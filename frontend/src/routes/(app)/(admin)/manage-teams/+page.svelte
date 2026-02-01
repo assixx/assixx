@@ -8,7 +8,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import HighlightText from '$lib/components/HighlightText.svelte';
-  import { showErrorAlert } from '$lib/stores/toast';
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageTeamsPage');
@@ -153,6 +153,7 @@
       closeTeamModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
+      showSuccessAlert(isEditMode ? 'Team aktualisiert' : 'Team erstellt');
     } catch (err) {
       log.error({ err }, 'Error saving team');
       showErrorAlert(
@@ -176,6 +177,7 @@
         if (deleteTeamId === teamId) deleteTeamId = null;
         // Level 3: Trigger SSR refetch
         await invalidateAll();
+        showSuccessAlert('Team gelöscht');
       } else if (result.hasMembers) {
         forceDeleteMemberCount = result.memberCount;
         showDeleteConfirmModal = false;
@@ -198,6 +200,7 @@
       if (deleteTeamId === teamId) deleteTeamId = null;
       // Level 3: Trigger SSR refetch
       await invalidateAll();
+      showSuccessAlert('Team gelöscht');
     } catch (err) {
       log.error({ err }, 'Error force deleting team');
       showErrorAlert(MESSAGES.ERROR_DELETING);

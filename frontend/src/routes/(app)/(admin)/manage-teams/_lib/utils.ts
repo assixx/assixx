@@ -48,6 +48,10 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 // DEPARTMENT BADGE HELPERS (BADGE-INHERITANCE-DISPLAY)
 // =============================================================================
 
+/** Badge CSS classes for team table badges */
+const BADGE_CLASS_INFO = 'badge--info';
+const BADGE_CLASS_SECONDARY = 'badge--secondary';
+
 /**
  * Get department badge info for team table
  * Shows department name with tooltip showing area hierarchy
@@ -62,7 +66,7 @@ export function getDepartmentBadge(
 ): BadgeInfo {
   if (team.departmentId === undefined) {
     return {
-      class: 'badge--secondary',
+      class: BADGE_CLASS_SECONDARY,
       text: 'Keine Abteilung',
       title: 'Keine Abteilung zugewiesen',
     };
@@ -79,14 +83,14 @@ export function getDepartmentBadge(
     const safeAreaName = escapeHtml(areaName);
     const tooltip = `${safeDeptName} (gehört zu: ${safeAreaName})`;
     return {
-      class: 'badge--info',
+      class: BADGE_CLASS_INFO,
       text: `<i class="fas fa-sitemap mr-1"></i>${safeDeptName}`,
       title: tooltip,
     };
   }
 
   return {
-    class: 'badge--info',
+    class: BADGE_CLASS_INFO,
     text: safeDeptName,
     title: safeDeptName,
   };
@@ -104,7 +108,7 @@ export function getMembersBadge(team: Team): BadgeInfo {
 
   if (count === 0) {
     return {
-      class: 'badge--secondary',
+      class: BADGE_CLASS_SECONDARY,
       text: '0',
       title: 'Keine Mitglieder zugewiesen',
     };
@@ -112,7 +116,7 @@ export function getMembersBadge(team: Team): BadgeInfo {
 
   const label = count === 1 ? 'Mitglied' : 'Mitglieder';
   return {
-    class: 'badge--info',
+    class: BADGE_CLASS_INFO,
     text: `<i class="fas fa-users mr-1"></i>${count}`,
     title: `${count} ${label}: ${names}`,
   };
@@ -130,17 +134,29 @@ export function getMachinesBadge(team: Team): BadgeInfo {
 
   if (count === 0) {
     return {
-      class: 'badge--secondary',
-      text: '0',
+      class: BADGE_CLASS_SECONDARY,
+      text: 'Keine',
       title: 'Keine Maschinen zugewiesen',
     };
   }
 
+  // SECURITY FIX: Escape user-provided names to prevent XSS
+  const safeNames = escapeHtml(names);
   const label = count === 1 ? 'Maschine' : 'Maschinen';
+
+  // Show names directly for 1-2 machines, count for 3+
+  if (count <= 2) {
+    return {
+      class: BADGE_CLASS_INFO,
+      text: `<i class="fas fa-cog mr-1"></i>${safeNames}`,
+      title: `${count} ${label}: ${safeNames}`,
+    };
+  }
+
   return {
-    class: 'badge--secondary',
-    text: `<i class="fas fa-cog mr-1"></i>${count}`,
-    title: `${count} ${label}: ${names}`,
+    class: BADGE_CLASS_INFO,
+    text: `<i class="fas fa-cog mr-1"></i>${count} ${label}`,
+    title: `${count} ${label}: ${safeNames}`,
   };
 }
 

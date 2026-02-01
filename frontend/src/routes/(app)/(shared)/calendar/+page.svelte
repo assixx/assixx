@@ -31,12 +31,10 @@
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import EventDetailModal from './_lib/EventDetailModal.svelte';
   import EventFormModal from './_lib/EventFormModal.svelte';
+  import EventList from './_lib/EventList.svelte';
+  import { shiftIndicators } from './_lib/shift-indicators.svelte';
   import { calendarState } from './_lib/state.svelte';
-  import {
-    getUpcomingEventTimeStr,
-    getEventLevelInfo,
-    formatDatetimeLocal,
-  } from './_lib/utils';
+  import { formatDatetimeLocal } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -71,10 +69,6 @@
   // ==========================================================================
 
   let isFullscreen = $state(false);
-  // Load showShifts from localStorage (only in browser)
-  let showShifts = $state(
-    browser ? localStorage.getItem('showShiftsInCalendar') === 'true' : false,
-  );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment -- Calendar component type from @event-calendar/core lacks proper types
   let calendarRef: any = $state();
 
@@ -208,102 +202,17 @@
   // CALENDAR EVENT HANDLERS
   // ==========================================================================
 
-  // ==========================================================================
-  // SHIFT INDICATORS (Legacy DOM-based approach)
-  // ==========================================================================
-
-  // Cache for shift data (dateKey -> shift) - not reactive, just storage for DOM rendering
-
-  const shiftsCache = $state<Map<string, { type: 'F' | 'S' | 'N' }>>(new Map());
-
-  /**
-   * Render shift indicators in calendar cells (Legacy approach)
-   * EventCalendar uses: .ec-day > .ec-day-head > time[datetime="YYYY-MM-DD"]
-   * Indicator goes INSIDE .ec-day-head, next to the day number
-   */
-  function renderShiftIndicators(): void {
-    // Remove existing indicators first
-    document.querySelectorAll('.shift-indicator').forEach((el) => {
-      el.remove();
-    });
-
-    if (!showShifts || shiftsCache.size === 0) return;
-
-    // Find all day head containers (EventCalendar structure)
-    const dayHeads = document.querySelectorAll('.ec-day .ec-day-head');
-
-    let renderedCount = 0;
-    dayHeads.forEach((dayHead) => {
-      const timeEl = dayHead.querySelector('time[datetime]');
-      if (!timeEl) return;
-
-      const dateAttr = timeEl.getAttribute('datetime');
-      if (dateAttr === null) return;
-
-      const shift = shiftsCache.get(dateAttr);
-      if (!shift) return;
-
-      // Create shift indicator
-      const indicator = document.createElement('div');
-      indicator.className = `shift-indicator shift-${shift.type}`;
-      indicator.textContent = shift.type;
-      indicator.setAttribute(
-        'aria-label',
-        `Schicht: ${
-          shift.type === 'F' ? 'Frühschicht'
-          : shift.type === 'S' ? 'Spätschicht'
-          : 'Nachtschicht'
-        }`,
-      );
-
-      // Insert AFTER time - library uses row-reverse, so visually indicator appears LEFT
-      dayHead.appendChild(indicator);
-      renderedCount++;
-    });
-
-    log.debug(
-      { renderedCount, cachedCount: shiftsCache.size },
-      'Rendered shift indicators',
-    );
-  }
-
-  /**
-   * Fetch and cache shifts, then render indicators
-   */
-  async function fetchAndRenderShifts(
-    startStr: string,
-    endStr: string,
-  ): Promise<void> {
-    if (!showShifts) {
-      shiftsCache.clear();
-      return;
-    }
-
-    log.debug({ startStr, endStr }, 'Fetching shifts');
-    const shifts = await api.loadUserShifts(startStr, endStr);
-
-    // Build cache
-    shiftsCache.clear();
-    for (const shift of shifts) {
-      // Extract date part (YYYY-MM-DD)
-      const dateOnly = shift.date.split('T')[0] ?? '';
-      shiftsCache.set(dateOnly, { type: shift.type });
-    }
-
-    log.debug({ size: shiftsCache.size }, 'Cached shifts');
-
-    // Small delay to ensure DOM is rendered, then add indicators
-    setTimeout(renderShiftIndicators, 100);
-  }
-
   async function fetchEvents(fetchInfo: {
     startStr: string;
     endStr: string;
   }): Promise<EventInput[]> {
     try {
       // Fetch shifts in parallel (for DOM rendering later)
-      if (showShifts) {
-        void fetchAndRenderShifts(fetchInfo.startStr, fetchInfo.endStr);
+      if (shiftIndicators.showShifts) {
+        void shiftIndicators.fetchAndRenderShifts(
+          fetchInfo.startStr,
+          fetchInfo.endStr,
+        );
       }
 
       return await api.loadCalendarEvents(
@@ -541,31 +450,14 @@
             <button
               type="button"
               class="toggle-group__btn"
-              class:active={showShifts}
+              class:active={shiftIndicators.showShifts}
               id="showShiftsToggle"
               title="Schichten anzeigen/ausblenden"
               data-action="toggle-shifts"
               onclick={() => {
-                showShifts = !showShifts;
-                log.debug({ showShifts }, 'Shifts toggle');
-                // Persist to localStorage
-                if (browser) {
-                  localStorage.setItem(
-                    'showShiftsInCalendar',
-                    String(showShifts),
-                  );
-                }
-                // Render or remove shift indicators
-                if (showShifts) {
-                  refetchCalendarEvents(); // This triggers fetchAndRenderShifts
-                } else {
-                  // Remove all shift indicators
-                  document
-                    .querySelectorAll('.shift-indicator')
-                    .forEach((el) => {
-                      el.remove();
-                    });
-                  shiftsCache.clear();
+                const isNowActive = shiftIndicators.toggle();
+                if (isNowActive) {
+                  refetchCalendarEvents();
                 }
               }}
             >
@@ -653,160 +545,21 @@
 
   <!-- Two-column layout for events -->
   <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <!-- Upcoming Events (Current Month) -->
-    <div class="card">
-      <div class="card__header">
-        <h3 class="card__title">
-          <i class="fas fa-clock mr-2"></i>
-          Anstehende Termine
-          <span
-            class="ml-2 text-sm font-normal text-[var(--color-text-secondary)]"
-          >
-            (Aktueller Monat)
-          </span>
-        </h3>
-      </div>
-      <div class="card__body">
-        <div class="upcoming-events">
-          {#if upcomingEvents.length === 0}
-            <p class="text-center text-[var(--color-text-secondary)]">
-              Keine anstehenden Termine in diesem Monat.
-            </p>
-          {:else}
-            {#each upcomingEvents as event (event.id)}
-              {@const levelInfo = getEventLevelInfo(event.orgLevel)}
-              {@const hasArea =
-                event.areaId !== null && event.areaId !== undefined}
-              {@const hasDept =
-                event.departmentId !== null && event.departmentId !== undefined}
-              {@const hasTeam =
-                event.teamId !== null && event.teamId !== undefined}
-              <button
-                type="button"
-                class="event-item w-full text-left"
-                onclick={() => handleEventClick(event.id)}
-              >
-                <div class="event-date">
-                  <span class="event-day"
-                    >{new Date(event.startTime).getDate()}</span
-                  >
-                  <span class="event-month">
-                    {new Date(event.startTime).toLocaleDateString('de-DE', {
-                      month: 'short',
-                    })}
-                  </span>
-                  <span class="event-time"
-                    >{getUpcomingEventTimeStr(event)}</span
-                  >
-                </div>
-                <div class="event-details">
-                  <div class="event-title">{event.title}</div>
-                  {#if event.location}
-                    <div class="event-location">
-                      <i class="fas fa-map-marker-alt"></i>
-                      {event.location}
-                    </div>
-                  {/if}
-                  <div class="event-badges">
-                    {#if hasArea}
-                      <span class="event-level event-level-area">Bereich</span>
-                    {/if}
-                    {#if hasDept}
-                      <span class="event-level event-level-department"
-                        >Abteilung</span
-                      >
-                    {/if}
-                    {#if hasTeam}
-                      <span class="event-level event-level-team">Team</span>
-                    {/if}
-                    {#if !hasArea && !hasDept && !hasTeam}
-                      <span class="event-level {levelInfo.class}"
-                        >{levelInfo.text}</span
-                      >
-                    {/if}
-                  </div>
-                </div>
-              </button>
-            {/each}
-          {/if}
-        </div>
-      </div>
-    </div>
-
-    <!-- Recently Added Events -->
-    <div class="card">
-      <div class="card__header">
-        <h3 class="card__title">
-          <i class="fas fa-plus-circle mr-2"></i>
-          Neueste Termine
-        </h3>
-      </div>
-      <div class="card__body">
-        <div class="upcoming-events">
-          {#if recentlyAddedEvents.length === 0}
-            <p class="text-center text-[var(--color-text-secondary)]">
-              Keine neuen Termine hinzugefuegt.
-            </p>
-          {:else}
-            {#each recentlyAddedEvents as event (event.id)}
-              {@const levelInfo = getEventLevelInfo(event.orgLevel)}
-              {@const hasArea =
-                event.areaId !== null && event.areaId !== undefined}
-              {@const hasDept =
-                event.departmentId !== null && event.departmentId !== undefined}
-              {@const hasTeam =
-                event.teamId !== null && event.teamId !== undefined}
-              <button
-                type="button"
-                class="event-item w-full text-left"
-                onclick={() => handleEventClick(event.id)}
-              >
-                <div class="event-date">
-                  <span class="event-day"
-                    >{new Date(event.startTime).getDate()}</span
-                  >
-                  <span class="event-month">
-                    {new Date(event.startTime).toLocaleDateString('de-DE', {
-                      month: 'short',
-                    })}
-                  </span>
-                  <span class="event-time"
-                    >{getUpcomingEventTimeStr(event)}</span
-                  >
-                </div>
-                <div class="event-details">
-                  <div class="event-title">{event.title}</div>
-                  {#if event.location}
-                    <div class="event-location">
-                      <i class="fas fa-map-marker-alt"></i>
-                      {event.location}
-                    </div>
-                  {/if}
-                  <div class="event-badges">
-                    {#if hasArea}
-                      <span class="event-level event-level-area">Bereich</span>
-                    {/if}
-                    {#if hasDept}
-                      <span class="event-level event-level-department"
-                        >Abteilung</span
-                      >
-                    {/if}
-                    {#if hasTeam}
-                      <span class="event-level event-level-team">Team</span>
-                    {/if}
-                    {#if !hasArea && !hasDept && !hasTeam}
-                      <span class="event-level {levelInfo.class}"
-                        >{levelInfo.text}</span
-                      >
-                    {/if}
-                  </div>
-                </div>
-              </button>
-            {/each}
-          {/if}
-        </div>
-      </div>
-    </div>
+    <EventList
+      title="Anstehende Termine"
+      icon="fa-clock"
+      subtitle="(Aktueller Monat)"
+      emptyStateMessage="Keine anstehenden Termine in diesem Monat."
+      events={upcomingEvents}
+      onEventClick={handleEventClick}
+    />
+    <EventList
+      title="Neueste Termine"
+      icon="fa-plus-circle"
+      emptyStateMessage="Keine neuen Termine hinzugefuegt."
+      events={recentlyAddedEvents}
+      onEventClick={handleEventClick}
+    />
   </div>
 </div>
 

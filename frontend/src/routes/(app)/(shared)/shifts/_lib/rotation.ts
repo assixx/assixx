@@ -7,11 +7,15 @@
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
+import { getEmployeeDisplayName } from './utils';
+
+import type { CustomRotationAssignment } from './api';
 import type {
   RotationPattern,
   Employee,
   RotationHistoryEntryAPI,
   ShiftType,
+  CustomRotationConfig,
 } from './types';
 
 const log = createLogger('ShiftsRotation');
@@ -433,4 +437,69 @@ export function filterEmployeesForRotation(
     }
     return true;
   });
+}
+
+// =============================================================================
+// CUSTOM ROTATION BUILDERS (Extracted from +page.svelte)
+// =============================================================================
+
+/** Weekday names for custom rotation special rules */
+export const WEEKDAY_NAMES = [
+  'Sonntag',
+  'Montag',
+  'Dienstag',
+  'Mittwoch',
+  'Donnerstag',
+  'Freitag',
+  'Samstag',
+] as const;
+
+/** Build algorithm config from custom rotation config */
+export function buildAlgorithmConfig(config: CustomRotationConfig) {
+  const sequenceArray = config.shiftSequence.split('-') as (
+    | 'early'
+    | 'late'
+    | 'night'
+  )[];
+  const specialRules =
+    config.nthWeekdayFree ?
+      [
+        {
+          type: 'nth_weekday_free' as const,
+          name: `Jeder ${String(config.nthValue)}. ${WEEKDAY_NAMES[config.weekdayValue] ?? 'Tag'} frei`,
+          weekday: config.weekdayValue,
+          n: config.nthValue,
+        },
+      ]
+    : undefined;
+
+  return {
+    shiftBlockLength: config.shiftBlockLength,
+    freeDays: config.freeDays,
+    startShift: config.startShift,
+    shiftSequence: sequenceArray,
+    specialRules,
+  };
+}
+
+/** Build employee assignments from config map (pure - no state dependency) */
+export function buildRotationAssignments(
+  employeeAssignments: Map<string, number[]>,
+  getEmployeeById: (id: number) => Employee | undefined,
+): CustomRotationAssignment[] {
+  const assignments: CustomRotationAssignment[] = [];
+  for (const [shiftGroup, userIds] of employeeAssignments) {
+    const startGroup = shiftGroup as 'F' | 'S' | 'N';
+    for (const userId of userIds) {
+      const employee = getEmployeeById(userId);
+      if (employee !== undefined) {
+        assignments.push({
+          userId,
+          userName: getEmployeeDisplayName(employee),
+          startGroup,
+        });
+      }
+    }
+  }
+  return assignments;
 }

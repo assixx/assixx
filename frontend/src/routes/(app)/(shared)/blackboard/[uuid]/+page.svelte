@@ -16,17 +16,16 @@
     showErrorAlert,
     showSuccessAlert,
   } from '$lib/utils';
-  import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   // Page-specific CSS (reuses kvp-detail layout)
   import '../../../../../styles/kvp-detail.css';
 
-  // Smart Edit Modal (self-contained with org data loading)
+  // Shared components (parent _lib)
   import BlackboardEditModal from '../_lib/BlackboardEditModal.svelte';
+  import DeleteConfirmModal from '../_lib/DeleteConfirmModal.svelte';
 
-  // _lib/ imports
+  // Page-level components
   import {
-    addComment as addCommentApi,
     archiveEntry as archiveApi,
     buildDownloadUrl,
     confirmEntry as confirmApi,
@@ -34,16 +33,16 @@
     unarchiveEntry as unarchiveApi,
     unconfirmEntry as unconfirmApi,
   } from './_lib/api';
+  import AttachmentPreviewModal from './_lib/AttachmentPreviewModal.svelte';
+  import CommentSection from './_lib/CommentSection.svelte';
   import {
     filterOtherFiles,
     filterPhotos,
     formatDate,
     formatDateTime,
-    getAvatarColor,
-    getFileIcon,
     formatFileSize,
+    getFileIcon,
     getOrgLevelText,
-    getPreviewFileType,
     getPriorityBadgeClass,
     getPriorityText,
     getVisibilityBadgeClass,
@@ -111,20 +110,31 @@
   // Client-only content flag (for auth-required URLs)
   const mounted = $derived(browser);
 
-  // Comment Form State
-  let newComment = $state('');
-  let submittingComment = $state(false);
-
   // Confirmation State
   let confirming = $state(false);
 
-  // Delete Modal State
-  let showDeleteModal = $state(false);
+  // Delete Modal State (two-step via DeleteConfirmModal)
+  let showDeleteStep1 = $state(false);
+  let showDeleteStep2 = $state(false);
   let deleting = $state(false);
 
   // Preview Modal State
   let showPreviewModal = $state(false);
-  let previewAttachment = $state<PreviewAttachment | null>(null);
+  let previewIndex = $state<number | null>(null);
+
+  const previewAttachment = $derived.by((): PreviewAttachment | null => {
+    if (previewIndex === null) return null;
+    const att = attachments[previewIndex];
+    return {
+      fileUuid: att.fileUuid,
+      filename: att.filename,
+      mimeType: att.mimeType,
+      fileSize: att.fileSize,
+      uploadedByName: att.uploadedByName,
+      downloadUrl: att.downloadUrl,
+      previewUrl: att.previewUrl,
+    };
+  });
 
   // Edit Modal State
   let showEditModal = $state(false);
@@ -157,23 +167,6 @@
       showErrorAlert('Fehler beim Zurücknehmen der Lesebestätigung');
     }
     confirming = false;
-  }
-
-  async function handleAddComment(e: Event): Promise<void> {
-    e.preventDefault();
-    const commentText = newComment.trim();
-    if (!commentText) return;
-    submittingComment = true;
-    const success = await addCommentApi(uuid, commentText);
-    if (success) {
-      // eslint-disable-next-line require-atomic-updates -- Setting to constant '', not using previous value. Input disabled via submittingComment.
-      newComment = '';
-      showSuccessAlert('Kommentar hinzugefügt');
-      await invalidateAll();
-    } else {
-      showErrorAlert('Fehler beim Hinzufügen des Kommentars');
-    }
-    submittingComment = false;
   }
 
   async function archiveEntry(): Promise<void> {
@@ -214,7 +207,8 @@
       showErrorAlert(result.error);
     }
     deleting = false;
-    showDeleteModal = false;
+    showDeleteStep1 = false;
+    showDeleteStep2 = false;
   }
 
   /** Open edit modal */
@@ -232,26 +226,37 @@
   // =============================================================================
 
   function openPreview(att: Attachment): void {
-    previewAttachment = {
-      fileUuid: att.fileUuid,
-      filename: att.filename,
-      mimeType: att.mimeType,
-      fileSize: att.fileSize,
-      uploadedByName: att.uploadedByName,
-      downloadUrl: att.downloadUrl,
-      previewUrl: att.previewUrl,
-    };
+    const idx = attachments.findIndex((a) => a.fileUuid === att.fileUuid);
+    if (idx === -1) return;
+    previewIndex = idx;
     showPreviewModal = true;
   }
 
   function closePreview(): void {
     showPreviewModal = false;
-    previewAttachment = null;
+    previewIndex = null;
   }
 
-  function downloadAttachment(): void {
-    if (!previewAttachment) return;
-    window.open(buildDownloadUrl(previewAttachment.downloadUrl), '_blank');
+  function handlePreviewPrev(): void {
+    if (previewIndex === null || attachments.length <= 1) return;
+    previewIndex =
+      previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
+  }
+
+  function handlePreviewNext(): void {
+    if (previewIndex === null || attachments.length <= 1) return;
+    previewIndex =
+      previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
+  }
+
+  function cancelDelete(): void {
+    showDeleteStep1 = false;
+    showDeleteStep2 = false;
+  }
+
+  function proceedToDeleteStep2(): void {
+    showDeleteStep1 = false;
+    showDeleteStep2 = true;
   }
 
   function goBack(): void {
@@ -264,36 +269,13 @@
 
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
-      if (showDeleteModal) showDeleteModal = false;
+      if (showDeleteStep1 || showDeleteStep2) cancelDelete();
       else if (showEditModal) showEditModal = false;
       else if (showPreviewModal) closePreview();
+    } else if (showPreviewModal) {
+      if (e.key === 'ArrowLeft') handlePreviewPrev();
+      else if (e.key === 'ArrowRight') handlePreviewNext();
     }
-  }
-
-  /**
-   * Determines the avatar color class based on profile picture availability.
-   * Returns empty string if profile picture exists, otherwise returns color class.
-   * Uses userId for consistent color per user (same user = same color everywhere).
-   */
-  function getAvatarColorClass(
-    profilePicture: string | null | undefined,
-    userId: number,
-  ): string {
-    const hasProfilePic =
-      profilePicture !== null &&
-      profilePicture !== undefined &&
-      profilePicture !== '';
-    return hasProfilePic ? '' : `avatar--color-${getAvatarColor(userId)}`;
-  }
-
-  /**
-   * Type-safe check for non-empty string value.
-   * Handles null, undefined, and empty string cases explicitly.
-   */
-  function hasProfilePicture(
-    value: string | null | undefined,
-  ): value is string {
-    return value !== null && value !== undefined && value !== '';
   }
 </script>
 
@@ -422,94 +404,11 @@
       {/if}
 
       <!-- Comments Section -->
-      <div class="comments-section">
-        <h3 class="section-title">
-          <i class="fas fa-comments"></i> Kommentare
-          <span class="badge badge--count ml-2">{comments.length}</span>
-        </h3>
-
-        <!-- Comment Form - Hidden for archived entries -->
-        {#if !isArchived}
-          <form
-            class="mb-6 flex gap-4"
-            onsubmit={handleAddComment}
-          >
-            <div class="form-field flex-1">
-              <textarea
-                class="form-field__control"
-                placeholder="Kommentar hinzufügen..."
-                rows="3"
-                required
-                bind:value={newComment}
-              ></textarea>
-            </div>
-            <div class="flex items-start">
-              <button
-                type="submit"
-                class="btn btn-primary"
-                disabled={submittingComment}
-              >
-                {#if submittingComment}<span
-                    class="spinner-ring spinner-ring--sm mr-2"
-                  ></span>{:else}<i class="fas fa-paper-plane mr-2"></i>{/if}
-                Senden
-              </button>
-            </div>
-          </form>
-        {/if}
-
-        <!-- Comment List -->
-        <div class="comment-list">
-          {#if comments.length === 0}
-            <p class="text-muted">Keine Kommentare vorhanden.</p>
-          {:else}
-            {#each comments as comment (comment.id)}
-              <div
-                class="comment-item"
-                class:comment-internal={comment.isInternal}
-              >
-                <div class="comment-header">
-                  <div class="comment-author">
-                    <div
-                      class="avatar avatar--sm {getAvatarColorClass(
-                        comment.profilePicture,
-                        comment.userId,
-                      )}"
-                    >
-                      {#if hasProfilePicture(comment.profilePicture)}
-                        <img
-                          src={getProfilePictureUrl(comment.profilePicture)}
-                          alt="{comment.firstName} {comment.lastName}"
-                          class="avatar__image"
-                        />
-                      {:else}
-                        <span class="avatar__initials"
-                          >{(comment.firstName?.[0] ?? 'U').toUpperCase()}{(
-                            comment.lastName?.[0] ?? 'N'
-                          ).toUpperCase()}</span
-                        >
-                      {/if}
-                    </div>
-                    <div>
-                      <strong
-                        >{comment.firstName ?? 'Unbekannt'}
-                        {comment.lastName ?? ''}</strong
-                      >
-                      {#if comment.isInternal}<span class="internal-badge"
-                          >Intern</span
-                        >{/if}
-                    </div>
-                  </div>
-                  <span class="comment-date"
-                    >{formatDateTime(comment.createdAt)}</span
-                  >
-                </div>
-                <div class="comment-content">{comment.comment}</div>
-              </div>
-            {/each}
-          {/if}
-        </div>
-      </div>
+      <CommentSection
+        {comments}
+        {isArchived}
+        {uuid}
+      />
     </div>
 
     <!-- Sidebar -->
@@ -600,7 +499,7 @@
               <button
                 type="button"
                 class="btn btn-danger mb-2 w-full"
-                onclick={() => (showDeleteModal = true)}
+                onclick={() => (showDeleteStep1 = true)}
                 ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
               >
             {/if}
@@ -637,165 +536,25 @@
 </div>
 
 <!-- Preview Modal -->
-{#if showPreviewModal && previewAttachment}
-  <div
-    class="modal-overlay modal-overlay--active"
-    onclick={closePreview}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closePreview();
-    }}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="ds-modal ds-modal--xl"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      role="document"
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          {#if getPreviewFileType(previewAttachment.mimeType) === 'pdf'}<i
-              class="fas fa-file-pdf text-error-500 mr-2"
-            ></i>
-          {:else if getPreviewFileType(previewAttachment.mimeType) === 'image'}<i
-              class="fas fa-image text-success-500 mr-2"
-            ></i>
-          {:else}<i class="fas fa-file mr-2"></i>{/if}
-          {previewAttachment.filename}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={closePreview}
-          aria-label="Schließen"><i class="fas fa-times"></i></button
-        >
-      </div>
-      <div class="ds-modal__body p-0">
-        {#if getPreviewFileType(previewAttachment.mimeType) === 'pdf'}
-          <iframe
-            src={buildDownloadUrl(
-              previewAttachment.previewUrl ?? previewAttachment.downloadUrl,
-            )}
-            title="PDF Vorschau"
-            class="block h-[70vh] min-h-[600px] w-full border-none"
-          ></iframe>
-        {:else if getPreviewFileType(previewAttachment.mimeType) === 'image'}
-          <div
-            class="flex h-[70vh] min-h-[600px] w-full items-center justify-center bg-[var(--surface-1)]"
-          >
-            <img
-              src={buildDownloadUrl(
-                previewAttachment.previewUrl ?? previewAttachment.downloadUrl,
-              )}
-              alt={previewAttachment.filename}
-              class="max-h-full max-w-full object-contain"
-            />
-          </div>
-        {:else}
-          <div
-            class="flex h-[70vh] min-h-[600px] w-full items-center justify-center bg-[var(--surface-1)]"
-          >
-            <div class="text-center text-[var(--color-text-secondary)]">
-              <i class="fas fa-file-alt mb-4 text-6xl"></i>
-              <p class="text-lg">Vorschau nicht verfügbar</p>
-              <p class="mt-2 text-sm">Bitte laden Sie die Datei herunter.</p>
-            </div>
-          </div>
-        {/if}
-        <div
-          class="border-t border-[var(--border-subtle)] bg-[var(--surface-2)] p-4"
-        >
-          <div
-            class="flex items-center gap-6 text-sm text-[var(--color-text-secondary)]"
-          >
-            <span class="flex items-center gap-2"
-              ><i class="fas fa-file-archive"></i>
-              {formatFileSize(previewAttachment.fileSize)}</span
-            >
-            <span class="flex items-center gap-2"
-              ><i class="fas fa-user"></i>
-              {previewAttachment.uploadedByName}</span
-            >
-          </div>
-        </div>
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={closePreview}
-          ><i class="fas fa-times mr-2"></i>Schließen</button
-        >
-        <button
-          type="button"
-          class="btn btn-modal"
-          onclick={downloadAttachment}
-          ><i class="fas fa-download mr-2"></i>Herunterladen</button
-        >
-      </div>
-    </div>
-  </div>
-{/if}
+<AttachmentPreviewModal
+  show={showPreviewModal}
+  attachment={previewAttachment}
+  onclose={closePreview}
+  onprev={handlePreviewPrev}
+  onnext={handlePreviewNext}
+  currentIndex={previewIndex ?? undefined}
+  totalCount={attachments.length}
+/>
 
-<!-- Delete Confirmation Modal -->
-{#if showDeleteModal}
-  <div
-    class="modal-overlay modal-overlay--active"
-    onclick={() => (showDeleteModal = false)}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') showDeleteModal = false;
-    }}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--danger"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      role="document"
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3 class="confirm-modal__title">Eintrag löschen?</h3>
-      <p class="confirm-modal__message">
-        Möchten Sie diesen Eintrag wirklich löschen? Diese Aktion kann nicht
-        rückgängig gemacht werden.
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => (showDeleteModal = false)}
-          disabled={deleting}>Abbrechen</button
-        >
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={handleDeleteEntry}
-          disabled={deleting}
-        >
-          {#if deleting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
-          Endgültig löschen
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<!-- Delete Confirmation Modal (two-step via parent component) -->
+<DeleteConfirmModal
+  showStep1={showDeleteStep1}
+  showStep2={showDeleteStep2}
+  loading={deleting}
+  oncancel={cancelDelete}
+  onproceed={proceedToDeleteStep2}
+  onconfirm={handleDeleteEntry}
+/>
 
 <!-- Edit Entry Modal (Smart - loads org data internally) -->
 {#if showEditModal}
@@ -817,10 +576,6 @@
   .confirmation-done .text-success {
     font-size: 2rem;
     color: var(--color-success);
-  }
-  .comment-date {
-    font-size: 0.85rem;
-    color: rgb(255 255 255 / 50%);
   }
   .attachment-info {
     flex: 1;

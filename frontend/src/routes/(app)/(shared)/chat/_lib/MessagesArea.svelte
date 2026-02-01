@@ -559,7 +559,6 @@
     background: rgb(0 0 0 / 5%);
     border-radius: var(--radius-md, 8px);
     cursor: pointer;
-    border: 1px solid rgb(0 0 0 / 10%);
     font: inherit;
     color: inherit;
     text-align: left;

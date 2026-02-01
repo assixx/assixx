@@ -11,7 +11,10 @@
 {#if kvpDetailState.showPreviewModal && kvpDetailState.previewAttachment !== null}
   {@const attachment = kvpDetailState.previewAttachment}
   <div class="modal-overlay modal-overlay--active">
-    <div class="ds-modal ds-modal--xl">
+    <div
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh;"
+    >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
           <i class="fas {getFileIconClass(attachment.fileType)} mr-2"></i>
@@ -32,12 +35,12 @@
         {#if attachment.fileType.includes('pdf')}
           <iframe
             src={getAttachmentPreviewUrl(attachment.fileUuid)}
-            class="block h-[70vh] min-h-[600px] w-full border-none"
+            class="block h-[80vh] min-h-[600px] w-full border-none"
             title="Dokumentenvorschau"
           ></iframe>
         {:else if attachment.fileType.includes('image')}
           <div
-            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
+            class="bg-surface-1 flex h-[80vh] min-h-[600px] w-full items-center justify-center"
           >
             <img
               src={getAttachmentPreviewUrl(attachment.fileUuid)}
@@ -47,7 +50,7 @@
           </div>
         {:else}
           <div
-            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
+            class="bg-surface-1 flex h-[80vh] min-h-[600px] w-full items-center justify-center"
           >
             <div class="text-content-secondary text-center">
               <i class="fas fa-file-alt mb-4 text-6xl"></i>

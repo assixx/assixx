@@ -64,19 +64,29 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: teams + all reference data
-  const [teamsData, departmentsData, adminsData, employeesData, machinesData] =
-    await Promise.all([
-      apiFetch<Team[]>('/teams', token, fetch),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Admin[]>('/users?role=admin', token, fetch),
-      apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
-      apiFetch<Machine[]>('/machines', token, fetch),
-    ]);
+  // Parallel fetch: teams + all reference data (admin + root as potential team leads)
+  const [
+    teamsData,
+    departmentsData,
+    adminsData,
+    rootsData,
+    employeesData,
+    machinesData,
+  ] = await Promise.all([
+    apiFetch<Team[]>('/teams', token, fetch),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Admin[]>('/users?role=admin', token, fetch),
+    apiFetch<Admin[]>('/users?role=root', token, fetch),
+    apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
+    apiFetch<Machine[]>('/machines', token, fetch),
+  ]);
 
   const teams = Array.isArray(teamsData) ? teamsData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
-  const admins = Array.isArray(adminsData) ? adminsData : [];
+  const admins = [
+    ...(Array.isArray(adminsData) ? adminsData : []),
+    ...(Array.isArray(rootsData) ? rootsData : []),
+  ];
   const employees = Array.isArray(employeesData) ? employeesData : [];
   const machines = Array.isArray(machinesData) ? machinesData : [];
 
