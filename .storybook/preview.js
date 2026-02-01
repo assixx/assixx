@@ -2,9 +2,8 @@
  * Storybook Preview Configuration
  * Global decorators, parameters, and styles
  */
-// Import global styles
-// NOTE: main.css already imports tailwind.css which includes design-system
-import '../frontend/src/styles/main.css';
+// Import global styles (SvelteKit entry point - replaces legacy main.css)
+import '../frontend/src/app.css';
 
 /** @type { import('@storybook/html-vite').Preview } */
 const preview = {

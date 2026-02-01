@@ -8,8 +8,6 @@
  * - Keyboard triggers
  * - Dynamic content
  */
-import '../frontend/src/design-system/index.css';
-
 export default {
   title: 'Design System/Tooltip',
   parameters: {

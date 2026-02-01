@@ -10,8 +10,6 @@
  * - Keyboard navigation
  * - ARIA state management
  */
-import '../frontend/src/design-system/index.css';
-
 export default {
   title: 'Design System/Collapse',
   parameters: {
