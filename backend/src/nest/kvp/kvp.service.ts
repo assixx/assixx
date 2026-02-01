@@ -389,6 +389,38 @@ export class KvpService {
     }
   }
 
+  /**
+   * Assert that the user has permission to change KVP suggestion status.
+   *
+   * Allowed: root | admin with has_full_access | admin who is team_lead of this KVP's team
+   */
+  private async assertCanUpdateStatus(
+    suggestion: KVPSuggestionResponse,
+    userId: number,
+    tenantId: number,
+    userRole: string,
+  ): Promise<void> {
+    if (userRole === 'root') return;
+
+    if (userRole !== 'admin') {
+      throw new ForbiddenException(
+        'Nur Administratoren dürfen den Status ändern.',
+      );
+    }
+
+    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    if (orgInfo.hasFullAccess) return;
+
+    const kvpTeamId = suggestion.teamId;
+    if (kvpTeamId !== null && orgInfo.teamLeadOf.includes(kvpTeamId)) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'Nur Root, Admins mit Vollzugriff oder der Teamleiter dieses KVP-Teams dürfen den Status ändern.',
+    );
+  }
+
   /** Log activity and emit notifications for newly created KVP suggestion */
   private async logAndNotifyKvpCreated(
     suggestionId: number,
@@ -454,12 +486,8 @@ export class KvpService {
     if (userRole === 'employee' && existing.submittedBy !== userId) {
       throw new ForbiddenException('You can only update your own suggestions');
     }
-    if (
-      dto.status !== undefined &&
-      userRole !== 'admin' &&
-      userRole !== 'root'
-    ) {
-      throw new ForbiddenException('Only admins can update status');
+    if (dto.status !== undefined) {
+      await this.assertCanUpdateStatus(existing, userId, tenantId, userRole);
     }
 
     const oldValues = {
