@@ -320,22 +320,7 @@ export class KvpService {
 
     // Rate limit: Employees can only create 1 KVP suggestion per day
     if (userRole === 'employee') {
-      const todayCount = await this.db.query<{ count: string }>(
-        `SELECT COUNT(*) as count
-         FROM kvp_suggestions
-         WHERE tenant_id = $1
-           AND submitted_by = $2
-           AND created_at >= CURRENT_DATE
-           AND created_at < CURRENT_DATE + INTERVAL '1 day'`,
-        [tenantId, userId],
-      );
-
-      const count = Number.parseInt(todayCount[0]?.count ?? '0', 10);
-      if (count >= 1) {
-        throw new ForbiddenException(
-          'Tageslimit erreicht: Sie können nur 1 KVP-Vorschlag pro Tag einreichen. Versuchen Sie es morgen erneut.',
-        );
-      }
+      await this.assertDailyLimitNotReached(tenantId, userId);
     }
 
     const uuid = uuidv7();
@@ -379,6 +364,29 @@ export class KvpService {
     void this.logAndNotifyKvpCreated(rows[0].id, dto, tenantId, userId);
 
     return createdSuggestion;
+  }
+
+  /** Assert that the employee has not exceeded the daily KVP submission limit */
+  private async assertDailyLimitNotReached(
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    const todayCount = await this.db.query<{ count: string }>(
+      `SELECT COUNT(*) as count
+       FROM kvp_suggestions
+       WHERE tenant_id = $1
+         AND submitted_by = $2
+         AND created_at >= CURRENT_DATE
+         AND created_at < CURRENT_DATE + INTERVAL '1 day'`,
+      [tenantId, userId],
+    );
+
+    const count = Number.parseInt(todayCount[0]?.count ?? '0', 10);
+    if (count >= 1) {
+      throw new ForbiddenException(
+        'Tageslimit erreicht: Sie können nur 1 KVP-Vorschlag pro Tag einreichen. Versuchen Sie es morgen erneut.',
+      );
+    }
   }
 
   /** Log activity and emit notifications for newly created KVP suggestion */
