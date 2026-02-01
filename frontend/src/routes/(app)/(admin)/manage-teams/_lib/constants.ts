@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
     `/teams/${teamId}/machines/${machineId}`,
   DEPARTMENTS: '/departments',
   ADMINS: '/users?role=admin',
+  ROOT_USERS: '/users?role=root',
   EMPLOYEES: '/users?role=employee',
   MACHINES: '/machines',
 } as const;

@@ -335,7 +335,7 @@
       <div class="form-field">
         <label
           class="form-field__label"
-          for="team-lead">Team-Leiter (Admin)</label
+          for="team-lead">Team-Leiter</label
         >
         <div
           class="dropdown"

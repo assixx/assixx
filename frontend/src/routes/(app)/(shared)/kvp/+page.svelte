@@ -224,14 +224,12 @@
       return;
     }
 
-    // Admin/Root: only if they are team leads
-    if (user.role === 'admin' || user.role === 'root') {
-      const leadTeam = await findUserTeamAsLead(user.id);
-      if (leadTeam !== null) {
-        currentTeamId = leadTeam.id;
-        kvpState.openCreateModal();
-        return;
-      }
+    // Admin/Root (only remaining after employee early return): must be team leads
+    const leadTeam = await findUserTeamAsLead(user.id);
+    if (leadTeam !== null) {
+      currentTeamId = leadTeam.id;
+      kvpState.openCreateModal();
+      return;
     }
 
     // Not authorized
