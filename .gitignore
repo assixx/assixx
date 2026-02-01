@@ -65,7 +65,7 @@ temp/
 *.tmp
 *.cache
 *.bak
-docker/cookies.txt
+**/cookies*.txt
 
 # Test coverage
 coverage/
