@@ -297,7 +297,8 @@ export class KvpService {
 
   /**
    * Create a new suggestion
-   * Rate limit: 1 suggestion per user per day (employees only, admins/root unlimited)
+   * Permission: employees, or admin/root who are team leads
+   * Rate limit: 1 suggestion per user per day (employees only)
    */
   async createSuggestion(
     dto: CreateSuggestionDto,
@@ -307,24 +308,19 @@ export class KvpService {
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Creating suggestion: ${dto.title}`);
 
-    // Rate limit: Employees can only create 1 KVP suggestion per day
-    if (userRole === 'employee') {
-      const todayCount = await this.db.query<{ count: string }>(
-        `SELECT COUNT(*) as count
-         FROM kvp_suggestions
-         WHERE tenant_id = $1
-           AND submitted_by = $2
-           AND created_at >= CURRENT_DATE
-           AND created_at < CURRENT_DATE + INTERVAL '1 day'`,
-        [tenantId, userId],
-      );
-
-      const count = Number.parseInt(todayCount[0]?.count ?? '0', 10);
-      if (count >= 1) {
+    // Permission: admin/root must be team leads to create KVP suggestions
+    if (userRole !== 'employee') {
+      const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+      if (orgInfo.teamLeadOf.length === 0) {
         throw new ForbiddenException(
-          'Tageslimit erreicht: Sie können nur 1 KVP-Vorschlag pro Tag einreichen. Versuchen Sie es morgen erneut.',
+          'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
         );
       }
+    }
+
+    // Rate limit: Employees can only create 1 KVP suggestion per day
+    if (userRole === 'employee') {
+      await this.assertDailyLimitNotReached(tenantId, userId);
     }
 
     const uuid = uuidv7();
@@ -368,6 +364,61 @@ export class KvpService {
     void this.logAndNotifyKvpCreated(rows[0].id, dto, tenantId, userId);
 
     return createdSuggestion;
+  }
+
+  /** Assert that the employee has not exceeded the daily KVP submission limit */
+  private async assertDailyLimitNotReached(
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    const todayCount = await this.db.query<{ count: string }>(
+      `SELECT COUNT(*) as count
+       FROM kvp_suggestions
+       WHERE tenant_id = $1
+         AND submitted_by = $2
+         AND created_at >= CURRENT_DATE
+         AND created_at < CURRENT_DATE + INTERVAL '1 day'`,
+      [tenantId, userId],
+    );
+
+    const count = Number.parseInt(todayCount[0]?.count ?? '0', 10);
+    if (count >= 1) {
+      throw new ForbiddenException(
+        'Tageslimit erreicht: Sie können nur 1 KVP-Vorschlag pro Tag einreichen. Versuchen Sie es morgen erneut.',
+      );
+    }
+  }
+
+  /**
+   * Assert that the user has permission to change KVP suggestion status.
+   *
+   * Allowed: root | admin with has_full_access | admin who is team_lead of this KVP's team
+   */
+  private async assertCanUpdateStatus(
+    suggestion: KVPSuggestionResponse,
+    userId: number,
+    tenantId: number,
+    userRole: string,
+  ): Promise<void> {
+    if (userRole === 'root') return;
+
+    if (userRole !== 'admin') {
+      throw new ForbiddenException(
+        'Nur Administratoren dürfen den Status ändern.',
+      );
+    }
+
+    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    if (orgInfo.hasFullAccess) return;
+
+    const kvpTeamId = suggestion.teamId;
+    if (kvpTeamId !== null && orgInfo.teamLeadOf.includes(kvpTeamId)) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'Nur Root, Admins mit Vollzugriff oder der Teamleiter dieses KVP-Teams dürfen den Status ändern.',
+    );
   }
 
   /** Log activity and emit notifications for newly created KVP suggestion */
@@ -435,12 +486,8 @@ export class KvpService {
     if (userRole === 'employee' && existing.submittedBy !== userId) {
       throw new ForbiddenException('You can only update your own suggestions');
     }
-    if (
-      dto.status !== undefined &&
-      userRole !== 'admin' &&
-      userRole !== 'root'
-    ) {
-      throw new ForbiddenException('Only admins can update status');
+    if (dto.status !== undefined) {
+      await this.assertCanUpdateStatus(existing, userId, tenantId, userRole);
     }
 
     const oldValues = {

@@ -213,6 +213,7 @@ export class UsersController {
       uuid,
       dto,
       user.id,
+      user.role,
       tenantId,
     );
   }
@@ -230,7 +231,13 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateUser(id, dto, user.id, tenantId);
+    return await this.usersService.updateUser(
+      id,
+      dto,
+      user.id,
+      user.role,
+      tenantId,
+    );
   }
 
   /**

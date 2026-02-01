@@ -316,10 +316,10 @@
               type="button"
               class="btn btn-manage mb-4 w-4/5"
               onclick={() => {
-                navigateTo('/document-upload');
+                navigateTo('/documents-explorer');
               }}
             >
-              Dokument hochladen
+              Dokumenten-Explorer
             </button>
             <div class="space-y-2">
               {#if recentDocuments.length === 0}

@@ -177,6 +177,19 @@ export const MESSAGES = {
   STATUS_HINT: 'Inaktive/Archivierte Mitarbeiter können sich nicht anmelden',
   TEAM_INFO:
     'Mitarbeiter werden Teams zugewiesen. Abteilung und Bereich werden automatisch vom Team vererbt.',
+
+  // Danger zone - Role upgrade
+  UPGRADE_TITLE: 'Gefahrenzone',
+  UPGRADE_DESCRIPTION:
+    'Stuft diesen Mitarbeiter dauerhaft zum Administrator hoch. Der Mitarbeiter erhält Zugriff auf Admin-Funktionen und verschwindet aus der Mitarbeiterliste.',
+  UPGRADE_BUTTON: 'Zu Admin hochstufen',
+  UPGRADE_CONFIRM_MESSAGE:
+    'Sind Sie sicher? Der Mitarbeiter wird sofort zum Administrator hochgestuft und erscheint künftig in der Admin-Verwaltung.',
+  UPGRADE_CONFIRM_BUTTON: 'Ja, hochstufen',
+  UPGRADE_SUCCESS: 'Mitarbeiter wurde zum Administrator hochgestuft',
+  UPGRADE_ERROR: 'Fehler beim Hochstufen',
+  UPGRADE_UNAUTHORIZED:
+    'Sie sind nicht berechtigt, Rollen zu ändern. Nur Root oder Admin mit Vollzugriff.',
 } as const;
 
 /**

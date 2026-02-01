@@ -14,7 +14,7 @@
   // KVP-specific styles (migrated from legacy)
   import '../../../../styles/kvp.css';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showErrorAlert } from '$lib/utils';
+  import { showErrorAlert, showWarningAlert } from '$lib/utils';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -197,34 +197,45 @@
   // CREATE MODAL
   // ==========================================================================
 
+  /** Resolve team ID for current user (direct assignment or team lead) */
+  async function resolveUserTeamId(
+    user: CurrentUser,
+  ): Promise<number | undefined> {
+    if (user.teamId !== undefined && user.teamId !== 0) return user.teamId;
+    const leadTeam = await findUserTeamAsLead(user.id);
+    return leadTeam?.id;
+  }
+
   async function handleOpenCreateModal() {
-    // Validate employee has a team
-    if (kvpState.effectiveRole === 'employee') {
-      const user = kvpState.currentUser;
-      if (user === null) return;
+    const user = kvpState.currentUser;
+    if (user === null) return;
 
-      // Check if user has team
-      let teamId = user.teamId;
-
-      if (teamId === undefined || teamId === 0) {
-        // Check if user is team lead
-        const userTeam = await findUserTeamAsLead(user.id);
-        if (userTeam !== null) {
-          teamId = userTeam.id;
-        }
-      }
-
-      if (teamId === undefined || teamId === 0) {
+    // Employees: can always create (need team assignment)
+    if (user.role === 'employee') {
+      const teamId = await resolveUserTeamId(user);
+      if (teamId === undefined) {
         showErrorAlert(
           'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
         );
         return;
       }
-
       currentTeamId = teamId;
+      kvpState.openCreateModal();
+      return;
     }
 
-    kvpState.openCreateModal();
+    // Admin/Root (only remaining after employee early return): must be team leads
+    const leadTeam = await findUserTeamAsLead(user.id);
+    if (leadTeam !== null) {
+      currentTeamId = leadTeam.id;
+      kvpState.openCreateModal();
+      return;
+    }
+
+    // Not authorized
+    showWarningAlert(
+      'Sie sind nicht berechtigt, KVP-Vorschläge zu erstellen. Nur Mitarbeiter und Teamleiter dürfen Vorschläge einreichen.',
+    );
   }
 
   function handleCloseCreateModal(): void {
@@ -626,17 +637,15 @@
   </div>
 </div>
 
-<!-- Floating Add Button (employees only) -->
-{#if kvpState.isEmployee}
-  <button
-    type="button"
-    class="btn-float"
-    aria-label="Neuen Vorschlag erstellen"
-    onclick={handleOpenCreateModal}
-  >
-    <i class="fas fa-plus"></i>
-  </button>
-{/if}
+<!-- Floating Add Button -->
+<button
+  type="button"
+  class="btn-float"
+  aria-label="Neuen Vorschlag erstellen"
+  onclick={handleOpenCreateModal}
+>
+  <i class="fas fa-plus"></i>
+</button>
 
 <!-- Create KVP Modal -->
 {#if kvpState.showCreateModal}

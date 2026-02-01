@@ -29,7 +29,7 @@ export interface FilterableDepartment {
 export interface FilterableTeam {
   id: number;
   name: string;
-  departmentId?: number;
+  departmentId?: number | null;
 }
 
 // =============================================================================

@@ -26,6 +26,8 @@ export interface DbSuggestion {
   category_id: number;
   org_level: 'company' | 'department' | 'area' | 'team';
   org_id: number;
+  department_id: number | null;
+  team_id: number | null;
   is_shared: boolean;
   submitted_by: number;
   priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -157,6 +159,8 @@ export interface KVPSuggestionResponse {
   orgLevel: string;
   orgId: number;
   isShared: boolean;
+  departmentId: number | null;
+  teamId: number | null;
   submittedBy: number;
   status: string;
   priority: string;

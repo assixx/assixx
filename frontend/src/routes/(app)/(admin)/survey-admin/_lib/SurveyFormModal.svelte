@@ -2,6 +2,8 @@
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
+    filterAvailableTeams,
+    filterTeamIdsByDepartments,
   } from '$lib/utils';
 
   import QuestionItem from './QuestionItem.svelte';
@@ -78,9 +80,22 @@
     );
   });
 
+  /** All department IDs covered by selection (explicit + area-inherited) */
+  const coveredDepartmentIds = $derived.by(() => {
+    const inherited = departments
+      .filter((d) => formSelectedAreas.includes(d.areaId ?? -1))
+      .map((d) => d.id);
+    return [...formSelectedDepartments, ...inherited];
+  });
+
+  /** Filter teams: hide teams whose department is already covered */
+  const availableTeams = $derived.by(() => {
+    return filterAvailableTeams(teams, coveredDepartmentIds, formCompanyWide);
+  });
+
   /**
    * Handle area selection change.
-   * Also filters out departments that are now covered by selected areas.
+   * Filters out departments and teams covered by selected areas (inheritance).
    */
   function handleAreaChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
@@ -93,6 +108,33 @@
       departments,
       newAreaIds,
     );
+    // Remove teams whose department is now covered (explicit + area-inherited)
+    const areaDeptIds = departments
+      .filter((d) => newAreaIds.includes(d.areaId ?? -1))
+      .map((d) => d.id);
+    formSelectedTeams = filterTeamIdsByDepartments(formSelectedTeams, teams, [
+      ...formSelectedDepartments,
+      ...areaDeptIds,
+    ]);
+  }
+
+  /**
+   * Handle department selection change.
+   * Filters out teams covered by selected departments.
+   */
+  function handleDepartmentChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    const newDeptIds = Array.from(select.selectedOptions).map((o) =>
+      Number(o.value),
+    );
+    formSelectedDepartments = newDeptIds;
+    const areaDeptIds = departments
+      .filter((d) => formSelectedAreas.includes(d.areaId ?? -1))
+      .map((d) => d.id);
+    formSelectedTeams = filterTeamIdsByDepartments(formSelectedTeams, teams, [
+      ...newDeptIds,
+      ...areaDeptIds,
+    ]);
   }
 
   // =============================================================================
@@ -368,11 +410,15 @@
             id="survey-department-select"
             multiple
             class="form-field__control min-h-[100px]"
-            bind:value={formSelectedDepartments}
+            value={formSelectedDepartments}
             disabled={formCompanyWide}
+            onchange={handleDepartmentChange}
           >
             {#each availableDepartments as dept (dept.id)}
-              <option value={dept.id}>
+              <option
+                value={dept.id}
+                selected={formSelectedDepartments.includes(dept.id)}
+              >
                 {dept.name}{(
                   dept.areaName !== undefined && dept.areaName !== ''
                 ) ?
@@ -406,7 +452,7 @@
             bind:value={formSelectedTeams}
             disabled={formCompanyWide}
           >
-            {#each teams as team (team.id)}
+            {#each availableTeams as team (team.id)}
               <option value={team.id}>
                 {team.name} ({getTeamMemberCount(team)} Mitglieder)
               </option>
@@ -414,8 +460,8 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl beinhaltet
-            zugehoerige Teams.
+            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
+            zugehoerige Teams aus.
           </span>
         </div>
 

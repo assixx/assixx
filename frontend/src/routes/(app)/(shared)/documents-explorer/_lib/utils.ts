@@ -5,6 +5,7 @@
 import {
   CATEGORY_LABELS,
   CATEGORY_MAPPINGS,
+  MESSAGES,
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZE,
 } from './constants';
@@ -15,7 +16,10 @@ import type {
   FileTypeDisplayInfo,
   CategoryMapping,
   UploadFormData,
+  UploadData,
   CurrentUser,
+  ValidatedUploadData,
+  UploadValidationResult,
 } from './types';
 
 // =============================================================================
@@ -458,4 +462,86 @@ export function canDeleteDocument(
 ): boolean {
   // Same logic as edit for now
   return canEditDocument(doc, user);
+}
+
+// =============================================================================
+// UPLOAD VALIDATION
+// =============================================================================
+
+/**
+ * Validate upload data before submission
+ * Checks: file selected, category selected, user loaded, user has required fields, payroll period
+ *
+ * @param data - Raw upload form data
+ * @param user - Current user (null if not loaded)
+ * @returns Discriminated union: { valid: true, data } or { valid: false, error, type }
+ */
+export function validateUploadData(
+  data: UploadData,
+  user: CurrentUser | null,
+): UploadValidationResult {
+  if (data.file === null) {
+    return { valid: false, error: MESSAGES.UPLOAD_NO_FILE, type: 'warning' };
+  }
+  if (data.category === '') {
+    return {
+      valid: false,
+      error: MESSAGES.UPLOAD_NO_CATEGORY,
+      type: 'warning',
+    };
+  }
+  if (user === null) {
+    return {
+      valid: false,
+      error: 'Benutzerdaten nicht geladen',
+      type: 'error',
+    };
+  }
+
+  const mapping = CATEGORY_MAPPINGS[data.category];
+  const validation = validateUserForCategory(mapping, user);
+  if (!validation.valid) {
+    return { valid: false, error: validation.error ?? '', type: 'warning' };
+  }
+  if (
+    mapping.requiresPayrollPeriod === true &&
+    (data.salaryYear === 0 || data.salaryMonth === 0)
+  ) {
+    return {
+      valid: false,
+      error: MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD,
+      type: 'warning',
+    };
+  }
+
+  return {
+    valid: true,
+    data: {
+      file: data.file,
+      category: data.category,
+      user,
+      requiresPayroll: mapping.requiresPayrollPeriod === true,
+    } satisfies ValidatedUploadData,
+  };
+}
+
+// =============================================================================
+// DOCUMENT DOWNLOAD
+// =============================================================================
+
+/**
+ * Trigger document download via DOM link creation
+ * Cookie-based auth: accessToken cookie sent automatically on same-origin request
+ * No token in URL = no token in logs/history
+ *
+ * @param doc - Document to download
+ */
+export function downloadDocument(doc: Document): void {
+  const link = document.createElement('a');
+  link.href = doc.downloadUrl;
+  link.download = doc.filename;
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

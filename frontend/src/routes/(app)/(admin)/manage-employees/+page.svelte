@@ -7,7 +7,11 @@
    */
   import { goto, invalidateAll } from '$app/navigation';
 
-  import { showSuccessAlert, showErrorAlert } from '$lib/utils';
+  import {
+    showSuccessAlert,
+    showErrorAlert,
+    showWarningAlert,
+  } from '$lib/utils';
   import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -22,6 +26,7 @@
     saveEmployee as apiSaveEmployee,
     deleteEmployee as apiDeleteEmployee,
     updateEmployeeAvailability as apiUpdateAvailability,
+    upgradeToAdmin as apiUpgradeToAdmin,
     syncTeamMemberships,
     buildEmployeePayload,
   } from './_lib/api';
@@ -63,6 +68,13 @@
   const allEmployees = $derived<Employee[]>(data.employees);
   const allTeams = $derived<Team[]>(data.teams);
 
+  // Permission: Only root or admin with has_full_access may upgrade roles
+  const canUpgrade = $derived(
+    data.user !== null &&
+      (data.user.role === 'root' ||
+        (data.user.role === 'admin' && data.user.hasFullAccess)),
+  );
+
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
   // =============================================================================
@@ -82,6 +94,9 @@
   let showDeleteModal = $state(false);
   let showDeleteConfirmModal = $state(false);
   let showAvailabilityModal = $state(false);
+  let showUpgradeConfirmModal = $state(false);
+  let upgradeEmployeeId = $state<number | null>(null);
+  let upgradeLoading = $state(false);
 
   // Availability Modal State
   let availabilityEmployeeId = $state<number | null>(null);
@@ -198,6 +213,49 @@
     } finally {
       submitting = false;
     }
+  }
+
+  /** Step 1: Inline confirm clicked → open warning modal */
+  function upgradeEmployee(): void {
+    if (currentEditId === null) return;
+    if (!canUpgrade) {
+      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      return;
+    }
+    upgradeEmployeeId = currentEditId;
+    closeEmployeeModal();
+    showUpgradeConfirmModal = true;
+  }
+
+  /** Step 2: Warning modal confirmed → PUT role change */
+  async function confirmUpgradeEmployee(): Promise<void> {
+    if (upgradeEmployeeId === null) return;
+    if (!canUpgrade) {
+      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      return;
+    }
+    const userId = upgradeEmployeeId;
+    upgradeLoading = true;
+
+    try {
+      showUpgradeConfirmModal = false;
+      upgradeEmployeeId = null;
+      await apiUpgradeToAdmin(userId);
+      await invalidateAll();
+      showSuccessAlert(MESSAGES.UPGRADE_SUCCESS);
+    } catch (err) {
+      log.error({ err }, 'Error upgrading employee to admin');
+      showErrorAlert(
+        err instanceof Error ? err.message : MESSAGES.UPGRADE_ERROR,
+      );
+    } finally {
+      upgradeLoading = false;
+    }
+  }
+
+  function closeUpgradeConfirmModal(): void {
+    showUpgradeConfirmModal = false;
+    upgradeEmployeeId = null;
   }
 
   async function deleteEmployee(): Promise<void> {
@@ -415,7 +473,8 @@
 
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
-      if (showDeleteConfirmModal) closeDeleteConfirmModal();
+      if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
+      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showEmployeeModal) closeEmployeeModal();
     }
@@ -664,6 +723,7 @@
   onsubmit={handleFormSubmit}
   onvalidateemails={validateEmails}
   onvalidatepasswords={validatePasswords}
+  onupgrade={canUpgrade ? upgradeEmployee : undefined}
 />
 
 <!-- Delete Modals Component -->
@@ -690,3 +750,61 @@
   onsave={saveAvailability}
   onmanage={navigateToAvailabilityPage}
 />
+
+<!-- Upgrade Confirm Modal (confirm-modal--warning) -->
+{#if showUpgradeConfirmModal}
+  <div
+    id="upgrade-confirm-modal"
+    class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="upgrade-confirm-title"
+    tabindex="-1"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) closeUpgradeConfirmModal();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closeUpgradeConfirmModal();
+    }}
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <div
+      class="confirm-modal confirm-modal--warning"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <div class="confirm-modal__icon">
+        <i class="fas fa-arrow-up"></i>
+      </div>
+      <h3
+        class="confirm-modal__title"
+        id="upgrade-confirm-title"
+      >
+        {MESSAGES.UPGRADE_TITLE}
+      </h3>
+      <p class="confirm-modal__message">
+        <strong>{MESSAGES.UPGRADE_CONFIRM_MESSAGE}</strong>
+      </p>
+      <div class="confirm-modal__actions">
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--cancel"
+          disabled={upgradeLoading}
+          onclick={closeUpgradeConfirmModal}>Abbrechen</button
+        >
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--warning"
+          disabled={upgradeLoading}
+          onclick={() => void confirmUpgradeEmployee()}
+        >
+          {#if upgradeLoading}
+            <i class="fas fa-spinner fa-spin mr-2"></i>
+          {/if}
+          {MESSAGES.UPGRADE_CONFIRM_BUTTON}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

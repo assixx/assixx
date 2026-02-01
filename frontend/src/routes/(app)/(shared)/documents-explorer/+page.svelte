@@ -1,632 +1,65 @@
 <script lang="ts">
   /**
-   * Documents Explorer - Page Component
+   * Documents Explorer - Page Component (Thin Presentation Layer)
    * SSR: Data loaded in +page.server.ts
    * Level 3 Hybrid: SSR initial + client-side filtering/sorting
+   *
+   * All state logic lives in _lib/state.svelte.ts (state module pattern)
+   * This component handles: SSR sync, DOM effects, template rendering
    */
-  import { onMount } from 'svelte';
-
-  import { goto, invalidateAll } from '$app/navigation';
-
-  import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showWarningAlert,
-  } from '$lib/stores/toast';
-  import { createLogger } from '$lib/utils/logger';
-
-  const log = createLogger('DocumentsExplorerPage');
+  import { onMount, untrack } from 'svelte';
 
   // Page-specific CSS
   import '../../../../styles/documents-explorer.css';
 
-  // Import from _lib/ modules
-  import {
-    fetchDocuments as apiFetchDocuments,
-    markDocumentAsRead as apiMarkAsRead,
-    fetchChatFolders as apiFetchChatFolders,
-    fetchChatAttachments as apiFetchChatAttachments,
-    uploadDocument as apiUploadDocument,
-    deleteDocument as apiDeleteDocument,
-    updateDocument as apiUpdateDocument,
-    getCurrentUser as apiGetCurrentUser,
-    isSessionExpiredError,
-  } from './_lib/api';
   import ChatFoldersList from './_lib/ChatFoldersList.svelte';
-  import {
-    SORT_OPTIONS,
-    SORT_LABELS,
-    CATEGORY_MAPPINGS,
-    CATEGORY_LABELS,
-    MESSAGES,
-  } from './_lib/constants';
+  import { SORT_OPTIONS, CATEGORY_LABELS, MESSAGES } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import DocumentGridView from './_lib/DocumentGridView.svelte';
   import DocumentListView from './_lib/DocumentListView.svelte';
   import EditModal from './_lib/EditModal.svelte';
-  import {
-    applyAllFilters,
-    calculateCategoryCounts,
-    calculateStats,
-  } from './_lib/filters';
   import FolderSidebar from './_lib/FolderSidebar.svelte';
   import PreviewModal from './_lib/PreviewModal.svelte';
+  import { docExplorerState } from './_lib/state.svelte';
   import UploadModal from './_lib/UploadModal.svelte';
-  import {
-    validateUserForCategory,
-    buildUploadFormData,
-    canUpload,
-    canSeeActions,
-    canEditDocument,
-    canDeleteDocument,
-  } from './_lib/utils';
-
-  // Import Components
 
   import type { PageData } from './$types';
-  import type {
-    EditData,
-    UploadData,
-    Document,
-    DocumentCategory,
-    ViewMode,
-    SortOption,
-    ChatFolder,
-    CurrentUser,
-  } from './_lib/types';
 
   // ==========================================================================
-  // SSR DATA (initial values from server)
+  // SSR DATA → STATE SYNC
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
 
-  // Derived SSR data as baseline
+  // Derived SSR data as baseline (re-evaluates on invalidateAll)
   const ssrDocuments = $derived(data.documents);
   const ssrChatFolders = $derived(data.chatFolders);
   const ssrUser = $derived(data.currentUser ?? null);
 
-  // ==========================================================================
-  // HYBRID STATE - SSR initial, client updates for filtering/sorting
-  // ==========================================================================
-
-  let allDocuments = $state<Document[]>([]);
-  let filteredDocuments = $state<Document[]>([]);
-  let chatFolders = $state<ChatFolder[]>([]);
-  let chatFoldersLoaded = $state(true);
-  let selectedConversationId = $state<number | null>(null);
-  let currentUser = $state<CurrentUser | null>(null);
-  let userRole = $state<string | null>(null);
-  let loading = $state(false);
-  let error = $state<string | null>(null);
-
-  // Initialize from SSR on first render
+  // Sync SSR → state store (untrack prevents circular dependency)
   $effect(() => {
-    if (allDocuments.length === 0 && ssrDocuments.length > 0) {
-      allDocuments = [...ssrDocuments];
-      filteredDocuments = applyAllFilters(ssrDocuments, 'all', '', 'newest');
-    }
-    if (chatFolders.length === 0 && ssrChatFolders.length > 0) {
-      chatFolders = [...ssrChatFolders];
-    }
-    if (currentUser === null && ssrUser !== null) {
-      currentUser = {
-        id: ssrUser.id,
-        tenantId: 0,
-        role: ssrUser.role,
-      };
-      userRole = ssrUser.role;
-    }
+    const docs = ssrDocuments;
+    const folders = ssrChatFolders;
+    const user = ssrUser;
+
+    untrack(() => {
+      docExplorerState.initFromSSR(docs, folders, user);
+    });
   });
 
-  // NOTE: Document read status is tracked individually via document_read_status table
-  // Badge decrements when user clicks on a document (markAsRead function)
+  // ==========================================================================
+  // DOM-DEPENDENT EFFECTS (must stay in component)
+  // ==========================================================================
 
-  let currentCategory = $state<DocumentCategory>('all');
-  let searchQuery = $state('');
-  let sortOption = $state<SortOption>('newest');
-  let viewMode = $state<ViewMode>('list');
-  let selectedDocument = $state<Document | null>(null);
-  let showPreviewModal = $state(false);
-  let showUploadModal = $state(false);
-  let showEditModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
-  let deletingDocument = $state<Document | null>(null);
-  let deleteSubmitting = $state(false);
-  let editingDocument = $state<Document | null>(null);
-  let editSubmitting = $state(false);
-  let sortDropdownOpen = $state(false);
-  let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // DERIVED VALUES
-  const categoryCounts = $derived(calculateCategoryCounts(allDocuments));
-  const stats = $derived(calculateStats(filteredDocuments));
-  const chatFoldersTotalCount = $derived(
-    chatFolders.reduce((sum, f) => sum + f.attachmentCount, 0),
-  );
-  const currentSortLabel = $derived(SORT_LABELS[sortOption]);
-  const showUploadButton = $derived(canUpload(userRole));
-  const showActions = $derived(canSeeActions(userRole));
-  const isViewingChatFolders = $derived(
-    currentCategory === 'chat' && selectedConversationId === null,
-  );
-  const selectedChatFolderName = $derived.by(() => {
-    if (selectedConversationId === null) return null;
-    const folder = chatFolders.find(
-      (f) => f.conversationId === selectedConversationId,
-    );
-    if (folder === undefined) return null;
-    return folder.isGroup && folder.groupName !== null ?
-        folder.groupName
-      : folder.participantName;
-  });
-
-  function applyFilters() {
-    filteredDocuments = applyAllFilters(
-      allDocuments,
-      currentCategory,
-      searchQuery,
-      sortOption,
-    );
-  }
-
-  // API FUNCTIONS
-  async function loadDocuments() {
-    loading = true;
-    error = null;
-    try {
-      allDocuments = await apiFetchDocuments();
-      applyFilters();
-    } catch (err) {
-      log.error({ err }, 'Error loading documents');
-      if (isSessionExpiredError(err)) {
-        return void goto('/login?session=expired');
-      }
-      error = err instanceof Error ? err.message : MESSAGES.ERROR_LOAD_FAILED;
-    } finally {
-      loading = false;
-    }
-  }
-
-  async function loadChatFolders() {
-    if (chatFoldersLoaded) return;
-    chatFoldersLoaded = true; // Set before await to prevent race condition
-    try {
-      chatFolders = await apiFetchChatFolders();
-    } catch (err) {
-      log.error({ err }, 'Error loading chat folders');
-    }
-  }
-
-  async function loadChatAttachments(conversationId: number) {
-    const previousPath = buildBreadcrumbPath(
-      currentCategory,
-      selectedConversationId,
-    );
-    const folder = chatFolders.find((f) => f.conversationId === conversationId);
-    const folderName =
-      folder !== undefined ?
-        folder.isGroup && folder.groupName !== null ?
-          folder.groupName
-        : folder.participantName
-      : `Conversation#${conversationId}`;
-
-    loading = true;
-    selectedConversationId = conversationId;
-
-    const newPath = buildBreadcrumbPath(currentCategory, conversationId);
-    log.debug(
-      {
-        action: 'loadChatAttachments',
-        from: { path: previousPath },
-        to: { conversationId, folderName, path: newPath },
-        trigger: 'ChatFoldersList click',
-      },
-      '[NAV] Chat folder click: %s → %s',
-      previousPath,
-      newPath,
-    );
-
-    try {
-      allDocuments = await apiFetchChatAttachments(conversationId);
-      log.debug(
-        { conversationId, documentCount: allDocuments.length, path: newPath },
-        '[NAV] Loaded %d attachments for conversation %d',
-        allDocuments.length,
-        conversationId,
-      );
-      applyFilters();
-    } catch (err) {
-      log.error({ err, conversationId }, 'Error loading chat attachments');
-      error = MESSAGES.ERROR_LOAD_FAILED;
-    } finally {
-      loading = false;
-    }
-  }
-
-  async function loadCurrentUser() {
-    currentUser = await apiGetCurrentUser();
-  }
-
-  async function markAsRead(documentId: number) {
-    try {
-      await apiMarkAsRead(documentId);
-      notificationStore.decrementCount('documents'); // Update sidebar badge
-      allDocuments = allDocuments.map((doc) =>
-        doc.id === documentId ? { ...doc, isRead: true } : doc,
-      );
-      applyFilters();
-    } catch (err) {
-      log.error({ err }, 'Error marking as read');
-    }
-  }
-
-  // CATEGORY NAVIGATION
-  function navigateToCategory(category: DocumentCategory) {
-    const previousCategory = currentCategory;
-    const previousConversationId = selectedConversationId;
-    const previousPath = buildBreadcrumbPath(
-      previousCategory,
-      previousConversationId,
-    );
-
-    if (currentCategory === category && selectedConversationId === null) {
-      log.debug(
-        { category, path: previousPath },
-        '[NAV] Category unchanged, ignoring click',
-      );
-      return;
-    }
-
-    // CRITICAL: If leaving chat category OR leaving a chat conversation,
-    // restore allDocuments from SSR data because loadChatAttachments()
-    // replaced allDocuments with only chat attachments
-    const leavingChatCategory =
-      previousCategory === 'chat' && category !== 'chat';
-    const wasInChatConversation = previousConversationId !== null;
-    if (leavingChatCategory || wasInChatConversation) {
-      log.debug(
-        {
-          leavingChatCategory,
-          wasInChatConversation,
-          previousConversationId,
-          ssrDocCount: ssrDocuments.length,
-        },
-        '[NAV] Restoring allDocuments from SSR data',
-      );
-      allDocuments = [...ssrDocuments];
-    }
-
-    currentCategory = category;
-    selectedConversationId = null;
-
-    const newPath = buildBreadcrumbPath(category, null);
-    log.debug(
-      {
-        action: 'navigateToCategory',
-        from: { category: previousCategory, path: previousPath },
-        to: { category, path: newPath },
-        label: CATEGORY_LABELS[category],
-        restoredDocs: leavingChatCategory || wasInChatConversation,
-      },
-      '[NAV] Folder tree click: %s → %s',
-      previousPath,
-      newPath,
-    );
-
-    if (category === 'chat' && !chatFoldersLoaded) {
-      void loadChatFolders();
-    }
-    if (category !== 'chat') {
-      applyFilters();
-    } else {
-      // Switching to chat category - clear documents until conversation selected
-      filteredDocuments = [];
-    }
-  }
-
-  /** Build breadcrumb path string for logging */
-  function buildBreadcrumbPath(
-    category: DocumentCategory,
-    conversationId: number | null,
-  ): string {
-    if (category === 'all') return '/Alle Dokumente';
-    const categoryLabel = CATEGORY_LABELS[category];
-    if (conversationId === null) return `/Alle Dokumente/${categoryLabel}`;
-    const folder = chatFolders.find((f) => f.conversationId === conversationId);
-    const folderName =
-      folder !== undefined ?
-        folder.isGroup && folder.groupName !== null ?
-          folder.groupName
-        : folder.participantName
-      : `Conversation#${conversationId}`;
-    return `/Alle Dokumente/${categoryLabel}/${folderName}`;
-  }
-
-  function backToFolders() {
-    const previousPath = buildBreadcrumbPath(
-      currentCategory,
-      selectedConversationId,
-    );
-    const newPath = buildBreadcrumbPath(currentCategory, null);
-
-    log.debug(
-      {
-        action: 'backToFolders',
-        from: { conversationId: selectedConversationId, path: previousPath },
-        to: { category: currentCategory, path: newPath },
-        trigger: 'back-to-folders-row OR breadcrumb',
-      },
-      '[NAV] Back to folders: %s → %s',
-      previousPath,
-      newPath,
-    );
-
-    selectedConversationId = null;
-    filteredDocuments = [];
-  }
-
-  // SEARCH HANDLING
-  function handleSearchInput(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const query = input.value;
-    if (searchDebounceTimer !== null) clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => {
-      searchQuery = query;
-      applyFilters();
-    }, 150);
-  }
-
-  function clearSearch() {
-    searchQuery = '';
-    applyFilters();
-  }
-
-  function handleSortChange(option: SortOption) {
-    sortOption = option;
-    sortDropdownOpen = false;
-    applyFilters();
-  }
-
-  function setViewMode(mode: ViewMode) {
-    viewMode = mode;
-    localStorage.setItem('documents-view-mode', mode);
-  }
-
-  function loadSavedViewMode() {
-    const saved = localStorage.getItem('documents-view-mode');
-    if (saved === 'list' || saved === 'grid') viewMode = saved;
-  }
-
-  // DOCUMENT ACTIONS
-  function openPreview(doc: Document) {
-    selectedDocument = doc;
-    showPreviewModal = true;
-    if (!doc.isRead) void markAsRead(doc.id);
-  }
-
-  function closePreview() {
-    showPreviewModal = false;
-    selectedDocument = null;
-  }
-
-  function downloadDocument(doc: Document) {
-    // Cookie-based auth: accessToken cookie sent automatically on same-origin request
-    // No token in URL = no token in logs/history
-    const link = document.createElement('a');
-    link.href = doc.downloadUrl;
-    link.download = doc.filename;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  function handleDownloadClick(doc: Document, e: MouseEvent) {
-    e.stopPropagation();
-    downloadDocument(doc);
-  }
-
-  function handleDeleteDocument(doc: Document, e: MouseEvent) {
-    e.stopPropagation();
-    if (!canDeleteDocument(doc, currentUser)) {
-      showWarningAlert(
-        'Sie haben keine Berechtigung, dieses Dokument zu löschen',
-      );
-      return;
-    }
-    deletingDocument = doc;
-    showDeleteConfirmModal = true;
-  }
-
-  function closeDeleteConfirmModal() {
-    showDeleteConfirmModal = false;
-    deletingDocument = null;
-  }
-
-  async function confirmDeleteDocument() {
-    if (!deletingDocument) return;
-    deleteSubmitting = true;
-    try {
-      await apiDeleteDocument(deletingDocument.id);
-      showSuccessAlert('Dokument erfolgreich gelöscht');
-      closeDeleteConfirmModal();
-      await invalidateAll();
-      allDocuments = allDocuments.filter((d) => d.id !== deletingDocument?.id);
-      applyFilters();
-    } catch (err) {
-      log.error({ err }, 'Delete failed');
-      showErrorAlert(
-        err instanceof Error ? err.message : 'Löschen fehlgeschlagen',
-      );
-    } finally {
-      deleteSubmitting = false;
-    }
-  }
-
-  function openEditModal(doc: Document, e: MouseEvent) {
-    e.stopPropagation();
-    if (!canEditDocument(doc, currentUser)) {
-      showWarningAlert(
-        'Sie haben keine Berechtigung, dieses Dokument zu bearbeiten',
-      );
-      return;
-    }
-    editingDocument = doc;
-    showEditModal = true;
-  }
-
-  function closeEditModal() {
-    showEditModal = false;
-    editingDocument = null;
-  }
-
-  async function handleEditSubmit(data: EditData) {
-    if (!editingDocument) return;
-    if (!data.documentName.trim()) {
-      showWarningAlert('Bitte geben Sie einen Dokumentnamen ein');
-      return;
-    }
-    editSubmitting = true;
-    try {
-      await apiUpdateDocument(editingDocument.id, data);
-      showSuccessAlert('Dokument erfolgreich aktualisiert');
-      closeEditModal();
-      await invalidateAll();
-      await loadDocuments();
-    } catch (err) {
-      log.error({ err }, 'Update failed');
-      showErrorAlert(
-        err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen',
-      );
-    } finally {
-      editSubmitting = false;
-    }
-  }
-
-  // UPLOAD HANDLING
-  function openUploadModal() {
-    showUploadModal = true;
-    void loadCurrentUser();
-  }
-
-  function closeUploadModal() {
-    showUploadModal = false;
-  }
-
-  /** Validated upload data with guaranteed non-null values */
-  interface ValidatedUploadData {
-    file: File;
-    category: string;
-    user: CurrentUser;
-    requiresPayroll: boolean;
-  }
-
-  /** Validation result: either error info or validated data */
-  type UploadValidationResult =
-    | { valid: false; error: string; type: 'warning' | 'error' }
-    | { valid: true; data: ValidatedUploadData };
-
-  /** Validate upload data before submission */
-  function validateUploadData(
-    data: UploadData,
-    user: CurrentUser | null,
-  ): UploadValidationResult {
-    if (data.file === null) {
-      return { valid: false, error: MESSAGES.UPLOAD_NO_FILE, type: 'warning' };
-    }
-    if (data.category === '') {
-      return {
-        valid: false,
-        error: MESSAGES.UPLOAD_NO_CATEGORY,
-        type: 'warning',
-      };
-    }
-    if (user === null) {
-      return {
-        valid: false,
-        error: 'Benutzerdaten nicht geladen',
-        type: 'error',
-      };
-    }
-
-    const mapping = CATEGORY_MAPPINGS[data.category];
-    const validation = validateUserForCategory(mapping, user);
-    if (!validation.valid) {
-      return { valid: false, error: validation.error ?? '', type: 'warning' };
-    }
-    if (
-      mapping.requiresPayrollPeriod === true &&
-      (data.salaryYear === 0 || data.salaryMonth === 0)
-    ) {
-      return {
-        valid: false,
-        error: MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD,
-        type: 'warning',
-      };
-    }
-
-    return {
-      valid: true,
-      data: {
-        file: data.file,
-        category: data.category,
-        user,
-        requiresPayroll: mapping.requiresPayrollPeriod === true,
-      },
-    };
-  }
-
-  async function handleUploadSubmit(data: UploadData) {
-    const result = validateUploadData(data, currentUser);
-    if (!result.valid) {
-      if (result.type === 'warning') {
-        showWarningAlert(result.error);
-      } else {
-        showErrorAlert(result.error);
-      }
-      return;
-    }
-
-    const { file, category, user, requiresPayroll } = result.data;
-    const formData = buildUploadFormData(
-      file,
-      category,
-      user,
-      data.docName,
-      data.description,
-      data.tags,
-      requiresPayroll ? data.salaryYear : undefined,
-      requiresPayroll ? data.salaryMonth : undefined,
-    );
-
-    if (formData === null) {
-      showErrorAlert('Ungültige Kategorie');
-      return;
-    }
-
-    try {
-      await apiUploadDocument(formData);
-      showSuccessAlert(MESSAGES.UPLOAD_SUCCESS);
-      closeUploadModal();
-      await invalidateAll();
-      await loadDocuments();
-    } catch (err) {
-      log.error({ err }, 'Upload failed');
-      showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED,
-      );
-    }
-  }
-
-  // OUTSIDE CLICK & KEYBOARD HANDLERS
+  /** Close sort dropdown on outside click */
   $effect(() => {
-    if (sortDropdownOpen) {
+    if (docExplorerState.sortDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
         const el = document.getElementById('sort-dropdown');
-        if (el && !el.contains(target)) sortDropdownOpen = false;
+        if (el !== null && !el.contains(target)) {
+          docExplorerState.setSortDropdownOpen(false);
+        }
       };
       document.addEventListener('click', handleOutsideClick);
       return () => {
@@ -635,20 +68,36 @@
     }
   });
 
-  function handleKeydown(e: KeyboardEvent) {
+  /** Global Escape key handler for modals */
+  function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
-      if (showDeleteConfirmModal) closeDeleteConfirmModal();
-      else if (showEditModal) closeEditModal();
-      else if (showUploadModal) closeUploadModal();
-      else if (showPreviewModal) closePreview();
+      if (docExplorerState.showDeleteConfirmModal) {
+        docExplorerState.closeDeleteConfirmModal();
+      } else if (docExplorerState.showEditModal) {
+        docExplorerState.closeEditModal();
+      } else if (docExplorerState.showUploadModal) {
+        docExplorerState.closeUploadModal();
+      } else if (docExplorerState.showPreviewModal) {
+        docExplorerState.closePreview();
+      }
+    } else if (docExplorerState.showPreviewModal) {
+      if (e.key === 'ArrowLeft') docExplorerState.navigatePreviewPrev();
+      else if (e.key === 'ArrowRight') docExplorerState.navigatePreviewNext();
     }
   }
 
+  /** Extract search query from input event and delegate to state */
+  function onSearchInput(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    docExplorerState.handleSearchInput(input.value);
+  }
+
+  // ==========================================================================
   // LIFECYCLE
+  // ==========================================================================
+
   onMount(() => {
-    // Load saved view mode preference (client-side only)
-    loadSavedViewMode();
-    // Note: Documents, chat folders, and current user are loaded via SSR
+    docExplorerState.loadSavedViewMode();
   });
 </script>
 
@@ -684,25 +133,25 @@
                 class="search-input__field"
                 placeholder="Dokumente durchsuchen..."
                 autocomplete="off"
-                value={searchQuery}
-                oninput={handleSearchInput}
+                value={docExplorerState.searchQuery}
+                oninput={onSearchInput}
               />
               <button
                 type="button"
                 class="search-input__clear"
-                class:hidden={!searchQuery}
-                onclick={clearSearch}
+                class:hidden={!docExplorerState.searchQuery}
+                onclick={docExplorerState.clearSearch}
                 aria-label="Suche löschen"
               >
                 <i class="fas fa-times"></i>
               </button>
             </div>
-            {#if showUploadButton}
+            {#if docExplorerState.showUploadButton}
               <button
                 type="button"
                 id="upload-btn"
                 class="btn btn-upload"
-                onclick={openUploadModal}
+                onclick={docExplorerState.handleUploadOpen}
               >
                 <i class="fas fa-upload mr-2"></i>
                 Hochladen
@@ -715,11 +164,11 @@
               <button
                 type="button"
                 class="action-icon"
-                class:action-icon--active={viewMode === 'list'}
+                class:action-icon--active={docExplorerState.viewMode === 'list'}
                 aria-label="Listen-Ansicht"
                 title="Listen-Ansicht"
                 onclick={() => {
-                  setViewMode('list');
+                  docExplorerState.setViewMode('list');
                 }}
               >
                 <i class="fas fa-list"></i>
@@ -727,11 +176,11 @@
               <button
                 type="button"
                 class="action-icon"
-                class:action-icon--active={viewMode === 'grid'}
+                class:action-icon--active={docExplorerState.viewMode === 'grid'}
                 aria-label="Grid-Ansicht"
                 title="Grid-Ansicht"
                 onclick={() => {
-                  setViewMode('grid');
+                  docExplorerState.setViewMode('grid');
                 }}
               >
                 <i class="fas fa-th"></i>
@@ -748,17 +197,18 @@
                 tabindex="0"
                 onclick={(e) => {
                   e.stopPropagation();
-                  sortDropdownOpen = !sortDropdownOpen;
+                  docExplorerState.toggleSortDropdown();
                 }}
-                onkeydown={(e) =>
-                  e.key === 'Enter' && (sortDropdownOpen = !sortDropdownOpen)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') docExplorerState.toggleSortDropdown();
+                }}
               >
-                <span>{currentSortLabel}</span>
+                <span>{docExplorerState.currentSortLabel}</span>
                 <i class="fas fa-chevron-down"></i>
               </div>
               <div
                 class="dropdown__menu"
-                class:active={sortDropdownOpen}
+                class:active={docExplorerState.sortDropdownOpen}
               >
                 {#each SORT_OPTIONS as option (option.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -766,7 +216,7 @@
                   <div
                     class="dropdown__option"
                     onclick={() => {
-                      handleSortChange(option.value);
+                      docExplorerState.handleSortOptionSelect(option.value);
                     }}
                   >
                     {option.label}
@@ -795,13 +245,13 @@
               ></path>
             </svg>
             <span class="text-content-secondary text-sm"
-              >{stats.total} Dokumente</span
+              >{docExplorerState.stats.total} Dokumente</span
             >
           </div>
-          {#if stats.unread > 0}
+          {#if docExplorerState.stats.unread > 0}
             <div class="flex items-center gap-2">
               <span class="text-warning-500 text-sm"
-                >{stats.unread} Ungelesen</span
+                >{docExplorerState.stats.unread} Ungelesen</span
               >
             </div>
           {/if}
@@ -816,7 +266,7 @@
         class="breadcrumb mb-2"
         aria-label="Ordnerpfad"
       >
-        {#if currentCategory === 'all'}
+        {#if docExplorerState.currentCategory === 'all'}
           <span
             class="breadcrumb__item breadcrumb__item--active"
             aria-current="page"
@@ -832,7 +282,7 @@
             type="button"
             class="breadcrumb__item"
             onclick={() => {
-              navigateToCategory('all');
+              docExplorerState.navigateToCategory('all');
             }}
           >
             <i
@@ -847,13 +297,13 @@
           >
             <i class="fas fa-chevron-right"></i>
           </span>
-          {#if selectedConversationId !== null && selectedChatFolderName !== null}
+          {#if docExplorerState.selectedConversationId !== null && docExplorerState.selectedChatFolderName !== null}
             <button
               type="button"
               class="breadcrumb__item"
-              onclick={backToFolders}
+              onclick={docExplorerState.backToFolders}
             >
-              {CATEGORY_LABELS[currentCategory]}
+              {CATEGORY_LABELS[docExplorerState.currentCategory]}
             </button>
             <span
               class="breadcrumb__separator"
@@ -869,14 +319,14 @@
                 class="fas fa-comments breadcrumb__icon"
                 aria-hidden="true"
               ></i>
-              {selectedChatFolderName}
+              {docExplorerState.selectedChatFolderName}
             </span>
           {:else}
             <span
               class="breadcrumb__item breadcrumb__item--active"
               aria-current="page"
             >
-              {CATEGORY_LABELS[currentCategory]}
+              {CATEGORY_LABELS[docExplorerState.currentCategory]}
             </span>
           {/if}
         {/if}
@@ -885,67 +335,71 @@
       <div class="flex h-[600px]">
         <!-- Sidebar -->
         <FolderSidebar
-          {currentCategory}
-          {categoryCounts}
-          {chatFoldersTotalCount}
-          onnavigate={navigateToCategory}
+          currentCategory={docExplorerState.currentCategory}
+          categoryCounts={docExplorerState.categoryCounts}
+          chatFoldersTotalCount={docExplorerState.chatFoldersTotalCount}
+          onnavigate={docExplorerState.navigateToCategory}
         />
 
         <!-- Content Area -->
         <div class="flex flex-1 flex-col">
           <div class="flex-1 overflow-y-auto p-2">
-            {#if loading}
+            {#if docExplorerState.loading}
               <div class="flex items-center justify-center p-8">
                 <div class="spinner-ring spinner-ring--md"></div>
               </div>
-            {:else if error}
+            {:else if docExplorerState.error}
               <div class="flex h-full items-center justify-center">
                 <div class="text-center">
                   <i
                     class="fas fa-exclamation-triangle text-error-500 mb-4 text-4xl"
                   ></i>
-                  <p class="text-content-secondary mb-4">{error}</p>
+                  <p class="text-content-secondary mb-4">
+                    {docExplorerState.error}
+                  </p>
                   <button
                     type="button"
                     class="btn btn-primary"
-                    onclick={() => loadDocuments()}>{MESSAGES.BTN_RETRY}</button
+                    onclick={() => docExplorerState.loadDocuments()}
+                    >{MESSAGES.BTN_RETRY}</button
                   >
                 </div>
               </div>
-            {:else if isViewingChatFolders}
-              <div class:hidden={viewMode !== 'list'}>
+            {:else if docExplorerState.isViewingChatFolders}
+              <div class:hidden={docExplorerState.viewMode !== 'list'}>
                 <ChatFoldersList
-                  folders={chatFolders}
+                  folders={docExplorerState.chatFolders}
                   showBackToAll={true}
-                  onfolderClick={loadChatAttachments}
+                  onfolderClick={docExplorerState.loadChatAttachments}
                   onbackToAll={() => {
-                    navigateToCategory('all');
+                    docExplorerState.navigateToCategory('all');
                   }}
                 />
               </div>
             {:else}
-              <div class:hidden={viewMode !== 'list'}>
+              <div class:hidden={docExplorerState.viewMode !== 'list'}>
                 <DocumentListView
-                  documents={filteredDocuments}
-                  {currentUser}
-                  {showActions}
-                  showBackToFolders={selectedConversationId !== null}
-                  onpreview={openPreview}
-                  ondownload={handleDownloadClick}
-                  onedit={openEditModal}
-                  ondelete={handleDeleteDocument}
-                  onbackToFolders={backToFolders}
+                  documents={docExplorerState.filteredDocuments}
+                  currentUser={docExplorerState.currentUser}
+                  showActions={docExplorerState.showActions}
+                  showBackToFolders={docExplorerState.selectedConversationId !==
+                    null}
+                  onpreview={docExplorerState.handlePreviewOpen}
+                  ondownload={docExplorerState.handleDownloadClick}
+                  onedit={docExplorerState.handleEditClick}
+                  ondelete={docExplorerState.handleDeleteDocument}
+                  onbackToFolders={docExplorerState.backToFolders}
                 />
               </div>
-              <div class:hidden={viewMode !== 'grid'}>
+              <div class:hidden={docExplorerState.viewMode !== 'grid'}>
                 <DocumentGridView
-                  documents={filteredDocuments}
-                  {currentUser}
-                  {showActions}
-                  onpreview={openPreview}
-                  ondownload={handleDownloadClick}
-                  onedit={openEditModal}
-                  ondelete={handleDeleteDocument}
+                  documents={docExplorerState.filteredDocuments}
+                  currentUser={docExplorerState.currentUser}
+                  showActions={docExplorerState.showActions}
+                  onpreview={docExplorerState.handlePreviewOpen}
+                  ondownload={docExplorerState.handleDownloadClick}
+                  onedit={docExplorerState.handleEditClick}
+                  ondelete={docExplorerState.handleDeleteDocument}
                 />
               </div>
             {/if}
@@ -958,30 +412,36 @@
 
 <!-- Modals -->
 <PreviewModal
-  show={showPreviewModal}
-  document={selectedDocument}
-  onclose={closePreview}
-  ondownload={downloadDocument}
+  show={docExplorerState.showPreviewModal}
+  document={docExplorerState.selectedDocument}
+  onclose={docExplorerState.closePreview}
+  ondownload={docExplorerState.downloadDocument}
+  onprev={docExplorerState.navigatePreviewPrev}
+  onnext={docExplorerState.navigatePreviewNext}
+  currentIndex={docExplorerState.previewIndex >= 0 ?
+    docExplorerState.previewIndex
+  : undefined}
+  totalCount={docExplorerState.previewTotalCount}
 />
 
 <UploadModal
-  show={showUploadModal}
-  onclose={closeUploadModal}
-  onsubmit={handleUploadSubmit}
+  show={docExplorerState.showUploadModal}
+  onclose={docExplorerState.closeUploadModal}
+  onsubmit={docExplorerState.handleUploadSubmit}
 />
 
 <EditModal
-  show={showEditModal}
-  document={editingDocument}
-  submitting={editSubmitting}
-  onclose={closeEditModal}
-  onsubmit={handleEditSubmit}
+  show={docExplorerState.showEditModal}
+  document={docExplorerState.editingDocument}
+  submitting={docExplorerState.editSubmitting}
+  onclose={docExplorerState.closeEditModal}
+  onsubmit={docExplorerState.handleEditSubmit}
 />
 
 <DeleteConfirmModal
-  show={showDeleteConfirmModal}
-  document={deletingDocument}
-  submitting={deleteSubmitting}
-  onclose={closeDeleteConfirmModal}
-  onconfirm={confirmDeleteDocument}
+  show={docExplorerState.showDeleteConfirmModal}
+  document={docExplorerState.deletingDocument}
+  submitting={docExplorerState.deleteSubmitting}
+  onclose={docExplorerState.closeDeleteConfirmModal}
+  onconfirm={docExplorerState.confirmDeleteDocument}
 />

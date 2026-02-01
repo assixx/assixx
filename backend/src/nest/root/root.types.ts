@@ -280,6 +280,7 @@ export interface UpdateUserRequest {
   isActive?: number | undefined;
   employeeNumber?: string | undefined;
   position?: string | undefined;
+  role?: string | undefined;
 }
 
 export interface CreateRootUserRequest {

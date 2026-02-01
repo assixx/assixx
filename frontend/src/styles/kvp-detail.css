@@ -395,6 +395,61 @@
   transform: scale(1.2);
 }
 
+.lightbox-nav {
+  cursor: pointer;
+
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+  padding: 0;
+
+  font-size: 1.5rem;
+  color: #fff;
+
+  background: rgb(255 255 255 / 15%);
+  border: none;
+  border-radius: 50%;
+
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.lightbox-nav:hover {
+  background: rgb(255 255 255 / 30%);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightbox-nav--prev {
+  left: 24px;
+}
+
+.lightbox-nav--next {
+  right: 24px;
+}
+
+.lightbox-counter {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 4px 12px;
+
+  font-size: 0.875rem;
+  color: #fff;
+
+  background: rgb(0 0 0 / 50%);
+  border-radius: 12px;
+}
+
 /* ========================================
    SHARE MODAL SPECIFIC STYLES
    ======================================== */
