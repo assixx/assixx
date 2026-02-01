@@ -14,6 +14,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -59,6 +60,8 @@ const ERROR_MESSAGES = {
   EMAIL_EXISTS: 'Email already exists',
   EMPLOYEE_NUMBER_EXISTS: 'Personalnummer bereits vergeben',
   INVALID_PASSWORD: 'Invalid current password',
+  ROLE_CHANGE_FORBIDDEN:
+    'Keine Berechtigung für Rollenänderung. Nur Root oder Admin mit Vollzugriff dürfen Rollen ändern.',
 } as const;
 
 @Injectable()
@@ -311,11 +314,17 @@ export class UsersService {
     userId: number,
     dto: UpdateUserDto,
     actingUserId: number,
+    actingUserRole: string,
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const existingUser = await this.findUserById(userId, tenantId);
     if (existingUser === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+    }
+
+    // Guard: Role changes require root OR admin with has_full_access
+    if (dto.role !== undefined && dto.role !== existingUser.role) {
+      await this.assertCanChangeRole(actingUserId, actingUserRole, tenantId);
     }
 
     // Store old values for logging
@@ -648,6 +657,30 @@ export class UsersService {
   // ============================================
 
   /**
+   * Assert the acting user is allowed to change another user's role.
+   * Only root OR admin with has_full_access=true may promote users.
+   */
+  private async assertCanChangeRole(
+    actingUserId: number,
+    actingUserRole: string,
+    tenantId: number,
+  ): Promise<void> {
+    if (actingUserRole === 'root') return;
+
+    if (actingUserRole === 'admin') {
+      const rows = await this.databaseService.query<{
+        has_full_access: boolean;
+      }>('SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2', [
+        actingUserId,
+        tenantId,
+      ]);
+      if (rows[0]?.has_full_access === true) return;
+    }
+
+    throw new ForbiddenException(ERROR_MESSAGES.ROLE_CHANGE_FORBIDDEN);
+  }
+
+  /**
    * Find user by ID
    * SECURITY: Only returns ACTIVE users (is_active = 1)
    * NOTE: Availability fields removed - now from employee_availability table
@@ -971,10 +1004,17 @@ export class UsersService {
     uuid: string,
     dto: UpdateUserDto,
     actingUserId: number,
+    actingUserRole: string,
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
-    return await this.updateUser(userId, dto, actingUserId, tenantId);
+    return await this.updateUser(
+      userId,
+      dto,
+      actingUserId,
+      actingUserRole,
+      tenantId,
+    );
   }
 
   /**

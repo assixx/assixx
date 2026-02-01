@@ -187,6 +187,29 @@ export const MESSAGES = {
   BADGE_NO_DEPARTMENTS: 'Keine Abteilung zugewiesen',
   BADGE_NO_TEAMS: 'Keine Teams zugewiesen',
 
+  // Danger zone - Role upgrade
+  UPGRADE_TITLE: 'Gefahrenzone',
+  UPGRADE_DESCRIPTION:
+    'Stuft diesen Administrator dauerhaft zum Root-Benutzer hoch. Root-Benutzer haben uneingeschränkten Systemzugriff.',
+  UPGRADE_BUTTON: 'Zu Root hochstufen',
+  UPGRADE_CONFIRM_MESSAGE:
+    'Sind Sie sicher? Der Administrator wird sofort zum Root-Benutzer hochgestuft und erhält uneingeschränkten Systemzugriff.',
+  UPGRADE_CONFIRM_BUTTON: 'Ja, hochstufen',
+  UPGRADE_SUCCESS: 'Administrator wurde zum Root-Benutzer hochgestuft',
+  UPGRADE_ERROR: 'Fehler beim Hochstufen',
+  UPGRADE_UNAUTHORIZED:
+    'Sie sind nicht berechtigt, Rollen zu ändern. Nur Root-Benutzer dürfen Admins hochstufen.',
+
+  // Danger zone - Role downgrade
+  DOWNGRADE_DESCRIPTION:
+    'Stuft diesen Administrator dauerhaft zum Mitarbeiter herunter. Alle Admin-Berechtigungen gehen verloren.',
+  DOWNGRADE_BUTTON: 'Zu Mitarbeiter herunterstufen',
+  DOWNGRADE_CONFIRM_MESSAGE:
+    'Sind Sie sicher? Der Administrator verliert sofort alle Admin-Berechtigungen und wird zum Mitarbeiter heruntergestuft.',
+  DOWNGRADE_CONFIRM_BUTTON: 'Ja, herunterstufen',
+  DOWNGRADE_SUCCESS: 'Administrator wurde zum Mitarbeiter heruntergestuft',
+  DOWNGRADE_ERROR: 'Fehler beim Herunterstufen',
+
   // Table headers
   TH_ID: 'ID',
   TH_NAME: 'Name',
