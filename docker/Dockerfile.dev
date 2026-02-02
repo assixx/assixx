@@ -12,6 +12,7 @@
 # Default: LTS version for stability
 ARG NODE_VERSION=24.13.0-alpine3.22
 FROM node:${NODE_VERSION}
+LABEL org.opencontainers.image.authors="Assixx"
 
 # Install development tools
 # Fix CVE-2025-10966: Upgrade curl to latest available version
