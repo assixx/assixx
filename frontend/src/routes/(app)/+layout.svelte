@@ -17,6 +17,7 @@
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import NotificationBadge from '$lib/components/NotificationBadge.svelte';
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import {
@@ -201,19 +202,19 @@
     return 'User';
   }
 
-  /** Get role badge class */
-  function getRoleBadgeClass(): string {
-    if (currentRole === 'root') return 'badge--danger';
-    if (currentRole === 'admin') return 'badge--warning';
-    return 'badge--info';
-  }
+  /** Role badge class derived from currentRole */
+  const roleBadgeClass = $derived(
+    currentRole === 'root' ? 'badge--danger'
+    : currentRole === 'admin' ? 'badge--warning'
+    : 'badge--info',
+  );
 
-  /** Get role badge text */
-  function getRoleBadgeText(): string {
-    if (currentRole === 'root') return 'Root';
-    if (currentRole === 'admin') return 'Admin';
-    return 'Mitarbeiter';
-  }
+  /** Role badge text derived from currentRole */
+  const roleBadgeText = $derived(
+    currentRole === 'root' ? 'Root'
+    : currentRole === 'admin' ? 'Admin'
+    : 'Mitarbeiter',
+  );
 
   /** Check if menu item is active (recursive for nested submenus) */
   function isActive(item: NavItem): boolean {
@@ -515,6 +516,8 @@
           <span id="user-name">{getDisplayName()}</span>
         </div>
 
+        <ThemeToggle />
+
         <button
           type="button"
           id="logout-btn"
@@ -775,9 +778,7 @@
           {#if user?.employeeNumber}
             <span class="employee-number__text">{user.employeeNumber}</span>
           {/if}
-          <span class="badge badge--sm {getRoleBadgeClass()}"
-            >{getRoleBadgeText()}</span
-          >
+          <span class="badge badge--sm {roleBadgeClass}">{roleBadgeText}</span>
         </div>
       </div>
 
