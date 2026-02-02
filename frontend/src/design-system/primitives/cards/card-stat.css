@@ -11,7 +11,7 @@
 .card-stat {
   transition: all 0.2s ease;
   box-shadow: var(--shadow-md);
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(
     --radius-xl
   ); /* 12px - Same as card-accent for consistency */

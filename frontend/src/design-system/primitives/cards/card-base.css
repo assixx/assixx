@@ -19,7 +19,7 @@
   box-shadow: var(--shadow-md);
 
   /* Glassmorphism */
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(
     --radius-xl
   ); /* 12px - Consistent with all card components */

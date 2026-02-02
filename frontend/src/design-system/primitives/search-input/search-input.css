@@ -284,7 +284,7 @@
   z-index: 1000;
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--color-surface);

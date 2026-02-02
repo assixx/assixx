@@ -67,7 +67,7 @@
   box-shadow: var(--shadow-modal);
 
   /* Schlicht & Elegant - Wie Cards */
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(--radius-xl); /* 12px */
 
   background: rgb(255 255 255 / 95%);

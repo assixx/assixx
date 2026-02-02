@@ -19,18 +19,8 @@ html.dark {
     #000
   );
 
-  /* Glass Opacity (stronger on dark backgrounds) */
-  --glass-opacity-heavy: 0.2;
-  --glass-opacity-strong: 0.15;
-  --glass-opacity-medium: 0.1;
-  --glass-opacity-light: 0.05;
-  --glass-opacity-subtle: 0.02;
-
   /* Backgrounds */
-  --color-background: var(--color-gray-950);
-  --color-background-secondary: var(--color-gray-900);
   --color-surface: var(--color-gray-800);
-  --color-secondary: var(--color-gray-700);
 
   /* Text */
   --color-text-primary: var(--color-white);
@@ -39,20 +29,11 @@ html.dark {
   --color-text-placeholder: rgb(255 255 255 / 50%);
   --color-icon-primary: #a9d9ff;
 
-  /* Borders */
-  --color-border: var(--color-gray-700);
-  --color-border-hover: var(--color-gray-600);
-
   /* Glass Backgrounds (white overlays on dark surfaces) */
-  --glass-background-active: rgb(255 255 255 / var(--glass-opacity-medium));
-  --glass-background-hover: rgb(255 255 255 / var(--glass-opacity-light));
-  --glass-background: rgb(255 255 255 / var(--glass-opacity-subtle));
   --glass-bg: rgb(255 255 255 / 2%);
   --glass-bg-hover: rgb(255 255 255 / 3%);
   --glass-bg-active: rgb(255 255 255 / 5%);
   --glass-border: 1px solid rgb(255 255 255 / 10%);
-  --glass-shadow: rgb(0 0 0 / 10%);
-  --glass-card-border: 1px solid hsl(0deg 0% 100% / 10%);
 
   /* Glass Form (dark mode) */
   --glass-form-bg: rgb(255 255 255 / 4%);
@@ -63,23 +44,11 @@ html.dark {
   /* Legacy Tokens (dark mode values) */
   --text-primary: var(--color-text-primary, #fff);
   --text-secondary: var(--color-text-secondary, #e0e0e0);
-  --secondary-color: var(--color-secondary, #1b1b1b);
-  --background-dark: var(--color-background, #121212);
-  --background-light: var(--color-background-secondary, #1e1e1e);
+  --background-dark: #121212;
+  --background-light: #1e1e1e;
   --border-color: hsl(0deg 0% 23.9%);
   --accent-color: rgb(255 255 255 / 10%);
-  --accent-gradient: linear-gradient(
-    135deg,
-    rgb(255 255 255 / 15%),
-    rgb(255 255 255 / 5%),
-    rgb(255 255 255 / 10%)
-  );
-  --accent-glow: rgb(255 255 255 / 60%);
-  --accent-grey1a: #1a1a1a;
-  --default-modal: 0, 4.3%, 9%, 0.65;
   --text-muted: #b0b0b0;
-  --bg-primary: #1a1a2e;
-  --bg-secondary: #16213e;
 
   /* Navigation-specific (dark mode) */
   --nav-hover-bg: #a9d9ff47;

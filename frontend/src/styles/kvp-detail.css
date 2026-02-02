@@ -185,7 +185,7 @@
 .section-content {
   /* Glassmorphism Container für Text */
   padding: var(--spacing-4);
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(--glass-card-radius);
 
   /* Text styling */
