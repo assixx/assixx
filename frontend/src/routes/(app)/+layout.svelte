@@ -40,7 +40,11 @@
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
 
-  import { getMenuItemsForRole, type NavItem } from './_lib/navigation-config';
+  import {
+    filterMenuByAccess,
+    getMenuItemsForRole,
+    type NavItem,
+  } from './_lib/navigation-config';
 
   import type { LayoutData } from './$types';
 
@@ -79,8 +83,6 @@
 
   // User from SSR (loaded once server-side, available instantly)
   const ssrUser = $derived(data.user ?? null);
-  const ssrTenant = $derived(data.tenant ?? null);
-
   // User State - initialize from SSR data to prevent hydration FOUC
   // INTENTIONAL: We capture initial data.user to match SSR render.
   // Future updates are handled by $effect (line ~118) that syncs ssrUser → user.
@@ -120,6 +122,7 @@
   );
   let sidebarCollapsed = $state(false);
   let openSubmenu = $state<string | null>(null);
+  let openSubSubmenu = $state<string | null>(null);
   let roleSwitchBannerDismissed = $state(
     isBannerDismissed(getInitialActiveRole()),
   );
@@ -171,12 +174,15 @@
     }
   });
 
-  // Navigation menu items - imported from navigation-config.ts
-  const menuItems = $derived<NavItem[]>(getMenuItemsForRole(currentRole));
+  // Navigation menu items - filtered by has_full_access for admin users
+  const hasFullAccess = $derived(
+    data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
+  );
+  const menuItems = $derived<NavItem[]>(
+    filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
+  );
 
-  // =============================================================================
-  // HELPER FUNCTIONS
-  // =============================================================================
+  // --- HELPER FUNCTIONS ---
 
   /** Get user initials for avatar */
   function getInitials(): string {
@@ -209,33 +215,19 @@
     return 'Mitarbeiter';
   }
 
-  /** Check if menu item is active */
+  /** Check if menu item is active (recursive for nested submenus) */
   function isActive(item: NavItem): boolean {
     const currentPath = $page.url.pathname;
     if (item.url !== undefined && item.url !== '') {
       return currentPath === item.url || currentPath.startsWith(item.url + '/');
     }
     if (item.submenu !== undefined) {
-      return item.submenu.some((sub) => {
-        if (sub.url === undefined || sub.url === '') return false;
-        return currentPath === sub.url || currentPath.startsWith(sub.url + '/');
-      });
+      return item.submenu.some((sub) => isActive(sub));
     }
     return false;
   }
 
-  /** Check if submenu child item is active */
-  function isSubmenuItemActive(subItem: NavItem): boolean {
-    const currentPath = $page.url.pathname;
-    if (subItem.url === undefined || subItem.url === '') return false;
-    return (
-      currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')
-    );
-  }
-
-  // =============================================================================
-  // API FUNCTIONS
-  // =============================================================================
+  // --- API FUNCTIONS ---
 
   /**
    * Logout user
@@ -299,9 +291,7 @@
     tokenExpired = false;
   }
 
-  // =============================================================================
-  // EVENT HANDLERS
-  // =============================================================================
+  // --- EVENT HANDLERS ---
 
   /** Toggle sidebar collapsed state */
   function toggleSidebar(): void {
@@ -310,6 +300,7 @@
     // Close all submenus when collapsing sidebar
     if (sidebarCollapsed) {
       openSubmenu = null;
+      openSubSubmenu = null;
     }
   }
 
@@ -318,33 +309,29 @@
     // Don't open submenus when sidebar is collapsed
     if (sidebarCollapsed) return;
     openSubmenu = openSubmenu === itemId ? null : itemId;
+    // Close nested sub-submenu when switching top-level submenu
+    openSubSubmenu = null;
   }
 
-  /** Calculate aggregated badge count for all submenu items */
+  /** Toggle nested sub-submenu */
+  function toggleSubSubmenu(itemId: string): void {
+    if (sidebarCollapsed) return;
+    openSubSubmenu = openSubSubmenu === itemId ? null : itemId;
+  }
+
+  /** Calculate aggregated badge count for all submenu items (recursive) */
   function getSubmenuBadgeCount(submenu: NavItem[] | undefined): number {
-    if (!submenu) return 0;
+    if (submenu === undefined) return 0;
     return submenu.reduce((total, item) => {
-      if (item.badgeType) {
-        return total + notificationStore.counts[item.badgeType];
+      let count = 0;
+      if (item.badgeType !== undefined) {
+        count += notificationStore.counts[item.badgeType];
       }
-      return total;
+      if (item.submenu !== undefined) {
+        count += getSubmenuBadgeCount(item.submenu);
+      }
+      return total + count;
     }, 0);
-  }
-
-  /** Handle logout button click */
-  function handleLogoutClick(): void {
-    showLogoutModal = true;
-  }
-
-  /** Confirm logout */
-  function confirmLogout(): void {
-    showLogoutModal = false;
-    void logout();
-  }
-
-  /** Cancel logout */
-  function cancelLogout(): void {
-    showLogoutModal = false;
   }
 
   /** Dismiss role switch banner */
@@ -353,68 +340,33 @@
     localStorage.setItem(`roleSwitchBannerDismissed_${activeRole}`, 'true');
   }
 
-  // =============================================================================
-  // LIFECYCLE
-  // =============================================================================
-
-  /**
-   * Initialize client-side state from SSR data
-   * SSR provides user/tenant data - we only need to:
-   * 1. Sync SSR data to local state
-   * 2. Load UI preferences from localStorage (sidebar)
-   * 3. Persist role to localStorage
-   *
-   * NOTE: activeRole and roleSwitchBannerDismissed are already initialized
-   * IMMEDIATELY during hydration (see getInitialActiveRole / isBannerDismissedForRole)
-   * to ensure the role switch banner shows instantly, not after page load.
-   */
-  function initializeFromSSR(): void {
-    // 1. Sync SSR user/tenant data to local state
-    if (ssrUser) {
-      user = ssrUser;
-      tenant = ssrTenant;
-
-      // Set userRole from SSR (original role never changes)
-      const role = ssrUser.role;
-      userRole = role;
-
-      // Persist role to localStorage for role switching component
-      localStorage.setItem('userRole', role);
-      if (localStorage.getItem('activeRole') === null) {
-        localStorage.setItem('activeRole', role);
-      }
-    }
-
-    // 2. Load UI preferences from localStorage
-    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-    if (savedCollapsed === 'true') {
-      sidebarCollapsed = true;
-    }
-  }
+  // --- LIFECYCLE ---
 
   onMount(() => {
     const endLayoutMount = perf.start('layout:mount:total');
 
-    // Initialize state from SSR data
+    // Sync userRole from SSR + load UI preferences (user/tenant already synced via $effect)
     perf.timeSync('layout:initializeFromSSR', () => {
-      initializeFromSSR();
+      if (ssrUser) {
+        userRole = ssrUser.role;
+        localStorage.setItem('userRole', ssrUser.role);
+        if (localStorage.getItem('activeRole') === null) {
+          localStorage.setItem('activeRole', ssrUser.role);
+        }
+      }
+      if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        sidebarCollapsed = true;
+      }
     });
 
     // Subscribe to TokenManager timer updates (uses relative time - no clock skew!)
-    // Also handles token expiration events
+    // NOTE: Token expiration redirect is handled by TokenManager.clearTokens() internally
     perf.timeSync('layout:tokenManager:init', () => {
       const tokenManager = getTokenManager();
 
-      // Subscribe to timer updates (fires every second with remaining seconds)
       tokenTimerUnsubscribe = tokenManager.onTimerUpdate(
         handleTokenTimerUpdate,
       );
-
-      // Subscribe to token expiration events
-      tokenManager.onTokenExpired(() => {
-        log.warn({}, 'Token expired during session, redirecting to login');
-        void goto('/login', { replaceState: true });
-      });
     });
 
     // Initialize Session Manager (handles inactivity timeout + warning modal)
@@ -472,19 +424,9 @@
   });
 
   onDestroy(() => {
-    // Unsubscribe from TokenManager timer updates
-    if (tokenTimerUnsubscribe !== null) {
-      tokenTimerUnsubscribe();
-    }
-    // Cleanup SessionManager
-    if (sessionManagerInstance !== null) {
-      sessionManagerInstance.destroy();
-    }
-    // Cleanup RoleSyncManager
-    if (roleSyncManagerInstance !== null) {
-      roleSyncManagerInstance.destroy();
-    }
-    // Disconnect SSE
+    tokenTimerUnsubscribe?.();
+    sessionManagerInstance?.destroy();
+    roleSyncManagerInstance?.destroy();
     notificationStore.disconnect();
   });
 </script>
@@ -577,7 +519,9 @@
           type="button"
           id="logout-btn"
           class="btn btn-danger"
-          onclick={handleLogoutClick}
+          onclick={() => {
+            showLogoutModal = true;
+          }}
           title="Abmelden"
           aria-label="Abmelden"
         >
@@ -641,7 +585,7 @@
       <nav class="sidebar-nav">
         <ul class="sidebar-menu">
           {#each menuItems as item (item.id)}
-            {#if item.hasSubmenu === true && item.submenu !== undefined}
+            {#if item.submenu !== undefined}
               <li
                 class="sidebar-item has-submenu"
                 class:active={isActive(item)}
@@ -684,25 +628,91 @@
                   class:u-hidden={openSubmenu !== item.id}
                 >
                   {#each item.submenu as subItem (subItem.id)}
-                    <li
-                      class="submenu-item"
-                      class:active={isSubmenuItemActive(subItem)}
-                    >
-                      <a
-                        href={resolveDynamicPath(subItem.url ?? '')}
-                        class="submenu-link"
-                        class:active={isSubmenuItemActive(subItem)}
+                    {#if subItem.submenu !== undefined}
+                      <li
+                        class="submenu-item has-submenu"
+                        class:active={isActive(subItem)}
+                        class:open={openSubSubmenu === subItem.id}
                       >
-                        <span>{subItem.label}</span>
-                        {#if subItem.badgeType && openSubmenu === item.id}
-                          <NotificationBadge
-                            count={notificationStore.counts[subItem.badgeType]}
-                            size="sm"
-                            position="inline"
-                          />
-                        {/if}
-                      </a>
-                    </li>
+                        <button
+                          type="button"
+                          class="submenu-link submenu-link--toggle"
+                          class:active={isActive(subItem)}
+                          onclick={() => {
+                            toggleSubSubmenu(subItem.id);
+                          }}
+                        >
+                          <span>{subItem.label}</span>
+                          {#if openSubSubmenu !== subItem.id}
+                            <NotificationBadge
+                              count={getSubmenuBadgeCount(subItem.submenu)}
+                              size="sm"
+                              position="inline"
+                            />
+                          {/if}
+                          <span class="submenu-arrow">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M7 10l5 5 5-5z" />
+                            </svg>
+                          </span>
+                        </button>
+                        <ul
+                          class="submenu submenu--nested"
+                          class:u-hidden={openSubSubmenu !== subItem.id}
+                        >
+                          {#each subItem.submenu as nestedItem (nestedItem.id)}
+                            <li
+                              class="submenu-item"
+                              class:active={isActive(nestedItem)}
+                            >
+                              <a
+                                href={resolveDynamicPath(nestedItem.url ?? '')}
+                                class="submenu-link"
+                                class:active={isActive(nestedItem)}
+                              >
+                                <span>{nestedItem.label}</span>
+                                {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
+                                  <NotificationBadge
+                                    count={notificationStore.counts[
+                                      nestedItem.badgeType
+                                    ]}
+                                    size="sm"
+                                    position="inline"
+                                  />
+                                {/if}
+                              </a>
+                            </li>
+                          {/each}
+                        </ul>
+                      </li>
+                    {:else}
+                      <li
+                        class="submenu-item"
+                        class:active={isActive(subItem)}
+                      >
+                        <a
+                          href={resolveDynamicPath(subItem.url ?? '')}
+                          class="submenu-link"
+                          class:active={isActive(subItem)}
+                        >
+                          <span>{subItem.label}</span>
+                          {#if subItem.badgeType && openSubmenu === item.id}
+                            <NotificationBadge
+                              count={notificationStore.counts[
+                                subItem.badgeType
+                              ]}
+                              size="sm"
+                              position="inline"
+                            />
+                          {/if}
+                        </a>
+                      </li>
+                    {/if}
                   {/each}
                 </ul>
               </li>
@@ -830,14 +840,19 @@
           <button
             type="button"
             class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
-            onclick={cancelLogout}
+            onclick={() => {
+              showLogoutModal = false;
+            }}
           >
             Abbrechen
           </button>
           <button
             type="button"
             class="btn btn-danger confirm-modal__btn--wide"
-            onclick={confirmLogout}
+            onclick={() => {
+              showLogoutModal = false;
+              void logout();
+            }}
           >
             Abmelden
           </button>

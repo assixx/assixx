@@ -18,3 +18,11 @@ export {
   ShareSuggestionSchema,
 } from './share-suggestion.dto.js';
 export { AddCommentDto, AddCommentSchema } from './comment.dto.js';
+export {
+  CreateCustomCategoryDto,
+  CreateCustomCategorySchema,
+} from './create-custom-category.dto.js';
+export {
+  OverrideCategoryNameDto,
+  OverrideCategoryNameSchema,
+} from './override-category-name.dto.js';

@@ -7,10 +7,10 @@
 export const POSITION_MAP: Record<string, string> = {
   bereichsleiter: 'Bereichsleiter',
   personalleiter: 'Personalleiter',
-  geschaeftsfuehrer: 'Geschäftsführer',
+  geschäftsführer: 'Geschäftsführer',
   werksleiter: 'Werksleiter',
   produktionsleiter: 'Produktionsleiter',
-  qualitaetsleiter: 'Qualitätsleiter',
+  qualitätsleiter: 'Qualitätsleiter',
   'it-leiter': 'IT-Leiter',
   vertriebsleiter: 'Vertriebsleiter',
 } as const;

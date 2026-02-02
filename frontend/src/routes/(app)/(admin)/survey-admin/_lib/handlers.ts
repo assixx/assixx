@@ -343,7 +343,7 @@ export function buildAssignments(
   ];
 
   if (assignments.length === 0) {
-    showErrorAlert('Bitte waehlen Sie mindestens eine Zielgruppe aus');
+    showErrorAlert('Bitte wählen Sie mindestens eine Zielgruppe aus');
     return null;
   }
 
@@ -364,7 +364,7 @@ function validateQuestions(
     const needsOptions = questionTypeNeedsOptions(question.type);
     const validOptions = question.options.filter((o) => o.trim() !== '').length;
     if (needsOptions && validOptions < 2) {
-      return `Frage ${index + 1} benoetigt mindestens 2 Antwortoptionen`;
+      return `Frage ${index + 1} benötigt mindestens 2 Antwortoptionen`;
     }
   }
   return null;
@@ -566,7 +566,7 @@ export async function handleCompleteSurveyWithInvalidate(
   invalidateAll: () => Promise<void>,
 ): Promise<void> {
   const confirmed = await showConfirmDanger(
-    'Die Umfrage wird fuer alle Mitarbeiter beendet. Neue Antworten sind danach nicht mehr moeglich.',
+    'Die Umfrage wird für alle Mitarbeiter beendet. Neue Antworten sind danach nicht mehr möglich.',
     'Umfrage beenden?',
   );
   if (!confirmed) return;
@@ -597,7 +597,7 @@ export async function handleDeleteSurvey(
 
   const result = await deleteSurvey(surveyId);
   if (result.success) {
-    showSuccessAlert('Umfrage erfolgreich geloescht');
+    showSuccessAlert('Umfrage erfolgreich gelöscht');
     await reloadSurveys();
   } else {
     showErrorAlert(result.error ?? 'Fehler beim Löschen der Umfrage');
@@ -619,7 +619,7 @@ export async function handleDeleteSurveyWithInvalidate(
 
   const result = await deleteSurvey(surveyId);
   if (result.success) {
-    showSuccessAlert('Umfrage erfolgreich geloescht');
+    showSuccessAlert('Umfrage erfolgreich gelöscht');
     // Level 3: Trigger SSR refetch
     await invalidateAll();
   } else {

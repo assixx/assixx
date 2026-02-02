@@ -100,10 +100,11 @@ export interface KvpSuggestion {
 }
 
 /**
- * KVP Category
+ * KVP Category (with source for global/custom distinction)
  */
 export interface KvpCategory {
   id: number;
+  source: 'global' | 'custom';
   name: string;
   icon?: string;
   color: string;
@@ -162,6 +163,7 @@ export interface KvpFormData {
   title: string;
   description: string;
   categoryId: number | null;
+  customCategoryId: number | null;
   priority: KvpPriority;
   expectedBenefit?: string;
   orgLevel: OrgLevel;

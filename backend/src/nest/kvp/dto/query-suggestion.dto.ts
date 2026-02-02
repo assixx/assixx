@@ -38,6 +38,7 @@ const OrgLevelSchema = z.enum(['company', 'department', 'area', 'team'], {
 export const ListSuggestionsQuerySchema = PaginationSchema.extend({
   status: StatusSchema.optional(),
   categoryId: IdSchema.optional(),
+  customCategoryId: IdSchema.optional(),
   priority: PrioritySchema.optional(),
   orgLevel: OrgLevelSchema.optional(),
   search: z.string().trim().max(100, 'Search query too long').optional(),

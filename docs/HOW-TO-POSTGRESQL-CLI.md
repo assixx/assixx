@@ -2,7 +2,7 @@
 
 > **psql** ist der offizielle PostgreSQL-Kommandozeilen-Client.
 > Installiert als **Client-only** (kein Server!) auf WSL2 Ubuntu.
-> Der PostgreSQL-Server laeuft weiterhin ausschliesslich in Docker.
+> Der PostgreSQL-Server läuft weiterhin ausschließlich in Docker.
 
 ---
 
@@ -26,9 +26,9 @@
 ### Voraussetzungen
 
 - WSL2 mit Ubuntu 24.04 (Noble)
-- Docker-Container `assixx-postgres` laeuft
+- Docker-Container `assixx-postgres` läuft
 
-### 1. PostgreSQL APT Repository hinzufuegen
+### 1. PostgreSQL APT Repository hinzufügen
 
 ```bash
 # Signing Key herunterladen
@@ -36,7 +36,7 @@ sudo install -d /usr/share/postgresql-common/pgdg
 sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
   --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
 
-# Repository hinzufuegen
+# Repository hinzufügen
 sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 ```
 
@@ -47,9 +47,9 @@ sudo apt update
 sudo apt install -y postgresql-client-17
 ```
 
-**WICHTIG:** NUR `postgresql-client-17` installieren, NICHT `postgresql` oder `postgresql-contrib`. Der Server laeuft in Docker -- ein zweiter auf dem Host wuerde Port 5432 blockieren.
+**WICHTIG:** NUR `postgresql-client-17` installieren, NICHT `postgresql` oder `postgresql-contrib`. Der Server läuft in Docker -- ein zweiter auf dem Host würde Port 5432 blockieren.
 
-### 3. Installation pruefen
+### 3. Installation prüfen
 
 ```bash
 psql --version
@@ -69,7 +69,7 @@ psql -h localhost -U assixx_user -d assixx
 # Einzelner SQL-Befehl
 psql -h localhost -U assixx_user -d assixx -c "SELECT COUNT(*) FROM users;"
 
-# SQL-Datei ausfuehren
+# SQL-Datei ausführen
 psql -h localhost -U assixx_user -d assixx -f /path/to/script.sql
 ```
 
@@ -81,10 +81,10 @@ PGPASSWORD=$(docker exec assixx-postgres printenv POSTGRES_PASSWORD) \
   psql -h localhost -U assixx_user -d assixx -c "SELECT 1;"
 ```
 
-### Via Docker (Alternative, kein lokales psql noetig)
+### Via Docker (Alternative, kein lokales psql nötig)
 
 ```bash
-# Weiterhin moeglich - psql im Container ausfuehren
+# Weiterhin möglich - psql im Container ausführen
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT 1;"
 
 # Interaktive Shell im Container
@@ -93,9 +93,9 @@ docker exec -it assixx-postgres psql -U assixx_user -d assixx
 
 ---
 
-## Haeufige Befehle
+## Häufige Befehle
 
-### Datenbank-Uebersicht
+### Datenbank-Übersicht
 
 ```bash
 # Alle Tabellen auflisten
@@ -104,10 +104,10 @@ psql -h localhost -U assixx_user -d assixx -c "\dt"
 # Tabellen-Schema anzeigen
 psql -h localhost -U assixx_user -d assixx -c "\d users"
 
-# Datenbankgroesse
+# Datenbankgröße
 psql -h localhost -U assixx_user -d assixx -c "SELECT pg_size_pretty(pg_database_size('assixx'));"
 
-# Tabellengroessen (Top 10)
+# Tabellengrößen (Top 10)
 psql -h localhost -U assixx_user -d assixx -c "
 SELECT relname AS table_name,
        pg_size_pretty(pg_total_relation_size(relid)) AS total_size
@@ -138,7 +138,7 @@ ORDER BY tablename;
 ### Migrationen
 
 ```bash
-# Migration-Status pruefen
+# Migration-Status prüfen
 psql -h localhost -U assixx_user -d assixx -c "
 SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;
 "
@@ -147,13 +147,13 @@ SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;
 ### Seeds
 
 ```bash
-# Seeds anwenden (ueber pnpm)
+# Seeds anwenden (über pnpm)
 pnpm run db:seed
 
 # Oder manuell
 psql -h localhost -U assixx_user -d assixx -f database/seeds/001_global-seed-data.sql
 
-# Seed-Daten pruefen
+# Seed-Daten prüfen
 psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM kvp_categories ORDER BY id;"
 psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM features ORDER BY id;"
 psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM plans ORDER BY id;"
@@ -175,7 +175,7 @@ psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM plans ORDER 
 | `\conninfo`     | Aktuelle Verbindungsinfo       |
 | `\x`            | Erweiterte Ausgabe (toggle)    |
 | `\timing`       | Query-Timing anzeigen (toggle) |
-| `\i filename`   | SQL-Datei ausfuehren           |
+| `\i filename`   | SQL-Datei ausführen            |
 | `\copy`         | CSV Import/Export              |
 | `\q`            | psql beenden                   |
 | `\?`            | Hilfe zu Meta-Befehlen         |
@@ -185,10 +185,10 @@ psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM plans ORDER 
 
 ## Backup & Restore
 
-### pg_dump (lokal, nicht mehr docker exec noetig)
+### pg_dump (lokal, nicht mehr docker exec nötig)
 
 ```bash
-# Vollstaendiges Backup (komprimiert)
+# Vollständiges Backup (komprimiert)
 PGPASSWORD=$(docker exec assixx-postgres printenv POSTGRES_PASSWORD) \
   pg_dump -h localhost -U assixx_user -d assixx \
   --format=custom --compress=9 \
@@ -242,10 +242,10 @@ SELECT COUNT(*) FROM users;
 
 | Methode             | Wann                                              |
 | ------------------- | ------------------------------------------------- |
-| `psql -h localhost` | Standard fuer Entwicklung (schneller, direkt)     |
+| `psql -h localhost` | Standard für Entwicklung (schneller, direkt)      |
 | `docker exec`       | Wenn psql nicht installiert oder Container-intern |
 | `pnpm run db:seed`  | Seeds anwenden (nutzt psql intern)                |
-| DBeaver (Windows)   | GUI fuer komplexe Schema-Exploration              |
+| DBeaver (Windows)   | GUI für komplexe Schema-Exploration               |
 
 **Empfehlung:** `psql -h localhost` als Standard, `docker exec` nur als Fallback.
 
@@ -253,13 +253,13 @@ SELECT COUNT(*) FROM users;
 
 ## Troubleshooting
 
-| Problem                            | Ursache                   | Loesung                                                  |
+| Problem                            | Ursache                   | Lösung                                                   |
 | ---------------------------------- | ------------------------- | -------------------------------------------------------- |
 | `connection refused`               | Docker-Container nicht da | `cd docker && doppler run -- docker-compose up -d`       |
 | `password authentication failed`   | Falsches Passwort         | `docker exec assixx-postgres printenv POSTGRES_PASSWORD` |
 | `psql: command not found`          | Client nicht installiert  | `sudo apt install postgresql-client-17`                  |
 | `FATAL: role "scs" does not exist` | Kein `-U` angegeben       | Immer `-U assixx_user` mitgeben                          |
-| `could not connect to server`      | Port 5432 nicht exposed   | `docker-compose.yml` pruefen: `127.0.0.1:5432->5432`     |
+| `could not connect to server`      | Port 5432 nicht exposed   | `docker-compose.yml` prüfen: `127.0.0.1:5432->5432`      |
 
 ---
 

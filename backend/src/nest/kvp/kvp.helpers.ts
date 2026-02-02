@@ -231,9 +231,9 @@ export function buildListBaseQuery(userIdPlaceholder: string): string {
   return `
     SELECT
       s.*,
-      c.name as category_name,
-      c.color as category_color,
-      c.icon as category_icon,
+      COALESCE(kcc_new.custom_name, kcc_override.custom_name, c.name) as category_name,
+      COALESCE(kcc_new.color, c.color) as category_color,
+      COALESCE(kcc_new.icon, c.icon) as category_icon,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
       a.name as area_name,
@@ -248,6 +248,8 @@ export function buildListBaseQuery(userIdPlaceholder: string): string {
       kc.first_seen_at
     FROM kvp_suggestions s
     LEFT JOIN kvp_categories c ON s.category_id = c.id
+    LEFT JOIN kvp_categories_custom kcc_override ON c.id = kcc_override.category_id AND kcc_override.tenant_id = s.tenant_id
+    LEFT JOIN kvp_categories_custom kcc_new ON s.custom_category_id = kcc_new.id
     LEFT JOIN departments d ON s.department_id = d.id
     LEFT JOIN teams t ON s.team_id = t.id
     LEFT JOIN departments td ON t.department_id = td.id
@@ -267,9 +269,9 @@ export function buildDetailBaseQuery(userIdPlaceholder: string): string {
   return `
     SELECT
       s.*,
-      c.name as category_name,
-      c.color as category_color,
-      c.icon as category_icon,
+      COALESCE(kcc_new.custom_name, kcc_override.custom_name, c.name) as category_name,
+      COALESCE(kcc_new.color, c.color) as category_color,
+      COALESCE(kcc_new.icon, c.icon) as category_icon,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
       a.name as area_name,
@@ -282,6 +284,8 @@ export function buildDetailBaseQuery(userIdPlaceholder: string): string {
       kc.first_seen_at
     FROM kvp_suggestions s
     LEFT JOIN kvp_categories c ON s.category_id = c.id
+    LEFT JOIN kvp_categories_custom kcc_override ON c.id = kcc_override.category_id AND kcc_override.tenant_id = s.tenant_id
+    LEFT JOIN kvp_categories_custom kcc_new ON s.custom_category_id = kcc_new.id
     LEFT JOIN departments d ON s.department_id = d.id
     LEFT JOIN teams t ON s.team_id = t.id
     LEFT JOIN departments td ON t.department_id = td.id
@@ -332,6 +336,10 @@ export function buildFilterConditions(
   if (filters.categoryId !== undefined) {
     clause += ` AND s.category_id = $${idx++}`;
     params.push(filters.categoryId);
+  }
+  if (filters.customCategoryId !== undefined) {
+    clause += ` AND s.custom_category_id = $${idx++}`;
+    params.push(filters.customCategoryId);
   }
   if (filters.priority !== undefined && filters.priority !== '') {
     clause += ` AND s.priority = $${idx++}`;
@@ -393,6 +401,7 @@ export function buildSuggestionUpdateClause(
   addField(dto.title, 'title');
   addField(dto.description, 'description');
   addField(dto.categoryId, 'category_id');
+  addField(dto.customCategoryId, 'custom_category_id');
   addField(dto.priority, 'priority');
   addField(dto.expectedBenefit, 'expected_benefit');
   addField(dto.estimatedCost, 'estimated_cost');
