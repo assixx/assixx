@@ -11,7 +11,7 @@
   import { createSuggestion, uploadPhotos } from './api';
   import { PRIORITY_OPTIONS, UPLOAD_CONFIG } from './constants';
   import { kvpState } from './state.svelte';
-  import { validatePhotoFile, readFileAsDataUrl } from './utils';
+  import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
   import type { KvpFormData, KvpPriority } from './types';
 
@@ -29,7 +29,9 @@
 
   // Dropdown state
   let activeDropdown = $state<string | null>(null);
-  let formCategoryDisplay = $state('Bitte waehlen');
+  let formCategoryDisplay = $state('Bitte wählen');
+  let formCategoryIcon = $state<string | undefined>(undefined);
+  let formCategoryColor = $state<string | undefined>(undefined);
   let formCategoryValue = $state('');
   let formPriorityDisplay = $state('Normal');
   let formPriorityValue = $state<KvpPriority>('normal');
@@ -47,12 +49,16 @@
   }
 
   function handleFormCategorySelect(
-    value: string,
+    id: number,
+    source: 'global' | 'custom',
     label: string,
     icon?: string,
+    color?: string,
   ) {
-    formCategoryValue = value;
-    formCategoryDisplay = icon !== undefined ? `${icon} ${label}` : label;
+    formCategoryValue = `${source}:${id}`;
+    formCategoryIcon = icon;
+    formCategoryColor = color;
+    formCategoryDisplay = label;
     closeAllDropdowns();
   }
 
@@ -80,7 +86,7 @@
     for (const file of files) {
       if (selectedPhotos.length >= UPLOAD_CONFIG.MAX_FILES) {
         showWarningAlert(
-          `Sie koennen maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`,
+          `Sie können maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`,
         );
         break;
       }
@@ -112,7 +118,9 @@
   function handleClose() {
     photoPreviews = [];
     selectedPhotos = [];
-    formCategoryDisplay = 'Bitte waehlen';
+    formCategoryDisplay = 'Bitte wählen';
+    formCategoryIcon = undefined;
+    formCategoryColor = undefined;
     formCategoryValue = '';
     formPriorityDisplay = 'Normal';
     formPriorityValue = 'normal';
@@ -148,13 +156,25 @@
     expectedBenefit: string,
   ): KvpFormData {
     const { orgLevel, orgId } = determineOrgInfo();
-    const categoryId =
-      formCategoryValue !== '' ? parseInt(formCategoryValue, 10) : null;
+
+    let categoryId: number | null = null;
+    let customCategoryId: number | null = null;
+
+    if (formCategoryValue !== '') {
+      const [source, idStr] = formCategoryValue.split(':');
+      const id = parseInt(idStr, 10);
+      if (source === 'global') {
+        categoryId = id;
+      } else {
+        customCategoryId = id;
+      }
+    }
 
     return {
       title: title.trim(),
       description: description.trim(),
       categoryId,
+      customCategoryId,
       priority: formPriorityValue,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
       orgLevel,
@@ -245,9 +265,9 @@
         <div class="alert__content">
           <strong class="alert__title">Wichtiger Hinweis:</strong>
           <p class="alert__message">
-            Nach dem Einreichen koennen Sie Ihren Vorschlag nicht mehr
-            bearbeiten oder Löschen. Bitte pruefen Sie alle Angaben sorgfaeltig,
-            bevor Sie den Vorschlag absenden.
+            Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten
+            oder Löschen. Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie
+            den Vorschlag absenden.
           </p>
         </div>
       </div>
@@ -319,37 +339,62 @@
                 if (e.key === 'Enter') toggleDropdown('kvpCategory');
               }}
             >
-              <span>{formCategoryDisplay}</span>
+              <span>
+                {#if formCategoryIcon !== undefined && isFaIcon(formCategoryIcon)}
+                  <i
+                    class="fas fa-{formCategoryIcon}"
+                    style:color={formCategoryColor}
+                    style:margin-right="0"
+                  ></i>
+                {:else if formCategoryIcon !== undefined}
+                  {formCategoryIcon}
+                {/if}
+                {formCategoryDisplay}
+              </span>
               <i class="fas fa-chevron-down"></i>
             </div>
             <div
               class="dropdown__menu"
               class:active={activeDropdown === 'kvpCategory'}
             >
-              {#each kvpState.categories as category (category.id)}
+              {#each kvpState.categories as category (`${category.source}:${String(category.id)}`)}
                 <div
                   class="dropdown__option"
                   role="button"
                   tabindex="0"
                   onclick={() => {
                     handleFormCategorySelect(
-                      category.id.toString(),
+                      category.id,
+                      category.source,
                       category.name,
                       category.icon,
+                      category.color,
                     );
                   }}
                   onkeydown={(e) => {
                     if (e.key === 'Enter') {
                       handleFormCategorySelect(
-                        category.id.toString(),
+                        category.id,
+                        category.source,
                         category.name,
                         category.icon,
+                        category.color,
                       );
                     }
                   }}
                 >
-                  {category.icon ?? '💡'}
-                  {category.name}
+                  <span>
+                    {#if category.icon !== undefined && isFaIcon(category.icon)}
+                      <i
+                        class="fas fa-{category.icon}"
+                        style:color={category.color}
+                        style:margin-right="0"
+                      ></i>
+                    {:else}
+                      {category.icon ?? '💡'}
+                    {/if}
+                    {category.name}
+                  </span>
                 </div>
               {/each}
             </div>
@@ -365,7 +410,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="kvpPriorityValue">Prioritaet</label
+            for="kvpPriorityValue">Priorität</label
           >
           <div
             class="dropdown"
@@ -435,7 +480,7 @@
             class="form-field__label"
             for="kvpPhotos"
           >
-            Fotos hinzufuegen (optional)
+            Fotos hinzufügen (optional)
             <span class="form-field__hint"
               >Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span
             >
@@ -461,7 +506,7 @@
               }}
             >
               <i class="fas fa-camera"></i>
-              <p>Klicken Sie hier, um Fotos auszuwaehlen</p>
+              <p>Klicken Sie hier, um Fotos auszuwählen</p>
               <p class="mt-2 text-sm text-gray-400">
                 oder ziehen Sie Dateien hierher
               </p>

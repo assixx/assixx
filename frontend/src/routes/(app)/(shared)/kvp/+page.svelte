@@ -36,6 +36,7 @@
     getSharedByInfo,
     getAttachmentText,
     debounce,
+    isFaIcon,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -266,7 +267,7 @@
         <strong class="alert__title">Tipp für Admins:</strong>
         <p class="alert__message">
           Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen.
-          Als Admin koennen Sie Vorschläge verwalten und firmenweit teilen.
+          Als Admin können Sie Vorschläge verwalten und firmenweit teilen.
         </p>
       </div>
     </div>
@@ -435,15 +436,15 @@
                   >
                     Alle Kategorien
                   </button>
-                  {#each kvpState.categories as category (category.id)}
+                  {#each kvpState.categories as category (`${category.source}:${String(category.id)}`)}
                     <button
                       type="button"
                       class="dropdown__option"
                       data-action="select-category"
-                      data-value={category.id.toString()}
+                      data-value={`${category.source}:${String(category.id)}`}
                       onclick={() => {
                         handleCategorySelect(
-                          category.id.toString(),
+                          `${category.source}:${category.id}`,
                           category.name,
                         );
                       }}
@@ -531,7 +532,7 @@
           </div>
           <h3 class="empty-state__title">Keine Vorschläge gefunden</h3>
           <p class="empty-state__description">
-            Aendern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag
+            Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag
           </p>
         </div>
       {:else}
@@ -624,7 +625,14 @@
                     style:color={suggestion.categoryColor}
                     style:border="1px solid {suggestion.categoryColor}"
                   >
-                    {suggestion.categoryIcon}
+                    {#if isFaIcon(suggestion.categoryIcon)}
+                      <i
+                        class="fas fa-{suggestion.categoryIcon}"
+                        style:margin-right="0.1em"
+                      ></i>
+                    {:else}
+                      {suggestion.categoryIcon}
+                    {/if}
                     {suggestion.categoryName}
                   </div>
                 </div>

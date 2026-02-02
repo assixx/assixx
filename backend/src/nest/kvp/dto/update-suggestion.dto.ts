@@ -41,7 +41,8 @@ export const UpdateSuggestionSchema = z.object({
     .min(10, 'Description must be at least 10 characters')
     .max(5000, 'Description must not exceed 5000 characters')
     .optional(),
-  categoryId: IdSchema.optional(),
+  categoryId: IdSchema.optional().nullable(),
+  customCategoryId: IdSchema.optional().nullable(),
   priority: PrioritySchema.optional(),
   expectedBenefit: z
     .string()

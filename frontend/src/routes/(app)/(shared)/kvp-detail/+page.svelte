@@ -13,6 +13,7 @@
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
 
   import { filterState } from '../kvp/_lib/state-filters.svelte';
+  import { isFaIcon } from '../kvp/_lib/utils';
 
   import '../../../../styles/kvp-detail.css';
 
@@ -208,7 +209,7 @@
       commentsSectionRef.clearInput();
       await invalidateAll();
     } else {
-      showErrorAlert(result.error ?? 'Fehler beim Hinzufuegen');
+      showErrorAlert(result.error ?? 'Fehler beim hinzufügen');
     }
 
     kvpDetailState.setAddingComment(false);
@@ -265,7 +266,7 @@
       reason,
     );
     if (result.success) {
-      showSuccessAlert(`Status geaendert zu: ${getStatusText(newStatus)}`);
+      showSuccessAlert(`Status geändert zu: ${getStatusText(newStatus)}`);
       await invalidateAll();
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Aktualisieren');
@@ -287,7 +288,7 @@
     let orgId = kvpDetailState.selectedOrgId;
 
     if (level === null) {
-      showErrorAlert('Bitte waehlen Sie eine Organisationsebene');
+      showErrorAlert('Bitte wählen Sie eine Organisationsebene');
       return;
     }
 
@@ -297,7 +298,7 @@
     }
 
     if (orgId === null) {
-      showErrorAlert('Bitte waehlen Sie eine Organisation');
+      showErrorAlert('Bitte wählen Sie eine Organisation');
       return;
     }
 
@@ -319,7 +320,7 @@
 
   async function handleUnshare() {
     const confirmed = await showConfirm(
-      'Moechten Sie das Teilen wirklich rückgängig machen?',
+      'Möchten Sie das Teilen wirklich rückgängig machen?',
     );
     if (!confirmed) return;
 
@@ -364,7 +365,7 @@
 
   async function handleArchive() {
     const confirmed = await showConfirm(
-      'Moechten Sie diesen Vorschlag wirklich archivieren?',
+      'Möchten Sie diesen Vorschlag wirklich archivieren?',
     );
     if (!confirmed) return;
 
@@ -383,7 +384,7 @@
 
   async function handleUnarchive() {
     const confirmed = await showConfirm(
-      'Moechten Sie diesen Vorschlag wirklich wiederherstellen?',
+      'Möchten Sie diesen Vorschlag wirklich wiederherstellen?',
     );
     if (!confirmed) return;
 
@@ -510,7 +511,14 @@
                 style:color={suggestion.categoryColor}
                 style:border="1px solid {suggestion.categoryColor}"
               >
-                {suggestion.categoryIcon}
+                {#if isFaIcon(suggestion.categoryIcon)}
+                  <i
+                    class="fas fa-{suggestion.categoryIcon}"
+                    style:margin-right="0.1em"
+                  ></i>
+                {:else}
+                  {suggestion.categoryIcon}
+                {/if}
                 {suggestion.categoryName}
               </div>
             </span>
@@ -651,7 +659,7 @@
           <div class="data-list data-list--grid">
             {#if suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0}
               <div class="data-list__item">
-                <span class="data-list__label">Geschaetzte Kosten</span>
+                <span class="data-list__label">Geschätzte Kosten</span>
                 <span class="data-list__value"
                   >{formatCurrency(suggestion.estimatedCost)}</span
                 >
@@ -725,7 +733,7 @@
       <button
         type="button"
         class="lightbox-nav lightbox-nav--next"
-        aria-label="Naechstes Bild"
+        aria-label="Nächstes Bild"
         onclick={handleLightboxNext}
       >
         <i class="fas fa-chevron-right"></i>

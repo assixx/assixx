@@ -26,8 +26,8 @@
       </div>
       <div class="ds-modal__body">
         <p class="mb-6">
-          Waehlen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag
-          teilen moechten:
+          wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag
+          teilen möchten:
         </p>
 
         <div class="choice-group">
@@ -73,8 +73,8 @@
                     {kvpDetailState.selectedOrgId !== null ?
                       (kvpDetailState.departments.find(
                         (d) => d.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? 'Abteilung auswaehlen...')
-                    : 'Abteilung auswaehlen...'}
+                      )?.name ?? 'Abteilung auswählen...')
+                    : 'Abteilung auswählen...'}
                   </span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
@@ -142,8 +142,8 @@
                     {kvpDetailState.selectedOrgId !== null ?
                       (kvpDetailState.areas.find(
                         (a) => a.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? 'Bereich auswaehlen...')
-                    : 'Bereich auswaehlen...'}
+                      )?.name ?? 'Bereich auswählen...')
+                    : 'Bereich auswählen...'}
                   </span>
                   <i class="fas fa-chevron-down"></i>
                 </button>

@@ -310,7 +310,7 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
             Abteilungen.
           </span>
         </div>
@@ -375,7 +375,7 @@
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
             Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
-            zugehoerige Teams aus.
+            zugehörige Teams aus.
           </span>
         </div>
       {/if}

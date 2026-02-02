@@ -107,6 +107,15 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Check if icon string is a FontAwesome name (ASCII lowercase + hyphens)
+ * vs an emoji (Unicode characters).
+ * Global categories use emojis, custom categories use FA names.
+ */
+export function isFaIcon(icon: string): boolean {
+  return /^[a-z][a-z0-9-]*$/.test(icon);
+}
+
+/**
  * Escape HTML for safe rendering
  */
 export function escapeHtml(text: string): string {

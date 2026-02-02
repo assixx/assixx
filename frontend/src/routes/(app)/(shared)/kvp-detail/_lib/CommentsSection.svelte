@@ -58,7 +58,7 @@
       <div class="form-field flex-1">
         <textarea
           class="form-field__control"
-          placeholder="Kommentar hinzufuegen..."
+          placeholder="Kommentar hinzufügen..."
           rows="3"
           bind:this={commentInput}
           required

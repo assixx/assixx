@@ -213,7 +213,7 @@ export async function addComment(
     const message =
       err instanceof Error ?
         err.message
-      : 'Fehler beim Hinzufuegen des Kommentars';
+      : 'Fehler beim hinzufügen des Kommentars';
     return { success: false, error: message };
   }
 }
