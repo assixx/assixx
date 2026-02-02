@@ -1,0 +1,2 @@
+# GitHub Linguist - Exclude from language statistics
+design-system/stories/** linguist-generated=true
