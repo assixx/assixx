@@ -18,10 +18,10 @@ body:not(.loaded) * {
   cursor: default;
 
   margin-bottom: 6px;
-  border: 1px solid rgb(255 255 255 / 5%);
+  border: var(--glass-border);
   border-radius: 8px;
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   padding: 3px 12px;
 }
 
@@ -35,8 +35,8 @@ body:not(.loaded) * {
  * WHY: Visual feedback on hover - slides right and brightens */
 .compact-item:hover {
   transform: translateX(4px);
-  border-color: rgb(255 255 255 / 10%);
-  background: rgb(255 255 255 / 4%);
+  border-color: var(--color-glass-border);
+  background: var(--glass-bg-hover);
 }
 
 /* Item name with ellipsis for long text

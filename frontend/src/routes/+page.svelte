@@ -3,16 +3,24 @@
 
   import { resolve } from '$app/paths';
 
+  import {
+    isDark,
+    forceDark,
+    restoreUserTheme,
+  } from '$lib/stores/theme.svelte';
+
   import '../styles/index.css';
 
   // Modal state
   let showSignupModal: boolean = $state(false);
 
-  // Add class to body for landing page (disables global gradient)
+  // Always-dark page + body class for landing page (disables global gradient)
   onMount(() => {
+    forceDark();
     document.body.classList.add('landing-page-active');
     return () => {
       document.body.classList.remove('landing-page-active');
+      restoreUserTheme();
     };
   });
 
@@ -47,7 +55,9 @@
           onclick={handleReloadPage}
         >
           <img
-            src="/images/logo.png"
+            src={isDark() ?
+              '/images/logo_darkmode.png'
+            : '/images/logo_lightmode.png'}
             alt="Assixx Logo"
             class="logo"
           />

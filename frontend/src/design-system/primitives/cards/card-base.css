@@ -19,12 +19,12 @@
   box-shadow: var(--shadow-md);
 
   /* Glassmorphism */
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: var(--glass-card-border);
   border-radius: var(
     --radius-xl
   ); /* 12px - Consistent with all card components */
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   background-clip: border-box;
   padding: var(--spacing-6); /* 24px */
 
@@ -38,7 +38,7 @@
 /* Card Header */
 .card__header {
   margin-bottom: var(--spacing-4);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
   padding-bottom: var(--spacing-3);
 }
 
@@ -58,7 +58,7 @@
 /* Card Footer */
 .card__footer {
   margin-top: var(--spacing-4);
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
   padding-top: var(--spacing-3);
 }
 
@@ -71,7 +71,7 @@
 .card--clickable:hover {
   /* Exakt wie admin-dashboard .compact-card:hover */
   border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
 }
 
 /* No Margin Variant (for grids) */

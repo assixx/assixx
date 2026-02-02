@@ -16,6 +16,9 @@
 /* Tailwind v4 via @tailwindcss/vite */
 @import 'tailwindcss';
 
+/* Dark mode: class-based toggle via .dark on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* FontAwesome - Icons (fas, far, fab classes) */
 @import './styles/lib/fontawesome.min.css';
 
@@ -162,6 +165,7 @@
    References primitive tokens from @theme above
    Defines: --color-primary, --font-primary, --glass-* etc.
    ============================================================ */
+@import './design-system/variables-light.css';
 @import './design-system/variables-dark.css';
 
 /* ============================================================

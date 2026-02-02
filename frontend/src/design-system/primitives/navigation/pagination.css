@@ -33,10 +33,10 @@
 
   transition: all 0.2s ease;
   cursor: pointer;
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   padding: var(--spacing-2) var(--spacing-4);
   color: var(--color-text-primary);
@@ -47,7 +47,7 @@
 
 .pagination__btn:hover:not(:disabled) {
   border-color: var(--color-primary);
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 }
 
 .pagination__btn:disabled {
@@ -84,7 +84,7 @@
 }
 
 .pagination__page:hover:not(.pagination__page--active) {
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
   color: var(--color-primary);
 }
 

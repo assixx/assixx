@@ -56,10 +56,10 @@
   margin: 0;
 
   /* Glassmorphism */
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl); /* 12px */
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
 
   /* Spacing */
   padding: 10px var(--spacing-4); /* 10px 16px */
@@ -68,7 +68,7 @@
 /* Hover state */
 .choice-card:hover {
   border-color: rgb(33 150 243 / 30%);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 }
 
 /* Active/Checked state - when input is checked */
@@ -104,7 +104,7 @@
   margin-right: var(--spacing-3); /* 12px gap from text */
 
   /* Base styling */
-  border: 2px solid rgb(255 255 255 / 30%);
+  border: 2px solid var(--color-glass-border-hover);
   background: transparent;
 
   /* Size */

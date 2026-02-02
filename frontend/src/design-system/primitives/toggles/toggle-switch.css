@@ -80,10 +80,11 @@
     border-color var(--duration-normal) var(--ease-standard),
     box-shadow var(--duration-normal) var(--ease-standard);
   box-shadow: var(--shadow-glass);
+  border: 1px solid var(--color-glass-border);
   border-radius: 14px; /* Half of height for perfect circle */
 
   /* Glass Track - OFF State */
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 
   width: 48px;
   height: 28px;
@@ -101,7 +102,7 @@
     background var(--duration-normal) var(--ease-standard);
   box-shadow:
     0 2px 4px rgb(0 0 0 / 20%),
-    inset 0 1px 1px rgb(255 255 255 / 80%);
+    0 0 0 1px rgb(0 0 0 / 6%);
   border-radius: 50%;
 
   /* Glass Thumb */
@@ -154,7 +155,7 @@
   /* Subtle glow on hover */
   box-shadow:
     var(--shadow-glass),
-    0 0 8px rgb(255 255 255 / 10%);
+    0 0 8px var(--color-glass-border);
 }
 
 .toggle-switch__input:checked:hover + .toggle-switch__slider {

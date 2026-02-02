@@ -231,13 +231,13 @@
 
 .entry-form-modal form::-webkit-scrollbar-track {
   border-radius: 5px;
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 .entry-form-modal form::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 5px;
-  background: rgb(255 255 255 / 10%);
+  background: var(--color-glass-border);
   background-clip: padding-box;
 }
 
@@ -410,7 +410,7 @@
 
 .entry-detail-header {
   margin-bottom: var(--spacing-6);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
   padding-bottom: var(--spacing-4);
 }
 
@@ -466,7 +466,7 @@
 }
 
 .entry-tags .badge {
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: 20px;
 
   background: rgb(255 255 255 / 5%);
@@ -593,7 +593,7 @@
 /* Attachment Display in Entry - Compact Design */
 .entry-attachments {
   margin-top: var(--spacing-6);
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
   padding-top: var(--spacing-6);
 }
 
@@ -781,7 +781,7 @@
 .zoom-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
-  background: rgb(255 255 255 / 10%);
+  background: var(--color-glass-border);
 }
 
 .zoom-btn:active {

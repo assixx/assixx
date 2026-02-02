@@ -161,6 +161,7 @@
           {
             "ignoreAtRules": [
               "layer",
+              "custom-variant",
               "tailwind",
               "apply",
               "theme",
@@ -177,6 +178,7 @@
           {
             "ignoreAtRules": [
               "layer",
+              "custom-variant",
               "tailwind",
               "apply",
               "theme",

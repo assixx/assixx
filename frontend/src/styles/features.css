@@ -55,12 +55,12 @@
  */
 .addon-card {
   padding: 24px;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: 12px;
 
   text-align: center;
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   backdrop-filter: blur(10px);
 
   transition: all 0.2s ease;
@@ -68,8 +68,8 @@
 
 .addon-card:hover {
   transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 4%);
+  border-color: var(--color-glass-border-hover);
+  background: var(--glass-bg-hover);
   box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
 }
 
@@ -120,19 +120,19 @@
 
   width: 32px;
   height: 32px;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: 50%;
 
   color: var(--color-text-primary);
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 
   transition: all 0.2s ease;
 }
 
 .addon-btn:hover {
   border-color: var(--color-primary);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 }
 
 .addon-value {
@@ -157,7 +157,7 @@
   left: var(--sidebar-width, 250px);
 
   padding: 16px 24px;
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
 
   background: rgb(20 20 30 / 95%);
   backdrop-filter: blur(20px);

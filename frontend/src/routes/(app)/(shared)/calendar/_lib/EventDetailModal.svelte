@@ -207,9 +207,9 @@
     gap: 15px;
     margin: 20px 0;
     padding: 24px;
-    border: 1px solid rgb(255 255 255 / 8%);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 2%);
+    background: var(--glass-bg);
   }
 
   /* Attendee list */
@@ -225,7 +225,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 15px;
-    border: 1px solid rgb(255 255 255 / 8%);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
     background: rgb(255 255 255 / 3%);
   }

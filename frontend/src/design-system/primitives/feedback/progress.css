@@ -23,11 +23,11 @@
   backdrop-filter: blur(10px);
 
   /* Appearance */
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
   /* Glassmorphism */
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   /* Size */
   width: 100%;
@@ -173,8 +173,8 @@
 .progress__bar--neutral {
   background: linear-gradient(
     90deg,
-    rgb(255 255 255 / 30%) 0%,
-    rgb(255 255 255 / 50%) 100%
+    var(--color-glass-border-hover) 0%,
+    var(--color-glass-border) 100%
   );
 }
 
@@ -282,7 +282,7 @@
 
 .progress-circle__bg {
   fill: none;
-  stroke: rgb(255 255 255 / 10%);
+  stroke: var(--color-glass-border);
   stroke-width: 8;
 }
 

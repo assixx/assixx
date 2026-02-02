@@ -43,10 +43,10 @@
   cursor: pointer;
 
   /* Glassmorphism - subtle base state */
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: 12px;
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   /* Spacing - more generous than default choice-card */
   padding: 24px;
@@ -56,15 +56,15 @@
 .plan-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgb(0 0 0 / 40%);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
+  border-color: var(--color-glass-border-hover);
+  background: var(--glass-bg-active);
 }
 
 /* Selected state - strong primary glow */
 .plan-card:has(.choice-card__input:checked) {
   box-shadow:
     0 0 30px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
+    inset 0 1px 0 var(--color-glass-border);
   border-color: rgb(33 150 243 / 60%);
   background: rgb(33 150 243 / 12%);
 }
@@ -238,7 +238,7 @@
   right: 12px;
   border-radius: var(--radius-md);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   padding: 4px 8px;
   content: 'Nicht verfügbar';
