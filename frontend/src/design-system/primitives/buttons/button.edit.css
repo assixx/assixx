@@ -20,7 +20,7 @@
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
   /* Colors */
-  color: var(--color-white);
+  color: var(--color-text-primary);
 
   /* Shadow */
 }
@@ -33,7 +33,7 @@
     rgb(245 158 11 / 25%)
   ); /* Intensiver */
 
-  color: var(--color-white);
+  color: var(--color-text-primary);
 }
 
 /* Active/Pressed State */
@@ -77,7 +77,7 @@
   animation: spin 0.6s linear infinite;
   margin-top: -8px;
   margin-left: -8px;
-  border: 2px solid var(--color-white);
+  border: 2px solid var(--color-text-primary);
   border-top-color: transparent;
   border-radius: 50%;
 

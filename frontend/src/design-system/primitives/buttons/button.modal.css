@@ -33,7 +33,7 @@
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
   /* Text */
-  color: rgb(255 255 255 / 95%);
+  color: var(--color-white);
 }
 
 /* Hover State - Intensify Gradient */
@@ -68,10 +68,10 @@
   box-shadow: none;
 
   /* Muted border */
-  border-color: rgb(255 255 255 / 20%);
+  border-color: var(--color-glass-border-hover);
 
   /* Reduced opacity */
-  color: rgb(255 255 255 / 30%);
+  color: var(--color-text-muted);
 }
 
 /* Loading State */

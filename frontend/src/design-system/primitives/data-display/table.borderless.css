@@ -16,5 +16,5 @@
 
 /* Optional: Add subtle separator between rows */
 .data-table--borderless.data-table--separated tbody tr:not(:last-child) {
-  border-bottom: 1px solid rgb(255 255 255 / 3%);
+  border-bottom: 1px solid var(--glass-bg);
 }

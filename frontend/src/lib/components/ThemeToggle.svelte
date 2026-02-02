@@ -2,25 +2,22 @@
   /**
    * ThemeToggle - Neumorphic Day/Night toggle switch
    * Sliding knob in recessed track with sun/moon icons.
-   * Dark mode = default.
+   * Dark mode = default. Wired to theme store for actual switching.
    */
+  import { isDark as getIsDark, toggleTheme } from '$lib/stores/theme.svelte';
 
-  let isDark = $state(true);
-
-  /** Toggle visual state - actual theme logic will be wired here later */
-  function toggle(): void {
-    isDark = !isDark;
-  }
+  /** Reactive derived state from theme store */
+  const dark = $derived(getIsDark());
 </script>
 
 <button
   type="button"
   class="theme-toggle"
-  class:is-light={!isDark}
-  onclick={toggle}
+  class:is-light={!dark}
+  onclick={toggleTheme}
   role="switch"
-  aria-checked={!isDark}
-  aria-label={isDark ? 'Zu Light Mode wechseln' : 'Zu Dark Mode wechseln'}
+  aria-checked={!dark}
+  aria-label={dark ? 'Zu Light Mode wechseln' : 'Zu Dark Mode wechseln'}
 >
   <span class="theme-toggle__track">
     <!-- Lucide sun icon (left side) -->
@@ -82,9 +79,7 @@
     border-radius: 17px;
     border: none;
     background: rgb(0 3 8 / 50%);
-    box-shadow:
-      inset 0 0 0 rgb(255 249 249 / 59%),
-      inset 0 -1px 0 rgb(255 255 255 / 10%);
+    box-shadow: inset 0 -1px rgba(255, 255, 255, 0.203);
     transition:
       background 400ms ease,
       box-shadow 400ms ease;
@@ -173,6 +168,14 @@
   }
 
   /* ---- Light mode state ---- */
+  .theme-toggle.is-light .theme-toggle__track {
+    background: var(--color-icon-primary);
+    box-shadow:
+      inset 0 3px 6px rgb(0 0 0 / 40%),
+      inset 0 1px 2px rgb(0 0 0 / 30%),
+      inset 0 -1px 1px rgb(255 255 255 / 10%);
+  }
+
   .theme-toggle.is-light .theme-toggle__track::before,
   .theme-toggle.is-light .theme-toggle__track::after {
     opacity: 0;
@@ -189,12 +192,6 @@
 
   .theme-toggle.is-light .theme-toggle__knob {
     transform: translateX(45px);
-    background: linear-gradient(145deg, #555 0%, #2a2a2a 100%);
-    box-shadow:
-      0 3px 7px rgb(0 0 0 / 35%),
-      0 1px 3px rgb(0 0 0 / 20%),
-      inset 0 2px 4px rgb(255 255 255 / 15%),
-      inset 0 -2px 3px rgb(0 0 0 / 30%);
   }
 
   .theme-toggle:focus-visible .theme-toggle__track {

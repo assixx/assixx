@@ -44,6 +44,20 @@
     </style>
     <script>
       (function () {
+        // FOUC Prevention: Apply theme before first paint
+        // Default is dark (html has class="dark"). Remove if user chose light.
+        // Landing, login, signup are ALWAYS dark - never remove dark class there.
+        var path = window.location.pathname;
+        if (path === '/' || path === '/login' || path === '/signup') {
+          // Always-dark pages: keep dark class, skip theme check
+        } else {
+          var theme = localStorage.getItem('theme');
+          if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+
+        // Font loading detection
         if (
           document.fonts &&
           document.fonts.check('1em "Material Symbols Outlined"')

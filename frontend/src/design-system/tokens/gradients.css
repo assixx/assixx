@@ -56,6 +56,17 @@
 
   /* ========== BACKGROUND GRADIENTS ========== */
 
+  /* Body background - Light mode: subtle warm gradient */
+  --gradient-body-bg: linear-gradient(
+    180deg,
+    var(--color-white) 0%,
+    rgb(0 142 255 / 3%) 50%,
+    var(--color-gray-50) 100%
+  );
+}
+
+/* ========== DARK MODE GRADIENT OVERRIDES ========== */
+html.dark {
   /* Body background - Dramatic dark gradient */
   --gradient-body-bg: linear-gradient(
     5deg,

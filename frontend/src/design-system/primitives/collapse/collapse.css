@@ -100,13 +100,13 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
   padding: var(--spacing-4);
 }
 
 .collapse--card:hover {
-  border-color: rgb(255 255 255 / 30%);
-  background: rgb(255 255 255 / 8%);
+  border-color: var(--color-glass-border-hover);
+  background: var(--color-glass-border);
 }
 
 .collapse--card .collapse__body {
@@ -126,7 +126,7 @@
 /* Filled variant */
 .collapse--filled {
   border-radius: var(--radius-md);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
   padding: var(--spacing-3) var(--spacing-4);
 }
 
@@ -194,7 +194,7 @@
 
 .collapse__spinner {
   animation: spin 0.8s linear infinite;
-  border: 3px solid rgb(255 255 255 / 20%);
+  border: 3px solid var(--color-glass-border-hover);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   width: 24px;

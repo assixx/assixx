@@ -5,6 +5,11 @@
   import { goto, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import {
+    isDark,
+    forceDark,
+    restoreUserTheme,
+  } from '$lib/stores/theme.svelte';
   import { showInfoAlert } from '$lib/stores/toast';
   import { getTokenManager } from '$lib/utils/token-manager';
 
@@ -86,12 +91,15 @@
     }
   }
 
-  // onMount + setTimeout(0) ensures execution in next event loop tick
-  // This guarantees router is fully initialized after hydration completes
+  // Always-dark page + URL parameter check after hydration
   onMount(() => {
+    forceDark();
     setTimeout(() => {
       checkForMessages();
     }, 0);
+    return () => {
+      restoreUserTheme();
+    };
   });
 
   // =============================================================================
@@ -284,7 +292,9 @@
         }}
       >
         <img
-          src="/images/logo.png"
+          src={isDark() ?
+            '/images/logo_darkmode.png'
+          : '/images/logo_lightmode.png'}
           alt="Assixx Logo"
           class="login-logo"
         />

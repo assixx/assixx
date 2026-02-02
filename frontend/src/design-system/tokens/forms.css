@@ -13,17 +13,17 @@
   --form-field-text: var(--color-text-primary);
   --form-field-placeholder: var(--color-text-placeholder);
   --form-field-helper: var(--color-text-secondary);
-  --form-field-disabled-text: rgb(255 255 255 / 60%);
+  --form-field-disabled-text: rgb(0 0 0 / 40%);
 
   /* Hintergründe */
   --form-field-bg: var(--glass-form-bg);
   --form-field-bg-hover: var(--glass-form-bg-hover);
   --form-field-bg-focus: var(--glass-form-bg-focus);
-  --form-field-bg-disabled: rgb(255 255 255 / 4%);
+  --form-field-bg-disabled: rgb(0 0 0 / 4%);
 
   /* Rahmen & Ringe */
   --form-field-border: var(--glass-form-border);
-  --form-field-border-hover: 1px solid rgb(255 255 255 / 20%);
+  --form-field-border-hover: 1px solid rgb(0 0 0 / 15%);
   --form-field-border-focus: var(--glass-form-border-focus);
   --form-field-border-error: 1px solid var(--color-danger);
   --form-field-border-success: 1px solid var(--color-success);
@@ -46,4 +46,11 @@
   --form-field-text-error: var(--color-danger);
   --form-field-text-success: var(--color-success);
   --form-field-text-warning: var(--color-warning);
+}
+
+/* ========== DARK MODE FORM OVERRIDES ========== */
+html.dark {
+  --form-field-disabled-text: rgb(255 255 255 / 60%);
+  --form-field-bg-disabled: rgb(255 255 255 / 4%);
+  --form-field-border-hover: 1px solid rgb(255 255 255 / 20%);
 }

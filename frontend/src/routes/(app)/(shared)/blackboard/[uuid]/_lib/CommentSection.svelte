@@ -161,6 +161,6 @@
 <style>
   .comment-date {
     font-size: 0.85rem;
-    color: rgb(255 255 255 / 50%);
+    color: var(--text-muted);
   }
 </style>

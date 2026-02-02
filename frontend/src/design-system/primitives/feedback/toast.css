@@ -111,15 +111,15 @@
   box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
 
   /* Appearance */
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-bottom: none; /* Progress bar replaces bottom border */
   border-radius: var(--radius-xl);
 
-  /* Glassmorphism */
+  /* Glassmorphism - light mode */
   background: linear-gradient(
     135deg,
-    rgb(30 30 40 / 95%) 0%,
-    rgb(20 20 30 / 95%) 100%
+    rgb(255 255 255 / 95%) 0%,
+    rgb(245 245 250 / 95%) 100%
   );
   padding: var(--spacing-4) var(--spacing-5);
 
@@ -217,7 +217,7 @@
   left: 0;
 
   /* Appearance - no border-radius needed, parent clip-path handles it */
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   /* Size */
   width: 100%;
@@ -253,10 +253,10 @@
 .toast__action {
   transition: background var(--duration-fast) var(--ease-standard);
   cursor: pointer;
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-md);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 
   padding: 4px 12px;
   color: var(--color-text-primary);
@@ -266,7 +266,7 @@
 }
 
 .toast__action:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--color-glass-border);
 }
 
 /* ========== VARIANT STYLES ========== */
@@ -479,4 +479,14 @@
 .toast:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* ========== DARK MODE OVERRIDES ========== */
+
+html.dark .toast {
+  background: linear-gradient(
+    135deg,
+    rgb(30 30 40 / 95%) 0%,
+    rgb(20 20 30 / 95%) 100%
+  );
 }

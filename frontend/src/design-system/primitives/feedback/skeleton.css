@@ -24,9 +24,9 @@
   /* Appearance */
   background: linear-gradient(
     90deg,
-    rgb(255 255 255 / 5%) 0%,
-    rgb(255 255 255 / 10%) 50%,
-    rgb(255 255 255 / 5%) 100%
+    var(--glass-bg-hover) 0%,
+    var(--glass-bg-active) 50%,
+    var(--glass-bg-hover) 100%
   );
   background-size: 200% 100%;
   pointer-events: none;
@@ -242,16 +242,16 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: var(--spacing-4);
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  border-bottom: 1px solid var(--glass-bg-hover);
 
   padding: var(--spacing-3);
 }
 
 /* Card skeleton */
 .skeleton-card {
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   padding: var(--spacing-5);
 }
 
@@ -301,7 +301,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(255 255 255 / 10%),
+    var(--glass-bg-active),
     transparent
   );
   content: '';

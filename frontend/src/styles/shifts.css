@@ -22,11 +22,11 @@
   margin-bottom: var(--spacing-6);
   box-shadow:
     0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 5%);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
+    inset 0 1px 0 var(--color-glass-border);
+  border: var(--glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
   padding: var(--spacing-6);
 }
 
@@ -74,7 +74,7 @@
   margin-bottom: var(--spacing-8);
   box-shadow:
     0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 5%);
+    inset 0 1px 0 var(--color-glass-border);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
@@ -126,7 +126,7 @@
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 4%);
+  background: var(--glass-bg-hover);
   padding: var(--spacing-4) var(--spacing-1);
 
   color: var(--primary-color);
@@ -153,7 +153,7 @@
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
   padding: var(--spacing-3);
 
   min-height: 85px;
@@ -202,7 +202,7 @@
   position: relative;
   backdrop-filter: blur(5px);
   cursor: pointer;
-  border: 1px solid rgb(255 255 255 / 8%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
@@ -230,14 +230,14 @@
 /* Locked shift cell - read-only mode (plan exists, not in edit mode) */
 .shift-cell.locked {
   cursor: not-allowed;
-  border-color: rgb(255 255 255 / 10%);
+  border-color: var(--color-glass-border);
   background:
     repeating-linear-gradient(
       45deg,
       transparent,
       transparent 10px,
-      rgb(255 255 255 / 3%) 10px,
-      rgb(255 255 255 / 3%) 20px
+      var(--glass-bg-hover) 10px,
+      var(--glass-bg-hover) 20px
     ),
     var(--glass-bg);
 }
@@ -245,14 +245,14 @@
 .shift-cell.locked:hover {
   cursor: not-allowed;
   box-shadow: none; /* Override hover effect - no visual feedback when locked */
-  border-color: rgb(255 255 255 / 10%);
+  border-color: var(--color-glass-border);
   background:
     repeating-linear-gradient(
       45deg,
       transparent,
       transparent 10px,
-      rgb(255 255 255 / 3%) 10px,
-      rgb(255 255 255 / 3%) 20px
+      var(--glass-bg-hover) 10px,
+      var(--glass-bg-hover) 20px
     ),
     var(--glass-bg);
 }
@@ -268,7 +268,7 @@
 /* Week 2 cells for Kontischicht mode (NO inline styles - all styling via CSS) */
 .shift-cell.week-2-cell {
   backdrop-filter: blur(5px);
-  border: 1px solid rgb(255 255 255 / 8%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
@@ -307,7 +307,7 @@
   flex-direction: column;
   backdrop-filter: blur(10px);
   margin-top: 2px;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+  box-shadow: inset 0 1px 0 var(--color-glass-border);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
@@ -338,10 +338,10 @@
 .shift-info-textarea {
   flex: 1;
   backdrop-filter: blur(5px);
-  border: 1px solid rgb(255 255 255 / 8%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
   padding: var(--spacing-3);
 
   min-height: 300px;
@@ -400,7 +400,7 @@
 .employee-sidebar {
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-sm);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border: var(--glass-border);
   border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
@@ -409,7 +409,7 @@
 
 .shift-sidebar-title {
   margin-bottom: var(--spacing-6);
-  color: rgb(255 255 255);
+  color: var(--color-text-primary);
   font-weight: 500;
 
   font-size: 17px;
@@ -636,17 +636,17 @@
   cursor: grab;
 
   margin: 5px 0;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
   padding: 8px 12px;
   user-select: none;
 }
 
 .employee-item:hover {
   transform: translateX(2px);
-  background: rgb(255 255 255 / 8%);
+  background: var(--glass-bg-active);
 }
 
 .employee-item.dragging {
@@ -677,7 +677,7 @@
 }
 
 .drop-zone {
-  border: 2px dashed rgb(255 255 255 / 20%);
+  border: 2px dashed var(--color-glass-border-hover);
   border-top: none;
   border-radius: 0 0 4px 4px;
 
@@ -780,17 +780,17 @@
   align-items: center;
   gap: var(--spacing-4);
   backdrop-filter: blur(10px);
-  border: 1px solid rgb(255 255 255 / 8%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 
   padding: var(--spacing-4);
 }
 
 .divider {
   margin: 0 var(--spacing-2);
-  background: rgb(255 255 255 / 10%);
+  background: var(--accent-color);
   width: 1px;
   height: 40px;
 }
@@ -1052,7 +1052,7 @@
   margin-top: var(--spacing-8);
   box-shadow:
     0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 5%);
+    inset 0 1px 0 var(--color-glass-border);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
