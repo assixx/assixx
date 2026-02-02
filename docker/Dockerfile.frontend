@@ -81,6 +81,7 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 # Re-declare ARG for this stage (ARG scope is per-stage)
 ARG NODE_VERSION=24.13.0-alpine3.22
 FROM node:${NODE_VERSION} AS production
+LABEL org.opencontainers.image.authors="Assixx"
 
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
