@@ -16,22 +16,22 @@
 Assixx nutzt PostgreSQL 17 als zentrale Datenbank mit:
 
 - **109 Tabellen** (84 mit RLS, 25 global)
-- **89 RLS Policies** fuer Multi-Tenant-Isolation
+- **89 RLS Policies** für Multi-Tenant-Isolation
 - **70+ Trigger** (KVP Rate Limiting, Admin-only Comments, Soft-Delete, etc.)
-- **Monatliche Partitionierung** fuer `audit_trail`
+- **Monatliche Partitionierung** für `audit_trail`
 
 ### Problem: Kein Migration-Tooling
 
-Ein internes Audit (2026-01-27) hat 6 kritische Schwaechen im Migration-Workflow identifiziert:
+Ein internes Audit (2026-01-27) hat 6 kritische Schwächen im Migration-Workflow identifiziert:
 
-| #   | Problem                                                                                  | Schwere  |
-| --- | ---------------------------------------------------------------------------------------- | -------- |
-| 1   | **Kein Migration Runner** - Manuelle `docker cp` + `psql` Ausfuehrung                    | Kritisch |
-| 2   | **Keine Rollback-Strategie** - Kein `down()`, kein Undo                                  | Kritisch |
-| 3   | **Keine Tracking-Tabelle** - Unklar welche Migrationen auf welcher DB ausgefuehrt wurden | Kritisch |
-| 4   | **Baseline nicht idempotent** - 676KB SQL-Datei ohne `IF NOT EXISTS` Guards              | Hoch     |
-| 5   | **Seeds mit Schema gemischt** - `002_seed_data.sql` neben Schema-Migrationen             | Mittel   |
-| 6   | **Nummerierungskollision** - Drei Dateien mit Prefix `003-*`                             | Mittel   |
+| #   | Problem                                                                                 | Schwere  |
+| --- | --------------------------------------------------------------------------------------- | -------- |
+| 1   | **Kein Migration Runner** - Manuelle `docker cp` + `psql` Ausführung                    | Kritisch |
+| 2   | **Keine Rollback-Strategie** - Kein `down()`, kein Undo                                 | Kritisch |
+| 3   | **Keine Tracking-Tabelle** - Unklar welche Migrationen auf welcher DB ausgeführt wurden | Kritisch |
+| 4   | **Baseline nicht idempotent** - 676KB SQL-Datei ohne `IF NOT EXISTS` Guards             | Hoch     |
+| 5   | **Seeds mit Schema gemischt** - `002_seed_data.sql` neben Schema-Migrationen            | Mittel   |
+| 6   | **Nummerierungskollision** - Drei Dateien mit Prefix `003-*`                            | Mittel   |
 
 ### Bisheriger Workflow (manuell)
 
@@ -47,8 +47,8 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/migration.sql
 
 **Risiken:**
 
-- Migrationen koennen doppelt ausgefuehrt werden (kein idempotency-Schutz)
-- Kein Weg zurueck bei fehlerhafter Migration
+- Migrationen können doppelt ausgeführt werden (kein idempotency-Schutz)
+- Kein Weg zurück bei fehlerhafter Migration
 - Bei mehreren Entwicklern: Keine Garantie dass alle Migrationen in korrekter Reihenfolge laufen
 - Customer Fresh-Install hat keine Garantie dass Schema-Stand = Migrations-Stand
 
@@ -59,19 +59,19 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/migration.sql
 | `app_user`    | Backend-Verbindung (Runtime) | Ja (FORCE ROW LEVEL SECURITY) | Nein (nur SELECT/INSERT/UPDATE/DELETE) |
 | `assixx_user` | Migrationen, Admin (DevOps)  | Nein (BYPASSRLS)              | Ja (CREATE, ALTER, DROP, GRANT)        |
 
-Migrationen MUESSEN als `assixx_user` laufen - `app_user` kann keine Tabellen erstellen, keine RLS Policies anlegen, keine GRANTs vergeben.
+Migrationen MÜSSEN als `assixx_user` laufen - `app_user` kann keine Tabellen erstellen, keine RLS Policies anlegen, keine GRANTs vergeben.
 
 ---
 
 ## Decision Drivers
 
-1. **PostgreSQL-nativ** - Tool muss mit Raw SQL arbeiten (RLS, Trigger, Partitioning sind nicht ORM-faehig)
+1. **PostgreSQL-nativ** - Tool muss mit Raw SQL arbeiten (RLS, Trigger, Partitioning sind nicht ORM-fähig)
 2. **TypeScript** - Konsistent mit Projekt-Stack
 3. **Leichtgewichtig** - Keine Runtime-Dependency, kein Code-Generator, kein Schema-Lock
-4. **Rollback-Faehigkeit** - `down()` Funktion fuer jede Migration
-5. **Tracking** - Welche Migrationen wurden auf welcher DB ausgefuehrt?
-6. **Doppler-Kompatibilitaet** - Secrets werden ueber Doppler injected, nicht in `.env` Dateien
-7. **KISS** - Minimale Komplexitaet, kein Overkill
+4. **Rollback-Fähigkeit** - `down()` Funktion für jede Migration
+5. **Tracking** - Welche Migrationen wurden auf welcher DB ausgeführt?
+6. **Doppler-Kompatibilität** - Secrets werden über Doppler injected, nicht in `.env` Dateien
+7. **KISS** - Minimale Komplexität, kein Overkill
 
 ---
 
@@ -82,18 +82,18 @@ Migrationen MUESSEN als `assixx_user` laufen - `app_user` kann keine Tabellen er
 **Pros:**
 
 - Keine neue Dependency
-- Volle Kontrolle ueber jeden SQL-Befehl
+- Volle Kontrolle über jeden SQL-Befehl
 - Zero Learning Curve
 
 **Cons:**
 
-- **Kein Tracking** - Unbekannt welche Migrationen wo ausgefuehrt wurden
+- **Kein Tracking** - Unbekannt welche Migrationen wo ausgeführt wurden
 - **Kein Rollback** - Fehler erfordern manuelle Korrektur
-- **Fehleranfaellig** - Doppelte Ausfuehrung, falsche Reihenfolge, vergessene Migrationen
+- **Fehleranfällig** - Doppelte Ausführung, falsche Reihenfolge, vergessene Migrationen
 - **Nicht skalierbar** - Bei mehreren Entwicklern oder Kunden-Instanzen unhaltbar
 - **Tote Scripts** - `backend/package.json` hatte `db:migrate` und `db:seed` Scripts die auf nicht-existierende Dateien zeigten
 
-**Verdict:** REJECTED - Audit hat die Schwaechen klar dokumentiert
+**Verdict:** REJECTED - Audit hat die Schwächen klar dokumentiert
 
 ### Option B: Prisma Migrate
 
@@ -101,15 +101,15 @@ Migrationen MUESSEN als `assixx_user` laufen - `app_user` kann keine Tabellen er
 
 - Type-safe Schema-Definition
 - Auto-generierte Migrationen
-- Populaer, grosse Community
+- Populär, grosse Community
 
 **Cons:**
 
 - **Massive Runtime-Dependency** - Prisma Client als Runtime-Dependency im Backend
-- **Schema-Lock** - Prisma will das Schema "besitzen" und generiert Code dafuer
-- **RLS nicht unterstuetzt** - Prisma kann keine `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` generieren
-- **Trigger nicht unterstuetzt** - `CREATE TRIGGER` ist nicht im Prisma-Schema
-- **Partitioning nicht unterstuetzt** - `PARTITION BY RANGE` ist nicht modellierbar
+- **Schema-Lock** - Prisma will das Schema "besitzen" und generiert Code dafür
+- **RLS nicht unterstützt** - Prisma kann keine `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` generieren
+- **Trigger nicht unterstützt** - `CREATE TRIGGER` ist nicht im Prisma-Schema
+- **Partitioning nicht unterstützt** - `PARTITION BY RANGE` ist nicht modellierbar
 - **ENUM-Handling** - Prisma hat eigene ENUM-Abstraktion die mit PostgreSQL ENUMs kollidiert
 - **Overkill** - Wir brauchen keinen Query Builder, wir haben `pg` + Raw SQL
 
@@ -121,28 +121,28 @@ Migrationen MUESSEN als `assixx_user` laufen - `app_user` kann keine Tabellen er
 
 - TypeScript-nativ
 - Migration Runner eingebaut
-- Kann Raw SQL ausfuehren
+- Kann Raw SQL ausführen
 
 **Cons:**
 
 - **Massive Runtime-Dependency** - TypeORM als ORM im Backend (wir nutzen `pg` direkt)
 - **Decorator-basiert** - Anderes Paradigma als unser Service-Layer
 - **Migration-Format** - Erwartet TypeORM Connection, nicht `DATABASE_URL`
-- **Overkill** - Wir nutzen 1% der Features (nur Migrations), zahlen 100% der Komplexitaet
+- **Overkill** - Wir nutzen 1% der Features (nur Migrations), zahlen 100% der Komplexität
 
-**Verdict:** REJECTED - ORM-Overhead fuer ein Raw-SQL-Projekt
+**Verdict:** REJECTED - ORM-Overhead für ein Raw-SQL-Projekt
 
 ### Option D: node-pg-migrate (EMPFOHLEN)
 
 **Pros:**
 
 - **PostgreSQL-exklusiv** - Kennt PostgreSQL-Features (ENUMs, Extensions, Schemas)
-- **Raw SQL via `pgm.sql()`** - Perfekt fuer RLS, Trigger, Partitioning, GRANTs
+- **Raw SQL via `pgm.sql()`** - Perfekt für RLS, Trigger, Partitioning, GRANTs
 - **TypeScript-nativ** - `-j ts` Flag, `tsx` als Runner (bereits installiert)
 - **Leichtgewichtig** - Dev-Dependency, keine Runtime-Auswirkung
 - **Tracking-Tabelle** - `pgmigrations` automatisch verwaltet
-- **UP/DOWN** - Rollback-Faehigkeit eingebaut
-- **Dry-Run** - `--dry-run` Flag zeigt was passieren wuerde
+- **UP/DOWN** - Rollback-Fähigkeit eingebaut
+- **Dry-Run** - `--dry-run` Flag zeigt was passieren würde
 - **`--fake`** - Bestehende DBs als "already migrated" markieren
 - **`DATABASE_URL`** - Standard-PostgreSQL Connection String
 - **UTC-Timestamps** - Verhindert Nummerierungskollisionen (kein `003-*` Problem mehr)
@@ -151,10 +151,10 @@ Migrationen MUESSEN als `assixx_user` laufen - `app_user` kann keine Tabellen er
 **Cons:**
 
 - Neue DevDependency (`node-pg-migrate` 8.x)
-- Wrapper-Script fuer Doppler noetig (`scripts/run-migrations.sh`)
-- Bestehende Migrationen muessen einmalig mit `--fake` registriert werden
+- Wrapper-Script für Doppler nötig (`scripts/run-migrations.sh`)
+- Bestehende Migrationen müssen einmalig mit `--fake` registriert werden
 
-**Verdict:** ACCEPTED - Perfekter Fit fuer PostgreSQL-nativen Stack
+**Verdict:** ACCEPTED - Perfekter Fit für PostgreSQL-nativen Stack
 
 ### Option E: Flyway / Liquibase
 
@@ -167,7 +167,7 @@ Migrationen MUESSEN als `assixx_user` laufen - `app_user` kann keine Tabellen er
 
 - **Java-Runtime** - Erfordert JVM im Docker-Container oder separaten Container
 - **Nicht TypeScript** - SQL oder XML/YAML Migrationen
-- **Docker-Overhead** - Zusaetzlicher Container oder JVM im bestehenden Container
+- **Docker-Overhead** - Zusätzlicher Container oder JVM im bestehenden Container
 - **Overkill** - Enterprise-Features die wir nicht brauchen
 
 **Verdict:** REJECTED - Java-Dependency in einem TypeScript/Node.js Stack
@@ -248,7 +248,7 @@ database/
 └── backups/                            ← pg_dump Backups
 
 scripts/
-├── run-migrations.sh                   ← DATABASE_URL Wrapper fuer Doppler
+├── run-migrations.sh                   ← DATABASE_URL Wrapper für Doppler
 └── run-seeds.sh                        ← Seed Runner (psql, assixx_user)
 ```
 
@@ -274,7 +274,7 @@ UTC-Timestamps sind einzigartig, selbst wenn mehrere Entwickler gleichzeitig Mig
 
 ### Migration-Pattern
 
-Jede Migration nutzt `pgm.sql()` fuer Raw SQL:
+Jede Migration nutzt `pgm.sql()` für Raw SQL:
 
 ```typescript
 import type { MigrationBuilder } from 'node-pg-migrate';
@@ -319,24 +319,24 @@ export function down(pgm: MigrationBuilder): void {
 3. **Trigger** - `CREATE TRIGGER ... EXECUTE FUNCTION ...` nur in Raw SQL
 4. **Partitioning** - `PARTITION BY RANGE` nicht im Builder
 5. **GRANTs** - `GRANT ... TO app_user` nicht im Builder
-6. **Konsistenz** - Ein Pattern fuer alles, nicht Builder + SQL gemischt
+6. **Konsistenz** - Ein Pattern für alles, nicht Builder + SQL gemischt
 
 ### Seeds vs. Migrationen
 
-| Aspekt         | Migrationen                   | Seeds                                 |
-| -------------- | ----------------------------- | ------------------------------------- |
-| **Pfad**       | `database/migrations/*.ts`    | `database/seeds/*.sql`                |
-| **Tool**       | `node-pg-migrate`             | `psql` (via `run-seeds.sh`)           |
-| **Tracking**   | `pgmigrations` Tabelle        | Kein Tracking (idempotent)            |
-| **Idempotenz** | Einmal ausfuehren             | Beliebig oft ausfuehrbar              |
-| **Inhalt**     | DDL (Schema-Aenderungen)      | DML (Konfigurationsdaten)             |
-| **Beispiel**   | `CREATE TABLE`, `ALTER TABLE` | `INSERT INTO features VALUES(...)`    |
-| **Rollback**   | `down()` Funktion             | Nicht noetig (ON CONFLICT DO NOTHING) |
+| Aspekt         | Migrationen                   | Seeds                                |
+| -------------- | ----------------------------- | ------------------------------------ |
+| **Pfad**       | `database/migrations/*.ts`    | `database/seeds/*.sql`               |
+| **Tool**       | `node-pg-migrate`             | `psql` (via `run-seeds.sh`)          |
+| **Tracking**   | `pgmigrations` Tabelle        | Kein Tracking (idempotent)           |
+| **Idempotenz** | Einmal ausführen              | Beliebig oft ausführbar              |
+| **Inhalt**     | DDL (Schema-Änderungen)       | DML (Konfigurationsdaten)            |
+| **Beispiel**   | `CREATE TABLE`, `ALTER TABLE` | `INSERT INTO features VALUES(...)`   |
+| **Rollback**   | `down()` Funktion             | Nicht nötig (ON CONFLICT DO NOTHING) |
 
 ### CLI Commands
 
 ```bash
-# Migration ausfuehren (alle pending)
+# Migration ausführen (alle pending)
 doppler run -- ./scripts/run-migrations.sh up
 
 # Rollback (letzte Migration)
@@ -351,7 +351,7 @@ doppler run -- pnpm run db:migrate:create add-employee-skills
 # Seeds anwenden
 doppler run -- pnpm run db:seed
 
-# Status pruefen
+# Status prüfen
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;"
 ```
@@ -363,25 +363,25 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 ### Positive
 
 - **Tracking-Tabelle** - `pgmigrations` dokumentiert exakt welche Migrationen auf welcher DB laufen
-- **Rollback** - `down()` ermoeglicht Ruecknahme fehlerhafter Migrationen
-- **Dry-Run** - Aenderungen vor Ausfuehrung pruefen
-- **Idempotente Seeds** - `ON CONFLICT DO NOTHING`, sicher mehrfach ausfuehrbar
+- **Rollback** - `down()` ermöglicht Rücknahme fehlerhafter Migrationen
+- **Dry-Run** - Änderungen vor Ausführung prüfen
+- **Idempotente Seeds** - `ON CONFLICT DO NOTHING`, sicher mehrfach ausführbar
 - **UTC-Timestamps** - Keine Nummerierungskollisionen mehr
 - **TypeScript** - Konsistent mit Backend-Stack, IDE-Support, Type Checking
 - **Zero Runtime-Impact** - `node-pg-migrate` ist DevDependency, nicht im Production Bundle
 - **`--fake`** - Bestehende DBs nahtlos einbinden
-- **Customer Fresh-Install** - Gleicher Migrations-Pfad fuer Dev und Production
+- **Customer Fresh-Install** - Gleicher Migrations-Pfad für Dev und Production
 
 ### Negative
 
-- **Einmalige Migration** - Bestehende DBs muessen einmalig `--fake` ausfuehren (Day 1 Procedure)
-- **Wrapper-Script** - `scripts/run-migrations.sh` noetig wegen Doppler (kein nativer `DATABASE_URL` Support ohne Env-Vars)
+- **Einmalige Migration** - Bestehende DBs müssen einmalig `--fake` ausführen (Day 1 Procedure)
+- **Wrapper-Script** - `scripts/run-migrations.sh` nötig wegen Doppler (kein nativer `DATABASE_URL` Support ohne Env-Vars)
 - **Lernkurve** - Team muss `node-pg-migrate` CLI lernen (minimal: `up`, `down`, `create`)
 
 ### Neutral
 
 - Archivierte SQL-Dateien bleiben in `database/migrations/archive/` erhalten
-- `customer/fresh-install/` bleibt unveraendert (wird weiterhin aus pg_dump generiert)
+- `customer/fresh-install/` bleibt unverändert (wird weiterhin aus pg_dump generiert)
 - Backend-Code ist nicht betroffen (nutzt weiterhin `pg` Pool direkt)
 
 ---
@@ -390,14 +390,14 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 
 Nicht alle PostgreSQL-Operationen sind reversibel:
 
-| Operation              | Reversibel? | `down()` Strategie                                       |
-| ---------------------- | ----------- | -------------------------------------------------------- |
-| `CREATE TABLE`         | Ja          | `DROP TABLE CASCADE`                                     |
-| `ADD COLUMN`           | Ja          | `DROP COLUMN`                                            |
-| `DROP TABLE`           | Nein        | Error werfen                                             |
-| `DROP COLUMN`          | Nein        | Error werfen (Daten verloren)                            |
-| `ALTER TYPE ADD VALUE` | Nein        | Error werfen (PostgreSQL Limitation)                     |
-| `Data Migration`       | Bedingt     | Error werfen (transformierte Daten nicht zuruecksetzbar) |
+| Operation              | Reversibel? | `down()` Strategie                                      |
+| ---------------------- | ----------- | ------------------------------------------------------- |
+| `CREATE TABLE`         | Ja          | `DROP TABLE CASCADE`                                    |
+| `ADD COLUMN`           | Ja          | `DROP COLUMN`                                           |
+| `DROP TABLE`           | Nein        | Error werfen                                            |
+| `DROP COLUMN`          | Nein        | Error werfen (Daten verloren)                           |
+| `ALTER TYPE ADD VALUE` | Nein        | Error werfen (PostgreSQL Limitation)                    |
+| `Data Migration`       | Bedingt     | Error werfen (transformierte Daten nicht zurücksetzbar) |
 
 **Konvention:** Irreversible Migrationen werfen in `down()` einen beschreibenden Error:
 
@@ -411,20 +411,20 @@ export function down(): void {
 
 ## Day 1 Procedure (Bestehende DB)
 
-Fuer Datenbanken die bereits alle Migrationen manuell ausgefuehrt haben:
+Für Datenbanken die bereits alle Migrationen manuell ausgeführt haben:
 
 ```bash
 # 1. Backup
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
     --format=custom --compress=9 > database/backups/pre-node-pg-migrate.dump
 
-# 2. Alle 15 Migrationen als "bereits ausgefuehrt" markieren
+# 2. Alle 15 Migrationen als "bereits ausgeführt" markieren
 doppler run -- ./scripts/run-migrations.sh up --fake
 
 # 3. Verifizieren
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;"
-# → 15 Eintraege
+# → 15 Einträge
 
 # 4. Seeds
 doppler run -- pnpm run db:seed
@@ -453,10 +453,10 @@ See: [ADR-014-implementation-plan.md](./ADR-014-implementation-plan.md)
 
 ## References
 
-- [DATABASE-MIGRATION-GUIDE.md](../../DATABASE-MIGRATION-GUIDE.md) - Vollstaendige Anleitung mit CLI Commands, Checklisten, Troubleshooting
+- [DATABASE-MIGRATION-GUIDE.md](../../DATABASE-MIGRATION-GUIDE.md) - Vollständige Anleitung mit CLI Commands, Checklisten, Troubleshooting
 - [node-pg-migrate GitHub](https://github.com/salsita/node-pg-migrate) - Offizielle Dokumentation
 - [node-pg-migrate Docs](https://salsita.github.io/node-pg-migrate/) - API Reference
-- [database/migrations/template.ts](../../../database/migrations/template.ts) - Referenz-Template fuer neue Migrationen
+- [database/migrations/template.ts](../../../database/migrations/template.ts) - Referenz-Template für neue Migrationen
 - [ADR Template](https://adr.github.io/) - ADR Format-Standard
 
 ## Related ADRs

@@ -27,10 +27,10 @@ export const POSITION_OPTIONS = [
 export const POSITION_DISPLAY_MAP: Record<string, string> = {
   bereichsleiter: 'Bereichsleiter',
   personalleiter: 'Personalleiter',
-  geschaeftsfuehrer: 'Geschäftsführer',
+  geschäftsführer: 'Geschäftsführer',
   werksleiter: 'Werksleiter',
   produktionsleiter: 'Produktionsleiter',
-  qualitaetsleiter: 'Qualitätsleiter',
+  qualitätsleiter: 'Qualitätsleiter',
   'it-leiter': 'IT-Leiter',
   vertriebsleiter: 'Vertriebsleiter',
   mitarbeiter: 'Mitarbeiter',

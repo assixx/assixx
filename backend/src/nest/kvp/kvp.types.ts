@@ -24,6 +24,7 @@ export interface DbSuggestion {
   title: string;
   description: string;
   category_id: number;
+  custom_category_id: number | null;
   org_level: 'company' | 'department' | 'area' | 'team';
   org_id: number;
   department_id: number | null;
@@ -150,12 +151,23 @@ export interface Category {
   icon?: string;
 }
 
+/** Category option for dropdown (includes source for global/custom distinction) */
+export interface CategoryOption {
+  id: number;
+  source: 'global' | 'custom';
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+}
+
 export interface KVPSuggestionResponse {
   id: number;
   uuid: string;
   title: string;
   description: string;
   categoryId: number;
+  customCategoryId: number | null;
   orgLevel: string;
   orgId: number;
   isShared: boolean;
@@ -234,6 +246,7 @@ export interface PaginatedSuggestionsResult {
 export interface SuggestionFilters {
   status: string | undefined;
   categoryId: number | undefined;
+  customCategoryId: number | undefined;
   priority: string | undefined;
   orgLevel: string | undefined;
   search: string | undefined;

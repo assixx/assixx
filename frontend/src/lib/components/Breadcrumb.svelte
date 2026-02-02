@@ -72,6 +72,7 @@
       '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
       '/shifts': { label: 'Schichtplan', icon: 'fa-clock' },
       '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
+      '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
       '/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
       '/survey-admin': { label: 'Umfragen', icon: 'fa-poll' },
       '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
@@ -128,6 +129,7 @@
       icon: 'fa-poll',
     },
     '/kvp-detail': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
+    '/kvp-categories': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
     '/blackboard-detail': {
       label: 'Schwarzes Brett',
       href: '/blackboard',

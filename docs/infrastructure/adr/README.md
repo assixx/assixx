@@ -37,6 +37,7 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 | [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)         | CI/CD Pipeline Hardening           | Accepted | 2026-01-26 |
 | [ADR-014](./ADR-014-database-migration-architecture.md)  | Database & Migration Architecture  | Accepted | 2026-01-27 |
 | [ADR-015](./ADR-015-shared-package-architecture.md)      | Shared Package Architecture & Plan | Accepted | 2026-01-30 |
+| [ADR-016](./ADR-016-tenant-customizable-seed-data.md)    | Tenant-Customizable Seed Data      | Accepted | 2026-02-02 |
 
 ## Template
 

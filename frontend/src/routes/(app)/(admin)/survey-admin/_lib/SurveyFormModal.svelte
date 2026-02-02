@@ -252,7 +252,7 @@
           </div>
           <p class="text-secondary mt-3 text-sm">
             <i class="fas fa-info-circle"></i>
-            Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie koennen
+            Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie können
             nicht sehen, wer geantwortet hat.
           </p>
         </div>
@@ -329,7 +329,7 @@
             Sichtbarkeit
           </span>
           <p class="mb-2 text-sm text-[var(--color-text-secondary)]">
-            Waehlen Sie keine Organisation fuer firmenweite Umfragen oder
+            wählen Sie keine Organisation für firmenweite Umfragen oder
             eine/mehrere spezifische Organisationen.
           </p>
         </div>
@@ -390,7 +390,7 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige
+            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
             Abteilungen.
           </span>
         </div>
@@ -429,7 +429,7 @@
           </select>
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur Abteilungen die nicht bereits
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
             durch Bereiche abgedeckt sind.
           </span>
         </div>
@@ -461,7 +461,7 @@
           <span class="form-field__message text-[var(--color-text-secondary)]">
             <i class="fas fa-info-circle mr-1"></i>
             Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
-            zugehoerige Teams aus.
+            zugehörige Teams aus.
           </span>
         </div>
 
@@ -500,7 +500,7 @@
             onclick={onaddquestion}
           >
             <i class="fas fa-plus"></i>
-            Frage hinzufuegen
+            Frage hinzufügen
           </button>
         </div>
       </div>

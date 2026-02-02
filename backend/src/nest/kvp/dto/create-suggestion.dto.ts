@@ -24,37 +24,53 @@ const PrioritySchema = z.enum(['low', 'normal', 'high', 'urgent'], {
 
 /**
  * Create suggestion request body schema
+ *
+ * Either categoryId (global) or customCategoryId (tenant-specific) must be provided.
  */
-export const CreateSuggestionSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(3, 'Title must be at least 3 characters')
-    .max(255, 'Title must not exceed 255 characters'),
-  description: z
-    .string()
-    .trim()
-    .min(10, 'Description must be at least 10 characters')
-    .max(5000, 'Description must not exceed 5000 characters'),
-  categoryId: IdSchema,
-  departmentId: IdSchema.optional().nullable(),
-  orgLevel: OrgLevelSchema,
-  orgId: z
-    .number()
-    .int()
-    .min(0, 'Organization ID must be a non-negative integer'),
-  priority: PrioritySchema.optional(),
-  expectedBenefit: z
-    .string()
-    .trim()
-    .max(500, 'Expected benefit cannot exceed 500 characters')
-    .optional(),
-  estimatedCost: z
-    .string()
-    .trim()
-    .max(100, 'Estimated cost cannot exceed 100 characters')
-    .optional(),
-});
+export const CreateSuggestionSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(3, 'Title must be at least 3 characters')
+      .max(255, 'Title must not exceed 255 characters'),
+    description: z
+      .string()
+      .trim()
+      .min(10, 'Description must be at least 10 characters')
+      .max(5000, 'Description must not exceed 5000 characters'),
+    categoryId: IdSchema.optional().nullable(),
+    customCategoryId: IdSchema.optional().nullable(),
+    departmentId: IdSchema.optional().nullable(),
+    orgLevel: OrgLevelSchema,
+    orgId: z
+      .number()
+      .int()
+      .min(0, 'Organization ID must be a non-negative integer'),
+    priority: PrioritySchema.optional(),
+    expectedBenefit: z
+      .string()
+      .trim()
+      .max(500, 'Expected benefit cannot exceed 500 characters')
+      .optional(),
+    estimatedCost: z
+      .string()
+      .trim()
+      .max(100, 'Estimated cost cannot exceed 100 characters')
+      .optional(),
+  })
+  .refine(
+    (data: {
+      categoryId?: number | null | undefined;
+      customCategoryId?: number | null | undefined;
+    }) =>
+      (data.categoryId !== null && data.categoryId !== undefined) ||
+      (data.customCategoryId !== null && data.customCategoryId !== undefined),
+    {
+      message: 'Either categoryId or customCategoryId must be provided',
+      path: ['categoryId'],
+    },
+  );
 
 /**
  * Create Suggestion DTO class
