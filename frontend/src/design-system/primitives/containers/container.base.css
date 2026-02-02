@@ -18,7 +18,7 @@
   position: relative;
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(--radius-xl); /* 12px */
 
   background: var(--glass-bg);

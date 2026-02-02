@@ -39,6 +39,7 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 | [ADR-015](./ADR-015-shared-package-architecture.md)        | Shared Package Architecture & Plan | Accepted | 2026-01-30 |
 | [ADR-016](./ADR-016-tenant-customizable-seed-data.md)      | Tenant-Customizable Seed Data      | Accepted | 2026-02-02 |
 | [ADR-017](./ADR-017-design-system-theming-architecture.md) | Design System Theming Architecture | Accepted | 2026-02-02 |
+| [ADR-017 Plan](./ADR-017-IMPLEMENTATION-PLAN.md)           | ADR-017 Implementation Plan        | Active   | 2026-02-02 |
 
 ## Template
 

@@ -171,7 +171,7 @@
   .theme-toggle.is-light .theme-toggle__track {
     background: var(--color-icon-primary);
     box-shadow:
-      inset 0 3px 6px rgb(0 0 0 / 40%),
+      inset 2px 1px 2px rgb(0 0 0 / 40%),
       inset 0 1px 2px rgb(0 0 0 / 30%),
       inset 0 -1px 1px rgb(255 255 255 / 10%);
   }

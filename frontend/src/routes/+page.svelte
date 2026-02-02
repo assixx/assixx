@@ -70,7 +70,7 @@
         <a href={resolve('/login', {})}>Anmelden</a>
         <a
           href={resolve('/signup', {})}
-          class="btn btn-primary btn-primary--transparent">Registrieren</a
+          class="btn btn-primary-first">Registrieren</a
         >
       </div>
     </nav>
@@ -85,7 +85,7 @@
     </p>
     <a
       href={resolve('/signup', {})}
-      class="btn btn-primary btn-primary--transparent">Jetzt registrieren</a
+      class="btn btn-primary-first">Jetzt registrieren</a
     >
   </section>
 

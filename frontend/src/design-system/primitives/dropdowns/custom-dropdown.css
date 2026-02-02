@@ -79,7 +79,7 @@
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
 
-    border: var(--glass-card-border);
+    border: var(--glass-border);
     border-radius: var(--radius-xl);
     background: rgb(255 255 255 / 95%);
   }

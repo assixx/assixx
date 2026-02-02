@@ -4,7 +4,7 @@
 | ------------ | --------------------------------------------------- |
 | **Branch**   | `variables/lightmode`                               |
 | **Created**  | 2026-02-02                                          |
-| **Status**   | In Progress — Step 5k done, Visual QA next          |
+| **Status**   | In Progress — Step 8 done, Visual QA next           |
 | **Approach** | Class-based `.dark` on `<html>`, dark-first default |
 
 ---
@@ -39,7 +39,7 @@
       `body::after` gradient via `--main-bg-gradient`, scrollbar theming.
 - [x] **1d.** Tailwind v4 dark variant in `app.css`:
       `@custom-variant dark (&:where(.dark, .dark *));`
-- [ ] **1e.** Clean up dead `styles/design-system/variables-dark.css` (not imported anywhere).
+- [x] **1e.** Deleted entire `styles/design-system/` directory (4 orphaned files, not imported).
 
 ### Step 2: Theme Store + Toggle — DONE
 
@@ -162,11 +162,43 @@ Remaining 32 values are **intentional** (white thumbs, stripes on colored bars, 
 - [ ] **7b.** Configure `withThemeByClassName` in `.storybook/preview.js`.
 - [ ] **7c.** Visual QA all 25 stories in both modes.
 
-### Step 8: Cleanup — TODO
+### Step 8: Variable Redundancy Cleanup — DONE
 
-- [ ] **8a.** Remove dead `styles/design-system/variables-dark.css`.
-- [ ] **8b.** Remove unused `--gradient-body-bg` from `gradients.css` (replaced by `--main-bg-gradient`).
-- [ ] **8c.** Final audit: grep for remaining hardcoded dark-only values.
+Full audit of all 6 theme files with grep-verified usage counts.
+
+- [x] **8a.** Deleted `styles/design-system/` directory (4 orphaned files, zero imports).
+- [x] **8b.** Removed `--gradient-body-bg` from `gradients.css` (:root + html.dark).
+- [x] **8c.** Fixed 3 silent cascade conflicts:
+      `--color-border` (html.dark): variables-dark had `gray-700`, colors.css had `gray-800` — removed stale def from variables-dark.
+      `--color-border-hover` (:root + html.dark): variables files had gray values, colors.css had blue-tint — removed stale defs from variables files.
+      colors.css is now the single owner of `--color-border` and `--color-border-hover`.
+- [x] **8d.** Fixed missing definition: `--color-primary-alpha-10` used in `documents-explorer.css` but never defined — added to `colors.css`.
+- [x] **8e.** Removed 5 redundant duplicate definitions from `variables-light.css` (identical values already in `colors.css`):
+      `--color-primary`, `--color-primary-hover`, `--color-success`, `--color-warning`, `--color-border`.
+- [x] **8f.** Deleted 2 dead glass naming systems:
+      System B (`--glass-background/hover/active` + 5 `--glass-opacity-*` primitives) — 0 usage.
+      System C (`--color-glass-bg/hover`) — 0 usage.
+      Active system: `--glass-bg/hover/active` (38/30/27 files).
+- [x] **8g.** Merged `--glass-card-border` → `--glass-border` (identical values in both themes).
+      8 component files updated: custom-dropdown, kvp-detail, search-input, container.base, modal.base, card-stat, card-accent, card-base.
+- [x] **8h.** Removed ~87 dead variables (0 usage) across all theme files:
+
+      | File | Variables removed | Examples |
+      | ---- | ---------------- | -------- |
+      | `variables-light.css` | ~50 | glass-blur-*, button-*, card-*, modal-*, display-*, font-display/body, admin-color, employee-color, bg-primary/secondary, accent-gradient/glow/grey1a, default-modal, color-background/secondary, secondary-color |
+      | `variables-dark.css` | ~20 | Same dead legacy/glass vars mirrored from light file |
+      | `colors.css` | ~20 | color-glass-bg/hover, color-background-dark/light, color-border-subtle, color-overlay-dark/darker, alpha-*, all *-light color variants, all *-alpha-70 and *-light-alpha-60 variants |
+      | `gradients.css` | 1 | gradient-body-bg |
+
+- [x] **8i.** Fixed `--primary-light` reference: was `var(--color-primary-active)` (= blue-800, dark) — changed to `var(--color-primary-light)` (= blue-400, correct lighter variant).
+- [x] **8j.** Inlined legacy token fallbacks: `--background-dark`/`--background-light` simplified from `var(--color-background, fallback)` to direct values (removed indirection through dead variables).
+
+      **File size reduction:**
+      `variables-light.css`: 220 → 124 lines
+      `variables-dark.css`: 91 → 60 lines
+      `colors.css`: 124 → 77 lines
+
+- [ ] **8k.** Final audit: grep for remaining hardcoded dark-only values (deferred to Visual QA).
 
 ---
 
