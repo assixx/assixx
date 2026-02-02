@@ -73,10 +73,13 @@ export default defineConfig(({ mode }) => ({
     },
   },
 
-  resolve: {
-    alias: {
-      // Bereits in svelte.config.js definiert, hier für IDE Support
-    },
+  // SSR: Bundle @assixx/shared instead of externalizing it.
+  // inject-workspace-packages (pnpm) hard-copies instead of symlinking,
+  // so Vite treats it as a regular dependency and externalizes it.
+  // Without noExternal, Node.js tries to resolve subpath exports
+  // (e.g. @assixx/shared/constants) at runtime via dist/ which may not exist.
+  ssr: {
+    noExternal: ['@assixx/shared'],
   },
 
   // Build Optimierungen
