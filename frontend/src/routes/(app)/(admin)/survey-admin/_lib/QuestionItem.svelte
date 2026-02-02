@@ -149,7 +149,7 @@
           class="add-option-btn"
           onclick={onaddoption}
         >
-          <i class="fas fa-plus"></i> Option hinzufuegen
+          <i class="fas fa-plus"></i> Option hinzufügen
         </button>
       </div>
       <div class="option-list">

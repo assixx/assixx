@@ -8,26 +8,26 @@
 
 ## Ziel
 
-Automatisiertes Migration-Tooling mit `node-pg-migrate` einfuehren. Tracking-Tabelle, UP/DOWN Rollbacks, TypeScript-Migrationen.
+Automatisiertes Migration-Tooling mit `node-pg-migrate` einführen. Tracking-Tabelle, UP/DOWN Rollbacks, TypeScript-Migrationen.
 
 ---
 
 ## Architektur-Entscheidungen
 
-| Entscheidung             | Wahl                               | Warum                                                                                     |
-| ------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| Install-Ort              | Root `package.json`                | `pg` wird als peerDep aufgeloest ueber workspace; Migrations sind DevOps, nicht App-Logik |
-| Migration-Verzeichnis    | `database/migrations/` (bestehend) | Team kennt den Pfad, kein unnoetiger Umzug                                                |
-| Sprache                  | TypeScript (`-j ts`)               | Konsistent mit Projekt, `tsx` bereits installiert                                         |
-| DB-User fuer Migrationen | `assixx_user` (Owner)              | `app_user` hat keine DDL-Rechte (nur SELECT/INSERT/UPDATE/DELETE)                         |
-| Tracking-Tabelle         | `pgmigrations` (Default)           | Kein Konflikt, weniger Config                                                             |
-| Dateiformat              | UTC-Timestamps                     | Verhindert das 003-Duplikat-Problem                                                       |
-| Seeds                    | Separater `database/seeds/` Ordner | Saubere Trennung Schema vs. Daten                                                         |
-| Ausfuehrung              | Vom Host (`localhost:5432`)        | DB-Port exposed, `assixx_user` Credentials verfuegbar                                     |
+| Entscheidung            | Wahl                               | Warum                                                                                   |
+| ----------------------- | ---------------------------------- | --------------------------------------------------------------------------------------- |
+| Install-Ort             | Root `package.json`                | `pg` wird als peerDep aufgelöst über workspace; Migrations sind DevOps, nicht App-Logik |
+| Migration-Verzeichnis   | `database/migrations/` (bestehend) | Team kennt den Pfad, kein unnötiger Umzug                                               |
+| Sprache                 | TypeScript (`-j ts`)               | Konsistent mit Projekt, `tsx` bereits installiert                                       |
+| DB-User für Migrationen | `assixx_user` (Owner)              | `app_user` hat keine DDL-Rechte (nur SELECT/INSERT/UPDATE/DELETE)                       |
+| Tracking-Tabelle        | `pgmigrations` (Default)           | Kein Konflikt, weniger Config                                                           |
+| Dateiformat             | UTC-Timestamps                     | Verhindert das 003-Duplikat-Problem                                                     |
+| Seeds                   | Separater `database/seeds/` Ordner | Saubere Trennung Schema vs. Daten                                                       |
+| Ausführung              | Vom Host (`localhost:5432`)        | DB-Port exposed, `assixx_user` Credentials verfügbar                                    |
 
 ---
 
-## Schritt-fuer-Schritt Implementierung
+## Schritt-für-Schritt Implementierung
 
 ### Schritt 1: `node-pg-migrate` installieren
 
@@ -38,7 +38,7 @@ Automatisiertes Migration-Tooling mit `node-pg-migrate` einfuehren. Tracking-Tab
 pnpm add -wD node-pg-migrate
 ```
 
-Scripts hinzugefuegt:
+Scripts hinzugefügt:
 
 ```json
 "db:migrate": "node-pg-migrate -m database/migrations",
@@ -50,7 +50,7 @@ Scripts hinzugefuegt:
 "db:seed": "./scripts/run-seeds.sh"
 ```
 
-**Hinweis:** `pnpm add -wD` (mit `-w` Flag) ist noetig weil Root in einem pnpm Workspace liegt.
+**Hinweis:** `pnpm add -wD` (mit `-w` Flag) ist nötig weil Root in einem pnpm Workspace liegt.
 
 ### Schritt 2: Config-Datei erstellen
 
@@ -70,7 +70,7 @@ Scripts hinzugefuegt:
 }
 ```
 
-### Schritt 3: Wrapper-Script fuer DATABASE_URL
+### Schritt 3: Wrapper-Script für DATABASE_URL
 
 **Status:** Completed
 **Neue Datei:** `scripts/run-migrations.sh`
@@ -128,7 +128,7 @@ Jede bestehende SQL-Migration wurde als `.ts`-Datei mit `pgm.sql()` gewrappt:
 | `20260127000013_kvp-status-restored.ts`                    | `013-kvp-status-restored.sql`                                       |
 | `20260127000014_remove-deprecated-availability-columns.ts` | `014-remove-deprecated-availability-columns.sql`                    |
 
-**Pattern fuer jede Datei:**
+**Pattern für jede Datei:**
 
 ```typescript
 import type { MigrationBuilder } from 'node-pg-migrate';
@@ -141,7 +141,7 @@ export function up(pgm: MigrationBuilder): void {
 
 export function down(pgm: MigrationBuilder): void {
   pgm.sql(`
-    -- Rollback SQL (wo moeglich)
+    -- Rollback SQL (wo möglich)
   `);
 }
 ```
@@ -154,17 +154,17 @@ export function down(pgm: MigrationBuilder): void {
 
 **Neue Datei:** `database/seeds/001_global-seed-data.sql`
 
-Inhalt aus `002_seed_data.sql` mit Aenderungen:
+Inhalt aus `002_seed_data.sql` mit Änderungen:
 
 - `\restrict` / `\unrestrict` entfernt (psql-spezifisch, funktioniert nicht mit `pg` library)
-- Alle INSERTs mit `ON CONFLICT (id) DO NOTHING` ergaenzt → idempotent
+- Alle INSERTs mit `ON CONFLICT (id) DO NOTHING` ergänzt → idempotent
 - Sequences werden am Ende mit `GREATEST(MAX(id), seed_count)` synchronisiert
 
 **Neue Datei:** `scripts/run-seeds.sh`
 
-Fuehrt alle `.sql` Dateien in `database/seeds/` via `psql` aus (alphabetisch sortiert).
+Führt alle `.sql` Dateien in `database/seeds/` via `psql` aus (alphabetisch sortiert).
 
-### Schritt 7: Tote Scripts aufraeumen
+### Schritt 7: Tote Scripts aufräumen
 
 **Status:** Completed
 **Datei:** `backend/package.json`
@@ -194,11 +194,11 @@ Referenz-Template (KEIN echte Migration) mit Assixx-spezifischen Patterns:
 **Status:** Completed
 **Datei:** `docs/DATABASE-MIGRATION-GUIDE.md`
 
-Komplett ueberarbeitet mit:
+Komplett überarbeitet mit:
 
-- Neue Architektur-Uebersicht (node-pg-migrate statt docker cp + psql)
+- Neue Architektur-Übersicht (node-pg-migrate statt docker cp + psql)
 - CLI Commands Referenz
-- Day 1 Procedure fuer bestehende DBs
+- Day 1 Procedure für bestehende DBs
 - Migration-Checkliste (VOR/NACH)
 - Seeds-Sektion
 - Neues Problem 5: "Migration fehlgeschlagen (partial apply)"
@@ -207,7 +207,7 @@ Komplett ueberarbeitet mit:
 
 ## Bestehende DB migrieren (Day 1)
 
-**Status:** Pending (muss auf jeder bestehenden DB-Instanz ausgefuehrt werden)
+**Status:** Pending (muss auf jeder bestehenden DB-Instanz ausgeführt werden)
 
 ```bash
 # 1. Backup erstellen
@@ -215,7 +215,7 @@ docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
     --format=custom --compress=9 \
     > database/backups/pre-node-pg-migrate.dump
 
-# 2. Alle 15 Migrationen als "bereits ausgefuehrt" markieren
+# 2. Alle 15 Migrationen als "bereits ausgeführt" markieren
 doppler run -- ./scripts/run-migrations.sh up --fake
 
 # 3. Verifizieren
@@ -236,7 +236,7 @@ doppler run -- pnpm run db:migrate:create add-employee-skills
 # Dry-Run
 doppler run -- ./scripts/run-migrations.sh up --dry-run
 
-# Ausfuehren
+# Ausführen
 doppler run -- ./scripts/run-migrations.sh up
 
 # Rollback (letzte Migration)
@@ -248,7 +248,7 @@ doppler run -- pnpm run db:seed
 
 ---
 
-## Dateien-Uebersicht
+## Dateien-Übersicht
 
 | Datei                                     | Aktion                              | Status    |
 | ----------------------------------------- | ----------------------------------- | --------- |
@@ -267,14 +267,14 @@ doppler run -- pnpm run db:seed
 
 ## Risiken & Mitigations
 
-| Risiko                                    | Mitigation                                                                      | Status          |
-| ----------------------------------------- | ------------------------------------------------------------------------------- | --------------- |
-| ESM-Kompatibilitaet                       | `tsx` bereits installiert; `-j ts` Flag nutzt tsx                               | Kein Problem    |
-| 676KB Baseline in Transaction             | `pgm.noTransaction()` falls noetig                                              | Nicht benoetigt |
-| psql Meta-Commands (`\restrict`) in Seeds | Entfernt beim Umzug nach `seeds/`                                               | Erledigt        |
-| `--fake` falsche Reihenfolge              | Alle 15 .ts Dateien VOR dem fake-Run erstellt                                   | Erledigt        |
-| `pg` als peerDep                          | Bereits in backend installiert, workspace hoisting loest das auf                | Kein Problem    |
-| Linter Import-Reihenfolge                 | Einige Migrationen hatten auto-fixed Import Order (node:fs vor node-pg-migrate) | Erledigt        |
+| Risiko                                    | Mitigation                                                                      | Status         |
+| ----------------------------------------- | ------------------------------------------------------------------------------- | -------------- |
+| ESM-Kompatibilität                        | `tsx` bereits installiert; `-j ts` Flag nutzt tsx                               | Kein Problem   |
+| 676KB Baseline in Transaction             | `pgm.noTransaction()` falls nötig                                               | Nicht benötigt |
+| psql Meta-Commands (`\restrict`) in Seeds | Entfernt beim Umzug nach `seeds/`                                               | Erledigt       |
+| `--fake` falsche Reihenfolge              | Alle 15 .ts Dateien VOR dem fake-Run erstellt                                   | Erledigt       |
+| `pg` als peerDep                          | Bereits in backend installiert, workspace hoisting löst das auf                 | Kein Problem   |
+| Linter Import-Reihenfolge                 | Einige Migrationen hatten auto-fixed Import Order (node:fs vor node-pg-migrate) | Erledigt       |
 
 ---
 
@@ -290,7 +290,7 @@ doppler run -- pnpm run db:seed
 | Template erstellt                                    | Completed |
 | Docs aktualisiert                                    | Completed |
 | Wrapper-Scripts erstellt + chmod +x                  | Completed |
-| `--fake` auf Dev-DB ausgefuehrt                      | Pending   |
+| `--fake` auf Dev-DB ausgeführt                       | Pending   |
 | `pnpm run db:migrate:create test-check` funktioniert | Pending   |
 | Backend startet normal                               | Pending   |
 | `customer/fresh-install/install.sh` funktioniert     | Pending   |
@@ -300,7 +300,7 @@ doppler run -- pnpm run db:seed
 ## References
 
 - [ADR-014: Database & Migration Architecture](./ADR-014-database-migration-architecture.md) - Die Architektur-Entscheidung
-- [DATABASE-MIGRATION-GUIDE.md](../../DATABASE-MIGRATION-GUIDE.md) - Vollstaendige Anleitung
+- [DATABASE-MIGRATION-GUIDE.md](../../DATABASE-MIGRATION-GUIDE.md) - Vollständige Anleitung
 - [node-pg-migrate GitHub](https://github.com/salsita/node-pg-migrate)
 - [database/migrations/template.ts](../../../database/migrations/template.ts) - Referenz-Template
 

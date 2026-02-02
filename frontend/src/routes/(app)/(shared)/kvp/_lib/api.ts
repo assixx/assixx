@@ -135,6 +135,20 @@ export async function loadTeams(): Promise<Team[]> {
 // SUGGESTIONS
 // =============================================================================
 
+/** Parse a source:id category filter value into params */
+function appendCategoryParam(params: URLSearchParams, value: string): void {
+  if (value === '') return;
+
+  if (!value.includes(':')) {
+    params.append('categoryId', value);
+    return;
+  }
+
+  const [source, id] = value.split(':');
+  const key = source === 'custom' ? 'customCategoryId' : 'categoryId';
+  params.append(key, id);
+}
+
 /**
  * Build query params for suggestions API
  * Maps frontend filter values to backend API parameters
@@ -149,25 +163,22 @@ function buildSuggestionParams(
   const params = new URLSearchParams();
 
   // Map filter to backend orgLevel parameter
-  // Backend expects: orgLevel = 'team' | 'department' | 'area' | 'company'
   const orgLevelFilters = ['team', 'department', 'area', 'company'];
   if (orgLevelFilters.includes(filter)) {
     params.append('orgLevel', filter);
   }
 
-  // Handle "mine" filter - show only current user's submissions
   if (filter === 'mine') {
     params.append('mineOnly', 'true');
   }
 
-  // Handle archived filter
   if (filter === 'archived') {
     params.append('status', 'archived');
   } else if (statusFilter !== '') {
     params.append('status', statusFilter);
   }
 
-  if (categoryFilter !== '') params.append('categoryId', categoryFilter);
+  appendCategoryParam(params, categoryFilter);
   if (departmentFilter !== '') params.append('departmentId', departmentFilter);
   if (searchQuery !== '') params.append('search', searchQuery);
 

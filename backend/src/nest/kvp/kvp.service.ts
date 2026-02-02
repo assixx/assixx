@@ -20,7 +20,6 @@ import {
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/eventBus.js';
-import { dbToApi } from '../../utils/fieldMapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -48,9 +47,8 @@ import {
   transformSuggestion,
 } from './kvp.helpers.js';
 import type {
-  Category,
+  CategoryOption,
   DashboardStats,
-  DbCategory,
   DbDashboardStats,
   DbExtendedOrgInfo,
   DbSuggestion,
@@ -65,6 +63,7 @@ import type {
 // Re-export API types for controller
 export type {
   Category,
+  CategoryOption,
   DashboardStats,
   KVPAttachment,
   KVPComment,
@@ -122,17 +121,40 @@ export class KvpService {
   // CATEGORIES & DASHBOARD
   // ==========================================================================
 
-  /** Get KVP categories */
-  async getCategories(_tenantId: number): Promise<Category[]> {
-    this.logger.debug('Getting categories');
+  /** Get KVP categories with tenant-specific overrides and custom categories */
+  async getCategories(tenantId: number): Promise<CategoryOption[]> {
+    this.logger.debug(`Getting categories for tenant ${tenantId}`);
 
-    const rows = await this.db.query<DbCategory>(
-      'SELECT * FROM kvp_categories ORDER BY name ASC',
-    );
+    const query = `
+      SELECT
+        kc.id,
+        'global' AS source,
+        COALESCE(kcc.custom_name, kc.name) AS name,
+        kc.description,
+        kc.color,
+        kc.icon
+      FROM kvp_categories kc
+      LEFT JOIN kvp_categories_custom kcc
+        ON kcc.category_id = kc.id
+        AND kcc.tenant_id = $1
 
-    return rows.map((row: DbCategory) =>
-      dbToApi(row as unknown as Record<string, unknown>),
-    ) as unknown as Category[];
+      UNION ALL
+
+      SELECT
+        kcc.id,
+        'custom' AS source,
+        kcc.custom_name AS name,
+        kcc.description,
+        kcc.color,
+        kcc.icon
+      FROM kvp_categories_custom kcc
+      WHERE kcc.tenant_id = $1
+        AND kcc.category_id IS NULL
+
+      ORDER BY name ASC
+    `;
+
+    return await this.db.query<CategoryOption>(query, [tenantId]);
   }
 
   /** Get dashboard statistics */
@@ -328,8 +350,8 @@ export class KvpService {
 
     const query = `
       INSERT INTO kvp_suggestions
-      (uuid, tenant_id, title, description, category_id, department_id, org_level, org_id, is_shared, submitted_by, team_id, priority, expected_benefit, estimated_cost)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, $12, $13)
+      (uuid, tenant_id, title, description, category_id, custom_category_id, department_id, org_level, org_id, is_shared, submitted_by, team_id, priority, expected_benefit, estimated_cost)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, FALSE, $10, $11, $12, $13, $14)
       RETURNING id
     `;
 
@@ -338,7 +360,8 @@ export class KvpService {
       tenantId,
       dto.title,
       dto.description,
-      dto.categoryId,
+      dto.categoryId ?? null,
+      dto.customCategoryId ?? null,
       dto.departmentId ?? null,
       dto.orgLevel,
       dto.orgId,

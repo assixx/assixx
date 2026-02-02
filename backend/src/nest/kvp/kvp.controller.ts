@@ -2,8 +2,13 @@
  * KVP Controller
  *
  * HTTP endpoints for Continuous Improvement Process (KVP) management:
- * - GET    /kvp/categories        - Get categories
- * - GET    /kvp/dashboard/stats   - Get dashboard statistics
+ * - GET    /kvp/categories              - Get categories (with tenant overrides)
+ * - GET    /kvp/categories/customizable - Admin: defaults + custom merged
+ * - PUT    /kvp/categories/override/:categoryId - Upsert name override
+ * - DELETE /kvp/categories/override/:categoryId - Reset override
+ * - POST   /kvp/categories/custom       - Create new tenant category
+ * - DELETE /kvp/categories/custom/:id   - Delete tenant category
+ * - GET    /kvp/dashboard/stats         - Get dashboard statistics
  * - GET    /kvp/unconfirmed-count - Get unread count for notification badge
  * - POST   /kvp/:uuid/confirm     - Mark suggestion as read
  * - DELETE /kvp/:uuid/confirm     - Mark suggestion as unread
@@ -54,13 +59,17 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import {
   AddCommentDto,
+  CreateCustomCategoryDto,
   CreateSuggestionDto,
   ListSuggestionsQueryDto,
+  OverrideCategoryNameDto,
   ShareSuggestionDto,
   UpdateSuggestionDto,
 } from './dto/index.js';
+import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
+import { KvpCategoriesService } from './kvp-categories.service.js';
 import type {
-  Category,
+  CategoryOption,
   DashboardStats,
   KVPAttachment,
   KVPComment,
@@ -91,15 +100,131 @@ interface MessageResponse {
 
 @Controller('kvp')
 export class KvpController {
-  constructor(private readonly kvpService: KvpService) {}
+  constructor(
+    private readonly kvpService: KvpService,
+    private readonly categoriesService: KvpCategoriesService,
+  ) {}
 
   /**
    * GET /kvp/categories
    * Get KVP categories for the tenant
    */
   @Get('categories')
-  async getCategories(@TenantId() tenantId: number): Promise<Category[]> {
+  async getCategories(@TenantId() tenantId: number): Promise<CategoryOption[]> {
     return await this.kvpService.getCategories(tenantId);
+  }
+
+  // ==========================================================================
+  // CATEGORY CUSTOMIZATION (Overlay-Pattern)
+  // ==========================================================================
+
+  /**
+   * GET /kvp/categories/customizable
+   * Admin view: defaults with override info + custom categories
+   */
+  @Get('categories/customizable')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  async getCustomizableCategories(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CustomizableCategoriesResponse> {
+    return await this.categoriesService.getCustomizable(
+      tenantId,
+      user.id,
+      user.role,
+    );
+  }
+
+  /**
+   * PUT /kvp/categories/override/:categoryId
+   * Upsert a name override for a global default category
+   */
+  @Put('categories/override/:categoryId')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  async upsertOverride(
+    @Param('categoryId') categoryId: string,
+    @Body() dto: OverrideCategoryNameDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ id: number }> {
+    const id = Number.parseInt(categoryId, 10);
+    return await this.categoriesService.upsertOverride(
+      tenantId,
+      id,
+      dto.customName,
+      user.id,
+      user.role,
+    );
+  }
+
+  /**
+   * DELETE /kvp/categories/override/:categoryId
+   * Reset override, restoring default name
+   */
+  @Delete('categories/override/:categoryId')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  async deleteOverride(
+    @Param('categoryId') categoryId: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    const id = Number.parseInt(categoryId, 10);
+    await this.categoriesService.deleteOverride(
+      tenantId,
+      id,
+      user.id,
+      user.role,
+    );
+    return { message: 'Override removed' };
+  }
+
+  /**
+   * POST /kvp/categories/custom
+   * Create a new tenant-specific category
+   */
+  @Post('categories/custom')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  @HttpCode(HttpStatus.CREATED)
+  async createCustomCategory(
+    @Body() dto: CreateCustomCategoryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ id: number }> {
+    return await this.categoriesService.createCustom(
+      tenantId,
+      dto.name,
+      dto.color,
+      dto.icon,
+      user.id,
+      user.role,
+      dto.description,
+    );
+  }
+
+  /**
+   * DELETE /kvp/categories/custom/:id
+   * Delete a tenant-specific custom category
+   */
+  @Delete('categories/custom/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  async deleteCustomCategory(
+    @Param('id') id: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    const categoryId = Number.parseInt(id, 10);
+    await this.categoriesService.deleteCustom(
+      tenantId,
+      categoryId,
+      user.id,
+      user.role,
+    );
+    return { message: 'Custom category deleted' };
   }
 
   /**
@@ -169,6 +294,7 @@ export class KvpController {
     return await this.kvpService.listSuggestions(tenantId, user.id, user.role, {
       status: query.status,
       categoryId: query.categoryId,
+      customCategoryId: query.customCategoryId,
       priority: query.priority,
       orgLevel: query.orgLevel,
       search: query.search,

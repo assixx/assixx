@@ -8,7 +8,7 @@
 #   2. Seed-Dump → customer/
 #   3. pgmigrations SQL → customer/ (dynamisch generiert)
 #
-# VERWENDUNG: Nach jeder Migration ausfuehren!
+# VERWENDUNG: Nach jeder Migration ausführen!
 #   ./scripts/sync-customer-migrations.sh
 #
 # =============================================================================
@@ -161,4 +161,4 @@ else
     exit 1
 fi
 
-log_warn "Hinweis: Falls Seed-Daten geaendert wurden, auch database/seeds/001_global-seed-data.sql manuell aktualisieren (ON CONFLICT DO NOTHING Format)."
+log_warn "Hinweis: Falls Seed-Daten geändert wurden, auch database/seeds/001_global-seed-data.sql manuell aktualisieren (ON CONFLICT DO NOTHING Format)."

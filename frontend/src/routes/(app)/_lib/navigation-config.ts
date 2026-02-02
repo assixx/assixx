@@ -19,7 +19,6 @@ export interface NavItem {
   icon?: string;
   label: string;
   url?: string;
-  hasSubmenu?: boolean;
   submenu?: NavItem[];
   /** Badge type for real-time notification count */
   badgeType?:
@@ -50,10 +49,59 @@ export const ICONS: Record<string, string> = {
   building: '<i class="fas fa-building"></i>',
   feature: '<i class="fas fa-puzzle-piece"></i>',
   logs: '<i class="fas fa-list-alt"></i>',
-  folder: '<i class="fas fa-folder"></i>',
-  lightbulb: '<i class="fas fa-lightbulb"></i>',
-  poll: '<i class="fas fa-poll"></i>',
 };
+
+/** Shared blackboard submenu (root + admin) */
+const BLACKBOARD_SUBMENU: NavItem[] = [
+  {
+    id: 'blackboard-main',
+    label: LABELS.BLACKBOARD,
+    url: '/blackboard',
+    badgeType: 'blackboard',
+  },
+  {
+    id: 'blackboard-archive',
+    label: LABELS.ARCHIVE,
+    url: '/blackboard/archived',
+  },
+];
+
+/** Shared documents submenu (all roles) */
+const DOCUMENTS_SUBMENU: NavItem[] = [
+  {
+    id: 'documents-explorer',
+    label: LABELS.FILE_EXPLORER,
+    url: '/documents-explorer',
+    badgeType: 'documents',
+  },
+];
+
+/** KVP + Surveys submenu for root/admin (includes category management) */
+const LEAN_ADMIN_SUBMENU: NavItem[] = [
+  {
+    id: 'kvp',
+    label: LABELS.KVP_SYSTEM,
+    submenu: [
+      {
+        id: 'kvp-main',
+        label: 'Vorschläge',
+        url: '/kvp',
+        badgeType: 'kvp',
+      },
+      {
+        id: 'kvp-categories',
+        label: 'Definitionen',
+        url: '/kvp-categories',
+      },
+    ],
+  },
+  {
+    id: 'surveys',
+    label: LABELS.SURVEYS,
+    url: '/survey-admin',
+    badgeType: 'surveys',
+  },
+];
 
 export const rootMenuItems: NavItem[] = [
   {
@@ -66,20 +114,7 @@ export const rootMenuItems: NavItem[] = [
     id: 'blackboard',
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
-    hasSubmenu: true,
-    submenu: [
-      {
-        id: 'blackboard-main',
-        label: LABELS.BLACKBOARD,
-        url: '/blackboard',
-        badgeType: 'blackboard',
-      },
-      {
-        id: 'blackboard-archive',
-        label: LABELS.ARCHIVE,
-        url: '/blackboard/archived',
-      },
-    ],
+    submenu: BLACKBOARD_SUBMENU,
   },
   {
     id: 'root-users',
@@ -111,30 +146,13 @@ export const rootMenuItems: NavItem[] = [
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
-    hasSubmenu: true,
-    submenu: [
-      {
-        id: 'documents-explorer',
-        label: LABELS.FILE_EXPLORER,
-        url: '/documents-explorer',
-        badgeType: 'documents',
-      },
-    ],
+    submenu: DOCUMENTS_SUBMENU,
   },
   {
     id: 'lean-management',
     icon: ICONS.lean,
     label: 'LEAN-Management',
-    hasSubmenu: true,
-    submenu: [
-      { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
-      {
-        id: 'surveys',
-        label: LABELS.SURVEYS,
-        url: '/survey-admin',
-        badgeType: 'surveys',
-      },
-    ],
+    submenu: LEAN_ADMIN_SUBMENU,
   },
   {
     id: 'chat',
@@ -155,7 +173,6 @@ export const rootMenuItems: NavItem[] = [
     id: 'system',
     icon: ICONS.settings,
     label: 'System',
-    hasSubmenu: true,
     submenu: [
       {
         id: 'account-settings',
@@ -177,20 +194,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'blackboard',
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
-    hasSubmenu: true,
-    submenu: [
-      {
-        id: 'blackboard-main',
-        label: LABELS.BLACKBOARD,
-        url: '/blackboard',
-        badgeType: 'blackboard',
-      },
-      {
-        id: 'blackboard-archive',
-        label: LABELS.ARCHIVE,
-        url: '/blackboard/archived',
-      },
-    ],
+    submenu: BLACKBOARD_SUBMENU,
   },
   {
     id: 'employees',
@@ -209,15 +213,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
-    hasSubmenu: true,
-    submenu: [
-      {
-        id: 'documents-explorer',
-        label: LABELS.FILE_EXPLORER,
-        url: '/documents-explorer',
-        badgeType: 'documents',
-      },
-    ],
+    submenu: DOCUMENTS_SUBMENU,
   },
   {
     id: 'calendar',
@@ -230,16 +226,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'lean-management',
     icon: ICONS.lean,
     label: 'LEAN-Management',
-    hasSubmenu: true,
-    submenu: [
-      { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
-      {
-        id: 'surveys',
-        label: LABELS.SURVEYS,
-        url: '/survey-admin',
-        badgeType: 'surveys',
-      },
-    ],
+    submenu: LEAN_ADMIN_SUBMENU,
   },
   { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
   {
@@ -281,15 +268,7 @@ export const employeeMenuItems: NavItem[] = [
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
-    hasSubmenu: true,
-    submenu: [
-      {
-        id: 'documents-explorer',
-        label: LABELS.FILE_EXPLORER,
-        url: '/documents-explorer',
-        badgeType: 'documents',
-      },
-    ],
+    submenu: DOCUMENTS_SUBMENU,
   },
   {
     id: 'calendar',
@@ -302,7 +281,6 @@ export const employeeMenuItems: NavItem[] = [
     id: 'lean-management',
     icon: ICONS.lean,
     label: 'LEAN-Management',
-    hasSubmenu: true,
     submenu: [
       { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
       {
@@ -343,4 +321,31 @@ export function getMenuItemsForRole(
     case 'employee':
       return employeeMenuItems;
   }
+}
+
+/**
+ * Filter menu items based on user access level.
+ * Removes items requiring has_full_access (e.g. KVP category management).
+ * Root users always pass. Recursive for nested submenus.
+ */
+export function filterMenuByAccess(
+  items: NavItem[],
+  hasFullAccess: boolean,
+): NavItem[] {
+  if (hasFullAccess) return items;
+
+  return items.reduce<NavItem[]>((acc, item) => {
+    if (item.id === 'kvp-categories') return acc;
+
+    if (item.submenu !== undefined) {
+      const filtered = filterMenuByAccess(item.submenu, hasFullAccess);
+      if (filtered.length > 0 || item.url !== undefined) {
+        acc.push({ ...item, submenu: filtered });
+      }
+      return acc;
+    }
+
+    acc.push(item);
+    return acc;
+  }, []);
 }
