@@ -328,7 +328,7 @@
             <i class="fas fa-users mr-2"></i>
             Sichtbarkeit
           </span>
-          <p class="mb-2 text-sm text-[var(--color-text-secondary)]">
+          <p class="mb-2 text-sm text-(--color-text-secondary)">
             wählen Sie keine Organisation für firmenweite Umfragen oder
             eine/mehrere spezifische Organisationen.
           </p>
@@ -349,7 +349,7 @@
                 Ganze Firma (Alle Mitarbeiter)
               </span>
             </label>
-            <span class="form-field__message text-[var(--color-danger)]">
+            <span class="form-field__message text-(--color-danger)">
               <i class="fas fa-exclamation-triangle mr-1"></i>
               Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diese Umfrage
             </span>
@@ -370,7 +370,7 @@
           <select
             id="survey-area-select"
             multiple
-            class="form-field__control min-h-[100px]"
+            class="form-field__control min-h-25"
             value={formSelectedAreas}
             disabled={formCompanyWide}
             onchange={handleAreaChange}
@@ -388,7 +388,7 @@
               </option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
             Abteilungen.
@@ -409,7 +409,7 @@
           <select
             id="survey-department-select"
             multiple
-            class="form-field__control min-h-[100px]"
+            class="form-field__control min-h-25"
             value={formSelectedDepartments}
             disabled={formCompanyWide}
             onchange={handleDepartmentChange}
@@ -427,7 +427,7 @@
               </option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
             durch Bereiche abgedeckt sind.
@@ -448,7 +448,7 @@
           <select
             id="survey-team-select"
             multiple
-            class="form-field__control min-h-[100px]"
+            class="form-field__control min-h-25"
             bind:value={formSelectedTeams}
             disabled={formCompanyWide}
           >
@@ -458,7 +458,7 @@
               </option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
             zugehörige Teams aus.
