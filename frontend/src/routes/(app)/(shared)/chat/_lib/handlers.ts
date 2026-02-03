@@ -111,6 +111,8 @@ export interface ChatHandlers {
 
 export interface WebSocketCallbacks {
   onConnected: (ws: WebSocket) => void;
+  /** Called when WebSocket disconnects. permanent=true means max retries exceeded. */
+  onDisconnect: (permanent: boolean) => void;
   onNewMessage: (message: Message) => void;
   onTypingStart: (conversationId: number, userId: number) => void;
   onTypingStop: (userId: number) => void;
@@ -361,6 +363,33 @@ let ws: WebSocket | null = null;
 let pingIntervalId: number | null = null;
 let typingTimeoutId: number | undefined;
 
+// Reconnection state
+let reconnectAttempts = 0;
+let reconnectTimeoutId: number | null = null;
+let originalCallbacks: WebSocketCallbacks | null = null;
+
+/** Parse raw WebSocket MessageEvent and dispatch to handler */
+function handleRawMessage(
+  event: MessageEvent,
+  callbacks: WebSocketCallbacks,
+): void {
+  try {
+    // MessageEvent.data is typed as 'any' in DOM lib - explicitly type it
+    const rawData: unknown = event.data;
+    if (typeof rawData !== 'string') {
+      log.error(
+        { rawDataType: typeof rawData },
+        'Unexpected WebSocket message type',
+      );
+      return;
+    }
+    const message = JSON.parse(rawData) as { type: string; data: unknown };
+    handleWebSocketMessage(message, callbacks);
+  } catch (err) {
+    log.error({ err }, 'Error parsing WebSocket message');
+  }
+}
+
 /**
  * Connect to WebSocket using connection ticket
  * SECURITY: Fetches short-lived ticket instead of using JWT to prevent token leakage in logs
@@ -370,6 +399,9 @@ export async function connectWebSocket(
   callbacks: WebSocketCallbacks,
 ): Promise<WebSocket | null> {
   if (!browser) return null;
+
+  // Store original callbacks for reconnection (only on first connection)
+  originalCallbacks ??= callbacks;
 
   // Close existing connection before async operation
   if (ws !== null) {
@@ -397,29 +429,29 @@ export async function connectWebSocket(
     };
 
     newWs.onmessage = (event: MessageEvent) => {
-      try {
-        // MessageEvent.data is typed as 'any' in DOM lib - explicitly type it
-        const rawData: unknown = event.data;
-        if (typeof rawData !== 'string') {
-          log.error(
-            { rawDataType: typeof rawData },
-            'Unexpected WebSocket message type',
-          );
-          return;
-        }
-        const message = JSON.parse(rawData) as { type: string; data: unknown };
-        handleWebSocketMessage(message, callbacks);
-      } catch (err) {
-        log.error({ err }, 'Error parsing WebSocket message');
-      }
+      handleRawMessage(event, callbacks);
     };
 
     newWs.onerror = (err) => {
       log.error({ err }, 'WebSocket error');
     };
 
-    newWs.onclose = () => {
-      // Connection closed
+    newWs.onclose = (event: CloseEvent) => {
+      ws = null;
+
+      // 1001 = "going away" — browser is navigating away from the page.
+      // Svelte onDestroy → disconnectWebSocket() handles full cleanup.
+      if (event.code === 1001) {
+        log.debug({ code: event.code }, 'WebSocket closed (page navigation)');
+        return;
+      }
+
+      log.warn(
+        { code: event.code, reason: event.reason },
+        'WebSocket connection closed unexpectedly',
+      );
+      callbacks.onDisconnect(false);
+      scheduleReconnect();
     };
 
     // Assign to module-level variable after setup complete
@@ -439,6 +471,13 @@ function handleConnectionEstablished(
   _data: unknown,
   callbacks: WebSocketCallbacks,
 ): void {
+  // Reset reconnection state on successful connection
+  reconnectAttempts = 0;
+  if (reconnectTimeoutId !== null) {
+    window.clearTimeout(reconnectTimeoutId);
+    reconnectTimeoutId = null;
+  }
+
   callbacks.getConversations().forEach((conv) => {
     sendWebSocketMessage(buildJoinMessage(conv.id));
   });
@@ -552,6 +591,15 @@ export function stopPeriodicPing(): void {
 
 export function disconnectWebSocket(): void {
   stopPeriodicPing();
+
+  // Cancel any pending reconnection
+  if (reconnectTimeoutId !== null) {
+    window.clearTimeout(reconnectTimeoutId);
+    reconnectTimeoutId = null;
+  }
+  reconnectAttempts = 0;
+  originalCallbacks = null;
+
   if (ws) {
     ws.onclose = null;
     ws.close();
@@ -564,25 +612,45 @@ export function getWebSocket(): WebSocket | null {
 }
 
 /**
- * Attempt to reconnect WebSocket with exponential backoff
- * SECURITY: Uses connection tickets instead of JWT
+ * Schedule a WebSocket reconnection with exponential backoff.
+ * Uses stored original callbacks to ensure consistent behavior across retries.
+ * Overrides onAuthError during reconnection to retry instead of redirecting to login,
+ * since ticket fetch failures during reconnection are likely transient network issues.
  */
-export function attemptReconnect(
-  currentAttempts: number,
-  callbacks: WebSocketCallbacks,
-): { success: boolean; attempts: number } {
-  if (!shouldReconnect(currentAttempts)) {
-    log.error({ currentAttempts }, 'Max reconnection attempts reached');
-    return { success: false, attempts: currentAttempts };
+function scheduleReconnect(): void {
+  if (originalCallbacks === null) return;
+  if (reconnectTimeoutId !== null) return; // Already scheduled
+
+  if (!shouldReconnect(reconnectAttempts)) {
+    log.error(
+      { reconnectAttempts },
+      'Max reconnection attempts reached, giving up',
+    );
+    originalCallbacks.onDisconnect(true);
+    return;
   }
 
-  const attempts = currentAttempts + 1;
+  reconnectAttempts++;
+  const delay = calculateReconnectDelay(reconnectAttempts);
+  log.info(
+    { attempt: reconnectAttempts, delay },
+    'Scheduling WebSocket reconnect',
+  );
 
-  setTimeout(() => {
-    void connectWebSocket(callbacks);
-  }, calculateReconnectDelay(attempts));
+  reconnectTimeoutId = window.setTimeout(() => {
+    reconnectTimeoutId = null;
+    if (originalCallbacks === null) return;
 
-  return { success: true, attempts };
+    // During reconnection, override onAuthError to retry instead of redirecting
+    const reconnectCallbacks: WebSocketCallbacks = {
+      ...originalCallbacks,
+      onAuthError: () => {
+        log.warn('Auth error during reconnect, will retry');
+        scheduleReconnect();
+      },
+    };
+    void connectWebSocket(reconnectCallbacks);
+  }, delay);
 }
 
 // Re-export websocket utilities for convenience

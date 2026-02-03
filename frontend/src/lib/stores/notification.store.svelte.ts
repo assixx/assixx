@@ -60,10 +60,20 @@ function incrementCount(state: NotificationState, type: CountType): void {
   state.lastUpdate = new Date();
 }
 
+/**
+ * SSE event types suppressed by feature pages that handle their own badge updates.
+ * When a page has a direct real-time channel (e.g., chat page uses WebSocket),
+ * it suppresses the SSE handler to prevent double-counting.
+ */
+const suppressedSSETypes = new Set<string>();
+
 function handleSSEEvent(
   state: NotificationState,
   event: NotificationEvent,
 ): void {
+  // Skip types suppressed by active feature pages (prevents double-counting)
+  if (suppressedSSETypes.has(event.type)) return;
+
   switch (event.type) {
     case 'CONNECTED':
       state.isConnected = true;
@@ -329,6 +339,54 @@ function disconnectSSE(
   state.connectionState = 'disconnected';
 }
 
+function buildStoreActions(
+  state: NotificationState,
+  getUnsubscribe: () => (() => void) | null,
+  setUnsubscribe: (fn: (() => void) | null) => void,
+) {
+  return {
+    connect: () => {
+      connectSSE(state, setUnsubscribe);
+    },
+    disconnect: () => {
+      disconnectSSE(state, getUnsubscribe(), setUnsubscribe);
+    },
+    decrementCount: (type: CountType) => {
+      decrementCountMut(state, type);
+    },
+    incrementCount: (type: CountType) => {
+      incrementCount(state, type);
+    },
+    resetCount: (type: CountType) => {
+      resetCountMut(state, type);
+    },
+    resetAllCounts: () => {
+      state.counts = createInitialCounts();
+    },
+    setCounts: (counts: Partial<NotificationCounts>) => {
+      setCountsMut(state, counts);
+    },
+    loadInitialCounts: async () => {
+      if (browser) await fetchInitialCounts(state);
+    },
+    /** Initialize counts from SSR data (no HTTP request needed) */
+    initFromSSR: (counts: SSRCounts) => {
+      initFromSSRData(state, counts);
+    },
+    markTypeAsRead: async (featureType: FeatureType) => {
+      if (browser) await markFeatureTypeAsRead(state, featureType);
+    },
+    /**
+     * Suppress an SSE event type from auto-incrementing badge counts.
+     * Used by feature pages that handle their own real-time updates
+     * (e.g., chat page uses WebSocket, so it suppresses SSE NEW_MESSAGE).
+     */
+    suppressSSEType: (type: string) => suppressedSSETypes.add(type),
+    /** Re-enable SSE handling for a previously suppressed event type. */
+    unsuppressSSEType: (type: string) => suppressedSSETypes.delete(type),
+  };
+}
+
 function createNotificationStore() {
   const state = $state<NotificationState>({
     counts: createInitialCounts(),
@@ -357,37 +415,7 @@ function createNotificationStore() {
     get totalUnread() {
       return state.counts.total;
     },
-    connect: () => {
-      connectSSE(state, setUnsubscribe);
-    },
-    disconnect: () => {
-      disconnectSSE(state, unsubscribeSSE, setUnsubscribe);
-    },
-    decrementCount: (type: CountType) => {
-      decrementCountMut(state, type);
-    },
-    incrementCount: (type: CountType) => {
-      incrementCount(state, type);
-    },
-    resetCount: (type: CountType) => {
-      resetCountMut(state, type);
-    },
-    resetAllCounts: () => {
-      state.counts = createInitialCounts();
-    },
-    setCounts: (counts: Partial<NotificationCounts>) => {
-      setCountsMut(state, counts);
-    },
-    loadInitialCounts: async () => {
-      if (browser) await fetchInitialCounts(state);
-    },
-    /** Initialize counts from SSR data (no HTTP request needed) */
-    initFromSSR: (counts: SSRCounts) => {
-      initFromSSRData(state, counts);
-    },
-    markTypeAsRead: async (featureType: FeatureType) => {
-      if (browser) await markFeatureTypeAsRead(state, featureType);
-    },
+    ...buildStoreActions(state, () => unsubscribeSSE, setUnsubscribe),
   };
 }
 

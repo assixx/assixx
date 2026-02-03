@@ -6,6 +6,7 @@ import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
 import { ResultSetHeader, RowDataPacket, execute, query } from './utils/db.js';
+import { eventBus } from './utils/eventBus.js';
 import { logger } from './utils/logger.js';
 
 // ============================================================================
@@ -393,7 +394,7 @@ export class ChatWebSocketServer {
     senderId: number,
     content: string,
     tenantId: number,
-  ): Promise<number> {
+  ): Promise<{ id: number; uuid: string }> {
     const messageUuid = uuidv7();
     const messageQuery = `
       INSERT INTO messages (conversation_id, sender_id, content, tenant_id, uuid, uuid_created_at, created_at)
@@ -416,7 +417,7 @@ export class ChatWebSocketServer {
     if (insertedRow === undefined) {
       throw new Error('Failed to insert message - no row returned');
     }
-    return insertedRow.id;
+    return { id: insertedRow.id, uuid: messageUuid };
   }
 
   /**
@@ -659,7 +660,7 @@ export class ChatWebSocketServer {
     }
   }
 
-  /** Saves message, links attachments, and broadcasts to participants */
+  /** Saves message, links attachments, broadcasts to participants, and emits SSE event */
   private async processAndBroadcastMessage(
     userId: number,
     tenantId: number,
@@ -668,7 +669,7 @@ export class ChatWebSocketServer {
     attachmentIds: number[],
     participantIds: number[],
   ): Promise<number> {
-    const messageId = await this.saveMessage(
+    const { id: messageId, uuid: messageUuid } = await this.saveMessage(
       conversationId,
       userId,
       content,
@@ -694,6 +695,18 @@ export class ChatWebSocketServer {
     );
 
     this.broadcastToParticipants(participantIds, 'new_message', messageData);
+
+    // Emit SSE event so sidebar badges update for users NOT on the chat page
+    const recipientIds = participantIds.filter((id: number) => id !== userId);
+    eventBus.emitNewMessage(tenantId, {
+      id: messageId,
+      uuid: messageUuid,
+      conversationId,
+      senderId: userId,
+      recipientIds,
+      preview: content.substring(0, 50),
+    });
+
     return messageId;
   }
 
