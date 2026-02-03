@@ -153,6 +153,7 @@
 
   // WebSocket
   let typingUsers: number[] = $state([]);
+  let isDisconnected = $state(false);
 
   // SSE subscription for scheduled messages
   let sseUnsubscribe: (() => void) | null = null;
@@ -198,6 +199,10 @@
     if (ssrConversations.length > 0) {
       conversations = [...ssrConversations];
     }
+
+    // Suppress SSE NEW_MESSAGE in notification store while chat page is mounted.
+    // The chat page handles badge updates directly from WebSocket (prevents double-counting).
+    notificationStore.suppressSSEType('NEW_MESSAGE');
 
     // SSR already loaded conversations and user data
     // Just need to connect WebSocket for real-time updates
@@ -251,6 +256,8 @@
 
   onDestroy(() => {
     handlers.disconnectWebSocket();
+    // Re-enable SSE NEW_MESSAGE handling in notification store
+    notificationStore.unsuppressSSEType('NEW_MESSAGE');
     // Cleanup SSE subscription
     if (sseUnsubscribe !== null) {
       sseUnsubscribe();
@@ -326,22 +333,38 @@
   async function connectWebSocket(): Promise<void> {
     await handlers.connectWebSocket({
       onConnected: () => {
+        isDisconnected = false;
         conversations.forEach((conv) => {
           handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
         });
       },
+      onDisconnect: (permanent: boolean) => {
+        isDisconnected = true;
+        if (permanent) {
+          showNotification(MESSAGES.errorConnectionLost, 'error');
+        }
+      },
       onNewMessage: (newMessage: Message) => {
-        if (activeConversation?.id === newMessage.conversationId) {
+        const isActiveConv =
+          activeConversation?.id === newMessage.conversationId;
+        const isOwnMessage = newMessage.senderId === currentUser?.id;
+
+        if (isActiveConv) {
           messages = [...messages, newMessage];
-          if (newMessage.senderId !== currentUser?.id) {
+          if (!isOwnMessage) {
             void apiMarkConversationAsRead(newMessage.conversationId);
           }
+        } else if (!isOwnMessage) {
+          // Non-active conversation, not own message → increment sidebar badge
+          // (SSE NEW_MESSAGE is suppressed while chat page is mounted)
+          notificationStore.incrementCount('chat');
         }
+
         conversations = updateConversationWithMessage(
           conversations,
           newMessage.conversationId,
           newMessage,
-          activeConversation?.id === newMessage.conversationId,
+          isActiveConv,
           currentUser?.id ?? 0,
         );
         typingUsers = removeTypingUser(typingUsers, newMessage.senderId);
@@ -765,6 +788,15 @@
     />
 
     <div class="chat-main">
+      {#if isDisconnected}
+        <div
+          class="connection-lost-banner"
+          role="alert"
+        >
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>{MESSAGES.reconnecting}</span>
+        </div>
+      {/if}
       {#if activeConversation}
         <ChatHeader
           conversation={activeConversation}
@@ -869,5 +901,29 @@
 <style>
   .hidden {
     display: none !important;
+  }
+
+  .connection-lost-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-warning-text, #92400e);
+    background-color: var(--color-warning-bg, #fef3c7);
+    border-bottom: 1px solid var(--color-warning-border, #fcd34d);
+    animation: pulse-banner 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-banner {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 </style>

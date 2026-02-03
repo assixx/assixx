@@ -10,7 +10,7 @@
    */
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  import { goto } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
@@ -134,6 +134,9 @@
   // Logout Modal State
   let showLogoutModal = $state(false);
 
+  // Browser tab title base (without count prefix)
+  let pageTitleBase = $state('Assixx');
+
   // Tenant Info - initialize from SSR data to prevent hydration FOUC
   // INTENTIONAL: Capture initial SSR value. Updates via ssrTenant → effect sync.
   // svelte-ignore state_referenced_locally
@@ -170,6 +173,24 @@
     if (ssrUser !== null) {
       user = ssrUser;
     }
+  });
+
+  // =========================================================================
+  // BROWSER TAB TITLE - Show unread count (e.g., "(3) Chat - Assixx")
+  // =========================================================================
+
+  // Capture page-set title after each navigation (<svelte:head> in child pages)
+  afterNavigate(() => {
+    requestAnimationFrame(() => {
+      pageTitleBase = document.title.replace(/^\(\d+\)\s*/, '');
+    });
+  });
+
+  // Apply unread count prefix to browser tab title
+  $effect(() => {
+    const count = notificationStore.totalUnread;
+    const base = pageTitleBase;
+    document.title = count > 0 ? `(${count}) ${base}` : base;
   });
 
   // Navigation menu items - filtered by has_full_access for admin users

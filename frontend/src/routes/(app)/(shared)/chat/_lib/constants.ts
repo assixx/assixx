@@ -41,8 +41,10 @@ export const MESSAGES = {
   errorDeleteConversation: 'Fehler beim Löschen der Unterhaltung',
   errorUploadFiles: 'Fehler beim Hochladen der Dateien',
   errorWebSocket: 'Fehler bei der Kommunikation mit dem Server',
-  errorConnectionLost: 'Verbindung zum Server verloren. Bitte Seite neu laden.',
+  errorConnectionLost:
+    'Verbindung zum Server konnte nicht wiederhergestellt werden. Bitte Seite neu laden.',
   errorConnectionRetry: 'Verbindung verloren. Bitte versuchen Sie es erneut.',
+  reconnecting: 'Verbindung unterbrochen – Wiederverbindung läuft...',
 
   // Success
   successScheduled: 'Nachricht wurde geplant',
