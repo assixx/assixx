@@ -29,7 +29,6 @@ import { RolesGuard } from './common/guards/roles.guard.js';
 // Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
 import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
-import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor.js';
 import { LoggerModule } from './common/logger/logger.module.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
@@ -183,11 +182,6 @@ import { UsersModule } from './users/users.module.js';
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
-    },
-    // Global Tenant Context Interceptor
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: TenantContextInterceptor,
     },
     // Global Audit Trail Interceptor
     // Logs ALL authenticated requests to audit_trail table
