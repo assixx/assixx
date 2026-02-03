@@ -11,8 +11,12 @@
 
 .alert--success {
   border-color: rgb(76 175 80 / 30%);
-  background: rgb(76 175 80 / 10%);
+  background: rgb(76 175 80 / 28%);
   color: var(--color-success);
+}
+
+html.dark .alert--success {
+  background: rgb(76 175 80 / 10%);
 }
 
 .alert--success .alert__icon {
@@ -47,8 +51,12 @@
 
 .alert--warning {
   border-color: rgb(255 152 0 / 30%);
-  background: rgb(255 152 0 / 10%);
+  background: rgb(255 152 0 / 28%);
   color: var(--color-warning);
+}
+
+html.dark .alert--warning {
+  background: rgb(255 152 0 / 10%);
 }
 
 .alert--warning .alert__icon {
@@ -84,8 +92,13 @@
 .alert--error,
 .alert--danger {
   border-color: rgb(244 67 54 / 30%);
-  background: rgb(244 67 54 / 10%);
+  background: rgb(244 67 54 / 28%);
   color: var(--color-danger);
+}
+
+html.dark .alert--error,
+html.dark .alert--danger {
+  background: rgb(244 67 54 / 10%);
 }
 
 .alert--error .alert__icon,
@@ -126,8 +139,12 @@
 
 .alert--info {
   border-color: rgb(33 150 243 / 30%);
-  background: rgb(33 150 243 / 10%);
+  background: rgb(33 150 243 / 28%);
   color: var(--color-primary);
+}
+
+html.dark .alert--info {
+  background: rgb(33 150 243 / 10%);
 }
 
 .alert--info .alert__icon {
@@ -162,8 +179,12 @@
 
 .alert--neutral {
   border-color: var(--color-glass-border);
-  background: var(--glass-bg-hover);
+  background: rgb(0 0 0 / 19%);
   color: var(--color-text-primary);
+}
+
+html.dark .alert--neutral {
+  background: var(--glass-bg-hover);
 }
 
 .alert--neutral .alert__icon {

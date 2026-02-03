@@ -1,62 +1,12 @@
 <script lang="ts">
   /**
    * Toast Container Component
-   * 1:1 Copy from frontend/src/scripts/services/notification.service.ts
-   * Renders toast notifications in fixed position
+   * Uses Design System alert primitives for consistent theming (light/dark)
    */
 
   import { toasts, type ToastType } from '$lib/stores/toast';
 
-  // =============================================================================
-  // TYPES
-  // =============================================================================
-
-  interface NotificationColors {
-    bgColor: string;
-    borderColor: string;
-    textColor: string;
-  }
-
-  // =============================================================================
-  // HELPER FUNCTIONS (1:1 from legacy notification.service.ts)
-  // =============================================================================
-
-  /**
-   * Get notification colors based on type
-   */
-  function getNotificationColors(type: ToastType): NotificationColors {
-    switch (type) {
-      case 'success':
-        return {
-          bgColor: 'rgba(76, 175, 80, 0.1)',
-          borderColor: 'rgba(76, 175, 80, 0.2)',
-          textColor: 'rgba(76, 175, 80, 0.9)',
-        };
-      case 'warning':
-        return {
-          bgColor: 'rgba(255, 152, 0, 0.1)',
-          borderColor: 'rgba(255, 152, 0, 0.2)',
-          textColor: 'rgba(255, 152, 0, 0.9)',
-        };
-      case 'error':
-        return {
-          bgColor: 'rgba(244, 67, 54, 0.1)',
-          borderColor: 'rgba(244, 67, 54, 0.2)',
-          textColor: 'rgba(244, 67, 54, 0.9)',
-        };
-      case 'info':
-      default:
-        return {
-          bgColor: 'rgba(33, 150, 243, 0.1)',
-          borderColor: 'rgba(33, 150, 243, 0.2)',
-          textColor: 'rgba(33, 150, 243, 0.9)',
-        };
-    }
-  }
-
-  /**
-   * Get icon class for notification type
-   */
+  /** Map toast type to FontAwesome icon class */
   function getIconClass(type: ToastType): string {
     switch (type) {
       case 'success':
@@ -70,50 +20,25 @@
         return 'fa-info-circle';
     }
   }
+
+  /** Map toast type to alert variant class */
+  function getAlertVariant(type: ToastType): string {
+    if (type === 'error') return 'alert--error';
+    return `alert--${type}`;
+  }
 </script>
 
-<!-- Notification Container (1:1 like legacy) -->
-<div
-  id="notification-container"
-  class="notification-container"
-  style="position: fixed; top: 91px; right: 20px; z-index: 10000; pointer-events: none;"
->
+<div class="notification-container">
   {#each $toasts as toast (toast.id)}
-    {@const colors = getNotificationColors(toast.type)}
     <div
       id="notification-{toast.id}"
-      class="notification notification-{toast.type}"
+      class="alert {getAlertVariant(toast.type)} notification"
       class:dismissing={toast.dismissing}
-      style="
-        position: relative;
-        padding: 12px 20px;
-        background: {colors.bgColor};
-        border: 1px solid {colors.borderColor};
-        color: {colors.textColor};
-        border-radius: var(--radius-xl);
-        font-size: 14px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-        pointer-events: auto;
-        width: max-content;
-        max-width: 500px;
-      "
     >
-      <!-- Icon -->
-      <span
-        style="color: {colors.textColor}; display: flex; align-items: center;"
-      >
-        <i
-          class="fas {getIconClass(toast.type)}"
-          style="font-size: 18px;"
-        ></i>
+      <span class="alert__icon">
+        <i class="fas {getIconClass(toast.type)}"></i>
       </span>
-
-      <!-- Text -->
-      <span style="flex: 1; color: {colors.textColor};">
+      <span class="alert__content">
         {toast.title}{toast.message !== undefined && toast.message !== '' ?
           `: ${toast.message}`
         : ''}
@@ -123,8 +48,19 @@
 </div>
 
 <style>
-  /* Animations (1:1 from legacy notification.service.ts) */
+  .notification-container {
+    position: fixed;
+    top: 91px;
+    right: 20px;
+    z-index: 10000;
+    pointer-events: none;
+  }
+
   .notification {
+    pointer-events: auto;
+    width: max-content;
+    max-width: 500px;
+    margin-bottom: 10px;
     animation: slideInRight 0.3s ease-out;
   }
 
@@ -154,12 +90,11 @@
     }
   }
 
-  /* Responsive (1:1 from legacy) */
   @media (max-width: 768px) {
     .notification-container {
-      left: 20px !important;
-      right: 20px !important;
-      max-width: none !important;
+      left: 20px;
+      right: 20px;
+      max-width: none;
     }
   }
 </style>
