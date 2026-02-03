@@ -81,21 +81,36 @@
   box-shadow: none;
   border: 1px solid var(--color-glass-border); /* Subtle border */
 
+  /* Light mode: bright bg with red gradient border */
   background:
-    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
+    linear-gradient(rgb(255 255 255 / 95%), rgb(245 242 242)) padding-box,
     linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
 
   /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
-  color: var(--color-white); /* Primary blue text */
+  color: var(--text-primary);
+}
+
+/* Dark mode: dark bg with same red gradient border */
+html.dark .btn-cancel {
+  background:
+    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+  color: var(--color-white);
 }
 
 /* Hover state - Strengthen glass and border */
 .btn-cancel:hover:not(:disabled) {
   background:
+    linear-gradient(rgb(248 238 238), rgb(240 228 228)) padding-box,
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+}
+
+html.dark .btn-cancel:hover:not(:disabled) {
+  background:
     linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
-    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box; /* Solid primary border */
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
 }
 
 /* Focus state */

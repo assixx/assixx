@@ -52,11 +52,11 @@
   flex-shrink: 0; /* Verhindert Größenänderung */
   flex-direction: column;
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  border-left: 1px solid rgb(255 255 255 / 10%);
-  border-right: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
+  border-left: 1px solid var(--color-glass-border);
+  border-right: 1px solid var(--color-glass-border);
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
 
   width: 300px;
 
@@ -228,9 +228,9 @@
   justify-content: space-between;
   align-items: center;
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   padding: 7px 16px;
 }
@@ -401,7 +401,7 @@
 .date-separator::before,
 .date-separator::after {
   flex: 1;
-  background: rgb(255 255 255 / 10%);
+  background: var(--color-glass-border);
   height: 1px;
   content: '';
 }
@@ -478,10 +478,10 @@
 .message-content {
   position: relative;
   backdrop-filter: blur(10px);
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   padding: 10px 14px;
   color: var(--text-primary);
@@ -548,9 +548,9 @@
   position: relative;
   z-index: 10;
   backdrop-filter: blur(10px);
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   padding: 10px 16px;
 }
@@ -559,10 +559,10 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: 20px;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   padding: 6px;
 }
@@ -644,7 +644,7 @@
   border: none;
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   padding: 0;
 
   width: 16px;
@@ -730,15 +730,15 @@
   cursor: pointer;
 
   margin-top: var(--spacing-2);
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   padding: var(--spacing-3);
 }
 
 .attachment:hover {
-  background: rgb(255 255 255 / 15%);
+  background: var(--glass-bg-active);
 }
 
 /* Image Attachment with Preview Overlay */
@@ -858,7 +858,7 @@
   transition: opacity var(--duration-fast) var(--ease-standard);
   border-radius: var(--radius-md);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   padding: var(--spacing-2) var(--spacing-3);
 }
@@ -870,7 +870,7 @@
   align-items: center;
   border-radius: var(--radius-md);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   width: 48px;
   height: 48px;
@@ -930,7 +930,7 @@
   left: 0;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
 
-  background: rgb(255 255 255 / 20%);
+  background: var(--glass-bg-active);
 
   width: 100%;
   height: 4px;
@@ -1016,7 +1016,7 @@
   gap: 6px;
 
   margin-top: 8px;
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
   padding-top: 8px;
   color: hsl(40deg 100% 70%);
 
@@ -1043,7 +1043,7 @@
   border: none;
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   padding: 0;
 
   width: 20px;
