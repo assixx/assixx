@@ -78,8 +78,8 @@
   --main-bg-gradient: linear-gradient(
     180deg,
     var(--color-white) 0%,
-    rgb(171 207 255 / 7.5%) 30%,
-    rgb(37 157 255 / 11%) 60%,
+    rgb(171 207 255 / 6.8%) 30%,
+    rgb(37 157 255 / 2.7%) 60%,
     var(--color-gray-100) 100%
   );
 

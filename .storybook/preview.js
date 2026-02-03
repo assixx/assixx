@@ -20,23 +20,20 @@ const preview = {
       },
     },
 
-    // Backgrounds - Match Assixx dark theme
+    // Backgrounds - Solid colors for Storybook addon compatibility.
+    // The addon sets background-color (not background-image), so gradients
+    // don't work here. The actual gradient overlay comes from body::after
+    // via CSS variables (--main-bg-gradient in base.css).
     backgrounds: {
+      disable: false,
       options: {
         'assixx-dark': {
-          name: 'assixx-dark',
-          value: '#000000',
+          name: 'Dark Mode',
+          value: '#000',
         },
-
-        'assixx-gradient': {
-          name: 'assixx-gradient',
-          value:
-            'linear-gradient(5deg, transparent 0%, rgba(0, 142, 255, 0.1) 25%, rgba(1, 0, 4, 0.51) 60%, rgba(0, 0, 4, 0.6) 90%, black 100%)',
-        },
-
-        light: {
-          name: 'light',
-          value: '#ffffff',
+        'assixx-light': {
+          name: 'Light Mode',
+          value: '#fafafa',
         },
       },
     },
@@ -74,7 +71,40 @@ const preview = {
 
   // Global decorators
   decorators: [
-    (story) => {
+    (story, context) => {
+      // Sync html.dark class with selected background (drives CSS variable theming)
+      // Backgrounds global can be string or { value: string, grid: boolean }
+      const data = context.globals?.backgrounds;
+      const bg = typeof data === 'string' ? data : data?.value;
+      const isDark = !bg || bg === 'assixx-dark';
+
+      // Apply class to BOTH html and body for maximum CSS variable coverage
+      const html = document.documentElement;
+      const body = document.body;
+      if (isDark) {
+        html.classList.add('dark');
+        body.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+        body.classList.remove('dark');
+      }
+
+      // Debug: log computed CSS variable values to find override source
+      const computed = getComputedStyle(html);
+      console.log('[Assixx Theme]', isDark ? 'DARK' : 'LIGHT', {
+        bg,
+        'html.dark': html.classList.contains('dark'),
+        '--main-bg': computed.getPropertyValue('--main-bg'),
+        '--color-text-primary': computed.getPropertyValue(
+          '--color-text-primary',
+        ),
+        '--glass-bg': computed.getPropertyValue('--glass-bg'),
+        '--color-white': computed.getPropertyValue('--color-white'),
+        'body.color': getComputedStyle(body).color,
+        'body.background': getComputedStyle(body).background,
+        styleSheets: document.styleSheets.length,
+      });
+
       // Wrap each story in a container with padding
       const container = document.createElement('div');
       container.style.padding = '2rem';

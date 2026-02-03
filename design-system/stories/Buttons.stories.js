@@ -45,12 +45,6 @@ export default {
       defaultValue: false,
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 // Helper function to create button HTML

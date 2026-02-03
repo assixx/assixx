@@ -9,12 +9,6 @@ export default {
   parameters: {
     layout: 'padded',
   },
-
-  globals: {
-    backgrounds: {
-      value: 'dark',
-    },
-  },
 };
 
 /**

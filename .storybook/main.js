@@ -38,12 +38,8 @@ export default {
         },
       },
 
-      // CSS configuration
-      css: {
-        postcss: './frontend/postcss.config.js',
-      },
-
       // Tailwind Plugin - CRITICAL for utilities generation
+      // @tailwindcss/vite handles all CSS processing (PostCSS not needed with Tailwind v4)
       plugins: [tailwindcss.default()],
     });
   },

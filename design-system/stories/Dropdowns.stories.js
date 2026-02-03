@@ -24,12 +24,6 @@ export default {
       description: 'Default selected value',
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**
