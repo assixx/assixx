@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/static/images/logo.png" alt="Assixx Logo" width="200">
+  <img src="frontend/static/images/logo_lightmode.png" alt="Assixx Logo" width="200">
 </p>
 
 # Was ist Assixx?
@@ -11,6 +11,21 @@
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
 Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in produzierenden Unternehmen.
+
+---
+
+## Preview
+
+<table>
+  <tr>
+    <td align="center"><strong>Dark Mode</strong></td>
+    <td align="center"><strong>Light Mode</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/sample_dark.png" alt="Assixx Dark Mode" width="100%"></td>
+    <td><img src="docs/screenshots/sample_light.png" alt="Assixx Light Mode" width="100%"></td>
+  </tr>
+</table>
 
 ---
 
