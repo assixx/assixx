@@ -67,7 +67,7 @@
       <div class="flex items-start">
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-upload"
           disabled={kvpDetailState.isAddingComment}
         >
           {#if kvpDetailState.isAddingComment}
