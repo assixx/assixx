@@ -36,12 +36,6 @@ export default {
       description: 'Empty state size',
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

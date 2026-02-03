@@ -41,12 +41,6 @@ export default {
       description: 'Loading state',
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

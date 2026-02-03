@@ -8,11 +8,6 @@
 export default {
   title: 'Design System/Badges',
   tags: ['autodocs'],
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**
