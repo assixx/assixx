@@ -368,6 +368,48 @@ let reconnectAttempts = 0;
 let reconnectTimeoutId: number | null = null;
 let originalCallbacks: WebSocketCallbacks | null = null;
 
+// ==========================================================================
+// Callback Management (presence vs chat)
+// ==========================================================================
+// The WebSocket connection lives at app layout level for presence tracking.
+// When the chat page mounts, it "upgrades" callbacks to include chat handlers.
+// When it unmounts, callbacks are "downgraded" back to presence-only.
+// The WebSocket itself is NEVER closed during this swap.
+
+/** Active callbacks used by the WebSocket onmessage/onopen/onclose handlers */
+let activeCallbacks: WebSocketCallbacks | null = null;
+
+/** Presence-only callbacks set by the app layout (minimal handlers) */
+let presenceCallbacks: WebSocketCallbacks | null = null;
+
+/**
+ * Register presence-only callbacks (called once from app layout).
+ * These are the "baseline" callbacks restored when leaving the chat page.
+ */
+export function setPresenceCallbacks(callbacks: WebSocketCallbacks): void {
+  presenceCallbacks = callbacks;
+}
+
+/**
+ * Upgrade active callbacks (e.g., when chat page mounts).
+ * Does NOT reconnect — just swaps which handlers receive messages.
+ */
+export function updateCallbacks(callbacks: WebSocketCallbacks): void {
+  activeCallbacks = callbacks;
+  originalCallbacks = callbacks;
+}
+
+/**
+ * Downgrade to presence-only callbacks (e.g., when chat page unmounts).
+ * WebSocket stays connected — user remains "online".
+ */
+export function restorePresenceCallbacks(): void {
+  if (presenceCallbacks !== null) {
+    activeCallbacks = presenceCallbacks;
+    originalCallbacks = presenceCallbacks;
+  }
+}
+
 /** Parse raw WebSocket MessageEvent and dispatch to handler */
 function handleRawMessage(
   event: MessageEvent,
@@ -400,6 +442,8 @@ export async function connectWebSocket(
 ): Promise<WebSocket | null> {
   if (!browser) return null;
 
+  // Set active callbacks (used by onmessage/onopen/onclose via module reference)
+  activeCallbacks = callbacks;
   // Store original callbacks for reconnection (only on first connection)
   originalCallbacks ??= callbacks;
 
@@ -414,7 +458,7 @@ export async function connectWebSocket(
   const ticket = await getConnectionTicket('websocket');
   if (ticket === null) {
     log.error('Failed to get connection ticket for WebSocket');
-    callbacks.onAuthError();
+    activeCallbacks.onAuthError();
     return null;
   }
 
@@ -424,12 +468,18 @@ export async function connectWebSocket(
     // Create new WebSocket in local variable first to avoid race conditions
     const newWs = new WebSocket(wsUrl);
 
+    // IMPORTANT: All handlers reference activeCallbacks (module-level mutable)
+    // instead of closure-captured callbacks. This allows the chat page to
+    // upgrade/downgrade handlers without reconnecting.
+
     newWs.onopen = () => {
-      callbacks.onConnected(newWs);
+      activeCallbacks?.onConnected(newWs);
     };
 
     newWs.onmessage = (event: MessageEvent) => {
-      handleRawMessage(event, callbacks);
+      if (activeCallbacks !== null) {
+        handleRawMessage(event, activeCallbacks);
+      }
     };
 
     newWs.onerror = (err) => {
@@ -440,7 +490,7 @@ export async function connectWebSocket(
       ws = null;
 
       // 1001 = "going away" — browser is navigating away from the page.
-      // Svelte onDestroy → disconnectWebSocket() handles full cleanup.
+      // App layout onDestroy → disconnectWebSocket() handles full cleanup.
       if (event.code === 1001) {
         log.debug({ code: event.code }, 'WebSocket closed (page navigation)');
         return;
@@ -450,7 +500,7 @@ export async function connectWebSocket(
         { code: event.code, reason: event.reason },
         'WebSocket connection closed unexpectedly',
       );
-      callbacks.onDisconnect(false);
+      activeCallbacks?.onDisconnect(false);
       scheduleReconnect();
     };
 
@@ -537,6 +587,7 @@ const messageHandlers: Record<string, MessageHandler> = {
 const noopMessageTypes = new Set<string>([
   WS_MESSAGE_TYPES.PONG,
   WS_MESSAGE_TYPES.MESSAGE_SENT,
+  WS_MESSAGE_TYPES.USER_JOINED_CONVERSATION,
 ]);
 
 export function handleWebSocketMessage(
@@ -597,6 +648,9 @@ export function sendTypingStop(conversationId: number): void {
 }
 
 export function startPeriodicPing(): void {
+  // Idempotency guard: prevent duplicate ping intervals
+  if (pingIntervalId !== null) return;
+
   pingIntervalId = window.setInterval(() => {
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(buildPingMessage()));
