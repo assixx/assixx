@@ -115,7 +115,7 @@ export interface WebSocketCallbacks {
   onDisconnect: (permanent: boolean) => void;
   onNewMessage: (message: Message) => void;
   onTypingStart: (conversationId: number, userId: number) => void;
-  onTypingStop: (userId: number) => void;
+  onTypingStop: (conversationId: number, userId: number) => void;
   onUserStatus: (userId: number, status: string) => void;
   onMessageRead: (messageId: number) => void;
   onError: (error: string) => void;
@@ -500,7 +500,7 @@ function handleTypingStart(data: unknown, callbacks: WebSocketCallbacks): void {
 
 function handleTypingStop(data: unknown, callbacks: WebSocketCallbacks): void {
   const stopData = extractTypingData(data as RawWebSocketMessage);
-  callbacks.onTypingStop(stopData.userId);
+  callbacks.onTypingStop(stopData.conversationId, stopData.userId);
 }
 
 function handleUserStatus(data: unknown, callbacks: WebSocketCallbacks): void {
@@ -566,12 +566,34 @@ export function sendWebSocketMessage(message: {
 }
 
 export function sendTypingStart(conversationId: number): void {
-  sendWebSocketMessage(buildTypingStartMessage(conversationId));
+  const sent = sendWebSocketMessage(buildTypingStartMessage(conversationId));
 
-  if (typingTimeoutId !== undefined) clearTimeout(typingTimeoutId);
+  // Clear any existing timer regardless
+  if (typingTimeoutId !== undefined) {
+    clearTimeout(typingTimeoutId);
+    typingTimeoutId = undefined;
+  }
+
+  // Only start auto-stop timer if the start message was actually sent
+  if (!sent) return;
+
   typingTimeoutId = window.setTimeout(() => {
     sendWebSocketMessage(buildTypingStopMessage(conversationId));
+    typingTimeoutId = undefined;
   }, WEBSOCKET_CONFIG.typingTimeout);
+}
+
+/**
+ * Explicitly stop typing indicator.
+ * Clears the auto-stop timer and sends typing_stop immediately.
+ * Called when a message is sent to prevent ghost typing indicators.
+ */
+export function sendTypingStop(conversationId: number): void {
+  if (typingTimeoutId !== undefined) {
+    clearTimeout(typingTimeoutId);
+    typingTimeoutId = undefined;
+  }
+  sendWebSocketMessage(buildTypingStopMessage(conversationId));
 }
 
 export function startPeriodicPing(): void {

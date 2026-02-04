@@ -13,7 +13,7 @@ export const WEBSOCKET_CONFIG = {
   /** Interval for sending ping messages (ms) */
   pingInterval: 30000,
   /** Timeout for typing indicator (ms) */
-  typingTimeout: 3000,
+  typingTimeout: 6000,
 } as const;
 
 /**

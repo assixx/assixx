@@ -216,6 +216,7 @@
 /* Main Chat Area */
 .chat-main {
   display: flex;
+  position: relative;
   flex: 1;
   flex-direction: column;
   background: var(--glass-bg);
@@ -349,7 +350,7 @@
   gap: 12px;
 
   opacity: 0%;
-  padding: 16px;
+  padding: 16px 16px 40px;
 
   min-height: 0; /* Wichtig für Firefox */
   max-height: 100%;
@@ -541,6 +542,87 @@
 
 .message.archived {
   opacity: 50%;
+}
+
+/* Connection Lost Banner */
+.connection-lost-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-warning-text, #92400e);
+  background-color: var(--color-warning-bg, #fef3c7);
+  border-bottom: 1px solid var(--color-warning-border, #fcd34d);
+  animation: pulse-banner 2s ease-in-out infinite;
+}
+
+@keyframes pulse-banner {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 60%;
+  }
+}
+
+/* Typing Indicator - Floats above input, does not shift layout */
+.typing-indicator {
+  display: flex;
+  position: absolute;
+  bottom: 75px;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  align-items: center;
+  gap: var(--spacing-2, 0.5rem);
+  padding: 4px var(--spacing-4, 1rem);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 50%;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 100%;
+  }
 }
 
 /* Message Input Area */
