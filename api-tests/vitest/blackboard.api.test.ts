@@ -1,7 +1,6 @@
 /**
  * Blackboard API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/blackboard/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
@@ -11,19 +10,19 @@ import {
   BASE_URL,
   authHeaders,
   authOnly,
-  loginBrunotest,
+  loginApitest,
   type AuthState,
   type JsonBody,
 } from './helpers.js';
 
 let auth: AuthState;
 
-// Module-level state (replaces Bruno's bru.setVar)
+// Module-level state shared across sequential describe blocks
 let blackboardEntryId: number;
 let existingBlackboardId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ─── List Blackboard Entries (seq: 1) ───────────────────────────────────────
@@ -71,8 +70,8 @@ describe('Create Blackboard Entry (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        title: `Bruno Test ${Date.now()}`,
-        content: 'Created via Bruno API test - will be deleted',
+        title: `API Test ${Date.now()}`,
+        content: 'Created via API test - will be deleted',
         priority: 'medium',
         orgLevel: 'company',
         requiresConfirmation: false,
@@ -89,8 +88,8 @@ describe('Create Blackboard Entry (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        title: `Bruno Test ${Date.now()}`,
-        content: 'Created via Bruno API test - will be deleted',
+        title: `API Test ${Date.now()}`,
+        content: 'Created via API test - will be deleted',
         priority: 'medium',
         orgLevel: 'company',
         requiresConfirmation: false,
@@ -99,7 +98,7 @@ describe('Create Blackboard Entry (Admin)', () => {
     const body = (await res.json()) as JsonBody;
 
     expect(body.data).toHaveProperty('id');
-    expect(body.data.title).toContain('Bruno Test');
+    expect(body.data.title).toContain('API Test');
 
     // Store created entry ID for subsequent tests
     if (body.data?.id) {
@@ -180,7 +179,7 @@ describe('Update Blackboard Entry (Admin)', () => {
         headers: authHeaders(auth.authToken),
         body: JSON.stringify({
           title: 'Updated Announcement',
-          content: 'Updated content via Bruno',
+          content: 'Updated content via API test',
           priority: 'high',
         }),
       },
@@ -250,7 +249,7 @@ describe('Add Comment to Entry', () => {
         method: 'POST',
         headers: authHeaders(auth.authToken),
         body: JSON.stringify({
-          comment: 'This is a test comment from Bruno API testing.',
+          comment: 'This is a test comment from API integration test.',
           isInternal: false,
         }),
       },

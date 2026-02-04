@@ -45,7 +45,7 @@ api-tests/
 | Export                 | Purpose                                                       |
 | ---------------------- | ------------------------------------------------------------- |
 | `BASE_URL`             | `http://localhost:3000/api/v2`                                |
-| `loginBrunotest()`     | Cached login -- ONE HTTP request for entire suite             |
+| `loginApitest()`       | Cached login -- ONE HTTP request for entire suite             |
 | `authHeaders(token)`   | `Authorization` + `Content-Type: application/json` (POST/PUT) |
 | `authOnly(token)`      | `Authorization` only (GET/DELETE/PUT-without-body)            |
 | `fetchWithRetry()`     | Auto-retry on 429 with exponential backoff                    |
@@ -71,17 +71,17 @@ rate-limited mid-run:
 docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' --no-auth-warning FLUSHDB
 ```
 
-### Database Prerequisites (brunotest tenant, id=1)
+### Database Prerequisites (apitest tenant, id=1)
 
 These must be set once after initial DB setup. Without them, KVP tests fail:
 
 ```sql
--- Enable all features for brunotest tenant
+-- Enable all features for apitest tenant
 INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at)
 SELECT 1, id, 1, NOW() FROM features WHERE is_active = 1
 ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1;
 
--- Set brunotest user (id=1) as team lead (required for KVP create)
+-- Set apitest user (id=1) as team lead (required for KVP create)
 UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
 ```
 
@@ -189,7 +189,7 @@ const res = await fetch(url, { headers });
 ### 7. KVP requires team lead role
 
 `kvp.service.ts` line 334: admin/root users can only create KVP suggestions if they are
-a team lead (`orgInfo.teamLeadOf.length > 0`). The brunotest user must be set as
+a team lead (`orgInfo.teamLeadOf.length > 0`). The apitest user must be set as
 `team_lead_id` on at least one team in the database.
 
 ## Pattern Mapping: Bruno to Vitest
@@ -207,17 +207,17 @@ a team lead (`orgInfo.teamLeadOf.length > 0`). The brunotest user must be set as
 | Sequential `.bru` files (meta.seq)  | Sequential `describe()` blocks + `it()` per check |
 | `auth:bearer` on GET/DELETE         | `headers: authOnly(auth.authToken)`               |
 | `auth:bearer` on POST/PUT with body | `headers: authHeaders(auth.authToken)`            |
-| `bru.sendRequest()` (re-login)      | `await loginBrunotest()`                          |
+| `bru.sendRequest()` (re-login)      | `await loginApitest()`                            |
 
 ## Test File Template
 
 ```typescript
-import { type AuthState, BASE_URL, type JsonBody, authHeaders, authOnly, loginBrunotest } from './helpers.js';
+import { type AuthState, BASE_URL, type JsonBody, authHeaders, authOnly, loginApitest } from './helpers.js';
 
 let auth: AuthState;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // GET -- use authOnly (no Content-Type)
@@ -278,7 +278,7 @@ describe('Module: Delete', () => {
 - [x] Every `assert` block covered by `expect()` assertions
 - [x] Every `tests` block test case represented as `it()` block
 - [x] Every `script:post-response` state update handled via module-level variables
-- [x] `beforeAll` handles login via `loginBrunotest()`
+- [x] `beforeAll` handles login via `loginApitest()`
 - [x] Prerequisite resources created in `beforeAll` (self-contained)
 - [x] Test passes with `pnpm run test:api:vitest` (all 175 tests green)
 - [x] No `any` without eslint-disable + justification comment
@@ -302,27 +302,27 @@ describe('Module: Delete', () => {
 
 ## Migration Status
 
-| Module        | .bru Files | Status | Tests  | Pass   | Fail | Notes                                 |
-| ------------- | ---------- | ------ | ------ | ------ | ---- | ------------------------------------- |
-| auth (+setup) | 9          | DONE   | 9      | 9      | 0    |                                       |
-| users         | 3          | DONE   | 10     | 10     | 0    |                                       |
-| departments   | 5          | DONE   | 9      | 9      | 0    |                                       |
-| teams         | 6          | DONE   | 11     | 11     | 0    |                                       |
-| roles         | 3          | DONE   | 4      | 4      | 0    |                                       |
-| notifications | 8          | DONE   | 9      | 9      | 0    |                                       |
-| blackboard    | 11         | DONE   | 18     | 18     | 0    |                                       |
-| calendar      | 6          | DONE   | 8      | 8      | 0    |                                       |
-| kvp           | 9          | DONE   | 15     | 15     | 0    | Fixed: team lead + features enabled   |
-| machines      | 9          | DONE   | 15     | 15     | 0    |                                       |
-| surveys       | 7          | DONE   | 10     | 10     | 0    |                                       |
-| chat          | 3          | DONE   | 6      | 6      | 0    |                                       |
-| documents     | 2          | DONE   | 4      | 4      | 0    |                                       |
-| shifts        | 6          | DONE   | 12     | 12     | 0    | Fixed: controller double-wrap removed |
-| logs          | 6          | DONE   | 24     | 24     | 0    | Fixed: throttle key flush per request |
-| settings      | 4          | DONE   | 4      | 4      | 0    |                                       |
-| features      | 3          | DONE   | 4      | 4      | 0    |                                       |
-| areas         | 2          | DONE   | 3      | 3      | 0    |                                       |
-| **TOTAL**     | **103**    |**DONE**|**175** |**175** |**0** | **100% passing**                      |
+| Module        | .bru Files | Status   | Tests   | Pass    | Fail  | Notes                                 |
+| ------------- | ---------- | -------- | ------- | ------- | ----- | ------------------------------------- |
+| auth (+setup) | 9          | DONE     | 9       | 9       | 0     |                                       |
+| users         | 3          | DONE     | 10      | 10      | 0     |                                       |
+| departments   | 5          | DONE     | 9       | 9       | 0     |                                       |
+| teams         | 6          | DONE     | 11      | 11      | 0     |                                       |
+| roles         | 3          | DONE     | 4       | 4       | 0     |                                       |
+| notifications | 8          | DONE     | 9       | 9       | 0     |                                       |
+| blackboard    | 11         | DONE     | 18      | 18      | 0     |                                       |
+| calendar      | 6          | DONE     | 8       | 8       | 0     |                                       |
+| kvp           | 9          | DONE     | 15      | 15      | 0     | Fixed: team lead + features enabled   |
+| machines      | 9          | DONE     | 15      | 15      | 0     |                                       |
+| surveys       | 7          | DONE     | 10      | 10      | 0     |                                       |
+| chat          | 3          | DONE     | 6       | 6       | 0     |                                       |
+| documents     | 2          | DONE     | 4       | 4       | 0     |                                       |
+| shifts        | 6          | DONE     | 12      | 12      | 0     | Fixed: controller double-wrap removed |
+| logs          | 6          | DONE     | 24      | 24      | 0     | Fixed: throttle key flush per request |
+| settings      | 4          | DONE     | 4       | 4       | 0     |                                       |
+| features      | 3          | DONE     | 4       | 4       | 0     |                                       |
+| areas         | 2          | DONE     | 3       | 3       | 0     |                                       |
+| **TOTAL**     | **103**    | **DONE** | **175** | **175** | **0** | **100% passing**                      |
 
 ## Resolved Failures (previously 20 tests, 3 modules)
 
@@ -343,6 +343,7 @@ ALSO wraps in `{ success: true, data: ..., timestamp }` -- causing double-wrappi
 Tests expected `body.data.shiftsCreated` but actual was `body.data.data.shiftsCreated`.
 
 **Fix:** Removed manual `{ success, data }` wrapping from 3 controller methods:
+
 - `generateRotationFromConfig()` in `rotation.controller.ts`
 - `deleteRotationHistory()` in `rotation.controller.ts`
 - `deleteShiftsByWeek()` in `shifts.controller.ts`
@@ -355,10 +356,12 @@ failing tests currently, but should be fixed for consistency.
 ### KVP -- 1 failure (RESOLVED)
 
 **Root cause:** Two issues:
-1. The brunotest user (root role) was NOT a team lead for any team. `kvp.service.ts`
+
+1. The apitest user (root role) was NOT a team lead for any team. `kvp.service.ts`
    line 334-340 requires admin/root users to be team leads to create KVP suggestions.
 2. No features were enabled for tenant 1 (tenant_features table was empty).
 
 **Fix:**
-1. Set brunotest user as team lead: `UPDATE teams SET team_lead_id = 1 WHERE id = 2`
+
+1. Set apitest user as team lead: `UPDATE teams SET team_lead_id = 1 WHERE id = 2`
 2. Enabled all features: `INSERT INTO tenant_features ... SELECT 1, id, 1, NOW() FROM features`

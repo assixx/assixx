@@ -30,7 +30,7 @@
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                            |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                    |
 | Test-Dateien       | **8 Dateien, 222 Tests** — Phase 0-4 abgeschlossen                     |
-| Bruno API-Tests    | 96 Requests, 169 Tests, 195 Assertions (extern)                        |
+| Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                             |
 | CI/CD              | `code-quality-checks.yml` — nur Lint, kein Test (geplant nach Phase 4) |
 | Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                 |
 

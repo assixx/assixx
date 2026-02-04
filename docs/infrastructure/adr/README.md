@@ -40,6 +40,7 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 | [ADR-016](./ADR-016-tenant-customizable-seed-data.md)      | Tenant-Customizable Seed Data      | Accepted | 2026-02-02 |
 | [ADR-017](./ADR-017-design-system-theming-architecture.md) | Design System Theming Architecture | Accepted | 2026-02-02 |
 | [ADR-017 Plan](./ADR-017-IMPLEMENTATION-PLAN.md)           | ADR-017 Implementation Plan        | Active   | 2026-02-02 |
+| [ADR-018](./ADR-018-testing-strategy.md)                   | Testing Strategy (Unit + API)      | Accepted | 2026-02-04 |
 
 ## Template
 

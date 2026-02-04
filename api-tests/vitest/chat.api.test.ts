@@ -1,7 +1,6 @@
 /**
  * Chat API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/chat/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
@@ -11,7 +10,7 @@ import {
   BASE_URL,
   authHeaders,
   authOnly,
-  loginBrunotest,
+  loginApitest,
   ensureTestEmployee,
   type AuthState,
   type JsonBody,
@@ -24,7 +23,7 @@ let chatParticipantId: number;
 let conversationId: string | undefined;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
   chatParticipantId = await ensureTestEmployee(auth.authToken);
 });
 

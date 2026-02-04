@@ -1,13 +1,12 @@
 /**
  * Shifts API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/shifts/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
@@ -18,7 +17,7 @@ let shiftsTeamId: number;
 let shiftId: number | undefined;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ---- seq: 1 -- Setup Shifts Test Team ----------------------------------------
@@ -143,7 +142,7 @@ describe('Shifts: Generate Rotation From Config', () => {
         assignments: [
           {
             userId: auth.userId,
-            userName: 'Bruno Test User',
+            userName: 'Test User',
             startGroup: 'F',
           },
         ],

@@ -1,23 +1,22 @@
 /**
  * KVP API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/kvp/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
-// Shared state across sequential tests (replaces Bruno's bru.setVar)
+// Shared state across sequential describe blocks
 let kvpId: number | undefined;
 let _existingKvpId: number;
 let _createdKvpId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ---- seq: 1 -- List KVP Suggestions -----------------------------------------
@@ -66,9 +65,9 @@ describe('KVP: Create Suggestion', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        title: `Bruno Test ${Date.now()}`,
+        title: `API Test ${Date.now()}`,
         description:
-          'Created via Bruno API test - this is a test KVP entry that will be deleted after testing',
+          'Created via API test - will be deleted after testing',
         categoryId: 1,
         orgLevel: 'company',
         orgId: 1,

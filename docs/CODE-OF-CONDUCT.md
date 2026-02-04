@@ -160,8 +160,9 @@ async function getUserById(id: number): Promise<User> {
 ## Testing
 
 ```bash
-pnpm run test:api                              # All API tests
-cd api-tests && npx bru run calendar --env local  # Single module
+pnpm run test:api                                                      # All API integration tests
+pnpm run test:unit                                                     # All unit tests
+vitest run --project api api-tests/vitest/calendar.api.test.ts         # Single module
 ```
 
 ---

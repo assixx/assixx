@@ -1,13 +1,12 @@
 /**
  * Departments API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/departments/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
@@ -18,7 +17,7 @@ let departmentId: number;
 let _existingDepartmentId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ---- seq: 1 -- List Departments ---------------------------------------------
@@ -42,7 +41,7 @@ describe('Departments: List Departments', () => {
 
     expect(Array.isArray(body.data)).toBe(true);
 
-    // Store first existing department ID as fallback (mirrors Bruno post-response script)
+    // Store first existing department ID as fallback
     if (Array.isArray(body.data) && body.data.length > 0) {
       _existingDepartmentId = body.data[0].id as number;
     }
@@ -57,8 +56,8 @@ describe('Departments: Create Department (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Test Dept ${Date.now()}`,
-        description: 'Created via Bruno API test - will be deleted',
+        name: `API Test Dept ${Date.now()}`,
+        description: 'Created via API test - will be deleted',
       }),
     });
     const body = (await res.json()) as JsonBody;
@@ -72,15 +71,15 @@ describe('Departments: Create Department (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Test Dept ${Date.now()}`,
-        description: 'Created via Bruno API test - will be deleted',
+        name: `API Test Dept ${Date.now()}`,
+        description: 'Created via API test - will be deleted',
       }),
     });
     const body = (await res.json()) as JsonBody;
 
     expect(body.data).toHaveProperty('id');
 
-    // Store created department ID for subsequent tests (mirrors Bruno bru.setVar)
+    // Store created department ID for subsequent tests
     departmentId = body.data.id as number;
   });
 });
@@ -117,8 +116,8 @@ describe('Departments: Update Department (Admin)', () => {
       method: 'PUT',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Updated Dept ${Date.now()}`,
-        description: 'Updated via Bruno API test',
+        name: `API Updated Dept ${Date.now()}`,
+        description: 'Updated via API test',
       }),
     });
     const body = (await res.json()) as JsonBody;
@@ -148,7 +147,7 @@ describe('Departments: Delete Department (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Delete Dept ${Date.now()}`,
+        name: `API Delete Dept ${Date.now()}`,
         description: 'Created for deletion confirmation test',
       }),
     });
@@ -163,7 +162,7 @@ describe('Departments: Delete Department (Admin)', () => {
 
     expect(body.success).toBe(true);
 
-    // Cleanup: restore fallback ID (mirrors Bruno post-response script)
+    // Cleanup: restore fallback ID
     if (_existingDepartmentId) {
       departmentId = _existingDepartmentId;
     }

@@ -1,23 +1,22 @@
 /**
  * Calendar API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/calendar/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
-// Shared state across sequential tests (replaces Bruno's bru.setVar)
+// Shared state across sequential describe blocks
 let calendarEventId: number;
 let _existingCalendarId: number;
 let _createdCalendarId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ---- seq: 1 -- List Calendar Events ------------------------------------------
@@ -56,8 +55,8 @@ describe('Calendar: Create Event', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        title: `Bruno Test ${Date.now()}`,
-        description: 'Created via Bruno API test - will be deleted',
+        title: `API Test ${Date.now()}`,
+        description: 'Created via API test - will be deleted',
         startTime: '2025-01-15T10:00:00Z',
         endTime: '2025-01-15T11:00:00Z',
         allDay: false,
@@ -110,7 +109,7 @@ describe('Calendar: Update Event', () => {
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         title: 'Updated Meeting',
-        description: 'Updated via Bruno',
+        description: 'Updated via API test',
       }),
     });
     const body = (await res.json()) as JsonBody;

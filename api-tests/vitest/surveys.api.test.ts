@@ -1,13 +1,12 @@
 /**
  * Surveys API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/surveys/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
@@ -21,7 +20,7 @@ let createdSurveyId: number | undefined;
 let surveyId: number | undefined;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ---- seq: 1 -- List Surveys ---------------------------------------------------
@@ -60,8 +59,8 @@ describe('Surveys: Create Survey (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        title: `Bruno Test ${Date.now()}`,
-        description: 'Created via Bruno API test - will be deleted',
+        title: `API Test ${Date.now()}`,
+        description: 'Created via API test - will be deleted',
         status: 'draft',
         questions: [
           {

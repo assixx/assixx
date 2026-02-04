@@ -1,23 +1,22 @@
 /**
  * Machines API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/machines/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
-// Shared state across sequential tests (replaces Bruno's bru.setVar)
+// Shared state across sequential describe blocks
 let machineId: number;
 let _existingMachineId: number;
 let _createdMachineId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ---- seq: 1 -- List Machines -------------------------------------------------
@@ -56,9 +55,9 @@ describe('Machines: Create (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Test ${Date.now()}`,
+        name: `API Test ${Date.now()}`,
         model: 'TM-001',
-        manufacturer: 'Bruno Test Corp',
+        manufacturer: 'Test Corp',
         machineType: 'production',
         status: 'operational',
         location: 'Test Location',

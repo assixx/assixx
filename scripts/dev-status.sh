@@ -102,7 +102,7 @@ echo ""
 
 # 5. Test Status
 echo "5️⃣  Test Status:"
-echo "   📊 API Tests: pnpm run test:api (Bruno, 169 Tests)"
+echo "   📊 API Tests: pnpm run test:api (Vitest, 175 Tests)"
 echo "   📊 CI: code-quality-checks.yml (Backend + Frontend)"
 echo ""
 

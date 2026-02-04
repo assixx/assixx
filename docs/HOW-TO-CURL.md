@@ -2,10 +2,10 @@
 
 ## Das Problem
 
-Bash escaped `!` (History Expansion) auch in Single Quotes. Das macht JSON mit Passwörtern wie `BrunoTest123!` kaputt:
+Bash escaped `!` (History Expansion) auch in Single Quotes. Das macht JSON mit Passwörtern wie `ApiTest12345!` kaputt:
 
 ```
-# Bash sendet: BrunoTest123\!  → Fastify: "Body is not valid JSON"
+# Bash sendet: ApiTest123\!  → Fastify: "Body is not valid JSON"
 ```
 
 ## Lösung: JSON-Datei verwenden
@@ -13,13 +13,13 @@ Bash escaped `!` (History Expansion) auch in Single Quotes. Das macht JSON mit P
 ```bash
 # 1. JSON-Datei anlegen (einmalig)
 cat > /tmp/login.json << 'EOF'
-{"email":"admin@brunotest.de","password":"BrunoTest123!"}
+{"email":"admin@apitest.de","password":"ApiTest12345!"}
 EOF
 
 # 2. Login
 curl -s -X POST http://localhost:3000/api/v2/auth/login \
   -H "Content-Type: application/json" \
-  -H "X-Tenant-ID: brunotest" \
+  -H "X-Tenant-ID: apitest" \
   -d @/tmp/login.json | jq '.'
 ```
 
@@ -33,7 +33,7 @@ curl -s -X POST http://localhost:3000/api/v2/auth/login \
     "refreshToken": "eyJhbG...",
     "user": {
       "id": 1,
-      "email": "admin@brunotest.de",
+      "email": "admin@apitest.de",
       "firstName": "Bruno",
       "lastName": "Tester",
       "role": "root",
@@ -49,19 +49,19 @@ curl -s -X POST http://localhost:3000/api/v2/auth/login \
 # Token aus Login-Response extrahieren
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v2/auth/login \
   -H "Content-Type: application/json" \
-  -H "X-Tenant-ID: brunotest" \
+  -H "X-Tenant-ID: apitest" \
   -d @/tmp/login.json | jq -r '.data.accessToken')
 
 # Authentifizierte Requests
 curl -s http://localhost:3000/api/v2/users \
   -H "Authorization: Bearer $TOKEN" \
-  -H "X-Tenant-ID: brunotest" | jq '.'
+  -H "X-Tenant-ID: apitest" | jq '.'
 ```
 
-## Credentials (brunotest Tenant)
+## Credentials (apitest Tenant)
 
-| Feld     | Wert               |
-| -------- | ------------------ |
-| Email    | admin@brunotest.de |
-| Passwort | BrunoTest123!      |
-| Tenant   | brunotest          |
+| Feld     | Wert             |
+| -------- | ---------------- |
+| Email    | admin@apitest.de |
+| Passwort | ApiTest12345!    |
+| Tenant   | apitest          |

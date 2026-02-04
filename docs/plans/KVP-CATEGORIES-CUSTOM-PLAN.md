@@ -708,7 +708,7 @@ api-tests/kvp-categories/
 
 **Test-Reihenfolge:**
 
-1. Login als brunotest Admin (has_full_access = true)
+1. Login als apitest Admin (has_full_access = true)
 2. GET customizable → 6 Defaults, 0 Custom
 3. PUT Override → "Sicherheit" → "Arbeitssicherheit"
 4. GET categories → verifiziert "Arbeitssicherheit" statt "Sicherheit"

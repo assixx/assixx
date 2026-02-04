@@ -1,7 +1,6 @@
 /**
  * Notifications API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/notifications/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
@@ -11,19 +10,19 @@ import {
   BASE_URL,
   authHeaders,
   authOnly,
-  loginBrunotest,
+  loginApitest,
   type AuthState,
   type JsonBody,
 } from './helpers.js';
 
 let auth: AuthState;
 
-// Module-level state (replaces Bruno's bru.setVar)
+// Module-level state shared across sequential describe blocks
 let notificationId: number;
 let existingNotificationId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 });
 
 // ─── List Notifications (seq: 1) ────────────────────────────────────────────
@@ -62,8 +61,8 @@ describe('Create Notification (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        title: `Bruno Test ${Date.now()}`,
-        message: 'Created via Bruno API test - will be deleted',
+        title: `API Test ${Date.now()}`,
+        message: 'Created via API test - will be deleted',
         type: 'announcement',
         recipientType: 'all',
       }),

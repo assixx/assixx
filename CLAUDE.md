@@ -178,7 +178,7 @@ doppler run -- docker-compose restart backend
 10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
 11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
 12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
-13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-BRUNO.md) for context (read whole File)
+13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-VITEST.md) for context (read whole File)
 14. Read(~/projects/Assixx/docs/CODE-OF-CONDUCT-SVELTE.md) for context (read whole File)
 15. Read(~/projects/Assixx/docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) - Docker/Nginx/SvelteKit Setup!
 16. Read all ADR in (~/projects/Assixx/docs/infrastructure/adr/ADR-0\*\*.md.) and docs/infrastructure/adr/README.md

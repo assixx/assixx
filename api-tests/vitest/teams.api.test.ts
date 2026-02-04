@@ -1,13 +1,12 @@
 /**
  * Teams API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/teams/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * @see vitest.config.api.ts
  */
 
-import { BASE_URL, authHeaders, authOnly, loginBrunotest, type AuthState, type JsonBody } from './helpers.js';
+import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
 
 let auth: AuthState;
 
@@ -21,9 +20,9 @@ let teamId: number;
 let _existingTeamId: number;
 
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
 
-  // Teams require a department -- create one upfront (mirrors Bruno pre-request script)
+  // Teams require a department -- create one upfront
   const res = await fetch(`${BASE_URL}/departments`, {
     method: 'POST',
     headers: authHeaders(auth.authToken),
@@ -82,7 +81,7 @@ describe('Teams: List Teams', () => {
 
     expect(Array.isArray(body.data)).toBe(true);
 
-    // Store first existing team ID as fallback (mirrors Bruno post-response script)
+    // Store first existing team ID as fallback
     if (Array.isArray(body.data) && body.data.length > 0) {
       _existingTeamId = body.data[0].id as number;
     }
@@ -97,9 +96,9 @@ describe('Teams: Create Team (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Test Team ${Date.now()}`,
+        name: `API Test Team ${Date.now()}`,
         departmentId: teamsDepartmentId,
-        description: 'Created via Bruno API test - will be deleted',
+        description: 'Created via API test - will be deleted',
       }),
     });
     const body = (await res.json()) as JsonBody;
@@ -113,16 +112,16 @@ describe('Teams: Create Team (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Test Team ${Date.now()}`,
+        name: `API Test Team ${Date.now()}`,
         departmentId: teamsDepartmentId,
-        description: 'Created via Bruno API test - will be deleted',
+        description: 'Created via API test - will be deleted',
       }),
     });
     const body = (await res.json()) as JsonBody;
 
     expect(body.data).toHaveProperty('id');
 
-    // Store created team ID for subsequent tests (mirrors Bruno bru.setVar)
+    // Store created team ID for subsequent tests
     teamId = body.data.id as number;
   });
 });
@@ -159,8 +158,8 @@ describe('Teams: Update Team (Admin)', () => {
       method: 'PUT',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Updated Team ${Date.now()}`,
-        description: 'Updated via Bruno API test',
+        name: `API Updated Team ${Date.now()}`,
+        description: 'Updated via API test',
       }),
     });
     const body = (await res.json()) as JsonBody;
@@ -213,7 +212,7 @@ describe('Teams: Delete Team (Admin)', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Bruno Delete Team ${Date.now()}`,
+        name: `API Delete Team ${Date.now()}`,
         departmentId: teamsDepartmentId,
         description: 'Created for deletion confirmation test',
       }),
@@ -229,7 +228,7 @@ describe('Teams: Delete Team (Admin)', () => {
 
     expect(body.success).toBe(true);
 
-    // Cleanup: restore fallback ID (mirrors Bruno post-response script)
+    // Cleanup: restore fallback ID
     if (_existingTeamId) {
       teamId = _existingTeamId;
     }

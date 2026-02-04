@@ -225,7 +225,7 @@ Assixx/
 │   ├── docker-compose.yml         # Main orchestration
 │   ├── Dockerfile.dev             # Dev container
 │   └── .env                       # Environment vars
-├── api-tests/                     # Bruno API tests
+├── api-tests/                     # Vitest API integration tests
 ├── database/
 │   └── migrations/                # SQL migrations
 └── docs/                          # Documentation

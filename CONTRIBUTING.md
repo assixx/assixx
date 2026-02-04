@@ -16,7 +16,7 @@ Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md).
 | Cache      | Redis 7                            |
 | Secrets    | Doppler                            |
 | Validation | Zod (nestjs-zod)                   |
-| Testing    | Bruno CLI (API), Vitest (Unit)     |
+| Testing    | Vitest (Unit + API Integration)    |
 | Container  | Docker + Nginx (Reverse Proxy)     |
 
 ---
@@ -126,17 +126,17 @@ pnpm run stylelint:fix         # CSS linting
 ### 4. Test
 
 ```bash
-# API tests (Bruno CLI)
+# API integration tests (requires Docker backend)
 pnpm run test:api
 
-# Full test suite (including tenant setup)
-pnpm run test:api:full
+# Unit tests (no Docker needed)
+pnpm run test:unit
 
 # Single module
-cd api-tests && npx bru run calendar --env local
+vitest run --project api api-tests/vitest/calendar.api.test.ts
 ```
 
-See [HOW-TO-TEST-WITH-BRUNO.md](./docs/HOW-TO-TEST-WITH-BRUNO.md) for details.
+See [HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md) for details.
 
 ### 5. Commit
 
@@ -197,7 +197,7 @@ Assixx/
 │   ├── migrations/            #   node-pg-migrate TypeScript migrations
 │   └── seeds/                 #   Idempotent seed data (SQL)
 ├── docker/                    # Docker Compose + Dockerfiles + Nginx
-├── api-tests/                 # Bruno API test collections
+├── api-tests/                 # Vitest API integration tests
 └── docs/                      # All documentation
 ```
 
@@ -213,7 +213,7 @@ Assixx/
    - `<module>.module.ts` - Module definition
    - `dto/` - Zod validation schemas (`createZodDto`)
 2. Register module in `app.module.ts`
-3. Add Bruno tests in `api-tests/<module>/`
+3. Add Vitest API tests in `api-tests/vitest/<module>.api.test.ts`
 4. Run `pnpm run validate:all`
 
 See [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md) for DTO patterns.
@@ -243,7 +243,7 @@ See [CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md) for Svelte pat
 
 ### Fix a Bug
 
-1. Reproduce with Bruno or browser
+1. Reproduce with API test or browser
 2. Find **root cause** (not symptoms)
 3. Write fix
 4. Add test case for the bug
@@ -303,7 +303,7 @@ docker exec assixx-backend pnpm run lint
 | [TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md)                             | TypeScript strict rules       |
 | [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)                     | PostgreSQL migrations & RLS   |
 | [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md)                             | Secret management setup       |
-| [HOW-TO-TEST-WITH-BRUNO.md](./docs/HOW-TO-TEST-WITH-BRUNO.md)                         | API testing with Bruno        |
+| [HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md)                       | API testing with Vitest       |
 | [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) | Docker/Nginx/SvelteKit setup  |
 | [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)                   | Zod validation in NestJS      |
 | [ADR Index](./docs/infrastructure/adr/README.md)                                      | Architecture Decision Records |

@@ -1,36 +1,65 @@
 /**
  * Auth API Integration Tests
  *
- * Migrated from Bruno CLI tests:
- *   _setup/01-check-subdomain.bru
- *   _setup/02-create-tenant.bru
- *   _setup/03-login-brunotest.bru
- *   auth/login.bru
- *   auth/refresh.bru
- *   auth/logout.bru
- *
  * Runs against the REAL backend (Docker must be running).
  * Uses native fetch() -- no mocking, no HTTP client libraries.
  *
- * NOTE: This file does NOT use helpers.ts loginBrunotest() because it
+ * NOTE: This file does NOT use helpers.ts loginApitest() because it
  * tests the login endpoint directly. Other test files use the cached helper.
  *
  * @see vitest.config.ts (project: api)
  */
 
+import { execSync } from 'node:child_process';
+
 // Integration test: response shapes are validated by assertions, not static types.
- 
+
 type JsonBody = Record<string, any>;
 
 const BASE_URL = 'http://localhost:3000/api/v2';
-const BRUNOTEST_EMAIL = 'admin@brunotest.de';
-const BRUNOTEST_PASSWORD = 'BrunoTest123!';
+const APITEST_EMAIL = 'admin@apitest.de';
+const APITEST_PASSWORD = 'ApiTest12345!';
 
-// Shared state across sequential tests (replaces Bruno's bru.setVar)
+// Shared state across sequential describe blocks
 let authToken = '';
 let refreshToken = '';
 let _userId: number;
 let _tenantId: number;
+
+/**
+ * Enable all features and set team lead for the test tenant.
+ * Required for KVP tests (team lead) and feature-gated endpoints.
+ * Runs via docker exec — safe because auth tokens are in-process, not Redis.
+ */
+function applyDbPrerequisites(tenantId: number, userId: number): void {
+  execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -c "
+      -- Enable all features for the test tenant
+      INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at)
+      SELECT ${tenantId}, id, 1, NOW() FROM features WHERE is_active = 1
+      ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1;
+
+      -- Ensure a department exists (required FK for teams)
+      INSERT INTO departments (tenant_id, name, description, is_active, uuid, uuid_created_at)
+      SELECT ${tenantId}, 'Test Department', 'Auto-created for API tests', 1, gen_random_uuid()::char(36), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM departments WHERE tenant_id = ${tenantId});
+
+      -- Ensure a team exists (required for KVP team_lead)
+      INSERT INTO teams (tenant_id, name, department_id, team_lead_id, is_active, uuid, uuid_created_at)
+      SELECT ${tenantId}, 'Test Team',
+        (SELECT id FROM departments WHERE tenant_id = ${tenantId} LIMIT 1),
+        ${userId}, 1, gen_random_uuid()::char(36), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM teams WHERE tenant_id = ${tenantId});
+
+      -- Set team_lead on any team that lacks one
+      UPDATE teams SET team_lead_id = ${userId}
+      WHERE id = (
+        SELECT id FROM teams WHERE tenant_id = ${tenantId} AND team_lead_id IS NULL LIMIT 1
+      );
+    "`,
+    { stdio: 'pipe' },
+  );
+}
 
 /** Login with 429 retry for rate-limited environments. */
 async function login(): Promise<{ res: Response; body: JsonBody }> {
@@ -39,8 +68,8 @@ async function login(): Promise<{ res: Response; body: JsonBody }> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: BRUNOTEST_EMAIL,
-        password: BRUNOTEST_PASSWORD,
+        email: APITEST_EMAIL,
+        password: APITEST_PASSWORD,
       }),
     });
 
@@ -56,18 +85,18 @@ async function login(): Promise<{ res: Response; body: JsonBody }> {
   throw new Error('Login failed after 3 retries (429)');
 }
 
-// ─── Setup: Ensure brunotest tenant exists and login ─────────────────────────
+// ─── Setup: Ensure apitest tenant exists and login ─────────────────────────
 
-describe('Setup: Brunotest Tenant', () => {
+describe('Setup: Apitest Tenant', () => {
   it('should check subdomain availability', async () => {
-    const res = await fetch(`${BASE_URL}/signup/check-subdomain/brunotest`);
+    const res = await fetch(`${BASE_URL}/signup/check-subdomain/apitest`);
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toHaveProperty('available');
     expect(body.data).toHaveProperty('subdomain');
-    expect(body.data.subdomain).toBe('brunotest');
+    expect(body.data.subdomain).toBe('apitest');
   });
 
   it('should create tenant or confirm it already exists', async () => {
@@ -75,15 +104,15 @@ describe('Setup: Brunotest Tenant', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        companyName: 'Bruno Test GmbH',
-        subdomain: 'brunotest',
-        email: 'info@brunotest.de',
+        companyName: 'API Test GmbH',
+        subdomain: 'apitest',
+        email: 'info@apitest.de',
         phone: '+49 123 456789',
         address: 'Teststrasse 1, 12345 Teststadt',
-        adminEmail: BRUNOTEST_EMAIL,
-        adminPassword: BRUNOTEST_PASSWORD,
-        adminFirstName: 'Bruno',
-        adminLastName: 'Tester',
+        adminEmail: APITEST_EMAIL,
+        adminPassword: APITEST_PASSWORD,
+        adminFirstName: 'John',
+        adminLastName: 'Doe',
         plan: 'trial',
       }),
     });
@@ -94,10 +123,10 @@ describe('Setup: Brunotest Tenant', () => {
     expect(body).toBeDefined();
 
     // eslint-disable-next-line vitest/no-conditional-expect -- Integration test: response shape differs by HTTP status (201 vs 409)
-    if (res.status === 201) expect(body.data.subdomain).toBe('brunotest');
+    if (res.status === 201) expect(body.data.subdomain).toBe('apitest');
   });
 
-  it('should login as brunotest admin', async () => {
+  it('should login as apitest admin', async () => {
     const { res, body } = await login();
 
     expect(res.status).toBe(200);
@@ -105,7 +134,7 @@ describe('Setup: Brunotest Tenant', () => {
     expect(body.data.accessToken).toBeTypeOf('string');
     expect(body.data.refreshToken).toBeTypeOf('string');
     expect(body.data.user.id).toBeTypeOf('number');
-    expect(body.data.user.email).toBe(BRUNOTEST_EMAIL);
+    expect(body.data.user.email).toBe(APITEST_EMAIL);
     expect(body.data.user).toHaveProperty('role');
 
     // Store for subsequent tests
@@ -113,6 +142,9 @@ describe('Setup: Brunotest Tenant', () => {
     refreshToken = body.data.refreshToken;
     _userId = body.data.user.id;
     _tenantId = body.data.user.tenantId;
+
+    // Enable features + set team lead (idempotent, runs every time)
+    applyDbPrerequisites(_tenantId, _userId);
   });
 });
 

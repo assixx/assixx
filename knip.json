@@ -6,7 +6,6 @@
       "project": ["scripts/**/*.{js,cjs,mjs,ts}"],
       "ignoreDependencies": [
         "husky",
-        "@usebruno/cli",
         "concurrently",
         "markdownlint-cli",
         "purgecss"

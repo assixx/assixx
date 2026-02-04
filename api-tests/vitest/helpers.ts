@@ -2,15 +2,16 @@
  * Shared utilities for Vitest API integration tests.
  *
  * Constants, types, and helper functions used by all API test files.
- * Each test file imports from here and calls loginBrunotest() in beforeAll.
+ * Each test file imports from here and calls loginApitest() in beforeAll.
  *
  * With isolate: false, this module is cached across all test files in the suite.
  * The login result is cached so only ONE login request is made for the entire run.
  */
+import { execSync } from 'node:child_process';
 
 export const BASE_URL = 'http://localhost:3000/api/v2';
-export const BRUNOTEST_EMAIL = 'admin@brunotest.de';
-export const BRUNOTEST_PASSWORD = 'BrunoTest123!';
+export const APITEST_EMAIL = 'admin@apitest.de';
+export const APITEST_PASSWORD = 'ApiTest12345!';
 
 /** Integration tests validate response shapes via assertions, not static types. */
 
@@ -29,11 +30,11 @@ let _cachedAuth: AuthState | null = null;
 let _authPromise: Promise<AuthState> | null = null;
 
 /**
- * Login as brunotest admin and return auth state.
+ * Login as apitest admin and return auth state.
  * Cached: only the first call makes a real HTTP request.
  * All subsequent calls (from other test files) return the cached result.
  */
-export async function loginBrunotest(): Promise<AuthState> {
+export async function loginApitest(): Promise<AuthState> {
   if (_cachedAuth) return _cachedAuth;
   if (_authPromise) return _authPromise;
 
@@ -49,8 +50,8 @@ async function _performLogin(attempt = 1): Promise<AuthState> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: BRUNOTEST_EMAIL,
-      password: BRUNOTEST_PASSWORD,
+      email: APITEST_EMAIL,
+      password: APITEST_PASSWORD,
     }),
   });
 
@@ -121,8 +122,6 @@ export async function fetchWithRetry(
  * Auth tokens are cached in-process (_cachedAuth), not in Redis -- safe to flush.
  */
 export function flushThrottleKeys(): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Integration test: child_process needed for Redis access
-  const { execSync } = require('child_process') as typeof import('child_process');
   execSync(
     "docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' --no-auth-warning EVAL \"local keys = redis.call('KEYS', 'throttle:*') for i, key in ipairs(keys) do redis.call('DEL', key) end return #keys\" 0",
     { stdio: 'pipe' },
@@ -139,8 +138,8 @@ export async function ensureTestEmployee(token: string): Promise<number> {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
-      email: 'employee@brunotest.de',
-      password: BRUNOTEST_PASSWORD,
+      email: 'employee@apitest.de',
+      password: APITEST_PASSWORD,
       firstName: 'Test',
       lastName: 'Employee',
       role: 'employee',
@@ -159,7 +158,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
   });
   const listBody = (await listRes.json()) as JsonBody;
   const users = listBody.data as Array<{ id: number; email: string }>;
-  const employee = users.find((u) => u.email === 'employee@brunotest.de');
+  const employee = users.find((u) => u.email === 'employee@apitest.de');
 
   if (!employee) {
     throw new Error('Test employee not found after create attempt');

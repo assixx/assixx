@@ -1,7 +1,6 @@
 /**
  * Logs API Integration Tests
  *
- * Migrated from Bruno CLI: api-tests/logs/*.bru
  * Runs against REAL backend (Docker must be running).
  *
  * All 6 export requests are made in a single top-level beforeAll
@@ -15,7 +14,7 @@ import {
   BASE_URL,
   authOnly,
   flushThrottleKeys,
-  loginBrunotest,
+  loginApitest,
   type AuthState,
   type JsonBody,
 } from './helpers.js';
@@ -45,7 +44,7 @@ let auth: AuthState;
  * Auth tokens are cached in-process, not in Redis -- flush is safe.
  */
 beforeAll(async () => {
-  auth = await loginBrunotest();
+  auth = await loginApitest();
   const headers = authOnly(auth.authToken);
 
   const storeJson = async (url: string, target: StoredResponse): Promise<void> => {
