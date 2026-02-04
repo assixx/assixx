@@ -21,7 +21,6 @@ import { SurveysService } from '../surveys/surveys.service.js';
 import type {
   ChatCounts,
   DashboardCounts,
-  DashboardCountsResponse,
   NotificationStats,
 } from './dto/dashboard-counts.dto.js';
 
@@ -65,7 +64,7 @@ export class DashboardService {
   async getCounts(
     user: NestAuthUser,
     tenantId: number,
-  ): Promise<DashboardCountsResponse> {
+  ): Promise<DashboardCounts> {
     // Execute all count queries in parallel
     const [
       chatResult,
@@ -117,7 +116,7 @@ export class DashboardService {
       fetchedAt: new Date().toISOString(),
     };
 
-    return { success: true, data };
+    return data;
   }
 
   /**

@@ -93,6 +93,7 @@ export class JwtAuthGuard implements CanActivate {
       this.cls.set('tenantId', authUser.tenantId);
       this.cls.set('userId', authUser.id);
       this.cls.set('userRole', authUser.activeRole);
+      this.cls.set('userEmail', authUser.email);
 
       return true;
     } catch (error: unknown) {

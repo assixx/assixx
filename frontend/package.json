@@ -19,7 +19,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@sveltejs/adapter-node": "^5.5.2",
-    "@sveltejs/kit": "^2.50.1",
+    "@sveltejs/kit": "^2.50.2",
     "@sveltejs/vite-plugin-svelte": "6.2.4",
     "@tailwindcss/vite": "4.1.18",
     "@types/html-minifier-terser": "7.0.2",
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@assixx/shared": "workspace:*",
-    "@event-calendar/core": "^5.3.1",
+    "@event-calendar/core": "^5.3.2",
     "@sentry/sveltekit": "^10.38.0",
     "dompurify": "^3.3.1",
     "pino": "^10.3.0",

@@ -22,7 +22,7 @@
   animation: spinner-rotate 0.8s linear infinite;
 
   /* Appearance */
-  border: 3px solid rgb(255 255 255 / 10%);
+  border: 3px solid var(--color-glass-border);
   border-top-color: var(--color-primary);
   border-radius: 50%;
 

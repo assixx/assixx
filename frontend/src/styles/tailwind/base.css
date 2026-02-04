@@ -85,8 +85,13 @@
      CUSTOM BASE STYLES
      ============================================ */
 
-  /* Root setup */
+  /* Root setup - Light mode default */
   :root {
+    color-scheme: light;
+  }
+
+  /* Dark mode override */
+  html.dark {
     color-scheme: dark;
   }
 
@@ -95,7 +100,7 @@
     position: relative;
     margin: 0;
 
-    background: #000;
+    background: var(--main-bg);
     padding: 0;
 
     min-height: 100vh;
@@ -107,20 +112,15 @@
     font-family: var(--font-primary);
   }
 
-  /* Glassmorphism background */
+  /* Glassmorphism background gradient overlay
+     absolute statt fixed: fixed erzeugt eigenen Stacking Context,
+     der Fullscreen-Overlays (z.B. Blackboard) verdeckt */
   body::after {
-    position: fixed;
+    position: absolute;
     z-index: -100;
     inset: 0;
 
-    background: linear-gradient(
-      360deg,
-      #0000,
-      #0070ff1f 100%,
-      #01000482 0,
-      #00000499 100%,
-      #000
-    );
+    background: var(--main-bg-gradient);
     pointer-events: none;
     content: '';
   }
@@ -201,22 +201,35 @@
     color: #fff;
   }
 
-  /* Scrollbar */
+  /* Scrollbar - Light mode */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: rgb(255 255 255 / 5%);
+    background: rgb(0 0 0 / 5%);
   }
 
   ::-webkit-scrollbar-thumb {
     border-radius: 4px;
-    background: rgb(255 255 255 / 20%);
+    background: rgb(0 0 0 / 15%);
   }
 
   ::-webkit-scrollbar-thumb:hover {
+    background: rgb(0 0 0 / 25%);
+  }
+
+  /* Scrollbar - Dark mode */
+  html.dark ::-webkit-scrollbar-track {
+    background: rgb(255 255 255 / 5%);
+  }
+
+  html.dark ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 20%);
+  }
+
+  html.dark ::-webkit-scrollbar-thumb:hover {
     background: rgb(255 255 255 / 30%);
   }
 

@@ -42,7 +42,7 @@
 
 .action-icon:hover {
   transform: scale(1.1);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 }
 
 .action-icon:active {
@@ -106,7 +106,7 @@
 /* ========== MORE VARIANT (Neutral) ========== */
 
 .action-icon--more:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   color: var(--color-text-primary);
 }
 

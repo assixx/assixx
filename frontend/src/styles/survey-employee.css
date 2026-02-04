@@ -36,7 +36,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(255 255 255 / 10%),
+    var(--accent-color),
     transparent
   );
   height: 1px;
@@ -73,7 +73,7 @@
 
 .response-question {
   margin-bottom: var(--spacing-6);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
   padding-bottom: var(--spacing-6);
 }
 
@@ -88,9 +88,9 @@
 }
 
 .response-answer {
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
   padding: var(--spacing-3);
 }
 
@@ -119,10 +119,10 @@
 
 .question-item {
   margin-bottom: var(--spacing-6);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
   padding: var(--spacing-6);
 }
 
@@ -176,10 +176,10 @@
 
   width: 3rem;
   height: 3rem;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: 0.5rem;
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 
   color: #d1d5db;
   font-size: 1rem;
@@ -219,7 +219,7 @@
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgb(255 255 255 / 10%);
+  border: 3px solid var(--color-glass-border);
   border-top-color: var(--primary-color, #3498db);
   border-radius: 50%;
 

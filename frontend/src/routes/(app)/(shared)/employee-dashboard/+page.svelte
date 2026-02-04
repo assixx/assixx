@@ -95,11 +95,6 @@
     getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee),
   );
 
-  // Notification count (placeholder for now)
-  const alertCount = $derived(
-    blackboardEntries.filter((e) => e.isConfirmed !== true).length,
-  );
-
   // =============================================================================
   // FLOATING DOTS - Generated client-side for animation
   // =============================================================================
@@ -126,8 +121,9 @@
   <!-- Welcome Hero Section -->
   <div
     class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
-      justify-between overflow-hidden rounded-xl border border-white/10 px-8 py-6
-      text-white shadow-sm backdrop-blur-[20px] backdrop-saturate-[180%]"
+      justify-between overflow-hidden rounded-xl border border-white/10 px-4 py-4
+      text-white shadow-sm backdrop-blur-[20px] backdrop-saturate-[180%]
+      md:px-6 md:py-5 lg:px-8 lg:py-6"
   >
     <!-- Floating sakura petals (generated via floatingDotsCount) -->
     <div class="floating-elements">
@@ -138,21 +134,14 @@
 
     <!-- Welcome content -->
     <div class="relative z-10">
-      <h1 class="mb-1 text-3xl font-bold">{MESSAGES.welcomeBack}</h1>
-      <p class="text-lg text-white/90">
+      <h1 class="mb-1 text-xl font-bold md:text-2xl lg:text-3xl">
+        {MESSAGES.welcomeBack}
+      </h1>
+      <p class="text-base text-white/90 md:text-lg">
         {MESSAGES.niceToSeeYou}&nbsp;
-        <span class="font-semibold text-[var(--color-primary)]"
-          >{employeeName}</span
+        <span class="employee-name-hero text-2xl font-bold">{employeeName}</span
         >
       </p>
-    </div>
-
-    <!-- Stats -->
-    <div class="relative z-10 flex gap-6">
-      <div class="welcome-stat">
-        <div class="welcome-stat-number">{alertCount}</div>
-        <div class="welcome-stat-label">{MESSAGES.heroStatLabel}</div>
-      </div>
     </div>
   </div>
 

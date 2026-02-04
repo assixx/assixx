@@ -12,12 +12,6 @@ export default {
   parameters: {
     layout: 'fullscreen',
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

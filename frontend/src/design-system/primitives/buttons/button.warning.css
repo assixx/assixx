@@ -23,7 +23,7 @@
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
   /* Colors */
-  color: var(--color-white);
+  color: var(--color-text-primary);
 }
 
 /* Hover State - Brighten the gradient */
@@ -35,7 +35,7 @@
     rgb(255 111 0 / 25%)
   ); /* Intensiver */
 
-  color: var(--color-white);
+  color: var(--color-text-primary);
 }
 
 /* Active/Pressed State */

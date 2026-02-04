@@ -42,12 +42,6 @@ export default {
       description: 'Optional image URL',
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

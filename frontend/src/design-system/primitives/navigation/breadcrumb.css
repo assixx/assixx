@@ -81,8 +81,8 @@
   display: flex;
   align-items: center;
 
-  /* Separator (arrow) is WHITE */
-  color: rgb(255 255 255 / 100%) !important;
+  /* Separator (arrow) inherits text color */
+  color: var(--color-text-primary) !important;
 
   font-size: 12px;
   user-select: none;

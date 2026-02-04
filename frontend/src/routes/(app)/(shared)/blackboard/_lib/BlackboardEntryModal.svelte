@@ -278,107 +278,115 @@
         </span>
       </div>
 
-      {#if !companyWide}
-        <div class="form-field">
-          <label
-            for="entry-area-select"
-            class="form-field__label"
-          >
-            <i class="fas fa-layer-group mr-1"></i>Bereiche (Areas)
-          </label>
-          <select
-            id="entry-area-select"
-            multiple
-            class="form-field__control form-field__control--multiselect"
-            value={areaIds}
-            onchange={(e) => {
-              const select = e.target as HTMLSelectElement;
-              handleAreaChange(
-                Array.from(select.selectedOptions).map((o) => Number(o.value)),
-              );
-            }}
-          >
-            {#each areas as area (area.id)}
-              <option value={area.id}>
-                {area.name}{(
-                  area.departmentCount !== undefined && area.departmentCount > 0
-                ) ?
-                  ` (${area.departmentCount} Abt.)`
-                : ''}
-              </option>
-            {/each}
-          </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
-            <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
-            Abteilungen.
-          </span>
-        </div>
-        <div class="form-field">
-          <label
-            for="entry-department-select"
-            class="form-field__label"
-          >
-            <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
-          </label>
-          <select
-            id="entry-department-select"
-            multiple
-            class="form-field__control form-field__control--multiselect"
-            value={departmentIds}
-            onchange={(e) => {
-              const select = e.target as HTMLSelectElement;
-              handleDepartmentChange(
-                Array.from(select.selectedOptions).map((o) => Number(o.value)),
-              );
-            }}
-          >
-            {#each availableDepartments as dept (dept.id)}
-              <option value={dept.id}>
-                {dept.name}{(
-                  dept.areaName !== undefined && dept.areaName !== ''
-                ) ?
-                  ` (${dept.areaName})`
-                : ''}
-              </option>
-            {/each}
-          </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
-            <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
-            durch Bereiche abgedeckt sind.
-          </span>
-        </div>
-        <div class="form-field">
-          <label
-            for="entry-team-select"
-            class="form-field__label"
-          >
-            <i class="fas fa-users mr-1"></i>Teams
-          </label>
-          <select
-            id="entry-team-select"
-            multiple
-            class="form-field__control form-field__control--multiselect"
-            value={teamIds}
-            onchange={(e) => {
-              const select = e.target as HTMLSelectElement;
-              onteamschange(
-                Array.from(select.selectedOptions).map((o) => Number(o.value)),
-              );
-            }}
-          >
-            {#each availableTeams as team (team.id)}
-              <option value={team.id}>{team.name}</option>
-            {/each}
-          </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
-            <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
-            zugehörige Teams aus.
-          </span>
-        </div>
-      {/if}
+      <div
+        class="form-field"
+        class:opacity-50={companyWide}
+      >
+        <label
+          for="entry-area-select"
+          class="form-field__label"
+        >
+          <i class="fas fa-layer-group mr-1"></i>Bereiche (Areas)
+        </label>
+        <select
+          id="entry-area-select"
+          multiple
+          class="form-field__control form-field__control--multiselect"
+          value={areaIds}
+          disabled={companyWide}
+          onchange={(e) => {
+            const select = e.target as HTMLSelectElement;
+            handleAreaChange(
+              Array.from(select.selectedOptions).map((o) => Number(o.value)),
+            );
+          }}
+        >
+          {#each areas as area (area.id)}
+            <option value={area.id}>
+              {area.name}{(
+                area.departmentCount !== undefined && area.departmentCount > 0
+              ) ?
+                ` (${area.departmentCount} Abt.)`
+              : ''}
+            </option>
+          {/each}
+        </select>
+        <span class="form-field__message text-[var(--color-text-secondary)]">
+          <i class="fas fa-info-circle mr-1"></i>
+          Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
+          Abteilungen.
+        </span>
+      </div>
+      <div
+        class="form-field"
+        class:opacity-50={companyWide}
+      >
+        <label
+          for="entry-department-select"
+          class="form-field__label"
+        >
+          <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
+        </label>
+        <select
+          id="entry-department-select"
+          multiple
+          class="form-field__control form-field__control--multiselect"
+          value={departmentIds}
+          disabled={companyWide}
+          onchange={(e) => {
+            const select = e.target as HTMLSelectElement;
+            handleDepartmentChange(
+              Array.from(select.selectedOptions).map((o) => Number(o.value)),
+            );
+          }}
+        >
+          {#each availableDepartments as dept (dept.id)}
+            <option value={dept.id}>
+              {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
+                ` (${dept.areaName})`
+              : ''}
+            </option>
+          {/each}
+        </select>
+        <span class="form-field__message text-[var(--color-text-secondary)]">
+          <i class="fas fa-info-circle mr-1"></i>
+          Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
+          durch Bereiche abgedeckt sind.
+        </span>
+      </div>
+      <div
+        class="form-field"
+        class:opacity-50={companyWide}
+      >
+        <label
+          for="entry-team-select"
+          class="form-field__label"
+        >
+          <i class="fas fa-users mr-1"></i>Teams
+        </label>
+        <select
+          id="entry-team-select"
+          multiple
+          class="form-field__control form-field__control--multiselect"
+          value={teamIds}
+          disabled={companyWide}
+          onchange={(e) => {
+            const select = e.target as HTMLSelectElement;
+            onteamschange(
+              Array.from(select.selectedOptions).map((o) => Number(o.value)),
+            );
+          }}
+        >
+          {#each availableTeams as team (team.id)}
+            <option value={team.id}>{team.name}</option>
+          {/each}
+        </select>
+        <span class="form-field__message text-[var(--color-text-secondary)]">
+          <i class="fas fa-info-circle mr-1"></i>
+          Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet zugehörige
+          Teams aus.
+        </span>
+      </div>
 
       <!-- Priority -->
       <div class="form-field">

@@ -12,7 +12,7 @@
   border: 1px solid rgb(229 57 53); /* Solid red border - avatar style */
 
   /* ========== VISUAL ========== */
-  background: linear-gradient(145deg, #f44336b0, #ff000052);
+  background: linear-gradient(145deg, #cf1406, #680000ce);
 
   /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
@@ -23,7 +23,7 @@
 /* Hover state - Brighten the gradient */
 .btn-danger:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-danger-hover);
-  background: linear-gradient(145deg, #ff1100b0, #ff000052);
+  background: linear-gradient(145deg, #c40d00dd, #e00303d7);
 }
 
 /* Focus state - Red focus ring */

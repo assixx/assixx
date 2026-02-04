@@ -50,10 +50,10 @@
 .data-table thead th {
   /* Remove top border on first row */
   border-top: 0;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
 
   /* Glassmorphic header background */
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
   color: var(--color-text-secondary);
   font-weight: 600;
 
@@ -70,7 +70,7 @@
 
 /* Default subtle hover (can be overridden by .data-table--hover) */
 .data-table tbody tr:hover {
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 /* Multiple tbody support (rare, but Bootstrap had it) */
@@ -105,7 +105,7 @@
   width: 100%;
 
   overflow-x: auto;
-  scrollbar-color: rgb(255 255 255 / 20%) transparent;
+  scrollbar-color: var(--color-glass-border-hover) transparent;
   scrollbar-width: thin;
 
   /* Smooth scrolling on iOS */
@@ -122,11 +122,11 @@
 
 .table-responsive::-webkit-scrollbar-thumb {
   border-radius: 4px;
-  background: rgb(255 255 255 / 20%);
+  background: var(--color-glass-border-hover);
 }
 
 .table-responsive::-webkit-scrollbar-thumb:hover {
-  background: rgb(255 255 255 / 30%);
+  background: var(--color-glass-border);
 }
 
 /* Ensure table doesn't shrink below content width */

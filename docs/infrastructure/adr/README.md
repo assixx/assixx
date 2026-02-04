@@ -21,23 +21,25 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 
 ## Index
 
-| ADR                                                      | Titel                              | Status   | Datum      |
-| -------------------------------------------------------- | ---------------------------------- | -------- | ---------- |
-| [ADR-001](./ADR-001-rate-limiting.md)                    | Rate Limiting Implementation       | Accepted | 2026-01-06 |
-| [ADR-002](./ADR-002-alerting-monitoring.md)              | Alerting & Monitoring              | Accepted | 2026-01-07 |
-| [ADR-003](./ADR-003-notification-system.md)              | Real-Time Notification System      | Accepted | 2026-01-11 |
-| [ADR-004](./ADR-004-persistent-notification-counts.md)   | Persistent Notification Counts     | Proposed | 2026-01-14 |
-| [ADR-005](./ADR-005-authentication-strategy.md)          | Authentication Strategy            | Accepted | 2026-01-14 |
-| [ADR-006](./ADR-006-multi-tenant-context-isolation.md)   | Multi-Tenant Context Isolation     | Accepted | 2026-01-14 |
-| [ADR-007](./ADR-007-api-response-standardization.md)     | API Response Standardization       | Accepted | 2026-01-14 |
-| [ADR-008](./ADR-008-dependency-version-management.md)    | Dependency Version Management      | Accepted | 2026-01-15 |
-| [ADR-009](./ADR-009-user-role-assignment-permissions.md) | User Role Assignment & Permissions | Accepted | 2026-01-22 |
-| [ADR-011](./ADR-011-shift-data-architecture.md)          | Shift Data Architecture & Sync     | Accepted | 2026-01-25 |
-| [ADR-012](./ADR-012-frontend-route-security-groups.md)   | Frontend Route Security Groups     | Accepted | 2026-01-26 |
-| [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)         | CI/CD Pipeline Hardening           | Accepted | 2026-01-26 |
-| [ADR-014](./ADR-014-database-migration-architecture.md)  | Database & Migration Architecture  | Accepted | 2026-01-27 |
-| [ADR-015](./ADR-015-shared-package-architecture.md)      | Shared Package Architecture & Plan | Accepted | 2026-01-30 |
-| [ADR-016](./ADR-016-tenant-customizable-seed-data.md)    | Tenant-Customizable Seed Data      | Accepted | 2026-02-02 |
+| ADR                                                        | Titel                              | Status   | Datum      |
+| ---------------------------------------------------------- | ---------------------------------- | -------- | ---------- |
+| [ADR-001](./ADR-001-rate-limiting.md)                      | Rate Limiting Implementation       | Accepted | 2026-01-06 |
+| [ADR-002](./ADR-002-alerting-monitoring.md)                | Alerting & Monitoring              | Accepted | 2026-01-07 |
+| [ADR-003](./ADR-003-notification-system.md)                | Real-Time Notification System      | Accepted | 2026-01-11 |
+| [ADR-004](./ADR-004-persistent-notification-counts.md)     | Persistent Notification Counts     | Proposed | 2026-01-14 |
+| [ADR-005](./ADR-005-authentication-strategy.md)            | Authentication Strategy            | Accepted | 2026-01-14 |
+| [ADR-006](./ADR-006-multi-tenant-context-isolation.md)     | Multi-Tenant Context Isolation     | Accepted | 2026-01-14 |
+| [ADR-007](./ADR-007-api-response-standardization.md)       | API Response Standardization       | Accepted | 2026-01-14 |
+| [ADR-008](./ADR-008-dependency-version-management.md)      | Dependency Version Management      | Accepted | 2026-01-15 |
+| [ADR-009](./ADR-009-user-role-assignment-permissions.md)   | User Role Assignment & Permissions | Accepted | 2026-01-22 |
+| [ADR-011](./ADR-011-shift-data-architecture.md)            | Shift Data Architecture & Sync     | Accepted | 2026-01-25 |
+| [ADR-012](./ADR-012-frontend-route-security-groups.md)     | Frontend Route Security Groups     | Accepted | 2026-01-26 |
+| [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)           | CI/CD Pipeline Hardening           | Accepted | 2026-01-26 |
+| [ADR-014](./ADR-014-database-migration-architecture.md)    | Database & Migration Architecture  | Accepted | 2026-01-27 |
+| [ADR-015](./ADR-015-shared-package-architecture.md)        | Shared Package Architecture & Plan | Accepted | 2026-01-30 |
+| [ADR-016](./ADR-016-tenant-customizable-seed-data.md)      | Tenant-Customizable Seed Data      | Accepted | 2026-02-02 |
+| [ADR-017](./ADR-017-design-system-theming-architecture.md) | Design System Theming Architecture | Accepted | 2026-02-02 |
+| [ADR-017 Plan](./ADR-017-IMPLEMENTATION-PLAN.md)           | ADR-017 Implementation Plan        | Active   | 2026-02-02 |
 
 ## Template
 

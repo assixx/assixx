@@ -50,11 +50,6 @@ Employee → Team → Department → Area
       },
     },
   },
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

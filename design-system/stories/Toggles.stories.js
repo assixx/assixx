@@ -23,12 +23,6 @@ export default {
       description: 'Index of default active button (0-based)',
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

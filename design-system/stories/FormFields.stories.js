@@ -31,12 +31,6 @@ export default {
       description: 'Input placeholder',
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 const createField = ({

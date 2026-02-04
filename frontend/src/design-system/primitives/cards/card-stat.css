@@ -11,12 +11,12 @@
 .card-stat {
   transition: all 0.2s ease;
   box-shadow: var(--shadow-md);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: var(--glass-border);
   border-radius: var(
     --radius-xl
   ); /* 12px - Same as card-accent for consistency */
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   padding: var(--spacing-6); /* 24px */
 
   text-align: center;

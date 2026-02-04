@@ -11,7 +11,7 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { DashboardService } from './dashboard.service.js';
-import type { DashboardCountsResponse } from './dto/dashboard-counts.dto.js';
+import type { DashboardCounts } from './dto/dashboard-counts.dto.js';
 
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard)
@@ -37,7 +37,7 @@ export class DashboardController {
   async getCounts(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-  ): Promise<DashboardCountsResponse> {
+  ): Promise<DashboardCounts> {
     return await this.dashboardService.getCounts(user, tenantId);
   }
 }

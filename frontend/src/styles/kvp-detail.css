@@ -33,10 +33,10 @@
   z-index: 1;
 
   padding: var(--spacing-8);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 }
@@ -58,10 +58,10 @@
   overflow: visible;
 
   padding: var(--spacing-6);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px) saturate(180%);
 }
 
@@ -104,7 +104,7 @@
   display: flex;
   gap: var(--spacing-6);
   font-size: 0.9rem;
-  color: rgb(255 255 255 / 60%);
+  color: var(--text-muted);
 }
 
 .detail-meta span {
@@ -120,11 +120,11 @@
 /* Expiration date indicator in detail-meta */
 .detail-meta__expires {
   font-style: italic;
-  color: rgb(255 255 255 / 50%);
+  color: var(--text-muted);
 }
 
 .detail-meta__expires i {
-  color: rgb(255 255 255 / 50%);
+  color: var(--text-muted);
 }
 
 .detail-meta__expires--expired {
@@ -185,12 +185,12 @@
 .section-content {
   /* Glassmorphism Container für Text */
   padding: var(--spacing-4);
-  border: var(--glass-card-border);
+  border: var(--glass-border);
   border-radius: var(--glass-card-radius);
 
   /* Text styling */
   line-height: 1.6;
-  color: rgb(255 255 255 / 90%);
+  color: var(--color-text-primary);
   overflow-wrap: anywhere;
 
   background: var(--glass-bg);
@@ -205,7 +205,7 @@
 .comments-section {
   margin-top: var(--spacing-8);
   padding-top: var(--spacing-8);
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
 }
 
 .comment-list {
@@ -216,9 +216,9 @@
 
 .comment-item {
   padding: var(--spacing-3);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 .comment-header {
@@ -271,15 +271,15 @@
   align-items: center;
 
   padding: var(--spacing-3);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 .attachment-item:hover {
   border-color: var(--primary-color);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 }
 
 /* ========================================
@@ -304,7 +304,7 @@
   border: 2px solid transparent;
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 }
 
 .photo-thumbnail:hover {
@@ -328,9 +328,9 @@
   height: 100%;
 
   font-size: 1.5rem;
-  color: rgb(255 255 255 / 30%);
+  color: var(--color-text-disabled);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-active);
 }
 
 .photo-count {
@@ -523,7 +523,7 @@
    RESPONSIVE
    ======================================== */
 
-@media (width <= 768px) {
+@media (width < 768px) {
   .detail-container {
     grid-template-columns: 1fr;
   }

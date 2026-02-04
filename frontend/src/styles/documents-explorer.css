@@ -100,11 +100,11 @@
 
 /* Striped rows */
 #list-view .data-table.data-table--striped tbody tr:nth-of-type(odd) {
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 #list-view .data-table.data-table--striped tbody tr:nth-of-type(even) {
-  background: rgb(255 255 255 / 4%);
+  background: var(--glass-bg-hover);
 }
 
 /* Table cell alignment */

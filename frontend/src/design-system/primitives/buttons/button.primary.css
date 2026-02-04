@@ -19,7 +19,6 @@
 
   /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-  color: var(--color-white);
 }
 
 /* Focus state - Accessibility */

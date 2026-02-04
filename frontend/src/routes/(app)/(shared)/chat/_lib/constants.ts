@@ -13,7 +13,7 @@ export const WEBSOCKET_CONFIG = {
   /** Interval for sending ping messages (ms) */
   pingInterval: 30000,
   /** Timeout for typing indicator (ms) */
-  typingTimeout: 3000,
+  typingTimeout: 6000,
 } as const;
 
 /**
@@ -41,8 +41,10 @@ export const MESSAGES = {
   errorDeleteConversation: 'Fehler beim Löschen der Unterhaltung',
   errorUploadFiles: 'Fehler beim Hochladen der Dateien',
   errorWebSocket: 'Fehler bei der Kommunikation mit dem Server',
-  errorConnectionLost: 'Verbindung zum Server verloren. Bitte Seite neu laden.',
+  errorConnectionLost:
+    'Verbindung zum Server konnte nicht wiederhergestellt werden. Bitte Seite neu laden.',
   errorConnectionRetry: 'Verbindung verloren. Bitte versuchen Sie es erneut.',
+  reconnecting: 'Verbindung unterbrochen – Wiederverbindung läuft...',
 
   // Success
   successScheduled: 'Nachricht wurde geplant',
@@ -161,6 +163,7 @@ export const WS_MESSAGE_TYPES = {
   USER_STOPPED_TYPING: 'user_stopped_typing',
   USER_STATUS: 'user_status',
   USER_STATUS_CHANGED: 'user_status_changed',
+  USER_JOINED_CONVERSATION: 'user_joined_conversation',
   MESSAGE_READ: 'message_read',
   MESSAGE_SENT: 'message_sent',
   PONG: 'pong',

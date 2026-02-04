@@ -60,10 +60,20 @@ function incrementCount(state: NotificationState, type: CountType): void {
   state.lastUpdate = new Date();
 }
 
+/**
+ * SSE event types suppressed by feature pages that handle their own badge updates.
+ * When a page has a direct real-time channel (e.g., chat page uses WebSocket),
+ * it suppresses the SSE handler to prevent double-counting.
+ */
+const suppressedSSETypes = new Set<string>();
+
 function handleSSEEvent(
   state: NotificationState,
   event: NotificationEvent,
 ): void {
+  // Skip types suppressed by active feature pages (prevents double-counting)
+  if (suppressedSSETypes.has(event.type)) return;
+
   switch (event.type) {
     case 'CONNECTED':
       state.isConnected = true;
@@ -172,20 +182,20 @@ async function markFeatureTypeAsRead(
 interface DashboardCountsResponse {
   success: boolean;
   data: {
-    chat: { totalUnread: number };
-    notifications: {
+    chat?: { totalUnread: number };
+    notifications?: {
       total: number;
       unread: number;
       byType: Record<string, number>;
     };
-    blackboard: { count: number };
-    calendar: { count: number };
-    documents: { count: number };
+    blackboard?: { count: number };
+    calendar?: { count: number };
+    documents?: { count: number };
     /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
-    kvp: { count: number };
+    kvp?: { count: number };
     /** Pending surveys count (active surveys not yet responded to by user) */
-    surveys: { count: number };
-    fetchedAt: string;
+    surveys?: { count: number };
+    fetchedAt?: string;
   };
 }
 
@@ -209,32 +219,7 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
     }
 
     const json = (await response.json()) as DashboardCountsResponse;
-    const { data } = json;
-
-    // Extract counts from combined response
-    const chatCount = data.chat.totalUnread;
-    const surveyCount = data.surveys.count;
-    // KVP uses Pattern 2 (Individual read tracking) - separate count field
-    const kvpCount = data.kvp.count;
-    const blackboardCount = data.blackboard.count;
-    const calendarCount = data.calendar.count;
-    const documentsCount = data.documents.count;
-
-    // Update state
-    state.counts.chat = chatCount;
-    state.counts.surveys = surveyCount;
-    state.counts.documents = documentsCount;
-    state.counts.kvp = kvpCount;
-    state.counts.blackboard = blackboardCount;
-    state.counts.calendar = calendarCount;
-    state.counts.total =
-      chatCount +
-      surveyCount +
-      documentsCount +
-      kvpCount +
-      blackboardCount +
-      calendarCount;
-    state.lastUpdate = new Date();
+    initFromSSRData(state, json.data);
 
     log.debug(
       { counts: state.counts },
@@ -270,42 +255,48 @@ function connectSSE(
   sse.connect();
 }
 
-/** SSR counts input type */
+/**
+ * SSR counts input type
+ *
+ * Properties are optional because this data crosses an API boundary —
+ * the runtime shape may not match if the backend response changes or
+ * a sub-service fails. Defensive access with `?.` and `?? 0` is required.
+ */
 interface SSRCounts {
-  chat: { totalUnread: number };
-  notifications: { byType: Record<string, number> };
-  blackboard: { count: number };
-  calendar: { count: number };
-  documents: { count: number };
+  chat?: { totalUnread: number };
+  notifications?: { byType: Record<string, number> };
+  blackboard?: { count: number };
+  calendar?: { count: number };
+  documents?: { count: number };
   /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
-  kvp: { count: number };
+  kvp?: { count: number };
   /** Pending surveys count (active surveys not yet responded to by user) */
-  surveys: { count: number };
+  surveys?: { count: number };
+}
+
+/** Safely extract count from an optional API field (defensive against missing data) */
+function safeCount(item: { count: number } | undefined): number {
+  return item?.count ?? 0;
 }
 
 /** Initialize counts from SSR data (no HTTP request needed) */
 function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
-  const chatCount = counts.chat.totalUnread;
-  const surveyCount = counts.surveys.count;
-  // KVP uses Pattern 2 (Individual read tracking) - separate count field
-  const kvpCount = counts.kvp.count;
-  const blackboardCount = counts.blackboard.count;
-  const calendarCount = counts.calendar.count;
-  const documentsCount = counts.documents.count;
+  const chat = counts.chat?.totalUnread ?? 0;
+  const surveys = safeCount(counts.surveys);
+  const kvp = safeCount(counts.kvp);
+  const blackboard = safeCount(counts.blackboard);
+  const calendar = safeCount(counts.calendar);
+  const documents = safeCount(counts.documents);
 
-  state.counts.chat = chatCount;
-  state.counts.surveys = surveyCount;
-  state.counts.documents = documentsCount;
-  state.counts.kvp = kvpCount;
-  state.counts.blackboard = blackboardCount;
-  state.counts.calendar = calendarCount;
-  state.counts.total =
-    chatCount +
-    surveyCount +
-    documentsCount +
-    kvpCount +
-    blackboardCount +
-    calendarCount;
+  state.counts = {
+    total: chat + surveys + documents + kvp + blackboard + calendar,
+    chat,
+    surveys,
+    documents,
+    kvp,
+    blackboard,
+    calendar,
+  };
   state.lastUpdate = new Date();
 
   log.debug(
@@ -327,6 +318,54 @@ function disconnectSSE(
   getNotificationSSE().disconnect();
   state.isConnected = false;
   state.connectionState = 'disconnected';
+}
+
+function buildStoreActions(
+  state: NotificationState,
+  getUnsubscribe: () => (() => void) | null,
+  setUnsubscribe: (fn: (() => void) | null) => void,
+) {
+  return {
+    connect: () => {
+      connectSSE(state, setUnsubscribe);
+    },
+    disconnect: () => {
+      disconnectSSE(state, getUnsubscribe(), setUnsubscribe);
+    },
+    decrementCount: (type: CountType) => {
+      decrementCountMut(state, type);
+    },
+    incrementCount: (type: CountType) => {
+      incrementCount(state, type);
+    },
+    resetCount: (type: CountType) => {
+      resetCountMut(state, type);
+    },
+    resetAllCounts: () => {
+      state.counts = createInitialCounts();
+    },
+    setCounts: (counts: Partial<NotificationCounts>) => {
+      setCountsMut(state, counts);
+    },
+    loadInitialCounts: async () => {
+      if (browser) await fetchInitialCounts(state);
+    },
+    /** Initialize counts from SSR data (no HTTP request needed) */
+    initFromSSR: (counts: SSRCounts) => {
+      initFromSSRData(state, counts);
+    },
+    markTypeAsRead: async (featureType: FeatureType) => {
+      if (browser) await markFeatureTypeAsRead(state, featureType);
+    },
+    /**
+     * Suppress an SSE event type from auto-incrementing badge counts.
+     * Used by feature pages that handle their own real-time updates
+     * (e.g., chat page uses WebSocket, so it suppresses SSE NEW_MESSAGE).
+     */
+    suppressSSEType: (type: string) => suppressedSSETypes.add(type),
+    /** Re-enable SSE handling for a previously suppressed event type. */
+    unsuppressSSEType: (type: string) => suppressedSSETypes.delete(type),
+  };
 }
 
 function createNotificationStore() {
@@ -357,37 +396,7 @@ function createNotificationStore() {
     get totalUnread() {
       return state.counts.total;
     },
-    connect: () => {
-      connectSSE(state, setUnsubscribe);
-    },
-    disconnect: () => {
-      disconnectSSE(state, unsubscribeSSE, setUnsubscribe);
-    },
-    decrementCount: (type: CountType) => {
-      decrementCountMut(state, type);
-    },
-    incrementCount: (type: CountType) => {
-      incrementCount(state, type);
-    },
-    resetCount: (type: CountType) => {
-      resetCountMut(state, type);
-    },
-    resetAllCounts: () => {
-      state.counts = createInitialCounts();
-    },
-    setCounts: (counts: Partial<NotificationCounts>) => {
-      setCountsMut(state, counts);
-    },
-    loadInitialCounts: async () => {
-      if (browser) await fetchInitialCounts(state);
-    },
-    /** Initialize counts from SSR data (no HTTP request needed) */
-    initFromSSR: (counts: SSRCounts) => {
-      initFromSSRData(state, counts);
-    },
-    markTypeAsRead: async (featureType: FeatureType) => {
-      if (browser) await markFeatureTypeAsRead(state, featureType);
-    },
+    ...buildStoreActions(state, () => unsubscribeSSE, setUnsubscribe),
   };
 }
 

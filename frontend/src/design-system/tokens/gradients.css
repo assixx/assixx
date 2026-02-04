@@ -53,16 +53,4 @@
     rgb(255 255 255 / 20%),
     transparent
   );
-
-  /* ========== BACKGROUND GRADIENTS ========== */
-
-  /* Body background - Dramatic dark gradient */
-  --gradient-body-bg: linear-gradient(
-    5deg,
-    transparent 0%,
-    rgb(0 142 255 / 10%) 25%,
-    rgb(1 0 4 / 51%) 60%,
-    rgb(0 0 4 / 60%) 90%,
-    var(--color-black) 100%
-  );
 }

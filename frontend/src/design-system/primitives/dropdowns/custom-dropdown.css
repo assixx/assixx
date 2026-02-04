@@ -79,9 +79,9 @@
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
 
-    border: 1px solid rgb(255 255 255 / 10%);
+    border: var(--glass-border);
     border-radius: var(--radius-xl);
-    background: rgb(30 30 30 / 95%); /* Heller als rgb(18,18,18) */
+    background: rgb(255 255 255 / 95%);
   }
 
   .dropdown__menu.active {
@@ -99,7 +99,7 @@
 
     transition: all 0.15s ease;
     cursor: pointer;
-    border-bottom: 1px solid rgb(255 255 255 / 5%);
+    border-bottom: 1px solid var(--color-glass-border);
 
     padding: 10px 16px;
     color: var(--color-text-primary);
@@ -116,7 +116,7 @@
     border-radius: var(--radius-md);
     background: rgb(33 150 243 / 20%);
     padding-left: 20px;
-    color: #fff;
+    color: var(--color-text-primary);
   }
 
   .dropdown__option:active {
@@ -127,7 +127,7 @@
   .dropdown__option i {
     margin-right: 12px;
     width: 20px;
-    color: rgb(255 255 255 / 60%);
+    color: var(--color-text-secondary);
     font-size: 14px;
   }
 
@@ -137,11 +137,11 @@
   }
 
   .dropdown__option:hover i {
-    color: #fff;
+    color: var(--color-text-primary);
   }
 
   .dropdown__option:hover .material-symbols-outlined {
-    color: #fff;
+    color: var(--color-text-primary);
   }
 
   /* Option Secondary Text (e.g., price) */
@@ -152,7 +152,7 @@
   }
 
   .dropdown__option:hover .dropdown__option-secondary {
-    color: #fff;
+    color: var(--color-text-primary);
   }
 
   /* Fix stacking context: When a dropdown is active inside a glass-card,
@@ -176,15 +176,20 @@
   }
 
   .dropdown__menu--scrollable::-webkit-scrollbar-track {
-    background: rgb(255 255 255 / 5%);
+    background: var(--glass-bg);
   }
 
   .dropdown__menu--scrollable::-webkit-scrollbar-thumb {
     border-radius: 2px;
-    background: rgb(255 255 255 / 20%);
+    background: var(--color-glass-border);
   }
 
   .dropdown__menu--scrollable::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 30%);
+    background: var(--color-glass-border-hover);
   }
+}
+
+/* Dark mode overrides for opaque dropdown */
+html.dark .dropdown__menu {
+  background: rgb(30 30 30 / 95%);
 }

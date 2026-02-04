@@ -53,11 +53,11 @@
   /* Interaction */
   cursor: pointer;
   box-shadow: var(--shadow-glass);
-  border: 2px dashed rgb(255 255 255 / 20%);
+  border: 2px dashed var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
 
   /* Glassmorphism */
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
   padding: var(--spacing-8);
 
   min-height: 200px;
@@ -165,7 +165,7 @@
 
   /* Highlight on hover */
   border-color: rgb(33 150 243 / 40%);
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 }
 
 .file-upload-zone:hover .file-upload-zone__icon {

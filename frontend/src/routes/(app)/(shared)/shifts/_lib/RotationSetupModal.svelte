@@ -480,9 +480,7 @@
               for="rotation-end"
             >
               Enddatum
-              <small class="text-[var(--color-text-secondary)]"
-                >(optional)</small
-              >
+              <small class="text-(--color-text-secondary)">(optional)</small>
             </label>
             <input
               type="date"
@@ -499,7 +497,7 @@
 
           <!-- Available Employees -->
           <div class="glass-card mb-4 p-4">
-            <h4 class="mb-2 font-medium text-white/80">
+            <h4 class="mb-2 font-medium text-(--color-text-secondary)">
               Verfügbare Mitarbeiter
             </h4>
             <div class="employee-list">
@@ -523,9 +521,7 @@
                 </div>
               {/each}
               {#if availableEmployees.length === 0}
-                <div
-                  class="py-2 text-sm text-[var(--color-text-tertiary)] italic"
-                >
+                <div class="py-2 text-sm text-(--color-text-tertiary) italic">
                   Alle Mitarbeiter zugewiesen
                 </div>
               {/if}
@@ -534,19 +530,19 @@
 
           <!-- Shift Assignment Drop Zones -->
           <div class="glass-card p-4">
-            <h4 class="mb-2 font-medium text-white/80">
+            <h4 class="mb-2 font-medium text-(--color-text-secondary)">
               Schichtzuweisung (Startschicht)
             </h4>
             <div class="shift-assignment-table grid grid-cols-3 gap-4">
               <!-- F-Shift Column -->
               <div class="shift-column">
                 <div
-                  class="column-header mb-2 text-center font-medium text-blue-400"
+                  class="column-header mb-2 text-center font-medium text-blue-700 dark:text-blue-400"
                 >
                   F (Früh)
                 </div>
                 <div
-                  class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
+                  class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
                   data-shift="F"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
@@ -582,12 +578,12 @@
               <!-- S-Shift Column -->
               <div class="shift-column">
                 <div
-                  class="column-header mb-2 text-center font-medium text-yellow-400"
+                  class="column-header mb-2 text-center font-medium text-yellow-700 dark:text-yellow-400"
                 >
                   S (Spät)
                 </div>
                 <div
-                  class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
+                  class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
                   data-shift="S"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
@@ -623,12 +619,12 @@
               <!-- N-Shift Column -->
               <div class="shift-column">
                 <div
-                  class="column-header mb-2 text-center font-medium text-purple-400"
+                  class="column-header mb-2 text-center font-medium text-purple-700 dark:text-purple-400"
                 >
                   N (Nacht)
                 </div>
                 <div
-                  class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
+                  class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
                   data-shift="N"
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}

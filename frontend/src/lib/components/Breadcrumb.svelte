@@ -81,6 +81,7 @@
         label: 'Konto-Einstellungen',
         icon: 'fa-user-cog',
       },
+      '/settings/design': { label: 'Design', icon: 'fa-palette' },
       '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
       '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
       '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
@@ -130,6 +131,11 @@
     },
     '/kvp-detail': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
     '/kvp-categories': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
+    '/settings/design': {
+      label: 'Einstellungen',
+      href: '/settings/design',
+      icon: 'fa-cog',
+    },
     '/blackboard-detail': {
       label: 'Schwarzes Brett',
       href: '/blackboard',

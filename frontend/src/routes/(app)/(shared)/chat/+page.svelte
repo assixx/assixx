@@ -48,6 +48,7 @@
   } from './_lib/websocket';
 
   import type { PageData } from './$types';
+  import type { WebSocketCallbacks } from './_lib/handlers';
   import type {
     ChatUser,
     Conversation,
@@ -153,6 +154,7 @@
 
   // WebSocket
   let typingUsers: number[] = $state([]);
+  let isDisconnected = $state(false);
 
   // SSE subscription for scheduled messages
   let sseUnsubscribe: (() => void) | null = null;
@@ -199,11 +201,27 @@
       conversations = [...ssrConversations];
     }
 
-    // SSR already loaded conversations and user data
-    // Just need to connect WebSocket for real-time updates
-    // Auth handled by connection ticket (fetched inside connectWebSocket)
-    void connectWebSocket();
-    handlers.startPeriodicPing();
+    // Suppress SSE NEW_MESSAGE in notification store while chat page is mounted.
+    // The chat page handles badge updates directly from WebSocket (prevents double-counting).
+    notificationStore.suppressSSEType('NEW_MESSAGE');
+
+    // WebSocket is already connected from app layout for presence tracking.
+    // Upgrade callbacks to include chat-specific handlers (messages, typing, etc.).
+    const chatCallbacks = getChatCallbacks();
+    const existingWs = handlers.getWebSocket();
+
+    if (existingWs !== null && existingWs.readyState === WebSocket.OPEN) {
+      // WS already connected from layout — just upgrade callbacks and join conversations
+      handlers.updateCallbacks(chatCallbacks);
+      conversations.forEach((conv) => {
+        handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
+      });
+    } else {
+      // Race condition: layout WS not ready yet — update callbacks so they're
+      // used when the connection completes. The layout's connectWebSocket will
+      // use activeCallbacks (which we just set) for onopen/onmessage.
+      handlers.updateCallbacks(chatCallbacks);
+    }
 
     // Subscribe to SSE for scheduled message notifications
     // Scheduled messages are sent via eventBus → SSE (not WebSocket)
@@ -250,7 +268,11 @@
   });
 
   onDestroy(() => {
-    handlers.disconnectWebSocket();
+    // DON'T disconnect WebSocket — it stays alive for presence ("online" status).
+    // Just restore presence-only callbacks (removes chat-specific handlers).
+    handlers.restorePresenceCallbacks();
+    // Re-enable SSE NEW_MESSAGE handling in notification store
+    notificationStore.unsuppressSSEType('NEW_MESSAGE');
     // Cleanup SSE subscription
     if (sseUnsubscribe !== null) {
       sseUnsubscribe();
@@ -319,29 +341,44 @@
   // ==========================================================================
 
   /**
-   * Connect to WebSocket using connection ticket
-   * SECURITY: Uses short-lived, single-use ticket instead of JWT to prevent token leakage
-   * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
+   * Build chat-specific WebSocket callbacks.
+   * Used by both initial upgrade (from presence) and reconnection.
    */
-  async function connectWebSocket(): Promise<void> {
-    await handlers.connectWebSocket({
+  function getChatCallbacks(): WebSocketCallbacks {
+    return {
       onConnected: () => {
+        isDisconnected = false;
         conversations.forEach((conv) => {
           handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
         });
       },
+      onDisconnect: (permanent: boolean) => {
+        isDisconnected = true;
+        if (permanent) {
+          showNotification(MESSAGES.errorConnectionLost, 'error');
+        }
+      },
       onNewMessage: (newMessage: Message) => {
-        if (activeConversation?.id === newMessage.conversationId) {
+        const isActiveConv =
+          activeConversation?.id === newMessage.conversationId;
+        const isOwnMessage = newMessage.senderId === currentUser?.id;
+
+        if (isActiveConv) {
           messages = [...messages, newMessage];
-          if (newMessage.senderId !== currentUser?.id) {
+          if (!isOwnMessage) {
             void apiMarkConversationAsRead(newMessage.conversationId);
           }
+        } else if (!isOwnMessage) {
+          // Non-active conversation, not own message → increment sidebar badge
+          // (SSE NEW_MESSAGE is suppressed while chat page is mounted)
+          notificationStore.incrementCount('chat');
         }
+
         conversations = updateConversationWithMessage(
           conversations,
           newMessage.conversationId,
           newMessage,
-          activeConversation?.id === newMessage.conversationId,
+          isActiveConv,
           currentUser?.id ?? 0,
         );
         typingUsers = removeTypingUser(typingUsers, newMessage.senderId);
@@ -351,8 +388,10 @@
           typingUsers = addTypingUser(typingUsers, userId);
         }
       },
-      onTypingStop: (userId: number) => {
-        typingUsers = removeTypingUser(typingUsers, userId);
+      onTypingStop: (conversationId: number, userId: number) => {
+        if (activeConversation?.id === conversationId) {
+          typingUsers = removeTypingUser(typingUsers, userId);
+        }
       },
       onUserStatus: (userId: number, status: string) => {
         conversations = updateConversationsUserStatus(
@@ -360,6 +399,15 @@
           userId,
           status as UserStatus,
         );
+        // Sync activeConversation so ChatHeader status text updates too
+        if (activeConversation !== null) {
+          activeConversation = {
+            ...activeConversation,
+            participants: activeConversation.participants.map((p) =>
+              p.id === userId ? { ...p, status: status as UserStatus } : p,
+            ),
+          };
+        }
       },
       onMessageRead: (messageId: number) => {
         messages = markMessageAsRead(messages, messageId);
@@ -373,7 +421,7 @@
       getActiveConversationId: () => activeConversation?.id ?? null,
       getCurrentUserId: () => currentUser?.id ?? 0,
       getConversations: () => conversations,
-    });
+    };
   }
 
   // ==========================================================================
@@ -546,6 +594,9 @@
     const scheduleTime = scheduledFor;
 
     if (content === '' && filesToSend.length === 0) return;
+
+    // Stop typing indicator immediately when sending a message
+    handlers.sendTypingStop(activeConversation.id);
 
     // Clear inputs immediately to prevent double-sends
     messageInput = '';
@@ -765,6 +816,15 @@
     />
 
     <div class="chat-main">
+      {#if isDisconnected}
+        <div
+          class="connection-lost-banner"
+          role="alert"
+        >
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>{MESSAGES.reconnecting}</span>
+        </div>
+      {/if}
       {#if activeConversation}
         <ChatHeader
           conversation={activeConversation}
@@ -793,12 +853,19 @@
           {scheduledMessages}
           currentUserId={currentUser?.id ?? 0}
           searchQuery={debouncedSearchQuery}
-          {typingUsers}
           isLoading={isLoadingMessages}
           oncancelscheduled={cancelScheduled}
           onimageclick={openImagePreview}
         />
 
+        {#if typingUsers.length > 0}
+          <div class="typing-indicator">
+            <span class="typing-dots"
+              ><span></span><span></span><span></span></span
+            >
+            <span class="typing-text">{MESSAGES.labelTyping}</span>
+          </div>
+        {/if}
         <MessageInputArea
           bind:messageInput
           {selectedFiles}

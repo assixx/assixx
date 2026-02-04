@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
@@ -7,6 +9,11 @@
     return (resolve as (p: string) => string)(path);
   }
 
+  import {
+    isDark,
+    forceDark,
+    restoreUserTheme,
+  } from '$lib/stores/theme.svelte';
   import {
     showWarningAlert,
     showErrorAlert,
@@ -118,6 +125,17 @@
   const buttonText = $derived(
     loading ? '⏳ Wird erstellt...' : 'Jetzt registrieren →',
   );
+
+  // =============================================================================
+  // LIFECYCLE - Always-dark page
+  // =============================================================================
+
+  onMount(() => {
+    forceDark();
+    return () => {
+      restoreUserTheme();
+    };
+  });
 
   // =============================================================================
   // EVENT HANDLERS
@@ -260,7 +278,9 @@
   <div class="signup-header">
     <div class="header-left">
       <img
-        src="/images/logo.png"
+        src={isDark() ?
+          '/images/logo_darkmode.png'
+        : '/images/logo_lightmode.png'}
         alt="Assixx Logo"
         class="signup-logo"
       />
@@ -498,7 +518,7 @@
         >
           Passwort
           <span class="tooltip ml-1">
-            <i class="fas fa-info-circle cursor-help text-sm text-blue-400"></i>
+            <i class="fas fa-info-circle"></i>
             <span
               class="tooltip__content tooltip__content--info tooltip__content--right"
               role="tooltip"

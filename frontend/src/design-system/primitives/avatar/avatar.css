@@ -44,7 +44,7 @@
   transition: all var(--transition-normal);
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 
   width: 40px;
   height: 40px;
@@ -57,7 +57,7 @@
   transform: scale(1.05);
   box-shadow:
     var(--shadow-glass),
-    0 0 12px rgb(255 255 255 / 10%);
+    0 0 12px var(--color-glass-border);
 }
 
 /* ========================================
@@ -371,10 +371,10 @@
   transition: all var(--transition-normal);
   cursor: pointer;
   margin-left: -12px;
-  border: 1px solid rgb(255 255 255 / 15%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 8%);
+  background: var(--glass-bg-active);
 
   width: 40px;
   height: 40px;
@@ -386,7 +386,7 @@
 
 .avatar-group__count:hover {
   transform: scale(1.05);
-  background: rgb(255 255 255 / 12%);
+  background: var(--color-glass-border-hover);
   color: var(--color-text-primary);
 }
 
