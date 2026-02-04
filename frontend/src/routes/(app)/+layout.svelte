@@ -39,6 +39,14 @@
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
 
+  // WebSocket presence: keeps user "online" across ALL authenticated pages
+  import {
+    connectWebSocket as wsConnect,
+    disconnectWebSocket as wsDisconnect,
+    setPresenceCallbacks,
+    startPeriodicPing,
+    type WebSocketCallbacks,
+  } from './(shared)/chat/_lib/handlers';
   import AppSidebar from './_lib/AppSidebar.svelte';
   import {
     filterMenuByAccess,
@@ -261,6 +269,55 @@
   }
 
   // =============================================================================
+  // WEBSOCKET PRESENCE
+  // Keeps user "online" across all authenticated pages (not just chat).
+  // Chat page upgrades callbacks for message handling, then restores on leave.
+  // =============================================================================
+
+  async function connectPresenceWebSocket(): Promise<void> {
+    const userId = data.user?.id ?? 0;
+
+    const callbacks: WebSocketCallbacks = {
+      onConnected: () => {
+        log.info('Presence WebSocket connected');
+      },
+      onDisconnect: (_permanent: boolean) => {
+        // Reconnection handled automatically by handlers.ts
+      },
+      // No-op handlers: SSE handles notification badges outside chat page.
+      // Chat page upgrades these with real handlers when mounted.
+      onNewMessage: () => {
+        /* no-op: SSE handles badges */
+      },
+      onTypingStart: () => {
+        /* no-op: chat-page-only */
+      },
+      onTypingStop: () => {
+        /* no-op: chat-page-only */
+      },
+      onUserStatus: () => {
+        /* no-op: chat-page-only */
+      },
+      onMessageRead: () => {
+        /* no-op: chat-page-only */
+      },
+      onError: (error: string) => {
+        log.error(error);
+      },
+      onAuthError: () => {
+        void goto('/login');
+      },
+      getActiveConversationId: () => null,
+      getCurrentUserId: () => userId,
+      getConversations: () => [],
+    };
+
+    setPresenceCallbacks(callbacks);
+    await wsConnect(callbacks);
+    startPeriodicPing();
+  }
+
+  // =============================================================================
   // TOKEN TIMER
   // =============================================================================
 
@@ -370,6 +427,9 @@
       notificationStore.connect();
     });
 
+    // Connect WebSocket for presence tracking (user appears "online" app-wide)
+    void connectPresenceWebSocket();
+
     endLayoutMount();
 
     // Log page load timing after everything is mounted
@@ -386,6 +446,7 @@
     sessionManagerInstance?.destroy();
     roleSyncManagerInstance?.destroy();
     notificationStore.disconnect();
+    wsDisconnect();
   });
 </script>
 
@@ -556,7 +617,7 @@
 
     <!-- Main Content (Child Routes) -->
     <main
-      class="min-h-[calc(100vh-60px)] flex-1 bg-[var(--background-primary)] p-4"
+      class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-4"
     >
       <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
       <div id="breadcrumb-container">

@@ -48,6 +48,7 @@
   } from './_lib/websocket';
 
   import type { PageData } from './$types';
+  import type { WebSocketCallbacks } from './_lib/handlers';
   import type {
     ChatUser,
     Conversation,
@@ -204,11 +205,23 @@
     // The chat page handles badge updates directly from WebSocket (prevents double-counting).
     notificationStore.suppressSSEType('NEW_MESSAGE');
 
-    // SSR already loaded conversations and user data
-    // Just need to connect WebSocket for real-time updates
-    // Auth handled by connection ticket (fetched inside connectWebSocket)
-    void connectWebSocket();
-    handlers.startPeriodicPing();
+    // WebSocket is already connected from app layout for presence tracking.
+    // Upgrade callbacks to include chat-specific handlers (messages, typing, etc.).
+    const chatCallbacks = getChatCallbacks();
+    const existingWs = handlers.getWebSocket();
+
+    if (existingWs !== null && existingWs.readyState === WebSocket.OPEN) {
+      // WS already connected from layout — just upgrade callbacks and join conversations
+      handlers.updateCallbacks(chatCallbacks);
+      conversations.forEach((conv) => {
+        handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
+      });
+    } else {
+      // Race condition: layout WS not ready yet — update callbacks so they're
+      // used when the connection completes. The layout's connectWebSocket will
+      // use activeCallbacks (which we just set) for onopen/onmessage.
+      handlers.updateCallbacks(chatCallbacks);
+    }
 
     // Subscribe to SSE for scheduled message notifications
     // Scheduled messages are sent via eventBus → SSE (not WebSocket)
@@ -255,7 +268,9 @@
   });
 
   onDestroy(() => {
-    handlers.disconnectWebSocket();
+    // DON'T disconnect WebSocket — it stays alive for presence ("online" status).
+    // Just restore presence-only callbacks (removes chat-specific handlers).
+    handlers.restorePresenceCallbacks();
     // Re-enable SSE NEW_MESSAGE handling in notification store
     notificationStore.unsuppressSSEType('NEW_MESSAGE');
     // Cleanup SSE subscription
@@ -326,12 +341,11 @@
   // ==========================================================================
 
   /**
-   * Connect to WebSocket using connection ticket
-   * SECURITY: Uses short-lived, single-use ticket instead of JWT to prevent token leakage
-   * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
+   * Build chat-specific WebSocket callbacks.
+   * Used by both initial upgrade (from presence) and reconnection.
    */
-  async function connectWebSocket(): Promise<void> {
-    await handlers.connectWebSocket({
+  function getChatCallbacks(): WebSocketCallbacks {
+    return {
       onConnected: () => {
         isDisconnected = false;
         conversations.forEach((conv) => {
@@ -385,6 +399,15 @@
           userId,
           status as UserStatus,
         );
+        // Sync activeConversation so ChatHeader status text updates too
+        if (activeConversation !== null) {
+          activeConversation = {
+            ...activeConversation,
+            participants: activeConversation.participants.map((p) =>
+              p.id === userId ? { ...p, status: status as UserStatus } : p,
+            ),
+          };
+        }
       },
       onMessageRead: (messageId: number) => {
         messages = markMessageAsRead(messages, messageId);
@@ -398,7 +421,7 @@
       getActiveConversationId: () => activeConversation?.id ?? null,
       getCurrentUserId: () => currentUser?.id ?? 0,
       getConversations: () => conversations,
-    });
+    };
   }
 
   // ==========================================================================
