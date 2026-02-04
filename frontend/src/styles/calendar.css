@@ -21,6 +21,7 @@
 .ec {
   --ec-bg-color: none !important;
   --ec-border-color: unset !important;
+  --ec-event-col-gap: 8px;
 
   color-scheme: none !important;
 }
@@ -105,6 +106,15 @@
   border-color: hsl(0deg 0% 83.5% / 35%);
 }
 
+html:not(.dark) .ec-day-grid .ec-header,
+html:not(.dark) .ec-day-grid .ec-all-day,
+html:not(.dark) .ec-day-grid .ec-body,
+html:not(.dark) .ec-day-grid .ec-days,
+html:not(.dark) .ec-day-grid .ec-day,
+html:not(.dark) .ec-day-grid .ec-day-head {
+  border-color: hsl(0deg 0% 0% / 40.9%);
+}
+
 .ec-day {
   position: relative;
   color: var(--text-primary);
@@ -152,11 +162,14 @@
   margin-right: 0 !important;
 }
 
+/* --ec-event-col-gap steuert inline-size: calc(100% - gap).
+   Library legt den Abstand nur rechts an -- margin-inline: auto zentriert das Event */
 .ec-event {
   cursor: pointer;
   border: none !important;
   border-radius: 4px;
   box-shadow: var(--shadow-sm);
+  margin-inline: auto;
 }
 
 .ec-event:hover {
@@ -599,7 +612,7 @@
    ============================================================================ */
 
 .calendar-fullscreen-mode #calendarContainer {
-  position: fixed !important;
+  position: absolute !important;
   z-index: 9999 !important;
   inset: 0 !important;
 
@@ -608,7 +621,6 @@
   margin: 0 !important;
   border: 0;
   border-radius: 0 !important;
-  background: #00000063;
 }
 
 .calendar-fullscreen-mode #calendarContainer .card__header {

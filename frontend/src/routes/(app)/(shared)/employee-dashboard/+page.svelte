@@ -95,11 +95,6 @@
     getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee),
   );
 
-  // Notification count (placeholder for now)
-  const alertCount = $derived(
-    blackboardEntries.filter((e) => e.isConfirmed !== true).length,
-  );
-
   // =============================================================================
   // FLOATING DOTS - Generated client-side for animation
   // =============================================================================
@@ -141,18 +136,9 @@
       <h1 class="mb-1 text-3xl font-bold">{MESSAGES.welcomeBack}</h1>
       <p class="text-lg text-white/90">
         {MESSAGES.niceToSeeYou}&nbsp;
-        <span class="font-semibold text-[var(--color-primary)]"
-          >{employeeName}</span
+        <span class="employee-name-hero text-2xl font-bold">{employeeName}</span
         >
       </p>
-    </div>
-
-    <!-- Stats -->
-    <div class="relative z-10 flex gap-6">
-      <div class="welcome-stat">
-        <div class="welcome-stat-number">{alertCount}</div>
-        <div class="welcome-stat-label">{MESSAGES.heroStatLabel}</div>
-      </div>
     </div>
   </div>
 

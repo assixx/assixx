@@ -89,6 +89,8 @@
   /* Text */
   --color-text-primary: var(--color-gray-900);
   --color-text-secondary: #1a1a1a;
+  --color-text-tertiary: var(--color-gray-600);
+  --color-text-muted: #6b7280;
   --color-text-disabled: var(--color-gray-400);
   --color-text-placeholder: rgb(0 0 0 / 40%);
   --color-icon-primary: #1976d2;
