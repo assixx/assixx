@@ -1,2 +1,8 @@
+# Line ending normalization
+* text=auto eol=lf
+*.sh text eol=lf
+
 # GitHub Linguist - Exclude from language statistics
 design-system/stories/** linguist-generated=true
+*.sh linguist-detectable=false
+*.sql linguist-detectable=false
