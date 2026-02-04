@@ -981,30 +981,61 @@ body:has(.sidebar.collapsed) .header .logo {
   text-align: right;
 }
 
-/* Responsive Design */
-@media (width <=768px) {
+/* ===== MOBILE: < 768px ===== */
+@media (width < 768px) {
   .header {
-    flex-direction: column;
-    gap: var(--spacing-4);
+    height: var(--header-height-mobile);
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Hide elements that don't fit on mobile */
+  .header-actions [id='user-name'] {
+    display: none;
+  }
+
+  .header .logo {
+    width: 100px;
   }
 
   .sidebar {
-    /* Mobile: Fixed statt Sticky (Overlay-Menü) */
+    /* Mobile: Fixed overlay menu, hidden by default */
     position: fixed;
-    top: 60px;
+    top: var(--header-height-mobile);
+    left: 0;
+    z-index: 200;
     transform: translateX(-100%);
-    z-index: 100;
 
-    width: 100%;
-    height: calc(100vh - 60px);
-    max-height: calc(100vh - 60px);
+    margin-left: 0;
+
+    width: 280px;
+    height: calc(100vh - var(--header-height-mobile));
+    max-height: calc(100vh - var(--header-height-mobile));
+
+    transition: transform 0.3s ease;
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
   }
 
-  /* .main-content - REMOVED: Margin-left now handled by Tailwind utilities */
+  /* Override !important from base .sidebar width rules */
+  .sidebar.mobile-open {
+    width: 280px !important;
+    min-width: 280px !important;
+  }
+
+  /* Show labels in mobile sidebar (override collapsed state) */
+  .sidebar.mobile-open .sidebar-link .label {
+    display: inline;
+  }
+
+  .sidebar.mobile-open .submenu-arrow {
+    display: flex;
+  }
+
+  .sidebar.mobile-open .submenu {
+    display: block;
+  }
 
   .layout-container {
     flex-direction: column;
@@ -1018,6 +1049,126 @@ body:has(.sidebar.collapsed) .header .logo {
 
     margin-top: var(--spacing-6);
   }
+
+  /* Role switch banner adjusts for smaller header */
+  .role-switch-banner {
+    top: var(--header-height-mobile);
+    right: 5%;
+    left: 5%;
+  }
+}
+
+/* ===== TABLET: 768px – 1023px ===== */
+/* Mirror .sidebar.collapsed behavior via CSS-only (no JS .collapsed class) */
+@media (width >= 768px) and (width < 1024px) {
+  .sidebar {
+    width: var(--sidebar-width-collapsed) !important;
+    min-width: var(--sidebar-width-collapsed) !important;
+  }
+
+  /* Auto-collapse sidebar labels on tablet */
+  .sidebar .sidebar-link .label {
+    display: none;
+  }
+
+  .sidebar .submenu-arrow {
+    display: none;
+  }
+
+  .sidebar .submenu {
+    display: none !important;
+  }
+
+  .sidebar .user-details {
+    display: none;
+  }
+
+  .sidebar .storage-widget {
+    display: none;
+  }
+
+  /* Mirror .sidebar.collapsed icon/badge styles so nothing gets clipped */
+  .sidebar .sidebar-link {
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0.5rem;
+    overflow: visible !important;
+  }
+
+  .sidebar .user-info-card {
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 9rem;
+    margin-left: 4px;
+    padding: 0.7rem;
+    min-height: auto;
+  }
+
+  .sidebar .sidebar-title {
+    justify-content: center;
+    margin-left: 4px;
+    padding: var(--spacing-2);
+    width: calc(100% - 8px);
+    min-height: 26px;
+    font-size: 0;
+  }
+
+  .sidebar .title-text {
+    display: none;
+  }
+
+  /* Override expanded active style — must match specificity of
+     .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link (0,5,0) */
+  .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-black) !important;
+  }
+
+  .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link .icon::before {
+    position: absolute;
+    z-index: -1;
+    inset: -0.55rem;
+    border-radius: var(--glass-card-radius);
+    background: linear-gradient(135deg, #e9f1f7 0%, #75bffc 100%);
+    content: '';
+  }
+
+  /* Hover on non-active items */
+  .sidebar:not(.collapsed)
+    .sidebar-item:not(.active)
+    .sidebar-link:hover
+    .icon::before {
+    position: absolute;
+    z-index: -1;
+    inset: -0.525rem;
+    border-radius: var(--glass-card-radius);
+    background: var(--nav-hover-bg);
+    content: '';
+  }
+
+  .sidebar:not(.collapsed) .sidebar-item:not(.active) .sidebar-link:hover {
+    background: transparent;
+  }
+}
+
+/* Backdrop overlay for mobile sidebar */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  cursor: default;
+  border: none;
+  background: rgb(0 0 0 / 50%);
+  backdrop-filter: blur(4px);
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-backdrop.active {
+  display: block;
 }
 
 /* ========== Navigation Badges ========== */

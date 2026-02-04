@@ -43,9 +43,21 @@
     currentRole: 'root' | 'admin' | 'employee';
     user: UserInfo | null;
     tenant: { id?: number; companyName?: string } | null;
+    mobileMenuOpen?: boolean;
+    isMobile?: boolean;
+    onCloseMobile?: () => void;
   }
 
-  const { collapsed, menuItems, currentRole, user, tenant }: Props = $props();
+  const {
+    collapsed,
+    menuItems,
+    currentRole,
+    user,
+    tenant,
+    mobileMenuOpen = false,
+    isMobile = false,
+    onCloseMobile,
+  }: Props = $props();
 
   // --- INTERNAL STATE ---
   let openSubmenu = $state<string | null>(null);
@@ -104,6 +116,13 @@
     return false;
   }
 
+  /** Handle link click - close mobile menu on navigation */
+  function handleLinkClick(): void {
+    if (isMobile) {
+      onCloseMobile?.();
+    }
+  }
+
   /** Toggle submenu */
   function toggleSubmenu(itemId: string): void {
     if (collapsed) return;
@@ -136,6 +155,7 @@
 <aside
   class="sidebar"
   class:collapsed
+  class:mobile-open={mobileMenuOpen}
 >
   <nav class="sidebar-nav">
     <ul class="sidebar-menu">
@@ -229,6 +249,7 @@
                             href={resolveDynamicPath(nestedItem.url ?? '')}
                             class="submenu-link"
                             class:active={isActive(nestedItem)}
+                            onclick={handleLinkClick}
                           >
                             <span>{nestedItem.label}</span>
                             {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
@@ -254,6 +275,7 @@
                       href={resolveDynamicPath(subItem.url ?? '')}
                       class="submenu-link"
                       class:active={isActive(subItem)}
+                      onclick={handleLinkClick}
                     >
                       <span>{subItem.label}</span>
                       {#if subItem.badgeType && openSubmenu === item.id}
@@ -277,6 +299,7 @@
             <a
               href={resolveDynamicPath(item.url ?? '')}
               class="sidebar-link"
+              onclick={handleLinkClick}
             >
               <span
                 class="icon"

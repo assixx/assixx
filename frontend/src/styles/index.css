@@ -654,7 +654,7 @@
 }
 
 /* Responsive Design */
-@media (width <= 768px) {
+@media (width < 768px) {
   .header {
     padding: var(--spacing-3);
   }

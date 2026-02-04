@@ -10,25 +10,43 @@
 /* stylelint-disable declaration-block-no-redundant-longhand-properties -- Need individual props for left override */
 .chat-page-main {
   position: fixed;
-  top: 80px; /* Header height from dashboard-theme.css */
+  top: var(--header-height);
   right: 0;
   bottom: 0;
-  left: 280px; /* Navigation Sidebar width - expanded */
+  left: var(--sidebar-width-expanded);
 
   transition: left 0.3s ease;
   margin: 0 !important;
   padding: 0 !important;
 
-  height: calc(100vh - 80px); /* Subtract header height */
+  height: calc(100vh - var(--header-height));
 
   overflow: hidden;
 }
 
-/* When Navigation Sidebar is collapsed - class added by unified-navigation */
+/* When Navigation Sidebar is collapsed */
 .chat-page-main.sidebar-collapsed {
-  left: 125px; /* Collapsed Navigation Sidebar width */
+  left: var(--sidebar-width-collapsed);
 }
 /* stylelint-enable declaration-block-no-redundant-longhand-properties */
+
+/* Mobile: full-width chat, no sidebar offset */
+@media (width < 768px) {
+  .chat-page-main,
+  .chat-page-main.sidebar-collapsed {
+    left: 0;
+    top: var(--header-height-mobile);
+    height: calc(100vh - var(--header-height-mobile));
+  }
+}
+
+/* Tablet: sidebar always collapsed width */
+@media (width >= 768px) and (width < 1024px) {
+  .chat-page-main,
+  .chat-page-main.sidebar-collapsed {
+    left: var(--sidebar-width-collapsed);
+  }
+}
 
 /* Chat-spezifische Styles mit Glassmorphismus-Design */
 .chat-container {
@@ -778,7 +796,7 @@
 /* Animations */
 
 /* Responsive Design */
-@media (width <= 768px) {
+@media (width < 768px) {
   .chat-sidebar {
     position: absolute;
     top: 0;
@@ -1038,7 +1056,7 @@
 /* Search Bar - Now uses Design System search-input component */
 
 /* Mobile Improvements */
-@media (width <= 768px) {
+@media (width < 768px) {
   .message-input-container {
     padding: var(--spacing-3);
   }

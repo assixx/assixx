@@ -697,7 +697,7 @@ html:not(.dark) .ec-day-grid .ec-day-head {
    RESPONSIVE
    ============================================================================ */
 
-@media (width <= 767.98px) {
+@media (width < 768px) {
   .event-date {
     flex: 0 0 70px;
   }

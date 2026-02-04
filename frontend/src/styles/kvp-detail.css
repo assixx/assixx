@@ -523,7 +523,7 @@
    RESPONSIVE
    ======================================== */
 
-@media (width <= 768px) {
+@media (width < 768px) {
   .detail-container {
     grid-template-columns: 1fr;
   }
