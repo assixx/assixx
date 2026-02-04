@@ -1,0 +1,45 @@
+meta {
+  name: List Notifications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/notifications
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 20
+  ~isRead: false
+  ~type:
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return notifications array", function() {
+    // API returns: { data: { notifications: [...], total: X, ... } }
+    expect(res.getBody().data.notifications).to.be.an("array");
+  });
+}
+
+script:post-response {
+  const data = res.body.data;
+  if (data && data.notifications && data.notifications.length > 0) {
+    bru.setVar("existing_notification_id", data.notifications[0].id);
+  }
+}

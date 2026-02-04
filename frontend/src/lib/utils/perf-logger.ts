@@ -46,6 +46,9 @@ const completedEntries: PerfEntry[] = [];
 /** Max entries to keep in memory */
 const MAX_ENTRIES = 500;
 
+/** Guard: page timing already logged (prevents duplicates on layout re-mount) */
+let pageTimingLogged = false;
+
 /**
  * Get current high-resolution timestamp
  */
@@ -257,10 +260,12 @@ export const perf = {
         .filter((e) => (e.duration ?? 0) > 500)
         .sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0))
         .forEach((e) => {
-          console.log(
-            `${e.name}: ${formatDuration(e.duration ?? 0)}`,
-            e.metadata ?? '',
-          );
+          const label = `${e.name}: ${formatDuration(e.duration ?? 0)}`;
+          if (e.metadata !== undefined) {
+            console.log(label, e.metadata);
+          } else {
+            console.log(label);
+          }
         });
       console.groupEnd();
     }
@@ -312,7 +317,7 @@ export function perfMeasure(
  * Uses Navigation Timing API Level 2 (PerformanceNavigationTiming)
  */
 export function logPageLoadTiming(): void {
-  if (!browser || !isDev) return;
+  if (!browser || !isDev || pageTimingLogged) return;
 
   // Wait for page to fully load
   if (document.readyState !== 'complete') {
@@ -350,6 +355,8 @@ export function logPageLoadTiming(): void {
   storeEntry({ name: 'page-dom-parsing', startTime: 0, duration: domParsing });
   storeEntry({ name: 'page-dom-ready', startTime: 0, duration: domReady });
   storeEntry({ name: 'page-load-complete', startTime: 0, duration: pageLoad });
+
+  pageTimingLogged = true;
 }
 
 /**

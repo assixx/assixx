@@ -74,8 +74,8 @@ coverage/
 # Test directories
 **/__tests__/
 
-# Bruno API Tests (lokale Tokens)
-api-tests/
+# Bruno API Tests - Runtime tokens (not committed, stored by Bruno at runtime)
+# api-tests/ is now tracked (Vitest API tests live there)
 
 # ESLint
 eslint-report.json
@@ -97,8 +97,8 @@ archive/
 *_backup_*.sql
 backup_*.sql
 
-# Bruno API Testing (komplett ignorieren)
-api-tests/
+# Bruno API Testing - runtime artifacts only
+api-tests/environments/*.bru.bak
 
 # Credentials Archive (NEVER commit - contains passwords!)
 .locklock

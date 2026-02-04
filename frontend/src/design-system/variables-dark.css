@@ -30,6 +30,7 @@ html.dark {
   --color-text-disabled: var(--color-gray-500);
   --color-text-placeholder: rgb(255 255 255 / 50%);
   --color-icon-primary: #a9d9ff;
+  --color-accent-bg: #a9d9ff;
 
   /* Glass Backgrounds (white overlays on dark surfaces) */
   --glass-bg: rgb(255 255 255 / 2.5%);

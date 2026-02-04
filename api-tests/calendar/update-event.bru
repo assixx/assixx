@@ -1,0 +1,37 @@
+meta {
+  name: Update Calendar Event
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/calendar/events/{{calendar_event_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Updated Meeting",
+    "description": "Updated via Bruno"
+  }
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

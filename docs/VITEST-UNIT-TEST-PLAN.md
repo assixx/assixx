@@ -24,15 +24,15 @@
 
 ### Was existiert
 
-| Was                | Status                                                  |
-| ------------------ | ------------------------------------------------------- |
-| Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`         |
-| `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)             |
-| `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests     |
-| Test-Dateien       | **8 Dateien, 222 Tests** — Phase 0-4 abgeschlossen     |
-| Bruno API-Tests    | 96 Requests, 169 Tests, 195 Assertions (extern)         |
+| Was                | Status                                                                 |
+| ------------------ | ---------------------------------------------------------------------- |
+| Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                         |
+| `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                            |
+| `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                    |
+| Test-Dateien       | **8 Dateien, 222 Tests** — Phase 0-4 abgeschlossen                     |
+| Bruno API-Tests    | 96 Requests, 169 Tests, 195 Assertions (extern)                        |
 | CI/CD              | `code-quality-checks.yml` — nur Lint, kein Test (geplant nach Phase 4) |
-| Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv  |
+| Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                 |
 
 ### npm Scripts (vorhanden)
 
@@ -218,11 +218,12 @@ pnpm test:ui
 | 0.1 | Coverage-Exclude: `nest/**` entfernen, sinnvolle Excludes setzen           | [x]    |
 | 0.2 | Include: `shared/src/**` hinzufügen                                        | [x]    |
 | 0.3 | Aliases: Auf NestJS-Struktur aktualisieren                                 | [x]    |
-| 0.4 | Setup: `vitest.setup.ts` prüfen + `TZ=UTC` ergänzt                        | [x]    |
+| 0.4 | Setup: `vitest.setup.ts` prüfen + `TZ=UTC` ergänzt                         | [x]    |
 | 0.5 | `.gitignore`: `coverage/` drin?                                            | [x]    |
 | 0.6 | Smoke-Test: `pnpm test` + `pnpm test:coverage` + `pnpm test:ui` fehlerfrei | [x]    |
 
 **Zusätzlich erledigt:**
+
 - `@vitest/coverage-v8` installiert (fehlte als Dependency)
 - `@vitest/ui` installiert (für Browser-UI)
 - `root: rootDir` statt `root: '.'` (WSL2 ERR_INVALID_FILE_URL_HOST Fix)
@@ -759,11 +760,11 @@ Settings → Branches → master:
 
 ### Wann CI/CD aktivieren?
 
-| Meilenstein                     | Aktion                                 | Status |
-| ------------------------------- | -------------------------------------- | ------ |
-| Phase 1 grün (fieldMapper)      | Noch nicht — zu wenig Tests            | ✅ erreicht |
-| Phase 2 grün (shared + schemas) | CI-Job hinzufügen, aber NICHT required | ✅ erreicht |
-| Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht |
+| Meilenstein                     | Aktion                                 | Status                                            |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------- |
+| Phase 1 grün (fieldMapper)      | Noch nicht — zu wenig Tests            | ✅ erreicht                                       |
+| Phase 2 grün (shared + schemas) | CI-Job hinzufügen, aber NICHT required | ✅ erreicht                                       |
+| Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht                                       |
 | Phase 4+                        | Coverage-Thresholds in CI aktivieren   | ✅ erreicht — **CI-Job noch nicht implementiert** |
 
 **Aktion:** CI-Job kann jetzt als `required` hinzugefügt werden (222 Tests stabil).
@@ -774,16 +775,16 @@ Settings → Branches → master:
 
 ### Phasen-Ziele
 
-| Phase | Was              | Lines (Ziel)    | Branches | Functions | Status |
-| ----- | ---------------- | --------------- | -------- | --------- | ------ |
-| 0+1   | Fundament + PoC  | ~2%             | ~2%      | ~3%       | ✅     |
-| 2     | Shared + Schemas | ~15%            | ~15%     | ~20%      | ✅     |
-| 3     | Helpers          | ~35%            | ~30%     | ~40%      | ✅     |
-| 4     | Services (hier: Backend Helpers) | ~35% | ~30% | ~40%     | ✅     |
-| 5     | Services (Mocking) | ~55%          | ~45%     | ~60%      |        |
-| 6     | Restliche        | ~65%            | ~55%     | ~70%      |        |
-| 7     | Frontend         | (eigene Config) | —        | —         |        |
-| 8     | DTOs             | ~75%            | ~65%     | ~80%      |        |
+| Phase | Was                              | Lines (Ziel)    | Branches | Functions | Status |
+| ----- | -------------------------------- | --------------- | -------- | --------- | ------ |
+| 0+1   | Fundament + PoC                  | ~2%             | ~2%      | ~3%       | ✅     |
+| 2     | Shared + Schemas                 | ~15%            | ~15%     | ~20%      | ✅     |
+| 3     | Helpers                          | ~35%            | ~30%     | ~40%      | ✅     |
+| 4     | Services (hier: Backend Helpers) | ~35%            | ~30%     | ~40%      | ✅     |
+| 5     | Services (Mocking)               | ~55%            | ~45%     | ~60%      |        |
+| 6     | Restliche                        | ~65%            | ~55%     | ~70%      |        |
+| 7     | Frontend                         | (eigene Config) | —        | —         |        |
+| 8     | DTOs                             | ~75%            | ~65%     | ~80%      |        |
 
 ### Langfrist-Ziel
 
@@ -803,11 +804,11 @@ coverage: {
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-4) |
-| ------------------- | -------- | ------------------- |
-| Testbare Dateien    | ~60+     | 8 getestet          |
-| Testbare Funktionen | ~300+    | ~35 getestet        |
-| Geschätzte Tests    | ~470-580 | **222 geschrieben** |
+| Metrik              | Geplant  | Aktuell (Phase 0-4)  |
+| ------------------- | -------- | -------------------- |
+| Testbare Dateien    | ~60+     | 8 getestet           |
+| Testbare Funktionen | ~300+    | ~35 getestet         |
+| Geschätzte Tests    | ~470-580 | **222 geschrieben**  |
 | Phasen              | 0 + 8    | **5 von 9 erledigt** |
 
 ### Abgeschlossen: Phase 0-4

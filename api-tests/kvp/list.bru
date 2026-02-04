@@ -1,0 +1,50 @@
+meta {
+  name: List KVP Suggestions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/kvp
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 20
+  ~status: new
+  ~categoryId:
+  ~priority:
+  ~orgLevel:
+  ~search:
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return suggestions array", function() {
+    expect(res.getBody().data.suggestions).to.be.an("array");
+  });
+
+  test("should return pagination info", function() {
+    expect(res.getBody().data.pagination).to.be.an("object");
+  });
+}
+
+script:post-response {
+  if (res.body.data && res.body.data.suggestions && res.body.data.suggestions.length > 0) {
+    bru.setVar("existing_kvp_id", res.body.data.suggestions[0].id);
+  }
+}

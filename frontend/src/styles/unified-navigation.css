@@ -775,8 +775,8 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-  border-color: var(--color-icon-primary);
-  background: var(--color-icon-primary);
+  border-color: var(--color-accent-bg);
+  background: var(--color-accent-bg);
   color: var(--color-black);
 }
 

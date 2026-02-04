@@ -1,0 +1,21 @@
+meta {
+  name: Get My Survey Response
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/surveys/{{survey_id}}/my-response
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("should return 200 OK or 404 (no response yet)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+}

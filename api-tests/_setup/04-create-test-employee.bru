@@ -1,0 +1,52 @@
+meta {
+  name: Create Test Employee
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "employee@brunotest.de",
+    "password": "BrunoTest123!",
+    "firstName": "Test",
+    "lastName": "Employee",
+    "role": "employee",
+    "phone": "+49123456780"
+  }
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("should return 201 Created OR 409 Conflict (user exists)", function() {
+    const status = res.getStatus();
+    // 201 = New user created
+    // 409/400 = User already exists (also OK!)
+    expect([201, 409, 400]).to.include(status);
+  });
+}
+
+script:post-response {
+  // Store test employee ID for chat tests
+  const status = res.getStatus();
+  if (status === 201 && res.body.data) {
+    bru.setVar("test_employee_id", res.body.data.id);
+    bru.setVar("chat_participant_id", res.body.data.id);
+    console.log("Test employee created: ID=" + res.body.data.id);
+  } else {
+    // User might already exist - try to get their ID from users list
+    console.log("Test employee might already exist - will fetch ID from users list");
+  }
+}

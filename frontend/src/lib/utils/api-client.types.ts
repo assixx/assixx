@@ -80,6 +80,8 @@ export interface ApiConfig {
   signal?: AbortSignal | undefined;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number | undefined;
+  /** Suppress error logging for expected failures (e.g., optional settings lookup) */
+  silent?: boolean | undefined;
 }
 
 export interface ApiResponseWrapper<T = unknown> {

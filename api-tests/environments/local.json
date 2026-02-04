@@ -1,0 +1,41 @@
+{
+  "name": "Local Development",
+  "variables": [
+    {
+      "name": "base_url",
+      "value": "http://localhost:3000/api/v2",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "tenant_id",
+      "value": "",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "brunotest_email",
+      "value": "admin@brunotest.de",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "brunotest_password",
+      "value": "BrunoTest123!",
+      "enabled": true,
+      "secret": true
+    },
+    {
+      "name": "auth_token",
+      "value": "",
+      "enabled": true,
+      "secret": true
+    },
+    {
+      "name": "refresh_token",
+      "value": "",
+      "enabled": true,
+      "secret": true
+    }
+  ]
+}

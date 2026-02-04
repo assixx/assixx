@@ -143,7 +143,7 @@ export async function loadThemeFromApi(): Promise<void> {
     const api = getApiClient();
     const result = await api.get<{ settingValue: string }>(
       '/settings/user/theme',
-      { skipCache: true },
+      { skipCache: true, silent: true },
     );
 
     const apiTheme = result.settingValue;

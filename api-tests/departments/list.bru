@@ -1,0 +1,45 @@
+meta {
+  name: List Departments
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/departments
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 20
+  ~search:
+  ~isActive: 1
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return departments array", function() {
+    expect(res.getBody().data).to.be.an("array");
+  });
+}
+
+script:post-response {
+  // Store first existing department ID as fallback
+  const data = res.body.data;
+  if (data && data.length > 0) {
+    bru.setVar("existing_department_id", data[0].id);
+  }
+}

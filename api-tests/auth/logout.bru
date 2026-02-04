@@ -1,0 +1,74 @@
+meta {
+  name: Logout
+  type: http
+  seq: 999
+}
+
+post {
+  url: {{base_url}}/auth/logout
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should confirm logout success", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+
+  test("should revoke tokens", function() {
+    expect(res.getBody().data).to.have.property("tokensRevoked");
+  });
+}
+
+script:post-response {
+  // Re-login after logout to keep tests running
+  // Using Bruno's built-in bru.sendRequest() instead of axios
+  const baseUrl = bru.getEnvVar('base_url');
+  const email = bru.getEnvVar('brunotest_email');
+  const password = bru.getEnvVar('brunotest_password');
+
+  await bru.sendRequest({
+    method: 'POST',
+    url: `${baseUrl}/auth/login`,
+    headers: { 'Content-Type': 'application/json' },
+    data: {
+      email: email,
+      password: password
+    }
+  }, function(err, response) {
+    if (err) {
+      console.log('Re-login failed:', err.message);
+      return;
+    }
+
+    if (response.data && response.data.data && response.data.data.accessToken) {
+      bru.setVar('auth_token', response.data.data.accessToken);
+      bru.setVar('refresh_token', response.data.data.refreshToken);
+      if (response.data.data.user) {
+        bru.setVar('user_id', response.data.data.user.id);
+        bru.setVar('tenant_id', response.data.data.user.tenantId);
+      }
+    }
+  });
+}

@@ -1,0 +1,46 @@
+meta {
+  name: List Calendar Events
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/calendar/events
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 50
+  ~startDate:
+  ~endDate:
+  ~type:
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return events array", function() {
+    // API returns: { data: { events: [...], pagination: {...} } }
+    expect(res.getBody().data.events).to.be.an("array");
+  });
+}
+
+script:post-response {
+  const data = res.body.data;
+  if (data && data.events && data.events.length > 0) {
+    bru.setVar("existing_calendar_id", data.events[0].id);
+  }
+}

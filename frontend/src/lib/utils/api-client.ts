@@ -305,7 +305,7 @@ export class ApiClient {
       return result;
     } catch (error) {
       endPerf();
-      this.handleRequestError(error, timeoutMs);
+      this.handleRequestError(error, timeoutMs, config.silent);
     } finally {
       // Always clean up timeout to prevent memory leaks
       cleanupTimeout();
@@ -319,7 +319,11 @@ export class ApiClient {
   /**
    * Handle errors from fetch requests
    */
-  private handleRequestError(error: unknown, timeoutMs: number): never {
+  private handleRequestError(
+    error: unknown,
+    timeoutMs: number,
+    silent?: boolean,
+  ): never {
     if (error instanceof Error) {
       if (isTimeoutError(error)) {
         throw new ApiError(
@@ -330,7 +334,8 @@ export class ApiClient {
       }
 
       // Don't log abort errors (expected during navigation)
-      if (!isAbortError(error)) {
+      // Don't log silent errors (expected failures like optional settings lookup)
+      if (!isAbortError(error) && silent !== true) {
         log.error({ err: error }, 'Request failed');
       }
     }

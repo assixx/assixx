@@ -1,0 +1,40 @@
+meta {
+  name: Delete Department (Admin)
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/departments/{{department_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should confirm deletion", function() {
+    expect(res.getBody().success).to.be.true;
+  });
+}
+
+script:post-response {
+  // Cleanup: Clear the created department ID
+  bru.setVar("created_department_id", "");
+  // Restore fallback for any subsequent tests
+  const fallback = bru.getVar("existing_department_id");
+  if (fallback) {
+    bru.setVar("department_id", fallback);
+  }
+}

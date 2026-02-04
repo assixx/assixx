@@ -1,0 +1,49 @@
+meta {
+  name: Create Calendar Event
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/calendar/events
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Bruno Test {{$timestamp}}",
+    "description": "Created via Bruno API test - will be deleted",
+    "startTime": "2025-01-15T10:00:00Z",
+    "endTime": "2025-01-15T11:00:00Z",
+    "allDay": false,
+    "orgLevel": "personal"
+  }
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 201
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 201 Created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+script:post-response {
+  // API returns: data.id (not data.event.eventId)
+  if (res.body.data && res.body.data.id) {
+    bru.setVar("calendar_event_id", res.body.data.id);
+    bru.setVar("created_calendar_id", res.body.data.id);
+  }
+}

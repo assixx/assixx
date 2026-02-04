@@ -1,0 +1,38 @@
+meta {
+  name: Update KVP Suggestion
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/kvp/{{kvp_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Updated Suggestion",
+    "priority": "high",
+    "status": "in_review"
+  }
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

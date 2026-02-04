@@ -84,7 +84,12 @@ export default [
   // =============================================================================
   {
     files: ['backend/**/*.ts', 'backend/**/*.tsx', 'shared/**/*.ts'],
-    ignores: ['backend/**/*.test.ts', 'backend/**/*.spec.ts', 'shared/**/*.test.ts', 'shared/**/*.spec.ts'],
+    ignores: [
+      'backend/**/*.test.ts',
+      'backend/**/*.spec.ts',
+      'shared/**/*.test.ts',
+      'shared/**/*.spec.ts',
+    ],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -544,15 +549,25 @@ export default [
   // Run: cd frontend && pnpm run lint
   // =============================================================================
 
-  // Test files configuration - Vitest (Backend + Shared)
+  // Test files configuration - Vitest (Backend + Shared + API Integration)
   {
-    files: ['backend/**/*.test.ts', 'backend/**/*.spec.ts', 'shared/**/*.test.ts', 'shared/**/*.spec.ts'],
+    files: [
+      'backend/**/*.test.ts',
+      'backend/**/*.spec.ts',
+      'shared/**/*.test.ts',
+      'shared/**/*.spec.ts',
+      'api-tests/**/*.ts',
+    ],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        project: ['./backend/tsconfig.test.json', './shared/tsconfig.test.json'],
+        project: [
+          './backend/tsconfig.test.json',
+          './shared/tsconfig.test.json',
+          './api-tests/tsconfig.json',
+        ],
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -572,6 +587,15 @@ export default [
         Buffer: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
+        fetch: 'readonly', // Node 18+ native fetch
+        Response: 'readonly', // Node 18+ native fetch
+        Request: 'readonly', // Node 18+ native fetch
+        Headers: 'readonly', // Node 18+ native fetch
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        Promise: 'readonly',
+        URL: 'readonly',
+        RequestInit: 'readonly',
       },
     },
     plugins: {

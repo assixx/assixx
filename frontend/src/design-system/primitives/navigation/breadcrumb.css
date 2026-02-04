@@ -50,7 +50,7 @@
 
   padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
 
-  /* Links are BLUE (primary color) - !important to override @layer base */
+  /* --color-icon-primary adapts per mode: #2196f3 light, #a9d9ff dark */
   color: var(--color-icon-primary);
   text-decoration: none;
 }

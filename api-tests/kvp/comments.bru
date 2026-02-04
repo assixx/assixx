@@ -1,0 +1,30 @@
+meta {
+  name: Get KVP Comments
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/kvp/{{kvp_id}}/comments
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return comments array", function() {
+    expect(res.getBody().data).to.be.an("array");
+  });
+}

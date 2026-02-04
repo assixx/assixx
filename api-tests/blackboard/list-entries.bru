@@ -1,0 +1,54 @@
+meta {
+  name: List Blackboard Entries
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/blackboard/entries
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 20
+  ~status: active
+  ~filter: all
+  ~search:
+  ~priority:
+  ~sortBy: created_at
+  ~sortDir: DESC
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return entries array", function() {
+    // NestJS format: data is directly the array
+    expect(res.getBody().data).to.be.an("array");
+  });
+
+  test("should return pagination info", function() {
+    // NestJS format: pagination is in meta.pagination
+    expect(res.getBody().meta.pagination).to.be.an("object");
+  });
+}
+
+script:post-response {
+  // NestJS format: data is directly the array
+  if (res.body.data && res.body.data.length > 0) {
+    bru.setVar("existing_blackboard_id", res.body.data[0].id);
+  }
+}

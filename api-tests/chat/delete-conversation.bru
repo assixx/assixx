@@ -1,0 +1,35 @@
+meta {
+  name: Delete Chat Conversation
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{base_url}}/chat/conversations/{{conversation_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should confirm deletion", function() {
+    expect(res.getBody()).to.have.property("data");
+  });
+}
+
+script:post-response {
+  // Clear the conversation_id variable
+  bru.setVar("conversation_id", "");
+}

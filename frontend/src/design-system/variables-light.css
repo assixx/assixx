@@ -94,7 +94,8 @@
   --color-text-muted: #6b7280;
   --color-text-disabled: var(--color-gray-400);
   --color-text-placeholder: rgb(0 0 0 / 40%);
-  --color-icon-primary: #1976d2;
+  --color-icon-primary: var(--color-primary);
+  --color-accent-bg: #a9d9ff;
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
   --glass-bg: rgb(0 0 0 / 5%);

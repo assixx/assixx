@@ -1,0 +1,46 @@
+meta {
+  name: List Teams
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/teams
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 20
+  ~departmentId:
+  ~search:
+  ~isActive: 1
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return teams array", function() {
+    expect(res.getBody().data).to.be.an("array");
+  });
+}
+
+script:post-response {
+  // Store first existing team ID as fallback
+  const data = res.body.data;
+  if (data && data.length > 0) {
+    bru.setVar("existing_team_id", data[0].id);
+  }
+}

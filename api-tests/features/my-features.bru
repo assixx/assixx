@@ -1,0 +1,26 @@
+meta {
+  name: Get My Features
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/features/my-features
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

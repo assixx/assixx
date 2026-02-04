@@ -1,0 +1,53 @@
+meta {
+  name: Get Chat Participant ID
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/users?limit=10
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have at least 2 users for chat tests", function() {
+    // API returns: { data: [...], meta: { pagination: {...} } }
+    const users = res.getBody().data;
+    expect(users.length).to.be.at.least(2);
+  });
+}
+
+script:post-response {
+  // Find a user different from the current admin for chat tests
+  const currentUserId = bru.getVar('user_id');
+  // API returns: { data: [...], meta: { pagination: {...} } }
+  const users = res.body.data;
+
+  if (users && users.length > 0) {
+    // Find a user that's not the current user
+    const otherUser = users.find(u => u.id !== currentUserId);
+    if (otherUser) {
+      bru.setVar('chat_participant_id', otherUser.id);
+      bru.setVar('test_employee_id', otherUser.id);
+      console.log('Chat participant set: ID=' + otherUser.id + ' (' + otherUser.email + ')');
+    } else {
+      // If only one user, use that one (might fail chat tests)
+      bru.setVar('chat_participant_id', users[0].id);
+      console.log('Warning: Only one user found, chat tests may fail');
+    }
+  }
+}

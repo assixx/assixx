@@ -1,0 +1,39 @@
+meta {
+  name: Export Logs (Date Range Too Large)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/logs/export?format=json&dateFrom=2024-01-01&dateTo=2026-01-31&source=all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.error.code: eq DATE_RANGE_TOO_LARGE
+}
+
+tests {
+  test("should return 400 Bad Request for date range > 365 days", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return success false", function() {
+    expect(res.getBody().success).to.be.false;
+  });
+
+  test("should have DATE_RANGE_TOO_LARGE error code", function() {
+    expect(res.getBody().error.code).to.equal("DATE_RANGE_TOO_LARGE");
+  });
+
+  test("should have descriptive error message", function() {
+    expect(res.getBody().error.message).to.include("365");
+  });
+}

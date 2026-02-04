@@ -1,0 +1,38 @@
+meta {
+  name: Update Blackboard Entry (Admin)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/blackboard/entries/{{blackboard_entry_id}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Updated Announcement",
+    "content": "Updated content via Bruno",
+    "priority": "high"
+  }
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

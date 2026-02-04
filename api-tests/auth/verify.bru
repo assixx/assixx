@@ -1,0 +1,37 @@
+meta {
+  name: Verify Token
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/auth/verify
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.data.valid: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should confirm token is valid", function() {
+    expect(res.getBody().data.valid).to.be.true;
+  });
+
+  test("should return user info", function() {
+    expect(res.getBody().data.user).to.have.property("id");
+    expect(res.getBody().data.user).to.have.property("email");
+    expect(res.getBody().data.user).to.have.property("role");
+  });
+}

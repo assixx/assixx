@@ -1,0 +1,36 @@
+meta {
+  name: List Chat Conversations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/chat/conversations
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~page: 1
+  ~limit: 20
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return conversations array", function() {
+    // API returns: { data: [...], meta: { pagination: {...} } }
+    expect(res.getBody().data).to.be.an("array");
+  });
+}

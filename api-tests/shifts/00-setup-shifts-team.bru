@@ -1,0 +1,49 @@
+meta {
+  name: Setup Shifts Test Team
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/teams
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Shifts Rotation Test Team",
+    "description": "Team for shifts rotation testing"
+  }
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+tests {
+  test("should create team or already exist", function() {
+    const status = res.getStatus();
+    expect([201, 409]).to.include(status);
+  });
+}
+
+script:post-response {
+  const status = res.getStatus();
+
+  if (status === 201 && res.body.data && res.body.data.id) {
+    bru.setVar("shifts_team_id", res.body.data.id);
+    console.log("Created shifts test team:", res.body.data.id);
+  } else if (status === 409) {
+    // Team exists, fetch teams list to get ID
+    console.log("Team exists, using existing team_id");
+    const existingId = bru.getVar("team_id");
+    if (existingId) {
+      bru.setVar("shifts_team_id", existingId);
+    }
+  }
+}
