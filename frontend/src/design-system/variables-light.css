@@ -14,8 +14,9 @@
 :root {
   /* Layout Constants */
   --header-height: 80px;
-  --sidebar-width-expanded: 250px;
-  --sidebar-width-collapsed: 60px;
+  --header-height-mobile: 60px;
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 72px;
 
   /* Card Sizing */
   --card-shadow: var(--shadow-md);

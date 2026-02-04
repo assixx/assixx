@@ -305,7 +305,7 @@
    RESPONSIVE
    ======================================== */
 
-@media (width <= 768px) {
+@media (width < 768px) {
   .status-grid {
     grid-template-columns: 1fr;
   }

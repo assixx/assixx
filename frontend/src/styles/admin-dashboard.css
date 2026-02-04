@@ -58,7 +58,7 @@ body:not(.loaded) * {
 /* Mobile responsive adjustments
  * WHY: Reduces padding and font size on very small screens (<=400px)
  * Not handled by Tailwind - custom breakpoint for ultra-small devices */
-@media (width <= 400px) {
+@media (width < 768px) {
   .compact-item {
     padding: 8px 10px;
   }
@@ -196,7 +196,7 @@ body:not(.loaded) * {
 }
 
 /* Mobile responsive for events */
-@media (width <= 640px) {
+@media (width < 768px) {
   .event-date {
     flex: 0 0 70px;
   }

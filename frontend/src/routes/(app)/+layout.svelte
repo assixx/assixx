@@ -10,7 +10,7 @@
    */
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  import { afterNavigate, goto } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
@@ -129,6 +129,8 @@
     getInitialActiveRole(),
   );
   let sidebarCollapsed = $state(false);
+  let mobileMenuOpen = $state(false);
+  let isMobile = $state(false);
   let roleSwitchBannerDismissed = $state(
     isBannerDismissed(getInitialActiveRole()),
   );
@@ -180,6 +182,39 @@
   $effect(() => {
     if (ssrUser !== null) {
       user = ssrUser;
+    }
+  });
+
+  // =========================================================================
+  // RESPONSIVE: Mobile detection via matchMedia
+  // =========================================================================
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mql = window.matchMedia('(max-width: 767px)');
+
+    function handleChange(e: MediaQueryListEvent | MediaQueryList): void {
+      isMobile = e.matches;
+      // Auto-close mobile menu when switching to desktop
+      if (!e.matches) {
+        mobileMenuOpen = false;
+      }
+    }
+
+    // Set initial value
+    handleChange(mql);
+
+    mql.addEventListener('change', handleChange);
+    return () => {
+      mql.removeEventListener('change', handleChange);
+    };
+  });
+
+  // Close mobile menu on navigation
+  beforeNavigate(() => {
+    if (isMobile) {
+      mobileMenuOpen = false;
     }
   });
 
@@ -343,10 +378,19 @@
 
   // --- EVENT HANDLERS ---
 
-  /** Toggle sidebar collapsed state */
+  /** Toggle sidebar: mobile opens overlay, desktop toggles collapsed */
   function toggleSidebar(): void {
-    sidebarCollapsed = !sidebarCollapsed;
-    localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
+    if (isMobile) {
+      mobileMenuOpen = !mobileMenuOpen;
+    } else {
+      sidebarCollapsed = !sidebarCollapsed;
+      localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
+    }
+  }
+
+  /** Close mobile sidebar overlay */
+  function closeMobileMenu(): void {
+    mobileMenuOpen = false;
   }
 
   /** Dismiss role switch banner */
@@ -606,6 +650,16 @@
 
   <!-- Main Layout -->
   <div class="layout-container">
+    <!-- Mobile sidebar backdrop overlay -->
+    {#if mobileMenuOpen}
+      <button
+        type="button"
+        class="sidebar-backdrop active"
+        onclick={closeMobileMenu}
+        aria-label="Sidebar schließen"
+      ></button>
+    {/if}
+
     <!-- Sidebar Navigation (extracted to AppSidebar for modularity) -->
     <AppSidebar
       collapsed={sidebarCollapsed}
@@ -613,10 +667,15 @@
       {currentRole}
       {user}
       {tenant}
+      {mobileMenuOpen}
+      {isMobile}
+      onCloseMobile={closeMobileMenu}
     />
 
     <!-- Main Content (Child Routes) -->
-    <main class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-4">
+    <main
+      class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-2 md:p-3 lg:p-4"
+    >
       <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
       <div id="breadcrumb-container">
         <Breadcrumb userRole={currentRole} />

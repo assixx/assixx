@@ -129,7 +129,7 @@
 }
 
 /* Responsive adjustments */
-@media (width <= 480px) {
+@media (width < 768px) {
   .login-card {
     padding: var(--spacing-6);
   }

@@ -134,7 +134,7 @@
 }
 
 /* ===== RESPONSIVE ===== */
-@media (width <= 768px) {
+@media (width < 768px) {
   .profile-picture-section {
     flex-direction: column;
     text-align: center;

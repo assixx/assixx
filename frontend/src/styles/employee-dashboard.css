@@ -475,7 +475,7 @@
 }
 
 /* Mobile responsive for events */
-@media (width <= 640px) {
+@media (width < 768px) {
   .event-date {
     flex: 0 0 70px;
   }
