@@ -480,17 +480,17 @@ export class ShiftsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @CurrentUser() user: JwtPayload,
-  ): Promise<SuccessResponse<{ shiftsDeleted: number }>> {
+  ): Promise<{ shiftsDeleted: number }> {
     this.logger.debug(
       `Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`,
     );
-    const result = await this.shiftsService.deleteShiftsByWeek(
+    // ResponseInterceptor wraps in { success, data, timestamp }
+    return await this.shiftsService.deleteShiftsByWeek(
       teamId,
       startDate,
       endDate,
       user.tenantId,
     );
-    return { success: true, data: result };
   }
 
   /**

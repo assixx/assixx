@@ -60,8 +60,8 @@ curl -s http://localhost:3000/api/v2/users \
 
 ## Credentials (brunotest Tenant)
 
-| Feld     | Wert                  |
-| -------- | --------------------- |
-| Email    | admin@brunotest.de    |
-| Passwort | BrunoTest123!         |
-| Tenant   | brunotest             |
+| Feld     | Wert               |
+| -------- | ------------------ |
+| Email    | admin@brunotest.de |
+| Passwort | BrunoTest123!      |
+| Tenant   | brunotest          |

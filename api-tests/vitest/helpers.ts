@@ -116,6 +116,20 @@ export async function fetchWithRetry(
 }
 
 /**
+ * Flush throttle/rate-limit keys from Redis.
+ * Required for logs/export tests where ExportThrottle allows only 1 req/min.
+ * Auth tokens are cached in-process (_cachedAuth), not in Redis -- safe to flush.
+ */
+export function flushThrottleKeys(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Integration test: child_process needed for Redis access
+  const { execSync } = require('child_process') as typeof import('child_process');
+  execSync(
+    "docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' --no-auth-warning EVAL \"local keys = redis.call('KEYS', 'throttle:*') for i, key in ipairs(keys) do redis.call('DEL', key) end return #keys\" 0",
+    { stdio: 'pipe' },
+  );
+}
+
+/**
  * Create a test employee and return their ID.
  * Used by modules that need a second user (chat, etc.).
  */

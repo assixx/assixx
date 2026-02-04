@@ -270,17 +270,17 @@ export class RotationController {
   async generateRotationFromConfig(
     @CurrentUser() user: JwtPayload,
     @Body() dto: GenerateRotationFromConfigDto,
-  ): Promise<SuccessResponse<Record<string, unknown>>> {
+  ): Promise<Record<string, unknown>> {
     this.logger.debug(
       `Generating rotation from config for tenant ${user.tenantId}`,
     );
-    const result = await this.rotationService.generateRotationFromConfig(
+    // ResponseInterceptor wraps in { success, data, timestamp }
+    return await this.rotationService.generateRotationFromConfig(
       dto,
       user.tenantId,
       user.id,
       user.role,
     );
-    return { success: true, data: result };
   }
 
   // ============= HISTORY =============
@@ -323,12 +323,10 @@ export class RotationController {
   async deleteRotationHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryDto,
-  ): Promise<
-    SuccessResponse<{
-      message: string;
-      deletedCounts: DeleteHistoryCountsResponse;
-    }>
-  > {
+  ): Promise<{
+    message: string;
+    deletedCounts: DeleteHistoryCountsResponse;
+  }> {
     const { teamId, patternId } = query;
     const hasPatternId = patternId !== undefined;
     this.logger.debug(
@@ -346,10 +344,8 @@ export class RotationController {
       hasPatternId ?
         `Successfully deleted rotation pattern ${patternId} for team ${teamId}`
       : `Successfully deleted all rotation data for team ${teamId}`;
-    return {
-      success: true,
-      data: { message, deletedCounts },
-    };
+    // ResponseInterceptor wraps in { success, data, timestamp }
+    return { message, deletedCounts };
   }
 
   /**
