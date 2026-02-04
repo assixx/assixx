@@ -1,0 +1,814 @@
+# Vitest Unit Test Plan — Assixx
+
+**Version:** 1.1.0 | **Branch:** `unittest` | **Erstellt:** 2026-02-04
+
+> **Philosophie:** Fundament zuerst. Peu à peu. Wenn heute die Config stimmt und EIN grüner Test läuft — war der Tag gut.
+
+---
+
+## Inhaltsverzeichnis
+
+1. [Ist-Zustand](#1-ist-zustand)
+2. [Phase 0: Fundament (Config & Infrastruktur)](#2-phase-0-fundament)
+3. [Phase 1: Erster grüner Test (Proof of Concept)](#3-phase-1-erster-grüner-test)
+4. [Phase 2-8: Test-Phasen (nach stabilem Fundament)](#4-phase-2-8-test-phasen)
+5. [Best Practices (Industrie-Standard)](#5-best-practices-industrie-standard)
+6. [Konventionen & Regeln](#6-konventionen--regeln)
+7. [CI/CD Integration (nach Phase 2)](#7-cicd-integration)
+8. [Coverage-Ziele (Langfrist)](#8-coverage-ziele)
+
+---
+
+## 1. Ist-Zustand
+
+### Was existiert
+
+| Was                   | Status                                          |
+| --------------------- | ----------------------------------------------- |
+| Vitest installiert    | v4.0.18                                         |
+| `vitest.config.ts`    | Vorhanden, **4 Fehler** (siehe Phase 0)         |
+| `vitest.setup.ts`     | Vorhanden, funktioniert (clearAllMocks, env)    |
+| Test-Dateien          | **ZERO** — kein einziger Unit-Test existiert    |
+| Bruno API-Tests       | 96 Requests, 169 Tests, 195 Assertions (extern) |
+| CI/CD                 | `code-quality-checks.yml` — nur Lint, kein Test |
+| Coverage              | Kaputt konfiguriert (excluded nest/)            |
+
+### npm Scripts (vorhanden)
+
+```bash
+pnpm test            # vitest run         → Single-Run
+pnpm test:watch      # vitest             → Watch-Mode (Re-Run bei File-Change)
+pnpm test:coverage   # vitest run --coverage → Coverage-Report
+pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5175
+```
+
+### Aktueller Zustand bei `pnpm test`
+
+```
+RUN  v4.0.18
+No test files found, exiting with code 1
+include: backend/src/**/*.{test,spec}.ts
+```
+
+Vitest läuft, findet nur keine Tests. Setup-Datei wird geladen. Basis funktioniert.
+
+---
+
+## 2. Phase 0: Fundament (Config & Infrastruktur)
+
+> **Ziel:** Bevor auch nur EIN Test geschrieben wird, muss die gesamte Infrastruktur stimmen. Langfristig denken. Kein Quick-Fix.
+
+### Schritt 0.1: `vitest.config.ts` — Coverage-Exclude fixen
+
+**Problem:** Coverage schließt `backend/src/nest/**` aus — dort liegt 100% der Business-Logik.
+
+```typescript
+// ❌ AKTUELL (FALSCH)
+coverage: {
+  exclude: [
+    'backend/src/nest/**', // "NestJS has own test system" — IRREFÜHREND
+  ],
+}
+```
+
+**Warum falsch:** `@nestjs/testing` ist für Integration-Tests mit DI-Container. Wir testen reine Funktionen mit Vitest — das hat nichts mit dem NestJS-Testsystem zu tun.
+
+```typescript
+// ✅ FIX: Nur wirklich untestbare Dinge ausschließen
+coverage: {
+  provider: 'v8',
+  reporter: ['text', 'json', 'html'],
+  reportsDirectory: './coverage',
+  include: [
+    'backend/src/**/*.ts',
+    'shared/src/**/*.ts',
+  ],
+  exclude: [
+    'backend/src/**/*.test.ts',
+    'backend/src/**/*.spec.ts',
+    'backend/src/**/*.module.ts',     // NestJS Module-Definitionen (nur DI-Wiring)
+    'backend/src/**/*.controller.ts', // Controller = HTTP-Layer (→ Integration-Test)
+    'backend/src/**/main.ts',         // NestJS Bootstrap
+    'backend/src/**/index.ts',        // Barrel-Exports
+    'backend/src/types/**',           // Reine Type-Definitionen
+  ],
+}
+```
+
+**Verifikation:** `pnpm test:coverage` zeigt nest/-Dateien in der Coverage-Tabelle.
+
+---
+
+### Schritt 0.2: `vitest.config.ts` — Test-Include erweitern
+
+**Problem:** Nur `backend/src/**` im Include. Tests im `shared/`-Package werden ignoriert.
+
+```typescript
+// ❌ AKTUELL
+include: ['backend/src/**/*.{test,spec}.ts'],
+
+// ✅ FIX
+include: [
+  'backend/src/**/*.{test,spec}.ts',
+  'shared/src/**/*.{test,spec}.ts',
+],
+```
+
+**Verifikation:** Test-Datei in `shared/src/` wird von `pnpm test` gefunden.
+
+---
+
+### Schritt 0.3: `vitest.config.ts` — Aliases aktualisieren
+
+**Problem:** Aliases zeigen auf nicht-existierende Pre-NestJS-Pfade.
+
+```typescript
+// ❌ AKTUELL (VERALTET)
+resolve: {
+  alias: {
+    '@controllers': resolve(rootDir, './backend/src/controllers'), // EXISTIERT NICHT
+    '@models': resolve(rootDir, './backend/src/models'),           // EXISTIERT NICHT
+    '@middleware': resolve(rootDir, './backend/src/middleware'),   // EXISTIERT NICHT
+    '@services': resolve(rootDir, './backend/src/services'),      // Nur 2 Legacy-Files
+  },
+}
+
+// ✅ FIX: An aktuelle NestJS-Struktur anpassen
+resolve: {
+  alias: {
+    '@': resolve(rootDir, './backend/src'),
+    '@nest': resolve(rootDir, './backend/src/nest'),
+    '@utils': resolve(rootDir, './backend/src/utils'),
+    '@schemas': resolve(rootDir, './backend/src/schemas'),
+    '@shared': resolve(rootDir, './shared/src'),
+  },
+}
+```
+
+**Verifikation:** Import mit `@utils/fieldMapper.js` in einem Test resolves korrekt.
+
+---
+
+### Schritt 0.4: `vitest.setup.ts` — Prüfen & ggf. erweitern
+
+**Aktuell:** Funktioniert, aber prüfen ob ausreichend.
+
+```typescript
+// vitest.setup.ts (AKTUELL)
+beforeEach(() => vi.clearAllMocks());
+afterEach(() => vi.resetModules());
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-jwt-secret-for-vitest';
+// ... weitere ENV-Vars
+```
+
+**Prüfpunkte:**
+- [ ] `vi.clearAllMocks()` in `beforeEach` — korrekt
+- [ ] `vi.resetModules()` in `afterEach` — korrekt
+- [ ] Test-ENV-Vars gesetzt — korrekt
+- [ ] Kein globaler State der Tests koppelt — prüfen
+
+---
+
+### Schritt 0.5: `.gitignore` — Coverage-Output ausschließen
+
+**Prüfen:** Ist `coverage/` in `.gitignore`? Wenn nicht, hinzufügen.
+
+```
+# Test coverage
+coverage/
+```
+
+---
+
+### Schritt 0.6: Smoke-Test — `pnpm test` läuft ohne Fehler
+
+Nach allen Config-Fixes:
+
+```bash
+pnpm test
+# Erwartung: "No test files found" (noch keine Tests) ODER exit 0
+
+pnpm test:coverage
+# Erwartung: Läuft durch, zeigt leere Coverage-Tabelle
+
+pnpm test:ui
+# Erwartung: Browser-UI auf http://localhost:5175 erreichbar
+```
+
+**Kriterium für Phase 0 abgeschlossen:** Alle drei Commands laufen fehlerfrei.
+
+---
+
+### Phase 0: Checkliste
+
+| # | Aufgabe | Status |
+|---|---------|--------|
+| 0.1 | Coverage-Exclude: `nest/**` entfernen, sinnvolle Excludes setzen | [ ] |
+| 0.2 | Include: `shared/src/**` hinzufügen | [ ] |
+| 0.3 | Aliases: Auf NestJS-Struktur aktualisieren | [ ] |
+| 0.4 | Setup: `vitest.setup.ts` prüfen | [ ] |
+| 0.5 | `.gitignore`: `coverage/` drin? | [ ] |
+| 0.6 | Smoke-Test: `pnpm test` + `pnpm test:coverage` + `pnpm test:ui` fehlerfrei | [ ] |
+
+### Phase 0: Definition of Done
+
+- [ ] `vitest.config.ts` hat korrekte Includes, Excludes und Aliases
+- [ ] `pnpm test` läuft fehlerfrei (exit 0 oder "no test files found")
+- [ ] `pnpm test:coverage` läuft durch ohne Crash
+- [ ] `coverage/` ist in `.gitignore`
+- [ ] Keine Quick-Fixes, keine Workarounds — saubere Config
+
+---
+
+## 3. Phase 1: Erster grüner Test (Proof of Concept)
+
+> **Ziel:** EINE Test-Datei. Grün. Beweis dass das Fundament trägt. Nicht mehr.
+
+### Warum `fieldMapper.ts`?
+
+| Kriterium | fieldMapper.ts |
+|-----------|----------------|
+| Pure Function | Ja — kein DI, kein State, kein DB |
+| Dependencies | Nur `lodash` (trivial) |
+| Im Include-Pfad | `backend/src/utils/` — ja |
+| Wird überall benutzt | Ja — jeder Helper importiert `dbToApi()` |
+| Klare Input→Output | Objekt rein → Objekt raus |
+| Edge Cases dokumentierbar | `is_active` Exception, null-Handling, Rekursion |
+
+### Datei: `backend/src/utils/fieldMapper.test.ts`
+
+**Zu testende Funktionen:** `dbToApi()`, `apiToDb()`
+
+**Testfälle (Minimum für Phase 1):**
+
+```
+dbToApi()
+├── should convert snake_case keys to camelCase
+├── should convert is_* fields to boolean
+├── should convert has_* fields to boolean
+├── should NOT convert is_active to boolean (multi-state: 0/1/3/4)
+├── should convert Date objects to ISO string
+├── should preserve null values
+├── should handle nested objects recursively
+├── should handle arrays of objects
+├── should return empty object for empty input
+
+apiToDb()
+├── should convert camelCase keys to snake_case
+├── should preserve null values
+├── should handle nested objects recursively
+├── should handle arrays of objects
+├── should return empty object for empty input
+```
+
+### Erfolgskriterium Phase 1
+
+```bash
+pnpm test
+#  ✓ backend/src/utils/fieldMapper.test.ts (14 tests) 23ms
+#  Tests  14 passed
+#  Duration  0.5s
+```
+
+14+ Tests. Alle grün. Fertig. Das ist der Beweis.
+
+### Phase 1: Definition of Done
+
+- [ ] `pnpm test` zeigt 14+ grüne Tests
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] Alle Tests folgen AAA-Pattern und Naming-Konvention
+- [ ] `pnpm test:coverage` zeigt `fieldMapper.ts` mit >90% Coverage
+
+---
+
+## 4. Phase 2-8: Test-Phasen (nach stabilem Fundament)
+
+> **Regel:** Jede Phase wird erst begonnen wenn die vorherige Phase 100% grün ist. Kein Vorspringen.
+
+### Phase 2: Shared Package — Pure Helpers
+
+| # | Datei | Funktionen | Fokus |
+|---|-------|------------|-------|
+| 1 | `shared/src/helpers/date-helpers.ts` | `formatDate()`, `formatDateTime()`, `formatTime()`, `formatRelativeDate()`, `isToday()`, `isWithinDays()` | DE-Locale, relative Zeiten ("gerade eben", "gestern"), Edge: Mitternacht, Jahreswechsel. WICHTIG: `vi.useFakeTimers()` für deterministische Zeitvergleiche |
+| 2 | `shared/src/constants/is-active.ts` | `IS_ACTIVE`, `STATUS_LABELS`, `STATUS_BADGE_CLASSES`, `FORM_STATUS_OPTIONS` | Mapping-Korrektheit, FORM_STATUS_OPTIONS hat KEIN "deleted" |
+
+**Geschätzte Tests:** ~25-30
+
+### Phase 2: Definition of Done
+
+- [ ] `pnpm test` zeigt alle Phase 1+2 Tests grün
+- [ ] `date-helpers.test.ts` nutzt `vi.useFakeTimers()` — keine flaky Tests
+- [ ] `is-active.test.ts` verifiziert alle 4 Status-Codes (0/1/3/4)
+- [ ] Kein `.only` oder `.skip` im Code
+
+---
+
+### Phase 3: Zod Schemas — Eingabe-Validierung
+
+| # | Datei | Schemas | Fokus |
+|---|-------|---------|-------|
+| 1 | `backend/src/schemas/common.schema.ts` | `IdSchema` | String→Number Coercion, ""→undefined, "abc"→undefined, -1→fail, 0→fail |
+| 2 | (gleich) | `EmailSchema` | Valide/invalide Emails, Normalisierung (Trim, Lowercase) |
+| 3 | (gleich) | `PasswordSchema` | <12→fail, >72→fail, 3/4 Kategorien-Regel (NIST 800-63B) |
+| 4 | (gleich) | `PaginationSchema` | String→Number, Defaults (page=1, limit=10), max=100 |
+| 5 | (gleich) | `TenantIdSchema` | 0→fail, -1→fail |
+| 6 | (gleich) | `DateSchema`, `TimeSchema` | ISO-Format, HH:MM, ungültige Strings |
+| 7 | (gleich) | `DocumentMimeTypes` | Erlaubte→pass, unbekannte→fail |
+
+**Geschätzte Tests:** ~50-60
+
+### Phase 3: Definition of Done
+
+- [ ] Jedes Schema hat Happy-Path + Edge-Case + Grenzwert-Tests
+- [ ] `PasswordSchema` testet NIST 800-63B Regeln (12-72 chars, 3/4 Kategorien)
+- [ ] Alle Coercion-Logik getestet (String→Number, Trim, Lowercase)
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] CI-Job hinzugefügt (optional, nicht required)
+
+---
+
+### Phase 4: Backend Helpers — Data Transformation
+
+| # | Datei | Kernfunktionen |
+|---|-------|----------------|
+| 1 | `backend/src/nest/shifts/shifts.helpers.ts` | `parseTimeFromDateTime()`, `parseDateToString()`, `buildTimestamp()`, `calculateHours()` |
+| 2 | `backend/src/nest/users/users.helpers.ts` | `mapSortField()`, `isUniqueConstraintViolation()`, `buildUpdateFields()`, `buildUserListWhereClause()` |
+| 3 | `backend/src/nest/kvp/kvp.helpers.ts` | `isUuid()`, `hasExtendedOrgAccess()`, `buildStatusFilter()`, `buildFilterConditions()`, `mapOrgLevelToRecipient()` |
+| 4 | `backend/src/nest/common/audit/audit.helpers.ts` | `sanitizeData()`, `extractResourceType()`, `extractResourceId()`, `singularize()`, `shouldExclude()`, `getPathBasedAction()`, `buildUserName()` |
+
+**Geschätzte Tests:** ~100-120
+
+### Phase 4: Definition of Done
+
+- [ ] Alle Helper-Dateien haben co-located `.test.ts`
+- [ ] SQL-Injection-Schutz getestet (`mapSortField()` Fallback, `validateSortColumn()`)
+- [ ] `sanitizeData()` redacted alle SENSITIVE_FIELDS
+- [ ] `singularize()` deckt Special-Cases ab (entries→entry, categories→category)
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] CI-Job als **required** gesetzt
+
+---
+
+### Phase 5: Service-Logik mit Mocking
+
+| # | Datei | Testbare Logik | Was wird gemockt |
+|---|-------|----------------|------------------|
+| 1 | `roles.service.ts` | `getRoleHierarchy()`, `getAssignableRoles()`, `checkUserRole()` | Nichts (pure logic) |
+| 2 | `rotation-generator.service.ts` | `determineShiftType()`, Cycle-Berechnung | DB |
+| 3 | `features.service.ts` | `checkFeatureAccess()`, `checkFeatureQuota()` | DB |
+| 4 | `plans.service.ts` | Plan-Validierung, Upgrade-Prüfung | DB |
+| 5 | `admin-permissions.service.ts` | Permission-Inheritance | DB |
+| 6 | `auth.service.ts` | Token-Refresh-Rotation, Reuse-Detection | DB, bcrypt, JWT |
+
+**Mocking-Pattern:**
+
+```typescript
+const mockExecute = vi.fn();
+vi.mock('../../database/database.service.js', () => ({
+  DatabaseService: vi.fn().mockImplementation(() => ({
+    execute: mockExecute,
+  })),
+}));
+```
+
+**Geschätzte Tests:** ~80-100
+
+### Phase 5: Definition of Done
+
+- [ ] Mocking-Pattern dokumentiert und konsistent über alle Service-Tests
+- [ ] Kein echter DB-Call in Tests — alles gemockt
+- [ ] Role-Hierarchy-Logik vollständig getestet (root > admin > employee)
+- [ ] Token-Reuse-Detection getestet (Refresh-Rotation)
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] Coverage-Thresholds in CI aktiviert
+
+---
+
+### Phase 6: Restliche Helpers
+
+| # | Datei | Funktionen |
+|---|-------|------------|
+| 1 | `blackboard.helpers.ts` | `validateSortColumn()`, `validateSortDirection()` |
+| 2 | `calendar.helpers.ts` | `validateSortColumn()`, Filter-Normalisierung |
+| 3 | `chat.helpers.ts` | Row→User-Mapping, Conversation-Mapping |
+| 4 | `documents.helpers.ts` | Tag-Parsing, MIME-Validation |
+| 5 | `surveys.helpers.ts` | Status-Workflow, Question-Validierung |
+| 6 | `notifications.helpers.ts` | Type-Mapping |
+
+**Geschätzte Tests:** ~60-80
+
+### Phase 6: Definition of Done
+
+- [ ] Alle restlichen Helper-Dateien haben Tests
+- [ ] Kein `.only` oder `.skip` im Code
+
+---
+
+### Phase 7: Frontend Utils (eigenes Setup)
+
+**Voraussetzung:** Eigene `frontend/vitest.config.ts` mit `environment: 'happy-dom'`.
+
+| # | Datei | Funktionen |
+|---|-------|------------|
+| 1 | `password-strength.ts` | `getStrengthLabel()`, `getStrengthColor()`, `formatCrackTime()` |
+| 2 | `auth.ts` | `getAuthToken()`, `setAuthToken()`, `getUserRole()` |
+| 3 | `jwt-utils.ts` | JWT-Parsing, Expiry-Berechnung |
+| 4 | `sanitize-html.ts` | XSS-Prevention |
+| 5 | `avatar-helpers.ts` | Initialen-Generierung |
+
+**Geschätzte Tests:** ~40-50
+
+### Phase 7: Definition of Done
+
+- [ ] `frontend/vitest.config.ts` existiert mit `environment: 'happy-dom'`
+- [ ] `pnpm test` im Frontend läuft separat und grün
+- [ ] localStorage/sessionStorage korrekt gemockt
+- [ ] Kein `.only` oder `.skip` im Code
+
+---
+
+### Phase 8: DTO-Validierungen (alle Module)
+
+Alle Zod-DTOs in `backend/src/nest/*/dto/` testen: valid→pass, missing required→fail, wrong type→fail, edge values.
+
+**Module:** users, auth, departments, teams, calendar, kvp, shifts, surveys, documents, blackboard, machines, notifications, settings
+
+**Geschätzte Tests:** ~100-120
+
+### Phase 8: Definition of Done
+
+- [ ] Jedes DTO-Modul hat Tests: valid→pass, missing required→fail, wrong type→fail
+- [ ] Grenzwerte getestet (min/max Längen, Zahlen)
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] Backend-Coverage >= 70% Lines, 75% Functions
+- [ ] CI blockiert Merge bei Test-Failure
+
+---
+
+### Phasen-Übersicht
+
+```
+Phase 0: Fundament      Config fixen, Smoke-Test                ← HEUTE
+Phase 1: Proof of Concept   fieldMapper.test.ts — 1 Datei grün ← HEUTE
+─────────────────────────────────────────────────────────────
+Phase 2: Shared Package  date-helpers, is-active
+Phase 3: Zod Schemas     common.schema.ts
+Phase 4: Backend Helpers shifts, users, kvp, audit
+Phase 5: Services        roles, rotation, features, auth (Mocking)
+Phase 6: Restliche       blackboard, calendar, chat, etc.
+Phase 7: Frontend Utils  password-strength, auth, jwt (jsdom)
+Phase 8: DTOs            Alle Module
+```
+
+**Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
+
+---
+
+## 5. Best Practices (Industrie-Standard)
+
+> Quellen: Microsoft .NET Testing Guidelines, IBM Unit Testing Best Practices, "Unit Tests as Documentation" (The Coder Cafe)
+
+### 5.1 F.I.R.S.T. Prinzipien
+
+| Prinzip        | Bedeutung                                                     |
+| -------------- | ------------------------------------------------------------- |
+| **Fast**       | Millisekunden pro Test. Langsame Tests werden nicht ausgeführt |
+| **Isolated**   | Kein Test hängt von einem anderen ab. Kein shared state       |
+| **Repeatable** | Gleiches Ergebnis bei jedem Run. Kein `Math.random()`, kein `new Date()` |
+| **Self-Checking** | Automatisch pass/fail. Kein manuelles Log-Lesen           |
+| **Timely**     | Tests werden MIT dem Code geschrieben, nicht "irgendwann"     |
+
+### 5.2 Naming: Tests als lebende Dokumentation
+
+Tests SIND die Dokumentation. Wenn ein Test fehlschlägt, soll der Name allein erklären was kaputt ist.
+
+```typescript
+// ❌ SCHLECHT — sagt nichts
+it('should work', () => { ... });
+it('test 1', () => { ... });
+
+// ✅ GUT — sofort verständlich
+it('should convert snake_case to camelCase', () => { ... });
+it('should return undefined for invalid date input', () => { ... });
+it('should redact password fields in nested objects', () => { ... });
+```
+
+Alternativ mit describe-Verschachtelung:
+
+```typescript
+describe('PasswordSchema', () => {
+  describe('when password is too short', () => {
+    it('should reject with min-length error', () => { ... });
+  });
+  describe('when password has only lowercase', () => {
+    it('should reject with category error', () => { ... });
+  });
+});
+```
+
+### 5.3 Ein Konzept pro Test
+
+Jeder Test prüft EINEN Aspekt. Wenn der Test fehlschlägt, weißt du sofort WAS kaputt ist.
+
+```typescript
+// ❌ SCHLECHT — zwei Dinge in einem Test
+it('should handle conversion', () => {
+  expect(dbToApi({ first_name: 'John' })).toEqual({ firstName: 'John' });
+  expect(apiToDb({ firstName: 'John' })).toEqual({ first_name: 'John' });
+});
+
+// ✅ GUT — getrennte Tests
+it('should convert snake_case keys to camelCase', () => {
+  expect(dbToApi({ first_name: 'John' })).toEqual({ firstName: 'John' });
+});
+
+it('should convert camelCase keys to snake_case', () => {
+  expect(apiToDb({ firstName: 'John' })).toEqual({ first_name: 'John' });
+});
+```
+
+### 5.4 Minimaler Test-Input
+
+Nutze den **einfachsten** Input der das Verhalten beweist. Kein Rauschen.
+
+```typescript
+// ❌ SCHLECHT — überflüssige Daten
+const user = {
+  id: 42, first_name: 'John', last_name: 'Doe',
+  email: 'john@test.de', role: 'admin', tenant_id: 7,
+  created_at: '2025-01-01', is_active: 1, phone: '+49...',
+};
+expect(dbToApi(user).firstName).toBe('John');
+
+// ✅ GUT — minimaler Input
+expect(dbToApi({ first_name: 'John' })).toEqual({ firstName: 'John' });
+```
+
+### 5.5 Keine Logik in Tests
+
+Tests sind DEKLARATIV, nicht imperativ. Keine Schleifen, keine if/else, keine Berechnungen.
+
+```typescript
+// ❌ SCHLECHT — Logik im Test
+const testCases = ['admin', 'employee', 'root'];
+for (const role of testCases) {
+  expect(RoleSchema.safeParse(role).success).toBe(true);
+}
+
+// ✅ GUT — deklarativ mit it.each
+it.each(['admin', 'employee', 'root'])(
+  'should accept valid role "%s"',
+  (role) => {
+    expect(RoleSchema.safeParse(role).success).toBe(true);
+  },
+);
+```
+
+### 5.6 Mocking: Stubs vs. Mocks
+
+| Begriff  | Zweck                                    | Assertion auf... |
+| -------- | ---------------------------------------- | ---------------- |
+| **Stub** | Liefert kontrollierte Daten              | das Ergebnis     |
+| **Mock** | Verifiziert Interaktionen                | den Mock selbst  |
+
+**Regel:** Bevorzuge Stubs. Mocks koppeln Tests an Implementation.
+
+### 5.7 Edge Cases dokumentieren Verhalten
+
+Tests für Edge Cases sind die wertvollste Dokumentation — Dinge die in README.md NIE stehen:
+
+```typescript
+describe('is_active exception', () => {
+  it('should NOT convert is_active to boolean (multi-state: 0/1/3/4)', () => {
+    expect(dbToApi({ is_active: 0 }).isActive).toBe(0);  // NICHT false!
+    expect(dbToApi({ is_active: 3 }).isActive).toBe(3);  // NICHT true!
+  });
+});
+```
+
+### 5.8 Anti-Patterns (Verboten)
+
+| Anti-Pattern | Warum schlecht | Stattdessen |
+| --- | --- | --- |
+| `expect(result).toBeTruthy()` | Sagt nichts bei Fehler | `expect(result).toBe(true)` |
+| Test hängt von anderem Test ab | Reihenfolge-abhängig, fragil | Jeder Test unabhängig |
+| `beforeAll` mit shared state | Koppelt Tests aneinander | Factory-Funktionen pro Test |
+| Implementierungs-Details testen | Bricht bei Refactoring | Verhalten/Output testen |
+| Zu viele Assertions pro Test | Unklar was fehlschlug | Ein Konzept pro Test |
+| Coverage > 90% als Ziel | Diminishing returns, nutzlose Tests | 70-80% mit Qualitätsfokus |
+
+---
+
+## 6. Konventionen & Regeln
+
+### Dateistruktur
+
+```
+source.ts           → source.test.ts (co-located, NICHT in __tests__/)
+```
+
+### Naming
+
+```typescript
+describe('FunctionName', () => {         // Funktionsname
+  describe('when valid input', () => {   // Kontext
+    it('should return expected', () => { // Erwartung
+    });
+  });
+});
+```
+
+### AAA-Pattern (Arrange-Act-Assert)
+
+```typescript
+it('should convert snake_case to camelCase', () => {
+  // Arrange
+  const input = { first_name: 'John' };
+
+  // Act
+  const result = dbToApi(input);
+
+  // Assert
+  expect(result).toEqual({ firstName: 'John' });
+});
+```
+
+### Was MUSS getestet werden
+
+- **Happy Path** — normaler, erwarteter Input
+- **Edge Cases** — null, undefined, leerer String, 0, negative Zahlen
+- **Grenzwerte** — Min/Max (z.B. Passwort 12 chars, 72 chars)
+- **Fehlerfall** — ungültiger Input, was passiert?
+
+### Was NICHT
+
+- Private Funktionen direkt testen (ueber public API testen)
+- Implementation Details (HOW statt WHAT)
+- Framework-Code (NestJS Decorators, Module-Wiring)
+- Reine Type-Definitionen
+
+### Verboten in Tests
+
+```typescript
+// ❌ NIEMALS
+any                          // Typsicher auch in Tests
+console.log()                // Kein Debug-Output
+.skip / .only                // Nicht committen
+sleep() / setTimeout()       // Deterministische Tests
+Math.random()                // Deterministisch!
+new Date()                   // Nutze vi.useFakeTimers()
+```
+
+---
+
+## 7. CI/CD Integration (nach Phase 2)
+
+> CI/CD wird NICHT sofort gebaut. Erst wenn mindestens Phase 1+2 stabil grün laufen, lohnt sich die Pipeline. Sonst blockiert eine leere Test-Suite den Merge.
+
+### Aktueller Workflow (`code-quality-checks.yml`)
+
+```
+Backend:  TypeScript Check → ESLint → Prettier
+Frontend: Svelte Check → ESLint → Prettier → Stylelint
+Docker:   Build Verification
+```
+
+### Geplante Erweiterung: Unit-Tests als Merge-Gate
+
+```yaml
+# .github/workflows/code-quality-checks.yml — Neuer Job
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests (Backend + Shared)
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Unit Tests
+        run: pnpm test
+
+      - name: Run Coverage Report
+        run: pnpm test:coverage
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+```
+
+### Branch Protection Rules (GitHub)
+
+```
+Settings → Branches → master:
+  ✅ Require status checks to pass
+    ✅ unit-tests (required)          ← NEU
+    ✅ backend-quality (required)
+    ✅ frontend-quality (required)
+  ✅ Require branches to be up to date
+```
+
+**Ergebnis:** Kein Merge in `master` ohne grüne Unit-Tests.
+
+### Wann CI/CD aktivieren?
+
+| Meilenstein | Aktion |
+|-------------|--------|
+| Phase 1 grün (fieldMapper) | Noch nicht — zu wenig Tests |
+| Phase 2 grün (shared + schemas) | CI-Job hinzufügen, aber NICHT required |
+| Phase 3 grün (helpers) | CI-Job als **required** setzen |
+| Phase 4+ | Coverage-Thresholds in CI aktivieren |
+
+---
+
+## 8. Coverage-Ziele (Langfrist)
+
+### Phasen-Ziele
+
+| Phase | Was | Lines | Branches | Functions |
+|-------|-----|-------|----------|-----------|
+| 0+1   | Fundament + PoC | ~2% | ~2% | ~3% |
+| 2     | Shared + Schemas | ~15% | ~15% | ~20% |
+| 3     | Helpers | ~35% | ~30% | ~40% |
+| 4     | Services | ~55% | ~45% | ~60% |
+| 5     | Restliche | ~65% | ~55% | ~70% |
+| 6     | Frontend | (eigene Config) | — | — |
+| 7     | DTOs | ~75% | ~65% | ~80% |
+
+### Langfrist-Ziel
+
+```typescript
+// vitest.config.ts — erst ab Phase 4 aktivieren
+coverage: {
+  thresholds: {
+    lines: 70,
+    branches: 60,
+    functions: 75,
+    statements: 70,
+  },
+}
+```
+
+---
+
+## Zusammenfassung
+
+| Metrik              | Wert         |
+| ------------------- | ------------ |
+| Testbare Dateien    | ~60+         |
+| Testbare Funktionen | ~300+        |
+| Geschätzte Tests    | ~470-580     |
+| Phasen              | 0 + 8       |
+
+### Heute: Phase 0 + Phase 1
+
+```
+Phase 0: vitest.config.ts fixen, Smoke-Test grün
+Phase 1: fieldMapper.test.ts — 14+ Tests grün
+═══════════════════════════════════════════════
+         Das reicht. Das ist der Beweis.
+```
+
+### Danach: Peu à peu
+
+```
+Phase 2: Shared Package  (date-helpers, is-active)
+Phase 3: Zod Schemas     (common.schema.ts)
+Phase 4: Backend Helpers  (shifts, users, kvp, audit)
+Phase 5: Services         (roles, rotation, features, auth)
+Phase 6: Restliche        (blackboard, calendar, chat, etc.)
+Phase 7: Frontend Utils   (password-strength, auth, jwt)
+Phase 8: DTOs             (alle Module)
+```
+
+**Jede Phase:** Tests grün → Review → Nächste Phase. Kein Vorspringen.
+
+---
+
+**Referenzen:**
+- [Vitest Docs v4](https://vitest.dev/guide/)
+- [Microsoft: Unit Testing Best Practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
+- [IBM: Unit Testing Best Practices](https://www.ibm.com/think/insights/unit-testing-best-practices)
+- [The Coder Cafe: Unit Tests as Documentation](https://read.thecoder.cafe/p/unit-tests-as-documentation)
+- [ADR-013: CI/CD Pipeline Hardening](./infrastructure/adr/ADR-013-ci-cd-pipeline-hardening.md)
+- [TYPESCRIPT-STANDARDS.md](./TYPESCRIPT-STANDARDS.md)
+- [CODE-OF-CONDUCT.md](./CODE-OF-CONDUCT.md)
