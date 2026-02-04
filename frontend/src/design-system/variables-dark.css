@@ -32,7 +32,7 @@ html.dark {
   --color-icon-primary: #a9d9ff;
 
   /* Glass Backgrounds (white overlays on dark surfaces) */
-  --glass-bg: rgb(255 255 255 / 2%);
+  --glass-bg: rgb(255 255 255 / 2.5%);
   --glass-bg-hover: rgb(255 255 255 / 3%);
   --glass-bg-active: rgb(255 255 255 / 5%);
   --glass-border: 1px solid rgb(255 255 255 / 10%);

@@ -616,9 +616,7 @@
     />
 
     <!-- Main Content (Child Routes) -->
-    <main
-      class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-4"
-    >
+    <main class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-4">
       <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
       <div id="breadcrumb-container">
         <Breadcrumb userRole={currentRole} />
