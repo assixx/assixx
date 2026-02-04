@@ -24,19 +24,6 @@ interface SuccessResponse<T> {
   timestamp: string;
 }
 
-/**
- * Paginated response structure
- */
-interface PaginatedData<T> {
-  items: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<
   T,
@@ -66,17 +53,13 @@ export class ResponseInterceptor<T> implements NestInterceptor<
           return data as unknown as SuccessResponse<T>;
         }
 
-        // If data is already wrapped, don't wrap again
-        if (this.isAlreadyWrapped(data)) {
-          return data as unknown as SuccessResponse<T>;
-        }
-
         // Check for pagination metadata
         if (this.isPaginatedResponse(data)) {
+          const dataObj = data as Record<string, unknown>;
           return {
             success: true as const,
-            data: data.items as unknown as T,
-            meta: { pagination: data.pagination },
+            data: this.extractPaginatedItems(dataObj) as unknown as T,
+            meta: { pagination: dataObj['pagination'] },
             timestamp: new Date().toISOString(),
           } as unknown as SuccessResponse<T>;
         }
@@ -90,32 +73,27 @@ export class ResponseInterceptor<T> implements NestInterceptor<
     );
   }
 
-  private isAlreadyWrapped(data: unknown): boolean {
-    return (
-      data !== null &&
-      typeof data === 'object' &&
-      'success' in data &&
-      typeof (data as { success: unknown }).success === 'boolean'
-    );
-  }
-
-  private isPaginatedResponse(data: unknown): data is PaginatedData<unknown> {
+  /** Check if response has pagination metadata */
+  private isPaginatedResponse(data: unknown): boolean {
     if (data === null || typeof data !== 'object' || !('pagination' in data)) {
       return false;
     }
-    // Support 'items', 'entries', and 'data' as array property names
     const dataObj = data as Record<string, unknown>;
-    const hasItems = 'items' in dataObj && Array.isArray(dataObj['items']);
-    const hasEntries =
-      'entries' in dataObj && Array.isArray(dataObj['entries']);
-    const hasData = 'data' in dataObj && Array.isArray(dataObj['data']);
-    // Normalize all array properties to 'items' for consistent handling
-    if (hasEntries && !hasItems) {
-      dataObj['items'] = dataObj['entries'];
-    }
-    if (hasData && !hasItems) {
-      dataObj['items'] = dataObj['data'];
-    }
-    return hasItems || hasEntries || hasData;
+    return (
+      ('items' in dataObj && Array.isArray(dataObj['items'])) ||
+      ('entries' in dataObj && Array.isArray(dataObj['entries'])) ||
+      ('data' in dataObj && Array.isArray(dataObj['data']))
+    );
+  }
+
+  /** Extract items array from paginated response (supports items, entries, data) */
+  private extractPaginatedItems(data: Record<string, unknown>): unknown[] {
+    if ('items' in data && Array.isArray(data['items']))
+      return data['items'] as unknown[];
+    if ('entries' in data && Array.isArray(data['entries']))
+      return data['entries'] as unknown[];
+    if ('data' in data && Array.isArray(data['data']))
+      return data['data'] as unknown[];
+    return [];
   }
 }

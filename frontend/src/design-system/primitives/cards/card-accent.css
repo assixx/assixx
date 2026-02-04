@@ -14,10 +14,10 @@
   transition: all 0.2s ease;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: var(--glass-border);
   border-radius: var(--radius-xl); /* 12px */
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 
   /* overflow: hidden; */
 
@@ -29,16 +29,16 @@
 
 .card-accent:hover {
   border-color: var(--color-border-hover);
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
 }
 
 /* Header */
 .card-accent__header {
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  border-bottom: 1px solid var(--color-glass-border);
   border-radius: 10px 10px 0 0;
 
-  background: rgb(255 255 255 / 1%);
+  background: var(--glass-bg);
   padding: var(--spacing-4) var(--spacing-6);
 }
 

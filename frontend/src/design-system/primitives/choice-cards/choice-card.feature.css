@@ -39,10 +39,10 @@
     box-shadow var(--duration-normal) var(--ease-out);
 
   /* Glassmorphism */
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   /* Spacing */
   padding: 24px;
@@ -52,30 +52,30 @@
 .feature-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 10%);
+  border-color: var(--color-glass-border-hover);
+  background: var(--color-glass-border);
 }
 
 /* Active state (feature is enabled) */
 .feature-card.active {
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--card-shadow);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--glass-card-radius);
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
 }
 
 .feature-card.active:hover {
   border-color: var(--color-success);
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
 }
 
 /* Inactive/Disabled state */
 .feature-card.inactive {
   opacity: 70%;
-  border-color: rgb(255 255 255 / 5%);
-  background: rgb(255 255 255 / 3%);
+  border-color: var(--glass-bg-hover);
+  background: var(--glass-bg);
 }
 
 /* ============================================================
@@ -107,8 +107,8 @@
 }
 
 .feature-status.status-inactive {
-  border: 1px solid rgb(255 255 255 / 10%);
-  background: rgb(255 255 255 / 5%);
+  border: 1px solid var(--color-glass-border);
+  background: var(--glass-bg-hover);
   color: var(--color-text-secondary);
 }
 

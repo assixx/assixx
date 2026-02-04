@@ -64,13 +64,13 @@
   backdrop-filter: blur(20px) saturate(180%);
 
   transition: transform 0.3s ease;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+  box-shadow: var(--shadow-modal);
 
   /* Schlicht & Elegant - Wie Cards */
-  border: 1px solid rgb(255 255 255 / 10%); /* Card border */
+  border: var(--glass-border);
   border-radius: var(--radius-xl); /* 12px */
 
-  background: rgb(15 15 15 / 95%);
+  background: rgb(255 255 255 / 95%);
 
   /* Default size */
   width: 90%;
@@ -97,10 +97,10 @@
   flex-shrink: 0; /* Don't shrink when body scrolls */
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  border-bottom: 1px solid var(--color-glass-border);
 
   /* Schlicht & Elegant - Subtiler Hintergrund */
-  background: rgb(0 0 0 / 20%);
+  background: var(--glass-bg);
 
   /* Spacing */
   padding: var(--spacing-6); /* 24px */
@@ -132,7 +132,7 @@
   border-radius: var(--radius-md); /* 8px */
 
   background: none;
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg-hover);
 
   /* Size */
   width: 36px;
@@ -142,7 +142,7 @@
 }
 
 .ds-modal__close:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   color: var(--color-danger);
 }
 
@@ -182,16 +182,16 @@
 
 .ds-modal__body::-webkit-scrollbar-track {
   border-radius: var(--radius-sm);
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 .ds-modal__body::-webkit-scrollbar-thumb {
   border-radius: var(--radius-sm);
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 }
 
 .ds-modal__body::-webkit-scrollbar-thumb:hover {
-  background: rgb(255 255 255 / 15%);
+  background: var(--color-glass-border);
 }
 
 /* ========================================
@@ -204,10 +204,10 @@
   flex-shrink: 0; /* Don't shrink */
   justify-content: flex-end; /* Buttons right-aligned by default */
   gap: var(--spacing-4); /* 16px */
-  border-top: 1px solid rgb(255 255 255 / 8%);
+  border-top: 1px solid var(--color-glass-border);
 
   /* Schlicht & Elegant - Subtiler Hintergrund */
-  background: rgb(0 0 0 / 20%);
+  background: var(--glass-bg);
 
   /* Spacing */
   padding: var(--spacing-6); /* 24px */
@@ -335,4 +335,17 @@ body:has(.modal-overlay--active) {
   .modal-overlay--active .ds-modal {
     transform: translateY(0) scale(1);
   }
+}
+
+/* ========================================
+   DARK MODE OVERRIDES
+   ======================================== */
+
+html.dark .ds-modal {
+  background: rgb(15 15 15 / 95%);
+}
+
+html.dark .ds-modal__header,
+html.dark .ds-modal__footer {
+  background: rgb(0 0 0 / 20%);
 }

@@ -516,7 +516,9 @@
         Mitarbeiter erstellen und verwalten
       </p>
 
-      <div class="mt-6 flex items-center justify-between gap-4">
+      <div
+        class="mt-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between"
+      >
         <!-- Status Toggle Group -->
         <div
           class="toggle-group"

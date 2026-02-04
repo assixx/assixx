@@ -1,0 +1,126 @@
+/**
+ * Light Mode Variables + Theme-Neutral Tokens
+ *
+ * :root = Light mode defaults + tokens that are identical in both themes.
+ * Overridden by html.dark in variables-dark.css.
+ *
+ * See also: variables-dark.css for dark mode overrides.
+ */
+
+/* ============================================================
+   THEME-NEUTRAL TOKENS (identical in light and dark)
+   ============================================================ */
+
+:root {
+  /* Layout Constants */
+  --header-height: 80px;
+  --header-height-mobile: 60px;
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 72px;
+
+  /* Card Sizing */
+  --card-shadow: var(--shadow-md);
+
+  /* Brand Colors (unique to this file — not in colors.css) */
+  --color-error: var(--color-red-500);
+
+  /* Input Sizing (bridge tokens consumed by forms.css) */
+  --input-border-radius: var(--radius-xl);
+  --input-font-size: var(--font-size-base);
+  --input-padding-x: var(--spacing-3);
+  --input-padding-y: var(--spacing-2);
+
+  /* Typography Families */
+  --font-primary:
+    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
+    sans-serif;
+
+  /* Status Colors (theme-independent) */
+  --success-color: #4caf50;
+  --error-color: #f44336;
+  --warning-color: #ff9800;
+
+  /* Layout Helpers */
+  --margin-text-top: 4px;
+  --margin-icon-right: 8px;
+
+  /* Backdrop Filters (same visual effect in both themes) */
+  --glass-backdrop: blur(20px) saturate(180%);
+  --glass-form-backdrop: blur(5px);
+  --blur-sm: blur(10px);
+  --blur-md: blur(15px);
+
+  /* Glass Card Structural */
+  --glass-card-radius: var(--radius-xl);
+  --glass-card-shadow: var(--shadow-sm);
+
+  /* Z-Index Scale */
+  --z-dropdown: 100;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-notification: 2000;
+
+  /* Brand Legacy Tokens (theme-independent) */
+  --primary-color: var(--color-primary, #2196f3);
+  --primary-dark: var(--color-primary-hover, #1976d2);
+  --primary-light: var(--color-primary-light, #42a5f5);
+  --glass-form-border-focus: 1px solid var(--primary-color);
+
+  /* ============================================================
+     LIGHT MODE TOKENS (default — overridden by html.dark)
+     ============================================================ */
+
+  /* Main Background - Light theme */
+  --main-bg: var(--color-gray-50);
+  --main-bg-gradient: linear-gradient(
+    180deg,
+    var(--color-white) 0%,
+    rgb(171 207 255 / 6.8%) 30%,
+    rgb(37 157 255 / 2.7%) 60%,
+    var(--color-gray-100) 100%
+  );
+
+  /* Backgrounds */
+  --color-surface: var(--color-white);
+
+  /* Text */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: #1a1a1a;
+  --color-text-tertiary: var(--color-gray-600);
+  --color-text-muted: #6b7280;
+  --color-text-disabled: var(--color-gray-400);
+  --color-text-placeholder: rgb(0 0 0 / 40%);
+  --color-icon-primary: #1976d2;
+
+  /* Glass Backgrounds (dark overlays on light surfaces) */
+  --glass-bg: rgb(0 0 0 / 5%);
+  --glass-bg-hover: rgb(0 0 0 / 3%);
+  --glass-bg-active: rgb(0 0 0 / 5%);
+  --glass-border: 1px solid rgb(0 0 0 / 8%);
+
+  /* Glass Form (light mode) */
+  --glass-form-bg: rgb(0 0 0 / 3%);
+  --glass-form-bg-hover: rgb(0 0 0 / 4%);
+  --glass-form-bg-focus: rgb(0 0 0 / 5%);
+  --glass-form-border: 1px solid rgb(0 0 0 / 12%);
+
+  /* Legacy Tokens (light mode values) */
+  --text-primary: var(--color-text-primary, #212121);
+  --text-secondary: var(--color-text-secondary, #1a1a1a);
+  --background-dark: #fafafa;
+  --background-light: #f5f5f5;
+  --border-color: hsl(0deg 0% 85%);
+  --accent-color: rgb(0 0 0 / 6%);
+  --text-muted: #6b7280;
+
+  /* Navigation-specific (light mode) */
+  --nav-hover-bg: rgb(33 150 243 / 10%);
+  --nav-active-submenu-bg: rgb(0 0 0 / 6%);
+  --scrollbar-thumb-hover: rgb(0 0 0 / 25%);
+  --sidebar-fold-edge: var(--color-gray-700);
+  --sidebar-fold-bg: var(--color-gray-50);
+}

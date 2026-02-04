@@ -386,7 +386,7 @@
   border: none;
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 70%);
+  background: var(--color-white, rgb(255 255 255 / 70%));
   padding: 0;
 
   width: 28px;
@@ -398,7 +398,7 @@
 
 .sticky-note__action:hover {
   transform: scale(1.1);
-  background: rgb(255 255 255 / 90%);
+  background: var(--color-white, rgb(255 255 255 / 90%));
 }
 
 .sticky-note__action--edit {

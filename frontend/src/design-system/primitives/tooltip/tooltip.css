@@ -42,6 +42,13 @@
   cursor: help;
 }
 
+/* Tooltip icon (inline <i> trigger) */
+.tooltip > i {
+  font-size: 1rem;
+  cursor: help;
+  color: var(--color-blue-400);
+}
+
 /* ========================================
    TOOLTIP CONTENT (Popover)
    ======================================== */
@@ -65,7 +72,7 @@
     visibility var(--transition-fast),
     transform var(--transition-fast);
   box-shadow: var(--shadow-lg);
-  border: 1px solid rgb(255 255 255 / 15%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-md);
 
   /* Visual - Glassmorphism */

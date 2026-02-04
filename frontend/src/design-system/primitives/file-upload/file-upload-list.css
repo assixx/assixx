@@ -77,11 +77,11 @@
     border-color var(--duration-normal) var(--ease-standard),
     box-shadow var(--duration-normal) var(--ease-standard);
   box-shadow: var(--shadow-glass);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-md);
 
   /* Glassmorphism */
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
 
   padding: var(--spacing-4);
 }
@@ -99,11 +99,11 @@
   flex-shrink: 0;
   justify-content: center;
   align-items: center;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-md);
 
   /* Glass background */
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   width: 48px;
   height: 48px;
@@ -232,7 +232,7 @@
   border: none;
   border-radius: var(--radius);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
   padding: 0;
 
   width: 32px;

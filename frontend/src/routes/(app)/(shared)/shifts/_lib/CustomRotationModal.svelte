@@ -183,7 +183,7 @@
       </button>
     </div>
     <div class="ds-modal__body">
-      <p class="mb-4 text-[var(--color-text-secondary)]">
+      <p class="mb-4 text-(--color-text-secondary)">
         Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das
         gewählte Muster wird automatisch für den gewählten Zeitraum wiederholt.
       </p>
@@ -228,7 +228,7 @@
             />
           </div>
         </div>
-        <p class="mt-2 text-xs text-[var(--color-text-tertiary)]">
+        <p class="mt-2 text-xs text-(--color-text-tertiary)">
           <i class="fas fa-info-circle mr-1"></i>
           Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für
           nahtlosen Übergang.
@@ -491,7 +491,7 @@
             {/if}
           </div>
 
-          <span class="text-white">im Monat frei</span>
+          <span class="text-(--color-text-primary)">im Monat frei</span>
         </div>
       </div>
 
@@ -501,19 +501,17 @@
 
         <!-- Available Employees -->
         <div class="glass-card mb-4 p-4">
-          <h4 class="mb-2 font-medium text-white/80">Verfügbare Mitarbeiter</h4>
-          <div class="employee-list min-h-[60px]">
+          <h4 class="mb-2 font-medium text-(--color-text-secondary)">
+            Verfügbare Mitarbeiter
+          </h4>
+          <div class="employee-list min-h-15">
             {#if employees.length === 0}
-              <div
-                class="py-2 text-sm text-[var(--color-text-tertiary)] italic"
-              >
+              <div class="py-2 text-sm text-(--color-text-tertiary) italic">
                 <i class="fas fa-info-circle mr-1"></i>
                 Bitte wählen Sie zuerst ein Team aus, um die Mitarbeiter zu laden.
               </div>
             {:else if availableEmployees.length === 0}
-              <div
-                class="py-2 text-sm text-[var(--color-text-tertiary)] italic"
-              >
+              <div class="py-2 text-sm text-(--color-text-tertiary) italic">
                 <i class="fas fa-check-circle mr-1 text-green-400"></i>
                 Alle Mitarbeiter wurden zugewiesen.
               </div>
@@ -538,19 +536,19 @@
 
         <!-- Drop Zones for Shift Assignment -->
         <div class="glass-card p-4">
-          <h4 class="mb-2 font-medium text-white/80">
+          <h4 class="mb-2 font-medium text-(--color-text-secondary)">
             Schichtzuweisung (Startschicht)
           </h4>
           <div class="shift-assignment-table grid grid-cols-3 gap-4">
             <!-- Early Shift Column -->
             <div class="shift-column">
               <div
-                class="column-header mb-2 text-center font-medium text-blue-400"
+                class="column-header mb-2 text-center font-medium text-blue-700 dark:text-blue-400"
               >
                 F (Früh)
               </div>
               <div
-                class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
+                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop('F');
@@ -584,12 +582,12 @@
             <!-- Late Shift Column -->
             <div class="shift-column">
               <div
-                class="column-header mb-2 text-center font-medium text-yellow-400"
+                class="column-header mb-2 text-center font-medium text-yellow-700 dark:text-yellow-400"
               >
                 S (Spät)
               </div>
               <div
-                class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
+                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop('S');
@@ -623,12 +621,12 @@
             <!-- Night Shift Column -->
             <div class="shift-column">
               <div
-                class="column-header mb-2 text-center font-medium text-purple-400"
+                class="column-header mb-2 text-center font-medium text-purple-700 dark:text-purple-400"
               >
                 N (Nacht)
               </div>
               <div
-                class="drop-zone min-h-[100px] rounded border border-dashed border-white/20 p-2"
+                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop('N');

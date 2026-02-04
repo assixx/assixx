@@ -18,10 +18,10 @@
   position: relative;
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: var(--glass-border);
   border-radius: var(--radius-xl); /* 12px */
 
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
   padding: 28px 40px;
 
   width: 100%;

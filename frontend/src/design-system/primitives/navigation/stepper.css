@@ -64,7 +64,7 @@
   border: 2px solid var(--glass-border);
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   width: 40px;
   height: 40px;
@@ -192,7 +192,7 @@
   .stepper__step:not(.stepper__step--active):hover
   .stepper__indicator {
   border-color: var(--color-primary);
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 }
 
 .stepper--clickable

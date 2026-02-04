@@ -41,12 +41,6 @@ export default {
       table: { defaultValue: { summary: 'false' } },
     },
   },
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

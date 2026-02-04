@@ -21,7 +21,7 @@
   /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
-  color: var(--color-white);
+  color: var(--color-text-primary);
 }
 
 /* Hover state - Brighten the gradient */

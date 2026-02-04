@@ -11,10 +11,10 @@
     display: inline-flex;
     gap: var(--spacing-2); /* 8px */
     backdrop-filter: blur(10px);
-    border: 1px solid rgb(255 255 255 / 10%);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl); /* 8px */
 
-    background: rgb(255 255 255 / 2%);
+    background: var(--glass-bg);
 
     padding: var(--spacing-1); /* 4px */
   }
@@ -33,16 +33,16 @@
     background: transparent;
 
     padding: var(--spacing-1-5) var(--spacing-3); /* 6px 12px */
-    color: rgb(255 255 255 / 60%);
+    color: var(--color-text-secondary);
     font-weight: var(--font-weight-medium); /* 500 */
 
     font-size: 13px;
   }
 
   .toggle-group__btn:hover {
-    border-color: rgb(255 255 255 / 10%);
-    background: rgb(255 255 255 / 5%);
-    color: rgb(255 255 255 / 80%);
+    border-color: var(--color-glass-border);
+    background: var(--glass-bg-hover);
+    color: var(--color-text-primary);
   }
 
   .toggle-group__btn.active,
@@ -60,6 +60,6 @@
   .toggle-group__btn:disabled {
     opacity: 50%;
     cursor: not-allowed;
-    color: rgb(255 255 255 / 30%);
+    color: var(--color-text-muted);
   }
 }

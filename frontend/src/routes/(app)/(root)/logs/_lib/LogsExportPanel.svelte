@@ -134,136 +134,137 @@
   }
 </script>
 
-<div
-  class="export-section mt-6 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.2)] p-4"
->
-  <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold">
-    <i class="fas fa-file-export text-[var(--color-success)]"></i>
-    Audit-Logs exportieren
-  </h3>
-
-  <!-- Export Status Messages -->
-  {#if exportError}
-    <div class="alert alert--danger mb-4">
-      <i class="fas fa-exclamation-circle mr-2"></i>
-      {exportError}
-    </div>
-  {/if}
-  {#if exportSuccess}
-    <div class="alert alert--success mb-4">
-      <i class="fas fa-check-circle mr-2"></i>
-      {exportSuccess}
-    </div>
-  {/if}
-
-  <!-- Quick Timerange Buttons -->
-  <div class="mb-4">
-    <span class="form-field__label mb-2 block">Schnellauswahl Zeitraum</span>
-    <div class="toggle-group">
-      {#each EXPORT_QUICK_TIMERANGE_OPTIONS as option (option.value)}
-        <button
-          type="button"
-          class="toggle-group__btn"
-          class:active={selectedQuickTimerange === option.value}
-          onclick={() => {
-            selectQuickTimerange(option.value, option.minutes);
-          }}
-        >
-          {option.text}
-        </button>
-      {/each}
-    </div>
+<div class="card mt-6">
+  <div class="card__header">
+    <h3 class="card__title">
+      <i class="fas fa-file-export mr-2"></i>
+      Audit-Logs exportieren
+    </h3>
   </div>
-
-  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-    <!-- Date From -->
-    <div class="form-field">
-      <label
-        class="form-field__label"
-        for="export-date-from">Von Datum</label
-      >
-      <input
-        type="date"
-        id="export-date-from"
-        class="form-field__control"
-        bind:value={exportDateFrom}
-        oninput={clearQuickTimerangeSelection}
-      />
-    </div>
-
-    <!-- Date To -->
-    <div class="form-field">
-      <label
-        class="form-field__label"
-        for="export-date-to">Bis Datum</label
-      >
-      <input
-        type="date"
-        id="export-date-to"
-        class="form-field__control"
-        bind:value={exportDateTo}
-        oninput={clearQuickTimerangeSelection}
-      />
-    </div>
-
-    <!-- Format Dropdown -->
-    <FilterDropdown
-      label="Format"
-      labelId="format-label"
-      options={EXPORT_FORMAT_OPTIONS}
-      selectedValue={exportFormat}
-      displayText={formatDisplayText}
-      onselect={(value) => {
-        exportFormat = value as ExportFormat;
-      }}
-    />
-
-    <!-- Source Dropdown -->
-    <FilterDropdown
-      label="Quelle"
-      labelId="source-label"
-      options={EXPORT_SOURCE_OPTIONS}
-      selectedValue={exportSource}
-      displayText={sourceDisplayText}
-      onselect={(value) => {
-        exportSource = value as ExportSource;
-      }}
-    />
-  </div>
-
-  <!-- Export Button -->
-  <div class="mt-4 flex items-center gap-4">
-    <button
-      type="button"
-      class="btn btn-success"
-      onclick={() => void handleExportLogs()}
-      disabled={!canExport}
-    >
-      {#if exportLoading}
-        <span class="spinner spinner--sm mr-2">
-          <span class="spinner__circle"></span>
-        </span>
-        {MESSAGES.EXPORT_LOADING}
-      {:else if isRateLimited}
-        <i class="fas fa-clock mr-2"></i>
-        Warten ({rateLimitRemaining()}s)
-      {:else}
-        <i class="fas fa-download mr-2"></i>
-        Export starten
-      {/if}
-    </button>
-
-    {#if hasActiveFilters}
-      <span class="text-sm text-[var(--color-text-secondary)]">
-        <i class="fas fa-info-circle mr-1"></i>
-        Aktive Filter werden beim Export berücksichtigt
-      </span>
+  <div class="card__body">
+    <!-- Export Status Messages -->
+    {#if exportError}
+      <div class="alert alert--danger mb-4">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        {exportError}
+      </div>
     {/if}
-  </div>
+    {#if exportSuccess}
+      <div class="alert alert--success mb-4">
+        <i class="fas fa-check-circle mr-2"></i>
+        {exportSuccess}
+      </div>
+    {/if}
 
-  <!-- Export Info -->
-  <p class="mt-3 text-sm text-[var(--color-text-secondary)]">
-    <i class="fas fa-shield-alt mr-1"></i>
-    Max. 365 Tage | 1 Export pro Minute | RLS-geschützt
-  </p>
+    <!-- Quick Timerange Buttons -->
+    <div class="mb-4">
+      <span class="form-field__label mb-2 block">Schnellauswahl Zeitraum</span>
+      <div class="toggle-group">
+        {#each EXPORT_QUICK_TIMERANGE_OPTIONS as option (option.value)}
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={selectedQuickTimerange === option.value}
+            onclick={() => {
+              selectQuickTimerange(option.value, option.minutes);
+            }}
+          >
+            {option.text}
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <!-- Date From -->
+      <div class="form-field">
+        <label
+          class="form-field__label"
+          for="export-date-from">Von Datum</label
+        >
+        <input
+          type="date"
+          id="export-date-from"
+          class="form-field__control"
+          bind:value={exportDateFrom}
+          oninput={clearQuickTimerangeSelection}
+        />
+      </div>
+
+      <!-- Date To -->
+      <div class="form-field">
+        <label
+          class="form-field__label"
+          for="export-date-to">Bis Datum</label
+        >
+        <input
+          type="date"
+          id="export-date-to"
+          class="form-field__control"
+          bind:value={exportDateTo}
+          oninput={clearQuickTimerangeSelection}
+        />
+      </div>
+
+      <!-- Format Dropdown -->
+      <FilterDropdown
+        label="Format"
+        labelId="format-label"
+        options={EXPORT_FORMAT_OPTIONS}
+        selectedValue={exportFormat}
+        displayText={formatDisplayText}
+        onselect={(value) => {
+          exportFormat = value as ExportFormat;
+        }}
+      />
+
+      <!-- Source Dropdown -->
+      <FilterDropdown
+        label="Quelle"
+        labelId="source-label"
+        options={EXPORT_SOURCE_OPTIONS}
+        selectedValue={exportSource}
+        displayText={sourceDisplayText}
+        onselect={(value) => {
+          exportSource = value as ExportSource;
+        }}
+      />
+    </div>
+
+    <!-- Export Button -->
+    <div class="mt-4 flex items-center gap-4">
+      <button
+        type="button"
+        class="btn btn-success"
+        onclick={() => void handleExportLogs()}
+        disabled={!canExport}
+      >
+        {#if exportLoading}
+          <span class="spinner spinner--sm mr-2">
+            <span class="spinner__circle"></span>
+          </span>
+          {MESSAGES.EXPORT_LOADING}
+        {:else if isRateLimited}
+          <i class="fas fa-clock mr-2"></i>
+          Warten ({rateLimitRemaining()}s)
+        {:else}
+          <i class="fas fa-download mr-2"></i>
+          Export starten
+        {/if}
+      </button>
+
+      {#if hasActiveFilters}
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          <i class="fas fa-info-circle mr-1"></i>
+          Aktive Filter werden beim Export berücksichtigt
+        </span>
+      {/if}
+    </div>
+
+    <!-- Export Info -->
+    <p class="mt-3 text-sm text-[var(--color-text-secondary)]">
+      <i class="fas fa-shield-alt mr-1"></i>
+      Max. 365 Tage | 1 Export pro Minute | RLS-geschützt
+    </p>
+  </div>
 </div>

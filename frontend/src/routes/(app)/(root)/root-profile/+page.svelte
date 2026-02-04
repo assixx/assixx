@@ -603,8 +603,7 @@
           >
             Neues Passwort
             <span class="tooltip ml-1">
-              <i class="fas fa-info-circle cursor-help text-sm text-blue-400"
-              ></i>
+              <i class="fas fa-info-circle"></i>
               <span
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip">{PASSWORD_TOOLTIP}</span

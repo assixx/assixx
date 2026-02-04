@@ -19,12 +19,6 @@ export default {
   },
 
   tags: ['autodocs'],
-
-  globals: {
-    backgrounds: {
-      value: 'assixx-dark',
-    },
-  },
 };
 
 /**

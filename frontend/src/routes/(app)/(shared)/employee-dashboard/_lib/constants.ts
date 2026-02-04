@@ -47,7 +47,6 @@ export const PLACEHOLDER_TEXT = {
 export const MESSAGES = {
   welcomeBack: 'Willkommen zurück!',
   niceToSeeYou: 'Schön, dass Sie da sind,',
-  heroStatLabel: 'Neu',
   upcomingEvents: 'Nächste Termine',
   noBlackboard: 'Keine Einträge',
   noBlackboardDescription: 'Das Schwarze Brett ist derzeit leer.',

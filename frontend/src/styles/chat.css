@@ -10,25 +10,43 @@
 /* stylelint-disable declaration-block-no-redundant-longhand-properties -- Need individual props for left override */
 .chat-page-main {
   position: fixed;
-  top: 80px; /* Header height from dashboard-theme.css */
+  top: var(--header-height);
   right: 0;
   bottom: 0;
-  left: 280px; /* Navigation Sidebar width - expanded */
+  left: var(--sidebar-width-expanded);
 
   transition: left 0.3s ease;
   margin: 0 !important;
   padding: 0 !important;
 
-  height: calc(100vh - 80px); /* Subtract header height */
+  height: calc(100vh - var(--header-height));
 
   overflow: hidden;
 }
 
-/* When Navigation Sidebar is collapsed - class added by unified-navigation */
+/* When Navigation Sidebar is collapsed */
 .chat-page-main.sidebar-collapsed {
-  left: 125px; /* Collapsed Navigation Sidebar width */
+  left: var(--sidebar-width-collapsed);
 }
 /* stylelint-enable declaration-block-no-redundant-longhand-properties */
+
+/* Mobile: full-width chat, no sidebar offset */
+@media (width < 768px) {
+  .chat-page-main,
+  .chat-page-main.sidebar-collapsed {
+    left: 0;
+    top: var(--header-height-mobile);
+    height: calc(100vh - var(--header-height-mobile));
+  }
+}
+
+/* Tablet: sidebar always collapsed width */
+@media (width >= 768px) and (width < 1024px) {
+  .chat-page-main,
+  .chat-page-main.sidebar-collapsed {
+    left: var(--sidebar-width-collapsed);
+  }
+}
 
 /* Chat-spezifische Styles mit Glassmorphismus-Design */
 .chat-container {
@@ -52,11 +70,11 @@
   flex-shrink: 0; /* Verhindert Größenänderung */
   flex-direction: column;
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  border-left: 1px solid rgb(255 255 255 / 10%);
-  border-right: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
+  border-left: 1px solid var(--color-glass-border);
+  border-right: 1px solid var(--color-glass-border);
 
-  background: rgb(255 255 255 / 3%);
+  background: var(--glass-bg);
 
   width: 300px;
 
@@ -216,9 +234,10 @@
 /* Main Chat Area */
 .chat-main {
   display: flex;
+  position: relative;
   flex: 1;
   flex-direction: column;
-  background: rgb(255 255 255 / 2%);
+  background: var(--glass-bg);
 }
 
 /* Anpassung wenn Navigation Sidebar collapsed - keine margin mehr nötig */
@@ -228,9 +247,9 @@
   justify-content: space-between;
   align-items: center;
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  border-bottom: 1px solid var(--color-glass-border);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   padding: 7px 16px;
 }
@@ -349,7 +368,7 @@
   gap: 12px;
 
   opacity: 0%;
-  padding: 16px;
+  padding: 16px 16px 40px;
 
   min-height: 0; /* Wichtig für Firefox */
   max-height: 100%;
@@ -387,12 +406,12 @@
 
 .date-separator span {
   backdrop-filter: blur(10px);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border: var(--glass-border);
   border-radius: 20px;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--accent-color);
   padding: 6px 16px;
-  color: rgb(255 255 255 / 70%);
+  color: var(--color-text-secondary);
   font-weight: 500;
 
   font-size: 0.85rem;
@@ -401,7 +420,7 @@
 .date-separator::before,
 .date-separator::after {
   flex: 1;
-  background: rgb(255 255 255 / 10%);
+  background: var(--color-glass-border);
   height: 1px;
   content: '';
 }
@@ -478,10 +497,10 @@
 .message-content {
   position: relative;
   backdrop-filter: blur(10px);
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   padding: 10px 14px;
   color: var(--text-primary);
@@ -543,14 +562,95 @@
   opacity: 50%;
 }
 
+/* Connection Lost Banner */
+.connection-lost-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-warning-text, #92400e);
+  background-color: var(--color-warning-bg, #fef3c7);
+  border-bottom: 1px solid var(--color-warning-border, #fcd34d);
+  animation: pulse-banner 2s ease-in-out infinite;
+}
+
+@keyframes pulse-banner {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 60%;
+  }
+}
+
+/* Typing Indicator - Floats above input, does not shift layout */
+.typing-indicator {
+  display: flex;
+  position: absolute;
+  bottom: 75px;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  align-items: center;
+  gap: var(--spacing-2, 0.5rem);
+  padding: 4px var(--spacing-4, 1rem);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 50%;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 100%;
+  }
+}
+
 /* Message Input Area */
 .message-input-container {
   position: relative;
   z-index: 10;
   backdrop-filter: blur(10px);
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
 
-  background: rgb(255 255 255 / 5%);
+  background: var(--glass-bg-hover);
 
   padding: 10px 16px;
 }
@@ -559,10 +659,10 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: 20px;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   padding: 6px;
 }
@@ -644,7 +744,7 @@
   border: none;
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   padding: 0;
 
   width: 16px;
@@ -696,7 +796,7 @@
 /* Animations */
 
 /* Responsive Design */
-@media (width <= 768px) {
+@media (width < 768px) {
   .chat-sidebar {
     position: absolute;
     top: 0;
@@ -730,15 +830,15 @@
   cursor: pointer;
 
   margin-top: var(--spacing-2);
-  border: 1px solid rgb(255 255 255 / 20%);
+  border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   padding: var(--spacing-3);
 }
 
 .attachment:hover {
-  background: rgb(255 255 255 / 15%);
+  background: var(--glass-bg-active);
 }
 
 /* Image Attachment with Preview Overlay */
@@ -858,7 +958,7 @@
   transition: opacity var(--duration-fast) var(--ease-standard);
   border-radius: var(--radius-md);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   padding: var(--spacing-2) var(--spacing-3);
 }
@@ -870,7 +970,7 @@
   align-items: center;
   border-radius: var(--radius-md);
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
 
   width: 48px;
   height: 48px;
@@ -930,7 +1030,7 @@
   left: 0;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
 
-  background: rgb(255 255 255 / 20%);
+  background: var(--glass-bg-active);
 
   width: 100%;
   height: 4px;
@@ -956,7 +1056,7 @@
 /* Search Bar - Now uses Design System search-input component */
 
 /* Mobile Improvements */
-@media (width <= 768px) {
+@media (width < 768px) {
   .message-input-container {
     padding: var(--spacing-3);
   }
@@ -1016,7 +1116,7 @@
   gap: 6px;
 
   margin-top: 8px;
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-glass-border);
   padding-top: 8px;
   color: hsl(40deg 100% 70%);
 
@@ -1043,7 +1143,7 @@
   border: none;
   border-radius: 50%;
 
-  background: rgb(255 255 255 / 10%);
+  background: var(--glass-bg-active);
   padding: 0;
 
   width: 20px;

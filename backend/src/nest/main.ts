@@ -30,8 +30,6 @@ import 'reflect-metadata';
 
 import { ChatWebSocketServer } from '../websocket.js';
 import { AppModule } from './app.module.js';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
-import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import {
   REDACTED_VALUE,
   REDACT_PATHS,
@@ -124,13 +122,6 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
-}
-
-/** Setup global pipes, filters, and interceptors */
-function setupGlobalMiddleware(app: NestFastifyApplication): void {
-  app.useGlobalPipes(new ZodValidationPipe());
-  app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new ResponseInterceptor());
 }
 
 // =============================================================================
@@ -248,7 +239,7 @@ async function bootstrap(): Promise<void> {
   bootstrapLogger.log(`Uploads serving configured: ${uploadsPath}`);
 
   await setupSecurity(app);
-  setupGlobalMiddleware(app);
+  app.useGlobalPipes(new ZodValidationPipe());
 
   // Fastify v5: listen with object syntax, 0.0.0.0 for Docker
   const port = Number.parseInt(process.env['PORT'] ?? '3000', 10);
