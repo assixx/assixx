@@ -4,7 +4,7 @@
 | ------------ | --------------------------------------------------- |
 | **Branch**   | `variables/lightmode`                               |
 | **Created**  | 2026-02-02                                          |
-| **Status**   | In Progress — Step 8 done, Visual QA next           |
+| **Status**   | Complete — All steps done, ready for merge          |
 | **Approach** | Class-based `.dark` on `<html>`, dark-first default |
 
 ---
@@ -149,18 +149,20 @@ Remaining 32 values are **intentional** (white thumbs, stripes on colored bars, 
       - Svelte inline styles in various components
       - Tailwind RGBA utility classes in templates
 
-### Step 6: Visual QA — TODO (MUST before merge)
+### Step 6: Visual QA — DONE
 
-- [ ] **6a.** Start app (`pnpm run dev:svelte`), switch to light mode.
-- [ ] **6b.** Walk through every page, screenshot issues.
-- [ ] **6c.** Fix discovered issues.
-- [ ] **6d.** Verify dark mode is NOT broken (regression check).
+- [x] **6a.** Start app (`pnpm run dev:svelte`), switch to light mode.
+- [x] **6b.** Walk through every page, screenshot issues.
+- [x] **6c.** Fix discovered issues.
+- [x] **6d.** Verify dark mode is NOT broken (regression check).
 
-### Step 7: Storybook Integration — NICE-TO-HAVE
+Final code audit (2026-02-04): Frontend lint 0 errors. Hardcoded color grep found no actionable issues — remaining hardcoded values are intentional (decorative patterns, white-on-colored buttons, always-dark pages). Variable symmetry verified: forms.css bridge vars correctly reference themed vars. One cosmetic note: `button.secondary.css:13` uses `#ffffff1a` instead of `var(--glass-bg-active)` — no visual impact.
 
-- [ ] **7a.** Install `@storybook/addon-themes`.
-- [ ] **7b.** Configure `withThemeByClassName` in `.storybook/preview.js`.
-- [ ] **7c.** Visual QA all 25 stories in both modes.
+### Step 7: Storybook Integration — DONE
+
+- [x] **7a.** Install `@storybook/addon-themes`.
+- [x] **7b.** Configure `withThemeByClassName` in `.storybook/preview.js`.
+- [x] **7c.** Visual QA all 25 stories in both modes.
 
 ### Step 8: Variable Redundancy Cleanup — DONE
 

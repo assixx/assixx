@@ -182,20 +182,20 @@ async function markFeatureTypeAsRead(
 interface DashboardCountsResponse {
   success: boolean;
   data: {
-    chat: { totalUnread: number };
-    notifications: {
+    chat?: { totalUnread: number };
+    notifications?: {
       total: number;
       unread: number;
       byType: Record<string, number>;
     };
-    blackboard: { count: number };
-    calendar: { count: number };
-    documents: { count: number };
+    blackboard?: { count: number };
+    calendar?: { count: number };
+    documents?: { count: number };
     /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
-    kvp: { count: number };
+    kvp?: { count: number };
     /** Pending surveys count (active surveys not yet responded to by user) */
-    surveys: { count: number };
-    fetchedAt: string;
+    surveys?: { count: number };
+    fetchedAt?: string;
   };
 }
 
@@ -219,32 +219,7 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
     }
 
     const json = (await response.json()) as DashboardCountsResponse;
-    const { data } = json;
-
-    // Extract counts from combined response
-    const chatCount = data.chat.totalUnread;
-    const surveyCount = data.surveys.count;
-    // KVP uses Pattern 2 (Individual read tracking) - separate count field
-    const kvpCount = data.kvp.count;
-    const blackboardCount = data.blackboard.count;
-    const calendarCount = data.calendar.count;
-    const documentsCount = data.documents.count;
-
-    // Update state
-    state.counts.chat = chatCount;
-    state.counts.surveys = surveyCount;
-    state.counts.documents = documentsCount;
-    state.counts.kvp = kvpCount;
-    state.counts.blackboard = blackboardCount;
-    state.counts.calendar = calendarCount;
-    state.counts.total =
-      chatCount +
-      surveyCount +
-      documentsCount +
-      kvpCount +
-      blackboardCount +
-      calendarCount;
-    state.lastUpdate = new Date();
+    initFromSSRData(state, json.data);
 
     log.debug(
       { counts: state.counts },
@@ -280,42 +255,48 @@ function connectSSE(
   sse.connect();
 }
 
-/** SSR counts input type */
+/**
+ * SSR counts input type
+ *
+ * Properties are optional because this data crosses an API boundary —
+ * the runtime shape may not match if the backend response changes or
+ * a sub-service fails. Defensive access with `?.` and `?? 0` is required.
+ */
 interface SSRCounts {
-  chat: { totalUnread: number };
-  notifications: { byType: Record<string, number> };
-  blackboard: { count: number };
-  calendar: { count: number };
-  documents: { count: number };
+  chat?: { totalUnread: number };
+  notifications?: { byType: Record<string, number> };
+  blackboard?: { count: number };
+  calendar?: { count: number };
+  documents?: { count: number };
   /** KVP unconfirmed count (Pattern 2: Individual read tracking) */
-  kvp: { count: number };
+  kvp?: { count: number };
   /** Pending surveys count (active surveys not yet responded to by user) */
-  surveys: { count: number };
+  surveys?: { count: number };
+}
+
+/** Safely extract count from an optional API field (defensive against missing data) */
+function safeCount(item: { count: number } | undefined): number {
+  return item?.count ?? 0;
 }
 
 /** Initialize counts from SSR data (no HTTP request needed) */
 function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
-  const chatCount = counts.chat.totalUnread;
-  const surveyCount = counts.surveys.count;
-  // KVP uses Pattern 2 (Individual read tracking) - separate count field
-  const kvpCount = counts.kvp.count;
-  const blackboardCount = counts.blackboard.count;
-  const calendarCount = counts.calendar.count;
-  const documentsCount = counts.documents.count;
+  const chat = counts.chat?.totalUnread ?? 0;
+  const surveys = safeCount(counts.surveys);
+  const kvp = safeCount(counts.kvp);
+  const blackboard = safeCount(counts.blackboard);
+  const calendar = safeCount(counts.calendar);
+  const documents = safeCount(counts.documents);
 
-  state.counts.chat = chatCount;
-  state.counts.surveys = surveyCount;
-  state.counts.documents = documentsCount;
-  state.counts.kvp = kvpCount;
-  state.counts.blackboard = blackboardCount;
-  state.counts.calendar = calendarCount;
-  state.counts.total =
-    chatCount +
-    surveyCount +
-    documentsCount +
-    kvpCount +
-    blackboardCount +
-    calendarCount;
+  state.counts = {
+    total: chat + surveys + documents + kvp + blackboard + calendar,
+    chat,
+    surveys,
+    documents,
+    kvp,
+    blackboard,
+    calendar,
+  };
   state.lastUpdate = new Date();
 
   log.debug(

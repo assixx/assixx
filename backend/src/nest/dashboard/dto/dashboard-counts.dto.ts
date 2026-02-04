@@ -60,11 +60,3 @@ export type CountItem = z.infer<typeof CountItemSchema>;
 export type ChatCounts = z.infer<typeof ChatCountsSchema>;
 export type NotificationStats = z.infer<typeof NotificationStatsSchema>;
 export type DashboardCounts = z.infer<typeof DashboardCountsSchema>;
-
-/**
- * API Response wrapper for dashboard counts
- */
-export interface DashboardCountsResponse {
-  success: true;
-  data: DashboardCounts;
-}
