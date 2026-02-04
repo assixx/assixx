@@ -18,7 +18,8 @@ afterEach(() => {
 });
 
 // Global test environment setup
-// Add environment variables for testing
+// Force UTC timezone for deterministic date/time tests across all environments
+process.env.TZ = 'UTC';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-for-vitest';
 process.env.DB_HOST = 'localhost';
