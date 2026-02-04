@@ -46,20 +46,17 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
-      include: [
-        'backend/src/**/*.ts',
-        'shared/src/**/*.ts',
-      ],
+      include: ['backend/src/**/*.ts', 'shared/src/**/*.ts'],
       exclude: [
         'backend/src/**/*.test.ts',
         'backend/src/**/*.spec.ts',
         'shared/src/**/*.test.ts',
         'shared/src/**/*.spec.ts',
-        'backend/src/**/*.module.ts',     // NestJS Module definitions (DI wiring only)
+        'backend/src/**/*.module.ts', // NestJS Module definitions (DI wiring only)
         'backend/src/**/*.controller.ts', // Controllers = HTTP layer (integration tests)
-        'backend/src/**/main.ts',         // NestJS bootstrap
-        'backend/src/**/index.ts',        // Barrel exports
-        'backend/src/types/**',           // Pure type definitions
+        'backend/src/**/main.ts', // NestJS bootstrap
+        'backend/src/**/index.ts', // Barrel exports
+        'backend/src/types/**', // Pure type definitions
       ],
     },
 
