@@ -17,6 +17,7 @@
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import { loadThemeFromApi } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import {
     getAvatarColorClass,
@@ -417,6 +418,9 @@
         sidebarCollapsed = true;
       }
     });
+
+    // Sync theme preference from DB (cross-device persistence)
+    void loadThemeFromApi();
 
     // Subscribe to TokenManager timer updates (uses relative time - no clock skew!)
     // NOTE: Token expiration redirect is handled by TokenManager.clearTokens() internally

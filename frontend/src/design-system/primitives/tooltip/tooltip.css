@@ -42,6 +42,13 @@
   cursor: help;
 }
 
+/* Tooltip icon (inline <i> trigger) */
+.tooltip > i {
+  font-size: 1rem;
+  cursor: help;
+  color: var(--color-blue-400);
+}
+
 /* ========================================
    TOOLTIP CONTENT (Popover)
    ======================================== */

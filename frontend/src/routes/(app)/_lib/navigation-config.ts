@@ -175,6 +175,11 @@ export const rootMenuItems: NavItem[] = [
     label: 'System',
     submenu: [
       {
+        id: 'design',
+        label: 'Design',
+        url: '/settings/design',
+      },
+      {
         id: 'account-settings',
         label: 'Kontoeinstellungen',
         url: '/account-settings',
@@ -240,7 +245,13 @@ export const adminMenuItems: NavItem[] = [
     id: 'settings',
     icon: ICONS.settings,
     label: 'Einstellungen',
-    url: '#settings',
+    submenu: [
+      {
+        id: 'design',
+        label: 'Design',
+        url: '/settings/design',
+      },
+    ],
   },
   {
     id: 'profile',
@@ -299,6 +310,18 @@ export const employeeMenuItems: NavItem[] = [
     badgeType: 'chat',
   },
   { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
+  {
+    id: 'settings',
+    icon: ICONS.settings,
+    label: 'Einstellungen',
+    submenu: [
+      {
+        id: 'design',
+        label: 'Design',
+        url: '/settings/design',
+      },
+    ],
+  },
   {
     id: 'profile',
     icon: ICONS.user,
