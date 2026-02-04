@@ -6,3 +6,5 @@
 design-system/stories/** linguist-generated=true
 *.sh linguist-detectable=false
 *.sql linguist-detectable=false
+*.html linguist-detectable=false
+*.swift linguist-generated=true
