@@ -32,7 +32,6 @@
     scheduledMessages: ScheduledMessage[];
     currentUserId: number;
     searchQuery: string;
-    typingUsers: number[];
     isLoading: boolean;
     oncancelscheduled: (scheduled: ScheduledMessage) => void;
     onimageclick: (file: PreviewAttachment) => void;
@@ -43,7 +42,6 @@
     scheduledMessages,
     currentUserId,
     searchQuery,
-    typingUsers,
     isLoading,
     oncancelscheduled,
     onimageclick,
@@ -439,16 +437,6 @@
         </div>
       </div>
     {/each}
-
-    <!-- Typing Indicator -->
-    {#if typingUsers.length > 0}
-      <div class="typing-indicator">
-        <span class="typing-dots">
-          <span></span><span></span><span></span>
-        </span>
-        <span class="typing-text">{MESSAGES.labelTyping}</span>
-      </div>
-    {/if}
   {/if}
 </div>
 
@@ -490,51 +478,6 @@
     padding: var(--spacing-8, 2rem);
     font-size: 2rem;
     color: var(--primary-color, #2196f3);
-  }
-
-  .typing-indicator {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2, 0.5rem);
-    padding: var(--spacing-2, 0.5rem) var(--spacing-4, 1rem);
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-  }
-
-  .typing-dots {
-    display: flex;
-    gap: 4px;
-  }
-
-  .typing-dots span {
-    width: 6px;
-    height: 6px;
-    background: var(--text-secondary);
-    border-radius: 50%;
-    animation: typingBounce 1.4s infinite ease-in-out;
-  }
-
-  .typing-dots span:nth-child(1) {
-    animation-delay: 0s;
-  }
-  .typing-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  .typing-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-
-  @keyframes typingBounce {
-    0%,
-    80%,
-    100% {
-      transform: scale(0.8);
-      opacity: 0.5;
-    }
-    40% {
-      transform: scale(1);
-      opacity: 1;
-    }
   }
 
   /* Reset button styles for image attachment */

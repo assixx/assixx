@@ -374,8 +374,10 @@
           typingUsers = addTypingUser(typingUsers, userId);
         }
       },
-      onTypingStop: (userId: number) => {
-        typingUsers = removeTypingUser(typingUsers, userId);
+      onTypingStop: (conversationId: number, userId: number) => {
+        if (activeConversation?.id === conversationId) {
+          typingUsers = removeTypingUser(typingUsers, userId);
+        }
       },
       onUserStatus: (userId: number, status: string) => {
         conversations = updateConversationsUserStatus(
@@ -569,6 +571,9 @@
     const scheduleTime = scheduledFor;
 
     if (content === '' && filesToSend.length === 0) return;
+
+    // Stop typing indicator immediately when sending a message
+    handlers.sendTypingStop(activeConversation.id);
 
     // Clear inputs immediately to prevent double-sends
     messageInput = '';
@@ -825,12 +830,19 @@
           {scheduledMessages}
           currentUserId={currentUser?.id ?? 0}
           searchQuery={debouncedSearchQuery}
-          {typingUsers}
           isLoading={isLoadingMessages}
           oncancelscheduled={cancelScheduled}
           onimageclick={openImagePreview}
         />
 
+        {#if typingUsers.length > 0}
+          <div class="typing-indicator">
+            <span class="typing-dots"
+              ><span></span><span></span><span></span></span
+            >
+            <span class="typing-text">{MESSAGES.labelTyping}</span>
+          </div>
+        {/if}
         <MessageInputArea
           bind:messageInput
           {selectedFiles}
@@ -901,29 +913,5 @@
 <style>
   .hidden {
     display: none !important;
-  }
-
-  .connection-lost-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-warning-text, #92400e);
-    background-color: var(--color-warning-bg, #fef3c7);
-    border-bottom: 1px solid var(--color-warning-border, #fcd34d);
-    animation: pulse-banner 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-banner {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
   }
 </style>

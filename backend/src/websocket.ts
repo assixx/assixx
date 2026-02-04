@@ -853,7 +853,7 @@ export class ChatWebSocketServer {
           this.sendMessage(clientWs, {
             type: 'user_status_changed',
             data: {
-              userId: relatedUserId,
+              userId,
               status,
               timestamp: new Date().toISOString(),
             },
