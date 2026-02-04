@@ -6,9 +6,13 @@ import { defineConfig } from 'vitest/config';
 const rootDir = import.meta.dirname;
 
 /**
- * Vitest Configuration for Assixx Backend
+ * Vitest Configuration for Assixx
+ *
+ * Scope: backend/src + shared/src (unit tests)
+ * Frontend: separate config in frontend/vitest.config.ts (Phase 7)
  *
  * @see https://vitest.dev/config/
+ * @see docs/VITEST-UNIT-TEST-PLAN.md
  */
 export default defineConfig({
   test: {
@@ -24,7 +28,10 @@ export default defineConfig({
     globals: true,
 
     // Include patterns for test files
-    include: ['backend/src/**/*.{test,spec}.ts'],
+    include: [
+      'backend/src/**/*.{test,spec}.ts',
+      'shared/src/**/*.{test,spec}.ts',
+    ],
 
     // Exclude patterns
     exclude: [
@@ -39,17 +46,25 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
-      include: ['backend/src/**/*.ts'],
+      include: [
+        'backend/src/**/*.ts',
+        'shared/src/**/*.ts',
+      ],
       exclude: [
         'backend/src/**/*.test.ts',
         'backend/src/**/*.spec.ts',
-        'backend/src/types/**',
-        'backend/src/nest/**', // NestJS has own test system
+        'shared/src/**/*.test.ts',
+        'shared/src/**/*.spec.ts',
+        'backend/src/**/*.module.ts',     // NestJS Module definitions (DI wiring only)
+        'backend/src/**/*.controller.ts', // Controllers = HTTP layer (integration tests)
+        'backend/src/**/main.ts',         // NestJS bootstrap
+        'backend/src/**/index.ts',        // Barrel exports
+        'backend/src/types/**',           // Pure type definitions
       ],
     },
 
     // Timeout for async tests (ms)
-    testTimeout: 10000,
+    testTimeout: 10_000,
 
     // Setup files run before each test file
     setupFiles: ['./vitest.setup.ts'],
@@ -60,19 +75,19 @@ export default defineConfig({
     // Watch mode configuration
     watch: false,
 
-    // Root directory
-    root: '.',
+    // Root directory (absolute path to avoid ERR_INVALID_FILE_URL_HOST bug)
+    // @see https://github.com/vitest-dev/vitest/issues/8579
+    root: rootDir,
   },
 
   resolve: {
     alias: {
       '@': resolve(rootDir, './backend/src'),
-      '@controllers': resolve(rootDir, './backend/src/controllers'),
-      '@models': resolve(rootDir, './backend/src/models'),
-      '@middleware': resolve(rootDir, './backend/src/middleware'),
+      '@nest': resolve(rootDir, './backend/src/nest'),
+      '@schemas': resolve(rootDir, './backend/src/schemas'),
       '@services': resolve(rootDir, './backend/src/services'),
       '@utils': resolve(rootDir, './backend/src/utils'),
-      '@types': resolve(rootDir, './backend/src/types'),
+      '@shared': resolve(rootDir, './shared/src'),
     },
   },
 });
