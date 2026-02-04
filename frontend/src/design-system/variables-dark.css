@@ -13,7 +13,7 @@ html.dark {
   --main-bg-gradient: linear-gradient(
     360deg,
     transparent,
-    rgb(0 112 255 / 12%) 100%,
+    rgb(0 90 207 / 12%) 100%,
     rgb(1 0 4 / 51%) 0,
     rgb(0 0 4 / 60%) 100%,
     #000
@@ -25,6 +25,8 @@ html.dark {
   /* Text */
   --color-text-primary: var(--color-white);
   --color-text-secondary: var(--color-gray-300);
+  --color-text-tertiary: var(--color-gray-500);
+  --color-text-muted: rgb(255 255 255 / 50%);
   --color-text-disabled: var(--color-gray-500);
   --color-text-placeholder: rgb(255 255 255 / 50%);
   --color-icon-primary: #a9d9ff;

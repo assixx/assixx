@@ -112,9 +112,11 @@
     font-family: var(--font-primary);
   }
 
-  /* Glassmorphism background gradient overlay */
+  /* Glassmorphism background gradient overlay
+     absolute statt fixed: fixed erzeugt eigenen Stacking Context,
+     der Fullscreen-Overlays (z.B. Blackboard) verdeckt */
   body::after {
-    position: fixed;
+    position: absolute;
     z-index: -100;
     inset: 0;
 

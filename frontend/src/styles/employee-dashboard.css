@@ -16,56 +16,9 @@
     );
 }
 
-/* Welcome Stat Card
- * WHY: Glassmorphic stat cards in welcome hero section
- * USED IN: employee-dashboard.html Lines 81, 85, 89 */
-.welcome-stat {
-  backdrop-filter: blur(20px);
-
-  transition: all 0.2s ease;
-  box-shadow:
-    0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 var(--color-glass-border);
-  border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-xl);
-
-  background: var(--glass-bg-hover);
-  padding: var(--spacing-3);
-  min-width: 80px;
-
-  text-align: center;
-}
-
-/* Welcome Stat Hover Effect
- * WHY: UX enhancement - lift effect on hover */
-.welcome-stat:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-  background: var(--glass-bg-active);
-}
-
-/* Welcome Stat Number
- * WHY: Large number display in stat card
- * USED IN: employee-dashboard.html Lines 82, 86, 90 */
-.welcome-stat-number {
-  display: block;
-
-  margin-bottom: var(--spacing-1);
-  color: #fff;
-  font-weight: 700;
-
-  font-size: 1.5rem;
-}
-
-/* Welcome Stat Label
- * WHY: Label text for stat card
- * USED IN: employee-dashboard.html Lines 83, 87, 91 */
-.welcome-stat-label {
-  opacity: 90%;
-  color: rgb(255 255 255 / 90%);
-  font-size: 0.8rem;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+/* Employee Name */
+.employee-name-hero {
+  color: #000;
 }
 
 /* Floating Elements Container

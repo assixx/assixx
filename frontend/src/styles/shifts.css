@@ -1097,7 +1097,7 @@
    - Using existing shift-label, day-header, and Design System btn instead */
 
 .shift-name {
-  color: #fff;
+  color: var(--color-text-primary);
   font-weight: 600;
   font-size: 0.75rem;
 }
@@ -1143,6 +1143,27 @@
 .availability-badge.badge--dark {
   background: rgb(149 165 166 / 20%);
   color: #95a5a6;
+}
+
+/* Light mode: darker text for readability on light backgrounds */
+html:not(.dark) .availability-badge.badge--warning {
+  color: #ab8000;
+}
+
+html:not(.dark) .availability-badge.badge--danger {
+  color: #c62828;
+}
+
+html:not(.dark) .availability-badge.badge--error {
+  color: #962018;
+}
+
+html:not(.dark) .availability-badge.badge--info {
+  color: #1565c0;
+}
+
+html:not(.dark) .availability-badge.badge--dark {
+  color: #546e7a;
 }
 
 .availability-period {

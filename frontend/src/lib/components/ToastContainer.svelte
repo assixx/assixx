@@ -50,7 +50,7 @@
 <style>
   .notification-container {
     position: fixed;
-    top: 91px;
+    top: 87px;
     right: 20px;
     z-index: 10000;
     pointer-events: none;

@@ -23,6 +23,7 @@
 
   border-radius: 12px;
 
+  /* Dark mode: helle Speckles auf dunklem Hintergrund */
   background:
     linear-gradient(45deg, #ffffff57 3%, #9a070700 0),
     linear-gradient(-45deg, #fff0 3% 0),
@@ -38,31 +39,15 @@
   content: '';
 }
 
-/* Cork texture overlay for more realism */
-.blackboard-container::before {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-
-  border-radius: 12px;
-
+/* Light mode: dunkle Speckles auf hellem Hintergrund
+   background-image statt background shorthand -- sonst werden
+   background-position und background-size auf default resettet */
+html:not(.dark) .blackboard-container::after {
   background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgb(0 0 0 / 3%) 2px,
-      rgb(0 0 0 / 3%) 4px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgb(0 0 0 / 3%) 2px,
-      rgb(0 0 0 / 3%) 4px
-    );
-  pointer-events: none;
-  content: '';
+    linear-gradient(45deg, #00000057 3%, #9a070700 0),
+    linear-gradient(-45deg, #0000 3% 0),
+    linear-gradient(45deg, #000000b2 3%, #0000 0),
+    linear-gradient(-45deg, #0000003d 3%, #84848400 0);
 }
 
 /* Pinboard Items Grid */
@@ -892,7 +877,6 @@ body.fullscreen-mode #blackboardContainer {
   border: 0 !important; /* No border */
   border-radius: 0 !important; /* No rounded corners */
 
-  background: #00000063;
   padding: 20px !important; /* Space für Pinboard Items */
 
   width: 100% !important;
