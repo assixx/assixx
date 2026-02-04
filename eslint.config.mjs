@@ -84,7 +84,7 @@ export default [
   // =============================================================================
   {
     files: ['backend/**/*.ts', 'backend/**/*.tsx', 'shared/**/*.ts'],
-    ignores: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
+    ignores: ['backend/**/*.test.ts', 'backend/**/*.spec.ts', 'shared/**/*.test.ts', 'shared/**/*.spec.ts'],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -544,15 +544,15 @@ export default [
   // Run: cd frontend && pnpm run lint
   // =============================================================================
 
-  // Test files configuration - Vitest (Backend)
+  // Test files configuration - Vitest (Backend + Shared)
   {
-    files: ['backend/**/*.test.ts', 'backend/**/*.spec.ts'],
+    files: ['backend/**/*.test.ts', 'backend/**/*.spec.ts', 'shared/**/*.test.ts', 'shared/**/*.spec.ts'],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        projectService: true, // v8 recommended
+        project: ['./backend/tsconfig.test.json', './shared/tsconfig.test.json'],
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {

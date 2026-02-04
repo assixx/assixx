@@ -23,14 +23,14 @@ describe('IdSchema', () => {
     const result = IdSchema.safeParse('42');
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe(42);
+    expect(result.data).toBe(42);
   });
 
   it('should pass through valid number', () => {
     const result = IdSchema.safeParse(5);
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe(5);
+    expect(result.data).toBe(5);
   });
 
   it('should fail for empty string', () => {
@@ -57,7 +57,7 @@ describe('IdSchema', () => {
     const result = IdSchema.safeParse('3.7');
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe(3);
+    expect(result.data).toBe(3);
   });
 });
 
@@ -70,14 +70,14 @@ describe('EmailSchema', () => {
     const result = EmailSchema.safeParse('user@example.com');
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe('user@example.com');
+    expect(result.data).toBe('user@example.com');
   });
 
   it('should normalize to lowercase', () => {
     const result = EmailSchema.safeParse('USER@EXAMPLE.COM');
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe('user@example.com');
+    expect(result.data).toBe('user@example.com');
   });
 
   it('should fail for email with leading/trailing spaces (trim runs after regex)', () => {
@@ -150,7 +150,7 @@ describe('UsernameSchema', () => {
     const result = UsernameSchema.safeParse('  JohnDoe  ');
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe('johndoe');
+    expect(result.data).toBe('johndoe');
   });
 
   it('should accept email-like username', () => {
@@ -198,20 +198,14 @@ describe('PaginationSchema', () => {
     const result = PaginationSchema.safeParse({});
 
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.page).toBe(1);
-      expect(result.data.limit).toBe(10);
-    }
+    expect(result.data).toMatchObject({ page: 1, limit: 10 });
   });
 
   it('should coerce string page and limit to numbers', () => {
     const result = PaginationSchema.safeParse({ page: '3', limit: '25' });
 
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.page).toBe(3);
-      expect(result.data.limit).toBe(25);
-    }
+    expect(result.data).toMatchObject({ page: 3, limit: 25 });
   });
 
   it('should fail for limit exceeding 100', () => {
@@ -226,7 +220,7 @@ describe('PaginationSchema', () => {
     const result = PaginationSchema.safeParse({ offset: '20' });
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.offset).toBe(20);
+    expect(result.data).toMatchObject({ offset: 20 });
   });
 
   it('should fail for negative offset', () => {
@@ -237,7 +231,7 @@ describe('PaginationSchema', () => {
     const result = PaginationSchema.safeParse({ limit: 100 });
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.limit).toBe(100);
+    expect(result.data).toMatchObject({ limit: 100 });
   });
 });
 
@@ -255,19 +249,19 @@ describe('SearchQuerySchema', () => {
     });
 
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.page).toBe(2);
-      expect(result.data.search).toBe('test');
-      expect(result.data.sortBy).toBe('name');
-      expect(result.data.sortOrder).toBe('desc');
-    }
+    expect(result.data).toMatchObject({
+      page: 2,
+      search: 'test',
+      sortBy: 'name',
+      sortOrder: 'desc',
+    });
   });
 
   it('should default sortOrder to "asc"', () => {
     const result = SearchQuerySchema.safeParse({});
 
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.sortOrder).toBe('asc');
+    expect(result.data).toMatchObject({ sortOrder: 'asc' });
   });
 
   it('should fail for invalid sortOrder', () => {
