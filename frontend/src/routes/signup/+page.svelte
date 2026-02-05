@@ -19,6 +19,10 @@
     showErrorAlert,
     showInfoAlert,
   } from '$lib/stores/toast';
+  import {
+    analyzePassword,
+    type PasswordStrengthResult,
+  } from '$lib/utils/password-strength';
 
   // Page-specific CSS
   import '../../styles/signup.css';
@@ -42,8 +46,6 @@
     passwordsMatch,
     isPhoneValid,
     isPasswordValid,
-    getPasswordStrengthScore,
-    getPasswordStrengthLabel,
   } from './_lib/validators';
 
   import type { Country, Plan } from './_lib/types';
@@ -73,6 +75,10 @@
   let showPassword = $state(false);
   let showPasswordConfirm = $state(false);
 
+  // Password Strength
+  let passwordStrength = $state<PasswordStrengthResult | null>(null);
+  let strengthLoading = $state(false);
+
   // Plan
   let selectedPlan = $state(DEFAULT_PLAN.value);
   let selectedPlanName = $state(DEFAULT_PLAN.name);
@@ -99,10 +105,6 @@
   const emailMatch = $derived(emailsMatch(email, emailConfirm));
   const passwordMatch = $derived(passwordsMatch(password, passwordConfirm));
   const phoneValid = $derived(isPhoneValid(phone));
-  const passwordStrengthScore = $derived(getPasswordStrengthScore(password));
-  const passwordStrengthLabel = $derived(
-    getPasswordStrengthLabel(passwordStrengthScore),
-  );
 
   const isFormValid = $derived(
     companyName !== '' &&
@@ -158,6 +160,32 @@
   function handlePhoneInput(): void {
     phoneError =
       phone !== '' && !phoneValid ? ERROR_MESSAGES.phoneInvalid : null;
+  }
+
+  /** Minimum characters before running zxcvbn analysis */
+  const MIN_STRENGTH_CHECK = 4;
+
+  async function checkPassword(): Promise<void> {
+    if (password.length < MIN_STRENGTH_CHECK) {
+      passwordStrength = null;
+      return;
+    }
+
+    strengthLoading = true;
+    try {
+      const userInputs = [email, firstName, lastName, companyName].filter(
+        Boolean,
+      );
+      passwordStrength = await analyzePassword(password, userInputs);
+    } catch {
+      // Ignore strength check errors
+    } finally {
+      strengthLoading = false;
+    }
+  }
+
+  async function handlePasswordInput(): Promise<void> {
+    await checkPassword();
   }
 
   function handlePasswordConfirmInput(): void {
@@ -540,6 +568,7 @@
             placeholder="Min. 12 Zeichen"
             autocomplete="new-password"
             bind:value={password}
+            oninput={handlePasswordInput}
             disabled={loading}
           />
           <button
@@ -556,18 +585,47 @@
       </div>
 
       <!-- Password Strength Indicator -->
-      {#if password.length > 0}
-        <div class="password-strength-container">
+      {#if passwordStrength !== null || strengthLoading}
+        <div
+          class="password-strength-container"
+          class:is-loading={strengthLoading}
+        >
           <div class="password-strength-meter">
             <div
               class="password-strength-bar"
-              data-score={passwordStrengthScore}
+              data-score={passwordStrength?.score ?? -1}
             ></div>
           </div>
-          <div class="password-strength-info">
-            <span class="password-strength-label">{passwordStrengthLabel}</span>
-          </div>
+          {#if passwordStrength !== null}
+            <div class="password-strength-info">
+              <span class="password-strength-label"
+                >{passwordStrength.label}</span
+              >
+              <span class="password-strength-time"
+                >{passwordStrength.crackTime}</span
+              >
+            </div>
+          {/if}
         </div>
+      {/if}
+
+      {#if passwordStrength !== null}
+        {@const warningText = passwordStrength.feedback.warning}
+        {@const suggestions = passwordStrength.feedback.suggestions}
+        {#if warningText !== '' || suggestions.length > 0}
+          <div class="password-feedback">
+            {#if warningText !== ''}
+              <span class="password-feedback-warning">{warningText}</span>
+            {/if}
+            {#if suggestions.length > 0}
+              <ul class="password-feedback-suggestions">
+                {#each suggestions as suggestion, i (i)}
+                  <li>{suggestion}</li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
       {/if}
 
       <div

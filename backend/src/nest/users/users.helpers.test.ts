@@ -1,11 +1,196 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  addDepartmentInfo,
+  addTeamInfo,
   buildUpdateFields,
   buildUserListWhereClause,
   isUniqueConstraintViolation,
   mapSortField,
+  toSafeUserResponse,
 } from './users.helpers.js';
+import type {
+  SafeUserResponse,
+  UserDepartmentRow,
+  UserRow,
+  UserTeamRow,
+} from './users.types.js';
+
+// =============================================================
+// Test Fixtures
+// =============================================================
+
+function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
+  return {
+    id: 1,
+    uuid: 'test-uuid-v7',
+    tenant_id: 10,
+    email: 'max@example.com',
+    password: 'hashed-secret',
+    role: 'employee',
+    username: 'maxm',
+    first_name: 'Max',
+    last_name: 'Mustermann',
+    is_active: 1,
+    last_login: null,
+    created_at: new Date('2025-01-01'),
+    updated_at: null,
+    phone: null,
+    address: null,
+    position: null,
+    employee_number: 'EMP001',
+    profile_picture: null,
+    emergency_contact: null,
+    date_of_birth: null,
+    has_full_access: 0,
+    ...overrides,
+  };
+}
+
+function makeEmptyResponse(): SafeUserResponse {
+  return {
+    id: 0,
+    uuid: '',
+    tenantId: 0,
+    email: '',
+    role: '',
+    username: '',
+    firstName: null,
+    lastName: null,
+    isActive: 0,
+    lastLogin: null,
+    createdAt: '',
+    updatedAt: null,
+    phone: null,
+    address: null,
+    position: null,
+    employeeNumber: null,
+    profilePicture: null,
+    emergencyContact: null,
+    dateOfBirth: null,
+    availabilityStatus: null,
+    availabilityStart: null,
+    availabilityEnd: null,
+    availabilityNotes: null,
+    hasFullAccess: null,
+  };
+}
+
+// =============================================================
+// toSafeUserResponse
+// =============================================================
+
+describe('toSafeUserResponse', () => {
+  it('strips password from output', () => {
+    const row = makeUserRow();
+    const result = toSafeUserResponse(row);
+
+    expect(result).not.toHaveProperty('password');
+  });
+
+  it('converts snake_case to camelCase', () => {
+    const row = makeUserRow();
+    const result = toSafeUserResponse(row);
+
+    expect(result.email).toBe('max@example.com');
+    expect(result.firstName).toBe('Max');
+    expect(result.lastName).toBe('Mustermann');
+    expect(result.employeeNumber).toBe('EMP001');
+  });
+
+  it('preserves is_active as number (not boolean)', () => {
+    const row = makeUserRow({ is_active: 3 });
+    const result = toSafeUserResponse(row);
+
+    expect(result.isActive).toBe(3);
+  });
+});
+
+// =============================================================
+// addDepartmentInfo
+// =============================================================
+
+describe('addDepartmentInfo', () => {
+  it('adds department IDs and names to response', () => {
+    const response = makeEmptyResponse();
+    const departments: UserDepartmentRow[] = [
+      {
+        user_id: 1,
+        department_id: 10,
+        department_name: 'Engineering',
+        is_primary: true,
+      },
+      {
+        user_id: 1,
+        department_id: 20,
+        department_name: 'QA',
+        is_primary: false,
+      },
+    ];
+
+    addDepartmentInfo(response, departments);
+
+    expect(response.departmentIds).toEqual([10, 20]);
+    expect(response.departmentNames).toEqual(['Engineering', 'QA']);
+  });
+
+  it('handles empty departments array', () => {
+    const response = makeEmptyResponse();
+    addDepartmentInfo(response, []);
+
+    expect(response.departmentIds).toEqual([]);
+    expect(response.departmentNames).toEqual([]);
+  });
+});
+
+// =============================================================
+// addTeamInfo
+// =============================================================
+
+describe('addTeamInfo', () => {
+  it('adds team IDs, names, and inheritance from primary team', () => {
+    const response = makeEmptyResponse();
+    const teams: UserTeamRow[] = [
+      {
+        user_id: 1,
+        team_id: 100,
+        team_name: 'Alpha',
+        team_department_id: 10,
+        team_department_name: 'Engineering',
+        team_area_id: 5,
+        team_area_name: 'Produktion',
+      },
+      {
+        user_id: 1,
+        team_id: 200,
+        team_name: 'Beta',
+        team_department_id: 20,
+        team_department_name: 'QA',
+        team_area_id: null,
+        team_area_name: null,
+      },
+    ];
+
+    addTeamInfo(response, teams);
+
+    expect(response.teamIds).toEqual([100, 200]);
+    expect(response.teamNames).toEqual(['Alpha', 'Beta']);
+    // Inheritance from first (primary) team
+    expect(response.teamDepartmentId).toBe(10);
+    expect(response.teamDepartmentName).toBe('Engineering');
+    expect(response.teamAreaId).toBe(5);
+    expect(response.teamAreaName).toBe('Produktion');
+  });
+
+  it('does not set inheritance fields for empty teams', () => {
+    const response = makeEmptyResponse();
+    addTeamInfo(response, []);
+
+    expect(response.teamIds).toEqual([]);
+    expect(response.teamNames).toEqual([]);
+    expect(response.teamDepartmentId).toBeUndefined();
+  });
+});
 
 // =============================================================
 // mapSortField (SQL injection prevention)
