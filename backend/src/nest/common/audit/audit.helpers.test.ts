@@ -41,13 +41,11 @@ describe('sanitizeData', () => {
     expect(result?.['SSN']).toBe('[REDACTED]');
   });
 
-  it('should NOT redact camelCase keys that only exist as camelCase in SENSITIVE_FIELDS', () => {
-    // "accessToken".toLowerCase() = "accesstoken" but SENSITIVE_FIELDS has "accessToken" not "accesstoken"
-    // This is a known limitation: Array.includes is case-sensitive, so camelCase entries
-    // in SENSITIVE_FIELDS only match their exact casing, not the lowercased key.
+  it('should redact camelCase keys via toLowerCase matching', () => {
+    // "accessToken".toLowerCase() = "accesstoken" → matches "accesstoken" in SENSITIVE_FIELDS
     const result = sanitizeData({ accessToken: 'token123' });
 
-    expect(result?.['accessToken']).toBe('token123');
+    expect(result?.['accessToken']).toBe('[REDACTED]');
   });
 
   it('should recursively sanitize nested objects', () => {

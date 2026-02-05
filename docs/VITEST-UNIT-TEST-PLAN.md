@@ -752,14 +752,14 @@ Frontend: Svelte Check → ESLint → Prettier → Stylelint
 Docker:   Build Verification
 ```
 
-### Geplante Erweiterung: Unit-Tests als Merge-Gate
+### ✅ Implementiert: Unit-Tests als Merge-Gate (2026-02-05)
 
 ```yaml
-# .github/workflows/code-quality-checks.yml — Neuer Job
+# .github/workflows/code-quality-checks.yml — Job: unit-tests
 
 unit-tests:
   runs-on: ubuntu-latest
-  name: Unit Tests (Backend + Shared)
+  name: Unit Tests (Backend + Shared + Frontend)
   permissions:
     contents: read
 
@@ -780,11 +780,11 @@ unit-tests:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Run Unit Tests
-      run: pnpm test
+    - name: Generate SvelteKit types
+      run: cd frontend && pnpm exec svelte-kit sync
 
-    - name: Run Coverage Report
-      run: pnpm test:coverage
+    - name: Run Unit Tests with Coverage
+      run: pnpm vitest run --project unit --project frontend-unit --coverage
 
     - name: Upload Coverage Report
       if: always()
@@ -792,22 +792,31 @@ unit-tests:
       with:
         name: coverage-report
         path: coverage/
+        retention-days: 30
 ```
 
-### Branch Protection Rules (GitHub)
+**CI-Learnings:**
+
+- `svelte-kit sync` ist Pflicht in CI — `frontend/tsconfig.json` extends `.svelte-kit/tsconfig.json`
+- `*.guard.ts` aus Coverage excluden — Rollup kann TypeScript-Decorators nicht parsen
+- `*.test.ts` aus `.prettierignore` entfernt — sonst formatiert `validate:all` die Test-Files nicht, aber CI checkt sie
+
+### Branch Protection Rules (GitHub) — ✅ Konfiguriert
 
 ```
 Settings → Branches → master:
   ✅ Require status checks to pass
-    ✅ unit-tests (required)          ← NEU
-    ✅ backend-quality (required)
-    ✅ frontend-quality (required)
+    ✅ Unit Tests (Backend + Shared + Frontend) (required)
+    ✅ Backend & Shared (TypeScript, ESLint, Prettier) (required)
+    ✅ Frontend (Svelte Check, ESLint, Prettier, Stylelint) (required)
   ✅ Require branches to be up to date
 ```
 
-**Ergebnis:** Kein Merge in `master` ohne grüne Unit-Tests.
+**Ergebnis:** Kein Merge in `master` ohne grüne Unit-Tests + Quality Checks.
 
-### Wann CI/CD aktivieren?
+> **Hinweis:** Branch Protection erfordert GitHub Team Plan ($4/User/Monat) für private Repos.
+
+### CI/CD Meilensteine
 
 | Meilenstein                     | Aktion                                 | Status                                              |
 | ------------------------------- | -------------------------------------- | --------------------------------------------------- |
@@ -816,38 +825,42 @@ Settings → Branches → master:
 | Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht                                         |
 | Phase 4+                        | Coverage-Thresholds in CI aktivieren   | ✅ erreicht — **CI-Job implementiert (2026-02-05)** |
 
-**CI-Job `unit-tests` wurde in `code-quality-checks.yml` implementiert** (843 Tests: 824 unit + 19 frontend-unit). Branch Protection Rule muss noch auf GitHub aktiviert werden.
+**Status:** CI-Job `unit-tests` läuft in `code-quality-checks.yml` (843 Tests: 824 unit + 19 frontend-unit). Branch Protection Rule auf GitHub konfiguriert.
 
 ---
 
-## 8. Coverage-Ziele (Langfrist)
+## 8. Coverage-Ziele
 
-### Phasen-Ziele
+### Aktueller Stand (2026-02-05)
 
-| Phase | Was                              | Lines (Ziel)    | Branches | Functions | Status |
-| ----- | -------------------------------- | --------------- | -------- | --------- | ------ |
-| 0+1   | Fundament + PoC                  | ~2%             | ~2%      | ~3%       | ✅     |
-| 2     | Shared + Schemas                 | ~15%            | ~15%     | ~20%      | ✅     |
-| 3     | Helpers                          | ~35%            | ~30%     | ~40%      | ✅     |
-| 4     | Services (hier: Backend Helpers) | ~35%            | ~30%     | ~40%      | ✅     |
-| 5     | Services (Mocking)               | ~55%            | ~45%     | ~60%      |        |
-| 6     | Restliche                        | ~65%            | ~55%     | ~70%      |        |
-| 7     | Frontend                         | (eigene Config) | —        | —         |        |
-| 8     | DTOs                             | ~75%            | ~65%     | ~80%      |        |
+- **Coverage:** ~10% Lines, ~11% Branches, ~9% Functions, ~10% Statements
+- **Warum niedrig:** 16 Service-Dateien (der Großteil des Codes) haben 0% Coverage
+- **Gut getestet:** Helpers, Schemas, DTOs, Constants (50-100% pro File)
 
-### Langfrist-Ziel
+### Aktive Thresholds (in `vitest.config.ts`)
 
 ```typescript
-// vitest.config.ts — erst ab Phase 4 aktivieren
+// Floor-Werte — verhindern Regressions, nicht das Ziel
 coverage: {
   thresholds: {
-    lines: 70,
-    branches: 60,
-    functions: 75,
-    statements: 70,
+    lines: 10,
+    functions: 8,
+    branches: 10,
+    statements: 10,
   },
 }
 ```
+
+> **Wenn Coverage unter diese Werte fällt → CI wird rot → Merge blockiert.**
+
+### Stufenplan
+
+| Stufe | Wann | Lines | Functions | Aktion |
+| ----- | ---- | ----- | --------- | ------ |
+| **Jetzt** | Phase 8 done | **10%** | **8%** | ✅ Thresholds aktiviert (2026-02-05) |
+| Nächste | Phase 9 (Service-Tests) | **20%** | **15%** | Thresholds erhöhen nach mehr Tests |
+| Mittel | Phase 10+ | **35%** | **30%** | Weitere Services testen |
+| Langfrist | Alle Services getestet | **50%** | **50%** | Ziel-Wert |
 
 ---
 

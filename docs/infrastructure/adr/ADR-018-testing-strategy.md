@@ -94,7 +94,7 @@ Assixx hatte bis Anfang 2026 **keine automatisierten Tests**. API-Endpunkte wurd
 
 - **ESM-native** — Keine Workarounds, kein `--experimental-vm-modules`
 - **Single Tool** — Vitest fuer Unit UND Integration (Workspace-Projects)
-- **Schnell** — 222 Unit-Tests in 453ms, 175 API-Tests in 5.7s
+- **Schnell** — 824 Unit-Tests in ~4s, 19 Frontend-Tests in <1s, 175 API-Tests in ~6s
 - **Workspace-Trennung** — `--project unit` (schnell, isolated) vs. `--project api` (sequentiell, real HTTP)
 - **Pure-Function-First** — Kein DI-Container fuer Helpers/Schemas/Utils
 - **fetch()-basiert** — API-Tests nutzen native `fetch()`, keine Abstraktion (Bruno CLI, Supertest)
@@ -103,7 +103,7 @@ Assixx hatte bis Anfang 2026 **keine automatisierten Tests**. API-Endpunkte wurd
 
 **Cons:**
 
-- **Service-Mocking noetig** — Fuer Phase 5+ muessen DB-Calls manuell gemockt werden (`vi.mock()`)
+- **Service-Mocking nötig** — Fuer Phase 5+ muessen DB-Calls manuell gemockt werden (`vi.mock()`)
 - **Kein DI-Container-Validation** — Wir testen nicht ob NestJS-DI korrekt verdrahtet ist (akzeptables Risiko)
 - **Sequentielle API-Tests** — `maxWorkers: 1` ist langsamer als parallele Ausfuehrung (aber notwendig wegen Shared State)
 
@@ -134,8 +134,12 @@ Assixx hatte bis Anfang 2026 **keine automatisierten Tests**. API-Endpunkte wurd
                                 │
           ┌─────────────────────┴─────────────────────┐
           │           Unit Tests                       │  Tier 1: Pure Functions
-          │  8+ Dateien, 222+ Tests (Phase 0-4)       │  Kein Docker noetig
+          │  31 Dateien, 824 Tests (Phase 0-8)        │  Kein Docker nötig
           │  vitest --project unit                     │  Parallel, <1s
+          ├────────────────────────────────────────────┤
+          │           Frontend Unit Tests              │  Tier 1b: Frontend Utils
+          │  5 Dateien, 19 Tests (Phase 7)             │  Kein Docker nötig
+          │  vitest --project frontend-unit            │  Parallel, <1s
           └────────────────────────────────────────────┘
 ```
 
@@ -163,10 +167,11 @@ Phase 4: shifts.helpers.ts       — parseTime, calculateHours         ✅ 22 Te
          users.helpers.ts        — mapSortField, buildUpdateFields   ✅ 20 Tests
          kvp.helpers.ts          — isUuid, buildFilterConditions     ✅ 24 Tests
          audit.helpers.ts        — sanitizeData, singularize         ✅ 41 Tests
-Phase 5: Service-Logik (Mocking) — roles, rotation, features, auth   ← NAECHSTE
-Phase 6: Restliche Helpers       — blackboard, calendar, chat, etc.
-Phase 7: Frontend Utils          — password-strength, jwt, auth
-Phase 8: DTO-Validierungen       — Alle Module
+Phase 5: Service-Logik (Mocking) — roles, rotation, features, auth   ✅ 86 Tests
+Phase 6: Restliche Helpers       — blackboard, calendar, chat, etc.  ✅ 27 Tests
+Phase 7: Frontend Utils          — password-strength, jwt, auth      ✅ 19 Tests
+Phase 8: DTO-Validierungen       — Alle Module (13 Dateien)          ✅ 460 Tests
+Phase 9: Weitere Service-Tests   — Coverage von 10% → 30%+           ← Nächste
 ```
 
 **Was wird NICHT Unit-getestet:**
@@ -235,11 +240,26 @@ const res = await fetch(`${BASE_URL}/logs/export?format=json...`);
 ### Vitest Config (Workspace-Projects)
 
 ```typescript
-// vitest.config.ts
+// vitest.config.ts — 3 Projects
 export default defineConfig({
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['backend/src/**/*.ts', 'shared/src/**/*.ts'],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.module.ts',
+        '**/*.controller.ts',
+        '**/*.guard.ts',
+        '**/main.ts',
+        '**/index.ts',
+        '**/types/**',
+      ],
+      thresholds: { lines: 10, functions: 8, branches: 10, statements: 10 },
+    },
     projects: [
-      // Tier 1: Unit Tests
+      // Tier 1: Unit Tests (backend + shared)
       {
         test: {
           name: 'unit',
@@ -248,7 +268,16 @@ export default defineConfig({
           setupFiles: ['./vitest.setup.ts'],
         },
       },
-      // Tier 2: API Integration Tests
+      // Tier 1b: Frontend Unit Tests (pure utils)
+      {
+        test: {
+          name: 'frontend-unit',
+          include: ['frontend/src/**/*.{test,spec}.ts'],
+          testTimeout: 10_000,
+          setupFiles: ['./vitest.frontend-setup.ts'],
+        },
+      },
+      // Tier 2: API Integration Tests (real HTTP gegen Docker)
       {
         test: {
           name: 'api',
@@ -265,62 +294,116 @@ export default defineConfig({
 });
 ```
 
-### npm Scripts
+### Alle Test-Befehle (Quick Reference)
 
-| Script               | Command                     | Zweck                               |
-| -------------------- | --------------------------- | ----------------------------------- |
-| `pnpm test`          | `vitest run`                | Alle Tests (Unit + API)             |
-| `pnpm test:unit`     | `vitest run --project unit` | Nur Unit-Tests (kein Docker noetig) |
-| `pnpm test:api`      | `vitest run --project api`  | Nur API-Tests (Docker erforderlich) |
-| `pnpm test:watch`    | `vitest`                    | Watch-Mode                          |
-| `pnpm test:coverage` | `vitest run --coverage`     | Coverage-Report                     |
-| `pnpm test:ui`       | `vitest --ui --watch`       | Browser-UI auf Port 5175            |
+```bash
+# ── Alle Tests ────────────────────────────────────────────────
+pnpm test                                           # Alle 3 Projects (unit + frontend-unit + api)
+pnpm test -- --reporter=verbose                     # Mit Details
+
+# ── Backend Unit Tests ────────────────────────────────────────
+pnpm test --project unit                            # 824 Tests (~4s, kein Docker)
+pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Einzelne Datei
+
+# ── Frontend Unit Tests ───────────────────────────────────────
+pnpm test --project frontend-unit                   # 19 Tests (<1s, kein Docker)
+
+# ── API Integration Tests ────────────────────────────────────
+pnpm test --project api                             # 175 Tests (~6s, Docker MUSS laufen!)
+pnpm vitest run --project api -- api-tests/vitest/calendar.api.test.ts  # Einzelnes Modul
+
+# ── Coverage ──────────────────────────────────────────────────
+pnpm test:coverage                                  # Alle Projects mit Coverage
+pnpm vitest run --project unit --project frontend-unit --coverage  # Nur CI-relevante (ohne api)
+
+# ── CI-Befehl (identisch mit GitHub Actions) ──────────────────
+cd frontend && pnpm exec svelte-kit sync && cd ..   # SvelteKit Types generieren
+pnpm vitest run --project unit --project frontend-unit --coverage
+
+# ── Watch Mode (Entwicklung) ─────────────────────────────────
+pnpm test:watch                                     # Alle Projects im Watch-Mode
+pnpm vitest --project unit                          # Nur Unit Tests watchen
+
+# ── Browser UI ────────────────────────────────────────────────
+pnpm test:ui                                        # Vitest UI auf http://localhost:5175
+
+# ── Linting (kein Vitest, aber relevant) ──────────────────────
+docker exec assixx-backend pnpm exec eslint backend/src  # Backend ESLint
+cd frontend && pnpm run lint                             # Frontend ESLint
+pnpm run validate:all                                    # ALLES auf einmal
+```
 
 ### Phase-basierter Rollout
 
 ```
-Phase 0: Config & Infrastruktur    ✅ DONE   6/6 Checks
-Phase 1: Proof of Concept          ✅ DONE   16 Tests   (fieldMapper)
-Phase 2: Shared Package            ✅ DONE   36 Tests   (date-helpers, is-active)
-Phase 3: Zod Schemas               ✅ DONE   63 Tests   (common.schema)
-Phase 4: Backend Helpers            ✅ DONE  107 Tests   (shifts, users, kvp, audit)
+Phase 0: Config & Infrastruktur    ✅ DONE     6/6 Checks
+Phase 1: Proof of Concept          ✅ DONE    16 Tests   (fieldMapper)
+Phase 2: Shared Package            ✅ DONE    36 Tests   (date-helpers, is-active)
+Phase 3: Zod Schemas               ✅ DONE    63 Tests   (common.schema)
+Phase 4: Backend Helpers            ✅ DONE   107 Tests   (shifts, users, kvp, audit)
+Phase 5: Services (Mocking)         ✅ DONE    86 Tests   (roles, rotation, features, auth)
+Phase 6: Restliche Helpers          ✅ DONE    27 Tests   (blackboard, calendar, chat, etc.)
+Phase 7: Frontend Utils             ✅ DONE    19 Tests   (password-strength, auth, jwt)
+Phase 8: DTO-Validierungen          ✅ DONE   460 Tests   (13 Module, 13 Dateien)
 ──────────────────────────────────────────────────────────────────────
-Phase 5: Services (Mocking)         PENDING   ~80-100    (roles, rotation, features, auth)
-Phase 6: Restliche Helpers          PENDING   ~60-80     (blackboard, calendar, chat, etc.)
-Phase 7: Frontend Utils             PENDING   ~40-50     (password-strength, auth, jwt)
-Phase 8: DTO-Validierungen          PENDING  ~100-120    (alle Module)
+TOTAL: 824 Unit + 19 Frontend + 175 API = 1018 Tests (54 Dateien)
+──────────────────────────────────────────────────────────────────────
+Phase 9: Weitere Service-Tests      PENDING              (Coverage 10% → 30%+)
 ```
 
-**Regel:** Phase N+1 startet erst wenn Phase N 100% gruen ist. Kein Vorspringen.
+### Coverage-Thresholds (aktiv seit 2026-02-05)
 
-### Coverage-Ziele
+| Metrik     | Aktuell (~Phase 8) | Threshold (Floor) | Langfrist-Ziel |
+| ---------- | ------------------ | ----------------- | -------------- |
+| Lines      | ~10%               | **10%**           | 50%            |
+| Branches   | ~11%               | **10%**           | 50%            |
+| Functions  | ~9%                | **8%**            | 50%            |
+| Statements | ~10%               | **10%**           | 50%            |
 
-| Metrik     | Phase 4 (aktuell) | Langfrist-Ziel (Phase 8) |
-| ---------- | ----------------- | ------------------------ |
-| Lines      | ~35%              | 70%                      |
-| Branches   | ~30%              | 60%                      |
-| Functions  | ~40%              | 75%                      |
-| Statements | ~35%              | 70%                      |
+> **Warum niedrig trotz 824 Tests?** Die Tests decken Helpers, Schemas und DTOs gut ab (50-100%), aber die 16 Service-Dateien (der Grossteil des Codes) haben 0% Coverage.
 
-Coverage-Thresholds werden erst ab Phase 5 in CI aktiviert.
-
-### CI/CD Integration (geplant)
+### CI/CD Integration (✅ implementiert 2026-02-05)
 
 ```yaml
-# .github/workflows/code-quality-checks.yml — Neuer Job
+# .github/workflows/code-quality-checks.yml — Job: unit-tests
 unit-tests:
   runs-on: ubuntu-latest
+  name: Unit Tests (Backend + Shared + Frontend)
   steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v2
+      with: { version: 10.28.2 }
     - uses: actions/setup-node@v5
+      with: { node-version: '24', cache: 'pnpm' }
     - run: pnpm install --frozen-lockfile
-    - run: pnpm test:unit # Nur Unit-Tests (kein Docker in CI)
-    - run: pnpm test:coverage
+    - run: cd frontend && pnpm exec svelte-kit sync # SvelteKit Types!
+    - run: pnpm vitest run --project unit --project frontend-unit --coverage
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: coverage-report, path: coverage/, retention-days: 30 }
 ```
 
-**Wichtig:** API-Integration-Tests (`test:api`) laufen NICHT in CI — sie brauchen Docker mit DB/Redis.
-Unit-Tests (`test:unit`) laufen in CI — sie brauchen nur Node.js.
+**CI-Learnings:**
+
+- `svelte-kit sync` ist **Pflicht** — `frontend/tsconfig.json` extends `.svelte-kit/tsconfig.json`
+- `*.guard.ts` aus Coverage excluden — Rollup kann TypeScript-Decorators nicht parsen
+- `*.test.ts` aus `.prettierignore` entfernt — sonst formatiert `validate:all` Test-Files nicht, aber CI checkt sie
+
+**Wichtig:** API-Integration-Tests (`--project api`) laufen NICHT in CI — sie brauchen Docker mit DB/Redis.
+Unit + Frontend-Tests (`--project unit --project frontend-unit`) laufen in CI — sie brauchen nur Node.js.
+
+### Branch Protection (GitHub, ✅ konfiguriert)
+
+```
+Settings → Branches → master:
+  ✅ Require status checks to pass
+    ✅ Unit Tests (Backend + Shared + Frontend)
+    ✅ Backend & Shared (TypeScript, ESLint, Prettier)
+    ✅ Frontend (Svelte Check, ESLint, Prettier, Stylelint)
+  ✅ Require branches to be up to date
+```
+
+> Erfordert GitHub Team Plan ($4/User/Monat) fuer private Repos.
 
 ---
 
@@ -330,13 +413,15 @@ Unit-Tests (`test:unit`) laufen in CI — sie brauchen nur Node.js.
 
 - **Single Tool** — Vitest fuer Unit + Integration, keine Tool-Fragmentierung
 - **ESM-native** — Keine Workarounds, keine `--experimental-vm-modules` Flags
-- **Schnell** — 222 Unit-Tests in <500ms, 175 API-Tests in ~6s
+- **Schnell** — 824 Unit-Tests in ~4s, 175 API-Tests in ~6s, 19 Frontend-Tests in <1s
 - **Deterministisch** — `vi.useFakeTimers()` fuer Dates, `flushThrottleKeys()` fuer Rate-Limiting
 - **Workspace-Trennung** — Unit-Tests (CI-tauglich, kein Docker) vs. API-Tests (Docker required)
 - **Bruno CLI eliminiert** — 329 npm-Packages entfernt, kein State-Management via `bru.setVar()`
 - **Tests als Dokumentation** — Edge Cases (is_active Multi-State, Password NIST-Regeln) werden durch Tests sichtbar
-- **Bugs durch Tests entdeckt** — EmailSchema Trim-Order-Bug, sanitizeData camelCase-Bug (Phase 3-4)
-- **Regressionsschutz** — 397 automatisierte Assertions (222 Unit + 175 API)
+- **Bugs durch Tests entdeckt und gefixt** — sanitizeData camelCase-Bug (SENSITIVE_FIELDS lowercase-Normalisierung, gefixt 2026-02-05), EmailSchema Trim-Order dokumentiert
+- **Regressionsschutz** — 1018 automatisierte Tests (824 Unit + 19 Frontend + 175 API)
+- **CI als Merge-Gate** — Unit-Tests + Coverage-Thresholds blockieren Merge bei Failure
+- **Coverage-Floor** — Thresholds verhindern dass Coverage schleichend sinkt
 
 ### Negative
 
@@ -394,4 +479,4 @@ Unit-Tests (`test:unit`) laufen in CI — sie brauchen nur Node.js.
 
 ---
 
-_Last Updated: 2026-02-04 (v1 - Initial Decision)_
+_Last Updated: 2026-02-05 (v2 - Phase 8 complete, CI implemented, Coverage Thresholds active)_

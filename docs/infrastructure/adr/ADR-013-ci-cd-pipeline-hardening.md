@@ -2,8 +2,8 @@
 
 | Metadata                | Value                                                     |
 | ----------------------- | --------------------------------------------------------- |
-| **Status**              | Accepted                                                  |
-| **Date**                | 2026-01-26                                                |
+| **Status**              | Amended                                                   |
+| **Date**                | 2026-01-26 (amended 2026-02-05)                           |
 | **Decision Makers**     | SCS Technik                                               |
 | **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml |
 
@@ -56,14 +56,25 @@ Der bestehende Backend-Job wurde zu `backend-quality` umbenannt. Beide Jobs lauf
 
 Trivy wurde in zwei Steps aufgeteilt:
 
-| Step                               | Format | Severity               | exit-code | Blockiert PR? |
-| ---------------------------------- | ------ | ---------------------- | --------- | ------------- |
-| Check for critical vulnerabilities | table  | CRITICAL               | 1         | **Ja**        |
-| Generate vulnerability report      | sarif  | CRITICAL, HIGH, MEDIUM | -         | Nein          |
+| Step                                                   | Format | Severity     | exit-code | Blockiert PR? |
+| ------------------------------------------------------ | ------ | ------------ | --------- | ------------- |
+| Check for critical vulnerabilities (blocks PR)         | table  | CRITICAL     | 1         | **Ja**        |
+| Report HIGH and MEDIUM vulnerabilities (informational) | table  | HIGH, MEDIUM | 0         | Nein          |
 
 - CRITICAL blockiert den PR
-- HIGH/MEDIUM sind sichtbar im GitHub Security Tab, blockieren aber nicht (Docker-Base-Images haben fast immer HIGH-Findings die nicht actionable sind)
-- SARIF-Upload läuft mit `if: always()` und `continue-on-error: true` (GitHub-Upload kann aus GitHub-Gründen fehlschlagen)
+- HIGH/MEDIUM sind informativ in den CI-Logs sichtbar, blockieren aber nicht (Docker-Base-Images haben fast immer HIGH-Findings die nicht actionable sind)
+- Beide Steps nutzen `scanners: "vuln"` -- Secret-Scanning ist deaktiviert (ESLint `no-secrets` Plugin deckt das bereits ab)
+- GHCR-Login ist erforderlich, da der Trivy-Job auf einem eigenen Runner läuft und das private Image pullen muss
+
+**Amendment 2026-02-05:** SARIF-Upload und GitHub Security Tab Integration entfernt. GitHub Code Security / Advanced Security ist für das Repository nicht aktiviert (kostenpflichtiges Feature für private Repos). Table-Format in CI-Logs ist ausreichend für die Sichtbarkeit von HIGH/MEDIUM-Findings. Außerdem `sleep 30` Workaround entfernt -- `needs: build-and-push-image` garantiert bereits die Image-Verfügbarkeit.
+
+### Fix 5: CodeQL-Workflow entfernt (Amendment 2026-02-05)
+
+`codeql-analysis.yml` und `codeql-config.yml` wurden gelöscht:
+
+- CodeQL SARIF-Upload erfordert GitHub Code Security / Advanced Security -- nicht aktiviert für dieses Repository
+- ESLint Security-Plugins (`eslint-plugin-security`, `eslint-plugin-no-secrets`, `eslint-plugin-no-unsanitized`) decken die relevanten Findings bereits ab
+- CodeQL-Scan lief erfolgreich (731/731 TS-Dateien), aber das Ergebnis konnte nicht hochgeladen werden → CI schlug fehl
 
 ### Fix 3: Cache re-aktiviert
 
@@ -97,7 +108,16 @@ Gewählt: Zwei Jobs. pnpm-Cache via `actions/setup-node` macht das Install schne
 | **CRITICAL only (gewählt)** | Wenig False Positives | HIGH-Vulns blockieren nicht                   |
 | CRITICAL + HIGH             | Strengere Sicherheit  | Base-Image-Findings blockieren oft fälschlich |
 
-Gewählt: CRITICAL only als Gate. HIGH ist sichtbar im Security Tab, blockiert aber nicht. Kann bei Bedarf auf CRITICAL+HIGH verschärft werden.
+Gewählt: CRITICAL only als Gate. HIGH ist informativ in den CI-Logs sichtbar, blockiert aber nicht. Kann bei Bedarf auf CRITICAL+HIGH verschärft werden.
+
+### Trivy: SARIF-Upload vs. Table-Output (Amendment 2026-02-05)
+
+| Option                         | Pro                               | Contra                                    |
+| ------------------------------ | --------------------------------- | ----------------------------------------- |
+| SARIF + Security Tab           | GitHub-native Darstellung         | Erfordert Code Security (kostenpflichtig) |
+| **Table in CI-Logs (gewählt)** | Keine Zusatzkosten, direkt lesbar | Kein zentrales Dashboard, nur in Run-Logs |
+
+Gewählt: Table-Format. Code Security ist nicht aktiviert und für den aktuellen Bedarf nicht gerechtfertigt. Bei Aktivierung von Code Security kann SARIF wieder hinzugefügt werden.
 
 ### API-Tests in CI: Bruno vs. Alternativen
 
@@ -120,6 +140,8 @@ Bewusst nicht umgesetzt. Die Entscheidung ob Bruno, OpenAPI/Swagger, oder Postma
 - Zwei parallele Jobs bedeuten doppeltes `pnpm install` (durch Cache mitigiert)
 - CRITICAL-only Gate könnte zu permissiv sein (bewusste Trade-off-Entscheidung)
 - CI-Laufzeit steigt leicht durch zweiten Trivy-Scan (~30s)
+- Kein GitHub Security Tab für Trivy-Findings (Code Security nicht aktiviert) -- Findings nur in CI-Logs sichtbar
+- Kein CodeQL -- ESLint-Plugins sind weniger umfassend, aber für unseren Stack ausreichend
 
 ---
 

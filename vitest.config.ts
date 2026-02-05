@@ -43,6 +43,12 @@ export default defineConfig({
         'backend/src/**/index.ts', // Barrel exports
         'backend/src/types/**', // Pure type definitions
       ],
+      thresholds: {
+        lines: 10,
+        functions: 8,
+        branches: 10,
+        statements: 10,
+      },
     },
 
     reporters: ['default'],

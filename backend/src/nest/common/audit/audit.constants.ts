@@ -30,35 +30,37 @@ export type AuditStatus = 'success' | 'failure';
 /**
  * Sensitive fields that should NEVER be logged (OWASP, GDPR compliance).
  * These are removed from request bodies before storing in audit trail.
+ *
+ * ALL entries MUST be lowercase — sanitizeData() compares via key.toLowerCase().
  */
 export const SENSITIVE_FIELDS: readonly string[] = [
   // Authentication & Security
   'password',
-  'passwordHash',
+  'passwordhash',
   'password_hash',
-  'currentPassword',
+  'currentpassword',
   'current_password',
-  'newPassword',
+  'newpassword',
   'new_password',
-  'confirmPassword',
+  'confirmpassword',
   'confirm_password',
   'token',
-  'accessToken',
+  'accesstoken',
   'access_token',
-  'refreshToken',
+  'refreshtoken',
   'refresh_token',
   'secret',
-  'apiKey',
+  'apikey',
   'api_key',
-  'privateKey',
+  'privatekey',
   'private_key',
   // Personal Identifiable Information (GDPR)
   'ssn',
-  'socialSecurity',
+  'socialsecurity',
   'social_security',
-  'creditCard',
+  'creditcard',
   'credit_card',
-  'cardNumber',
+  'cardnumber',
   'card_number',
   'cvv',
   'pin',
