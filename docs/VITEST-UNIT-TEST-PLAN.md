@@ -1,6 +1,6 @@
 # Vitest Unit Test Plan — Assixx
 
-**Version:** 1.5.0 | **Branch:** `unit-test` | **Erstellt:** 2026-02-04 | **Letztes Update:** 2026-02-05
+**Version:** 1.6.0 | **Branch:** `unit-test` | **Erstellt:** 2026-02-04 | **Letztes Update:** 2026-02-06
 
 > **Philosophie:** Fundament zuerst. Peu à peu. Wenn heute die Config stimmt und EIN grüner Test läuft — war der Tag gut.
 
@@ -29,10 +29,10 @@
 | Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                        |
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                           |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                   |
-| Test-Dateien       | **109 Dateien, 1674 Tests** — Phase 0-11 ✅ COMPLETE                  |
+| Test-Dateien       | **109 Dateien, 1858 Tests** — Phase 0-12 ✅ COMPLETE                  |
 | Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                            |
 | CI/CD              | `code-quality-checks.yml` — Unit-Tests als Merge-Gate ✅ (2026-02-05) |
-| Coverage           | **52.84% Lines, 48.30% Branches, 54.80% Functions** — v8 Provider     |
+| Coverage           | **58.22% Lines, 54.50% Branches, 59.84% Functions** — v8 Provider     |
 
 ### npm Scripts (vorhanden)
 
@@ -97,16 +97,16 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  unit  backend/src/nest/shifts/rotation-generator.service.test.ts                 ( 6 tests)
  ✓  unit  backend/src/nest/audit-trail/audit-trail.service.test.ts                   (30 tests)
  ✓  unit  backend/src/nest/shifts/rotation-pattern.service.test.ts                   (17 tests)
- ✓  unit  backend/src/nest/kvp/kvp.service.test.ts                                   (12 tests)
+ ✓  unit  backend/src/nest/kvp/kvp.service.test.ts                                   (50 tests)
  ✓  unit  backend/src/nest/documents/documents.service.test.ts                       (19 tests)
- ✓  unit  backend/src/nest/surveys/surveys.service.test.ts                           (12 tests)
+ ✓  unit  backend/src/nest/surveys/surveys.service.test.ts                           (64 tests)
 
  === SERVICES Phase 10 ===
  ✓  unit  backend/src/nest/reports/reports.service.test.ts                           (16 tests)
  ✓  unit  backend/src/nest/settings/settings.service.test.ts                         (38 tests)
  ✓  unit  backend/src/nest/plans/plans.service.test.ts                               (12 tests)
- ✓  unit  backend/src/nest/shifts/shifts.service.test.ts                             (11 tests)
- ✓  unit  backend/src/nest/blackboard/blackboard-entries.service.test.ts             (10 tests)
+ ✓  unit  backend/src/nest/shifts/shifts.service.test.ts                             (47 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-entries.service.test.ts             (68 tests)
  ✓  unit  backend/src/nest/users/user-availability.service.test.ts                   (24 tests)
  ✓  unit  backend/src/nest/notifications/notifications.service.test.ts               (14 tests)
  ✓  unit  backend/src/nest/calendar/calendar.service.test.ts                         (18 tests)
@@ -174,11 +174,11 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  frontend-unit  frontend/src/lib/utils/jwt-utils.test.ts                          ( 3 tests)
 
  Test Files  109 passed (109)
-       Tests  1674 passed (1674)
+       Tests  1858 passed (1858)
     Duration  ~8.4s
 ```
 
-Phase 0-11 COMPLETE. 1655 Unit + 19 Frontend = 1674 Tests grün.
+Phase 0-12 COMPLETE. 1839 Unit + 19 Frontend = 1858 Tests grün.
 
 ---
 
@@ -636,9 +636,9 @@ Alle Zod-DTOs in `backend/src/nest/*/dto/` testen: valid→pass, missing require
 | 7   | `rotation-generator.service.ts` | 621   | 6     | Schichttyp-Algorithmus, Weekend-Skip   | ✅     |
 | 8   | `audit-trail.service.ts`        | 824   | 30    | CSV, row mapper, access control, stats | ✅     |
 | 9   | `rotation-pattern.service.ts`   | 332   | 17    | Config parsing, date fmt, UUID, CRUD   | ✅     |
-| 10  | `kvp.service.ts`                | 915   | 12    | Dashboard, permissions, visibility     | ✅     |
+| 10  | `kvp.service.ts`                | 915   | 50    | Dashboard, permissions, visibility (P12) | ✅     |
 | 11  | `documents.service.ts`          | 844   | 19    | Access ctrl, stats, scope filter, UUID | ✅     |
-| 12  | `surveys.service.ts`            | 774   | 12    | parseIdParam, UUID, templates, CRUD    | ✅     |
+| 12  | `surveys.service.ts`            | 774   | 64    | parseIdParam, UUID, templates, CRUD (P12) | ✅     |
 
 **Tatsächlich Phase 9 Gesamt:** 145 Tests in 12 Dateien ✅ COMPLETE
 
@@ -698,8 +698,8 @@ await vi.waitFor(() => { expect(mockDb.query).toHaveBeenCalled(); });
 | 1   | `reports.service.ts`            | 512   | 16    | DB-mocked, pure formatters            | ✅     |
 | 2   | `settings.service.ts`           | 487   | 38    | DB-mocked, validation, CRUD           | ✅     |
 | 3   | `plans.service.ts`              | 404   | 12    | DB-mocked, mapper, delegation         | ✅     |
-| 4   | `shifts.service.ts`             | 725   | 11    | DB-mocked, schedule logic             | ✅     |
-| 5   | `blackboard-entries.service.ts` | 548   | 10    | DB-mocked, archive, access ctrl       | ✅     |
+| 4   | `shifts.service.ts`             | 725   | 47    | DB-mocked, schedule logic (Phase 12)  | ✅     |
+| 5   | `blackboard-entries.service.ts` | 548   | 68    | DB-mocked, archive, access ctrl (P12) | ✅     |
 | 6   | `user-availability.service.ts`  | 697   | 24    | Pure helpers + DB-mocked, validation  | ✅     |
 | 7   | `notifications.service.ts`      | 553   | 14    | DB-mocked + delegation to sub-svc     | ✅     |
 | 8   | `calendar.service.ts`           | 648   | 18    | Pure helpers + DB-mocked + delegation | ✅     |
@@ -890,6 +890,69 @@ vi.advanceTimersByTime(6000); // Advance past throttle window
 
 ---
 
+### Phase 12: Deep Coverage Push — Service Test Deepening
+
+> **Ziel:** Die 4 Services mit niedrigster Coverage × höchster LOC gezielt vertiefen. Coverage von ~53% auf ~58% heben. +184 neue Tests.
+
+**Strategie:** Target-Services identifiziert via Coverage-Report × LOC-Analyse. Jeder Service von ~10-15 Tests auf 47-68 Tests erweitert. Factory-Helpers und Mock-Chains für wiederverwendbare Test-Infrastruktur.
+
+| #   | Service                         | Tests vorher | Tests nachher | Delta | Typ                                       | Status |
+| --- | ------------------------------- | ------------ | ------------- | ----- | ----------------------------------------- | ------ |
+| 1   | `blackboard-entries.service.ts` | 10           | 68            | +58   | DB-mocked, visibility, org-level, archive | ✅     |
+| 2   | `surveys.service.ts`            | 12           | 64            | +52   | UUID, status workflow, validation, access  | ✅     |
+| 3   | `shifts.service.ts`             | 11           | 47            | +36   | Filters, CSV export, calendar, favorites  | ✅     |
+| 4   | `kvp.service.ts`                | 12           | 50            | +38   | Facade, daily limit, status perms, share  | ✅     |
+
+**Phase 12 Gesamt:** +184 Tests (45→229 in 4 Dateien) ✅ COMPLETE
+
+**Mocking-Patterns (Phase 12 — neue Varianten):**
+
+```typescript
+// Factory pattern with spread for consistent mock data:
+function createMockDbSuggestion(overrides?: Partial<DbSuggestion>): DbSuggestion {
+  return {
+    id: 1, tenant_id: 1, user_id: 5, title: 'Test',
+    status: 'new', is_shared: false, is_archived: false,
+    // ALL optional fields explicitly null:
+    category_id: null, uuid: null, description: null, ...
+    ...overrides,
+  };
+}
+
+// Reusable mock chain for facade methods (kvp.service.ts):
+function mockGetSuggestionByIdChain(mockDb: MockDb, suggestion: DbSuggestion): void {
+  // getSuggestionById internally calls getExtendedUserOrgInfo (1 query) + detail query (1 query)
+  mockDb.queryOne.mockResolvedValueOnce(TEAM_LEAD_ORG_ROW);  // org info
+  mockDb.queryOne.mockResolvedValueOnce(suggestion);          // suggestion detail
+}
+
+// Static import mocking (kvp.service.ts uses uuid + eventBus):
+vi.mock('uuid', () => ({ v7: vi.fn(() => 'mock-uuid-v7') }));
+vi.mock('../../utils/eventBus.js', () => ({
+  eventBus: { emit: vi.fn() },
+}));
+```
+
+**Erkenntnisse Phase 12:**
+
+- **`createMockDbRow(overrides?)` Factory-Pattern:** Spread-basierte Factory vermeidet Wiederholung und stellt sicher, dass alle optionalen Felder `null` sind (nicht `undefined`).
+- **`mockGetSuggestionByIdChain()` Helper:** Wiederverwendbar für Facade-Methoden die intern `getSuggestionById` aufrufen (2 DB-Queries: org info + detail).
+- **Static Import Mocking:** `vi.mock('uuid')` und `vi.mock('../../utils/eventBus.js')` nötig für Module die diese auf Top-Level importieren.
+- **Blackboard visibility tests:** `not.toContain('AND e.org_level =')` statt `not.toContain('org_level')` — Base-SELECT enthält `e.org_level` als Spalte.
+- **Survey status workflow:** `validateSurveyUpdate` Conflict-Check gilt für ALLE Rollen — Root hat keine Ausnahme.
+
+### Phase 12: Definition of Done
+
+- [x] 4 Service-Testdateien vertieft (+184 Tests)
+- [x] Factory-Helpers erstellt (createMockDbSuggestion, createMockDbShift, createMockDbFavorite, createMockDbEntry)
+- [x] Mock-Chain-Helper erstellt (mockGetSuggestionByIdChain)
+- [x] Static Import Mocking (uuid, eventBus)
+- [x] Kein `.only` oder `.skip` im Code
+- [x] Coverage: **58.22% Lines, 54.50% Branches, 59.84% Functions, 58.06% Stmts**
+- [x] Coverage-Thresholds erhöht: 45% (Lines, Functions, Branches, Statements)
+
+---
+
 ### Phasen-Übersicht
 
 ```
@@ -905,10 +968,11 @@ Phase 8:  DTOs              Alle 13 Module (460 Tests, 13 Dateien)   ✅ DONE (4
 Phase 9:  Service Tests     12 Services, 145 Tests                    ✅ DONE (12/12 Services)
 Phase 10: Service Tests II  14 Services, 234 Tests                     ✅ DONE (14/14 Services)
 Phase 11: Service Tests III 47 Services, 452 Tests                      ✅ DONE (47/47 Services)
+Phase 12: Deep Coverage     4 Services, +184 Tests (deepened)            ✅ DONE (4/4 Services)
 ```
 
-**Gesamt: 1655 Unit Tests + 19 Frontend Tests in 109 Dateien, alle grün.**
-**Gesamtprojekt: 1849 Tests (1655 unit + 19 frontend + 175 API) in 127 Dateien.**
+**Gesamt: 1839 Unit Tests + 19 Frontend Tests in 109 Dateien, alle grün.**
+**Gesamtprojekt: 2033 Tests (1839 unit + 19 frontend + 175 API) in 127 Dateien.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -1202,17 +1266,18 @@ Settings → Branches → master:
 | Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht                                         |
 | Phase 4+                        | Coverage-Thresholds in CI aktivieren   | ✅ erreicht — **CI-Job implementiert (2026-02-05)** |
 
-**Status:** CI-Job `unit-tests` läuft in `code-quality-checks.yml` (1674 Tests: 1655 unit + 19 frontend-unit). Branch Protection Rule auf GitHub konfiguriert.
+**Status:** CI-Job `unit-tests` läuft in `code-quality-checks.yml` (1858 Tests: 1839 unit + 19 frontend-unit). Branch Protection Rule auf GitHub konfiguriert.
 
 ---
 
 ## 8. Coverage-Ziele
 
-### Aktueller Stand (2026-02-05)
+### Aktueller Stand (2026-02-06)
 
-- **Coverage:** **52.84% Lines, 48.30% Branches, 54.80% Functions, 52.87% Statements**
+- **Coverage:** **58.22% Lines, 54.50% Branches, 59.84% Functions, 58.06% Statements**
 - **Alle Services getestet:** Jeder Service im Projekt hat mindestens 1 Testdatei
 - **Gut getestet:** Helpers (100%), Schemas (93%), DTOs (100%), Constants (100%), 73 Services (50-100%)
+- **Deepened (Phase 12):** blackboard-entries (68), surveys (64), kvp (50), shifts (47)
 
 ### Aktive Thresholds (in `vitest.config.ts`)
 
@@ -1238,22 +1303,23 @@ coverage: {
 | **Phase 9**  | ✅ DONE (12/12 Services) | **~13%**   | **~11%**   | 145 Tests, 12 Services getestet      |
 | **Phase 10** | ✅ DONE (14/14 Services) | **28.3%**  | **28.9%**  | 234 Tests, Thresholds → 25%          |
 | **Phase 11** | ✅ DONE (47/47 Services) | **52.84%** | **54.80%** | 452 Tests, alle Services getestet    |
-| Phase 12+    | Thresholds erhöhen       | **60%**    | **60%**    | Tiefere Tests, Edge Cases, Guards    |
+| **Phase 12** | ✅ DONE (4 deepened)     | **58.22%** | **59.84%** | +184 Tests, 4 Services vertieft      |
+| Phase 13+    | Thresholds erhöhen       | **65%**    | **65%**    | Guards, Edge Cases, mehr Deepening   |
 | Langfrist    | Production-Ready         | **70%**    | **70%**    | Ziel-Wert                            |
 
 ---
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-11) |
+| Metrik              | Geplant  | Aktuell (Phase 0-12) |
 | ------------------- | -------- | -------------------- |
 | Testbare Dateien    | ~80+     | 109 getestet         |
-| Testbare Funktionen | ~400+    | ~1200+ getestet      |
-| Geschätzte Tests    | ~470-580 | **1674 geschrieben** |
-| Phasen              | 0 + 11+  | **Phase 11 ✅ DONE** |
-| Coverage            | 50%+     | **52.84% Lines**     |
+| Testbare Funktionen | ~400+    | ~1400+ getestet      |
+| Geschätzte Tests    | ~470-580 | **1858 geschrieben** |
+| Phasen              | 0 + 12+  | **Phase 12 ✅ DONE** |
+| Coverage            | 60%+     | **58.22% Lines**     |
 
-### Abgeschlossen: Phase 0-11
+### Abgeschlossen: Phase 0-12
 
 ```
 Phase 0:  vitest.config.ts komplett überarbeitet          ✅ 6/6 Checks
@@ -1268,15 +1334,16 @@ Phase 8:  DTO-Validierungen — 460 Tests, 13 Module         ✅ .safeParse(), r
 Phase 9:  Service Tests — 145 Tests, 12 Services             ✅ DONE (12/12 Services)
 Phase 10: Service Tests II — 234 Tests, 14 Services           ✅ DONE (14/14 Services)
 Phase 11: Service Tests III — 452 Tests, 47 Services            ✅ DONE (47/47 Services)
+Phase 12: Deep Coverage — +184 Tests, 4 Services vertieft       ✅ DONE (4/4 Services)
 ════════════════════════════════════════════════════════════════════════════
-          1655 Unit + 19 Frontend + 175 API = 1849 Tests.
+          1839 Unit + 19 Frontend + 175 API = 2033 Tests.
           127 Dateien. ~8.4s (unit). Alle grün.
-          Coverage: 52.84% Lines, 48.30% Branches, 54.80% Functions.
+          Coverage: 58.22% Lines, 54.50% Branches, 59.84% Functions.
 ```
 
 ### CI/CD — ✅ Implementiert (2026-02-05)
 
-- [x] `unit-tests` Job in `code-quality-checks.yml` (1655 unit + 19 frontend = 1674 tests)
+- [x] `unit-tests` Job in `code-quality-checks.yml` (1839 unit + 19 frontend = 1858 tests)
 - [x] Coverage-Thresholds aktiv (lines 45%, functions 45%, branches 45%, statements 45%)
 - [x] Branch Protection Rules auf GitHub konfiguriert
 - [x] `svelte-kit sync` vor Tests in CI (Pflicht)
@@ -1288,22 +1355,23 @@ Phase 11: Service Tests III — 452 Tests, 47 Services            ✅ DONE (47/4
 
 ---
 
-### ⚡ NÄCHSTER SCHRITT: Phase 12 — Coverage Push & Threshold Erhöhung
+### ⚡ NÄCHSTER SCHRITT: Phase 13 — Coverage Push & Guards
 
-**Phase 0-11 komplett. Alle Services getestet. Coverage: 52.84% Lines.**
+**Phase 0-12 komplett. Alle Services getestet + 4 vertieft. Coverage: 58.22% Lines.**
 
-**Optionen für Phase 12+:**
+**Optionen für Phase 13+:**
 
-| #     | Maßnahme                             | Impact                       | Aufwand  | Wann       |
-| ----- | ------------------------------------ | ---------------------------- | -------- | ---------- |
-| ~~1~~ | ~~Coverage-Thresholds → 45%~~        | ~~erledigt~~                 | ~~done~~ | ✅ done    |
-| 2     | Tiefere Service-Tests (2-3/Funktion) | Coverage auf 60%+ treiben    | Mittel   | Phase 12   |
-| 3     | Guard-Tests (NestJS Guards)          | Auth/RBAC-Logik absichern    | Mittel   | Phase 12   |
-| 4     | Controller-Tests (HTTP-Layer)        | Request/Response-Validierung | Hoch     | Phase 13   |
-| 5     | Frontend-Tests erweitern             | Svelte-Komponenten testen    | Hoch     | Phase 13   |
-| 6     | E2E-Tests (Playwright)               | User-Flows absichern         | Hoch     | **v0.4.0** |
+| #     | Maßnahme                              | Impact                       | Aufwand  | Wann       |
+| ----- | ------------------------------------- | ---------------------------- | -------- | ---------- |
+| ~~1~~ | ~~Coverage-Thresholds → 45%~~         | ~~erledigt~~                 | ~~done~~ | ✅ done    |
+| ~~2~~ | ~~Tiefere Service-Tests (4 deepened)~~| ~~+184 Tests, 58% Coverage~~ | ~~done~~ | ✅ Phase 12|
+| 3     | Guard-Tests (NestJS Guards)           | Auth/RBAC-Logik absichern    | Mittel   | Phase 13   |
+| 4     | Weitere Service-Deepening (5+ Svc)    | Coverage auf 65%+ treiben    | Mittel   | Phase 13   |
+| 5     | Controller-Tests (HTTP-Layer)         | Request/Response-Validierung | Hoch     | Phase 14   |
+| 6     | Frontend-Tests erweitern              | Svelte-Komponenten testen    | Hoch     | Phase 14   |
+| 7     | E2E-Tests (Playwright)                | User-Flows absichern         | Hoch     | **v0.4.0** |
 
-**Empfehlung:** Tiefere Service-Tests für kritische Business-Logik (Auth, Shifts, Documents, Surveys), dann Guard-Tests. Playwright E2E erst ab v0.4.0.
+**Empfehlung:** Guard-Tests (Auth, RBAC) + weitere Service-Deepening (documents, calendar, chat, auth, users). Coverage-Threshold auf 55% erhöhen. Playwright E2E erst ab v0.4.0.
 
 ---
 
@@ -1325,7 +1393,7 @@ Phase 11: Service Tests III — 452 Tests, 47 Services            ✅ DONE (47/4
 | shifts        | shifts.dto.test.ts        | 66    | 8 common enums, TimeSchema HH:MM, dual date fmt     |
 | settings      | settings.dto.test.ts      | 33    | SettingValue union, BulkUpdate min 1, CategoryEnum  |
 
-**Phase 0-11 abgeschlossen. Alle Services getestet.** CI + Coverage-Thresholds aktiv seit 2026-02-05.
+**Phase 0-12 abgeschlossen. Alle Services getestet + 4 vertieft.** CI + Coverage-Thresholds aktiv seit 2026-02-05.
 
 ---
 
