@@ -29,7 +29,7 @@
 | Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                         |
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                            |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                    |
-| Test-Dateien       | **12 Dateien, 308 Tests** — Phase 0-5 abgeschlossen                    |
+| Test-Dateien       | **18 Dateien, 345 Tests** — Phase 0-6 abgeschlossen                    |
 | Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                             |
 | CI/CD              | `code-quality-checks.yml` — nur Lint, kein Test (geplant nach Phase 4) |
 | Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                 |
@@ -58,13 +58,19 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓ backend/src/nest/features/features.service.test.ts                 (23 tests)
  ✓ backend/src/nest/auth/auth.service.test.ts                         (14 tests)
  ✓ backend/src/nest/admin-permissions/admin-permissions.service.test.ts (17 tests)
+ ✓ backend/src/nest/blackboard/blackboard.helpers.test.ts             ( 6 tests)
+ ✓ backend/src/nest/calendar/calendar.helpers.test.ts                 ( 7 tests)
+ ✓ backend/src/nest/chat/chat.helpers.test.ts                         (10 tests)
+ ✓ backend/src/nest/documents/documents.helpers.test.ts               ( 5 tests)
+ ✓ backend/src/nest/surveys/surveys.helpers.test.ts                   ( 6 tests)
+ ✓ backend/src/nest/notifications/notifications.helpers.test.ts       ( 3 tests)
 
- Test Files  12 passed (12)
-       Tests  308 passed (308)
-    Duration  659ms
+ Test Files  18 passed (18)
+       Tests  345 passed (345)
+    Duration  836ms
 ```
 
-Phase 0-5 abgeschlossen. Alle 308 Tests grün.
+Phase 0-6 abgeschlossen. Alle 345 Tests grün.
 
 ---
 
@@ -440,12 +446,16 @@ vi.hoisted(() => {
 | 5   | `surveys.helpers.ts`       | Status-Workflow, Question-Validierung             |
 | 6   | `notifications.helpers.ts` | Type-Mapping                                      |
 
-**Geschätzte Tests:** ~60-80
+**Geschätzte Tests:** ~60-80 → **Tatsächlich: 37 Tests (6 + 7 + 10 + 5 + 6 + 3)**
+
+Constraint: 1 Test pro Funktion — lean, kein Over-Testing. DB-Helpers in `documents.helpers.ts` bewusst ausgelassen (getDocumentRow, insertDocumentRecord, getDocumentsCount → Integration-Test).
 
 ### Phase 6: Definition of Done
 
-- [ ] Alle restlichen Helper-Dateien haben Tests
-- [ ] Kein `.only` oder `.skip` im Code
+- [x] Alle restlichen Helper-Dateien haben Tests (6 Dateien)
+- [x] 1 Test pro Funktion — kein Over-Testing
+- [x] `vi.useFakeTimers()` für `validateScheduledTime()` (chat)
+- [x] Kein `.only` oder `.skip` im Code
 
 ---
 
@@ -499,13 +509,13 @@ Phase 2: Shared Package    date-helpers, is-active                 ✅ DONE (36 
 Phase 3: Zod Schemas       common.schema.ts                       ✅ DONE (63 Tests)
 Phase 4: Backend Helpers   shifts, users, kvp, audit               ✅ DONE (107 Tests)
 Phase 5: Services          roles, features, auth, admin-perms      ✅ DONE (86 Tests)
+Phase 6: Restliche         blackboard, calendar, chat, etc.        ✅ DONE (37 Tests)
 ─────────────────────────────────────────────────────────────────────────
-Phase 6: Restliche         blackboard, calendar, chat, etc.         ← NÄCHSTE
-Phase 7: Frontend Utils    password-strength, auth, jwt (jsdom)
+Phase 7: Frontend Utils    password-strength, auth, jwt (jsdom)     ← NÄCHSTE
 Phase 8: DTOs              Alle Module
 ```
 
-**Gesamt: 308 Tests in 12 Dateien, alle grün.**
+**Gesamt: 345 Tests in 18 Dateien, alle grün.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -827,31 +837,31 @@ coverage: {
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-5)  |
+| Metrik              | Geplant  | Aktuell (Phase 0-6)  |
 | ------------------- | -------- | -------------------- |
-| Testbare Dateien    | ~60+     | 12 getestet          |
-| Testbare Funktionen | ~300+    | ~55 getestet         |
-| Geschätzte Tests    | ~470-580 | **308 geschrieben**  |
-| Phasen              | 0 + 8    | **6 von 9 erledigt** |
+| Testbare Dateien    | ~60+     | 18 getestet          |
+| Testbare Funktionen | ~300+    | ~92 getestet         |
+| Geschätzte Tests    | ~470-580 | **345 geschrieben**  |
+| Phasen              | 0 + 8    | **7 von 9 erledigt** |
 
-### Abgeschlossen: Phase 0-5
+### Abgeschlossen: Phase 0-6
 
 ```
-Phase 0: vitest.config.ts komplett überarbeitet     ✅ 6/6 Checks
-Phase 1: fieldMapper.test.ts — 16 Tests             ✅ 100/97/100/100% Coverage
-Phase 2: date-helpers + is-active — 36 Tests         ✅ vi.useFakeTimers()
-Phase 3: common.schema.ts — 63 Tests                 ✅ NIST 800-63B, Coercion
-Phase 4: shifts + users + kvp + audit — 107 Tests    ✅ SQL-Injection, SENSITIVE_FIELDS
-Phase 5: roles + features + auth + admin — 86 Tests   ✅ DB-Mocking, Token-Reuse
+Phase 0: vitest.config.ts komplett überarbeitet         ✅ 6/6 Checks
+Phase 1: fieldMapper.test.ts — 16 Tests                 ✅ 100/97/100/100% Coverage
+Phase 2: date-helpers + is-active — 36 Tests             ✅ vi.useFakeTimers()
+Phase 3: common.schema.ts — 63 Tests                     ✅ NIST 800-63B, Coercion
+Phase 4: shifts + users + kvp + audit — 107 Tests        ✅ SQL-Injection, SENSITIVE_FIELDS
+Phase 5: roles + features + auth + admin — 86 Tests       ✅ DB-Mocking, Token-Reuse
+Phase 6: blackboard+calendar+chat+docs+surveys+notif — 37 ✅ 1 Test/Funktion, lean
 ═══════════════════════════════════════════════════════════════════
-         308 Tests. 12 Dateien. 659ms. Alle grün.
+         345 Tests. 18 Dateien. 836ms. Alle grün.
 ```
 
 ### Nächste Phasen: Peu à peu
 
 ```
-Phase 6: Restliche        (blackboard, calendar, chat, etc.)  ← NÄCHSTE
-Phase 7: Frontend Utils   (password-strength, auth, jwt)
+Phase 7: Frontend Utils   (password-strength, auth, jwt)  ← NÄCHSTE
 Phase 8: DTOs             (alle Module)
 ```
 
