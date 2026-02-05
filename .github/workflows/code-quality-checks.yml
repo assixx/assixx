@@ -83,6 +83,40 @@ jobs:
       - name: Run Stylelint
         run: pnpm run stylelint
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests (Backend + Shared + Frontend)
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Unit Tests with Coverage
+        run: pnpm vitest run --project unit --project frontend-unit --coverage
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
   docker-build-verification:
     runs-on: ubuntu-latest
     name: Docker Build Verification (no push)

@@ -809,14 +809,14 @@ Settings → Branches → master:
 
 ### Wann CI/CD aktivieren?
 
-| Meilenstein                     | Aktion                                 | Status                                            |
-| ------------------------------- | -------------------------------------- | ------------------------------------------------- |
-| Phase 1 grün (fieldMapper)      | Noch nicht — zu wenig Tests            | ✅ erreicht                                       |
-| Phase 2 grün (shared + schemas) | CI-Job hinzufügen, aber NICHT required | ✅ erreicht                                       |
-| Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht                                       |
-| Phase 4+                        | Coverage-Thresholds in CI aktivieren   | ✅ erreicht — **CI-Job noch nicht implementiert** |
+| Meilenstein                     | Aktion                                 | Status                                              |
+| ------------------------------- | -------------------------------------- | --------------------------------------------------- |
+| Phase 1 grün (fieldMapper)      | Noch nicht — zu wenig Tests            | ✅ erreicht                                         |
+| Phase 2 grün (shared + schemas) | CI-Job hinzufügen, aber NICHT required | ✅ erreicht                                         |
+| Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht                                         |
+| Phase 4+                        | Coverage-Thresholds in CI aktivieren   | ✅ erreicht — **CI-Job implementiert (2026-02-05)** |
 
-**Aktion:** CI-Job kann jetzt als `required` hinzugefügt werden (222 Tests stabil).
+**CI-Job `unit-tests` wurde in `code-quality-checks.yml` implementiert** (843 Tests: 824 unit + 19 frontend-unit). Branch Protection Rule muss noch auf GitHub aktiviert werden.
 
 ---
 
