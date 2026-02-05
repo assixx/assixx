@@ -29,7 +29,7 @@
 | Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                         |
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                            |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                    |
-| Test-Dateien       | **23 Dateien, 364 Tests** — Phase 0-7 abgeschlossen                    |
+| Test-Dateien       | **36 Dateien, 824 Tests** — Phase 0-8 abgeschlossen                    |
 | Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                             |
 | CI/CD              | `code-quality-checks.yml` — nur Lint, kein Test (geplant nach Phase 4) |
 | Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                 |
@@ -508,9 +508,9 @@ Alle Zod-DTOs in `backend/src/nest/*/dto/` testen: valid→pass, missing require
 
 ### Phase 8: Definition of Done
 
-- [ ] Jedes DTO-Modul hat Tests: valid→pass, missing required→fail, wrong type→fail
-- [ ] Grenzwerte getestet (min/max Längen, Zahlen)
-- [ ] Kein `.only` oder `.skip` im Code
+- [x] Jedes DTO-Modul hat Tests: valid→pass, missing required→fail, wrong type→fail
+- [x] Grenzwerte getestet (min/max Längen, Zahlen)
+- [x] Kein `.only` oder `.skip` im Code
 - [ ] Backend-Coverage >= 70% Lines, 75% Functions
 - [ ] CI blockiert Merge bei Test-Failure
 
@@ -527,11 +527,11 @@ Phase 4: Backend Helpers   shifts, users, kvp, audit               ✅ DONE (107
 Phase 5: Services          roles, features, auth, admin-perms      ✅ DONE (86 Tests)
 Phase 6: Restliche         blackboard, calendar, chat, etc.        ✅ DONE (37 Tests)
 Phase 7: Frontend Utils    avatar, password, jwt, sanitize, auth    ✅ DONE (19 Tests)
-─────────────────────────────────────────────────────────────────────────
-Phase 8: DTOs              Alle Module                               ← NÄCHSTE
+Phase 8: DTOs              Alle 13 Module (460 Tests, 13 Dateien)   ✅ DONE (460 Tests)
 ```
 
-**Gesamt: 364 Tests in 23 Dateien, alle grün.**
+**Gesamt: 824 Unit Tests + 19 Frontend Tests in 36 Dateien, alle grün.**
+**Gesamtprojekt: 999 Tests (824 unit + 19 frontend + 175 API) in 54 Dateien.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -853,14 +853,14 @@ coverage: {
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-7)  |
+| Metrik              | Geplant  | Aktuell (Phase 0-8)  |
 | ------------------- | -------- | -------------------- |
-| Testbare Dateien    | ~60+     | 23 getestet          |
-| Testbare Funktionen | ~300+    | ~111 getestet        |
-| Geschätzte Tests    | ~470-580 | **364 geschrieben**  |
-| Phasen              | 0 + 8    | **8 von 9 erledigt** |
+| Testbare Dateien    | ~60+     | 36 getestet          |
+| Testbare Funktionen | ~300+    | ~570+ getestet       |
+| Geschätzte Tests    | ~470-580 | **824 geschrieben**  |
+| Phasen              | 0 + 8    | **9 von 9 erledigt** |
 
-### Abgeschlossen: Phase 0-7
+### Abgeschlossen: Phase 0-8
 
 ```
 Phase 0: vitest.config.ts komplett überarbeitet         ✅ 6/6 Checks
@@ -871,17 +871,36 @@ Phase 4: shifts + users + kvp + audit — 107 Tests        ✅ SQL-Injection, SE
 Phase 5: roles + features + auth + admin — 86 Tests       ✅ DB-Mocking, Token-Reuse
 Phase 6: blackboard+calendar+chat+docs+surveys+notif — 37 ✅ 1 Test/Funktion, lean
 Phase 7: avatar+password+jwt+sanitize+auth — 19          ✅ frontend-unit, no deps added
+Phase 8: DTO-Validierungen — 460 Tests, 13 Module        ✅ .safeParse(), refinements, coercions
 ═══════════════════════════════════════════════════════════════════
-         364 Tests. 23 Dateien. ~1.1s. Alle grün.
+         824 Unit + 19 Frontend + 175 API = 999 Tests.
+         54 Dateien. ~8.6s. Alle grün.
 ```
 
-### Nächste Phase: Peu à peu
+### Offene DoD-Punkte (Phase 8)
 
-```
-Phase 8: DTOs             (alle Module)  ← NÄCHSTE
-```
+- [ ] Backend-Coverage >= 70% Lines, 75% Functions (Coverage-Report auswerten)
+- [ ] CI blockiert Merge bei Test-Failure (`code-quality-checks.yml` erweitern)
 
-**Jede Phase:** Tests grün → Review → Nächste Phase. Kein Vorspringen.
+### Phase 8 Details: DTO-Tests (460 Tests, 13 Dateien)
+
+| Modul         | Datei                     | Tests | Highlights                                          |
+| ------------- | ------------------------- | ----- | --------------------------------------------------- |
+| auth          | auth.dto.test.ts          | 20    | PasswordSchema 12+ chars, RegisterSchema regex      |
+| users         | users.dto.test.ts         | 54    | ChangePassword 2 refinements, phone/employee regex  |
+| calendar      | calendar.dto.test.ts      | 42    | endTime>startTime refine, hex color, z.iso.datetime |
+| departments   | departments.dto.test.ts   | 23    | Boolean coercion (preprocess), name bounds          |
+| teams         | teams.dto.test.ts         | 26    | Date format regex, coerce IDs, boolean preprocess   |
+| notifications | notifications.dto.test.ts | 26    | recipientId refine (required unless 'all')          |
+| blackboard    | blackboard.dto.test.ts    | 37    | isActive refine [0,1,3,4], UUID, priority enums     |
+| machines      | machines.dto.test.ts      | 42    | z.url(), maintenance enums, teamIds max 50          |
+| surveys       | surveys.dto.test.ts       | 29    | QuestionSchema, AssignmentSchema refine, dual-ID    |
+| documents     | documents.dto.test.ts     | 20    | DtoClass.schema (unexported), tags max 20           |
+| kvp           | kvp.dto.test.ts           | 42    | categoryId OR customCategoryId refine, hex color    |
+| shifts        | shifts.dto.test.ts        | 66    | 8 common enums, TimeSchema HH:MM, dual date fmt     |
+| settings      | settings.dto.test.ts      | 33    | SettingValue union, BulkUpdate min 1, CategoryEnum  |
+
+**Alle Phasen abgeschlossen.** Nächste Schritte: Coverage-Thresholds aktivieren, CI-Integration.
 
 ---
 
