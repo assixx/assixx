@@ -1,6 +1,6 @@
 # Vitest Unit Test Plan — Assixx
 
-**Version:** 1.4.0 | **Branch:** `unit-test` | **Erstellt:** 2026-02-04 | **Letztes Update:** 2026-02-05
+**Version:** 1.5.0 | **Branch:** `unit-test` | **Erstellt:** 2026-02-04 | **Letztes Update:** 2026-02-05
 
 > **Philosophie:** Fundament zuerst. Peu à peu. Wenn heute die Config stimmt und EIN grüner Test läuft — war der Tag gut.
 
@@ -29,10 +29,10 @@
 | Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                        |
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                           |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                   |
-| Test-Dateien       | **62 Dateien, 1222 Tests** — Phase 0-9 ✅, Phase 10 🔄 IN PROGRESS    |
+| Test-Dateien       | **109 Dateien, 1674 Tests** — Phase 0-11 ✅ COMPLETE                  |
 | Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                            |
 | CI/CD              | `code-quality-checks.yml` — Unit-Tests als Merge-Gate ✅ (2026-02-05) |
-| Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                |
+| Coverage           | **52.84% Lines, 48.30% Branches, 54.80% Functions** — v8 Provider     |
 
 ### npm Scripts (vorhanden)
 
@@ -46,75 +46,139 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
 ### Aktueller Zustand bei `pnpm test --project unit --project frontend-unit`
 
 ```
- ✓  unit  shared/src/constants/is-active.test.ts                               ( 9 tests)
- ✓  unit  shared/src/helpers/date-helpers.test.ts                              (27 tests)
- ✓  unit  backend/src/utils/fieldMapper.test.ts                                (16 tests)
- ✓  unit  backend/src/schemas/common.schema.test.ts                            (63 tests)
- ✓  unit  backend/src/nest/common/audit/audit.helpers.test.ts                  (41 tests)
- ✓  unit  backend/src/nest/users/users.helpers.test.ts                         (27 tests)
- ✓  unit  backend/src/nest/shifts/shifts.helpers.test.ts                       (22 tests)
- ✓  unit  backend/src/nest/kvp/kvp.helpers.test.ts                             (24 tests)
- ✓  unit  backend/src/nest/blackboard/blackboard.helpers.test.ts               ( 6 tests)
- ✓  unit  backend/src/nest/calendar/calendar.helpers.test.ts                   ( 7 tests)
- ✓  unit  backend/src/nest/chat/chat.helpers.test.ts                           (10 tests)
- ✓  unit  backend/src/nest/documents/documents.helpers.test.ts                 ( 5 tests)
- ✓  unit  backend/src/nest/surveys/surveys.helpers.test.ts                     ( 6 tests)
- ✓  unit  backend/src/nest/notifications/notifications.helpers.test.ts         ( 3 tests)
- ✓  unit  backend/src/nest/roles/roles.service.test.ts                         (32 tests)
- ✓  unit  backend/src/nest/features/features.service.test.ts                   (23 tests)
- ✓  unit  backend/src/nest/auth/auth.service.test.ts                           (14 tests)
- ✓  unit  backend/src/nest/admin-permissions/admin-permissions.service.test.ts (17 tests)
- ✓  unit  backend/src/nest/auth/dto/auth.dto.test.ts                           (20 tests)
- ✓  unit  backend/src/nest/users/dto/users.dto.test.ts                         (54 tests)
- ✓  unit  backend/src/nest/calendar/dto/calendar.dto.test.ts                   (42 tests)
- ✓  unit  backend/src/nest/departments/dto/departments.dto.test.ts             (23 tests)
- ✓  unit  backend/src/nest/teams/dto/teams.dto.test.ts                         (26 tests)
- ✓  unit  backend/src/nest/notifications/dto/notifications.dto.test.ts         (26 tests)
- ✓  unit  backend/src/nest/blackboard/dto/blackboard.dto.test.ts               (37 tests)
- ✓  unit  backend/src/nest/machines/dto/machines.dto.test.ts                   (42 tests)
- ✓  unit  backend/src/nest/surveys/dto/surveys.dto.test.ts                     (29 tests)
- ✓  unit  backend/src/nest/documents/dto/documents.dto.test.ts                 (20 tests)
- ✓  unit  backend/src/nest/kvp/dto/kvp.dto.test.ts                            (42 tests)
- ✓  unit  backend/src/nest/shifts/dto/shifts.dto.test.ts                       (66 tests)
- ✓  unit  backend/src/nest/settings/dto/settings.dto.test.ts                   (33 tests)
- ✓  unit  backend/src/nest/logs/log-formatters.service.test.ts                 (28 tests)
- ✓  unit  backend/src/nest/config/config.service.test.ts                       (14 tests)
- ✓  unit  backend/src/nest/common/audit/audit-metadata.service.test.ts         ( 8 tests)
- ✓  unit  backend/src/nest/common/audit/audit-logging.service.test.ts          ( 5 tests)
- ✓  unit  backend/src/nest/logs/log-retention.service.test.ts                  ( 8 tests)
- ✓  unit  backend/src/nest/machines/machine-team.service.test.ts               ( 5 tests)
- ✓  unit  backend/src/nest/shifts/rotation-generator.service.test.ts           ( 6 tests)
- ✓  unit  backend/src/nest/audit-trail/audit-trail.service.test.ts             (30 tests)
- ✓  unit  backend/src/nest/shifts/rotation-pattern.service.test.ts             (17 tests)
- ✓  unit  backend/src/nest/kvp/kvp.service.test.ts                             (12 tests)
- ✓  unit  backend/src/nest/documents/documents.service.test.ts                 (19 tests)
- ✓  unit  backend/src/nest/surveys/surveys.service.test.ts                     (12 tests)
- ✓  unit  backend/src/nest/reports/reports.service.test.ts                     (16 tests)
- ✓  unit  backend/src/nest/settings/settings.service.test.ts                   (38 tests)
- ✓  unit  backend/src/nest/plans/plans.service.test.ts                         (12 tests)
- ✓  unit  backend/src/nest/shifts/shifts.service.test.ts                       (11 tests)
- ✓  unit  backend/src/nest/blackboard/blackboard-entries.service.test.ts       (10 tests)
- ✓  unit  backend/src/nest/users/user-availability.service.test.ts             (24 tests)
- ✓  unit  backend/src/nest/notifications/notifications.service.test.ts         (14 tests)
- ✓  unit  backend/src/nest/calendar/calendar.service.test.ts                   (18 tests)
- ✓  unit  backend/src/nest/chat/chat-conversations.service.test.ts             (12 tests)
- ✓  unit  backend/src/nest/surveys/survey-access.service.test.ts               (17 tests)
- ✓  unit  backend/src/nest/machines/machines.service.test.ts                   (12 tests)
- ✓  unit  backend/src/nest/signup/signup.service.test.ts                       (20 tests)
- ✓  unit  backend/src/nest/chat/chat-messages.service.test.ts                  (13 tests)
- ✓  unit  backend/src/nest/blackboard/blackboard.service.test.ts               (10 tests)
- ✓  frontend-unit  frontend/src/lib/utils/avatar-helpers.test.ts               ( 4 tests)
- ✓  frontend-unit  frontend/src/lib/utils/sanitize-html.test.ts                ( 2 tests)
- ✓  frontend-unit  frontend/src/lib/utils/auth.test.ts                         ( 6 tests)
- ✓  frontend-unit  frontend/src/lib/utils/password-strength.test.ts            ( 4 tests)
- ✓  frontend-unit  frontend/src/lib/utils/jwt-utils.test.ts                    ( 3 tests)
+ === SHARED (Phase 2) ===
+ ✓  unit  shared/src/constants/is-active.test.ts                                     ( 9 tests)
+ ✓  unit  shared/src/helpers/date-helpers.test.ts                                    (27 tests)
 
- Test Files  62 passed (62)
-       Tests  1222 passed (1222)
-    Duration  ~3.2s
+ === UTILS & SCHEMAS (Phase 1, 3) ===
+ ✓  unit  backend/src/utils/fieldMapper.test.ts                                      (16 tests)
+ ✓  unit  backend/src/schemas/common.schema.test.ts                                  (63 tests)
+
+ === HELPERS (Phase 4, 6) ===
+ ✓  unit  backend/src/nest/common/audit/audit.helpers.test.ts                        (41 tests)
+ ✓  unit  backend/src/nest/users/users.helpers.test.ts                               (27 tests)
+ ✓  unit  backend/src/nest/shifts/shifts.helpers.test.ts                             (22 tests)
+ ✓  unit  backend/src/nest/kvp/kvp.helpers.test.ts                                   (24 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard.helpers.test.ts                     ( 6 tests)
+ ✓  unit  backend/src/nest/calendar/calendar.helpers.test.ts                         ( 7 tests)
+ ✓  unit  backend/src/nest/chat/chat.helpers.test.ts                                 (10 tests)
+ ✓  unit  backend/src/nest/documents/documents.helpers.test.ts                       ( 5 tests)
+ ✓  unit  backend/src/nest/surveys/surveys.helpers.test.ts                           ( 6 tests)
+ ✓  unit  backend/src/nest/notifications/notifications.helpers.test.ts               ( 3 tests)
+
+ === DTOs (Phase 8) ===
+ ✓  unit  backend/src/nest/auth/dto/auth.dto.test.ts                                 (20 tests)
+ ✓  unit  backend/src/nest/users/dto/users.dto.test.ts                               (54 tests)
+ ✓  unit  backend/src/nest/calendar/dto/calendar.dto.test.ts                         (42 tests)
+ ✓  unit  backend/src/nest/departments/dto/departments.dto.test.ts                   (23 tests)
+ ✓  unit  backend/src/nest/teams/dto/teams.dto.test.ts                               (26 tests)
+ ✓  unit  backend/src/nest/notifications/dto/notifications.dto.test.ts               (26 tests)
+ ✓  unit  backend/src/nest/blackboard/dto/blackboard.dto.test.ts                     (37 tests)
+ ✓  unit  backend/src/nest/machines/dto/machines.dto.test.ts                         (42 tests)
+ ✓  unit  backend/src/nest/surveys/dto/surveys.dto.test.ts                           (29 tests)
+ ✓  unit  backend/src/nest/documents/dto/documents.dto.test.ts                       (20 tests)
+ ✓  unit  backend/src/nest/kvp/dto/kvp.dto.test.ts                                  (42 tests)
+ ✓  unit  backend/src/nest/shifts/dto/shifts.dto.test.ts                             (66 tests)
+ ✓  unit  backend/src/nest/settings/dto/settings.dto.test.ts                         (33 tests)
+
+ === SERVICES Phase 5 ===
+ ✓  unit  backend/src/nest/roles/roles.service.test.ts                               (32 tests)
+ ✓  unit  backend/src/nest/features/features.service.test.ts                         (23 tests)
+ ✓  unit  backend/src/nest/auth/auth.service.test.ts                                 (14 tests)
+ ✓  unit  backend/src/nest/admin-permissions/admin-permissions.service.test.ts        (17 tests)
+
+ === SERVICES Phase 9 ===
+ ✓  unit  backend/src/nest/logs/log-formatters.service.test.ts                       (28 tests)
+ ✓  unit  backend/src/nest/config/config.service.test.ts                             (14 tests)
+ ✓  unit  backend/src/nest/common/audit/audit-metadata.service.test.ts               ( 8 tests)
+ ✓  unit  backend/src/nest/common/audit/audit-logging.service.test.ts                ( 5 tests)
+ ✓  unit  backend/src/nest/logs/log-retention.service.test.ts                        ( 8 tests)
+ ✓  unit  backend/src/nest/machines/machine-team.service.test.ts                     ( 5 tests)
+ ✓  unit  backend/src/nest/shifts/rotation-generator.service.test.ts                 ( 6 tests)
+ ✓  unit  backend/src/nest/audit-trail/audit-trail.service.test.ts                   (30 tests)
+ ✓  unit  backend/src/nest/shifts/rotation-pattern.service.test.ts                   (17 tests)
+ ✓  unit  backend/src/nest/kvp/kvp.service.test.ts                                   (12 tests)
+ ✓  unit  backend/src/nest/documents/documents.service.test.ts                       (19 tests)
+ ✓  unit  backend/src/nest/surveys/surveys.service.test.ts                           (12 tests)
+
+ === SERVICES Phase 10 ===
+ ✓  unit  backend/src/nest/reports/reports.service.test.ts                           (16 tests)
+ ✓  unit  backend/src/nest/settings/settings.service.test.ts                         (38 tests)
+ ✓  unit  backend/src/nest/plans/plans.service.test.ts                               (12 tests)
+ ✓  unit  backend/src/nest/shifts/shifts.service.test.ts                             (11 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-entries.service.test.ts             (10 tests)
+ ✓  unit  backend/src/nest/users/user-availability.service.test.ts                   (24 tests)
+ ✓  unit  backend/src/nest/notifications/notifications.service.test.ts               (14 tests)
+ ✓  unit  backend/src/nest/calendar/calendar.service.test.ts                         (18 tests)
+ ✓  unit  backend/src/nest/chat/chat-conversations.service.test.ts                   (12 tests)
+ ✓  unit  backend/src/nest/surveys/survey-access.service.test.ts                     (17 tests)
+ ✓  unit  backend/src/nest/machines/machines.service.test.ts                         (12 tests)
+ ✓  unit  backend/src/nest/signup/signup.service.test.ts                             (20 tests)
+ ✓  unit  backend/src/nest/chat/chat-messages.service.test.ts                        (13 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard.service.test.ts                     (10 tests)
+
+ === SERVICES Phase 11 (47 new files) ===
+ ✓  unit  backend/src/nest/users/users.service.test.ts                               (21 tests)
+ ✓  unit  backend/src/nest/teams/teams.service.test.ts                               (22 tests)
+ ✓  unit  backend/src/nest/departments/departments.service.test.ts                   (13 tests)
+ ✓  unit  backend/src/nest/logs/logs.service.test.ts                                 (10 tests)
+ ✓  unit  backend/src/nest/areas/areas.service.test.ts                               (11 tests)
+ ✓  unit  backend/src/nest/surveys/survey-responses.service.test.ts                  (16 tests)
+ ✓  unit  backend/src/nest/root/root.service.test.ts                                 (14 tests)
+ ✓  unit  backend/src/nest/shifts/shift-plans.service.test.ts                        (12 tests)
+ ✓  unit  backend/src/nest/chat/chat.service.test.ts                                 (13 tests)
+ ✓  unit  backend/src/nest/kvp/kvp-categories.service.test.ts                        (13 tests)
+ ✓  unit  backend/src/nest/role-switch/role-switch.service.test.ts                   (10 tests)
+ ✓  unit  backend/src/nest/shifts/rotation.service.test.ts                           (10 tests)
+ ✓  unit  backend/src/nest/shifts/rotation-history.service.test.ts                   ( 8 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-confirmations.service.test.ts       ( 9 tests)
+ ✓  unit  backend/src/nest/machines/machine-maintenance.service.test.ts              ( 7 tests)
+ ✓  unit  backend/src/nest/dashboard/dashboard.service.test.ts                       ( 4 tests)
+ ✓  unit  backend/src/nest/root/root-deletion.service.test.ts                        (14 tests)
+ ✓  unit  backend/src/nest/root/root-admin.service.test.ts                           (10 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-access.service.test.ts              (15 tests)
+ ✓  unit  backend/src/nest/logs/unified-logs.service.test.ts                         ( 7 tests)
+ ✓  unit  backend/src/nest/surveys/survey-statistics.service.test.ts                 ( 6 tests)
+ ✓  unit  backend/src/nest/calendar/calendar-overview.service.test.ts                ( 7 tests)
+ ✓  unit  backend/src/nest/chat/scheduled-message-processor.service.test.ts          ( 5 tests)
+ ✓  unit  backend/src/nest/logs/partition-manager.service.test.ts                    ( 7 tests)
+ ✓  unit  backend/src/nest/chat/chat-scheduled.service.test.ts                       (13 tests)
+ ✓  unit  backend/src/nest/notifications/notification-statistics.service.test.ts     ( 4 tests)
+ ✓  unit  backend/src/nest/calendar/calendar-creation.service.test.ts                (12 tests)
+ ✓  unit  backend/src/nest/documents/document-access.service.test.ts                 (15 tests)
+ ✓  unit  backend/src/nest/shifts/rotation-assignment.service.test.ts                (11 tests)
+ ✓  unit  backend/src/nest/calendar/calendar-permission.service.test.ts              (14 tests)
+ ✓  unit  backend/src/nest/auth/connection-ticket.service.test.ts                    ( 9 tests)
+ ✓  unit  backend/src/nest/surveys/survey-questions.service.test.ts                  ( 8 tests)
+ ✓  unit  backend/src/nest/common/services/activity-logger.service.test.ts           ( 7 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-attachments.service.test.ts         ( 6 tests)
+ ✓  unit  backend/src/nest/root/root-tenant.service.test.ts                          ( 5 tests)
+ ✓  unit  backend/src/nest/kvp/kvp-confirmations.service.test.ts                     ( 6 tests)
+ ✓  unit  backend/src/nest/notifications/notification-feature.service.test.ts        ( 4 tests)
+ ✓  unit  backend/src/nest/kvp/kvp-attachments.service.test.ts                       ( 6 tests)
+ ✓  unit  backend/src/nest/notifications/notification-preferences.service.test.ts    ( 6 tests)
+ ✓  unit  backend/src/nest/common/audit/audit-request-filter.service.test.ts         (12 tests)
+ ✓  unit  backend/src/nest/shifts/shift-swap.service.test.ts                         ( 6 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-archive.service.test.ts             ( 6 tests)
+ ✓  unit  backend/src/nest/blackboard/blackboard-comments.service.test.ts            ( 6 tests)
+ ✓  unit  backend/src/nest/kvp/kvp-comments.service.test.ts                          ( 7 tests)
+ ✓  unit  backend/src/nest/documents/document-storage.service.test.ts                ( 9 tests)
+ ✓  unit  backend/src/nest/feature-visits/feature-visits.service.test.ts             ( 5 tests)
+ ✓  unit  backend/src/nest/documents/document-notification.service.test.ts           (11 tests)
+
+ === FRONTEND (Phase 7) ===
+ ✓  frontend-unit  frontend/src/lib/utils/avatar-helpers.test.ts                     ( 4 tests)
+ ✓  frontend-unit  frontend/src/lib/utils/sanitize-html.test.ts                      ( 2 tests)
+ ✓  frontend-unit  frontend/src/lib/utils/auth.test.ts                               ( 6 tests)
+ ✓  frontend-unit  frontend/src/lib/utils/password-strength.test.ts                  ( 4 tests)
+ ✓  frontend-unit  frontend/src/lib/utils/jwt-utils.test.ts                          ( 3 tests)
+
+ Test Files  109 passed (109)
+       Tests  1674 passed (1674)
+    Duration  ~8.4s
 ```
 
-Phase 0-10 (laufend). 1203 Unit + 19 Frontend = 1222 Tests grün.
+Phase 0-11 COMPLETE. 1655 Unit + 19 Frontend = 1674 Tests grün.
 
 ---
 
@@ -699,8 +763,130 @@ mockDb.queryOne.mockResolvedValueOnce({
 - [x] Pure Clause-Builders getestet (survey-access, chat-messages)
 - [x] `undefined !== null` Trap dokumentiert und in allen Mock-Rows beachtet
 - [x] Kein `.only` oder `.skip` im Code
-- [ ] Coverage-Thresholds erhöhen (nach 20%+ erreicht)
-- [ ] Verbleibende ~43 Services (Phase 11+)
+- [x] Coverage-Thresholds erhöht: 25% (Lines, Functions, Branches, Statements)
+
+---
+
+### Phase 11: Backend Service Tests — All Remaining Services (Coverage Push)
+
+> **Ziel:** ALLE verbleibenden untesteten Services systematisch abarbeiten. Coverage von ~28% auf ~53% heben. Jeder Service im Projekt hat mindestens 1 Testdatei.
+
+**Strategie:** Batch-weise (4 Services pro Batch), nach LOC sortiert (größte zuerst). Jeder Batch: Lesen → Schreiben → Verifizieren → Nächster Batch. 12 Batches insgesamt.
+
+| #   | Service                                  | Tests | Typ                                    | Status |
+| --- | ---------------------------------------- | ----- | -------------------------------------- | ------ |
+| 1   | `users.service.ts`                       | 21    | DB-mocked, CRUD, avatar, search        | ✅     |
+| 2   | `teams.service.ts`                       | 22    | DB-mocked, member mgmt, hierarchy      | ✅     |
+| 3   | `departments.service.ts`                 | 13    | DB-mocked, lead assignment             | ✅     |
+| 4   | `logs.service.ts`                        | 10    | DB-mocked, query builder, export       | ✅     |
+| 5   | `areas.service.ts`                       | 11    | DB-mocked, CRUD, lead assignment       | ✅     |
+| 6   | `survey-responses.service.ts`            | 16    | DB-mocked, submit, stats, validation   | ✅     |
+| 7   | `root.service.ts`                        | 14    | DB-mocked, tenant CRUD, features       | ✅     |
+| 8   | `shift-plans.service.ts`                 | 12    | DB-mocked, plan CRUD, assignment       | ✅     |
+| 9   | `chat.service.ts`                        | 13    | Facade/delegation to sub-services      | ✅     |
+| 10  | `kvp-categories.service.ts`              | 13    | DB-mocked, hierarchy, defaults         | ✅     |
+| 11  | `role-switch.service.ts`                 | 10    | DB-mocked, role validation             | ✅     |
+| 12  | `rotation.service.ts`                    | 10    | DB-mocked, rotation CRUD               | ✅     |
+| 13  | `rotation-history.service.ts`            | 8     | DB-mocked, history CRUD                | ✅     |
+| 14  | `blackboard-confirmations.service.ts`    | 9     | DB-mocked, UUID resolution             | ✅     |
+| 15  | `machine-maintenance.service.ts`         | 7     | DB-mocked, maintenance CRUD            | ✅     |
+| 16  | `dashboard.service.ts`                   | 4     | DB-mocked, aggregate queries           | ✅     |
+| 17  | `root-deletion.service.ts`               | 14    | DB-mocked, cascading deletion          | ✅     |
+| 18  | `root-admin.service.ts`                  | 10    | DB-mocked, admin CRUD                  | ✅     |
+| 19  | `blackboard-access.service.ts`           | 15    | DB-mocked, access control, visibility  | ✅     |
+| 20  | `unified-logs.service.ts`                | 7     | Pool-mocked, partition queries         | ✅     |
+| 21  | `survey-statistics.service.ts`           | 6     | DB-mocked, stats aggregation           | ✅     |
+| 22  | `calendar-overview.service.ts`           | 7     | DB-mocked, dashboard events            | ✅     |
+| 23  | `scheduled-message-processor.service.ts` | 5     | DB-mocked, cron, concurrency guard     | ✅     |
+| 24  | `partition-manager.service.ts`           | 7     | Pool-mocked, partition management      | ✅     |
+| 25  | `chat-scheduled.service.ts`              | 13    | CLS-mocked, scheduled messages         | ✅     |
+| 26  | `notification-statistics.service.ts`     | 4     | DB-mocked, stats aggregation           | ✅     |
+| 27  | `calendar-creation.service.ts`           | 12    | DB-mocked, pure helpers, UUID          | ✅     |
+| 28  | `document-access.service.ts`             | 15    | DB-mocked, access control, 9 scopes    | ✅     |
+| 29  | `rotation-assignment.service.ts`         | 11    | DB-mocked, validation, UPSERT          | ✅     |
+| 30  | `calendar-permission.service.ts`         | 14    | DB-mocked, pure clause builders        | ✅     |
+| 31  | `connection-ticket.service.ts`           | 9     | Redis-mocked, TTL, UUID validation     | ✅     |
+| 32  | `survey-questions.service.ts`            | 8     | DB-mocked, options, assignments        | ✅     |
+| 33  | `activity-logger.service.ts`             | 7     | Fire-and-forget, never throws          | ✅     |
+| 34  | `blackboard-attachments.service.ts`      | 6     | Delegation to DocumentsService         | ✅     |
+| 35  | `root-tenant.service.ts`                 | 5     | DB-mocked, storage breakdown           | ✅     |
+| 36  | `kvp-confirmations.service.ts`           | 6     | DB-mocked, UPSERT, visibility          | ✅     |
+| 37  | `notification-feature.service.ts`        | 4     | Fire-and-forget, never throws          | ✅     |
+| 38  | `kvp-attachments.service.ts`             | 6     | DB-mocked, UUID, null uploaded_at      | ✅     |
+| 39  | `notification-preferences.service.ts`    | 6     | DB-mocked, JSON parse, UPSERT          | ✅     |
+| 40  | `audit-request-filter.service.ts`        | 12    | Pure logic, fake timers, throttle      | ✅     |
+| 41  | `shift-swap.service.ts`                  | 6     | DB-mocked, filters, status update      | ✅     |
+| 42  | `blackboard-archive.service.ts`          | 6     | Cron, error resilience, manual trigger | ✅     |
+| 43  | `blackboard-comments.service.ts`         | 6     | DB-mocked, UUID resolution             | ✅     |
+| 44  | `kvp-comments.service.ts`                | 7     | DB-mocked, role-based visibility       | ✅     |
+| 45  | `document-storage.service.ts`            | 9     | fs-mocked, path traversal protection   | ✅     |
+| 46  | `feature-visits.service.ts`              | 5     | DB-mocked, UPSERT, Map return          | ✅     |
+| 47  | `document-notification.service.ts`       | 11    | Pure switch + fire-and-forget          | ✅     |
+
+**Phase 11 Gesamt:** 452 Tests in 47 Dateien ✅ COMPLETE
+
+**Mocking-Patterns (Phase 11 — neue Varianten):**
+
+```typescript
+// Redis constructor mock (connection-ticket.service.ts):
+const { mockRedisInstance } = vi.hoisted(() => ({
+  mockRedisInstance: {
+    set: vi.fn().mockResolvedValue('OK'),
+    get: vi.fn().mockResolvedValue(null),
+    del: vi.fn().mockResolvedValue(1),
+    quit: vi.fn().mockResolvedValue('OK'),
+  },
+}));
+vi.mock('ioredis', () => ({
+  default: vi.fn(function FakeRedis() { return mockRedisInstance; }),
+}));
+
+// CLS-dependent services (chat-scheduled.service.ts):
+const mockCls = {
+  get: vi.fn((key: string) => {
+    if (key === 'tenantId') return 10;
+    if (key === 'userId') return 5;
+    return undefined;
+  }),
+};
+
+// Pool-based services (partition-manager.service.ts, unified-logs.service.ts):
+const mockPool = { query: vi.fn() };
+mockPool.query.mockResolvedValueOnce({ rows: [{ count: '5' }] });
+
+// Fire-and-forget (activity-logger, notification-feature):
+// Service catches errors internally — test it doesn't throw
+mockDb.query.mockRejectedValueOnce(new Error('DB down'));
+await service.log(...); // Should NOT throw
+
+// Fake timers (audit-request-filter.service.ts):
+beforeEach(() => { vi.useFakeTimers(); });
+afterEach(() => { vi.useRealTimers(); });
+vi.advanceTimersByTime(6000); // Advance past throttle window
+```
+
+**Erkenntnisse Phase 11:**
+
+- **`vi.mock()` hoisting:** Factory functions are hoisted to top — variables used inside MUST be wrapped with `vi.hoisted()`. Forgetting this causes `ReferenceError: Cannot access before initialization`.
+- **Redis constructor mock:** `vi.fn().mockImplementation(() => obj)` does NOT work as constructor. Must use `vi.fn(function FakeName() { return obj; })` with named function expression (NOT arrow function).
+- **Pool vs DatabaseService:** Pool-based services (partition-manager, unified-logs) return `{ rows: [...] }`, not `T[]` directly. Different mock shape required.
+- **Concurrency guards:** `ScheduledMessageProcessorService.processAtMinute()` uses `isProcessing` boolean — second concurrent call skips entirely (0 additional queries, not reduced queries).
+- **Pure switch testing:** `mapAccessScopeToRecipient()` — test ALL switch branches including default `null` return. Edge cases: missing `ownerUserId` → `null` despite `personal` scope.
+- **Fire-and-forget services:** ActivityLoggerService and NotificationFeatureService catch errors internally via try/catch — verify they don't throw on DB failure.
+
+### Phase 11: Definition of Done
+
+- [x] 47 neue Service-Testdateien erstellt (452 Tests)
+- [x] Alle verbleibenden Services getestet (users, teams, departments, logs, areas, surveys, root, shifts, chat, kvp, blackboard, notifications, auth, calendar, documents, feature-visits, dashboard, role-switch, machines)
+- [x] Redis-Mocking Pattern dokumentiert (ioredis constructor via named function)
+- [x] Pool-Mocking Pattern dokumentiert (partition-manager, unified-logs)
+- [x] Fire-and-forget Pattern getestet (activity-logger, notification-feature)
+- [x] Fake-Timer Pattern getestet (audit-request-filter throttle window)
+- [x] CLS-Mocking Pattern getestet (chat-scheduled, chat-conversations)
+- [x] Pure function tests (mapAccessScopeToRecipient, determineOrgTarget, buildAdminOrgLevelFilter, shouldSkipRequest)
+- [x] Path traversal protection getestet (document-storage)
+- [x] Kein `.only` oder `.skip` im Code
+- [x] Coverage: **52.84% Lines, 48.30% Branches, 54.80% Functions, 52.87% Stmts**
 
 ---
 
@@ -718,10 +904,11 @@ Phase 7:  Frontend Utils    avatar, password, jwt, sanitize, auth    ✅ DONE (1
 Phase 8:  DTOs              Alle 13 Module (460 Tests, 13 Dateien)   ✅ DONE (460 Tests)
 Phase 9:  Service Tests     12 Services, 145 Tests                    ✅ DONE (12/12 Services)
 Phase 10: Service Tests II  14 Services, 234 Tests                     ✅ DONE (14/14 Services)
+Phase 11: Service Tests III 47 Services, 452 Tests                      ✅ DONE (47/47 Services)
 ```
 
-**Gesamt: 1203 Unit Tests + 19 Frontend Tests in 62 Dateien, alle grün.**
-**Gesamtprojekt: 1397 Tests (1203 unit + 19 frontend + 175 API) in 80 Dateien.**
+**Gesamt: 1655 Unit Tests + 19 Frontend Tests in 109 Dateien, alle grün.**
+**Gesamtprojekt: 1849 Tests (1655 unit + 19 frontend + 175 API) in 127 Dateien.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -1015,7 +1202,7 @@ Settings → Branches → master:
 | Phase 3 grün (helpers)          | CI-Job als **required** setzen         | ✅ erreicht                                         |
 | Phase 4+                        | Coverage-Thresholds in CI aktivieren   | ✅ erreicht — **CI-Job implementiert (2026-02-05)** |
 
-**Status:** CI-Job `unit-tests` läuft in `code-quality-checks.yml` (1222 Tests: 1203 unit + 19 frontend-unit). Branch Protection Rule auf GitHub konfiguriert.
+**Status:** CI-Job `unit-tests` läuft in `code-quality-checks.yml` (1674 Tests: 1655 unit + 19 frontend-unit). Branch Protection Rule auf GitHub konfiguriert.
 
 ---
 
@@ -1023,9 +1210,9 @@ Settings → Branches → master:
 
 ### Aktueller Stand (2026-02-05)
 
-- **Coverage:** **28.30% Lines, 27.83% Branches, 28.88% Functions, 28.29% Statements**
-- **Warum noch <30%:** ~43 Service-Dateien (der Großteil des Codes) haben noch 0% Coverage
-- **Gut getestet:** Helpers, Schemas, DTOs, Constants (50-100% pro File), 26 Services getestet
+- **Coverage:** **52.84% Lines, 48.30% Branches, 54.80% Functions, 52.87% Statements**
+- **Alle Services getestet:** Jeder Service im Projekt hat mindestens 1 Testdatei
+- **Gut getestet:** Helpers (100%), Schemas (93%), DTOs (100%), Constants (100%), 73 Services (50-100%)
 
 ### Aktive Thresholds (in `vitest.config.ts`)
 
@@ -1033,10 +1220,10 @@ Settings → Branches → master:
 // Floor-Werte — verhindern Regressions, nicht das Ziel
 coverage: {
   thresholds: {
-    lines: 25,
-    functions: 25,
-    branches: 25,
-    statements: 25,
+    lines: 45,
+    functions: 45,
+    branches: 45,
+    statements: 45,
   },
 }
 ```
@@ -1045,26 +1232,28 @@ coverage: {
 
 ### Stufenplan
 
-| Stufe        | Wann                     | Lines     | Functions | Aktion                               |
-| ------------ | ------------------------ | --------- | --------- | ------------------------------------ |
-| **Phase 8**  | Abgeschlossen            | **10%**   | **8%**    | ✅ Thresholds aktiviert (2026-02-05) |
-| **Phase 9**  | ✅ DONE (12/12 Services) | **~13%**  | **~11%**  | 145 Tests, 12 Services getestet      |
-| **Phase 10** | ✅ DONE (14/14 Services) | **28.3%** | **28.9%** | 234 Tests, Thresholds → 25%          |
-| Phase 11+    | Weitere Services         | **35%**   | **30%**   | Weitere ~43 Services testen          |
-| Langfrist    | Alle Services getestet   | **50%**   | **50%**   | Ziel-Wert                            |
+| Stufe        | Wann                     | Lines      | Functions  | Aktion                               |
+| ------------ | ------------------------ | ---------- | ---------- | ------------------------------------ |
+| **Phase 8**  | Abgeschlossen            | **10%**    | **8%**     | ✅ Thresholds aktiviert (2026-02-05) |
+| **Phase 9**  | ✅ DONE (12/12 Services) | **~13%**   | **~11%**   | 145 Tests, 12 Services getestet      |
+| **Phase 10** | ✅ DONE (14/14 Services) | **28.3%**  | **28.9%**  | 234 Tests, Thresholds → 25%          |
+| **Phase 11** | ✅ DONE (47/47 Services) | **52.84%** | **54.80%** | 452 Tests, alle Services getestet    |
+| Phase 12+    | Thresholds erhöhen       | **60%**    | **60%**    | Tiefere Tests, Edge Cases, Guards    |
+| Langfrist    | Production-Ready         | **70%**    | **70%**    | Ziel-Wert                            |
 
 ---
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-10) |
+| Metrik              | Geplant  | Aktuell (Phase 0-11) |
 | ------------------- | -------- | -------------------- |
-| Testbare Dateien    | ~80+     | 62 getestet          |
-| Testbare Funktionen | ~400+    | ~800+ getestet       |
-| Geschätzte Tests    | ~470-580 | **1222 geschrieben** |
-| Phasen              | 0 + 11+  | **Phase 10 ✅ DONE** |
+| Testbare Dateien    | ~80+     | 109 getestet         |
+| Testbare Funktionen | ~400+    | ~1200+ getestet      |
+| Geschätzte Tests    | ~470-580 | **1674 geschrieben** |
+| Phasen              | 0 + 11+  | **Phase 11 ✅ DONE** |
+| Coverage            | 50%+     | **52.84% Lines**     |
 
-### Abgeschlossen: Phase 0-10
+### Abgeschlossen: Phase 0-11
 
 ```
 Phase 0:  vitest.config.ts komplett überarbeitet          ✅ 6/6 Checks
@@ -1078,15 +1267,17 @@ Phase 7:  avatar+password+jwt+sanitize+auth — 19           ✅ frontend-unit, 
 Phase 8:  DTO-Validierungen — 460 Tests, 13 Module         ✅ .safeParse(), refinements, coercions
 Phase 9:  Service Tests — 145 Tests, 12 Services             ✅ DONE (12/12 Services)
 Phase 10: Service Tests II — 234 Tests, 14 Services           ✅ DONE (14/14 Services)
-════════════════════════════════════════════════════════════════════════
-          1203 Unit + 19 Frontend + 175 API = 1397 Tests.
-          80 Dateien. ~3.2s (unit). Alle grün.
+Phase 11: Service Tests III — 452 Tests, 47 Services            ✅ DONE (47/47 Services)
+════════════════════════════════════════════════════════════════════════════
+          1655 Unit + 19 Frontend + 175 API = 1849 Tests.
+          127 Dateien. ~8.4s (unit). Alle grün.
+          Coverage: 52.84% Lines, 48.30% Branches, 54.80% Functions.
 ```
 
 ### CI/CD — ✅ Implementiert (2026-02-05)
 
-- [x] `unit-tests` Job in `code-quality-checks.yml` (1203 unit + 19 frontend = 1222 tests)
-- [x] Coverage-Thresholds aktiv (lines 25%, functions 25%, branches 25%, statements 25%)
+- [x] `unit-tests` Job in `code-quality-checks.yml` (1655 unit + 19 frontend = 1674 tests)
+- [x] Coverage-Thresholds aktiv (lines 45%, functions 45%, branches 45%, statements 45%)
 - [x] Branch Protection Rules auf GitHub konfiguriert
 - [x] `svelte-kit sync` vor Tests in CI (Pflicht)
 
@@ -1097,33 +1288,22 @@ Phase 10: Service Tests II — 234 Tests, 14 Services           ✅ DONE (14/14 
 
 ---
 
-### ⚡ NÄCHSTER SCHRITT: Phase 11 — Verbleibende Services
+### ⚡ NÄCHSTER SCHRITT: Phase 12 — Coverage Push & Threshold Erhöhung
 
-**Phase 9+10 komplett (26 Services getestet).** Verbleibend: ~43 Services ohne Unit-Tests.
+**Phase 0-11 komplett. Alle Services getestet. Coverage: 52.84% Lines.**
 
-**Top-Priorität nach LOC (größte Dateien = meiste Business-Logik):**
+**Optionen für Phase 12+:**
 
-| #   | Service                       | LOC  | Modul       | Testbare Logik                       |
-| --- | ----------------------------- | ---- | ----------- | ------------------------------------ |
-| 1   | `users.service.ts`            | 1053 | users       | CRUD, search, avatar, bulk ops       |
-| 2   | `teams.service.ts`            | 869  | teams       | CRUD, member mgmt, hierarchy         |
-| 3   | `departments.service.ts`      | 768  | departments | CRUD, lead assignment, area relation |
-| 4   | `logs.service.ts`             | 687  | logs        | Query builder, export, retention     |
-| 5   | `areas.service.ts`            | 585  | areas       | CRUD, lead assignment                |
-| 6   | `survey-responses.service.ts` | 535  | surveys     | Submit, stats, export, validation    |
-| 7   | `root.service.ts`             | 545  | root        | System admin, tenant CRUD, features  |
-| 8   | `shift-plans.service.ts`      | 439  | shifts      | Plan CRUD, assignment, scheduling    |
-| 9   | `chat.service.ts`             | 407  | chat        | Facade/delegation to sub-services    |
-| 10  | `kvp-categories.service.ts`   | 347  | kvp         | CRUD, hierarchy, default categories  |
+| #     | Maßnahme                             | Impact                       | Aufwand  | Wann       |
+| ----- | ------------------------------------ | ---------------------------- | -------- | ---------- |
+| ~~1~~ | ~~Coverage-Thresholds → 45%~~        | ~~erledigt~~                 | ~~done~~ | ✅ done    |
+| 2     | Tiefere Service-Tests (2-3/Funktion) | Coverage auf 60%+ treiben    | Mittel   | Phase 12   |
+| 3     | Guard-Tests (NestJS Guards)          | Auth/RBAC-Logik absichern    | Mittel   | Phase 12   |
+| 4     | Controller-Tests (HTTP-Layer)        | Request/Response-Validierung | Hoch     | Phase 13   |
+| 5     | Frontend-Tests erweitern             | Svelte-Komponenten testen    | Hoch     | Phase 13   |
+| 6     | E2E-Tests (Playwright)               | User-Flows absichern         | Hoch     | **v0.4.0** |
 
-**Anleitung für jeden Service:**
-
-1. Datei lesen (`Read`)
-2. Public Methoden identifizieren
-3. Pure Logik vs. DB-Calls trennen
-4. 1 Test pro Funktion schreiben (lean, minimaler Input)
-5. `pnpm vitest run --project unit -- <datei>` laufen lassen
-6. Grün? → Nächster Service. Rot? → Fixen.
+**Empfehlung:** Tiefere Service-Tests für kritische Business-Logik (Auth, Shifts, Documents, Surveys), dann Guard-Tests. Playwright E2E erst ab v0.4.0.
 
 ---
 
@@ -1145,7 +1325,7 @@ Phase 10: Service Tests II — 234 Tests, 14 Services           ✅ DONE (14/14 
 | shifts        | shifts.dto.test.ts        | 66    | 8 common enums, TimeSchema HH:MM, dual date fmt     |
 | settings      | settings.dto.test.ts      | 33    | SettingValue union, BulkUpdate min 1, CategoryEnum  |
 
-**Phase 0-10 abgeschlossen. Phase 11 (weitere Services) als Nächstes.** CI + Coverage-Thresholds aktiv seit 2026-02-05.
+**Phase 0-11 abgeschlossen. Alle Services getestet.** CI + Coverage-Thresholds aktiv seit 2026-02-05.
 
 ---
 

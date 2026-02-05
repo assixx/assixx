@@ -1,0 +1,176 @@
+/**
+ * Unit tests for DashboardService
+ *
+ * Phase 11: Service tests — mocked dependencies.
+ * Focus: Parallel aggregation from 7 sub-services,
+ *        graceful error handling (catch → fallback values).
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { BlackboardService } from '../blackboard/blackboard.service.js';
+import type { CalendarService } from '../calendar/calendar.service.js';
+import type { ChatService } from '../chat/chat.service.js';
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { DocumentsService } from '../documents/documents.service.js';
+import type { KvpService } from '../kvp/kvp.service.js';
+import type { NotificationsService } from '../notifications/notifications.service.js';
+import type { SurveysService } from '../surveys/surveys.service.js';
+import { DashboardService } from './dashboard.service.js';
+
+// =============================================================
+// Mock factories
+// =============================================================
+
+function createMockChatService() {
+  return {
+    getUnreadCount: vi.fn().mockResolvedValue({
+      totalUnread: 3,
+      conversations: [
+        { conversationId: 1, conversationName: 'General', unreadCount: 3 },
+      ],
+    }),
+  };
+}
+
+function createMockNotificationsService() {
+  return {
+    getPersonalStats: vi.fn().mockResolvedValue({
+      total: 10,
+      unread: 2,
+      byType: { info: 5, warning: 5 },
+    }),
+  };
+}
+
+function createMockBlackboardService() {
+  return {
+    getUnconfirmedCount: vi.fn().mockResolvedValue({ count: 4 }),
+  };
+}
+
+function createMockCalendarService() {
+  return {
+    getUpcomingCount: vi.fn().mockResolvedValue({ count: 7 }),
+  };
+}
+
+function createMockDocumentsService() {
+  return {
+    getUnreadCount: vi.fn().mockResolvedValue({ count: 1 }),
+  };
+}
+
+function createMockKvpService() {
+  return {
+    getUnconfirmedCount: vi.fn().mockResolvedValue({ count: 2 }),
+  };
+}
+
+function createMockSurveysService() {
+  return {
+    getPendingSurveyCount: vi.fn().mockResolvedValue({ count: 3 }),
+  };
+}
+
+function makeUser(): NestAuthUser {
+  return {
+    id: 5,
+    tenantId: 10,
+    role: 'employee',
+    email: 'user@test.com',
+    activeRole: 'employee',
+    departmentId: 3,
+    teamId: 7,
+  } as NestAuthUser;
+}
+
+// =============================================================
+// DashboardService
+// =============================================================
+
+describe('DashboardService', () => {
+  let service: DashboardService;
+  let mockChat: ReturnType<typeof createMockChatService>;
+  let mockNotifications: ReturnType<typeof createMockNotificationsService>;
+  let mockBlackboard: ReturnType<typeof createMockBlackboardService>;
+  let mockCalendar: ReturnType<typeof createMockCalendarService>;
+  let mockDocuments: ReturnType<typeof createMockDocumentsService>;
+  let mockKvp: ReturnType<typeof createMockKvpService>;
+  let mockSurveys: ReturnType<typeof createMockSurveysService>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockChat = createMockChatService();
+    mockNotifications = createMockNotificationsService();
+    mockBlackboard = createMockBlackboardService();
+    mockCalendar = createMockCalendarService();
+    mockDocuments = createMockDocumentsService();
+    mockKvp = createMockKvpService();
+    mockSurveys = createMockSurveysService();
+    service = new DashboardService(
+      mockChat as unknown as ChatService,
+      mockNotifications as unknown as NotificationsService,
+      mockBlackboard as unknown as BlackboardService,
+      mockCalendar as unknown as CalendarService,
+      mockDocuments as unknown as DocumentsService,
+      mockKvp as unknown as KvpService,
+      mockSurveys as unknown as SurveysService,
+    );
+  });
+
+  // =============================================================
+  // getCounts — all services succeed
+  // =============================================================
+
+  describe('getCounts', () => {
+    it('should aggregate counts from all services', async () => {
+      const result = await service.getCounts(makeUser(), 10);
+
+      expect(result.chat.totalUnread).toBe(3);
+      expect(result.notifications.total).toBe(10);
+      expect(result.notifications.unread).toBe(2);
+      expect(result.blackboard.count).toBe(4);
+      expect(result.calendar.count).toBe(7);
+      expect(result.documents.count).toBe(1);
+      expect(result.kvp.count).toBe(2);
+      expect(result.surveys.count).toBe(3);
+      expect(result.fetchedAt).toBeDefined();
+    });
+  });
+
+  // =============================================================
+  // getCounts — graceful error handling
+  // =============================================================
+
+  describe('getCounts — error fallback', () => {
+    it('should use fallback when chat fails', async () => {
+      mockChat.getUnreadCount.mockRejectedValueOnce(new Error('Chat down'));
+
+      const result = await service.getCounts(makeUser(), 10);
+
+      expect(result.chat.totalUnread).toBe(0);
+      expect(result.chat.conversations).toEqual([]);
+    });
+
+    it('should use fallback when notifications fail', async () => {
+      mockNotifications.getPersonalStats.mockRejectedValueOnce(
+        new Error('Notifications down'),
+      );
+
+      const result = await service.getCounts(makeUser(), 10);
+
+      expect(result.notifications.total).toBe(0);
+      expect(result.notifications.unread).toBe(0);
+    });
+
+    it('should use fallback when blackboard fails', async () => {
+      mockBlackboard.getUnconfirmedCount.mockRejectedValueOnce(
+        new Error('BB down'),
+      );
+
+      const result = await service.getCounts(makeUser(), 10);
+
+      expect(result.blackboard.count).toBe(0);
+    });
+  });
+});

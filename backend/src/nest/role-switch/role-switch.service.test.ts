@@ -1,0 +1,186 @@
+/**
+ * Unit tests for RoleSwitchService
+ *
+ * Phase 11: Service tests — mocked dependencies.
+ * Focus: Role switching with security checks, JWT generation,
+ *        ForbiddenException for unauthorized roles, getStatus (pure).
+ *
+ * NOTE: Uses legacy execute() from utils/db.js.
+ */
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { execute } from '../../utils/db.js';
+import { RoleSwitchService } from './role-switch.service.js';
+
+// =============================================================
+// Module mocks
+// =============================================================
+
+vi.mock('../../utils/db.js', () => ({
+  execute: vi.fn(),
+}));
+
+const mockExecute = vi.mocked(execute);
+
+// =============================================================
+// Mock factories
+// =============================================================
+
+function createMockJwtService() {
+  return {
+    sign: vi.fn().mockReturnValue('mock-jwt-token'),
+  };
+}
+
+function makeUserRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    username: 'admin@example.com',
+    email: 'admin@example.com',
+    role: 'admin',
+    tenant_id: 10,
+    position: null,
+    ...overrides,
+  };
+}
+
+// =============================================================
+// RoleSwitchService
+// =============================================================
+
+describe('RoleSwitchService', () => {
+  let service: RoleSwitchService;
+  let mockJwtService: ReturnType<typeof createMockJwtService>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockJwtService = createMockJwtService();
+    service = new RoleSwitchService(mockJwtService as never);
+  });
+
+  // =============================================================
+  // switchToEmployee
+  // =============================================================
+
+  describe('switchToEmployee', () => {
+    it('should throw NotFoundException when user not found', async () => {
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      await expect(service.switchToEmployee(999, 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException for employee user', async () => {
+      mockExecute.mockResolvedValueOnce([
+        [makeUserRow({ role: 'employee' })],
+        [],
+      ]);
+
+      await expect(service.switchToEmployee(1, 10)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should switch admin to employee view', async () => {
+      // verifyUserTenant
+      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'admin' })], []]);
+      // logRoleSwitch
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.switchToEmployee(1, 10);
+
+      expect(result.token).toBe('mock-jwt-token');
+      expect(result.user.activeRole).toBe('employee');
+      expect(result.user.isRoleSwitched).toBe(true);
+      expect(result.message).toBe('Successfully switched to employee view');
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          activeRole: 'employee',
+          isRoleSwitched: true,
+        }),
+      );
+    });
+  });
+
+  // =============================================================
+  // switchToOriginal
+  // =============================================================
+
+  describe('switchToOriginal', () => {
+    it('should switch back to original role', async () => {
+      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'admin' })], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.switchToOriginal(1, 10);
+
+      expect(result.user.activeRole).toBe('admin');
+      expect(result.user.isRoleSwitched).toBe(false);
+    });
+
+    it('should throw ForbiddenException for employee', async () => {
+      mockExecute.mockResolvedValueOnce([
+        [makeUserRow({ role: 'employee' })],
+        [],
+      ]);
+
+      await expect(service.switchToOriginal(1, 10)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  // =============================================================
+  // rootToAdmin
+  // =============================================================
+
+  describe('rootToAdmin', () => {
+    it('should throw ForbiddenException for non-root user', async () => {
+      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'admin' })], []]);
+
+      await expect(service.rootToAdmin(1, 10)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should switch root to admin view', async () => {
+      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'root' })], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.rootToAdmin(1, 10);
+
+      expect(result.user.activeRole).toBe('admin');
+      expect(result.user.role).toBe('root');
+      expect(result.user.isRoleSwitched).toBe(true);
+    });
+  });
+
+  // =============================================================
+  // getStatus (pure function)
+  // =============================================================
+
+  describe('getStatus', () => {
+    it('should return status for non-switched user', () => {
+      const result = service.getStatus(1, 10, 'admin', undefined, undefined);
+
+      expect(result.originalRole).toBe('admin');
+      expect(result.activeRole).toBe('admin');
+      expect(result.isRoleSwitched).toBe(false);
+      expect(result.canSwitch).toBe(true);
+    });
+
+    it('should return status for switched user', () => {
+      const result = service.getStatus(1, 10, 'admin', 'employee', true);
+
+      expect(result.activeRole).toBe('employee');
+      expect(result.isRoleSwitched).toBe(true);
+    });
+
+    it('should report canSwitch=false for employee', () => {
+      const result = service.getStatus(5, 10, 'employee', undefined, undefined);
+
+      expect(result.canSwitch).toBe(false);
+    });
+  });
+});
