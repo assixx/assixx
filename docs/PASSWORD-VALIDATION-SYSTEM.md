@@ -598,10 +598,9 @@ console.log('Hash length:', hash.length); // Should be 60
 
 ```
 password-strength-core.js:        12 KB  (lazy wrapper)
-password-strength-integration.js: 30 KB  (UI integration)
 vendor-zxcvbn.js:                  0 KB  (NOT loaded yet!)
 ────────────────────────────────────────
-Total Initial:                    ~42 KB ✅
+Total Initial:                    ~12 KB ✅
 ```
 
 **After First Password Field Focus:**
@@ -717,45 +716,7 @@ export async function initPasswordStrength(): Promise<void> {
 - **Null Checks:** Graceful handling if initialization fails
 - **Error Recovery:** Try-catch blocks ensure app doesn't crash
 
-#### 2. UI Integration (`password-strength-integration.ts` - 30 KB)
-
-**Purpose:** Wire up lazy loading to DOM events
-
-```typescript
-export function setupPasswordStrength(config: PasswordStrengthConfig): void {
-  const elements = getPasswordStrengthElements(config);
-  if (elements === null) return;
-
-  // Initialize zxcvbn on FIRST focus (lazy loading trigger)
-  elements.passwordInput.addEventListener('focus', async () => {
-    if (!isPasswordStrengthReady()) {
-      await initPasswordStrength();
-    }
-  });
-
-  // Debounced validation on input (only after loaded)
-  const debounceMs = config.debounceMs ?? 300;
-  let validationTimeout: NodeJS.Timeout | null = null;
-
-  elements.passwordInput.addEventListener('input', () => {
-    if (validationTimeout !== null) {
-      clearTimeout(validationTimeout);
-    }
-    validationTimeout = setTimeout(() => {
-      void validatePasswordStrength();
-    }, debounceMs);
-  });
-}
-```
-
-**Loading Trigger:**
-
-- **Event:** `focus` on password input field
-- **Frequency:** Once per page load (cached after first focus)
-- **User Experience:** ~500ms delay before validation becomes available
-- **Fallback:** Validation works without zxcvbn (basic rules still enforced)
-
-#### 3. Vite Build Configuration
+#### 2. Vite Build Configuration
 
 **Purpose:** Separate zxcvbn into lazy-loadable chunk
 
@@ -784,7 +745,6 @@ build: {
 ```
 dist/js/
 ├─ password-strength-core-[hash].js        12 KB  ← Lazy wrapper
-├─ password-strength-integration-[hash].js 30 KB  ← UI integration
 └─ vendor-zxcvbn-[hash].js              3,225 KB  ← Dictionaries (lazy!)
 ```
 

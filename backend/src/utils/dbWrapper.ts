@@ -6,14 +6,6 @@ import { QueryResultRow } from 'pg';
 
 import { PoolConnection, ResultSetHeader } from './db.js';
 
-export interface DbConnection {
-  query(
-    sql: string,
-    params?: unknown[],
-  ): Promise<{ rows: QueryResultRow[]; rowCount: number | null }>;
-  release(): void;
-}
-
 /**
  * ConnectionWrapper provides a consistent interface for database operations
  * Works with PoolConnection from db.ts

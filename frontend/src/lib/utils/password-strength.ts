@@ -16,14 +16,13 @@ const log = createLogger('PasswordStrength');
 let zxcvbnInstance:
   | ((password: string, userInputs?: string[]) => ZxcvbnResult)
   | null = null;
-let isLoading = false;
 let loadPromise: Promise<void> | null = null;
 
 /**
  * Initialize zxcvbn with German language support
  * Lazy loads all required modules on first use
  */
-export async function initPasswordStrength(): Promise<void> {
+async function initPasswordStrength(): Promise<void> {
   // Return existing promise if already loading
   if (loadPromise !== null) {
     await loadPromise;
@@ -35,8 +34,6 @@ export async function initPasswordStrength(): Promise<void> {
     await Promise.resolve();
     return;
   }
-
-  isLoading = true;
 
   // Create and store the loading promise
   loadPromise = (async () => {
@@ -62,10 +59,9 @@ export async function initPasswordStrength(): Promise<void> {
       zxcvbnOptions.setOptions(options);
       zxcvbnInstance = zxcvbn;
     } catch (error) {
+      loadPromise = null;
       log.error({ err: error }, 'Failed to load modules');
       throw error;
-    } finally {
-      isLoading = false;
     }
   })();
 
@@ -80,7 +76,7 @@ export async function initPasswordStrength(): Promise<void> {
  * @param userInputs - User-specific context (name, email, etc.)
  * @returns Password strength result or null if not loaded
  */
-export async function checkPasswordStrength(
+async function checkPasswordStrength(
   password: string,
   userInputs: string[] = [],
 ): Promise<ZxcvbnResult | null> {
@@ -200,20 +196,6 @@ export function formatCrackTime(crackTimeDisplay: string): string {
     return '';
   }
   return `Knackzeit: ${crackTimeDisplay}`;
-}
-
-/**
- * Check if loading is in progress
- */
-export function isPasswordStrengthLoading(): boolean {
-  return isLoading;
-}
-
-/**
- * Check if password strength module is ready
- */
-export function isPasswordStrengthReady(): boolean {
-  return zxcvbnInstance !== null;
 }
 
 /**

@@ -24,7 +24,7 @@ export interface ResultSetHeader {
 /**
  * Field metadata from query result
  */
-export interface FieldPacket {
+interface FieldPacket {
   name: string;
   dataTypeID: number;
 }
@@ -211,7 +211,7 @@ export async function getConnection(): Promise<PoolConnection> {
  * RLS context options for transaction
  * NEW 2025-12-04: Added userId for participant-based isolation
  */
-export interface RLSContextOptions {
+interface RLSContextOptions {
   tenantId?: number;
   userId?: number;
 }

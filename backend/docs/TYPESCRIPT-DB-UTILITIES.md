@@ -132,12 +132,10 @@ try {
 ```typescript
 // Available imports from '../utils/db'
 import {
-  FieldPacket,
   Pool,
   PoolClient,
   PoolConnection,
   QueryResultRow,
-  RLSContextOptions,
   // Types
   ResultSetHeader,
   RowDataPacket,
@@ -152,6 +150,8 @@ import {
   transaction,
 } from '../utils/db';
 ```
+
+> **Note:** `FieldPacket` and `RLSContextOptions` are internal types — used within `db.ts` but not exported.
 
 ## Row Level Security (RLS)
 

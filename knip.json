@@ -30,10 +30,8 @@
         "reflect-metadata",
         "pino-pretty",
         "pino-loki",
-        "pino-roll",
         "@sentry/nestjs",
-        "@willsoto/nestjs-prometheus",
-        "class-transformer"
+        "@willsoto/nestjs-prometheus"
       ]
     },
     "frontend": {

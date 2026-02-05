@@ -48,23 +48,3 @@ export function generateEmployeeId(
 
   return `${domain}${roleCode}${userId}${dateTime}`;
 }
-
-/**
- * Generates a temporary employee ID before user ID is known
- * @param subdomain - The tenant subdomain
- * @param role - User role
- * @returns Temporary employee ID
- */
-export function generateTempEmployeeId(
-  subdomain: string,
-  role: string,
-): { tempId: string; timestamp: string } {
-  const domain = subdomain.toUpperCase().slice(0, 10);
-  const roleCode = getRoleAbbreviation(role);
-  const dateTime = getDateTimeString();
-
-  return {
-    tempId: `${domain}${roleCode}TEMP${dateTime}`,
-    timestamp: dateTime,
-  };
-}

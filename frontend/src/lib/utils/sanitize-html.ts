@@ -257,28 +257,3 @@ export function escapeHtml(text: string | null | undefined): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-
-/**
- * Check if content contains potentially dangerous HTML
- * Useful for showing warnings to users
- *
- * SSR-SAFE: Returns false on server (can't detect without DOMPurify)
- *
- * @param html - HTML content to check
- * @returns true if content was modified by sanitization
- */
-export function containsDangerousHtml(
-  html: string | null | undefined,
-): boolean {
-  if (html === null || html === undefined || html === '') {
-    return false;
-  }
-
-  // SSR fallback: can't detect dangerous HTML without DOMPurify
-  if (!browser || purifier === null) {
-    return false;
-  }
-
-  const sanitized = purifier.sanitize(html, DOMPURIFY_CONFIG);
-  return sanitized !== html;
-}

@@ -165,25 +165,3 @@ export async function fetchCurrentUser(): Promise<{
   userCache.promise = promise;
   return await promise;
 }
-
-/**
- * Get cached user (synchronous)
- * Returns null if not cached or cache expired
- */
-export function getCachedUser(): CurrentUser | null {
-  if (isUserCacheValid()) {
-    return userCache.data;
-  }
-  return null;
-}
-
-/**
- * Get cached tenant (synchronous)
- * Returns null if not cached or cache expired
- */
-export function getCachedTenant(): CurrentTenant | null {
-  if (isUserCacheValid()) {
-    return userCache.tenant;
-  }
-  return null;
-}

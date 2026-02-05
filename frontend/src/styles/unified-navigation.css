@@ -382,7 +382,7 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-left: 4px;
 
   /* 20px in rem */
-  padding: 0.7rem;
+  padding: 0.9rem 0.7rem 0.7rem;
 
   min-height: auto;
 

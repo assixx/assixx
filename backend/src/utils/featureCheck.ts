@@ -19,7 +19,7 @@ interface DbFeature extends RowDataPacket {
  * @param featureCode - Feature code (e.g., 'email_notifications')
  * @returns true if tenant has active access to the feature
  */
-export async function checkTenantFeatureAccess(
+async function checkTenantFeatureAccess(
   tenantId: number,
   featureCode: string,
 ): Promise<boolean> {
@@ -53,7 +53,7 @@ export async function checkTenantFeatureAccess(
  * @param metadata - Additional metadata to log
  * @returns true if logged successfully
  */
-export async function logFeatureUsage(
+async function logFeatureUsage(
   tenantId: number,
   featureCode: string,
   userId: number | null = null,

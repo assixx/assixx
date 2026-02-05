@@ -73,7 +73,6 @@ export {
   sanitizeHtml,
   sanitizeWithLineBreaks,
   escapeHtml,
-  containsDangerousHtml,
 } from './sanitize-html';
 
 // API Client
@@ -81,15 +80,7 @@ export { ApiClient, ApiError, getApiClient, apiClient } from './api-client';
 
 // Password strength (lazy-loaded zxcvbn-ts)
 export {
-  initPasswordStrength,
-  checkPasswordStrength,
   analyzePassword,
-  getStrengthLabel,
-  getStrengthColor,
-  getStrengthClass,
-  formatCrackTime,
-  isPasswordStrengthLoading,
-  isPasswordStrengthReady,
   type PasswordStrengthResult,
 } from './password-strength';
 
