@@ -29,7 +29,7 @@
 | Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                         |
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                            |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                    |
-| Test-Dateien       | **8 Dateien, 222 Tests** — Phase 0-4 abgeschlossen                     |
+| Test-Dateien       | **12 Dateien, 308 Tests** — Phase 0-5 abgeschlossen                    |
 | Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                             |
 | CI/CD              | `code-quality-checks.yml` — nur Lint, kein Test (geplant nach Phase 4) |
 | Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                 |
@@ -46,21 +46,25 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
 ### Aktueller Zustand bei `pnpm test`
 
 ```
- ✓ shared/src/constants/is-active.test.ts              ( 9 tests)  5ms
- ✓ shared/src/helpers/date-helpers.test.ts             (27 tests) 18ms
- ✓ backend/src/nest/common/audit/audit.helpers.test.ts (41 tests)  7ms
- ✓ backend/src/utils/fieldMapper.test.ts               (16 tests)  8ms
- ✓ backend/src/nest/users/users.helpers.test.ts        (20 tests)  6ms
- ✓ backend/src/nest/shifts/shifts.helpers.test.ts      (22 tests)  5ms
- ✓ backend/src/nest/kvp/kvp.helpers.test.ts            (24 tests)  8ms
- ✓ backend/src/schemas/common.schema.test.ts           (63 tests) 12ms
+ ✓ shared/src/constants/is-active.test.ts                             ( 9 tests)
+ ✓ shared/src/helpers/date-helpers.test.ts                            (27 tests)
+ ✓ backend/src/nest/common/audit/audit.helpers.test.ts                (41 tests)
+ ✓ backend/src/utils/fieldMapper.test.ts                              (16 tests)
+ ✓ backend/src/nest/users/users.helpers.test.ts                       (20 tests)
+ ✓ backend/src/nest/shifts/shifts.helpers.test.ts                     (22 tests)
+ ✓ backend/src/nest/kvp/kvp.helpers.test.ts                           (24 tests)
+ ✓ backend/src/schemas/common.schema.test.ts                          (63 tests)
+ ✓ backend/src/nest/roles/roles.service.test.ts                       (32 tests)
+ ✓ backend/src/nest/features/features.service.test.ts                 (23 tests)
+ ✓ backend/src/nest/auth/auth.service.test.ts                         (14 tests)
+ ✓ backend/src/nest/admin-permissions/admin-permissions.service.test.ts (17 tests)
 
- Test Files  8 passed (8)
-       Tests  222 passed (222)
-    Duration  453ms
+ Test Files  12 passed (12)
+       Tests  308 passed (308)
+    Duration  659ms
 ```
 
-Phase 0-4 abgeschlossen. Alle 222 Tests grün.
+Phase 0-5 abgeschlossen. Alle 308 Tests grün.
 
 ---
 
@@ -375,34 +379,53 @@ pnpm test
 
 | #   | Datei                           | Testbare Logik                                                  | Was wird gemockt    |
 | --- | ------------------------------- | --------------------------------------------------------------- | ------------------- |
-| 1   | `roles.service.ts`              | `getRoleHierarchy()`, `getAssignableRoles()`, `checkUserRole()` | Nichts (pure logic) |
-| 2   | `rotation-generator.service.ts` | `determineShiftType()`, Cycle-Berechnung                        | DB                  |
-| 3   | `features.service.ts`           | `checkFeatureAccess()`, `checkFeatureQuota()`                   | DB                  |
-| 4   | `plans.service.ts`              | Plan-Validierung, Upgrade-Prüfung                               | DB                  |
-| 5   | `admin-permissions.service.ts`  | Permission-Inheritance                                          | DB                  |
-| 6   | `auth.service.ts`               | Token-Refresh-Rotation, Reuse-Detection                         | DB, bcrypt, JWT     |
+| 1   | `roles.service.ts`              | `getRoleHierarchy()`, `getAssignableRoles()`, `checkUserRole()` | `execute` (utils/db) |
+| 2   | `features.service.ts`           | Mapper-Logik, Status-Berechnung, `checkTenantAccess()`          | DatabaseService      |
+| 3   | `auth.service.ts`               | `verifyToken()`, Token-Reuse-Detection, Refresh-Rotation        | DatabaseService, JWT |
+| 4   | `admin-permissions.service.ts`  | `checkAccess()`, Permission-Level-Prüfung, Deprecated-Verhalten | DatabaseService      |
 
-**Mocking-Pattern:**
+**Nicht getestet (bewusst ausgelassen):**
+
+- `rotation-generator.service.ts` — Alle pure Methoden sind `private`, testbar nur via öffentliche Methoden die komplexes DB-Mocking brauchen. → Phase 6 oder Extract-to-Helper.
+- `plans.service.ts` — Mapper-Logik identisch zu features.service.ts. Kein Mehrwert durch doppelte Tests.
+
+**Mocking-Pattern (konsistent über alle Service-Tests):**
 
 ```typescript
-const mockExecute = vi.fn();
-vi.mock('../../database/database.service.js', () => ({
-  DatabaseService: vi.fn().mockImplementation(() => ({
-    execute: mockExecute,
-  })),
-}));
+// 1. Create mock DB factory
+function createMockDb() {
+  return { query: vi.fn(), queryOne: vi.fn() };
+}
+
+// 2. Instantiate service with mock (DI bypass)
+const mockDb = createMockDb();
+const service = new FeaturesService(mockDb as unknown as DatabaseService);
+
+// 3. Configure mock per test
+mockDb.query.mockResolvedValueOnce([{ id: 1, name: 'Test' }]);
+
+// For modules with module-level validation (auth.service.ts):
+vi.hoisted(() => {
+  process.env['JWT_SECRET'] = 'long-enough-secret...';
+});
 ```
 
-**Geschätzte Tests:** ~80-100
+**Geschätzte Tests:** ~80-100 → **Tatsächlich: 86 Tests (32 + 23 + 14 + 17)**
 
 ### Phase 5: Definition of Done
 
-- [ ] Mocking-Pattern dokumentiert und konsistent über alle Service-Tests
-- [ ] Kein echter DB-Call in Tests — alles gemockt
-- [ ] Role-Hierarchy-Logik vollständig getestet (root > admin > employee)
-- [ ] Token-Reuse-Detection getestet (Refresh-Rotation)
-- [ ] Kein `.only` oder `.skip` im Code
-- [ ] Coverage-Thresholds in CI aktiviert
+- [x] Mocking-Pattern dokumentiert und konsistent über alle Service-Tests
+- [x] Kein echter DB-Call in Tests — alles gemockt
+- [x] Role-Hierarchy-Logik vollständig getestet (root > admin > employee) — 9-Combo table-driven
+- [x] Token-Reuse-Detection getestet (Refresh-Rotation) — 3 Reuse + 2 Happy-Path
+- [x] Kein `.only` oder `.skip` im Code
+- [ ] Coverage-Thresholds in CI aktiviert — verschoben auf CI-Setup
+
+**Erkenntnisse:**
+
+- `vi.hoisted()` nötig für Module mit Top-Level-Validierung (auth.service.ts `getJwtSecrets()`)
+- `vi.useFakeTimers()` nötig für Feature-Expiry-Logik (deterministische `new Date()` Vergleiche)
+- DI-Bypass via Constructor-Injection: `new Service(mockDb as unknown as DatabaseService)` — Standard-Pattern, kein NestJS-Testmodul nötig
 
 ---
 
@@ -475,14 +498,14 @@ Phase 1: Proof of Concept  fieldMapper.test.ts — 16 Tests grün    ✅ DONE (1
 Phase 2: Shared Package    date-helpers, is-active                 ✅ DONE (36 Tests)
 Phase 3: Zod Schemas       common.schema.ts                       ✅ DONE (63 Tests)
 Phase 4: Backend Helpers   shifts, users, kvp, audit               ✅ DONE (107 Tests)
+Phase 5: Services          roles, features, auth, admin-perms      ✅ DONE (86 Tests)
 ─────────────────────────────────────────────────────────────────────────
-Phase 5: Services          roles, rotation, features, auth (Mocking) ← NÄCHSTE
-Phase 6: Restliche         blackboard, calendar, chat, etc.
+Phase 6: Restliche         blackboard, calendar, chat, etc.         ← NÄCHSTE
 Phase 7: Frontend Utils    password-strength, auth, jwt (jsdom)
 Phase 8: DTOs              Alle Module
 ```
 
-**Gesamt: 222 Tests in 8 Dateien, alle grün.**
+**Gesamt: 308 Tests in 12 Dateien, alle grün.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -804,14 +827,14 @@ coverage: {
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-4)  |
+| Metrik              | Geplant  | Aktuell (Phase 0-5)  |
 | ------------------- | -------- | -------------------- |
-| Testbare Dateien    | ~60+     | 8 getestet           |
-| Testbare Funktionen | ~300+    | ~35 getestet         |
-| Geschätzte Tests    | ~470-580 | **222 geschrieben**  |
-| Phasen              | 0 + 8    | **5 von 9 erledigt** |
+| Testbare Dateien    | ~60+     | 12 getestet          |
+| Testbare Funktionen | ~300+    | ~55 getestet         |
+| Geschätzte Tests    | ~470-580 | **308 geschrieben**  |
+| Phasen              | 0 + 8    | **6 von 9 erledigt** |
 
-### Abgeschlossen: Phase 0-4
+### Abgeschlossen: Phase 0-5
 
 ```
 Phase 0: vitest.config.ts komplett überarbeitet     ✅ 6/6 Checks
@@ -819,15 +842,15 @@ Phase 1: fieldMapper.test.ts — 16 Tests             ✅ 100/97/100/100% Covera
 Phase 2: date-helpers + is-active — 36 Tests         ✅ vi.useFakeTimers()
 Phase 3: common.schema.ts — 63 Tests                 ✅ NIST 800-63B, Coercion
 Phase 4: shifts + users + kvp + audit — 107 Tests    ✅ SQL-Injection, SENSITIVE_FIELDS
+Phase 5: roles + features + auth + admin — 86 Tests   ✅ DB-Mocking, Token-Reuse
 ═══════════════════════════════════════════════════════════════════
-         222 Tests. 8 Dateien. 453ms. Alle grün.
+         308 Tests. 12 Dateien. 659ms. Alle grün.
 ```
 
 ### Nächste Phasen: Peu à peu
 
 ```
-Phase 5: Services         (roles, rotation, features, auth)  ← NÄCHSTE
-Phase 6: Restliche        (blackboard, calendar, chat, etc.)
+Phase 6: Restliche        (blackboard, calendar, chat, etc.)  ← NÄCHSTE
 Phase 7: Frontend Utils   (password-strength, auth, jwt)
 Phase 8: DTOs             (alle Module)
 ```
