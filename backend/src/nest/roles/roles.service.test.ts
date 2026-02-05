@@ -20,7 +20,7 @@ vi.mock('../../utils/db.js', () => ({
 }));
 
 // Import AFTER mock registration to get the mocked version
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+ 
 import { execute } from '../../utils/db.js';
 
 const mockExecute = vi.mocked(execute);

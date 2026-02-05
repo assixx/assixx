@@ -45,6 +45,8 @@ export default [
       'backend/src/routes/v1/**',
       'backend/archive/**',
       'coverage/**',
+      'vitest.frontend-setup.ts',
+      'vitest.mocks/**',
       '*.log',
       'backend/logs/**',
       '.env',

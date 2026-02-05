@@ -141,7 +141,7 @@ describe('AuthService', () => {
   // =============================================================
 
   describe('refresh', () => {
-    const fakeRefreshToken = 'eyJhbGciOiJIUzI1NiJ9.fake-refresh-token';
+    const fakeRefreshToken = 'fake-refresh-token-for-unit-test';
     const fakeTokenHash = crypto
       .createHash('sha256')
       .update(fakeRefreshToken)

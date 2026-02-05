@@ -8,9 +8,10 @@ const rootDir = import.meta.dirname;
 /**
  * Vitest Configuration for Assixx
  *
- * Two projects:
- *   - unit: backend/src + shared/src (fast, isolated, mocked)
- *   - api:  api-tests/vitest (real HTTP against Docker backend)
+ * Three projects:
+ *   - unit:          backend/src + shared/src (fast, isolated, mocked)
+ *   - frontend-unit: frontend/src utils (pure functions, mocked SvelteKit env)
+ *   - api:           api-tests/vitest (real HTTP against Docker backend)
  *
  * Vitest 4: uses `projects` array (vitest.workspace.ts is deprecated since v3.2)
  *
@@ -79,6 +80,29 @@ export default defineConfig({
           setupFiles: ['./vitest.setup.ts'],
           // Unique groupOrder required when projects have different maxWorkers
           sequence: { groupOrder: 1 },
+        },
+      },
+
+      // ── Frontend Unit Tests: pure utility functions ─────────────────────
+      {
+        resolve: {
+          alias: {
+            '$app/environment': resolve(
+              rootDir,
+              './vitest.mocks/app-environment.ts',
+            ),
+            $lib: resolve(rootDir, './frontend/src/lib'),
+          },
+        },
+        test: {
+          name: 'frontend-unit',
+          environment: 'node',
+          globals: true,
+          include: ['frontend/src/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**', '**/dist/**'],
+          testTimeout: 10_000,
+          setupFiles: ['./vitest.frontend-setup.ts'],
+          sequence: { groupOrder: 3 },
         },
       },
 

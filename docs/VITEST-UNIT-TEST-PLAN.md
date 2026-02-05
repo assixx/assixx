@@ -29,7 +29,7 @@
 | Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                         |
 | `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                            |
 | `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                    |
-| Test-Dateien       | **18 Dateien, 345 Tests** — Phase 0-6 abgeschlossen                    |
+| Test-Dateien       | **23 Dateien, 364 Tests** — Phase 0-7 abgeschlossen                    |
 | Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                             |
 | CI/CD              | `code-quality-checks.yml` — nur Lint, kein Test (geplant nach Phase 4) |
 | Coverage           | **Funktioniert** — nest/ inkludiert, v8 Provider aktiv                 |
@@ -64,13 +64,18 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓ backend/src/nest/documents/documents.helpers.test.ts               ( 5 tests)
  ✓ backend/src/nest/surveys/surveys.helpers.test.ts                   ( 6 tests)
  ✓ backend/src/nest/notifications/notifications.helpers.test.ts       ( 3 tests)
+ ✓ frontend/src/lib/utils/avatar-helpers.test.ts                     ( 4 tests)
+ ✓ frontend/src/lib/utils/sanitize-html.test.ts                      ( 2 tests)
+ ✓ frontend/src/lib/utils/auth.test.ts                               ( 6 tests)
+ ✓ frontend/src/lib/utils/password-strength.test.ts                  ( 4 tests)
+ ✓ frontend/src/lib/utils/jwt-utils.test.ts                          ( 3 tests)
 
- Test Files  18 passed (18)
-       Tests  345 passed (345)
-    Duration  836ms
+ Test Files  23 passed (23)
+       Tests  364 passed (364)
+    Duration  ~1.1s
 ```
 
-Phase 0-6 abgeschlossen. Alle 345 Tests grün.
+Phase 0-7 abgeschlossen. Alle 364 Tests grün.
 
 ---
 
@@ -383,12 +388,12 @@ pnpm test
 
 ### Phase 5: Service-Logik mit Mocking
 
-| #   | Datei                           | Testbare Logik                                                  | Was wird gemockt    |
-| --- | ------------------------------- | --------------------------------------------------------------- | ------------------- |
-| 1   | `roles.service.ts`              | `getRoleHierarchy()`, `getAssignableRoles()`, `checkUserRole()` | `execute` (utils/db) |
-| 2   | `features.service.ts`           | Mapper-Logik, Status-Berechnung, `checkTenantAccess()`          | DatabaseService      |
-| 3   | `auth.service.ts`               | `verifyToken()`, Token-Reuse-Detection, Refresh-Rotation        | DatabaseService, JWT |
-| 4   | `admin-permissions.service.ts`  | `checkAccess()`, Permission-Level-Prüfung, Deprecated-Verhalten | DatabaseService      |
+| #   | Datei                          | Testbare Logik                                                  | Was wird gemockt     |
+| --- | ------------------------------ | --------------------------------------------------------------- | -------------------- |
+| 1   | `roles.service.ts`             | `getRoleHierarchy()`, `getAssignableRoles()`, `checkUserRole()` | `execute` (utils/db) |
+| 2   | `features.service.ts`          | Mapper-Logik, Status-Berechnung, `checkTenantAccess()`          | DatabaseService      |
+| 3   | `auth.service.ts`              | `verifyToken()`, Token-Reuse-Detection, Refresh-Rotation        | DatabaseService, JWT |
+| 4   | `admin-permissions.service.ts` | `checkAccess()`, Permission-Level-Prüfung, Deprecated-Verhalten | DatabaseService      |
 
 **Nicht getestet (bewusst ausgelassen):**
 
@@ -461,24 +466,35 @@ Constraint: 1 Test pro Funktion — lean, kein Over-Testing. DB-Helpers in `docu
 
 ### Phase 7: Frontend Utils (eigenes Setup)
 
-**Voraussetzung:** Eigene `frontend/vitest.config.ts` mit `environment: 'happy-dom'`.
+**Lösung:** Eigenes `frontend-unit` Projekt in `vitest.config.ts` mit `environment: 'node'` + custom Mocks (kein happy-dom nötig).
 
-| #   | Datei                  | Funktionen                                                      |
-| --- | ---------------------- | --------------------------------------------------------------- |
-| 1   | `password-strength.ts` | `getStrengthLabel()`, `getStrengthColor()`, `formatCrackTime()` |
-| 2   | `auth.ts`              | `getAuthToken()`, `setAuthToken()`, `getUserRole()`             |
-| 3   | `jwt-utils.ts`         | JWT-Parsing, Expiry-Berechnung                                  |
-| 4   | `sanitize-html.ts`     | XSS-Prevention                                                  |
-| 5   | `avatar-helpers.ts`    | Initialen-Generierung                                           |
+**Infrastruktur:**
 
-**Geschätzte Tests:** ~40-50
+- `vitest.mocks/app-environment.ts` — Mock für `$app/environment` (browser=false)
+- `vitest.frontend-setup.ts` — Map-based localStorage + window Mock
+- `vitest.config.ts` — `frontend-unit` Projekt mit resolve-alias für `$app/environment`
+
+**Mocking-Pattern:** `vi.mock('./logger')` in jeder Test-Datei die Logger braucht (vermeidet $app/environment → pino Chain).
+
+| #   | Datei                  | Funktionen                                                                                                                     | Tests |
+| --- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| 1   | `avatar-helpers.ts`    | `getAvatarColor()`, `getAvatarColorClass()`, `getInitials()`, `getProfilePictureUrl()`                                         | 4     |
+| 2   | `password-strength.ts` | `getStrengthLabel()`, `getStrengthColor()`, `getStrengthClass()`, `formatCrackTime()`                                          | 4     |
+| 3   | `jwt-utils.ts`         | `parseJwt()`, `isTokenExpired()`, `getTokenExpiryTime()`                                                                       | 3     |
+| 4   | `sanitize-html.ts`     | `escapeHtml()`, `sanitizeHtml()` (SSR fallback)                                                                                | 2     |
+| 5   | `auth.ts`              | `getRoleDisplayName()`, `setAuthToken()+getAuthToken()`, `setUserRole()+getUserRole()`, `hasPermission()`, `isAuthenticated()` | 6     |
+
+**Geschätzte Tests:** ~40-50 → **Tatsächlich: 19 Tests (4 + 4 + 3 + 2 + 6)**
+
+Constraint: 1 Test pro Funktion. Async Functions (zxcvbn) und DOMPurify-Branch bewusst ausgelassen.
 
 ### Phase 7: Definition of Done
 
-- [ ] `frontend/vitest.config.ts` existiert mit `environment: 'happy-dom'`
-- [ ] `pnpm test` im Frontend läuft separat und grün
-- [ ] localStorage/sessionStorage korrekt gemockt
-- [ ] Kein `.only` oder `.skip` im Code
+- [x] `frontend-unit` Projekt in `vitest.config.ts` mit resolve-alias für `$app/environment`
+- [x] `pnpm test --project frontend-unit` läuft separat und grün (19 Tests, 279ms)
+- [x] localStorage via Map-based Mock in `vitest.frontend-setup.ts`
+- [x] Logger-Mock via `vi.mock('./logger')` in Test-Dateien (vermeidet pino-Import)
+- [x] Kein `.only` oder `.skip` im Code
 
 ---
 
@@ -510,12 +526,12 @@ Phase 3: Zod Schemas       common.schema.ts                       ✅ DONE (63 T
 Phase 4: Backend Helpers   shifts, users, kvp, audit               ✅ DONE (107 Tests)
 Phase 5: Services          roles, features, auth, admin-perms      ✅ DONE (86 Tests)
 Phase 6: Restliche         blackboard, calendar, chat, etc.        ✅ DONE (37 Tests)
+Phase 7: Frontend Utils    avatar, password, jwt, sanitize, auth    ✅ DONE (19 Tests)
 ─────────────────────────────────────────────────────────────────────────
-Phase 7: Frontend Utils    password-strength, auth, jwt (jsdom)     ← NÄCHSTE
-Phase 8: DTOs              Alle Module
+Phase 8: DTOs              Alle Module                               ← NÄCHSTE
 ```
 
-**Gesamt: 345 Tests in 18 Dateien, alle grün.**
+**Gesamt: 364 Tests in 23 Dateien, alle grün.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -837,14 +853,14 @@ coverage: {
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-6)  |
+| Metrik              | Geplant  | Aktuell (Phase 0-7)  |
 | ------------------- | -------- | -------------------- |
-| Testbare Dateien    | ~60+     | 18 getestet          |
-| Testbare Funktionen | ~300+    | ~92 getestet         |
-| Geschätzte Tests    | ~470-580 | **345 geschrieben**  |
-| Phasen              | 0 + 8    | **7 von 9 erledigt** |
+| Testbare Dateien    | ~60+     | 23 getestet          |
+| Testbare Funktionen | ~300+    | ~111 getestet        |
+| Geschätzte Tests    | ~470-580 | **364 geschrieben**  |
+| Phasen              | 0 + 8    | **8 von 9 erledigt** |
 
-### Abgeschlossen: Phase 0-6
+### Abgeschlossen: Phase 0-7
 
 ```
 Phase 0: vitest.config.ts komplett überarbeitet         ✅ 6/6 Checks
@@ -854,15 +870,15 @@ Phase 3: common.schema.ts — 63 Tests                     ✅ NIST 800-63B, Coe
 Phase 4: shifts + users + kvp + audit — 107 Tests        ✅ SQL-Injection, SENSITIVE_FIELDS
 Phase 5: roles + features + auth + admin — 86 Tests       ✅ DB-Mocking, Token-Reuse
 Phase 6: blackboard+calendar+chat+docs+surveys+notif — 37 ✅ 1 Test/Funktion, lean
+Phase 7: avatar+password+jwt+sanitize+auth — 19          ✅ frontend-unit, no deps added
 ═══════════════════════════════════════════════════════════════════
-         345 Tests. 18 Dateien. 836ms. Alle grün.
+         364 Tests. 23 Dateien. ~1.1s. Alle grün.
 ```
 
-### Nächste Phasen: Peu à peu
+### Nächste Phase: Peu à peu
 
 ```
-Phase 7: Frontend Utils   (password-strength, auth, jwt)  ← NÄCHSTE
-Phase 8: DTOs             (alle Module)
+Phase 8: DTOs             (alle Module)  ← NÄCHSTE
 ```
 
 **Jede Phase:** Tests grün → Review → Nächste Phase. Kein Vorspringen.
