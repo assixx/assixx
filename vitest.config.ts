@@ -38,6 +38,7 @@ export default defineConfig({
         'shared/src/**/*.spec.ts',
         'backend/src/**/*.module.ts', // NestJS Module definitions (DI wiring only)
         'backend/src/**/*.controller.ts', // Controllers = HTTP layer (integration tests)
+        'backend/src/**/*.guard.ts', // Guards = HTTP layer (integration tests)
         'backend/src/**/main.ts', // NestJS bootstrap
         'backend/src/**/index.ts', // Barrel exports
         'backend/src/types/**', // Pure type definitions
