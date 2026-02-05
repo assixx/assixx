@@ -67,19 +67,13 @@ describe('dbToApi', () => {
 
   it('should handle arrays of objects', () => {
     const input = {
-      user_list: [
-        { first_name: 'John' },
-        { first_name: 'Jane' },
-      ],
+      user_list: [{ first_name: 'John' }, { first_name: 'Jane' }],
     };
 
     const result = dbToApi(input);
 
     expect(result).toEqual({
-      userList: [
-        { firstName: 'John' },
-        { firstName: 'Jane' },
-      ],
+      userList: [{ firstName: 'John' }, { firstName: 'Jane' }],
     });
   });
 
@@ -121,19 +115,13 @@ describe('apiToDb', () => {
 
   it('should handle arrays of objects', () => {
     const input = {
-      userList: [
-        { firstName: 'John' },
-        { firstName: 'Jane' },
-      ],
+      userList: [{ firstName: 'John' }, { firstName: 'Jane' }],
     };
 
     const result = apiToDb(input);
 
     expect(result).toEqual({
-      user_list: [
-        { first_name: 'John' },
-        { first_name: 'Jane' },
-      ],
+      user_list: [{ first_name: 'John' }, { first_name: 'Jane' }],
     });
   });
 

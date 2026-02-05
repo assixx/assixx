@@ -30,9 +30,9 @@ describe('UpdateDocumentDto schema', () => {
   });
 
   it('should accept tags array', () => {
-    expect(
-      updateSchema.safeParse({ tags: ['important', 'hr'] }).success,
-    ).toBe(true);
+    expect(updateSchema.safeParse({ tags: ['important', 'hr'] }).success).toBe(
+      true,
+    );
   });
 
   it('should reject tags array with more than 20 items', () => {
@@ -42,15 +42,15 @@ describe('UpdateDocumentDto schema', () => {
   });
 
   it('should reject tag longer than 50 characters', () => {
-    expect(
-      updateSchema.safeParse({ tags: ['X'.repeat(51)] }).success,
-    ).toBe(false);
+    expect(updateSchema.safeParse({ tags: ['X'.repeat(51)] }).success).toBe(
+      false,
+    );
   });
 
   it('should reject filename longer than 255 characters', () => {
-    expect(
-      updateSchema.safeParse({ filename: 'F'.repeat(256) }).success,
-    ).toBe(false);
+    expect(updateSchema.safeParse({ filename: 'F'.repeat(256) }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -80,9 +80,9 @@ describe('ListDocumentsQueryDto schema', () => {
   });
 
   it('should reject invalid accessScope', () => {
-    expect(
-      listSchema.safeParse({ accessScope: 'private' }).success,
-    ).toBe(false);
+    expect(listSchema.safeParse({ accessScope: 'private' }).success).toBe(
+      false,
+    );
   });
 
   it('should coerce ownerUserId from string', () => {
@@ -92,9 +92,7 @@ describe('ListDocumentsQueryDto schema', () => {
   });
 
   it('should reject salaryYear out of range', () => {
-    expect(
-      listSchema.safeParse({ salaryYear: '1999' }).success,
-    ).toBe(false);
+    expect(listSchema.safeParse({ salaryYear: '1999' }).success).toBe(false);
   });
 
   it('should reject salaryMonth out of range', () => {
@@ -102,9 +100,9 @@ describe('ListDocumentsQueryDto schema', () => {
   });
 
   it('should reject search longer than 200 characters', () => {
-    expect(
-      listSchema.safeParse({ search: 'X'.repeat(201) }).success,
-    ).toBe(false);
+    expect(listSchema.safeParse({ search: 'X'.repeat(201) }).success).toBe(
+      false,
+    );
   });
 
   it('should reject limit > 100', () => {

@@ -6,8 +6,8 @@
  *
  * DatabaseService is mocked — no real DB calls.
  */
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { AdminPermissionsService } from './admin-permissions.service.js';
@@ -32,9 +32,7 @@ describe('AdminPermissionsService', () => {
 
   beforeEach(() => {
     mockDb = createMockDb();
-    service = new AdminPermissionsService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new AdminPermissionsService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================

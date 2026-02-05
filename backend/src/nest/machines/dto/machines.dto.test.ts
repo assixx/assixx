@@ -55,9 +55,9 @@ describe('CreateMachineSchema', () => {
     'standby',
     'decommissioned',
   ] as const)('should accept status=%s', (status) => {
-    expect(
-      CreateMachineSchema.safeParse({ ...valid, status }).success,
-    ).toBe(true);
+    expect(CreateMachineSchema.safeParse({ ...valid, status }).success).toBe(
+      true,
+    );
   });
 
   it('should accept valid URL for manualUrl', () => {
@@ -136,9 +136,7 @@ describe('SetMachineTeamsSchema', () => {
   });
 
   it('should accept empty array', () => {
-    expect(SetMachineTeamsSchema.safeParse({ teamIds: [] }).success).toBe(
-      true,
-    );
+    expect(SetMachineTeamsSchema.safeParse({ teamIds: [] }).success).toBe(true);
   });
 
   it('should reject array with more than 50 items', () => {
@@ -189,8 +187,7 @@ describe('AddMaintenanceRecordSchema', () => {
     'should accept statusAfter=%s',
     (statusAfter) => {
       expect(
-        AddMaintenanceRecordSchema.safeParse({ ...valid, statusAfter })
-          .success,
+        AddMaintenanceRecordSchema.safeParse({ ...valid, statusAfter }).success,
       ).toBe(true);
     },
   );

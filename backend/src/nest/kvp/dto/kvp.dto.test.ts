@@ -112,9 +112,7 @@ describe('UpdateSuggestionSchema', () => {
     'rejected',
     'archived',
   ] as const)('should accept status=%s', (status) => {
-    expect(
-      UpdateSuggestionSchema.safeParse({ status }).success,
-    ).toBe(true);
+    expect(UpdateSuggestionSchema.safeParse({ status }).success).toBe(true);
   });
 });
 
@@ -227,8 +225,7 @@ describe('ListSuggestionsQuerySchema', () => {
 
   it('should reject search longer than 100 characters', () => {
     expect(
-      ListSuggestionsQuerySchema.safeParse({ search: 'X'.repeat(101) })
-        .success,
+      ListSuggestionsQuerySchema.safeParse({ search: 'X'.repeat(101) }).success,
     ).toBe(false);
   });
 

@@ -9,19 +9,18 @@
  * DB methods (checkUserRole):
  *   `execute` from utils/db.js is mocked via vi.mock().
  */
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Import AFTER mock registration to get the mocked version
+
+import { execute } from '../../utils/db.js';
 import { RolesService } from './roles.service.js';
 
 // Mock the database module — hoisted before all imports by Vitest
 vi.mock('../../utils/db.js', () => ({
   execute: vi.fn(),
 }));
-
-// Import AFTER mock registration to get the mocked version
- 
-import { execute } from '../../utils/db.js';
 
 const mockExecute = vi.mocked(execute);
 

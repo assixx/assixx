@@ -26,9 +26,9 @@ describe('ShiftDateSchema', () => {
   });
 
   it('should accept ISO 8601 datetime format', () => {
-    expect(
-      ShiftDateSchema.safeParse('2025-06-15T08:00:00Z').success,
-    ).toBe(true);
+    expect(ShiftDateSchema.safeParse('2025-06-15T08:00:00Z').success).toBe(
+      true,
+    );
   });
 
   it('should reject invalid date format', () => {
@@ -166,15 +166,13 @@ describe('QueryShiftsSchema', () => {
   });
 
   it('should reject limit > 100', () => {
-    expect(
-      QueryShiftsSchema.safeParse({ limit: '101' }).success,
-    ).toBe(false);
+    expect(QueryShiftsSchema.safeParse({ limit: '101' }).success).toBe(false);
   });
 
   it('should accept valid date filter', () => {
-    expect(
-      QueryShiftsSchema.safeParse({ date: '2025-06-15' }).success,
-    ).toBe(true);
+    expect(QueryShiftsSchema.safeParse({ date: '2025-06-15' }).success).toBe(
+      true,
+    );
   });
 });
 
@@ -215,8 +213,7 @@ describe('CreateShiftSchema', () => {
 
   it('should reject title longer than 200 characters', () => {
     expect(
-      CreateShiftSchema.safeParse({ ...valid, title: 'T'.repeat(201) })
-        .success,
+      CreateShiftSchema.safeParse({ ...valid, title: 'T'.repeat(201) }).success,
     ).toBe(false);
   });
 
@@ -247,14 +244,11 @@ describe('ExportShiftsSchema', () => {
     expect(data.format).toBe('csv');
   });
 
-  it.each(['csv', 'excel'] as const)(
-    'should accept format=%s',
-    (format) => {
-      expect(
-        ExportShiftsSchema.safeParse({ ...valid, format }).success,
-      ).toBe(true);
-    },
-  );
+  it.each(['csv', 'excel'] as const)('should accept format=%s', (format) => {
+    expect(ExportShiftsSchema.safeParse({ ...valid, format }).success).toBe(
+      true,
+    );
+  });
 
   it('should reject missing startDate', () => {
     expect(
@@ -269,9 +263,9 @@ describe('ExportShiftsSchema', () => {
 
 describe('CreateSwapRequestSchema', () => {
   it('should accept valid swap request', () => {
-    expect(
-      CreateSwapRequestSchema.safeParse({ shiftId: 1 }).success,
-    ).toBe(true);
+    expect(CreateSwapRequestSchema.safeParse({ shiftId: 1 }).success).toBe(
+      true,
+    );
   });
 
   it('should reject missing shiftId', () => {

@@ -71,9 +71,9 @@ describe('SettingValueSchema', () => {
 
 describe('SettingKeyParamSchema', () => {
   it('should accept valid key', () => {
-    expect(
-      SettingKeyParamSchema.safeParse({ key: 'theme.mode' }).success,
-    ).toBe(true);
+    expect(SettingKeyParamSchema.safeParse({ key: 'theme.mode' }).success).toBe(
+      true,
+    );
   });
 
   it('should reject empty key', () => {
@@ -152,9 +152,7 @@ describe('SettingsFilterQuerySchema', () => {
 describe('BulkUpdateSettingsSchema', () => {
   const valid = {
     type: 'system' as const,
-    settings: [
-      { setting_key: 'app.theme', setting_value: 'dark' },
-    ],
+    settings: [{ setting_key: 'app.theme', setting_value: 'dark' }],
   };
 
   it('should accept valid bulk update', () => {

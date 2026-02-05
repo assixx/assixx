@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  AvailabilityHistoryQuerySchema,
-} from './availability-history-query.dto.js';
+import { AvailabilityHistoryQuerySchema } from './availability-history-query.dto.js';
 import { ChangePasswordSchema } from './change-password.dto.js';
 import { CreateUserSchema } from './create-user.dto.js';
 import { ListUsersQuerySchema } from './list-users-query.dto.js';
@@ -70,8 +68,7 @@ describe('ChangePasswordSchema', () => {
 
   it('should reject empty currentPassword', () => {
     expect(
-      ChangePasswordSchema.safeParse({ ...valid, currentPassword: '' })
-        .success,
+      ChangePasswordSchema.safeParse({ ...valid, currentPassword: '' }).success,
     ).toBe(false);
   });
 });
@@ -121,15 +118,14 @@ describe('UpdateProfileSchema', () => {
 
   it('should reject employee number longer than 10 characters', () => {
     expect(
-      UpdateProfileSchema.safeParse({ employeeNumber: 'EMP-12345678' })
-        .success,
+      UpdateProfileSchema.safeParse({ employeeNumber: 'EMP-12345678' }).success,
     ).toBe(false);
   });
 
   it('should reject empty firstName when provided', () => {
-    expect(
-      UpdateProfileSchema.safeParse({ firstName: '' }).success,
-    ).toBe(false);
+    expect(UpdateProfileSchema.safeParse({ firstName: '' }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -212,14 +208,11 @@ describe('UpdateUserSchema', () => {
     expect(UpdateUserSchema.safeParse({}).success).toBe(true);
   });
 
-  it.each([0, 1, 3] as const)(
-    'should accept isActive=%d',
-    (isActive) => {
-      const data = UpdateUserSchema.parse({ isActive });
+  it.each([0, 1, 3] as const)('should accept isActive=%d', (isActive) => {
+    const data = UpdateUserSchema.parse({ isActive });
 
-      expect(data.isActive).toBe(isActive);
-    },
-  );
+    expect(data.isActive).toBe(isActive);
+  });
 
   it('should reject isActive=2 (not in union)', () => {
     expect(UpdateUserSchema.safeParse({ isActive: 2 }).success).toBe(false);
@@ -251,24 +244,22 @@ describe('ListUsersQuerySchema', () => {
   });
 
   it('should reject isActive > 4', () => {
-    expect(
-      ListUsersQuerySchema.safeParse({ isActive: '5' }).success,
-    ).toBe(false);
+    expect(ListUsersQuerySchema.safeParse({ isActive: '5' }).success).toBe(
+      false,
+    );
   });
 
   it.each(['firstName', 'lastName', 'email', 'createdAt', 'lastLogin'])(
     'should accept sortBy=%s',
     (sortBy) => {
-      expect(
-        ListUsersQuerySchema.safeParse({ sortBy }).success,
-      ).toBe(true);
+      expect(ListUsersQuerySchema.safeParse({ sortBy }).success).toBe(true);
     },
   );
 
   it('should reject invalid sortBy', () => {
-    expect(
-      ListUsersQuerySchema.safeParse({ sortBy: 'id' }).success,
-    ).toBe(false);
+    expect(ListUsersQuerySchema.safeParse({ sortBy: 'id' }).success).toBe(
+      false,
+    );
   });
 });
 

@@ -8,7 +8,7 @@
  *   - mapDbFeatureToApi → via getAllFeatures
  *   - mapTenantFeatureRow + parseCustomConfig → via getTenantFeatures
  */
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { FeaturesService } from './features.service.js';

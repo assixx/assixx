@@ -37,9 +37,7 @@ describe('CreateSurveySchema', () => {
   it('should accept survey with questions', () => {
     const result = CreateSurveySchema.safeParse({
       ...valid,
-      questions: [
-        { questionText: 'How are you?', questionType: 'text' },
-      ],
+      questions: [{ questionText: 'How are you?', questionType: 'text' }],
     });
 
     expect(result.success).toBe(true);
@@ -67,10 +65,7 @@ describe('CreateSurveySchema', () => {
         {
           questionText: 'Pick one',
           questionType: 'single_choice',
-          options: [
-            { optionText: 'Option A' },
-            { optionText: 'Option B' },
-          ],
+          options: [{ optionText: 'Option A' }, { optionText: 'Option B' }],
         },
       ],
     });
@@ -185,9 +180,7 @@ describe('SubmitResponseSchema', () => {
   });
 
   it('should reject empty answers array', () => {
-    expect(
-      SubmitResponseSchema.safeParse({ answers: [] }).success,
-    ).toBe(false);
+    expect(SubmitResponseSchema.safeParse({ answers: [] }).success).toBe(false);
   });
 });
 
@@ -200,14 +193,9 @@ describe('ExportResponsesQuerySchema', () => {
     expect(ExportResponsesQuerySchema.safeParse({}).success).toBe(true);
   });
 
-  it.each(['csv', 'excel'] as const)(
-    'should accept format=%s',
-    (format) => {
-      expect(
-        ExportResponsesQuerySchema.safeParse({ format }).success,
-      ).toBe(true);
-    },
-  );
+  it.each(['csv', 'excel'] as const)('should accept format=%s', (format) => {
+    expect(ExportResponsesQuerySchema.safeParse({ format }).success).toBe(true);
+  });
 
   it('should reject invalid format', () => {
     expect(

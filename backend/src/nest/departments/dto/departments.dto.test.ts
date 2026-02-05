@@ -32,9 +32,7 @@ describe('CreateDepartmentSchema', () => {
   });
 
   it('should reject name shorter than 2 characters', () => {
-    expect(CreateDepartmentSchema.safeParse({ name: 'A' }).success).toBe(
-      false,
-    );
+    expect(CreateDepartmentSchema.safeParse({ name: 'A' }).success).toBe(false);
   });
 
   it('should reject name longer than 100 characters', () => {
@@ -101,16 +99,13 @@ describe('ListDepartmentsQuerySchema', () => {
     [0, false],
     [true, true],
     [false, false],
-  ] as const)(
-    'should coerce includeExtended=%s to %s',
-    (input, expected) => {
-      const data = ListDepartmentsQuerySchema.parse({
-        includeExtended: input,
-      });
+  ] as const)('should coerce includeExtended=%s to %s', (input, expected) => {
+    const data = ListDepartmentsQuerySchema.parse({
+      includeExtended: input,
+    });
 
-      expect(data.includeExtended).toBe(expected);
-    },
-  );
+    expect(data.includeExtended).toBe(expected);
+  });
 });
 
 // =============================================================

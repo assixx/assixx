@@ -27,8 +27,7 @@ describe('CreateEntrySchema', () => {
 
   it('should reject title longer than 200 characters', () => {
     expect(
-      CreateEntrySchema.safeParse({ ...valid, title: 'T'.repeat(201) })
-        .success,
+      CreateEntrySchema.safeParse({ ...valid, title: 'T'.repeat(201) }).success,
     ).toBe(false);
   });
 
@@ -42,18 +41,18 @@ describe('CreateEntrySchema', () => {
   it.each(['company', 'department', 'team', 'area'] as const)(
     'should accept orgLevel=%s',
     (orgLevel) => {
-      expect(
-        CreateEntrySchema.safeParse({ ...valid, orgLevel }).success,
-      ).toBe(true);
+      expect(CreateEntrySchema.safeParse({ ...valid, orgLevel }).success).toBe(
+        true,
+      );
     },
   );
 
   it.each(['low', 'medium', 'high', 'urgent'] as const)(
     'should accept priority=%s',
     (priority) => {
-      expect(
-        CreateEntrySchema.safeParse({ ...valid, priority }).success,
-      ).toBe(true);
+      expect(CreateEntrySchema.safeParse({ ...valid, priority }).success).toBe(
+        true,
+      );
     },
   );
 
@@ -73,12 +72,9 @@ describe('UpdateEntrySchema', () => {
     expect(UpdateEntrySchema.safeParse({}).success).toBe(true);
   });
 
-  it.each([0, 1, 3, 4] as const)(
-    'should accept isActive=%d',
-    (isActive) => {
-      expect(UpdateEntrySchema.safeParse({ isActive }).success).toBe(true);
-    },
-  );
+  it.each([0, 1, 3, 4] as const)('should accept isActive=%d', (isActive) => {
+    expect(UpdateEntrySchema.safeParse({ isActive }).success).toBe(true);
+  });
 
   it('should reject isActive=2 (not in allowed set)', () => {
     expect(UpdateEntrySchema.safeParse({ isActive: 2 }).success).toBe(false);
@@ -105,9 +101,9 @@ describe('ListEntriesQuerySchema', () => {
   });
 
   it('should reject isActive=2 (not in allowed set)', () => {
-    expect(
-      ListEntriesQuerySchema.safeParse({ isActive: '2' }).success,
-    ).toBe(false);
+    expect(ListEntriesQuerySchema.safeParse({ isActive: '2' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject search longer than 100 characters', () => {
@@ -116,19 +112,14 @@ describe('ListEntriesQuerySchema', () => {
     ).toBe(false);
   });
 
-  it.each(['ASC', 'DESC'] as const)(
-    'should accept sortDir=%s',
-    (sortDir) => {
-      expect(
-        ListEntriesQuerySchema.safeParse({ sortDir }).success,
-      ).toBe(true);
-    },
-  );
+  it.each(['ASC', 'DESC'] as const)('should accept sortDir=%s', (sortDir) => {
+    expect(ListEntriesQuerySchema.safeParse({ sortDir }).success).toBe(true);
+  });
 
   it('should reject invalid sortDir', () => {
-    expect(
-      ListEntriesQuerySchema.safeParse({ sortDir: 'asc' }).success,
-    ).toBe(false);
+    expect(ListEntriesQuerySchema.safeParse({ sortDir: 'asc' }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -170,9 +161,7 @@ describe('DashboardQuerySchema', () => {
   });
 
   it('should reject limit > 10', () => {
-    expect(
-      DashboardQuerySchema.safeParse({ limit: '11' }).success,
-    ).toBe(false);
+    expect(DashboardQuerySchema.safeParse({ limit: '11' }).success).toBe(false);
   });
 });
 

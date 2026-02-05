@@ -265,9 +265,9 @@ describe('SearchQuerySchema', () => {
   });
 
   it('should fail for invalid sortOrder', () => {
-    expect(
-      SearchQuerySchema.safeParse({ sortOrder: 'random' }).success,
-    ).toBe(false);
+    expect(SearchQuerySchema.safeParse({ sortOrder: 'random' }).success).toBe(
+      false,
+    );
   });
 });
 

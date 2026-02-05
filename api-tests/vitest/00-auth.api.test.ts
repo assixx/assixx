@@ -9,7 +9,6 @@
  *
  * @see vitest.config.ts (project: api)
  */
-
 import { execSync } from 'node:child_process';
 
 // Integration test: response shapes are validated by assertions, not static types.

@@ -9,14 +9,13 @@
  *
  * @see vitest.config.api.ts
  */
-
 import {
+  type AuthState,
   BASE_URL,
+  type JsonBody,
   authOnly,
   flushThrottleKeys,
   loginApitest,
-  type AuthState,
-  type JsonBody,
 } from './helpers.js';
 
 // ─── Pre-fetched responses (populated in top-level beforeAll) ──────────────
@@ -29,12 +28,36 @@ interface StoredResponse {
   text?: string;
 }
 
-const jsonExport: StoredResponse = { status: 0, contentType: '', disposition: '' };
-const csvExport: StoredResponse = { status: 0, contentType: '', disposition: '' };
-const txtExport: StoredResponse = { status: 0, contentType: '', disposition: '' };
-const validationErr: StoredResponse = { status: 0, contentType: '', disposition: '' };
-const dateRangeErr: StoredResponse = { status: 0, contentType: '', disposition: '' };
-const auditTrail: StoredResponse = { status: 0, contentType: '', disposition: '' };
+const jsonExport: StoredResponse = {
+  status: 0,
+  contentType: '',
+  disposition: '',
+};
+const csvExport: StoredResponse = {
+  status: 0,
+  contentType: '',
+  disposition: '',
+};
+const txtExport: StoredResponse = {
+  status: 0,
+  contentType: '',
+  disposition: '',
+};
+const validationErr: StoredResponse = {
+  status: 0,
+  contentType: '',
+  disposition: '',
+};
+const dateRangeErr: StoredResponse = {
+  status: 0,
+  contentType: '',
+  disposition: '',
+};
+const auditTrail: StoredResponse = {
+  status: 0,
+  contentType: '',
+  disposition: '',
+};
 
 let auth: AuthState;
 
@@ -47,7 +70,10 @@ beforeAll(async () => {
   auth = await loginApitest();
   const headers = authOnly(auth.authToken);
 
-  const storeJson = async (url: string, target: StoredResponse): Promise<void> => {
+  const storeJson = async (
+    url: string,
+    target: StoredResponse,
+  ): Promise<void> => {
     flushThrottleKeys();
     const res = await fetch(url, { headers });
     target.status = res.status;
@@ -56,7 +82,10 @@ beforeAll(async () => {
     target.body = (await res.json()) as JsonBody;
   };
 
-  const storeText = async (url: string, target: StoredResponse): Promise<void> => {
+  const storeText = async (
+    url: string,
+    target: StoredResponse,
+  ): Promise<void> => {
     flushThrottleKeys();
     const res = await fetch(url, { headers });
     target.status = res.status;
@@ -84,10 +113,7 @@ beforeAll(async () => {
   );
 
   // 4: Validation error (missing dateFrom)
-  await storeJson(
-    `${BASE_URL}/logs/export?format=json`,
-    validationErr,
-  );
+  await storeJson(`${BASE_URL}/logs/export?format=json`, validationErr);
 
   // 5: Date range too large
   await storeJson(

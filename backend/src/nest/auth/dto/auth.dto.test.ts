@@ -88,9 +88,9 @@ describe('RegisterSchema', () => {
   });
 
   it('should reject name shorter than 2 characters', () => {
-    expect(
-      RegisterSchema.safeParse({ ...valid, firstName: 'J' }).success,
-    ).toBe(false);
+    expect(RegisterSchema.safeParse({ ...valid, firstName: 'J' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject name longer than 50 characters', () => {
@@ -137,9 +137,9 @@ describe('ConnectionTicketSchema', () => {
   );
 
   it('should reject invalid purpose', () => {
-    expect(
-      ConnectionTicketSchema.safeParse({ purpose: 'http' }).success,
-    ).toBe(false);
+    expect(ConnectionTicketSchema.safeParse({ purpose: 'http' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject missing purpose', () => {

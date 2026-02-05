@@ -4,7 +4,7 @@
  * Phase 6: Pure function tests — 1 test per function, no mocking needed.
  * validateScheduledTime uses vi.useFakeTimers for deterministic Date.
  */
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   buildPaginationMeta,
@@ -208,18 +208,32 @@ describe('chat.helpers', () => {
   it('filterUsersBySearch should filter by name', () => {
     const users: ChatUserRow[] = [
       {
-        id: 1, username: 'alice', email: 'a@test.de',
-        first_name: 'Alice', last_name: 'Wonder',
-        employee_number: null, profile_picture: null,
-        department_id: null, department_name: null,
-        area_id: null, area_name: null, role: 'employee',
+        id: 1,
+        username: 'alice',
+        email: 'a@test.de',
+        first_name: 'Alice',
+        last_name: 'Wonder',
+        employee_number: null,
+        profile_picture: null,
+        department_id: null,
+        department_name: null,
+        area_id: null,
+        area_name: null,
+        role: 'employee',
       },
       {
-        id: 2, username: 'bob', email: 'b@test.de',
-        first_name: 'Bob', last_name: 'Builder',
-        employee_number: null, profile_picture: null,
-        department_id: null, department_name: null,
-        area_id: null, area_name: null, role: 'employee',
+        id: 2,
+        username: 'bob',
+        email: 'b@test.de',
+        first_name: 'Bob',
+        last_name: 'Builder',
+        employee_number: null,
+        profile_picture: null,
+        department_id: null,
+        department_name: null,
+        area_id: null,
+        area_name: null,
+        role: 'employee',
       },
     ];
 

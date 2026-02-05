@@ -37,9 +37,9 @@ describe('CreateTeamSchema', () => {
   });
 
   it('should reject name longer than 100 characters', () => {
-    expect(
-      CreateTeamSchema.safeParse({ name: 'X'.repeat(101) }).success,
-    ).toBe(false);
+    expect(CreateTeamSchema.safeParse({ name: 'X'.repeat(101) }).success).toBe(
+      false,
+    );
   });
 
   it('should reject description longer than 500 characters', () => {
@@ -65,19 +65,14 @@ describe('UpdateTeamSchema', () => {
     expect(data.departmentId).toBeNull();
   });
 
-  it.each([0, 1, 3] as const)(
-    'should accept isActive=%d',
-    (isActive) => {
-      expect(
-        UpdateTeamSchema.safeParse({ isActive: String(isActive) }).success,
-      ).toBe(true);
-    },
-  );
+  it.each([0, 1, 3] as const)('should accept isActive=%d', (isActive) => {
+    expect(
+      UpdateTeamSchema.safeParse({ isActive: String(isActive) }).success,
+    ).toBe(true);
+  });
 
   it('should reject isActive=5 (out of range)', () => {
-    expect(
-      UpdateTeamSchema.safeParse({ isActive: '5' }).success,
-    ).toBe(false);
+    expect(UpdateTeamSchema.safeParse({ isActive: '5' }).success).toBe(false);
   });
 });
 
@@ -149,9 +144,7 @@ describe('AddMachineSchema', () => {
   });
 
   it('should reject non-positive machineId', () => {
-    expect(AddMachineSchema.safeParse({ machineId: '-5' }).success).toBe(
-      false,
-    );
+    expect(AddMachineSchema.safeParse({ machineId: '-5' }).success).toBe(false);
   });
 });
 

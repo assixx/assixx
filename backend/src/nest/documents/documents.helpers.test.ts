@@ -4,8 +4,8 @@
  * Phase 6: Pure function tests — 1 test per function.
  * DB helpers (getDocumentRow, insertDocumentRecord, getDocumentsCount) skipped — tested via integration.
  */
-import { describe, expect, it } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
+import { describe, expect, it } from 'vitest';
 
 import {
   buildDocumentFilters,
@@ -66,7 +66,9 @@ describe('documents.helpers', () => {
 
   it('buildDocumentFilters should pass through query params with isActive', () => {
     const result = buildDocumentFilters(
-      { category: 'contract', search: 'test' } as Parameters<typeof buildDocumentFilters>[0],
+      { category: 'contract', search: 'test' } as Parameters<
+        typeof buildDocumentFilters
+      >[0],
       1,
     );
 

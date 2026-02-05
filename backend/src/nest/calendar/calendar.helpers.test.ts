@@ -87,7 +87,13 @@ describe('calendar.helpers', () => {
 
   it('calculateRecurrenceDates should generate weekly dates with count limit', () => {
     const start = new Date('2025-01-06T09:00:00Z');
-    const dates = calculateRecurrenceDates(start, 'weekly', 'after', 4, undefined);
+    const dates = calculateRecurrenceDates(
+      start,
+      'weekly',
+      'after',
+      4,
+      undefined,
+    );
 
     expect(dates).toHaveLength(4);
     expect(dates[1]!.getDate()).toBe(13); // +7 days

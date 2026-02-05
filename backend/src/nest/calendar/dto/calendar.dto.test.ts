@@ -46,9 +46,9 @@ describe('CreateEventSchema', () => {
   });
 
   it('should reject empty title', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, title: '' }).success,
-    ).toBe(false);
+    expect(CreateEventSchema.safeParse({ ...valid, title: '' }).success).toBe(
+      false,
+    );
   });
 
   it('should accept valid hex color', () => {
@@ -166,15 +166,13 @@ describe('ListEventsQuerySchema', () => {
   });
 
   it('should reject limit > 100', () => {
-    expect(
-      ListEventsQuerySchema.safeParse({ limit: '101' }).success,
-    ).toBe(false);
+    expect(ListEventsQuerySchema.safeParse({ limit: '101' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject page < 1', () => {
-    expect(
-      ListEventsQuerySchema.safeParse({ page: '0' }).success,
-    ).toBe(false);
+    expect(ListEventsQuerySchema.safeParse({ page: '0' }).success).toBe(false);
   });
 
   it.each([
@@ -185,9 +183,7 @@ describe('ListEventsQuerySchema', () => {
     'area',
     'personal',
   ] as const)('should accept filter=%s', (filter) => {
-    expect(
-      ListEventsQuerySchema.safeParse({ filter }).success,
-    ).toBe(true);
+    expect(ListEventsQuerySchema.safeParse({ filter }).success).toBe(true);
   });
 });
 
@@ -207,15 +203,15 @@ describe('DashboardEventsQuerySchema', () => {
   });
 
   it('should reject days > 365', () => {
-    expect(
-      DashboardEventsQuerySchema.safeParse({ days: '366' }).success,
-    ).toBe(false);
+    expect(DashboardEventsQuerySchema.safeParse({ days: '366' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject limit > 50', () => {
-    expect(
-      DashboardEventsQuerySchema.safeParse({ limit: '51' }).success,
-    ).toBe(false);
+    expect(DashboardEventsQuerySchema.safeParse({ limit: '51' }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -224,17 +220,14 @@ describe('DashboardEventsQuerySchema', () => {
 // =============================================================
 
 describe('ExportEventsQuerySchema', () => {
-  it.each(['ics', 'csv'] as const)(
-    'should accept format=%s',
-    (format) => {
-      expect(ExportEventsQuerySchema.safeParse({ format }).success).toBe(true);
-    },
-  );
+  it.each(['ics', 'csv'] as const)('should accept format=%s', (format) => {
+    expect(ExportEventsQuerySchema.safeParse({ format }).success).toBe(true);
+  });
 
   it('should reject invalid format', () => {
-    expect(
-      ExportEventsQuerySchema.safeParse({ format: 'pdf' }).success,
-    ).toBe(false);
+    expect(ExportEventsQuerySchema.safeParse({ format: 'pdf' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject missing format', () => {

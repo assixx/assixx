@@ -5,14 +5,13 @@
  *
  * @see vitest.config.api.ts
  */
-
 import {
+  type AuthState,
   BASE_URL,
+  type JsonBody,
   authHeaders,
   authOnly,
   loginApitest,
-  type AuthState,
-  type JsonBody,
 } from './helpers.js';
 
 let auth: AuthState;

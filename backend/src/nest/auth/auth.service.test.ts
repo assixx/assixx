@@ -9,9 +9,14 @@
  * IMPORTANT: process.env must have valid JWT secrets BEFORE auth.service.js
  * is imported, because getJwtSecrets() runs at module evaluation time.
  */
-import crypto from 'node:crypto';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { UnauthorizedException } from '@nestjs/common';
+import type { JwtService } from '@nestjs/jwt';
+import crypto from 'node:crypto';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { DatabaseService } from '../database/database.service.js';
+import { AuthService } from './auth.service.js';
 
 // Override JWT secrets before auth.service.js is imported (getJwtSecrets validation)
 vi.hoisted(() => {
@@ -20,11 +25,6 @@ vi.hoisted(() => {
   process.env['JWT_REFRESH_SECRET'] =
     'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long';
 });
-
-import type { JwtService } from '@nestjs/jwt';
-import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import type { DatabaseService } from '../database/database.service.js';
-import { AuthService } from './auth.service.js';
 
 // Factory for mock dependencies
 function createMockDb() {
@@ -45,9 +45,7 @@ type MockDb = ReturnType<typeof createMockDb>;
 type MockJwt = ReturnType<typeof createMockJwtService>;
 
 // Factory for NestAuthUser test data
-function createAuthUser(
-  overrides: Partial<NestAuthUser> = {},
-): NestAuthUser {
+function createAuthUser(overrides: Partial<NestAuthUser> = {}): NestAuthUser {
   return {
     id: 1,
     email: 'admin@test.de',

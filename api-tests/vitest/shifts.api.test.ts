@@ -5,8 +5,14 @@
  *
  * @see vitest.config.api.ts
  */
-
-import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
+import {
+  type AuthState,
+  BASE_URL,
+  type JsonBody,
+  authHeaders,
+  authOnly,
+  loginApitest,
+} from './helpers.js';
 
 let auth: AuthState;
 
@@ -37,7 +43,6 @@ describe('Shifts: Setup Test Team', () => {
     // 201 = created, 409 = already exists -- both are acceptable
     expect([201, 409]).toContain(res.status);
 
-     
     if (res.status === 201 && body.data?.id) {
       shiftsTeamId = body.data.id as number;
     }

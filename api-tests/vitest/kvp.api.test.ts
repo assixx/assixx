@@ -5,8 +5,14 @@
  *
  * @see vitest.config.api.ts
  */
-
-import { BASE_URL, authHeaders, authOnly, loginApitest, type AuthState, type JsonBody } from './helpers.js';
+import {
+  type AuthState,
+  BASE_URL,
+  type JsonBody,
+  authHeaders,
+  authOnly,
+  loginApitest,
+} from './helpers.js';
 
 let auth: AuthState;
 
@@ -66,8 +72,7 @@ describe('KVP: Create Suggestion', () => {
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         title: `API Test ${Date.now()}`,
-        description:
-          'Created via API test - will be deleted after testing',
+        description: 'Created via API test - will be deleted after testing',
         categoryId: 1,
         orgLevel: 'company',
         orgId: 1,
