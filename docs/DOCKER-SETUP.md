@@ -10,7 +10,7 @@
 ### Option 1: Automatisch (Empfohlen)
 
 ```bash
-git clone https://github.com/SCS-Technik/Assixx.git
+git clone https://github.com/assixx-dev/Assixx.git
 cd Assixx/docker
 ./docker-init.sh
 ```
@@ -18,7 +18,7 @@ cd Assixx/docker
 ### Option 2: Manuell
 
 ```bash
-git clone https://github.com/SCS-Technik/Assixx.git
+git clone https://github.com/assixx-dev/Assixx.git
 cd Assixx
 
 # .env erstellen

@@ -49,7 +49,7 @@ See [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md) for the full refer
 ### 2. Clone & Start
 
 ```bash
-git clone https://github.com/SCS-Technik/Assixx.git
+git clone https://github.com/assixx-dev/Assixx.git
 cd Assixx
 
 # Install dependencies

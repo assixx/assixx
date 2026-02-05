@@ -6,8 +6,8 @@
 
 **Enterprise 2.0 Platform für Industrieunternehmen**
 
-[![Version](https://img.shields.io/badge/Version-0.1.5-blue.svg)](https://github.com/SCS-Technik/Assixx)
-[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/SCS-Technik/Assixx)
+[![Version](https://img.shields.io/badge/Version-0.1.5-blue.svg)](https://github.com/assixx-dev/Assixx)
+[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx-dev/Assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
 Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in produzierenden Unternehmen.
@@ -35,7 +35,7 @@ Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Von TPM-
 ## Schnellstart
 
 ```bash
-git clone https://github.com/SCS-Technik/Assixx.git
+git clone https://github.com/assixx-dev/Assixx.git
 cd Assixx/docker
 ./docker-init.sh
 ```
@@ -108,7 +108,7 @@ docker-compose down                               # Stoppen
 ## Kontakt
 
 **Entwicklung:** SCS-Technik Team
-**GitHub:** [SCS-Technik/Assixx](https://github.com/SCS-Technik/Assixx)
+**GitHub:** [assixx-dev/Assixx](https://github.com/assixx-dev/Assixx)
 
 ---
 

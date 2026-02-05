@@ -42,7 +42,7 @@ wir bleibebn und arbeiten in dev : pnpm run dev:svelte
 ## QUICK REFERENCE
 
 - Project: Multi-Tenant SaaS for Industrial Companies
-- GitHub: <https://github.com/SCS-Technik/Assixx>
+- GitHub: <https://github.com/assixx-dev/Assixx>
 - Tech Stack: TypeScript, NestJS+Fastify, PostgreSQL, Docker, Redis, SvelteKit, Nginx
 - Dev URL: <http://localhost:5173> (SvelteKit) / <http://localhost:3000> (API)
 - Prod URL: <http://localhost> (via Nginx)
