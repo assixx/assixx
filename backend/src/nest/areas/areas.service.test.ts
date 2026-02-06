@@ -2,8 +2,9 @@
  * Unit tests for AreasService
  *
  * Phase 11: Service tests — mocked dependencies.
+ * Phase 14 B5: Deepened from 11 → 28 tests.
  * Focus: CRUD operations, dependency checking, force delete,
- *        stats aggregation, department assignment.
+ *        stats aggregation, department assignment, private helpers.
  *
  * NOTE: This service uses `execute()` from utils/db.js (legacy pattern).
  */
@@ -16,6 +17,7 @@ import type { AreaRow } from './areas.service.js';
 import { AreasService } from './areas.service.js';
 import type { CreateAreaDto } from './dto/create-area.dto.js';
 import type { ListAreasQueryDto } from './dto/list-areas-query.dto.js';
+import type { UpdateAreaDto } from './dto/update-area.dto.js';
 
 // =============================================================
 // Module mocks
@@ -67,6 +69,13 @@ function makeAreaRow(overrides: Partial<AreaRow> = {}): AreaRow {
   } as AreaRow;
 }
 
+/** Mock 5 dependency checks all returning empty */
+function mockNoDependencies(): void {
+  for (let i = 0; i < 5; i++) {
+    mockExecute.mockResolvedValueOnce([[], []]);
+  }
+}
+
 // =============================================================
 // AreasService
 // =============================================================
@@ -100,6 +109,37 @@ describe('AreasService', () => {
       expect(result).toHaveLength(2);
       expect(result[0]?.name).toBe('Main Building');
       expect(result[1]?.name).toBe('Warehouse');
+    });
+
+    it('should return empty array when no areas', async () => {
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.listAreas(10, {} as ListAreasQueryDto);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should apply type filter via buildFilteredQuery', async () => {
+      mockExecute.mockResolvedValueOnce([
+        [makeAreaRow({ type: 'warehouse' })],
+        [],
+      ]);
+
+      const query = { type: 'warehouse' } as unknown as ListAreasQueryDto;
+      await service.listAreas(10, query);
+
+      const callArgs = mockExecute.mock.calls[0];
+      expect(callArgs?.[1]).toEqual([10, 'warehouse']);
+    });
+
+    it('should apply search filter via buildFilteredQuery', async () => {
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+
+      const query = { search: 'Main' } as unknown as ListAreasQueryDto;
+      await service.listAreas(10, query);
+
+      const callArgs = mockExecute.mock.calls[0];
+      expect(callArgs?.[1]).toEqual([10, '%Main%', '%Main%']);
     });
   });
 
@@ -159,6 +199,18 @@ describe('AreasService', () => {
       expect(result.totalCapacity).toBe(500);
       expect(result.byType).toEqual({ building: 2, warehouse: 1 });
     });
+
+    it('should default to 0 when stats row is empty', async () => {
+      mockExecute.mockResolvedValueOnce([[], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.getAreaStats(10);
+
+      expect(result.totalAreas).toBe(0);
+      expect(result.activeAreas).toBe(0);
+      expect(result.totalCapacity).toBe(0);
+      expect(result.byType).toEqual({});
+    });
   });
 
   // =============================================================
@@ -196,6 +248,68 @@ describe('AreasService', () => {
       expect(result.id).toBe(5);
       expect(mockActivityLogger.logCreate).toHaveBeenCalled();
     });
+
+    it('should throw Error when INSERT returns empty', async () => {
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const dto = {
+        name: 'Fail Area',
+        type: 'office',
+      } as unknown as CreateAreaDto;
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        'Failed to create area',
+      );
+    });
+  });
+
+  // =============================================================
+  // updateArea
+  // =============================================================
+
+  describe('updateArea', () => {
+    it('should update area with fields and log activity', async () => {
+      // getAreaById (existing check)
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      // UPDATE areas
+      mockExecute.mockResolvedValueOnce([[], []]);
+      // getAreaById (return updated)
+      mockExecute.mockResolvedValueOnce([
+        [makeAreaRow({ name: 'Updated Building' })],
+        [],
+      ]);
+
+      const dto = { name: 'Updated Building' } as UpdateAreaDto;
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.name).toBe('Updated Building');
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
+    });
+
+    it('should skip UPDATE when no fields changed', async () => {
+      // getAreaById (existing check)
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      // getAreaById (return — no UPDATE executed)
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+
+      const dto = {} as UpdateAreaDto;
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.id).toBe(1);
+      // Only 2 execute calls (2× getAreaById, no UPDATE)
+      expect(mockExecute).toHaveBeenCalledTimes(2);
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException for non-existent area', async () => {
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const dto = { name: 'X' } as UpdateAreaDto;
+
+      await expect(service.updateArea(999, dto, 1, 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   // =============================================================
@@ -228,9 +342,7 @@ describe('AreasService', () => {
       // getAreaById
       mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
       // checkAreaDependencies → 5 table checks (all empty)
-      for (let i = 0; i < 5; i++) {
-        mockExecute.mockResolvedValueOnce([[], []]);
-      }
+      mockNoDependencies();
       // DELETE FROM areas
       mockExecute.mockResolvedValueOnce([[], []]);
 
@@ -238,6 +350,46 @@ describe('AreasService', () => {
 
       expect(result.message).toBe('Area deleted successfully');
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
+    });
+
+    it('should force-delete area removing dependencies first', async () => {
+      // getAreaById
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      // checkAreaDependencies → departments=2, machines=1, rest empty
+      mockExecute.mockResolvedValueOnce([[{ id: 1 }, { id: 2 }], []]);
+      mockExecute.mockResolvedValueOnce([[{ id: 3 }], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+      // removeAreaDependencies → UPDATE departments, UPDATE machines (2 calls)
+      mockExecute.mockResolvedValueOnce([[], []]);
+      mockExecute.mockResolvedValueOnce([[], []]);
+      // DELETE FROM areas
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.deleteArea(1, 1, 10, true);
+
+      expect(result.message).toBe('Area deleted successfully');
+      expect(mockActivityLogger.logDelete).toHaveBeenCalled();
+    });
+
+    it('should force-delete including shift_favorites DELETE strategy', async () => {
+      // getAreaById
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      // checkAreaDependencies → only shiftFavorites=1
+      mockExecute.mockResolvedValueOnce([[], []]); // departments
+      mockExecute.mockResolvedValueOnce([[], []]); // machines
+      mockExecute.mockResolvedValueOnce([[], []]); // shifts
+      mockExecute.mockResolvedValueOnce([[], []]); // shift_plans
+      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]); // shift_favorites
+      // removeAreaDependencies → DELETE shift_favorites
+      mockExecute.mockResolvedValueOnce([[], []]);
+      // DELETE FROM areas
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.deleteArea(1, 1, 10, true);
+
+      expect(result.message).toBe('Area deleted successfully');
     });
   });
 
@@ -265,6 +417,118 @@ describe('AreasService', () => {
       const result = await service.assignDepartmentsToArea(1, [10, 20], 10);
 
       expect(result.message).toBe('Departments assigned successfully');
+      expect(mockExecute).toHaveBeenCalledTimes(3);
+    });
+
+    it('should only clear assignments when departmentIds is empty', async () => {
+      // getAreaById
+      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      // Clear existing assignments
+      mockExecute.mockResolvedValueOnce([[], []]);
+
+      const result = await service.assignDepartmentsToArea(1, [], 10);
+
+      expect(result.message).toBe('Departments assigned successfully');
+      // Only 2 calls: getAreaById + clear (no assign)
+      expect(mockExecute).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // =============================================================
+  // Private helpers
+  // =============================================================
+
+  describe('mapToResponse (private)', () => {
+    it('should convert null optional fields to undefined', () => {
+      const row = makeAreaRow();
+      const result = service['mapToResponse'](row);
+
+      expect(result.description).toBeUndefined();
+      expect(result.areaLeadId).toBeUndefined();
+      expect(result.areaLeadName).toBeUndefined();
+      expect(result.capacity).toBeUndefined();
+      expect(result.address).toBeUndefined();
+      expect(result.departmentNames).toBeUndefined();
+    });
+
+    it('should preserve values when all optional fields are set', () => {
+      const row = makeAreaRow({
+        description: 'A big building',
+        area_lead_id: 5,
+        area_lead_name: 'Anna Smith',
+        capacity: 200,
+        address: '123 Main St',
+        department_names: 'Dept A, Dept B',
+      });
+      const result = service['mapToResponse'](row);
+
+      expect(result.description).toBe('A big building');
+      expect(result.areaLeadId).toBe(5);
+      expect(result.areaLeadName).toBe('Anna Smith');
+      expect(result.capacity).toBe(200);
+      expect(result.address).toBe('123 Main St');
+      expect(result.departmentNames).toBe('Dept A, Dept B');
+    });
+  });
+
+  describe('buildFilteredQuery (private)', () => {
+    it('should return empty clause for no filters', () => {
+      const result = service['buildFilteredQuery']({} as ListAreasQueryDto);
+
+      expect(result.whereClause).toBe('');
+      expect(result.params).toHaveLength(0);
+    });
+
+    it('should add type filter', () => {
+      const result = service['buildFilteredQuery']({
+        type: 'office',
+      } as ListAreasQueryDto);
+
+      expect(result.whereClause).toContain('a.type = $2');
+      expect(result.params).toEqual(['office']);
+    });
+
+    it('should add search filter with ILIKE', () => {
+      const result = service['buildFilteredQuery']({
+        search: 'hall',
+      } as ListAreasQueryDto);
+
+      expect(result.whereClause).toContain('ILIKE');
+      expect(result.params).toEqual(['%hall%', '%hall%']);
+    });
+
+    it('should combine type and search filters', () => {
+      const result = service['buildFilteredQuery']({
+        type: 'warehouse',
+        search: 'big',
+      } as ListAreasQueryDto);
+
+      expect(result.whereClause).toContain('a.type = $2');
+      expect(result.whereClause).toContain('ILIKE');
+      expect(result.params).toEqual(['warehouse', '%big%', '%big%']);
+    });
+  });
+
+  describe('buildUpdateFields (private)', () => {
+    it('should build fields for multiple DTO keys', () => {
+      const dto = {
+        name: 'New Name',
+        capacity: 100,
+        isActive: 0,
+      } as UpdateAreaDto;
+
+      const result = service['buildUpdateFields'](dto);
+
+      expect(result.fields).toHaveLength(3);
+      expect(result.values).toEqual(['New Name', 100, 0]);
+    });
+
+    it('should return empty for undefined-only DTO', () => {
+      const dto = {} as UpdateAreaDto;
+      const result = service['buildUpdateFields'](dto);
+
+      expect(result.fields).toHaveLength(0);
+      expect(result.values).toHaveLength(0);
     });
   });
 });

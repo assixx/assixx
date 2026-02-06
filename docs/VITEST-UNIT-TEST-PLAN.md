@@ -1619,45 +1619,49 @@ const service = new TenantDeletionService(mockDb as never);
 
 ---
 
-#### Batch A: Service-Deepening Tier 1 — Kritisch Undertested (Ratio < 1.6)
+#### Batch A: Service-Deepening Tier 1 — Kritisch Undertested (Ratio < 1.6) ✅ COMPLETE
 
 > **Kriterium:** Tests-per-100-Lines Ratio unter 1.6. Das sind die fünf Services mit der dünnsten Coverage relativ zu ihrer Größe.
-> **Geschätzte Tests:** ~160-200 neue Tests
+> **Ergebnis:** +145 neue Tests (Ziel war ~160-200)
 
-| #   | Service                         | Lines | Tests aktuell | Ratio | Target Tests | Delta | Warum kritisch                                          |
-| --- | ------------------------------- | ----- | ------------- | ----- | ------------ | ----- | ------------------------------------------------------- |
-| A1  | `rotation-generator.service.ts` | 621   | 6             | 0.97  | 35           | +29   | **Niedrigste Ratio im Projekt.** Schicht-Algorithmus.   |
-| A2  | `auth.service.ts`               | 786   | 11            | 1.40  | 45           | +34   | **Sicherheitskritisch!** Login, Token, Password-Reset.  |
-| A3  | `reports.service.ts`            | 1,036 | 16            | 1.54  | 50           | +34   | **Zweitgrößter Service.** CSV/PDF-Reports, Aggregation. |
-| A4  | `logs.service.ts`               | 687   | 10            | 1.46  | 35           | +25   | Query-Builder, Export, Retention.                       |
-| A5  | `unified-logs.service.ts`       | 461   | 7             | 1.52  | 25           | +18   | Pool-basiert, Partitions, Cross-Table-Queries.          |
+| #   | Service                         | Lines | Tests vorher | Tests nachher | Delta | Ratio neu | Status |
+| --- | ------------------------------- | ----- | ------------ | ------------- | ----- | --------- | ------ |
+| A1  | `rotation-generator.service.ts` | 621   | 6            | 33            | +27   | 5.31      | ✅     |
+| A2  | `auth.service.ts`               | 786   | 14           | 45            | +31   | 5.73      | ✅     |
+| A3  | `reports.service.ts`            | 1,036 | 16           | 52            | +36   | 5.02      | ✅     |
+| A4  | `logs.service.ts`               | 687   | 10           | 39            | +29   | 5.68      | ✅     |
+| A5  | `unified-logs.service.ts`       | 461   | 7            | 29            | +22   | 6.29      | ✅     |
 
-**Besonderheiten:**
+**Key Patterns eingesetzt:**
 
-- `rotation-generator.service.ts` (Ratio 0.97) ist der **absolute Worst Case** — 621 Lines komplexer Algorithmus-Code mit nur 6 Tests. Enthält Schichttyp-Bestimmung, Weekend-Skip, Night-Static, Rotations-Pattern-Logik. Braucht `vi.useFakeTimers()` für Date-basierte Berechnungen.
-- `auth.service.ts` (Ratio 1.40) — **sicherheitskritisch**. Token-Verifikation, Refresh-Rotation, Password-Reset, Brute-Force-Protection. Die Tatsache dass dieser Service so dünn getestet ist, ist ein Risiko. Braucht `vi.hoisted()` für ENV-Vars.
-- `reports.service.ts` ist mit 1,036 Lines der zweitgrößte Service (nach `users.service.ts` mit 1,053 Lines). CSV/PDF-Generierung, Query-Aggregation, Datumsfilter.
+- A1: SQL-routing `mockImplementation` für config-based tests, `vi.mock('uuid')`, `vi.useFakeTimers()`
+- A2: `vi.hoisted()` für ENV-Vars + bcrypt mocks, `setupLoginMocks()` helper für 6-call login chain
+- A3: `mockOverviewQueries()` helper, ROI division-by-zero guard, KVP participation edge cases
+- A4: Private helpers via bracket notation (addSearchCondition, buildWhereClause, formatCreatedAt, etc.)
+- A5: Cursor-based streaming mocks, RLS context verification, `safeJsonParse` branch coverage
 
 ---
 
-#### Batch B: Service-Deepening Tier 2 — Below Average (Ratio 1.6-2.0)
+#### Batch B: Service-Deepening Tier 2 — Below Average (Ratio 1.6-2.0) ✅ COMPLETE
 
 > **Kriterium:** Tests-per-100-Lines Ratio zwischen 1.6 und 2.0. Große Services mit unterdurchschnittlicher Coverage.
-> **Geschätzte Tests:** ~100-130 neue Tests
+> **Ergebnis:** +100 neue Tests (Ziel war ~100-130)
 
-| #   | Service                         | Lines | Tests aktuell | Ratio | Target Tests | Delta | Fokus                                                  |
-| --- | ------------------------------- | ----- | ------------- | ----- | ------------ | ----- | ------------------------------------------------------ |
-| B1  | `users.service.ts`              | 1,053 | 21            | 1.99  | 50           | +29   | **Größter Service!** CRUD, Avatar, Search, Permissions |
-| B2  | `departments.service.ts`        | 768   | 13            | 1.69  | 35           | +22   | Lead-Assignment, Extended Query Fallback               |
-| B3  | `plans.service.ts`              | 699   | 12            | 1.72  | 30           | +18   | Plan-Logik, Feature-Mapping, Addon-Management          |
-| B4  | `chat-conversations.service.ts` | 635   | 12            | 1.89  | 30           | +18   | CLS-basiert, Participants, Read-Status                 |
-| B5  | `areas.service.ts`              | 585   | 11            | 1.88  | 25           | +14   | Hierarchie, Lead-Assignment, Department-Zuordnung      |
+| #   | Service                         | Lines | Tests vorher | Tests nachher | Delta | Ratio neu | Status |
+| --- | ------------------------------- | ----- | ------------ | ------------- | ----- | --------- | ------ |
+| B1  | `users.service.ts`              | 1,053 | 21           | 51            | +30   | 4.84      | ✅     |
+| B2  | `departments.service.ts`        | 768   | 13           | 34            | +21   | 4.43      | ✅     |
+| B3  | `plans.service.ts`              | 699   | 12           | 27            | +15   | 3.86      | ✅     |
+| B4  | `chat-conversations.service.ts` | 635   | 12           | 27            | +15   | 4.25      | ✅     |
+| B5  | `areas.service.ts`              | 585   | 11           | 30            | +19   | 5.13      | ✅     |
 
-**Besonderheiten:**
+**Key Patterns eingesetzt:**
 
-- `users.service.ts` (1,053 Lines) ist der **größte Service im Projekt**. CRUD + Avatar-Upload + Search + Permissions + Password-Change + Activation/Deactivation. Braucht umfangreiches Mock-Setup.
-- `chat-conversations.service.ts` braucht CLS-Mocking (nestjs-cls) — Pattern aus Phase 10.
-- `departments.service.ts` hat einen Extended/Simple Query Fallback — beide Pfade testen.
+- B1: `vi.mock('fs')` + `vi.mock('bcryptjs')` for avatar/password, PG constraint `{ code: '23505' }`, 6-mock chains for createUser/updateUser with departmentIds
+- B2: `mockNoDependencies()` helper for 11 empty dep checks, legacy `execute()` `[rows, fields]` tuple
+- B3: `makePlanRow()` + `makeTenantPlanRow()` factories, 10+ mock chain for upgradePlan, `query` + `queryOne` dual mocking
+- B4: CLS mock `{ get: vi.fn((key) => ...) }`, `vi.mock('uuid')`, WhatsApp-style soft-delete idempotency
+- B5: `mockNoDependencies()` for 5 dep checks, force-delete with UPDATE vs DELETE strategies, `buildFilteredQuery` private helper coverage
 
 ---
 
@@ -1728,24 +1732,24 @@ const mockHost = {
 
 #### Phase 14: Zusammenfassung
 
-| Batch | Kategorie        | Services/Dateien | Delta Tests  |
-| ----- | ---------------- | ---------------- | ------------ |
-| A     | Tier 1 Deepening | 5 Services       | ~160-200     |
-| B     | Tier 2 Deepening | 5 Services       | ~100-130     |
-| C     | Infrastructure   | 3 Dateien        | ~30-40       |
-| D     | Partial Utils    | 3 Dateien        | ~20-30       |
-| **∑** | **GESAMT**       | **16**           | **~310-400** |
+| Batch | Kategorie        | Services/Dateien | Delta Tests  | Status |
+| ----- | ---------------- | ---------------- | ------------ | ------ |
+| A     | Tier 1 Deepening | 5 Services       | +145 ✅      | DONE   |
+| B     | Tier 2 Deepening | 5 Services       | +100 ✅      | DONE   |
+| C     | Infrastructure   | 3 Dateien        | ~30-40       |        |
+| D     | Partial Utils    | 3 Dateien        | ~20-30       |        |
+| **∑** | **GESAMT**       | **16**           | **~295-315** |        |
 
-**Reihenfolge:** A1 (rotation-generator) → A2 (auth — sicherheitskritisch!) → A3 (reports) → B1 (users) → C1-C2 (filter, pipe) → Rest nach Verfügbarkeit.
+**Reihenfolge:** A1→A5 ✅ → B1→B5 ✅ → C1-C3 → D1-D3.
 
 #### Phase 14: Definition of Done
 
-- [ ] 5 Tier-1-Services vertieft (rotation-generator, auth, reports, logs, unified-logs)
-- [ ] 5 Tier-2-Services vertieft (users, departments, plans, chat-conversations, areas)
+- [x] 5 Tier-1-Services vertieft (rotation-generator, auth, reports, logs, unified-logs) ✅ +145 Tests
+- [x] 5 Tier-2-Services vertieft (users, departments, plans, chat-conversations, areas) ✅ +100 Tests
 - [ ] Exception-Filter getestet (all-exceptions.filter.ts)
 - [ ] Validation-Pipe getestet (zod-validation.pipe.ts)
 - [ ] Response-Interceptor getestet (response.interceptor.ts)
-- [ ] Auth-Service hat ≥ 45 Tests (sicherheitskritisch, aktuell nur 11!)
+- [x] Auth-Service hat ≥ 45 Tests (sicherheitskritisch — jetzt 45 Tests!) ✅
 - [ ] Coverage: **≥ 75% Lines, ≥ 68% Branches, ≥ 75% Functions, ≥ 75% Stmts**
 - [ ] Coverage-Thresholds erhöht: **72% Lines, 65% Branches, 72% Functions, 72% Stmts**
 - [ ] Kein `.only` oder `.skip` im Code
@@ -1763,15 +1767,15 @@ Phase 13 (Foundation Broadening):     857 Tests                         ✅ COMP
   Batch D: Helper-Deepening              +85 Tests         ✅ DONE
   Batch C: Legacy-Services               170 Tests         ✅ DONE (8/8)
 
-Phase 14 (Deep Coverage):             ~310-400 neue Tests → Coverage ~75%
-  Batch A: 5 Tier-1 Service-Deepening   ~160-200 Tests
-  Batch B: 5 Tier-2 Service-Deepening   ~100-130 Tests
+Phase 14 (Deep Coverage):             ~295-315 neue Tests → Coverage ~75%
+  Batch A: 5 Tier-1 Service-Deepening   +145 Tests        ✅ DONE
+  Batch B: 5 Tier-2 Service-Deepening   +100 Tests        ✅ DONE
   Batch C: 3 Infrastructure             ~30-40 Tests
   Batch D: 3 Partial Utils              ~20-30 Tests
 
-GESAMT:  ~1170-1260 neue Tests (857 Phase 13 ✅ + ~310-400 Phase 14)
-         → von 1858 auf ~2860-3070 Tests
-         → Coverage: 58% → 65% → 68.77% (Phase 13 ✅) → 75% (Phase 14)
+GESAMT:  ~1150-1170 neue Tests (857 Phase 13 ✅ + ~295-315 Phase 14)
+         → von 1858 auf ~3010-3030 Tests (aktuell: 2960 nach Batch B)
+         → Coverage: 58% → 65% → 68.77% (Phase 13 ✅) → ~71% (Batch A ✅) → ~73% (Batch B ✅) → 75% (Phase 14)
          → Thresholds: 55% → 65% → 72%
 ```
 
@@ -1811,7 +1815,9 @@ GESAMT:  ~1170-1260 neue Tests (857 Phase 13 ✅ + ~310-400 Phase 14)
 CI + Coverage-Thresholds aktiv seit 2026-02-05. Coverage von 58% → 68.77% gestiegen (+857 Tests).
 
 **Phase 13 DONE:** 857 Tests, 142 Dateien, Coverage 68.77% Lines / 63.37% Branches / 68.97% Functions / 68.72% Stmts.
-**Phase 14 definiert:** ~310-400 neue Tests. Ziel: **75% Lines Coverage** bis Ende Phase 14.
+**Phase 14 Batch A DONE:** +145 Tests (53→198), 2860 Unit-Tests total, 137 Dateien.
+**Phase 14 Batch B DONE:** +100 Tests (69→169), 2960 Unit-Tests total, 137 Dateien.
+**Phase 14 remaining:** ~50-70 neue Tests (C+D). Ziel: **75% Lines Coverage** bis Ende Phase 14.
 
 ---
 
