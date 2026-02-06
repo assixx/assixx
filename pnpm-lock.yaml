@@ -244,7 +244,7 @@ importers:
         specifier: ^17.2.4
         version: 17.2.4
       fastify:
-        specifier: ^5.7.4
+        specifier: ^5.7.1
         version: 5.7.4
       fastify-multer:
         specifier: 2.0.3

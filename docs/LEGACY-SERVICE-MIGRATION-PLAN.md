@@ -23,17 +23,18 @@ backend/src/services/
 
 **Was ist das Problem?**
 
-| Aspekt | Legacy (jetzt) | NestJS (soll) |
-|--------|---------------|---------------|
-| DB-Zugriff | `execute()`/`query()` aus `utils/db.js` | `DatabaseService` via DI |
-| Tenant-Context | Manueller `tenantId`-Parameter | `ClsService` (nestjs-cls) |
-| Redis | `new Redis()` lazy in Facade | Constructor-Injection via Config |
-| Email | `import emailService` Singleton | Injected `EmailService` (TODO) |
-| Transaction | `transaction(async (conn) => ...)` | `this.db.transaction(...)` |
-| Export | `export const singleton = new Class()` | `@Injectable()` + Module-Export |
-| Testbarkeit | `vi.mock('../utils/db.js')` Hacks | Sauberes Constructor-Mocking |
+| Aspekt         | Legacy (jetzt)                          | NestJS (soll)                    |
+| -------------- | --------------------------------------- | -------------------------------- |
+| DB-Zugriff     | `execute()`/`query()` aus `utils/db.js` | `DatabaseService` via DI         |
+| Tenant-Context | Manueller `tenantId`-Parameter          | `ClsService` (nestjs-cls)        |
+| Redis          | `new Redis()` lazy in Facade            | Constructor-Injection via Config |
+| Email          | `import emailService` Singleton         | Injected `EmailService` (TODO)   |
+| Transaction    | `transaction(async (conn) => ...)`      | `this.db.transaction(...)`       |
+| Export         | `export const singleton = new Class()`  | `@Injectable()` + Module-Export  |
+| Testbarkeit    | `vi.mock('../utils/db.js')` Hacks       | Sauberes Constructor-Mocking     |
 
 **Warum jetzt?**
+
 - Jede neue Consumption dieser Services erfordert Singleton-Imports statt DI
 - Unit-Tests brauchen `vi.mock()`-Hacks statt sauberer Constructor-Injection
 - Tenant-Isolation via ClsService wird umgangen
@@ -45,55 +46,55 @@ backend/src/services/
 
 ### 2.1 Zu migrierende Dateien (8 Service-Files)
 
-| # | Datei (aktuell) | Lines | Ziel-Pfad (neu) |
-|---|-----------------|-------|-----------------|
-| 1 | `services/hierarchyPermission.service.ts` | 486 | `nest/hierarchy-permission/hierarchy-permission.service.ts` |
-| 2 | `services/tenantDeletion.service.ts` | 510 | `nest/tenant-deletion/tenant-deletion.service.ts` |
-| 3 | `services/tenant-deletion-executor.service.ts` | 402 | `nest/tenant-deletion/tenant-deletion-executor.service.ts` |
-| 4 | `services/tenant-deletion-exporter.service.ts` | 280 | `nest/tenant-deletion/tenant-deletion-exporter.service.ts` |
-| 5 | `services/tenant-deletion-analyzer.service.ts` | 146 | `nest/tenant-deletion/tenant-deletion-analyzer.service.ts` |
-| 6 | `services/tenant-deletion-audit.service.ts` | 139 | `nest/tenant-deletion/tenant-deletion-audit.service.ts` |
-| 7 | `services/tenant-deletion.helpers.ts` | 61 | `nest/tenant-deletion/tenant-deletion.helpers.ts` |
-| 8 | `services/tenant-deletion.types.ts` | 113 | `nest/tenant-deletion/tenant-deletion.types.ts` |
+| #   | Datei (aktuell)                                | Lines | Ziel-Pfad (neu)                                             |
+| --- | ---------------------------------------------- | ----- | ----------------------------------------------------------- |
+| 1   | `services/hierarchyPermission.service.ts`      | 486   | `nest/hierarchy-permission/hierarchy-permission.service.ts` |
+| 2   | `services/tenantDeletion.service.ts`           | 510   | `nest/tenant-deletion/tenant-deletion.service.ts`           |
+| 3   | `services/tenant-deletion-executor.service.ts` | 402   | `nest/tenant-deletion/tenant-deletion-executor.service.ts`  |
+| 4   | `services/tenant-deletion-exporter.service.ts` | 280   | `nest/tenant-deletion/tenant-deletion-exporter.service.ts`  |
+| 5   | `services/tenant-deletion-analyzer.service.ts` | 146   | `nest/tenant-deletion/tenant-deletion-analyzer.service.ts`  |
+| 6   | `services/tenant-deletion-audit.service.ts`    | 139   | `nest/tenant-deletion/tenant-deletion-audit.service.ts`     |
+| 7   | `services/tenant-deletion.helpers.ts`          | 61    | `nest/tenant-deletion/tenant-deletion.helpers.ts`           |
+| 8   | `services/tenant-deletion.types.ts`            | 113   | `nest/tenant-deletion/tenant-deletion.types.ts`             |
 
 ### 2.2 Neue Dateien (Module + Re-Exports)
 
-| # | Datei | Zweck |
-|---|-------|-------|
-| 9 | `nest/tenant-deletion/tenant-deletion.module.ts` | NestJS Module (Providers, Exports) |
-| 10 | `nest/hierarchy-permission/hierarchy-permission.module.ts` | NestJS Module |
+| #   | Datei                                                      | Zweck                              |
+| --- | ---------------------------------------------------------- | ---------------------------------- |
+| 9   | `nest/tenant-deletion/tenant-deletion.module.ts`           | NestJS Module (Providers, Exports) |
+| 10  | `nest/hierarchy-permission/hierarchy-permission.module.ts` | NestJS Module                      |
 
 ### 2.3 Anzupassende Consumer (3 Dateien)
 
-| # | Datei | Importiert aktuell | Muss ändern zu |
-|---|-------|-------------------|----------------|
-| 11 | `nest/root/root-deletion.service.ts` (310L) | `tenantDeletionService` Singleton | DI via Constructor |
-| 12 | `nest/blackboard/blackboard-access.service.ts` (298L) | `hierarchyPermissionService` Singleton | DI via Constructor |
-| 13 | `workers/deletionWorker.ts` (169L) | `tenantDeletionService` Singleton | NestJS Standalone App |
+| #   | Datei                                                 | Importiert aktuell                     | Muss ändern zu        |
+| --- | ----------------------------------------------------- | -------------------------------------- | --------------------- |
+| 11  | `nest/root/root-deletion.service.ts` (310L)           | `tenantDeletionService` Singleton      | DI via Constructor    |
+| 12  | `nest/blackboard/blackboard-access.service.ts` (298L) | `hierarchyPermissionService` Singleton | DI via Constructor    |
+| 13  | `workers/deletionWorker.ts` (169L)                    | `tenantDeletionService` Singleton      | NestJS Standalone App |
 
 ### 2.4 Anzupassende Module (2 Dateien)
 
-| # | Datei | Änderung |
-|---|-------|----------|
-| 14 | `nest/root/root.module.ts` | `imports: [TenantDeletionModule]` hinzufügen |
-| 15 | `nest/blackboard/blackboard.module.ts` | `imports: [HierarchyPermissionModule]` hinzufügen |
+| #   | Datei                                  | Änderung                                          |
+| --- | -------------------------------------- | ------------------------------------------------- |
+| 14  | `nest/root/root.module.ts`             | `imports: [TenantDeletionModule]` hinzufügen      |
+| 15  | `nest/blackboard/blackboard.module.ts` | `imports: [HierarchyPermissionModule]` hinzufügen |
 
 ### 2.5 Bestehende Tests (3 Dateien — Umbau nötig)
 
-| # | Datei | Tests | Änderung |
-|---|-------|-------|----------|
-| 16 | `services/hierarchyPermission.service.test.ts` | 22 | Move + Mock-Pattern ändern |
-| 17 | `services/tenant-deletion.helpers.test.ts` | 13 | Move + Import-Pfade ändern |
-| 18 | `nest/database/database.service.test.ts` | 25 | Keine Änderung (bereits NestJS) |
+| #   | Datei                                          | Tests | Änderung                        |
+| --- | ---------------------------------------------- | ----- | ------------------------------- |
+| 16  | `services/hierarchyPermission.service.test.ts` | 22    | Move + Mock-Pattern ändern      |
+| 17  | `services/tenant-deletion.helpers.test.ts`     | 13    | Move + Import-Pfade ändern      |
+| 18  | `nest/database/database.service.test.ts`       | 25    | Keine Änderung (bereits NestJS) |
 
 ### 2.6 Nicht betroffen (kein Umbau)
 
-| Datei | Warum nicht |
-|-------|-------------|
-| `utils/db.js` | Bleibt bestehen für andere Legacy-Nutzung (wenn vorhanden) |
-| `utils/dbWrapper.js` | Wird ggf. obsolet nach Migration — separat evaluieren |
-| `utils/logger.js` | NestJS Logger-Wrapper existiert bereits, kein Impact |
-| `utils/emailService.js` | Eigenes Refactoring-Ticket (nicht in Scope) |
+| Datei                   | Warum nicht                                                |
+| ----------------------- | ---------------------------------------------------------- |
+| `utils/db.js`           | Bleibt bestehen für andere Legacy-Nutzung (wenn vorhanden) |
+| `utils/dbWrapper.js`    | Wird ggf. obsolet nach Migration — separat evaluieren      |
+| `utils/logger.js`       | NestJS Logger-Wrapper existiert bereits, kein Impact       |
+| `utils/emailService.js` | Eigenes Refactoring-Ticket (nicht in Scope)                |
 
 ---
 
@@ -195,6 +196,7 @@ export class HierarchyPermissionService {
 ```
 
 **Zentrale Änderungen:**
+
 - `execute<T[]>('SQL', params)` → returns `[rows, fields]` tuple
 - `this.db.query<T>('SQL', params)` → returns `T[]` direkt
 - **Alle `const [rows] = await execute(...)` müssen zu `const rows = await this.db.query(...)` werden**
@@ -236,7 +238,7 @@ export class BlackboardAccessService {
 ```typescript
 // blackboard.module.ts
 @Module({
-  imports: [HierarchyPermissionModule],  // ← NEU
+  imports: [HierarchyPermissionModule], // ← NEU
   // ...
 })
 export class BlackboardModule {}
@@ -250,12 +252,12 @@ export class BlackboardModule {}
 
 **4 Dateien umbauen:**
 
-| Sub-Service | DB-Calls | Spezial-Dependencies |
-|-------------|----------|---------------------|
-| `executor` | `conn.query()` (ConnectionWrapper) | `ResultSetHeader` Type |
-| `exporter` | `conn.query()` + `fs.writeFile` + `child_process.exec` | Filesystem, tar |
-| `analyzer` | `query()`, `transaction()`, `conn.query()` | Standalone Transaction |
-| `audit` | `query()`, `transaction()`, `conn.query()` | `emailService` |
+| Sub-Service | DB-Calls                                               | Spezial-Dependencies   |
+| ----------- | ------------------------------------------------------ | ---------------------- |
+| `executor`  | `conn.query()` (ConnectionWrapper)                     | `ResultSetHeader` Type |
+| `exporter`  | `conn.query()` + `fs.writeFile` + `child_process.exec` | Filesystem, tar        |
+| `analyzer`  | `query()`, `transaction()`, `conn.query()`             | Standalone Transaction |
+| `audit`     | `query()`, `transaction()`, `conn.query()`             | `emailService`         |
 
 **Kritische Entscheidung: ConnectionWrapper → PoolClient**
 
@@ -358,7 +360,7 @@ export class RootDeletionService {
   constructor(
     private readonly db: DatabaseService,
     private readonly userRepository: UserRepository,
-    private readonly tenantDeletion: TenantDeletionService,  // ← DI
+    private readonly tenantDeletion: TenantDeletionService, // ← DI
   ) {}
 }
 ```
@@ -366,7 +368,7 @@ export class RootDeletionService {
 ```typescript
 // root.module.ts
 @Module({
-  imports: [TenantDeletionModule],  // ← NEU
+  imports: [TenantDeletionModule], // ← NEU
   // ...
 })
 export class RootModule {}
@@ -379,6 +381,7 @@ Der Worker läuft als separater Thread/Prozess. Zwei Optionen:
 ```typescript
 // Option A: NestJS Standalone Application (sauber)
 import { NestFactory } from '@nestjs/core';
+
 import { AppModule } from '../nest/app.module.js';
 
 async function runWorker(): Promise<void> {
@@ -413,14 +416,14 @@ async function runWorker(): Promise<void> {
 
 ## 5. DB-Layer-Mapping (Cheat Sheet)
 
-| Legacy (`utils/db.js`) | NestJS (`DatabaseService`) | Rückgabe |
-|------------------------|---------------------------|----------|
-| `const [rows] = await execute<T[]>(sql, params)` | `const rows = await this.db.query<T>(sql, params)` | `T[]` |
-| `const [rows] = await query<T[]>(sql, params)` | `const rows = await this.db.query<T>(sql, params)` | `T[]` |
-| `await transaction(async (conn) => { ... })` | `await this.db.transaction(async (client) => { ... })` | `T` |
-| `const wrapped = wrapConnection(conn)` | Direkt `client.query()` nutzen | — |
-| `await conn.query<T[]>(sql, params)` | `await client.query(sql, params)` → `.rows` | `QueryResult` |
-| `result.affectedRows` (MySQL-Style) | `result.rowCount` (PostgreSQL) | `number` |
+| Legacy (`utils/db.js`)                           | NestJS (`DatabaseService`)                             | Rückgabe      |
+| ------------------------------------------------ | ------------------------------------------------------ | ------------- |
+| `const [rows] = await execute<T[]>(sql, params)` | `const rows = await this.db.query<T>(sql, params)`     | `T[]`         |
+| `const [rows] = await query<T[]>(sql, params)`   | `const rows = await this.db.query<T>(sql, params)`     | `T[]`         |
+| `await transaction(async (conn) => { ... })`     | `await this.db.transaction(async (client) => { ... })` | `T`           |
+| `const wrapped = wrapConnection(conn)`           | Direkt `client.query()` nutzen                         | —             |
+| `await conn.query<T[]>(sql, params)`             | `await client.query(sql, params)` → `.rows`            | `QueryResult` |
+| `result.affectedRows` (MySQL-Style)              | `result.rowCount` (PostgreSQL)                         | `number`      |
 
 **ACHTUNG:** `execute()` gibt `[rows, fields]` Tuple zurück. `this.db.query()` gibt direkt `T[]` zurück. **Jedes `const [rows] = await execute(...)` muss zu `const rows = await this.db.query(...)` werden.**
 
@@ -428,28 +431,28 @@ async function runWorker(): Promise<void> {
 
 ## 6. Risiko-Analyse
 
-| Risiko | Impact | Wahrscheinlichkeit | Mitigation |
-|--------|--------|-------------------|------------|
-| Tenant-Deletion bricht | **KRITISCH** — Datenverlust möglich | Niedrig (guter Test-Abdeckung) | API-Tests vor/nach Migration, Staging-Test |
-| Permission-Check versagt | **HOCH** — Unauthorisierter Zugriff | Niedrig | Bestehende 22 Unit-Tests migrieren |
-| Worker startet nicht | MITTEL — Queue staut sich | Mittel | Worker-Health-Check, manuelle Queue-Verarbeitung |
-| Import-Pfade vergessen | Niedrig — Build bricht | Hoch (viele Dateien) | TypeScript Compiler findet fehlende Imports |
-| Transaction-Semantik ändert sich | **HOCH** | Niedrig | PoolClient-Durchreichung statt Umbau |
-| `ResultSetHeader.affectedRows` fehlt | MITTEL | Mittel | Check ob PostgreSQL `rowCount` nutzt |
+| Risiko                               | Impact                              | Wahrscheinlichkeit             | Mitigation                                       |
+| ------------------------------------ | ----------------------------------- | ------------------------------ | ------------------------------------------------ |
+| Tenant-Deletion bricht               | **KRITISCH** — Datenverlust möglich | Niedrig (guter Test-Abdeckung) | API-Tests vor/nach Migration, Staging-Test       |
+| Permission-Check versagt             | **HOCH** — Unauthorisierter Zugriff | Niedrig                        | Bestehende 22 Unit-Tests migrieren               |
+| Worker startet nicht                 | MITTEL — Queue staut sich           | Mittel                         | Worker-Health-Check, manuelle Queue-Verarbeitung |
+| Import-Pfade vergessen               | Niedrig — Build bricht              | Hoch (viele Dateien)           | TypeScript Compiler findet fehlende Imports      |
+| Transaction-Semantik ändert sich     | **HOCH**                            | Niedrig                        | PoolClient-Durchreichung statt Umbau             |
+| `ResultSetHeader.affectedRows` fehlt | MITTEL                              | Mittel                         | Check ob PostgreSQL `rowCount` nutzt             |
 
 ---
 
 ## 7. Zeitschätzung
 
-| Schritt | Aufwand | Kumulativ |
-|---------|---------|-----------|
-| 1: Types + Helpers verschieben | 15 min | 15 min |
-| 2: HierarchyPermission migrieren | 45 min | 1h |
-| 3: Sub-Services migrieren (4 Stück) | 1.5h | 2.5h |
-| 4: Facade + Consumer migrieren | 1.5h | 4h |
-| 5: Cleanup + Test-Migration | 30 min | 4.5h |
-| **Puffer (20%)** | 1h | **5.5h** |
-| **Tests verifizieren + CI grün** | 30 min | **6h** |
+| Schritt                             | Aufwand | Kumulativ |
+| ----------------------------------- | ------- | --------- |
+| 1: Types + Helpers verschieben      | 15 min  | 15 min    |
+| 2: HierarchyPermission migrieren    | 45 min  | 1h        |
+| 3: Sub-Services migrieren (4 Stück) | 1.5h    | 2.5h      |
+| 4: Facade + Consumer migrieren      | 1.5h    | 4h        |
+| 5: Cleanup + Test-Migration         | 30 min  | 4.5h      |
+| **Puffer (20%)**                    | 1h      | **5.5h**  |
+| **Tests verifizieren + CI grün**    | 30 min  | **6h**    |
 
 **Realistisch: 1 fokussierter Arbeitstag.**
 
@@ -500,10 +503,10 @@ async function runWorker(): Promise<void> {
 
 ## 10. Nicht in Scope (separate Tickets)
 
-| Was | Warum nicht jetzt |
-|-----|-------------------|
-| `utils/emailService.ts` → NestJS Injectable | 727 Lines, SMTP-Dependency, eigenes Refactoring |
-| `utils/db.ts` entfernen | Prüfen ob noch andere Consumer existieren |
-| `utils/logger.ts` → NestJS Logger | Funktioniert, kein dringender Umbau |
-| `workers/deletionWorker.ts` → Bull/BullMQ Queue | Architektur-Entscheidung, eigenes ADR |
-| Controller-Tests für Deletion-Endpoints | Nicht in Unit-Test-Scope (API-Tests decken ab) |
+| Was                                             | Warum nicht jetzt                               |
+| ----------------------------------------------- | ----------------------------------------------- |
+| `utils/emailService.ts` → NestJS Injectable     | 727 Lines, SMTP-Dependency, eigenes Refactoring |
+| `utils/db.ts` entfernen                         | Prüfen ob noch andere Consumer existieren       |
+| `utils/logger.ts` → NestJS Logger               | Funktioniert, kein dringender Umbau             |
+| `workers/deletionWorker.ts` → Bull/BullMQ Queue | Architektur-Entscheidung, eigenes ADR           |
+| Controller-Tests für Deletion-Endpoints         | Nicht in Unit-Test-Scope (API-Tests decken ab)  |
