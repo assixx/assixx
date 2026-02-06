@@ -1,0 +1,64 @@
+/**
+ * Design System - Primary First-Level Button
+ *
+ * Purpose: Hero/Landing page call-to-action (First-Level)
+ * Usage: Registration, Login, Hero CTAs
+ *
+ * Visual: TRANSPARENT background with shadow-only
+ * Hierarchy: First-Level (most prominent, no background)
+ *
+ * CRITICAL: background: none !important
+ * This is intentional - only shadow creates the visual boundary
+ */
+
+.btn-primary-first {
+  box-shadow: var(--shadow-btn-primary);
+
+  /* No border - shadow is the visual boundary */
+  border: none;
+
+  /* ========== VISUAL ========== */
+  background: none !important; /* CRITICAL: No background! */
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-text-primary);
+}
+
+/* Hover state - Same as primary but NO background */
+.btn-primary-first:hover:not(:disabled) {
+  box-shadow: var(--shadow-btn-primary-hover);
+
+  /* Still no background! */
+}
+
+/* Focus state */
+.btn-primary-first:focus-visible {
+  box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
+}
+
+/**
+ * WHY TRANSPARENT?
+ *
+ * This is a UNIQUE design pattern in Assixx:
+ * - First-Level buttons are the MOST prominent
+ * - Transparency creates elegance and draws attention
+ * - Shadow-only boundary is minimalist and modern
+ * - Contrasts with Second-Level (gradient background)
+ *
+ * This follows the "less is more" principle:
+ * - Hero buttons don't NEED heavy background
+ * - Shadow is enough visual weight
+ * - Transparency feels premium
+ *
+ * WHEN TO USE:
+ * ✅ Landing page hero ("Jetzt starten")
+ * ✅ Login page ("Login", "Registrieren")
+ * ✅ Marketing CTAs in header
+ *
+ * WHEN NOT TO USE:
+ * ❌ Forms (use .btn-primary)
+ * ❌ Dialogs (use .btn-primary)
+ * ❌ Content areas (use .btn-primary)
+ */

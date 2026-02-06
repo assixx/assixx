@@ -1,0 +1,123 @@
+# Dependencies
+node_modules/
+
+# Environment (NEVER commit secrets!)
+.env
+.env.local
+.env.production
+docker/.env
+**/.env
+!**/.env.example
+
+# Doppler (contains token references)
+docs/HOW-TO-DOPPLER-GUIDE.md
+.locklock
+
+# Logs
+*.log
+*.pid
+combined.log
+error.log
+server.log
+backend/logs/
+
+# Uploads (User-generated content)
+uploads/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+frontend/.svelte-kit/
+frontend/stats.html
+frontend-legacy/
+*.min.js
+*.min.css
+dist/
+*.tsbuildinfo
+*.d.ts.map
+
+# Vite build artifacts in root
+/css/
+/js/
+/fonts/
+/images/
+/pages/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+CLAUDE.local.md
+CLAUDE-KAIZEN-MANIFEST.md
+TODO.md
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Temporary files
+temp/
+*.tmp
+*.cache
+*.bak
+**/cookies*.txt
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Test directories
+**/__tests__/
+
+# api-tests/ is tracked (Vitest API integration tests live there)
+
+# ESLint
+eslint-report.json
+
+# Stylelint
+.stylelintcache
+.type-coverage
+
+# Feature flags (local development only)
+frontend/public/feature-flags.js
+
+# Database Backups & Archives (NEVER commit - security risk + bloats repo)
+backups/
+database/backups/
+database/archive/
+docs/archive/
+archive/
+*.backup.sql
+*_backup_*.sql
+backup_*.sql
+
+
+# Credentials Archive (NEVER commit - contains passwords!)
+.locklock
+
+# Secret Backup Patterns (NEVER commit!)
+*.secrets
+*.secrets.*
+*secrets-backup*
+*-secrets-*
+*.env.old*
+*.env.backup*
+*.env.bak
+*credentials*
+*api-key*
+*.key
+!*.key.example
+
+# Grafana (exported dashboards, provisioned at runtime)
+docker/grafana/dashboards/
+
+# Grafana Cloud API credentials (NEVER commit - use Doppler!)
+docker/prometheus/grafana_cloud_api_key
+
+# Customer Deployment (contains customer-specific scripts, NOT for public repo)
+customer/

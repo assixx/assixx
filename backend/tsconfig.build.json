@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/__tests__/**/*",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/routes/v1/**/*",
+    "src/routes/mocks/**/*"
+  ]
+}

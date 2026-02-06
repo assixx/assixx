@@ -1,0 +1,17 @@
+# Generated files
+.svelte-kit/
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Package manager
+pnpm-lock.yaml
+
+# Static assets (no formatting needed)
+static/
+
+# Config files that shouldn't be formatted
+*.min.js
+*.min.css

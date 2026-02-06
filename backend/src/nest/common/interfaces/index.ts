@@ -1,0 +1,5 @@
+/**
+ * Common Interfaces Barrel Export
+ */
+
+export type { NestAuthUser, JwtPayload, UserRole } from './auth.interface.js';

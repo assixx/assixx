@@ -1,0 +1,69 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/tsdoc/v0/tsdoc.schema.json",
+  "noStandardTags": false,
+  "tagDefinitions": [
+    {
+      "tagName": "@swagger",
+      "syntaxKind": "block",
+      "allowMultiple": true
+    },
+    {
+      "tagName": "@route",
+      "syntaxKind": "block",
+      "allowMultiple": false
+    },
+    {
+      "tagName": "@desc",
+      "syntaxKind": "block",
+      "allowMultiple": false
+    },
+    {
+      "tagName": "@description",
+      "syntaxKind": "block",
+      "allowMultiple": false
+    },
+    {
+      "tagName": "@access",
+      "syntaxKind": "modifier",
+      "allowMultiple": false
+    },
+    {
+      "tagName": "@private",
+      "syntaxKind": "modifier",
+      "allowMultiple": false
+    }
+  ],
+  "supportForTags": {
+    "@swagger": true,
+    "@route": true,
+    "@desc": true,
+    "@description": true,
+    "@access": true,
+    "@private": true,
+    "@alpha": true,
+    "@beta": true,
+    "@defaultValue": true,
+    "@decorator": true,
+    "@deprecated": true,
+    "@eventProperty": true,
+    "@example": true,
+    "@experimental": true,
+    "@inheritDoc": true,
+    "@internal": true,
+    "@label": true,
+    "@link": true,
+    "@override": true,
+    "@packageDocumentation": true,
+    "@param": true,
+    "@privateRemarks": true,
+    "@public": true,
+    "@readonly": true,
+    "@remarks": true,
+    "@returns": true,
+    "@sealed": true,
+    "@see": true,
+    "@throws": true,
+    "@typeParam": true,
+    "@virtual": true
+  }
+}

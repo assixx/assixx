@@ -1,0 +1,75 @@
+# =============================================================================
+# Assixx Docker Compose - CI Override
+# =============================================================================
+# Purpose: Adapt for GitHub Actions runners
+# - Use production Dockerfile (includes source code, builds in image)
+# - Reduced resource limits (runners have only 2 CPUs)
+# - Minimal volume mounts (no dev live-reload needed)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+# =============================================================================
+
+services:
+  postgres:
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  backend:
+    # Use production Dockerfile - it copies source and builds in image
+    # Dockerfile.dev only copies package.json, expects source via volumes
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: assixx-backend:ci
+    # No user override needed - prod Dockerfile uses nodejs:1001 user
+    # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
+    # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
+    volumes: !reset
+      - ../uploads:/app/uploads
+      - ../exports:/exports
+      - ../backups:/backups
+    # Override command - prod image uses tsx, but dist is already built
+    command: ["dumb-init", "node", "backend/dist/nest/main.js"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  deletion-worker:
+    # Use same CI image as backend - MUST have build context since image doesn't exist in registry
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: assixx-backend:ci
+    # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
+    # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
+    volumes: !reset
+      - ../exports:/exports
+      - ../backups:/backups
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.1"
+          memory: 256M
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M

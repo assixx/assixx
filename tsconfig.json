@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Root Configuration - Project References Only",
+
+  // ============================================================
+  // PROJECT REFERENCES PATTERN
+  // Best Practice 2025: Monorepo with separated projects
+  //
+  // This root config does NOT compile anything itself.
+  // It only tells the IDE and tools about the sub-projects.
+  //
+  // Benefits:
+  // - Faster incremental builds
+  // - Clear project boundaries
+  // - Each project has correct moduleResolution
+  // - No config inheritance conflicts
+  // ============================================================
+
+  "files": [],
+
+  "references": [
+    { "path": "./shared" },
+    { "path": "./backend" },
+    { "path": "./frontend" }
+  ],
+
+  // ============================================================
+  // EXCLUDE (for tooling like ESLint)
+  // ============================================================
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "backend/dist",
+    "frontend/dist",
+    "coverage",
+    "backend/coverage",
+    "uploads",
+    "backend/logs",
+    "backups",
+    ".storybook",
+    "stories",
+    "design-system/build",
+    "frontend/public",
+    "backend/src/database/migrations/**/*.js",
+    "database/**/*.js",
+    "backend/src/__tests__",
+    "backend/**/*.test.ts",
+    "backend/**/*.spec.ts",
+    "frontend/**/*.test.ts",
+    "frontend/**/*.spec.ts",
+    "**/__tests__",
+    "**/test",
+    "**/tests",
+    "**/*.html",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.bak",
+    "**/*.backup",
+    "**/*.generated.ts",
+    "**/*.config.js",
+    "**/*.min.css",
+    "**/*.min.js"
+  ]
+}

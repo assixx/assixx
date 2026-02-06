@@ -1,0 +1,574 @@
+# =============================================================================
+# Assixx Docker Compose - Development Environment
+# =============================================================================
+#
+# SECURITY NOTES:
+# 1. All secrets are managed by Doppler. Start with: doppler run -- docker-compose up -d
+#    Without Doppler, required secrets (:? checks) will cause clear error messages.
+#
+# 2. IMAGE PINNING: This file uses version tags (e.g., postgres:17-alpine).
+#    For production deployments, consider pinning images with SHA256 digests:
+#      image: postgres:17-alpine@sha256:<digest>
+#    Get digests with: docker pull postgres:17-alpine && docker inspect --format='{{index .RepoDigests 0}}' postgres:17-alpine
+#
+# 3. See docker/.env.example for required environment variables.
+#
+# =============================================================================
+
+services:
+  # =============================================
+  # PostgreSQL - Primary Database
+  # =============================================
+  postgres:
+    image: postgres:17-alpine
+    container_name: assixx-postgres
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+        reservations:
+          cpus: "1.0"
+          memory: 1G
+    # PostgreSQL Performance Configuration
+    # pg_stat_statements: Query performance tracking (essential for optimization)
+    # track_io_timing: I/O statistics per query
+    # Reference: https://www.postgresql.org/docs/17/pgstatstatements.html
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "track_io_timing=on"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - use doppler run}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Europe/Berlin
+    ports:
+      # SECURITY: Bind to localhost only - not accessible from external networks
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assixx_user -d assixx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Assixx Backend (Development Mode with Live Reload)
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+      args:
+        # Node/pnpm versions - configurable via .env (Single Source of Truth)
+        NODE_VERSION: ${NODE_VERSION_DEV:-24.13.0-alpine3.22}
+        PNPM_VERSION: ${PNPM_VERSION:-10.28.2}
+    image: assixx-backend:dev
+    container_name: assixx-backend
+    restart: unless-stopped
+    # Best Practice: Use host user UID/GID to prevent permission conflicts
+    user: "${UID:-1000}:${GID:-1000}"
+    # Resource limits prevent runaway processes (generous for dev with TypeScript)
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+        reservations:
+          cpus: "1.0"
+          memory: 1G
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      CI: "true"
+      # PostgreSQL Connection (app_user with RLS)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
+      DB_NAME: ${POSTGRES_DB}
+      # SECURITY: Secrets are REQUIRED - no fallback defaults
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set - use doppler run}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
+      DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
+      TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
+      SCARF_ANALYTICS: false
+      DO_NOT_TRACK: 1
+      # Redis Connection (for rate limiting)
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
+      # Sentry Error Tracking
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # Loki Log Aggregation - Dual Target Support
+      # LOKI_URL: Grafana Cloud (requires GRAFANA_CLOUD_USER + API_KEY)
+      LOKI_URL: ${LOKI_URL:-}
+      # LOKI_LOCAL_URL: Local Docker Loki (no auth needed)
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      # Grafana Cloud credentials (optional - for cloud logging)
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../uploads:/app/uploads
+      - ../backend/logs:/app/backend/logs
+      - ../exports:/exports
+      - ../backups:/backups
+      # Live-Reload Volumes für Entwicklung (source code - need write for hot reload)
+      - ../backend:/app/backend:delegated
+      - ../frontend:/app/frontend:delegated
+      - ../shared:/app/shared:delegated
+      - ../scripts:/app/scripts:delegated
+      - ../Testing:/app/Testing:delegated
+      # Config files - read-only (edited on host, synced to container)
+      # SECURITY: No write access needed, prevents accidental modification
+      - ../package.json:/app/package.json:ro
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../tsconfig.base.json:/app/tsconfig.base.json:ro
+      - ../eslint.config.mjs:/app/eslint.config.mjs:ro
+      - ../vitest.config.ts:/app/vitest.config.ts:ro
+      - ../vitest.setup.ts:/app/vitest.setup.ts:ro
+      - ../.prettierignore:/app/.prettierignore:ro
+      - ../.prettierrc.json:/app/.prettierrc.json:ro
+      - ../.npmrc:/app/.npmrc:ro
+      - ../nodemon.json:/app/nodemon.json:ro
+      - ../.env:/app/.env:ro
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Development command - build shared + NestJS, then run
+    # 1. Build @assixx/shared (TS → JS for Node runtime resolution)
+    # 2. Build backend (tsc for decorator metadata - tsx can't emit it)
+    # 3. Run compiled JS with Node
+    command: sh -c "pnpm --filter @assixx/shared run build && cd backend && pnpm run build && node dist/nest/main.js"
+
+  # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
+  redis:
+    image: redis:8-alpine
+    container_name: assixx-redis
+    restart: unless-stopped
+    # SECURITY: Redis with password authentication
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    # Resource limits for cache service (generous for dev)
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    volumes:
+      - redis_data:/data
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Tenant Deletion Worker
+  # Uses Redis via tenantDeletionService.clearRedisCache() during tenant deletion
+  deletion-worker:
+    image: assixx-backend:dev
+    container_name: assixx-deletion-worker
+    restart: unless-stopped
+    # Best Practice: Use host user UID/GID to prevent permission conflicts
+    user: "${UID:-1000}:${GID:-1000}"
+    # Resource limits for worker process (generous for dev)
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      CI: "true"
+      # PostgreSQL Connection (app_user with RLS)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
+      DB_NAME: ${POSTGRES_DB}
+      # SECURITY: Secrets are REQUIRED - no fallback defaults
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set - use doppler run}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
+      DELETION_WORKER_HEALTH_PORT: 3002
+      DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
+      DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
+      TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
+      # Sentry Error Tracking
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # Loki Log Aggregation - Dual Target Support
+      # LOKI_URL: Grafana Cloud (requires GRAFANA_CLOUD_USER + API_KEY)
+      LOKI_URL: ${LOKI_URL:-}
+      # LOKI_LOCAL_URL: Local Docker Loki (no auth needed)
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      # Grafana Cloud credentials (optional - for cloud logging)
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+      # Email settings for deletion notifications
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+    ports:
+      - "3002:3002" # Health check port (changed from 3001 - SvelteKit uses 3001)
+    volumes:
+      - ../backend:/app/backend:delegated
+      - ../shared:/app/shared:delegated
+      - ../scripts:/app/scripts:delegated
+      - ../package.json:/app/package.json:delegated
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
+      - ../tsconfig.json:/app/tsconfig.json:delegated
+      - ../tsconfig.base.json:/app/tsconfig.base.json:delegated
+      - ../.env:/app/.env:ro
+      - /app/node_modules
+      - ../exports:/exports
+      - ../backups:/backups
+      # Worker specific logs
+      - ../backend/logs/deletion-worker:/app/backend/logs/deletion-worker
+    depends_on:
+      backend:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Worker command - run compiled JS (tsx can't handle parameter decorators like @Inject)
+    # Backend build (via service_healthy dependency) populates dist/ on shared volume
+    command: ["node", "backend/dist/workers/deletionWorker.js"]
+
+  # ===========================================================================
+  # SvelteKit Frontend (Production)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        # Node/pnpm versions - configurable via .env (Single Source of Truth)
+        NODE_VERSION: ${NODE_VERSION_PROD:-24.13.0-alpine3.22}
+        PNPM_VERSION: ${PNPM_VERSION:-10.28.2}
+        # Sentry DSN for error tracking (embedded at build time)
+        PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+      # BuildKit secrets - never persisted in image layers (unlike ARG/ENV)
+      secrets:
+        - sentry_auth_token
+    image: assixx-frontend:prod
+    container_name: assixx-frontend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ORIGIN: ${ORIGIN:-http://localhost}
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
+      # API URL for SSR server-side fetches (inside Docker network)
+      API_URL: http://backend:3000/api/v2
+      # Sentry DSN for server-side error tracking (SSR)
+      PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+      # Loki Log Aggregation - Dual Target Support (SSR logs)
+      LOKI_URL: ${LOKI_URL:-}
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+    ports:
+      - "3001:3001" # Direct access for debugging
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3001', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - production
+
+  # ===========================================================================
+  # Nginx Reverse Proxy (Production)
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: assixx-nginx
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 64M
+    ports:
+      - "80:80"
+      # - "443:443"  # Uncomment for HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - assixx-network
+    healthcheck:
+      # NOTE: Use curl instead of wget - BusyBox wget resolves localhost to ::1 (IPv6)
+      # but nginx only listens on 0.0.0.0:80 (IPv4), causing "Connection refused"
+      test: ["CMD-SHELL", "curl -sf http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - production
+
+  # ===========================================================================
+  # PLG Stack - Observability (Prometheus + Loki + Grafana)
+  # ===========================================================================
+  # Start with: docker-compose --profile observability up -d
+  # Access Grafana: http://localhost:3050 (admin/admin)
+  # ===========================================================================
+
+  # Loki - Log Aggregation
+  # Receives logs from pino-loki transport
+  loki:
+    image: grafana/loki:3.6.3
+    container_name: assixx-loki
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - assixx-network
+    # Healthcheck: Loki 3.6.3 is distroless (no wget/curl)
+    # Use /ready endpoint via external check or disable
+    healthcheck:
+      test: ["CMD", "/usr/bin/loki", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    profiles:
+      - observability
+      - production
+
+  # Prometheus - Metrics Collection
+  # Scrapes /api/v2/metrics from backend
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: assixx-prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    ports:
+      - "9090:9090"
+    environment:
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "$${GRAFANA_CLOUD_API_KEY}" > /etc/prometheus/grafana_cloud_api_key
+        exec /bin/prometheus \
+          --config.file=/etc/prometheus/prometheus.yml \
+          --storage.tsdb.path=/prometheus \
+          --storage.tsdb.retention.time=15d \
+          --web.enable-lifecycle
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - observability
+      - production
+
+  # Grafana - Dashboards & Visualization
+  # Pre-configured with Loki and Prometheus datasources
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: assixx-grafana
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    ports:
+      - "3050:3000"
+    environment:
+      # Admin credentials (change in production!)
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-admin}
+      # Server settings
+      GF_SERVER_ROOT_URL: ${GF_ROOT_URL:-http://localhost:3050}
+      GF_SERVER_DOMAIN: localhost
+      # Disable analytics
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+      # Enable anonymous access for development (disable in production)
+      GF_AUTH_ANONYMOUS_ENABLED: ${GF_ANONYMOUS_ENABLED:-false}
+      # Alerting
+      GF_ALERTING_ENABLED: true
+      GF_UNIFIED_ALERTING_ENABLED: true
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - observability
+      - production
+
+# =============================================================================
+# BuildKit Secrets - Passed to build steps without persisting in image layers
+# Requires: SENTRY_AUTH_TOKEN env var set via Doppler (or empty = skipped)
+# =============================================================================
+secrets:
+  sentry_auth_token:
+    environment: SENTRY_AUTH_TOKEN
+
+networks:
+  assixx-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: assixx_postgres_data
+    external: true
+  redis_data:
+    name: assixx_redis_data
+    external: true
+  pnpm-store:
+  # PLG Stack volumes (not external - created automatically)
+  loki_data:
+    name: assixx_loki_data
+  prometheus_data:
+    name: assixx_prometheus_data
+  grafana_data:
+    name: assixx_grafana_data

@@ -1,0 +1,9 @@
+packages:
+  - "shared"
+  - "frontend"
+  - "backend"
+ignoredBuiltDependencies:
+  - unrs-resolver
+onlyBuiltDependencies:
+  - "@swc/core"
+  - "esbuild"

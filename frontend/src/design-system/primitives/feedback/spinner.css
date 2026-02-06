@@ -1,0 +1,433 @@
+/**
+ * Design System - Loading Spinners
+ *
+ * Purpose: Loading animations for async operations
+ * Usage: <div class="spinner"></div>
+ *
+ * Variants:
+ * - Circular border spinner (default)
+ * - Dots spinner
+ * - Pulse spinner
+ * - Size variants (sm, md, lg)
+ * - Color variants
+ */
+
+/* ========== CIRCULAR BORDER SPINNER (DEFAULT) ========== */
+
+.spinner {
+  /* Layout */
+  display: inline-block;
+
+  /* Animation */
+  animation: spinner-rotate 0.8s linear infinite;
+
+  /* Appearance */
+  border: 3px solid var(--color-glass-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+
+  /* Size (default: medium) */
+  width: 40px;
+  height: 40px;
+}
+
+@keyframes spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== SIZE VARIANTS ========== */
+
+/* Small */
+.spinner--sm {
+  border-width: 2px;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Medium (default) */
+.spinner--md {
+  border-width: 3px;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+/* Large */
+.spinner--lg {
+  border-width: 4px;
+  width: 60px !important;
+  height: 60px !important;
+}
+
+/* Extra large */
+.spinner--xl {
+  border-width: 5px;
+  width: 80px !important;
+  height: 80px !important;
+}
+
+/* ========== COLOR VARIANTS ========== */
+
+.spinner--primary {
+  border-color: rgb(33 150 243 / 20%) !important;
+  border-top-color: var(--color-primary) !important;
+}
+
+.spinner--success {
+  border-color: rgb(76 175 80 / 20%) !important;
+  border-top-color: var(--color-success) !important;
+}
+
+.spinner--warning {
+  border-color: rgb(255 152 0 / 20%) !important;
+  border-top-color: var(--color-warning) !important;
+}
+
+.spinner--danger {
+  border-color: rgb(244 67 54 / 20%) !important;
+  border-top-color: var(--color-danger) !important;
+}
+
+.spinner--white {
+  border-color: rgb(255 255 255 / 20%) !important;
+  border-top-color: #fff !important;
+}
+
+/* ========== DOTS SPINNER ========== */
+
+.spinner-dots {
+  /* Layout */
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner-dots__dot {
+  /* Animation */
+  animation: spinner-dots-bounce 1.4s ease-in-out infinite;
+
+  /* Appearance */
+  border-radius: 50%;
+
+  background: var(--color-primary);
+
+  /* Size */
+  width: 10px;
+  height: 10px;
+}
+
+.spinner-dots__dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.spinner-dots__dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.spinner-dots__dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes spinner-dots-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 50%;
+  }
+
+  40% {
+    transform: scale(1.2);
+    opacity: 100%;
+  }
+}
+
+/* Dots size variants */
+.spinner-dots--sm .spinner-dots__dot {
+  width: 6px;
+  height: 6px;
+}
+
+.spinner-dots--lg .spinner-dots__dot {
+  width: 14px;
+  height: 14px;
+}
+
+/* Dots color variants */
+.spinner-dots--success .spinner-dots__dot {
+  background: var(--color-success);
+}
+
+.spinner-dots--warning .spinner-dots__dot {
+  background: var(--color-warning);
+}
+
+.spinner-dots--danger .spinner-dots__dot {
+  background: var(--color-danger);
+}
+
+.spinner-dots--white .spinner-dots__dot {
+  background: #fff;
+}
+
+/* ========== PULSE SPINNER ========== */
+
+.spinner-pulse {
+  display: inline-block;
+
+  /* Layout */
+  position: relative;
+
+  /* Size */
+  width: 40px;
+  height: 40px;
+}
+
+.spinner-pulse::before,
+.spinner-pulse::after {
+  /* Position */
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  opacity: 0%;
+
+  /* Animation */
+  animation: spinner-pulse 2s ease-out infinite;
+
+  /* Appearance */
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+
+  /* Size */
+  width: 100%;
+  height: 100%;
+  content: '';
+}
+
+.spinner-pulse::after {
+  animation-delay: 1s;
+}
+
+@keyframes spinner-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 100%;
+  }
+
+  100% {
+    transform: scale(1.5);
+    opacity: 0%;
+  }
+}
+
+/* Pulse size variants */
+.spinner-pulse--sm {
+  width: 20px;
+  height: 20px;
+}
+
+.spinner-pulse--lg {
+  width: 60px;
+  height: 60px;
+}
+
+/* Pulse color variants */
+.spinner-pulse--success::before,
+.spinner-pulse--success::after {
+  border-color: var(--color-success);
+}
+
+.spinner-pulse--warning::before,
+.spinner-pulse--warning::after {
+  border-color: var(--color-warning);
+}
+
+.spinner-pulse--danger::before,
+.spinner-pulse--danger::after {
+  border-color: var(--color-danger);
+}
+
+/* ========== RING SPINNER (GRADIENT) ========== */
+
+.spinner-ring {
+  /* Layout */
+  display: inline-block;
+
+  /* Animation */
+  animation: spinner-rotate 0.8s linear infinite;
+
+  /* Appearance */
+  border: 3px solid transparent;
+  border-top: 3px solid var(--color-primary);
+  border-right: 3px solid var(--color-primary);
+  border-radius: 50%;
+
+  /* Size */
+  width: 40px;
+  height: 40px;
+}
+
+/* Ring size variants */
+.spinner-ring--sm {
+  border-width: 2px;
+  width: 20px;
+  height: 20px;
+}
+
+.spinner-ring--lg {
+  border-width: 4px;
+  width: 60px;
+  height: 60px;
+}
+
+/* Ring color variants */
+.spinner-ring--primary {
+  border-top-color: var(--color-primary) !important;
+  border-right-color: var(--color-primary) !important;
+}
+
+.spinner-ring--success {
+  border-top-color: var(--color-success) !important;
+  border-right-color: var(--color-success) !important;
+}
+
+.spinner-ring--warning {
+  border-top-color: var(--color-warning) !important;
+  border-right-color: var(--color-warning) !important;
+}
+
+.spinner-ring--danger {
+  border-top-color: var(--color-danger) !important;
+  border-right-color: var(--color-danger) !important;
+}
+
+.spinner-ring--white {
+  border-top-color: #fff !important;
+  border-right-color: #fff !important;
+}
+
+/* ========== OVERLAY SPINNER (FULLSCREEN) ========== */
+
+.spinner-overlay {
+  /* Layout */
+  display: flex;
+
+  /* Position */
+  position: fixed;
+  top: 0;
+  left: 0;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+
+  /* Appearance */
+  background: rgb(0 0 0 / 60%);
+
+  /* Size */
+  width: 100%;
+  height: 100%;
+}
+
+.spinner-overlay__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.spinner-overlay__text {
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* ========== INLINE SPINNER (BUTTON USAGE) ========== */
+
+.spinner-inline {
+  /* Vertical alignment */
+  vertical-align: middle;
+  border-width: 2px;
+
+  /* Size for inline use */
+  width: 16px;
+  height: 16px;
+}
+
+/* Usage in buttons */
+.btn .spinner-inline {
+  margin-right: var(--spacing-2);
+}
+
+/* ========== CENTERED SPINNER CONTAINER ========== */
+
+.spinner-container {
+  /* Layout */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Spacing */
+  padding: var(--spacing-6);
+
+  width: 100%;
+
+  /* Size */
+  min-height: 200px;
+}
+
+.spinner-container--sm {
+  min-height: 100px;
+}
+
+.spinner-container--lg {
+  min-height: 400px;
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .spinner-ring {
+    animation: none;
+    border-style: dashed;
+    border-color: var(--color-primary);
+  }
+
+  .spinner-dots__dot {
+    transform: scale(1);
+    opacity: 100%;
+    animation: none;
+  }
+
+  .spinner-pulse::before,
+  .spinner-pulse::after {
+    opacity: 30%;
+    animation: none;
+  }
+}
+
+/* Screen reader text */
+.spinner__sr-text {
+  position: absolute;
+
+  clip-path: inset(50%);
+  margin: -1px;
+  border: 0;
+  padding: 0;
+
+  width: 1px;
+  height: 1px;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+}

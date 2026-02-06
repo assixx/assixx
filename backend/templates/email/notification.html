@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{subject}}</title>
+    <style>
+      body {
+        margin: 0 auto;
+        padding: 24px;
+        max-width: 600px;
+        color: #333;
+        line-height: 1.6;
+        font-family: 'Ubuntu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .header {
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      .logo {
+        max-width: 150px;
+        height: auto;
+      }
+      .content {
+        margin-bottom: 30px;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        background-color: #f7f9fc;
+        padding: 25px;
+      }
+      .message-box {
+        margin: 20px 0;
+        border-left: 4px solid #2196f3;
+        border-radius: 0 4px 4px 0;
+        background-color: #e3f2fd;
+        padding: 15px;
+      }
+      .btn {
+        display: inline-block;
+        margin: 20px 0;
+        border-radius: 4px;
+        background-color: var(--color-primary);
+        padding: 10px 24px;
+        color: #fff;
+        font-weight: bold;
+        text-decoration: none;
+      }
+      .footer {
+        margin-top: 30px;
+        border-top: 1px solid #e1e4e8;
+        padding-top: 20px;
+        color: #777;
+        font-size: 0.9em;
+        text-align: center;
+      }
+      .unsubscribe {
+        margin-top: 20px;
+        color: #999;
+        font-size: 0.8em;
+        text-align: center;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #1a1a1a;
+          color: #e0e0e0;
+        }
+        .content {
+          border-color: #3a3a3a;
+          background-color: #2a2a2a;
+        }
+        .message-box {
+          border-left-color: #2196f3;
+          background-color: #0d47a1;
+        }
+        a {
+          color: #64b5f6;
+        }
+        .btn {
+          background-color: #1e88e5;
+        }
+        .footer {
+          border-top-color: #3a3a3a;
+          color: #aaa;
+        }
+        .unsubscribe {
+          color: #888;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <img
+        src="https://app.assixx.de/images/logo.png"
+        alt="Assixx Logo"
+        class="logo"
+      />
+    </div>
+
+    <div class="content">
+      <h1>{{subject}}</h1>
+
+      <p>Hallo {{userName}},</p>
+
+      <div class="message-box">
+        <p>{{message}}</p>
+      </div>
+
+      {{#if actionText}}
+      <div style="text-align: center">
+        <a href="{{actionUrl}}" class="btn">{{actionText}}</a>
+      </div>
+      {{/if}}
+
+      <p>Falls Sie Fragen haben, kontaktieren Sie bitte Ihren Administrator.</p>
+    </div>
+
+    <div class="footer">
+      <p>© 2025 Assixx - Eine SaaS-Plattform für Industriefirmen</p>
+      <p>
+        Dies ist eine automatisierte Nachricht. Bitte antworten Sie nicht auf
+        diese E-Mail.
+      </p>
+    </div>
+
+    <div class="unsubscribe">
+      <p>
+        Sie erhalten diese E-Mail, weil Sie Mitarbeiter bei einem Unternehmen
+        sind, das Assixx nutzt.<br />
+        <a href="{{unsubscribeUrl}}">Vom Newsletter abmelden</a>
+      </p>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,165 @@
+/**
+ * Date Range Component
+ *
+ * Two date pickers connected by a separator for selecting date ranges
+ * Common use case: "From - To" date selection
+ *
+ * Usage:
+ * <div class="date-range">
+ *   <div class="date-picker">
+ *     <i class="date-picker__icon fas fa-calendar"></i>
+ *     <input type="date" class="date-picker__input" name="start_date" />
+ *   </div>
+ *   <span class="date-range__separator">bis</span>
+ *   <div class="date-picker">
+ *     <i class="date-picker__icon fas fa-calendar"></i>
+ *     <input type="date" class="date-picker__input" name="end_date" />
+ *   </div>
+ * </div>
+ *
+ * Variants:
+ * - .date-range--vertical - Stack pickers vertically
+ * - .date-range--compact - Smaller gap between pickers
+ *
+ * @see design-system/primitives/pickers/date-picker.css
+ */
+
+/* ============================================================
+   BASE - Structure & Behavior
+   ============================================================ */
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: 100%;
+}
+
+/* Separator between start and end date */
+.date-range__separator {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+
+  font-size: 14px;
+  user-select: none;
+}
+
+/* Ensure date pickers inside range take equal space */
+.date-range .date-picker {
+  flex: 1;
+  min-width: 0; /* Allow shrinking below content size */
+}
+
+/* ============================================================
+   LAYOUT VARIANTS
+   ============================================================ */
+
+/* Vertical layout (stacked) */
+.date-range--vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.date-range--vertical .date-range__separator {
+  align-self: flex-start;
+  margin: var(--spacing-2) 0;
+  font-size: 13px;
+}
+
+/* Compact spacing */
+.date-range--compact {
+  gap: var(--spacing-2);
+}
+
+.date-range--compact .date-range__separator {
+  font-size: 13px;
+}
+
+/* Wide layout (more space between pickers) */
+.date-range--wide {
+  gap: var(--spacing-6);
+}
+
+/* ============================================================
+   RESPONSIVE BEHAVIOR
+   ============================================================ */
+
+/* Mobile: Stack vertically on small screens */
+@media (width <= 640px) {
+  .date-range {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .date-range__separator {
+    align-self: flex-start;
+    margin: var(--spacing-1) 0;
+  }
+}
+
+/* ============================================================
+   UTILITY MODIFIERS
+   ============================================================ */
+
+/* Labels above pickers */
+.date-range--labeled .date-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* Hide separator (use when labels are descriptive enough) */
+.date-range--no-separator .date-range__separator {
+  display: none;
+}
+
+/* Arrow separator (→ instead of text) */
+.date-range--arrow .date-range__separator::before {
+  content: '→';
+  font-size: 18px;
+}
+
+.date-range--arrow .date-range__separator {
+  font-size: 0; /* Hide text, show arrow only */
+}
+
+/* ============================================================
+   VALIDATION STATES
+   ============================================================ */
+
+/* Error state (end date before start date) */
+.date-range--error .date-picker {
+  /* Inherit error state from date-picker--error */
+}
+
+.date-range--error .date-range__separator {
+  color: var(--color-danger);
+}
+
+/* Success state (valid range) */
+.date-range--success .date-picker {
+  /* Inherit success state from date-picker--success */
+}
+
+.date-range--success .date-range__separator {
+  color: var(--color-success);
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .date-range {
+    transition: none;
+  }
+}
+
+/* High contrast mode - make separator more visible */
+@media (prefers-contrast: high) {
+  .date-range__separator {
+    font-weight: 700;
+  }
+}

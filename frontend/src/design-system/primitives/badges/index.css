@@ -1,0 +1,103 @@
+/**
+ * Design System - Badge System
+ *
+ * Purpose: Barrel export for all badge styles
+ * Usage: @import 'design-system/primitives/badges';
+ *
+ * Architecture:
+ * - Base defines structure & behavior
+ * - Variants define visual appearance (status, action, role)
+ *
+ * Import order matters:
+ * 1. Base (foundation)
+ * 2. Variants (build on base)
+ */
+
+/* Foundation - Core badge structure */
+@import './badge.base.css';
+
+/* Variants - Visual appearances */
+@import './badge.status.css';
+@import './badge.action.css';
+@import './badge.role.css';
+@import './badge.kvp.css';
+@import './badge.process.css';
+@import './badge.workflow.css';
+@import './badge.count.css';
+
+/**
+ * QUICK REFERENCE:
+ *
+ * Status Badges:
+ *   <span class="badge badge--success">Success</span>
+ *   <span class="badge badge--warning">Warning</span>
+ *   <span class="badge badge--danger">Error</span>
+ *   <span class="badge badge--info">Info</span>
+ *   <span class="badge badge--primary">Primary</span>
+ *   <span class="badge badge--secondary">Secondary</span>
+ *
+ * Action Badges:
+ *   <span class="badge badge--login">Login</span>
+ *   <span class="badge badge--create">Created</span>
+ *   <span class="badge badge--update">Updated</span>
+ *   <span class="badge badge--delete">Deleted</span>
+ *
+ * Role Badges (with small modifier):
+ *   <span class="badge badge--sm badge--role-root">Root</span>
+ *   <span class="badge badge--sm badge--role-admin">Admin</span>
+ *   <span class="badge badge--sm badge--role-employee">Employee</span>
+ *
+ * KVP Priority Badges:
+ *   <span class="badge badge--priority-low">Low</span>
+ *   <span class="badge badge--priority-normal">Normal</span>
+ *   <span class="badge badge--priority-high">High</span>
+ *   <span class="badge badge--priority-urgent">Urgent</span>
+ *
+ * KVP Status Badges:
+ *   <span class="badge badge--kvp-new">New</span>
+ *   <span class="badge badge--kvp-in-review">In Review</span>
+ *   <span class="badge badge--kvp-approved">Approved</span>
+ *   <span class="badge badge--kvp-implemented">Implemented</span>
+ *
+ * Active/Inactive:
+ *   <span class="badge badge--active">Active</span>
+ *   <span class="badge badge--inactive">Inactive</span>
+ *
+ * Process Status:
+ *   <span class="badge badge--pending">Pending</span>
+ *   <span class="badge badge--processing">Processing</span>
+ *   <span class="badge badge--completed">Completed</span>
+ *   <span class="badge badge--failed">Failed</span>
+ *
+ * Workflow/Task Status:
+ *   <span class="badge badge--todo">To Do</span>
+ *   <span class="badge badge--in-progress">In Progress</span>
+ *   <span class="badge badge--done">Done</span>
+ *   <span class="badge badge--blocked">Blocked</span>
+ *
+ * Document Status:
+ *   <span class="badge badge--draft">Draft</span>
+ *   <span class="badge badge--published">Published</span>
+ *   <span class="badge badge--expired">Expired</span>
+ *
+ * Severity:
+ *   <span class="badge badge--critical">Critical</span>
+ *   <span class="badge badge--major">Major</span>
+ *   <span class="badge badge--minor">Minor</span>
+ *
+ * Count Badges:
+ *   <span class="badge badge--count">5</span>
+ *   <span class="badge badge--count-pill">12</span>
+ *   <span class="badge badge--count badge--success">3</span>
+ *
+ * Sizes:
+ *   <span class="badge badge--sm badge--success">Small</span>
+ *   <span class="badge badge--success">Default</span>
+ *   <span class="badge badge--lg badge--success">Large</span>
+ *
+ * With Dot Indicator:
+ *   <span class="badge badge--dot badge--success">Online</span>
+ *
+ * Uppercase:
+ *   <span class="badge badge--uppercase badge--primary">New</span>
+ */

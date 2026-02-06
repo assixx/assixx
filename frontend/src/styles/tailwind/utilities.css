@@ -1,0 +1,291 @@
+/**
+ * Tailwind v4 Utilities Layer
+ * Helper classes and custom utilities
+ */
+
+@layer utilities {
+  /* Display Utilities */
+  .hidden {
+    display: none !important;
+  }
+
+  .u-hidden {
+    display: none !important;
+  }
+
+  /* Text Utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .u-text-center {
+    text-align: center !important;
+  }
+
+  .u-text-left {
+    text-align: left !important;
+  }
+
+  .u-text-right {
+    text-align: right !important;
+  }
+
+  /* Spacing Utilities */
+  .content-spacing {
+    padding-inline: clamp(1rem, 5vw, 3rem);
+  }
+
+  .u-mt-text {
+    margin: 0;
+    margin-top: var(--margin-text-top) !important;
+  }
+
+  .u-mb-md {
+    margin-bottom: var(--spacing-4) !important;
+  }
+
+  .u-mb-sm {
+    margin-bottom: var(--spacing-2) !important;
+  }
+
+  .u-mb-8 {
+    margin-bottom: 8px !important;
+  }
+
+  .u-mb-12 {
+    margin-bottom: 12px !important;
+  }
+
+  .u-m-0 {
+    margin: 0 !important;
+  }
+
+  /* Font Size Utilities */
+  .u-fs-09rem {
+    font-size: 0.9rem !important;
+  }
+
+  .u-fs-11 {
+    font-size: 11px !important;
+  }
+
+  .u-fs-12 {
+    font-size: 12px !important;
+  }
+
+  .u-fs-xl {
+    font-size: 1.5rem !important;
+  }
+
+  .u-fs-3xl {
+    font-size: 3rem !important;
+  }
+
+  /* Font Weight Utilities */
+  .u-fw-400 {
+    font-weight: 400 !important;
+  }
+
+  .u-fw-600 {
+    font-weight: 600 !important;
+  }
+
+  /* Animation Utilities */
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-in;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Glassmorphism Utilities */
+  .glass-blur {
+    backdrop-filter: blur(20px);
+  }
+
+  .glass-blur-light {
+    backdrop-filter: blur(10px);
+  }
+
+  .glass-saturate {
+    backdrop-filter: saturate(180%);
+  }
+
+  /* Grid Utilities */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  .grid-auto-fill {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  /* Scroll Utilities */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Focus Utilities */
+  .focus-ring {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Truncate Utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* Color Utilities */
+  .u-color-primary {
+    color: var(--primary-color) !important;
+  }
+
+  .u-color-text-secondary {
+    color: var(--text-secondary) !important;
+  }
+
+  /* Opacity Utilities */
+  .u-opacity-80 {
+    opacity: 80% !important;
+  }
+
+  /* Cursor Utilities */
+  .u-cursor-pointer {
+    cursor: pointer !important;
+  }
+
+  /* Flex Utilities */
+  .u-flex {
+    display: flex !important;
+  }
+
+  .u-flex-1 {
+    flex: 1 !important;
+  }
+
+  /* Width Utilities */
+  .u-w-full {
+    width: 100% !important;
+  }
+
+  /* Padding Utilities */
+  .u-p-container {
+    padding: var(--spacing-6) !important;
+  }
+
+  /* Position Utilities */
+  .u-relative {
+    position: relative !important;
+  }
+
+  /* Z-Index Utilities */
+  .z-dropdown {
+    z-index: 1000;
+  }
+
+  .z-modal {
+    z-index: 1050;
+  }
+
+  .z-toast {
+    z-index: 1100;
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-accent) 100%
+    );
+    background-clip: text;
+
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Selection */
+  .select-primary::selection {
+    background-color: var(--color-primary);
+    color: #fff;
+  }
+
+  /* Container Utilities */
+  @media (width >= 96rem) {
+    .container {
+      max-width: 113rem;
+    }
+  }
+
+  /* Print Utilities */
+  @media print {
+    .print-hidden {
+      display: none !important;
+    }
+
+    .print-break {
+      break-after: always;
+    }
+  }
+}
+
+/* Keyframe Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0%;
+  }
+
+  to {
+    opacity: 100%;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 50%;
+  }
+}

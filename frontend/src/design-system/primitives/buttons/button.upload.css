@@ -1,0 +1,75 @@
+/**
+ * Design System - Upload Button
+ *
+ * Purpose: Dedicated upload button with beautiful blue gradient
+ * Usage: File uploads, document uploads, media uploads
+ *
+ * Visual: Blue gradient background (like btn-primary) with white text
+ * Icon: Usually with fa-upload icon
+ *
+ * Difference from btn-primary:
+ * - btn-primary: No background (uses gradient only from tokens)
+ * - btn-upload: Beautiful blue gradient background for premium upload feel
+ */
+
+.btn-upload {
+  box-shadow: var(--shadow-btn-primary);
+
+  /* No border - gradient is the visual boundary */
+  border: none;
+
+  /* ========== VISUAL - BLUE GRADIENT ========== */
+  /* Beautiful blue gradient - Premium upload button */
+  background: var(--gradient-primary);
+
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  color: var(--color-white);
+}
+
+/* Hover state - Slightly darker gradient */
+.btn-upload:hover:not(:disabled) {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-hover),
+    var(--color-blue-800)
+  );
+}
+
+/* Active/Pressed state */
+.btn-upload:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-primary);
+}
+
+/* Focus state - Accessibility */
+.btn-upload:focus-visible {
+  box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
+}
+
+/* Disabled state */
+.btn-upload:disabled {
+  opacity: 60%;
+  cursor: not-allowed;
+  color: var(--color-gray-200);
+}
+
+/**
+ * WHY THIS DESIGN?
+ *
+ * - Blue Gradient: Premium, trustworthy look for important upload action
+ * - Shadow: Creates depth in dark UI
+ * - White text: Maximum contrast for accessibility
+ * - Hover lift: Clear interactive feedback
+ *
+ * WHEN TO USE:
+ * ✅ File upload buttons (Documents, Images, Media)
+ * ✅ Import actions (CSV, Data import)
+ * ✅ Any upload-related primary action
+ *
+ * WHEN NOT TO USE:
+ * ❌ Non-upload actions (use .btn-primary)
+ * ❌ Destructive actions (use .btn-danger)
+ * ❌ Cancel/back actions (use .btn-cancel)
+ */

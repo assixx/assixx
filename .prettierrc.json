@@ -1,0 +1,28 @@
+{
+  "singleQuote": true,
+  "printWidth": 80,
+  "endOfLine": "lf",
+  "experimentalTernaries": true,
+  "plugins": [
+    "@trivago/prettier-plugin-sort-imports",
+    "prettier-plugin-css-order"
+  ],
+  "importOrder": ["^\\./instrument", "^@?\\w", "^(@/|src/)", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "importOrderParserPlugins": ["typescript", "decorators-legacy"],
+  "overrides": [
+    {
+      "files": "*.md",
+      "options": {
+        "printWidth": 120
+      }
+    },
+    {
+      "files": "*.{yml,yaml}",
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ]
+}

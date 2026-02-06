@@ -1,0 +1,37 @@
+/**
+ * Tailwind Component - Container with Container Queries
+ *
+ * Global .container class with responsive behavior using Container Queries
+ * Official Tailwind Docs: https://tailwindcss.com/docs/responsive-design
+ *
+ * Uses @container queries to adapt based on available space, not viewport
+ * This solves zoom/scroll issues where media queries fail
+ *
+ * Usage:
+ *   Parent: <main class="@container">
+ *   Child:  <div class="container">
+ *
+ * @layer components
+ */
+
+@layer components {
+  /* Container - Responsive using Tailwind Container Queries
+   * Adapts to parent container size, not viewport
+   */
+  .container {
+    /* Container adapts to parent container size */
+    container-type: inline-size;
+    margin: 0 auto;
+    padding: var(--spacing-6);
+
+    /* Responsive max-width using container queries */
+    max-width: 100%;
+  }
+
+  /* At larger container sizes, limit width for readability */
+  @container (min-width: 80rem) {
+    .container {
+      max-width: 87.5rem; /* 1400px */
+    }
+  }
+}

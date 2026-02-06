@@ -1,0 +1,100 @@
+/**
+ * Manage Machines - Page-Specific Styles
+ * All UI components use Design System - no custom styles needed
+ *
+ * Migration Complete: 2025-11-01
+ * - Card → card__header, card__body (Design System)
+ * - Table → data-table--striped (Design System)
+ * - Action Buttons → action-icon (Design System)
+ * - Floating Action Button → btn-float (Design System)
+ * - Modal → ds-modal (Design System)
+ * - Delete Modal → ds-modal--sm (Design System)
+ * - Forms → form-field (Design System)
+ * - Status Filter → toggle-group (Design System)
+ * - Search Input → search-input with results dropdown (Design System)
+ * - Status Badges → badge--success/warning/danger (Design System)
+ * - Empty State → empty-state (Design System)
+ * - Loading Spinner → spinner-container (Design System)
+ * - Layout → Tailwind utilities (flex, gap, p-4, etc.)
+ * - Maintenance Warning Icons → Tailwind text utilities
+ *
+ * Status: 100% Design System compliant
+ * Previous: 461 lines of custom CSS (all unused)
+ * Current: Minimal custom CSS for cascading dropdowns
+ *
+ * Backup: manage-machines.css.backup (2025-11-01)
+ * All styles now provided by Design System + Tailwind
+ */
+
+/* =============================================================================
+   CASCADING DROPDOWNS - Disabled State
+   ============================================================================= */
+
+.dropdown.disabled .dropdown__trigger,
+.dropdown__trigger.disabled {
+  opacity: 50%;
+  cursor: not-allowed;
+  pointer-events: none;
+  background-color: var(--color-glass-light);
+}
+
+/* =============================================================================
+   TEAMS MULTI-SELECT DROPDOWN
+   ============================================================================= */
+
+.dropdown__menu--multi {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dropdown__option--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.dropdown__option--checkbox:hover {
+  background-color: var(--color-glass-light);
+}
+
+.dropdown__checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dropdown__option--disabled {
+  opacity: 50%;
+  cursor: not-allowed;
+  font-style: italic;
+}
+
+/* =============================================================================
+   SEARCH RESULT ITEMS
+   ============================================================================= */
+
+.search-result__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-result__name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.search-result__details {
+  font-size: 0.813rem;
+  color: var(--color-text-secondary);
+}
+
+.search-result__more {
+  font-size: 0.813rem;
+  color: var(--color-primary);
+  text-align: center;
+  border-top: 1px solid rgb(255 255 255 / 5%);
+}

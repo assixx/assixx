@@ -1,0 +1,241 @@
+/**
+ * Tailwind v4 Base Layer
+ * Global resets and element styles
+ *
+ * NOTE: We don't use Tailwind's Preflight to avoid `* { padding: 0 }`
+ *       which would override utility classes like .px-4
+ *       Instead, we apply a minimal, safe reset below.
+ */
+
+@layer base {
+  /* ============================================
+     MINIMAL CSS RESET (Preflight Alternative)
+     ============================================ */
+
+  /* Universal box-sizing and border reset */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: currentcolor;
+  }
+
+  /* Remove default margins on common elements */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  pre,
+  figure,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  /* Lists reset */
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Media elements */
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Block-level elements - ensure proper stacking */
+  header,
+  main,
+  footer,
+  section,
+  article,
+  nav,
+  aside {
+    display: block;
+  }
+
+  /* Form elements normalization */
+  button,
+  input,
+  select,
+  textarea {
+    margin: 0;
+    font-size: inherit;
+    line-height: inherit;
+    font-family: inherit;
+  }
+
+  /* Hidden attribute support - ensures [hidden] attribute works correctly */
+  [hidden] {
+    display: none !important;
+  }
+
+  /* ============================================
+     CUSTOM BASE STYLES
+     ============================================ */
+
+  /* Root setup - Light mode default */
+  :root {
+    color-scheme: light;
+  }
+
+  /* Dark mode override */
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* Body reset */
+  body {
+    position: relative;
+    margin: 0;
+
+    background: var(--main-bg);
+    padding: 0;
+
+    min-height: 100vh;
+
+    overflow-x: hidden;
+    color: var(--color-text-primary);
+    line-height: 1.5;
+
+    font-family: var(--font-primary);
+  }
+
+  /* Glassmorphism background gradient overlay
+     absolute statt fixed: fixed erzeugt eigenen Stacking Context,
+     der Fullscreen-Overlays (z.B. Blackboard) verdeckt */
+  body::after {
+    position: absolute;
+    z-index: -100;
+    inset: 0;
+
+    background: var(--main-bg-gradient);
+    pointer-events: none;
+    content: '';
+  }
+
+  /* Disable gradient on landing page (has own background image)
+   * Uses :has() for SSR-friendly detection - no FOUC!
+   * .landing-page is rendered server-side, so gradient is hidden immediately
+   * Fallback: .landing-page-active class added via onMount (legacy browsers)
+   */
+  body:has(.landing-page)::after,
+  body.landing-page-active::after {
+    display: none;
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    color: var(--color-text-primary);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 3.5rem;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  h6 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  /* Links */
+  a {
+    transition: color 0.2s ease;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-primary-hover);
+  }
+
+  /* Focus */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: var(--color-primary);
+    color: #fff;
+  }
+
+  /* Scrollbar - Light mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(0 0 0 / 5%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: rgb(0 0 0 / 15%);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(0 0 0 / 25%);
+  }
+
+  /* Scrollbar - Dark mode */
+  html.dark ::-webkit-scrollbar-track {
+    background: rgb(255 255 255 / 5%);
+  }
+
+  html.dark ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 20%);
+  }
+
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 30%);
+  }
+
+  /* NOTE: .overflow-x-visible was REMOVED (2025-11)
+   * Use .table-responsive from Design System instead
+   * Reason: overflow-x:visible doesn't enable scrolling!
+   * See: design-system/primitives/data-display/table.base.css
+   */
+}

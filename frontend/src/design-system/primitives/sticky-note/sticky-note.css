@@ -1,0 +1,449 @@
+/**
+ * Sticky Note Component
+ * Single Source of Truth for blackboard entries (Dashboard Widget + Blackboard Page)
+ *
+ * Usage:
+ *   <div class="sticky-note sticky-note--yellow">
+ *     <div class="sticky-note__pin"></div>
+ *     <div class="sticky-note__header">
+ *       <div class="sticky-note__title">Title</div>
+ *       <span class="sticky-note__expires sticky-note__expires--expired">
+ *         <i class="fas fa-clock"></i> 20.01.2026
+ *       </span>
+ *     </div>
+ *     <div class="sticky-note__content">Content text...</div>
+ *     <div class="sticky-note__indicators">
+ *       <span class="sticky-note__attachments"><i class="fas fa-paperclip"></i> 2</span>
+ *       <span class="sticky-note__comments"><i class="fas fa-comments"></i> 5</span>
+ *       <span class="sticky-note__read-status sticky-note__read-status--unread">
+ *         <i class="fas fa-eye-slash"></i>
+ *       </span>
+ *     </div>
+ *     <div class="sticky-note__footer">
+ *       <span class="sticky-note__author"><i class="fas fa-user"></i> Name</span>
+ *       <span class="sticky-note__date">26.11.2025</span>
+ *     </div>
+ *     <div class="sticky-note__actions">...</div>
+ *   </div>
+ */
+
+/* ========================================
+   BASE COMPONENT
+   ======================================== */
+
+.sticky-note {
+  position: relative;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+
+  box-shadow: 0 1px 8px rgb(0 0 0 / 10%);
+  border-radius: 8px;
+  padding: 1rem;
+
+  width: 250px;
+  min-height: 120px;
+
+  color: var(--color-black);
+}
+
+.sticky-note:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+}
+
+/* ========================================
+   SIZE VARIANTS
+   ======================================== */
+
+/* Default: Mini size for dashboard widget */
+.sticky-note--mini {
+  flex: 0 0 250px;
+  min-height: 120px;
+}
+
+/* Large: For blackboard page with more content */
+.sticky-note--large {
+  min-height: 200px;
+}
+
+.sticky-note--large .sticky-note__content {
+  -webkit-line-clamp: 6;
+}
+
+/* ========================================
+   COLOR VARIANTS
+   ======================================== */
+
+.sticky-note--yellow {
+  background: linear-gradient(135deg, #fff6a5, #fcd35a);
+}
+
+.sticky-note--blue {
+  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+}
+
+.sticky-note--green {
+  background: linear-gradient(135deg, #bde9bf 0%, #8cdd8f 100%);
+}
+
+.sticky-note--red {
+  background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
+}
+
+.sticky-note--orange {
+  background: linear-gradient(135deg, #fbd397 0%, #ffaa2b 100%);
+}
+
+.sticky-note--pink {
+  background: linear-gradient(135deg, #fce4ec 0%, #f894b7 100%);
+}
+
+/* ========================================
+   PUSHPIN
+   ======================================== */
+
+.sticky-note__pin {
+  position: absolute;
+  top: -5px;
+  right: 15px;
+  transform: rotate(-45deg);
+  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
+  border-radius: 50% 50% 50% 0;
+
+  background: radial-gradient(circle at 30% 30%, #f44, #c00);
+
+  width: 15px;
+  height: 15px;
+}
+
+.sticky-note__pin::after {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  border-radius: 50%;
+
+  width: 10px;
+  height: 10px;
+  content: '';
+}
+
+/* ========================================
+   CONTENT ELEMENTS
+   ======================================== */
+
+/* Header wrapper for title + expiration date */
+.sticky-note__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.3em;
+  margin-bottom: 0.5rem;
+}
+
+.sticky-note__header .sticky-note__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.sticky-note__title {
+  margin-top: 0.3em;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  font-weight: 600;
+
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Expiration date indicator */
+.sticky-note__expires {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-style: italic;
+  color: var(--color-gray-600);
+  white-space: nowrap;
+}
+
+.sticky-note__expires--expired {
+  color: var(--color-red-500);
+  font-weight: 500;
+}
+
+.sticky-note__expires i {
+  margin-right: 0.2em;
+}
+
+.sticky-note__content {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+/* ========================================
+   FOOTER (Author + Date)
+   ======================================== */
+
+.sticky-note__footer {
+  display: flex;
+  position: absolute;
+  right: 1rem;
+  bottom: 0.5rem;
+  left: 1rem;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  opacity: 70%;
+
+  font-size: 0.7rem;
+}
+
+/* Top row: Badges only (right aligned) */
+.sticky-note__badges {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+/* Bottom row: Author + Date */
+.sticky-note__footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sticky-note__author,
+.sticky-note__date {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sticky-note__author i {
+  opacity: 60%;
+  font-size: 0.65rem;
+}
+
+/* ========================================
+   BADGES (Priority + Org Level)
+   ======================================== */
+
+.sticky-note__badge {
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  font-weight: 600;
+
+  font-size: 0.55rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Priority badges */
+.sticky-note__badge--priority-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sticky-note__badge--priority-medium {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.sticky-note__badge--priority-high {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.sticky-note__badge--priority-urgent {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Org Level badges */
+.sticky-note__badge--org-company {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.sticky-note__badge--org-department {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.sticky-note__badge--org-team {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sticky-note__badge--org-area {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+/* Unread indicator badge */
+.sticky-note__badge--unread {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ========================================
+   INDICATORS (Attachments + Comments)
+   ======================================== */
+
+.sticky-note__indicators {
+  display: flex;
+  position: absolute;
+  bottom: 1.8rem; /* Above footer */
+  left: 1rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sticky-note__attachments,
+.sticky-note__comments {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  opacity: 80%;
+
+  font-size: 0.75rem;
+}
+
+.sticky-note__attachments i,
+.sticky-note__comments i {
+  color: var(--color-black, #000);
+  font-size: 0.8rem;
+}
+
+/* Read Status Indicator (Eye icon) */
+.sticky-note__read-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  font-size: 0.75rem;
+}
+
+.sticky-note__read-status i {
+  font-size: 0.85rem;
+}
+
+.sticky-note__read-status--read {
+  opacity: 60%;
+}
+
+.sticky-note__read-status--read i {
+  color: var(--color-success, #4caf50);
+}
+
+.sticky-note__read-status--unread {
+  opacity: 100%;
+}
+
+.sticky-note__read-status--unread i {
+  color: var(--color-warning, #ff9800);
+}
+
+/* ========================================
+   ACTION BUTTONS (Edit/Delete)
+   ======================================== */
+
+.sticky-note__actions {
+  display: flex;
+  position: absolute;
+  top: 0.5rem;
+  right: 2rem; /* Space for pushpin */
+  gap: 0.5rem;
+
+  opacity: 0%;
+
+  transition: opacity 0.2s ease;
+}
+
+.sticky-note:hover .sticky-note__actions {
+  opacity: 100%;
+}
+
+.sticky-note__action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+  border: none;
+  border-radius: 50%;
+
+  background: var(--color-white, rgb(255 255 255 / 70%));
+  padding: 0;
+
+  width: 28px;
+  height: 28px;
+  color: var(--color-black);
+
+  font-size: 0.75rem;
+}
+
+.sticky-note__action:hover {
+  transform: scale(1.1);
+  background: var(--color-white, rgb(255 255 255 / 90%));
+}
+
+.sticky-note__action--edit {
+  color: var(--color-black);
+}
+
+.sticky-note__action--delete {
+  color: var(--color-black);
+}
+
+/* ========================================
+   ATTACHMENT PREVIEW (Direct attachment mode)
+   ======================================== */
+
+.sticky-note__attachment-preview {
+  position: relative;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sticky-note__attachment-preview img {
+  display: block;
+  width: 100%;
+}
+
+.sticky-note.has-attachment .sticky-note__content {
+  display: none;
+}
+
+.sticky-note.has-attachment {
+  padding-bottom: 2.5rem;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (width <= 768px) {
+  .sticky-note {
+    flex: 0 0 200px;
+    min-height: 100px;
+  }
+
+  .sticky-note--large {
+    min-height: 150px;
+  }
+}
