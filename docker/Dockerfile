@@ -69,7 +69,7 @@ RUN addgroup -g 1001 -S nodejs && \
 # Arbeitsverzeichnis
 WORKDIR /app
 
-# Alle Dependencies (inkl. tsx für runtime)
+# Production dependencies (tsx not needed — runs compiled JS)
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
@@ -106,5 +106,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Start Command with dumb-init for proper signal handling
 # dumb-init ensures SIGTERM/SIGINT are forwarded to Node.js process
-# NestJS Entry-Point (migrated from Express)
-CMD ["dumb-init", "pnpm", "exec", "tsx", "backend/src/nest/main.ts"]
+# NestJS Entry-Point — runs compiled JS (tsx can't handle parameter decorators like @Inject)
+CMD ["dumb-init", "node", "backend/dist/nest/main.js"]

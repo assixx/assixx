@@ -6,8 +6,8 @@
  */
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 
-import { hierarchyPermissionService } from '../../services/hierarchyPermission.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type {
   DbBlackboardEntry,
   UserAccessInfo,
@@ -18,7 +18,10 @@ import type {
 export class BlackboardAccessService {
   private readonly logger = new Logger(BlackboardAccessService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly hierarchyPermission: HierarchyPermissionService,
+  ) {}
 
   // ==========================================================================
   // LOGGING HELPERS
@@ -254,9 +257,9 @@ export class BlackboardAccessService {
   ): Promise<void> {
     const [accessibleAreas, accessibleDepts, accessibleTeams] =
       await Promise.all([
-        hierarchyPermissionService.getAccessibleAreaIds(userId, tenantId),
-        hierarchyPermissionService.getAccessibleDepartmentIds(userId, tenantId),
-        hierarchyPermissionService.getAccessibleTeamIds(userId, tenantId),
+        this.hierarchyPermission.getAccessibleAreaIds(userId, tenantId),
+        this.hierarchyPermission.getAccessibleDepartmentIds(userId, tenantId),
+        this.hierarchyPermission.getAccessibleTeamIds(userId, tenantId),
       ]);
 
     const accessibleAreaSet = new Set(accessibleAreas);

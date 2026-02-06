@@ -14,9 +14,9 @@ import {
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 
-import { tenantDeletionService } from '../../services/tenantDeletion.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { TenantDeletionService } from '../tenant-deletion/tenant-deletion.service.js';
 import { ERROR_CODES } from './root.helpers.js';
 import type {
   DbDeletionQueueRow,
@@ -34,6 +34,7 @@ export class RootDeletionService {
   constructor(
     private readonly db: DatabaseService,
     private readonly userRepository: UserRepository,
+    private readonly tenantDeletion: TenantDeletionService,
   ) {}
 
   /**
@@ -58,7 +59,7 @@ export class RootDeletionService {
     }
 
     try {
-      const result = await tenantDeletionService.requestTenantDeletion(
+      const result = await this.tenantDeletion.requestTenantDeletion(
         tenantId,
         requestedBy,
         reason ?? 'No reason provided',
@@ -130,7 +131,7 @@ export class RootDeletionService {
    */
   async cancelDeletion(tenantId: number, userId: number): Promise<void> {
     this.logger.log(`Cancelling deletion for tenant ${tenantId}`);
-    await tenantDeletionService.cancelDeletion(tenantId, userId);
+    await this.tenantDeletion.cancelDeletion(tenantId, userId);
   }
 
   /**
@@ -139,7 +140,7 @@ export class RootDeletionService {
   async performDeletionDryRun(tenantId: number): Promise<DeletionDryRunReport> {
     this.logger.log(`Performing deletion dry run for tenant ${tenantId}`);
 
-    const report = await tenantDeletionService.performDryRun(tenantId);
+    const report = await this.tenantDeletion.performDryRun(tenantId);
 
     // Get tenant name
     const tenant = await this.db.query<DbTenantRow>(
@@ -285,7 +286,7 @@ export class RootDeletionService {
     this.logger.log(
       `Password verified for user ${userId}, proceeding with approval`,
     );
-    await tenantDeletionService.approveDeletion(queueId, userId, comment);
+    await this.tenantDeletion.approveDeletion(queueId, userId, comment);
   }
 
   /**
@@ -297,7 +298,7 @@ export class RootDeletionService {
     reason: string,
   ): Promise<void> {
     this.logger.log(`Rejecting deletion ${queueId}`);
-    await tenantDeletionService.rejectDeletion(queueId, userId, reason);
+    await this.tenantDeletion.rejectDeletion(queueId, userId, reason);
   }
 
   /**
@@ -305,6 +306,6 @@ export class RootDeletionService {
    */
   async emergencyStop(tenantId: number, userId: number): Promise<void> {
     this.logger.log(`Emergency stop for tenant ${tenantId}`);
-    await tenantDeletionService.triggerEmergencyStop(tenantId, userId);
+    await this.tenantDeletion.triggerEmergencyStop(tenantId, userId);
   }
 }

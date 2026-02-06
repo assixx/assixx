@@ -9,20 +9,9 @@ import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
+import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import { BlackboardAccessService } from './blackboard-access.service.js';
 import type { DbBlackboardEntry } from './blackboard.types.js';
-
-// =============================================================
-// Module mocks
-// =============================================================
-
-vi.mock('../../services/hierarchyPermission.service.js', () => ({
-  hierarchyPermissionService: {
-    getAccessibleAreaIds: vi.fn().mockResolvedValue([]),
-    getAccessibleDepartmentIds: vi.fn().mockResolvedValue([]),
-    getAccessibleTeamIds: vi.fn().mockResolvedValue([]),
-  },
-}));
 
 // =============================================================
 // Mock factories
@@ -30,6 +19,14 @@ vi.mock('../../services/hierarchyPermission.service.js', () => ({
 
 function createMockDb() {
   return { query: vi.fn() };
+}
+
+function createMockHierarchyPermission() {
+  return {
+    getAccessibleAreaIds: vi.fn().mockResolvedValue([]),
+    getAccessibleDepartmentIds: vi.fn().mockResolvedValue([]),
+    getAccessibleTeamIds: vi.fn().mockResolvedValue([]),
+  };
 }
 
 function makeEntry(
@@ -58,11 +55,16 @@ function makeEntry(
 describe('BlackboardAccessService', () => {
   let service: BlackboardAccessService;
   let mockDb: ReturnType<typeof createMockDb>;
+  let mockHierarchy: ReturnType<typeof createMockHierarchyPermission>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new BlackboardAccessService(mockDb as unknown as DatabaseService);
+    mockHierarchy = createMockHierarchyPermission();
+    service = new BlackboardAccessService(
+      mockDb as unknown as DatabaseService,
+      mockHierarchy as unknown as HierarchyPermissionService,
+    );
   });
 
   // =============================================================
@@ -292,7 +294,7 @@ describe('BlackboardAccessService', () => {
     });
 
     it('should throw ForbiddenException for inaccessible area', async () => {
-      // hierarchyPermissionService returns empty arrays by default
+      // mockHierarchy returns empty arrays by default
 
       await expect(service.validateOrgPermissions(1, 10, [99])).rejects.toThrow(
         ForbiddenException,

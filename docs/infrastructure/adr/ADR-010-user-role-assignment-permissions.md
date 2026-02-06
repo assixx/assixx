@@ -479,6 +479,6 @@ backend/src/nest/
 
 - [ADR-006: Multi-Tenant Context Isolation](./ADR-006-multi-tenant-context-isolation.md)
 - [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md)
-- [ULTIMATE-PERMISSION-SYSTEM-PLAN.md](/docs/ULTIMATE-PERMISSION-SYSTEM-PLAN.md)
+- [ULTIMATE-PERMISSION-SYSTEM.md](/docs/ULTIMATE-PERMISSION-SYSTEM.md)
 - [refactoring-assignment-concrete-plan.md](/docs/refactoring-assignment-concrete-plan.md)
 - [ASSIGNED-LEAD_ID-SOLUTION.md](/docs/ASSIGNED-LEAD_ID-SOLUTION.md)

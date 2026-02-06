@@ -1,76 +1,92 @@
 #!/usr/bin/env node
 /**
  * Tenant Deletion Worker
- * Background process that handles tenant deletion queue
+ * Background process that handles tenant deletion queue.
+ *
+ * Uses NestJS standalone application context for proper DI.
+ * Only bootstraps the modules needed for deletion — not the full app.
  */
+import { type INestApplicationContext, Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import 'dotenv/config';
 import * as http from 'http';
 import { IncomingMessage, ServerResponse } from 'http';
 
-import pool from '../config/database.js';
-import { tenantDeletionService } from '../services/tenantDeletion.service.js';
-import { logger } from '../utils/logger.js';
+import { TenantDeletionService } from '../nest/tenant-deletion/tenant-deletion.service.js';
+import { DeletionWorkerModule } from './deletion-worker.module.js';
 
 class DeletionWorker {
   private isRunning = true;
   private processingInterval = 30000; // 30 seconds
   private isProcessing = false;
+  private readonly logger = new Logger('DeletionWorker');
+  private app: INestApplicationContext | null = null;
+  private tenantDeletionService: TenantDeletionService | null = null;
 
   constructor() {
     // Setup graceful shutdown handlers
     process.on('SIGTERM', () => void this.shutdown('SIGTERM'));
     process.on('SIGINT', () => void this.shutdown('SIGINT'));
     process.on('uncaughtException', (error: Error) => {
-      logger.error({ err: error }, 'Uncaught exception in deletion worker');
+      this.logger.error(
+        `Uncaught exception in deletion worker: ${error.message}`,
+      );
       void this.shutdown('uncaughtException');
     });
-    process.on(
-      'unhandledRejection',
-      (reason: unknown, promise: Promise<unknown>) => {
-        logger.error(
-          { reason, promise },
-          'Unhandled rejection in deletion worker',
-        );
-        void this.shutdown('unhandledRejection');
-      },
-    );
+    process.on('unhandledRejection', (reason: unknown) => {
+      this.logger.error(
+        `Unhandled rejection in deletion worker: ${reason instanceof Error ? reason.message : String(reason)}`,
+      );
+      void this.shutdown('unhandledRejection');
+    });
   }
 
   async start(): Promise<void> {
-    logger.info(' Tenant Deletion Worker starting...');
+    this.logger.log('Tenant Deletion Worker starting...');
 
     try {
-      // Test database connection
-      const client = await pool.connect();
-      client.release();
-      logger.info('✅ Database connected');
-
-      // Redis connection would be initialized here if needed
-      logger.info('✅ Worker initialized (Redis optional)');
+      // Bootstrap NestJS standalone application context
+      this.app = await NestFactory.createApplicationContext(
+        DeletionWorkerModule,
+        { logger: ['error', 'warn', 'log'] },
+      );
+      this.tenantDeletionService = this.app.get(TenantDeletionService);
+      this.logger.log('NestJS application context created');
 
       // Start health check endpoint
       this.startHealthCheck();
 
-      logger.info('✅ Deletion Worker ready and running');
-      logger.info(
-        ` Checking for queued deletions every ${this.processingInterval / 1000} seconds`,
+      this.logger.log('Deletion Worker ready and running');
+      this.logger.log(
+        `Checking for queued deletions every ${this.processingInterval / 1000} seconds`,
       );
 
       // Main processing loop
       while (this.isRunning) {
-        try {
-          if (!this.isProcessing) {
-            await this.checkAndProcessQueue();
-          }
-          await this.sleep(this.processingInterval);
-        } catch (error: unknown) {
-          logger.error({ err: error }, 'Error in worker main loop');
-          await this.sleep(60000); // 1 minute wait on error
-        }
+        await this.runLoopIteration();
       }
     } catch (error: unknown) {
-      logger.error({ err: error }, 'Failed to start deletion worker');
+      this.logger.error(
+        `Failed to start deletion worker: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
       process.exit(1);
+    }
+  }
+
+  /**
+   * Single iteration of the main processing loop.
+   */
+  private async runLoopIteration(): Promise<void> {
+    try {
+      if (!this.isProcessing) {
+        await this.checkAndProcessQueue();
+      }
+      await this.sleep(this.processingInterval);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error in worker main loop: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
+      await this.sleep(60000); // 1 minute wait on error
     }
   }
 
@@ -78,10 +94,13 @@ class DeletionWorker {
     this.isProcessing = true;
 
     try {
-      // Silent check - only logs when there's actual work to do (inside processQueue)
-      await tenantDeletionService.processQueue();
+      if (this.tenantDeletionService !== null) {
+        await this.tenantDeletionService.processQueue();
+      }
     } catch (error: unknown) {
-      logger.error({ err: error }, 'Error processing deletion queue');
+      this.logger.error(
+        `Error processing deletion queue: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
     } finally {
       this.isProcessing = false;
     }
@@ -112,7 +131,9 @@ class DeletionWorker {
     );
 
     server.listen(healthPort, () => {
-      logger.info(`📡 Health check endpoint listening on port ${healthPort}`);
+      this.logger.log(
+        `Health check endpoint listening on port ${String(healthPort)}`,
+      );
     });
   }
 
@@ -123,8 +144,8 @@ class DeletionWorker {
   }
 
   private async shutdown(signal: string): Promise<void> {
-    logger.info(
-      `⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`,
+    this.logger.log(
+      `Deletion Worker received ${signal} signal, shutting down gracefully...`,
     );
 
     this.isRunning = false;
@@ -133,26 +154,24 @@ class DeletionWorker {
     let waitTime = 0;
     while (this.isProcessing && waitTime < 60000) {
       // Max 60 seconds wait
-      logger.info('Waiting for current deletion to complete...');
+      this.logger.log('Waiting for current deletion to complete...');
       await this.sleep(5000);
       waitTime += 5000;
     }
 
     try {
-      // Close database connections
-      // Close database connections if pool has end method
-      if ('end' in pool && typeof pool.end === 'function') {
-        await pool.end();
+      // Close NestJS application context (handles DB pool + Redis cleanup)
+      if (this.app !== null) {
+        await this.app.close();
+        this.logger.log('NestJS application context closed');
       }
-      logger.info('✅ Database connections closed');
 
-      // Redis would be disconnected here if used
-      logger.info('✅ Cleanup complete');
-
-      logger.info('✅ Deletion Worker shutdown complete');
+      this.logger.log('Deletion Worker shutdown complete');
       process.exit(0);
     } catch (error: unknown) {
-      logger.error({ err: error }, 'Error during shutdown');
+      this.logger.error(
+        `Error during shutdown: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
       process.exit(1);
     }
   }
@@ -161,7 +180,10 @@ class DeletionWorker {
 // Start the worker when run directly
 const worker = new DeletionWorker();
 worker.start().catch((error: unknown) => {
-  logger.error({ err: error }, 'Fatal error starting deletion worker');
+  const logger = new Logger('DeletionWorker');
+  logger.error(
+    `Fatal error starting deletion worker: ${error instanceof Error ? error.message : 'Unknown'}`,
+  );
   process.exit(1);
 });
 

@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { TenantDeletionService } from '../tenant-deletion/tenant-deletion.service.js';
 import { RootDeletionService } from './root-deletion.service.js';
 
 // =============================================================
@@ -22,24 +23,6 @@ vi.mock('bcryptjs', () => ({
   default: {
     hash: vi.fn().mockResolvedValue('hashed-password'),
     compare: vi.fn().mockResolvedValue(true),
-  },
-}));
-
-vi.mock('../../services/tenantDeletion.service.js', () => ({
-  tenantDeletionService: {
-    requestTenantDeletion: vi.fn().mockResolvedValue({ queueId: 42 }),
-    cancelDeletion: vi.fn().mockResolvedValue(undefined),
-    performDryRun: vi.fn().mockResolvedValue({
-      tenantId: 10,
-      estimatedDuration: 5,
-      totalRecords: 100,
-      affectedRecords: { users: 10, documents: 20 },
-      warnings: [],
-      blockers: [],
-    }),
-    approveDeletion: vi.fn().mockResolvedValue(undefined),
-    rejectDeletion: vi.fn().mockResolvedValue(undefined),
-    triggerEmergencyStop: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -58,6 +41,24 @@ function createMockUserRepo() {
   };
 }
 
+function createMockTenantDeletion() {
+  return {
+    requestTenantDeletion: vi.fn().mockResolvedValue({ queueId: 42 }),
+    cancelDeletion: vi.fn().mockResolvedValue(undefined),
+    performDryRun: vi.fn().mockResolvedValue({
+      tenantId: 10,
+      estimatedDuration: 5,
+      totalRecords: 100,
+      affectedRecords: { users: 10, documents: 20 },
+      warnings: [],
+      blockers: [],
+    }),
+    approveDeletion: vi.fn().mockResolvedValue(undefined),
+    rejectDeletion: vi.fn().mockResolvedValue(undefined),
+    triggerEmergencyStop: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 // =============================================================
 // RootDeletionService
 // =============================================================
@@ -66,14 +67,17 @@ describe('RootDeletionService', () => {
   let service: RootDeletionService;
   let mockDb: ReturnType<typeof createMockDb>;
   let mockUserRepo: ReturnType<typeof createMockUserRepo>;
+  let mockTenantDeletion: ReturnType<typeof createMockTenantDeletion>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockUserRepo = createMockUserRepo();
+    mockTenantDeletion = createMockTenantDeletion();
     service = new RootDeletionService(
       mockDb as unknown as DatabaseService,
       mockUserRepo as unknown as UserRepository,
+      mockTenantDeletion as unknown as TenantDeletionService,
     );
   });
 
@@ -97,11 +101,9 @@ describe('RootDeletionService', () => {
     });
 
     it('should throw ConflictException when already marked for deletion', async () => {
-      const { tenantDeletionService } =
-        await import('../../services/tenantDeletion.service.js');
-      vi.mocked(
-        tenantDeletionService.requestTenantDeletion,
-      ).mockRejectedValueOnce(new Error('already marked_for_deletion'));
+      mockTenantDeletion.requestTenantDeletion.mockRejectedValueOnce(
+        new Error('already marked_for_deletion'),
+      );
 
       await expect(
         service.requestTenantDeletion(10, 1, 'test'),
@@ -255,9 +257,7 @@ describe('RootDeletionService', () => {
 
       await service.approveDeletion(1, 5, 'correct', 'Approved');
 
-      const { tenantDeletionService } =
-        await import('../../services/tenantDeletion.service.js');
-      expect(tenantDeletionService.approveDeletion).toHaveBeenCalledWith(
+      expect(mockTenantDeletion.approveDeletion).toHaveBeenCalledWith(
         1,
         5,
         'Approved',
@@ -270,22 +270,18 @@ describe('RootDeletionService', () => {
   // =============================================================
 
   describe('cancelDeletion', () => {
-    it('should delegate to tenantDeletionService', async () => {
+    it('should delegate to TenantDeletionService', async () => {
       await service.cancelDeletion(10, 1);
 
-      const { tenantDeletionService } =
-        await import('../../services/tenantDeletion.service.js');
-      expect(tenantDeletionService.cancelDeletion).toHaveBeenCalledWith(10, 1);
+      expect(mockTenantDeletion.cancelDeletion).toHaveBeenCalledWith(10, 1);
     });
   });
 
   describe('emergencyStop', () => {
-    it('should delegate to tenantDeletionService', async () => {
+    it('should delegate to TenantDeletionService', async () => {
       await service.emergencyStop(10, 1);
 
-      const { tenantDeletionService } =
-        await import('../../services/tenantDeletion.service.js');
-      expect(tenantDeletionService.triggerEmergencyStop).toHaveBeenCalledWith(
+      expect(mockTenantDeletion.triggerEmergencyStop).toHaveBeenCalledWith(
         10,
         1,
       );
