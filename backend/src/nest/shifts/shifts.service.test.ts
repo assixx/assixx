@@ -268,10 +268,7 @@ describe('ShiftsService – DB-mocked methods', () => {
         sortOrder: 'desc',
       });
 
-      const [query, params] = mockDb.query.mock.calls[0] as [
-        string,
-        unknown[],
-      ];
+      const [query, params] = mockDb.query.mock.calls[0] as [string, unknown[]];
       expect(query).toContain('ORDER BY s.start_time DESC');
       expect(query).toContain('LIMIT');
       // page 3, limit 25 → offset = (3-1)*25 = 50
@@ -398,9 +395,9 @@ describe('ShiftsService – DB-mocked methods', () => {
       // Q1: getShiftById
       mockDb.query.mockResolvedValueOnce([createMockDbShift()]);
 
-      await expect(
-        service.updateShift(1, {} as never, 42, 5),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateShift(1, {} as never, 42, 5)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -623,17 +620,18 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('passes all 8 params to query', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getUserCalendarShifts(
+      await service.getUserCalendarShifts(5, 42, '2025-06-01', '2025-06-30');
+
+      const [, params] = mockDb.query.mock.calls[0] as [string, unknown[]];
+      expect(params).toEqual([
         5,
         42,
         '2025-06-01',
         '2025-06-30',
-      );
-
-      const [, params] = mockDb.query.mock.calls[0] as [string, unknown[]];
-      expect(params).toEqual([
-        5, 42, '2025-06-01', '2025-06-30',
-        5, 42, '2025-06-01', '2025-06-30',
+        5,
+        42,
+        '2025-06-01',
+        '2025-06-30',
       ]);
     });
   });
@@ -725,9 +723,7 @@ describe('ShiftsService – DB-mocked methods', () => {
   describe('createSwapRequest', () => {
     it('throws ForbiddenException when shift does not belong to user', async () => {
       // getShiftById returns shift owned by user 99
-      mockDb.query.mockResolvedValueOnce([
-        createMockDbShift({ user_id: 99 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createMockDbShift({ user_id: 99 })]);
 
       await expect(
         service.createSwapRequest(
@@ -740,10 +736,13 @@ describe('ShiftsService – DB-mocked methods', () => {
 
     it('delegates to shiftSwapService when ownership passes', async () => {
       // getShiftById returns shift owned by user 5
-      mockDb.query.mockResolvedValueOnce([
-        createMockDbShift({ user_id: 5 }),
-      ]);
-      const mockSwapResult = { id: 1, shiftId: 1, requestedBy: 5, status: 'pending' };
+      mockDb.query.mockResolvedValueOnce([createMockDbShift({ user_id: 5 })]);
+      const mockSwapResult = {
+        id: 1,
+        shiftId: 1,
+        requestedBy: 5,
+        status: 'pending',
+      };
       mockSwapService.createSwapRequest.mockResolvedValueOnce(mockSwapResult);
 
       const result = await service.createSwapRequest(
@@ -823,11 +822,7 @@ describe('ShiftsService – delegation methods', () => {
       const mockResult = { planId: 1, shiftIds: [1, 2], message: 'created' };
       mockPlansService.createShiftPlan.mockResolvedValueOnce(mockResult);
 
-      const result = await service.createShiftPlan(
-        {} as never,
-        42,
-        5,
-      );
+      const result = await service.createShiftPlan({} as never, 42, 5);
 
       expect(result).toEqual(mockResult);
       expect(mockPlansService.createShiftPlan).toHaveBeenCalledWith(
@@ -918,9 +913,7 @@ describe('ShiftsService – delegation methods', () => {
   describe('updateSwapRequestStatus', () => {
     it('delegates to shiftSwapService', async () => {
       const mockResult = { message: 'Swap request updated' };
-      mockSwapService.updateSwapRequestStatus.mockResolvedValueOnce(
-        mockResult,
-      );
+      mockSwapService.updateSwapRequestStatus.mockResolvedValueOnce(mockResult);
 
       const result = await service.updateSwapRequestStatus(
         1,

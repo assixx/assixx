@@ -188,9 +188,7 @@ function mockGetSuggestionByIdChain(
   // Q1: getExtendedUserOrgInfo
   mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
   // Q2: detail query
-  mockDb.query.mockResolvedValueOnce([
-    createMockDbSuggestion(dbSuggestion),
-  ]);
+  mockDb.query.mockResolvedValueOnce([createMockDbSuggestion(dbSuggestion)]);
 }
 
 // =============================================================
@@ -260,8 +258,20 @@ describe('KvpService', () => {
   describe('getCategories', () => {
     it('returns categories from DB', async () => {
       const mockCategories = [
-        { id: 1, source: 'global', name: 'Quality', color: '#00f', icon: 'check' },
-        { id: 2, source: 'custom', name: 'Safety', color: '#f00', icon: 'alert' },
+        {
+          id: 1,
+          source: 'global',
+          name: 'Quality',
+          color: '#00f',
+          icon: 'check',
+        },
+        {
+          id: 2,
+          source: 'custom',
+          name: 'Safety',
+          color: '#f00',
+          icon: 'alert',
+        },
       ];
       mockDb.query.mockResolvedValueOnce(mockCategories);
 
@@ -344,7 +354,9 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
       // Q2: detail by uuid
       mockDb.query.mockResolvedValueOnce([
-        createMockDbSuggestion({ uuid: '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee' }),
+        createMockDbSuggestion({
+          uuid: '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
+        }),
       ]);
 
       const result = await service.getSuggestionById(
@@ -597,7 +609,10 @@ describe('KvpService', () => {
       // UPDATE
       mockDb.query.mockResolvedValueOnce([]);
       // getSuggestionById chain (updated)
-      mockGetSuggestionByIdChain(mockDb, { submitted_by: 99, status: 'approved' });
+      mockGetSuggestionByIdChain(mockDb, {
+        submitted_by: 99,
+        status: 'approved',
+      });
 
       const result = await service.updateSuggestion(
         1,
@@ -691,9 +706,7 @@ describe('KvpService', () => {
   describe('unshareSuggestion', () => {
     it('unshares suggestion and resets to team level', async () => {
       // getExtendedUserOrgInfo → user with team
-      mockDb.query.mockResolvedValueOnce([
-        { ...EMPTY_ORG_ROW, team_ids: [5] },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ ...EMPTY_ORG_ROW, team_ids: [5] }]);
       // UPDATE
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -937,9 +950,7 @@ describe('KvpService', () => {
         org_id: 5,
       });
       // User has team membership for team 5
-      mockDb.query.mockResolvedValueOnce([
-        { ...EMPTY_ORG_ROW, team_ids: [5] },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ ...EMPTY_ORG_ROW, team_ids: [5] }]);
 
       const result = await service.getAttachment(
         'file-uuid',
@@ -974,7 +985,12 @@ describe('KvpService', () => {
       await service.addComment(1, 3, 42, 'Good idea', false, 'admin');
 
       expect(mockComments.addComment).toHaveBeenCalledWith(
-        1, 3, 42, 'Good idea', false, 'admin',
+        1,
+        3,
+        42,
+        'Good idea',
+        false,
+        'admin',
       );
     });
   });

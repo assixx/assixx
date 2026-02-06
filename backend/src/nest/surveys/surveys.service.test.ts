@@ -213,11 +213,15 @@ describe('SurveysService', () => {
     });
 
     it('should throw BadRequestException for zero', () => {
-      expect(() => mocks.service.parseIdParam('0')).toThrow(BadRequestException);
+      expect(() => mocks.service.parseIdParam('0')).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for negative number', () => {
-      expect(() => mocks.service.parseIdParam('-5')).toThrow(BadRequestException);
+      expect(() => mocks.service.parseIdParam('-5')).toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -543,7 +547,13 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValue([]);
 
       const dto = { questions: [{ questionText: 'Q1', questionType: 'text' }] };
-      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
+      await mocks.service['updateSurveyRelations'](
+        1,
+        dto as never,
+        1,
+        5,
+        'admin',
+      );
 
       expect(mocks.mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM survey_questions'),
@@ -558,7 +568,13 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValue([]);
 
       const dto = { assignments: [{ scope: 'all' }] };
-      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
+      await mocks.service['updateSurveyRelations'](
+        1,
+        dto as never,
+        1,
+        5,
+        'admin',
+      );
 
       expect(
         mocks.mockAccessService.validateAssignmentPermissions,
@@ -574,7 +590,13 @@ describe('SurveysService', () => {
 
     it('skips question/assignment updates when not in DTO', async () => {
       const dto = { title: 'Just title' };
-      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
+      await mocks.service['updateSurveyRelations'](
+        1,
+        dto as never,
+        1,
+        5,
+        'admin',
+      );
 
       expect(mocks.mockDb.query).not.toHaveBeenCalled();
       expect(
@@ -586,7 +608,13 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValue([]);
 
       const dto = { assignments: [] };
-      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
+      await mocks.service['updateSurveyRelations'](
+        1,
+        dto as never,
+        1,
+        5,
+        'admin',
+      );
 
       expect(
         mocks.mockAccessService.validateAssignmentPermissions,
@@ -879,13 +907,7 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValueOnce([existing]);
 
       await expect(
-        mocks.service.updateSurvey(
-          1,
-          { title: 'X' } as never,
-          1,
-          5,
-          'admin',
-        ),
+        mocks.service.updateSurvey(1, { title: 'X' } as never, 1, 5, 'admin'),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -985,9 +1007,12 @@ describe('SurveysService', () => {
       const result = await mocks.service.submitResponse(1, 5, 1, []);
 
       expect(result).toBe(42);
-      expect(
-        mocks.mockResponsesService.submitResponse,
-      ).toHaveBeenCalledWith(1, 5, 1, []);
+      expect(mocks.mockResponsesService.submitResponse).toHaveBeenCalledWith(
+        1,
+        5,
+        1,
+        [],
+      );
     });
   });
 
@@ -1096,7 +1121,9 @@ describe('SurveysService', () => {
         5,
       );
 
-      expect(mocks.mockNotifications.createFeatureNotification).toHaveBeenCalled();
+      expect(
+        mocks.mockNotifications.createFeatureNotification,
+      ).toHaveBeenCalled();
       expect(mocks.mockActivityLogger.logCreate).toHaveBeenCalledWith(
         1,
         5,
@@ -1117,7 +1144,9 @@ describe('SurveysService', () => {
         5,
       );
 
-      expect(mocks.mockNotifications.createFeatureNotification).toHaveBeenCalled();
+      expect(
+        mocks.mockNotifications.createFeatureNotification,
+      ).toHaveBeenCalled();
     });
   });
 

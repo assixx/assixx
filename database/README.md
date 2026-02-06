@@ -1,66 +1,72 @@
-# 📊 Assixx Database Structure
+# Assixx Database Structure
 
-**Last Updated:** 2025-06-16  
+**Last Updated:** 2026-02-06
+**Database:** PostgreSQL 17.7
 **Status:** Synchronized with Production
 
-## 🗂️ Current Structure
+## Current Structure
 
 ```
 database/
-├── docker-init.sql              # Main schema file (updated 2025-06-16)
-├── current-schema-20250616.sql  # Today's production snapshot
-├── migrations/                  # All applied migrations
-│   ├── 001-tenant-isolation-fixes.sql
-│   ├── 002-add-is-primary-to-tenant-admins.sql
-│   ├── 003-add-plans-system.sql
-│   ├── 004-add-document-multi-recipients.sql
-│   └── ... (18 migration files total)
-├── archive/                     # Old schema versions
-│   └── pre-20250616/
-│       ├── docker-init.sql     # Original schema
-│       ├── complete-schema.sql  # Old complete schema
-│       └── docker-init-simple.sql
-├── seeds/                       # Test data
-├── schema/                      # Individual table definitions
-└── build/                       # Build scripts
+├── docker-init.sql                  # Main schema file (PostgreSQL)
+├── database-setup.sql               # Setup script
+├── migrations/                      # node-pg-migrate TypeScript migrations (ADR-014)
+│   ├── 20260127000000_baseline.ts
+│   ├── 20260127000001_drop-unused-tables.ts
+│   ├── ...
+│   ├── 20260202000018_fix-position-umlauts.ts
+│   └── archive/                     # Old SQL migrations (pre node-pg-migrate)
+├── seeds/                           # Seed data
+│   └── 001_global-seed-data.sql
+├── backups/                         # Database backups (.gitignored)
+└── README.md
 ```
 
-## 📋 Database Statistics
+## Database Statistics
 
-- **Tables:** 92
+- **Tables:** 170
 - **Views:** 2
-- **Total Migrations Applied:** 18
+- **Migrations Applied:** 19 (TypeScript, via node-pg-migrate)
 
-## 🚀 Usage
+## Usage
 
 ### Fresh Installation
 
 ```bash
-docker exec assixx-mysql sh -c 'mysql -h localhost -u root -p"YOUR_ROOT_PASSWORD" < /docker-entrypoint-initdb.d/01-schema.sql'
+docker cp database/docker-init.sql assixx-postgres:/tmp/
+docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/docker-init.sql
 ```
 
 ### Apply Migration
 
 ```bash
-MIGRATION_FILE="database/migrations/XXX-your-migration.sql"
-docker cp $MIGRATION_FILE assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD assixx < /tmp/'$(basename $MIGRATION_FILE)
+# Migrations run via node-pg-migrate (see ADR-014)
+docker exec assixx-backend pnpm run migrate:up
+```
+
+### Check Current Schema
+
+```bash
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt"
 ```
 
 ### Backup Current State
 
 ```bash
-bash scripts/quick-backup.sh "manual_backup_$(date +%Y%m%d_%H%M%S)"
+docker exec assixx-postgres pg_dump -U assixx_user -d assixx > backups/backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
-## ⚠️ Important Notes
+## Important Notes
 
-1. **Production is Source of Truth**: The `docker-init.sql` is now synchronized with production
-2. **Always Backup First**: Use `scripts/quick-backup.sh` before any changes
-3. **Test Migrations**: Test on development environment first
-4. **Foreign Keys**: Always check foreign key constraints before dropping tables
+1. **PostgreSQL 17** with Row Level Security (RLS) for tenant isolation
+2. **Always Backup First** before any schema changes
+3. **Test Migrations** on development environment first
+4. **Foreign Keys**: Check constraints before dropping tables
+5. **Placeholders**: Use `$1, $2, $3` (NOT `?` — that's MySQL syntax)
+6. **IDs**: Use `RETURNING id` (NOT `LAST_INSERT_ID()`)
+7. **Multi-Tenant**: Every table with user data MUST have `tenant_id`
 
-## 🔄 Maintenance Schedule
+## Maintenance Schedule
 
 - **Daily**: Automatic backups at 02:00 AM
 - **Weekly**: Schema validation check

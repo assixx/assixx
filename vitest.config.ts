@@ -44,10 +44,10 @@ export default defineConfig({
         'backend/src/types/**', // Pure type definitions
       ],
       thresholds: {
-        lines: 55,
-        functions: 55,
-        branches: 50,
-        statements: 55,
+        lines: 60,
+        functions: 60,
+        branches: 60,
+        statements: 60,
       },
     },
 

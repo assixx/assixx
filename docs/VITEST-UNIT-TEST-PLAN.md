@@ -1,6 +1,6 @@
 # Vitest Unit Test Plan — Assixx
 
-**Version:** 1.6.0 | **Branch:** `unit-test` | **Erstellt:** 2026-02-04 | **Letztes Update:** 2026-02-06
+**Version:** 1.7.0 | **Branch:** `unit-test` | **Erstellt:** 2026-02-04 | **Letztes Update:** 2026-02-06
 
 > **Philosophie:** Fundament zuerst. Peu à peu. Wenn heute die Config stimmt und EIN grüner Test läuft — war der Tag gut.
 
@@ -24,15 +24,15 @@
 
 ### Was existiert
 
-| Was                | Status                                                                |
-| ------------------ | --------------------------------------------------------------------- |
-| Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                        |
-| `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                           |
-| `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                   |
-| Test-Dateien       | **109 Dateien, 1858 Tests** — Phase 0-12 ✅ COMPLETE                  |
-| Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                            |
-| CI/CD              | `code-quality-checks.yml` — Unit-Tests als Merge-Gate ✅ (2026-02-05) |
-| Coverage           | **58.22% Lines, 54.50% Branches, 59.84% Functions** — v8 Provider     |
+| Was                | Status                                                                          |
+| ------------------ | ------------------------------------------------------------------------------- |
+| Vitest installiert | v4.0.18 + `@vitest/coverage-v8` + `@vitest/ui`                                  |
+| `vitest.config.ts` | **FIXED** — alle 4 Fehler behoben (Phase 0)                                     |
+| `vitest.setup.ts`  | Erweitert: `TZ=UTC` für deterministische Date-Tests                             |
+| Test-Dateien       | **132 Dateien, 2605 Unit + 19 Frontend = 2624 Tests** — Phase 13 🔄 IN PROGRESS |
+| Vitest API-Tests   | 18 Dateien, 175 Tests (Vitest Integration)                                      |
+| CI/CD              | `code-quality-checks.yml` — Unit-Tests als Merge-Gate ✅ (2026-02-05)           |
+| Coverage           | **64.93% Lines, 60.95% Branches, 65.95% Functions, 64.88% Stmts** — v8 Provider |
 
 ### npm Scripts (vorhanden)
 
@@ -166,6 +166,47 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  unit  backend/src/nest/feature-visits/feature-visits.service.test.ts             ( 5 tests)
  ✓  unit  backend/src/nest/documents/document-notification.service.test.ts           (11 tests)
 
+ === PHASE 13 — Batch E: Shared Package ===
+ ✓  unit  shared/src/constants/availability.test.ts                                 ( 9 tests)  [Phase 13E]
+ ✓  unit  shared/src/constants/roles.test.ts                                        ( 6 tests)  [Phase 13E]
+
+ === PHASE 13 — Batch B: Helpers/Utils/Constants (11 files, 247 tests) ===
+ ✓  unit  backend/src/nest/machines/machines.helpers.test.ts                        (70 tests)  [Phase 13B]
+ ✓  unit  backend/src/nest/common/audit/audit.constants.test.ts                    (42 tests)  [Phase 13B]
+ ✓  unit  backend/src/nest/root/root.helpers.test.ts                               (38 tests)  [Phase 13B]
+ ✓  unit  backend/src/utils/featureCheck.test.ts                                   (16 tests)  [Phase 13B]
+ ✓  unit  backend/src/utils/pathSecurity.test.ts                                   (22 tests)  [Phase 13B]
+ ✓  unit  backend/src/utils/eventBus.test.ts                                       (14 tests)  [Phase 13B]
+ ✓  unit  backend/src/nest/calendar/calendar-export.utils.test.ts                  (18 tests)  [Phase 13B]
+ ✓  unit  backend/src/utils/employeeIdGenerator.test.ts                            ( 9 tests)  [Phase 13B]
+ ✓  unit  backend/src/utils/dbWrapper.test.ts                                      ( 8 tests)  [Phase 13B]
+
+ === PHASE 13 — Batch A: Untested DTOs (13 modules, 359 tests) ===
+ ✓  unit  backend/src/nest/chat/dto/chat.dto.test.ts                               (58 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/logs/dto/logs.dto.test.ts                               (32 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/audit-trail/dto/audit-trail.dto.test.ts                 (34 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/root/dto/root.dto.test.ts                               (56 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/areas/dto/areas.dto.test.ts                             (28 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/signup/dto/signup.dto.test.ts                           (24 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/admin-permissions/dto/admin-permissions.dto.test.ts     (30 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/reports/dto/reports.dto.test.ts                         (22 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/features/dto/features.dto.test.ts                       (14 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/dashboard/dto/dashboard.dto.test.ts                     (11 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/roles/dto/roles.dto.test.ts                             (13 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/plans/dto/plans.dto.test.ts                             (14 tests)  [Phase 13A]
+ ✓  unit  backend/src/nest/feature-visits/dto/feature-visits.dto.test.ts           (11 tests)  [Phase 13A]
+
+ === PHASE 13 — Batch D: Helper-Deepening (4 files, +85 new tests) ===
+ ✓  unit  backend/src/nest/documents/documents.helpers.test.ts                     (28 tests)  [deepened 5→28]
+ ✓  unit  backend/src/nest/calendar/calendar.helpers.test.ts                       (30 tests)  [deepened 7→30]
+ ✓  unit  backend/src/nest/chat/chat.helpers.test.ts                               (38 tests)  [deepened 10→38]
+ ✓  unit  backend/src/nest/notifications/notifications.helpers.test.ts             (14 tests)  [deepened 3→14]
+
+ === PHASE 13 — Batch C: Legacy Services (3/8 done, 60 tests) ===
+ ✓  unit  backend/src/services/tenant-deletion.helpers.test.ts                     (13 tests)  [Phase 13C]
+ ✓  unit  backend/src/nest/database/database.service.test.ts                       (25 tests)  [Phase 13C]
+ ✓  unit  backend/src/services/hierarchyPermission.service.test.ts                 (22 tests)  [Phase 13C]
+
  === FRONTEND (Phase 7) ===
  ✓  frontend-unit  frontend/src/lib/utils/avatar-helpers.test.ts                     ( 4 tests)
  ✓  frontend-unit  frontend/src/lib/utils/sanitize-html.test.ts                      ( 2 tests)
@@ -173,12 +214,13 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  frontend-unit  frontend/src/lib/utils/password-strength.test.ts                  ( 4 tests)
  ✓  frontend-unit  frontend/src/lib/utils/jwt-utils.test.ts                          ( 3 tests)
 
- Test Files  109 passed (109)
-       Tests  1858 passed (1858)
-    Duration  ~8.4s
+ Test Files  132 passed (132)  [unit]  |  5 passed (5) [frontend-unit]
+       Tests  2605 passed (2605) [unit]  |  19 passed (19) [frontend-unit]
+    Duration  ~7.9s (unit)
 ```
 
-Phase 0-12 COMPLETE. 1839 Unit + 19 Frontend = 1858 Tests grün.
+Phase 0-12 COMPLETE. Phase 13 IN PROGRESS (Batch C partial: 3/8).
+2605 Unit + 19 Frontend = 2624 Tests grün. Coverage: 64.93% Lines.
 
 ---
 
@@ -625,19 +667,19 @@ Alle Zod-DTOs in `backend/src/nest/*/dto/` testen: valid→pass, missing require
 
 **Strategie:** Step-by-step, 1 Service nach dem anderen. 1 Test pro Funktion (lean). Pure-Logik-Services zuerst (kein Mocking), dann Services mit DB-Dependency (mocked).
 
-| #   | Service                         | Lines | Tests | Typ                                    | Status |
-| --- | ------------------------------- | ----- | ----- | -------------------------------------- | ------ |
-| 1   | `log-formatters.service.ts`     | 265   | 28    | Pure Logik (TXT/CSV/JSON Formatter)    | ✅     |
-| 2   | `config.service.ts`             | 220   | 14    | Zod Validation, computed Getters       | ✅     |
-| 3   | `audit-metadata.service.ts`     | 108   | 8     | Request-Metadata, fire-and-forget      | ✅     |
-| 4   | `audit-logging.service.ts`      | 199   | 5     | Fire-and-forget, error extraction      | ✅     |
-| 5   | `log-retention.service.ts`      | 363   | 8     | Retention days validation, min enforce | ✅     |
-| 6   | `machine-team.service.ts`       | 118   | 5     | Row mapper, team validation            | ✅     |
-| 7   | `rotation-generator.service.ts` | 621   | 6     | Schichttyp-Algorithmus, Weekend-Skip   | ✅     |
-| 8   | `audit-trail.service.ts`        | 824   | 30    | CSV, row mapper, access control, stats | ✅     |
-| 9   | `rotation-pattern.service.ts`   | 332   | 17    | Config parsing, date fmt, UUID, CRUD   | ✅     |
-| 10  | `kvp.service.ts`                | 915   | 50    | Dashboard, permissions, visibility (P12) | ✅     |
-| 11  | `documents.service.ts`          | 844   | 19    | Access ctrl, stats, scope filter, UUID | ✅     |
+| #   | Service                         | Lines | Tests | Typ                                       | Status |
+| --- | ------------------------------- | ----- | ----- | ----------------------------------------- | ------ |
+| 1   | `log-formatters.service.ts`     | 265   | 28    | Pure Logik (TXT/CSV/JSON Formatter)       | ✅     |
+| 2   | `config.service.ts`             | 220   | 14    | Zod Validation, computed Getters          | ✅     |
+| 3   | `audit-metadata.service.ts`     | 108   | 8     | Request-Metadata, fire-and-forget         | ✅     |
+| 4   | `audit-logging.service.ts`      | 199   | 5     | Fire-and-forget, error extraction         | ✅     |
+| 5   | `log-retention.service.ts`      | 363   | 8     | Retention days validation, min enforce    | ✅     |
+| 6   | `machine-team.service.ts`       | 118   | 5     | Row mapper, team validation               | ✅     |
+| 7   | `rotation-generator.service.ts` | 621   | 6     | Schichttyp-Algorithmus, Weekend-Skip      | ✅     |
+| 8   | `audit-trail.service.ts`        | 824   | 30    | CSV, row mapper, access control, stats    | ✅     |
+| 9   | `rotation-pattern.service.ts`   | 332   | 17    | Config parsing, date fmt, UUID, CRUD      | ✅     |
+| 10  | `kvp.service.ts`                | 915   | 50    | Dashboard, permissions, visibility (P12)  | ✅     |
+| 11  | `documents.service.ts`          | 844   | 19    | Access ctrl, stats, scope filter, UUID    | ✅     |
 | 12  | `surveys.service.ts`            | 774   | 64    | parseIdParam, UUID, templates, CRUD (P12) | ✅     |
 
 **Tatsächlich Phase 9 Gesamt:** 145 Tests in 12 Dateien ✅ COMPLETE
@@ -899,7 +941,7 @@ vi.advanceTimersByTime(6000); // Advance past throttle window
 | #   | Service                         | Tests vorher | Tests nachher | Delta | Typ                                       | Status |
 | --- | ------------------------------- | ------------ | ------------- | ----- | ----------------------------------------- | ------ |
 | 1   | `blackboard-entries.service.ts` | 10           | 68            | +58   | DB-mocked, visibility, org-level, archive | ✅     |
-| 2   | `surveys.service.ts`            | 12           | 64            | +52   | UUID, status workflow, validation, access  | ✅     |
+| 2   | `surveys.service.ts`            | 12           | 64            | +52   | UUID, status workflow, validation, access | ✅     |
 | 3   | `shifts.service.ts`             | 11           | 47            | +36   | Filters, CSV export, calendar, favorites  | ✅     |
 | 4   | `kvp.service.ts`                | 12           | 50            | +38   | Facade, daily limit, status perms, share  | ✅     |
 
@@ -969,10 +1011,13 @@ Phase 9:  Service Tests     12 Services, 145 Tests                    ✅ DONE (
 Phase 10: Service Tests II  14 Services, 234 Tests                     ✅ DONE (14/14 Services)
 Phase 11: Service Tests III 47 Services, 452 Tests                      ✅ DONE (47/47 Services)
 Phase 12: Deep Coverage     4 Services, +184 Tests (deepened)            ✅ DONE (4/4 Services)
+Phase 13: Foundation        DTOs, Helpers, Legacy Svcs (~580-715 Tests)   ⏳ NEXT → ~68% Coverage
+Phase 14: Deep Coverage II  Service-Deepening, Infra (~310-400 Tests)     ⏳ PLANNED → ~75% Coverage
 ```
 
 **Gesamt: 1839 Unit Tests + 19 Frontend Tests in 109 Dateien, alle grün.**
 **Gesamtprojekt: 2033 Tests (1839 unit + 19 frontend + 175 API) in 127 Dateien.**
+**Ziel Phase 14: ~2750-2970 Tests, ~75% Coverage.**
 
 **Regel:** Phase N+1 startet erst wenn Phase N 100% grün ist.
 
@@ -1177,6 +1222,21 @@ console.log()                // Kein Debug-Output
 sleep() / setTimeout()       // Deterministische Tests
 Math.random()                // Deterministisch!
 new Date()                   // Nutze vi.useFakeTimers()
+if (...) expect(...)         // vitest/no-conditional-expect → Type-Assertion statt if
+expect() in try/catch        // Gleiche Regel — Silent Pass Gefahr
+```
+
+**Zod `.safeParse()` Pattern (PFLICHT):**
+
+```typescript
+// ✅ SO — Type-Assertion, kein if
+const result = Schema.safeParse(input);
+expect(result.success).toBe(true);
+const data = (result as { success: true; data: Record<string, unknown> }).data;
+expect(data.field).toBe('value');
+
+// ❌ NICHT SO — expect im if = ESLint-Fehler + Silent-Pass-Gefahr
+if (result.success) expect(result.data.field).toBe('value');
 ```
 
 ---
@@ -1272,12 +1332,14 @@ Settings → Branches → master:
 
 ## 8. Coverage-Ziele
 
-### Aktueller Stand (2026-02-06)
+### Aktueller Stand (2026-02-06, Phase 13 in progress)
 
-- **Coverage:** **58.22% Lines, 54.50% Branches, 59.84% Functions, 58.06% Statements**
-- **Alle Services getestet:** Jeder Service im Projekt hat mindestens 1 Testdatei
-- **Gut getestet:** Helpers (100%), Schemas (93%), DTOs (100%), Constants (100%), 73 Services (50-100%)
+- **Coverage:** **64.93% Lines, 60.95% Branches, 65.95% Functions, 64.88% Statements**
+- **Alle Services getestet:** Jeder NestJS-Service hat mindestens 1 Testdatei
+- **Phase 13 Fortschritt:** Batch E ✅, B ✅, A ✅, D ✅, C 🔄 (3/8 legacy services)
+- **Gut getestet:** Helpers (100%), Schemas (93%), DTOs (100%), Constants (100%), 73+ Services (50-100%)
 - **Deepened (Phase 12):** blackboard-entries (68), surveys (64), kvp (50), shifts (47)
+- **Deepened (Phase 13D):** documents (5→28), calendar (7→30), chat (10→38), notifications (3→14)
 
 ### Aktive Thresholds (in `vitest.config.ts`)
 
@@ -1285,10 +1347,10 @@ Settings → Branches → master:
 // Floor-Werte — verhindern Regressions, nicht das Ziel
 coverage: {
   thresholds: {
-    lines: 45,
-    functions: 45,
-    branches: 45,
-    statements: 45,
+    lines: 55,
+    functions: 55,
+    branches: 50,
+    statements: 55,
   },
 }
 ```
@@ -1304,22 +1366,23 @@ coverage: {
 | **Phase 10** | ✅ DONE (14/14 Services) | **28.3%**  | **28.9%**  | 234 Tests, Thresholds → 25%          |
 | **Phase 11** | ✅ DONE (47/47 Services) | **52.84%** | **54.80%** | 452 Tests, alle Services getestet    |
 | **Phase 12** | ✅ DONE (4 deepened)     | **58.22%** | **59.84%** | +184 Tests, 4 Services vertieft      |
-| Phase 13+    | Thresholds erhöhen       | **65%**    | **65%**    | Guards, Edge Cases, mehr Deepening   |
-| Langfrist    | Production-Ready         | **70%**    | **70%**    | Ziel-Wert                            |
+| **Phase 13** | 🔄 IN PROGRESS           | **64.93%** | **65.95%** | +747 Tests bisher, Batch C 3/8 done  |
+| **Phase 14** | Deep Coverage            | **~75%**   | **~75%**   | Service-Deepening, Infrastructure    |
+| Langfrist    | Production-Ready         | **80%**    | **80%**    | Guards, Controller, E2E              |
 
 ---
 
 ## Zusammenfassung
 
-| Metrik              | Geplant  | Aktuell (Phase 0-12) |
-| ------------------- | -------- | -------------------- |
-| Testbare Dateien    | ~80+     | 109 getestet         |
-| Testbare Funktionen | ~400+    | ~1400+ getestet      |
-| Geschätzte Tests    | ~470-580 | **1858 geschrieben** |
-| Phasen              | 0 + 12+  | **Phase 12 ✅ DONE** |
-| Coverage            | 60%+     | **58.22% Lines**     |
+| Metrik              | Geplant (Phase 14) | Aktuell (Phase 13 🔄) |
+| ------------------- | ------------------ | --------------------- |
+| Testbare Dateien    | ~220+              | 132 getestet (unit)   |
+| Testbare Funktionen | ~2000+             | ~1800+ getestet       |
+| Geschätzte Tests    | ~2750-2970         | **2624 geschrieben**  |
+| Phasen              | 0-14               | **Phase 13 🔄**       |
+| Coverage            | **~75% Lines**     | **64.93% Lines**      |
 
-### Abgeschlossen: Phase 0-12
+### Abgeschlossen: Phase 0-12 ✅ + Phase 13 🔄
 
 ```
 Phase 0:  vitest.config.ts komplett überarbeitet          ✅ 6/6 Checks
@@ -1335,16 +1398,25 @@ Phase 9:  Service Tests — 145 Tests, 12 Services             ✅ DONE (12/12 S
 Phase 10: Service Tests II — 234 Tests, 14 Services           ✅ DONE (14/14 Services)
 Phase 11: Service Tests III — 452 Tests, 47 Services            ✅ DONE (47/47 Services)
 Phase 12: Deep Coverage — +184 Tests, 4 Services vertieft       ✅ DONE (4/4 Services)
+Phase 13: Foundation Broadening — +747 Tests bisher              🔄 IN PROGRESS
+  Batch E: Shared Package (availability, roles) — 15 Tests         ✅ DONE
+  Batch B: Helpers/Utils/Constants — 247 Tests, 11 Dateien         ✅ DONE
+  Batch A: Untested DTOs — 359 Tests, 13 Module                    ✅ DONE
+  Batch D: Helper-Deepening — +85 Tests, 4 Dateien vertieft       ✅ DONE
+  Batch C: Legacy Services — 60/~120 Tests, 3/8 Services          🔄 IN PROGRESS
+    ✅ tenant-deletion.helpers (13), database.service (25), hierarchyPermission (22)
+    ❌ tenant-deletion-analyzer, -audit, -executor, -exporter, tenantDeletion facade
 ════════════════════════════════════════════════════════════════════════════
-          1839 Unit + 19 Frontend + 175 API = 2033 Tests.
-          127 Dateien. ~8.4s (unit). Alle grün.
-          Coverage: 58.22% Lines, 54.50% Branches, 59.84% Functions.
+          2605 Unit + 19 Frontend + 175 API = 2799 Tests.
+          132 Unit-Dateien + 5 Frontend-Dateien. ~7.9s (unit). Alle grün.
+          Coverage: 64.93% Lines, 60.95% Branches, 65.95% Functions.
+          Phase 13 DoD-Gap: ~3.1% Lines (64.93% → ≥68%), ~2.1% Branches (60.95% → ≥63%)
 ```
 
 ### CI/CD — ✅ Implementiert (2026-02-05)
 
-- [x] `unit-tests` Job in `code-quality-checks.yml` (1839 unit + 19 frontend = 1858 tests)
-- [x] Coverage-Thresholds aktiv (lines 45%, functions 45%, branches 45%, statements 45%)
+- [x] `unit-tests` Job in `code-quality-checks.yml` (2605 unit + 19 frontend = 2624 tests)
+- [x] Coverage-Thresholds aktiv (lines 55%, functions 55%, branches 50%, statements 55%)
 - [x] Branch Protection Rules auf GitHub konfiguriert
 - [x] `svelte-kit sync` vor Tests in CI (Pflicht)
 
@@ -1355,23 +1427,361 @@ Phase 12: Deep Coverage — +184 Tests, 4 Services vertieft       ✅ DONE (4/4 
 
 ---
 
-### ⚡ NÄCHSTER SCHRITT: Phase 13 — Coverage Push & Guards
+### Phase 13: Foundation Broadening — Untested Code Categories
 
-**Phase 0-12 komplett. Alle Services getestet + 4 vertieft. Coverage: 58.22% Lines.**
+> **Ziel:** Alle bisher komplett untesteten Code-Kategorien abdecken. Coverage von **58% → ~68% Lines**. Geschätzte **~580-700 neue Tests**.
+>
+> **Philosophie:** Breite vor Tiefe. Jede Datei im Coverage-Scope soll mindestens 1 Test haben. Mechanische Arbeit (DTOs, Constants) zuerst, dann komplexere Legacy-Services.
 
-**Optionen für Phase 13+:**
+**Warum 68%?** Die größten Coverage-Lücken waren die **komplett untesteten Dateien** — 87 DTOs, 12 Helpers/Utils, 8 Legacy-Services. Davon sind DTOs, Helpers und 3 Legacy-Services jetzt getestet. **Restlücke:** 5 Legacy-Services (1477 Lines bei 0%) + Coverage-Schwelle von 64.93% → 68% (~3.1% Gap).
 
-| #     | Maßnahme                              | Impact                       | Aufwand  | Wann       |
-| ----- | ------------------------------------- | ---------------------------- | -------- | ---------- |
-| ~~1~~ | ~~Coverage-Thresholds → 45%~~         | ~~erledigt~~                 | ~~done~~ | ✅ done    |
-| ~~2~~ | ~~Tiefere Service-Tests (4 deepened)~~| ~~+184 Tests, 58% Coverage~~ | ~~done~~ | ✅ Phase 12|
-| 3     | Guard-Tests (NestJS Guards)           | Auth/RBAC-Logik absichern    | Mittel   | Phase 13   |
-| 4     | Weitere Service-Deepening (5+ Svc)    | Coverage auf 65%+ treiben    | Mittel   | Phase 13   |
-| 5     | Controller-Tests (HTTP-Layer)         | Request/Response-Validierung | Hoch     | Phase 14   |
-| 6     | Frontend-Tests erweitern              | Svelte-Komponenten testen    | Hoch     | Phase 14   |
-| 7     | E2E-Tests (Playwright)                | User-Flows absichern         | Hoch     | **v0.4.0** |
+---
 
-**Empfehlung:** Guard-Tests (Auth, RBAC) + weitere Service-Deepening (documents, calendar, chat, auth, users). Coverage-Threshold auf 55% erhöhen. Playwright E2E erst ab v0.4.0.
+#### Batch A: Untested DTOs (13 Module, 87 Dateien, ~2,507 Lines)
+
+> **Pattern:** Identisch zu Phase 8 — `.safeParse()` für valid/invalid, `.refine()` cross-field, enum-Werte.
+> **Geschätzte Tests:** ~400-480
+
+| #   | Modul               | Dateien | Lines | Schemas | Prio   | Highlights                                                  |
+| --- | ------------------- | ------- | ----- | ------- | ------ | ----------------------------------------------------------- |
+| A1  | `chat`              | 26      | 619   | 44      | HOCH   | Größtes Modul, 4 type-only files (0 exports), scheduled-msg |
+| A2  | `logs`              | 4       | 294   | 8       | HOCH   | `export-logs.dto.ts` 153 Lines mit ExportFormat + LogSource |
+| A3  | `audit-trail`       | 6       | 290   | 12      | HOCH   | `get-entries.dto.ts` 90 Lines, complex query filters        |
+| A4  | `root`              | 12      | 239   | 24      | MITTEL | 12 Dateien, alle 2-export Schema+Class                      |
+| A5  | `areas`             | 6       | 215   | 13      | MITTEL | `create-area.dto.ts` mit AreaTypeSchema enum                |
+| A6  | `signup`            | 2       | 209   | 4       | HOCH   | `signup.dto.ts` 149 Lines — Tenant-Registration-Validierung |
+| A7  | `admin-permissions` | 10      | 200   | 20      | MITTEL | 10 Param-DTOs, bulk-update, set-permissions                 |
+| A8  | `reports`           | 7       | 151   | 14      | MITTEL | `custom-report.dto.ts` mit `.refine()` cross-field          |
+| A9  | `features`          | 6       | 92    | 12      | QUICK  | 6 kleine Dateien, je 2 exports                              |
+| A10 | `dashboard`         | 1       | 62    | 4       | QUICK  | Nur Zod-Schemas, KEINE DTO-Klassen                          |
+| A11 | `roles`             | 2       | 57    | 5       | QUICK  | `RoleEnumSchema`, `role-id-param`                           |
+| A12 | `plans`             | 4       | 51    | 8       | QUICK  | Kleinstes Modul, alle simpel                                |
+| A13 | `feature-visits`    | 1       | 28    | 3       | QUICK  | `FeatureSchema` enum, `MarkVisitedSchema`                   |
+
+**Reihenfolge:** Quick Wins zuerst (A9-A13 = 290 Lines, ~50 Tests, schnell erledigt), dann HOCH (A1-A3,A6), dann MITTEL (A4,A5,A7,A8).
+
+**Besonderheiten:**
+
+- `chat/` hat 4 Dateien mit 0 Exports (type-only re-exports) → diese überspringen
+- `dashboard/` hat keine DTO-Klassen → `.safeParse()` direkt auf Schemas
+- `signup.dto.ts` (149 Lines) ist das zweitschwerste einzelne DTO → braucht eigene Testdatei
+- `export-logs.dto.ts` (153 Lines) ist das schwerste → ExportFormat + LogSource enums + complex filters
+
+---
+
+#### Batch B: Untested Helpers, Utils & Constants (12 Dateien, ~1,544 Lines)
+
+> **Pattern:** Pure Functions → kein Mocking. Constants → Strukturelle Assertions / Snapshot-Tests.
+> **Geschätzte Tests:** ~80-100
+
+| #   | Datei                               | Lines | Exports | Typ                    | Prio   | Highlights                                              |
+| --- | ----------------------------------- | ----- | ------- | ---------------------- | ------ | ------------------------------------------------------- |
+| B1  | `machines/machines.helpers.ts`      | 326   | 16      | Helper (pure)          | HOCH   | 16 Exports, größter untesteter Helper                   |
+| B2  | `audit/audit.constants.ts`          | 286   | 17      | Constants              | HOCH   | SENSITIVE_FIELDS, EXCLUDED_PATHS, ACTION_MAP, SQL_REGEX |
+| B3  | `root/root.helpers.ts`              | 208   | 7       | Helper (pure)          | HOCH   | Tenant-Verwaltungs-Logik, Mapper                        |
+| B4  | `logger/logger.constants.ts`        | 163   | 7       | Constants              | MITTEL | Log-Level-Mappings, Format-Configs                      |
+| B5  | `utils/featureCheck.ts`             | 103   | 2       | Utility                | MITTEL | Feature-Flag-Prüfung                                    |
+| B6  | `utils/pathSecurity.ts`             | 101   | 3       | Utility (security!)    | HOCH   | Path-Traversal-Schutz — sicherheitskritisch!            |
+| B7  | `utils/eventBus.ts`                 | 99    | 1       | Singleton/EventEmitter | MITTEL | EventBus-Klasse, emit/on/off                            |
+| B8  | `calendar/calendar-export.utils.ts` | 88    | 3       | Utility (pure)         | MITTEL | iCal-/CSV-Export-Formatierung                           |
+| B9  | `shared/constants/availability.ts`  | 50    | 4       | Constants              | QUICK  | Verfügbarkeits-Status-Mappings                          |
+| B10 | `utils/employeeIdGenerator.ts`      | 50    | 1       | Utility (pure)         | QUICK  | Mitarbeiter-ID-Generierung                              |
+| B11 | `utils/dbWrapper.ts`                | 48    | 2       | Utility                | QUICK  | DB-Query-Wrapper                                        |
+| B12 | `shared/constants/roles.ts`         | 22    | 2       | Constants              | QUICK  | Rollen-Hierarchie-Definition                            |
+
+**Reihenfolge:** Quick Wins (B9-B12 = 170 Lines, ~15 Tests), dann HOCH (B1,B2,B3,B6), dann MITTEL (B4,B5,B7,B8).
+
+**Besonderheiten:**
+
+- `pathSecurity.ts` ist **sicherheitskritisch** — Path-Traversal-Tests MÜSSEN `../`, `..\\`, null-bytes etc. abdecken
+- `audit.constants.ts` und `logger.constants.ts` sind großteils Daten-Exports → Strukturelle Tests (`expect(SENSITIVE_FIELDS).toContain('password')`)
+- `eventBus.ts` braucht Spy-Setup auf EventEmitter
+- `machines.helpers.ts` mit 16 Exports ist der größte Einzelaufwand in diesem Batch
+
+---
+
+#### Batch C: Legacy Services (8 Dateien, ~2,280 Lines)
+
+> **Pattern:** DI-Bypass wie Phase 5-12. Legacy Services haben 0 NestJS-Imports (außer database.service) → reines Constructor-Mocking.
+> **Geschätzte Tests:** ~60-80
+
+| #   | Datei                                 | Lines | Async Methods | NestJS? | Prio   | Highlights                                             |
+| --- | ------------------------------------- | ----- | ------------- | ------- | ------ | ------------------------------------------------------ |
+| C1  | `tenantDeletion.service.ts`           | 510   | 14            | Nein    | HOCH   | Orchestrator/Facade, delegiert an C3-C6                |
+| C2  | `hierarchyPermission.service.ts`      | 486   | 11            | Nein    | HOCH   | Komplexe Berechtigungs-Hierarchie, viel Business-Logik |
+| C3  | `tenant-deletion-executor.service.ts` | 402   | 9             | Nein    | MITTEL | Kaskadierende Löschung, DB-Transaktionen               |
+| C4  | `tenant-deletion-exporter.service.ts` | 280   | 6             | Nein    | MITTEL | Export-Logik vor Löschung                              |
+| C5  | `database.service.ts`                 | 256   | 8             | Ja (1)  | MITTEL | Pool-Management, query/queryOne Wrapper                |
+| C6  | `tenant-deletion-analyzer.service.ts` | 146   | 3             | Nein    | QUICK  | Analyse-Logik, Dependencies prüfen                     |
+| C7  | `tenant-deletion-audit.service.ts`    | 139   | 5             | Nein    | QUICK  | Audit-Trail für Löschungen                             |
+| C8  | `tenant-deletion.helpers.ts`          | 61    | 2             | Nein    | QUICK  | Pure Helpers, kleinste Datei                           |
+
+**Reihenfolge:** Quick Wins (C6-C8 = 346 Lines, ~15 Tests), dann HOCH (C1,C2), dann MITTEL (C3-C5).
+
+**Besonderheiten:**
+
+- `tenantDeletion.service.ts` ist ein Facade → delegiert an executor/exporter/analyzer/audit → Delegation-Tests wie Phase 10
+- `hierarchyPermission.service.ts` hat komplexe Rekursion (Abteilung→Team→User) → Edge Cases für tiefe Hierarchien
+- `database.service.ts` hat 1 NestJS-Import (Pool-Injection) → Pool-Mock wie partition-manager
+- `tenant-deletion.helpers.ts` sind pure Functions → kein Mocking nötig, sofort testbar
+- Alle Legacy-Services nutzen `execute()` aus `utils/db.ts` statt `DatabaseService` → anderen Mock-Shape!
+
+**Mocking-Pattern für Legacy Services:**
+
+```typescript
+import { execute } from '../../utils/db.js';
+
+// Legacy services use utils/db execute() — NOT DatabaseService
+vi.mock('../../utils/db.js', () => ({
+  execute: vi.fn(),
+}));
+
+const mockExecute = vi.mocked(execute);
+
+// Or constructor injection where applicable:
+const mockDb = { query: vi.fn() };
+const service = new TenantDeletionService(mockDb as never);
+```
+
+---
+
+#### Batch D: Helper-Deepening (4 existierende Helper-Dateien, niedrige Test-Ratio)
+
+> **Pattern:** Bestehende Test-Dateien erweitern — mehr Edge Cases, mehr Branches.
+> **Geschätzte Tests:** ~30-40 neue Tests
+
+| #   | Datei                      | Lines | Aktuelle Tests | Ratio   | Target Tests | Delta |
+| --- | -------------------------- | ----- | -------------- | ------- | ------------ | ----- |
+| D1  | `documents.helpers.ts`     | 275   | 5              | 1.8/100 | 15           | +10   |
+| D2  | `calendar.helpers.ts`      | 309   | 7              | 2.3/100 | 15           | +8    |
+| D3  | `chat.helpers.ts`          | 358   | 10             | 2.8/100 | 20           | +10   |
+| D4  | `notifications.helpers.ts` | 108   | 3              | 2.8/100 | 8            | +5    |
+
+**Besonderheiten:**
+
+- `documents.helpers.ts` hat DB-Helpers (`getDocumentRow`, `insertDocumentRecord`) die in Phase 6 bewusst ausgelassen wurden → jetzt mit DB-Mocking testen
+- `calendar.helpers.ts` hat Filter-Normalisierung → Edge Cases für leere/undefined Filter
+- `chat.helpers.ts` hat Row→User-Mapping und Conversation-Mapping → mehr Mapper-Varianten
+
+---
+
+#### Batch E: Shared Package (2 Dateien, 72 Lines)
+
+> **Pattern:** Pure Constants → Strukturelle Tests.
+> **Geschätzte Tests:** ~10-15
+
+| #   | Datei                              | Lines | Exports | Tests                                     |
+| --- | ---------------------------------- | ----- | ------- | ----------------------------------------- |
+| E1  | `shared/constants/availability.ts` | 50    | 4       | Status-Mappings, Label-Korrektheit        |
+| E2  | `shared/constants/roles.ts`        | 22    | 2       | Rollen-Definition, Hierarchie-Korrektheit |
+
+---
+
+#### Phase 13: Zusammenfassung
+
+| Batch | Kategorie           | Dateien | Lines     | Geschätzte Tests |
+| ----- | ------------------- | ------- | --------- | ---------------- |
+| A     | Untested DTOs       | 87      | 2,507     | ~400-480         |
+| B     | Helpers/Utils/Const | 12      | 1,544     | ~80-100          |
+| C     | Legacy Services     | 8       | 2,280     | ~60-80           |
+| D     | Helper-Deepening    | 4       | 1,050     | ~30-40           |
+| E     | Shared Package      | 2       | 72        | ~10-15           |
+| **∑** | **GESAMT**          | **113** | **7,453** | **~580-715**     |
+
+**Reihenfolge der Batches:** E → B (Quick Wins) → A (mechanisch, hoch-ROI) → D → C (komplex)
+
+#### Phase 13: Definition of Done
+
+- [x] Alle 13 DTO-Module haben Test-Dateien (87 DTOs, 359 Tests) ✅ Batch A
+- [x] 11/12 untestete Helper/Utils/Constants haben Tests (247 Tests) ✅ Batch B
+- [ ] Alle 8 Legacy-Services haben Tests (60/~120 Tests) — 🔄 3/8 done (Batch C)
+- [x] 4 existierende Helper-Dateien vertieft (+85 Tests) ✅ Batch D
+- [x] Shared Package vollständig getestet (availability, roles) ✅ Batch E
+- [x] `pathSecurity.ts` hat Path-Traversal-Schutztests (sicherheitskritisch!) ✅ Batch B
+- [ ] Coverage: **≥ 68% Lines, ≥ 63% Branches, ≥ 68% Functions, ≥ 68% Stmts** — aktuell 64.93/60.95/65.95/64.88
+- [ ] Coverage-Thresholds erhöht: **65% Lines, 60% Branches, 65% Functions, 65% Stmts**
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] Alle Tests grün in CI
+
+---
+
+### Phase 14: Deep Coverage — Service-Deepening & Infrastructure
+
+> **Ziel:** Die 15 Services mit niedrigster Test-Ratio gezielt vertiefen + Infrastructure-Code testen. Coverage von **~68% → ~75% Lines**. Geschätzte **~350-450 neue Tests**.
+>
+> **Philosophie:** Tiefe vor Breite. Die größten Services mit der dünnsten Testabdeckung systematisch vertiefen. Sicherheitskritische Services (Auth) priorisieren.
+
+**Warum 75%?** Ab 68% sind alle Dateien mindestens einmal getestet (Phase 13). Jetzt fehlt Tiefe — die großen Services haben 1-2 Tests pro 100 Lines statt der empfohlenen 4-5. Phase 14 bringt die Coverage auf ein produktionsreifes Niveau.
+
+---
+
+#### Batch A: Service-Deepening Tier 1 — Kritisch Undertested (Ratio < 1.6)
+
+> **Kriterium:** Tests-per-100-Lines Ratio unter 1.6. Das sind die fünf Services mit der dünnsten Coverage relativ zu ihrer Größe.
+> **Geschätzte Tests:** ~160-200 neue Tests
+
+| #   | Service                         | Lines | Tests aktuell | Ratio | Target Tests | Delta | Warum kritisch                                          |
+| --- | ------------------------------- | ----- | ------------- | ----- | ------------ | ----- | ------------------------------------------------------- |
+| A1  | `rotation-generator.service.ts` | 621   | 6             | 0.97  | 35           | +29   | **Niedrigste Ratio im Projekt.** Schicht-Algorithmus.   |
+| A2  | `auth.service.ts`               | 786   | 11            | 1.40  | 45           | +34   | **Sicherheitskritisch!** Login, Token, Password-Reset.  |
+| A3  | `reports.service.ts`            | 1,036 | 16            | 1.54  | 50           | +34   | **Zweitgrößter Service.** CSV/PDF-Reports, Aggregation. |
+| A4  | `logs.service.ts`               | 687   | 10            | 1.46  | 35           | +25   | Query-Builder, Export, Retention.                       |
+| A5  | `unified-logs.service.ts`       | 461   | 7             | 1.52  | 25           | +18   | Pool-basiert, Partitions, Cross-Table-Queries.          |
+
+**Besonderheiten:**
+
+- `rotation-generator.service.ts` (Ratio 0.97) ist der **absolute Worst Case** — 621 Lines komplexer Algorithmus-Code mit nur 6 Tests. Enthält Schichttyp-Bestimmung, Weekend-Skip, Night-Static, Rotations-Pattern-Logik. Braucht `vi.useFakeTimers()` für Date-basierte Berechnungen.
+- `auth.service.ts` (Ratio 1.40) — **sicherheitskritisch**. Token-Verifikation, Refresh-Rotation, Password-Reset, Brute-Force-Protection. Die Tatsache dass dieser Service so dünn getestet ist, ist ein Risiko. Braucht `vi.hoisted()` für ENV-Vars.
+- `reports.service.ts` ist mit 1,036 Lines der zweitgrößte Service (nach `users.service.ts` mit 1,053 Lines). CSV/PDF-Generierung, Query-Aggregation, Datumsfilter.
+
+---
+
+#### Batch B: Service-Deepening Tier 2 — Below Average (Ratio 1.6-2.0)
+
+> **Kriterium:** Tests-per-100-Lines Ratio zwischen 1.6 und 2.0. Große Services mit unterdurchschnittlicher Coverage.
+> **Geschätzte Tests:** ~100-130 neue Tests
+
+| #   | Service                         | Lines | Tests aktuell | Ratio | Target Tests | Delta | Fokus                                                  |
+| --- | ------------------------------- | ----- | ------------- | ----- | ------------ | ----- | ------------------------------------------------------ |
+| B1  | `users.service.ts`              | 1,053 | 21            | 1.99  | 50           | +29   | **Größter Service!** CRUD, Avatar, Search, Permissions |
+| B2  | `departments.service.ts`        | 768   | 13            | 1.69  | 35           | +22   | Lead-Assignment, Extended Query Fallback               |
+| B3  | `plans.service.ts`              | 699   | 12            | 1.72  | 30           | +18   | Plan-Logik, Feature-Mapping, Addon-Management          |
+| B4  | `chat-conversations.service.ts` | 635   | 12            | 1.89  | 30           | +18   | CLS-basiert, Participants, Read-Status                 |
+| B5  | `areas.service.ts`              | 585   | 11            | 1.88  | 25           | +14   | Hierarchie, Lead-Assignment, Department-Zuordnung      |
+
+**Besonderheiten:**
+
+- `users.service.ts` (1,053 Lines) ist der **größte Service im Projekt**. CRUD + Avatar-Upload + Search + Permissions + Password-Change + Activation/Deactivation. Braucht umfangreiches Mock-Setup.
+- `chat-conversations.service.ts` braucht CLS-Mocking (nestjs-cls) — Pattern aus Phase 10.
+- `departments.service.ts` hat einen Extended/Simple Query Fallback — beide Pfade testen.
+
+---
+
+#### Batch C: Infrastructure-Tests (3 Dateien, ~481 Lines)
+
+> **Pattern:** NestJS Execution-Context-Mocking für Pipes/Filters/Interceptors.
+> **Geschätzte Tests:** ~30-40
+
+| #   | Datei                                         | Lines | Typ              | Prio   | Highlights                                         |
+| --- | --------------------------------------------- | ----- | ---------------- | ------ | -------------------------------------------------- |
+| C1  | `common/filters/all-exceptions.filter.ts`     | 295   | Exception Filter | HOCH   | Error-Normalisierung, HTTP-Status-Mapping, Logging |
+| C2  | `common/pipes/zod-validation.pipe.ts`         | 87    | Validation Pipe  | HOCH   | Zod-Schema-Validierung, Error-Formatting           |
+| C3  | `common/interceptors/response.interceptor.ts` | 99    | Interceptor      | MITTEL | Response-Wrapping, Success-Envelope                |
+
+**Mocking-Pattern für Infrastructure:**
+
+```typescript
+// NestJS ExecutionContext mock für Pipes/Filters
+const mockContext = {
+  switchToHttp: () => ({
+    getRequest: () => ({ url: '/api/v2/test', method: 'GET' }),
+    getResponse: () => ({ status: vi.fn().mockReturnThis(), json: vi.fn() }),
+  }),
+  getHandler: () => vi.fn(),
+  getClass: () => vi.fn(),
+};
+
+// ArgumentsHost mock für ExceptionFilter
+const mockHost = {
+  switchToHttp: () => ({
+    getRequest: () => ({ url: '/test', method: 'POST', ip: '127.0.0.1' }),
+    getResponse: () => mockResponse,
+  }),
+  getType: () => 'http',
+};
+```
+
+**Bewusst NICHT getestet (Infrastructure):**
+
+- `audit-trail.interceptor.ts` (207 Lines) — Zu komplex, braucht vollständiges Request-Lifecycle-Mocking
+- `throttle.decorators.ts` (137 Lines) — Reine NestJS-Decorator-Komposition
+- `current-user.decorator.ts`, `tenant.decorator.ts`, `roles.decorator.ts`, `public.decorator.ts` — Reine Decorators, getestet via Integration/API-Tests
+
+---
+
+#### Batch D: Partial Utility Coverage (3 Dateien, ~368 Lines)
+
+> **Pattern:** Gemocked für externe Dependencies (fs, SMTP, etc.)
+> **Geschätzte Tests:** ~20-30
+
+| #   | Datei                          | Lines | Prio   | Highlights                                          |
+| --- | ------------------------------ | ----- | ------ | --------------------------------------------------- |
+| D1  | `utils/logger.ts`              | 240   | MITTEL | Pino-Wrapper, Log-Level-Konfiguration, Formatierung |
+| D2  | `utils/featureCheck.ts`        | 103   | MITTEL | Feature-Flag-Prüfung (DB-abhängig → Mock)           |
+| D3  | `utils/employeeIdGenerator.ts` | 50    | QUICK  | ID-Generierung (möglicherweise pure, sonst Mock)    |
+
+**Bewusst NICHT getestet (zu hoher Mock-Aufwand, zu wenig ROI):**
+
+- `websocket.ts` (936 Lines) — Braucht Socket.IO-Server-Mock, WebSocket-Lifecycle → E2E
+- `utils/emailService.ts` (727 Lines) — SMTP-Dependency → Integration-Test
+- `utils/db.ts` (329 Lines) — Pool-Management → getestet indirekt durch alle DB-mocked Tests
+- `database/repositories/user.repository.ts` (593 Lines) — Raw-SQL → API/Integration-Tests
+- `workers/deletionWorker.ts` (168 Lines) — Worker-Thread-Lifecycle → Integration-Test
+- `config/database.ts` (162 Lines) — Konfiguration, einmalig beim Start
+- `nest/instrument.ts` (104 Lines) — Sentry-Init, Side-Effect-only
+
+---
+
+#### Phase 14: Zusammenfassung
+
+| Batch | Kategorie        | Services/Dateien | Delta Tests  |
+| ----- | ---------------- | ---------------- | ------------ |
+| A     | Tier 1 Deepening | 5 Services       | ~160-200     |
+| B     | Tier 2 Deepening | 5 Services       | ~100-130     |
+| C     | Infrastructure   | 3 Dateien        | ~30-40       |
+| D     | Partial Utils    | 3 Dateien        | ~20-30       |
+| **∑** | **GESAMT**       | **16**           | **~310-400** |
+
+**Reihenfolge:** A1 (rotation-generator) → A2 (auth — sicherheitskritisch!) → A3 (reports) → B1 (users) → C1-C2 (filter, pipe) → Rest nach Verfügbarkeit.
+
+#### Phase 14: Definition of Done
+
+- [ ] 5 Tier-1-Services vertieft (rotation-generator, auth, reports, logs, unified-logs)
+- [ ] 5 Tier-2-Services vertieft (users, departments, plans, chat-conversations, areas)
+- [ ] Exception-Filter getestet (all-exceptions.filter.ts)
+- [ ] Validation-Pipe getestet (zod-validation.pipe.ts)
+- [ ] Response-Interceptor getestet (response.interceptor.ts)
+- [ ] Auth-Service hat ≥ 45 Tests (sicherheitskritisch, aktuell nur 11!)
+- [ ] Coverage: **≥ 75% Lines, ≥ 68% Branches, ≥ 75% Functions, ≥ 75% Stmts**
+- [ ] Coverage-Thresholds erhöht: **72% Lines, 65% Branches, 72% Functions, 72% Stmts**
+- [ ] Kein `.only` oder `.skip` im Code
+- [ ] Alle Tests grün in CI
+
+---
+
+### Phase 13 + 14: Gesamtübersicht
+
+```
+Phase 13 (Foundation Broadening):     747 Tests bisher + ~60 remaining → Coverage ~68%
+  Batch E: Shared Package               15 Tests          ✅ DONE
+  Batch B: Helpers/Utils/Constants       247 Tests         ✅ DONE
+  Batch A: Untested DTOs, 13 Module      359 Tests         ✅ DONE
+  Batch D: Helper-Deepening              +85 Tests         ✅ DONE
+  Batch C: Legacy-Services               60/~120 Tests     🔄 3/8 DONE
+
+Phase 14 (Deep Coverage):             ~310-400 neue Tests → Coverage ~75%
+  Batch A: 5 Tier-1 Service-Deepening   ~160-200 Tests
+  Batch B: 5 Tier-2 Service-Deepening   ~100-130 Tests
+  Batch C: 3 Infrastructure             ~30-40 Tests
+  Batch D: 3 Partial Utils              ~20-30 Tests
+
+GESAMT:  ~1120-1210 neue Tests (807 fertig + ~310-400 Phase 14)
+         → von 1858 auf ~2860-3070 Tests
+         → Coverage: 58% → 65% (aktuell) → 68% (Phase 13 DoD) → 75% (Phase 14)
+         → Thresholds: 55% → 65% → 72%
+```
+
+**Bewusst NICHT in Phase 13/14 (→ v0.4.0 oder später):**
+
+- Controller-Tests (9,160 Lines, excluded from coverage)
+- Guard-Tests (434 Lines, excluded from coverage — kein Impact auf 75%-Ziel)
+- E2E/Playwright-Tests
+- Frontend-Komponenten-Tests
+- WebSocket-Tests (936 Lines)
+- Email-Service-Tests (727 Lines)
+- Worker-Tests (168 Lines)
+
+> **Hinweis zu Guards:** Die 3 Guard-Dateien (jwt-auth, throttler, roles = 434 Lines) sind aus der Coverage **excluded** in `vitest.config.ts`. Sie zu testen würde die Coverage-Metrik NICHT verbessern. Wenn Guard-Tests gewünscht sind, muss zuerst die Exclusion entfernt werden — das erhöht aber auch den Nenner und senkt die Coverage kurzfristig.
 
 ---
 
@@ -1393,7 +1803,11 @@ Phase 12: Deep Coverage — +184 Tests, 4 Services vertieft       ✅ DONE (4/4 
 | shifts        | shifts.dto.test.ts        | 66    | 8 common enums, TimeSchema HH:MM, dual date fmt     |
 | settings      | settings.dto.test.ts      | 33    | SettingValue union, BulkUpdate min 1, CategoryEnum  |
 
-**Phase 0-12 abgeschlossen. Alle Services getestet + 4 vertieft.** CI + Coverage-Thresholds aktiv seit 2026-02-05.
+**Phase 0-12 abgeschlossen. Phase 13 zu ~85% fertig (Batch C ausstehend: 5 Legacy-Services).**
+CI + Coverage-Thresholds aktiv seit 2026-02-05. Coverage von 58% → 65% gestiegen (+747 Tests).
+
+**Phase 13 Restarbeit:** 5 Legacy-Services (analyzer, audit, executor, exporter, facade = 1477 Lines) → ~60 Tests → Coverage ~68%.
+**Phase 14 definiert:** ~310-400 neue Tests. Ziel: **75% Lines Coverage** bis Ende Phase 14.
 
 ---
 
@@ -1414,6 +1828,59 @@ Phase 12: Deep Coverage — +184 Tests, 4 Services vertieft       ✅ DONE (4/4 
 **Impact:** Mittel — camelCase-Sensitive-Fields wie `accessToken` werden NICHT redacted.
 **Fix:** SENSITIVE_FIELDS auf lowercase normalisiert (2026-02-05).
 **Status:** ✅ Gefixt und durch Tests verifiziert.
+
+### Trap 3: `vitest/no-conditional-expect` — NIEMALS `expect()` in `if`-Blöcken (Phase 13) — ✅ GEFIXT
+
+**ESLint-Regel:** `vitest/no-conditional-expect`
+**Betroffene Dateien:** 8 DTO- und Helper-Test-Dateien, 27 Stellen
+**Problem:** Zod `.safeParse()` gibt ein Discriminated-Union-Ergebnis zurück (`{ success: true, data } | { success: false, error }`). TypeScript erzwingt ein `if (result.success)` bevor `result.data` zugänglich ist. Das führt zu:
+
+```typescript
+// ❌ VERBOTEN — ESLint vitest/no-conditional-expect
+const result = SomeSchema.safeParse(input);
+expect(result.success).toBe(true);
+if (result.success) {
+  expect(result.data.someField).toBe('expected'); // ← expect in if = LINT ERROR
+}
+```
+
+**Warum verboten:** Wenn `result.success` wider Erwarten `false` ist, wird der `expect` im `if`-Block **still übersprungen** — der Test wird **grün obwohl er falsch ist**. Das ist ein Silent Pass. Der `expect(result.success).toBe(true)` davor fängt es zwar ab, aber ESLint kann das nicht statisch erkennen.
+
+**Fix — Type-Assertion statt Conditional:**
+
+```typescript
+// ✅ KORREKT — kein Conditional, immer ausgeführt
+const result = SomeSchema.safeParse(input);
+expect(result.success).toBe(true);
+const data = (result as { success: true; data: Record<string, unknown> }).data;
+expect(data.someField).toBe('expected');
+```
+
+**Varianten für spezifische Typen:**
+
+```typescript
+// Wenn der Typ bekannt ist (z.B. String-Schema):
+const data = (result as { success: true; data: string }).data;
+expect(data).toBe('normalized@email.de');
+
+// Wenn mehrere Felder geprüft werden:
+const data = (result as { success: true; data: Record<string, unknown> }).data;
+expect(data.departmentIds).toEqual([]);
+expect(data.permissions).toEqual({ canRead: true, canWrite: false });
+
+// Für Discriminated Unions (nicht-safeParse):
+const data = result as { content: string };
+expect(data.content).toBe('Hello!');
+```
+
+**Regel für die Zukunft:**
+
+1. **NIEMALS** `expect()` in `if`, `else`, `try/catch`, oder Ternary
+2. **IMMER** Type-Assertion (`as`) für Zod-safeParse-Ergebnisse
+3. **IMMER** `expect(result.success).toBe(true)` VOR der Assertion — das ist der Runtime-Guard
+4. Die Type-Assertion ist **nur für TypeScript** — zur Laufzeit greift der `expect(result.success).toBe(true)` darüber
+
+**Status:** ✅ 27 Stellen in 8 Dateien gefixt (2026-02-06).
 
 ---
 
