@@ -3,7 +3,7 @@ name: Docker Image Build & Registry Push
 on:
   push:
     branches:
-      - master
+      - main
       - develop
       - "feature/*"
       - "feature/docker-*"
@@ -11,7 +11,7 @@ on:
       - "v*"
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   REGISTRY: ghcr.io
@@ -76,10 +76,10 @@ jobs:
     needs: [build-and-push-image, security-scan-trivy]
     # Run on:
     # - Pull requests (pre-merge validation)
-    # - Direct pushes to master (hotfixes, admin merges - safety net)
+    # - Direct pushes to main (hotfixes, admin merges - safety net)
     # - Skip feature branch pushes (tested via PR)
-    # - Skip tag pushes (master was already tested)
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    # - Skip tag pushes (main was already tested)
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     # Prevent multiple integration tests from running simultaneously
     concurrency:
       group: docker-integration-test
@@ -232,7 +232,7 @@ jobs:
           fi
 
       - name: Check for critical vulnerabilities (blocks PR)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@main
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
           version: "v0.69.0"
@@ -242,7 +242,7 @@ jobs:
           scanners: "vuln"
 
       - name: Report HIGH and MEDIUM vulnerabilities (informational)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@main
         if: always()
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}

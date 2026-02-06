@@ -20,7 +20,7 @@ router.get('/api/endpoint', rateLimiter.public, handler);
 
 **IMPORTANT:**
 
-- Suppressions only work AFTER merging to master (not in PRs)!
+- Suppressions only work AFTER merging to main (not in PRs)!
 - Use `codeql[rule-id]` format (NOT `lgtm` or `codeql-ignore`)
 
 ### 2. Global Exclusion (For Systemic False Positives)

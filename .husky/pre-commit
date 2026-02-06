@@ -114,6 +114,12 @@ for file in $FILES_TO_CHECK; do
         FOUND_SECRETS=1
         PROBLEM_FILES="$PROBLEM_FILES\n  - $file (GitHub token pattern)"
     fi
+
+    # Pattern 8: Grafana Cloud API Token (glc_eyJ... base64-encoded JSON)
+    if echo "$CONTENT" | grep -E 'glc_[a-zA-Z0-9+/=]{20,}' > /dev/null 2>&1; then
+        FOUND_SECRETS=1
+        PROBLEM_FILES="$PROBLEM_FILES\n  - $file (Grafana Cloud token pattern)"
+    fi
 done
 
 if [ $FOUND_SECRETS -eq 1 ]; then

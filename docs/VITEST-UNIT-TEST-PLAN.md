@@ -1305,7 +1305,7 @@ unit-tests:
 ### Branch Protection Rules (GitHub) — ✅ Konfiguriert
 
 ```
-Settings → Branches → master:
+Settings → Branches → main:
   ✅ Require status checks to pass
     ✅ Unit Tests (Backend + Shared + Frontend) (required)
     ✅ Backend & Shared (TypeScript, ESLint, Prettier) (required)
@@ -1313,7 +1313,7 @@ Settings → Branches → master:
   ✅ Require branches to be up to date
 ```
 
-**Ergebnis:** Kein Merge in `master` ohne grüne Unit-Tests + Quality Checks.
+**Ergebnis:** Kein Merge in `main` ohne grüne Unit-Tests + Quality Checks.
 
 > **Hinweis:** Branch Protection erfordert GitHub Team Plan ($4/User/Monat) für private Repos.
 

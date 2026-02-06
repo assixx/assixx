@@ -101,7 +101,7 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 ### 4. Neue Versionen testen: Git-Branches statt separate Lock-Files
 
 ```
-Branch: master (stable)          Branch: testing/svelte-upgrade
+Branch: main (stable)          Branch: testing/svelte-upgrade
 ┌─────────────────────┐          ┌─────────────────────┐
 │ pnpm-lock.yaml      │          │ pnpm-lock.yaml      │
 │ SvelteKit: 2.21.4   │          │ SvelteKit: 3.0-beta │
@@ -115,7 +115,7 @@ Branch: master (stable)          Branch: testing/svelte-upgrade
 
 1. Feature-Branch mit neuen Versionen erstellen
 2. Auf Staging/Dev testen
-3. Nach erfolgreichem Test: Merge zu master
+3. Nach erfolgreichem Test: Merge zu main
 4. Production erhält Updates erst nach Merge
 
 ---

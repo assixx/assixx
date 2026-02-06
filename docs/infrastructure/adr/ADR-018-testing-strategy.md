@@ -27,7 +27,7 @@ Assixx hatte bis Anfang 2026 **keine automatisierten Tests**. API-Endpunkte wurd
 | Kein Regressionsschutz        | Refactoring bricht Features, die erst in Production auffallen                     |
 | Bruno CLI ist fragil          | Rate-Limiting, State-Abhängigkeiten, kein parallelisierbares Feedback             |
 | Keine Edge-Case-Dokumentation | `is_active` Multi-State (0/1/3/4), Password-Regeln, Coercion-Logik undokumentiert |
-| Kein Merge-Gate               | Kaputter Code kann in `master` landen                                             |
+| Kein Merge-Gate               | Kaputter Code kann in `main` landen                                               |
 | Kein Coverage-Tracking        | Unklar welche Code-Pfade getestet sind                                            |
 
 ### Anforderungen
@@ -36,7 +36,7 @@ Assixx hatte bis Anfang 2026 **keine automatisierten Tests**. API-Endpunkte wurd
 2. **API-Integration-Tests** fuer HTTP-Endpunkte — gegen echtes Docker-Backend
 3. **Einheitliches Tool** fuer beide Test-Typen — kein Tool-Wildwuchs
 4. **ESM-native** — Assixx nutzt `"type": "module"` durchgehend
-5. **CI/CD-Integration** als Merge-Gate — kein kaputtes Feature in `master`
+5. **CI/CD-Integration** als Merge-Gate — kein kaputtes Feature in `main`
 6. **Phase-basierter Rollout** — Fundament zuerst, peu a peu erweitern
 
 ---
@@ -395,7 +395,7 @@ Unit + Frontend-Tests (`--project unit --project frontend-unit`) laufen in CI �
 ### Branch Protection (GitHub, ✅ konfiguriert)
 
 ```
-Settings → Branches → master:
+Settings → Branches → main:
   ✅ Require status checks to pass
     ✅ Unit Tests (Backend + Shared + Frontend)
     ✅ Backend & Shared (TypeScript, ESLint, Prettier)

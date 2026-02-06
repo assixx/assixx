@@ -6,7 +6,7 @@
 
 - **Aktuelle Phase:** API-V2-MIGRATION
 - **Workflow:**
-  1. ZUERST: API-V2-MASTERPLAN-CHECKLIST.md abarbeiten
+  1. ZUERST: API-V2-mainPLAN-CHECKLIST.md abarbeiten
   2. DANACH: DEAL-BREAKER Features
 - **Status:** Bei Phase 7 - KVP System
 
@@ -30,7 +30,7 @@ fetch('/api/kvp', { credentials: 'include' });
 apiClient.get<KvpData[]>('/kvp');
 ```
 
-### 3. API-V2-MASTERPLAN-CHECKLIST.md
+### 3. API-V2-mainPLAN-CHECKLIST.md
 
 #### Status
 
@@ -53,7 +53,7 @@ apiClient.get<KvpData[]>('/kvp');
   - snake_case → camelCase
   - Neue Response Struktur
 
-### 5. API-V2-MIGRATION-MASTERPLAN.md
+### 5. API-V2-MIGRATION-mainPLAN.md
 
 #### KVP Specific
 

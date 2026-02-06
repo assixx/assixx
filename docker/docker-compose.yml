@@ -458,15 +458,21 @@ services:
           memory: 512M
     ports:
       - "9090:9090"
+    environment:
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/grafana_cloud_api_key:/etc/prometheus/grafana_cloud_api_key:ro
       - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=15d"
-      - "--web.enable-lifecycle"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "$${GRAFANA_CLOUD_API_KEY}" > /etc/prometheus/grafana_cloud_api_key
+        exec /bin/prometheus \
+          --config.file=/etc/prometheus/prometheus.yml \
+          --storage.tsdb.path=/prometheus \
+          --storage.tsdb.retention.time=15d \
+          --web.enable-lifecycle
     networks:
       - assixx-network
     healthcheck:

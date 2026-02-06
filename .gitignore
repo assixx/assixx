@@ -116,5 +116,8 @@ backup_*.sql
 # Grafana (exported dashboards, provisioned at runtime)
 docker/grafana/dashboards/
 
+# Grafana Cloud API credentials (NEVER commit - use Doppler!)
+docker/prometheus/grafana_cloud_api_key
+
 # Customer Deployment (contains customer-specific scripts, NOT for public repo)
 customer/

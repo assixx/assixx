@@ -949,7 +949,7 @@ Revised to prioritize by **business value + risk**, not just file size.
 - **One service per PR.** Never split two services in the same PR.
 - Branch naming: `refactor/split-{service-name}` (e.g., `refactor/split-chat-service`)
 - Each PR must include: type-check pass, lint pass, Bruno test results, startup log showing no circular dependency warnings.
-- Merge to development branch first. Verify in staging before master.
+- Merge to development branch first. Verify in staging before main.
 
 ### Transaction Pattern
 

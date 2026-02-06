@@ -13,7 +13,7 @@
 
 ---
 
-## Master-Befehl: Alles auf einmal
+## main-Befehl: Alles auf einmal
 
 ```bash
 # Aus Root-Verzeichnis - läuft OHNE abzubrechen bei Fehlern

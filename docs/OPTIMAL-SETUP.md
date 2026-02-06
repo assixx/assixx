@@ -1853,21 +1853,21 @@ doppler run --config prd -- docker-compose --profile production up -d
 ### Workflow
 
 ```
-master (stable)
+main (stable)
     │
-    ├── feature/fullcalendar-migration ► PR → master (ZUERST!)
+    ├── feature/fullcalendar-migration ► PR → main (ZUERST!)
     │                                        │
     │   ◄────────────────────────────────────┘
     │
-    ├── feature/nestjs-migration ──────► PR → master
+    ├── feature/nestjs-migration ──────► PR → main
     │                                        │
     │   ◄────────────────────────────────────┘
     │
-    ├── refactor/jest-to-vitest ───────► PR → master
+    ├── refactor/jest-to-vitest ───────► PR → main
     │                                        │
     │   ◄────────────────────────────────────┘
     │
-    ├── feature/sveltekit-migration ───► PR → master
+    ├── feature/sveltekit-migration ───► PR → main
     │                                        │
     │   ◄────────────────────────────────────┘
     │
@@ -1880,5 +1880,5 @@ master (stable)
 2. **Phase 0 zuerst** - FullCalendar isoliert testen (hohes Risiko!)
 3. **Phase 1 vor Phase 3** - Frontend braucht stabiles Backend
 4. **PR nach jeder Phase** - incremental mergen
-5. **master bleibt stable** - nur getesteter Code
+5. **main bleibt stable** - nur getesteter Code
 6. **KEIN Fallback/Legacy** - git revert bei Problemen

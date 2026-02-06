@@ -129,7 +129,7 @@ Bewusst nicht umgesetzt. Die Entscheidung ob Bruno, OpenAPI/Swagger, oder Postma
 
 ### Positive
 
-- Frontend-Fehler blockieren jetzt PRs -- kein kaputter Build mehr auf master
+- Frontend-Fehler blockieren jetzt PRs -- kein kaputter Build mehr auf main
 - CRITICAL-Schwachstellen in Docker-Images werden tatsächlich blockiert
 - Docker-Builds sind wieder schneller durch Cache
 - Dokumentation spiegelt den tatsächlichen Zustand wider

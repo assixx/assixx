@@ -212,7 +212,7 @@ doppler run -- docker-compose restart backend
 - docs/FEATURES.md - Feature list with prices
 - docs/DATABASE-SETUP-README.md - DB Schema Reference
 
-## MERGE STRATEGY FOR MASTER BRANCH
+## MERGE STRATEGY FOR main BRANCH
 
 **IMPORTANT: No Fast-Forward Merges!**
 
@@ -221,9 +221,9 @@ doppler run -- docker-compose restart backend
 git merge --no-ff <branch-name>
 
 # Check BEFORE merge:
-git diff master..<branch-name> --name-status
-git diff master..<branch-name> -- CLAUDE.md
-git diff master..<branch-name> -- TODO.md
+git diff main..<branch-name> --name-status
+git diff main..<branch-name> -- CLAUDE.md
+git diff main..<branch-name> -- TODO.md
 ```
 
 **Why no Fast-Forward:**

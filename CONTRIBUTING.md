@@ -89,7 +89,7 @@ See [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TE
 ### 1. Create Branch
 
 ```bash
-git checkout master && git pull origin master
+git checkout main && git pull origin main
 git checkout -b feature/short-description
 ```
 
