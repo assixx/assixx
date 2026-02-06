@@ -1,0 +1,119 @@
+# Nginx Configuration für Assixx Production
+# Reverse Proxy mit SSL/TLS
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # SSL Configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Gzip Compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+    # Rate Limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
+
+    # Upstream Backend
+    upstream assixx_backend {
+        server backend:3000;
+        keepalive 32;
+    }
+
+    # HTTP to HTTPS Redirect
+    server {
+        listen 80;
+        server_name assixx.yourdomain.com;
+        return 301 https://$server_name$request_uri;
+    }
+
+    # HTTPS Server
+    server {
+        listen 443 ssl http2;
+        server_name assixx.yourdomain.com;
+
+        # SSL Certificate
+        ssl_certificate /etc/nginx/ssl/cert.pem;
+        ssl_certificate_key /etc/nginx/ssl/key.pem;
+
+        # Security
+        client_max_body_size 50M;  # Für Datei-Uploads
+
+        # Static Files (Frontend)
+        location / {
+            root /usr/share/nginx/html;
+            try_files $uri $uri/ /index.html;
+            
+            # Cache static assets
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+        }
+
+        # API Endpoints
+        location /api/ {
+            limit_req zone=api burst=20 nodelay;
+            
+            proxy_pass http://assixx_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+            
+            # Timeouts für lange API-Calls
+            proxy_read_timeout 300s;
+            proxy_connect_timeout 75s;
+        }
+
+        # Auth Endpoints (strengeres Rate Limit)
+        location ~ ^/(login|signup|auth)$ {
+            limit_req zone=login burst=5 nodelay;
+            
+            proxy_pass http://assixx_backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # WebSocket for Chat
+        location /chat-ws {
+            proxy_pass http://assixx_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_read_timeout 3600s;
+        }
+
+        # Health Check Endpoint
+        location /health {
+            proxy_pass http://assixx_backend;
+            access_log off;
+        }
+    }
+}

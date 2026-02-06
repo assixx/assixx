@@ -1,0 +1,81 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.{js,cjs,mjs,ts}", ".storybook/**/*.{js,ts}"],
+      "project": ["scripts/**/*.{js,cjs,mjs,ts}"],
+      "ignoreDependencies": [
+        "husky",
+        "concurrently",
+        "markdownlint-cli",
+        "purgecss"
+      ]
+    },
+    "backend": {
+      "entry": [
+        "src/nest/main.ts",
+        "src/**/*.module.ts",
+        "src/**/*.controller.ts",
+        "src/**/*.service.ts",
+        "src/**/*.guard.ts",
+        "src/**/*.decorator.ts",
+        "src/**/*.filter.ts",
+        "src/**/*.interceptor.ts",
+        "src/**/*.pipe.ts",
+        "scripts/**/*.{js,ts}"
+      ],
+      "project": ["src/**/*.ts"],
+      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "dist/**"],
+      "ignoreDependencies": [
+        "reflect-metadata",
+        "pino-pretty",
+        "pino-loki",
+        "@sentry/nestjs",
+        "@willsoto/nestjs-prometheus"
+      ]
+    },
+    "frontend": {
+      "entry": [
+        "src/routes/**/+page.svelte",
+        "src/routes/**/+page.server.ts",
+        "src/routes/**/+layout.svelte",
+        "src/routes/**/+layout.server.ts",
+        "src/routes/**/+server.ts",
+        "src/routes/**/+error.svelte",
+        "src/app.html"
+      ],
+      "project": ["src/**/*.{svelte,ts,js}"],
+      "ignore": [".svelte-kit/**", "build/**", "node_modules/**"],
+      "ignoreDependencies": [
+        "@sveltejs/adapter-node",
+        "@sveltejs/vite-plugin-svelte",
+        "@tailwindcss/vite",
+        "prettier-plugin-svelte",
+        "html-minifier-terser",
+        "rollup-plugin-visualizer",
+        "tailwindcss",
+        "pino-pretty",
+        "pino-loki",
+        "@sentry/sveltekit"
+      ]
+    }
+  },
+  "ignore": [
+    "**/*.d.ts",
+    "**/dist/**",
+    "**/node_modules/**",
+    "docker/**",
+    "database/**",
+    "Testing/**",
+    "api-tests/**",
+    ".storybook/**",
+    "storybook-static/**",
+    "backups/**",
+    "**/index.ts"
+  ],
+  "ignoreUnresolved": ["./$types", "$app/*", "$env/*", "$lib/*"],
+  "rules": {
+    "classMembers": "off",
+    "enumMembers": "off"
+  }
+}

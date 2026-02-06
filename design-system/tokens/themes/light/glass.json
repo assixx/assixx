@@ -1,0 +1,24 @@
+{
+  "glass": {
+    "background": {
+      "value": "rgba(0, 0, 0, {glass.opacity.subtle})",
+      "description": "Glass background for light theme"
+    },
+    "background-hover": {
+      "value": "rgba(0, 0, 0, {glass.opacity.light})",
+      "description": "Glass hover background for light theme"
+    },
+    "background-active": {
+      "value": "rgba(0, 0, 0, {glass.opacity.medium})",
+      "description": "Glass active background for light theme"
+    },
+    "border": {
+      "value": "rgba(0, 0, 0, {glass.opacity.light})",
+      "description": "Glass border for light theme"
+    },
+    "backdrop": {
+      "value": "blur({glass.blur.md}) saturate({glass.saturate.medium})",
+      "description": "Glass backdrop filter for light theme - softer"
+    }
+  }
+}

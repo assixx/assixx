@@ -1,0 +1,5266 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Assixx API Documentation",
+    "version": "1.0.0",
+    "description": "Multi-Tenant SaaS Platform für Industrieunternehmen",
+    "contact": { "name": "SCS-Technik", "email": "support@scs-technik.de" },
+    "license": { "name": "Proprietary", "url": "https://assixx.com/license" }
+  },
+  "servers": [
+    { "url": "https://api.assixx.com/api", "description": "Production Server" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter your JWT token in the format: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "description": "Error message" },
+          "message": {
+            "type": "string",
+            "description": "Error message (alternative field)"
+          },
+          "code": { "type": "string", "description": "Error code" },
+          "details": {
+            "type": "object",
+            "description": "Additional error details"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "description": "Success message" },
+          "data": { "type": "object", "description": "Response data" }
+        }
+      },
+      "PaginationInfo": {
+        "type": "object",
+        "properties": {
+          "currentPage": { "type": "integer", "example": 1 },
+          "totalPages": { "type": "integer", "example": 10 },
+          "totalItems": { "type": "integer", "example": 100 },
+          "itemsPerPage": { "type": "integer", "example": 10 },
+          "hasNext": { "type": "boolean", "example": true },
+          "hasPrev": { "type": "boolean", "example": false }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "User ID" },
+          "username": { "type": "string", "description": "Username" },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address"
+          },
+          "first_name": { "type": "string", "description": "First name" },
+          "last_name": { "type": "string", "description": "Last name" },
+          "role": {
+            "type": "string",
+            "enum": ["root", "admin", "employee"],
+            "description": "User role"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "department_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Department ID"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Whether the user is active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": ["id", "username", "email", "role", "tenant_id"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Username for authentication",
+            "example": "admin"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "User password",
+            "example": "SecurePass123!"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "Browser fingerprint for session isolation",
+            "example": "abc123def456"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "Login erfolgreich" },
+          "token": {
+            "type": "string",
+            "description": "JWT token (also set as httpOnly cookie)"
+          },
+          "role": { "type": "string", "enum": ["root", "admin", "employee"] },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "BlackboardEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Entry ID" },
+          "title": { "type": "string", "description": "Entry title" },
+          "content": { "type": "string", "description": "Entry content" },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "normal", "high", "urgent"],
+            "description": "Entry priority"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["company", "department", "team", "personal"],
+            "description": "Visibility scope"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "archived"],
+            "description": "Entry status"
+          },
+          "created_by": {
+            "type": "integer",
+            "description": "User ID who created the entry"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "department_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Department ID (for department visibility)"
+          },
+          "team_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Team ID (for team visibility)"
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "can_edit": {
+            "type": "boolean",
+            "description": "Whether current user can edit this entry"
+          },
+          "can_delete": {
+            "type": "boolean",
+            "description": "Whether current user can delete this entry"
+          },
+          "is_read": {
+            "type": "boolean",
+            "description": "Whether current user has read this entry"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content",
+          "priority",
+          "visibility",
+          "status",
+          "created_by",
+          "tenant_id"
+        ]
+      },
+      "KvpSuggestion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Suggestion ID" },
+          "title": { "type": "string", "description": "Suggestion title" },
+          "description": {
+            "type": "string",
+            "description": "Detailed description"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "Sicherheit",
+              "Produktivität",
+              "Qualität",
+              "Kosten",
+              "Umwelt",
+              "Sonstiges"
+            ],
+            "description": "Suggestion category"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "implemented", "rejected"],
+            "description": "Current status"
+          },
+          "is_shared": {
+            "type": "boolean",
+            "description": "Whether the suggestion is shared publicly"
+          },
+          "created_by": {
+            "type": "integer",
+            "description": "User ID who created the suggestion"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "potential_savings": {
+            "type": "number",
+            "nullable": true,
+            "description": "Estimated savings in EUR"
+          },
+          "implementation_effort": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["low", "medium", "high"],
+            "description": "Effort required to implement"
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "comment_count": {
+            "type": "integer",
+            "description": "Number of comments"
+          },
+          "attachment_count": {
+            "type": "integer",
+            "description": "Number of attachments"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "category",
+          "status",
+          "created_by",
+          "tenant_id"
+        ]
+      },
+      "CalendarEvent": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Event ID" },
+          "title": { "type": "string", "description": "Event title" },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Event description"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event start date and time"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event end date and time"
+          },
+          "all_day": {
+            "type": "boolean",
+            "description": "Whether this is an all-day event"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "description": "Event location"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["company", "department", "team", "personal"],
+            "description": "Event visibility scope"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "cancelled"],
+            "description": "Event status"
+          },
+          "created_by": {
+            "type": "integer",
+            "description": "User ID who created the event"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "department_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Department ID (for department events)"
+          },
+          "team_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Team ID (for team events)"
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "can_edit": {
+            "type": "boolean",
+            "description": "Whether current user can edit this event"
+          },
+          "can_delete": {
+            "type": "boolean",
+            "description": "Whether current user can delete this event"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "start_date",
+          "end_date",
+          "visibility",
+          "status",
+          "created_by",
+          "tenant_id"
+        ]
+      },
+      "ShiftTemplate": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Template ID" },
+          "name": { "type": "string", "description": "Template name" },
+          "start_time": {
+            "type": "string",
+            "format": "time",
+            "description": "Shift start time (HH:mm)",
+            "example": "08:00"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time",
+            "description": "Shift end time (HH:mm)",
+            "example": "16:00"
+          },
+          "break_duration": {
+            "type": "integer",
+            "description": "Break duration in minutes",
+            "example": 30
+          },
+          "required_staff": {
+            "type": "integer",
+            "description": "Number of required staff",
+            "example": 3
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Template description"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "description": "Display color (hex)",
+            "example": "#4CAF50"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Whether template is active"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "start_time", "end_time", "tenant_id"]
+      },
+      "ShiftPlan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Plan ID" },
+          "name": { "type": "string", "description": "Plan name" },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Plan start date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Plan end date"
+          },
+          "department_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Department ID"
+          },
+          "team_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Team ID"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Plan description"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "published", "archived"],
+            "description": "Plan status"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "created_by": {
+            "type": "integer",
+            "description": "User ID who created the plan"
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id",
+          "name",
+          "start_date",
+          "end_date",
+          "status",
+          "tenant_id",
+          "created_by"
+        ]
+      },
+      "Survey": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Survey ID" },
+          "title": { "type": "string", "description": "Survey title" },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Survey description"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "active", "closed"],
+            "description": "Survey status"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Survey start date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Survey end date"
+          },
+          "is_anonymous": {
+            "type": "boolean",
+            "description": "Whether responses are anonymous"
+          },
+          "is_mandatory": {
+            "type": "boolean",
+            "description": "Whether survey is mandatory"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "question": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": ["text", "radio", "checkbox", "scale", "date"]
+                },
+                "required": { "type": "boolean" },
+                "options": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "description": "Survey questions"
+          },
+          "response_count": {
+            "type": "integer",
+            "description": "Number of responses"
+          },
+          "created_by": {
+            "type": "integer",
+            "description": "User ID who created the survey"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "title", "status", "tenant_id", "created_by"]
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Document ID" },
+          "title": { "type": "string", "description": "Document title" },
+          "description": {
+            "type": "string",
+            "description": "Document description"
+          },
+          "file_name": { "type": "string", "description": "Original filename" },
+          "file_path": { "type": "string", "description": "Server file path" },
+          "file_size": {
+            "type": "integer",
+            "description": "File size in bytes"
+          },
+          "file_type": { "type": "string", "description": "MIME type" },
+          "category": {
+            "type": "string",
+            "enum": ["personal", "company", "department", "team", "payroll"],
+            "description": "Document category"
+          },
+          "year": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Year (for payroll documents)"
+          },
+          "month": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Month (for payroll documents)"
+          },
+          "uploaded_by": {
+            "type": "integer",
+            "description": "User ID who uploaded the document"
+          },
+          "target_user_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Target user (for personal documents)"
+          },
+          "target_department_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Target department"
+          },
+          "target_team_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Target team"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Upload timestamp"
+          },
+          "is_read": {
+            "type": "boolean",
+            "description": "Whether the current user has read this document"
+          }
+        },
+        "required": ["id", "title", "file_name", "category", "tenant_id"]
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Conversation ID" },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Conversation name (for group chats)"
+          },
+          "is_group": {
+            "type": "boolean",
+            "description": "Whether this is a group conversation"
+          },
+          "created_by": {
+            "type": "integer",
+            "description": "User ID who created the conversation"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last activity timestamp"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user_id": { "type": "integer" },
+                "username": { "type": "string" },
+                "first_name": { "type": "string" },
+                "last_name": { "type": "string" },
+                "is_online": { "type": "boolean" },
+                "joined_at": { "type": "string", "format": "date-time" }
+              }
+            },
+            "description": "List of conversation participants"
+          },
+          "last_message": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": { "type": "integer" },
+              "message": { "type": "string" },
+              "sender_name": { "type": "string" },
+              "sent_at": { "type": "string", "format": "date-time" }
+            },
+            "description": "Preview of the last message"
+          },
+          "unread_count": {
+            "type": "integer",
+            "description": "Number of unread messages for current user"
+          }
+        },
+        "required": [
+          "id",
+          "is_group",
+          "created_by",
+          "created_at",
+          "participants"
+        ]
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Message ID" },
+          "conversation_id": {
+            "type": "integer",
+            "description": "Conversation ID"
+          },
+          "sender_id": { "type": "integer", "description": "Sender user ID" },
+          "sender_name": {
+            "type": "string",
+            "description": "Sender display name"
+          },
+          "message": { "type": "string", "description": "Message content" },
+          "attachment": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "filename": {
+                "type": "string",
+                "description": "Attachment filename"
+              },
+              "original_name": {
+                "type": "string",
+                "description": "Original filename"
+              },
+              "file_size": {
+                "type": "integer",
+                "description": "File size in bytes"
+              },
+              "mime_type": { "type": "string", "description": "MIME type" }
+            },
+            "description": "File attachment information"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Message timestamp"
+          },
+          "is_read": {
+            "type": "boolean",
+            "description": "Whether the current user has read this message"
+          },
+          "read_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the message was read"
+          },
+          "is_edited": {
+            "type": "boolean",
+            "description": "Whether the message has been edited"
+          },
+          "edited_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the message was edited"
+          }
+        },
+        "required": ["id", "conversation_id", "sender_id", "message", "sent_at"]
+      },
+      "Department": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Department ID" },
+          "name": { "type": "string", "description": "Department name" },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Department description"
+          },
+          "manager_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "User ID of department manager"
+          },
+          "manager_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Manager display name"
+          },
+          "parent_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Parent department ID"
+          },
+          "parent_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Parent department name"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "description": "Physical location"
+          },
+          "cost_center": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cost center code"
+          },
+          "employee_count": {
+            "type": "integer",
+            "description": "Number of employees in department"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": ["id", "name", "tenant_id"]
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Team ID" },
+          "name": { "type": "string", "description": "Team name" },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Team description"
+          },
+          "department_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Department ID this team belongs to"
+          },
+          "department_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Department name"
+          },
+          "leader_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "User ID of team leader"
+          },
+          "leader_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Leader display name"
+          },
+          "max_members": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Maximum team size"
+          },
+          "member_count": {
+            "type": "integer",
+            "description": "Current number of team members"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "description": "Team location"
+          },
+          "budget": {
+            "type": "number",
+            "nullable": true,
+            "description": "Team budget"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Whether team is active"
+          },
+          "goals": {
+            "type": "string",
+            "nullable": true,
+            "description": "Team goals and objectives"
+          },
+          "tenant_id": { "type": "integer", "description": "Tenant ID" },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": ["id", "name", "tenant_id", "is_active"]
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication and authorization"
+    },
+    { "name": "Admin", "description": "Admin-specific operations" },
+    { "name": "Employee", "description": "Employee-specific operations" },
+    { "name": "Documents", "description": "Document management" },
+    {
+      "name": "Blackboard",
+      "description": "Company announcements (Schwarzes Brett)"
+    },
+    { "name": "Calendar", "description": "Event and calendar management" },
+    { "name": "Chat", "description": "Real-time messaging" },
+    { "name": "KVP", "description": "Continuous improvement process (KVP)" },
+    { "name": "Shifts", "description": "Shift planning and management" },
+    { "name": "Survey", "description": "Survey creation and management" },
+    { "name": "Features", "description": "Feature management" },
+    {
+      "name": "Departments",
+      "description": "Department management and organization structure"
+    },
+    {
+      "name": "Teams",
+      "description": "Team management and team member operations"
+    }
+  ],
+  "paths": {
+    "/admin/employees": {
+      "post": {
+        "summary": "Create a new employee",
+        "description": "Create a new employee account within the admin's tenant",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Unique username for the employee",
+                    "example": "john.doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Employee email address",
+                    "example": "john.doe@company.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Initial password for the employee",
+                    "example": "SecurePass123!"
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "description": "Employee first name",
+                    "example": "John"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "description": "Employee last name",
+                    "example": "Doe"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Employee phone number",
+                    "example": "+49 123 456789"
+                  },
+                  "department_id": {
+                    "type": "integer",
+                    "description": "Department ID to assign the employee to",
+                    "example": 1
+                  },
+                  "position": {
+                    "type": "string",
+                    "description": "Job position/title",
+                    "example": "Software Developer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Employee created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mitarbeiter erfolgreich erstellt"
+                    },
+                    "employeeId": {
+                      "type": "integer",
+                      "description": "ID of the newly created employee",
+                      "example": 123
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - Username or email already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Ein Mitarbeiter mit diesem Benutzernamen oder dieser E-Mail existiert bereits."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all employees",
+        "description": "Retrieve a list of all employees within the admin's tenant",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Number of items per page"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": { "type": "string" },
+            "description": "Search term for filtering employees by name or email"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of employees retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/employees/{id}": {
+      "get": {
+        "summary": "Get single employee",
+        "description": "Retrieve detailed information about a specific employee",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Employee ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Employee not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mitarbeiter nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update employee information",
+        "description": "Update an existing employee's information (Admin only)",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Employee ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Updated email address"
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "description": "Updated first name"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "description": "Updated last name"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Updated phone number"
+                  },
+                  "department_id": {
+                    "type": "integer",
+                    "description": "Updated department ID"
+                  },
+                  "position": {
+                    "type": "string",
+                    "description": "Updated job position"
+                  },
+                  "is_active": {
+                    "type": "boolean",
+                    "description": "Active status"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Employee updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mitarbeiter erfolgreich aktualisiert"
+                    },
+                    "success": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Cannot change employee role or not an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Die Rolle eines Mitarbeiters kann nicht geändert werden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Employee not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mitarbeiter nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/upload-document/{employeeId}": {
+      "post": {
+        "summary": "Upload document for employee",
+        "description": "Upload a PDF document for a specific employee (Admin only)",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employeeId",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Employee ID to upload document for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["document"],
+                "properties": {
+                  "document": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to upload (max 3MB)"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Document title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Document description"
+                  },
+                  "year": {
+                    "type": "string",
+                    "description": "Year (for payroll documents)"
+                  },
+                  "month": {
+                    "type": "string",
+                    "description": "Month (for payroll documents)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Dokument erfolgreich hochgeladen"
+                    },
+                    "documentId": {
+                      "type": "integer",
+                      "description": "ID of the uploaded document"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - No file uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Keine Datei hochgeladen"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Employee not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mitarbeiter nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Nur PDF-Dateien sind erlaubt!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/dashboard-stats": {
+      "get": {
+        "summary": "Get admin dashboard statistics",
+        "description": "Retrieve statistics for the admin dashboard including employee, department, team, and document counts",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Dashboard statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "employeeCount": {
+                      "type": "integer",
+                      "description": "Total number of employees in the tenant",
+                      "example": 42
+                    },
+                    "departmentCount": {
+                      "type": "integer",
+                      "description": "Total number of departments in the tenant",
+                      "example": 5
+                    },
+                    "teamCount": {
+                      "type": "integer",
+                      "description": "Total number of teams in the tenant",
+                      "example": 12
+                    },
+                    "documentCount": {
+                      "type": "integer",
+                      "description": "Total number of documents in the tenant",
+                      "example": 156
+                    },
+                    "adminName": {
+                      "type": "string",
+                      "description": "Username of the current admin",
+                      "example": "admin123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/validate": {
+      "get": {
+        "summary": "Validate current JWT token",
+        "description": "Validates the current JWT token and returns user information if valid",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Token is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "valid": { "type": "boolean", "example": true },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "username": { "type": "string" },
+                        "role": {
+                          "type": "string",
+                          "enum": ["root", "admin", "employee"]
+                        },
+                        "tenant_id": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token is invalid or expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login user",
+        "description": "Authenticate user with username, password and optional browser fingerprint",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Username for authentication",
+                    "example": "admin"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "User password",
+                    "example": "SecurePass123!"
+                  },
+                  "fingerprint": {
+                    "type": "string",
+                    "description": "Browser fingerprint for session isolation",
+                    "example": "abc123def456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTTP-only cookie containing JWT token"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Login erfolgreich"
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "JWT token (also set as httpOnly cookie)"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": ["root", "admin", "employee"]
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "username": { "type": "string" },
+                        "email": { "type": "string" },
+                        "role": { "type": "string" },
+                        "tenant_id": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register new user",
+        "description": "Create a new user account with optional tenant assignment",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Unique username",
+                    "example": "johndoe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email address",
+                    "example": "john.doe@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Strong password",
+                    "example": "SecurePass123!"
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "description": "First name",
+                    "example": "John"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "description": "Last name",
+                    "example": "Doe"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["admin", "employee"],
+                    "description": "User role (cannot register as root)",
+                    "example": "employee"
+                  },
+                  "tenant_id": {
+                    "type": "integer",
+                    "description": "Tenant ID for multi-tenant assignment",
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Registration successful"
+                    },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout user",
+        "description": "Logout the current user and clear authentication token",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "description": "Clears the httpOnly token cookie"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Logout successful"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blackboard": {
+      "get": {
+        "summary": "Get all blackboard entries",
+        "description": "Retrieve all blackboard entries visible to the user with pagination and filtering",
+        "tags": ["Blackboard"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "archived"],
+              "default": "active"
+            },
+            "description": "Filter by entry status"
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "company", "department", "team", "personal"],
+              "default": "all"
+            },
+            "description": "Filter by visibility scope"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": { "type": "string" },
+            "description": "Search in title and content"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 18
+            },
+            "description": "Items per page"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": ["created_at", "updated_at", "title", "priority"],
+              "default": "created_at"
+            },
+            "description": "Sort by field"
+          },
+          {
+            "in": "query",
+            "name": "sortDir",
+            "schema": {
+              "type": "string",
+              "enum": ["ASC", "DESC"],
+              "default": "DESC"
+            },
+            "description": "Sort direction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blackboard entries retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BlackboardEntry"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "totalItems": { "type": "integer" },
+                        "itemsPerPage": { "type": "integer" },
+                        "hasNext": { "type": "boolean" },
+                        "hasPrev": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create blackboard entry",
+        "description": "Create a new blackboard entry with optional file attachment",
+        "tags": ["Blackboard"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "content", "org_level"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Entry title",
+                    "example": "Wichtige Ankündigung"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "Entry content (supports Markdown)",
+                    "example": "Dies ist eine wichtige Mitteilung für alle Mitarbeiter."
+                  },
+                  "org_level": {
+                    "type": "string",
+                    "enum": ["company", "department", "team"],
+                    "description": "Organizational level"
+                  },
+                  "org_id": {
+                    "type": "integer",
+                    "description": "Department/Team ID (not needed for company level)"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["low", "normal", "high", "urgent"],
+                    "default": "normal",
+                    "description": "Entry priority"
+                  },
+                  "color": {
+                    "type": "string",
+                    "enum": ["blue", "green", "yellow", "red", "purple"],
+                    "default": "blue",
+                    "description": "Display color"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Expiration date (optional)"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Tags for categorization"
+                  },
+                  "requires_confirmation": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether users must confirm reading"
+                  },
+                  "attachment": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Optional file attachment (PDF, JPEG, PNG, GIF - max 10MB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Entry created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Blackboard entry created successfully"
+                    },
+                    "entry": { "$ref": "#/components/schemas/BlackboardEntry" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "message": { "type": "string" } }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - No permission for this org level",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "You do not have permission to create entries at this level"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Nur PDF und Bilder (JPEG, PNG, GIF) sind erlaubt!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/calendar": {
+      "get": {
+        "summary": "Get all calendar events",
+        "description": "Retrieve all calendar events visible to the user with pagination and filtering",
+        "tags": ["Calendar"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "cancelled"],
+              "default": "active"
+            },
+            "description": "Filter by event status"
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "company", "department", "team", "personal"],
+              "default": "all"
+            },
+            "description": "Filter by visibility scope"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": { "type": "string" },
+            "description": "Search in title and description"
+          },
+          {
+            "in": "query",
+            "name": "start_date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Filter events starting from this date"
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Filter events ending before this date"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Items per page"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": ["start_date", "end_date", "title", "created_at"],
+              "default": "start_date"
+            },
+            "description": "Sort by field"
+          },
+          {
+            "in": "query",
+            "name": "sortDir",
+            "schema": {
+              "type": "string",
+              "enum": ["ASC", "DESC"],
+              "default": "ASC"
+            },
+            "description": "Sort direction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar events retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/CalendarEvent" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "totalItems": { "type": "integer" },
+                        "itemsPerPage": { "type": "integer" },
+                        "hasNext": { "type": "boolean" },
+                        "hasPrev": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/users": {
+      "get": {
+        "summary": "Get available chat users",
+        "description": "Retrieve list of users available for chat within the tenant",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": { "type": "string" },
+            "description": "Search by username or name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "username": { "type": "string" },
+                          "first_name": { "type": "string" },
+                          "last_name": { "type": "string" },
+                          "role": { "type": "string" },
+                          "is_online": { "type": "boolean" },
+                          "last_seen": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/conversations": {
+      "get": {
+        "summary": "Get user conversations",
+        "description": "Retrieve all conversations for the authenticated user",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Conversations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversations": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Conversation" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create new conversation",
+        "description": "Create a new chat conversation with one or more participants",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["participants"],
+                "properties": {
+                  "participants": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "description": "Array of user IDs to include in conversation",
+                    "example": [2, 3, 4]
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Optional conversation name (for group chats)",
+                    "example": "Project Team Chat"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conversation created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Konversation erfolgreich erstellt"
+                    },
+                    "conversation": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/conversations/{id}/messages": {
+      "get": {
+        "summary": "Get messages from conversation",
+        "description": "Retrieve all messages from a specific conversation",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Conversation ID"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Messages per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ChatMessage" }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/PaginationInfo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not a participant in this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Sie sind kein Teilnehmer dieser Konversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Konversation nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Send message to conversation",
+        "description": "Send a new message to a conversation with optional file attachment",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Conversation ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "Message content",
+                    "example": "Hallo, wie geht es dir?"
+                  },
+                  "attachment": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Optional file attachment (max 10MB)"
+                  }
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "Message content",
+                    "example": "Hallo, wie geht es dir?"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Nachricht erfolgreich gesendet"
+                    },
+                    "data": { "$ref": "#/components/schemas/ChatMessage" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not a participant in this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Sie sind kein Teilnehmer dieser Konversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Konversation nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Dateityp nicht erlaubt"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/attachments/{filename}": {
+      "get": {
+        "summary": "Download chat attachment",
+        "description": "Download a file attachment from a chat message",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Attachment filename"
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "schema": { "type": "boolean", "default": false },
+            "description": "Force download instead of inline display"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File content",
+            "content": {
+              "image/jpeg": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "image/png": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "image/gif": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "image/webp": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "text/plain": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "application/msword": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "example": "attachment; filename=\"document.pdf\""
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - No access to this file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Kein Zugriff auf diese Datei"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Datei nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/unread-count": {
+      "get": {
+        "summary": "Get unread message count",
+        "description": "Get the total number of unread messages for the authenticated user",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Unread count retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "unreadCount": {
+                      "type": "integer",
+                      "description": "Total number of unread messages",
+                      "example": 5
+                    },
+                    "conversations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "conversationId": { "type": "integer" },
+                          "unreadCount": { "type": "integer" },
+                          "lastMessage": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/conversations/{id}/read": {
+      "post": {
+        "summary": "Mark conversation as read",
+        "description": "Mark all messages in a conversation as read",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation marked as read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Konversation als gelesen markiert"
+                    },
+                    "markedCount": {
+                      "type": "integer",
+                      "description": "Number of messages marked as read"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not a participant in this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Sie sind kein Teilnehmer dieser Konversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Konversation nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/conversations/{id}": {
+      "delete": {
+        "summary": "Delete conversation",
+        "description": "Delete a conversation (admin only or if you're the only participant)",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Konversation erfolgreich gelöscht"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Cannot delete this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Sie können diese Konversation nicht löschen"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Konversation nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/departments": {
+      "post": {
+        "summary": "Create a new department",
+        "description": "Create a new department (Admin/Root only)",
+        "tags": ["Departments"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Department name",
+                    "example": "Produktion"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Department description",
+                    "example": "Produktionsabteilung für alle Fertigungsprozesse"
+                  },
+                  "manager_id": {
+                    "type": "integer",
+                    "description": "User ID of department manager",
+                    "example": 42
+                  },
+                  "parent_id": {
+                    "type": "integer",
+                    "description": "Parent department ID for hierarchical structure",
+                    "example": 1
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Physical location",
+                    "example": "Gebäude A, 2. Stock"
+                  },
+                  "cost_center": {
+                    "type": "string",
+                    "description": "Cost center code",
+                    "example": "CC-PROD-001"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Department created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung erfolgreich erstellt"
+                    },
+                    "departmentId": { "type": "integer", "example": 5 }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilungsname ist erforderlich"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all departments",
+        "description": "Retrieve all departments for the tenant",
+        "tags": ["Departments"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Departments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Department" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/departments/{id}": {
+      "get": {
+        "summary": "Get department by ID",
+        "description": "Retrieve a specific department by its ID",
+        "tags": ["Departments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Department ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Department" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Department not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update department",
+        "description": "Update an existing department (Admin/Root only)",
+        "tags": ["Departments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Department ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Department name",
+                    "example": "Produktion"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Department description"
+                  },
+                  "manager_id": {
+                    "type": "integer",
+                    "description": "User ID of department manager"
+                  },
+                  "parent_id": {
+                    "type": "integer",
+                    "description": "Parent department ID"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Physical location"
+                  },
+                  "cost_center": {
+                    "type": "string",
+                    "description": "Cost center code"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Department updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung erfolgreich aktualisiert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Eine Abteilung kann nicht sich selbst als Übergeordnete haben"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Department not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete department",
+        "description": "Delete a department (Admin/Root only). Cannot delete if users are assigned.",
+        "tags": ["Departments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Department ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung erfolgreich gelöscht"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot delete - has assigned users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Diese Abteilung kann nicht gelöscht werden, da ihr noch Benutzer zugeordnet sind"
+                    },
+                    "users": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Department not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/departments/{id}/members": {
+      "get": {
+        "summary": "Get department members",
+        "description": "Retrieve all users assigned to a specific department",
+        "tags": ["Departments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Department ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Department members retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "username": { "type": "string" },
+                      "email": { "type": "string" },
+                      "first_name": { "type": "string" },
+                      "last_name": { "type": "string" },
+                      "role": {
+                        "type": "string",
+                        "enum": ["root", "admin", "employee"]
+                      },
+                      "position": { "type": "string" },
+                      "is_active": { "type": "boolean" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Department not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Abteilung nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/upload": {
+      "post": {
+        "summary": "Upload a document",
+        "description": "Upload a PDF document to the system (Admin only)",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["document", "category"],
+                "properties": {
+                  "document": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to upload (max 5MB)"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Document title",
+                    "example": "Arbeitsvertrag"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Document description",
+                    "example": "Arbeitsvertrag für neuen Mitarbeiter"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "personal",
+                      "company",
+                      "department",
+                      "team",
+                      "payroll"
+                    ],
+                    "description": "Document category"
+                  },
+                  "userId": {
+                    "type": "integer",
+                    "description": "Target user ID (for personal documents)"
+                  },
+                  "teamId": {
+                    "type": "integer",
+                    "description": "Target team ID (for team documents)"
+                  },
+                  "departmentId": {
+                    "type": "integer",
+                    "description": "Target department ID (for department documents)"
+                  },
+                  "year": {
+                    "type": "integer",
+                    "description": "Year (for payroll documents)",
+                    "example": 2025
+                  },
+                  "month": {
+                    "type": "integer",
+                    "description": "Month (for payroll documents)",
+                    "example": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Dokument erfolgreich hochgeladen"
+                    },
+                    "documentId": {
+                      "type": "integer",
+                      "description": "ID of the uploaded document",
+                      "example": 123
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid file or parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Nur PDF-Dateien sind erlaubt!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "get": {
+        "summary": "Get all documents",
+        "description": "Retrieve a list of documents with optional filtering (Admin only)",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string",
+              "enum": ["personal", "company", "department", "team", "payroll"]
+            },
+            "description": "Filter by document category"
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": { "type": "integer" },
+            "description": "Filter by target user ID"
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": { "type": "integer" },
+            "description": "Filter by year (for payroll documents)"
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "schema": { "type": "integer" },
+            "description": "Filter by month (for payroll documents)"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Number of items per page"
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "schema": { "type": "boolean" },
+            "description": "Filter by archived status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Document" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "totalDocuments": { "type": "integer" },
+                        "hasNext": { "type": "boolean" },
+                        "hasPrev": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an admin",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/preview/{documentId}": {
+      "get": {
+        "summary": "Preview document",
+        "description": "Get document content for inline preview (iframe display)",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Document ID to preview"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document content for preview",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            },
+            "headers": {
+              "Content-Type": {
+                "schema": { "type": "string", "example": "application/pdf" }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "example": "inline; filename=\"document.pdf\""
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - No access to this document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Kein Zugriff auf dieses Dokument"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Document not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Dokument nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error or document has no content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Dokument hat keinen Inhalt"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/info": {
+      "get": {
+        "summary": "Get employee information",
+        "description": "Retrieve the current employee's personal information",
+        "tags": ["Employee"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Employee information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an employee",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Employee not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mitarbeiter nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/documents": {
+      "get": {
+        "summary": "Get employee documents",
+        "description": "Retrieve all documents accessible to the employee (personal, team, department, and company documents)",
+        "tags": ["Employee"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Documents retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Document" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User is not an employee",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kvp": {
+      "get": {
+        "summary": "Get all KVP suggestions",
+        "description": "Retrieve all KVP suggestions visible to the user with pagination and filtering",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "approved", "implemented", "rejected"]
+            },
+            "description": "Filter by suggestion status"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": { "type": "string" },
+            "description": "Filter by category"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": { "type": "string" },
+            "description": "Search in title and description"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page"
+          },
+          {
+            "in": "query",
+            "name": "shared",
+            "schema": { "type": "boolean" },
+            "description": "Filter by shared/private status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KVP suggestions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/KvpSuggestion" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "totalItems": { "type": "integer" },
+                        "itemsPerPage": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create KVP suggestion",
+        "description": "Create a new KVP suggestion",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "description", "category"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Suggestion title",
+                    "example": "Optimierung der Pausenzeiten"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Detailed description",
+                    "example": "Durch versetzte Pausenzeiten können wir die Produktivität steigern..."
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "Sicherheit",
+                      "Produktivität",
+                      "Qualität",
+                      "Kosten",
+                      "Umwelt",
+                      "Sonstiges"
+                    ],
+                    "description": "Suggestion category"
+                  },
+                  "potential_savings": {
+                    "type": "number",
+                    "description": "Estimated savings in EUR",
+                    "example": 5000
+                  },
+                  "implementation_effort": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"],
+                    "description": "Effort required"
+                  },
+                  "is_shared": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Share with other users"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Suggestion created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "KVP-Vorschlag erfolgreich erstellt"
+                    },
+                    "suggestion": {
+                      "$ref": "#/components/schemas/KvpSuggestion"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kvp/categories": {
+      "get": {
+        "summary": "Get KVP categories",
+        "description": "Retrieve all available KVP categories",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Categories retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "example": [
+                    "Sicherheit",
+                    "Produktivität",
+                    "Qualität",
+                    "Kosten",
+                    "Umwelt",
+                    "Sonstiges"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kvp/stats": {
+      "get": {
+        "summary": "Get KVP statistics",
+        "description": "Retrieve statistics about KVP suggestions",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of suggestions"
+                    },
+                    "byStatus": {
+                      "type": "object",
+                      "properties": {
+                        "pending": { "type": "integer" },
+                        "approved": { "type": "integer" },
+                        "implemented": { "type": "integer" },
+                        "rejected": { "type": "integer" }
+                      }
+                    },
+                    "byCategory": {
+                      "type": "object",
+                      "additionalProperties": { "type": "integer" }
+                    },
+                    "thisMonth": {
+                      "type": "integer",
+                      "description": "Suggestions created this month"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kvp/{id}": {
+      "get": {
+        "summary": "Get KVP suggestion by ID",
+        "description": "Retrieve a specific KVP suggestion with all details",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "KVP suggestion ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KVP suggestion retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/KvpSuggestion" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Suggestion not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Vorschlag nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kvp/{id}/comments": {
+      "get": {
+        "summary": "Get comments for KVP suggestion",
+        "description": "Retrieve all comments for a specific KVP suggestion",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "KVP suggestion ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "comments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "comment": { "type": "string" },
+                          "created_by": { "type": "integer" },
+                          "created_by_name": { "type": "string" },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "example": [
+                        {
+                          "id": 1,
+                          "comment": "Sehr gute Idee! Das sollten wir umsetzen.",
+                          "created_by": 42,
+                          "created_by_name": "Max Mustermann",
+                          "created_at": "2025-06-23T10:30:00Z"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "description": "Suggestion not found" }
+        }
+      },
+      "post": {
+        "summary": "Add comment to KVP suggestion",
+        "description": "Add a new comment to a specific KVP suggestion",
+        "tags": ["KVP"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "KVP suggestion ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["comment"],
+                "properties": {
+                  "comment": {
+                    "type": "string",
+                    "description": "Comment text",
+                    "example": "Sehr gute Idee! Das sollten wir umsetzen."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Kommentar erfolgreich hinzugefügt"
+                    },
+                    "comment": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "comment": { "type": "string" },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "description": "Suggestion not found" }
+        }
+      }
+    },
+    "/shifts/templates": {
+      "get": {
+        "summary": "Get all shift templates",
+        "description": "Retrieve all available shift templates for the tenant",
+        "tags": ["Shifts"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Shift templates retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ShiftTemplate" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": {
+                      "type": "string",
+                      "example": "Fehler beim Laden der Schichtvorlagen"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shifts/plans": {
+      "get": {
+        "summary": "Get all shift plans",
+        "description": "Retrieve shift plans with optional filtering",
+        "tags": ["Shifts"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "department_id",
+            "schema": { "type": "integer" },
+            "description": "Filter by department ID"
+          },
+          {
+            "in": "query",
+            "name": "team_id",
+            "schema": { "type": "integer" },
+            "description": "Filter by team ID"
+          },
+          {
+            "in": "query",
+            "name": "start_date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Filter plans starting from this date"
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Filter plans ending before this date"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": ["draft", "published", "archived"]
+            },
+            "description": "Filter by plan status"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shift plans retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "plans": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ShiftPlan" }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of plans"
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "Current page"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Items per page"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/surveys": {
+      "get": {
+        "summary": "Get all surveys",
+        "description": "Retrieve all surveys for the tenant with pagination and filtering",
+        "tags": ["Survey"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "draft", "closed"]
+            },
+            "description": "Filter by survey status"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Surveys retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "surveys": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Survey" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "currentPage": { "type": "integer" },
+                        "totalPages": { "type": "integer" },
+                        "totalItems": { "type": "integer" },
+                        "itemsPerPage": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Feature not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Feature not available for your subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Fehler beim Abrufen der Umfragen"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teams": {
+      "post": {
+        "summary": "Create a new team",
+        "description": "Create a new team (Admin/Root only)",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Team name",
+                    "example": "DevOps Team"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Team description",
+                    "example": "Verantwortlich für CI/CD und Infrastruktur"
+                  },
+                  "department_id": {
+                    "type": "integer",
+                    "description": "Department ID this team belongs to",
+                    "example": 2
+                  },
+                  "leader_id": {
+                    "type": "integer",
+                    "description": "User ID of team leader",
+                    "example": 15
+                  },
+                  "max_members": {
+                    "type": "integer",
+                    "description": "Maximum team size",
+                    "example": 10
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Team location",
+                    "example": "Gebäude B, Raum 201"
+                  },
+                  "budget": {
+                    "type": "number",
+                    "description": "Team budget",
+                    "example": 50000
+                  },
+                  "is_active": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether team is active"
+                  },
+                  "goals": {
+                    "type": "string",
+                    "description": "Team goals and objectives"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Team created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team erfolgreich erstellt"
+                    },
+                    "teamId": { "type": "integer", "example": 8 }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Teamname ist erforderlich"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all teams",
+        "description": "Retrieve all teams for the tenant",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Teams retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Team" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teams/{id}": {
+      "get": {
+        "summary": "Get team by ID",
+        "description": "Retrieve a specific team by its ID",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Team ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Team" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update team",
+        "description": "Update an existing team (Admin/Root only)",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Team ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "description": "Team name" },
+                  "description": {
+                    "type": "string",
+                    "description": "Team description"
+                  },
+                  "department_id": {
+                    "type": "integer",
+                    "description": "Department ID"
+                  },
+                  "leader_id": {
+                    "type": "integer",
+                    "description": "Team leader user ID"
+                  },
+                  "max_members": {
+                    "type": "integer",
+                    "description": "Maximum team size"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Team location"
+                  },
+                  "budget": { "type": "number", "description": "Team budget" },
+                  "is_active": {
+                    "type": "boolean",
+                    "description": "Whether team is active"
+                  },
+                  "goals": { "type": "string", "description": "Team goals" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Team updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team erfolgreich aktualisiert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Teamname ist erforderlich"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete team",
+        "description": "Delete a team (Admin/Root only)",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Team ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team erfolgreich gelöscht"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teams/{id}/members": {
+      "get": {
+        "summary": "Get team members",
+        "description": "Retrieve all members of a specific team",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Team ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team members retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "username": { "type": "string" },
+                      "email": { "type": "string" },
+                      "first_name": { "type": "string" },
+                      "last_name": { "type": "string" },
+                      "role": {
+                        "type": "string",
+                        "enum": ["root", "admin", "employee"]
+                      },
+                      "position": { "type": "string" },
+                      "joined_at": { "type": "string", "format": "date-time" },
+                      "is_leader": { "type": "boolean" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add user to team",
+        "description": "Add a user to a team (Admin/Root only)",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Team ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": {
+                    "type": "integer",
+                    "description": "User ID to add to team",
+                    "example": 42
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User added to team successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Benutzer erfolgreich zum Team hinzugefügt"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Benutzer-ID ist erforderlich"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team or user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Team nicht gefunden"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teams/{id}/members/{userId}": {
+      "delete": {
+        "summary": "Remove user from team",
+        "description": "Remove a user from a team (Admin/Root only)",
+        "tags": ["Teams"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Team ID"
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "User ID to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User removed from team successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Benutzer erfolgreich aus dem Team entfernt"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not admin/root",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Zugriff verweigert"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team, user, or membership not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Benutzer ist kein Mitglied dieses Teams"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/profile": {
+      "get": {
+        "summary": "Get current user profile",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Not authenticated" },
+          "404": { "description": "User not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    }
+  }
+}

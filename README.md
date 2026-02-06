@@ -1,0 +1,117 @@
+<p align="center">
+  <img src="frontend/static/images/logo_darkmode.png" alt="Assixx Logo" width="200">
+</p>
+
+# Was ist Assixx?
+
+**Enterprise 2.0 Platform für Industrieunternehmen**
+
+[![Version](https://img.shields.io/badge/Version-0.1.5-blue.svg)](https://github.com/assixx-dev/Assixx)
+[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx-dev/Assixx)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
+
+Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in produzierenden Unternehmen.
+
+---
+
+## Preview
+
+<p align="center"><strong>Dark Mode</strong></p>
+<p align="center"><img src="docs/screenshots/sample_dark.png" alt="Assixx Dark Mode"></p>
+
+<p align="center"><strong>Light Mode</strong></p>
+<p align="center"><img src="docs/screenshots/sample_light.png" alt="Assixx Light Mode"></p>
+
+---
+
+## Übersicht
+
+Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Von TPM-Checklisten bis zu Gehaltsabrechnungen – digital, sicher und effizient.
+
+**Zielgruppe:** Automotive, Maschinenbau, Chemie, Metallverarbeitung | 50–500 Mitarbeiter | Deutschland
+
+---
+
+## Schnellstart
+
+```bash
+git clone https://github.com/assixx-dev/Assixx.git
+cd Assixx/docker
+./docker-init.sh
+```
+
+Development: `http://localhost:5173` | Production: `http://localhost`
+
+---
+
+## Tech Stack
+
+| Komponente | Technologie                        |
+| ---------- | ---------------------------------- |
+| Backend    | NestJS 11 + Fastify + TypeScript   |
+| Frontend   | SvelteKit 5 + Tailwind v4          |
+| Datenbank  | PostgreSQL 17 + Row Level Security |
+| Cache      | Redis 7                            |
+| Echtzeit   | WebSocket (Chat & Notifications)   |
+| Validation | Zod                                |
+| Container  | Docker + Nginx (Reverse Proxy)     |
+
+---
+
+## Features
+
+**Verfügbar:**
+
+- Benutzerverwaltung (Multi-Tenant, Rollen: Root/Admin/Employee)
+- Dokumenten-System (Upload, Kategorien, Zugriffsrechte)
+- Schwarzes Brett (Digitale Mitteilungen)
+- Kalender (Events, Drag & Drop)
+- KVP-System (Verbesserungsvorschläge)
+- Schichtplanung (Wochenansicht, Drag & Drop)
+- Chat-System (Echtzeit, Gruppen, Dateianhänge)
+
+**In Entwicklung:**
+
+- TPM-System – Wartungsplanung für Maschinen
+- Gehaltsabrechnung – Sichere Lohndokumente
+- Urlaubsantrag – Digitaler Workflow
+
+Details: [FEATURES.md](./docs/FEATURES.md)
+
+---
+
+## Dokumentation
+
+| Dokument                                  | Inhalt                     |
+| ----------------------------------------- | -------------------------- |
+| [FEATURES.md](./docs/FEATURES.md)         | Feature-Übersicht & Preise |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technische Architektur     |
+| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup               |
+| [TODO.md](./TODO.md)                      | Aktuelle Aufgaben          |
+
+---
+
+## Docker
+
+```bash
+cd docker
+
+docker-compose up -d                              # Development starten
+docker-compose --profile production up -d         # Production starten
+docker-compose ps                                 # Status
+docker-compose logs -f backend                    # Logs
+docker-compose down                               # Stoppen
+```
+
+---
+
+## Kontakt
+
+**Entwicklung:** SCS-Technik Team
+**GitHub:** [assixx-dev/Assixx](https://github.com/assixx-dev/Assixx)
+
+---
+
+## Lizenz
+
+Proprietäre Software – Alle Rechte vorbehalten. Siehe [LICENSE](./LICENSE).

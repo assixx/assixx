@@ -1,0 +1,144 @@
+/**
+ * Data List (Definition Lists)
+ *
+ * Key-value pair displays for detail views, user profiles, settings, etc.
+ *
+ * Usage:
+ * <dl class="data-list">
+ *   <div class="data-list__item">
+ *     <dt class="data-list__label">Email</dt>
+ *     <dd class="data-list__value">user@example.com</dd>
+ *   </div>
+ *   <div class="data-list__item">
+ *     <dt class="data-list__label">Role</dt>
+ *     <dd class="data-list__value"><span class="badge badge--role-admin">Admin</span></dd>
+ *   </div>
+ * </dl>
+ */
+
+/* ========== BASE DATA LIST ========== */
+
+.data-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+
+  margin: 0;
+  padding: 0;
+}
+
+/* ========== ITEM (TERM + DEFINITION PAIR) ========== */
+
+.data-list__item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: baseline;
+  gap: var(--spacing-4);
+  border-bottom: 1px solid var(--glass-border);
+
+  padding: var(--spacing-3) 0;
+}
+
+.data-list__item:last-child {
+  border-bottom: 0;
+}
+
+/* ========== LABEL (TERM) ========== */
+
+.data-list__label {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ========== VALUE (DEFINITION) ========== */
+
+.data-list__value {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+/* Empty value placeholder */
+.data-list__value--empty {
+  opacity: 50%;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.data-list__value--empty::before {
+  content: '—';
+}
+
+/* ========== LAYOUT VARIANTS ========== */
+
+/* Horizontal layout (side-by-side) */
+.data-list--horizontal {
+  flex-flow: row wrap;
+  gap: var(--spacing-6);
+}
+
+.data-list--horizontal .data-list__item {
+  grid-template-columns: 120px 1fr;
+  flex: 1 1 300px;
+}
+
+/* Stacked layout (label above value) */
+.data-list--stacked .data-list__item {
+  grid-template-columns: 1fr;
+  gap: var(--spacing-1);
+}
+
+/* Compact layout (smaller spacing) */
+.data-list--compact {
+  gap: var(--spacing-2);
+}
+
+.data-list--compact .data-list__item {
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+}
+
+/* Borderless variant */
+.data-list--borderless .data-list__item {
+  border-bottom: 0;
+}
+
+/* Grid layout (2 columns) */
+.data-list--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-5);
+}
+
+.data-list--grid .data-list__item {
+  grid-template-columns: 1fr;
+  gap: var(--spacing-1);
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .data-list__item {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-1);
+  }
+
+  .data-list__label {
+    font-size: 11px;
+  }
+
+  .data-list__value {
+    font-size: 13px;
+  }
+
+  /* Grid becomes single column on mobile */
+  .data-list--grid {
+    grid-template-columns: 1fr;
+  }
+}

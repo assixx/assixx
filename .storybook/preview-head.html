@@ -1,0 +1,31 @@
+<!--
+  Storybook Theme Integration:
+  - html.dark: Default to dark mode (matches initialGlobals in preview.js).
+    The decorator in preview.js toggles this class based on background selection.
+  - body background: base.css sets body { background: var(--main-bg) } as fallback.
+    Storybook addon overrides via .sb-show-main with solid colors (#000/#fafafa).
+  - body::after: base.css gradient overlay (--main-bg-gradient) stays enabled —
+    sits between body background and content via z-index: -100.
+-->
+<script>
+  // Apply dark class immediately to prevent FOUC.
+  // The decorator in preview.js toggles this class based on background selection.
+  document.documentElement.classList.add('dark');
+</script>
+
+<!-- Google Fonts - Outfit (same as production) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- FontAwesome (for icon examples) -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>

@@ -1,0 +1,125 @@
+/**
+ * Design System - Button System
+ *
+ * Purpose: Barrel export for all button styles
+ * Usage: @import 'design-system/primitives/buttons';
+ *
+ * Architecture:
+ * - Base defines structure & behavior
+ * - Variants define visual appearance
+ * - Effects add micro-interactions
+ *
+ * Import order matters:
+ * 1. Base (foundation)
+ * 2. Variants (build on base)
+ * 3. Effects (enhance variants)
+ */
+
+/* Foundation - Core button structure */
+@import './button.base.css';
+
+/* Variants - Visual appearances */
+@import './button.primary.css';
+@import './button.primary-first.css';
+@import './button.secondary.css';
+@import './button.danger.css';
+@import './button.success.css';
+@import './button.status.css';
+@import './button.warning.css';
+@import './button.info.css';
+@import './button.edit.css';
+@import './button.light.css';
+@import './button.dark.css';
+@import './button.manage.css';
+@import './button.link.css';
+@import './button.modal.css';
+@import './button.upload.css';
+
+/* Modifiers - Sizes and layouts */
+@import './button.sizes.css';
+
+/* Special - Floating action button */
+@import './button.float.css';
+
+/* Special - Action icon buttons (table actions) */
+@import './button.action-icons.css';
+
+/* Effects - Micro-interactions */
+@import './button.effects.css';
+
+/**
+ * QUICK REFERENCE:
+ *
+ * Primary Actions (Gradient):
+ *   <button class="btn btn-primary">Save</button>
+ *
+ * Hero CTAs (Transparent):
+ *   <button class="btn btn-primary-first">Register</button>
+ *
+ * Cancel/Back:
+ *   <button class="btn btn-cancel">Cancel</button>
+ *
+ * Delete/Remove:
+ *   <button class="btn btn-danger">Delete</button>
+ *
+ * Success:
+ *   <button class="btn btn-success">Approve</button>
+ *
+ * Status Toggle:
+ *   <button class="btn btn-status-active">Deactivate</button>
+ *   <button class="btn btn-status-inactive">Activate</button>
+ *
+ * Warning:
+ *   <button class="btn btn-warning">Caution</button>
+ *
+ * Info:
+ *   <button class="btn btn-info">Information</button>
+ *
+ * Light:
+ *   <button class="btn btn-light">Light</button>
+ *
+ * Dark:
+ *   <button class="btn btn-dark">Dark</button>
+ *
+ * Manage (Dashboard Actions):
+ *   <button class="btn btn-manage">Manage Items</button>
+ *
+ * Link:
+ *   <button class="btn btn-link">Learn More</button>
+ *
+ * Modal Submit (Glassmorphism):
+ *   <button class="btn btn-modal">Save Changes</button>
+ *
+ * Sizes:
+ *   <button class="btn btn-primary btn-sm">Small</button>
+ *   <button class="btn btn-primary btn-lg">Large</button>
+ *
+ * Full Width:
+ *   <button class="btn btn-primary btn-block">Full Width</button>
+ *
+ * With Icon:
+ *   <button class="btn btn-primary">
+ *     <svg>...</svg>
+ *     Upload
+ *   </button>
+ *
+ * Icon Only:
+ *   <button class="btn btn-primary btn-icon">
+ *     <svg>...</svg>
+ *   </button>
+ *
+ * Loading:
+ *   <button class="btn btn-primary" data-loading="true">
+ *     Saving...
+ *   </button>
+ *
+ * Disabled:
+ *   <button class="btn btn-primary" disabled>
+ *     Disabled
+ *   </button>
+ *
+ * Floating Action Button:
+ *   <button class="btn-float" aria-label="Add item">
+ *     <i class="fas fa-plus"></i>
+ *   </button>
+ */

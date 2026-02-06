@@ -1,0 +1,32 @@
+/**
+ * Design System - Token Barrel Export
+ *
+ * Purpose: Single import point for all design tokens
+ * Usage: @import 'design-system/tokens';
+ *
+ * Philosophy: Tokens are the single source of truth
+ * They define the visual language of the entire system
+ */
+
+/* Semantic color mappings */
+@import './colors.css';
+
+/* Shadow system (glassmorphism) */
+@import './shadows.css';
+
+/* Gradient definitions */
+@import './gradients.css';
+
+/* Animation & transition tokens */
+@import './animations.css';
+
+/* Form control tokens */
+@import './forms.css';
+
+/**
+ * NOTE: Base design tokens (spacing, typography, base colors)
+ * are already defined in /styles/tailwind.css @theme layer
+ *
+ * These tokens EXTEND the base layer with semantic and
+ * component-specific values
+ */

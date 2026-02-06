@@ -1,0 +1,27 @@
+/**
+ * Manage Admins - Page-Specific Styles
+ * All UI components use Design System - no custom styles needed
+ *
+ * Migration Complete: 2025-01-20
+ * - Container → Tailwind utilities (max-w-card mx-auto px-4)
+ * - Table → data-table (Design System)
+ * - Action Buttons → btn-* (Design System)
+ * - Floating Action Button → btn-float (Design System)
+ * - Modal → ds-modal (Design System)
+ * - Dropdown → dropdown (Design System)
+ * - Status Badge → badge--* (Design System)
+ * - Radio Buttons → choice-card (Design System)
+ * - Checkboxes → Native/Design System
+ * - Empty State → empty-state (Design System)
+ * - Button Group → Tailwind flex gap-4
+ * - Department Badge → badge--* (Design System)
+ * - Search Input → search-input (Design System)
+ * - Toggle Group → toggle-group (Design System)
+ *
+ * Status: 100% Design System compliant
+ * Previous: 405 lines of custom CSS (all unused)
+ * Current: 0 lines of custom CSS
+ *
+ * Backup: manage-admins.css.bak (2025-01-20)
+ * Container now defined globally in tailwind/components/container.css
+ */

@@ -1,0 +1,94 @@
+/**
+ * Design System - Button Info Variant
+ *
+ * Purpose: Informational actions, neutral information display
+ * Use Case: Help buttons, information modals, tooltips triggers
+ *
+ * Color: Light blue/cyan with high contrast
+ * Reference: Bootstrap info pattern, adapted to Material Design
+ */
+
+.btn-info {
+  /* Shadow */
+  box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
+  border: 1px solid rgb(0 172 193); /* Solid cyan border - avatar style */
+
+  background: linear-gradient(
+    145deg,
+    rgb(129 212 250 / 11%),
+    rgb(0 176 255 / 15%)
+  ); /* Subtle cyan gradient */
+
+  /* Padding - matches other variants */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* Colors - Cyan/Light Blue */
+  color: var(--color-text-primary);
+}
+
+/* Hover State - Brighten the gradient */
+.btn-info:hover:not(:disabled) {
+  box-shadow: var(--shadow-btn-info-hover, 0 4px 12px rgb(0 188 212 / 40%));
+  background: linear-gradient(
+    145deg,
+    rgb(129 212 250 / 18%),
+    rgb(0 176 255 / 25%)
+  ); /* Intensiver */
+}
+
+/* Active/Pressed State */
+.btn-info:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-info-active, 0 1px 4px rgb(0 188 212 / 30%));
+  background: #0097a7; /* Cyan 700 */
+}
+
+/* Focus State */
+.btn-info:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 3px rgb(0 188 212 / 20%),
+    var(--shadow-btn-info);
+}
+
+/* Disabled State */
+.btn-info:disabled,
+.btn-info.disabled {
+  opacity: 60%;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: #b2ebf2; /* Cyan 100 */
+
+  color: rgb(255 255 255 / 50%);
+}
+
+/* Loading State */
+.btn-info.loading {
+  pointer-events: none;
+  color: transparent;
+}
+
+.btn-info.loading::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  animation: spin 0.6s linear infinite;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid var(--color-text-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+
+  width: 16px;
+  height: 16px;
+  content: '';
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

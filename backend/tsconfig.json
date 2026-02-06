@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Backend Configuration - Node.js with TypeScript",
+
+  // ============================================================
+  // EXTENDS BASE CONFIGURATION
+  // Inherits all strict rules from tsconfig.base.json
+  // ============================================================
+  "extends": "../tsconfig.base.json",
+
+  "compilerOptions": {
+    // ============================================================
+    // NODE.JS MODULE SYSTEM
+    // Best Practice 2025: Use NodeNext for Node.js projects
+    //
+    // NodeNext understands:
+    // - package.json "exports" field
+    // - package.json "type": "module"
+    // - .mts (ES Module) vs .cts (CommonJS)
+    // - Requires .js extensions in imports (ES Module standard)
+    // ============================================================
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+
+    // ============================================================
+    // TARGET LIBRARY
+    // Node.js does NOT need DOM types
+    // ============================================================
+    "lib": ["ES2022"],
+
+    // ============================================================
+    // OUTPUT CONFIGURATION
+    // ============================================================
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    // ============================================================
+    // PROJECT REFERENCES (Performance Optimization)
+    // Best Practice 2025: Enable composite for incremental builds
+    //
+    // composite: true enables:
+    // - Incremental compilation (faster rebuilds)
+    // - Declaration files (.d.ts) for type sharing
+    // - Better IDE performance
+    // ============================================================
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "incremental": true,
+
+    // ============================================================
+    // DECORATORS (for future ORM/DI frameworks)
+    // ============================================================
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // ============================================================
+    // ISOLATED MODULES
+    // Each file can be transpiled independently (faster builds)
+    // ============================================================
+    "isolatedModules": true,
+
+    // ============================================================
+    // PATH MAPPING
+    // Enables cleaner imports: '@models/user' instead of '../../models/user'
+    // ============================================================
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@controllers/*": ["controllers/*"],
+      "@models/*": ["models/*"],
+      "@middleware/*": ["middleware/*"],
+      "@services/*": ["services/*"],
+      "@utils/*": ["utils/*"],
+      "@types/*": ["types/*"]
+    },
+
+    // ============================================================
+    // TYPE DEFINITIONS
+    // ============================================================
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  },
+
+  // ============================================================
+  // INCLUDE/EXCLUDE PATTERNS
+  // ============================================================
+  "include": ["src/**/*"],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/__tests__/**/*",
+    "src/**/__tests__/**/*",
+    "src/**/*.test.ts",
+    "src/routes/v1/**/*"
+  ]
+}

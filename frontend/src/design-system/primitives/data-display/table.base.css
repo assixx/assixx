@@ -1,0 +1,162 @@
+/**
+ * Table Base
+ *
+ * Foundation for all table components
+ * Source: Replaces bootstrap-tables.css with Design System patterns
+ *
+ * Usage:
+ * <table class="data-table">
+ *   <thead>
+ *     <tr>
+ *       <th>Header 1</th>
+ *       <th>Header 2</th>
+ *     </tr>
+ *   </thead>
+ *   <tbody>
+ *     <tr>
+ *       <td>Data 1</td>
+ *       <td>Data 2</td>
+ *     </tr>
+ *   </tbody>
+ * </table>
+ */
+
+/* ========== BASE TABLE CONTAINER ========== */
+
+.data-table {
+  border-collapse: collapse;
+
+  background-color: transparent;
+
+  width: 100%;
+  color: var(--color-text-primary);
+
+  /* Data table optimization: 14px for better readability (updated from 12px) */
+  font-size: 14px;
+}
+
+/* ========== TABLE CELLS ========== */
+
+.data-table th,
+.data-table td {
+  vertical-align: top;
+  border-bottom: 1px solid var(--glass-border);
+  padding: var(--spacing-4) var(--spacing-4);
+  text-align: left;
+}
+
+/* ========== TABLE HEADER ========== */
+
+.data-table thead th {
+  /* Remove top border on first row */
+  border-top: 0;
+  border-bottom: 1px solid var(--color-glass-border);
+
+  /* Glassmorphic header background */
+  background: var(--glass-bg-hover);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ========== TABLE BODY ========== */
+
+.data-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+/* Default subtle hover (can be overridden by .data-table--hover) */
+.data-table tbody tr:hover {
+  background: var(--glass-bg);
+}
+
+/* Multiple tbody support (rare, but Bootstrap had it) */
+.data-table tbody + tbody {
+  border-top: 2px solid var(--glass-border);
+}
+
+/* ========== RESPONSIVE WRAPPER ========== */
+
+/**
+ * .table-responsive - Horizontal scroll wrapper for wide tables
+ *
+ * USAGE:
+ *   <div class="table-responsive">
+ *     <table class="data-table">...</table>
+ *   </div>
+ *
+ * IMPORTANT - Tooltip Behavior:
+ * - Tooltips with position:absolute WILL be clipped by overflow:auto
+ * - For tooltips inside tables, use native title="" attribute OR
+ * - Use .tooltip--fixed class with JavaScript positioning
+ *
+ * WHY overflow-x-auto clips tooltips:
+ * CSS Spec: When overflow-x is not 'visible', overflow-y computes to 'auto'
+ * This creates a new stacking context that clips ALL absolutely positioned children
+ */
+.table-responsive {
+  display: block;
+
+  position: relative;
+
+  width: 100%;
+
+  overflow-x: auto;
+  scrollbar-color: var(--color-glass-border-hover) transparent;
+  scrollbar-width: thin;
+
+  /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: var(--color-glass-border-hover);
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: var(--color-glass-border);
+}
+
+/* Ensure table doesn't shrink below content width */
+.table-responsive .data-table {
+  min-width: max-content;
+}
+
+/* ========== TEXT ALIGNMENT UTILITIES ========== */
+
+.data-table .text-center {
+  text-align: center;
+}
+
+.data-table .text-right {
+  text-align: right;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .data-table {
+    font-size: 13px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--spacing-3) var(--spacing-2);
+  }
+
+  .data-table thead th {
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Frontend (formatted separately with Tailwind plugin)
+frontend/
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+*.min.js
+*.min.css
+
+# Legacy v1 Routes (deprecated)
+backend/src/routes/v1/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env*
+!.env.example
+
+# Test coverage
+coverage/
+.nyc_output
+
+# IDE
+.vscode/
+.idea/
+
+# Database
+*.sqlite
+*.db
+
+# Uploaded files
+uploads/
+
+# Generated files
+eslint-report.json
+
+# External libraries
+frontend/src/styles/lib/
+frontend/src/scripts/lib/
+
+# Package lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+

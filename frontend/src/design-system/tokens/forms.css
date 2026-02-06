@@ -1,0 +1,56 @@
+/**
+ * Design System - Form Field Tokens
+ *
+ * Zweck: Semantische Layer für Eingabefelder (Inputs, Textareas, Selects)
+ * Philosophie: Token-first – alle Form-Styles greifen auf diese Werte zu.
+ *
+ * Quelle: Bestehende Glassmorphism-Werte aus variables-dark.css
+ *         und globale Farb-/Typografie-Token aus tailwind.css.
+ */
+
+:root {
+  /* Grundfarben */
+  --form-field-text: var(--color-text-primary);
+  --form-field-placeholder: var(--color-text-placeholder);
+  --form-field-helper: var(--color-text-secondary);
+  --form-field-disabled-text: rgb(0 0 0 / 40%);
+
+  /* Hintergründe */
+  --form-field-bg: var(--glass-form-bg);
+  --form-field-bg-hover: var(--glass-form-bg-hover);
+  --form-field-bg-focus: var(--glass-form-bg-focus);
+  --form-field-bg-disabled: rgb(0 0 0 / 4%);
+
+  /* Rahmen & Ringe */
+  --form-field-border: var(--glass-form-border);
+  --form-field-border-hover: 1px solid rgb(0 0 0 / 15%);
+  --form-field-border-focus: var(--glass-form-border-focus);
+  --form-field-border-error: 1px solid var(--color-danger);
+  --form-field-border-success: 1px solid var(--color-success);
+  --form-field-focus-ring: 0 0 0 3px rgb(33 150 243 / 15%);
+
+  /* Typografie & Abstände */
+  --form-field-font-size: var(--input-font-size);
+  --form-field-label-size: 0.875rem; /* 14px */
+  --form-field-label-weight: var(--font-weight-medium);
+  --form-field-padding-x: var(--input-padding-x);
+  --form-field-padding-y: var(--input-padding-y);
+  --form-field-radius: var(--input-border-radius);
+  --form-field-gap: var(--spacing-2);
+
+  /* Interaktion */
+  --form-field-transition: var(--transition-colors);
+  --form-field-transition-shadow: var(--transition-shadow);
+
+  /* Statusfarben für Hilfetexte */
+  --form-field-text-error: var(--color-danger);
+  --form-field-text-success: var(--color-success);
+  --form-field-text-warning: var(--color-warning);
+}
+
+/* ========== DARK MODE FORM OVERRIDES ========== */
+html.dark {
+  --form-field-disabled-text: rgb(255 255 255 / 60%);
+  --form-field-bg-disabled: rgb(255 255 255 / 4%);
+  --form-field-border-hover: 1px solid rgb(255 255 255 / 20%);
+}

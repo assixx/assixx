@@ -1,0 +1,75 @@
+/**
+ * Design System - Semantic Color Tokens
+ *
+ * Purpose: Maps Material Design colors to semantic meanings
+ * Philosophy: Best Practice 2025 - Semantic naming over presentational
+ *
+ * Reference:
+ * - Microsoft Fluent: Semantic color system
+ * - Google Material: Color roles
+ * - Tailwind Colors: Already in tailwind.css @theme
+ *
+ * NOTE: Base colors (blue-500, red-500, etc.) are in tailwind.css
+ * These tokens provide SEMANTIC mappings for components
+ */
+
+:root {
+  /* ========== PRIMARY (Brand Blue) ========== */
+  --color-primary: var(--color-blue-500); /* #2196f3 - Main brand color */
+  --color-primary-hover: var(
+    --color-blue-700
+  ); /* #1976d2 - Hover/Active state */
+
+  --color-primary-light: var(--color-blue-400); /* #42a5f5 - Lighter variant */
+  --color-primary-dark: var(--color-blue-800); /* #1565c0 - Darker variant */
+
+  /* Alpha variants for overlays and highlights */
+  --color-primary-alpha-5: #2196f30d; /* 5% - Subtle hover (tables, cards) */
+  --color-primary-alpha-10: rgb(33 150 243 / 10%); /* 10% - Subtle highlights */
+  --color-primary-alpha-15: rgb(
+    33 150 243 / 15%
+  ); /* 15% - Active backgrounds */
+
+  --color-primary-alpha-30: rgb(33 150 243 / 30%); /* 30% - Active borders */
+
+  /* ========== DANGER (Destructive Actions) ========== */
+  --color-danger: var(--color-red-500); /* #f44336 - Delete, Remove */
+  --color-danger-hover: var(--color-red-600); /* #e53935 - Hover state */
+
+  /* ========== SUCCESS (Positive Actions) ========== */
+  --color-success: var(--color-green-500); /* #4caf50 - Success, Confirm */
+  --color-success-hover: var(--color-green-600); /* #43a047 - Hover state */
+
+  /* ========== WARNING (Caution) ========== */
+  --color-warning: var(--color-orange-500); /* #ff9800 - Warning */
+  --color-warning-hover: var(--color-orange-600); /* #fb8c00 - Hover state */
+
+  /* ========== STATUS TOGGLES (Custom) ========== */
+  /* Active → Deactivate (Deep Red) */
+  --color-status-active: #c62828; /* Deep Red - Show when active */
+  --color-status-active-hover: #b71c1c; /* Darker red on hover */
+
+  /* Inactive → Activate (Green) */
+  --color-status-inactive: #28a745; /* Green - Show when inactive */
+  --color-status-inactive-hover: #218838; /* Darker green on hover */
+
+  /* ========== NEUTRALS (Grayscale Semantics) ========== */
+  /* NOTE: --color-text-primary/secondary are defined in variables-light/dark.css */
+  --color-border: var(--color-gray-300); /* Borders (light) */
+  --color-border-hover: rgb(33 150 243 / 25%); /* Blue tint hover borders */
+
+  /* ========== SURFACE (Glassmorphism) ========== */
+  /* Light mode: dark overlays on light surfaces */
+  --color-glass-border: rgb(0 0 0 / 8%); /* Glass border */
+  --color-glass-border-hover: rgb(0 0 0 / 15%); /* Hover border */
+}
+
+/* ========== DARK MODE OVERRIDES ========== */
+html.dark {
+  --color-border: var(--color-gray-800); /* #424242 - Borders */
+  --color-border-hover: #a9d9ff54; /* Blue tint ~33% opacity */
+
+  /* Glassmorphism: white overlays on dark surfaces */
+  --color-glass-border: rgb(255 255 255 / 10%);
+  --color-glass-border-hover: rgb(255 255 255 / 20%);
+}
