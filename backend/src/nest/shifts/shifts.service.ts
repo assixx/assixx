@@ -9,6 +9,7 @@
  */
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -708,26 +709,42 @@ export class ShiftsService {
       `Creating favorite for user ${userId} in tenant ${tenantId}`,
     );
 
-    const result = await this.databaseService.query<{ id: number }>(
-      `INSERT INTO shift_favorites (
-        tenant_id, user_id, name, area_id, area_name, department_id, department_name,
-        machine_id, machine_name, team_id, team_name
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING id`,
-      [
-        tenantId,
-        userId,
-        dto.name,
-        dto.areaId,
-        dto.areaName,
-        dto.departmentId,
-        dto.departmentName,
-        dto.machineId,
-        dto.machineName,
-        dto.teamId,
-        dto.teamName,
-      ],
-    );
+    let result: { id: number }[];
+    try {
+      result = await this.databaseService.query<{ id: number }>(
+        `INSERT INTO shift_favorites (
+          tenant_id, user_id, name, area_id, area_name, department_id, department_name,
+          machine_id, machine_name, team_id, team_name
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING id`,
+        [
+          tenantId,
+          userId,
+          dto.name,
+          dto.areaId,
+          dto.areaName,
+          dto.departmentId,
+          dto.departmentName,
+          dto.machineId,
+          dto.machineName,
+          dto.teamId,
+          dto.teamName,
+        ],
+      );
+    } catch (error: unknown) {
+      // PostgreSQL unique_violation = 23505 (constraint: tenant_id, user_id, name)
+      if (
+        error !== null &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code: string }).code === '23505'
+      ) {
+        throw new ConflictException(
+          `A favorite with the name "${dto.name}" already exists`,
+        );
+      }
+      throw error;
+    }
 
     const favoriteId = result[0]?.id ?? 0;
     const favorites = await this.databaseService.query<DbFavoriteRow>(

@@ -6,6 +6,7 @@
  */
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
   NotImplementedException,
@@ -688,6 +689,54 @@ describe('ShiftsService – DB-mocked methods', () => {
 
       expect(result).toHaveProperty('name', 'My Favorite');
       expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws ConflictException on duplicate favorite name', async () => {
+      const dbError = new Error(
+        'duplicate key value violates unique constraint',
+      );
+      (dbError as unknown as { code: string }).code = '23505';
+      mockDb.query.mockRejectedValueOnce(dbError);
+
+      await expect(
+        service.createFavorite(
+          {
+            name: 'My Favorite',
+            areaId: 1,
+            areaName: 'Area 1',
+            departmentId: 10,
+            departmentName: 'Engineering',
+            machineId: 0,
+            machineName: '',
+            teamId: 3,
+            teamName: 'Team Alpha',
+          } as never,
+          42,
+          5,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rethrows non-constraint DB errors', async () => {
+      mockDb.query.mockRejectedValueOnce(new Error('connection refused'));
+
+      await expect(
+        service.createFavorite(
+          {
+            name: 'My Favorite',
+            areaId: 1,
+            areaName: 'Area 1',
+            departmentId: 10,
+            departmentName: 'Engineering',
+            machineId: 0,
+            machineName: '',
+            teamId: 3,
+            teamName: 'Team Alpha',
+          } as never,
+          42,
+          5,
+        ),
+      ).rejects.toThrow('connection refused');
     });
   });
 
