@@ -583,6 +583,12 @@ export class TokenManager {
     });
   }
 
+  /**
+   * Timer interval for UI countdown.
+   * Must be 1s — the header shows a MM:SS countdown that users expect to tick live.
+   * The isPageVisible guard in tick() already skips work for background tabs.
+   * Cost: ~0.01ms per tick = 18ms total over 30 min token lifetime. Negligible.
+   */
   private getOptimalInterval(): number {
     return 1000;
   }

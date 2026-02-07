@@ -256,9 +256,7 @@ export class ApiClient {
     config: ApiConfig = {},
   ): Promise<T> {
     const method = (options.method ?? 'GET').toUpperCase();
-    const perfName = `api:${method}:${endpoint}`;
-    const endPerf = perf.start(perfName, { method, endpoint });
-
+    const endPerf = perf.start(`api:${method}:${endpoint}`, { method, endpoint });
     const baseApiPath = '/api/v2';
     const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
     const headers = this.buildHeaders(options, config);
