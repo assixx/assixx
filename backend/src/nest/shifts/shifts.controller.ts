@@ -49,29 +49,8 @@ import type {
 } from './shifts.service.js';
 import { ShiftsService } from './shifts.service.js';
 
-// ============================================================
-// RESPONSE TYPES
-// ============================================================
-
-interface SuccessResponse<T = unknown> {
-  success: true;
-  data: T;
-  message?: string;
-}
-
-interface PaginatedResponse<T> extends SuccessResponse<T> {
-  pagination: {
-    currentPage: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-  };
-}
-
-interface MessageOnlyResponse {
-  success: true;
-  message: string;
-}
+// ResponseInterceptor wraps ALL responses in { success, data, timestamp } (ADR-007).
+// Controllers return raw data only — NO manual { success, data } wrapping.
 
 @Controller('shifts')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -90,12 +69,19 @@ export class ShiftsController {
   async listShifts(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryShiftsDto,
-  ): Promise<PaginatedResponse<ShiftResponse[]>> {
+  ): Promise<{
+    items: ShiftResponse[];
+    pagination: {
+      currentPage: number;
+      pageSize: number;
+      totalItems: number;
+      totalPages: number;
+    };
+  }> {
     this.logger.debug(`Listing shifts for tenant ${user.tenantId}`);
     const shifts = await this.shiftsService.listShifts(user.tenantId, query);
     return {
-      success: true,
-      data: shifts,
+      items: shifts,
       pagination: {
         currentPage: query.page,
         pageSize: query.limit,
@@ -113,13 +99,9 @@ export class ShiftsController {
   async listSwapRequests(
     @CurrentUser() user: JwtPayload,
     @Query() query: QuerySwapRequestsDto,
-  ): Promise<SuccessResponse<SwapRequestResponse[]>> {
+  ): Promise<SwapRequestResponse[]> {
     this.logger.debug(`Listing swap requests for tenant ${user.tenantId}`);
-    const requests = await this.shiftsService.listSwapRequests(
-      user.tenantId,
-      query,
-    );
-    return { success: true, data: requests };
+    return await this.shiftsService.listSwapRequests(user.tenantId, query);
   }
 
   /**
@@ -131,14 +113,13 @@ export class ShiftsController {
   async createSwapRequest(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateSwapRequestDto,
-  ): Promise<SuccessResponse<SwapRequestResponse>> {
+  ): Promise<SwapRequestResponse> {
     this.logger.debug(`Creating swap request for user ${user.id}`);
-    const request = await this.shiftsService.createSwapRequest(
+    return await this.shiftsService.createSwapRequest(
       dto,
       user.tenantId,
       user.id,
     );
-    return { success: true, data: request };
   }
 
   /**
@@ -151,15 +132,14 @@ export class ShiftsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateSwapRequestStatusDto,
-  ): Promise<SuccessResponse<{ message: string }>> {
+  ): Promise<{ message: string }> {
     this.logger.debug(`Updating swap request ${id} status`);
-    const result = await this.shiftsService.updateSwapRequestStatus(
+    return await this.shiftsService.updateSwapRequestStatus(
       id,
       dto,
       user.tenantId,
       user.id,
     );
-    return { success: true, data: result };
   }
 
   /**
@@ -170,18 +150,14 @@ export class ShiftsController {
   async getOvertimeReport(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryOvertimeDto,
-  ): Promise<SuccessResponse<Record<string, unknown>>> {
+  ): Promise<Record<string, unknown>> {
     this.logger.debug(`Getting overtime report for tenant ${user.tenantId}`);
     const filters = {
       userId: query.userId ?? user.id,
       startDate: query.startDate,
       endDate: query.endDate,
     };
-    const report = await this.shiftsService.getOvertimeReport(
-      filters,
-      user.tenantId,
-    );
-    return { success: true, data: report };
+    return await this.shiftsService.getOvertimeReport(filters, user.tenantId);
   }
 
   /**
@@ -191,13 +167,9 @@ export class ShiftsController {
   @Get('favorites')
   async listFavorites(
     @CurrentUser() user: JwtPayload,
-  ): Promise<SuccessResponse<FavoriteResponse[]>> {
+  ): Promise<FavoriteResponse[]> {
     this.logger.debug(`Listing favorites for user ${user.id}`);
-    const favorites = await this.shiftsService.listFavorites(
-      user.tenantId,
-      user.id,
-    );
-    return { success: true, data: favorites };
+    return await this.shiftsService.listFavorites(user.tenantId, user.id);
   }
 
   /**
@@ -209,18 +181,9 @@ export class ShiftsController {
   async createFavorite(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateFavoriteDto,
-  ): Promise<SuccessResponse<FavoriteResponse>> {
+  ): Promise<FavoriteResponse> {
     this.logger.debug(`Creating favorite for user ${user.id}`);
-    const favorite = await this.shiftsService.createFavorite(
-      dto,
-      user.tenantId,
-      user.id,
-    );
-    return {
-      success: true,
-      data: favorite,
-      message: 'Favorite created successfully',
-    };
+    return await this.shiftsService.createFavorite(dto, user.tenantId, user.id);
   }
 
   /**
@@ -231,10 +194,10 @@ export class ShiftsController {
   async deleteFavorite(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
-  ): Promise<MessageOnlyResponse> {
+  ): Promise<{ message: string }> {
     this.logger.debug(`Deleting favorite ${id}`);
     await this.shiftsService.deleteFavorite(id, user.tenantId, user.id);
-    return { success: true, message: 'Favorite deleted successfully' };
+    return { message: 'Favorite deleted successfully' };
   }
 
   /**
@@ -245,19 +208,14 @@ export class ShiftsController {
   async getMyCalendarShifts(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryMyCalendarShiftsDto,
-  ): Promise<SuccessResponse<CalendarShiftResponse[]>> {
+  ): Promise<CalendarShiftResponse[]> {
     this.logger.debug(`Getting calendar shifts for user ${user.id}`);
-    const shifts = await this.shiftsService.getUserCalendarShifts(
+    return await this.shiftsService.getUserCalendarShifts(
       user.id,
       user.tenantId,
       query.startDate,
       query.endDate,
     );
-    return {
-      success: true,
-      data: shifts,
-      message: 'User shifts retrieved successfully',
-    };
   }
 
   /**
@@ -302,16 +260,9 @@ export class ShiftsController {
   async getShiftPlan(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryShiftPlanDto,
-  ): Promise<
-    SuccessResponse<{ plan?: unknown; shifts: unknown[]; notes: unknown[] }>
-  > {
+  ): Promise<{ plan?: unknown; shifts: unknown[]; notes: unknown[] }> {
     this.logger.debug(`Getting shift plan for tenant ${user.tenantId}`);
-    const result = await this.shiftsService.getShiftPlan(query, user.tenantId);
-    return {
-      success: true,
-      data: result,
-      message: 'Shift plan retrieved successfully',
-    };
+    return await this.shiftsService.getShiftPlan(query, user.tenantId);
   }
 
   /**
@@ -324,14 +275,13 @@ export class ShiftsController {
   async createShiftPlan(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateShiftPlanDto,
-  ): Promise<SuccessResponse<ShiftPlanResponse>> {
+  ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Creating shift plan for tenant ${user.tenantId}`);
-    const result = await this.shiftsService.createShiftPlan(
+    return await this.shiftsService.createShiftPlan(
       dto,
       user.tenantId,
       user.id,
     );
-    return { success: true, data: result };
   }
 
   /**
@@ -343,19 +293,14 @@ export class ShiftsController {
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateShiftPlanDto,
-  ): Promise<SuccessResponse<ShiftPlanResponse>> {
+  ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Updating shift plan ${uuid}`);
-    const result = await this.shiftsService.updateShiftPlanByUuid(
+    return await this.shiftsService.updateShiftPlanByUuid(
       uuid,
       dto,
       user.tenantId,
       user.id,
     );
-    return {
-      success: true,
-      data: result,
-      message: 'Shift plan updated successfully',
-    };
   }
 
   /**
@@ -368,19 +313,14 @@ export class ShiftsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateShiftPlanDto,
-  ): Promise<SuccessResponse<ShiftPlanResponse>> {
+  ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Updating shift plan ${id}`);
-    const result = await this.shiftsService.updateShiftPlan(
+    return await this.shiftsService.updateShiftPlan(
       id,
       dto,
       user.tenantId,
       user.id,
     );
-    return {
-      success: true,
-      data: result,
-      message: 'Shift plan updated successfully',
-    };
   }
 
   /**
@@ -392,10 +332,10 @@ export class ShiftsController {
   async deleteShiftPlanByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
-  ): Promise<MessageOnlyResponse> {
+  ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift plan ${uuid}`);
     await this.shiftsService.deleteShiftPlanByUuid(uuid, user.tenantId);
-    return { success: true, message: 'Shift plan deleted successfully' };
+    return { message: 'Shift plan deleted successfully' };
   }
 
   /**
@@ -408,10 +348,10 @@ export class ShiftsController {
   async deleteShiftPlan(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
-  ): Promise<MessageOnlyResponse> {
+  ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift plan ${id}`);
     await this.shiftsService.deleteShiftPlan(id, user.tenantId);
-    return { success: true, message: 'Shift plan deleted successfully' };
+    return { message: 'Shift plan deleted successfully' };
   }
 
   /**
@@ -422,10 +362,9 @@ export class ShiftsController {
   async getShiftById(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
-  ): Promise<SuccessResponse<ShiftResponse>> {
+  ): Promise<ShiftResponse> {
     this.logger.debug(`Getting shift ${id}`);
-    const shift = await this.shiftsService.getShiftById(id, user.tenantId);
-    return { success: true, data: shift };
+    return await this.shiftsService.getShiftById(id, user.tenantId);
   }
 
   /**
@@ -438,14 +377,9 @@ export class ShiftsController {
   async createShift(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateShiftDto,
-  ): Promise<SuccessResponse<ShiftResponse>> {
+  ): Promise<ShiftResponse> {
     this.logger.debug(`Creating shift for tenant ${user.tenantId}`);
-    const shift = await this.shiftsService.createShift(
-      dto,
-      user.tenantId,
-      user.id,
-    );
-    return { success: true, data: shift };
+    return await this.shiftsService.createShift(dto, user.tenantId, user.id);
   }
 
   /**
@@ -458,15 +392,14 @@ export class ShiftsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateShiftDto,
-  ): Promise<SuccessResponse<ShiftResponse>> {
+  ): Promise<ShiftResponse> {
     this.logger.debug(`Updating shift ${id}`);
-    const shift = await this.shiftsService.updateShift(
+    return await this.shiftsService.updateShift(
       id,
       dto,
       user.tenantId,
       user.id,
     );
-    return { success: true, data: shift };
   }
 
   /**
@@ -484,7 +417,6 @@ export class ShiftsController {
     this.logger.debug(
       `Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`,
     );
-    // ResponseInterceptor wraps in { success, data, timestamp }
     return await this.shiftsService.deleteShiftsByWeek(
       teamId,
       startDate,
@@ -502,13 +434,9 @@ export class ShiftsController {
   async deleteShiftsByTeam(
     @Query('teamId', ParseIntPipe) teamId: number,
     @CurrentUser() user: JwtPayload,
-  ): Promise<SuccessResponse<{ shiftsDeleted: number }>> {
+  ): Promise<{ shiftsDeleted: number }> {
     this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
-    const result = await this.shiftsService.deleteShiftsByTeam(
-      teamId,
-      user.tenantId,
-    );
-    return { success: true, data: result };
+    return await this.shiftsService.deleteShiftsByTeam(teamId, user.tenantId);
   }
 
   /**
@@ -520,13 +448,8 @@ export class ShiftsController {
   async deleteShift(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
-  ): Promise<SuccessResponse<{ message: string }>> {
+  ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift ${id}`);
-    const result = await this.shiftsService.deleteShift(
-      id,
-      user.tenantId,
-      user.id,
-    );
-    return { success: true, data: result };
+    return await this.shiftsService.deleteShift(id, user.tenantId, user.id);
   }
 }
