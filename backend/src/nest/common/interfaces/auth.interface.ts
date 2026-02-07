@@ -18,6 +18,8 @@ export interface NestAuthUser extends BaseAuthUser {
   activeRole: UserRole;
   /** Whether user is currently viewing as different role */
   isRoleSwitched: boolean;
+  /** Full access flag — root always true, admin can be granted/revoked */
+  hasFullAccess: boolean;
   /** Department ID (for employees) */
   departmentId?: number;
   /** Team ID (for employees) */

@@ -2,8 +2,28 @@
 
 ## Overview
 
-Bottom-Up implementation: **DB → Backend → Frontend**
+Bottom-Up implementation: **DB → Backend → Enforcement → Frontend**
 Per-user, per-feature/module permission control (canRead, canWrite, canDelete).
+
+### Zwei Säulen: Management + Enforcement
+
+| Säule                         | Was                                         | Status  |
+| ----------------------------- | ------------------------------------------- | ------- |
+| **Management** (Phase 1–5, 7) | CRUD: Permissions in DB speichern/lesen, UI | ✅ Done |
+| **Enforcement** (Phase 5b)    | Guard: Permissions bei jedem Request prüfen | ✅ Done |
+
+Ohne Enforcement ist das System nur ein Notizbuch — Permissions werden gespeichert,
+aber niemand prüft sie. Phase 5b schließt diese Lücke.
+
+### Guard Execution Order (alle global)
+
+```
+Request → JwtAuthGuard → RolesGuard → PermissionGuard → Controller
+              ↓              ↓              ↓
+          ADR-005        ADR-012        ADR-020
+       Authenticate    Check Role    Check Feature
+                                     Permission
+```
 
 ### Architektur-Entscheidung: Dezentrales Registry Pattern
 
@@ -18,6 +38,12 @@ common/permission-registry/
   ├── permission-registry.service.ts    ← register() + getAll() (Singleton)
   └── permission-registry.module.ts     ← @Global()
 
+common/decorators/
+  └── require-permission.decorator.ts   ← @RequirePermission(feature, module, action)
+
+common/guards/
+  └── permission.guard.ts              ← Global Guard, liest @RequirePermission Metadata
+
 blackboard/
   ├── blackboard.permissions.ts         ← const BLACKBOARD_PERMISSIONS
   └── blackboard-permission.registrar.ts ← OnModuleInit → register()
@@ -27,7 +53,7 @@ calendar/
   └── calendar-permission.registrar.ts  ← OnModuleInit → register()
 
 user-permissions/
-  ├── user-permissions.service.ts       ← Injects PermissionRegistry, kennt KEINE Features
+  ├── user-permissions.service.ts       ← CRUD + hasPermission() — kennt KEINE Features
   ├── user-permissions.controller.ts
   └── user-permissions.module.ts
 ```
@@ -47,15 +73,16 @@ user-permissions/
 
 ### ADRs
 
-| ADR                                  | Relevant für                                                                |
-| ------------------------------------ | --------------------------------------------------------------------------- |
-| `ADR-005` Custom JWT Guard           | Phase 5: `@CurrentUser()`, `@TenantId()` Decorators                         |
-| `ADR-006` ClsService Tenant Context  | Phase 4: Tenant-Isolation, CLS → `tenantTransaction()`                      |
-| `ADR-007` ResponseInterceptor        | Phase 5: Controller gibt Raw-Data zurück, KEIN `{ success, data }` wrapping |
-| `ADR-012` Fail-Closed RBAC           | Phase 5: `@Roles('admin')` Guard                                            |
-| `ADR-014` node-pg-migrate            | Phase 1: Migration-Runner, `up`/`down` Pattern                              |
-| `ADR-018` Vitest Single Runner       | Phase 6+8: `--project unit` vs `--project api`                              |
-| `ADR-019` Multi-Tenant RLS Isolation | Phase 1+4: RLS-Policy, `tenantTransaction()`, Dual-User-Model               |
+| ADR                                  | Relevant für                                                                        |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `ADR-005` Custom JWT Guard           | Phase 5: `@CurrentUser()`, `@TenantId()` Decorators                                 |
+| `ADR-006` ClsService Tenant Context  | Phase 4+5b: Tenant-Isolation, CLS → `tenantTransaction()`                           |
+| `ADR-007` ResponseInterceptor        | Phase 5: Controller gibt Raw-Data zurück, KEIN `{ success, data }` wrapping         |
+| `ADR-012` Fail-Closed RBAC           | Phase 5: `@Roles('admin')` Guard                                                    |
+| `ADR-014` node-pg-migrate            | Phase 1: Migration-Runner, `up`/`down` Pattern                                      |
+| `ADR-018` Vitest Single Runner       | Phase 6+8: `--project unit` vs `--project api`                                      |
+| `ADR-019` Multi-Tenant RLS Isolation | Phase 1+4+5b: RLS-Policy, `tenantTransaction()`, Dual-User-Model                    |
+| `ADR-020` Per-User Feature Perms     | Phase 2-5b: Dezentrales Registry, Guard-Enforcement, `@RequirePermission` Decorator |
 
 ### Pattern-Vorlagen (existierender Code)
 
@@ -123,6 +150,24 @@ export class KvpPermissionRegistrar implements OnModuleInit {
 
 **File 3:** `backend/src/nest/kvp/kvp.module.ts` — **nur** `KvpPermissionRegistrar` zu `providers` hinzufügen.
 
+**File 4:** Controller-Endpoints mit `@RequirePermission()` annotieren:
+
+```typescript
+// In kvp.controller.ts:
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
+
+const KVP_FEATURE = 'kvp';
+const KVP_SUGGESTIONS = 'kvp-suggestions';
+
+@Get('suggestions')
+@RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+listSuggestions() { ... }
+
+@Post('suggestions')
+@RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+createSuggestion() { ... }
+```
+
 **Warum funktioniert das automatisch?**
 
 1. **Registry:** `KvpPermissionRegistrar.onModuleInit()` registriert die Permissions beim Start
@@ -130,6 +175,7 @@ export class KvpPermissionRegistrar implements OnModuleInit {
 3. **GET Endpoint:** Fragt `PermissionRegistryService.getAll()` → bekommt alle registrierten Kategorien
 4. **PUT Endpoint:** Validiert gegen Registry → neue Kategorie wird akzeptiert
 5. **Frontend:** Rendert dynamisch aus SSR-Daten — keine Hardcoded UI
+6. **Enforcement:** `PermissionGuard` liest `@RequirePermission` Metadata → prüft `hasPermission()` in DB
 
 ### Existierende Feature-Codes (features-Tabelle)
 
@@ -230,12 +276,12 @@ COMMENT ON TABLE user_feature_permissions IS 'Per-user, per-feature/module permi
 
 **Definition of Done:**
 
-- [ ] Migration runs without errors (`up` + `down`)
-- [ ] RLS policy `tenant_isolation` existiert auf `user_feature_permissions`
-- [ ] `FORCE ROW LEVEL SECURITY` aktiv (auch Table Owner gefiltert)
-- [ ] GRANTs für `app_user` gesetzt (SELECT, INSERT, UPDATE, DELETE + Sequence)
-- [ ] Table visible in `\dt`
-- [ ] Unique constraint prevents duplicate (tenant_id, user_id, feature_code, module_code)
+- [x] Migration runs without errors (`up` + `down`) ✅ 2026-02-07
+- [x] RLS policy `tenant_isolation` existiert auf `user_feature_permissions` ✅ verified
+- [x] `FORCE ROW LEVEL SECURITY` aktiv (auch Table Owner gefiltert) ✅ verified
+- [x] GRANTs für `app_user` gesetzt (SELECT, INSERT, UPDATE, DELETE + Sequence) ✅ verified
+- [x] Table visible in `\dt` ✅ verified
+- [x] Unique constraint prevents duplicate (tenant_id, user_id, feature_code, module_code) ✅ `uq_user_feature_module`
 - [ ] Cross-Tenant-Test: `SET app.tenant_id = '1'; SELECT ... WHERE tenant_id = 2;` → 0 Rows
 
 ---
@@ -319,11 +365,11 @@ export class PermissionRegistryModule {}
 
 **Definition of Done:**
 
-- [ ] PermissionRegistryService ist @Injectable() Singleton
-- [ ] register() wirft Error bei doppelter Registrierung (fail-fast)
-- [ ] getAll(), getByCode(), isValidModule(), getAllowedPermissions() funktionieren
-- [ ] @Global() Modul in app.module.ts registriert
-- [ ] Kein Feature-spezifisches Wissen im Registry
+- [x] PermissionRegistryService ist @Injectable() Singleton ✅ 2026-02-07
+- [x] register() wirft Error bei doppelter Registrierung (fail-fast) ✅ implemented
+- [x] getAll(), getByCode(), isValidModule(), getAllowedPermissions() funktionieren ✅ implemented
+- [x] @Global() Modul in app.module.ts registriert ✅ verified in backend logs
+- [x] Kein Feature-spezifisches Wissen im Registry ✅ pure registry, no feature imports
 
 ---
 
@@ -406,11 +452,11 @@ Der DTO hat keinen Zugriff auf den `PermissionRegistryService` (Zod-Schemas sind
 
 **Definition of Done:**
 
-- [ ] Blackboard-Permissions registriert sich via OnModuleInit
-- [ ] blackboard.module.ts enthält BlackboardPermissionRegistrar als Provider
-- [ ] Zod DTO validiert Struktur (Typen, Non-Empty Strings, Booleans)
-- [ ] DTO barrel export via index.ts
-- [ ] Kein Feature-spezifisches Wissen im DTO
+- [x] Blackboard-Permissions registriert sich via OnModuleInit ✅ logs: `Registered permission category "blackboard" with 1 module(s)`
+- [x] blackboard.module.ts enthält BlackboardPermissionRegistrar als Provider ✅ 2026-02-07
+- [x] Zod DTO validiert Struktur (Typen, Non-Empty Strings, Booleans) ✅ UpsertUserPermissionsSchema
+- [x] DTO barrel export via index.ts ✅ with `export type` for PermissionEntry
+- [x] Kein Feature-spezifisches Wissen im DTO ✅ pure structure validation
 
 ---
 
@@ -447,7 +493,7 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
 }
 ```
 
-### Drei Methoden:
+### Vier Methoden:
 
 1. **`getPermissions(tenantId, userUuid)`** — via `tenantTransaction()`
    - Resolve UUID → user_id
@@ -464,7 +510,15 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
    - For modules with `allowedPermissions`: force non-allowed permissions to `false` via `getAllowedPermissions()`
    - INSERT ... ON CONFLICT DO UPDATE (RLS sichert tenant_id automatisch ab)
 
-3. **`getActiveFeaturesForTenant(tenantId)`** — (private helper, innerhalb der Transaction)
+3. **`hasPermission(userId, featureCode, moduleCode, action)`** — via `tenantTransaction()` _(Phase 5b)_
+   - Used by `PermissionGuard` for endpoint enforcement
+   - Takes numeric userId (already resolved by JwtAuthGuard, no UUID resolution needed)
+   - SELECT single row from `user_feature_permissions` (RLS filtert tenant via CLS)
+   - Returns `boolean`: `true` if permission granted, `false` if denied or no row exists
+   - **Fail-closed:** No row in DB = `false` (denied). Explicit grant required.
+   - No `tenantId` param — CLS already set by JwtAuthGuard before guard executes
+
+4. **`getActiveFeaturesForTenant(tenantId)`** — (private helper, innerhalb der Transaction)
    - `SELECT feature_code FROM tenant_features WHERE is_active = 1` (RLS filtert tenant)
    - Returns `Set<string>` for O(1) lookup
 
@@ -472,14 +526,16 @@ Uses: `DatabaseService.tenantTransaction()`, `PermissionRegistryService`, `Logge
 
 **Definition of Done:**
 
-- [ ] Alle DB-Zugriffe via `tenantTransaction()` (NICHT `db.query()`)
-- [ ] RLS GUC wird gesetzt via `set_config('app.tenant_id', ...)` (automatisch durch `tenantTransaction`)
-- [ ] getPermissions returns full category tree filtered by tenant's active features
-- [ ] upsertPermissions uses UPSERT (INSERT ON CONFLICT UPDATE)
-- [ ] Validierung gegen PermissionRegistryService (nicht gegen hardcoded Constants)
-- [ ] Non-allowed permission types forced to `false` on save
-- [ ] NotFoundException if UUID doesn't resolve
-- [ ] BadRequestException if featureCode/moduleCode unknown
+- [x] Alle DB-Zugriffe via `tenantTransaction()` (NICHT `db.query()`) ✅ both methods use tenantTransaction
+- [x] RLS GUC wird gesetzt via `set_config('app.tenant_id', ...)` (automatisch durch `tenantTransaction`) ✅
+- [x] getPermissions returns full category tree filtered by tenant's active features ✅ JOINs tenant_features + features
+- [x] upsertPermissions uses UPSERT (INSERT ON CONFLICT UPDATE) ✅ ON CONFLICT (tenant_id, user_id, feature_code, module_code)
+- [x] Validierung gegen PermissionRegistryService (nicht gegen hardcoded Constants) ✅ isValidModule() + getAllowedPermissions()
+- [x] Non-allowed permission types forced to `false` on save ✅ checked per entry
+- [x] NotFoundException if UUID doesn't resolve ✅ resolveUserIdFromUuid()
+- [x] BadRequestException if featureCode/moduleCode unknown ✅ isValidModule() check
+- [x] hasPermission() returns boolean for guard enforcement ✅ fail-closed, no row = false
+- [x] hasPermission() uses tenantTransaction() for RLS compliance ✅ CLS tenantId from JwtAuthGuard
 
 ---
 
@@ -499,12 +555,14 @@ PUT  /user-permissions/:uuid  → upsertPermissions
 ```
 
 - `@Controller('user-permissions')`
-- `@Roles('admin')` on class level (only admins manage user permissions)
+- `@Roles('admin', 'root')` on class level (admin + root manage user permissions)
 - `@CurrentUser()` for assignedBy
 - `@TenantId()` for tenant context
 - UUID param validated as string (UUIDv7 format)
 - PUT body validated with `UpsertUserPermissionsDto`
+- `assertFullAccess()`: Root always passes; Admin needs `hasFullAccess = true`
 - Returns raw data — ResponseInterceptor wraps automatically (ADR-007, NO double-wrapping)
+- **KEIN** `@RequirePermission` hier — das sind Management-Endpoints, geschützt durch `@Roles` + `assertFullAccess()`
 
 ### Module
 
@@ -518,11 +576,133 @@ PUT  /user-permissions/:uuid  → upsertPermissions
 
 **Definition of Done:**
 
-- [ ] GET endpoint returns permission tree for user
-- [ ] PUT endpoint saves permissions via UPSERT
-- [ ] @Roles('admin') protects both endpoints
-- [ ] Module registered in AppModule
-- [ ] No double-wrapping (controller returns raw, interceptor wraps)
+- [x] GET endpoint returns permission tree for user ✅ `GET /api/v2/user-permissions/:uuid` mapped
+- [x] PUT endpoint saves permissions via UPSERT ✅ `PUT /api/v2/user-permissions/:uuid` mapped
+- [x] @Roles('admin', 'root') protects both endpoints ✅ class-level decorator
+- [x] assertFullAccess() checks admin has `hasFullAccess = true` ✅ Root always passes
+- [x] Module registered in AppModule ✅ UserPermissionsModule + PermissionRegistryModule
+- [x] No double-wrapping (controller returns raw, interceptor wraps) ✅ returns raw data
+
+---
+
+## Phase 5b: Permission Enforcement (PermissionGuard)
+
+**Quellen:** `ADR-020` (Per-User Feature Permissions), `ADR-005` (JWT Guard Pattern), `ADR-012` (Fail-Closed RBAC)
+**Problem:** Phasen 1–5 bauen nur CRUD (Speichern/Lesen). Ohne Enforcement ist das System wirkungslos — Permissions werden in DB geschrieben, aber kein Guard prüft sie an den Feature-Endpoints. Ergebnis: User hat `canRead=false` für Blackboard, kann aber trotzdem alle Entries lesen.
+
+### Architektur: 3 Bausteine
+
+**1. `@RequirePermission()` Decorator** — markiert Endpoints mit benötigter Permission
+
+```typescript
+@RequirePermission('blackboard', 'blackboard-posts', 'canRead')
+@Get('entries')
+listEntries() { ... }
+```
+
+Speichert `RequiredPermission { featureCode, moduleCode, action }` als NestJS Metadata.
+Exakt gleiches Pattern wie `@Roles()` — nur mit 3 statt 1 Parameter.
+
+**2. `hasPermission()` Service-Methode** — prüft DB
+
+```typescript
+// In UserPermissionsService (Phase 4 erweitert):
+async hasPermission(userId: number, featureCode: string, moduleCode: string, action: PermissionType): Promise<boolean> {
+  return this.db.tenantTransaction(async (client) => {
+    const result = await client.query(
+      'SELECT can_read, can_write, can_delete FROM user_feature_permissions WHERE user_id = $1 AND feature_code = $2 AND module_code = $3',
+      [userId, featureCode, moduleCode]
+    );
+    const row = result.rows[0];
+    if (!row) return false; // Fail-closed: no row = denied
+    switch (action) {
+      case 'canRead':  return row.can_read;
+      case 'canWrite': return row.can_write;
+      case 'canDelete': return row.can_delete;
+    }
+  });
+}
+```
+
+- `tenantTransaction()` für RLS-Compliance (ADR-019)
+- CLS tenantId bereits gesetzt durch JwtAuthGuard
+- Kein `tenantId` Parameter nötig — Guard läuft NACH JwtAuthGuard
+
+**3. `PermissionGuard`** — Globaler NestJS Guard (3. in der Kette)
+
+```
+Request → JwtAuthGuard → RolesGuard → PermissionGuard → Controller
+             (1.)           (2.)          (3. NEU)
+```
+
+Logik:
+
+1. Kein `@RequirePermission()` Metadata → **pass through** (Endpoint hat keine Feature-Permission)
+2. User ist Root → **pass** (Root hat immer Vollzugriff, DB-Trigger erzwingt dies)
+3. User ist Admin mit `hasFullAccess=true` → **pass** (Admins die Permissions verwalten)
+4. Alle anderen → **DB-Check** via `hasPermission()`, bei `false` → `ForbiddenException`
+
+### Bypass-Logik (WICHTIG)
+
+| User-Typ                 | Verhalten  | Begründung                                                    |
+| ------------------------ | ---------- | ------------------------------------------------------------- |
+| Root                     | Immer pass | Vollzugriff per Design, DB-Trigger (Migration 20260207000020) |
+| Admin + hasFullAccess    | Immer pass | Permission-Verwalter, muss alles sehen können                 |
+| Admin ohne hasFullAccess | DB-Check   | Eingeschränkter Admin, Permissions gelten                     |
+| Employee                 | DB-Check   | Standard-User, Permissions gelten                             |
+| Role-Switched Admin      | DB-Check   | Wenn Admin als Employee agiert, Employee-Regeln gelten        |
+
+### Fail-Closed Design
+
+**Kein Row in DB = Zugriff verweigert.**
+
+- Neuer User ohne Permissions → kann nichts
+- Admin muss explizit Permissions vergeben
+- Konsistent mit Security-Best-Practice: Deny by default, allow explicitly
+
+### Files
+
+**Neue Files:**
+
+| File                                                                 | Zweck                                         |
+| -------------------------------------------------------------------- | --------------------------------------------- |
+| `backend/src/nest/common/decorators/require-permission.decorator.ts` | `@RequirePermission(feature, module, action)` |
+| `backend/src/nest/common/guards/permission.guard.ts`                 | Globaler Guard, Enforcement-Logik             |
+
+**Modifizierte Files:**
+
+| File                                                            | Änderung                                       |
+| --------------------------------------------------------------- | ---------------------------------------------- |
+| `backend/src/nest/user-permissions/user-permissions.service.ts` | `hasPermission()` Methode hinzugefügt          |
+| `backend/src/nest/app.module.ts`                                | `PermissionGuard` als 3. APP_GUARD registriert |
+| `backend/src/nest/blackboard/blackboard.controller.ts`          | `@RequirePermission` auf alle 22 Endpoints     |
+
+### Blackboard Endpoint-Mapping
+
+Erstes Feature mit vollständigem Enforcement:
+
+| Permission  | Endpoints                                                                                                                                                                                                                                                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `canRead`   | GET entries, GET dashboard, GET unconfirmed-count, GET entries/:id, GET entries/:id/full, POST entries/:id/confirm, DELETE entries/:id/confirm, GET entries/:id/confirmations, GET entries/:id/comments, GET entries/:id/attachments, GET attachments/:attachmentId, GET attachments/:attachmentId/preview, GET attachments/:fileUuid/download |
+| `canWrite`  | POST entries, PUT entries/:id, POST entries/:id/archive, POST entries/:id/unarchive, POST entries/:id/comments, POST entries/:id/attachments                                                                                                                                                                                                   |
+| `canDelete` | DELETE entries/:id, DELETE comments/:commentId, DELETE attachments/:attachmentId                                                                                                                                                                                                                                                               |
+
+**Konstanten:** `BB_FEATURE = 'blackboard'`, `BB_MODULE = 'blackboard-posts'` (sonarjs/no-duplicate-string compliant)
+
+### Definition of Done
+
+- [x] `@RequirePermission()` Decorator erstellt, folgt exakt `@Roles()` Pattern ✅ 2026-02-07
+- [x] `hasPermission()` in UserPermissionsService, nutzt `tenantTransaction()` (ADR-019) ✅ 2026-02-07
+- [x] `PermissionGuard` erstellt, global registriert als 3. APP_GUARD ✅ 2026-02-07
+- [x] Root bypass ✅ `user.activeRole === 'root'` → return true
+- [x] Admin + hasFullAccess bypass ✅ `user.activeRole === 'admin' && user.hasFullAccess` → return true
+- [x] Fail-closed: no row = ForbiddenException ✅ `hasPermission()` returns false if no DB row
+- [x] Blackboard: alle 22 Endpoints mit `@RequirePermission` annotiert ✅ canRead/canWrite/canDelete
+- [x] Logger.warn bei Permission-Denied (User-ID, Role, Feature, Module, Action) ✅
+- [x] ESLint 0 Errors ✅ TSDoc escaping, import order, no-duplicate-string
+- [x] Backend TypeScript type-check 0 Errors ✅ `tsc --noEmit -p backend`
+- [x] Backend startet fehlerfrei nach Restart ✅ `Nest application successfully started`
+- [x] Guard-Kette korrekt: JWT → Roles → Permission (in dieser Reihenfolge) ✅ APP_GUARD Reihenfolge in app.module.ts
 
 ---
 
@@ -548,32 +728,49 @@ PUT  /user-permissions/:uuid  → upsertPermissions
 ## Phase 7: Frontend Integration
 
 **Quellen:** `docs/CODE-OF-CONDUCT-SVELTE.md`, Svelte 5 Runes (`$state`, `$derived`, `$props`)
-**Files to modify:**
+
+### Architecture: Shared Component + Origin-Aware Routes
+
+Statt Permission-UI in einer Route zu duplizieren: **Shared Component + Shared Loader** für 3 Routen.
+
+**Shared Files (DRY):**
+
+- `frontend/src/lib/components/PermissionSettings.svelte` — Shared UI (categories, checkboxes, save)
+- `frontend/src/lib/server/load-permission-data.ts` — Shared server-side loader
+
+**3 Origin-Aware Routes (thin wrappers):**
 
 - `frontend/src/routes/(app)/(admin)/manage-employees/permission/[uuid]/+page.server.ts`
-- `frontend/src/routes/(app)/(admin)/manage-employees/permission/[uuid]/+page.svelte`
+- `frontend/src/routes/(app)/(admin)/manage-admins/permission/[uuid]/+page.server.ts`
+- `frontend/src/routes/(app)/(root)/manage-root/permission/[uuid]/+page.server.ts`
 
-### +page.server.ts Changes
+Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `PermissionSettings.svelte`.
 
-- Add second fetch: `GET /api/v2/user-permissions/${uuid}`
-- Return `{ employee, permissions, error }` where permissions = full category tree from API
+### PermissionSettings.svelte
 
-### +page.svelte Changes
+- Props: `employee`, `permissionData`, `error`, `backUrl`, `backLabel`
+- `$state` initialized from `structuredClone(permissionData)` (intentional one-time clone for form editing)
+- `svelte-ignore state_referenced_locally` comment documents this is deliberate
+- Uses `empty-state` design system pattern for error + empty states
+- Save button: `PUT /api/v2/user-permissions/${uuid}` via client-side fetch
+- Toast notifications on toggle (showSuccessAlert / showWarningAlert)
 
-- Replace hardcoded `categories` $state with SSR data from `data.permissions`
-- Add `isSaving` state and `savePermissions()` function
-- Add "Speichern" (Save) button that calls `PUT /api/v2/user-permissions/${uuid}`
-- Add loading/error states for save operation
-- Keep existing toast notifications on toggle (immediate feedback)
-- Save button sends current state to backend (batch save, not per-toggle)
+### load-permission-data.ts
+
+- Fetches employee + permissions in parallel: `GET /api/v2/users/${uuid}` + `GET /api/v2/user-permissions/${uuid}`
+- Returns `{ employee, permissionData, error }` for SSR consumption
 
 **Definition of Done:**
 
-- [ ] Permission categories loaded from API (not hardcoded)
-- [ ] Save button persists permissions to DB
-- [ ] Saved permissions survive page reload
-- [ ] Error handling for API failures
-- [ ] Loading state during save
+- [x] Permission categories loaded from API (not hardcoded) ✅ `GET /api/v2/user-permissions/${uuid}` via shared loader
+- [x] Save button persists permissions to DB ✅ `PUT /api/v2/user-permissions/${uuid}` via client-side fetch
+- [x] Saved permissions survive page reload ✅ SSR loads from DB on every page load
+- [x] Error handling for API failures ✅ graceful fallback + showErrorAlert
+- [x] Loading state during save ✅ `isSaving` state + spinner icon + disabled button
+- [x] Shared component for 3 routes (DRY) ✅ PermissionSettings.svelte + load-permission-data.ts
+- [x] Empty-state design system pattern ✅ `empty-state__icon`, `empty-state__title`, `empty-state__description`
+- [x] Svelte `$state` warning resolved ✅ `svelte-ignore state_referenced_locally` (intentional one-time clone)
+- [x] `validate:all` passes clean ✅ 0 errors, 0 warnings (TypeScript + Svelte + Stylelint)
 
 ---
 
@@ -599,28 +796,37 @@ PUT  /user-permissions/:uuid  → upsertPermissions
 
 ## File Summary
 
-### New Files (14)
+### New Files (18)
 
 1. `database/migrations/20260207000019_user-feature-permissions.ts`
-2. `backend/src/nest/common/permission-registry/permission.types.ts`
-3. `backend/src/nest/common/permission-registry/permission-registry.service.ts`
-4. `backend/src/nest/common/permission-registry/permission-registry.module.ts`
-5. `backend/src/nest/common/permission-registry/permission-registry.service.test.ts`
-6. `backend/src/nest/blackboard/blackboard.permissions.ts`
-7. `backend/src/nest/blackboard/blackboard-permission.registrar.ts`
-8. `backend/src/nest/user-permissions/user-permissions.service.ts`
-9. `backend/src/nest/user-permissions/user-permissions.controller.ts`
-10. `backend/src/nest/user-permissions/user-permissions.module.ts`
-11. `backend/src/nest/user-permissions/dto/upsert-user-permissions.dto.ts`
-12. `backend/src/nest/user-permissions/dto/index.ts`
-13. `backend/src/nest/user-permissions/user-permissions.service.test.ts`
-14. `api-tests/vitest/user-permissions.api.test.ts`
+2. `database/migrations/20260207000020_root-must-have-full-access.ts`
+3. `backend/src/nest/common/permission-registry/permission.types.ts`
+4. `backend/src/nest/common/permission-registry/permission-registry.service.ts`
+5. `backend/src/nest/common/permission-registry/permission-registry.module.ts`
+6. `backend/src/nest/common/decorators/require-permission.decorator.ts` _(Phase 5b)_
+7. `backend/src/nest/common/guards/permission.guard.ts` _(Phase 5b)_
+8. `backend/src/nest/common/permission-registry/permission-registry.service.test.ts` _(Phase 6)_
+9. `backend/src/nest/blackboard/blackboard.permissions.ts`
+10. `backend/src/nest/blackboard/blackboard-permission.registrar.ts`
+11. `backend/src/nest/user-permissions/user-permissions.service.ts`
+12. `backend/src/nest/user-permissions/user-permissions.controller.ts`
+13. `backend/src/nest/user-permissions/user-permissions.module.ts`
+14. `backend/src/nest/user-permissions/dto/upsert-user-permissions.dto.ts`
+15. `backend/src/nest/user-permissions/dto/index.ts`
+16. `backend/src/nest/user-permissions/user-permissions.service.test.ts` _(Phase 6)_
+17. `api-tests/vitest/user-permissions.api.test.ts` _(Phase 8)_
+18. `frontend/src/lib/components/PermissionSettings.svelte` — Shared permission UI component
+19. `frontend/src/lib/server/load-permission-data.ts` — Shared server-side loader
 
-### Modified Files (3)
+### Modified Files (7)
 
-1. `backend/src/nest/app.module.ts` — add PermissionRegistryModule + UserPermissionsModule imports
-2. `frontend/.../permission/[uuid]/+page.server.ts` — fetch permissions from API
-3. `frontend/.../permission/[uuid]/+page.svelte` — SSR data + Save button
+1. `backend/src/nest/app.module.ts` — add PermissionRegistryModule + UserPermissionsModule + PermissionGuard (APP_GUARD)
+2. `backend/src/nest/user-permissions/user-permissions.service.ts` — add `hasPermission()` method _(Phase 5b)_
+3. `backend/src/nest/blackboard/blackboard.controller.ts` — add `@RequirePermission` to all 22 endpoints _(Phase 5b)_
+4. `backend/src/nest/common/interfaces/auth.interface.ts` — add `hasFullAccess: boolean` to NestAuthUser
+5. `backend/src/nest/common/guards/jwt-auth.guard.ts` — add `has_full_access` to DB query + buildAuthUser
+6. `frontend/.../manage-employees/permission/[uuid]/+page.server.ts` — uses shared loader
+7. `frontend/.../manage-admins/permission/[uuid]/+page.server.ts` — uses shared loader
 
 ### Modified Files (Feature-Module, nur Provider hinzufügen)
 
@@ -630,28 +836,90 @@ PUT  /user-permissions/:uuid  → upsertPermissions
 
 ## Execution Order
 
-Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8
+Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 5b → Phase 6 → Phase 7 → Phase 8
+
+```
+Phase 1: DB Migration (Table + RLS)               ✅
+Phase 2: Permission Registry (Global Singleton)    ✅
+Phase 3: Feature Definitions + Zod DTOs            ✅
+Phase 4: Backend Service (CRUD + hasPermission)    ✅
+Phase 5: Backend Controller + Module               ✅
+Phase 5b: Enforcement (PermissionGuard)            ✅  ← CRITICAL: macht Permissions wirksam
+Phase 6: Backend Unit Tests                        ⏳
+Phase 7: Frontend Integration                      ✅
+Phase 8: API Integration Tests                     ⏳
+```
 
 Each phase is self-contained and testable before moving to the next.
 
 ---
 
-## Definition of Done — Gesamtes Feature
+## Definition of Done — Plan Teil 1 (Infrastruktur + Blackboard + Enforcement)
 
-- [ ] Migration läuft fehlerfrei, Tabelle + RLS + FORCE + Policy + GRANTs + Index existieren
+**Status: Infrastruktur + Enforcement komplett. Blackboard ist erstes Feature mit vollständigem Permission-Enforcement. Plan Teil 2 fügt alle 7 Features hinzu.**
+
+### Management Layer (Phase 1–5, 7)
+
+- [x] Migration läuft fehlerfrei, Tabelle + RLS + FORCE + Policy + GRANTs + Index existieren ✅
 - [ ] RLS Cross-Tenant-Test bestanden (Tenant 1 sieht keine Tenant 2 Daten)
-- [ ] PermissionRegistryModule ist @Global() Singleton, register()/getAll() funktionieren
-- [ ] Blackboard registriert seine Permissions via OnModuleInit
-- [ ] Zod DTO validiert Struktur, Service validiert gegen Registry
-- [ ] Service nutzt `tenantTransaction()` für ALLE DB-Zugriffe (ADR-019)
-- [ ] GET Endpoint: gibt Permissions-Tree zurück, gefiltert nach Tenant-Features
-- [ ] PUT Endpoint: speichert Permissions per UPSERT, erzwingt allowedPermissions
-- [ ] Unit Tests grün (Registry + DTO + Service)
-- [ ] API Integration Tests grün (7 Szenarien)
-- [ ] Frontend lädt Permissions aus API, Save-Button persistiert in DB
-- [ ] Permissions überleben Page-Reload
-- [ ] Erweiterbarkeit: neue Kategorie = 2 Files im Feature-Modul, kein zentrales File
-- [ ] ESLint 0 Errors, Type-Check 0 Errors
+- [x] PermissionRegistryModule ist @Global() Singleton, register()/getAll() funktionieren ✅
+- [x] Blackboard registriert seine Permissions via OnModuleInit ✅
+- [x] Zod DTO validiert Struktur, Service validiert gegen Registry ✅
+- [x] Service nutzt `tenantTransaction()` für ALLE DB-Zugriffe (ADR-019) ✅
+- [x] GET Endpoint: gibt Permissions-Tree zurück, gefiltert nach Tenant-Features ✅
+- [x] PUT Endpoint: speichert Permissions per UPSERT, erzwingt allowedPermissions ✅
+- [x] Frontend lädt Permissions aus API, Save-Button persistiert in DB ✅
+- [x] Permissions überleben Page-Reload ✅
+- [x] Shared Component Pattern: 3 Routen teilen `PermissionSettings.svelte` + `load-permission-data.ts` ✅
+- [x] Empty-State Design System Pattern korrekt verwendet ✅
+- [x] Erweiterbarkeit: neue Kategorie = 2 Files im Feature-Modul, kein zentrales File ✅
+- [x] `validate:all` passes clean: 0 Errors, 0 Warnings (TypeScript + Svelte + Stylelint) ✅
+- [x] Svelte `$state` Warning resolved (svelte-ignore, intentional one-time clone) ✅
+- [x] Backend routes mapped: `GET /api/v2/user-permissions/:uuid` + `PUT /api/v2/user-permissions/:uuid` ✅
+- [x] Frontend 200 OK: manage-employees, manage-admins, manage-root permission routes work ✅
+- [x] `pnpm test` — 3374 Tests grün, 0 Failures ✅
+
+### Enforcement Layer (Phase 5b)
+
+- [x] `@RequirePermission()` Decorator erstellt (folgt `@Roles()` Pattern) ✅
+- [x] `hasPermission()` Service-Methode, `tenantTransaction()`, fail-closed ✅
+- [x] `PermissionGuard` global registriert als 3. APP_GUARD (nach JWT + Roles) ✅
+- [x] Root-Bypass: `activeRole === 'root'` → immer pass ✅
+- [x] Admin-Full-Access-Bypass: `activeRole === 'admin' && hasFullAccess` → immer pass ✅
+- [x] Fail-Closed: kein DB-Row = ForbiddenException (Deny by default) ✅
+- [x] Blackboard: alle 22 Endpoints mit `@RequirePermission` annotiert ✅
+- [x] Logger.warn bei Permission-Denied mit User-ID, Role, Feature, Module, Action ✅
+- [x] ESLint 0 Errors + Backend TypeScript type-check 0 Errors ✅
+- [x] Backend startet fehlerfrei, Guard-Kette: JWT → Roles → Permission ✅
+
+### Noch Offen
+
+- [ ] Unit Tests grün (Registry + DTO + Service + Guard) — siehe `USER-PERMISSIONS-UNIT-TEST-PLAN.md`
+- [ ] API Integration Tests grün (7+ Szenarien) — siehe Phase 8
+
+### Bugfixes während Implementation (2026-02-07)
+
+| Bug                                | Root Cause                                                                                                                                                                                                                                                                            | Fix                                                                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 403 für root User                  | `@Roles('admin')` schloss root aus                                                                                                                                                                                                                                                    | `@Roles('admin', 'root')`                                                                                                                                                        |
+| Admin ohne `has_full_access` Check | `hasFullAccess` fehlte in `NestAuthUser` + JWT Guard                                                                                                                                                                                                                                  | `has_full_access` zu Guard-Query + `NestAuthUser` hinzugefügt, `assertFullAccess()` im Controller                                                                                |
+| Leere Permissions-Liste            | Tenant 2 hatte keine `tenant_features` Einträge                                                                                                                                                                                                                                       | `INSERT INTO tenant_features` für Tenant 2 (12 Features)                                                                                                                         |
+| Toast-Spam bei Checkbox-Toggle     | `showSuccessAlert`/`showWarningAlert` bei jedem Toggle                                                                                                                                                                                                                                | Handler entleert, Feedback nur noch beim Speichern                                                                                                                               |
+| **Permissions wirken nicht**       | **KEIN Enforcement-Layer vorhanden** — Permissions wurden gespeichert aber nie geprüft. Kein Guard, kein Interceptor, kein Middleware las `user_feature_permissions` bei Feature-Requests. Alle Feature-Controller (Blackboard etc.) prüften nur `@Roles()`, nie Feature-Permissions. | **Phase 5b:** `@RequirePermission()` Decorator + `PermissionGuard` (globaler APP_GUARD) + `hasPermission()` Service-Methode. Blackboard als erstes Feature vollständig enforced. |
+
+### Zusätzlich modifizierte Files (Bugfixes)
+
+- `backend/src/nest/common/interfaces/auth.interface.ts` — `hasFullAccess: boolean` zu `NestAuthUser`
+- `backend/src/nest/common/guards/jwt-auth.guard.ts` — `has_full_access` in DB-Query + `UserRow` + `buildAuthUser()`
+- `frontend/src/lib/components/PermissionSettings.svelte` — Toast-Spam entfernt, unused import entfernt
+
+### Zusätzlich erstellte/modifizierte Files (Enforcement, Phase 5b)
+
+- `backend/src/nest/common/decorators/require-permission.decorator.ts` — **NEU** `@RequirePermission()` Decorator
+- `backend/src/nest/common/guards/permission.guard.ts` — **NEU** Globaler PermissionGuard
+- `backend/src/nest/user-permissions/user-permissions.service.ts` — `hasPermission()` Methode hinzugefügt
+- `backend/src/nest/app.module.ts` — `PermissionGuard` als 3. APP_GUARD registriert
+- `backend/src/nest/blackboard/blackboard.controller.ts` — `@RequirePermission` auf alle 22 Endpoints + `BB_FEATURE`/`BB_MODULE` Konstanten
 
 ---
 
@@ -659,13 +927,15 @@ Each phase is self-contained and testable before moving to the next.
 
 # Plan Teil 2: Vollständige Permission-Definitionen aller Feature-Module
 
-> **Voraussetzung:** Plan Teil 1 (Phasen 1–8) ist vollständig umgesetzt.
+> **Voraussetzung:** Plan Teil 1 Infrastruktur (Phasen 1–5, 7) ist umgesetzt. ✅
+> **Status:** BEREIT ZUR UMSETZUNG — Infrastruktur steht, Frontend rendert dynamisch.
 > **Zweck:** Alle Feature-Module erhalten ihre Permission-Definitionen (`.permissions.ts` + `.registrar.ts`).
 > **Prinzip:** Dezentrales Registry Pattern — jedes Feature besitzt seine Permissions, kein zentrales File.
+> **Aufwand:** Pro Feature: 2 neue Files + 1 Zeile in `.module.ts`. Kein Frontend-Change nötig.
 
 ## Übersicht: 7 Features, 18 Module
 
-Aktuell registriert (Plan 1): Nur **Blackboard** mit 1 Modul.
+Aktuell registriert (Plan 1): Nur **Blackboard** mit 1 Modul (`blackboard-posts`).
 Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 
 ---
@@ -866,6 +1136,8 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 
 ## Definition of Done — Plan Teil 2
 
+### Registration (Registry + DB)
+
 - [ ] Blackboard erweitert: 3 Module (Beiträge, Kommentare, Archiv) registriert
 - [ ] Calendar: 1 Modul (Termine) registriert via OnModuleInit
 - [ ] Documents: 2 Module (Dokumente, Archiv) registriert via OnModuleInit
@@ -874,6 +1146,20 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 - [ ] Shift Planning: 3 Module (Schichtplan, Tauschbörse, Rotation) registriert via OnModuleInit
 - [ ] Surveys: 3 Module (Verwaltung, Teilnahme, Ergebnisse) registriert via OnModuleInit
 - [ ] `PermissionRegistryService.getAll()` gibt alle 7 Features mit 18 Modulen zurück
+
+### Enforcement (`@RequirePermission` auf Controller-Endpoints)
+
+- [ ] Blackboard Controller: `@RequirePermission` auf alle Endpoints (✅ bereits in Phase 5b erledigt)
+- [ ] Calendar Controller: `@RequirePermission` auf alle Endpoints
+- [ ] Documents Controller: `@RequirePermission` auf alle Endpoints
+- [ ] Chat Controller: `@RequirePermission` auf alle Endpoints
+- [ ] KVP Controller: `@RequirePermission` auf alle Endpoints
+- [ ] Shifts Controller: `@RequirePermission` auf alle Endpoints
+- [ ] Surveys Controller: `@RequirePermission` auf alle Endpoints
+- [ ] Konstanten-Pattern: `const FEATURE = '...'`, `const MODULE = '...'` pro Controller (sonarjs compliant)
+
+### Verifikation
+
 - [ ] GET `/user-permissions/:uuid` zeigt alle 18 Module in der UI (gefiltert nach Tenant-Features)
 - [ ] Jedes Modul zeigt NUR seine `allowedPermissions`-Checkboxes (z.B. Rotation nur canRead)
 - [ ] `feature_code` matcht exakt mit `features.code` aus Seed-Daten
@@ -881,3 +1167,4 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 - [ ] Backend startet fehlerfrei (kein doppelter `register()` Call)
 - [ ] ESLint 0 Errors, Type-Check 0 Errors
 - [ ] Frontend zeigt Permission-Tree mit allen 7 Kategorien + 18 Modulen korrekt an
+- [ ] Enforcement-Test: User ohne Permission → 403 Forbidden auf jedem Feature-Controller

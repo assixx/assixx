@@ -287,7 +287,7 @@
   // =============================================================================
 
   function navigateToPermissionPage(uuid: string): void {
-    void goto(`/manage-employees/permission/${uuid}`);
+    void goto(`/manage-root/permission/${uuid}`);
   }
 
   function handleStatusToggle(status: StatusFilter): void {

@@ -4,20 +4,23 @@
 > **Runner:** Vitest (`vitest run --project unit`)
 > **Muster:** Existierende Test-Patterns aus `auth.service.test.ts`, `auth.dto.test.ts`, `documents.service.test.ts`
 > **Quellen:** `ADR-018` (Vitest Single Runner), `docs/HOW-TO-TEST-WITH-VITEST.md`
+> **Update 2026-02-07:** Erweitert um Phase 5b (Enforcement) — `hasPermission()`, `PermissionGuard`, `@RequirePermission()`
 
 ---
 
 ## Scope
 
-Drei Test-Dateien, die alle Backend-Logik des Permission-Features abdecken:
+Fünf Test-Dateien, die alle Backend-Logik des Permission-Features abdecken:
 
-| #   | Test-Datei                            | SUT (System Under Test)           | Geschätzter Umfang |
-| --- | ------------------------------------- | --------------------------------- | ------------------ |
-| 1   | `permission-registry.service.test.ts` | PermissionRegistryService         | ~20 Tests          |
-| 2   | `user-permissions.dto.test.ts`        | UpsertUserPermissionsSchema (Zod) | ~18 Tests          |
-| 3   | `user-permissions.service.test.ts`    | UserPermissionsService            | ~28 Tests          |
+| #   | Test-Datei                             | SUT (System Under Test)                       | Geschätzter Umfang |
+| --- | -------------------------------------- | --------------------------------------------- | ------------------ |
+| 1   | `permission-registry.service.test.ts`  | PermissionRegistryService                     | ~20 Tests          |
+| 2   | `user-permissions.dto.test.ts`         | UpsertUserPermissionsSchema (Zod)             | ~18 Tests          |
+| 3   | `user-permissions.service.test.ts`     | UserPermissionsService (CRUD + hasPermission) | ~37 Tests          |
+| 4   | `permission.guard.test.ts`             | PermissionGuard (Enforcement)                 | ~16 Tests          |
+| 5   | `require-permission.decorator.test.ts` | RequirePermission Decorator (Metadata)        | ~5 Tests           |
 
-**Gesamt: ~66 Unit Tests**
+**Gesamt: ~96 Unit Tests**
 
 ---
 
@@ -61,6 +64,48 @@ function createMockRegistry(): {
     isValidModule: vi.fn(),
     getAllowedPermissions: vi.fn(),
   };
+}
+```
+
+### Mock-Pattern (UserPermissionsService — für PermissionGuard Tests)
+
+```typescript
+function createMockPermissionService(): {
+  hasPermission: ReturnType<typeof vi.fn>;
+} {
+  return {
+    hasPermission: vi.fn(),
+  };
+}
+```
+
+### Mock-Pattern (ExecutionContext — für PermissionGuard Tests)
+
+```typescript
+function createMockExecutionContext(user?: Partial<NestAuthUser>): ExecutionContext {
+  const mockRequest = {
+    user:
+      user !== undefined ?
+        {
+          id: 1,
+          email: 'test@example.com',
+          role: 'employee' as const,
+          activeRole: 'employee' as const,
+          isRoleSwitched: false,
+          hasFullAccess: false,
+          tenantId: 42,
+          ...user,
+        }
+      : undefined,
+  };
+
+  return {
+    switchToHttp: () => ({
+      getRequest: () => mockRequest,
+    }),
+    getHandler: () => vi.fn(),
+    getClass: () => vi.fn(),
+  } as unknown as ExecutionContext;
 }
 ```
 
@@ -326,16 +371,169 @@ beforeEach(() => {
 | 27  | should return only is_active = 1 features      | DB: 3 Features, 2 mit `is_active = 1`, 1 mit `is_active = 0` | Nur 2 Features im Result |
 | 28  | should return empty Set when no features exist | DB: `[]`                                                     | Leerer Tree              |
 
+### describe('hasPermission()') — Phase 5b Enforcement
+
+> **Zweck:** Wird vom `PermissionGuard` aufgerufen, um zu prüfen ob ein User eine bestimmte Permission hat.
+> **Fail-Closed:** Kein Row in DB → `false` (Zugriff verweigert).
+
+#### Happy Path
+
+| #   | Test                                                              | Mock-Setup                                                        | Erwartung |
+| --- | ----------------------------------------------------------------- | ----------------------------------------------------------------- | --------- |
+| 29  | should return true when can_read is true and action=canRead       | DB: Row mit `can_read: true, can_write: false, can_delete: false` | `true`    |
+| 30  | should return true when can_write is true and action=canWrite     | DB: Row mit `can_read: false, can_write: true, can_delete: false` | `true`    |
+| 31  | should return true when can_delete is true and action=canDelete   | DB: Row mit `can_read: false, can_write: false, can_delete: true` | `true`    |
+| 32  | should return false when can_read is false and action=canRead     | DB: Row mit `can_read: false, can_write: true, can_delete: true`  | `false`   |
+| 33  | should return false when can_write is false and action=canWrite   | DB: Row mit `can_read: true, can_write: false, can_delete: true`  | `false`   |
+| 34  | should return false when can_delete is false and action=canDelete | DB: Row mit `can_read: true, can_write: true, can_delete: false`  | `false`   |
+
+#### Fail-Closed (no row = denied)
+
+| #   | Test                                                            | Mock-Setup                | Erwartung |
+| --- | --------------------------------------------------------------- | ------------------------- | --------- |
+| 35  | should return false when no permission row exists (fail-closed) | DB: `rows: []` (kein Row) | `false`   |
+
+#### DB-Call Verification
+
+| #   | Test                                                           | Mock-Setup                                                | Erwartung                                                                                   |
+| --- | -------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 36  | should query with correct userId, featureCode, moduleCode      | `userId=42, featureCode='blackboard', moduleCode='posts'` | `mockClient.query` Call enthält `[42, 'blackboard', 'posts']` als Params                    |
+| 37  | should use tenantTransaction (not db.query) for RLS compliance | Beliebig                                                  | `mockDb.tenantTransaction` aufgerufen, `mockDb.query` NICHT aufgerufen (ADR-019 Compliance) |
+
+---
+
+## Test-Datei 4: `permission.guard.test.ts`
+
+**Pfad:** `backend/src/nest/common/guards/permission.guard.test.ts`
+**SUT:** `PermissionGuard`
+**Mocks:** `Reflector`, `UserPermissionsService`, `ExecutionContext` (NestJS Testing Pattern)
+
+### Mock-Pattern (ExecutionContext)
+
+```typescript
+function createMockExecutionContext(user?: Partial<NestAuthUser>): ExecutionContext {
+  const mockRequest = {
+    user:
+      user !== undefined ?
+        {
+          id: 1,
+          email: 'test@example.com',
+          role: 'employee' as const,
+          activeRole: 'employee' as const,
+          isRoleSwitched: false,
+          hasFullAccess: false,
+          tenantId: 42,
+          ...user,
+        }
+      : undefined,
+  };
+
+  return {
+    switchToHttp: () => ({
+      getRequest: () => mockRequest,
+    }),
+    getHandler: () => vi.fn(),
+    getClass: () => vi.fn(),
+  } as unknown as ExecutionContext;
+}
+```
+
+### Mock-Pattern (UserPermissionsService)
+
+```typescript
+function createMockPermissionService(): { hasPermission: ReturnType<typeof vi.fn> } {
+  return {
+    hasPermission: vi.fn(),
+  };
+}
+```
+
+### describe('PermissionGuard — No Metadata (pass through)')
+
+| #   | Test                                                   | Mock-Setup                                  | Erwartung                                            |
+| --- | ------------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------- |
+| 1   | should pass when no @RequirePermission metadata exists | `reflector.getAllAndOverride` → `undefined` | `canActivate()` → `true`, `hasPermission` NOT called |
+| 2   | should not call hasPermission when no metadata         | `reflector` → `undefined`, User = employee  | `mockPermissionService.hasPermission` never called   |
+
+### describe('PermissionGuard — Authentication Check')
+
+| #   | Test                                                   | Mock-Setup                                   | Erwartung                                      |
+| --- | ------------------------------------------------------ | -------------------------------------------- | ---------------------------------------------- |
+| 3   | should throw ForbiddenException when user is undefined | Metadata gesetzt, `request.user = undefined` | `ForbiddenException('User not authenticated')` |
+
+### describe('PermissionGuard — Root Bypass')
+
+| #   | Test                                                   | Mock-Setup                                                  | Erwartung                                            |
+| --- | ------------------------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
+| 4   | should pass for root user regardless of DB permissions | User: `activeRole: 'root'`, Metadata: canRead on blackboard | `canActivate()` → `true`, `hasPermission` NOT called |
+| 5   | should pass for root even with hasFullAccess=false     | User: `activeRole: 'root', hasFullAccess: false`            | `canActivate()` → `true` (Root always bypasses)      |
+
+### describe('PermissionGuard — Admin Full Access Bypass')
+
+| #   | Test                                                          | Mock-Setup                                                                   | Erwartung                                            |
+| --- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 6   | should pass for admin with hasFullAccess=true                 | User: `activeRole: 'admin', hasFullAccess: true`                             | `canActivate()` → `true`, `hasPermission` NOT called |
+| 7   | should check DB for admin with hasFullAccess=false            | User: `activeRole: 'admin', hasFullAccess: false`. `hasPermission` → `true`  | `canActivate()` → `true`, `hasPermission` WAS called |
+| 8   | should deny admin without hasFullAccess when permission=false | User: `activeRole: 'admin', hasFullAccess: false`. `hasPermission` → `false` | `ForbiddenException`                                 |
+
+### describe('PermissionGuard — Employee DB Check')
+
+| #   | Test                                             | Mock-Setup                                                                          | Erwartung                                                                  |
+| --- | ------------------------------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 9   | should pass for employee when permission granted | User: `activeRole: 'employee'`. `hasPermission` → `true`                            | `canActivate()` → `true`                                                   |
+| 10  | should deny employee when permission not granted | User: `activeRole: 'employee'`. `hasPermission` → `false`                           | `ForbiddenException('Permission denied: canRead access required for ...')` |
+| 11  | should call hasPermission with correct params    | User: `id: 42`, Metadata: `feature='blackboard', module='posts', action='canWrite'` | `hasPermission(42, 'blackboard', 'posts', 'canWrite')` aufgerufen          |
+
+### describe('PermissionGuard — Role-Switching')
+
+| #   | Test                                                         | Mock-Setup                                                                                     | Erwartung                                                    |
+| --- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 12  | should check DB for role-switched admin (acting as employee) | User: `role: 'admin', activeRole: 'employee', isRoleSwitched: true`. `hasPermission` → `false` | `ForbiddenException` (Role-switched = treated as activeRole) |
+| 13  | should pass for role-switched admin when permission granted  | User: `role: 'admin', activeRole: 'employee', isRoleSwitched: true`. `hasPermission` → `true`  | `canActivate()` → `true`                                     |
+
+### describe('PermissionGuard — Logging')
+
+| #   | Test                                                      | Mock-Setup                                                        | Erwartung                                                                              |
+| --- | --------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 14  | should log warning with user details on permission denied | User: `id: 42, activeRole: 'employee'`. `hasPermission` → `false` | `Logger.warn` called with message containing `42`, `employee`, feature, module, action |
+
+### describe('PermissionGuard — getAllAndOverride Metadata Resolution')
+
+| #   | Test                                                            | Mock-Setup                                                                | Erwartung                                                         |
+| --- | --------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 15  | should read metadata from handler first, class second           | `reflector.getAllAndOverride` mit `[getHandler(), getClass()]`            | `getAllAndOverride` aufgerufen mit `[handler, class]` als Sources |
+| 16  | should pass RequiredPermission interface shape to hasPermission | Metadata: `{ featureCode: 'bb', moduleCode: 'posts', action: 'canRead' }` | `hasPermission` called with `(userId, 'bb', 'posts', 'canRead')`  |
+
+---
+
+## Test-Datei 5: `require-permission.decorator.test.ts`
+
+**Pfad:** `backend/src/nest/common/decorators/require-permission.decorator.test.ts`
+**SUT:** `RequirePermission`, `PERMISSION_KEY`
+**Keine Mocks nötig** — reiner Decorator-Test mit `Reflect.getMetadata()`
+
+### describe('RequirePermission()')
+
+| #   | Test                                                 | Input                                                   | Erwartung                                                   |
+| --- | ---------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | should set metadata with correct PERMISSION_KEY      | `@RequirePermission('blackboard', 'posts', 'canRead')`  | `Reflect.getMetadata(PERMISSION_KEY, target)` ist definiert |
+| 2   | should store featureCode in metadata                 | `@RequirePermission('blackboard', 'posts', 'canRead')`  | Metadata enthält `{ featureCode: 'blackboard' }`            |
+| 3   | should store moduleCode in metadata                  | `@RequirePermission('blackboard', 'posts', 'canRead')`  | Metadata enthält `{ moduleCode: 'posts' }`                  |
+| 4   | should store action in metadata                      | `@RequirePermission('blackboard', 'posts', 'canWrite')` | Metadata enthält `{ action: 'canWrite' }`                   |
+| 5   | should export PERMISSION_KEY as 'requiredPermission' | —                                                       | `PERMISSION_KEY === 'requiredPermission'`                   |
+
 ---
 
 ## Zusammenfassung
 
-| Test-Datei                            | Tests  | Fokus                                     |
-| ------------------------------------- | ------ | ----------------------------------------- |
-| `permission-registry.service.test.ts` | 20     | In-Memory-Registry, keine DB              |
-| `user-permissions.dto.test.ts`        | 18     | Zod-Schema-Validierung                    |
-| `user-permissions.service.test.ts`    | 28     | Service-Logik mit gemocktem DB + Registry |
-| **GESAMT**                            | **66** |                                           |
+| Test-Datei                             | Tests  | Fokus                                                     |
+| -------------------------------------- | ------ | --------------------------------------------------------- |
+| `permission-registry.service.test.ts`  | 20     | In-Memory-Registry, keine DB                              |
+| `user-permissions.dto.test.ts`         | 18     | Zod-Schema-Validierung                                    |
+| `user-permissions.service.test.ts`     | 37     | Service-Logik mit gemocktem DB + Registry + hasPermission |
+| `permission.guard.test.ts`             | 16     | Guard-Enforcement: Bypass, DB-Check, Logging              |
+| `require-permission.decorator.test.ts` | 5      | Decorator-Metadata (SetMetadata)                          |
+| **GESAMT**                             | **96** |                                                           |
 
 ---
 
@@ -345,20 +543,25 @@ beforeEach(() => {
 # Alle Unit Tests (inkl. Permission Tests)
 vitest run --project unit
 
-# Nur Permission Tests
+# Nur Permission Tests (alle 5 Dateien)
 vitest run --project unit backend/src/nest/common/permission-registry/permission-registry.service.test.ts
 vitest run --project unit backend/src/nest/user-permissions/dto/user-permissions.dto.test.ts
 vitest run --project unit backend/src/nest/user-permissions/user-permissions.service.test.ts
+vitest run --project unit backend/src/nest/common/guards/permission.guard.test.ts
+vitest run --project unit backend/src/nest/common/decorators/require-permission.decorator.test.ts
 
 # Verbose (jeder Test einzeln)
 vitest run --project unit --reporter verbose backend/src/nest/user-permissions/
+vitest run --project unit --reporter verbose backend/src/nest/common/guards/permission.guard.test.ts
 ```
 
 ---
 
 ## Definition of Done
 
-- [ ] Alle 66 Tests grün: `vitest run --project unit`
+### Management Layer (Phase 1–5)
+
+- [ ] Alle 75 Tests grün (Registry 20 + DTO 18 + Service 37): `vitest run --project unit`
 - [ ] Keine `any`-Types in Test-Files (außer mit eslint-disable + Begründung)
 - [ ] Mock-Pattern konsistent mit existierenden Tests (`createMockDb`, `vi.fn()`, `as unknown as`)
 - [ ] Factory-Functions für Test-Daten (`createCategory`, `createPermissionRow`)
@@ -366,10 +569,26 @@ vitest run --project unit --reporter verbose backend/src/nest/user-permissions/
 - [ ] `tenantTransaction`-Nutzung verifiziert (ADR-019 — kein `db.query()` für tenant-scoped)
 - [ ] allowedPermissions-Enforcement getestet (nicht-erlaubte Permissions → `false`)
 - [ ] Atomarität getestet (ungültiger Entry → kein DB-Write)
-- [ ] ESLint 0 Errors auf allen 3 Test-Dateien
+
+### Enforcement Layer (Phase 5b)
+
+- [ ] `hasPermission()` — alle 9 Tests grün (canRead/canWrite/canDelete true/false + fail-closed + DB-call verification)
+- [ ] `PermissionGuard` — alle 16 Tests grün (no metadata, auth check, root bypass, admin bypass, employee check, role-switch, logging)
+- [ ] `@RequirePermission()` — alle 5 Tests grün (metadata key + featureCode + moduleCode + action + export)
+- [ ] Root-Bypass verifiziert: Guard returnt `true` OHNE `hasPermission` aufzurufen
+- [ ] Admin-Full-Access-Bypass verifiziert: Guard returnt `true` OHNE `hasPermission` aufzurufen
+- [ ] Fail-Closed verifiziert: kein DB-Row → `ForbiddenException`
+- [ ] Role-Switching verifiziert: `activeRole` bestimmt Bypass-Logik, nicht `role`
+- [ ] Logger.warn bei Denial verifiziert: Message enthält userId, role, feature, module, action
+
+### Gesamt
+
+- [ ] Alle 96 Tests grün: `vitest run --project unit`
+- [ ] ESLint 0 Errors auf allen 5 Test-Dateien
 
 ---
 
 **Erstellt:** 2026-02-07
+**Erweitert:** 2026-02-07 (Phase 5b Enforcement Tests: hasPermission, PermissionGuard, RequirePermission)
 **Bezieht sich auf:** [`docs/USER-PERMISSIONS-PLAN.md`](./USER-PERMISSIONS-PLAN.md) — Phase 6
-**Status:** Umsetzen wenn Phasen 1–5 fertig
+**Status:** Umsetzen — Phasen 1–5b fertig, Tests können geschrieben werden
