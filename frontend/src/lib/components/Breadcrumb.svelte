@@ -120,11 +120,6 @@
       label: 'Employee Name Placeholder',
       icon: 'fa-shield-alt',
     },
-    {
-      pattern: /^\/manage-root\/permission\/[^/]+$/,
-      label: 'Employee Name Placeholder',
-      icon: 'fa-shield-alt',
-    },
   ];
 
   /**
@@ -185,12 +180,6 @@
       label: 'Admins verwalten',
       href: '/manage-admins',
       icon: 'fa-user-shield',
-    },
-    {
-      pattern: /^\/manage-root\/permission\/[^/]+$/,
-      label: 'Root User Verwaltung',
-      href: '/manage-root',
-      icon: 'fa-shield-alt',
     },
   ];
 

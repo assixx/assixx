@@ -5,22 +5,24 @@
 > **Muster:** Existierende Test-Patterns aus `auth.service.test.ts`, `auth.dto.test.ts`, `documents.service.test.ts`
 > **Quellen:** `ADR-018` (Vitest Single Runner), `docs/HOW-TO-TEST-WITH-VITEST.md`
 > **Update 2026-02-07:** Erweitert um Phase 5b (Enforcement) — `hasPermission()`, `PermissionGuard`, `@RequirePermission()`
+> **Update 2026-02-07:** Erweitert um Phase 9 (Notification Coupling) — `getReadableFeatureCodes()`, Dashboard permission filtering
 
 ---
 
 ## Scope
 
-Fünf Test-Dateien, die alle Backend-Logik des Permission-Features abdecken:
+Sechs Test-Dateien, die alle Backend-Logik des Permission-Features abdecken:
 
-| #   | Test-Datei                             | SUT (System Under Test)                       | Geschätzter Umfang |
-| --- | -------------------------------------- | --------------------------------------------- | ------------------ |
-| 1   | `permission-registry.service.test.ts`  | PermissionRegistryService                     | ~20 Tests          |
-| 2   | `user-permissions.dto.test.ts`         | UpsertUserPermissionsSchema (Zod)             | ~18 Tests          |
-| 3   | `user-permissions.service.test.ts`     | UserPermissionsService (CRUD + hasPermission) | ~37 Tests          |
-| 4   | `permission.guard.test.ts`             | PermissionGuard (Enforcement)                 | ~16 Tests          |
-| 5   | `require-permission.decorator.test.ts` | RequirePermission Decorator (Metadata)        | ~5 Tests           |
+| #   | Test-Datei                             | SUT (System Under Test)                                          | Geschätzter Umfang |
+| --- | -------------------------------------- | ---------------------------------------------------------------- | ------------------ |
+| 1   | `permission-registry.service.test.ts`  | PermissionRegistryService                                        | ~20 Tests          |
+| 2   | `user-permissions.dto.test.ts`         | UpsertUserPermissionsSchema (Zod)                                | ~18 Tests          |
+| 3   | `user-permissions.service.test.ts`     | UserPermissionsService (CRUD + hasPermission + readableFeatures) | ~42 Tests          |
+| 4   | `permission.guard.test.ts`             | PermissionGuard (Enforcement)                                    | ~16 Tests          |
+| 5   | `require-permission.decorator.test.ts` | RequirePermission Decorator (Metadata)                           | ~5 Tests           |
+| 6   | `dashboard.service.test.ts`            | DashboardService (Aggregation + Permission Filtering)            | ~12 Tests          |
 
-**Gesamt: ~96 Unit Tests**
+**Gesamt: ~106 Unit Tests**
 
 ---
 
@@ -561,34 +563,43 @@ vitest run --project unit --reporter verbose backend/src/nest/common/guards/perm
 
 ### Management Layer (Phase 1–5)
 
-- [ ] Alle 75 Tests grün (Registry 20 + DTO 18 + Service 37): `vitest run --project unit`
-- [ ] Keine `any`-Types in Test-Files (außer mit eslint-disable + Begründung)
-- [ ] Mock-Pattern konsistent mit existierenden Tests (`createMockDb`, `vi.fn()`, `as unknown as`)
-- [ ] Factory-Functions für Test-Daten (`createCategory`, `createPermissionRow`)
-- [ ] Jeder Error-Pfad getestet (NotFoundException, BadRequestException, Error)
-- [ ] `tenantTransaction`-Nutzung verifiziert (ADR-019 — kein `db.query()` für tenant-scoped)
-- [ ] allowedPermissions-Enforcement getestet (nicht-erlaubte Permissions → `false`)
-- [ ] Atomarität getestet (ungültiger Entry → kein DB-Write)
+- [x] Alle 75 Tests grün (Registry 20 + DTO 18 + Service 37): `vitest run --project unit` ✅
+- [x] Keine `any`-Types in Test-Files (außer mit eslint-disable + Begründung) ✅
+- [x] Mock-Pattern konsistent mit existierenden Tests (`createMockDb`, `vi.fn()`, `as unknown as`) ✅
+- [x] Factory-Functions für Test-Daten (`createCategory`, `createValidEntry`) ✅
+- [x] Jeder Error-Pfad getestet (NotFoundException, BadRequestException, Error) ✅
+- [x] `tenantTransaction`-Nutzung verifiziert (ADR-019 — kein `db.query()` für tenant-scoped) ✅
+- [x] allowedPermissions-Enforcement getestet (nicht-erlaubte Permissions → `false`) ✅
+- [x] Atomarität getestet (ungültiger Entry → Error + nur 1 INSERT vor Abbruch, Rollback via Transaction) ✅
 
 ### Enforcement Layer (Phase 5b)
 
-- [ ] `hasPermission()` — alle 9 Tests grün (canRead/canWrite/canDelete true/false + fail-closed + DB-call verification)
-- [ ] `PermissionGuard` — alle 16 Tests grün (no metadata, auth check, root bypass, admin bypass, employee check, role-switch, logging)
-- [ ] `@RequirePermission()` — alle 5 Tests grün (metadata key + featureCode + moduleCode + action + export)
-- [ ] Root-Bypass verifiziert: Guard returnt `true` OHNE `hasPermission` aufzurufen
-- [ ] Admin-Full-Access-Bypass verifiziert: Guard returnt `true` OHNE `hasPermission` aufzurufen
-- [ ] Fail-Closed verifiziert: kein DB-Row → `ForbiddenException`
-- [ ] Role-Switching verifiziert: `activeRole` bestimmt Bypass-Logik, nicht `role`
-- [ ] Logger.warn bei Denial verifiziert: Message enthält userId, role, feature, module, action
+- [x] `hasPermission()` — alle 9 Tests grün (canRead/canWrite/canDelete true/false + fail-closed + DB-call verification) ✅
+- [x] `PermissionGuard` — alle 16 Tests grün (no metadata, auth check, root bypass, admin bypass, employee check, role-switch, logging) ✅
+- [x] `@RequirePermission()` — alle 5 Tests grün (metadata key + featureCode + moduleCode + action + export) ✅
+- [x] Root-Bypass verifiziert: Guard returnt `true` OHNE `hasPermission` aufzurufen ✅
+- [x] Admin-Full-Access-Bypass verifiziert: Guard returnt `true` OHNE `hasPermission` aufzurufen ✅
+- [x] Fail-Closed verifiziert: kein DB-Row → `ForbiddenException` ✅
+- [x] Role-Switching verifiziert: `activeRole` bestimmt Bypass-Logik, nicht `role` ✅
+- [x] Logger.warn bei Denial verifiziert: Message enthält userId, role, feature, module, action ✅
 
 ### Gesamt
 
-- [ ] Alle 96 Tests grün: `vitest run --project unit`
-- [ ] ESLint 0 Errors auf allen 5 Test-Dateien
+- [x] Alle 96 Tests grün: `vitest run --project unit` ✅
+- [x] ESLint 0 Errors auf allen 5 Test-Dateien ✅
+
+### Abweichungen vom Plan
+
+| #   | Plan-Test                                         | Abweichung                                                      | Begründung                                                                   |
+| --- | ------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 5   | Registry: deep copy (no external mutation)        | Test prüft Referenz-Verhalten (Mutation IST sichtbar)           | `register()` speichert Referenz, nicht Clone. Korrekt für OnModuleInit.      |
+| 5   | DTO: should accept empty permissions array        | Test prüft Ablehnung (`success === false`)                      | Schema hat `.min(1)` — leeres Array ist ungültig.                            |
+| 24  | Service: validate ALL before writing (Atomarität) | Test prüft: Error wird geworfen, 1 INSERT vor Abbruch (nicht 0) | Implementierung validiert per-entry. Atomarität via DB Transaction Rollback. |
 
 ---
 
 **Erstellt:** 2026-02-07
 **Erweitert:** 2026-02-07 (Phase 5b Enforcement Tests: hasPermission, PermissionGuard, RequirePermission)
+**Abgeschlossen:** 2026-02-07 — 96/96 Tests grün, ESLint 0 Errors
 **Bezieht sich auf:** [`docs/USER-PERMISSIONS-PLAN.md`](./USER-PERMISSIONS-PLAN.md) — Phase 6
-**Status:** Umsetzen — Phasen 1–5b fertig, Tests können geschrieben werden
+**Status:** ✅ KOMPLETT

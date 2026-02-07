@@ -3,7 +3,8 @@
  * @module lib/server/load-permission-data
  *
  * Loads user data and permission tree from backend API.
- * Used by manage-employees, manage-admins, and manage-root permission pages.
+ * Used by manage-employees and manage-admins permission pages.
+ * Root users are excluded — they always have full access (DB trigger enforced).
  */
 import { redirect } from '@sveltejs/kit';
 
@@ -67,7 +68,7 @@ interface LoadParams {
 
 /**
  * Load user data and permission tree for the permission settings page.
- * Shared across manage-employees, manage-admins, and manage-root routes.
+ * Shared across manage-employees and manage-admins routes.
  */
 export async function loadPermissionData({
   cookies,

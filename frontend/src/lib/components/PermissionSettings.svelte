@@ -179,6 +179,31 @@
     return (resolve as (p: string) => string)(path);
   }
 
+  /** Set a single module's permissions to the given value (respecting allowedPermissions) */
+  function setModulePermissions(mod: ModulePermission, value: boolean): void {
+    mod.canRead = value && mod.allowedPermissions.includes('canRead');
+    mod.canWrite = value && mod.allowedPermissions.includes('canWrite');
+    mod.canDelete = value && mod.allowedPermissions.includes('canDelete');
+  }
+
+  /** Select all allowed permissions across all categories */
+  function selectAll(): void {
+    for (const cat of categories) {
+      for (const mod of cat.modules) {
+        setModulePermissions(mod, true);
+      }
+    }
+  }
+
+  /** Deselect all permissions across all categories */
+  function deselectAll(): void {
+    for (const cat of categories) {
+      for (const mod of cat.modules) {
+        setModulePermissions(mod, false);
+      }
+    }
+  }
+
   function goBack(): void {
     void goto(resolvePath(backUrl));
   }
@@ -241,7 +266,7 @@
       {:else}
         <!-- Permission Matrix -->
         <div class="perm-matrix">
-          <!-- Header Row: User name + column headers -->
+          <!-- Header Row: User name + bulk actions + column headers -->
           <div class="perm-row perm-row--header">
             <div class="perm-label">
               {#if employee}
@@ -251,6 +276,26 @@
                   {employee.lastName}
                 </span>
               {/if}
+              <div class="perm-bulk-actions">
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  title="Alle Berechtigungen aktivieren"
+                  onclick={selectAll}
+                >
+                  <i class="fas fa-check-double mr-1"></i>
+                  Alle
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-warning"
+                  title="Alle Berechtigungen deaktivieren"
+                  onclick={deselectAll}
+                >
+                  <i class="fas fa-times mr-1"></i>
+                  Keine
+                </button>
+              </div>
             </div>
             <div class="perm-cols">
               {#each PERMISSION_COLUMNS as col, colIdx (col.key)}
@@ -381,6 +426,13 @@
 
   .perm-row--header {
     padding-bottom: 12px;
+  }
+
+  /* Bulk action buttons container */
+  .perm-bulk-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
   }
 
   .perm-row--category {
@@ -547,8 +599,8 @@
   }
 
   .perm-check__box {
-    width: 36px;
-    height: 36px;
+    width: 25px;
+    height: 25px;
     border-radius: var(--radius-sm);
     border: 2px solid var(--color-glass-border);
     display: flex;

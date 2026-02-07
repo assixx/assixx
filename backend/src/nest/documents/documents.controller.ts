@@ -40,6 +40,7 @@ import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
@@ -193,6 +194,11 @@ interface ChatFoldersResponse {
   total: number;
 }
 
+/** Permission constants for \@RequirePermission decorator */
+const DOC_FEATURE = 'documents';
+const DOC_FILES = 'documents-files';
+const DOC_ARCHIVE = 'documents-archive';
+
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
@@ -202,6 +208,7 @@ export class DocumentsController {
    * List documents with filters and pagination
    */
   @Get()
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async listDocuments(
     @Query() query: ListDocumentsQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -215,6 +222,7 @@ export class DocumentsController {
    * Get document statistics
    */
   @Get('stats')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getDocumentStats(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -227,6 +235,7 @@ export class DocumentsController {
    * Get count of unread documents for notification badge
    */
   @Get('unread-count')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getUnreadCount(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -243,6 +252,7 @@ export class DocumentsController {
    * Get chat folders for document explorer
    */
   @Get('chat-folders')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getChatFolders(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -255,6 +265,7 @@ export class DocumentsController {
    * Get document by UUID (preferred)
    */
   @Get('uuid/:uuid')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getDocumentByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -273,6 +284,7 @@ export class DocumentsController {
    * @deprecated Use GET /documents/uuid/:uuid instead
    */
   @Get(':id')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getDocumentById(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -286,6 +298,7 @@ export class DocumentsController {
    * Upload/create a new document
    */
   @Post()
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canWrite')
   @UseInterceptors(FileInterceptor('document', documentUploadOptions))
   @HttpCode(HttpStatus.CREATED)
   async createDocument(
@@ -312,6 +325,7 @@ export class DocumentsController {
    * Update document by UUID (preferred)
    */
   @Put('uuid/:uuid')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canWrite')
   async updateDocumentByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateDocumentDto,
@@ -332,6 +346,7 @@ export class DocumentsController {
    * @deprecated Use PUT /documents/uuid/:uuid instead
    */
   @Put(':id')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canWrite')
   async updateDocument(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateDocumentDto,
@@ -351,6 +366,7 @@ export class DocumentsController {
    * Delete document by UUID (preferred)
    */
   @Delete('uuid/:uuid')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canDelete')
   async deleteDocumentByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -369,6 +385,7 @@ export class DocumentsController {
    * @deprecated Use DELETE /documents/uuid/:uuid instead
    */
   @Delete(':id')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canDelete')
   async deleteDocument(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -382,6 +399,7 @@ export class DocumentsController {
    * Archive document by UUID (preferred)
    */
   @Post('uuid/:uuid/archive')
+  @RequirePermission(DOC_FEATURE, DOC_ARCHIVE, 'canWrite')
   async archiveDocumentByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -400,6 +418,7 @@ export class DocumentsController {
    * @deprecated Use POST /documents/uuid/:uuid/archive instead
    */
   @Post(':id/archive')
+  @RequirePermission(DOC_FEATURE, DOC_ARCHIVE, 'canWrite')
   async archiveDocument(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -413,6 +432,7 @@ export class DocumentsController {
    * Unarchive document by UUID (preferred)
    */
   @Post('uuid/:uuid/unarchive')
+  @RequirePermission(DOC_FEATURE, DOC_ARCHIVE, 'canWrite')
   async unarchiveDocumentByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -431,6 +451,7 @@ export class DocumentsController {
    * @deprecated Use POST /documents/uuid/:uuid/unarchive instead
    */
   @Post(':id/unarchive')
+  @RequirePermission(DOC_FEATURE, DOC_ARCHIVE, 'canWrite')
   async unarchiveDocument(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -444,6 +465,7 @@ export class DocumentsController {
    * Download document by UUID (preferred)
    */
   @Get('uuid/:uuid/download')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async downloadDocumentByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -474,6 +496,7 @@ export class DocumentsController {
    * @deprecated Use GET /documents/uuid/:uuid/download instead
    */
   @Get(':id/download')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async downloadDocument(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -502,6 +525,7 @@ export class DocumentsController {
    * Preview document by UUID (preferred)
    */
   @Get('uuid/:uuid/preview')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async previewDocumentByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -540,6 +564,7 @@ export class DocumentsController {
    * @deprecated Use GET /documents/uuid/:uuid/preview instead
    */
   @Get(':id/preview')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async previewDocument(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -572,6 +597,7 @@ export class DocumentsController {
    * Mark document as read by UUID (preferred)
    */
   @Post('uuid/:uuid/read')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async markDocumentAsReadByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -590,6 +616,7 @@ export class DocumentsController {
    * @deprecated Use POST /documents/uuid/:uuid/read instead
    */
   @Post(':id/read')
+  @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async markDocumentAsRead(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,

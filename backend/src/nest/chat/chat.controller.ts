@@ -34,6 +34,7 @@ import {
   validatePath,
 } from '../../utils/pathSecurity.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -131,6 +132,11 @@ const fileFilter = (
   }
 };
 
+/** Permission constants for RequirePermission decorator */
+const CHAT_FEATURE = 'chat';
+const CHAT_CONV = 'chat-conversations';
+const CHAT_MSG = 'chat-messages';
+
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatController {
@@ -144,6 +150,7 @@ export class ChatController {
   // ============================================================
 
   @Get('users')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canRead')
   async getChatUsers(@Query() query: GetUsersQueryDto): Promise<unknown> {
     return await this.chatService.getChatUsers(query);
   }
@@ -153,6 +160,7 @@ export class ChatController {
   // ============================================================
 
   @Get('conversations')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canRead')
   async getConversations(
     @Query() query: GetConversationsQueryDto,
   ): Promise<unknown> {
@@ -160,6 +168,7 @@ export class ChatController {
   }
 
   @Post('conversations')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canWrite')
   async createConversation(
     @Body() dto: CreateConversationDto,
   ): Promise<unknown> {
@@ -167,6 +176,7 @@ export class ChatController {
   }
 
   @Get('conversations/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canRead')
   async getConversation(
     @Param() params: ConversationIdParamDto,
   ): Promise<unknown> {
@@ -174,6 +184,7 @@ export class ChatController {
   }
 
   @Put('conversations/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canWrite')
   async updateConversation(
     @Param() params: ConversationIdParamDto,
     @Body() dto: UpdateConversationDto,
@@ -182,6 +193,7 @@ export class ChatController {
   }
 
   @Delete('conversations/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canDelete')
   async deleteConversation(
     @Param() params: ConversationIdParamDto,
   ): Promise<{ message: string }> {
@@ -193,6 +205,7 @@ export class ChatController {
   // ============================================================
 
   @Get('conversations/:id/messages')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async getMessages(
     @Param() params: ConversationIdParamDto,
     @Query() query: GetMessagesQueryDto,
@@ -201,6 +214,7 @@ export class ChatController {
   }
 
   @Post('conversations/:id/messages')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canWrite')
   @UseInterceptors(
     FileInterceptor('attachment', {
       storage: diskStorageConfig,
@@ -230,6 +244,7 @@ export class ChatController {
   }
 
   @Put('messages/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canWrite')
   async editMessage(
     @Param() params: MessageIdParamDto,
     @Body() dto: EditMessageDto,
@@ -238,6 +253,7 @@ export class ChatController {
   }
 
   @Delete('messages/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canDelete')
   async deleteMessage(
     @Param() params: MessageIdParamDto,
   ): Promise<{ message: string }> {
@@ -245,16 +261,19 @@ export class ChatController {
   }
 
   @Post('conversations/:id/read')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async markAsRead(@Param() params: ConversationIdParamDto): Promise<unknown> {
     return await this.chatService.markAsRead(params.id);
   }
 
   @Get('unread-count')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async getUnreadCount(): Promise<unknown> {
     return await this.chatService.getUnreadCount();
   }
 
   @Get('search')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async searchMessages(
     @Query() query: SearchMessagesQueryDto,
   ): Promise<unknown> {
@@ -266,6 +285,7 @@ export class ChatController {
   // ============================================================
 
   @Post('conversations/:id/participants')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canWrite')
   async addParticipants(
     @Param() params: ConversationIdParamDto,
     @Body() dto: AddParticipantsDto,
@@ -274,6 +294,7 @@ export class ChatController {
   }
 
   @Delete('conversations/:id/participants/:userId')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canWrite')
   async removeParticipant(
     @Param() params: RemoveParticipantParamsDto,
   ): Promise<unknown> {
@@ -281,6 +302,7 @@ export class ChatController {
   }
 
   @Post('conversations/:id/leave')
+  @RequirePermission(CHAT_FEATURE, CHAT_CONV, 'canWrite')
   async leaveConversation(
     @Param() params: ConversationIdParamDto,
   ): Promise<unknown> {
@@ -292,6 +314,7 @@ export class ChatController {
   // ============================================================
 
   @Get('attachments/:filename')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async downloadAttachment(
     @Param() params: AttachmentFilenameParamDto,
     @Query() query: AttachmentQueryDto,
@@ -326,6 +349,7 @@ export class ChatController {
   // ============================================================
 
   @Post('scheduled-messages')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canWrite')
   async createScheduledMessage(
     @Body() dto: CreateScheduledMessageDto,
   ): Promise<unknown> {
@@ -333,11 +357,13 @@ export class ChatController {
   }
 
   @Get('scheduled-messages')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async getScheduledMessages(): Promise<unknown> {
     return await this.chatService.getScheduledMessages();
   }
 
   @Get('scheduled-messages/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async getScheduledMessage(
     @Param() params: ScheduledMessageIdParamDto,
   ): Promise<unknown> {
@@ -345,6 +371,7 @@ export class ChatController {
   }
 
   @Delete('scheduled-messages/:id')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canDelete')
   async cancelScheduledMessage(
     @Param() params: ScheduledMessageIdParamDto,
   ): Promise<{ message: string }> {
@@ -352,6 +379,7 @@ export class ChatController {
   }
 
   @Get('conversations/:id/scheduled-messages')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async getConversationScheduledMessages(
     @Param() params: ConversationScheduledMessagesParamDto,
   ): Promise<unknown> {
@@ -368,6 +396,7 @@ export class ChatController {
    * Upload attachment to a conversation (stored as document)
    */
   @Post('conversations/:id/attachments')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canWrite')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -431,6 +460,7 @@ export class ChatController {
    * Get all attachments for a conversation
    */
   @Get('conversations/:id/attachments')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async getConversationAttachments(
     @Param() params: ConversationAttachmentsParamDto,
     @CurrentUser() user: NestAuthUser,
@@ -455,6 +485,7 @@ export class ChatController {
    * Download attachment by file UUID
    */
   @Get('attachments/:fileUuid/download')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canRead')
   async downloadAttachmentByUuid(
     @Param() params: AttachmentFileUuidParamDto,
     @Query() query: AttachmentDownloadQueryDto,
@@ -495,6 +526,7 @@ export class ChatController {
    * Delete a chat attachment
    */
   @Delete('attachments/:documentId')
+  @RequirePermission(CHAT_FEATURE, CHAT_MSG, 'canDelete')
   async deleteConversationAttachment(
     @Param() params: AttachmentDocumentIdParamDto,
     @CurrentUser() user: NestAuthUser,

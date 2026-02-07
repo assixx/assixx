@@ -10,6 +10,7 @@ import { Module } from '@nestjs/common';
 import { DocumentsModule } from '../documents/documents.module.js';
 import { ChatConversationsService } from './chat-conversations.service.js';
 import { ChatMessagesService } from './chat-messages.service.js';
+import { ChatPermissionRegistrar } from './chat-permission.registrar.js';
 import { ChatScheduledService } from './chat-scheduled.service.js';
 import { ChatController } from './chat.controller.js';
 import { ChatService } from './chat.service.js';
@@ -24,6 +25,8 @@ import { ScheduledMessageProcessorService } from './scheduled-message-processor.
     ChatScheduledService,
     ChatService,
     ScheduledMessageProcessorService,
+    // Permission registration (ADR-020)
+    ChatPermissionRegistrar,
   ],
   exports: [ChatService],
 })
