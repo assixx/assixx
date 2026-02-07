@@ -117,7 +117,7 @@ export class RoleSyncManager {
     this.setupBroadcastChannel();
     this.setupStorageListener();
 
-    log.info('Initialized with dual-sync (BroadcastChannel + Storage Event)');
+    log.debug('Initialized with dual-sync (BroadcastChannel + Storage Event)');
   }
 
   /**
