@@ -344,8 +344,8 @@ export function populateFormFromEmployee(employee: Employee): EmployeeFormData {
   return {
     firstName: employee.firstName,
     lastName: employee.lastName,
-    email: employee.email,
-    emailConfirm: employee.email,
+    email: employee.email.toLowerCase(),
+    emailConfirm: employee.email.toLowerCase(),
     password: '',
     passwordConfirm: '',
     employeeNumber: employee.employeeNumber ?? '',
@@ -418,7 +418,7 @@ export function validateEmailMatch(
   emailConfirm: string,
 ): boolean {
   if (emailConfirm === '') return true;
-  return email === emailConfirm;
+  return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
 /**

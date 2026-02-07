@@ -10,6 +10,7 @@
  */
 import { Module } from '@nestjs/common';
 
+import { UserPermissionsModule } from '../user-permissions/user-permissions.module.js';
 import { NotificationFeatureService } from './notification-feature.service.js';
 import { NotificationPreferencesService } from './notification-preferences.service.js';
 import { NotificationStatisticsService } from './notification-statistics.service.js';
@@ -17,6 +18,7 @@ import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
 
 @Module({
+  imports: [UserPermissionsModule],
   controllers: [NotificationsController],
   providers: [
     NotificationsService,

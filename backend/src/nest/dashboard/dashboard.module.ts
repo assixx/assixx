@@ -18,6 +18,7 @@ import { DocumentsModule } from '../documents/documents.module.js';
 import { KvpModule } from '../kvp/kvp.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { SurveysModule } from '../surveys/surveys.module.js';
+import { UserPermissionsModule } from '../user-permissions/user-permissions.module.js';
 import { DashboardController } from './dashboard.controller.js';
 import { DashboardService } from './dashboard.service.js';
 
@@ -30,6 +31,7 @@ import { DashboardService } from './dashboard.service.js';
     DocumentsModule,
     KvpModule,
     SurveysModule,
+    UserPermissionsModule,
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

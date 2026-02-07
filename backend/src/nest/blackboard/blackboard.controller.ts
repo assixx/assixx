@@ -49,6 +49,7 @@ import type { FastifyReply } from 'fastify';
 import multer from 'fastify-multer';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -69,6 +70,12 @@ import {
   ListEntriesQueryDto,
   UpdateEntryDto,
 } from './dto/index.js';
+
+/** Permission constants for \@RequirePermission decorator */
+const BB_FEATURE = 'blackboard';
+const BB_POSTS = 'blackboard-posts';
+const BB_COMMENTS = 'blackboard-comments';
+const BB_ARCHIVE = 'blackboard-archive';
 
 const { memoryStorage } = multer;
 
@@ -123,6 +130,7 @@ export class BlackboardController {
    * List entries with filters and pagination
    */
   @Get('entries')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async listEntries(
     @Query() query: ListEntriesQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -145,6 +153,7 @@ export class BlackboardController {
    * Get dashboard entries for current user
    */
   @Get('dashboard')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async getDashboardEntries(
     @Query() query: DashboardQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -162,6 +171,7 @@ export class BlackboardController {
    * Get count of unconfirmed entries for notification badge
    */
   @Get('unconfirmed-count')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async getUnconfirmedCount(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -174,6 +184,7 @@ export class BlackboardController {
    * Get entry by ID (numeric or UUID)
    */
   @Get('entries/:id')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async getEntryById(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -192,6 +203,7 @@ export class BlackboardController {
    * Get full entry with comments (optimized single request)
    */
   @Get('entries/:id/full')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async getEntryFull(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -212,6 +224,7 @@ export class BlackboardController {
   @Post('entries')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createEntry(
     @Body() dto: CreateEntryDto,
@@ -228,6 +241,7 @@ export class BlackboardController {
   @Put('entries/:id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canWrite')
   async updateEntry(
     @Param('id') id: string,
     @Body() dto: UpdateEntryDto,
@@ -250,6 +264,7 @@ export class BlackboardController {
   @Delete('entries/:id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canDelete')
   async deleteEntry(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -271,6 +286,7 @@ export class BlackboardController {
   @Post('entries/:id/archive')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_ARCHIVE, 'canWrite')
   @HttpCode(HttpStatus.OK)
   async archiveEntry(
     @Param('id') id: string,
@@ -293,6 +309,7 @@ export class BlackboardController {
   @Post('entries/:id/unarchive')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_ARCHIVE, 'canWrite')
   async unarchiveEntry(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -312,6 +329,7 @@ export class BlackboardController {
    * Confirm reading an entry
    */
   @Post('entries/:id/confirm')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   @HttpCode(HttpStatus.OK)
   async confirmEntry(
     @Param('id') id: string,
@@ -326,6 +344,7 @@ export class BlackboardController {
    * Remove confirmation (mark as unread)
    */
   @Delete('entries/:id/confirm')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async unconfirmEntry(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -341,6 +360,7 @@ export class BlackboardController {
   @Get('entries/:id/confirmations')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async getConfirmationStatus(
     @Param('id') id: string,
     @TenantId() tenantId: number,
@@ -357,6 +377,7 @@ export class BlackboardController {
    * Get comments for an entry
    */
   @Get('entries/:id/comments')
+  @RequirePermission(BB_FEATURE, BB_COMMENTS, 'canRead')
   async getComments(
     @Param('id') id: string,
     @TenantId() tenantId: number,
@@ -370,6 +391,7 @@ export class BlackboardController {
    * Add a comment to an entry
    */
   @Post('entries/:id/comments')
+  @RequirePermission(BB_FEATURE, BB_COMMENTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id') id: string,
@@ -397,6 +419,7 @@ export class BlackboardController {
   @Delete('comments/:commentId')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_COMMENTS, 'canDelete')
   async deleteComment(
     @Param('commentId', ParseIntPipe) commentId: number,
     @TenantId() tenantId: number,
@@ -415,6 +438,7 @@ export class BlackboardController {
   @Post('entries/:id/attachments')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canWrite')
   @UseInterceptors(FileInterceptor('attachment', multerOptions))
   @HttpCode(HttpStatus.CREATED)
   async uploadAttachment(
@@ -440,6 +464,7 @@ export class BlackboardController {
    * Get attachments for an entry
    */
   @Get('entries/:id/attachments')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async getAttachments(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -458,6 +483,7 @@ export class BlackboardController {
    * Download attachment
    */
   @Get('attachments/:attachmentId')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async downloadAttachment(
     @Param() params: AttachmentIdParamDto,
     @CurrentUser() user: NestAuthUser,
@@ -486,6 +512,7 @@ export class BlackboardController {
    * Preview attachment inline
    */
   @Get('attachments/:attachmentId/preview')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async previewAttachment(
     @Param() params: AttachmentIdParamDto,
     @CurrentUser() user: NestAuthUser,
@@ -514,6 +541,7 @@ export class BlackboardController {
    * Download attachment by file UUID (secure URL)
    */
   @Get('attachments/:fileUuid/download')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canRead')
   async downloadByFileUuid(
     @Param() params: FileUuidParamDto,
     @CurrentUser() user: NestAuthUser,
@@ -544,6 +572,7 @@ export class BlackboardController {
   @Delete('attachments/:attachmentId')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(BB_FEATURE, BB_POSTS, 'canDelete')
   async deleteAttachment(
     @Param() params: AttachmentIdParamDto,
     @CurrentUser() user: NestAuthUser,

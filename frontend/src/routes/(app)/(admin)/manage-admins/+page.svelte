@@ -5,7 +5,7 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
 
   import {
     showSuccessAlert,
@@ -388,6 +388,10 @@
   // STATUS TOGGLE HANDLER
   // =============================================================================
 
+  function navigateToPermissionPage(uuid: string): void {
+    void goto(`/manage-admins/permission/${uuid}`);
+  }
+
   function handleStatusToggle(status: StatusFilter) {
     currentStatusFilter = status;
     // filteredAdmins is $derived - automatically updates when filter changes
@@ -632,6 +636,7 @@
                   <AdminTableRow
                     {admin}
                     onedit={openEditModal}
+                    onpermission={navigateToPermissionPage}
                     ondelete={openDeleteModal}
                   />
                 {/each}

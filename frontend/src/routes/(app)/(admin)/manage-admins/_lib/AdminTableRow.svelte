@@ -20,10 +20,11 @@
   interface Props {
     admin: Admin;
     onedit: (adminId: number) => void;
+    onpermission: (uuid: string) => void;
     ondelete: (adminId: number) => void;
   }
 
-  const { admin, onedit, ondelete }: Props = $props();
+  const { admin, onedit, onpermission, ondelete }: Props = $props();
 
   // =============================================================================
   // DERIVED VALUES
@@ -110,6 +111,17 @@
         }}
       >
         <i class="fas fa-edit"></i>
+      </button>
+      <button
+        type="button"
+        class="action-icon action-icon--info"
+        title="Berechtigungen"
+        aria-label="Berechtigungen verwalten"
+        onclick={() => {
+          onpermission(admin.uuid);
+        }}
+      >
+        <i class="fas fa-cog"></i>
       </button>
       <button
         type="button"
