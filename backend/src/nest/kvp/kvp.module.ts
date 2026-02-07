@@ -17,6 +17,7 @@ import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
+import { KvpPermissionRegistrar } from './kvp-permission.registrar.js';
 import { KvpController } from './kvp.controller.js';
 import { KvpService } from './kvp.service.js';
 
@@ -29,6 +30,8 @@ import { KvpService } from './kvp.service.js';
     KvpCommentsService,
     KvpAttachmentsService,
     KvpConfirmationsService,
+    // Permission registration (ADR-020)
+    KvpPermissionRegistrar,
   ],
   exports: [KvpService],
 })

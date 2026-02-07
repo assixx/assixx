@@ -15,6 +15,7 @@ import { BlackboardAttachmentsService } from './blackboard-attachments.service.j
 import { BlackboardCommentsService } from './blackboard-comments.service.js';
 import { BlackboardConfirmationsService } from './blackboard-confirmations.service.js';
 import { BlackboardEntriesService } from './blackboard-entries.service.js';
+import { BlackboardPermissionRegistrar } from './blackboard-permission.registrar.js';
 import { BlackboardController } from './blackboard.controller.js';
 import { BlackboardService } from './blackboard.service.js';
 
@@ -32,6 +33,8 @@ import { BlackboardService } from './blackboard.service.js';
     BlackboardAttachmentsService,
     // Cron job service
     BlackboardArchiveService,
+    // Permission registration (ADR-020)
+    BlackboardPermissionRegistrar,
   ],
   exports: [BlackboardService],
 })

@@ -24,12 +24,14 @@ import { CalendarModule } from './calendar/calendar.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
+import { PermissionGuard } from './common/guards/permission.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 // CustomThrottlerGuard is NOT global - applied selectively via @AuthThrottle(), @UploadThrottle()
 // Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
 import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { LoggerModule } from './common/logger/logger.module.js';
+import { PermissionRegistryModule } from './common/permission-registry/permission-registry.module.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
@@ -53,6 +55,7 @@ import { SignupModule } from './signup/signup.module.js';
 import { SurveysModule } from './surveys/surveys.module.js';
 import { TeamsModule } from './teams/teams.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
+import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -126,6 +129,10 @@ import { UsersModule } from './users/users.module.js';
     // Database module (raw PostgreSQL with pg)
     DatabaseModule,
 
+    // Permission Registry (Global Singleton, ADR-020)
+    // Feature modules register their permissions via OnModuleInit
+    PermissionRegistryModule,
+
     // Rate Limiting Module (Redis-backed)
     AppThrottlerModule,
 
@@ -157,6 +164,7 @@ import { UsersModule } from './users/users.module.js';
     ShiftsModule,
     SignupModule,
     ChatModule,
+    UserPermissionsModule,
   ],
   providers: [
     // NOTE: Throttler Guard is NOT global - applied selectively via decorators
@@ -172,6 +180,13 @@ import { UsersModule } from './users/users.module.js';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    // Global Permission Guard (runs after Roles guard, ADR-020)
+    // Checks @RequirePermission() decorator against user_feature_permissions table
+    // Root + admin-with-full-access bypass; all others: fail-closed DB check
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
     },
     // Global Exception Filter
     {

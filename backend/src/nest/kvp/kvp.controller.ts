@@ -52,6 +52,7 @@ import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -98,6 +99,11 @@ interface MessageResponse {
   message: string;
 }
 
+/** Permission constants for RequirePermission decorator */
+const KVP_FEATURE = 'kvp';
+const KVP_SUGGESTIONS = 'kvp-suggestions';
+const KVP_COMMENTS = 'kvp-comments';
+
 @Controller('kvp')
 export class KvpController {
   constructor(
@@ -110,6 +116,7 @@ export class KvpController {
    * Get KVP categories for the tenant
    */
   @Get('categories')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getCategories(@TenantId() tenantId: number): Promise<CategoryOption[]> {
     return await this.kvpService.getCategories(tenantId);
   }
@@ -125,6 +132,7 @@ export class KvpController {
   @Get('categories/customizable')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getCustomizableCategories(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -143,6 +151,7 @@ export class KvpController {
   @Put('categories/override/:categoryId')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   async upsertOverride(
     @Param('categoryId') categoryId: string,
     @Body() dto: OverrideCategoryNameDto,
@@ -166,6 +175,7 @@ export class KvpController {
   @Delete('categories/override/:categoryId')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canDelete')
   async deleteOverride(
     @Param('categoryId') categoryId: string,
     @CurrentUser() user: NestAuthUser,
@@ -188,6 +198,7 @@ export class KvpController {
   @Post('categories/custom')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createCustomCategory(
     @Body() dto: CreateCustomCategoryDto,
@@ -212,6 +223,7 @@ export class KvpController {
   @Delete('categories/custom/:id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canDelete')
   async deleteCustomCategory(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -232,6 +244,7 @@ export class KvpController {
    * Get dashboard statistics
    */
   @Get('dashboard/stats')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getDashboardStats(
     @TenantId() tenantId: number,
   ): Promise<DashboardStats> {
@@ -247,6 +260,7 @@ export class KvpController {
    * Get count of unconfirmed suggestions for notification badge
    */
   @Get('unconfirmed-count')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getUnconfirmedCount(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -259,6 +273,7 @@ export class KvpController {
    * Mark a suggestion as read (confirmed) by current user
    */
   @Post(':uuid/confirm')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   @HttpCode(HttpStatus.OK)
   async confirmSuggestion(
     @Param('uuid') uuid: string,
@@ -273,6 +288,7 @@ export class KvpController {
    * Mark a suggestion as unread (remove confirmation) by current user
    */
   @Delete(':uuid/confirm')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async unconfirmSuggestion(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -286,6 +302,7 @@ export class KvpController {
    * List suggestions with filters and pagination
    */
   @Get()
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async listSuggestions(
     @Query() query: ListSuggestionsQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -309,6 +326,7 @@ export class KvpController {
    * Get suggestion by ID (numeric or UUID)
    */
   @Get(':id')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getSuggestionById(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -329,6 +347,7 @@ export class KvpController {
    * Rate limit: Employees can create max 1 KVP per day
    */
   @Post()
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createSuggestion(
     @Body() dto: CreateSuggestionDto,
@@ -348,6 +367,7 @@ export class KvpController {
    * Update a suggestion
    */
   @Put(':id')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   async updateSuggestion(
     @Param('id') id: string,
     @Body() dto: UpdateSuggestionDto,
@@ -369,6 +389,7 @@ export class KvpController {
    * Delete a suggestion
    */
   @Delete(':id')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canDelete')
   async deleteSuggestion(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -390,6 +411,7 @@ export class KvpController {
   @Put(':id/share')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   async shareSuggestion(
     @Param('id') id: string,
     @Body() dto: ShareSuggestionDto,
@@ -413,6 +435,7 @@ export class KvpController {
   @Post(':id/unshare')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   async unshareSuggestion(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -434,6 +457,7 @@ export class KvpController {
   @Post(':id/archive')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.OK)
   async archiveSuggestion(
     @Param('id') id: string,
@@ -455,6 +479,7 @@ export class KvpController {
   @Post(':id/unarchive')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.OK)
   async unarchiveSuggestion(
     @Param('id') id: string,
@@ -474,6 +499,7 @@ export class KvpController {
    * Get comments for a suggestion
    */
   @Get(':id/comments')
+  @RequirePermission(KVP_FEATURE, KVP_COMMENTS, 'canRead')
   async getComments(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -496,6 +522,7 @@ export class KvpController {
   @Post(':id/comments')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_COMMENTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id') id: string,
@@ -519,6 +546,7 @@ export class KvpController {
    * Get attachments for a suggestion
    */
   @Get(':id/attachments')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getAttachments(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -539,6 +567,7 @@ export class KvpController {
    */
   @Post(':id/attachments')
   @UseInterceptors(FilesInterceptor('files', 5, kvpAttachmentOptions))
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async uploadAttachments(
     @Param('id') id: string,
@@ -605,6 +634,7 @@ export class KvpController {
    * Download attachment by file UUID (secure, non-guessable)
    */
   @Get('attachments/:fileUuid/download')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async downloadAttachment(
     @Param('fileUuid') fileUuid: string,
     @CurrentUser() user: NestAuthUser,

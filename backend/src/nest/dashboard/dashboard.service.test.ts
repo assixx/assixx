@@ -15,6 +15,7 @@ import type { DocumentsService } from '../documents/documents.service.js';
 import type { KvpService } from '../kvp/kvp.service.js';
 import type { NotificationsService } from '../notifications/notifications.service.js';
 import type { SurveysService } from '../surveys/surveys.service.js';
+import type { UserPermissionsService } from '../user-permissions/user-permissions.service.js';
 import { DashboardService } from './dashboard.service.js';
 
 // =============================================================
@@ -72,15 +73,39 @@ function createMockSurveysService() {
   };
 }
 
-function makeUser(): NestAuthUser {
+/**
+ * Mock UserPermissionsService (ADR-020).
+ * Default: returns all feature codes as readable (full access).
+ */
+function createMockPermissionsService() {
+  return {
+    getReadableFeatureCodes: vi
+      .fn()
+      .mockResolvedValue(
+        new Set([
+          'blackboard',
+          'calendar',
+          'chat',
+          'documents',
+          'kvp',
+          'surveys',
+        ]),
+      ),
+    hasPermission: vi.fn().mockResolvedValue(true),
+  };
+}
+
+function makeUser(overrides?: Partial<NestAuthUser>): NestAuthUser {
   return {
     id: 5,
     tenantId: 10,
     role: 'employee',
     email: 'user@test.com',
     activeRole: 'employee',
+    hasFullAccess: false,
     departmentId: 3,
     teamId: 7,
+    ...overrides,
   } as NestAuthUser;
 }
 
@@ -97,6 +122,7 @@ describe('DashboardService', () => {
   let mockDocuments: ReturnType<typeof createMockDocumentsService>;
   let mockKvp: ReturnType<typeof createMockKvpService>;
   let mockSurveys: ReturnType<typeof createMockSurveysService>;
+  let mockPermissions: ReturnType<typeof createMockPermissionsService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -107,6 +133,7 @@ describe('DashboardService', () => {
     mockDocuments = createMockDocumentsService();
     mockKvp = createMockKvpService();
     mockSurveys = createMockSurveysService();
+    mockPermissions = createMockPermissionsService();
     service = new DashboardService(
       mockChat as unknown as ChatService,
       mockNotifications as unknown as NotificationsService,
@@ -115,6 +142,7 @@ describe('DashboardService', () => {
       mockDocuments as unknown as DocumentsService,
       mockKvp as unknown as KvpService,
       mockSurveys as unknown as SurveysService,
+      mockPermissions as unknown as UserPermissionsService,
     );
   });
 
@@ -135,6 +163,95 @@ describe('DashboardService', () => {
       expect(result.kvp.count).toBe(2);
       expect(result.surveys.count).toBe(3);
       expect(result.fetchedAt).toBeDefined();
+    });
+  });
+
+  // =============================================================
+  // getCounts — permission filtering (ADR-020)
+  // =============================================================
+
+  describe('getCounts — permission filtering', () => {
+    it('should return 0 counts for features without permission', async () => {
+      // Employee only has blackboard + chat readable
+      mockPermissions.getReadableFeatureCodes.mockResolvedValue(
+        new Set(['blackboard', 'chat']),
+      );
+
+      const result = await service.getCounts(makeUser(), 10);
+
+      // Features WITH permission: normal counts
+      expect(result.blackboard.count).toBe(4);
+      expect(result.chat.totalUnread).toBe(3);
+
+      // Features WITHOUT permission: 0
+      expect(result.calendar.count).toBe(0);
+      expect(result.documents.count).toBe(0);
+      expect(result.kvp.count).toBe(0);
+      expect(result.surveys.count).toBe(0);
+
+      // Notifications always fetched (system-level)
+      expect(result.notifications.total).toBe(10);
+    });
+
+    it('should skip all feature count queries when no permissions', async () => {
+      mockPermissions.getReadableFeatureCodes.mockResolvedValue(new Set());
+
+      const result = await service.getCounts(makeUser(), 10);
+
+      expect(result.chat.totalUnread).toBe(0);
+      expect(result.blackboard.count).toBe(0);
+      expect(result.calendar.count).toBe(0);
+      expect(result.documents.count).toBe(0);
+      expect(result.kvp.count).toBe(0);
+      expect(result.surveys.count).toBe(0);
+
+      // Service methods NOT called for forbidden features
+      expect(mockChat.getUnreadCount).not.toHaveBeenCalled();
+      expect(mockBlackboard.getUnconfirmedCount).not.toHaveBeenCalled();
+    });
+
+    it('should bypass permission check for root user', async () => {
+      const rootUser = makeUser({ activeRole: 'root' });
+
+      const result = await service.getCounts(rootUser, 10);
+
+      // All counts returned (root bypasses permission check)
+      expect(result.blackboard.count).toBe(4);
+      expect(result.chat.totalUnread).toBe(3);
+      expect(result.calendar.count).toBe(7);
+
+      // Permission service NOT called for root
+      expect(mockPermissions.getReadableFeatureCodes).not.toHaveBeenCalled();
+    });
+
+    it('should bypass permission check for admin with fullAccess', async () => {
+      const adminUser = makeUser({
+        activeRole: 'admin',
+        hasFullAccess: true,
+      });
+
+      const result = await service.getCounts(adminUser, 10);
+
+      expect(result.blackboard.count).toBe(4);
+      expect(mockPermissions.getReadableFeatureCodes).not.toHaveBeenCalled();
+    });
+
+    it('should check permissions for admin without fullAccess', async () => {
+      const adminNoFull = makeUser({
+        activeRole: 'admin',
+        hasFullAccess: false,
+      });
+      mockPermissions.getReadableFeatureCodes.mockResolvedValue(
+        new Set(['blackboard']),
+      );
+
+      const result = await service.getCounts(adminNoFull, 10);
+
+      expect(result.blackboard.count).toBe(4);
+      expect(result.kvp.count).toBe(0);
+      expect(mockPermissions.getReadableFeatureCodes).toHaveBeenCalledWith(
+        adminNoFull.id,
+      );
     });
   });
 

@@ -15,6 +15,7 @@ import { RotationController } from './rotation.controller.js';
 import { RotationService } from './rotation.service.js';
 import { ShiftPlansService } from './shift-plans.service.js';
 import { ShiftSwapService } from './shift-swap.service.js';
+import { ShiftsPermissionRegistrar } from './shifts-permission.registrar.js';
 import { ShiftsController } from './shifts.controller.js';
 import { ShiftsService } from './shifts.service.js';
 
@@ -29,6 +30,8 @@ import { ShiftsService } from './shifts.service.js';
     RotationAssignmentService,
     RotationGeneratorService,
     RotationHistoryService,
+    // Permission registration (ADR-020)
+    ShiftsPermissionRegistrar,
   ],
   exports: [ShiftsService, RotationService],
 })

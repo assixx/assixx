@@ -36,6 +36,7 @@ export interface Department {
  */
 export interface Admin {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   firstName: string;
