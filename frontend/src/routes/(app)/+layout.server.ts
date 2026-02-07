@@ -244,7 +244,7 @@ export const load: LayoutServerLoad = async ({
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
-    log.info(
+    log.debug(
       { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
       `⚡ FAST PATH: RBAC user reused, /counts + /theme fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
     );
@@ -297,7 +297,7 @@ async function loadUserWithFetch(
   }
 
   const totalTime = Math.round(performance.now() - startTime);
-  log.info(
+  log.debug(
     { fetchTime, totalTime, path: pathname },
     `🐢 SLOW PATH complete: /users/me + /counts + /theme fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );

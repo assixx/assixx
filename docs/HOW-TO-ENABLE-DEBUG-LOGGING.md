@@ -7,16 +7,19 @@
 ## Quick Reference
 
 ```bash
-# Enable DEBUG for current session
+# === Backend (Docker) ===
 LOG_LEVEL=debug docker-compose restart backend
+# Or persistent: echo "LOG_LEVEL=debug" >> docker/.env
 
-# Or add to docker/.env for persistent DEBUG
-echo "LOG_LEVEL=debug" >> docker/.env
-docker-compose restart backend
+# === Frontend SSR (Vite Terminal) ===
+LOG_LEVEL=debug pnpm run dev:svelte
 
-# Disable DEBUG (back to default)
-# Remove LOG_LEVEL from .env or set:
+# === Frontend Browser (Console) ===
+# See "Frontend Debug Logging" section below
+
+# === Disable (back to default INFO) ===
 LOG_LEVEL=info docker-compose restart backend
+# Or just: pnpm run dev:svelte (without LOG_LEVEL)
 ```
 
 ## Log Levels Explained
@@ -59,17 +62,20 @@ INFO: Deleting department 3                 ← Significant event
 ## Architecture
 
 ```
-docker/.env
+docker/.env or shell env
     └── LOG_LEVEL=debug|info|warn|error
 
-backend/src/nest/common/logger/logger.constants.ts
-    └── LOG_LEVELS = { production: 'info', development: 'info', test: 'silent' }
+Backend (NestJS):
+    backend/src/nest/common/logger/logger.module.ts
+        └── level: process.env['LOG_LEVEL'] ?? getLogLevel()
 
-backend/src/nest/common/logger/logger.module.ts
-    └── level: process.env['LOG_LEVEL'] ?? getLogLevel()
+Frontend SSR (Vite Terminal):
+    frontend/src/lib/utils/logger.ts
+        └── level: process.env['LOG_LEVEL'] ?? 'info'
 
-backend/src/nest/main.ts
-    └── level: process.env['LOG_LEVEL'] ?? 'info'
+Frontend Browser (Console):
+    frontend/src/lib/utils/logger.ts
+        └── level: localStorage.LOG_LEVEL ?? 'info' (dev) / 'silent' (prod)
 ```
 
 ## Best Practices for Service Logging
@@ -105,6 +111,53 @@ docker-compose logs backend --tail 50
 
 ---
 
+## Frontend Debug Logging (LOG_LEVEL)
+
+> **Default:** INFO everywhere (clean terminal + clean console)
+> **DEBUG:** Opt-in when actively troubleshooting
+
+### Quick Reference
+
+```bash
+# === Vite Terminal (SSR) ===
+LOG_LEVEL=debug pnpm run dev:svelte
+
+# === Browser Console ===
+localStorage.setItem('LOG_LEVEL', 'debug'); location.reload();
+localStorage.removeItem('LOG_LEVEL'); location.reload();
+```
+
+### What You See (Default INFO vs DEBUG)
+
+**Vite Terminal (SSR):**
+
+| Default (INFO)                   | With LOG_LEVEL=debug                 |
+| -------------------------------- | ------------------------------------ |
+| `GET /admin-dashboard 200 114ms` | + Auth: User authenticated           |
+|                                  | + FAST PATH: /counts + /theme (99ms) |
+|                                  | + RBAC(admin): Access granted        |
+
+**Browser Console:**
+
+| Default (INFO)      | With LOG_LEVEL=debug                    |
+| ------------------- | --------------------------------------- |
+| SSE: Connected      | + TokenManager: Starting Timer...       |
+| WebSocket connected | + TokenManager: initialized...          |
+| Sentry: initialized | + SessionManager: Initialized           |
+|                     | + NotificationStore: Counts initialized |
+|                     | + RoleSyncManager: Initialized          |
+|                     | + ChatHandlers: WebSocket closed        |
+
+### Architecture
+
+```
+frontend/src/lib/utils/logger.ts → getLogLevel()
+    SSR:     process.env['LOG_LEVEL'] ?? 'info'
+    Browser: localStorage.LOG_LEVEL ?? 'info' (dev) / 'silent' (prod)
+```
+
+---
+
 ## Frontend Performance Logging (PERF_LOG)
 
 > **Default:** OFF (zero overhead)
@@ -122,22 +175,22 @@ localStorage.removeItem('PERF_LOG');
 location.reload();
 
 // Or use the helper functions:
-window.__perf.enable();   // → sets localStorage + tells you to reload
-window.__perf.disable();  // → removes localStorage + tells you to reload
-window.__perf.status();   // → shows current ON/OFF state
+window.__perf.enable(); // → sets localStorage + tells you to reload
+window.__perf.disable(); // → removes localStorage + tells you to reload
+window.__perf.status(); // → shows current ON/OFF state
 ```
 
 ### What Gets Logged
 
 When `PERF_LOG=true`:
 
-| Category | Examples |
-| --- | --- |
-| **Page Load Timing** | TTFB, DOM Parsing, DOM Ready, Page Load Complete |
-| **API Calls** | `api:GET:/users` 45ms, `api:POST:/auth/login` 120ms |
-| **Layout Mount** | `layout:mount:total` 8ms, `layout:tokenManager:init` 0ms |
-| **Notifications** | `notifications:fetchInitialCounts:total` 35ms |
-| **Resource Timing** | Which `/api/` fetches took how long |
+| Category             | Examples                                                 |
+| -------------------- | -------------------------------------------------------- |
+| **Page Load Timing** | TTFB, DOM Parsing, DOM Ready, Page Load Complete         |
+| **API Calls**        | `api:GET:/users` 45ms, `api:POST:/auth/login` 120ms      |
+| **Layout Mount**     | `layout:mount:total` 8ms, `layout:tokenManager:init` 0ms |
+| **Notifications**    | `notifications:fetchInitialCounts:total` 35ms            |
+| **Resource Timing**  | Which `/api/` fetches took how long                      |
 
 Slow operations (>500ms) are logged as `console.info`, very slow (>1s) as `console.warn`.
 
