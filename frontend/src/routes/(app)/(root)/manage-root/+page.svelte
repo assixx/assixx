@@ -5,7 +5,7 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { goto, invalidateAll } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   /** Resolve path with base prefix (for dynamic runtime paths) */
@@ -286,10 +286,6 @@
   // UI HANDLERS
   // =============================================================================
 
-  function navigateToPermissionPage(uuid: string): void {
-    void goto(`/manage-root/permission/${uuid}`);
-  }
-
   function handleStatusToggle(status: StatusFilter): void {
     currentStatusFilter = status;
     // filteredUsers is $derived - automatically updates when filter changes
@@ -361,7 +357,7 @@
       <h2 class="card__title">
         <i class="fas fa-shield-alt mr-2"></i>{MESSAGES.PAGE_HEADING}
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
@@ -506,9 +502,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
             class="btn btn-primary mt-4"
@@ -576,15 +572,6 @@
                         onclick={() => {
                           openEditModal(user.id);
                         }}><i class="fas fa-edit"></i></button
-                      >
-                      <button
-                        type="button"
-                        class="action-icon action-icon--info"
-                        title="Berechtigungen"
-                        aria-label="Berechtigungen verwalten"
-                        onclick={() => {
-                          navigateToPermissionPage(user.uuid);
-                        }}><i class="fas fa-cog"></i></button
                       >
                       <button
                         type="button"

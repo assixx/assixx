@@ -14,6 +14,7 @@ import { Module } from '@nestjs/common';
 import { FeatureVisitsModule } from '../feature-visits/feature-visits.module.js';
 import { CalendarCreationService } from './calendar-creation.service.js';
 import { CalendarOverviewService } from './calendar-overview.service.js';
+import { CalendarPermissionRegistrar } from './calendar-permission.registrar.js';
 import { CalendarPermissionService } from './calendar-permission.service.js';
 import { CalendarController } from './calendar.controller.js';
 import { CalendarService } from './calendar.service.js';
@@ -26,6 +27,8 @@ import { CalendarService } from './calendar.service.js';
     CalendarPermissionService,
     CalendarCreationService,
     CalendarOverviewService,
+    // Permission registration (ADR-020)
+    CalendarPermissionRegistrar,
   ],
   exports: [CalendarService],
 })

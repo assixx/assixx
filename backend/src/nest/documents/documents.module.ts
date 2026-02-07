@@ -10,6 +10,7 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { DocumentAccessService } from './document-access.service.js';
 import { DocumentNotificationService } from './document-notification.service.js';
 import { DocumentStorageService } from './document-storage.service.js';
+import { DocumentsPermissionRegistrar } from './documents-permission.registrar.js';
 import { DocumentsController } from './documents.controller.js';
 import { DocumentsService } from './documents.service.js';
 
@@ -21,6 +22,8 @@ import { DocumentsService } from './documents.service.js';
     DocumentAccessService,
     DocumentStorageService,
     DocumentNotificationService,
+    // Permission registration (ADR-020)
+    DocumentsPermissionRegistrar,
   ],
   exports: [DocumentsService],
 })

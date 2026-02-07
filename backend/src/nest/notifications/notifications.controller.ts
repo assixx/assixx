@@ -40,6 +40,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import { UserPermissionsService } from '../user-permissions/user-permissions.service.js';
 import {
   CreateNotificationDto,
   ListNotificationsQueryDto,
@@ -176,13 +177,16 @@ function registerHandler(
 }
 
 /**
- * Register SSE handlers based on user role
+ * Register SSE handlers based on user role AND feature permissions (ADR-020).
+ * Only registers handlers for features the user has read access to.
+ * Root and admin with fullAccess: readableFeatures is null → all features.
  */
 function registerSSEHandlers(
   role: string,
   tenantId: number,
   userId: number,
   eventSubject: Subject<{ data: SSEMessageData }>,
+  readableFeatures: Set<string> | null,
 ): EventHandler[] {
   const handlers: EventHandler[] = [];
   const makeHandler = (
@@ -191,20 +195,30 @@ function registerSSEHandlers(
   ): ((e: NotificationEventData) => void) =>
     createSSEHandler(type, key, tenantId, eventSubject);
 
-  // All users: documents and messages
-  registerHandler(
-    handlers,
-    SSE_EVENTS.DOCUMENT_UPLOADED,
-    makeHandler('NEW_DOCUMENT', 'document'),
-  );
-  registerHandler(
-    handlers,
-    SSE_EVENTS.MESSAGE_CREATED,
-    createMessageHandler(userId, tenantId, eventSubject),
-  );
+  /** Check if user can access a feature (null = bypass, all allowed) */
+  const canAccess = (featureCode: string): boolean =>
+    readableFeatures === null || readableFeatures.has(featureCode);
 
-  // Employee: survey notifications
-  if (role === 'employee') {
+  // Documents: only if user has documents permission
+  if (canAccess('documents')) {
+    registerHandler(
+      handlers,
+      SSE_EVENTS.DOCUMENT_UPLOADED,
+      makeHandler('NEW_DOCUMENT', 'document'),
+    );
+  }
+
+  // Chat: only if user has chat permission
+  if (canAccess('chat')) {
+    registerHandler(
+      handlers,
+      SSE_EVENTS.MESSAGE_CREATED,
+      createMessageHandler(userId, tenantId, eventSubject),
+    );
+  }
+
+  // Employee: survey notifications (only if user has surveys permission)
+  if (role === 'employee' && canAccess('surveys')) {
     registerHandler(
       handlers,
       SSE_EVENTS.SURVEY_CREATED,
@@ -219,16 +233,20 @@ function registerSSEHandlers(
 
   // Admin/Root: KVP and survey notifications
   if (role === 'admin' || role === 'root') {
-    registerHandler(
-      handlers,
-      SSE_EVENTS.KVP_SUBMITTED,
-      makeHandler('NEW_KVP', 'kvp'),
-    );
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_CREATED,
-      makeHandler('NEW_SURVEY_CREATED', 'survey'),
-    );
+    if (canAccess('kvp')) {
+      registerHandler(
+        handlers,
+        SSE_EVENTS.KVP_SUBMITTED,
+        makeHandler('NEW_KVP', 'kvp'),
+      );
+    }
+    if (canAccess('surveys')) {
+      registerHandler(
+        handlers,
+        SSE_EVENTS.SURVEY_CREATED,
+        makeHandler('NEW_SURVEY_CREATED', 'survey'),
+      );
+    }
   }
 
   return handlers;
@@ -245,7 +263,10 @@ function cleanupSSEHandlers(handlers: EventHandler[]): void {
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly permissionsService: UserPermissionsService,
+  ) {}
 
   /**
    * GET /notifications
@@ -483,7 +504,10 @@ export class NotificationsController {
 
   /**
    * GET /notifications/stream
-   * SSE stream for real-time notifications
+   * SSE stream for real-time notifications.
+   *
+   * Permission-aware (ADR-020): Only registers handlers for features
+   * the user has read access to. Root/admin with fullAccess bypasses.
    */
   @Sse('stream')
   stream(
@@ -508,13 +532,28 @@ export class NotificationsController {
       })),
     );
 
-    // Register handlers and setup cleanup
-    const handlers = registerSSEHandlers(role, tenantId, userId, eventSubject);
-    eventSubject.pipe(takeUntil(destroy$)).subscribe({
-      complete: (): void => {
-        cleanupSSEHandlers(handlers);
+    // Resolve readable features for permission filtering (ADR-020)
+    // Root and admin with fullAccess: null = all features
+    const readableFeaturesPromise = this.resolveReadableFeatures(user);
+
+    // Register handlers asynchronously after permission check
+    void readableFeaturesPromise.then(
+      (readableFeatures: Set<string> | null) => {
+        const handlers = registerSSEHandlers(
+          role,
+          tenantId,
+          userId,
+          eventSubject,
+          readableFeatures,
+        );
+        eventSubject.pipe(takeUntil(destroy$)).subscribe({
+          complete: (): void => {
+            cleanupSSEHandlers(handlers);
+          },
+        });
+        return undefined;
       },
-    });
+    );
 
     // Merge streams
     type SSESubscriber = import('rxjs').Subscriber<{ data: SSEMessageData }>;
@@ -526,6 +565,19 @@ export class NotificationsController {
       heartbeat$,
       eventSubject.pipe(takeUntil(destroy$)),
     );
+  }
+
+  /**
+   * Resolve readable feature codes for SSE permission filtering.
+   * Root and admin with fullAccess: null (all features accessible).
+   * Others: Set of feature codes with can_read = true.
+   */
+  private async resolveReadableFeatures(
+    user: NestAuthUser,
+  ): Promise<Set<string> | null> {
+    if (user.activeRole === 'root') return null;
+    if (user.activeRole === 'admin' && user.hasFullAccess) return null;
+    return await this.permissionsService.getReadableFeatureCodes(user.id);
   }
 
   /**

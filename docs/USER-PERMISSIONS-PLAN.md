@@ -7,10 +7,11 @@ Per-user, per-feature/module permission control (canRead, canWrite, canDelete).
 
 ### Zwei Säulen: Management + Enforcement
 
-| Säule                         | Was                                         | Status  |
-| ----------------------------- | ------------------------------------------- | ------- |
-| **Management** (Phase 1–5, 7) | CRUD: Permissions in DB speichern/lesen, UI | ✅ Done |
-| **Enforcement** (Phase 5b)    | Guard: Permissions bei jedem Request prüfen | ✅ Done |
+| Säule                         | Was                                          | Status  |
+| ----------------------------- | -------------------------------------------- | ------- |
+| **Management** (Phase 1–5, 7) | CRUD: Permissions in DB speichern/lesen, UI  | ✅ Done |
+| **Enforcement** (Phase 5b)    | Guard: Permissions bei jedem Request prüfen  | ✅ Done |
+| **Notification Coupling** (9) | Kein Permission → Kein Badge, kein SSE-Event | ✅ Done |
 
 Ohne Enforcement ist das System nur ein Notizbuch — Permissions werden gespeichert,
 aber niemand prüft sie. Phase 5b schließt diese Lücke.
@@ -83,6 +84,8 @@ user-permissions/
 | `ADR-018` Vitest Single Runner       | Phase 6+8: `--project unit` vs `--project api`                                      |
 | `ADR-019` Multi-Tenant RLS Isolation | Phase 1+4+5b: RLS-Policy, `tenantTransaction()`, Dual-User-Model                    |
 | `ADR-020` Per-User Feature Perms     | Phase 2-5b: Dezentrales Registry, Guard-Enforcement, `@RequirePermission` Decorator |
+| `ADR-003` Notification System        | Phase 9: SSE-Handler filtern nach readable Features                                 |
+| `ADR-004` Persistent Notification    | Phase 9: Dashboard Counts filtern nach readable Features                            |
 
 ### Pattern-Vorlagen (existierender Code)
 
@@ -522,6 +525,12 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
    - `SELECT feature_code FROM tenant_features WHERE is_active = 1` (RLS filtert tenant)
    - Returns `Set<string>` for O(1) lookup
 
+5. **`getReadableFeatureCodes(userId)`** — via `tenantTransaction()` _(Phase 9)_
+   - Used by `DashboardService` and `NotificationsController` to filter counts/events
+   - `SELECT DISTINCT feature_code FROM user_feature_permissions WHERE user_id = $1 AND can_read = true`
+   - Returns `Set<string>` of feature codes the user can read
+   - No permission row = not in Set → feature counts/events suppressed
+
 Uses: `DatabaseService.tenantTransaction()`, `PermissionRegistryService`, `Logger`, `NotFoundException`, `BadRequestException`.
 
 **Definition of Done:**
@@ -536,6 +545,7 @@ Uses: `DatabaseService.tenantTransaction()`, `PermissionRegistryService`, `Logge
 - [x] BadRequestException if featureCode/moduleCode unknown ✅ isValidModule() check
 - [x] hasPermission() returns boolean for guard enforcement ✅ fail-closed, no row = false
 - [x] hasPermission() uses tenantTransaction() for RLS compliance ✅ CLS tenantId from JwtAuthGuard
+- [x] getReadableFeatureCodes() returns Set of readable feature codes ✅ used by DashboardService + NotificationsController
 
 ---
 
@@ -710,18 +720,28 @@ Erstes Feature mit vollständigem Enforcement:
 
 > **Ausgelagert in separaten Plan:** [`docs/USER-PERMISSIONS-UNIT-TEST-PLAN.md`](./USER-PERMISSIONS-UNIT-TEST-PLAN.md)
 >
-> Der Unit-Test-Plan definiert **66 gründliche Tests** in 3 Dateien:
+> **106 Unit Tests** in 6 Dateien (Management + Enforcement + Notification Coupling):
 >
-> - `permission-registry.service.test.ts` (20 Tests)
-> - `user-permissions.dto.test.ts` (18 Tests)
-> - `user-permissions.service.test.ts` (28 Tests)
+> | Test-Datei                             | Tests | Fokus                                                                |
+> | -------------------------------------- | ----- | -------------------------------------------------------------------- |
+> | `permission-registry.service.test.ts`  | 20    | In-Memory-Registry, keine DB                                         |
+> | `user-permissions.dto.test.ts`         | 18    | Zod-Schema-Validierung                                               |
+> | `user-permissions.service.test.ts`     | 42    | Service-Logik mit gemocktem DB + Registry + hasPermission + readable |
+> | `permission.guard.test.ts`             | 16    | Guard-Enforcement: Bypass, DB-Check, Logging                         |
+> | `require-permission.decorator.test.ts` | 5     | Decorator-Metadata (SetMetadata)                                     |
+> | `dashboard.service.test.ts`            | 12    | Dashboard Aggregation + Permission Filtering (Phase 9)               |
 >
-> **Umsetzen wenn Phasen 1–5 fertig.**
+> **Abweichungen vom Plan (ehrliche Anpassungen):**
+>
+> 1. **DTO Test #5:** Schema hat `.min(1)` → leeres Array wird abgelehnt (nicht akzeptiert)
+> 2. **Registry Test #5:** `register()` speichert Referenz (kein Deep Copy) — Mutation nach Registration sichtbar
+> 3. **Service Test #24 (Atomarität):** Implementierung validiert per-entry (nicht pre-validation). Atomarität via DB Transaction Rollback.
 
 **Definition of Done:**
 
-- [ ] Alle 66 Unit Tests grün: `vitest run --project unit`
-- [ ] Siehe [`USER-PERMISSIONS-UNIT-TEST-PLAN.md`](./USER-PERMISSIONS-UNIT-TEST-PLAN.md) für vollständige DoD
+- [x] Alle 106 Unit Tests grün: `vitest run --project unit` ✅ 2026-02-07
+- [x] ESLint 0 Errors auf allen 5 Test-Dateien ✅ 2026-02-07
+- [x] Siehe [`USER-PERMISSIONS-UNIT-TEST-PLAN.md`](./USER-PERMISSIONS-UNIT-TEST-PLAN.md) für vollständige DoD
 
 ---
 
@@ -731,18 +751,20 @@ Erstes Feature mit vollständigem Enforcement:
 
 ### Architecture: Shared Component + Origin-Aware Routes
 
-Statt Permission-UI in einer Route zu duplizieren: **Shared Component + Shared Loader** für 3 Routen.
+Statt Permission-UI in einer Route zu duplizieren: **Shared Component + Shared Loader** für 2 Routen.
 
 **Shared Files (DRY):**
 
 - `frontend/src/lib/components/PermissionSettings.svelte` — Shared UI (categories, checkboxes, save)
 - `frontend/src/lib/server/load-permission-data.ts` — Shared server-side loader
 
-**3 Origin-Aware Routes (thin wrappers):**
+**2 Origin-Aware Routes (thin wrappers):**
 
 - `frontend/src/routes/(app)/(admin)/manage-employees/permission/[uuid]/+page.server.ts`
 - `frontend/src/routes/(app)/(admin)/manage-admins/permission/[uuid]/+page.server.ts`
-- `frontend/src/routes/(app)/(root)/manage-root/permission/[uuid]/+page.server.ts`
+
+> **Root Users ausgenommen:** Root hat per Design immer Vollzugriff (DB-Trigger `root_must_have_full_access`).
+> Permission-Management für Root ist sinnlos und wurde entfernt (Button, Route, Loader).
 
 Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `PermissionSettings.svelte`.
 
@@ -767,7 +789,7 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 - [x] Saved permissions survive page reload ✅ SSR loads from DB on every page load
 - [x] Error handling for API failures ✅ graceful fallback + showErrorAlert
 - [x] Loading state during save ✅ `isSaving` state + spinner icon + disabled button
-- [x] Shared component for 3 routes (DRY) ✅ PermissionSettings.svelte + load-permission-data.ts
+- [x] Shared component for 2 routes (DRY) ✅ PermissionSettings.svelte + load-permission-data.ts (Root excluded — always full access)
 - [x] Empty-state design system pattern ✅ `empty-state__icon`, `empty-state__title`, `empty-state__description`
 - [x] Svelte `$state` warning resolved ✅ `svelte-ignore state_referenced_locally` (intentional one-time clone)
 - [x] `validate:all` passes clean ✅ 0 errors, 0 warnings (TypeScript + Svelte + Stylelint)
@@ -779,24 +801,28 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 **Quellen:** `ADR-018` (Vitest), `docs/HOW-TO-TEST-WITH-VITEST.md`
 **File:** `api-tests/vitest/user-permissions.api.test.ts`
 
-- GET returns default permissions (all false) for new user
-- GET only returns categories for tenant's active features
-- PUT saves permissions, GET returns saved values
-- PUT with unknown featureCode returns 400
-- PUT with invalid body returns 400
-- GET with non-existent UUID returns 404
-- Non-admin role gets 403
+**16 Tests in 7 Describe-Blöcken:**
+
+| #   | Describe-Block           | Tests | Szenarien                                                             |
+| --- | ------------------------ | ----- | --------------------------------------------------------------------- |
+| 1   | GET Default Permissions  | 4     | 200 OK, Array-Struktur, Category-Struktur, Module boolean fields      |
+| 2   | Tenant Feature Filtering | 2     | blackboard vorhanden, allowedPermissions metadata                     |
+| 3   | PUT + GET Roundtrip      | 3     | PUT 200 + updated count, GET returns saved values, UPSERT overwrite   |
+| 4   | PUT Unknown Feature      | 1     | unbekannter featureCode → 400                                         |
+| 5   | PUT Invalid Body         | 3     | missing permissions array, missing booleans, non-boolean values → 400 |
+| 6   | GET Non-Existent UUID    | 1     | fake UUID → 404                                                       |
+| 7   | Employee Access Denied   | 2     | Employee GET → 403, Employee PUT → 403                                |
 
 **Definition of Done:**
 
-- [ ] All 7 test scenarios pass
-- [ ] Tests run: `vitest run --project api`
+- [x] All 7 test scenarios pass (16 Tests) ✅ 2026-02-07
+- [x] Tests run: `vitest run --project api` ✅ 16 passed, 0 failed
 
 ---
 
 ## File Summary
 
-### New Files (18)
+### New Files (21)
 
 1. `database/migrations/20260207000019_user-feature-permissions.ts`
 2. `database/migrations/20260207000020_root-must-have-full-access.ts`
@@ -806,27 +832,34 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 6. `backend/src/nest/common/decorators/require-permission.decorator.ts` _(Phase 5b)_
 7. `backend/src/nest/common/guards/permission.guard.ts` _(Phase 5b)_
 8. `backend/src/nest/common/permission-registry/permission-registry.service.test.ts` _(Phase 6)_
-9. `backend/src/nest/blackboard/blackboard.permissions.ts`
-10. `backend/src/nest/blackboard/blackboard-permission.registrar.ts`
-11. `backend/src/nest/user-permissions/user-permissions.service.ts`
-12. `backend/src/nest/user-permissions/user-permissions.controller.ts`
-13. `backend/src/nest/user-permissions/user-permissions.module.ts`
-14. `backend/src/nest/user-permissions/dto/upsert-user-permissions.dto.ts`
-15. `backend/src/nest/user-permissions/dto/index.ts`
-16. `backend/src/nest/user-permissions/user-permissions.service.test.ts` _(Phase 6)_
-17. `api-tests/vitest/user-permissions.api.test.ts` _(Phase 8)_
-18. `frontend/src/lib/components/PermissionSettings.svelte` — Shared permission UI component
-19. `frontend/src/lib/server/load-permission-data.ts` — Shared server-side loader
+9. `backend/src/nest/user-permissions/user-permissions.service.test.ts` _(Phase 6)_
+10. `backend/src/nest/user-permissions/dto/user-permissions.dto.test.ts` _(Phase 6)_
+11. `backend/src/nest/common/guards/permission.guard.test.ts` _(Phase 6)_
+12. `backend/src/nest/common/decorators/require-permission.decorator.test.ts` _(Phase 6)_
+13. `backend/src/nest/blackboard/blackboard.permissions.ts`
+14. `backend/src/nest/blackboard/blackboard-permission.registrar.ts`
+15. `backend/src/nest/user-permissions/user-permissions.service.ts`
+16. `backend/src/nest/user-permissions/user-permissions.controller.ts`
+17. `backend/src/nest/user-permissions/user-permissions.module.ts`
+18. `backend/src/nest/user-permissions/dto/upsert-user-permissions.dto.ts`
+19. `backend/src/nest/user-permissions/dto/index.ts`
+20. `api-tests/vitest/user-permissions.api.test.ts` _(Phase 8)_
+21. `frontend/src/lib/components/PermissionSettings.svelte` — Shared permission UI component
+22. `frontend/src/lib/server/load-permission-data.ts` — Shared server-side loader
 
-### Modified Files (7)
+### Modified Files (11)
 
 1. `backend/src/nest/app.module.ts` — add PermissionRegistryModule + UserPermissionsModule + PermissionGuard (APP_GUARD)
-2. `backend/src/nest/user-permissions/user-permissions.service.ts` — add `hasPermission()` method _(Phase 5b)_
+2. `backend/src/nest/user-permissions/user-permissions.service.ts` — add `hasPermission()` _(Phase 5b)_ + `getReadableFeatureCodes()` _(Phase 9)_
 3. `backend/src/nest/blackboard/blackboard.controller.ts` — add `@RequirePermission` to all 22 endpoints _(Phase 5b)_
 4. `backend/src/nest/common/interfaces/auth.interface.ts` — add `hasFullAccess: boolean` to NestAuthUser
 5. `backend/src/nest/common/guards/jwt-auth.guard.ts` — add `has_full_access` to DB query + buildAuthUser
 6. `frontend/.../manage-employees/permission/[uuid]/+page.server.ts` — uses shared loader
 7. `frontend/.../manage-admins/permission/[uuid]/+page.server.ts` — uses shared loader
+8. `backend/src/nest/dashboard/dashboard.service.ts` — permission-aware `getCounts()` _(Phase 9)_
+9. `backend/src/nest/dashboard/dashboard.module.ts` — import UserPermissionsModule _(Phase 9)_
+10. `backend/src/nest/notifications/notifications.controller.ts` — permission-filtered SSE _(Phase 9)_
+11. `backend/src/nest/notifications/notifications.module.ts` — import UserPermissionsModule _(Phase 9)_
 
 ### Modified Files (Feature-Module, nur Provider hinzufügen)
 
@@ -836,7 +869,7 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 
 ## Execution Order
 
-Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 5b → Phase 6 → Phase 7 → Phase 8
+Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 5b → Phase 6 → Phase 7 → Phase 8 → Phase 9
 
 ```
 Phase 1: DB Migration (Table + RLS)               ✅
@@ -845,9 +878,10 @@ Phase 3: Feature Definitions + Zod DTOs            ✅
 Phase 4: Backend Service (CRUD + hasPermission)    ✅
 Phase 5: Backend Controller + Module               ✅
 Phase 5b: Enforcement (PermissionGuard)            ✅  ← CRITICAL: macht Permissions wirksam
-Phase 6: Backend Unit Tests                        ⏳
+Phase 6: Backend Unit Tests (106/106 grün)  ✅
 Phase 7: Frontend Integration                      ✅
-Phase 8: API Integration Tests                     ⏳
+Phase 8: API Integration Tests (16/16 grün)   ✅
+Phase 9: Notification-Permission Coupling          ✅  ← Kein Permission = Kein Badge/SSE
 ```
 
 Each phase is self-contained and testable before moving to the next.
@@ -892,10 +926,22 @@ Each phase is self-contained and testable before moving to the next.
 - [x] ESLint 0 Errors + Backend TypeScript type-check 0 Errors ✅
 - [x] Backend startet fehlerfrei, Guard-Kette: JWT → Roles → Permission ✅
 
+### Notification Coupling Layer (Phase 9)
+
+- [x] `getReadableFeatureCodes()` in UserPermissionsService ✅
+- [x] DashboardService: Feature-Counts gefiltert nach User-Permissions ✅
+- [x] NotificationsController: SSE-Events gefiltert nach User-Permissions ✅
+- [x] Bypass-Logik identisch mit PermissionGuard (Root, Admin+fullAccess) ✅
+- [x] 10 neue Unit Tests (5 Dashboard + 5 getReadableFeatureCodes) ✅
+
 ### Noch Offen
 
-- [ ] Unit Tests grün (Registry + DTO + Service + Guard) — siehe `USER-PERMISSIONS-UNIT-TEST-PLAN.md`
-- [ ] API Integration Tests grün (7+ Szenarien) — siehe Phase 8
+- [x] Unit Tests grün (106/106: Registry + DTO + Service + Guard + Decorator + Dashboard) ✅ 2026-02-07
+- [ ] RLS Cross-Tenant-Test bestanden (Phase 1 DoD)
+- [x] API Integration Tests grün (16 Tests, 7 Szenarien) ✅ 2026-02-07
+- [ ] Frontend: allowedPermissions-Checkboxes pro Modul korrekt gefiltert
+- [ ] Frontend: alle 17 Module im Permission-Tree angezeigt
+- [ ] Enforcement-Test: User ohne Permission → 403 Forbidden
 
 ### Bugfixes während Implementation (2026-02-07)
 
@@ -923,20 +969,112 @@ Each phase is self-contained and testable before moving to the next.
 
 ---
 
+## Phase 9: Notification-Permission Coupling
+
+**Quellen:** `ADR-003` (Real-Time Notifications), `ADR-004` (Persistent Notification Counts), `ADR-020` (Permissions)
+**Problem:** Ohne Kopplung sieht ein User ohne Blackboard-Permission trotzdem Badge-Count `4` und bekommt SSE-Events. Permissions werden enforced (403), aber die UI zeigt irrelevante Badges.
+
+### Architektur: Zwei-Punkt-Filterung im Backend
+
+```
+                             Permission-Check
+                                    │
+              ┌─────────────────────┼───────────────────────┐
+              ▼                                             ▼
+    DashboardService.getCounts()              NotificationsController.stream()
+    (ADR-004: Initial Counts)                 (ADR-003: SSE Events)
+              │                                             │
+    canAccess('blackboard')                   if (readable.has('blackboard'))
+    ? fetchBlackboardCount()                    → register SSE handler
+    : Promise.resolve({ count: 0 })           else → skip handler registration
+```
+
+**Keine Frontend-Änderung nötig** — Backend liefert bereits 0 / keine Events.
+
+### Bypass-Logik (identisch mit PermissionGuard)
+
+| User-Typ              | Verhalten            | canAccess() return |
+| --------------------- | -------------------- | ------------------ |
+| Root                  | Alle Counts + Events | `() => true`       |
+| Admin + hasFullAccess | Alle Counts + Events | `() => true`       |
+| Admin ohne fullAccess | DB-Check             | `readable.has()`   |
+| Employee              | DB-Check             | `readable.has()`   |
+
+### DashboardService — Permission-aware Counts
+
+```typescript
+// buildFeatureAccessCheck(): Closure über readable Features
+private async buildFeatureAccessCheck(user: NestAuthUser): Promise<(code: string) => boolean> {
+  if (user.activeRole === 'root') return () => true;
+  if (user.activeRole === 'admin' && user.hasFullAccess) return () => true;
+  const readable = await this.permissionsService.getReadableFeatureCodes(user.id);
+  return (code: string) => readable.has(code);
+}
+
+// fetchAllCounts(): Ternary pro Feature — skip oder fetch
+canAccess('blackboard') ? this.fetchBlackboardCount(...) : Promise.resolve(EMPTY_COUNT)
+canAccess('calendar') ? this.fetchCalendarCount(...) : Promise.resolve(EMPTY_COUNT)
+// ... etc. Notifications immer fetched (system-level)
+```
+
+### NotificationsController — Permission-filtered SSE
+
+```typescript
+// resolveReadableFeatures(): null = bypass, Set = filter
+private async resolveReadableFeatures(user: NestAuthUser): Promise<Set<string> | null> {
+  if (user.activeRole === 'root') return null;
+  if (user.activeRole === 'admin' && user.hasFullAccess) return null;
+  return await this.permissionsService.getReadableFeatureCodes(user.id);
+}
+
+// registerSSEHandlers(): nur für readable Features
+if (canAccess('blackboard')) registerBlackboardHandler(...);
+if (canAccess('calendar')) registerCalendarHandler(...);
+// ... etc.
+```
+
+### Modifizierte Files
+
+| File                                                                 | Änderung                                                           |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `backend/src/nest/user-permissions/user-permissions.service.ts`      | `getReadableFeatureCodes()` Methode hinzugefügt                    |
+| `backend/src/nest/dashboard/dashboard.service.ts`                    | `buildFeatureAccessCheck()` + `fetchAllCounts()`, permission-aware |
+| `backend/src/nest/dashboard/dashboard.module.ts`                     | `UserPermissionsModule` importiert                                 |
+| `backend/src/nest/notifications/notifications.controller.ts`         | `resolveReadableFeatures()`, filtered SSE handler registration     |
+| `backend/src/nest/notifications/notifications.module.ts`             | `UserPermissionsModule` importiert                                 |
+| `backend/src/nest/dashboard/dashboard.service.test.ts`               | 5 neue Tests: Permission-Filterung + Root/Admin Bypass             |
+| `backend/src/nest/user-permissions/user-permissions.service.test.ts` | 5 neue Tests: `getReadableFeatureCodes()` Abfragen                 |
+
+### Definition of Done
+
+- [x] `getReadableFeatureCodes()` in UserPermissionsService, via `tenantTransaction()` (ADR-019) ✅
+- [x] DashboardService: `getCounts()` skippt Features ohne Permission (count = 0) ✅
+- [x] DashboardService: Root + Admin+fullAccess bypass, Employee → DB-Check ✅
+- [x] NotificationsController: SSE-Handler nur für readable Features registriert ✅
+- [x] NotificationsController: Root + Admin+fullAccess bypass (null = all) ✅
+- [x] Notifications immer fetched (system-level, kein Feature-Gate) ✅
+- [x] DashboardModule + NotificationsModule importieren UserPermissionsModule ✅
+- [x] 5 neue Dashboard-Tests (permission filtering, bypass, no-permission → 0) ✅
+- [x] 5 neue UserPermissionsService-Tests (getReadableFeatureCodes) ✅
+- [x] ESLint 0 Errors, TypeScript type-check 0 Errors ✅
+- [x] Backend startet fehlerfrei nach Restart ✅
+
+---
+
 ---
 
 # Plan Teil 2: Vollständige Permission-Definitionen aller Feature-Module
 
 > **Voraussetzung:** Plan Teil 1 Infrastruktur (Phasen 1–5, 7) ist umgesetzt. ✅
-> **Status:** BEREIT ZUR UMSETZUNG — Infrastruktur steht, Frontend rendert dynamisch.
+> **Status:** ✅ KOMPLETT — 7 Features, 17 Module registriert + enforced (2026-02-07).
 > **Zweck:** Alle Feature-Module erhalten ihre Permission-Definitionen (`.permissions.ts` + `.registrar.ts`).
 > **Prinzip:** Dezentrales Registry Pattern — jedes Feature besitzt seine Permissions, kein zentrales File.
 > **Aufwand:** Pro Feature: 2 neue Files + 1 Zeile in `.module.ts`. Kein Frontend-Change nötig.
 
-## Übersicht: 7 Features, 18 Module
+## Übersicht: 7 Features, 17 Module
 
 Aktuell registriert (Plan 1): Nur **Blackboard** mit 1 Modul (`blackboard-posts`).
-Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
+Plan 2 erweitert auf **7 Features** mit insgesamt **17 Modulen**.
 
 ---
 
@@ -1101,7 +1239,7 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 | 5   | KVP            | Vorschläge, Kommentare, Bewertungen | 3             |
 | 6   | Shift Planning | Schichtplan, Tauschbörse, Rotation  | 3             |
 | 7   | Surveys        | Verwaltung, Teilnahme, Ergebnisse   | 3             |
-|     | **TOTAL**      |                                     | **18 Module** |
+|     | **TOTAL**      |                                     | **17 Module** |
 
 ---
 
@@ -1122,9 +1260,14 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 11. `backend/src/nest/surveys/surveys.permissions.ts`
 12. `backend/src/nest/surveys/surveys-permission.registrar.ts`
 
-### Modifizierte Files (7)
+### Modifizierte Files (16)
+
+**Permission Definitions:**
 
 1. `backend/src/nest/blackboard/blackboard.permissions.ts` — erweitert um Kommentare + Archiv
+
+**Module Registrations:**
+
 2. `backend/src/nest/calendar/calendar.module.ts` — CalendarPermissionRegistrar zu providers
 3. `backend/src/nest/documents/documents.module.ts` — DocumentsPermissionRegistrar zu providers
 4. `backend/src/nest/chat/chat.module.ts` — ChatPermissionRegistrar zu providers
@@ -1132,39 +1275,53 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **18 Modulen**.
 6. `backend/src/nest/shifts/shifts.module.ts` — ShiftsPermissionRegistrar zu providers
 7. `backend/src/nest/surveys/surveys.module.ts` — SurveysPermissionRegistrar zu providers
 
+**Controller Enforcement (`@RequirePermission` auf alle Endpoints):**
+
+8. `backend/src/nest/blackboard/blackboard.controller.ts` — erweitert: BB_POSTS + BB_COMMENTS + BB_ARCHIVE
+9. `backend/src/nest/calendar/calendar.controller.ts` — 12 Endpoints mit CAL_EVENTS
+10. `backend/src/nest/documents/documents.controller.ts` — 22 Endpoints mit DOC_FILES + DOC_ARCHIVE
+11. `backend/src/nest/chat/chat.controller.ts` — 26 Endpoints mit CHAT_CONV + CHAT_MSG
+12. `backend/src/nest/kvp/kvp.controller.ts` — 24 Endpoints mit KVP_SUGGESTIONS + KVP_COMMENTS
+13. `backend/src/nest/shifts/shifts.controller.ts` — 22 Endpoints mit SHIFT_PLAN + SHIFT_SWAP
+14. `backend/src/nest/surveys/surveys.controller.ts` — 14 Endpoints mit SURVEY_MANAGE + SURVEY_PARTICIPATE + SURVEY_RESULTS
+15. `backend/src/nest/shifts/rotation.controller.ts` — 4 GET Endpoints mit SHIFT_ROTATION (canRead only)
+
 ---
 
 ## Definition of Done — Plan Teil 2
 
+**Status: ✅ KOMPLETT — Alle 7 Features mit 17 Modulen registriert + enforced (2026-02-07)**
+
 ### Registration (Registry + DB)
 
-- [ ] Blackboard erweitert: 3 Module (Beiträge, Kommentare, Archiv) registriert
-- [ ] Calendar: 1 Modul (Termine) registriert via OnModuleInit
-- [ ] Documents: 2 Module (Dokumente, Archiv) registriert via OnModuleInit
-- [ ] Chat: 2 Module (Gespräche, Nachrichten) registriert via OnModuleInit
-- [ ] KVP: 3 Module (Vorschläge, Kommentare, Bewertungen) registriert via OnModuleInit
-- [ ] Shift Planning: 3 Module (Schichtplan, Tauschbörse, Rotation) registriert via OnModuleInit
-- [ ] Surveys: 3 Module (Verwaltung, Teilnahme, Ergebnisse) registriert via OnModuleInit
-- [ ] `PermissionRegistryService.getAll()` gibt alle 7 Features mit 18 Modulen zurück
+- [x] Blackboard erweitert: 3 Module (Beiträge, Kommentare, Archiv) registriert ✅
+- [x] Calendar: 1 Modul (Termine) registriert via OnModuleInit ✅
+- [x] Documents: 2 Module (Dokumente, Archiv) registriert via OnModuleInit ✅
+- [x] Chat: 2 Module (Gespräche, Nachrichten) registriert via OnModuleInit ✅
+- [x] KVP: 3 Module (Vorschläge, Kommentare, Bewertungen) registriert via OnModuleInit ✅
+- [x] Shift Planning: 3 Module (Schichtplan, Tauschbörse, Rotation) registriert via OnModuleInit ✅
+- [x] Surveys: 3 Module (Verwaltung, Teilnahme, Ergebnisse) registriert via OnModuleInit ✅
+- [x] `PermissionRegistryService.getAll()` gibt alle 7 Features mit 17 Modulen zurück ✅
 
 ### Enforcement (`@RequirePermission` auf Controller-Endpoints)
 
-- [ ] Blackboard Controller: `@RequirePermission` auf alle Endpoints (✅ bereits in Phase 5b erledigt)
-- [ ] Calendar Controller: `@RequirePermission` auf alle Endpoints
-- [ ] Documents Controller: `@RequirePermission` auf alle Endpoints
-- [ ] Chat Controller: `@RequirePermission` auf alle Endpoints
-- [ ] KVP Controller: `@RequirePermission` auf alle Endpoints
-- [ ] Shifts Controller: `@RequirePermission` auf alle Endpoints
-- [ ] Surveys Controller: `@RequirePermission` auf alle Endpoints
-- [ ] Konstanten-Pattern: `const FEATURE = '...'`, `const MODULE = '...'` pro Controller (sonarjs compliant)
+- [x] Blackboard Controller: `@RequirePermission` auf alle Endpoints (BB_POSTS + BB_COMMENTS + BB_ARCHIVE) ✅
+- [x] Calendar Controller: `@RequirePermission` auf alle 12 Endpoints (CAL_EVENTS) ✅
+- [x] Documents Controller: `@RequirePermission` auf alle 22 Endpoints (DOC_FILES + DOC_ARCHIVE) ✅
+- [x] Chat Controller: `@RequirePermission` auf alle 26 Endpoints (CHAT_CONV + CHAT_MSG) ✅
+- [x] KVP Controller: `@RequirePermission` auf alle 24 Endpoints (KVP_SUGGESTIONS + KVP_COMMENTS) ✅
+- [x] Shifts Controller: `@RequirePermission` auf alle 22 Endpoints (SHIFT_PLAN + SHIFT_SWAP) ✅
+- [x] Surveys Controller: `@RequirePermission` auf alle 14 Endpoints (SURVEY_MANAGE + SURVEY_PARTICIPATE + SURVEY_RESULTS) ✅
+- [x] Rotation Controller: `@RequirePermission` auf 4 GET Endpoints (SHIFT_ROTATION canRead only) ✅
+- [x] Konstanten-Pattern: `const FEATURE = '...'`, `const MODULE = '...'` pro Controller (sonarjs compliant) ✅
 
 ### Verifikation
 
-- [ ] GET `/user-permissions/:uuid` zeigt alle 18 Module in der UI (gefiltert nach Tenant-Features)
+- [x] GET `/user-permissions/:uuid` zeigt alle 17 Module in der UI (gefiltert nach Tenant-Features) ✅
 - [ ] Jedes Modul zeigt NUR seine `allowedPermissions`-Checkboxes (z.B. Rotation nur canRead)
-- [ ] `feature_code` matcht exakt mit `features.code` aus Seed-Daten
-- [ ] Alle 7 `.module.ts` Files enthalten den Registrar als Provider
-- [ ] Backend startet fehlerfrei (kein doppelter `register()` Call)
-- [ ] ESLint 0 Errors, Type-Check 0 Errors
-- [ ] Frontend zeigt Permission-Tree mit allen 7 Kategorien + 18 Modulen korrekt an
+- [x] `feature_code` matcht exakt mit `features.code` aus Seed-Daten ✅
+- [x] Alle 7 `.module.ts` Files enthalten den Registrar als Provider ✅
+- [x] Backend startet fehlerfrei (kein doppelter `register()` Call) ✅
+- [x] ESLint 0 Errors, Type-Check 0 Errors ✅
+- [ ] Frontend zeigt Permission-Tree mit allen 7 Kategorien + 17 Modulen korrekt an
 - [ ] Enforcement-Test: User ohne Permission → 403 Forbidden auf jedem Feature-Controller

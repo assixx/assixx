@@ -18,6 +18,7 @@ import { DocumentsService } from '../documents/documents.service.js';
 import { KvpService } from '../kvp/kvp.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { SurveysService } from '../surveys/surveys.service.js';
+import { UserPermissionsService } from '../user-permissions/user-permissions.service.js';
 import type {
   ChatCounts,
   DashboardCounts,
@@ -49,13 +50,18 @@ export class DashboardService {
     private readonly documentsService: DocumentsService,
     private readonly kvpService: KvpService,
     private readonly surveysService: SurveysService,
+    private readonly permissionsService: UserPermissionsService,
   ) {}
 
   /**
-   * Get all dashboard counts in a single request
+   * Get all dashboard counts in a single request.
    *
    * Executes all count queries in parallel for optimal performance.
    * This replaces 5 separate API calls from the frontend.
+   *
+   * Permission-aware (ADR-020): Counts are only fetched for features
+   * the user has read permission for. No permission = count 0.
+   * Root and admin with fullAccess bypass this check.
    *
    * @param user - Current authenticated user
    * @param tenantId - Current tenant ID
@@ -65,58 +71,114 @@ export class DashboardService {
     user: NestAuthUser,
     tenantId: number,
   ): Promise<DashboardCounts> {
-    // Execute all count queries in parallel
-    const [
-      chatResult,
-      notificationsResult,
-      blackboardResult,
-      calendarResult,
-      documentsResult,
-      kvpResult,
-      surveysResult,
-    ] = await Promise.all([
-      this.fetchChatCounts().catch((err: unknown) => {
-        this.logger.warn(`Chat counts failed: ${String(err)}`);
-        return EMPTY_CHAT;
-      }),
+    // Determine which features the user can access (ADR-020)
+    const canAccess = await this.buildFeatureAccessCheck(user);
+
+    // Execute count queries in parallel — skip features without permission
+    const [chat, notifications, blackboard, calendar, documents, kvp, surveys] =
+      await this.fetchAllCounts(user, tenantId, canAccess);
+
+    return {
+      chat,
+      notifications,
+      blackboard,
+      calendar,
+      documents,
+      kvp,
+      surveys,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Execute all count queries in parallel.
+   * Skips queries for features the user cannot access (ADR-020).
+   */
+  private async fetchAllCounts(
+    user: NestAuthUser,
+    tenantId: number,
+    canAccess: (featureCode: string) => boolean,
+  ): Promise<
+    [
+      ChatCounts,
+      NotificationStats,
+      { count: number },
+      { count: number },
+      { count: number },
+      { count: number },
+      { count: number },
+    ]
+  > {
+    return await Promise.all([
+      canAccess('chat') ?
+        this.fetchChatCounts().catch((err: unknown) => {
+          this.logger.warn(`Chat counts failed: ${String(err)}`);
+          return EMPTY_CHAT;
+        })
+      : Promise.resolve(EMPTY_CHAT),
       this.fetchNotificationStats(user.id, tenantId).catch((err: unknown) => {
         this.logger.warn(`Notification stats failed: ${String(err)}`);
         return EMPTY_NOTIFICATIONS;
       }),
-      this.fetchBlackboardCount(user.id, tenantId).catch((err: unknown) => {
-        this.logger.warn(`Blackboard count failed: ${String(err)}`);
-        return EMPTY_COUNT;
-      }),
-      this.fetchCalendarCount(user, tenantId).catch((err: unknown) => {
-        this.logger.warn(`Calendar count failed: ${String(err)}`);
-        return EMPTY_COUNT;
-      }),
-      this.fetchDocumentsCount(user, tenantId).catch((err: unknown) => {
-        this.logger.warn(`Documents count failed: ${String(err)}`);
-        return EMPTY_COUNT;
-      }),
-      this.fetchKvpCount(user.id, tenantId).catch((err: unknown) => {
-        this.logger.warn(`KVP count failed: ${String(err)}`);
-        return EMPTY_COUNT;
-      }),
-      this.fetchSurveyPendingCount(user.id, tenantId).catch((err: unknown) => {
-        this.logger.warn(`Survey count failed: ${String(err)}`);
-        return EMPTY_COUNT;
-      }),
+      canAccess('blackboard') ?
+        this.fetchBlackboardCount(user.id, tenantId).catch((err: unknown) => {
+          this.logger.warn(`Blackboard count failed: ${String(err)}`);
+          return EMPTY_COUNT;
+        })
+      : Promise.resolve(EMPTY_COUNT),
+      canAccess('calendar') ?
+        this.fetchCalendarCount(user, tenantId).catch((err: unknown) => {
+          this.logger.warn(`Calendar count failed: ${String(err)}`);
+          return EMPTY_COUNT;
+        })
+      : Promise.resolve(EMPTY_COUNT),
+      canAccess('documents') ?
+        this.fetchDocumentsCount(user, tenantId).catch((err: unknown) => {
+          this.logger.warn(`Documents count failed: ${String(err)}`);
+          return EMPTY_COUNT;
+        })
+      : Promise.resolve(EMPTY_COUNT),
+      canAccess('kvp') ?
+        this.fetchKvpCount(user.id, tenantId).catch((err: unknown) => {
+          this.logger.warn(`KVP count failed: ${String(err)}`);
+          return EMPTY_COUNT;
+        })
+      : Promise.resolve(EMPTY_COUNT),
+      canAccess('surveys') ?
+        this.fetchSurveyPendingCount(user.id, tenantId).catch(
+          (err: unknown) => {
+            this.logger.warn(`Survey count failed: ${String(err)}`);
+            return EMPTY_COUNT;
+          },
+        )
+      : Promise.resolve(EMPTY_COUNT),
     ]);
+  }
 
-    const data: DashboardCounts = {
-      chat: chatResult,
-      notifications: notificationsResult,
-      blackboard: blackboardResult,
-      calendar: calendarResult,
-      documents: documentsResult,
-      kvp: kvpResult,
-      surveys: surveysResult,
-      fetchedAt: new Date().toISOString(),
-    };
+  /**
+   * Build a feature access check function for the current user.
+   * Root and admin with fullAccess bypass — all features accessible.
+   * Others: only features with at least one can_read = true module.
+   */
+  private async buildFeatureAccessCheck(
+    user: NestAuthUser,
+  ): Promise<(featureCode: string) => boolean> {
+    // Root always has full access
+    if (user.activeRole === 'root') {
+      return () => true;
+    }
 
-    return data;
+    // Admin with full access bypasses permission checks
+    if (user.activeRole === 'admin' && user.hasFullAccess) {
+      return () => true;
+    }
+
+    // Query readable feature codes from DB (ADR-020)
+    const readable = await this.permissionsService.getReadableFeatureCodes(
+      user.id,
+    );
+
+    return (featureCode: string) => readable.has(featureCode);
   }
 
   /**

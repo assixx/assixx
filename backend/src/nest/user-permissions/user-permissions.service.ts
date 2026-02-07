@@ -190,6 +190,31 @@ export class UserPermissionsService {
   }
 
   /**
+   * Get all feature codes where the user has at least one module with can_read = true.
+   * Used by DashboardService and NotificationsController to filter counts/events
+   * based on user permissions — no permission = no notification.
+   *
+   * @param userId - Numeric user ID (already resolved)
+   * @returns Set of feature_code strings the user can read
+   */
+  async getReadableFeatureCodes(userId: number): Promise<Set<string>> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<Set<string>> => {
+        const result = await client.query<{ feature_code: string }>(
+          `SELECT DISTINCT feature_code
+           FROM user_feature_permissions
+           WHERE user_id = $1 AND can_read = true`,
+          [userId],
+        );
+
+        return new Set(
+          result.rows.map((row: { feature_code: string }) => row.feature_code),
+        );
+      },
+    );
+  }
+
+  /**
    * Check if a user has a specific permission for a feature module.
    * Used by PermissionGuard for endpoint enforcement.
    * Fail-closed: no row in DB = denied.

@@ -21,6 +21,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -52,6 +53,10 @@ interface SuccessResponse<T = unknown> {
   message?: string;
 }
 
+/** Permission constants for RequirePermission decorator */
+const SHIFT_FEATURE = 'shift_planning';
+const SHIFT_ROTATION = 'shift-rotation';
+
 @Controller('shifts/rotation')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RotationController {
@@ -66,6 +71,7 @@ export class RotationController {
    * List rotation patterns
    */
   @Get('patterns')
+  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationPatterns(
     @CurrentUser() user: JwtPayload,
     @Query('active_only') activeOnly?: string,
@@ -84,6 +90,7 @@ export class RotationController {
    * Get single rotation pattern by UUID (preferred)
    */
   @Get('patterns/uuid/:uuid')
+  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationPatternByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -102,6 +109,7 @@ export class RotationController {
    * @deprecated Use GET /patterns/uuid/:uuid instead
    */
   @Get('patterns/:id')
+  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationPattern(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -290,6 +298,7 @@ export class RotationController {
    * Get rotation history
    */
   @Get('history')
+  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryRotationHistoryDto,

@@ -19,5 +19,17 @@ export const BLACKBOARD_PERMISSIONS: PermissionCategoryDef = {
       icon: 'fa-sticky-note',
       allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
     },
+    {
+      code: 'blackboard-comments',
+      label: 'Kommentare',
+      icon: 'fa-comments',
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+    },
+    {
+      code: 'blackboard-archive',
+      label: 'Archiv',
+      icon: 'fa-archive',
+      allowedPermissions: ['canRead', 'canWrite'],
+    },
   ],
 };
