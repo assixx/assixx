@@ -426,7 +426,9 @@
     // NOTE: Token expiration redirect is handled by TokenManager.clearTokens() internally
     perf.timeSync('layout:tokenManager:init', () => {
       const tokenManager = getTokenManager();
-      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(handleTokenTimerUpdate);
+      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(
+        handleTokenTimerUpdate,
+      );
     });
 
     // Initialize Session Manager (handles inactivity timeout + warning modal)

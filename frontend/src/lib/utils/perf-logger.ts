@@ -108,7 +108,13 @@ export function logPageLoadTiming(): void {
   if (!browser || !isEnabled()) return;
 
   if (document.readyState !== 'complete') {
-    window.addEventListener('load', () => { logPageLoadTiming(); }, { once: true });
+    window.addEventListener(
+      'load',
+      () => {
+        logPageLoadTiming();
+      },
+      { once: true },
+    );
     return;
   }
 
@@ -120,8 +126,12 @@ export function logPageLoadTiming(): void {
 
   console.group('📄 Page Load Timing');
   console.log(`TTFB: ${formatDuration(nav.responseStart - nav.startTime)}`);
-  console.log(`DOM Parsing: ${formatDuration(nav.domInteractive - nav.responseEnd)}`);
-  console.log(`DOM Ready: ${formatDuration(nav.domContentLoadedEventEnd - nav.startTime)}`);
+  console.log(
+    `DOM Parsing: ${formatDuration(nav.domInteractive - nav.responseEnd)}`,
+  );
+  console.log(
+    `DOM Ready: ${formatDuration(nav.domContentLoadedEventEnd - nav.startTime)}`,
+  );
   console.log(`Page Load: ${formatDuration(nav.loadEventEnd - nav.startTime)}`);
   console.groupEnd();
 }
@@ -136,11 +146,13 @@ export function logResourceTiming(filter?: string | RegExp): void {
     'resource',
   ) as PerformanceResourceTiming[];
   const filtered =
-    filter !== undefined
-      ? resources.filter((r) =>
-          typeof filter === 'string' ? r.name.includes(filter) : filter.test(r.name),
-        )
-      : resources;
+    filter !== undefined ?
+      resources.filter((r) =>
+        typeof filter === 'string' ?
+          r.name.includes(filter)
+        : filter.test(r.name),
+      )
+    : resources;
 
   console.group(`📦 Resource Timing (${filtered.length} resources)`);
   filtered
@@ -165,9 +177,7 @@ if (browser) {
       console.log('🔇 Perf logging disabled. Reload to deactivate.');
     },
     status(): void {
-      console.log(
-        isEnabled() ? '✅ PERF_LOG is ON' : '🔇 PERF_LOG is OFF',
-      );
+      console.log(isEnabled() ? '✅ PERF_LOG is ON' : '🔇 PERF_LOG is OFF');
     },
   };
 }
