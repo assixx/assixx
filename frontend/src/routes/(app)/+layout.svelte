@@ -17,7 +17,7 @@
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { loadThemeFromApi } from '$lib/stores/theme.svelte';
+  import { syncThemeFromSSR } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import {
     getAvatarColorClass,
@@ -419,14 +419,13 @@
       }
     });
 
-    // Sync theme preference from DB (cross-device persistence)
-    void loadThemeFromApi();
+    // Sync theme preference from SSR data (cross-device persistence)
+    syncThemeFromSSR(data.theme);
 
     // Subscribe to TokenManager timer updates (uses relative time - no clock skew!)
     // NOTE: Token expiration redirect is handled by TokenManager.clearTokens() internally
     perf.timeSync('layout:tokenManager:init', () => {
       const tokenManager = getTokenManager();
-
       tokenTimerUnsubscribe = tokenManager.onTimerUpdate(
         handleTokenTimerUpdate,
       );
@@ -460,13 +459,11 @@
       });
     });
 
-    // Initialize notification counts from SSR data (0ms!) or fetch client-side (fallback)
+    // Initialize notification counts from SSR data or fetch client-side (fallback)
     perf.timeSync('layout:notifications:init', () => {
       if (data.dashboardCounts !== null) {
-        // SSR path: counts already fetched server-side, just sync to store
         notificationStore.initFromSSR(data.dashboardCounts);
       } else {
-        // Fallback: fetch client-side if SSR didn't provide counts
         void notificationStore.loadInitialCounts();
       }
     });
@@ -480,12 +477,10 @@
 
     endLayoutMount();
 
-    // Log page load timing after everything is mounted
-    // Use setTimeout to ensure all resources are loaded
+    // Page load timing (only outputs when PERF_LOG=true)
     setTimeout(() => {
       logPageLoadTiming();
       logResourceTiming('/api/');
-      perf.logSummary();
     }, 100);
   });
 

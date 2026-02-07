@@ -155,16 +155,41 @@ function buildSSRTransport():
   return undefined;
 }
 
+/** Valid log levels for opt-in override */
+const VALID_LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);
+
+/** Type guard: check if a string is a valid Pino log level */
+function isValidLogLevel(value: string | undefined): value is pino.Level {
+  return value !== undefined && VALID_LOG_LEVELS.has(value);
+}
+
 /**
  * Determine log level based on environment
- * - SSR: debug (dev) or info (prod)
- * - Dev Browser: debug (all logs visible)
- * - Prod Browser: silent (esbuild.drop removes console.* anyway)
+ *
+ * Default: INFO everywhere (clean output, only meaningful events)
+ * Opt-in to DEBUG when actively troubleshooting.
+ *
+ * SSR (terminal):
+ *   LOG_LEVEL=debug pnpm run dev:svelte
+ *
+ * Browser (console):
+ *   localStorage.setItem('LOG_LEVEL', 'debug'); location.reload();
+ *   localStorage.removeItem('LOG_LEVEL'); location.reload();
  */
 function getLogLevel(): pino.Level | 'silent' {
-  if (!browser) return import.meta.env.DEV ? 'debug' : 'info';
-  if (import.meta.env.DEV) return 'debug';
-  return 'silent';
+  // SSR: check LOG_LEVEL env var, default to 'info'
+  if (!browser) {
+    if (import.meta.env.PROD) return 'info';
+    const envLevel = process.env.LOG_LEVEL;
+    return isValidLogLevel(envLevel) ? envLevel : 'info';
+  }
+
+  // Production browser: silent (esbuild.drop removes console.* anyway)
+  if (import.meta.env.PROD) return 'silent';
+
+  // Dev browser: respect localStorage override, default to 'info'
+  const stored = localStorage.getItem('LOG_LEVEL') ?? undefined;
+  return isValidLogLevel(stored) ? stored : 'info';
 }
 
 /**

@@ -120,6 +120,17 @@ async function parseDashboardCounts(
   return json.data ?? null;
 }
 
+/** Parse theme setting from response (graceful fallback to null) */
+async function parseThemeSetting(
+  response: Response | null,
+): Promise<'dark' | 'light' | null> {
+  if (response?.ok !== true) return null;
+  const json = (await response.json()) as ApiResponse<{ settingValue: string }>;
+  const value = json.data?.settingValue;
+  if (value === 'dark' || value === 'light') return value;
+  return null;
+}
+
 /** Clear auth cookies and redirect to login */
 function clearAuthAndRedirect(
   cookies: Parameters<LayoutServerLoad>[0]['cookies'],
@@ -135,41 +146,54 @@ const UNAUTHENTICATED_RESPONSE = {
   tenant: null,
   isAuthenticated: false,
   dashboardCounts: null,
+  theme: null,
 } as const;
 
-/** Build authenticated response from user data and counts */
+/** Build authenticated response from user data, counts, and theme */
 async function buildAuthenticatedResponse(
   userData: UserData,
   countsResponse: Response | null,
+  themeResponse: Response | null,
 ) {
   return {
     user: mapUserData(userData),
     tenant: userData.tenant ?? null,
     isAuthenticated: true,
     dashboardCounts: await parseDashboardCounts(countsResponse),
+    theme: await parseThemeSetting(themeResponse),
   };
 }
 
-/** Fetch dashboard counts only (when RBAC user is available) */
-async function fetchDashboardCountsOnly(
+/** Fetch dashboard counts + theme in parallel (when RBAC user is available) */
+async function fetchCountsAndTheme(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
-): Promise<Response | null> {
-  return await fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(
-    () => null,
-  );
+): Promise<{
+  countsResponse: Response | null;
+  themeResponse: Response | null;
+}> {
+  const [countsResponse, themeResponse] = await Promise.all([
+    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+  ]);
+  return { countsResponse, themeResponse };
 }
 
-/** Fetch user data and dashboard counts in parallel */
-async function fetchUserAndCounts(
+/** Fetch user data, dashboard counts, and theme in parallel */
+async function fetchUserCountsAndTheme(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
-): Promise<{ userResponse: Response; countsResponse: Response | null }> {
-  const [userResponse, countsResponse] = await Promise.all([
+): Promise<{
+  userResponse: Response;
+  countsResponse: Response | null;
+  themeResponse: Response | null;
+}> {
+  const [userResponse, countsResponse, themeResponse] = await Promise.all([
     fetchFn(`${API_BASE}/users/me`, { headers }),
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
   ]);
-  return { userResponse, countsResponse };
+  return { userResponse, countsResponse, themeResponse };
 }
 
 /**
@@ -211,18 +235,25 @@ export const load: LayoutServerLoad = async ({
   const rbacUser = locals.user as UserData | undefined;
 
   if (rbacUser !== undefined) {
-    // FAST PATH: Reuse user from RBAC hook - only fetch dashboard counts
-    const countsStart = performance.now();
-    const countsResponse = await fetchDashboardCountsOnly(fetch, headers);
-    const countsTime = Math.round(performance.now() - countsStart);
+    // FAST PATH: Reuse user from RBAC hook - fetch counts + theme in parallel
+    const fetchStart = performance.now();
+    const { countsResponse, themeResponse } = await fetchCountsAndTheme(
+      fetch,
+      headers,
+    );
+    const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
-    log.info(
-      { userId: rbacUser.id, countsTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, only /dashboard/counts fetched (${countsTime}ms, total: ${totalTime}ms)`,
+    log.debug(
+      { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
+      `⚡ FAST PATH: RBAC user reused, /counts + /theme fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
     );
 
-    return await buildAuthenticatedResponse(rbacUser, countsResponse);
+    return await buildAuthenticatedResponse(
+      rbacUser,
+      countsResponse,
+      themeResponse,
+    );
   }
 
   // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
@@ -248,10 +279,8 @@ async function loadUserWithFetch(
   pathname: string,
 ) {
   const fetchStart = performance.now();
-  const { userResponse, countsResponse } = await fetchUserAndCounts(
-    fetchFn,
-    headers,
-  );
+  const { userResponse, countsResponse, themeResponse } =
+    await fetchUserCountsAndTheme(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
   if (!userResponse.ok) {
@@ -268,10 +297,14 @@ async function loadUserWithFetch(
   }
 
   const totalTime = Math.round(performance.now() - startTime);
-  log.info(
+  log.debug(
     { fetchTime, totalTime, path: pathname },
-    `🐢 SLOW PATH complete: /users/me + /counts fetched (${fetchTime}ms, total: ${totalTime}ms)`,
+    `🐢 SLOW PATH complete: /users/me + /counts + /theme fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 
-  return await buildAuthenticatedResponse(userData, countsResponse);
+  return await buildAuthenticatedResponse(
+    userData,
+    countsResponse,
+    themeResponse,
+  );
 }
