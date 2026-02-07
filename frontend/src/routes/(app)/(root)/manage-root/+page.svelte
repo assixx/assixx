@@ -5,7 +5,7 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   /** Resolve path with base prefix (for dynamic runtime paths) */
@@ -14,7 +14,11 @@
   }
 
   import HighlightText from '$lib/components/HighlightText.svelte';
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import {
+    showSuccessAlert,
+    showWarningAlert,
+    showErrorAlert,
+  } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageRootPage');
@@ -184,6 +188,9 @@
 
       const result = await apiSaveRootUser(payload, currentEditId);
       if (result.success) {
+        showSuccessAlert(
+          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+        );
         closeRootModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
@@ -206,6 +213,7 @@
     try {
       const result = await apiDeleteRootUser(userIdToDelete);
       if (result.success) {
+        showSuccessAlert(MESSAGES.SUCCESS_DELETED);
         closeDeleteConfirmModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
@@ -277,6 +285,10 @@
   // =============================================================================
   // UI HANDLERS
   // =============================================================================
+
+  function navigateToPermissionPage(uuid: string): void {
+    void goto(`/manage-employees/permission/${uuid}`);
+  }
 
   function handleStatusToggle(status: StatusFilter): void {
     currentStatusFilter = status;
@@ -564,6 +576,15 @@
                         onclick={() => {
                           openEditModal(user.id);
                         }}><i class="fas fa-edit"></i></button
+                      >
+                      <button
+                        type="button"
+                        class="action-icon action-icon--info"
+                        title="Berechtigungen"
+                        aria-label="Berechtigungen verwalten"
+                        onclick={() => {
+                          navigateToPermissionPage(user.uuid);
+                        }}><i class="fas fa-cog"></i></button
                       >
                       <button
                         type="button"

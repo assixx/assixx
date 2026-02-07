@@ -323,7 +323,7 @@ export function buildAdminFormData(
   const data: AdminFormData = {
     firstName: form.firstName,
     lastName: form.lastName,
-    email: form.email,
+    email: form.email.toLowerCase().trim(),
     username: form.email.toLowerCase().trim(),
     position: form.position,
     notes: form.notes,
@@ -373,7 +373,7 @@ export function populateFormFromAdmin(admin: Admin): FormState {
   return {
     firstName: admin.firstName,
     lastName: admin.lastName,
-    email: admin.email,
+    email: admin.email.toLowerCase(),
     password: '',
     position: admin.position ?? '',
     notes: admin.notes ?? '',

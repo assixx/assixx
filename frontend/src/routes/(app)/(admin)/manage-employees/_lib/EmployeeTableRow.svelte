@@ -21,10 +21,12 @@
     employee: Employee;
     onedit: (employeeId: number) => void;
     onavailability: (employeeId: number) => void;
+    onpermission: (uuid: string) => void;
     ondelete: (employeeId: number) => void;
   }
 
-  const { employee, onedit, onavailability, ondelete }: Props = $props();
+  const { employee, onedit, onavailability, onpermission, ondelete }: Props =
+    $props();
 
   // =============================================================================
   // DERIVED VALUES
@@ -116,6 +118,17 @@
         }}
       >
         <i class="fas fa-calendar-alt"></i>
+      </button>
+      <button
+        type="button"
+        class="action-icon action-icon--info"
+        title="Berechtigungen"
+        aria-label="Berechtigungen verwalten"
+        onclick={() => {
+          onpermission(employee.uuid);
+        }}
+      >
+        <i class="fas fa-cog"></i>
       </button>
       <button
         type="button"

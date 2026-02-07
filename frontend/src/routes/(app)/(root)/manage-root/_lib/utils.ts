@@ -131,8 +131,8 @@ export function populateFormFromUser(user: RootUser): {
   return {
     firstName: user.firstName,
     lastName: user.lastName,
-    email: user.email,
-    emailConfirm: user.email,
+    email: user.email.toLowerCase(),
+    emailConfirm: user.email.toLowerCase(),
     password: '',
     passwordConfirm: '',
     employeeNumber: user.employeeNumber ?? '',
@@ -165,7 +165,7 @@ export function validateEmailMatch(
   emailConfirm: string,
 ): boolean {
   if (emailConfirm === '') return true;
-  return email === emailConfirm;
+  return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
 /**

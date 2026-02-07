@@ -15,6 +15,7 @@ export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
  */
 export interface RootUser {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   firstName: string;

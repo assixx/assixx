@@ -411,6 +411,10 @@
     void goto(`/manage-employees/availability/${uuid}`);
   }
 
+  function navigateToPermissionPage(uuid: string): void {
+    void goto(`/manage-employees/permission/${uuid}`);
+  }
+
   function resetForm(): void {
     const defaults = getDefaultFormValues();
     formFirstName = defaults.firstName;
@@ -678,6 +682,7 @@
                     {employee}
                     onedit={openEditModal}
                     onavailability={openAvailabilityModal}
+                    onpermission={navigateToPermissionPage}
                     ondelete={openDeleteModal}
                   />
                 {/each}

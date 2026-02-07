@@ -78,6 +78,11 @@ export const MESSAGES = {
   PASSWORDS_NOT_MATCH: 'Passwörter stimmen nicht überein',
   SELECT_POSITION_ERROR: 'Bitte wählen Sie eine Position aus',
 
+  // Success
+  SUCCESS_CREATED: 'Root-Benutzer erfolgreich erstellt',
+  SUCCESS_UPDATED: 'Root-Benutzer erfolgreich aktualisiert',
+  SUCCESS_DELETED: 'Root-Benutzer erfolgreich gelöscht',
+
   // API errors
   ERROR_LOADING: 'Ein Fehler ist aufgetreten',
   ERROR_SAVING: 'Fehler beim Speichern',

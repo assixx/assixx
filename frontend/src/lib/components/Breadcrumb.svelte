@@ -110,6 +110,11 @@
       label: 'Employee Name Placeholder',
       icon: 'fa-calendar-alt',
     },
+    {
+      pattern: /^\/manage-employees\/permission\/[^/]+$/,
+      label: 'Employee Name Placeholder',
+      icon: 'fa-shield-alt',
+    },
   ];
 
   /**
@@ -155,6 +160,12 @@
   }[] = [
     {
       pattern: /^\/manage-employees\/availability\/[^/]+$/,
+      label: 'Mitarbeiter verwalten',
+      href: '/manage-employees',
+      icon: 'fa-users',
+    },
+    {
+      pattern: /^\/manage-employees\/permission\/[^/]+$/,
       label: 'Mitarbeiter verwalten',
       href: '/manage-employees',
       icon: 'fa-users',
@@ -216,8 +227,20 @@
       dynamicMatch.pattern.source ===
       /^\/manage-employees\/availability\/[^/]+$/.source;
 
+    // Special handling for employee permission route
+    const isPermissionRoute =
+      dynamicMatch.pattern.source ===
+      /^\/manage-employees\/permission\/[^/]+$/.source;
+
     if (isAvailabilityRoute) {
       items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
+      items.push({
+        label: getEmployeeNameFromPageData(),
+        icon: 'fa-user',
+        current: true,
+      });
+    } else if (isPermissionRoute) {
+      items.push({ label: 'Berechtigungen', icon: 'fa-shield-alt' });
       items.push({
         label: getEmployeeNameFromPageData(),
         icon: 'fa-user',
