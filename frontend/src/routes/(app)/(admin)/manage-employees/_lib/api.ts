@@ -134,7 +134,8 @@ export async function loadTeams(): Promise<Team[]> {
  * @returns Generated username
  */
 export function generateUsernameFromEmail(email: string): string {
-  const localPart = email.split('@')[0] ?? email;
+  const normalized = email.toLowerCase().trim();
+  const localPart = normalized.split('@')[0] ?? normalized;
   return localPart.replace(/[^\w-]/g, '_');
 }
 
@@ -295,7 +296,7 @@ export function buildEmployeePayload(
   const payload: EmployeePayload = {
     firstName: formData.firstName,
     lastName: formData.lastName,
-    email: formData.email,
+    email: formData.email.toLowerCase().trim(),
     username: generateUsernameFromEmail(formData.email),
     position: toOptional(formData.position),
     phone: toOptional(formData.phone),

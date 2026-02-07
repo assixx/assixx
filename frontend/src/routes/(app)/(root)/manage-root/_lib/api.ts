@@ -32,7 +32,7 @@ export function buildRootUserPayload(
   const payload: RootUserPayload = {
     firstName: formData.firstName,
     lastName: formData.lastName,
-    email: formData.email,
+    email: formData.email.toLowerCase().trim(),
     position: formData.position,
     notes: formData.notes !== '' ? formData.notes : undefined,
     isActive: formData.isActive,
@@ -45,7 +45,11 @@ export function buildRootUserPayload(
   if (!isEditMode) {
     payload.password = formData.password;
     payload.username =
-      formData.email.split('@')[0]?.replace(/[^\w-]/g, '_') ?? formData.email;
+      formData.email
+        .toLowerCase()
+        .trim()
+        .split('@')[0]
+        ?.replace(/[^\w-]/g, '_') ?? formData.email.toLowerCase().trim();
   } else if (formData.password !== '' && formData.password.length >= 8) {
     payload.password = formData.password;
   }
