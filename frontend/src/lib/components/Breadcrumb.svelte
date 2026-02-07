@@ -115,6 +115,16 @@
       label: 'Employee Name Placeholder',
       icon: 'fa-shield-alt',
     },
+    {
+      pattern: /^\/manage-admins\/permission\/[^/]+$/,
+      label: 'Employee Name Placeholder',
+      icon: 'fa-shield-alt',
+    },
+    {
+      pattern: /^\/manage-root\/permission\/[^/]+$/,
+      label: 'Employee Name Placeholder',
+      icon: 'fa-shield-alt',
+    },
   ];
 
   /**
@@ -170,6 +180,18 @@
       href: '/manage-employees',
       icon: 'fa-users',
     },
+    {
+      pattern: /^\/manage-admins\/permission\/[^/]+$/,
+      label: 'Admins verwalten',
+      href: '/manage-admins',
+      icon: 'fa-user-shield',
+    },
+    {
+      pattern: /^\/manage-root\/permission\/[^/]+$/,
+      label: 'Root User Verwaltung',
+      href: '/manage-root',
+      icon: 'fa-shield-alt',
+    },
   ];
 
   // =============================================================================
@@ -223,14 +245,10 @@
     }
 
     // Special handling for employee availability route
-    const isAvailabilityRoute =
-      dynamicMatch.pattern.source ===
-      /^\/manage-employees\/availability\/[^/]+$/.source;
+    const isAvailabilityRoute = currentPath.includes('/availability/');
 
-    // Special handling for employee permission route
-    const isPermissionRoute =
-      dynamicMatch.pattern.source ===
-      /^\/manage-employees\/permission\/[^/]+$/.source;
+    // Special handling for permission routes (employees, admins, root)
+    const isPermissionRoute = currentPath.includes('/permission/');
 
     if (isAvailabilityRoute) {
       items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });

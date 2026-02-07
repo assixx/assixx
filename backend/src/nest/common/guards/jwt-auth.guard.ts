@@ -38,6 +38,7 @@ interface UserRow {
   first_name: string | null;
   last_name: string | null;
   is_active: number;
+  has_full_access: boolean;
 }
 
 @Injectable()
@@ -154,6 +155,7 @@ export class JwtAuthGuard implements CanActivate {
       role,
       activeRole,
       isRoleSwitched: payload.isRoleSwitched ?? false,
+      hasFullAccess: user.has_full_access,
       tenantId: user.tenant_id,
       ...(user.first_name !== null && { firstName: user.first_name }),
       ...(user.last_name !== null && { lastName: user.last_name }),
@@ -199,7 +201,7 @@ export class JwtAuthGuard implements CanActivate {
     tenantId: number,
   ): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
-      `SELECT id, email, role, tenant_id, first_name, last_name, is_active
+      `SELECT id, email, role, tenant_id, first_name, last_name, is_active, has_full_access
        FROM users
        WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],

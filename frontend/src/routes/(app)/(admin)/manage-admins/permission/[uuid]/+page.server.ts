@@ -1,8 +1,8 @@
 /**
- * Permission Management - Server-Side Data Loading (Employee Context)
- * @module manage-employees/permission/[uuid]/+page.server
+ * Permission Management - Server-Side Data Loading (Admin Context)
+ * @module manage-admins/permission/[uuid]/+page.server
  *
- * Loads employee data and permission tree from backend API.
+ * Loads admin data and permission tree from backend API.
  * Uses shared loader to avoid code duplication across manage pages.
  */
 import { loadPermissionData } from '$lib/server/load-permission-data';

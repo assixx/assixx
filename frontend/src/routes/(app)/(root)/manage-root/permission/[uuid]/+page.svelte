@@ -1,10 +1,10 @@
 <script lang="ts">
   /**
-   * Permission Management - Employee Context
-   * @module manage-employees/permission/[uuid]/+page
+   * Permission Management - Root User Context
+   * @module manage-root/permission/[uuid]/+page
    *
    * Thin wrapper around shared PermissionSettings component.
-   * Provides employee-specific context (back URL, breadcrumb label).
+   * Provides root-user-specific context (back URL, breadcrumb label).
    */
   import PermissionSettings from '$lib/components/PermissionSettings.svelte';
 
@@ -17,6 +17,6 @@
   employee={data.employee}
   permissionData={data.permissions}
   error={data.error}
-  backUrl="/manage-employees"
-  backLabel="Mitarbeiterverwaltung"
+  backUrl="/manage-root"
+  backLabel="Root User Verwaltung"
 />
