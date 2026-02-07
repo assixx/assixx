@@ -1,7 +1,8 @@
-# How to Enable DEBUG Logging
+# How to Enable DEBUG & Performance Logging
 
 > **Default:** INFO level (significant events only)
 > **DEBUG:** Opt-in when actively troubleshooting
+> **PERF:** Opt-in for frontend performance metrics
 
 ## Quick Reference
 
@@ -101,3 +102,74 @@ docker-compose logs backend --tail 50
 #   INFO: Creating department...
 # Then default INFO level is active.
 ```
+
+---
+
+## Frontend Performance Logging (PERF_LOG)
+
+> **Default:** OFF (zero overhead)
+> **When enabled:** Logs TTFB, DOM timing, API call durations, layout mount timing
+
+### Quick Reference (Browser Console)
+
+```js
+// Enable perf logging
+localStorage.setItem('PERF_LOG', 'true');
+location.reload();
+
+// Disable perf logging
+localStorage.removeItem('PERF_LOG');
+location.reload();
+
+// Or use the helper functions:
+window.__perf.enable();   // → sets localStorage + tells you to reload
+window.__perf.disable();  // → removes localStorage + tells you to reload
+window.__perf.status();   // → shows current ON/OFF state
+```
+
+### What Gets Logged
+
+When `PERF_LOG=true`:
+
+| Category | Examples |
+| --- | --- |
+| **Page Load Timing** | TTFB, DOM Parsing, DOM Ready, Page Load Complete |
+| **API Calls** | `api:GET:/users` 45ms, `api:POST:/auth/login` 120ms |
+| **Layout Mount** | `layout:mount:total` 8ms, `layout:tokenManager:init` 0ms |
+| **Notifications** | `notifications:fetchInitialCounts:total` 35ms |
+| **Resource Timing** | Which `/api/` fetches took how long |
+
+Slow operations (>500ms) are logged as `console.info`, very slow (>1s) as `console.warn`.
+
+### When to Enable PERF_LOG
+
+1. **Page feels slow** - check TTFB and SSR timing
+2. **API call investigation** - see which endpoints are slow
+3. **After performance changes** - verify improvements
+4. **Client-side bottleneck** - check layout mount breakdown
+
+### Architecture
+
+```
+Browser localStorage
+    └── PERF_LOG=true|<absent>
+
+frontend/src/lib/utils/perf-logger.ts
+    └── isEnabled() checks localStorage on each call
+    └── perf.start() / perf.time() / perf.timeSync()
+    └── logPageLoadTiming() / logResourceTiming()
+
+Instrumented files:
+    └── +layout.svelte (mount timing)
+    └── api-client.ts (every API call)
+    └── notification.store.svelte.ts (initial counts fetch)
+```
+
+### Zero Overhead When Disabled
+
+When `PERF_LOG` is not set:
+
+- `perf.start()` returns a no-op function
+- `perf.time()` / `perf.timeSync()` just execute the wrapped function directly
+- `logPageLoadTiming()` / `logResourceTiming()` return immediately
+- No `console.*` calls, no `performance.now()` calls, no string formatting

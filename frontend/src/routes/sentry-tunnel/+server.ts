@@ -8,7 +8,7 @@
  *
  * @see https://docs.sentry.io/platforms/javascript/troubleshooting/#using-the-tunnel-option
  */
-import { error, text } from '@sveltejs/kit';
+import { error, isHttpError, text } from '@sveltejs/kit';
 
 import { createLogger } from '$lib/utils/logger';
 
@@ -33,8 +33,10 @@ export const POST: RequestHandler = async ({ request }) => {
     // split() always returns at least one element, so pieces[0] is always defined
     const header = pieces[0] ?? '';
 
+    // Empty envelopes are a known Sentry client race condition during page navigation.
+    // The SDK fires before the envelope is fully assembled. Silently drop these.
     if (header === '') {
-      error(400, { message: 'Invalid Sentry envelope: empty header' });
+      return text('', { status: 200 });
     }
 
     const headerJson = JSON.parse(header) as { dsn?: string };
@@ -76,7 +78,12 @@ export const POST: RequestHandler = async ({ request }) => {
       },
     });
   } catch (err: unknown) {
-    // Log error but don't expose details to client
+    // Re-throw SvelteKit HttpError (from error() calls above) — don't swallow them
+    if (isHttpError(err)) {
+      throw err;
+    }
+
+    // Log unexpected errors but don't expose details to client
     log.error({ err }, 'Sentry tunnel error');
     error(500, { message: 'Sentry tunnel error' });
   }
