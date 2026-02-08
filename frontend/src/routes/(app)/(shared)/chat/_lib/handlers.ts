@@ -43,11 +43,11 @@ import {
   updateConversationsUserStatus,
   markMessageAsRead,
   updateConversationWithMessage,
-  buildJoinMessage,
   buildSendMessage,
   buildTypingStartMessage,
   buildTypingStopMessage,
   buildPingMessage,
+  buildRequestPresenceMessage,
   calculateReconnectDelay,
   shouldReconnect,
 } from './websocket';
@@ -395,6 +395,7 @@ export function setPresenceCallbacks(callbacks: WebSocketCallbacks): void {
  * Does NOT reconnect — just swaps which handlers receive messages.
  */
 export function updateCallbacks(callbacks: WebSocketCallbacks): void {
+  log.debug('Upgrading activeCallbacks to chat callbacks');
   activeCallbacks = callbacks;
   originalCallbacks = callbacks;
 }
@@ -442,8 +443,10 @@ export async function connectWebSocket(
 ): Promise<WebSocket | null> {
   if (!browser) return null;
 
-  // Set active callbacks (used by onmessage/onopen/onclose via module reference)
-  activeCallbacks = callbacks;
+  // IMPORTANT: Only set activeCallbacks if not already upgraded by chat page.
+  // In Svelte 5, child onMount (chat page) fires BEFORE parent onMount (layout).
+  // If chat page already called updateCallbacks(), don't overwrite with presence no-ops.
+  activeCallbacks ??= callbacks;
   // Store original callbacks for reconnection (only on first connection)
   originalCallbacks ??= callbacks;
 
@@ -473,6 +476,11 @@ export async function connectWebSocket(
     // upgrade/downgrade handlers without reconnecting.
 
     newWs.onopen = () => {
+      const hasConvs = activeCallbacks?.getConversations().length ?? 0;
+      log.info(
+        { hasConvs },
+        'WebSocket onopen — calling activeCallbacks.onConnected',
+      );
       activeCallbacks?.onConnected(newWs);
     };
 
@@ -528,9 +536,14 @@ function handleConnectionEstablished(
     reconnectTimeoutId = null;
   }
 
-  callbacks.getConversations().forEach((conv) => {
-    sendWebSocketMessage(buildJoinMessage(conv.id));
-  });
+  const convCount = callbacks.getConversations().length;
+  log.debug({ convCount }, 'connection_established');
+
+  // Request presence after connection if chat callbacks are active (has conversations)
+  if (convCount > 0) {
+    log.info('Sending request_presence from connection_established');
+    sendWebSocketMessage(buildRequestPresenceMessage());
+  }
 }
 
 function handleAuthError(data: unknown, callbacks: WebSocketCallbacks): void {
@@ -558,6 +571,21 @@ function handleUserStatus(data: unknown, callbacks: WebSocketCallbacks): void {
   callbacks.onUserStatus(statusData.userId, statusData.status);
 }
 
+/** Handle initial presence snapshot — marks conversation partners as online */
+function handleInitialPresence(
+  data: unknown,
+  callbacks: WebSocketCallbacks,
+): void {
+  const presenceData = data as { onlineUserIds?: number[] };
+  const onlineIds = presenceData.onlineUserIds;
+  log.info({ onlineIds }, 'initial_presence received');
+  if (!Array.isArray(onlineIds) || onlineIds.length === 0) return;
+  for (const userId of onlineIds) {
+    log.debug({ userId }, 'Setting user online from initial_presence');
+    callbacks.onUserStatus(userId, 'online');
+  }
+}
+
 function handleMessageRead(data: unknown, callbacks: WebSocketCallbacks): void {
   const readData = extractReadData(data as RawWebSocketMessage);
   callbacks.onMessageRead(readData.messageId);
@@ -579,6 +607,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   [WS_MESSAGE_TYPES.USER_STOPPED_TYPING]: handleTypingStop,
   [WS_MESSAGE_TYPES.USER_STATUS]: handleUserStatus,
   [WS_MESSAGE_TYPES.USER_STATUS_CHANGED]: handleUserStatus,
+  [WS_MESSAGE_TYPES.INITIAL_PRESENCE]: handleInitialPresence,
   [WS_MESSAGE_TYPES.MESSAGE_READ]: handleMessageRead,
   [WS_MESSAGE_TYPES.ERROR]: handleError,
 };
@@ -587,7 +616,6 @@ const messageHandlers: Record<string, MessageHandler> = {
 const noopMessageTypes = new Set<string>([
   WS_MESSAGE_TYPES.PONG,
   WS_MESSAGE_TYPES.MESSAGE_SENT,
-  WS_MESSAGE_TYPES.USER_JOINED_CONVERSATION,
 ]);
 
 export function handleWebSocketMessage(
@@ -736,6 +764,5 @@ export {
   updateConversationsUserStatus,
   markMessageAsRead,
   updateConversationWithMessage,
-  buildJoinMessage,
   buildSendMessage,
 };

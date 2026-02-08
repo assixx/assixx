@@ -1157,3 +1157,8 @@
   background: rgb(244 67 54 / 20%);
   color: var(--color-danger);
 }
+
+/* Utility: hidden file input (used by chat page for file upload trigger) */
+.hidden {
+  display: none !important;
+}
