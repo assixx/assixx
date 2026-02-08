@@ -1,269 +1,269 @@
-# Assixx Roadmap 2025-2026
+# Assixx Roadmap
 
-> **Letzte Aktualisierung:** 01.06.2025  
-> **Status:** 40% der geplanten Features implementiert  
-> **Neue Strategie:** Stabilität vor Features - Systematisches Testing und Debugging hat Priorität
+> **Letzte Aktualisierung:** 2026-02-08
+> **Version:** 0.2.0
+> **Tech Stack:** NestJS 11 + Fastify, SvelteKit 5, PostgreSQL 17 + RLS, Vitest
+> **Domains:** assixx.com, assixx.de
 
-## 🎯 Vision
+---
 
-Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit modularen, skalierbaren Features.
+## Completed
 
-## 🎯 Neue Entwicklungsstrategie
+### Core Platform
 
-### Version 0.1.0: Stabile Entwicklungsversion (2-3 Wochen)
+- [x] Multi-Tenant Architektur mit Row Level Security (79 Tabellen, 84 Policies)
+- [x] JWT Auth mit Token-Rotation, Reuse Detection, Family UUID
+- [x] Rate Limiting (Redis-backed, ADR-001)
+- [x] Global ResponseInterceptor + AllExceptionsFilter (ADR-007)
+- [x] ClsService Tenant Context Isolation (ADR-006)
+- [x] Hierarchisches RBAC (Root/Admin/Employee + Area/Department/Team Leads)
+- [x] Per-User Feature Permissions (ADR-020)
+- [x] Audit Trail mit monatlicher Partitionierung (ADR-009)
 
-**Fokus:** Stabilität, Qualität und Testing aller bestehenden Features
+### Backend (NestJS 11 + Fastify)
 
-- [ ] Systematisches Testing & Debugging aller 7 Live-Features
-- [ ] Performance-Optimierung
-- [ ] Code-Qualität und Refactoring
-- [ ] Vollständige Dokumentation
-- [ ] Security Audit
-- [ ] Database Optimization
-- [ ] Error Handling Verbesserung
+- [x] Komplette API v2 Migration (24+ Controller, v1 geloescht)
+- [x] Zod Validation (176 DTOs, kein class-validator)
+- [x] @assixx/shared Workspace Package (ADR-015)
+- [x] node-pg-migrate Migrations (ADR-014)
+- [x] Real-Time Notifications via SSE (ADR-003)
+- [x] WebSocket Chat
 
-### Version 1.0.0: Beta-Test Version (4-5 Wochen)
+### Frontend (SvelteKit 5)
 
-**Fokus:** Deal-Breaker Features für erste Kunden
+- [x] SvelteKit 5 mit Runes, adapter-node SSR
+- [x] Design System (16 Phasen, 29 Komponenten, 200+ Varianten)
+- [x] Tailwind v4 + Glassmorphism + Dark/Light Mode (ADR-017)
+- [x] Fail-Closed RBAC via Route Groups (ADR-012)
 
-#### Deal-Breaker Features
+### Features (Production-Ready)
 
-- [ ] **Urlaubsantrag-System** - Kritisch für HR-Prozesse
-  - [ ] Antragsformular mit Kalender-Integration
-  - [ ] Mehrstufiger Genehmigungsworkflow
-  - [ ] Resturlaubsberechnung
-  - [ ] Abwesenheitskalender
-  - [ ] Mobile-optimierte Ansicht
+- [x] Benutzerverwaltung (Rollen, Profile, Verfuegbarkeit)
+- [x] Dokumentenverwaltung (Upload, Kategorien, Zugriffsrechte, Benachrichtigungen)
+- [x] Gehaltsabrechnung (via Document Explorer: PDF Upload, Kategorisierung, Mitarbeiter-Zugriff)
+- [x] Schwarzes Brett (Eintraege, Kommentare, Anhaenge, Lesebestaetigungen, Archiv)
+- [x] Kalender (Events, Teilnehmer, Drag & Drop, ICS/CSV Export)
+- [x] KVP-System (Vorschlaege, Workflow, Kommentare, Kategorien, Anhaenge)
+- [x] Schichtplanung (Wochenansicht, Rotation, Drag & Drop)
+- [x] Chat-System (Echtzeit WebSocket, Gruppen, Dateien, Read Receipts)
+- [x] Umfrage-Tool (Templates, Statistiken, Antworten, Export)
+- [x] Maschinen-Verwaltung (CRUD, Kategorien, Basic Wartung)
+- [x] Abteilungen, Teams, Bereiche (CRUD, Hierarchie, Stats)
 
-- [ ] **Gehaltsabrechnung Upload** - Kritisch für Payroll
-  - [ ] Sichere PDF-Upload Funktion
-  - [ ] Verschlüsselte Speicherung
-  - [ ] Mitarbeiter-Portal für Abruf
-  - [ ] Automatische Benachrichtigungen
+### Infrastruktur
 
-- [ ] **TPM-System** - Kritisch für Produktion
-  - [ ] Wartungsplanung für Maschinen
-  - [ ] Digitale Checklisten
-  - [ ] Automatische Erinnerungen
-  - [ ] Wartungshistorie
-  - [ ] QR-Code Integration
+- [x] Docker Setup (Backend, Frontend, Nginx, PostgreSQL, Redis)
+- [x] CI/CD Pipeline mit GitHub Actions (ADR-013)
+- [x] Monitoring: Sentry + Pino Logging (ADR-002)
+- [x] Backup System (pg_dump, automatisiert)
+- [x] Security Headers (Helmet, CORS, CSP)
+- [x] 3061 Unit Tests + 175 API Integration Tests (ADR-018)
 
-#### Infrastruktur & Deployment
+---
 
-- [x] **Docker Setup** ✅ - Für einfaches Beta-Deployment
-- [x] **Backup System** ✅ - Automatisierte Datensicherung
-- [ ] **Monitoring & Logging** - Für Produktionsumgebung
-- [ ] **CI/CD Pipeline** - Automatisiertes Deployment
+## Phase 1 -- Core Feature Completion
 
-## ✅ Bereits implementiert
+> Pflicht-Features die zum Kern der Software gehoeren.
+> Ohne diese ist Assixx kein vollstaendiges Produkt.
 
-Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
+### Urlaubsantrag-System (nicht begonnen)
 
-## 🚀 Q1 2025 (Januar - März)
+- [ ] Antragsformular mit Kalender-Integration
+- [ ] Mehrstufiger Genehmigungsworkflow (Employee -> Lead -> Admin)
+- [ ] Resturlaubsberechnung und Kontingent-Verwaltung
+- [ ] Abwesenheitskalender (Team-Uebersicht)
 
-### Umfrage-Tool (80% fertig)
+### TPM-System -- Total Productive Maintenance (nicht begonnen)
 
-- [ ] Backend-Integration vervollständigen
-- [ ] Auswertungs-Dashboard
-- [ ] Export-Funktionen (CSV, PDF)
-- [ ] E-Mail-Benachrichtigungen
+- [ ] Wartungsplanung fuer Maschinen (Intervalle, Checklisten)
+- [ ] Digitale Checklisten mit Foto-Dokumentation
+- [ ] Automatische Erinnerungen (Faelligkeiten)
+- [ ] Wartungshistorie und Reports
+- [ ] QR-Code Integration (Maschine scannen -> Wartungsprotokoll)
 
-### Security Improvements
+### Schichttausch-Antrag (nicht implementiert)
 
-- [ ] HTTPS/TLS Implementation
-- [ ] Security Headers
-- [ ] Token-Rotation
-- [ ] Audit-Logging erweitern
+Nicht-funktionaler Backend-Rumpf existiert (Endpoints, DTOs, DB-Tabelle),
+aber kein funktionierendes Feature. Muss von Grund auf gebaut werden.
 
-## 📱 Q2 2025 (April - Juni) - AKTUALISIERT
+- [ ] Backend: Schema bereinigen, Service mit echtem Swap-Vollzug
+- [ ] Zweistufiger Workflow: User B akzeptiert/lehnt ab, dann Admin genehmigt
+- [ ] Tatsaechliche Swap-Transaktion (Shift Assignments tauschen)
+- [ ] RLS-Policies fuer shift_swap_requests
+- [ ] Frontend: Antrag erstellen, annehmen/ablehnen, Admin-Dashboard
+- [ ] Benachrichtigungen (SSE) bei neuem Tausch-Antrag
+- [ ] Unit + API Integration Tests
 
-### Phase 1: Systematisches Testing & Debugging (Version 0.1.0)
+### Stripe Payment Integration (nicht begonnen)
 
-**Zeitraum:** Juni 2025 (2-3 Wochen)
+Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 
-- [ ] Umfassende Tests aller 7 Live-Features
-- [ ] Bug-Fixing und Performance-Optimierung
-- [ ] Code-Review und Refactoring
-- [ ] Security Audit und Härtung
-- [ ] Dokumentation vervollständigen
-
-### Phase 2: Deal-Breaker Features (Version 1.0.0)
-
-**Zeitraum:** Juni-Juli 2025 (4-5 Wochen)
-
-- [ ] Urlaubsantrag-System (siehe oben)
-- [ ] Gehaltsabrechnung Upload (siehe oben)
-- [ ] TPM-System (siehe oben)
-
-### Parallel: Mobile PWA Grundlagen
-
-- [ ] Service Worker Implementation
-- [ ] Offline-Funktionalität für kritische Features
-- [ ] Push-Benachrichtigungen
-- [ ] App-Installation (iOS/Android)
-- [ ] Touch-optimierte UI
-
-## 🌍 Q3 2025 (Juli - September) - Beta-Test Phase
-
-### Beta-Testing & Stabilisierung
-
-**Fokus:** Erste Kunden onboarden und Feedback sammeln
-
-- [ ] Beta-Test mit 5-10 Pilotkunden
-- [ ] Bug-Fixing basierend auf User-Feedback
-- [ ] Performance-Monitoring in Produktion
-- [ ] Support-Prozesse etablieren
-- [ ] Dokumentation für Endnutzer
-
-### Stripe Integration (Nach erfolgreichem Beta-Test)
-
-- [ ] Payment Gateway Setup
-- [ ] Subscription Management
+- [ ] Stripe SDK Integration + Webhook-Handler
+- [ ] Subscription-Pläne (Basic/Premium/Enterprise)
+- [ ] Tenant-Signup mit Bezahlung (Registrierung -> Plan waehlen -> Zahlung -> Tenant erstellt)
+- [ ] Feature-Aktivierung per Plan (verknuepft mit ADR-020 Per-User Permissions)
 - [ ] Automatische Rechnungserstellung
 - [ ] Payment History Dashboard
+- [ ] Kuendigungs- und Downgrade-Logik
 
-### Mehrsprachigkeit (Basis)
+---
+
+## Phase 2 -- Vollstaendiger Funktionstest
+
+> Alle Features muessen End-to-End funktionieren bevor Deployment beginnt.
+> Besonders der Signup-Flow mit Bezahlung wurde bisher nicht getestet.
+
+### E2E Feature-Testing
+
+- [ ] Alle 11 bestehenden Features durchklicken und verifizieren
+- [ ] Neue Features (Urlaub, TPM, Schichttausch) vollstaendig testen
+- [ ] Cross-Feature-Tests (z.B. Urlaub im Kalender sichtbar, TPM in Maschinen)
+
+### Signup + Payment + Feature-Aktivierung (kritischer Pfad)
+
+- [ ] Neuen Tenant registrieren (Signup-Formular)
+- [ ] Plan waehlen und mit Stripe bezahlen
+- [ ] Feature-Aktivierung per Plan verifizieren (Basic vs Premium vs Enterprise)
+- [ ] Upgrade/Downgrade-Flow testen
+- [ ] Kuendigungs-Flow testen
+- [ ] Fehlerfaelle: Zahlung fehlgeschlagen, Karte abgelaufen, Doppel-Registrierung
+
+### Regressions- und Lasttests
+
+- [ ] Unit + API Test Suite gruen (alle ~3200+ Tests)
+- [ ] Multi-Tenant Isolation verifizieren (Tenant A sieht keine Daten von Tenant B)
+- [ ] Performance-Test mit realistischen Datenmengen
+
+---
+
+## Phase 3 -- Deployment-Vorbereitung
+
+> Alles was noetig ist bevor die Software auf einen echten Server kommt.
+
+### HTTPS/TLS + Produktions-Infrastruktur
+
+- [ ] Server mieten (Hetzner, Netcup o.ae.)
+- [ ] DNS: assixx.de + assixx.com -> Server-IP
+- [ ] SSL-Zertifikate (Let's Encrypt + Certbot)
+- [ ] Nginx TLS-Konfiguration (Port 443, HSTS, moderne Cipher Suites)
+- [ ] Erzwungene HTTP -> HTTPS Redirects
+- [ ] Docker-Compose Produktions-Config fuer echten Server anpassen
+- [ ] Backup-Strategie fuer Produktion (automatisiert, verschluesselt, off-site)
+- [ ] Monitoring + Alerting fuer Produktion (Sentry, Uptime-Checks)
+
+### Security Audit + Pentest
+
+- [ ] OWASP Top 10 Checkliste durchgehen
+- [ ] Dependency Audit (pnpm audit, known vulnerabilities)
+- [ ] RLS-Policies verifizieren (kein Tenant-Datenleck)
+- [ ] Auth-Flow Pentest (Token-Manipulation, Brute Force, Session Fixation)
+- [ ] Input Validation Audit (SQL Injection, XSS, CSRF)
+- [ ] Rate Limiting verifizieren unter Last
+- [ ] Penetrationstest (extern oder mit Tools wie OWASP ZAP, Burp Suite)
+- [ ] Gefundene Schwachstellen fixen
+
+---
+
+## Phase 4 -- Alpha (intern)
+
+> Erste Deployment auf echtem Server. Nur internes Team testet.
+
+- [ ] Deployment auf Server mit assixx.de
+- [ ] Internes Team testet alle Features im Produktions-Modus
+- [ ] Bug-Tracking und Fixing
+- [ ] Performance-Monitoring unter realen Bedingungen
+- [ ] Backup + Recovery testen (Backup einspielen, pruefen ob alles da ist)
+
+---
+
+## Phase 5 -- Beta (begrenzt extern)
+
+> Ausgewaehlte Firmen testen die Software. Erste echte Nutzer ausserhalb des Teams.
+
+- [ ] 2-5 ausgewaehlte Firmen einladen
+- [ ] Onboarding-Prozess testen (Tenant-Erstellung, Admin-Setup, Mitarbeiter-Import)
+- [ ] Feedback sammeln und priorisieren
+- [ ] Kritische Bugs fixen
+- [ ] UX-Verbesserungen basierend auf echtem Feedback
+- [ ] Dokumentation fuer Endnutzer (Admin-Handbuch, Mitarbeiter-Guide)
+
+---
+
+## Phase 6 -- RC / Staging (zahlende Kunden)
+
+> Release Candidate. Produktionsreif, erste zahlende Kunden moeglich.
+
+- [ ] Stabilitaet verifiziert (keine kritischen Bugs seit X Wochen)
+- [ ] SLA definieren (Uptime, Support-Zeiten, Response-Zeiten)
+- [ ] AGB / Datenschutzerklaerung / Impressum
+- [ ] Erste zahlende Kunden onboarden
+- [ ] Support-Prozess etablieren
+- [ ] Go-Live Entscheidung
+
+---
+
+## Post-Launch -- Erweiterungen
+
+### Mehrsprachigkeit (i18n)
 
 - [ ] i18n Framework Integration
-- [ ] Übersetzungen: Englisch (für internationale Kunden)
-- [ ] Sprachumschaltung im UI
+- [ ] Deutsch (Default, bereits vorhanden)
+- [ ] Englisch
+- [ ] Tuerkisch, Polnisch (nach Bedarf)
 
-### KVP-Erweiterungen
+### Mobile PWA
 
-- [ ] Bewertungssystem
-- [ ] Analytics Dashboard
-- [ ] Prämienberechnung
-- [ ] Team-Wettbewerbe
+- [ ] Service Worker
+- [ ] Offline-Funktionalitaet
+- [ ] Push-Benachrichtigungen
+- [ ] App-Installation (iOS/Android)
 
-## 🤖 Q4 2025 (Oktober - Dezember) - Skalierung & Wachstum
+---
 
-### Erweiterte Mehrsprachigkeit
-
-- [ ] Übersetzungen: Türkisch
-- [ ] Übersetzungen: Polnisch
-- [ ] Übersetzungen: Weitere nach Bedarf
+## Langfristig -- Enterprise / Skalierung
 
 ### Enterprise Features
 
-- [ ] Single Sign-On (SSO)
+- [ ] Single Sign-On (SSO / OAuth)
 - [ ] Active Directory Integration
-- [ ] Advanced API v2
-- [ ] White-Label Option
+- [ ] White-Label Option (Tenant-eigenes Branding, Logo, Domain)
+- [ ] QS-Checklisten (Qualitaetspruefung)
 
-### QS-Checklisten
+### Database Skalierung
 
-- [ ] Digitale Qualitätsprüfung
-- [ ] Foto-Dokumentation
-- [ ] Automatische Reports
-- [ ] Eskalationsmanagement
+- [ ] Encryption at Rest (pgcrypto oder Hoster-Disk-Encryption)
+- [ ] SSL/TLS fuer DB-Verbindungen
+- [ ] Regional Sharding (bei 100+ Kunden)
+- [ ] Tenant-spezifische Encryption Keys (bei 1000+ Kunden)
 
-### KI-Integration (Vorbereitung)
+### Compliance
 
-- [ ] Konzept für KI-Features
-- [ ] Technologie-Evaluation
-- [ ] Erste Prototypen
+- [ ] DSGVO-Compliance Tools (Datenloesch-Anfragen, Export, Einwilligungen)
+- [ ] ISO 27001 Vorbereitung
+- [ ] Audit-Trail Export fuer Zertifizierungen
 
-## 🎯 2026 Ausblick
+---
 
-### KI-Integration (Vollausbau)
+## Optional (kein fester Zeitplan)
+
+### KI-Integration
 
 - Automatische Dokumentenkategorisierung
 - Intelligente Suchfunktion
 - Predictive Maintenance
-- Chatbot für Mitarbeiter-Support
-- KI-basierte Analysen und Vorhersagen
+- Chatbot fuer Mitarbeiter-Support
 
 ### Erweiterte Automatisierung
 
 - Workflow-Engine
-- RPA-Integration
-- IoT-Anbindung
+- IoT-Anbindung fuer Maschinenanbindung
 - Echtzeit-Dashboards
 
-### Compliance & Zertifizierung
+---
 
-- ISO 9001 Modul
-- DSGVO-Compliance Tools
-- Audit-Trail Export
-- Rechtssichere Archivierung
+## Verwandte Dokumente
 
-## 📊 Success Metrics (Angepasst an neue Strategie)
-
-### Business KPIs 2025
-
-- **Q3 2025:** 5-10 Beta-Kunden
-- **Q4 2025:** 25+ zahlende Kunden
-- **Ende 2025:** €100k ARR
-- **Customer Satisfaction:** > 4.5/5
-- **Beta Feedback Score:** > 80% positiv
-
-### Technical KPIs
-
-- **Stabilität:** 99.5% Uptime (realistisches Ziel)
-- **Performance:** < 500ms API Response Time
-- **Sicherheit:** Zero kritische Security Issues
-- **Code-Qualität:** 80% Test Coverage
-- **Bug-Rate:** < 5 kritische Bugs pro Monat
-
-## 🔒 Database Security & Scalability Roadmap
-
-### Phase 1: Current (Multi-Tenant Single DB) ✅
-
-- **Status:** Implementiert
-- **Row-Level Security:** tenant_id in allen Tabellen
-- **Isolation:** Middleware-basiert
-- **Backup:** Automatisiert täglich
-
-### Phase 2: Pre-Production Security (Q3 2025)
-
-- [ ] **Encryption at Rest**
-  - [ ] PostgreSQL Transparent Data Encryption (TDE) aktivieren
-  - [ ] pgcrypto Extension für Spalten-Verschlüsselung
-  - [ ] Verschlüsselte Backups
-- [ ] **SSL/TLS für DB-Verbindungen**
-  - [ ] PostgreSQL SSL Zertifikate
-  - [ ] Erzwungene verschlüsselte Verbindungen
-- [ ] **Audit Logging**
-  - [ ] Alle DB-Zugriffe protokollieren
-  - [ ] Compliance-Reports
-
-### Phase 3: Regional Sharding (bei 100+ Kunden)
-
-- [ ] **Regional Data Residency**
-  - [ ] EU-Datenbank für DSGVO
-  - [ ] US-Datenbank für US-Kunden
-  - [ ] Tenant-Tabelle: `region` Spalte
-- [ ] **Latenz-Optimierung**
-  - [ ] Kunden-nahe Datenbanken
-  - [ ] Read-Replicas pro Region
-
-### Phase 4: Enterprise Features (bei 1000+ Kunden)
-
-- [ ] **Tenant-spezifische Encryption Keys**
-  - [ ] AWS KMS oder Azure Key Vault Integration
-  - [ ] Key-Rotation pro Tenant
-- [ ] **Resource Stamps Pattern**
-  - [ ] Tenant-Gruppen mit max. 1000 Tenants
-  - [ ] Isolierte DB-Cluster
-- [ ] **Dedicated Instance Option**
-  - [ ] Enterprise-Kunden: Eigene DB
-  - [ ] Premium-Pricing-Modell
-
-### Phase 5: Advanced Compliance (2026+)
-
-- [ ] **BYOK (Bring Your Own Key)**
-  - [ ] Kunden verwalten eigene Encryption Keys
-- [ ] **Geo-Redundancy**
-  - [ ] Multi-Region Failover
-  - [ ] Zero-Downtime Updates
-- [ ] **Compliance Zertifizierungen**
-  - [ ] SOC 2 Type II
-  - [ ] ISO 27001
-  - [ ] HIPAA (für Gesundheitskunden)
-
-## 🔗 Verwandte Dokumente
-
-- [TODO.md](./TODO.md) - Aktuelle Aufgaben
-- [FEATURES.md](./FEATURES.md) - Feature-Details
-- [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md) - Security Roadmap
-- [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) - DB Migration Guide
+- [FEATURES.md](./FEATURES.md) -- Feature-Details und Preismodelle
+- [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) -- PostgreSQL + RLS
+- [ADR Index](./infrastructure/adr/README.md) -- 20 Architecture Decision Records
+- [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md) -- Testing Guide
