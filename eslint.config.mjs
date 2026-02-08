@@ -120,6 +120,7 @@ export default [
         Express: 'readonly',
         BigInt: 'readonly', // PostgreSQL BIGINT/BIGSERIAL Support
         NodeJS: 'readonly', // Node.js namespace for types like NodeJS.ErrnoException
+        URL: 'readonly', // Node.js global since v10 (no import needed)
       },
     },
     plugins: {
