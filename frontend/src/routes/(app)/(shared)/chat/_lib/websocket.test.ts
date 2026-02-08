@@ -18,7 +18,6 @@ import {
   updateConversationsUserStatus,
   markMessageAsRead,
   updateConversationWithMessage,
-  buildJoinMessage,
   buildSendMessage,
   buildTypingStartMessage,
   buildTypingStopMessage,
@@ -446,16 +445,6 @@ describe('updateConversationWithMessage', () => {
 // ---------------------------------------------------------------------------
 // Message builders
 // ---------------------------------------------------------------------------
-
-describe('buildJoinMessage', () => {
-  it('should build join_conversation message', () => {
-    const msg = buildJoinMessage(42);
-    expect(msg).toEqual({
-      type: WS_MESSAGE_TYPES.JOIN_CONVERSATION,
-      data: { conversationId: 42 },
-    });
-  });
-});
 
 describe('buildSendMessage', () => {
   it('should build send_message with content and attachments', () => {

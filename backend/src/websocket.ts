@@ -1,6 +1,5 @@
 import { IncomingMessage, Server } from 'http';
 import { Redis } from 'ioredis';
-import { URL } from 'url';
 import { v7 as uuidv7 } from 'uuid';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
@@ -46,10 +45,6 @@ interface TypingData {
 
 interface MarkReadData {
   messageId: number;
-}
-
-interface JoinConversationData {
-  conversationId: number;
 }
 
 // ============================================================================
@@ -323,17 +318,14 @@ export class ChatWebSocketServer {
         case 'mark_read':
           await this.handleMarkRead(ws, message.data as MarkReadData);
           break;
-        case 'join_conversation':
-          await this.handleJoinConversation(
-            ws,
-            message.data as JoinConversationData,
-          );
-          break;
         case 'ping':
           this.sendMessage(ws, {
             type: 'pong',
             data: { timestamp: new Date().toISOString() },
           });
+          break;
+        case 'request_presence':
+          await this.sendPresenceSnapshot(ws);
           break;
         default:
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
@@ -788,28 +780,6 @@ export class ChatWebSocketServer {
     }
   }
 
-  private async handleJoinConversation(
-    ws: ExtendedWebSocket,
-    data: JoinConversationData,
-  ): Promise<void> {
-    const { conversationId } = data;
-
-    try {
-      const participantIds = await this.getOtherParticipantIds(
-        conversationId,
-        ws.tenantId as number,
-        ws.userId as number,
-      );
-      this.broadcastToParticipants(participantIds, 'user_joined_conversation', {
-        conversationId,
-        userId: ws.userId,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error: unknown) {
-      logger.error({ err: error }, 'Fehler beim Beitreten zur Unterhaltung');
-    }
-  }
-
   private async handleDisconnection(ws: ExtendedWebSocket): Promise<void> {
     if (ws.userId !== undefined) {
       this.clients.delete(ws.userId);
@@ -825,30 +795,35 @@ export class ChatWebSocketServer {
     logger.error({ err: error }, 'WebSocket Fehler');
   }
 
+  /**
+   * Get all distinct conversation partner IDs for a user across all conversations.
+   * Shared by broadcastUserStatus and sendPresenceSnapshot.
+   */
+  private async getConversationPartnerIds(
+    userId: number,
+    tenantId: number,
+  ): Promise<number[]> {
+    const [partners] = await query<ConversationParticipantResult[]>(
+      `SELECT DISTINCT cp2.user_id
+       FROM conversation_participants cp1
+       JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
+       JOIN conversations c ON cp1.conversation_id = c.id
+       WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3`,
+      [userId, tenantId, userId],
+    );
+    return partners.map((p: ConversationParticipantResult) => p.user_id);
+  }
+
   private async broadcastUserStatus(
     userId: number,
     tenantId: number,
     status: string,
   ): Promise<void> {
     try {
-      // Alle Unterhaltungen des Benutzers ermitteln
-      // PostgreSQL params: $1=userId, $2=tenantId, $3=userId (for != check)
-      const conversationsQuery = `
-        SELECT DISTINCT cp2.user_id
-        FROM conversation_participants cp1
-        JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
-        JOIN conversations c ON cp1.conversation_id = c.id
-        WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3
-      `;
-      const [relatedUsers] = await query<ConversationParticipantResult[]>(
-        conversationsQuery,
-        [userId, tenantId, userId],
-      );
+      const partnerIds = await this.getConversationPartnerIds(userId, tenantId);
 
-      // Status an alle verbundenen Benutzer senden
-      for (const user of relatedUsers) {
-        const relatedUserId = user.user_id;
-        const clientWs = this.clients.get(relatedUserId);
+      for (const partnerId of partnerIds) {
+        const clientWs = this.clients.get(partnerId);
         if (clientWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'user_status_changed',
@@ -862,6 +837,39 @@ export class ChatWebSocketServer {
       }
     } catch (error: unknown) {
       logger.error({ err: error }, 'Fehler beim Senden des User-Status');
+    }
+  }
+
+  /**
+   * Send snapshot of currently-online conversation partners to the requesting user.
+   * Triggered by 'request_presence' from the chat page after it upgrades callbacks.
+   */
+  private async sendPresenceSnapshot(ws: ExtendedWebSocket): Promise<void> {
+    try {
+      const partnerIds = await this.getConversationPartnerIds(
+        ws.userId as number,
+        ws.tenantId as number,
+      );
+
+      const onlineUserIds: number[] = [];
+      for (const partnerId of partnerIds) {
+        const clientWs = this.clients.get(partnerId);
+        if (clientWs?.readyState === WebSocket.OPEN) {
+          onlineUserIds.push(partnerId);
+        }
+      }
+
+      logger.debug(
+        { userId: ws.userId, onlinePartners: onlineUserIds.length },
+        'Sending presence snapshot',
+      );
+
+      this.sendMessage(ws, {
+        type: 'initial_presence',
+        data: { onlineUserIds },
+      });
+    } catch (error: unknown) {
+      logger.error({ err: error }, 'Failed to send presence snapshot');
     }
   }
 

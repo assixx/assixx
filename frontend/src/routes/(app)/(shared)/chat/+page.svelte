@@ -43,8 +43,8 @@
     updateConversationsUserStatus,
     markMessageAsRead,
     updateConversationWithMessage,
-    buildJoinMessage,
     buildSendMessage,
+    buildRequestPresenceMessage,
   } from './_lib/websocket';
 
   import type { PageData } from './$types';
@@ -69,9 +69,9 @@
   const ssrUser = $derived(data.currentUser);
   const ssrConversations = $derived(data.conversations);
 
-  // Current user derived from SSR
+  // Current user derived from SSR (hydration can yield undefined — Sentry JAVASCRIPT-SVELTEKIT-23)
   const currentUser = $derived.by<ChatUser | null>(() => {
-    if (ssrUser === null) return null;
+    if (ssrUser === null || (ssrUser as unknown) === undefined) return null;
     return {
       id: ssrUser.id,
       username: ssrUser.email,
@@ -211,11 +211,11 @@
     const existingWs = handlers.getWebSocket();
 
     if (existingWs !== null && existingWs.readyState === WebSocket.OPEN) {
-      // WS already connected from layout — just upgrade callbacks and join conversations
+      // WS already connected from layout — upgrade callbacks, join, request presence
       handlers.updateCallbacks(chatCallbacks);
-      conversations.forEach((conv) => {
-        handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
-      });
+      // Request current online statuses AFTER chat callbacks are active
+      log.info('Requesting presence snapshot from backend');
+      handlers.sendWebSocketMessage(buildRequestPresenceMessage());
     } else {
       // Race condition: layout WS not ready yet — update callbacks so they're
       // used when the connection completes. The layout's connectWebSocket will
@@ -348,9 +348,8 @@
     return {
       onConnected: () => {
         isDisconnected = false;
-        conversations.forEach((conv) => {
-          handlers.sendWebSocketMessage(buildJoinMessage(conv.id));
-        });
+        // Request online statuses after (re)connection with chat callbacks active
+        handlers.sendWebSocketMessage(buildRequestPresenceMessage());
       },
       onDisconnect: (permanent: boolean) => {
         isDisconnected = true;
@@ -457,7 +456,6 @@
         conv.unreadCount = 0;
       }
 
-      handlers.sendWebSocketMessage(buildJoinMessage(conversation.id));
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
     } catch (error) {
       log.error({ err: error }, 'Error loading messages');
@@ -539,9 +537,6 @@
 
     // Reload SSR data to sync with server
     await invalidateAll();
-
-    // Join the new conversation's WebSocket room
-    handlers.sendWebSocketMessage(buildJoinMessage(persistedConversation.id));
 
     log.info(
       { conversationId: persistedConversation.id },
@@ -932,9 +927,3 @@
   image={previewImage}
   onclose={closeImagePreview}
 />
-
-<style>
-  .hidden {
-    display: none !important;
-  }
-</style>

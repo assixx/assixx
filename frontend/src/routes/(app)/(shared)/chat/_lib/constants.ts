@@ -149,11 +149,11 @@ export const MIME_TYPE_ICONS: Record<string, string> = {
  */
 export const WS_MESSAGE_TYPES = {
   // Outgoing
-  JOIN_CONVERSATION: 'join_conversation',
   SEND_MESSAGE: 'send_message',
   TYPING_START: 'typing_start',
   TYPING_STOP: 'typing_stop',
   PING: 'ping',
+  REQUEST_PRESENCE: 'request_presence',
 
   // Incoming
   CONNECTION_ESTABLISHED: 'connection_established',
@@ -163,7 +163,7 @@ export const WS_MESSAGE_TYPES = {
   USER_STOPPED_TYPING: 'user_stopped_typing',
   USER_STATUS: 'user_status',
   USER_STATUS_CHANGED: 'user_status_changed',
-  USER_JOINED_CONVERSATION: 'user_joined_conversation',
+  INITIAL_PRESENCE: 'initial_presence',
   MESSAGE_READ: 'message_read',
   MESSAGE_SENT: 'message_sent',
   PONG: 'pong',

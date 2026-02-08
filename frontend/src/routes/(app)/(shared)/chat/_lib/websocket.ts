@@ -220,18 +220,6 @@ export function updateConversationWithMessage(
 // =============================================================================
 
 /**
- * Build join conversation message
- * @param conversationId - Conversation ID to join
- * @returns WebSocket message object
- */
-export function buildJoinMessage(conversationId: number): WebSocketMessage {
-  return {
-    type: WS_MESSAGE_TYPES.JOIN_CONVERSATION,
-    data: { conversationId },
-  };
-}
-
-/**
  * Build send message payload
  * @param conversationId - Conversation ID
  * @param content - Message content
@@ -285,6 +273,17 @@ export function buildPingMessage(): WebSocketMessage {
   return {
     type: WS_MESSAGE_TYPES.PING,
     data: { timestamp: new Date().toISOString() },
+  };
+}
+
+/**
+ * Build request_presence message — asks backend for current online partners
+ * @returns WebSocket message object
+ */
+export function buildRequestPresenceMessage(): WebSocketMessage {
+  return {
+    type: WS_MESSAGE_TYPES.REQUEST_PRESENCE,
+    data: {},
   };
 }
 
