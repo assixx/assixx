@@ -519,6 +519,15 @@
     padding-left: 4px;
   }
 
+  .perm-cell__info > i {
+    opacity: 0.25;
+    transition: opacity 0.2s ease;
+  }
+
+  .perm-cell__info:hover > i {
+    opacity: 0.6;
+  }
+
   /* Tooltip anchored right so it doesn't overflow viewport */
   .perm-cell__info :global(.tooltip__content) {
     right: 50%;
