@@ -94,6 +94,7 @@
     "css:analyze:verbose": "node scripts/analyze-css.cjs --verbose",
     "css:analyze:file": "node scripts/analyze-css.cjs --file",
     "test:api": "vitest run --project api",
+    "test:permission": "vitest run --project permission",
     "prepare": "husky",
     "knip": "knip",
     "knip:fix": "knip --fix",

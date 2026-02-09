@@ -6,7 +6,12 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -559,6 +564,17 @@ export class AdminPermissionsService {
   ): Promise<void> {
     this.logger.log(`Setting full access for user ${userId}: ${hasFullAccess}`);
 
+    // SECURITY: Employees MUST NOT have has_full_access=true
+    // Defense-in-depth: DB constraint chk_employee_no_full_access also enforces this
+    if (hasFullAccess) {
+      const { role } = await this.getUserRoleInfo(userId, tenantId);
+      if (role === 'employee') {
+        throw new BadRequestException(
+          'Mitarbeiter dürfen keinen Vollzugriff erhalten. Nur Admin- und Root-Benutzer können has_full_access=true haben.',
+        );
+      }
+    }
+
     const result = await this.db.query<DbAffectedRows>(
       `UPDATE users SET has_full_access = $1 WHERE id = $2 AND tenant_id = $3 RETURNING 1`,
       [hasFullAccess, userId, tenantId],
@@ -587,7 +603,7 @@ export class AdminPermissionsService {
   private async getUserRoleInfo(
     userId: number,
     tenantId: number,
-  ): Promise<{ isRoot: boolean; hasFullAccess: boolean }> {
+  ): Promise<{ role: string; isRoot: boolean; hasFullAccess: boolean }> {
     const rows = await this.db.query<DbRoleResult>(
       'SELECT role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
@@ -606,6 +622,7 @@ export class AdminPermissionsService {
     }
 
     return {
+      role: userRow.role,
       isRoot: userRow.role === 'root',
       hasFullAccess: userRow.has_full_access,
     };

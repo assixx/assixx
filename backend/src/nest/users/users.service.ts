@@ -1,13 +1,12 @@
 /**
  * Users Service
  *
- * Business logic for user management:
+ * Business logic for admin user management:
  * - List users with pagination and filters
- * - CRUD operations
- * - Profile management
- * - Password changes
- * - Profile pictures
+ * - CRUD operations (create, update, delete, archive)
+ * - Role change authorization
  *
+ * NOTE: Profile self-service extracted to UserProfileService
  * NOTE: Availability logic extracted to UserAvailabilityService
  * NOTE: Types extracted to users.types.ts, pure helpers to users.helpers.ts
  */
@@ -17,13 +16,9 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -31,7 +26,6 @@ import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
-import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserAvailabilityService } from './user-availability.service.js';
 import {
@@ -59,15 +53,14 @@ const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
   EMAIL_EXISTS: 'Email already exists',
   EMPLOYEE_NUMBER_EXISTS: 'Personalnummer bereits vergeben',
-  INVALID_PASSWORD: 'Invalid current password',
   ROLE_CHANGE_FORBIDDEN:
     'Keine Berechtigung für Rollenänderung. Nur Root oder Admin mit Vollzugriff dürfen Rollen ändern.',
+  EMPLOYEE_NO_FULL_ACCESS:
+    'Mitarbeiter dürfen keinen Vollzugriff erhalten. Nur Admin- und Root-Benutzer können has_full_access=true haben.',
 } as const;
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
-
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
@@ -204,9 +197,15 @@ export class UsersService {
     const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
     void teamIds;
 
+    // SECURITY: Employees MUST NOT have has_full_access=true
+    const safeFullAccess = this.enforceEmployeeNoFullAccess(
+      userData.role,
+      hasFullAccess,
+    );
+
     const userId = await this.insertUserRecord(
       userData,
-      hasFullAccess,
+      safeFullAccess,
       tenantId,
     );
     if (Array.isArray(departmentIds) && departmentIds.length > 0) {
@@ -226,12 +225,12 @@ export class UsersService {
         role: dto.role,
         firstName: dto.firstName,
         lastName: dto.lastName,
-        hasFullAccess: hasFullAccess ?? false,
+        hasFullAccess: safeFullAccess ?? false,
       },
     );
 
     // Log full access grant separately for audit trail
-    if (hasFullAccess === true) {
+    if (safeFullAccess === true) {
       await this.activityLogger.log({
         tenantId,
         userId: actingUserId,
@@ -327,19 +326,17 @@ export class UsersService {
       await this.assertCanChangeRole(actingUserId, actingUserRole, tenantId);
     }
 
-    // Store old values for logging
-    const oldValues = {
-      email: existingUser.email,
-      role: existingUser.role,
-      firstName: existingUser.first_name,
-      lastName: existingUser.last_name,
-    };
-
     await this.validateEmailUniqueness(dto.email, existingUser.email, tenantId);
 
     const { departmentIds, teamIds, hasFullAccess, password, ...updateData } =
       dto;
     void teamIds; // Reserved for future use
+
+    // SECURITY: Employees MUST NOT have has_full_access=true (defense-in-depth)
+    this.enforceEmployeeNoFullAccess(
+      dto.role ?? existingUser.role,
+      hasFullAccess ?? existingUser.has_full_access === 1,
+    );
 
     await this.executeUserUpdate(
       userId,
@@ -363,23 +360,7 @@ export class UsersService {
     );
 
     const result = await this.fetchUserWithDepartments(userId, tenantId);
-
-    // Log activity
-    await this.activityLogger.logUpdate(
-      tenantId,
-      actingUserId,
-      'user',
-      userId,
-      `Benutzer aktualisiert: ${existingUser.email}`,
-      oldValues,
-      {
-        email: dto.email ?? existingUser.email,
-        role: dto.role ?? existingUser.role,
-        firstName: dto.firstName ?? existingUser.first_name,
-        lastName: dto.lastName ?? existingUser.last_name,
-      },
-    );
-
+    await this.logUserUpdate(tenantId, actingUserId, userId, existingUser, dto);
     return result;
   }
 
@@ -397,6 +378,37 @@ export class UsersService {
     if (emailExists !== null) {
       throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
     }
+  }
+
+  /**
+   * Log user update activity with old/new values
+   */
+  private async logUserUpdate(
+    tenantId: number,
+    actingUserId: number,
+    userId: number,
+    existingUser: UserRow,
+    dto: UpdateUserDto,
+  ): Promise<void> {
+    await this.activityLogger.logUpdate(
+      tenantId,
+      actingUserId,
+      'user',
+      userId,
+      `Benutzer aktualisiert: ${existingUser.email}`,
+      {
+        email: existingUser.email,
+        role: existingUser.role,
+        firstName: existingUser.first_name,
+        lastName: existingUser.last_name,
+      },
+      {
+        email: dto.email ?? existingUser.email,
+        role: dto.role ?? existingUser.role,
+        firstName: dto.firstName ?? existingUser.first_name,
+        lastName: dto.lastName ?? existingUser.last_name,
+      },
+    );
   }
 
   /**
@@ -475,100 +487,6 @@ export class UsersService {
     addDepartmentInfo(response, departments);
 
     return response;
-  }
-
-  /**
-   * Update user profile (limited fields for self-update)
-   */
-  async updateProfile(
-    userId: number,
-    dto: UpdateProfileDto,
-    tenantId: number,
-  ): Promise<SafeUserResponse> {
-    const updates: string[] = ['updated_at = NOW()'];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    if (dto.firstName !== undefined) {
-      updates.push(`first_name = $${paramIndex}`);
-      params.push(dto.firstName);
-      paramIndex++;
-    }
-    if (dto.lastName !== undefined) {
-      updates.push(`last_name = $${paramIndex}`);
-      params.push(dto.lastName);
-      paramIndex++;
-    }
-    if (dto.phone !== undefined) {
-      updates.push(`phone = $${paramIndex}`);
-      params.push(dto.phone);
-      paramIndex++;
-    }
-    if (dto.address !== undefined) {
-      updates.push(`address = $${paramIndex}`);
-      params.push(dto.address);
-      paramIndex++;
-    }
-    if (dto.emergencyContact !== undefined) {
-      updates.push(`emergency_contact = $${paramIndex}`);
-      params.push(dto.emergencyContact);
-      paramIndex++;
-    }
-    if (dto.employeeNumber !== undefined) {
-      updates.push(`employee_number = $${paramIndex}`);
-      params.push(dto.employeeNumber);
-      paramIndex++;
-    }
-
-    if (params.length > 0) {
-      params.push(userId, tenantId);
-      await this.databaseService.query(
-        `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
-        params,
-      );
-    }
-
-    const updatedUser = await this.findUserById(userId, tenantId);
-    if (updatedUser === null) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    return toSafeUserResponse(updatedUser);
-  }
-
-  /**
-   * Change password
-   */
-  async changePassword(
-    userId: number,
-    tenantId: number,
-    currentPassword: string,
-    newPassword: string,
-  ): Promise<{ message: string }> {
-    // SECURITY: Get password hash for ACTIVE users only (is_active = 1)
-    const passwordHash = await this.userRepository.getPasswordHash(
-      userId,
-      tenantId,
-    );
-
-    if (passwordHash === null) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    // Verify current password
-    const isValid = await bcryptjs.compare(currentPassword, passwordHash);
-    if (!isValid) {
-      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_PASSWORD);
-    }
-
-    // Hash and update new password
-    const hashedPassword = await bcryptjs.hash(newPassword, 12);
-    await this.databaseService.query(
-      `UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3`,
-      [hashedPassword, userId, tenantId],
-    );
-
-    return { message: 'Password changed successfully' };
   }
 
   /**
@@ -678,6 +596,21 @@ export class UsersService {
     }
 
     throw new ForbiddenException(ERROR_MESSAGES.ROLE_CHANGE_FORBIDDEN);
+  }
+
+  /**
+   * SECURITY: Enforce that employees cannot have has_full_access=true.
+   * Defense-in-depth: DB constraint chk_employee_no_full_access also enforces this.
+   * @throws BadRequestException if role is 'employee' and hasFullAccess is true
+   */
+  private enforceEmployeeNoFullAccess(
+    role: string,
+    hasFullAccess: boolean | undefined,
+  ): boolean | undefined {
+    if (role === 'employee' && hasFullAccess === true) {
+      throw new BadRequestException(ERROR_MESSAGES.EMPLOYEE_NO_FULL_ACCESS);
+    }
+    return hasFullAccess;
   }
 
   /**
@@ -857,113 +790,6 @@ export class UsersService {
       `DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
-  }
-
-  // ============================================
-  // Profile Picture Methods (Native NestJS)
-  // ============================================
-
-  /**
-   * Get profile picture path
-   */
-  async getProfilePicturePath(
-    userId: number,
-    tenantId: number,
-  ): Promise<string> {
-    const user = await this.findUserById(userId, tenantId);
-    if (user === null) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    if (user.profile_picture === null || user.profile_picture === '') {
-      throw new NotFoundException('Profile picture not found');
-    }
-
-    const filePath = path.join(process.cwd(), user.profile_picture);
-
-    // Check if file exists
-    try {
-      await fs.access(filePath);
-    } catch {
-      throw new NotFoundException('Profile picture file not found');
-    }
-
-    return filePath;
-  }
-
-  /**
-   * Update profile picture
-   */
-  async updateProfilePicture(
-    userId: number,
-    filePath: string,
-    tenantId: number,
-  ): Promise<SafeUserResponse> {
-    const user = await this.findUserById(userId, tenantId);
-    if (user === null) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    // Store relative path in DB
-    const relativePath = path.relative(process.cwd(), filePath);
-
-    await this.databaseService.query(
-      `UPDATE users SET profile_picture = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3`,
-      [relativePath, userId, tenantId],
-    );
-
-    // Fetch and return updated user
-    const updatedUser = await this.findUserById(userId, tenantId);
-    if (updatedUser === null) {
-      throw new InternalServerErrorException('Failed to retrieve updated user');
-    }
-
-    return toSafeUserResponse(updatedUser);
-  }
-
-  /**
-   * Delete profile picture
-   */
-  async deleteProfilePicture(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ message: string }> {
-    const user = await this.findUserById(userId, tenantId);
-    if (user === null) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    if (user.profile_picture === null || user.profile_picture === '') {
-      throw new NotFoundException('No profile picture to delete');
-    }
-
-    // Validate path to prevent directory traversal
-    const profilePicture = user.profile_picture;
-    const normalizedPath = path.normalize(profilePicture);
-    if (normalizedPath.includes('..') || path.isAbsolute(normalizedPath)) {
-      throw new BadRequestException('Invalid profile picture path');
-    }
-
-    // Delete file from disk
-    const filePath = path.join(process.cwd(), normalizedPath);
-    try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
-      await fs.unlink(filePath);
-    } catch (error: unknown) {
-      // Log but don't fail if file doesn't exist
-      this.logger.warn('Failed to delete profile picture file', {
-        filePath,
-        error,
-      });
-    }
-
-    // Clear DB field
-    await this.databaseService.query(
-      `UPDATE users SET profile_picture = NULL, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
-      [userId, tenantId],
-    );
-
-    return { message: 'Profile picture deleted successfully' };
   }
 
   // ============================================

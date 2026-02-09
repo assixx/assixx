@@ -27,7 +27,7 @@ function createServiceWithMock(): {
 // Pure Clause Builders
 // ============================================================
 
-describe('SurveyAccessService – pure clause builders', () => {
+describe('SECURITY: SurveyAccessService – pure clause builders', () => {
   let service: SurveyAccessService;
 
   beforeEach(() => {
@@ -67,7 +67,7 @@ describe('SurveyAccessService – pure clause builders', () => {
 // DB-Mocked Methods
 // ============================================================
 
-describe('SurveyAccessService – DB-mocked methods', () => {
+describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
   let service: SurveyAccessService;
   let mockDb: { query: ReturnType<typeof vi.fn> };
 
