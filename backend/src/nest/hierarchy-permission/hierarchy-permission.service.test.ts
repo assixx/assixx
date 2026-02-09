@@ -47,7 +47,7 @@ function mockUserNotFound() {
 // hasAccess — Core Flow
 // ============================================
 
-describe('hasAccess', () => {
+describe('SECURITY: hasAccess', () => {
   it('should return false when user not found', async () => {
     mockUserNotFound();
 
@@ -105,7 +105,7 @@ describe('hasAccess', () => {
 // hasAccess — Area Access
 // ============================================
 
-describe('hasAccess — area', () => {
+describe('SECURITY: hasAccess — area', () => {
   it('should grant access when user has area permission with read', async () => {
     mockUser('admin', false);
     mockQueryReturn([{ can_read: true, can_write: false, can_delete: false }]);
@@ -138,7 +138,7 @@ describe('hasAccess — area', () => {
 // hasAccess — Department Access (with Area inheritance)
 // ============================================
 
-describe('hasAccess — department', () => {
+describe('SECURITY: hasAccess — department', () => {
   it('should grant access with direct department permission', async () => {
     mockUser('admin', false);
     // Direct dept permission
@@ -180,7 +180,7 @@ describe('hasAccess — department', () => {
 // hasAccess — Team Access
 // ============================================
 
-describe('hasAccess — team', () => {
+describe('SECURITY: hasAccess — team', () => {
   it('should grant access when user is team member', async () => {
     mockUser('employee', false);
     // 1. isTeamMember — is a member
@@ -205,10 +205,92 @@ describe('hasAccess — team', () => {
 });
 
 // ============================================
+// hasAccess — team inheritance chain (team → dept → area)
+// ============================================
+
+describe('SECURITY: hasAccess — team inheritance chain', () => {
+  it('should inherit from department when not team member', async () => {
+    mockUser('employee', false);
+    // 1. isTeamMember → not a member
+    mockQueryReturn([]);
+    // 2. getTeamInfo → team has department_id
+    mockQueryReturn([{ id: 10, department_id: 5 }]);
+    // 3. checkDepartmentAccess → direct dept permission exists
+    mockQueryReturn([{ can_read: true, can_write: false, can_delete: false }]);
+
+    const result = await service.hasAccess(1, 1, 'team', 10);
+
+    expect(result).toBe(true);
+  });
+
+  it('should inherit from area when no team membership and no dept permission', async () => {
+    mockUser('admin', false);
+    // 1. isTeamMember → not a member
+    mockQueryReturn([]);
+    // 2. getTeamInfo → team has department_id=5
+    mockQueryReturn([{ id: 10, department_id: 5 }]);
+    // 3. checkDepartmentAccess → no direct dept permission
+    mockQueryReturn([]);
+    // 4. getDepartmentInfo → dept has area_id=3
+    mockQueryReturn([{ id: 5, area_id: 3 }]);
+    // 5. checkAreaAccess → area permission exists
+    mockQueryReturn([{ can_read: true, can_write: false, can_delete: false }]);
+
+    const result = await service.hasAccess(1, 1, 'team', 10);
+
+    expect(result).toBe(true);
+  });
+
+  it('should deny when full chain yields no permission', async () => {
+    mockUser('employee', false);
+    // 1. isTeamMember → not a member
+    mockQueryReturn([]);
+    // 2. getTeamInfo → team has department_id=5
+    mockQueryReturn([{ id: 10, department_id: 5 }]);
+    // 3. checkDepartmentAccess → no direct dept permission
+    mockQueryReturn([]);
+    // 4. getDepartmentInfo → dept has area_id=3
+    mockQueryReturn([{ id: 5, area_id: 3 }]);
+    // 5. checkAreaAccess → no area permission either
+    mockQueryReturn([]);
+
+    const result = await service.hasAccess(1, 1, 'team', 10);
+
+    expect(result).toBe(false);
+  });
+});
+
+// ============================================
+// Permission level enforcement
+// ============================================
+
+describe('SECURITY: permission level enforcement', () => {
+  it('should deny write when user only has can_read on area', async () => {
+    mockUser('admin', false);
+    // Area permission: can_read=true, can_write=false
+    mockQueryReturn([{ can_read: true, can_write: false, can_delete: false }]);
+
+    const result = await service.hasAccess(1, 1, 'area', 10, 'write');
+
+    expect(result).toBe(false);
+  });
+
+  it('should deny delete when user has can_read + can_write but not can_delete', async () => {
+    mockUser('admin', false);
+    // Area permission: can_read=true, can_write=true, can_delete=false
+    mockQueryReturn([{ can_read: true, can_write: true, can_delete: false }]);
+
+    const result = await service.hasAccess(1, 1, 'area', 10, 'delete');
+
+    expect(result).toBe(false);
+  });
+});
+
+// ============================================
 // getAccessibleAreaIds
 // ============================================
 
-describe('getAccessibleAreaIds', () => {
+describe('SECURITY: getAccessibleAreaIds', () => {
   it('should return all areas for root user', async () => {
     mockUser('root', false);
     mockQueryReturn([{ id: 1 }, { id: 2 }, { id: 3 }]);
@@ -240,7 +322,7 @@ describe('getAccessibleAreaIds', () => {
 // getAccessibleDepartmentIds
 // ============================================
 
-describe('getAccessibleDepartmentIds', () => {
+describe('SECURITY: getAccessibleDepartmentIds', () => {
   it('should return all departments for root user', async () => {
     mockUser('root', false);
     mockQueryReturn([{ id: 1 }, { id: 2 }]);
@@ -280,7 +362,7 @@ describe('getAccessibleDepartmentIds', () => {
 // getAccessibleTeamIds
 // ============================================
 
-describe('getAccessibleTeamIds', () => {
+describe('SECURITY: getAccessibleTeamIds', () => {
   it('should return all teams for user with full access', async () => {
     mockUser('admin', true);
     mockQueryReturn([{ id: 1 }, { id: 2 }, { id: 3 }]);

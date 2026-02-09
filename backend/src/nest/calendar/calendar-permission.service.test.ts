@@ -55,7 +55,7 @@ function makeUserRole(overrides: Record<string, unknown> = {}) {
 // CalendarPermissionService
 // =============================================================
 
-describe('CalendarPermissionService', () => {
+describe('SECURITY: CalendarPermissionService', () => {
   let service: CalendarPermissionService;
   let mockDb: ReturnType<typeof createMockDb>;
 

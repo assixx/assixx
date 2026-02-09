@@ -121,7 +121,7 @@ function setupLoginMocks(
 // Tests
 // =============================================================
 
-describe('AuthService', () => {
+describe('SECURITY: AuthService', () => {
   let service: AuthService;
   let mockDb: MockDb;
   let mockJwt: MockJwt;

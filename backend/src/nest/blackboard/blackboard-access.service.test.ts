@@ -52,7 +52,7 @@ function makeEntry(
 // BlackboardAccessService
 // =============================================================
 
-describe('BlackboardAccessService', () => {
+describe('SECURITY: BlackboardAccessService', () => {
   let service: BlackboardAccessService;
   let mockDb: ReturnType<typeof createMockDb>;
   let mockHierarchy: ReturnType<typeof createMockHierarchyPermission>;

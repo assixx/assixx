@@ -18,7 +18,7 @@ import type { RequiredPermission } from './require-permission.decorator.js';
 // Tests
 // =============================================================
 
-describe('RequirePermission()', () => {
+describe('SECURITY: RequirePermission()', () => {
   it('should set metadata with correct PERMISSION_KEY', () => {
     class TestController {
       @RequirePermission('blackboard', 'blackboard-posts', 'canRead')

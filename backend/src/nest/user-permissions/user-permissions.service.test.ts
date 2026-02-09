@@ -64,7 +64,7 @@ function createCategory(
 // Test Suite
 // =============================================================
 
-describe('UserPermissionsService', () => {
+describe('SECURITY: UserPermissionsService', () => {
   let service: UserPermissionsService;
   let mockDb: MockDb;
   let mockClient: { query: ReturnType<typeof vi.fn> };

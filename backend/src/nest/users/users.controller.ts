@@ -64,6 +64,7 @@ import {
   UpdateUserDto,
 } from './dto/index.js';
 import { UserAvailabilityService } from './user-availability.service.js';
+import { UserProfileService } from './user-profile.service.js';
 import { UsersService } from './users.service.js';
 import type { PaginatedResult, SafeUserResponse } from './users.types.js';
 
@@ -128,6 +129,7 @@ interface MessageResponse {
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
+    private readonly userProfileService: UserProfileService,
     private readonly availabilityService: UserAvailabilityService,
   ) {}
 
@@ -249,7 +251,11 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
     @CurrentUser() user: NestAuthUser,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateProfile(user.id, dto, user.tenantId);
+    return await this.userProfileService.updateProfile(
+      user.id,
+      dto,
+      user.tenantId,
+    );
   }
 
   /**
@@ -261,7 +267,7 @@ export class UsersController {
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: NestAuthUser,
   ): Promise<MessageResponse> {
-    return await this.usersService.changePassword(
+    return await this.userProfileService.changePassword(
       user.id,
       user.tenantId,
       dto.currentPassword,
@@ -469,7 +475,7 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
     @CurrentUser() user: NestAuthUser,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateProfile(user.id, dto, user.tenantId);
+    return await this.updateProfile(dto, user);
   }
 
   /**
@@ -481,7 +487,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const filePath = await this.usersService.getProfilePicturePath(
+    const filePath = await this.userProfileService.getProfilePicturePath(
       user.id,
       user.tenantId,
     );
@@ -530,7 +536,7 @@ export class UsersController {
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath built from constant dir + UUIDv7 + validated extension
     fs.writeFileSync(filePath, file.buffer);
 
-    return await this.usersService.updateProfilePicture(
+    return await this.userProfileService.updateProfilePicture(
       user.id,
       relativePath,
       user.tenantId,
@@ -545,7 +551,10 @@ export class UsersController {
   async deleteProfilePicture(
     @CurrentUser() user: NestAuthUser,
   ): Promise<MessageResponse> {
-    return await this.usersService.deleteProfilePicture(user.id, user.tenantId);
+    return await this.userProfileService.deleteProfilePicture(
+      user.id,
+      user.tenantId,
+    );
   }
 
   /**

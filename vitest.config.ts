@@ -8,8 +8,9 @@ const rootDir = import.meta.dirname;
 /**
  * Vitest Configuration for Assixx
  *
- * Three projects:
+ * Four projects:
  *   - unit:          backend/src + shared/src (fast, isolated, mocked)
+ *   - permission:    security-critical permission/access tests (subset of unit)
  *   - frontend-unit: frontend/src utils (pure functions, mocked SvelteKit env)
  *   - api:           backend/test (real HTTP against Docker backend)
  *
@@ -87,6 +88,45 @@ export default defineConfig({
           setupFiles: ['./vitest.setup.ts'],
           // Unique groupOrder required when projects have different maxWorkers
           sequence: { groupOrder: 1 },
+        },
+      },
+
+      // ── Permission/Security Tests: CRITICAL access control (subset of unit) ──
+      {
+        resolve: {
+          alias: {
+            '@': resolve(rootDir, './backend/src'),
+            '@nest': resolve(rootDir, './backend/src/nest'),
+            '@schemas': resolve(rootDir, './backend/src/schemas'),
+            '@services': resolve(rootDir, './backend/src/services'),
+            '@utils': resolve(rootDir, './backend/src/utils'),
+            '@shared': resolve(rootDir, './shared/src'),
+          },
+        },
+        test: {
+          name: { label: 'permission', color: 'red' },
+          environment: 'node',
+          globals: true,
+          include: [
+            'backend/src/nest/admin-permissions/**/*.test.ts',
+            'backend/src/nest/user-permissions/**/*.test.ts',
+            'backend/src/nest/common/guards/permission.guard.test.ts',
+            'backend/src/nest/common/guards/roles.guard.test.ts',
+            'backend/src/nest/common/guards/jwt-auth.guard.test.ts',
+            'backend/src/nest/common/decorators/require-permission.decorator.test.ts',
+            'backend/src/nest/common/permission-registry/**/*.test.ts',
+            'backend/src/nest/hierarchy-permission/**/*.test.ts',
+            'backend/src/nest/calendar/calendar-permission.service.test.ts',
+            'backend/src/nest/blackboard/blackboard-access.service.test.ts',
+            'backend/src/nest/surveys/survey-access.service.test.ts',
+            'backend/src/nest/auth/auth.service.test.ts',
+            'backend/src/nest/roles/roles.service.test.ts',
+            'backend/src/nest/role-switch/role-switch.service.test.ts',
+            'backend/src/nest/documents/document-access.service.test.ts',
+          ],
+          testTimeout: 10_000,
+          setupFiles: ['./vitest.setup.ts'],
+          sequence: { groupOrder: 4 },
         },
       },
 

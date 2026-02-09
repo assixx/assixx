@@ -30,7 +30,7 @@ function createValidEntry(overrides?: Record<string, unknown>) {
 // Tests
 // =============================================================
 
-describe('UpsertUserPermissionsSchema', () => {
+describe('SECURITY: UpsertUserPermissionsSchema', () => {
   // -----------------------------------------------------------
   // Valid Cases
   // -----------------------------------------------------------
