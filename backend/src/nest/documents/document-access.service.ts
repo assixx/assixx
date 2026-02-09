@@ -15,7 +15,9 @@ export class DocumentAccessService {
 
   /**
    * Check if a user has access to a document based on access_scope.
-   * Admins/root can access all documents.
+   * Chat documents are ALWAYS private — only conversation participants
+   * can access them, regardless of role (admin/root included).
+   * Admins/root can access all OTHER document types.
    */
   async checkDocumentAccess(
     document: DbDocument,
@@ -25,7 +27,17 @@ export class DocumentAccessService {
     const user = await this.getUserRole(userId, tenantId);
     if (user === null) return false;
 
-    // Admins can access all
+    // Chat is ALWAYS private — check BEFORE admin bypass
+    if (document.access_scope === 'chat') {
+      if (document.conversation_id === null) return false;
+      return await this.isConversationParticipant(
+        userId,
+        document.conversation_id,
+        tenantId,
+      );
+    }
+
+    // Admins can access all non-chat documents
     if (user.role === 'admin' || user.role === 'root') {
       return true;
     }
@@ -42,13 +54,6 @@ export class DocumentAccessService {
       case 'department':
         // Simplified - would need department membership check
         return true;
-      case 'chat':
-        if (document.conversation_id === null) return false;
-        return await this.isConversationParticipant(
-          userId,
-          document.conversation_id,
-          tenantId,
-        );
       default:
         return false;
     }
@@ -111,6 +116,18 @@ export class DocumentAccessService {
     );
     baseQuery = filterResult.baseQuery;
     paramIndex = filterResult.paramIndex;
+
+    // Chat privacy: ALL users (including admins) can only see chat docs
+    // where they are a conversation participant
+    baseQuery += ` AND (
+      d.access_scope != 'chat'
+      OR EXISTS (
+        SELECT 1 FROM conversation_participants cp
+        WHERE cp.conversation_id = d.conversation_id AND cp.user_id = $${paramIndex}
+      )
+    )`;
+    params.push(userId);
+    paramIndex++;
 
     if (!isAdmin) {
       baseQuery += ` AND (

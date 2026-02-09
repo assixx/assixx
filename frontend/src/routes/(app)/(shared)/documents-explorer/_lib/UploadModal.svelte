@@ -105,6 +105,13 @@
     });
   }
 
+  // Reset form state every time modal opens (ensures clean slate after upload)
+  $effect(() => {
+    if (show) {
+      resetForm();
+    }
+  });
+
   // Outside click handler
   $effect(() => {
     if (categoryDropdownOpen) {

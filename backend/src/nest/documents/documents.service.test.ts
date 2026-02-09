@@ -308,14 +308,18 @@ describe('DocumentsService', () => {
   // =============================================================
 
   describe('getUnreadCount', () => {
-    it('should not add access scope filter for admin', async () => {
+    it('should add chat privacy filter but no role-based scope filter for admin', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '10' }]);
 
       const result = await service.getUnreadCount(42, 2, 'admin');
 
       expect(result.count).toBe(10);
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(sql).not.toContain('access_scope');
+      // Chat privacy filter is present for ALL users
+      expect(sql).toContain("d.access_scope != 'chat'");
+      expect(sql).toContain('conversation_participants');
+      // But no role-based scope filter (company/personal/payroll) for admin
+      expect(sql).not.toContain("d.access_scope = 'company'");
     });
 
     it('should add access scope filter for employee', async () => {

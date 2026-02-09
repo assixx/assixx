@@ -59,7 +59,7 @@ describe('DocumentAccessService', () => {
       expect(result).toBe(false);
     });
 
-    it('should allow admin access to any document', async () => {
+    it('should allow admin access to non-chat documents', async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
 
       const result = await service.checkDocumentAccess(
@@ -71,7 +71,7 @@ describe('DocumentAccessService', () => {
       expect(result).toBe(true);
     });
 
-    it('should allow root access to any document', async () => {
+    it('should allow root access to non-chat documents', async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
 
       const result = await service.checkDocumentAccess(
@@ -81,6 +81,60 @@ describe('DocumentAccessService', () => {
       );
 
       expect(result).toBe(true);
+    });
+
+    it('should deny admin access to chat docs they are not participant of', async () => {
+      // getUserRole returns admin
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // isConversationParticipant returns empty (not a participant)
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.checkDocumentAccess(
+        makeDocument({
+          access_scope: 'chat',
+          conversation_id: 42,
+        }) as never,
+        5,
+        10,
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('should allow admin access to chat docs they ARE participant of', async () => {
+      // getUserRole returns admin
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // isConversationParticipant returns match
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+
+      const result = await service.checkDocumentAccess(
+        makeDocument({
+          access_scope: 'chat',
+          conversation_id: 42,
+        }) as never,
+        5,
+        10,
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('should deny root access to chat docs they are not participant of', async () => {
+      // getUserRole returns root
+      mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
+      // isConversationParticipant returns empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.checkDocumentAccess(
+        makeDocument({
+          access_scope: 'chat',
+          conversation_id: 7,
+        }) as never,
+        1,
+        10,
+      );
+
+      expect(result).toBe(false);
     });
 
     it('should allow employee access to company documents', async () => {
@@ -191,18 +245,23 @@ describe('DocumentAccessService', () => {
   // =============================================================
 
   describe('buildDocumentQuery', () => {
-    it('should build base query for admin', () => {
+    it('should build base query for admin with chat privacy filter', () => {
       const result = service.buildDocumentQuery(10, 1, {}, true, 5);
 
       expect(result.baseQuery).toContain('WHERE d.tenant_id');
       expect(result.params).toContain(10);
       expect(result.params).toContain(1);
+      // Admin queries must include chat privacy filter
+      expect(result.baseQuery).toContain('conversation_participants');
+      expect(result.baseQuery).toContain("d.access_scope != 'chat'");
+      expect(result.params).toContain(5);
     });
 
     it('should add access scope filter for non-admin', () => {
       const result = service.buildDocumentQuery(10, 1, {}, false, 5);
 
       expect(result.baseQuery).toContain('access_scope');
+      expect(result.baseQuery).toContain('conversation_participants');
       expect(result.params).toContain(5);
     });
 

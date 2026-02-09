@@ -20,9 +20,10 @@
   let editTags = $state('');
   let categoryDropdownOpen = $state(false);
 
-  // Initialize form when document changes
+  // Reset residual UI state and initialize form when modal opens
   $effect(() => {
-    if (document) {
+    if (show && document) {
+      categoryDropdownOpen = false;
       editDocName = document.filename;
       editCategory = document.category;
       editTags = document.tags?.join(', ') ?? '';
