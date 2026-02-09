@@ -127,14 +127,12 @@ Both backend and frontend use path aliases for cleaner imports.
 ```
 
 ```typescript
-// ✅ CORRECT - Clean imports with aliases
-import { execute } from '@utils/db';
-import { security } from '@middleware/security';
-import { UserService } from '@services/user.service';
+// ✅ CORRECT - NestJS DI via constructor injection
+// DatabaseService is available everywhere (Global DatabaseModule)
+constructor(private readonly db: DatabaseService) {}
 
-// ❌ WRONG - Relative path hell
-import { execute } from '../../../utils/db';
-import { security } from '../../middleware/security';
+// ❌ WRONG - Standalone function imports (legacy, removed)
+// import { execute } from '../../../utils/db';
 ```
 
 ### Frontend Path Aliases (`frontend/tsconfig.json`)
@@ -1182,49 +1180,39 @@ router.post(
 
 ### Database Queries (PostgreSQL 17)
 
-**IMPORTANT**: Use the centralized database utilities from `/src/utils/db.ts` with **PostgreSQL `$1, $2, $3` placeholders**:
+**IMPORTANT**: Use `DatabaseService` (NestJS DI) with **PostgreSQL `$1, $2, $3` placeholders**:
 
 ```typescript
-import { ResultSetHeader, RowDataPacket, execute, query, transaction } from '../utils/db';
+// DatabaseService is injected via constructor (NestJS DI)
+// Generic takes ROW type, returns T[]
 
-// SELECT queries - use $1, $2, $3 placeholders (NOT ?)
-const [rows] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE id = $1 AND tenant_id = $2', [
-  userId,
-  tenantId,
-]);
+interface UserRow {
+  id: number;
+  email: string;
+}
 
-// INSERT with RETURNING (PostgreSQL best practice)
-const [result] = await execute<RowDataPacket[]>(
+// SELECT
+const users = await this.db.query<UserRow>('SELECT * FROM users WHERE id = $1 AND tenant_id = $2', [userId, tenantId]);
+
+// INSERT with RETURNING
+const rows = await this.db.query<{ id: number }>(
   'INSERT INTO users (email, password, tenant_id) VALUES ($1, $2, $3) RETURNING id',
   [email, hashedPassword, tenantId],
 );
-const insertId = result[0]?.id;
+const insertId = rows[0]?.id;
 
-// UPDATE/DELETE queries
-const [updateResult] = await execute<ResultSetHeader>('UPDATE users SET name = $1 WHERE id = $2 AND tenant_id = $3', [
-  newName,
-  userId,
-  tenantId,
-]);
+// UPDATE/DELETE (no generic needed)
+await this.db.query('UPDATE users SET name = $1 WHERE id = $2 AND tenant_id = $3', [newName, userId, tenantId]);
 
-// Transactions with RLS context
-await transaction(
-  async (connection) => {
-    await connection.execute('INSERT INTO users (email, tenant_id) VALUES ($1, $2) RETURNING id', [email, tenantId]);
-    await connection.execute('INSERT INTO profiles (user_id, tenant_id) VALUES ($1, $2)', [userId, tenantId]);
-  },
-  { tenantId, userId },
-); // RLS context for Row Level Security
+// Tenant-scoped transaction with RLS (ADR-019)
+await this.db.tenantTransaction(async (client) => {
+  await client.query('INSERT INTO users (email, tenant_id) VALUES ($1, $2) RETURNING id', [email, tenantId]);
+  await client.query('INSERT INTO profiles (user_id, tenant_id) VALUES ($1, $2)', [userId, tenantId]);
+});
 ```
 
-**PostgreSQL vs MySQL Syntax:**
-| MySQL | PostgreSQL |
-|-------|------------|
-| `?` placeholder | `$1, $2, $3` |
-| `LAST_INSERT_ID()` | `RETURNING id` |
-| `LIMIT ?, ?` | `LIMIT $1 OFFSET $2` |
-
-**Never import pool directly from database.ts or config/database.ts**.
+**Never import pool directly** — always use `DatabaseService`.
+See [TYPESCRIPT-DB-UTILITIES.md](../backend/docs/TYPESCRIPT-DB-UTILITIES.md) for full API reference.
 
 ### Error Handling
 
@@ -1278,8 +1266,7 @@ backend/src/
 │   └── middleware.types.ts   # Middleware types (includes ValidationMiddleware)
 ├── utils/
 │   ├── routeHandlers.ts      # Typed route wrappers
-│   ├── errorHandler.ts       # Error handling utilities
-│   └── db.ts                 # Database utilities (CRITICAL for TypeScript)
+│   └── errorHandler.ts       # Error handling utilities
 └── routes/
     └── *.ts                  # Route implementations
 ```
@@ -1306,11 +1293,16 @@ backend/src/
 ### Multi-tenant Query Pattern (PostgreSQL)
 
 ```typescript
-import { RowDataPacket, execute } from '../utils/db';
+// DatabaseService injected via constructor
+interface UserRow {
+  id: number;
+  email: string;
+  role: string;
+}
 
 // PostgreSQL uses $1, $2, $3 placeholders (NOT ?)
-const [users] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE tenant_id = $1 AND role = $2', [
-  req.user.tenantId,
+const users = await this.db.query<UserRow>('SELECT * FROM users WHERE tenant_id = $1 AND role = $2', [
+  tenantId,
   'employee',
 ]);
 ```
@@ -1395,9 +1387,8 @@ If you encounter type errors after migration:
 3. **"Cannot find module"**
    - Solution: Ensure all imports use correct paths and .js extensions in production
 
-4. **"This expression is not callable. Each member of the union type..."** (Pool/MockDatabase)
-   - Solution: ALWAYS use `import { execute, query } from '../utils/db'` instead of direct pool imports
-   - Never use `pool.query()` or `pool.execute()` directly
+4. **Database access outside NestJS DI**
+   - Solution: Always use `DatabaseService` via constructor injection — never import pool directly
 
 5. **ValidationMiddleware type errors**
    - Solution: Import from `middleware.types.ts` which includes proper union type with RequestHandler
