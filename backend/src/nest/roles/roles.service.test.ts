@@ -12,17 +12,18 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Import AFTER mock registration to get the mocked version
-
-import { execute } from '../../utils/db.js';
+import type { DatabaseService } from '../database/database.service.js';
 import { RolesService } from './roles.service.js';
 
-// Mock the database module — hoisted before all imports by Vitest
-vi.mock('../../utils/db.js', () => ({
-  execute: vi.fn(),
-}));
+function createMockDb() {
+  return {
+    query: vi.fn(),
+    queryOne: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+}
 
-const mockExecute = vi.mocked(execute);
+type MockDb = ReturnType<typeof createMockDb>;
 
 // =============================================================
 // RolesService
@@ -30,9 +31,11 @@ const mockExecute = vi.mocked(execute);
 
 describe('SECURITY: RolesService', () => {
   let service: RolesService;
+  let mockDb: MockDb;
 
   beforeEach(() => {
-    service = new RolesService();
+    mockDb = createMockDb();
+    service = new RolesService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -184,7 +187,7 @@ describe('SECURITY: RolesService', () => {
 
   describe('checkUserRole', () => {
     it('should return hasRole: true when user has exact required role', async () => {
-      mockExecute.mockResolvedValueOnce([[{ role: 'admin' }]]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
 
       const result = await service.checkUserRole(1, 10, 'admin');
 
@@ -192,7 +195,7 @@ describe('SECURITY: RolesService', () => {
     });
 
     it('should return hasRole: false when user has different role', async () => {
-      mockExecute.mockResolvedValueOnce([[{ role: 'employee' }]]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
 
       const result = await service.checkUserRole(1, 10, 'admin');
 
@@ -200,7 +203,7 @@ describe('SECURITY: RolesService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      mockExecute.mockResolvedValueOnce([[]]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.checkUserRole(1, 10, 'admin')).rejects.toThrow(
         NotFoundException,
@@ -208,18 +211,18 @@ describe('SECURITY: RolesService', () => {
     });
 
     it('should call execute with correct SQL and parameters', async () => {
-      mockExecute.mockResolvedValueOnce([[{ role: 'admin' }]]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
 
       await service.checkUserRole(42, 7, 'employee');
 
-      expect(mockExecute).toHaveBeenCalledWith(
+      expect(mockDb.query).toHaveBeenCalledWith(
         'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
         [42, 7],
       );
     });
 
     it('should return correct userRole and requiredRole in result', async () => {
-      mockExecute.mockResolvedValueOnce([[{ role: 'employee' }]]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
 
       const result = await service.checkUserRole(1, 10, 'root');
 
@@ -241,7 +244,7 @@ describe('SECURITY: RolesService', () => {
     ] as const)(
       'user "%s" vs required "%s" should have hasAccess=%s',
       async (userRole, requiredRole, expectedAccess) => {
-        mockExecute.mockResolvedValueOnce([[{ role: userRole }]]);
+        mockDb.query.mockResolvedValueOnce([{ role: userRole }]);
 
         const result = await service.checkUserRole(1, 10, requiredRole);
 

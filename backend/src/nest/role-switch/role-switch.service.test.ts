@@ -4,24 +4,21 @@
  * Phase 11: Service tests — mocked dependencies.
  * Focus: Role switching with security checks, JWT generation,
  *        ForbiddenException for unauthorized roles, getStatus (pure).
- *
- * NOTE: Uses legacy execute() from utils/db.js.
  */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { execute } from '../../utils/db.js';
+import type { DatabaseService } from '../database/database.service.js';
 import { RoleSwitchService } from './role-switch.service.js';
 
 // =============================================================
-// Module mocks
+// Mock factories
 // =============================================================
 
-vi.mock('../../utils/db.js', () => ({
-  execute: vi.fn(),
-}));
-
-const mockExecute = vi.mocked(execute);
+function createMockDb() {
+  return { query: vi.fn(), queryOne: vi.fn(), tenantTransaction: vi.fn() };
+}
+type MockDb = ReturnType<typeof createMockDb>;
 
 // =============================================================
 // Mock factories
@@ -52,11 +49,16 @@ function makeUserRow(overrides: Record<string, unknown> = {}) {
 describe('SECURITY: RoleSwitchService', () => {
   let service: RoleSwitchService;
   let mockJwtService: ReturnType<typeof createMockJwtService>;
+  let mockDb: MockDb;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockJwtService = createMockJwtService();
-    service = new RoleSwitchService(mockJwtService as never);
+    mockDb = createMockDb();
+    service = new RoleSwitchService(
+      mockJwtService as never,
+      mockDb as unknown as DatabaseService,
+    );
   });
 
   // =============================================================
@@ -65,7 +67,7 @@ describe('SECURITY: RoleSwitchService', () => {
 
   describe('switchToEmployee', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.switchToEmployee(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -73,10 +75,7 @@ describe('SECURITY: RoleSwitchService', () => {
     });
 
     it('should throw ForbiddenException for employee user', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [makeUserRow({ role: 'employee' })],
-        [],
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
 
       await expect(service.switchToEmployee(1, 10)).rejects.toThrow(
         ForbiddenException,
@@ -85,9 +84,9 @@ describe('SECURITY: RoleSwitchService', () => {
 
     it('should switch admin to employee view', async () => {
       // verifyUserTenant
-      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'admin' })], []]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]);
       // logRoleSwitch
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.switchToEmployee(1, 10);
 
@@ -110,8 +109,8 @@ describe('SECURITY: RoleSwitchService', () => {
 
   describe('switchToOriginal', () => {
     it('should switch back to original role', async () => {
-      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'admin' })], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.switchToOriginal(1, 10);
 
@@ -120,10 +119,7 @@ describe('SECURITY: RoleSwitchService', () => {
     });
 
     it('should throw ForbiddenException for employee', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [makeUserRow({ role: 'employee' })],
-        [],
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
 
       await expect(service.switchToOriginal(1, 10)).rejects.toThrow(
         ForbiddenException,
@@ -137,7 +133,7 @@ describe('SECURITY: RoleSwitchService', () => {
 
   describe('rootToAdmin', () => {
     it('should throw ForbiddenException for non-root user', async () => {
-      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'admin' })], []]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]);
 
       await expect(service.rootToAdmin(1, 10)).rejects.toThrow(
         ForbiddenException,
@@ -145,8 +141,8 @@ describe('SECURITY: RoleSwitchService', () => {
     });
 
     it('should switch root to admin view', async () => {
-      mockExecute.mockResolvedValueOnce([[makeUserRow({ role: 'root' })], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'root' })]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.rootToAdmin(1, 10);
 

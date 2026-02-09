@@ -13,9 +13,8 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import type { RowDataPacket } from '../../utils/db.js';
-import { execute } from '../../utils/db.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import { DatabaseService } from '../database/database.service.js';
 import type { CreateAreaDto } from './dto/create-area.dto.js';
 import type { ListAreasQueryDto } from './dto/list-areas-query.dto.js';
 import type { UpdateAreaDto } from './dto/update-area.dto.js';
@@ -23,7 +22,7 @@ import type { UpdateAreaDto } from './dto/update-area.dto.js';
 /**
  * Database area row type
  */
-export interface AreaRow extends RowDataPacket {
+export interface AreaRow {
   id: number;
   tenant_id: number;
   name: string;
@@ -96,7 +95,10 @@ interface AreaDependencies {
 export class AreasService {
   private readonly logger = new Logger(AreasService.name);
 
-  constructor(private readonly activityLogger: ActivityLoggerService) {}
+  constructor(
+    private readonly activityLogger: ActivityLoggerService,
+    private readonly db: DatabaseService,
+  ) {}
 
   /**
    * SQL query for fetching areas with counts
@@ -184,7 +186,7 @@ export class AreasService {
     const { whereClause, params } = this.buildFilteredQuery(query);
     const fullQuery = `${this.FIND_ALL_AREAS_QUERY}${whereClause} GROUP BY a.id ORDER BY a.name`;
 
-    const [rows] = await execute<AreaRow[]>(fullQuery, [tenantId, ...params]);
+    const rows = await this.db.query<AreaRow>(fullQuery, [tenantId, ...params]);
 
     return rows.map((row: AreaRow) => this.mapToResponse(row));
   }
@@ -196,7 +198,7 @@ export class AreasService {
     this.logger.debug(`Fetching area ${id} for tenant ${tenantId}`);
 
     const query = `${this.FIND_ALL_AREAS_QUERY} AND a.id = $2 GROUP BY a.id`;
-    const [rows] = await execute<AreaRow[]>(query, [tenantId, id]);
+    const rows = await this.db.query<AreaRow>(query, [tenantId, id]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       throw new NotFoundException('Area not found');
@@ -211,19 +213,19 @@ export class AreasService {
   async getAreaStats(tenantId: number): Promise<AreaStatsResponse> {
     this.logger.debug(`Fetching area stats for tenant ${tenantId}`);
 
-    interface StatsRow extends RowDataPacket {
+    interface StatsRow {
       total_areas: string;
       active_areas: string;
       total_capacity: string | null;
     }
 
-    interface TypeStatsRow extends RowDataPacket {
+    interface TypeStatsRow {
       type: string;
       count: string;
     }
 
-    const [[statsRows], [typeRows]] = await Promise.all([
-      execute<StatsRow[]>(
+    const [statsRows, typeRows] = await Promise.all([
+      this.db.query<StatsRow>(
         `SELECT
           COUNT(*) as total_areas,
           SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_areas,
@@ -232,7 +234,7 @@ export class AreasService {
         WHERE tenant_id = $1`,
         [tenantId],
       ),
-      execute<TypeStatsRow[]>(
+      this.db.query<TypeStatsRow>(
         `SELECT type, COUNT(*) as count
         FROM areas
         WHERE tenant_id = $1 AND is_active = 1
@@ -272,7 +274,7 @@ export class AreasService {
     }
 
     const areaUuid = uuidv7();
-    const [rows] = await execute<{ id: number }[]>(
+    const rows = await this.db.query<{ id: number }>(
       `INSERT INTO areas (
         tenant_id, name, description, area_lead_id, type, capacity,
         address, created_by, is_active, uuid, uuid_created_at
@@ -375,7 +377,7 @@ export class AreasService {
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id, tenantId);
-      await execute(
+      await this.db.query(
         `UPDATE areas SET ${fields.join(', ')} WHERE id = $${values.length - 1} AND tenant_id = $${values.length}`,
         values,
       );
@@ -422,7 +424,7 @@ export class AreasService {
 
     const counts = await Promise.all(
       tables.map(async (table: string) => {
-        const [rows] = await execute<RowDataPacket[]>(
+        const rows = await this.db.query<{ id: number }>(
           `SELECT id FROM ${table} WHERE area_id = $1 AND tenant_id = $2`,
           [id, tenantId],
         );
@@ -475,12 +477,12 @@ export class AreasService {
         .filter((s: CleanupStrategy) => s.count > 0)
         .map(async (s: CleanupStrategy) => {
           if (s.operation === 'UPDATE') {
-            await execute(
+            await this.db.query(
               `UPDATE ${s.table} SET area_id = NULL WHERE area_id = $1 AND tenant_id = $2`,
               [id, tenantId],
             );
           } else {
-            await execute(
+            await this.db.query(
               `DELETE FROM ${s.table} WHERE area_id = $1 AND tenant_id = $2`,
               [id, tenantId],
             );
@@ -525,7 +527,7 @@ export class AreasService {
       await this.removeAreaDependencies(id, tenantId, deps);
     }
 
-    await execute('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [
+    await this.db.query('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
@@ -564,7 +566,7 @@ export class AreasService {
     await this.getAreaById(areaId, tenantId);
 
     // Clear all existing department assignments for this area
-    await execute(
+    await this.db.query(
       `UPDATE departments SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`,
       [tenantId, areaId],
     );
@@ -574,7 +576,7 @@ export class AreasService {
       const placeholders = departmentIds
         .map((_: number, i: number) => `$${i + 3}`)
         .join(', ');
-      await execute(
+      await this.db.query(
         `UPDATE departments SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
         [areaId, tenantId, ...departmentIds],
       );

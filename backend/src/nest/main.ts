@@ -35,6 +35,7 @@ import {
   REDACT_PATHS,
 } from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
+import { DatabaseService } from './database/database.service.js';
 
 /** Get uploads directory path (Docker: /app/uploads, volume mounted) */
 function getUploadsPath(): string {
@@ -247,7 +248,8 @@ async function bootstrap(): Promise<void> {
 
   // Setup WebSocket server for chat (attaches to the same HTTP server)
   const httpServer = app.getHttpServer();
-  chatWsInstance = new ChatWebSocketServer(httpServer);
+  const dbService = app.get(DatabaseService);
+  chatWsInstance = new ChatWebSocketServer(httpServer, dbService);
   chatWsInstance.startHeartbeat();
   bootstrapLogger.log('WebSocket server started on /chat-ws');
 

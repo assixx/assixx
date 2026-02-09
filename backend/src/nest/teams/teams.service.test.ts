@@ -1,12 +1,11 @@
 /**
  * Unit tests for TeamsService
  *
- * Phase 11: Service tests — mocked dependencies.
+ * Phase 11: Service tests -- mocked dependencies.
  * Focus: CRUD operations, member/machine management, validation guards,
  *        duplicate name checks, leader role enforcement.
  *
- * NOTE: This service uses `execute()` from utils/db.js (legacy pattern)
- *       instead of DatabaseService DI. Mock accordingly.
+ * Uses DatabaseService DI with mocked query method.
  */
 import {
   BadRequestException,
@@ -15,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { execute } from '../../utils/db.js';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import type { DatabaseService } from '../database/database.service.js';
 import type { CreateTeamDto } from './dto/create-team.dto.js';
 import type { UpdateTeamDto } from './dto/update-team.dto.js';
 import type { TeamRow } from './teams.service.js';
@@ -26,15 +25,19 @@ import { TeamsService } from './teams.service.js';
 // Module mocks
 // =============================================================
 
-vi.mock('../../utils/db.js', () => ({
-  execute: vi.fn(),
-}));
-
 vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
 }));
 
-const mockExecute = vi.mocked(execute);
+function createMockDb() {
+  return {
+    query: vi.fn(),
+    queryOne: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+}
+
+type MockDb = ReturnType<typeof createMockDb>;
 
 // =============================================================
 // Mock factories
@@ -49,7 +52,7 @@ function createMockActivityLogger() {
   };
 }
 
-/** Standard team row — all optional fields set to null/undefined */
+/** Standard team row -- all optional fields set to null/undefined */
 function makeTeamRow(overrides: Partial<TeamRow> = {}): TeamRow {
   return {
     id: 1,
@@ -79,12 +82,15 @@ function makeTeamRow(overrides: Partial<TeamRow> = {}): TeamRow {
 describe('TeamsService', () => {
   let service: TeamsService;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+  let mockDb: MockDb;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockActivityLogger = createMockActivityLogger();
+    mockDb = createMockDb();
     service = new TeamsService(
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockDb as unknown as DatabaseService,
     );
   });
 
@@ -94,9 +100,9 @@ describe('TeamsService', () => {
 
   describe('listTeams', () => {
     it('should return mapped team responses', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [makeTeamRow(), makeTeamRow({ id: 2, name: 'Beta Team' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow(),
+        makeTeamRow({ id: 2, name: 'Beta Team' }),
       ]);
 
       const result = await service.listTeams(10);
@@ -107,12 +113,9 @@ describe('TeamsService', () => {
     });
 
     it('should filter by departmentId', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [
-          makeTeamRow({ department_id: 5 }),
-          makeTeamRow({ id: 2, department_id: 10 }),
-        ],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ department_id: 5 }),
+        makeTeamRow({ id: 2, department_id: 10 }),
       ]);
 
       const result = await service.listTeams(10, {
@@ -126,12 +129,9 @@ describe('TeamsService', () => {
     });
 
     it('should filter by search term', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [
-          makeTeamRow({ name: 'Alpha Team' }),
-          makeTeamRow({ id: 2, name: 'Beta Team' }),
-        ],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ name: 'Alpha Team' }),
+        makeTeamRow({ id: 2, name: 'Beta Team' }),
       ]);
 
       const result = await service.listTeams(10, {
@@ -151,7 +151,7 @@ describe('TeamsService', () => {
 
   describe('getTeamById', () => {
     it('should throw NotFoundException when team not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.getTeamById(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -160,7 +160,7 @@ describe('TeamsService', () => {
 
     it('should return mapped team response', async () => {
       const row = makeTeamRow({ department_name: 'Engineering' });
-      mockExecute.mockResolvedValueOnce([[row], []]);
+      mockDb.query.mockResolvedValueOnce([row]);
 
       const result = await service.getTeamById(1, 10);
 
@@ -184,16 +184,15 @@ describe('TeamsService', () => {
     } as unknown as CreateTeamDto;
 
     it('should create team and log activity', async () => {
-      // validateDepartment → skip (null)
-      // validateLeader → skip (undefined)
-      // checkDuplicateName → no duplicates
-      mockExecute.mockResolvedValueOnce([[], []]);
+      // validateDepartment -> skip (null)
+      // validateLeader -> skip (undefined)
+      // checkDuplicateName -> no duplicates
+      mockDb.query.mockResolvedValueOnce([]);
       // INSERT RETURNING id
-      mockExecute.mockResolvedValueOnce([[{ id: 5 }], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
       // getTeamById (for return value)
-      mockExecute.mockResolvedValueOnce([
-        [makeTeamRow({ id: 5, name: 'New Team' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ id: 5, name: 'New Team' }),
       ]);
 
       const result = await service.createTeam(createDto, 1, 10);
@@ -211,10 +210,10 @@ describe('TeamsService', () => {
     });
 
     it('should throw ConflictException on duplicate name', async () => {
-      // validateDepartment → skip (null)
-      // validateLeader → skip (undefined)
-      // checkDuplicateName → found duplicate
-      mockExecute.mockResolvedValueOnce([[{ id: 99 }], []]);
+      // validateDepartment -> skip (null)
+      // validateLeader -> skip (undefined)
+      // checkDuplicateName -> found duplicate
+      mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
 
       await expect(service.createTeam(createDto, 1, 10)).rejects.toThrow(
         ConflictException,
@@ -228,7 +227,7 @@ describe('TeamsService', () => {
 
   describe('updateTeam', () => {
     it('should throw NotFoundException when team not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const dto = { name: 'Updated' } as unknown as UpdateTeamDto;
 
@@ -244,7 +243,7 @@ describe('TeamsService', () => {
 
   describe('deleteTeam', () => {
     it('should throw NotFoundException when team not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.deleteTeam(999, 1, 10)).rejects.toThrow(
         NotFoundException,
@@ -253,9 +252,9 @@ describe('TeamsService', () => {
 
     it('should throw BadRequestException when team has members and force=false', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
-      // check members → has members
-      mockExecute.mockResolvedValueOnce([[{ user_id: 1 }, { user_id: 2 }], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // check members -> has members
+      mockDb.query.mockResolvedValueOnce([{ user_id: 1 }, { user_id: 2 }]);
 
       await expect(service.deleteTeam(1, 1, 10, false)).rejects.toThrow(
         BadRequestException,
@@ -264,13 +263,13 @@ describe('TeamsService', () => {
 
     it('should delete team with force=true even with members', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
-      // check members → has members
-      mockExecute.mockResolvedValueOnce([[{ user_id: 1 }], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // check members -> has members
+      mockDb.query.mockResolvedValueOnce([{ user_id: 1 }]);
       // DELETE FROM user_teams
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
       // DELETE FROM teams
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.deleteTeam(1, 1, 10, true);
 
@@ -285,7 +284,7 @@ describe('TeamsService', () => {
 
   describe('getTeamMembers', () => {
     it('should throw NotFoundException when team not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.getTeamMembers(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -294,26 +293,23 @@ describe('TeamsService', () => {
 
     it('should return mapped team members', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
       // fetch members
-      mockExecute.mockResolvedValueOnce([
-        [
-          {
-            id: 1,
-            username: 'maxm',
-            email: 'max@example.com',
-            first_name: 'Max',
-            last_name: 'Mustermann',
-            position: null,
-            employee_id: null,
-            role: 'member',
-            user_role: 'employee',
-            availability_status: null,
-            availability_start: null,
-            availability_end: null,
-          },
-        ],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          username: 'maxm',
+          email: 'max@example.com',
+          first_name: 'Max',
+          last_name: 'Mustermann',
+          position: null,
+          employee_id: null,
+          role: 'member',
+          user_role: 'employee',
+          availability_status: null,
+          availability_start: null,
+          availability_end: null,
+        },
       ]);
 
       const result = await service.getTeamMembers(1, 10);
@@ -330,7 +326,7 @@ describe('TeamsService', () => {
 
   describe('addTeamMember', () => {
     it('should throw NotFoundException when team not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.addTeamMember(999, 1, 10)).rejects.toThrow(
         NotFoundException,
@@ -339,11 +335,11 @@ describe('TeamsService', () => {
 
     it('should throw ConflictException when user already member', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
       // find user
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
-      // check existing membership → already member
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // check existing membership -> already member
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
       await expect(service.addTeamMember(1, 1, 10)).rejects.toThrow(
         ConflictException,
@@ -352,13 +348,13 @@ describe('TeamsService', () => {
 
     it('should add member successfully', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
       // find user
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
-      // check existing membership → not member
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // check existing membership -> not member
+      mockDb.query.mockResolvedValueOnce([]);
       // INSERT
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.addTeamMember(1, 1, 10);
 
@@ -373,9 +369,9 @@ describe('TeamsService', () => {
   describe('removeTeamMember', () => {
     it('should throw BadRequestException when user not member', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
-      // check membership → not member
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // check membership -> not member
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.removeTeamMember(1, 999, 10)).rejects.toThrow(
         BadRequestException,
@@ -384,11 +380,11 @@ describe('TeamsService', () => {
 
     it('should remove member successfully', async () => {
       // find team
-      mockExecute.mockResolvedValueOnce([[makeTeamRow()], []]);
-      // check membership → is member
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // check membership -> is member
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // DELETE
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.removeTeamMember(1, 1, 10);
 
@@ -402,7 +398,7 @@ describe('TeamsService', () => {
 
   describe('addTeamMachine', () => {
     it('should throw NotFoundException when machine not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.addTeamMachine(1, 999, 10, 1)).rejects.toThrow(
         NotFoundException,
@@ -411,9 +407,9 @@ describe('TeamsService', () => {
 
     it('should throw ConflictException when machine already assigned', async () => {
       // find machine
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
-      // check existing → already assigned
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // check existing -> already assigned
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
       await expect(service.addTeamMachine(1, 1, 10, 1)).rejects.toThrow(
         ConflictException,
@@ -427,7 +423,7 @@ describe('TeamsService', () => {
 
   describe('removeTeamMachine', () => {
     it('should throw NotFoundException when machine not assigned', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.removeTeamMachine(1, 999, 10)).rejects.toThrow(
         NotFoundException,
@@ -435,10 +431,10 @@ describe('TeamsService', () => {
     });
 
     it('should remove machine successfully', async () => {
-      // check existing → is assigned
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]);
+      // check existing -> is assigned
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // DELETE
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.removeTeamMachine(1, 1, 10);
 

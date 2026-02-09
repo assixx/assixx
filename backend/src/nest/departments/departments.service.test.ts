@@ -6,13 +6,13 @@
  * Focus: CRUD operations, dependency checking, force delete,
  *        member listing, stats aggregation, private helpers.
  *
- * NOTE: This service uses `execute()` from utils/db.js (legacy pattern).
+ * Uses DatabaseService mock pattern (no legacy execute).
  */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { execute } from '../../utils/db.js';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import type { DatabaseService } from '../database/database.service.js';
 import type { DepartmentRow } from './departments.service.js';
 import { DepartmentsService } from './departments.service.js';
 import type { CreateDepartmentDto } from './dto/create-department.dto.js';
@@ -22,19 +22,23 @@ import type { UpdateDepartmentDto } from './dto/update-department.dto.js';
 // Module mocks
 // =============================================================
 
-vi.mock('../../utils/db.js', () => ({
-  execute: vi.fn(),
-}));
-
 vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
 }));
 
-const mockExecute = vi.mocked(execute);
-
 // =============================================================
 // Mock factories
 // =============================================================
+
+function createMockDb() {
+  return {
+    query: vi.fn(),
+    queryOne: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+}
+
+type MockDb = ReturnType<typeof createMockDb>;
 
 function createMockActivityLogger() {
   return {
@@ -64,13 +68,13 @@ function makeDeptRow(overrides: Partial<DepartmentRow> = {}): DepartmentRow {
     team_count: undefined,
     team_names: undefined,
     ...overrides,
-  } as DepartmentRow;
+  };
 }
 
 /** Mock 11 dependency checks — all returning empty (no deps) */
-function mockNoDependencies(): void {
+function mockNoDependencies(mockDb: MockDb): void {
   for (let i = 0; i < 11; i++) {
-    mockExecute.mockResolvedValueOnce([[], []]);
+    mockDb.query.mockResolvedValueOnce([]);
   }
 }
 
@@ -81,12 +85,15 @@ function mockNoDependencies(): void {
 describe('DepartmentsService', () => {
   let service: DepartmentsService;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+  let mockDb: MockDb;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockActivityLogger = createMockActivityLogger();
+    mockDb = createMockDb();
     service = new DepartmentsService(
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockDb as unknown as DatabaseService,
     );
   });
 
@@ -96,9 +103,9 @@ describe('DepartmentsService', () => {
 
   describe('listDepartments', () => {
     it('should return mapped department responses', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [makeDeptRow(), makeDeptRow({ id: 2, name: 'QA' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow(),
+        makeDeptRow({ id: 2, name: 'QA' }),
       ]);
 
       const result = await service.listDepartments(10);
@@ -110,9 +117,9 @@ describe('DepartmentsService', () => {
 
     it('should fall back to simple query on error', async () => {
       // Extended query fails
-      mockExecute.mockRejectedValueOnce(new Error('Complex query failed'));
+      mockDb.query.mockRejectedValueOnce(new Error('Complex query failed'));
       // Simple fallback query succeeds
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
 
       const result = await service.listDepartments(10);
 
@@ -120,7 +127,7 @@ describe('DepartmentsService', () => {
     });
 
     it('should return empty array when no departments exist', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.listDepartments(10);
 
@@ -133,7 +140,7 @@ describe('DepartmentsService', () => {
         employee_count: 5,
         team_count: 2,
       });
-      mockExecute.mockResolvedValueOnce([[row], []]);
+      mockDb.query.mockResolvedValueOnce([row]);
 
       const result = await service.listDepartments(10, false);
 
@@ -149,7 +156,7 @@ describe('DepartmentsService', () => {
 
   describe('getDepartmentById', () => {
     it('should throw NotFoundException when department not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.getDepartmentById(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -161,7 +168,7 @@ describe('DepartmentsService', () => {
         department_lead_name: 'Max Mustermann',
         employee_count: 5,
       });
-      mockExecute.mockResolvedValueOnce([[row], []]);
+      mockDb.query.mockResolvedValueOnce([row]);
 
       const result = await service.getDepartmentById(1, 10);
 
@@ -172,8 +179,8 @@ describe('DepartmentsService', () => {
     });
 
     it('should fall back to simple query when extended fails', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('CTE error'));
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockRejectedValueOnce(new Error('CTE error'));
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
 
       const result = await service.getDepartmentById(1, 10);
 
@@ -183,8 +190,8 @@ describe('DepartmentsService', () => {
     });
 
     it('should throw NotFoundException when fallback also finds nothing', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('CTE error'));
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockRejectedValueOnce(new Error('CTE error'));
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.getDepartmentById(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -212,11 +219,10 @@ describe('DepartmentsService', () => {
 
     it('should create department and log activity', async () => {
       // INSERT RETURNING id
-      mockExecute.mockResolvedValueOnce([[{ id: 5 }], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
       // getDepartmentById for return
-      mockExecute.mockResolvedValueOnce([
-        [makeDeptRow({ id: 5, name: 'New Dept' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow({ id: 5, name: 'New Dept' }),
       ]);
 
       const dto = {
@@ -233,14 +239,13 @@ describe('DepartmentsService', () => {
     });
 
     it('should call ensureLeaderInDepartment when lead provided', async () => {
-      mockExecute.mockResolvedValueOnce([[{ id: 5 }], []]); // INSERT
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT
       // ensureLeaderInDepartment: check existing
-      mockExecute.mockResolvedValueOnce([[], []]); // not assigned yet
-      mockExecute.mockResolvedValueOnce([[], []]); // INSERT user_departments
+      mockDb.query.mockResolvedValueOnce([]); // not assigned yet
+      mockDb.query.mockResolvedValueOnce([]); // INSERT user_departments
       // getDepartmentById
-      mockExecute.mockResolvedValueOnce([
-        [makeDeptRow({ id: 5, department_lead_id: 42 })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow({ id: 5, department_lead_id: 42 }),
       ]);
 
       const dto = {
@@ -254,12 +259,12 @@ describe('DepartmentsService', () => {
 
       expect(result.id).toBe(5);
       // Verify user_departments INSERT was called
-      const insertCall = mockExecute.mock.calls[2]?.[0] as string;
+      const insertCall = mockDb.query.mock.calls[2]?.[0] as string;
       expect(insertCall).toContain('INSERT INTO user_departments');
     });
 
     it('should throw when INSERT returns no rows', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]); // INSERT returns empty
+      mockDb.query.mockResolvedValueOnce([]); // INSERT returns empty
 
       const dto = {
         name: 'FailDept',
@@ -280,7 +285,7 @@ describe('DepartmentsService', () => {
 
   describe('updateDepartment', () => {
     it('should throw NotFoundException when department not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const dto = { name: 'Updated' } as unknown as UpdateDepartmentDto;
 
@@ -290,13 +295,10 @@ describe('DepartmentsService', () => {
     });
 
     it('should update fields and log activity', async () => {
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]); // find existing
-      mockExecute.mockResolvedValueOnce([[], []]); // UPDATE
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // find existing
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE
       // getDepartmentById → extended query
-      mockExecute.mockResolvedValueOnce([
-        [makeDeptRow({ name: 'Updated' })],
-        [],
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow({ name: 'Updated' })]);
 
       const dto = { name: 'Updated' } as unknown as UpdateDepartmentDto;
       const result = await service.updateDepartment(1, dto, 1, 10);
@@ -306,27 +308,27 @@ describe('DepartmentsService', () => {
     });
 
     it('should skip UPDATE when no fields provided', async () => {
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]); // find existing
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // find existing
       // No UPDATE call — fields.length === 0
       // getDepartmentById
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
 
       const dto = {} as unknown as UpdateDepartmentDto;
       const result = await service.updateDepartment(1, dto, 1, 10);
 
       expect(result.name).toBe('Engineering');
-      // 2 execute calls: find + getDepartmentById (no UPDATE)
-      expect(mockExecute).toHaveBeenCalledTimes(2);
+      // 2 query calls: find + getDepartmentById (no UPDATE)
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
 
     it('should call ensureLeaderInDepartment when lead provided', async () => {
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]); // find existing
-      mockExecute.mockResolvedValueOnce([[], []]); // UPDATE
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // find existing
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE
       // ensureLeaderInDepartment
-      mockExecute.mockResolvedValueOnce([[], []]); // check existing → not found
-      mockExecute.mockResolvedValueOnce([[], []]); // INSERT user_departments
+      mockDb.query.mockResolvedValueOnce([]); // check existing → not found
+      mockDb.query.mockResolvedValueOnce([]); // INSERT user_departments
       // getDepartmentById
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
 
       const dto = {
         name: 'WithLead',
@@ -335,7 +337,7 @@ describe('DepartmentsService', () => {
 
       await service.updateDepartment(1, dto, 1, 10);
 
-      const insertCall = mockExecute.mock.calls[3]?.[0] as string;
+      const insertCall = mockDb.query.mock.calls[3]?.[0] as string;
       expect(insertCall).toContain('INSERT INTO user_departments');
     });
   });
@@ -346,7 +348,7 @@ describe('DepartmentsService', () => {
 
   describe('deleteDepartment', () => {
     it('should throw NotFoundException when department not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.deleteDepartment(999, 1, 10)).rejects.toThrow(
         NotFoundException,
@@ -355,10 +357,10 @@ describe('DepartmentsService', () => {
 
     it('should throw BadRequestException when has dependencies and force=false', async () => {
       // find department
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
       // checkDepartmentDependencies → 11 table checks
       for (let i = 0; i < 11; i++) {
-        mockExecute.mockResolvedValueOnce([i === 0 ? [{ id: 1 }] : [], []]);
+        mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
 
       await expect(service.deleteDepartment(1, 1, 10, false)).rejects.toThrow(
@@ -368,15 +370,15 @@ describe('DepartmentsService', () => {
 
     it('should delete department with force=true', async () => {
       // find department
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
       // checkDepartmentDependencies → 11 table checks (1 has data)
       for (let i = 0; i < 11; i++) {
-        mockExecute.mockResolvedValueOnce([i === 0 ? [{ id: 1 }] : [], []]);
+        mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
       // removeDependmentDependencies → DELETE user_departments (count > 0)
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
       // DELETE FROM departments
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.deleteDepartment(1, 1, 10, true);
 
@@ -385,15 +387,15 @@ describe('DepartmentsService', () => {
     });
 
     it('should delete directly when no dependencies exist', async () => {
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]); // find
-      mockNoDependencies(); // all 11 checks return empty
-      mockExecute.mockResolvedValueOnce([[], []]); // DELETE FROM departments
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // find
+      mockNoDependencies(mockDb); // all 11 checks return empty
+      mockDb.query.mockResolvedValueOnce([]); // DELETE FROM departments
 
       const result = await service.deleteDepartment(1, 1, 10);
 
       expect(result.message).toBe('Department deleted successfully');
       // No removeDependencies calls — total = find(1) + deps(11) + delete(1) = 13
-      expect(mockExecute).toHaveBeenCalledTimes(13);
+      expect(mockDb.query).toHaveBeenCalledTimes(13);
     });
   });
 
@@ -403,7 +405,7 @@ describe('DepartmentsService', () => {
 
   describe('getDepartmentMembers', () => {
     it('should throw NotFoundException when department not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.getDepartmentMembers(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -412,23 +414,20 @@ describe('DepartmentsService', () => {
 
     it('should return mapped members', async () => {
       // find department
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
       // fetch members
-      mockExecute.mockResolvedValueOnce([
-        [
-          {
-            id: 1,
-            username: 'maxm',
-            email: 'max@example.com',
-            first_name: 'Max',
-            last_name: 'Mustermann',
-            position: null,
-            employee_id: null,
-            role: 'employee',
-            is_active: 1,
-          },
-        ],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          username: 'maxm',
+          email: 'max@example.com',
+          first_name: 'Max',
+          last_name: 'Mustermann',
+          position: null,
+          employee_id: null,
+          role: 'employee',
+          is_active: 1,
+        },
       ]);
 
       const result = await service.getDepartmentMembers(1, 10);
@@ -439,22 +438,19 @@ describe('DepartmentsService', () => {
     });
 
     it('should apply defaults for null member fields', async () => {
-      mockExecute.mockResolvedValueOnce([[makeDeptRow()], []]);
-      mockExecute.mockResolvedValueOnce([
-        [
-          {
-            id: 2,
-            username: 'ghost',
-            email: 'g@test.com',
-            first_name: null,
-            last_name: null,
-            position: null,
-            employee_id: null,
-            role: null,
-            is_active: 0,
-          },
-        ],
-        [],
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 2,
+          username: 'ghost',
+          email: 'g@test.com',
+          first_name: null,
+          last_name: null,
+          position: null,
+          employee_id: null,
+          role: null,
+          is_active: 0,
+        },
       ]);
 
       const result = await service.getDepartmentMembers(1, 10);
@@ -474,8 +470,8 @@ describe('DepartmentsService', () => {
   describe('getDepartmentStats', () => {
     it('should return aggregated statistics', async () => {
       // dept count + team count (Promise.all)
-      mockExecute.mockResolvedValueOnce([[{ count: '5' }], []]);
-      mockExecute.mockResolvedValueOnce([[{ count: '12' }], []]);
+      mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
+      mockDb.query.mockResolvedValueOnce([{ count: '12' }]);
 
       const result = await service.getDepartmentStats(10);
 
@@ -484,8 +480,8 @@ describe('DepartmentsService', () => {
     });
 
     it('should default to 0 when no rows returned', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.getDepartmentStats(10);
 
@@ -605,27 +601,27 @@ describe('DepartmentsService', () => {
   describe('ensureLeaderInDepartment (private)', () => {
     it('should skip INSERT when leader already assigned', async () => {
       // check existing → found
-      mockExecute.mockResolvedValueOnce([[{ id: 99 }], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
 
       await service['ensureLeaderInDepartment'](42, 1, 10);
 
       // Only 1 query (the check), no INSERT
-      expect(mockExecute).toHaveBeenCalledTimes(1);
+      expect(mockDb.query).toHaveBeenCalledTimes(1);
     });
 
     it('should INSERT when leader not yet assigned', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]); // check → empty
-      mockExecute.mockResolvedValueOnce([[], []]); // INSERT
+      mockDb.query.mockResolvedValueOnce([]); // check → empty
+      mockDb.query.mockResolvedValueOnce([]); // INSERT
 
       await service['ensureLeaderInDepartment'](42, 1, 10);
 
-      expect(mockExecute).toHaveBeenCalledTimes(2);
-      const insertSql = mockExecute.mock.calls[1]?.[0] as string;
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      const insertSql = mockDb.query.mock.calls[1]?.[0] as string;
       expect(insertSql).toContain('INSERT INTO user_departments');
     });
 
     it('should catch errors without throwing', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('DB error'));
+      mockDb.query.mockRejectedValueOnce(new Error('DB error'));
 
       // Should NOT throw
       await expect(

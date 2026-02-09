@@ -1,18 +1,18 @@
 /**
  * Unit tests for AreasService
  *
- * Phase 11: Service tests — mocked dependencies.
- * Phase 14 B5: Deepened from 11 → 28 tests.
+ * Phase 11: Service tests -- mocked dependencies.
+ * Phase 14 B5: Deepened from 11 -> 28 tests.
  * Focus: CRUD operations, dependency checking, force delete,
  *        stats aggregation, department assignment, private helpers.
  *
- * NOTE: This service uses `execute()` from utils/db.js (legacy pattern).
+ * Uses DatabaseService mock (migrated from legacy execute pattern).
  */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { execute } from '../../utils/db.js';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import type { DatabaseService } from '../database/database.service.js';
 import type { AreaRow } from './areas.service.js';
 import { AreasService } from './areas.service.js';
 import type { CreateAreaDto } from './dto/create-area.dto.js';
@@ -23,19 +23,22 @@ import type { UpdateAreaDto } from './dto/update-area.dto.js';
 // Module mocks
 // =============================================================
 
-vi.mock('../../utils/db.js', () => ({
-  execute: vi.fn(),
-}));
-
 vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
 }));
 
-const mockExecute = vi.mocked(execute);
-
 // =============================================================
 // Mock factories
 // =============================================================
+
+function createMockDb() {
+  return {
+    query: vi.fn(),
+    queryOne: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+}
+type MockDb = ReturnType<typeof createMockDb>;
 
 function createMockActivityLogger() {
   return {
@@ -46,7 +49,7 @@ function createMockActivityLogger() {
   };
 }
 
-/** Standard area row — all optional fields set to defaults */
+/** Standard area row -- all optional fields set to defaults */
 function makeAreaRow(overrides: Partial<AreaRow> = {}): AreaRow {
   return {
     id: 1,
@@ -69,26 +72,29 @@ function makeAreaRow(overrides: Partial<AreaRow> = {}): AreaRow {
   } as AreaRow;
 }
 
-/** Mock 5 dependency checks all returning empty */
-function mockNoDependencies(): void {
-  for (let i = 0; i < 5; i++) {
-    mockExecute.mockResolvedValueOnce([[], []]);
-  }
-}
-
 // =============================================================
 // AreasService
 // =============================================================
 
 describe('AreasService', () => {
   let service: AreasService;
+  let mockDb: MockDb;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+
+  /** Mock 5 dependency checks all returning empty */
+  function mockNoDependencies(): void {
+    for (let i = 0; i < 5; i++) {
+      mockDb.query.mockResolvedValueOnce([]);
+    }
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDb = createMockDb();
     mockActivityLogger = createMockActivityLogger();
     service = new AreasService(
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockDb as unknown as DatabaseService,
     );
   });
 
@@ -98,9 +104,9 @@ describe('AreasService', () => {
 
   describe('listAreas', () => {
     it('should return mapped area responses', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [makeAreaRow(), makeAreaRow({ id: 2, name: 'Warehouse' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow(),
+        makeAreaRow({ id: 2, name: 'Warehouse' }),
       ]);
 
       const query = {} as unknown as ListAreasQueryDto;
@@ -112,7 +118,7 @@ describe('AreasService', () => {
     });
 
     it('should return empty array when no areas', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.listAreas(10, {} as ListAreasQueryDto);
 
@@ -120,25 +126,22 @@ describe('AreasService', () => {
     });
 
     it('should apply type filter via buildFilteredQuery', async () => {
-      mockExecute.mockResolvedValueOnce([
-        [makeAreaRow({ type: 'warehouse' })],
-        [],
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ type: 'warehouse' })]);
 
       const query = { type: 'warehouse' } as unknown as ListAreasQueryDto;
       await service.listAreas(10, query);
 
-      const callArgs = mockExecute.mock.calls[0];
+      const callArgs = mockDb.query.mock.calls[0];
       expect(callArgs?.[1]).toEqual([10, 'warehouse']);
     });
 
     it('should apply search filter via buildFilteredQuery', async () => {
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
 
       const query = { search: 'Main' } as unknown as ListAreasQueryDto;
       await service.listAreas(10, query);
 
-      const callArgs = mockExecute.mock.calls[0];
+      const callArgs = mockDb.query.mock.calls[0];
       expect(callArgs?.[1]).toEqual([10, '%Main%', '%Main%']);
     });
   });
@@ -149,7 +152,7 @@ describe('AreasService', () => {
 
   describe('getAreaById', () => {
     it('should throw NotFoundException when area not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.getAreaById(999, 10)).rejects.toThrow(
         NotFoundException,
@@ -161,7 +164,7 @@ describe('AreasService', () => {
         area_lead_name: 'Max Mustermann',
         department_count: 3,
       });
-      mockExecute.mockResolvedValueOnce([[row], []]);
+      mockDb.query.mockResolvedValueOnce([row]);
 
       const result = await service.getAreaById(1, 10);
 
@@ -180,16 +183,12 @@ describe('AreasService', () => {
   describe('getAreaStats', () => {
     it('should return aggregated statistics', async () => {
       // stats query + type breakdown (Promise.all)
-      mockExecute.mockResolvedValueOnce([
-        [{ total_areas: '5', active_areas: '3', total_capacity: '500' }],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        { total_areas: '5', active_areas: '3', total_capacity: '500' },
       ]);
-      mockExecute.mockResolvedValueOnce([
-        [
-          { type: 'building', count: '2' },
-          { type: 'warehouse', count: '1' },
-        ],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        { type: 'building', count: '2' },
+        { type: 'warehouse', count: '1' },
       ]);
 
       const result = await service.getAreaStats(10);
@@ -201,8 +200,8 @@ describe('AreasService', () => {
     });
 
     it('should default to 0 when stats row is empty', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.getAreaStats(10);
 
@@ -231,11 +230,10 @@ describe('AreasService', () => {
 
     it('should create area and log activity', async () => {
       // INSERT RETURNING id
-      mockExecute.mockResolvedValueOnce([[{ id: 5 }], []]);
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
       // getAreaById for return
-      mockExecute.mockResolvedValueOnce([
-        [makeAreaRow({ id: 5, name: 'New Area' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow({ id: 5, name: 'New Area' }),
       ]);
 
       const dto = {
@@ -250,7 +248,7 @@ describe('AreasService', () => {
     });
 
     it('should throw Error when INSERT returns empty', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const dto = {
         name: 'Fail Area',
@@ -270,13 +268,12 @@ describe('AreasService', () => {
   describe('updateArea', () => {
     it('should update area with fields and log activity', async () => {
       // getAreaById (existing check)
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
       // UPDATE areas
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
       // getAreaById (return updated)
-      mockExecute.mockResolvedValueOnce([
-        [makeAreaRow({ name: 'Updated Building' })],
-        [],
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow({ name: 'Updated Building' }),
       ]);
 
       const dto = { name: 'Updated Building' } as UpdateAreaDto;
@@ -288,21 +285,21 @@ describe('AreasService', () => {
 
     it('should skip UPDATE when no fields changed', async () => {
       // getAreaById (existing check)
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
-      // getAreaById (return — no UPDATE executed)
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // getAreaById (return -- no UPDATE executed)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
 
       const dto = {} as UpdateAreaDto;
       const result = await service.updateArea(1, dto, 1, 10);
 
       expect(result.id).toBe(1);
-      // Only 2 execute calls (2× getAreaById, no UPDATE)
-      expect(mockExecute).toHaveBeenCalledTimes(2);
+      // Only 2 query calls (2x getAreaById, no UPDATE)
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
       expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException for non-existent area', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const dto = { name: 'X' } as UpdateAreaDto;
 
@@ -318,7 +315,7 @@ describe('AreasService', () => {
 
   describe('deleteArea', () => {
     it('should throw NotFoundException when area not found', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.deleteArea(999, 1, 10)).rejects.toThrow(
         NotFoundException,
@@ -327,10 +324,10 @@ describe('AreasService', () => {
 
     it('should throw BadRequestException when has dependencies and force=false', async () => {
       // getAreaById
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
-      // checkAreaDependencies → 5 table checks (1 has data)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // checkAreaDependencies -> 5 table checks (1 has data)
       for (let i = 0; i < 5; i++) {
-        mockExecute.mockResolvedValueOnce([i === 0 ? [{ id: 1 }] : [], []]);
+        mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
 
       await expect(service.deleteArea(1, 1, 10, false)).rejects.toThrow(
@@ -340,11 +337,11 @@ describe('AreasService', () => {
 
     it('should delete area with no dependencies', async () => {
       // getAreaById
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
-      // checkAreaDependencies → 5 table checks (all empty)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // checkAreaDependencies -> 5 table checks (all empty)
       mockNoDependencies();
       // DELETE FROM areas
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.deleteArea(1, 1, 10);
 
@@ -354,18 +351,18 @@ describe('AreasService', () => {
 
     it('should force-delete area removing dependencies first', async () => {
       // getAreaById
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
-      // checkAreaDependencies → departments=2, machines=1, rest empty
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }, { id: 2 }], []]);
-      mockExecute.mockResolvedValueOnce([[{ id: 3 }], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
-      // removeAreaDependencies → UPDATE departments, UPDATE machines (2 calls)
-      mockExecute.mockResolvedValueOnce([[], []]);
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // checkAreaDependencies -> departments=2, machines=1, rest empty
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
+      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // removeAreaDependencies -> UPDATE departments, UPDATE machines (2 calls)
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
       // DELETE FROM areas
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.deleteArea(1, 1, 10, true);
 
@@ -375,17 +372,17 @@ describe('AreasService', () => {
 
     it('should force-delete including shift_favorites DELETE strategy', async () => {
       // getAreaById
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
-      // checkAreaDependencies → only shiftFavorites=1
-      mockExecute.mockResolvedValueOnce([[], []]); // departments
-      mockExecute.mockResolvedValueOnce([[], []]); // machines
-      mockExecute.mockResolvedValueOnce([[], []]); // shifts
-      mockExecute.mockResolvedValueOnce([[], []]); // shift_plans
-      mockExecute.mockResolvedValueOnce([[{ id: 1 }], []]); // shift_favorites
-      // removeAreaDependencies → DELETE shift_favorites
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // checkAreaDependencies -> only shiftFavorites=1
+      mockDb.query.mockResolvedValueOnce([]); // departments
+      mockDb.query.mockResolvedValueOnce([]); // machines
+      mockDb.query.mockResolvedValueOnce([]); // shifts
+      mockDb.query.mockResolvedValueOnce([]); // shift_plans
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // shift_favorites
+      // removeAreaDependencies -> DELETE shift_favorites
+      mockDb.query.mockResolvedValueOnce([]);
       // DELETE FROM areas
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.deleteArea(1, 1, 10, true);
 
@@ -399,7 +396,7 @@ describe('AreasService', () => {
 
   describe('assignDepartmentsToArea', () => {
     it('should throw NotFoundException for unknown area', async () => {
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       await expect(
         service.assignDepartmentsToArea(999, [1, 2], 10),
@@ -408,29 +405,29 @@ describe('AreasService', () => {
 
     it('should assign departments to area', async () => {
       // getAreaById
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
       // Clear existing assignments
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
       // Assign new departments
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.assignDepartmentsToArea(1, [10, 20], 10);
 
       expect(result.message).toBe('Departments assigned successfully');
-      expect(mockExecute).toHaveBeenCalledTimes(3);
+      expect(mockDb.query).toHaveBeenCalledTimes(3);
     });
 
     it('should only clear assignments when departmentIds is empty', async () => {
       // getAreaById
-      mockExecute.mockResolvedValueOnce([[makeAreaRow()], []]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
       // Clear existing assignments
-      mockExecute.mockResolvedValueOnce([[], []]);
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.assignDepartmentsToArea(1, [], 10);
 
       expect(result.message).toBe('Departments assigned successfully');
       // Only 2 calls: getAreaById + clear (no assign)
-      expect(mockExecute).toHaveBeenCalledTimes(2);
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
   });
 
