@@ -291,7 +291,7 @@
             placeholder="Zusätzliche Informationen..."
             bind:value={availabilityNotes}
           ></textarea>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             {availabilityNotes.length}/500 Zeichen
           </span>
         </div>

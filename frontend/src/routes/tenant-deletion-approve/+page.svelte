@@ -111,20 +111,19 @@
     {#if loading}
       <!-- Loading State -->
       <div class="py-8">
-        <i
-          class="fas fa-spinner fa-spin mb-4 text-4xl text-[var(--color-primary)]"
+        <i class="fas fa-spinner fa-spin mb-4 text-4xl text-(--color-primary)"
         ></i>
-        <p class="text-[var(--color-text-secondary)]">Lade Löschanfrage...</p>
+        <p class="text-(--color-text-secondary)">Lade Löschanfrage...</p>
       </div>
     {:else if errorMessage !== null && queueData === null}
       <!-- Error State (no data loaded) -->
       <div
         class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
-          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-[var(--color-danger)]"
+          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-(--color-danger)"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
+      <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">
         Fehler
       </h1>
       <div class="alert alert--danger mb-6">
@@ -144,11 +143,11 @@
       <!-- Success State -->
       <div
         class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
-          rounded-full bg-[rgb(76_175_80/15%)] text-[40px] text-[var(--color-success)]"
+          rounded-full bg-[rgb(76_175_80/15%)] text-[40px] text-(--color-success)"
       >
         <i class="fas fa-check-circle"></i>
       </div>
-      <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
+      <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">
         Genehmigung erfolgreich!
       </h1>
       <div class="alert alert--success mb-6">
@@ -158,7 +157,7 @@
           </p>
         </div>
       </div>
-      <p class="text-[var(--color-text-secondary)]">
+      <p class="text-(--color-text-secondary)">
         <i class="fas fa-spinner fa-spin mr-2"></i>
         Weiterleitung zur Statusübersicht...
       </p>
@@ -167,18 +166,16 @@
       <!-- Warning Icon -->
       <div
         class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
-          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-[var(--color-danger)]"
+          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-(--color-danger)"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
 
-      <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
+      <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">
         Tenant-Löschung genehmigen
       </h1>
 
-      <p
-        class="mb-6 text-base leading-relaxed text-[var(--color-text-secondary)]"
-      >
+      <p class="mb-6 text-base leading-relaxed text-(--color-text-secondary)">
         Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu
         genehmigen. Nach der Genehmigung beginnt die
         <strong>30-tägige Grace Period</strong>.
@@ -186,33 +183,29 @@
 
       <!-- Queue Info -->
       <div
-        class="mb-6 rounded-[var(--radius-lg)] border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/5%)] p-4"
+        class="mb-6 rounded-(--radius-lg) border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/5%)] p-4"
       >
         <div
           class="flex justify-between border-b border-[rgb(255_255_255/5%)] py-2"
         >
-          <span class="text-sm text-[var(--color-text-secondary)]"
-            >Queue ID:</span
-          >
-          <span class="text-sm font-semibold text-[var(--color-text-primary)]">
+          <span class="text-sm text-(--color-text-secondary)">Queue ID:</span>
+          <span class="text-sm font-semibold text-(--color-text-primary)">
             {queueData.queueId}
           </span>
         </div>
         <div
           class="flex justify-between border-b border-[rgb(255_255_255/5%)] py-2"
         >
-          <span class="text-sm text-[var(--color-text-secondary)]"
-            >Tenant ID:</span
-          >
-          <span class="text-sm font-semibold text-[var(--color-text-primary)]">
+          <span class="text-sm text-(--color-text-secondary)">Tenant ID:</span>
+          <span class="text-sm font-semibold text-(--color-text-primary)">
             {queueData.tenantId}
           </span>
         </div>
         <div class="flex justify-between py-2">
-          <span class="text-sm text-[var(--color-text-secondary)]"
+          <span class="text-sm text-(--color-text-secondary)"
             >Angefordert von:</span
           >
-          <span class="text-sm font-semibold text-[var(--color-text-primary)]">
+          <span class="text-sm font-semibold text-(--color-text-primary)">
             {queueData.requestedByName ?? `User ${queueData.requestedBy}`}
           </span>
         </div>

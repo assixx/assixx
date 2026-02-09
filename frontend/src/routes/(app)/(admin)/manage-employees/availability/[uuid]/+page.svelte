@@ -248,7 +248,7 @@
           Verfügbarkeitshistorie
         </h2>
         {#if employee}
-          <p class="mt-1 text-[var(--color-text-secondary)]">
+          <p class="mt-1 text-(--color-text-secondary)">
             <i class="fas fa-user mr-1"></i>
             {employee.firstName}
             {employee.lastName} ({employee.email})
@@ -258,7 +258,7 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="card__body border-b border-[var(--color-border)]">
+    <div class="card__body border-b border-(--color-border)">
       <div class="flex flex-wrap items-end gap-4">
         <!-- Year Dropdown -->
         <div class="form-field">
@@ -373,9 +373,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
         </div>
       {:else if entries.length === 0}
         <div class="empty-state">
@@ -401,7 +401,7 @@
           </button>
         </div>
       {:else}
-        <div class="mb-4 text-sm text-[var(--color-text-secondary)]">
+        <div class="mb-4 text-sm text-(--color-text-secondary)">
           {entries.length} Einträge gefunden
           {#if hasActiveFilter}
             (gefiltert)

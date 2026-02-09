@@ -334,7 +334,7 @@
         <i class="fas fa-building mr-2"></i>
         {MESSAGES.PAGE_HEADING}
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
@@ -471,9 +471,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
             class="btn btn-primary mt-4"
@@ -521,12 +521,12 @@
                 {#each filteredDepartments as dept (dept.id)}
                   <tr>
                     <td>
-                      <div class="font-medium text-[var(--color-text-primary)]">
+                      <div class="font-medium text-(--color-text-primary)">
                         {dept.name}
                       </div>
                     </td>
                     <td>
-                      <div class="text-sm text-[var(--color-text-secondary)]">
+                      <div class="text-sm text-(--color-text-secondary)">
                         {dept.description ?? '-'}
                       </div>
                     </td>
@@ -550,7 +550,7 @@
                       </span>
                     </td>
                     <td>
-                      <span class="text-[var(--color-text-primary)]"
+                      <span class="text-(--color-text-primary)"
                         >{getLeadDisplay(dept.departmentLeadName)}</span
                       >
                     </td>

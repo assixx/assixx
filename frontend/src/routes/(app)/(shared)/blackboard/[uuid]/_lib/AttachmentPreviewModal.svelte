@@ -98,7 +98,7 @@
           ></iframe>
         {:else if getPreviewFileType(attachment.mimeType) === 'image'}
           <div
-            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-[var(--surface-1)]"
+            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
           >
             <img
               src={buildDownloadUrl(
@@ -110,20 +110,18 @@
           </div>
         {:else}
           <div
-            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-[var(--surface-1)]"
+            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
           >
-            <div class="text-center text-[var(--color-text-secondary)]">
+            <div class="text-center text-(--color-text-secondary)">
               <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">Vorschau nicht verfügbar</p>
               <p class="mt-2 text-sm">Bitte laden Sie die Datei herunter.</p>
             </div>
           </div>
         {/if}
-        <div
-          class="border-t border-[var(--border-subtle)] bg-[var(--surface-2)] p-4"
-        >
+        <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
           <div
-            class="flex items-center gap-6 text-sm text-[var(--color-text-secondary)]"
+            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
           >
             <span class="flex items-center gap-2"
               ><i class="fas fa-file-archive"></i>

@@ -109,7 +109,7 @@
           <i class="fas fa-archive mr-2"></i>
           Archivierte Einträge
         </h2>
-        <p class="mt-1 text-[var(--color-text-secondary)]">
+        <p class="mt-1 text-(--color-text-secondary)">
           Schwarzes Brett - Archiv ({entries.length} Einträge)
         </p>
       </div>
@@ -119,9 +119,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
         </div>
       {:else if entries.length === 0}
         <div class="empty-state">
@@ -171,7 +171,7 @@
                     <div class="font-medium">
                       {truncateText(entry.title, 50)}
                     </div>
-                    <div class="text-sm text-[var(--color-text-secondary)]">
+                    <div class="text-sm text-(--color-text-secondary)">
                       {truncateText(entry.content.replace(/<[^>]*>/g, ''), 60)}
                     </div>
                   </td>

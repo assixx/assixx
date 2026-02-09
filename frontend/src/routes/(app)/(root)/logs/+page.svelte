@@ -225,7 +225,7 @@
         <i class="fas fa-list-alt mr-2"></i>
         System-Logs
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Übersicht aller Systemaktivitäten
       </p>
     </div>

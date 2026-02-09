@@ -18,9 +18,7 @@
   }: Props = $props();
 </script>
 
-<div
-  class="w-64 border-r border-[var(--border-color)] bg-[var(--background-secondary)]"
->
+<div class="w-64 border-r border-(--border-color) bg-(--background-secondary)">
   <nav
     id="folder-tree"
     class="p-2"

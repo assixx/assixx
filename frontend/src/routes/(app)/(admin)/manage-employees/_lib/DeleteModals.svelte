@@ -75,7 +75,7 @@
         </button>
       </div>
       <div class="ds-modal__body">
-        <p class="text-[var(--color-text-secondary)]">
+        <p class="text-(--color-text-secondary)">
           Möchten Sie diesen Mitarbeiter wirklich löschen?
         </p>
       </div>

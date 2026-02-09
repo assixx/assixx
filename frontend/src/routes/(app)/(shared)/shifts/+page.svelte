@@ -201,7 +201,7 @@
       <h2 class="card__title">
         <i class="fas fa-calendar-alt mr-2"></i>Schichtplanung
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Schichten planen und verwalten
       </p>
 
@@ -209,7 +209,7 @@
       {#if shiftsState.isLoading && !shiftsState.showPlanningUI}
         <div class="flex items-center justify-center gap-3 py-12">
           <div class="spinner-ring spinner-ring--lg"></div>
-          <span class="text-[var(--color-text-secondary)]">Laden...</span>
+          <span class="text-(--color-text-secondary)">Laden...</span>
         </div>
       {/if}
 
@@ -220,21 +220,20 @@
             bg-[rgba(255,255,255,0.03)] p-4"
           role="status"
         >
-          <i class="fas fa-users text-[var(--color-text-secondary)]"></i>
-          <span class="font-medium text-[var(--color-text-secondary)]"
+          <i class="fas fa-users text-(--color-text-secondary)"></i>
+          <span class="font-medium text-(--color-text-secondary)"
             >Dein Team:</span
           >
           <span class="font-semibold text-blue-400"
             >{shiftsState.employeeTeamInfo.teamName}</span
           >
-          <span class="font-medium text-[var(--color-text-secondary)]"
+          <span class="font-medium text-(--color-text-secondary)"
             >Abteilung:</span
           >
           <span class="font-semibold text-blue-400"
             >{shiftsState.employeeTeamInfo.departmentName}</span
           >
-          <span class="font-medium text-[var(--color-text-secondary)]"
-            >Bereich:</span
+          <span class="font-medium text-(--color-text-secondary)">Bereich:</span
           >
           <span class="font-semibold text-blue-400"
             >{shiftsState.employeeTeamInfo.areaName}</span

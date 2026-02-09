@@ -318,7 +318,7 @@
         <i class="fas fa-map-marked-alt mr-2"></i>
         {MESSAGES.PAGE_TITLE}
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
@@ -490,17 +490,17 @@
               {#each filteredAreas as area (area.id)}
                 <tr data-area-id={area.id}>
                   <td>
-                    <div class="font-medium text-[var(--color-text-primary)]">
+                    <div class="font-medium text-(--color-text-primary)">
                       {area.name}
                     </div>
                   </td>
                   <td>
-                    <div class="text-sm text-[var(--color-text-secondary)]">
+                    <div class="text-sm text-(--color-text-secondary)">
                       {area.description ?? '-'}
                     </div>
                   </td>
                   <td>
-                    <div class="text-[var(--color-text-secondary)]">
+                    <div class="text-(--color-text-secondary)">
                       {area.areaLeadName ?? '-'}
                     </div>
                   </td>

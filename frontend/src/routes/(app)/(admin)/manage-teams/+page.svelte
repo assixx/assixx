@@ -373,7 +373,7 @@
         <i class="fas fa-users-cog mr-2"></i>
         Teamübersicht
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Alle Teams verwalten und bearbeiten
       </p>
 
@@ -487,8 +487,7 @@
                     />
                   </span>
                   {#if team.departmentName}
-                    <span
-                      class="ml-2 text-sm text-[var(--color-text-secondary)]"
+                    <span class="ml-2 text-sm text-(--color-text-secondary)"
                       >&rarr; {team.departmentName}</span
                     >
                   {/if}
@@ -504,9 +503,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
             class="btn btn-primary mt-4"
