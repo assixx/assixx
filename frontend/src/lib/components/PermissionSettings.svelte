@@ -520,12 +520,12 @@
   }
 
   .perm-cell__info > i {
-    opacity: 0.25;
+    opacity: 0.75;
     transition: opacity 0.2s ease;
   }
 
   .perm-cell__info:hover > i {
-    opacity: 0.6;
+    opacity: 1;
   }
 
   /* Tooltip anchored right so it doesn't overflow viewport */
@@ -632,6 +632,7 @@
     background: var(--color-primary);
     border-color: var(--color-primary);
     box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    border-radius: var( --radius-md );
   }
 
   .perm-check input:checked + .perm-check__box .perm-check__icon {

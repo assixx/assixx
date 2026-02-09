@@ -118,6 +118,44 @@
   --accent-color: rgb(0 0 0 / 6%);
   --text-muted: #6b7280;
 
+  /* ========== BUTTON SHADOWS (light mode) ========== */
+
+  /* Primary Button - Blue glow (softer on light surfaces) */
+  --shadow-btn-primary: 0 1px 3px rgb(0 123 224 / 65.1%);
+  --shadow-btn-primary-hover: 0 6px 20px rgb(33 150 243 / 25%);
+
+  /* Danger Button - Red glow */
+  --shadow-btn-danger: 0 2px 4px rgb(220 53 69 / 12%);
+  --shadow-btn-danger-hover: 0 4px 12px rgb(220 53 69 / 20%);
+
+  /* Success Button - Green glow */
+  --shadow-btn-success: 0 2px 4px rgb(76 175 80 / 12%);
+  --shadow-btn-success-hover: 0 4px 12px rgb(76 175 80 / 20%);
+
+  /* Status Active - Orange glow */
+  --shadow-btn-status-active: 0 2px 4px rgb(255 107 53 / 10%);
+  --shadow-btn-status-active-hover: 0 4px 12px rgb(255 107 53 / 15%);
+
+  /* Status Inactive - Green glow */
+  --shadow-btn-status-inactive: 0 2px 4px rgb(40 167 69 / 10%);
+  --shadow-btn-status-inactive-hover: 0 4px 12px rgb(40 167 69 / 15%);
+
+  /* Warning Button - Orange glow */
+  --shadow-btn-warning: 0 2px 4px rgb(255 152 0 / 12%);
+  --shadow-btn-warning-hover: 0 4px 12px rgb(255 152 0 / 20%);
+
+  /* Info Button - Cyan glow */
+  --shadow-btn-info: 0 2px 4px rgb(0 188 212 / 12%);
+  --shadow-btn-info-hover: 0 4px 12px rgb(0 188 212 / 20%);
+
+  /* Light Button - Subtle shadow */
+  --shadow-btn-light: 0 1px 3px rgb(0 0 0 / 6%);
+  --shadow-btn-light-hover: 0 2px 6px rgb(0 0 0 / 10%);
+
+  /* Dark Button - Strong shadow */
+  --shadow-btn-dark: 0 2px 4px rgb(0 0 0 / 20%);
+  --shadow-btn-dark-hover: 0 4px 12px rgb(0 0 0 / 28%);
+
   /* Navigation-specific (light mode) */
   --nav-hover-bg: rgb(33 150 243 / 10%);
   --nav-active-submenu-bg: rgb(0 0 0 / 6%);
