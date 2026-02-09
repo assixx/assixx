@@ -11,16 +11,16 @@
 
 ## Context
 
-Eine konsistente API erfordert einheitliche Response-Formate:
+A consistent API requires uniform response formats:
 
-1. **Frontend-DX** - Einheitliche Struktur für Error-Handling
-2. **Debugging** - Timestamps, Request-IDs für Logs
-3. **Pagination** - Meta-Daten für Listen
-4. **Error-Tracking** - Strukturierte Fehler für Sentry
+1. **Frontend DX** - Uniform structure for error handling
+2. **Debugging** - Timestamps, request IDs for logs
+3. **Pagination** - Metadata for lists
+4. **Error Tracking** - Structured errors for Sentry
 
 ### Problem
 
-Ohne Standardisierung:
+Without standardization:
 
 ```typescript
 // Endpoint A
@@ -39,13 +39,13 @@ throw new Error('Not found')
 return { error: 'Not found', code: 404 }
 ```
 
-**Resultat:** Frontend muss jeden Endpoint anders behandeln.
+**Result:** Frontend must handle every endpoint differently.
 
 ---
 
 ## Decision
 
-### Einheitliche Response-Struktur
+### Uniform Response Structure
 
 #### Success Response
 
@@ -104,16 +104,16 @@ return { error: 'Not found', code: 404 }
 
 ```
 Controller returns { users: [...] }
-         │
-         ▼
-┌────────────────────────────────────┐
-│ ResponseInterceptor                │
-│ → Wraps in { success: true, data } │
-│ → Adds timestamp                   │
-│ → Handles pagination metadata      │
-└────────────────────────────────────┘
-         │
-         ▼
+         \u2502
+         \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 ResponseInterceptor                \u2502
+\u2502 \u2192 Wraps in { success: true, data } \u2502
+\u2502 \u2192 Adds timestamp                   \u2502
+\u2502 \u2192 Handles pagination metadata      \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+         \u2502
+         \u25bc
 Response: { success: true, data: { users: [...] }, timestamp: "..." }
 ```
 
@@ -121,18 +121,18 @@ Response: { success: true, data: { users: [...] }, timestamp: "..." }
 
 ```
 Service throws new UnauthorizedException('Invalid token')
-         │
-         ▼
-┌────────────────────────────────────┐
-│ AllExceptionsFilter                │
-│ → Catches exception                │
-│ → Determines status code           │
-│ → Formats error structure          │
-│ → Logs (warn for 4xx, error for 5xx)│
-│ → Reports 5xx to Sentry            │
-└────────────────────────────────────┘
-         │
-         ▼
+         \u2502
+         \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 AllExceptionsFilter                \u2502
+\u2502 \u2192 Catches exception                \u2502
+\u2502 \u2192 Determines status code           \u2502
+\u2502 \u2192 Formats error structure          \u2502
+\u2502 \u2192 Logs (warn for 4xx, error for 5xx)\u2502
+\u2502 \u2192 Reports 5xx to Sentry            \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+         \u2502
+         \u25bc
 Response: { success: false, error: { code: "UNAUTHORIZED", message: "..." }, ... }
 ```
 
@@ -140,7 +140,7 @@ Response: { success: false, error: { code: "UNAUTHORIZED", message: "..." }, ...
 
 ## Alternatives Considered
 
-### 1. Kein Interceptor (Manual Wrapping)
+### 1. No Interceptor (Manual Wrapping)
 
 ```typescript
 @Get()
@@ -154,23 +154,23 @@ async getUsers() {
 }
 ```
 
-| Pro         | Contra                    |
-| ----------- | ------------------------- |
-| Explizit    | Repetitiv (50+ Endpoints) |
-| Keine Magic | Leicht zu vergessen       |
-|             | Inkonsistenzen möglich    |
+| Pros     | Cons                       |
+| -------- | -------------------------- |
+| Explicit | Repetitive (50+ endpoints) |
+| No magic | Easy to forget             |
+|          | Inconsistencies possible   |
 
-**Entscheidung:** Abgelehnt - Zu fehleranfällig.
+**Decision:** Rejected - Too error-prone.
 
 ### 2. NestJS ClassSerializerInterceptor
 
-| Pro               | Contra                    |
-| ----------------- | ------------------------- |
-| NestJS Built-in   | Nur für class-transformer |
-| Decorator-basiert | Keine Response-Wrapping   |
-|                   | Kein Pagination-Support   |
+| Pros            | Cons                       |
+| --------------- | -------------------------- |
+| NestJS built-in | Only for class-transformer |
+| Decorator-based | No response wrapping       |
+|                 | No pagination support      |
 
-**Entscheidung:** Abgelehnt - Nicht für Response-Wrapping gedacht.
+**Decision:** Rejected - Not designed for response wrapping.
 
 ### 3. JSON:API Specification
 
@@ -182,23 +182,23 @@ async getUsers() {
 }
 ```
 
-| Pro        | Contra                           |
-| ---------- | -------------------------------- |
-| Standard   | Komplex für einfache APIs        |
-| Hypermedia | Frontend braucht JSON:API Client |
-|            | Overhead für kleine Responses    |
+| Pros       | Cons                           |
+| ---------- | ------------------------------ |
+| Standard   | Complex for simple APIs        |
+| Hypermedia | Frontend needs JSON:API client |
+|            | Overhead for small responses   |
 
-**Entscheidung:** Abgelehnt - Overkill für interne API.
+**Decision:** Rejected - Overkill for internal API.
 
 ### 4. GraphQL
 
-| Pro                    | Contra                           |
-| ---------------------- | -------------------------------- |
-| Typed Responses        | Komplett andere Architektur      |
-| Client-defined Queries | Learning Curve                   |
-|                        | Nicht für alle Use-Cases optimal |
+| Pros                   | Cons                              |
+| ---------------------- | --------------------------------- |
+| Typed responses        | Completely different architecture |
+| Client-defined queries | Learning curve                    |
+|                        | Not optimal for all use cases     |
 
-**Entscheidung:** Abgelehnt - REST ist etabliert, Migration nicht gerechtfertigt.
+**Decision:** Rejected - REST is established, migration not justified.
 
 ---
 
@@ -206,26 +206,26 @@ async getUsers() {
 
 ### Positive
 
-1. **Frontend Simplicity** - Immer gleiche Struktur
-2. **Type-Safety** - Frontend kann Response-Type definieren
-3. **Debugging** - Timestamps in allen Responses
-4. **Error-Consistency** - Einheitliche Error-Codes
-5. **Sentry Integration** - 5xx automatisch getracked
-6. **Zero Boilerplate** - Controller returnen nur Daten
+1. **Frontend simplicity** - Always the same structure
+2. **Type-safety** - Frontend can define response type
+3. **Debugging** - Timestamps in all responses
+4. **Error consistency** - Uniform error codes
+5. **Sentry integration** - 5xx automatically tracked
+6. **Zero boilerplate** - Controllers only return data
 
 ### Negative
 
-1. **Response Overhead** - ~100 Bytes extra pro Response
-2. **Magic** - Interceptor transformiert implizit
-3. **Edge Cases** - Raw Responses (Metrics, Files) brauchen Handling
+1. **Response overhead** - ~100 bytes extra per response
+2. **Magic** - Interceptor transforms implicitly
+3. **Edge cases** - Raw responses (metrics, files) need handling
 
 ### Mitigations
 
 | Problem       | Mitigation                        |
 | ------------- | --------------------------------- |
-| Overhead      | Gzip komprimiert effektiv         |
-| Magic         | Dokumentation, ADR                |
-| Raw Responses | Content-Type Check im Interceptor |
+| Overhead      | Gzip compresses effectively       |
+| Magic         | Documentation, ADR                |
+| Raw Responses | Content-Type check in interceptor |
 
 ---
 
@@ -235,10 +235,10 @@ async getUsers() {
 
 ```
 backend/src/nest/common/
-├── interceptors/
-│   └── response.interceptor.ts    # Success wrapping
-└── filters/
-    └── all-exceptions.filter.ts   # Error formatting
+\u251c\u2500\u2500 interceptors/
+\u2502   \u2514\u2500\u2500 response.interceptor.ts    # Success wrapping
+\u2514\u2500\u2500 filters/
+    \u2514\u2500\u2500 all-exceptions.filter.ts   # Error formatting
 ```
 
 ### Global Registration
@@ -248,7 +248,7 @@ backend/src/nest/common/
 app.useGlobalInterceptors(new ResponseInterceptor());
 app.useGlobalFilters(new AllExceptionsFilter());
 
-// ODER app.module.ts (für DI)
+// OR app.module.ts (for DI)
 {
   provide: APP_INTERCEPTOR,
   useClass: ResponseInterceptor,
@@ -262,7 +262,7 @@ app.useGlobalFilters(new AllExceptionsFilter());
 ### Skip Wrapping (Raw Responses)
 
 ```typescript
-// Automatisch erkannt:
+// Automatically detected:
 // 1. Content-Type != application/json
 // 2. typeof data === 'string'
 // 3. Buffer.isBuffer(data)
@@ -285,7 +285,7 @@ app.useGlobalFilters(new AllExceptionsFilter());
 ### Zod Validation Errors
 
 ```typescript
-// Automatisch formatiert:
+// Automatically formatted:
 {
   "success": false,
   "error": {
@@ -302,14 +302,14 @@ app.useGlobalFilters(new AllExceptionsFilter());
 ### Sentry Integration
 
 ```typescript
-// Nur 5xx Errors werden reported:
+// Only 5xx errors are reported:
 if (status >= 500) {
   Sentry.captureException(exception, {
     extra: { path, method, statusCode, errorCode },
     tags: { statusCode, errorCode },
   });
 }
-// 4xx = Client Errors = nicht reported
+// 4xx = Client errors = not reported
 ```
 
 ---
@@ -355,12 +355,12 @@ if (result.success) {
 
 | Scenario              | Expected                                                | Status |
 | --------------------- | ------------------------------------------------------- | ------ |
-| GET /users            | { success: true, data: [...] }                          | ✅     |
-| GET /users?page=1     | { success: true, data: [...], meta: { pagination } }    | ✅     |
-| POST /users (invalid) | { success: false, error: { code: "VALIDATION_ERROR" } } | ✅     |
-| GET /invalid          | { success: false, error: { code: "NOT_FOUND" } }        | ✅     |
-| 500 Error             | Sentry notification                                     | ✅     |
-| GET /metrics          | Plain text (not wrapped)                                | ✅     |
+| GET /users            | { success: true, data: [...] }                          | \u2705 |
+| GET /users?page=1     | { success: true, data: [...], meta: { pagination } }    | \u2705 |
+| POST /users (invalid) | { success: false, error: { code: "VALIDATION_ERROR" } } | \u2705 |
+| GET /invalid          | { success: false, error: { code: "NOT_FOUND" } }        | \u2705 |
+| 500 Error             | Sentry notification                                     | \u2705 |
+| GET /metrics          | Plain text (not wrapped)                                | \u2705 |
 
 ---
 

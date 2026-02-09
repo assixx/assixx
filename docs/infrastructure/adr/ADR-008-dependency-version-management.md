@@ -11,37 +11,37 @@
 
 ## Context
 
-Bei der Entwicklung von Assixx stellte sich die Frage, wie Dependency-Versionen zwischen Production und Development gehandhabt werden sollen:
+During the development of Assixx, the question arose of how dependency versions should be handled between production and development:
 
-### Fragestellung
+### Questions
 
-1. **Runtime (Node.js)**: Können/sollen Prod und Dev unterschiedliche Node-Versionen nutzen?
-2. **NPM Packages**: Können/sollen Prod und Dev unterschiedliche Package-Versionen nutzen?
-3. **Schutz**: Wie verhindern wir, dass Dev-Dependencies in Production landen?
+1. **Runtime (Node.js)**: Can/should prod and dev use different Node versions?
+2. **NPM Packages**: Can/should prod and dev use different package versions?
+3. **Protection**: How do we prevent dev dependencies from ending up in production?
 
-### Bestehendes Setup
+### Existing Setup
 
-- **Package Manager**: pnpm 10.28.0 mit Workspace
-- **Lock File**: Eine `pnpm-lock.yaml` für das gesamte Projekt
-- **Docker**: Multi-Stage Builds für Frontend/Backend
-- **Environments**: Development (lokal), Production (Docker)
+- **Package Manager**: pnpm 10.28.0 with workspace
+- **Lock File**: One `pnpm-lock.yaml` for the entire project
+- **Docker**: Multi-stage builds for frontend/backend
+- **Environments**: Development (local), Production (Docker)
 
-### Risiken ohne klare Strategie
+### Risks Without a Clear Strategy
 
-| Risiko                             | Impact                            |
-| ---------------------------------- | --------------------------------- |
-| Dev-Dependencies in Prod           | Größere Images, Sicherheitslücken |
-| Unterschiedliche Package-Versionen | "Works on my machine" Bugs        |
-| Unkontrollierte Updates            | Breaking Changes in Production    |
-| Version-Drift                      | Nicht reproduzierbare Builds      |
+| Risk                       | Impact                                  |
+| -------------------------- | --------------------------------------- |
+| Dev dependencies in prod   | Larger images, security vulnerabilities |
+| Different package versions | "Works on my machine" bugs              |
+| Uncontrolled updates       | Breaking changes in production          |
+| Version drift              | Non-reproducible builds                 |
 
 ---
 
 ## Decision
 
-### 1. Runtime-Versionen (Node.js): KÖNNEN unterschiedlich sein
+### 1. Runtime Versions (Node.js): CAN Be Different
 
-**Mechanismus**: Docker Build Arguments
+**Mechanism**: Docker Build Arguments
 
 ```dockerfile
 # Dockerfile.frontend / Dockerfile.dev
@@ -49,120 +49,120 @@ ARG NODE_VERSION=24.13.0-alpine3.22
 FROM node:${NODE_VERSION}
 ```
 
-**Steuerung via**:
+**Controlled via**:
 
 - `docker/.env` - Single Source of Truth
 - `docker-compose.yml` - Build Args
-- Fallback-Default im Dockerfile
+- Fallback default in Dockerfile
 
-**Rationale**: Node-LTS in Prod für Stabilität, neuere Version in Dev zum Testen möglich.
+**Rationale**: Node LTS in prod for stability, newer version in dev for testing possible.
 
-### 2. NPM Package-Versionen: MÜSSEN identisch sein
+### 2. NPM Package Versions: MUST Be Identical
 
-**Mechanismus**: Eine Lock-Datei für alle Environments
+**Mechanism**: One lock file for all environments
 
 ```
-pnpm-lock.yaml  ← Single Source of Truth
-      │
-      ├── Production Build: pnpm install --frozen-lockfile
-      └── Development:      pnpm install --frozen-lockfile
+pnpm-lock.yaml  \u2190 Single Source of Truth
+      \u2502
+      \u251c\u2500\u2500 Production Build: pnpm install --frozen-lockfile
+      \u2514\u2500\u2500 Development:      pnpm install --frozen-lockfile
 ```
 
 **Rationale**:
 
-- Testing-Integrity: Was getestet wird = was deployed wird
-- Reproduzierbare Builds: Identische Versionen überall
-- Keine "Works on my machine" Bugs
+- Testing integrity: What is tested = what is deployed
+- Reproducible builds: Identical versions everywhere
+- No "works on my machine" bugs
 
-### 3. Welche Packages installiert werden: dependencies vs devDependencies
+### 3. Which Packages Are Installed: dependencies vs devDependencies
 
 ```
 package.json
-├── dependencies        → Production + Development
-│   ├── @nestjs/core
-│   ├── fastify
-│   └── pg
-│
-└── devDependencies     → NUR Development
-    ├── typescript
-    ├── eslint
-    └── vitest
+\u251c\u2500\u2500 dependencies        \u2192 Production + Development
+\u2502   \u251c\u2500\u2500 @nestjs/core
+\u2502   \u251c\u2500\u2500 fastify
+\u2502   \u2514\u2500\u2500 pg
+\u2502
+\u2514\u2500\u2500 devDependencies     \u2192 Development ONLY
+    \u251c\u2500\u2500 typescript
+    \u251c\u2500\u2500 eslint
+    \u2514\u2500\u2500 vitest
 ```
 
-**Schutz-Mechanismus**:
+**Protection Mechanism**:
 
 ```dockerfile
 # Dockerfile.frontend:53
 RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 #                                        ^^^^^^
-#                    Nur dependencies, KEINE devDependencies
+#                    Only dependencies, NO devDependencies
 ```
 
-### 4. Neue Versionen testen: Git-Branches statt separate Lock-Files
+### 4. Testing New Versions: Git Branches Instead of Separate Lock Files
 
 ```
 Branch: main (stable)          Branch: testing/svelte-upgrade
-┌─────────────────────┐          ┌─────────────────────┐
-│ pnpm-lock.yaml      │          │ pnpm-lock.yaml      │
-│ SvelteKit: 2.21.4   │          │ SvelteKit: 3.0-beta │
-└─────────────────────┘          └─────────────────────┘
-         │                                │
-         ▼                                ▼
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510          \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 pnpm-lock.yaml      \u2502          \u2502 pnpm-lock.yaml      \u2502
+\u2502 SvelteKit: 2.21.4   \u2502          \u2502 SvelteKit: 3.0-beta \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518          \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+         \u2502                                \u2502
+         \u25bc                                \u25bc
     PRODUCTION                    STAGING / DEV-SERVER
 ```
 
 **Workflow**:
 
-1. Feature-Branch mit neuen Versionen erstellen
-2. Auf Staging/Dev testen
-3. Nach erfolgreichem Test: Merge zu main
-4. Production erhält Updates erst nach Merge
+1. Create feature branch with new versions
+2. Test on staging/dev
+3. After successful testing: Merge to main
+4. Production receives updates only after merge
 
 ---
 
 ## Alternatives Considered
 
-### 1. Separate Lock-Files pro Environment
+### 1. Separate Lock Files per Environment
 
-| Pro                                | Contra                           |
-| ---------------------------------- | -------------------------------- |
-| Unterschiedliche Versionen möglich | Version-Drift                    |
-| Flexibilität                       | Nicht reproduzierbar             |
-|                                    | Maintenance-Aufwand verdoppelt   |
-|                                    | "Works on my machine" garantiert |
+| Pros                        | Cons                             |
+| --------------------------- | -------------------------------- |
+| Different versions possible | Version drift                    |
+| Flexibility                 | Not reproducible                 |
+|                             | Maintenance effort doubled       |
+|                             | "Works on my machine" guaranteed |
 
-**Entscheidung**: Abgelehnt - Verstößt gegen Reproduzierbarkeit.
+**Decision**: Rejected - Violates reproducibility.
 
-### 2. npm statt pnpm
+### 2. npm instead of pnpm
 
-| Pro             | Contra                               |
-| --------------- | ------------------------------------ |
-| Breiter bekannt | Langsamer                            |
-|                 | Keine Workspace-Symlinks             |
-|                 | Größerer node_modules                |
-|                 | `pnpm deploy --prod` nicht verfügbar |
+| Pros              | Cons                               |
+| ----------------- | ---------------------------------- |
+| More widely known | Slower                             |
+|                   | No workspace symlinks              |
+|                   | Larger node_modules                |
+|                   | `pnpm deploy --prod` not available |
 
-**Entscheidung**: Abgelehnt - pnpm bietet bessere Monorepo-Unterstützung.
+**Decision**: Rejected - pnpm offers better monorepo support.
 
-### 3. Keine Lock-File (immer latest)
+### 3. No Lock File (always latest)
 
-| Pro                             | Contra                             |
-| ------------------------------- | ---------------------------------- |
-| Immer aktuelle Security-Patches | Nicht reproduzierbar               |
-|                                 | Breaking Changes jederzeit möglich |
-|                                 | CI kann anders bauen als lokal     |
+| Pros                            | Cons                                  |
+| ------------------------------- | ------------------------------------- |
+| Always current security patches | Not reproducible                      |
+|                                 | Breaking changes possible at any time |
+|                                 | CI can build differently than local   |
 
-**Entscheidung**: Abgelehnt - Inakzeptables Risiko.
+**Decision**: Rejected - Unacceptable risk.
 
-### 4. Renovate/Dependabot für automatische Updates
+### 4. Renovate/Dependabot for Automatic Updates
 
-| Pro                           | Contra                    |
-| ----------------------------- | ------------------------- |
-| Automatische Security-Updates | Zusätzliche Komplexität   |
-| PRs für jedes Update          | Noise bei vielen Updates  |
-| Gute für große Teams          | Overkill für kleines Team |
+| Pros                       | Cons                    |
+| -------------------------- | ----------------------- |
+| Automatic security updates | Additional complexity   |
+| PRs for every update       | Noise with many updates |
+| Good for large teams       | Overkill for small team |
 
-**Entscheidung**: Später evaluieren - Aktuell manuell Updates via `pnpm update`.
+**Decision**: Evaluate later - Currently manual updates via `pnpm update`.
 
 ---
 
@@ -170,107 +170,107 @@ Branch: main (stable)          Branch: testing/svelte-upgrade
 
 ### Positive
 
-1. **Reproduzierbare Builds**: Lock-File garantiert identische Versionen
-2. **Testing-Integrity**: Dev testet exakt was Prod ausführt
-3. **Klare Trennung**: `dependencies` vs `devDependencies`
-4. **Sichere Prod-Images**: `pnpm deploy --prod` exkludiert Dev-Tools
-5. **Flexible Runtime**: Node-Version pro Environment steuerbar
-6. **Dokumentierte Entscheidung**: Diese ADR als Referenz
+1. **Reproducible builds**: Lock file guarantees identical versions
+2. **Testing integrity**: Dev tests exactly what prod runs
+3. **Clear separation**: `dependencies` vs `devDependencies`
+4. **Secure prod images**: `pnpm deploy --prod` excludes dev tools
+5. **Flexible runtime**: Node version controllable per environment
+6. **Documented decision**: This ADR as reference
 
 ### Negative
 
-1. **Kein "schnelles Testen"**: Neue Version erfordert Branch
-2. **Merge-Konflikte**: Lock-File kann bei paralleler Arbeit konflikten
-3. **Update-Aufwand**: Manuelle Updates statt automatisch
+1. **No "quick testing"**: New version requires a branch
+2. **Merge conflicts**: Lock file can conflict during parallel work
+3. **Update effort**: Manual updates instead of automatic
 
 ### Neutral
 
-1. **Branch-Strategie erforderlich**: testing/feature-Branches für Upgrades
-2. **Lock-File-Größe**: pnpm-lock.yaml kann groß werden (~1MB)
+1. **Branch strategy required**: testing/feature branches for upgrades
+2. **Lock file size**: pnpm-lock.yaml can grow large (~1MB)
 
 ---
 
 ## Implementation Status
 
-### Implementiert
+### Implemented
 
-| Schutz                    | Datei                                                    | Status |
+| Protection                | File                                                     | Status |
 | ------------------------- | -------------------------------------------------------- | ------ |
-| `--prod` Flag             | `Dockerfile.frontend:57`                                 | ✅     |
-| `--frozen-lockfile`       | `Dockerfile.frontend:38`, `Dockerfile.dev:41`            | ✅     |
-| `engines` Field           | `package.json:6-11`                                      | ✅     |
-| `preinstall` Hook         | `package.json:37`                                        | ✅     |
-| `.npmrc` Enforcement      | `.npmrc`                                                 | ✅     |
-| **Node-Version ARG**      | `Dockerfile.frontend:19`, `Dockerfile.dev:13`            | ✅     |
-| **pnpm-Version ARG**      | `Dockerfile.frontend:23`, `Dockerfile.dev:26`            | ✅     |
-| **Build-Args in Compose** | `docker-compose.yml:73-76`, `docker-compose.yml:308-310` | ✅     |
-| **Version-Variablen**     | `docker/.env:27-29`                                      | ✅     |
+| `--prod` flag             | `Dockerfile.frontend:57`                                 | \u2705 |
+| `--frozen-lockfile`       | `Dockerfile.frontend:38`, `Dockerfile.dev:41`            | \u2705 |
+| `engines` field           | `package.json:6-11`                                      | \u2705 |
+| `preinstall` hook         | `package.json:37`                                        | \u2705 |
+| `.npmrc` enforcement      | `.npmrc`                                                 | \u2705 |
+| **Node version ARG**      | `Dockerfile.frontend:19`, `Dockerfile.dev:13`            | \u2705 |
+| **pnpm version ARG**      | `Dockerfile.frontend:23`, `Dockerfile.dev:26`            | \u2705 |
+| **Build args in Compose** | `docker-compose.yml:73-76`, `docker-compose.yml:308-310` | \u2705 |
+| **Version variables**     | `docker/.env:27-29`                                      | \u2705 |
 
-### Konfiguration (Single Source of Truth)
+### Configuration (Single Source of Truth)
 
 ```bash
 # docker/.env
 NODE_VERSION_PROD=24.13.0-alpine3.22  # Production: LTS
-NODE_VERSION_DEV=24.13.0-alpine3.22   # Development: kann auf neuere Version gesetzt werden
-PNPM_VERSION=10.28.0                   # Beide Environments
+NODE_VERSION_DEV=24.13.0-alpine3.22   # Development: can be set to a newer version
+PNPM_VERSION=10.28.0                   # Both environments
 ```
 
-### Use Case: Dev auf Node 26 upgraden, Prod bleibt auf Node 24
+### Use Case: Upgrade Dev to Node 26, Prod Stays on Node 24
 
-**Schritt 1: Eine Zeile in `.env` ändern**
+**Step 1: Change one line in `.env`**
 
 ```bash
 # docker/.env
 
-# VORHER (beide gleich):
+# BEFORE (both the same):
 NODE_VERSION_PROD=24.13.0-alpine3.22
 NODE_VERSION_DEV=24.13.0-alpine3.22
 
-# NACHHER (nur DEV ändern):
-NODE_VERSION_PROD=24.13.0-alpine3.22      # ← bleibt
-NODE_VERSION_DEV=26.0.0-alpine3.22        # ← NEU
+# AFTER (only DEV changed):
+NODE_VERSION_PROD=24.13.0-alpine3.22      # \u2190 stays
+NODE_VERSION_DEV=26.0.0-alpine3.22        # \u2190 NEW
 ```
 
-**Schritt 2: Backend neu bauen**
+**Step 2: Rebuild backend**
 
 ```bash
 cd /home/scs/projects/Assixx/docker
 docker-compose build backend
 ```
 
-**Fertig.**
+**Done.**
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  Production (Frontend + Nginx):  Node 24.13.0 LTS  ← unverändert│
-│  Development (Backend):          Node 26.0.0 LTS   ← NEU        │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502                                                                 \u2502
+\u2502  Production (Frontend + Nginx):  Node 24.13.0 LTS  \u2190 unchanged  \u2502
+\u2502  Development (Backend):          Node 26.0.0 LTS   \u2190 NEW       \u2502
+\u2502                                                                 \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
 ```
 
-**Zusammenfassung:**
+**Summary:**
 
-| Was               | Wo            | Änderung                             |
-| ----------------- | ------------- | ------------------------------------ |
-| **Eine Variable** | `docker/.env` | `NODE_VERSION_DEV=26.0.0-alpine3.22` |
-| **Ein Befehl**    | Terminal      | `docker-compose build backend`       |
+| What             | Where         | Change                               |
+| ---------------- | ------------- | ------------------------------------ |
+| **One variable** | `docker/.env` | `NODE_VERSION_DEV=26.0.0-alpine3.22` |
+| **One command**  | Terminal      | `docker-compose build backend`       |
 
-Prod wird **nicht** angefasst.
+Prod is **not** touched.
 
 ---
 
-### Use Case: Nach erfolgreichem Test auch Prod upgraden
+### Use Case: After Successful Testing, Also Upgrade Prod
 
-**Schritt 1: Prod-Variable in `.env` ändern**
+**Step 1: Change prod variable in `.env`**
 
 ```bash
 # docker/.env
-NODE_VERSION_PROD=26.0.0-alpine3.22       # ← jetzt auch Prod
+NODE_VERSION_PROD=26.0.0-alpine3.22       # \u2190 now also prod
 NODE_VERSION_DEV=26.0.0-alpine3.22
 ```
 
-**Schritt 2: Frontend neu bauen**
+**Step 2: Rebuild frontend**
 
 ```bash
 cd /home/scs/projects/Assixx/docker
@@ -279,22 +279,22 @@ docker-compose --profile production build frontend
 
 ---
 
-## Version Control Übersicht
+## Version Control Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    VERSION CONTROL MATRIX                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Komponente          │ Kontrolliert durch      │ Prod ≠ Dev?   │
-│  ────────────────────┼─────────────────────────┼───────────────│
-│  Node.js Version     │ Dockerfile (FROM)       │ JA (möglich)  │
-│  pnpm Version        │ package.json            │ NEIN          │
-│  NPM Package Version │ pnpm-lock.yaml          │ NEIN          │
-│  Welche Packages     │ dependencies vs devDeps │ JA (by design)│
-│  Security Overrides  │ pnpm.overrides          │ NEIN          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502                    VERSION CONTROL MATRIX                       \u2502
+\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
+\u2502                                                                 \u2502
+\u2502  Component            \u2502 Controlled by           \u2502 Prod \u2260 Dev?  \u2502
+\u2502  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2502
+\u2502  Node.js Version      \u2502 Dockerfile (FROM)        \u2502 YES (possible)\u2502
+\u2502  pnpm Version         \u2502 package.json             \u2502 NO            \u2502
+\u2502  NPM Package Version  \u2502 pnpm-lock.yaml           \u2502 NO            \u2502
+\u2502  Which Packages       \u2502 dependencies vs devDeps  \u2502 YES (by design)\u2502
+\u2502  Security Overrides   \u2502 pnpm.overrides           \u2502 NO            \u2502
+\u2502                                                                 \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
 ```
 
 ---

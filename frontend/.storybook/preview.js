@@ -3,7 +3,7 @@
  * Global decorators, parameters, and styles
  */
 // Import global styles (SvelteKit entry point - replaces legacy main.css)
-import '../frontend/src/app.css';
+import '../src/app.css';
 
 /** @type { import('@storybook/html-vite').Preview } */
 const preview = {

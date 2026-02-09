@@ -1,36 +1,36 @@
-# 🚀 Before Starting Development
+# Before Starting Development
 
-> **Zeitaufwand:** ~3 Minuten (inklusive TypeScript Check)
-> **Primäre Methode:** Ein einziger Befehl führt alle Checks aus!
+> **Time Required:** ~3 minutes (including TypeScript check)
+> **Primary Method:** A single command runs all checks!
 
-## ⚠️ PFLICHT: Diesen einen Befehl IMMER ausführen
+## MANDATORY: Always run this one command
 
 ```bash
-# Führt ALLE Checks aus (inklusive TypeScript Check!)
+# Runs ALL checks (including TypeScript check!)
 /home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
-**Das Script prüft automatisch:**
+**The script automatically checks:**
 
-- ✅ Docker Container Status
-- ✅ API Health Check
-- ✅ Git Status
-- ✅ **TypeScript Check** (NEU - wird jetzt automatisch ausgeführt!)
-- ✅ Aktuelle Phase Info
+- Docker Container Status
+- API Health Check
+- Git Status
+- **TypeScript Check** (NEW — now runs automatically!)
+- Current Phase Info
 
-# - ✅ Unit Tests (Auskommentiert - werden nicht mehr automatisch ausgeführt)
+# - Unit Tests (Commented out — no longer run automatically)
 
-**Bei Problemen:**
+**If there are problems:**
 
 ```bash
-# TypeScript Errors fixen
+# Fix TypeScript errors
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
 
-# Docker neu starten
+# Restart Docker
 cd /home/scs/projects/Assixx/docker && docker-compose down && docker-compose up -d
 ```
 
-## 🐳 Docker Development (Standard)
+## Docker Development (Standard)
 
 ### Essential Checks
 
@@ -42,14 +42,14 @@ cd /home/scs/projects/Assixx/docker
 docker-compose ps
 curl -s http://localhost:3000/health | jq '.'
 
-# Code Quality Check - NICHT VERGESSEN! Dieser Befehl ist KRITISCH!
+# Code Quality Check — DON'T FORGET! This command is CRITICAL!
 docker exec assixx-backend pnpm run type-check
 
-# Bei TypeScript Errors:
+# If TypeScript errors occur:
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix"
 ```
 
-### Erwartete Ausgaben
+### Expected Output
 
 **Container Status:**
 
@@ -70,33 +70,33 @@ assixx-redis            Up X minutes        6379/tcp
 }
 ```
 
-## 🔴 Troubleshooting
+## Troubleshooting
 
-### Container nicht gestartet
+### Containers not started
 
 ```bash
 cd /home/scs/projects/Assixx/docker
 docker-compose down && docker-compose up -d
-docker-compose logs -f  # Logs prüfen
+docker-compose logs -f  # Check logs
 ```
 
-### TypeScript Build Fehler
+### TypeScript Build Errors
 
 ```bash
-# Container neu builden
+# Rebuild container
 docker-compose build --no-cache backend
 docker-compose up -d
 ```
 
-## 📋 Zusätzliche Befehle
+## Additional Commands
 
 ### Code Quality
 
 ```bash
-# Alles automatisch fixen (Format → Lint → TypeCheck)
+# Fix everything automatically (Format -> Lint -> TypeCheck)
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
 
-# Einzelne Checks
+# Individual checks
 docker exec assixx-backend pnpm run format       # Prettier
 docker exec assixx-backend pnpm run lint:fix     # ESLint
 docker exec assixx-backend pnpm run type-check   # TypeScript
@@ -110,12 +110,12 @@ git log --oneline -5
 git branch --show-current
 ```
 
-## 📝 Wichtige Hinweise
+## Important Notes
 
-- **Working Directory** für Docker-Befehle: `/home/scs/projects/Assixx/docker`
-- **Container-Name**: `assixx-backend` (nicht docker-backend-1)
+- **Working Directory** for Docker commands: `/home/scs/projects/Assixx/docker`
+- **Container Name**: `assixx-backend` (not docker-backend-1)
 - **PostgreSQL Port**: 5432
 
 ---
 
-**Zuletzt aktualisiert:** 18.07.2025 - dev-status.sh führt jetzt TypeScript Check automatisch aus!
+**Last updated:** 2025-07-18 — dev-status.sh now runs TypeScript check automatically!

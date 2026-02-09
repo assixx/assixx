@@ -1,8 +1,8 @@
 # Storybook - Assixx Design System
 
-**Version:** 8.6.14
-**Framework:** Web Components (HTML support)
-**Builder:** Vite 6.x
+**Version:** 10.2.7
+**Framework:** HTML (via @storybook/html-vite)
+**Builder:** Vite 7.x
 
 ## Quick Start
 
@@ -44,16 +44,18 @@ pnpm run build-storybook
 
 ```
 Assixx/
-├── .storybook/
-│   ├── main.js         # Main configuration
-│   └── preview.js      # Global decorators & parameters
-├── stories/
-│   ├── Buttons.stories.js
-│   └── DesignTokens.stories.js
-└── frontend/src/design-system/
-    ├── tokens/         # Design tokens (colors, spacing, etc.)
-    ├── primitives/     # Button components
-    └── index.css       # Barrel export
+└── frontend/
+    ├── .storybook/
+    │   ├── main.js             # Main configuration
+    │   ├── preview.js          # Global decorators & parameters
+    │   ├── preview-head.html   # Fonts & Icons CDN
+    │   └── stories/            # All story files
+    │       ├── Buttons.stories.js
+    │       └── DesignTokens.stories.js
+    └── src/design-system/
+        ├── tokens/         # Design tokens (colors, spacing, etc.)
+        ├── primitives/     # Button components
+        └── index.css       # Barrel export
 ```
 
 ## Why Storybook?
@@ -124,9 +126,9 @@ http://localhost:6006 ✅
 
 ## Notes
 
-- **Framework:** Using @storybook/web-components-vite (best HTML support)
+- **Framework:** Using @storybook/html-vite (best HTML support)
 - **CSS Warnings:** Tailwind @import order warnings can be ignored (funktioniert trotzdem!)
-- **Stories Location:** All stories in `design-system/stories/` directory
+- **Stories Location:** All stories in `frontend/.storybook/stories/` directory
 - **Design System Migration:** Button components already migrated from Bootstrap
 
 ## Real Life Production Preview
@@ -141,8 +143,8 @@ http://localhost:6006 ✅
 
 **Config-Details:**
 
-- `.storybook/main.js` → Tailwind Plugin + PostCSS
-- `.storybook/preview-head.html` → Fonts & Icons
+- `frontend/.storybook/main.js` → Tailwind Plugin + PostCSS
+- `frontend/.storybook/preview-head.html` → Fonts & Icons
 - `frontend/tailwind.config.js` → Stories werden gescannt
 
 ## Future Extensions
