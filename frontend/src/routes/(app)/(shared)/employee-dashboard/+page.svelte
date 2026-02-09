@@ -387,7 +387,7 @@
                 <strong class="block font-semibold"
                   >{MESSAGES.upcomingEvents}</strong
                 >
-                <p class="mt-1 text-[var(--color-text-secondary)]">
+                <p class="mt-1 text-(--color-text-secondary)">
                   {PLACEHOLDER_TEXT.noEvents}
                 </p>
               </div>
@@ -481,7 +481,7 @@
           >
             {MESSAGES.kvpButton}
           </button>
-          <p class="text-sm text-[var(--color-text-secondary)]">
+          <p class="text-sm text-(--color-text-secondary)">
             {MESSAGES.kvpDescription}
           </p>
         </div>
@@ -510,7 +510,7 @@
           >
             {MESSAGES.profileButton}
           </button>
-          <p class="text-sm text-[var(--color-text-secondary)]">
+          <p class="text-sm text-(--color-text-secondary)">
             {MESSAGES.profileDescription}
           </p>
         </div>

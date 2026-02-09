@@ -116,7 +116,7 @@
           class="ds-modal__title"
           id="delete-modal-title"
         >
-          <i class="fas fa-trash mr-2 text-[var(--color-danger)]"></i>
+          <i class="fas fa-trash mr-2 text-(--color-danger)"></i>
           Eintrag löschen
         </h3>
         <button
@@ -130,10 +130,10 @@
       </div>
 
       <div class="ds-modal__body">
-        <p class="text-[var(--color-text-secondary)]">
+        <p class="text-(--color-text-secondary)">
           Möchten Sie diesen Verfügbarkeitseintrag wirklich löschen?
         </p>
-        <div class="mt-4 rounded-lg bg-[var(--color-bg-secondary)] p-4">
+        <div class="mt-4 rounded-lg bg-(--color-bg-secondary) p-4">
           <div class="mb-2 flex items-center gap-2">
             <span class="badge {getStatusClass(entry.status)}">
               <i class="fas {getStatusIcon(entry.status)} mr-1"></i>
@@ -151,7 +151,7 @@
             </p>
           {/if}
         </div>
-        <p class="mt-4 text-sm text-[var(--color-warning)]">
+        <p class="mt-4 text-sm text-(--color-warning)">
           <i class="fas fa-exclamation-triangle mr-1"></i>
           Diese Aktion kann nicht rückgängig gemacht werden.
         </p>

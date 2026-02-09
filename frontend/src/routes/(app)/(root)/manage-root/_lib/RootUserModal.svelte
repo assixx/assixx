@@ -76,6 +76,16 @@
     statusDropdownOpen = !statusDropdownOpen;
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      positionDropdownOpen = false;
+      statusDropdownOpen = false;
+      showPassword = false;
+      showPasswordConfirm = false;
+    }
+  });
+
   // Close dropdowns on outside click
   $effect(() => {
     if (positionDropdownOpen || statusDropdownOpen) {
@@ -182,7 +192,7 @@
             bind:value={email}
             oninput={onValidateEmails}
           />
-          <span class="form-field__message text-[var(--color-text-secondary)]"
+          <span class="form-field__message text-(--color-text-secondary)"
             >{MESSAGES.EMAIL_USED_AS_USERNAME}</span
           >
         </div>
@@ -464,7 +474,7 @@
               </div>
             </div>
             <span
-              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
+              class="form-field__message mt-1 block text-(--color-text-secondary)"
               >{MESSAGES.INACTIVE_HINT}</span
             >
           </div>

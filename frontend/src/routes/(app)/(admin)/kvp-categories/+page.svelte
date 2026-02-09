@@ -224,9 +224,9 @@
       <div class="card__body">
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{data.error}</p>
+          <p class="text-(--color-text-secondary)">{data.error}</p>
           <button
             type="button"
             class="btn btn-primary mt-4"
@@ -243,7 +243,7 @@
           <i class="fas fa-edit mr-2"></i>
           {LABELS.SECTION_DEFAULTS}
         </h2>
-        <p class="mt-2 text-[var(--color-text-secondary)]">
+        <p class="mt-2 text-(--color-text-secondary)">
           {LABELS.PAGE_DESCRIPTION}
         </p>
       </div>
@@ -330,7 +330,7 @@
           <i class="fas fa-tags mr-2"></i>
           {LABELS.SECTION_CUSTOM}
         </h2>
-        <p class="mt-2 text-[var(--color-text-secondary)]">
+        <p class="mt-2 text-(--color-text-secondary)">
           <span class="badge badge--info">
             {LABELS.remaining(data.categories.remainingSlots)}
           </span>
@@ -366,7 +366,7 @@
                           class="inline-block h-4 w-4 rounded-full border border-gray-400"
                           style="background-color: {cat.color}"
                         ></span>
-                        <span class="text-sm text-[var(--color-text-secondary)]"
+                        <span class="text-sm text-(--color-text-secondary)"
                           >{cat.color}</span
                         >
                       </div>
@@ -456,7 +456,7 @@
                         --cp-button-hover-color="var(--color-gray-700, #616161)"
                         --picker-z-index="1060"
                       />
-                      <span class="text-sm text-[var(--color-text-secondary)]"
+                      <span class="text-sm text-(--color-text-secondary)"
                         >{newColor}</span
                       >
                     </div>

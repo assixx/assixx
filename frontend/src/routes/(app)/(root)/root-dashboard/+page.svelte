@@ -118,7 +118,7 @@
         <!-- No close button - modal is mandatory -->
       </div>
       <div class="ds-modal__body">
-        <p class="mb-4 text-[var(--color-text-secondary)]">
+        <p class="mb-4 text-(--color-text-secondary)">
           Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu {EMPLOYEE_NUMBER.maxLength}
           Zeichen lang sein und Buchstaben, Zahlen sowie Bindestriche enthalten.
         </p>

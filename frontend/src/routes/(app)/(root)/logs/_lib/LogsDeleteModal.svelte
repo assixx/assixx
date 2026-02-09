@@ -81,7 +81,7 @@
         class="ds-modal__title flex items-center gap-3"
         id="delete-modal-title"
       >
-        <i class="fas fa-exclamation-triangle text-[var(--color-danger)]"></i>
+        <i class="fas fa-exclamation-triangle text-(--color-danger)"></i>
         {MESSAGES.DELETE_MODAL_TITLE}
       </h3>
     </div>
@@ -97,7 +97,7 @@
 
       <!-- Active Filters Display -->
       <div class="mb-6">
-        <p class="mb-2 text-[var(--color-text-secondary)]">
+        <p class="mb-2 text-(--color-text-secondary)">
           Folgende Filter werden gelöscht:
         </p>
         <div
@@ -125,7 +125,7 @@
               >
             {/if}
           {:else}
-            <span class="text-[var(--color-text-secondary)]"
+            <span class="text-(--color-text-secondary)"
               >{MESSAGES.NO_FILTERS_WARNING}</span
             >
           {/if}
@@ -139,7 +139,7 @@
           for="deleteLogsConfirmation"
         >
           {MESSAGES.DELETE_CONFIRM_LABEL.split('LÖSCHEN')[0]}
-          <strong class="text-[var(--color-danger)]">LÖSCHEN</strong>
+          <strong class="text-(--color-danger)">LÖSCHEN</strong>
           {MESSAGES.DELETE_CONFIRM_LABEL.split('LÖSCHEN')[1]}
         </label>
         <input
@@ -158,7 +158,7 @@
           class="form-field__label flex items-center gap-2"
           for="deleteLogsPassword"
         >
-          <i class="fas fa-lock text-[var(--color-danger)]"></i>
+          <i class="fas fa-lock text-(--color-danger)"></i>
           {MESSAGES.DELETE_PASSWORD_LABEL}
         </label>
         <input

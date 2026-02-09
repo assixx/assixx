@@ -254,7 +254,7 @@
       </button>
 
       {#if hasActiveFilters}
-        <span class="text-sm text-[var(--color-text-secondary)]">
+        <span class="text-sm text-(--color-text-secondary)">
           <i class="fas fa-info-circle mr-1"></i>
           Aktive Filter werden beim Export berücksichtigt
         </span>
@@ -262,7 +262,7 @@
     </div>
 
     <!-- Export Info -->
-    <p class="mt-3 text-sm text-[var(--color-text-secondary)]">
+    <p class="mt-3 text-sm text-(--color-text-secondary)">
       <i class="fas fa-shield-alt mr-1"></i>
       Max. 365 Tage | 1 Export pro Minute | RLS-geschützt
     </p>

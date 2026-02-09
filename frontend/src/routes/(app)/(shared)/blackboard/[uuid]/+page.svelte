@@ -516,9 +516,8 @@
       {:else if isArchived}
         <div class="sidebar-card">
           <div class="p-4 text-center">
-            <i class="fas fa-archive mb-2 text-3xl text-[var(--color-warning)]"
-            ></i>
-            <p class="mb-4 text-[var(--color-text-secondary)]">
+            <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"></i>
+            <p class="mb-4 text-(--color-text-secondary)">
               Dieser Eintrag ist archiviert
             </p>
             <button

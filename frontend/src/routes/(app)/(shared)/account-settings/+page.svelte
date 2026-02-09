@@ -155,7 +155,7 @@
         <i class="fas fa-exclamation-triangle mr-2"></i>
         Kontoeinstellungen
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Tenant-Verwaltung und Löschoptionen (Zwei-Personen-Prinzip)
       </p>
     </div>

@@ -28,9 +28,7 @@
       <i class="fas {icon} mr-2"></i>
       {title}
       {#if subtitle}
-        <span
-          class="ml-2 text-sm font-normal text-[var(--color-text-secondary)]"
-        >
+        <span class="ml-2 text-sm font-normal text-(--color-text-secondary)">
           {subtitle}
         </span>
       {/if}
@@ -39,7 +37,7 @@
   <div class="card__body">
     <div class="upcoming-events">
       {#if events.length === 0}
-        <p class="text-center text-[var(--color-text-secondary)]">
+        <p class="text-center text-(--color-text-secondary)">
           {emptyStateMessage}
         </p>
       {:else}

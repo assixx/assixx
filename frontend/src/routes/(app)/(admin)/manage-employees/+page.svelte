@@ -516,7 +516,7 @@
         <i class="fas fa-users mr-2"></i>
         Mitarbeiterverwaltung
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Mitarbeiter erstellen und verwalten
       </p>
 
@@ -620,9 +620,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
             class="btn btn-primary mt-4"

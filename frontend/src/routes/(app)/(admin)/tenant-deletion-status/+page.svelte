@@ -182,7 +182,7 @@
         <i class="fas fa-trash-alt mr-2"></i>
         Tenant Löschstatus
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Übersicht aller Löschanfragen und deren Status
       </p>
     </div>

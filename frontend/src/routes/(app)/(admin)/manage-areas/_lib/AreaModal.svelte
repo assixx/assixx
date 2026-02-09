@@ -93,6 +93,15 @@
     if (e.target === e.currentTarget) onclose();
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      typeDropdownOpen = false;
+      statusDropdownOpen = false;
+      areaLeadDropdownOpen = false;
+    }
+  });
+
   // Close dropdowns on outside click
   $effect(() => {
     if (typeDropdownOpen || statusDropdownOpen || areaLeadDropdownOpen) {
@@ -246,7 +255,7 @@
               {/each}
             </div>
           </div>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             {MESSAGES.AREA_LEAD_HINT}
           </span>
@@ -350,7 +359,7 @@
               <option value={dept.id}>{dept.name}</option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             {MESSAGES.DEPARTMENTS_HINT}
           </span>
@@ -419,7 +428,7 @@
               </div>
             </div>
             <span
-              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
+              class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
               {MESSAGES.STATUS_HINT}
             </span>

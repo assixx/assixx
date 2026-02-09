@@ -97,6 +97,15 @@
     return el?.contains(target) !== true;
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      areaDropdownOpen = false;
+      leadDropdownOpen = false;
+      statusDropdownOpen = false;
+    }
+  });
+
   // Close dropdowns on outside click
   $effect(() => {
     const anyDropdownOpen =
@@ -300,7 +309,7 @@
               {/each}
             </div>
           </div>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             {MESSAGES.DEPARTMENT_LEAD_HINT}
           </span>
@@ -371,7 +380,7 @@
               </div>
             </div>
             <span
-              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
+              class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
               {MESSAGES.STATUS_HINT}
             </span>

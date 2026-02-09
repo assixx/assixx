@@ -181,22 +181,20 @@
     <span class="rate-limit-icon material-symbols-outlined"
       >hourglass_check</span
     >
-    <h1 class="mb-4 text-[28px] font-bold text-[var(--color-text-primary)]">
+    <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">
       Zu viele Anfragen
     </h1>
-    <p
-      class="mb-8 text-base leading-relaxed text-[var(--color-text-secondary)]"
-    >
+    <p class="mb-8 text-base leading-relaxed text-(--color-text-secondary)">
       Sie haben die maximale Anzahl an Anfragen überschritten. Bitte warten Sie
       einen Moment, bevor Sie es erneut versuchen.
     </p>
     <div
-      class="mb-8 rounded-[var(--radius-xl)] border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/10%)] p-6"
+      class="mb-8 rounded-(--radius-xl) border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/10%)] p-6"
     >
-      <div class="mb-4 text-sm text-[var(--color-text-secondary)]">
+      <div class="mb-4 text-sm text-(--color-text-secondary)">
         Versuchen Sie es wieder in:
       </div>
-      <div class="countdown text-[32px] font-bold text-[var(--color-primary)]">
+      <div class="countdown text-[32px] font-bold text-(--color-primary)">
         {countdownText}
       </div>
     </div>
