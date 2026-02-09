@@ -203,7 +203,7 @@
           rows="4"
           placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
         ></textarea>
-        <span class="form-field__message text-[var(--color-text-secondary)]">
+        <span class="form-field__message text-(--color-text-secondary)">
           <i class="fas fa-info-circle"></i> Markdown-Formatierung möglich
         </span>
       </div>
@@ -278,7 +278,7 @@
             <i class="fas fa-users mr-2"></i>
             Sichtbarkeit
           </span>
-          <p class="mb-2 text-sm text-[var(--color-text-secondary)]">
+          <p class="mb-2 text-sm text-(--color-text-secondary)">
             wählen Sie keine Organisation für firmenweite Events oder
             eine/mehrere spezifische Organisationen.
           </p>
@@ -304,7 +304,7 @@
               Ganze Firma (Alle Mitarbeiter)
             </span>
           </label>
-          <span class="form-field__message text-[var(--color-danger)]">
+          <span class="form-field__message text-(--color-danger)">
             <i class="fas fa-exclamation-triangle mr-1"></i>
             Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Termin
           </span>
@@ -342,7 +342,7 @@
               </option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
             Abteilungen.
@@ -381,7 +381,7 @@
               </option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
             durch Bereiche abgedeckt sind.
@@ -410,7 +410,7 @@
               <option value={team.id}>{team.name}</option>
             {/each}
           </select>
-          <span class="form-field__message text-[var(--color-text-secondary)]">
+          <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
             zugehörige Teams aus.
@@ -421,7 +421,7 @@
         <div class="form-field">
           <span class="form-field__label">Teilnehmer</span>
           <div id="attendeesContainer">
-            <p class="flex items-center gap-2 text-[var(--color-info)]">
+            <p class="flex items-center gap-2 text-(--color-info)">
               <i class="fas fa-info-circle"></i>
               Alle Mitarbeiter der Firma werden automatisch eingeladen
             </p>

@@ -284,7 +284,7 @@
             bind:value={formEmail}
             oninput={onvalidateemails}
           />
-          <span class="form-field__message text-[var(--color-text-secondary)]"
+          <span class="form-field__message text-(--color-text-secondary)"
             >{MESSAGES.EMAIL_HINT}</span
           >
         </div>
@@ -500,7 +500,7 @@
             maxlength="10"
             bind:value={formEmployeeNumber}
           />
-          <span class="form-field__message text-[var(--color-text-secondary)]"
+          <span class="form-field__message text-(--color-text-secondary)"
             >{MESSAGES.EMPLOYEE_NUMBER_HINT}</span
           >
         </div>
@@ -523,8 +523,8 @@
         </div>
 
         <!-- Team Assignment Section -->
-        <div class="mt-6 border-t border-[var(--color-border)] pt-6">
-          <h4 class="mb-4 font-medium text-[var(--color-text-primary)]">
+        <div class="mt-6 border-t border-(--color-border) pt-6">
+          <h4 class="mb-4 font-medium text-(--color-text-primary)">
             <i class="fas fa-users mr-2"></i>
             Team-Zuweisung
           </h4>
@@ -572,9 +572,7 @@
                 </option>
               {/each}
             </select>
-            <span
-              class="form-field__message text-[var(--color-text-secondary)]"
-            >
+            <span class="form-field__message text-(--color-text-secondary)">
               <i class="fas fa-info-circle mr-1"></i>
               {MESSAGES.TEAM_MULTISELECT_HINT}
             </span>
@@ -645,7 +643,7 @@
               </div>
             </div>
             <span
-              class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
+              class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
               {MESSAGES.STATUS_HINT}
             </span>
@@ -655,13 +653,13 @@
           {#if onupgrade}
             <div
               bind:this={dangerZoneEl}
-              class="mt-6 border-t-2 border-[var(--color-danger)] pt-6"
+              class="mt-6 border-t-2 border-(--color-danger) pt-6"
             >
-              <h4 class="mb-2 font-medium text-[var(--color-danger)]">
+              <h4 class="mb-2 font-medium text-(--color-danger)">
                 <i class="fas fa-exclamation-triangle mr-2"></i>
                 {MESSAGES.UPGRADE_TITLE}
               </h4>
-              <p class="mb-4 text-sm text-[var(--color-text-secondary)]">
+              <p class="mb-4 text-sm text-(--color-text-secondary)">
                 {MESSAGES.UPGRADE_DESCRIPTION}
               </p>
               {#if !upgradeConfirmActive}

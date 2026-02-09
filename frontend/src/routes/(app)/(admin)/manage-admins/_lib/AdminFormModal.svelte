@@ -389,7 +389,7 @@
             required
             bind:value={formEmployeeNumber}
           />
-          <span class="form-field__message text-[var(--color-text-secondary)]"
+          <span class="form-field__message text-(--color-text-secondary)"
             >{MESSAGES.HINT_EMPLOYEE_NUMBER}</span
           >
         </div>

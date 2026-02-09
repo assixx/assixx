@@ -223,7 +223,7 @@
           <i class="fas fa-crown mr-2"></i>
           Plan & Feature Management
         </h1>
-        <p class="mt-2 text-[var(--color-text-secondary)]">
+        <p class="mt-2 text-(--color-text-secondary)">
           Verwalten Sie Ihren Plan und aktivieren Sie Features für
           <strong>{tenantName}</strong>
         </p>
@@ -245,7 +245,7 @@
         <i class="fas fa-th-large mr-2"></i>
         Verfügbare Pläne
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Wählen Sie den passenden Plan für Ihr Unternehmen
       </p>
     </div>
@@ -306,7 +306,7 @@
           <i class="fas fa-puzzle-piece mr-2"></i>
           Verfügbare Features
         </h2>
-        <p class="mt-2 text-[var(--color-text-secondary)]">
+        <p class="mt-2 text-(--color-text-secondary)">
           Aktivieren oder deaktivieren Sie Features
         </p>
       </div>
@@ -373,9 +373,9 @@
       {#if error}
         <div class="p-6 text-center">
           <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
           ></i>
-          <p class="text-[var(--color-text-secondary)]">{error}</p>
+          <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
             class="btn btn-primary mt-4"
@@ -469,7 +469,7 @@
         <i class="fas fa-cubes mr-2"></i>
         Zusätzliche Ressourcen
       </h2>
-      <p class="mt-2 text-[var(--color-text-secondary)]">
+      <p class="mt-2 text-(--color-text-secondary)">
         Erweitern Sie Ihre Kapazitäten nach Bedarf
       </p>
     </div>

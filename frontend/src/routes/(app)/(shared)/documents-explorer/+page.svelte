@@ -116,13 +116,13 @@
           <i class="fas fa-folder-open mr-2"></i>
           Dokumente Explorer
         </h2>
-        <p class="mt-2 text-[var(--color-text-secondary)]">
+        <p class="mt-2 text-(--color-text-secondary)">
           Dokumente hochladen und verwalten
         </p>
       </div>
 
       <!-- Toolbar -->
-      <div class="border-t border-[var(--border-color)] pt-4">
+      <div class="border-t border-(--border-color) pt-4">
         <div class="flex items-center justify-between gap-4">
           <div class="flex flex-1 items-center gap-3">
             <div class="search-input max-w-md flex-1">
