@@ -12,13 +12,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
-import type { RowDataPacket } from '../../utils/db.js';
-import { execute } from '../../utils/db.js';
+import { DatabaseService } from '../database/database.service.js';
 
 /**
  * User row from database
  */
-interface UserRow extends RowDataPacket {
+interface UserRow {
   id: number;
   username: string;
   email: string;
@@ -60,7 +59,10 @@ export interface RoleSwitchStatus {
 export class RoleSwitchService {
   private readonly logger = new Logger(RoleSwitchService.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly db: DatabaseService,
+  ) {}
 
   /**
    * Verify user belongs to tenant and return user data
@@ -70,7 +72,7 @@ export class RoleSwitchService {
     userId: number,
     tenantId: number,
   ): Promise<UserRow> {
-    const [rows] = await execute<UserRow[]>(
+    const rows = await this.db.query<UserRow>(
       'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
@@ -131,7 +133,7 @@ export class RoleSwitchService {
     action: string,
   ): Promise<void> {
     try {
-      await execute(
+      await this.db.query(
         `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, was_role_switched, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
         [

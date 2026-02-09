@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
-import { ResultSetHeader, RowDataPacket, execute, query } from './utils/db.js';
+import { DatabaseService } from './nest/database/database.service.js';
 import { eventBus } from './utils/eventBus.js';
 import { logger } from './utils/logger.js';
 
@@ -51,11 +51,11 @@ interface MarkReadData {
 // Database Query Result Interfaces
 // ============================================================================
 
-interface ConversationParticipantResult extends RowDataPacket {
+interface ConversationParticipantResult {
   user_id: number;
 }
 
-interface UserInfoResult extends RowDataPacket {
+interface UserInfoResult {
   id: number;
   username: string;
   first_name: string | null;
@@ -63,7 +63,7 @@ interface UserInfoResult extends RowDataPacket {
   profile_picture_url: string | null;
 }
 
-interface MessageInfoResult extends RowDataPacket {
+interface MessageInfoResult {
   sender_id: number;
   conversation_id: number;
 }
@@ -83,7 +83,10 @@ export class ChatWebSocketServer {
     return value
   `;
 
-  constructor(server: Server) {
+  constructor(
+    server: Server,
+    private readonly db: DatabaseService,
+  ) {
     this.wss = new WebSocketServer({
       server,
       path: '/chat-ws',
@@ -188,10 +191,10 @@ export class ChatWebSocketServer {
     userId: number,
     tenantId: number,
   ): Promise<boolean> {
-    interface UserActiveResult extends RowDataPacket {
+    interface UserActiveResult {
       is_active: number;
     }
-    const [userRows] = await query<UserActiveResult[]>(
+    const userRows = await this.db.query<UserActiveResult>(
       'SELECT is_active FROM users WHERE id = $1 AND tenant_id = $2',
       [userId, tenantId],
     );
@@ -354,7 +357,7 @@ export class ChatWebSocketServer {
       AND c.tenant_id = $2
       AND cp.tenant_id = $3
     `;
-    const [participants] = await query<ConversationParticipantResult[]>(
+    const participants = await this.db.query<ConversationParticipantResult>(
       participantQuery,
       [conversationId, tenantId, tenantId],
     );
@@ -368,7 +371,7 @@ export class ChatWebSocketServer {
     tenantId: number,
     excludeUserId: number,
   ): Promise<number[]> {
-    const [participants] = await query<ConversationParticipantResult[]>(
+    const participants = await this.db.query<ConversationParticipantResult>(
       `SELECT cp.user_id
        FROM conversation_participants cp
        JOIN conversations c ON cp.conversation_id = c.id
@@ -394,10 +397,10 @@ export class ChatWebSocketServer {
       RETURNING id
     `;
     // PostgreSQL RETURNING clause returns rows, not MySQL-style insertId
-    interface InsertResult extends RowDataPacket {
+    interface InsertResult {
       id: number;
     }
-    const [rows] = await query<InsertResult[]>(messageQuery, [
+    const rows = await this.db.query<InsertResult>(messageQuery, [
       conversationId,
       senderId,
       content,
@@ -433,7 +436,7 @@ export class ChatWebSocketServer {
       AND tenant_id = $2
       AND message_id IS NULL
     `;
-    await execute(updateQuery, [messageId, tenantId, ...attachmentIds]);
+    await this.db.query(updateQuery, [messageId, tenantId, ...attachmentIds]);
     logger.info(
       `Linked ${attachmentIds.length} attachments to message ${messageId}`,
     );
@@ -467,7 +470,7 @@ export class ChatWebSocketServer {
       WHERE id IN (${placeholders})
       AND tenant_id = $1
     `;
-    interface AttachmentRow extends RowDataPacket {
+    interface AttachmentRow {
       id: number;
       file_uuid: string;
       filename: string;
@@ -475,7 +478,7 @@ export class ChatWebSocketServer {
       file_size: number;
       mime_type: string;
     }
-    const [rows] = await query<AttachmentRow[]>(attachmentQuery, [
+    const rows = await this.db.query<AttachmentRow>(attachmentQuery, [
       tenantId,
       ...attachmentIds,
     ]);
@@ -508,7 +511,7 @@ export class ChatWebSocketServer {
       SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
       FROM users WHERE id = $1 AND tenant_id = $2
     `;
-    const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [
+    const senderInfo = await this.db.query<UserInfoResult>(senderQuery, [
       userId,
       tenantId,
     ]);
@@ -737,7 +740,7 @@ export class ChatWebSocketServer {
 
     try {
       // Nachricht als gelesen markieren
-      await execute<ResultSetHeader>(
+      await this.db.query(
         `
         UPDATE messages
         SET is_read = true
@@ -756,7 +759,7 @@ export class ChatWebSocketServer {
       const messageQuery = `
         SELECT sender_id, conversation_id FROM messages WHERE id = $1
       `;
-      const [messageInfo] = await query<MessageInfoResult[]>(messageQuery, [
+      const messageInfo = await this.db.query<MessageInfoResult>(messageQuery, [
         messageId,
       ]);
 
@@ -803,7 +806,7 @@ export class ChatWebSocketServer {
     userId: number,
     tenantId: number,
   ): Promise<number[]> {
-    const [partners] = await query<ConversationParticipantResult[]>(
+    const partners = await this.db.query<ConversationParticipantResult>(
       `SELECT DISTINCT cp2.user_id
        FROM conversation_participants cp1
        JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id

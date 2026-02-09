@@ -6,8 +6,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import type { RowDataPacket } from '../../utils/db.js';
-import { execute } from '../../utils/db.js';
+import { DatabaseService } from '../database/database.service.js';
 import type { RoleName } from './dto/index.js';
 
 /**
@@ -42,13 +41,15 @@ export interface RoleCheckResult {
 /**
  * Database user role query result
  */
-interface UserRoleRow extends RowDataPacket {
+interface UserRoleRow {
   role: string;
 }
 
 @Injectable()
 export class RolesService {
   private readonly logger = new Logger(RolesService.name);
+
+  constructor(private readonly db: DatabaseService) {}
 
   /**
    * Static role definitions
@@ -176,7 +177,7 @@ export class RolesService {
     );
 
     // SECURITY: Only check roles for ACTIVE users (is_active = 1)
-    const [rows] = await execute<UserRoleRow[]>(
+    const rows = await this.db.query<UserRoleRow>(
       'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
