@@ -68,6 +68,7 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
+            '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
         test: {
@@ -101,6 +102,7 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
+            '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
         test: {
