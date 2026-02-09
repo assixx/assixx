@@ -6,7 +6,7 @@
  *
  * DatabaseService is mocked — no real DB calls.
  */
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -26,7 +26,7 @@ type MockDb = ReturnType<typeof createMockDb>;
 // AdminPermissionsService
 // =============================================================
 
-describe('AdminPermissionsService', () => {
+describe('SECURITY: AdminPermissionsService', () => {
   let service: AdminPermissionsService;
   let mockDb: MockDb;
 
@@ -292,6 +292,79 @@ describe('AdminPermissionsService', () => {
 
       await expect(service.getAdminPermissions(999, 10)).rejects.toThrow(
         NotFoundException,
+      );
+    });
+  });
+
+  // =============================================================
+  // setHasFullAccess — employee guard
+  // =============================================================
+
+  describe('setHasFullAccess', () => {
+    it('should throw BadRequestException when granting full access to employee', async () => {
+      // getUserRoleInfo → employee
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'employee', has_full_access: false },
+      ]);
+
+      await expect(service.setHasFullAccess(1, true, 99, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow granting full access to admin', async () => {
+      // getUserRoleInfo → admin
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'admin', has_full_access: false },
+      ]);
+      // UPDATE RETURNING
+      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.setHasFullAccess(1, true, 99, 10),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should allow revoking full access from employee (false is always ok)', async () => {
+      // No getUserRoleInfo call when hasFullAccess=false (guard skipped)
+      // UPDATE RETURNING
+      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.setHasFullAccess(1, false, 99, 10),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should throw NotFoundException when user not found during grant', async () => {
+      // getUserRoleInfo → empty (user not found)
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.setHasFullAccess(999, true, 99, 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should propagate CHECK constraint error (23514) as DB safety net', async () => {
+      // getUserRoleInfo → admin (passes service-level check)
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'admin', has_full_access: false },
+      ]);
+      // UPDATE triggers CHECK constraint violation (DB safety net)
+      const pgError = Object.assign(
+        new Error(
+          'new row violates check constraint "chk_employee_no_full_access"',
+        ),
+        { code: '23514' },
+      );
+      mockDb.query.mockRejectedValueOnce(pgError);
+
+      // Error must propagate — not swallowed
+      await expect(service.setHasFullAccess(1, true, 99, 10)).rejects.toThrow(
+        'chk_employee_no_full_access',
       );
     });
   });

@@ -15,7 +15,7 @@ import { UserIdParamSchema } from './user-id-param.dto.js';
 // Param Schemas
 // =============================================================
 
-describe('AdminIdParamSchema (admin-permissions)', () => {
+describe('SECURITY: AdminIdParamSchema (admin-permissions)', () => {
   it('should accept valid adminId', () => {
     expect(AdminIdParamSchema.safeParse({ adminId: 1 }).success).toBe(true);
   });
@@ -30,7 +30,7 @@ describe('AdminIdParamSchema (admin-permissions)', () => {
   });
 });
 
-describe('AdminDepartmentParamSchema', () => {
+describe('SECURITY: AdminDepartmentParamSchema', () => {
   it('should accept valid params', () => {
     expect(
       AdminDepartmentParamSchema.safeParse({ adminId: 1, departmentId: 2 })
@@ -53,7 +53,7 @@ describe('AdminDepartmentParamSchema', () => {
   });
 });
 
-describe('AdminGroupParamSchema', () => {
+describe('SECURITY: AdminGroupParamSchema', () => {
   it('should accept valid params', () => {
     expect(
       AdminGroupParamSchema.safeParse({ adminId: 1, groupId: 2 }).success,
@@ -67,7 +67,7 @@ describe('AdminGroupParamSchema', () => {
   });
 });
 
-describe('CheckAccessParamSchema', () => {
+describe('SECURITY: CheckAccessParamSchema', () => {
   it('should accept valid params with default permissionLevel', () => {
     const result = CheckAccessParamSchema.safeParse({
       adminId: 1,
@@ -103,7 +103,7 @@ describe('CheckAccessParamSchema', () => {
   });
 });
 
-describe('UserIdParamSchema (admin-permissions)', () => {
+describe('SECURITY: UserIdParamSchema (admin-permissions)', () => {
   it('should accept valid userId', () => {
     expect(UserIdParamSchema.safeParse({ userId: 1 }).success).toBe(true);
   });
@@ -113,7 +113,7 @@ describe('UserIdParamSchema (admin-permissions)', () => {
   });
 });
 
-describe('UserAreaParamSchema', () => {
+describe('SECURITY: UserAreaParamSchema', () => {
   it('should accept valid params', () => {
     expect(
       UserAreaParamSchema.safeParse({ userId: 1, areaId: 2 }).success,
@@ -137,7 +137,7 @@ describe('UserAreaParamSchema', () => {
 // Body Schemas
 // =============================================================
 
-describe('SetFullAccessSchema', () => {
+describe('SECURITY: SetFullAccessSchema', () => {
   it('should accept boolean true', () => {
     expect(SetFullAccessSchema.safeParse({ hasFullAccess: true }).success).toBe(
       true,
@@ -161,7 +161,7 @@ describe('SetFullAccessSchema', () => {
   });
 });
 
-describe('SetPermissionsSchema', () => {
+describe('SECURITY: SetPermissionsSchema', () => {
   const valid = { adminId: 1 };
 
   it('should accept minimal data with defaults', () => {
@@ -196,7 +196,7 @@ describe('SetPermissionsSchema', () => {
   });
 });
 
-describe('SetAreaPermissionsSchema', () => {
+describe('SECURITY: SetAreaPermissionsSchema', () => {
   it('should accept valid area IDs', () => {
     expect(
       SetAreaPermissionsSchema.safeParse({ areaIds: [1, 2, 3] }).success,
@@ -216,7 +216,7 @@ describe('SetAreaPermissionsSchema', () => {
   });
 });
 
-describe('BulkUpdatePermissionsSchema', () => {
+describe('SECURITY: BulkUpdatePermissionsSchema', () => {
   const valid = { adminIds: [1, 2], operation: 'assign' as const };
 
   it('should accept valid bulk update', () => {

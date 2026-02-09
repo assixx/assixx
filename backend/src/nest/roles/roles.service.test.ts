@@ -28,7 +28,7 @@ const mockExecute = vi.mocked(execute);
 // RolesService
 // =============================================================
 
-describe('RolesService', () => {
+describe('SECURITY: RolesService', () => {
   let service: RolesService;
 
   beforeEach(() => {

@@ -13,6 +13,7 @@
 import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import {
   CustomReportDto,
@@ -25,6 +26,7 @@ import {
 } from './dto/index.js';
 import { ReportsService } from './reports.service.js';
 
+@Roles('admin', 'root')
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

@@ -38,7 +38,7 @@ function createCategory(
 // Tests
 // =============================================================
 
-describe('PermissionRegistryService', () => {
+describe('SECURITY: PermissionRegistryService', () => {
   let service: PermissionRegistryService;
 
   beforeEach(() => {

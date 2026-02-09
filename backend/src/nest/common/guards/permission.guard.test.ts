@@ -67,7 +67,7 @@ function createMockExecutionContext(
 // Tests
 // =============================================================
 
-describe('PermissionGuard', () => {
+describe('SECURITY: PermissionGuard', () => {
   let guard: PermissionGuard;
   let mockReflector: ReturnType<typeof createMockReflector>;
   let mockPermissionService: ReturnType<typeof createMockPermissionService>;

@@ -1,10 +1,9 @@
 /**
  * Unit tests for UsersService
  *
- * Phase 11: Service tests — mocked dependencies.
- * Phase 14 B1: Deepened from 21 → 50 tests.
- * Focus: CRUD operations, access control (role changes), soft delete,
- *        profile pictures, UUID resolution, pagination.
+ * Focus: Admin CRUD operations, access control (role changes), soft delete,
+ *        UUID resolution, pagination.
+ * Profile self-service tests moved to user-profile.service.test.ts.
  * Pure functions already tested in users.helpers.test.ts.
  */
 import {
@@ -13,10 +12,8 @@ import {
   ForbiddenException,
   InternalServerErrorException,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
-import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -24,7 +21,6 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
-import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
 import type { UserAvailabilityService } from './user-availability.service.js';
 import { UsersService } from './users.service.js';
@@ -43,13 +39,6 @@ vi.mock('bcryptjs', () => ({
 
 vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
-}));
-
-vi.mock('fs', () => ({
-  promises: {
-    access: vi.fn().mockResolvedValue(undefined),
-    unlink: vi.fn().mockResolvedValue(undefined),
-  },
 }));
 
 // =============================================================
@@ -347,16 +336,17 @@ describe('UsersService', () => {
       expect(deptSql).toContain('INSERT INTO user_departments');
     });
 
-    it('should log extra activity when hasFullAccess is true', async () => {
+    it('should log extra activity when hasFullAccess is true (admin)', async () => {
       const dtoWithAccess = {
         ...createDto,
+        role: 'admin',
         hasFullAccess: true,
       } as unknown as CreateUserDto;
 
       mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT
       mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 5, email: 'new@example.com' }),
+        makeUserRow({ id: 5, email: 'new@example.com', role: 'admin' }),
       ]); // fetchUser
       mockDb.query.mockResolvedValueOnce([]); // getDepartments
 
@@ -369,6 +359,38 @@ describe('UsersService', () => {
           details: expect.stringContaining('Vollzugriff'),
         }),
       );
+    });
+
+    it('should throw BadRequestException when creating employee with hasFullAccess=true', async () => {
+      const dtoEmployeeFullAccess = {
+        ...createDto,
+        role: 'employee',
+        hasFullAccess: true,
+      } as unknown as CreateUserDto;
+
+      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
+
+      await expect(
+        service.createUser(dtoEmployeeFullAccess, 1, 10),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should allow creating admin with hasFullAccess=true', async () => {
+      const adminDto = {
+        ...createDto,
+        role: 'admin',
+        hasFullAccess: true,
+      } as unknown as CreateUserDto;
+
+      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.query.mockResolvedValueOnce([{ id: 6 }]); // INSERT
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ id: 6, email: 'new@example.com', role: 'admin' }),
+      ]); // fetchUser
+      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+
+      const result = await service.createUser(adminDto, 1, 10);
+      expect(result.id).toBe(6);
     });
 
     it('should throw ConflictException on employee_number constraint violation', async () => {
@@ -391,6 +413,30 @@ describe('UsersService', () => {
 
       await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(
         InternalServerErrorException,
+      );
+    });
+
+    it('should propagate CHECK constraint error (23514) for chk_employee_no_full_access', async () => {
+      // Scenario: service-level validation bypassed, DB CHECK fires as safety net
+      const adminDto = {
+        ...createDto,
+        role: 'admin',
+        hasFullAccess: true,
+      } as unknown as CreateUserDto;
+
+      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
+      // INSERT triggers CHECK constraint violation
+      const pgError = Object.assign(
+        new Error(
+          'new row violates check constraint "chk_employee_no_full_access"',
+        ),
+        { code: '23514' },
+      );
+      mockDb.query.mockRejectedValueOnce(pgError);
+
+      // Error must NOT be swallowed — it propagates (not ConflictException, not silent)
+      await expect(service.createUser(adminDto, 1, 10)).rejects.toThrow(
+        'chk_employee_no_full_access',
       );
     });
   });
@@ -547,92 +593,69 @@ describe('UsersService', () => {
         99,
       );
     });
-  });
 
-  // =============================================================
-  // updateProfile
-  // =============================================================
+    it('should throw BadRequestException when setting hasFullAccess=true on employee', async () => {
+      // Existing user is an employee
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ role: 'employee', has_full_access: 0 }),
+      ]);
 
-  describe('updateProfile', () => {
-    it('should update limited fields and return response', async () => {
-      const updatedRow = makeUserRow({ first_name: 'Updated' });
-      // UPDATE query
-      mockDb.query.mockResolvedValueOnce([]);
-      // findUserById after update
-      mockDb.query.mockResolvedValueOnce([updatedRow]);
+      const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
 
-      const dto = {
-        firstName: 'Updated',
-      } as unknown as UpdateProfileDto;
-
-      const result = await service.updateProfile(1, dto, 10);
-
-      expect(result.firstName).toBe('Updated');
-    });
-
-    it('should skip UPDATE when no fields provided', async () => {
-      // No UPDATE query, just findUserById
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
-
-      const dto = {} as unknown as UpdateProfileDto;
-      const result = await service.updateProfile(1, dto, 10);
-
-      expect(result.email).toBe('max@example.com');
-      // Only 1 query (findUserById), no UPDATE
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
-    });
-
-    it('should throw NotFoundException when user vanishes after update', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE
-      mockDb.query.mockResolvedValueOnce([]); // findUserById → empty
-
-      const dto = { firstName: 'Ghost' } as unknown as UpdateProfileDto;
-
-      await expect(service.updateProfile(1, dto, 10)).rejects.toThrow(
-        NotFoundException,
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
+        BadRequestException,
       );
     });
-  });
 
-  // =============================================================
-  // changePassword
-  // =============================================================
+    it('should throw BadRequestException when changing role TO employee with existing full access', async () => {
+      // Existing user is admin with has_full_access = 1
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 1 }),
+      ]);
+      // assertCanChangeRole → root, no DB call needed
 
-  describe('changePassword', () => {
-    it('should throw NotFoundException when user not found', async () => {
-      mockUserRepo.getPasswordHash.mockResolvedValueOnce(null);
+      const dto = { role: 'employee' } as unknown as UpdateUserDto;
 
-      await expect(
-        service.changePassword(999, 10, 'old', 'new'),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw UnauthorizedException on wrong password', async () => {
-      mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
-      vi.mocked(bcryptjs.compare).mockResolvedValueOnce(false as never);
-
-      await expect(
-        service.changePassword(1, 10, 'wrong-password', 'new-password'),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should change password successfully', async () => {
-      mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
-      // bcryptjs.compare defaults to true (mocked)
-      // bcryptjs.hash defaults to 'hashed-password' (mocked)
-      mockDb.query.mockResolvedValueOnce([]);
-
-      const result = await service.changePassword(
-        1,
-        10,
-        'current-password',
-        'new-password',
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
+        BadRequestException,
       );
+    });
 
-      expect(result.message).toBe('Password changed successfully');
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE users SET password'),
-        expect.arrayContaining(['hashed-password', 1, 10]),
+    it('should allow setting hasFullAccess=true on admin', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 0 }),
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 1 }),
+      ]); // fetchUser
+      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+
+      const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
+      const result = await service.updateUser(1, dto, 99, 'root', 10);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should propagate CHECK constraint error (23514) for chk_employee_no_full_access on update', async () => {
+      // Scenario: DB CHECK fires as safety net during UPDATE
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 0 }),
+      ]); // findUserById
+      // executeUserUpdate triggers CHECK constraint
+      const pgError = Object.assign(
+        new Error(
+          'new row violates check constraint "chk_employee_no_full_access"',
+        ),
+        { code: '23514' },
+      );
+      mockDb.query.mockRejectedValueOnce(pgError);
+
+      const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
+
+      // Error must propagate — not swallowed, not misinterpreted as 23505
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
+        'chk_employee_no_full_access',
       );
     });
   });
@@ -719,142 +742,6 @@ describe('UsersService', () => {
       expect(result.message).toBe('User unarchived successfully');
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain('is_active = 1');
-    });
-  });
-
-  // =============================================================
-  // getProfilePicturePath
-  // =============================================================
-
-  describe('getProfilePicturePath', () => {
-    it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await expect(service.getProfilePicturePath(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw NotFoundException when no profile picture set', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
-
-      await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw NotFoundException when file not on disk', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/pic.jpg' }),
-      ]);
-      vi.mocked(fs.access).mockRejectedValueOnce(new Error('ENOENT'));
-
-      await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should return file path when picture exists', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/pic.jpg' }),
-      ]);
-      // fs.access default resolves (mocked)
-
-      const result = await service.getProfilePicturePath(1, 10);
-
-      expect(result).toContain('uploads/pic.jpg');
-    });
-  });
-
-  // =============================================================
-  // updateProfilePicture
-  // =============================================================
-
-  describe('updateProfilePicture', () => {
-    it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await expect(
-        service.updateProfilePicture(999, '/some/path.jpg', 10),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should store relative path and return updated user', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/new.jpg' }),
-      ]); // findUserById after
-
-      const result = await service.updateProfilePicture(
-        1,
-        `${process.cwd()}/uploads/new.jpg`,
-        10,
-      );
-
-      expect(result).toBeDefined();
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('profile_picture');
-    });
-  });
-
-  // =============================================================
-  // deleteProfilePicture
-  // =============================================================
-
-  describe('deleteProfilePicture', () => {
-    it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await expect(service.deleteProfilePicture(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw NotFoundException when no picture to delete', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
-
-      await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw BadRequestException on directory traversal', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: '../../../etc/passwd' }),
-      ]);
-
-      await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should delete file and clear DB field on success', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/avatar.jpg' }),
-      ]);
-      // fs.unlink default resolves (mocked)
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
-
-      const result = await service.deleteProfilePicture(1, 10);
-
-      expect(result.message).toBe('Profile picture deleted successfully');
-      expect(fs.unlink).toHaveBeenCalled();
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('profile_picture = NULL');
-    });
-
-    it('should continue when file deletion fails', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/missing.jpg' }),
-      ]);
-      vi.mocked(fs.unlink).mockRejectedValueOnce(new Error('ENOENT'));
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
-
-      const result = await service.deleteProfilePicture(1, 10);
-
-      // Should NOT throw, just logs warning and continues
-      expect(result.message).toBe('Profile picture deleted successfully');
     });
   });
 
