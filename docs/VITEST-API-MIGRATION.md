@@ -15,29 +15,28 @@ ESLint: 0 errors | TypeScript: 0 errors
 ## Architecture
 
 ```text
-api-tests/
-  vitest/
-    helpers.ts                # Shared: login cache, authHeaders, authOnly, fetchWithRetry, flushThrottleKeys
-    auth.api.test.ts          # Auth (setup + login + refresh + logout)
-    users.api.test.ts         # Users CRUD
-    departments.api.test.ts   # Departments CRUD
-    teams.api.test.ts         # Teams CRUD
-    roles.api.test.ts         # Roles
-    notifications.api.test.ts # Notifications CRUD + preferences + stats
-    blackboard.api.test.ts    # Blackboard CRUD
-    calendar.api.test.ts      # Calendar events
-    kvp.api.test.ts           # KVP (continuous improvement)
-    machines.api.test.ts      # Machines CRUD
-    surveys.api.test.ts       # Surveys CRUD
-    chat.api.test.ts          # Chat (needs 2nd user via ensureTestEmployee)
-    documents.api.test.ts     # Documents
-    shifts.api.test.ts        # Shifts + rotation generation + cleanup
-    logs.api.test.ts          # Audit log export (JSON/CSV/TXT + validation)
-    settings.api.test.ts      # Tenant settings
-    features.api.test.ts      # Feature flags
-    areas.api.test.ts         # Areas
-  environments/               # Bruno env files (kept for reference)
-  auth/, users/, ...          # Bruno .bru files (kept until migration verified)
+backend/test/                   # NestJS convention: integration tests at project level
+  helpers.ts                    # Shared: login cache, authHeaders, authOnly, fetchWithRetry, flushThrottleKeys
+  tsconfig.json                 # TS config (moduleResolution: NodeNext)
+  00-auth.api.test.ts           # Auth (setup + login + refresh + logout)
+  users.api.test.ts             # Users CRUD
+  departments.api.test.ts       # Departments CRUD
+  teams.api.test.ts             # Teams CRUD
+  roles.api.test.ts             # Roles
+  notifications.api.test.ts     # Notifications CRUD + preferences + stats
+  blackboard.api.test.ts        # Blackboard CRUD
+  calendar.api.test.ts          # Calendar events
+  kvp.api.test.ts               # KVP (continuous improvement)
+  machines.api.test.ts          # Machines CRUD
+  surveys.api.test.ts           # Surveys CRUD
+  chat.api.test.ts              # Chat (needs 2nd user via ensureTestEmployee)
+  documents.api.test.ts         # Documents
+  shifts.api.test.ts            # Shifts + rotation generation + cleanup
+  logs.api.test.ts              # Audit log export (JSON/CSV/TXT + validation)
+  settings.api.test.ts          # Tenant settings
+  features.api.test.ts          # Feature flags
+  areas.api.test.ts             # Areas
+  user-permissions.api.test.ts  # User permissions CRUD
 ```
 
 ### helpers.ts Exports
@@ -90,9 +89,9 @@ UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
 - File: `vitest.config.ts` (projects array -- `api` project)
 - Pool: `forks`, `maxWorkers: 1`, `isolate: false` (sequential, shared module cache)
 - Timeout: 30s per test / 30s per hook
-- Include: `api-tests/vitest/**/*.api.test.ts`
+- Include: `backend/test/**/*.api.test.ts`
 - No setup file (no mocking -- real HTTP requests)
-- TSConfig: `api-tests/tsconfig.json` (`moduleResolution: NodeNext` -- requires `.js` imports)
+- TSConfig: `backend/test/tsconfig.json` (`moduleResolution: NodeNext` -- requires `.js` imports)
 
 ## Critical Lessons Learned
 

@@ -67,7 +67,7 @@
     "docker/**",
     "database/**",
     "Testing/**",
-    "api-tests/**",
+    "backend/test/**",
     ".storybook/**",
     "storybook-static/**",
     "backups/**",

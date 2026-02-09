@@ -87,29 +87,28 @@ sleep 20 && doppler run -- docker-compose ps
 ## Projektstruktur
 
 ```
-api-tests/
-├── vitest/                        # Vitest Integration Tests
-│   ├── helpers.ts                 # Shared: login, auth headers, retry, throttle flush
-│   ├── auth.api.test.ts           # Auth (login + refresh + logout)
-│   ├── users.api.test.ts          # Users CRUD
-│   ├── departments.api.test.ts    # Departments CRUD
-│   ├── teams.api.test.ts          # Teams CRUD
-│   ├── roles.api.test.ts          # Roles
-│   ├── notifications.api.test.ts  # Notifications CRUD + preferences + stats
-│   ├── blackboard.api.test.ts     # Blackboard CRUD
-│   ├── calendar.api.test.ts       # Calendar Events
-│   ├── kvp.api.test.ts            # KVP (Verbesserungsvorschläge)
-│   ├── machines.api.test.ts       # Machines CRUD
-│   ├── surveys.api.test.ts        # Surveys CRUD
-│   ├── chat.api.test.ts           # Chat (braucht 2. User via ensureTestEmployee)
-│   ├── documents.api.test.ts      # Documents
-│   ├── shifts.api.test.ts         # Shifts + Rotation + Cleanup
-│   ├── logs.api.test.ts           # Audit Log Export (JSON/CSV/TXT + Validation)
-│   ├── settings.api.test.ts       # Tenant Settings
-│   ├── features.api.test.ts       # Feature Flags
-│   └── areas.api.test.ts          # Areas
-├── tsconfig.json                  # TS config (moduleResolution: NodeNext)
-└── tsconfig.json                  # TypeScript config (moduleResolution: NodeNext)
+backend/test/                        # NestJS convention: integration tests at project level
+├── helpers.ts                       # Shared: login, auth headers, retry, throttle flush
+├── tsconfig.json                    # TS config (moduleResolution: NodeNext)
+├── 00-auth.api.test.ts              # Auth (login + refresh + logout)
+├── users.api.test.ts                # Users CRUD
+├── departments.api.test.ts          # Departments CRUD
+├── teams.api.test.ts                # Teams CRUD
+├── roles.api.test.ts                # Roles
+├── notifications.api.test.ts        # Notifications CRUD + preferences + stats
+├── blackboard.api.test.ts           # Blackboard CRUD
+├── calendar.api.test.ts             # Calendar Events
+├── kvp.api.test.ts                  # KVP (Verbesserungsvorschläge)
+├── machines.api.test.ts             # Machines CRUD
+├── surveys.api.test.ts              # Surveys CRUD
+├── chat.api.test.ts                 # Chat (braucht 2. User via ensureTestEmployee)
+├── documents.api.test.ts            # Documents
+├── shifts.api.test.ts               # Shifts + Rotation + Cleanup
+├── logs.api.test.ts                 # Audit Log Export (JSON/CSV/TXT + Validation)
+├── settings.api.test.ts             # Tenant Settings
+├── features.api.test.ts             # Feature Flags
+├── areas.api.test.ts                # Areas
+└── user-permissions.api.test.ts     # User Permissions CRUD
 ```
 
 ---
@@ -126,7 +125,7 @@ Definiert in `vitest.config.ts` als `api`-Projekt:
 | `isolate`     | `false`                             | Module-Cache shared (Login-Request nur 1x) |
 | `testTimeout` | `30_000`                            | 30s pro Test (externe HTTP-Calls)          |
 | `hookTimeout` | `30_000`                            | 30s pro beforeAll/afterAll                 |
-| `include`     | `api-tests/vitest/**/*.api.test.ts` | Nur `.api.test.ts`-Dateien                 |
+| `include`     | `backend/test/**/*.api.test.ts` | Nur `.api.test.ts`-Dateien                 |
 | `globals`     | `true`                              | `describe`, `it`, `expect` ohne Import     |
 
 **Kein Setup-File:** Keine Mocks — echte HTTP-Requests gegen Docker-Backend.
@@ -146,10 +145,10 @@ Definiert in `vitest.config.ts` als `api`-Projekt:
 pnpm run test:api:vitest
 
 # Einzelne Test-Datei ausführen
-vitest run --project api api-tests/vitest/calendar.api.test.ts
+vitest run --project api backend/test/calendar.api.test.ts
 
 # Mehrere Module ausführen
-vitest run --project api api-tests/vitest/auth.api.test.ts api-tests/vitest/users.api.test.ts
+vitest run --project api backend/test/auth.api.test.ts backend/test/users.api.test.ts
 
 # Tests nach Name filtern (--testNamePattern / -t)
 vitest run --project api -t "should return 200"
@@ -389,32 +388,11 @@ describe('Module: Export JSON', () => {
 
 ---
 
-## Pattern-Mapping: Bruno → Vitest
-
-| Bruno                             | Vitest                                 |
-| --------------------------------- | -------------------------------------- |
-| `bru.setVar("key", val)`          | `let key = val` (Modul-Ebene)          |
-| `{{variable}}`                    | `${variable}` (Template Literal)       |
-| `res.getStatus()`                 | `res.status`                           |
-| `res.getBody()`                   | `(await res.json()) as JsonBody`       |
-| `assert { res.status: eq 200 }`   | `expect(res.status).toBe(200)`         |
-| `assert { res.body.X: isString }` | `expect(body.X).toBeTypeOf('string')`  |
-| `assert { res.body.X: isNumber }` | `expect(body.X).toBeTypeOf('number')`  |
-| `script:post-response`            | Inline nach `body = await res.json()`  |
-| `meta { seq: N }`                 | Reihenfolge der `describe()`-Blöcke    |
-| `auth:bearer` auf GET/DELETE      | `headers: authOnly(auth.authToken)`    |
-| `auth:bearer` auf POST/PUT        | `headers: authHeaders(auth.authToken)` |
-| `bru.sendRequest()` (Re-Login)    | `await loginApitest()`                 |
-| `{{$timestamp}}`                  | `Date.now()`                           |
-| `{{$randomInt}}`                  | `Math.floor(Math.random() * 10000)`    |
-
----
-
 ## TypeScript-Regeln für Test-Dateien
 
 ### 1. Import-Extensions erforderlich
 
-`moduleResolution: NodeNext` in `api-tests/tsconfig.json` erfordert `.js`-Extension:
+`moduleResolution: NodeNext` in `backend/test/tsconfig.json` erfordert `.js`-Extension:
 
 ```typescript
 import { ... } from './helpers.js';  // ✅ korrekt
@@ -537,10 +515,10 @@ In Tests: `flushThrottleKeys()` vor jedem Export-Request aufrufen.
 ## Test-Ergebnisse interpretieren
 
 ```
-✓ api-tests/vitest/auth.api.test.ts (9 tests)
-✓ api-tests/vitest/users.api.test.ts (10 tests)
+✓ backend/test/auth.api.test.ts (9 tests)
+✓ backend/test/users.api.test.ts (10 tests)
 ...
-✓ api-tests/vitest/areas.api.test.ts (3 tests)
+✓ backend/test/areas.api.test.ts (3 tests)
 
 Test Files  18 passed (18)
      Tests  175 passed (175)
@@ -565,24 +543,17 @@ doppler run -- docker-compose up -d
 pnpm run test:api:vitest
 
 # 3. Bei Fehlern: Einzelne Module debuggen (verbose)
-vitest run --project api api-tests/vitest/calendar.api.test.ts --reporter verbose
+vitest run --project api backend/test/calendar.api.test.ts --reporter verbose
 
 # 4. Backend Logs prüfen bei 500er
 docker logs assixx-backend --tail 100
 
 # 5. Neuen Test schreiben
-# → Datei erstellen: api-tests/vitest/{module}.api.test.ts
+# → Datei erstellen: backend/test/{module}.api.test.ts
 # → Pattern: import helpers.js → beforeAll login → describe-per-request → it-per-assertion
-# → ESLint prüfen: cd /home/scs/projects/Assixx && pnpm exec eslint api-tests/vitest/
+# → ESLint prüfen: cd /home/scs/projects/Assixx && pnpm exec eslint backend/test/
 ```
 
 ---
 
-## Migrationsreferenz
-
-Vollständige Dokumentation der Test-Migration:
-→ `docs/VITEST-API-MIGRATION.md`
-
----
-
-_Erstellt: 2026-02-04 | Migriert von HOW-TO-TEST-WITH-BRUNO.md | Branch: unit-test_
+_Erstellt: 2026-02-04 | Aktualisiert: 2026-02-09_

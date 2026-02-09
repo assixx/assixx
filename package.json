@@ -79,7 +79,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui --watch",
-    "type-check": "tsc --noEmit -p shared && tsc --noEmit -p frontend && tsc --noEmit -p backend && tsc --noEmit -p api-tests",
+    "type-check": "tsc --noEmit -p shared && tsc --noEmit -p frontend && tsc --noEmit -p backend && tsc --noEmit -p backend/test",
     "type-coverage": "pnpm exec type-coverage",
     "check": "tsc --noEmit -p frontend && tsc --noEmit -p backend",
     "lint:ts": "eslint backend/src/**/*.ts",

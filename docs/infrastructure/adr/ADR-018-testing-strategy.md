@@ -5,7 +5,7 @@
 | **Status**              | Accepted                                                                                              |
 | **Date**                | 2026-02-04                                                                                            |
 | **Decision Makers**     | SCS Technik                                                                                           |
-| **Affected Components** | `vitest.config.ts`, `api-tests/vitest/`, `backend/src/**/*.test.ts`, `shared/src/**/*.test.ts`, CI/CD |
+| **Affected Components** | `vitest.config.ts`, `backend/test/`, `backend/src/**/*.test.ts`, `shared/src/**/*.test.ts`, CI/CD |
 
 ---
 
@@ -187,7 +187,7 @@ Phase 9: Weitere Service-Tests   — Coverage von 10% → 30%+           ← Nä
 | Aspekt        | Entscheidung                                                      |
 | ------------- | ----------------------------------------------------------------- |
 | Tool          | Vitest v4 (`vitest run --project api`)                            |
-| Scope         | `api-tests/vitest/**/*.api.test.ts`                               |
+| Scope         | `backend/test/**/*.api.test.ts`                               |
 | Ausfuehrung   | Sequentiell (`maxWorkers: 1`, `isolate: false`)                   |
 | HTTP-Client   | Native `fetch()` — keine Abstraktion (kein Supertest, kein Axios) |
 | Auth          | `loginApitest()` — cached, ein Request fuer gesamte Suite         |
@@ -281,7 +281,7 @@ export default defineConfig({
       {
         test: {
           name: 'api',
-          include: ['api-tests/vitest/**/*.api.test.ts'],
+          include: ['backend/test/**/*.api.test.ts'],
           testTimeout: 30_000,
           hookTimeout: 30_000,
           pool: 'forks',
@@ -310,7 +310,7 @@ pnpm test --project frontend-unit                   # 19 Tests (<1s, kein Docker
 
 # ── API Integration Tests ────────────────────────────────────
 pnpm test --project api                             # 175 Tests (~6s, Docker MUSS laufen!)
-pnpm vitest run --project api -- api-tests/vitest/calendar.api.test.ts  # Einzelnes Modul
+pnpm vitest run --project api -- backend/test/calendar.api.test.ts  # Einzelnes Modul
 
 # ── Coverage ──────────────────────────────────────────────────
 pnpm test:coverage                                  # Alle Projects mit Coverage

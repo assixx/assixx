@@ -63,7 +63,7 @@ pnpm-debug.log*
 
 # Testing files (not needed in production image)
 Testing/
-api-tests/
+backend/test/
 stories/
 storybook-static/
 .storybook/
