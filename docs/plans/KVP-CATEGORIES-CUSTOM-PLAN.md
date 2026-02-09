@@ -688,36 +688,21 @@ export interface KvpCategory {
 
 ---
 
-### Schritt 9: Bruno API Tests
+### Schritt 9: API Integration Tests (Vitest)
 
-**Dateien:**
+Tests in `backend/test/kvp.api.test.ts` — KVP CRUD inkl. Kategorien.
 
-```
-api-tests/kvp-categories/
-+-- 01-get-customizable.bru     # GET /kvp/categories/customizable (Admin)
-+-- 02-override-name.bru        # PUT /kvp/categories/override/1
-+-- 03-get-verify-override.bru  # GET /kvp/categories → prüft Custom-Name
-+-- 04-create-custom.bru        # POST /kvp/categories/custom
-+-- 05-create-suggestion.bru    # POST /kvp mit customCategoryId
-+-- 06-delete-override.bru      # DELETE /kvp/categories/override/1
-+-- 07-delete-custom.bru        # DELETE /kvp/categories/custom/:id
-+-- 08-permission-employee.bru  # 403 für Employee
-+-- 09-permission-limited.bru   # 403 für Admin ohne has_full_access
-+-- 10-limit-check.bru          # 409 bei > 20 Kategorien
-```
+**Test-Szenarien:**
 
-**Test-Reihenfolge:**
-
-1. Login als apitest Admin (has_full_access = true)
-2. GET customizable → 6 Defaults, 0 Custom
-3. PUT Override → "Sicherheit" → "Arbeitssicherheit"
-4. GET categories → verifiziert "Arbeitssicherheit" statt "Sicherheit"
-5. POST Custom → "Digitalisierung" erstellen
-6. POST Suggestion mit `customCategoryId` → verifiziert Speicherung
-7. DELETE Override → zurück zu "Sicherheit"
-8. DELETE Custom → "Digitalisierung" entfernt
-9. Login als Employee → GET customizable → 403
-10. Limit-Test → 20 Custom-Kategorien erstellen, 21. → 409
+1. GET customizable → 6 Defaults, 0 Custom
+2. PUT Override → "Sicherheit" → "Arbeitssicherheit"
+3. GET categories → verifiziert Custom-Name
+4. POST Custom → "Digitalisierung" erstellen
+5. POST Suggestion mit `customCategoryId` → verifiziert Speicherung
+6. DELETE Override → zurück zu "Sicherheit"
+7. DELETE Custom → "Digitalisierung" entfernt
+8. Employee → 403
+9. Limit-Test → 409 bei > 20 Kategorien
 
 ---
 
@@ -761,7 +746,7 @@ Kein neuer Seed nötig - `kvp_categories_custom` ist bei Fresh-Install leer.
 | 17  | `frontend/.../(admin)/kvp-categories/_lib/api.ts`                 | **NEU** - API Client                                                           |
 | 18  | `frontend/.../(admin)/kvp-categories/_lib/types.ts`               | **NEU** - Interfaces                                                           |
 | 19  | `frontend/.../(admin)/kvp-categories/_lib/constants.ts`           | **NEU** - Constants                                                            |
-| 20  | `api-tests/kvp-categories/*.bru`                                  | **NEU** - 10 Bruno Tests                                                       |
+| 20  | `backend/test/kvp.api.test.ts`                                    | **EDIT** - KVP Kategorie-Tests (Vitest)                                        |
 
 **Was NICHT geändert wird:**
 

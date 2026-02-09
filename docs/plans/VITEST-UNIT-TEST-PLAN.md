@@ -620,7 +620,7 @@ Constraint: 1 Test pro Funktion — lean, kein Over-Testing. DB-Helpers in `docu
 
 **Infrastruktur:**
 
-- `vitest.mocks/app-environment.ts` — Mock für `$app/environment` (browser=false)
+- `frontend/test/mocks/app-environment.ts` — Mock für `$app/environment` (browser=false)
 - `vitest.frontend-setup.ts` — Map-based localStorage + window Mock
 - `vitest.config.ts` — `frontend-unit` Projekt mit resolve-alias für `$app/environment`
 

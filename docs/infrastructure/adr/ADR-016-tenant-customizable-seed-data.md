@@ -11,146 +11,146 @@
 
 ## Context
 
-### Ausgangslage
+### Starting Point
 
-Assixx nutzt globale Lookup-Tabellen für vordefinierte Kategorien (Seeds):
+Assixx uses global lookup tables for predefined categories (seeds):
 
-- `kvp_categories` - 6 Default-Kategorien (Sicherheit, Effizienz, Qualität, ...)
-- `machine_categories` - 11 Default-Kategorien (zukünftig)
-- Weitere globale Lookups (Features, Status-Enums, etc.)
+- `kvp_categories` - 6 default categories (Safety, Efficiency, Quality, ...)
+- `machine_categories` - 11 default categories (future)
+- Additional global lookups (Features, Status Enums, etc.)
 
-Diese Tabellen haben **kein `tenant_id`** und **kein RLS** - alle Tenants teilen dieselben Daten.
+These tables have **no `tenant_id`** and **no RLS** - all tenants share the same data.
 
-### Problem: Starre Vorgaben
+### Problem: Rigid Defaults
 
-Industriekunden haben unterschiedliche Fachbegriffe und Organisationsstrukturen:
+Industrial customers have different technical terms and organizational structures:
 
-| Tenant         | Seed-Name "Sicherheit" | Eigene Kategorien              |
-| -------------- | ---------------------- | ------------------------------ |
-| Maschinenbau A | "Arbeitssicherheit"    | "Digitalisierung", "Logistik"  |
-| Chemie B       | "HSE"                  | "Gefahrstoffe", "Umweltschutz" |
-| Logistik C     | (Default beibehalten)  | "Fuhrpark", "Lageroptimierung" |
+| Tenant           | Seed Name "Safety" | Custom Categories                    |
+| ---------------- | ------------------ | ------------------------------------ |
+| Mechanical Eng A | "Workplace Safety" | "Digitalization", "Logistics"        |
+| Chemical Co B    | "HSE"              | "Hazardous Materials", "Environment" |
+| Logistics C      | (keep default)     | "Fleet", "Warehouse Optimization"    |
 
-**Anforderungen:**
+**Requirements:**
 
-1. **Umbenennung** - Seed-Namen pro Tenant anpassen (z.B. "Sicherheit" → "Arbeitssicherheit")
-2. **Eigene Einträge** - Tenant-spezifische Kategorien hinzufügen
-3. **Limit** - Max Gesamtanzahl im Dropdown (Usability)
-4. **Globale Seeds unverändert** - Kein Tenant darf die Original-Seeds für andere Tenants verändern
-5. **Wiederverwendbar** - Pattern muss für jede globale Lookup-Tabelle anwendbar sein
+1. **Renaming** - Adapt seed names per tenant (e.g. "Safety" -> "Workplace Safety")
+2. **Custom Entries** - Add tenant-specific categories
+3. **Limit** - Max total count in dropdown (usability)
+4. **Global Seeds Unchanged** - No tenant may modify the original seeds for other tenants
+5. **Reusable** - Pattern must be applicable to any global lookup table
 
-### Sicherheitsanforderung
+### Security Requirement
 
-Nicht jeder Admin soll Kategorien verwalten dürfen. Nur:
+Not every admin should be allowed to manage categories. Only:
 
-- **Root** - Immer Zugriff
-- **Admin mit `has_full_access = true`** - Vollzugriff-Admins
+- **Root** - Always has access
+- **Admin with `has_full_access = true`** - Full-access admins
 
-Reguläre Admins (ohne `has_full_access`) und Employees sind ausgeschlossen.
+Regular admins (without `has_full_access`) and employees are excluded.
 
 ---
 
 ## Decision Drivers
 
-1. **Zero Breaking Changes** - Globale Seed-Tabellen dürfen NICHT verändert werden
-2. **Multi-Tenant-Isolation** - Tenant A sieht nie die Anpassungen von Tenant B
-3. **KISS** - Minimale Komplexität, kein eigenes Microservice-Pattern
-4. **Wiederverwendbar** - Selbes Pattern für `kvp_categories`, `machine_categories`, etc.
-5. **COALESCE-Merge** - Bestehende Queries müssen mit minimaler Änderung funktionieren
-6. **Permission-Granularität** - `has_full_access` als Schutz gegen unberechtigte Änderungen
+1. **Zero Breaking Changes** - Global seed tables MUST NOT be modified
+2. **Multi-Tenant Isolation** - Tenant A never sees the customizations of Tenant B
+3. **KISS** - Minimal complexity, no custom microservice pattern
+4. **Reusable** - Same pattern for `kvp_categories`, `machine_categories`, etc.
+5. **COALESCE Merge** - Existing queries must work with minimal changes
+6. **Permission Granularity** - `has_full_access` as protection against unauthorized modifications
 
 ---
 
 ## Options Considered
 
-### Option A: Seed-Tabelle direkt editierbar machen (tenant_id hinzufügen)
+### Option A: Make Seed Table Directly Editable (add tenant_id)
 
 **Pros:**
 
-- Einfachste Implementierung
-- Kein zusätzlicher JOIN
+- Simplest implementation
+- No additional JOIN
 
 **Cons:**
 
-- **Breaking Change** - Alle bestehenden Queries müssen angepasst werden
-- **Datenverlust-Risiko** - Tenant kann versehentlich globale Seeds löschen
-- **RLS-Umbau** - Globale Tabelle müsste tenant-aware werden
-- **Seed-Updates unmöglich** - Wenn wir einen neuen Default hinzufügen, kollidiert er mit Tenant-Daten
-- **Migration-Albtraum** - Bestehende Foreign Keys zeigen auf `kvp_categories.id`
+- **Breaking Change** - All existing queries must be adapted
+- **Data Loss Risk** - Tenant can accidentally delete global seeds
+- **RLS Rebuild** - Global table would need to become tenant-aware
+- **Seed Updates Impossible** - When we add a new default, it collides with tenant data
+- **Migration Nightmare** - Existing foreign keys point to `kvp_categories.id`
 
-**Verdict:** REJECTED - Fundamentaler Architekturbruch, zu riskant
+**Verdict:** REJECTED - Fundamental architecture break, too risky
 
-### Option B: Tenant-Kopie bei Onboarding (Copy-on-Create)
+### Option B: Tenant Copy at Onboarding (Copy-on-Create)
 
 **Pros:**
 
-- Jeder Tenant hat eigene vollständige Tabelle
-- Volle Kontrolle pro Tenant
+- Each tenant has its own complete table
+- Full control per tenant
 
 **Cons:**
 
-- **Dateninkonsistenz** - Wenn wir einen neuen Default hinzufügen, fehlt er bei bestehenden Tenants
-- **Speicher-Overhead** - 6 Rows × N Tenants statt 6 Rows global
-- **Sync-Problem** - Wie propagiert man neue Defaults an bestehende Tenants?
-- **Migration-Komplexität** - Onboarding-Prozess muss Seeds kopieren
+- **Data Inconsistency** - When we add a new default, it's missing for existing tenants
+- **Storage Overhead** - 6 rows x N tenants instead of 6 rows globally
+- **Sync Problem** - How to propagate new defaults to existing tenants?
+- **Migration Complexity** - Onboarding process must copy seeds
 
-**Verdict:** REJECTED - Synchronisationsproblem bei neuen Defaults
+**Verdict:** REJECTED - Synchronization problem with new defaults
 
-### Option C: JSON-Feld pro Tenant (Settings-Tabelle)
+### Option C: JSON Field per Tenant (Settings Table)
 
 **Pros:**
 
-- Flexibel, kein neues Schema
-- Ein Query pro Tenant
+- Flexible, no new schema
+- One query per tenant
 
 **Cons:**
 
-- **Kein SQL-JOIN** - Kategorie-Name nicht direkt in Suggestion-Queries verfügbar
-- **Keine referentielle Integrität** - JSON hat keine Foreign Keys
-- **Keine Indizes** - Suche nach Kategorie-Name nicht performant
-- **Schema-Drift** - JSON-Struktur kann zwischen Tenants divergieren
+- **No SQL JOIN** - Category name not directly available in suggestion queries
+- **No Referential Integrity** - JSON has no foreign keys
+- **No Indexes** - Search by category name not performant
+- **Schema Drift** - JSON structure can diverge between tenants
 
-**Verdict:** REJECTED - Verlust von SQL-Vorteilen (JOINs, FKs, Indizes)
+**Verdict:** REJECTED - Loss of SQL advantages (JOINs, FKs, indexes)
 
-### Option D: Overlay-Pattern mit separater Custom-Tabelle (EMPFOHLEN)
+### Option D: Overlay Pattern with Separate Custom Table (RECOMMENDED)
 
 **Pros:**
 
-- **Zero Breaking Changes** - Globale Seed-Tabelle wird NICHT verändert
-- **COALESCE-Merge** - `COALESCE(custom_name, default_name)` in einem Query
-- **Zwei Modi in einer Tabelle** - Override (umbenennen) ODER neue Einträge
-- **Tenant-isoliert** - RLS auf Custom-Tabelle, globale Seeds bleiben öffentlich
-- **Neue Defaults propagieren automatisch** - Neuer Seed in `kvp_categories` erscheint sofort bei allen Tenants
-- **Sauber löschbar** - DELETE Custom-Eintrag = Reset auf Default
-- **Wiederverwendbar** - Selbes Schema-Muster für jede Lookup-Tabelle
+- **Zero Breaking Changes** - Global seed table is NOT modified
+- **COALESCE Merge** - `COALESCE(custom_name, default_name)` in a single query
+- **Two Modes in One Table** - Override (rename) OR new entries
+- **Tenant-Isolated** - RLS on custom table, global seeds remain public
+- **New Defaults Propagate Automatically** - New seed in `kvp_categories` appears immediately for all tenants
+- **Cleanly Deletable** - DELETE custom entry = reset to default
+- **Reusable** - Same schema pattern for every lookup table
 
 **Cons:**
 
-- Zusätzlicher LEFT JOIN in jeder Category-Query
-- Neue Tabelle pro Lookup (aber minimal: ~5 Spalten)
-- Application-Level Limit-Check nötig (kein DB-Constraint für "max 20 total")
+- Additional LEFT JOIN in every category query
+- New table per lookup (but minimal: ~5 columns)
+- Application-level limit check needed (no DB constraint for "max 20 total")
 
-**Verdict:** ACCEPTED - Bester Kompromiss aus Einfachheit, Sicherheit und Wiederverwendbarkeit
+**Verdict:** ACCEPTED - Best compromise of simplicity, safety, and reusability
 
 ---
 
 ## Decision
 
-**Overlay-Pattern: Separate `_custom` Tabelle pro globaler Lookup-Tabelle.**
+**Overlay Pattern: Separate `_custom` table per global lookup table.**
 
-### Architektur-Schema
+### Architecture Schema
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    OVERLAY-PATTERN BLUEPRINT                        │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│   GLOBAL (Read-Only, kein tenant_id, kein RLS)                      │
+│   GLOBAL (Read-Only, no tenant_id, no RLS)                          │
 │   ┌──────────────────────────────────┐                              │
 │   │  kvp_categories                  │                              │
 │   │  id | name         | color | icon│                              │
-│   │  1  | Sicherheit   | #e74  | ... │  ← Seeds, nie verändert     │
-│   │  2  | Effizienz    | #2ec  | ... │                              │
+│   │  1  | Safety       | #e74  | ... │  ← Seeds, never modified    │
+│   │  2  | Efficiency   | #2ec  | ... │                              │
 │   │  ...                             │                              │
 │   └──────────────┬───────────────────┘                              │
 │                  │                                                   │
@@ -158,32 +158,32 @@ Reguläre Admins (ohne `has_full_access`) und Employees sind ausgeschlossen.
 │   ┌──────────────┴───────────────────┐                              │
 │   │  kvp_categories_custom           │                              │
 │   │                                  │                              │
-│   │  Modus 1 - Override:             │                              │
+│   │  Mode 1 - Override:             │                              │
 │   │  tenant=3, category_id=1         │                              │
-│   │  custom_name="Arbeitssicherheit" │  ← Umbenennung              │
+│   │  custom_name="Workplace Safety"  │  ← Renaming                 │
 │   │                                  │                              │
-│   │  Modus 2 - Neue Kategorie:      │                              │
+│   │  Mode 2 - New Category:         │                              │
 │   │  tenant=3, category_id=NULL      │                              │
-│   │  custom_name="Digitalisierung"   │  ← Eigener Eintrag          │
+│   │  custom_name="Digitalization"    │  ← Custom entry              │
 │   │  color="#8e44ad", icon="laptop"  │                              │
 │   └──────────────────────────────────┘                              │
 │                                                                     │
 │   MERGE (UNION ALL + COALESCE)                                      │
 │   ┌──────────────────────────────────┐                              │
-│   │  Dropdown für Tenant 3:          │                              │
-│   │  Arbeitssicherheit (Override)    │                              │
-│   │  Digitalisierung   (Custom)      │                              │
-│   │  Effizienz         (Default)     │                              │
-│   │  Ergonomie         (Default)     │                              │
+│   │  Dropdown for Tenant 3:          │                              │
+│   │  Workplace Safety (Override)     │                              │
+│   │  Digitalization    (Custom)      │                              │
+│   │  Efficiency        (Default)     │                              │
+│   │  Ergonomics        (Default)     │                              │
 │   │  ...                             │                              │
 │   └──────────────────────────────────┘                              │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Custom-Tabelle Schema (Blueprint)
+### Custom Table Schema (Blueprint)
 
-Für jede globale Lookup-Tabelle `<entity>_categories` wird eine `<entity>_categories_custom` Tabelle erstellt:
+For each global lookup table `<entity>_categories`, an `<entity>_categories_custom` table is created:
 
 ```sql
 CREATE TABLE IF NOT EXISTS <entity>_categories_custom (
@@ -197,17 +197,17 @@ CREATE TABLE IF NOT EXISTS <entity>_categories_custom (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Override: max 1 pro (tenant, global_category) Kombination
+    -- Override: max 1 per (tenant, global_category) combination
     CONSTRAINT uq_override UNIQUE (tenant_id, category_id),
 
-    -- Neue Kategorie: Pflichtfelder wenn kein Override
+    -- New category: required fields when not an override
     CONSTRAINT chk_custom_has_visuals CHECK (
         category_id IS NOT NULL
         OR (color IS NOT NULL AND icon IS NOT NULL)
     )
 );
 
--- RLS (PFLICHT)
+-- RLS (MANDATORY)
 ALTER TABLE <entity>_categories_custom ENABLE ROW LEVEL SECURITY;
 ALTER TABLE <entity>_categories_custom FORCE ROW LEVEL SECURITY;
 
@@ -222,10 +222,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON <entity>_categories_custom TO app_user;
 GRANT USAGE, SELECT ON SEQUENCE <entity>_categories_custom_id_seq TO app_user;
 ```
 
-### Merge-Query (Blueprint)
+### Merge Query (Blueprint)
 
 ```sql
--- Dropdown-Daten für einen Tenant
+-- Dropdown data for a tenant
 SELECT kc.id, 'global' AS source,
        COALESCE(kcc.custom_name, kc.name) AS name,
        kc.description, kc.color, kc.icon
@@ -244,55 +244,55 @@ WHERE kcc.tenant_id = $1 AND kcc.category_id IS NULL
 ORDER BY name ASC
 ```
 
-### API-Endpoints (Blueprint pro Feature)
+### API Endpoints (Blueprint per Feature)
 
-| Method   | Route                                       | Beschreibung                 | Rolle                        |
+| Method   | Route                                       | Description                  | Role                         |
 | -------- | ------------------------------------------- | ---------------------------- | ---------------------------- |
-| `GET`    | `/<entity>/categories/customizable`         | Admin-View (defaults+custom) | root, admin(has_full_access) |
-| `PUT`    | `/<entity>/categories/override/:categoryId` | Upsert Name-Override         | root, admin(has_full_access) |
-| `DELETE` | `/<entity>/categories/override/:categoryId` | Reset auf Default-Name       | root, admin(has_full_access) |
-| `POST`   | `/<entity>/categories/custom`               | Neue Tenant-Kategorie        | root, admin(has_full_access) |
-| `DELETE` | `/<entity>/categories/custom/:id`           | Tenant-Kategorie löschen     | root, admin(has_full_access) |
+| `GET`    | `/<entity>/categories/customizable`         | Admin view (defaults+custom) | root, admin(has_full_access) |
+| `PUT`    | `/<entity>/categories/override/:categoryId` | Upsert name override         | root, admin(has_full_access) |
+| `DELETE` | `/<entity>/categories/override/:categoryId` | Reset to default name        | root, admin(has_full_access) |
+| `POST`   | `/<entity>/categories/custom`               | New tenant category          | root, admin(has_full_access) |
+| `DELETE` | `/<entity>/categories/custom/:id`           | Delete tenant category       | root, admin(has_full_access) |
 
-### Permission-Layer (3 Schichten)
+### Permission Layer (3 Layers)
 
 ```
-Schicht 1 - Backend Guard:
+Layer 1 - Backend Guard:
   @UseGuards(RolesGuard) + @Roles('admin', 'root')
-  → Blockiert Employees
+  → Blocks employees
 
-Schicht 2 - Backend Service:
+Layer 2 - Backend Service:
   assertHasFullAccess(userId, userRole, tenantId)
-  → Root: sofort OK
+  → Root: immediately OK
   → Admin: SELECT has_full_access FROM users WHERE id=$1 AND tenant_id=$2
-  → Sonst: ForbiddenException
+  → Otherwise: ForbiddenException
 
-Schicht 3 - Frontend (Defense-in-Depth):
-  a) +page.server.ts: parent().user.hasFullAccess Check → redirect
-  b) Navigation: filterMenuByAccess() entfernt Link für Admins ohne Vollzugriff
+Layer 3 - Frontend (Defense-in-Depth):
+  a) +page.server.ts: parent().user.hasFullAccess check → redirect
+  b) Navigation: filterMenuByAccess() removes link for admins without full access
 ```
 
-### Frontend-Page Blueprint
+### Frontend Page Blueprint
 
 ```
 (admin)/<entity>-categories/
-├── +page.svelte          # UI (Override-Tabelle + Custom-Tabelle + Modals)
-├── +page.server.ts       # SSR Load + has_full_access Guard
+├── +page.svelte          # UI (Override table + Custom table + Modals)
+├── +page.server.ts       # SSR Load + has_full_access guard
 └── _lib/
-    ├── api.ts            # API Client (5 Funktionen)
-    ├── types.ts          # TypeScript Interfaces
-    └── constants.ts      # Labels, Messages, Icon-Optionen
+    ├── api.ts            # API client (5 functions)
+    ├── types.ts          # TypeScript interfaces
+    └── constants.ts      # Labels, messages, icon options
 ```
 
-### Design-Constraints
+### Design Constraints
 
-| Constraint          | Wert                        | Begründung                                            |
-| ------------------- | --------------------------- | ----------------------------------------------------- |
-| `custom_name`       | VARCHAR(50)                 | Deutsche Fachbegriffe bis 50 Zeichen                  |
-| Max pro Tenant      | Konfigurierbar (default 20) | Application-Level Check, nicht DB-Constraint          |
-| Soft-Delete         | NEIN                        | DELETE = Reset/Entfernung, kein `is_active` nötig     |
-| Leeres Input + Save | = DELETE                    | Override-Row wird gelöscht, Default-Name erscheint    |
-| `source`-Feld       | In Query                    | Dropdown muss wissen ob global/custom für FK-Referenz |
+| Constraint         | Value                     | Rationale                                            |
+| ------------------ | ------------------------- | ---------------------------------------------------- |
+| `custom_name`      | VARCHAR(50)               | Technical terms up to 50 characters                  |
+| Max per Tenant     | Configurable (default 20) | Application-level check, not a DB constraint         |
+| Soft Delete        | NO                        | DELETE = reset/removal, no `is_active` needed        |
+| Empty Input + Save | = DELETE                  | Override row is deleted, default name appears        |
+| `source` field     | In query                  | Dropdown must know if global/custom for FK reference |
 
 ---
 
@@ -300,65 +300,65 @@ Schicht 3 - Frontend (Defense-in-Depth):
 
 ### Positive
 
-- **Zero Breaking Changes** - Globale Seed-Tabellen bleiben unverändert
-- **Neue Defaults propagieren automatisch** - Neuer Seed erscheint sofort bei allen Tenants
-- **Wiederverwendbar** - Copy-Paste Blueprint für jede Lookup-Tabelle
-- **Sauber trennbar** - Override (Umbenennung) vs. Custom (neuer Eintrag) in einer Tabelle
-- **Idempotent Reset** - DELETE Custom-Row = Default-Name kommt zurück
-- **3-Schichten-Permission** - Backend Guard + Service-Level DB-Check + Frontend Guard
-- **Minimal-invasiv** - Bestehende Queries brauchen nur einen zusätzlichen LEFT JOIN + COALESCE
+- **Zero Breaking Changes** - Global seed tables remain unchanged
+- **New Defaults Propagate Automatically** - New seed appears immediately for all tenants
+- **Reusable** - Copy-paste blueprint for every lookup table
+- **Cleanly Separable** - Override (renaming) vs. Custom (new entry) in one table
+- **Idempotent Reset** - DELETE custom row = default name comes back
+- **3-Layer Permission** - Backend guard + service-level DB check + frontend guard
+- **Minimally Invasive** - Existing queries only need an additional LEFT JOIN + COALESCE
 
 ### Negative
 
-- **Zusätzlicher JOIN** - Jede Category-Query braucht LEFT JOIN auf `_custom` Tabelle
-- **Application-Level Limit** - Max-Kategorien-Check nicht als DB-Constraint möglich (Cross-Table Count)
-- **Neue Tabelle pro Feature** - Jede Lookup-Tabelle bekommt eine `_custom` Tabelle
-- **has_full_access Abfrage** - Extra DB-Query pro Request für Admin-Permission (kein JWT-Claim)
+- **Additional JOIN** - Every category query needs LEFT JOIN on `_custom` table
+- **Application-Level Limit** - Max categories check not possible as DB constraint (cross-table count)
+- **New Table per Feature** - Every lookup table gets a `_custom` table
+- **has_full_access Query** - Extra DB query per request for admin permission (no JWT claim)
 
 ### Neutral
 
-- Seeds bleiben in `database/seeds/` (unverändert)
-- Custom-Daten sind bei Fresh-Install leer (kein neuer Seed nötig)
-- Bestehende Foreign Keys auf `kvp_categories.id` bleiben intakt
+- Seeds remain in `database/seeds/` (unchanged)
+- Custom data is empty on fresh install (no new seed needed)
+- Existing foreign keys on `kvp_categories.id` remain intact
 
 ---
 
 ## First Implementation: KVP Categories
 
-| Datei                                                      | Rolle                                          |
-| ---------------------------------------------------------- | ---------------------------------------------- |
-| `database/migrations/*_kvp-categories-custom.ts`           | Custom-Tabelle Schema                          |
-| `database/migrations/*_kvp-suggestions-custom-category.ts` | FK-Spalte in Suggestions                       |
-| `backend/.../kvp-categories.service.ts`                    | 5 Service-Methoden + `assertHasFullAccess`     |
-| `backend/.../kvp.controller.ts`                            | 5 Endpoints mit `@CurrentUser` + `@Roles`      |
-| `backend/.../kvp.service.ts`                               | `getCategories()` UNION ALL Query              |
-| `frontend/.../(admin)/kvp-categories/`                     | Admin-Page (Override-Tabelle + Custom-Tabelle) |
-| `frontend/.../_lib/navigation-config.ts`                   | `filterMenuByAccess()` + Menüpunkt             |
+| File                                                       | Role                                       |
+| ---------------------------------------------------------- | ------------------------------------------ |
+| `database/migrations/*_kvp-categories-custom.ts`           | Custom table schema                        |
+| `database/migrations/*_kvp-suggestions-custom-category.ts` | FK column in suggestions                   |
+| `backend/.../kvp-categories.service.ts`                    | 5 service methods + `assertHasFullAccess`  |
+| `backend/.../kvp.controller.ts`                            | 5 endpoints with `@CurrentUser` + `@Roles` |
+| `backend/.../kvp.service.ts`                               | `getCategories()` UNION ALL query          |
+| `frontend/.../(admin)/kvp-categories/`                     | Admin page (Override table + Custom table) |
+| `frontend/.../_lib/navigation-config.ts`                   | `filterMenuByAccess()` + menu item         |
 
-## Zukünftige Anwendungen
+## Future Applications
 
-| Lookup-Tabelle       | Seeds | Custom-Tabelle               | Status    |
+| Lookup Table         | Seeds | Custom Table                 | Status    |
 | -------------------- | ----- | ---------------------------- | --------- |
-| `kvp_categories`     | 6     | `kvp_categories_custom`      | Fertig    |
-| `machine_categories` | 11    | `machine_categories_custom`  | Geplant   |
-| Weitere              | n     | `<entity>_categories_custom` | Blueprint |
+| `kvp_categories`     | 6     | `kvp_categories_custom`      | Done      |
+| `machine_categories` | 11    | `machine_categories_custom`  | Planned   |
+| Additional           | n     | `<entity>_categories_custom` | Blueprint |
 
 ---
 
 ## References
 
-- [KVP-CATEGORIES-CUSTOM-PLAN.md](../../plans/KVP-CATEGORIES-CUSTOM-PLAN.md) - Detaillierter Implementierungsplan (erste Anwendung)
+- [KVP-CATEGORIES-CUSTOM-PLAN.md](../../plans/KVP-CATEGORIES-CUSTOM-PLAN.md) - Detailed implementation plan (first application)
 - [ADR-006: Multi-Tenant Context Isolation](./ADR-006-multi-tenant-context-isolation.md) - RLS Policy Pattern
 - [ADR-009: User Role Assignment & Permissions](./ADR-009-user-role-assignment-permissions.md) - `has_full_access` Permission Model
 - [ADR-012: Frontend Route Security Groups](./ADR-012-frontend-route-security-groups.md) - `(admin)` Route Group + Fail-Closed RBAC
-- [ADR-014: Database & Migration Architecture](./ADR-014-database-migration-architecture.md) - Migration-Tooling (`node-pg-migrate`)
+- [ADR-014: Database & Migration Architecture](./ADR-014-database-migration-architecture.md) - Migration Tooling (`node-pg-migrate`)
 
 ## Related ADRs
 
-- **ADR-006** - RLS Policy Pattern (NULLIF) für `_custom` Tabellen
-- **ADR-009** - `has_full_access` Flag als Permission-Gate
-- **ADR-012** - `(admin)` Route Group für Frontend-Schutz
-- **ADR-014** - Migration-Tooling für neue `_custom` Tabellen
+- **ADR-006** - RLS Policy Pattern (NULLIF) for `_custom` tables
+- **ADR-009** - `has_full_access` flag as permission gate
+- **ADR-012** - `(admin)` route group for frontend protection
+- **ADR-014** - Migration tooling for new `_custom` tables
 
 ---
 

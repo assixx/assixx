@@ -11,80 +11,80 @@
 
 ## Context
 
-Das Assixx-Backend benötigt eine robuste Authentication-Strategie für:
+The Assixx backend requires a robust authentication strategy for:
 
-1. **Multi-Tenant SaaS** - Strikte Isolation zwischen Tenants
-2. **Role-based Access** - admin, employee, root mit unterschiedlichen Rechten
-3. **Role-Switching** - Admins können als Employee agieren
-4. **Multiple Token-Quellen** - Browser (Cookie), API (Header), WebSocket (Query)
-5. **Security** - Token-Invalidierung wenn User deaktiviert wird
+1. **Multi-Tenant SaaS** - Strict isolation between tenants
+2. **Role-based Access** - admin, employee, root with different permissions
+3. **Role-Switching** - Admins can act as employees
+4. **Multiple Token Sources** - Browser (Cookie), API (Header), WebSocket (Query)
+5. **Security** - Token invalidation when a user is deactivated
 
-### Anforderungen
+### Requirements
 
-- JWT-basierte stateless Authentication
-- Sofortige Invalidierung bei User-Deaktivierung (nicht erst bei Token-Expiry)
-- Tenant-Context für alle downstream Services
-- Support für HttpOnly Cookies (CSRF-Schutz)
-- WebSocket-Kompatibilität
+- JWT-based stateless authentication
+- Immediate invalidation upon user deactivation (not waiting for token expiry)
+- Tenant context for all downstream services
+- Support for HttpOnly Cookies (CSRF protection)
+- WebSocket compatibility
 
-### Bestehendes Setup
+### Existing Setup
 
 - Backend: NestJS 11 + Fastify 5
 - Database: PostgreSQL 17
-- Context: nestjs-cls für Request-Scope
+- Context: nestjs-cls for request scope
 
 ---
 
 ## Decision
 
-### Custom JwtAuthGuard statt Passport.js
+### Custom JwtAuthGuard instead of Passport.js
 
-Wir implementieren einen **Custom JwtAuthGuard** ohne Passport.js:
+We implement a **Custom JwtAuthGuard** without Passport.js:
 
 ```
 backend/src/nest/common/guards/jwt-auth.guard.ts
 ```
 
-### Architektur-Entscheidungen
+### Architectural Decisions
 
-| Entscheidung            | Gewählt                   | Begründung                                 |
-| ----------------------- | ------------------------- | ------------------------------------------ |
-| **Auth Library**        | Custom Guard              | Volle Kontrolle, kein Passport.js Overhead |
-| **Token Storage**       | 3 Quellen                 | Header + Cookie + Query für alle Use-Cases |
-| **User Validation**     | DB-Lookup pro Request     | Sofortige Invalidierung möglich            |
-| **Context Propagation** | CLS (nestjs-cls)          | Request-Scope ohne Parameter-Drilling      |
-| **Token Type**          | Explicit `type: 'access'` | Verhindert Refresh-Token-Missbrauch        |
+| Decision                | Chosen                    | Rationale                                 |
+| ----------------------- | ------------------------- | ----------------------------------------- |
+| **Auth Library**        | Custom Guard              | Full control, no Passport.js overhead     |
+| **Token Storage**       | 3 sources                 | Header + Cookie + Query for all use cases |
+| **User Validation**     | DB lookup per request     | Immediate invalidation possible           |
+| **Context Propagation** | CLS (nestjs-cls)          | Request scope without parameter drilling  |
+| **Token Type**          | Explicit `type: 'access'` | Prevents refresh token misuse             |
 
-### Token-Extraktion (Reihenfolge)
+### Token Extraction (Order)
 
 ```typescript
-1. Authorization: Bearer <token>  // API-Clients
+1. Authorization: Bearer <token>  // API clients
 2. Cookie: accessToken            // Browser (HttpOnly)
-3. Query: ?token=<token>          // WebSocket Handshake
+3. Query: ?token=<token>          // WebSocket handshake
 ```
 
-### Validierungsschritte
+### Validation Steps
 
 ```
-1. Token aus Request extrahieren
-2. JWT-Signatur verifizieren
-3. Token-Type = 'access' prüfen
-4. User aus DB laden (frische Daten!)
-5. is_active = 1 prüfen
-6. Rolle validieren (root | admin | employee)
-7. CLS Context setzen (tenantId, userId, userRole)
-8. User an Request anhängen
+1. Extract token from request
+2. Verify JWT signature
+3. Check token type = 'access'
+4. Load user from DB (fresh data!)
+5. Check is_active = 1
+6. Validate role (root | admin | employee)
+7. Set CLS context (tenantId, userId, userRole)
+8. Attach user to request
 ```
 
-### Warum DB-Lookup bei jedem Request?
+### Why DB Lookup on Every Request?
 
-| Szenario         | Nur JWT                          | Mit DB-Lookup       |
-| ---------------- | -------------------------------- | ------------------- |
-| User deaktiviert | Zugriff bis Token-Expiry (15min) | Sofort gesperrt     |
-| Rolle geändert   | Alte Rolle bis Token-Expiry      | Sofort aktualisiert |
-| User gelöscht    | Zugriff bis Token-Expiry         | Sofort 401          |
+| Scenario         | JWT Only                          | With DB Lookup      |
+| ---------------- | --------------------------------- | ------------------- |
+| User deactivated | Access until token expiry (15min) | Immediately blocked |
+| Role changed     | Old role until token expiry       | Immediately updated |
+| User deleted     | Access until token expiry         | Immediately 401     |
 
-**Trade-off:** ~1ms Latenz pro Request vs. sofortige Invalidierung
+**Trade-off:** ~1ms latency per request vs. immediate invalidation
 
 ---
 
@@ -92,44 +92,44 @@ backend/src/nest/common/guards/jwt-auth.guard.ts
 
 ### 1. Passport.js (@nestjs/passport)
 
-| Pro               | Contra                               |
-| ----------------- | ------------------------------------ |
-| Weit verbreitet   | Overhead für einfache JWT-Validation |
-| Viele Strategien  | Abstraction Layer nicht nötig        |
-| Community Support | Passport-Session nicht gebraucht     |
-|                   | Schwieriger zu debuggen              |
+| Pros              | Cons                               |
+| ----------------- | ---------------------------------- |
+| Widely used       | Overhead for simple JWT validation |
+| Many strategies   | Abstraction layer not needed       |
+| Community support | Passport session not needed        |
+|                   | Harder to debug                    |
 
-**Entscheidung:** Abgelehnt - Wir brauchen nur JWT, nicht OAuth/SAML/etc.
+**Decision:** Rejected - We only need JWT, not OAuth/SAML/etc.
 
-### 2. Nur JWT ohne DB-Lookup
+### 2. JWT Only without DB Lookup
 
-| Pro              | Contra                           |
-| ---------------- | -------------------------------- |
-| Schneller (~1ms) | Keine sofortige Invalidierung    |
-| Stateless        | User-Änderungen verzögert        |
-| Weniger DB-Load  | Security-Lücke bei Deaktivierung |
+| Pros          | Cons                           |
+| ------------- | ------------------------------ |
+| Faster (~1ms) | No immediate invalidation      |
+| Stateless     | User changes delayed           |
+| Less DB load  | Security gap upon deactivation |
 
-**Entscheidung:** Abgelehnt - Security > Performance für Auth.
+**Decision:** Rejected - Security > Performance for auth.
 
 ### 3. Token Blacklist in Redis
 
-| Pro               | Contra                       |
-| ----------------- | ---------------------------- |
-| Schneller als DB  | Zusätzliche Komplexität      |
-| Stateless-ähnlich | Sync zwischen Redis/DB nötig |
-|                   | Blacklist kann wachsen       |
+| Pros           | Cons                         |
+| -------------- | ---------------------------- |
+| Faster than DB | Additional complexity        |
+| Stateless-like | Sync between Redis/DB needed |
+|                | Blacklist can grow           |
 
-**Entscheidung:** Abgelehnt - DB-Lookup ist einfacher und ausreichend schnell.
+**Decision:** Rejected - DB lookup is simpler and sufficiently fast.
 
-### 4. Short-lived Tokens (1min) ohne DB-Lookup
+### 4. Short-lived Tokens (1min) without DB Lookup
 
-| Pro                    | Contra                      |
-| ---------------------- | --------------------------- |
-| Stateless              | Sehr häufige Token-Refreshs |
-| Schnelle Invalidierung | Mehr Load auf Auth-Endpoint |
-|                        | UX bei Offline/Slow Network |
+| Pros              | Cons                              |
+| ----------------- | --------------------------------- |
+| Stateless         | Very frequent token refreshes     |
+| Fast invalidation | More load on auth endpoint        |
+|                   | UX issues on offline/slow network |
 
-**Entscheidung:** Abgelehnt - 15min Token + DB-Lookup ist besserer Kompromiss.
+**Decision:** Rejected - 15min token + DB lookup is a better compromise.
 
 ---
 
@@ -137,25 +137,25 @@ backend/src/nest/common/guards/jwt-auth.guard.ts
 
 ### Positive
 
-1. **Sofortige Invalidierung** - Deaktivierte User sind sofort gesperrt
-2. **Einfache Architektur** - Kein Passport.js, kein Redis-Blacklist
-3. **Volle Kontrolle** - Custom Logic für Multi-Tenant, Role-Switching
-4. **Debuggability** - Klarer Code-Flow, keine Magic
-5. **Flexible Token-Quellen** - Browser, API, WebSocket alle unterstützt
-6. **CLS Integration** - Tenant-Context automatisch in allen Services
+1. **Immediate invalidation** - Deactivated users are blocked immediately
+2. **Simple architecture** - No Passport.js, no Redis blacklist
+3. **Full control** - Custom logic for multi-tenant, role-switching
+4. **Debuggability** - Clear code flow, no magic
+5. **Flexible token sources** - Browser, API, WebSocket all supported
+6. **CLS integration** - Tenant context automatically available in all services
 
 ### Negative
 
-1. **DB-Load** - Ein SELECT pro authentifiziertem Request
-2. **Latenz** - ~1ms zusätzlich pro Request
-3. **Keine Social Login** - Passport.js Strategien nicht verfügbar (nicht benötigt)
+1. **DB load** - One SELECT per authenticated request
+2. **Latency** - ~1ms additional per request
+3. **No social login** - Passport.js strategies not available (not needed)
 
 ### Mitigations
 
-| Problem | Mitigation                                  |
-| ------- | ------------------------------------------- |
-| DB-Load | Connection Pooling, Query ist indexed (PK)  |
-| Latenz  | Query < 1ms, akzeptabel für Security-Gewinn |
+| Problem | Mitigation                                |
+| ------- | ----------------------------------------- |
+| DB load | Connection pooling, query is indexed (PK) |
+| Latency | Query < 1ms, acceptable for security gain |
 
 ---
 
@@ -165,14 +165,14 @@ backend/src/nest/common/guards/jwt-auth.guard.ts
 
 ```
 backend/src/nest/common/
-├── guards/
-│   └── jwt-auth.guard.ts       # Custom JWT Guard
-├── decorators/
-│   ├── public.decorator.ts     # @Public() bypass auth
-│   ├── current-user.decorator.ts # @CurrentUser() param
-│   └── tenant.decorator.ts     # @TenantId() param
-└── interfaces/
-    └── auth.interface.ts       # NestAuthUser, JwtPayload types
+\u251c\u2500\u2500 guards/
+\u2502   \u2514\u2500\u2500 jwt-auth.guard.ts       # Custom JWT Guard
+\u251c\u2500\u2500 decorators/
+\u2502   \u251c\u2500\u2500 public.decorator.ts     # @Public() bypass auth
+\u2502   \u251c\u2500\u2500 current-user.decorator.ts # @CurrentUser() param
+\u2502   \u2514\u2500\u2500 tenant.decorator.ts     # @TenantId() param
+\u2514\u2500\u2500 interfaces/
+    \u2514\u2500\u2500 auth.interface.ts       # NestAuthUser, JwtPayload types
 ```
 
 ### Global Registration
@@ -200,14 +200,14 @@ getHealth() { ... }
 
 | Scenario           | Expected                  | Status |
 | ------------------ | ------------------------- | ------ |
-| Valid Token        | 200 + User attached       | ✅     |
-| No Token           | 401 Unauthorized          | ✅     |
-| Expired Token      | 401 Unauthorized          | ✅     |
-| Refresh Token used | 401 Invalid token type    | ✅     |
-| User deactivated   | 401 User inactive         | ✅     |
-| Invalid Role       | 401 Invalid role          | ✅     |
-| @Public() endpoint | 200 without token         | ✅     |
-| CLS Context        | tenantId/userId available | ✅     |
+| Valid Token        | 200 + User attached       | \u2705 |
+| No Token           | 401 Unauthorized          | \u2705 |
+| Expired Token      | 401 Unauthorized          | \u2705 |
+| Refresh Token used | 401 Invalid token type    | \u2705 |
+| User deactivated   | 401 User inactive         | \u2705 |
+| Invalid Role       | 401 Invalid role          | \u2705 |
+| @Public() endpoint | 200 without token         | \u2705 |
+| CLS Context        | tenantId/userId available | \u2705 |
 
 ---
 

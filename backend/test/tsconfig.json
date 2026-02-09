@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx API Integration Tests Configuration",
+
+  "extends": "../../tsconfig.base.json",
+
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node", "vitest/globals"],
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "rootDir": ".",
+    "outDir": "./dist"
+  },
+
+  "include": ["**/*.ts", "**/*.test.ts"],
+
+  "exclude": ["node_modules", "dist"]
+}

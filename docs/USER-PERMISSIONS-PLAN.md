@@ -799,7 +799,7 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 ## Phase 8: API Integration Test
 
 **Quellen:** `ADR-018` (Vitest), `docs/HOW-TO-TEST-WITH-VITEST.md`
-**File:** `api-tests/vitest/user-permissions.api.test.ts`
+**File:** `backend/test/user-permissions.api.test.ts`
 
 **16 Tests in 7 Describe-Blöcken:**
 
@@ -843,7 +843,7 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 17. `backend/src/nest/user-permissions/user-permissions.module.ts`
 18. `backend/src/nest/user-permissions/dto/upsert-user-permissions.dto.ts`
 19. `backend/src/nest/user-permissions/dto/index.ts`
-20. `api-tests/vitest/user-permissions.api.test.ts` _(Phase 8)_
+20. `backend/test/user-permissions.api.test.ts` _(Phase 8)_
 21. `frontend/src/lib/components/PermissionSettings.svelte` — Shared permission UI component
 22. `frontend/src/lib/server/load-permission-data.ts` — Shared server-side loader
 

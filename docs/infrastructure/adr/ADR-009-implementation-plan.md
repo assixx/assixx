@@ -13,55 +13,55 @@ This plan enhances the existing PostgreSQL-based audit logging to provide:
 
 ## Implementation Status (2026-01-19)
 
-| Phase | Description                       | Status      | Missing               |
-| ----- | --------------------------------- | ----------- | --------------------- |
-| 0     | **CRITICAL: audit_trail Logging** | ✅ **DONE** | -                     |
-| 1     | Backend: Unified Export           | ✅ **DONE** | Load tests (optional) |
-| 2     | Database: Partitioning            | ✅ **DONE** | -                     |
-| 3     | Frontend: Export UI               | ✅ **DONE** | -                     |
-| 4     | Cleanup: Retention Job            | ✅ **DONE** | -                     |
+| Phase | Description                       | Status   | Missing               |
+| ----- | --------------------------------- | -------- | --------------------- |
+| 0     | **CRITICAL: audit_trail Logging** | **DONE** | -                     |
+| 1     | Backend: Unified Export           | **DONE** | Load tests (optional) |
+| 2     | Database: Partitioning            | **DONE** | -                     |
+| 3     | Frontend: Export UI               | **DONE** | -                     |
+| 4     | Cleanup: Retention Job            | **DONE** | -                     |
 
-### 🎉 ALL PHASES COMPLETE! (2026-01-19)
+### ALL PHASES COMPLETE! (2026-01-19)
 
 ---
 
-## ✅ Phase 0 COMPLETED (2026-01-19)
+## Phase 0 COMPLETED (2026-01-19)
 
-**Implementiert:**
+**Implemented:**
 
-- `backend/src/nest/common/interceptors/audit-trail.interceptor.ts` (401 Zeilen)
-- Global registriert in `app.module.ts` via `APP_INTERCEPTOR`
-- Fire-and-forget logging (niemals Fehler werfen)
+- `backend/src/nest/common/interceptors/audit-trail.interceptor.ts` (401 lines)
+- Globally registered in `app.module.ts` via `APP_INTERCEPTOR`
+- Fire-and-forget logging (never throws errors)
 - Excludes: `/health`, `/metrics`, `/notifications/stream`, OPTIONS requests
 
-**Felder die geloggt werden:**
+**Fields being logged:**
 
 - `tenant_id`, `user_id`, `user_name`, `user_role`
 - `action` (read/create/update/delete)
-- `resource_type` (aus URL extrahiert)
+- `resource_type` (extracted from URL)
 - `resource_id`, `resource_name`
 - `ip_address`, `user_agent`
 - `status` (success/failure), `error_message`
 
-**Verifiziert:** `SELECT COUNT(*) FROM audit_trail;` → 25+ Einträge ✅
+**Verified:** `SELECT COUNT(*) FROM audit_trail;` -> 25+ entries
 
 ---
 
-## ✅ Phase 1 COMPLETED (2026-01-19)
+## Phase 1 COMPLETED (2026-01-19)
 
-**Implementiert:**
+**Implemented:**
 
-- Rate Limiting: `ExportThrottle()` - 1 Request pro Minute
-- `backend/src/nest/common/decorators/throttle.decorators.ts` erweitert
-- `backend/src/nest/throttler/throttler.module.ts` erweitert
-- `logs.controller.ts` mit `@UseGuards(CustomThrottlerGuard)` + `@ExportThrottle()`
+- Rate Limiting: `ExportThrottle()` - 1 request per minute
+- `backend/src/nest/common/decorators/throttle.decorators.ts` extended
+- `backend/src/nest/throttler/throttler.module.ts` extended
+- `logs.controller.ts` with `@UseGuards(CustomThrottlerGuard)` + `@ExportThrottle()`
 
-**Bereits vorhanden (von früher):**
+**Already existing (from earlier):**
 
-- `unified-logs.service.ts` - Cursor-basiertes Streaming
+- `unified-logs.service.ts` - Cursor-based streaming
 - `log-formatters.service.ts` - JSON/CSV/TXT
-- `export-logs.dto.ts` - Zod Validation
-- `/api/v2/logs/export` Endpoint
+- `export-logs.dto.ts` - Zod validation
+- `/api/v2/logs/export` endpoint
 
 ---
 
@@ -93,14 +93,14 @@ This plan enhances the existing PostgreSQL-based audit logging to provide:
 
 ---
 
-### 0.1 Unterschied audit_trail vs root_logs
+### 0.1 Difference: audit_trail vs root_logs
 
-| Tabelle       | Zweck                               | Was wird geloggt                          | Wer sieht es                   |
-| ------------- | ----------------------------------- | ----------------------------------------- | ------------------------------ |
-| `audit_trail` | **Compliance/Audit** - ALLES loggen | Jeder Request, jede Aktion, Seitenbesuche | TXT/CSV Export für Compliance  |
-| `root_logs`   | **Dashboard** - Kritische CRUD      | login, logout, create, update, delete     | Root-Dashboard direkt sichtbar |
+| Table         | Purpose                               | What is logged                           | Who sees it                        |
+| ------------- | ------------------------------------- | ---------------------------------------- | ---------------------------------- |
+| `audit_trail` | **Compliance/Audit** - log EVERYTHING | Every request, every action, page visits | TXT/CSV export for compliance      |
+| `root_logs`   | **Dashboard** - Critical CRUD         | login, logout, create, update, delete    | Directly visible in root dashboard |
 
-### 0.2 Zu implementieren: Global Audit Interceptor
+### 0.2 To implement: Global Audit Interceptor
 
 **File:** `backend/src/nest/common/interceptors/audit-trail.interceptor.ts`
 
@@ -146,9 +146,9 @@ export class AuditTrailInterceptor implements NestInterceptor {
 }
 ```
 
-### 0.3 Was muss geloggt werden?
+### 0.3 What needs to be logged?
 
-| Request Type | Action           | Beispiel          |
+| Request Type | Action           | Example           |
 | ------------ | ---------------- | ----------------- |
 | GET (list)   | `read`           | GET /users        |
 | GET (single) | `read`           | GET /users/123    |
@@ -159,12 +159,12 @@ export class AuditTrailInterceptor implements NestInterceptor {
 
 ### 0.4 Tasks
 
-- [x] Create `audit-trail.interceptor.ts` ✅ 2026-01-19
-- [x] Register interceptor globally in `app.module.ts` ✅ 2026-01-19
-- [x] Test: Visit page → Check audit_trail has entry ✅ 2026-01-19
-- [x] Test: API call → Check audit_trail has entry ✅ 2026-01-19
-- [x] Exclude health-check endpoints from logging ✅ 2026-01-19
-- [x] Exclude high-frequency endpoints (notifications/stream, etc.) ✅ 2026-01-19
+- [x] Create `audit-trail.interceptor.ts` 2026-01-19
+- [x] Register interceptor globally in `app.module.ts` 2026-01-19
+- [x] Test: Visit page -> Check audit_trail has entry 2026-01-19
+- [x] Test: API call -> Check audit_trail has entry 2026-01-19
+- [x] Exclude health-check endpoints from logging 2026-01-19
+- [x] Exclude high-frequency endpoints (notifications/stream, etc.) 2026-01-19
 
 ---
 
@@ -180,31 +180,31 @@ export class AuditTrailInterceptor implements NestInterceptor {
 
 ### Phase 1 Missing Items:
 
-- [x] Rate limiting (1 export/min per user) ✅ 2026-01-19 - `ExportThrottle()` decorator
-- [x] Log export actions to audit_trail ✅ 2026-01-19 - via `AuditTrailInterceptor`
+- [x] Rate limiting (1 export/min per user) 2026-01-19 - `ExportThrottle()` decorator
+- [x] Log export actions to audit_trail 2026-01-19 - via `AuditTrailInterceptor`
 - [ ] Load testing with 1M+ logs (optional, do when needed)
 
 ---
 
-## ✅ Phase 2 COMPLETED (2026-01-19)
+## Phase 2 COMPLETED (2026-01-19)
 
 **Migration:** `database/migrations/004-audit-log-partitioning.sql`
 
-**Implementiert:**
+**Implemented:**
 
-- `audit_trail` und `root_logs` jetzt partitioniert (PARTITION BY RANGE on `created_at`)
-- 36 monatliche Partitionen erstellt (2025-01 bis 2027-12)
-- RLS Policies auf partitionierte Tabellen übertragen
-- Daten migriert: 25 audit_trail, 91 root_logs Einträge
-- Indexes pro Partition: `tenant_id+created_at`, `action`, `resource_type+resource_id`, `status`, `user_id`
+- `audit_trail` and `root_logs` now partitioned (PARTITION BY RANGE on `created_at`)
+- 36 monthly partitions created (2025-01 to 2027-12)
+- RLS policies transferred to partitioned tables
+- Data migrated: 25 audit_trail, 91 root_logs entries
+- Indexes per partition: `tenant_id+created_at`, `action`, `resource_type+resource_id`, `status`, `user_id`
 
-**Neue Services:**
+**New Services:**
 
-- `backend/src/nest/logs/partition-manager.service.ts` (~210 Zeilen)
-  - `@Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)` - Erstellt Partitionen 3 Monate im Voraus
-  - Automatische Erkennung ob Partitioning aktiv ist
+- `backend/src/nest/logs/partition-manager.service.ts` (~210 lines)
+  - `@Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)` - Creates partitions 3 months ahead
+  - Automatic detection whether partitioning is active
 
-**Verifiziert:**
+**Verified:**
 
 ```sql
 \d audit_trail
@@ -215,51 +215,51 @@ export class AuditTrailInterceptor implements NestInterceptor {
 
 ---
 
-## ✅ Phase 3 COMPLETED (2026-01-19)
+## Phase 3 COMPLETED (2026-01-19)
 
 **Frontend Export UI:** `frontend/src/routes/(app)/logs/+page.svelte`
 
-**Implementiert:**
+**Implemented:**
 
-- Aufklappbarer Export-Bereich (collapsible section)
-- Datumsbereich-Auswahl (dateFrom, dateTo) - Standard: letzte 30 Tage
-- Format-Dropdown: CSV, JSON, TXT
-- Quellen-Dropdown: Alle, Audit Trail, System-Logs
-- Export-Button mit Loading-State
-- Rate-Limit-Handling (429 + Retry-After Header)
-- Erfolgs-/Fehler-Feedback
+- Collapsible export section
+- Date range selection (dateFrom, dateTo) - Default: last 30 days
+- Format dropdown: CSV, JSON, TXT
+- Source dropdown: All, Audit Trail, System Logs
+- Export button with loading state
+- Rate limit handling (429 + Retry-After header)
+- Success/error feedback
 
-**Neue Dateien:**
+**New Files:**
 
 - `frontend/src/routes/(app)/logs/_lib/types.ts` - Export types (ExportFormat, ExportSource, ExportLogsParams)
 - `frontend/src/routes/(app)/logs/_lib/constants.ts` - Export constants (EXPORT_FORMAT_OPTIONS, etc.)
-- `frontend/src/routes/(app)/logs/_lib/api.ts` - `exportLogs()` function mit RateLimitError class
+- `frontend/src/routes/(app)/logs/_lib/api.ts` - `exportLogs()` function with RateLimitError class
 
 ---
 
-## ✅ Phase 4 COMPLETED (2026-01-19)
+## Phase 4 COMPLETED (2026-01-19)
 
-**Service:** `backend/src/nest/logs/log-retention.service.ts` (~360 Zeilen)
+**Service:** `backend/src/nest/logs/log-retention.service.ts` (~360 lines)
 
-**Implementiert:**
+**Implemented:**
 
-- `@Cron('0 3 * * *')` - Täglicher Cleanup um 3 Uhr morgens
-- Per-Tenant Retention via `tenant_settings.audit_log_retention_days`
-- Default: 365 Tage, Minimum: 7 Tage
-- Batched DELETE (10.000 Rows pro Batch) um Lock-Contention zu vermeiden
-- Automatische Partition-Erkennung: Nutzt DETACH+DROP wenn Partitioning aktiv (100x schneller!)
-- Cleanup-Statistiken geloggt
+- `@Cron('0 3 * * *')` - Daily cleanup at 3 AM
+- Per-tenant retention via `tenant_settings.audit_log_retention_days`
+- Default: 365 days, Minimum: 7 days
+- Batched DELETE (10,000 rows per batch) to avoid lock contention
+- Automatic partition detection: Uses DETACH+DROP when partitioning is active (100x faster!)
+- Cleanup statistics logged
 
-**Retention-Einstellungen:**
+**Retention Settings:**
 
 ```sql
--- Retention per Tenant setzen:
+-- Set retention per tenant:
 INSERT INTO tenant_settings (tenant_id, setting_key, setting_value, value_type, category)
 VALUES (1, 'audit_log_retention_days', '180', 'integer', 'audit')
 ON CONFLICT (tenant_id, setting_key) DO UPDATE SET setting_value = '180';
 ```
 
-**Verifiziert:**
+**Verified:**
 
 ```
 [PartitionManagerService] Partitioning detected - PartitionManagerService active
@@ -306,30 +306,30 @@ interface UnifiedLogEntry {
 
 ### 1.2.1 RLS Security Requirement (CRITICAL!)
 
-**Problem:** Die RLS Policy erlaubt ALLE Rows wenn `app.tenant_id` nicht gesetzt ist:
+**Problem:** The RLS policy allows ALL rows when `app.tenant_id` is not set:
 
 ```sql
--- Aktuelle RLS Policy auf audit_trail und root_logs:
+-- Current RLS policy on audit_trail and root_logs:
 USING (
-  (NULLIF(current_setting('app.tenant_id', true), '') IS NULL)  -- ⚠️ NULL = ALLE sichtbar!
+  (NULLIF(current_setting('app.tenant_id', true), '') IS NULL)  -- Warning: NULL = ALL visible!
   OR
   (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer)
 )
 ```
 
-**Risiko ohne Fix:**
+**Risk without fix:**
 
 ```
-Cursor verwendet Pool-Connection
-        ↓
-app.tenant_id NICHT gesetzt
-        ↓
+Cursor uses pool connection
+        |
+app.tenant_id NOT set
+        |
 RLS: "IS NULL" = TRUE
-        ↓
-💀 ALLE TENANT DATEN SICHTBAR = DATA BREACH!
+        |
+ALL TENANT DATA VISIBLE = DATA BREACH!
 ```
 
-**Lösung:** `set_config('app.tenant_id', ...)` MUSS vor Cursor-Query aufgerufen werden!
+**Solution:** `set_config('app.tenant_id', ...)` MUST be called before the cursor query!
 
 **File:** `backend/src/nest/logs/unified-logs.service.ts`
 
@@ -929,15 +929,9 @@ cd backend && pnpm add -D @types/pg-cursor
 
 ## Testing
 
-### API Tests (Bruno)
+### API Integration Tests (Vitest)
 
-```
-api-tests/logs/
-├── export-json.bru          # Test JSON export
-├── export-csv.bru           # Test CSV export
-├── export-txt.bru           # Test TXT export
-└── export-validation.bru    # Test required params
-```
+Tests in `backend/test/logs.api.test.ts` (JSON/CSV/TXT export + validation).
 
 ### Unit Tests
 
@@ -947,14 +941,14 @@ api-tests/logs/
 
 ## Rollout Plan
 
-| Phase | Description                             | Effort   | Risk   | Status  |
-| ----- | --------------------------------------- | -------- | ------ | ------- |
-| 1     | Backend: Streaming + Unified Export     | 3-4 days | Low    | ✅ DONE |
-| 2     | Database: Partitioning + Indexes        | 1-2 days | Medium | ✅ DONE |
-| 3     | Frontend: Admin Logs UI                 | 2-3 days | Low    | ✅ DONE |
-| 4     | Cleanup: Retention Job + Partition Mgmt | 1 day    | Low    | ✅ DONE |
+| Phase | Description                             | Effort   | Risk   | Status |
+| ----- | --------------------------------------- | -------- | ------ | ------ |
+| 1     | Backend: Streaming + Unified Export     | 3-4 days | Low    | DONE   |
+| 2     | Database: Partitioning + Indexes        | 1-2 days | Medium | DONE   |
+| 3     | Frontend: Admin Logs UI                 | 2-3 days | Low    | DONE   |
+| 4     | Cleanup: Retention Job + Partition Mgmt | 1 day    | Low    | DONE   |
 
-**Total estimated effort:** 7-10 days → **Completed: 2026-01-19**
+**Total estimated effort:** 7-10 days -> **Completed: 2026-01-19**
 
 ### Phase 2 Risk Mitigation
 
@@ -968,11 +962,11 @@ Partitioning migration requires:
 
 ### Functional
 
-- [x] Admin can export all logs for date range as CSV/TXT/JSON ✅
-- [x] Logs are isolated by tenant_id (no cross-tenant leakage) ✅
-- [x] Retention cleanup runs daily without manual intervention ✅
-- [x] Partitions created automatically for future months ✅
-- [x] Bruno API tests pass ✅
+- [x] Admin can export all logs for date range as CSV/TXT/JSON
+- [x] Logs are isolated by tenant_id (no cross-tenant leakage)
+- [x] Retention cleanup runs daily without manual intervention
+- [x] Partitions created automatically for future months
+- [x] Bruno API tests pass
 
 ### Performance (CRITICAL)
 
@@ -1007,10 +1001,10 @@ time curl -s "http://localhost:3000/api/v2/logs/export?format=csv&dateFrom=2025-
 
 ### RLS (Row-Level Security) - CRITICAL
 
-- [x] **Set `app.tenant_id` before EVERY cursor query** (see 1.2.1) ✅
-- [x] Validate tenantId is not undefined/0/null before any query ✅
-- [x] Include `WHERE tenant_id = $1` as defense-in-depth (even with RLS) ✅
-- [x] Test: Query without `set_config` must return 0 rows (not all rows!) ✅
+- [x] **Set `app.tenant_id` before EVERY cursor query** (see 1.2.1)
+- [x] Validate tenantId is not undefined/0/null before any query
+- [x] Include `WHERE tenant_id = $1` as defense-in-depth (even with RLS)
+- [x] Test: Query without `set_config` must return 0 rows (not all rows!)
 
 ### RLS Security Test
 
@@ -1034,10 +1028,10 @@ it('should not leak data when app.tenant_id not set', async () => {
 
 ### General Security
 
-- [x] Export requires admin/root role ✅
-- [x] Rate limit exports (prevent DoS) ✅ - 1 export/minute via `ExportThrottle()`
-- [x] Log all export actions to audit_trail ✅ - via `AuditTrailInterceptor`
-- [x] Sanitize output (no SQL injection in exports) ✅
+- [x] Export requires admin/root role
+- [x] Rate limit exports (prevent DoS) - 1 export/minute via `ExportThrottle()`
+- [x] Log all export actions to audit_trail - via `AuditTrailInterceptor`
+- [x] Sanitize output (no SQL injection in exports)
 - [ ] Add GDPR notice in export header (optional, for future)
 
 ---
@@ -1080,7 +1074,7 @@ interface AuditChangesMetadata {
 
 ### Export Date Filter Fix
 
-**Problem:** `dateTo: "2026-01-19"` became `00:00:00` → Today's entries excluded!
+**Problem:** `dateTo: "2026-01-19"` became `00:00:00` -> Today's entries excluded!
 
 **Fix in `logs.controller.ts`:**
 
