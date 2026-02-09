@@ -11,59 +11,59 @@
 
 ## Context and Problem Statement
 
-Das Shift-Management-System speichert Schichtdaten in **zwei separaten Tabellen**:
+The shift management system stores shift data in **two separate tables**:
 
-1. **`shifts`** - Manuelle Schichtzuweisungen und Shift-Plan-Einträge
-2. **`shift_rotation_history`** - Automatisch generierte Rotationsschichten
+1. **`shifts`** - Manual shift assignments and shift plan entries
+2. **`shift_rotation_history`** - Automatically generated rotation shifts
 
-Das Frontend **merged beide Quellen** beim Laden, was zu einem kritischen Problem führt:
+The frontend **merges both sources** when loading, which leads to a critical problem:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    DAS SYNCHRONISATIONS-PROBLEM                              │
+│                    THE SYNCHRONIZATION PROBLEM                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  1. User lädt Shift-Plan                                                     │
-│     └─▶ Frontend fetcht: shifts + rotation_history                          │
-│     └─▶ processRotationHistory() MERGED beide in weeklyShifts               │
+│  1. User loads shift plan                                                     │
+│     └─▶ Frontend fetches: shifts + rotation_history                          │
+│     └─▶ processRotationHistory() MERGES both into weeklyShifts               │
 │                                                                              │
-│  2. User entfernt Mitarbeiter aus Schicht                                   │
-│     └─▶ Frontend State: weeklyShifts wird aktualisiert ✅                   │
-│     └─▶ PUT /shifts/plan/:id sendet korrekte Daten ✅                       │
+│  2. User removes employee from shift                                   │
+│     └─▶ Frontend State: weeklyShifts is updated ✅                   │
+│     └─▶ PUT /shifts/plan/:id sends correct data ✅                       │
 │                                                                              │
-│  3. Backend verarbeitet Update                                               │
-│     └─▶ shifts Tabelle: Eintrag wird gelöscht ✅                            │
-│     └─▶ shift_rotation_history: UNVERÄNDERT ❌                              │
+│  3. Backend processes update                                               │
+│     └─▶ shifts table: Entry is deleted ✅                            │
+│     └─▶ shift_rotation_history: UNCHANGED ❌                              │
 │                                                                              │
-│  4. User lädt Seite neu                                                      │
-│     └─▶ rotation_history liefert gelöschte Schicht zurück                   │
-│     └─▶ Schicht erscheint wieder! ❌                                        │
+│  4. User reloads page                                                      │
+│     └─▶ rotation_history returns deleted shift                   │
+│     └─▶ Shift reappears! ❌                                        │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Warum zwei Tabellen?
+### Why two tables?
 
-| Tabelle                  | Zweck                                        | Erstellt durch           |
-| ------------------------ | -------------------------------------------- | ------------------------ |
-| `shifts`                 | Konkrete Schicht-Instanzen mit Plan-Referenz | Manuell oder Plan-Update |
-| `shift_rotation_history` | Generierte Rotation (Algorithmus-Output)     | Rotation-Generator       |
+| Table                    | Purpose                                      | Created by            |
+| ------------------------ | -------------------------------------------- | --------------------- |
+| `shifts`                 | Concrete shift instances with plan reference | Manual or plan update |
+| `shift_rotation_history` | Generated rotation (algorithm output)        | Rotation generator    |
 
-Die Trennung ist sinnvoll weil:
+The separation makes sense because:
 
-- Rotations-Patterns können regeneriert werden ohne manuelle Änderungen zu verlieren
-- Historie der generierten Schichten bleibt erhalten
-- Unterschiedliche Metadaten (pattern_id, assignment_id vs plan_id)
+- Rotation patterns can be regenerated without losing manual changes
+- History of generated shifts is preserved
+- Different metadata (pattern_id, assignment_id vs plan_id)
 
 ---
 
 ## Decision Drivers
 
-1. **Datenkonsistenz** - Ein gelöschter Shift darf nicht wieder erscheinen
-2. **Debugging-Fähigkeit** - Datenfluss muss nachvollziehbar sein
-3. **Separation of Concerns** - Rotation-Generierung vs manuelle Bearbeitung
-4. **Performance** - Keine N+1 Queries beim Laden
-5. **Backward Compatibility** - Existierende Rotations-Patterns dürfen nicht brechen
+1. **Data Consistency** - A deleted shift must not reappear
+2. **Debuggability** - Data flow must be traceable
+3. **Separation of Concerns** - Rotation generation vs manual editing
+4. **Performance** - No N+1 queries when loading
+5. **Backward Compatibility** - Existing rotation patterns must not break
 
 ---
 
@@ -71,7 +71,7 @@ Die Trennung ist sinnvoll weil:
 
 ### 1. Dual-Source Synchronization Rule
 
-**Wenn ein Shift-Plan aktualisiert wird, müssen BEIDE Tabellen synchronisiert werden.**
+**When a shift plan is updated, BOTH tables must be synchronized.**
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗

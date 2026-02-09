@@ -2,15 +2,15 @@
   <img src="frontend/static/images/logo_darkmode.png" alt="Assixx Logo" width="200">
 </p>
 
-# Was ist Assixx?
+# What is Assixx?
 
-**Enterprise 2.0 Platform für Industrieunternehmen**
+**Enterprise 2.0 Platform for Industrial Companies**
 
 [![Version](https://img.shields.io/badge/Version-0.2.1-blue.svg)](https://github.com/assixx-dev/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx-dev/Assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
-Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in produzierenden Unternehmen.
+Multi-Tenant SaaS for knowledge management, communication, and collaboration in manufacturing companies.
 
 ---
 
@@ -24,15 +24,15 @@ Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in pro
 
 ---
 
-## Übersicht
+## Overview
 
-Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Von TPM-Checklisten bis zu Gehaltsabrechnungen – digital, sicher und effizient.
+Assixx digitizes existing paper-based processes in industrial companies. From TPM checklists to payroll documents — digital, secure, and efficient.
 
-**Zielgruppe:** Automotive, Maschinenbau, Chemie, Metallverarbeitung | 50–500 Mitarbeiter | Deutschland
+**Target Audience:** Automotive, Mechanical Engineering, Chemical, Metal Processing | 50–500 employees | Germany
 
 ---
 
-## Schnellstart
+## Quick Start
 
 ```bash
 git clone https://github.com/assixx-dev/Assixx.git
@@ -46,13 +46,13 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 
 ## Tech Stack
 
-| Komponente | Technologie                        |
+| Component  | Technology                         |
 | ---------- | ---------------------------------- |
 | Backend    | NestJS 11 + Fastify + TypeScript   |
 | Frontend   | SvelteKit 5 + Tailwind v4          |
-| Datenbank  | PostgreSQL 17 + Row Level Security |
+| Database   | PostgreSQL 17 + Row Level Security |
 | Cache      | Redis 7                            |
-| Echtzeit   | WebSocket (Chat & Notifications)   |
+| Real-Time  | WebSocket (Chat & Notifications)   |
 | Validation | Zod                                |
 | Container  | Docker + Nginx (Reverse Proxy)     |
 
@@ -60,34 +60,34 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 
 ## Features
 
-**Verfügbar:**
+**Available:**
 
-- Benutzerverwaltung (Multi-Tenant, Rollen: Root/Admin/Employee)
-- Dokumenten-System (Upload, Kategorien, Zugriffsrechte)
-- Schwarzes Brett (Digitale Mitteilungen)
-- Kalender (Events, Drag & Drop)
-- KVP-System (Verbesserungsvorschläge)
-- Schichtplanung (Wochenansicht, Drag & Drop)
-- Chat-System (Echtzeit, Gruppen, Dateianhänge)
+- User Management (Multi-Tenant, Roles: Root/Admin/Employee)
+- Document System (Upload, Categories, Access Control)
+- Bulletin Board (Digital Announcements)
+- Calendar (Events, Drag & Drop)
+- CIP System (Continuous Improvement Proposals)
+- Shift Planning (Weekly View, Drag & Drop)
+- Chat System (Real-Time, Groups, File Attachments)
 
-**In Entwicklung:**
+**In Development:**
 
-- TPM-System – Wartungsplanung für Maschinen
-- Gehaltsabrechnung – Sichere Lohndokumente
-- Urlaubsantrag – Digitaler Workflow
+- TPM System — Maintenance Planning for Machines
+- Payroll — Secure Salary Documents
+- Leave Requests — Digital Workflow
 
 Details: [FEATURES.md](./docs/FEATURES.md)
 
 ---
 
-## Dokumentation
+## Documentation
 
-| Dokument                                  | Inhalt                     |
-| ----------------------------------------- | -------------------------- |
-| [FEATURES.md](./docs/FEATURES.md)         | Feature-Übersicht & Preise |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technische Architektur     |
-| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup               |
-| [TODO.md](./TODO.md)                      | Aktuelle Aufgaben          |
+| Document                                  | Content                  |
+| ----------------------------------------- | ------------------------ |
+| [FEATURES.md](./docs/FEATURES.md)         | Feature Overview & Plans |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technical Architecture   |
+| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup             |
+| [TODO.md](./TODO.md)                      | Current Tasks            |
 
 ---
 
@@ -96,22 +96,22 @@ Details: [FEATURES.md](./docs/FEATURES.md)
 ```bash
 cd docker
 
-docker-compose up -d                              # Development starten
-docker-compose --profile production up -d         # Production starten
+docker-compose up -d                              # Start development
+docker-compose --profile production up -d         # Start production
 docker-compose ps                                 # Status
 docker-compose logs -f backend                    # Logs
-docker-compose down                               # Stoppen
+docker-compose down                               # Stop
 ```
 
 ---
 
-## Kontakt
+## Contact
 
-**Entwicklung:** SCS-Technik Team
+**Development:** SCS-Technik Team
 **GitHub:** [assixx-dev/Assixx](https://github.com/assixx-dev/Assixx)
 
 ---
 
-## Lizenz
+## License
 
-Proprietäre Software – Alle Rechte vorbehalten. Siehe [LICENSE](./LICENSE).
+Proprietary Software — All rights reserved. See [LICENSE](./LICENSE).

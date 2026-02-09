@@ -133,7 +133,7 @@ pnpm run test:api
 pnpm run test:unit
 
 # Single module
-vitest run --project api api-tests/vitest/calendar.api.test.ts
+vitest run --project api backend/test/calendar.api.test.ts
 ```
 
 See [HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md) for details.
@@ -197,7 +197,7 @@ Assixx/
 │   ├── migrations/            #   node-pg-migrate TypeScript migrations
 │   └── seeds/                 #   Idempotent seed data (SQL)
 ├── docker/                    # Docker Compose + Dockerfiles + Nginx
-├── api-tests/                 # Vitest API integration tests
+├── backend/test/              # Vitest API integration tests (NestJS convention)
 └── docs/                      # All documentation
 ```
 
@@ -213,7 +213,7 @@ Assixx/
    - `<module>.module.ts` - Module definition
    - `dto/` - Zod validation schemas (`createZodDto`)
 2. Register module in `app.module.ts`
-3. Add Vitest API tests in `api-tests/vitest/<module>.api.test.ts`
+3. Add Vitest API tests in `backend/test/<module>.api.test.ts`
 4. Run `pnpm run validate:all`
 
 See [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md) for DTO patterns.

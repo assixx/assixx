@@ -2,7 +2,10 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.{js,cjs,mjs,ts}", ".storybook/**/*.{js,ts}"],
+      "entry": [
+        "scripts/**/*.{js,cjs,mjs,ts}",
+        "frontend/.storybook/**/*.{js,ts}"
+      ],
       "project": ["scripts/**/*.{js,cjs,mjs,ts}"],
       "ignoreDependencies": [
         "husky",
@@ -67,8 +70,8 @@
     "docker/**",
     "database/**",
     "Testing/**",
-    "api-tests/**",
-    ".storybook/**",
+    "backend/test/**",
+    "frontend/.storybook/**",
     "storybook-static/**",
     "backups/**",
     "**/index.ts"

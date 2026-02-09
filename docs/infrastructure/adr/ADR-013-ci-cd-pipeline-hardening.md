@@ -11,29 +11,29 @@
 
 ## Context
 
-Ein Audit der CI/CD-Pipeline ergab fünf Schwachstellen:
+An audit of the CI/CD pipeline revealed five weaknesses:
 
-### 1. Frontend wird nie in CI geprüft
+### 1. Frontend is never checked in CI
 
-`code-quality-checks.yml` führte nur Backend-Checks aus (`cd backend && pnpm run typecheck/lint/prettier`). Die Root-ESLint-Config ignoriert `frontend/**` explizit. Weder Svelte Check, noch Frontend ESLint, noch Stylelint liefen in CI. Ein komplett kaputter Frontend-Build konnte den PR passieren.
+`code-quality-checks.yml` only ran backend checks (`cd backend && pnpm run typecheck/lint/prettier`). The root ESLint config explicitly ignores `frontend/**`. Neither Svelte Check, nor Frontend ESLint, nor Stylelint ran in CI. A completely broken frontend build could pass the PR.
 
-Lokal existierte `pnpm run validate:all` mit vollständiger Abdeckung -- aber das nutzt nichts als Gatekeeper.
+Locally, `pnpm run validate:all` existed with full coverage -- but that is useless as a gatekeeper.
 
-### 2. Trivy Security Scanner war dekorativ
+### 2. Trivy Security Scanner was decorative
 
-Der Trivy-Scan hatte `continue-on-error: true` auf allen Steps. Gefundene Schwachstellen (CRITICAL, HIGH, MEDIUM) wurden zwar gescannt, blockierten aber keinen PR. Der Scanner war effektiv ein No-Op.
+The Trivy scan had `continue-on-error: true` on all steps. Discovered vulnerabilities (CRITICAL, HIGH, MEDIUM) were scanned but did not block any PR. The scanner was effectively a no-op.
 
-### 3. GitHub Actions Cache deaktiviert
+### 3. GitHub Actions Cache disabled
 
-Docker Build Cache (`cache-from: type=gha`) war seit 2026-01-13 auskommentiert wegen temporärer GitHub-502/504-Errors. Nach 13 Tagen war der Workaround zum Dauerzustand geworden.
+Docker Build Cache (`cache-from: type=gha`) had been commented out since 2026-01-13 due to temporary GitHub 502/504 errors. After 13 days, the workaround had become a permanent state.
 
-### 4. Bruno API-Tests nur lokal
+### 4. Bruno API tests only local
 
-96 Bruno API-Requests mit 169 Tests existieren nur lokal. Kein Workflow führt sie aus. **Bewusst nicht adressiert** -- Entscheidung ob Bruno, OpenAPI, Swagger oder Postman steht noch aus.
+96 Bruno API requests with 169 tests exist only locally. No workflow runs them. **Intentionally not addressed** -- the decision whether to use Bruno, OpenAPI, Swagger, or Postman is still pending.
 
-### 5. Veraltete Dokumentation "56 TypeScript Test-Errors"
+### 5. Outdated documentation "56 TypeScript Test Errors"
 
-`CLAUDE.md` und `BEFORE-STARTING-DEV.md` dokumentierten 56 bekannte TypeScript-Fehler in Test-Dateien. Tatsächlich existieren keine Test-Dateien (`*.test.ts`, `*.spec.ts`) im Backend. Die Dokumentation war veraltet.
+`CLAUDE.md` and `BEFORE-STARTING-DEV.md` documented 56 known TypeScript errors in test files. In reality, no test files (`*.test.ts`, `*.spec.ts`) exist in the backend. The documentation was outdated.
 
 ---
 
@@ -41,87 +41,87 @@ Docker Build Cache (`cache-from: type=gha`) war seit 2026-01-13 auskommentiert w
 
 ### Fix 1: Frontend-Quality-Job in CI
 
-Neuer paralleler Job `frontend-quality` in `code-quality-checks.yml`:
+New parallel job `frontend-quality` in `code-quality-checks.yml`:
 
-| Check        | Command                                | Was wird geprüft    |
+| Check        | Command                                | What is checked     |
 | ------------ | -------------------------------------- | ------------------- |
 | Svelte Check | `cd frontend && pnpm run check`        | TypeScript + Svelte |
-| ESLint       | `cd frontend && pnpm run lint`         | Code-Qualität       |
-| Prettier     | `cd frontend && pnpm run format:check` | Formatierung        |
+| ESLint       | `cd frontend && pnpm run lint`         | Code quality        |
+| Prettier     | `cd frontend && pnpm run format:check` | Formatting          |
 | Stylelint    | `pnpm run stylelint`                   | CSS/SCSS            |
 
-Der bestehende Backend-Job wurde zu `backend-quality` umbenannt. Beide Jobs laufen parallel.
+The existing backend job was renamed to `backend-quality`. Both jobs run in parallel.
 
-### Fix 2: Trivy als echtes Gate
+### Fix 2: Trivy as a Real Gate
 
-Trivy wurde in zwei Steps aufgeteilt:
+Trivy was split into two steps:
 
-| Step                                                   | Format | Severity     | exit-code | Blockiert PR? |
-| ------------------------------------------------------ | ------ | ------------ | --------- | ------------- |
-| Check for critical vulnerabilities (blocks PR)         | table  | CRITICAL     | 1         | **Ja**        |
-| Report HIGH and MEDIUM vulnerabilities (informational) | table  | HIGH, MEDIUM | 0         | Nein          |
+| Step                                                   | Format | Severity     | exit-code | Blocks PR? |
+| ------------------------------------------------------ | ------ | ------------ | --------- | ---------- |
+| Check for critical vulnerabilities (blocks PR)         | table  | CRITICAL     | 1         | **Yes**    |
+| Report HIGH and MEDIUM vulnerabilities (informational) | table  | HIGH, MEDIUM | 0         | No         |
 
-- CRITICAL blockiert den PR
-- HIGH/MEDIUM sind informativ in den CI-Logs sichtbar, blockieren aber nicht (Docker-Base-Images haben fast immer HIGH-Findings die nicht actionable sind)
-- Beide Steps nutzen `scanners: "vuln"` -- Secret-Scanning ist deaktiviert (ESLint `no-secrets` Plugin deckt das bereits ab)
-- GHCR-Login ist erforderlich, da der Trivy-Job auf einem eigenen Runner läuft und das private Image pullen muss
+- CRITICAL blocks the PR
+- HIGH/MEDIUM are informational in the CI logs but do not block (Docker base images almost always have HIGH findings that are not actionable)
+- Both steps use `scanners: "vuln"` -- secret scanning is disabled (ESLint `no-secrets` plugin already covers this)
+- GHCR login is required since the Trivy job runs on its own runner and needs to pull the private image
 
-**Amendment 2026-02-05:** SARIF-Upload und GitHub Security Tab Integration entfernt. GitHub Code Security / Advanced Security ist für das Repository nicht aktiviert (kostenpflichtiges Feature für private Repos). Table-Format in CI-Logs ist ausreichend für die Sichtbarkeit von HIGH/MEDIUM-Findings. Außerdem `sleep 30` Workaround entfernt -- `needs: build-and-push-image` garantiert bereits die Image-Verfügbarkeit.
+**Amendment 2026-02-05:** SARIF upload and GitHub Security Tab integration removed. GitHub Code Security / Advanced Security is not enabled for the repository (paid feature for private repos). Table format in CI logs is sufficient for the visibility of HIGH/MEDIUM findings. Also removed `sleep 30` workaround -- `needs: build-and-push-image` already guarantees image availability.
 
-### Fix 5: CodeQL-Workflow entfernt (Amendment 2026-02-05)
+### Fix 5: CodeQL workflow removed (Amendment 2026-02-05)
 
-`codeql-analysis.yml` und `codeql-config.yml` wurden gelöscht:
+`codeql-analysis.yml` and `codeql-config.yml` were deleted:
 
-- CodeQL SARIF-Upload erfordert GitHub Code Security / Advanced Security -- nicht aktiviert für dieses Repository
-- ESLint Security-Plugins (`eslint-plugin-security`, `eslint-plugin-no-secrets`, `eslint-plugin-no-unsanitized`) decken die relevanten Findings bereits ab
-- CodeQL-Scan lief erfolgreich (731/731 TS-Dateien), aber das Ergebnis konnte nicht hochgeladen werden → CI schlug fehl
+- CodeQL SARIF upload requires GitHub Code Security / Advanced Security -- not enabled for this repository
+- ESLint security plugins (`eslint-plugin-security`, `eslint-plugin-no-secrets`, `eslint-plugin-no-unsanitized`) already cover the relevant findings
+- CodeQL scan ran successfully (731/731 TS files), but the result could not be uploaded → CI failed
 
-### Fix 3: Cache re-aktiviert
+### Fix 3: Cache re-enabled
 
-`cache-from: type=gha` und `cache-to: type=gha,mode=max` wieder einkommentiert. GitHub-Cache-Probleme von 2026-01-13 sind längst behoben.
+`cache-from: type=gha` and `cache-to: type=gha,mode=max` uncommented again. GitHub cache issues from 2026-01-13 have long been resolved.
 
-### Fix 4: Veraltete Dokumentation bereinigt
+### Fix 4: Outdated documentation cleaned up
 
-Drei Stellen entfernt:
+Three occurrences removed:
 
-- `CLAUDE.md:245` -- "TypeScript Test Errors (56 errors)" Zeile gelöscht
-- `BEFORE-STARTING-DEV.md:26` -- "außer den 56 Test-Errors" entfernt
-- `BEFORE-STARTING-DEV.md:48` -- "außer den 56 bekannten Test-Errors" entfernt
+- `CLAUDE.md:245` -- "TypeScript Test Errors (56 errors)" line deleted
+- `BEFORE-STARTING-DEV.md:26` -- "except for the 56 test errors" removed
+- `BEFORE-STARTING-DEV.md:48` -- "except for the 56 known test errors" removed
 
 ---
 
 ## Alternatives Considered
 
-### Frontend-Checks: Ein Job vs. zwei Jobs
+### Frontend Checks: One Job vs. Two Jobs
 
-| Option                            | Pro                              | Contra                   |
-| --------------------------------- | -------------------------------- | ------------------------ |
-| **Ein Job (Backend + Frontend)**  | Weniger `pnpm install` Runs      | Sequentiell, langsamer   |
-| **Zwei parallele Jobs (gewählt)** | Schneller, klare Fehlerzuordnung | Doppeltes `pnpm install` |
+| Option                           | Pros                            | Cons                  |
+| -------------------------------- | ------------------------------- | --------------------- |
+| **One job (Backend + Frontend)** | Fewer `pnpm install` runs       | Sequential, slower    |
+| **Two parallel jobs (chosen)**   | Faster, clear error attribution | Double `pnpm install` |
 
-Gewählt: Zwei Jobs. pnpm-Cache via `actions/setup-node` macht das Install schnell. Parallele Ausführung reduziert die Gesamt-CI-Zeit.
+Chosen: Two jobs. pnpm cache via `actions/setup-node` makes the install fast. Parallel execution reduces overall CI time.
 
-### Trivy: CRITICAL-only vs. CRITICAL+HIGH als Gate
+### Trivy: CRITICAL-only vs. CRITICAL+HIGH as Gate
 
-| Option                      | Pro                   | Contra                                        |
-| --------------------------- | --------------------- | --------------------------------------------- |
-| **CRITICAL only (gewählt)** | Wenig False Positives | HIGH-Vulns blockieren nicht                   |
-| CRITICAL + HIGH             | Strengere Sicherheit  | Base-Image-Findings blockieren oft fälschlich |
+| Option                     | Pros                | Cons                                        |
+| -------------------------- | ------------------- | ------------------------------------------- |
+| **CRITICAL only (chosen)** | Few false positives | HIGH vulns do not block                     |
+| CRITICAL + HIGH            | Stricter security   | Base image findings often block incorrectly |
 
-Gewählt: CRITICAL only als Gate. HIGH ist informativ in den CI-Logs sichtbar, blockiert aber nicht. Kann bei Bedarf auf CRITICAL+HIGH verschärft werden.
+Chosen: CRITICAL only as gate. HIGH is informational in the CI logs but does not block. Can be tightened to CRITICAL+HIGH if needed.
 
-### Trivy: SARIF-Upload vs. Table-Output (Amendment 2026-02-05)
+### Trivy: SARIF Upload vs. Table Output (Amendment 2026-02-05)
 
-| Option                         | Pro                               | Contra                                    |
-| ------------------------------ | --------------------------------- | ----------------------------------------- |
-| SARIF + Security Tab           | GitHub-native Darstellung         | Erfordert Code Security (kostenpflichtig) |
-| **Table in CI-Logs (gewählt)** | Keine Zusatzkosten, direkt lesbar | Kein zentrales Dashboard, nur in Run-Logs |
+| Option                        | Pros                                  | Cons                                   |
+| ----------------------------- | ------------------------------------- | -------------------------------------- |
+| SARIF + Security Tab          | GitHub-native presentation            | Requires Code Security (paid feature)  |
+| **Table in CI logs (chosen)** | No additional cost, directly readable | No central dashboard, only in run logs |
 
-Gewählt: Table-Format. Code Security ist nicht aktiviert und für den aktuellen Bedarf nicht gerechtfertigt. Bei Aktivierung von Code Security kann SARIF wieder hinzugefügt werden.
+Chosen: Table format. Code Security is not enabled and not justified for current needs. When Code Security is activated, SARIF can be added back.
 
-### API-Tests in CI: Bruno vs. Alternativen
+### API Tests in CI: Bruno vs. Alternatives
 
-Bewusst nicht umgesetzt. Die Entscheidung ob Bruno, OpenAPI/Swagger, oder Postman als API-Test-Tool langfristig genutzt wird, steht noch aus. Sobald entschieden, sollte das gewählte Tool in CI integriert werden.
+Intentionally not implemented. The decision whether to use Bruno, OpenAPI/Swagger, or Postman as the long-term API test tool is still pending. Once decided, the chosen tool should be integrated into CI.
 
 ---
 
@@ -129,19 +129,19 @@ Bewusst nicht umgesetzt. Die Entscheidung ob Bruno, OpenAPI/Swagger, oder Postma
 
 ### Positive
 
-- Frontend-Fehler blockieren jetzt PRs -- kein kaputter Build mehr auf main
-- CRITICAL-Schwachstellen in Docker-Images werden tatsächlich blockiert
-- Docker-Builds sind wieder schneller durch Cache
-- Dokumentation spiegelt den tatsächlichen Zustand wider
-- CI-Pipeline entspricht dem lokalen `pnpm run validate:all`
+- Frontend errors now block PRs -- no more broken builds on main
+- CRITICAL vulnerabilities in Docker images are actually blocked
+- Docker builds are faster again thanks to cache
+- Documentation reflects the actual state
+- CI pipeline matches the local `pnpm run validate:all`
 
 ### Negative
 
-- Zwei parallele Jobs bedeuten doppeltes `pnpm install` (durch Cache mitigiert)
-- CRITICAL-only Gate könnte zu permissiv sein (bewusste Trade-off-Entscheidung)
-- CI-Laufzeit steigt leicht durch zweiten Trivy-Scan (~30s)
-- Kein GitHub Security Tab für Trivy-Findings (Code Security nicht aktiviert) -- Findings nur in CI-Logs sichtbar
-- Kein CodeQL -- ESLint-Plugins sind weniger umfassend, aber für unseren Stack ausreichend
+- Two parallel jobs mean double `pnpm install` (mitigated by cache)
+- CRITICAL-only gate could be too permissive (deliberate trade-off decision)
+- CI runtime slightly increases due to second Trivy scan (~30s)
+- No GitHub Security Tab for Trivy findings (Code Security not enabled) -- findings only visible in CI logs
+- No CodeQL -- ESLint plugins are less comprehensive but sufficient for our stack
 
 ---
 
@@ -150,4 +150,4 @@ Bewusst nicht umgesetzt. Die Entscheidung ob Bruno, OpenAPI/Swagger, oder Postma
 - [GitHub Actions Cache Documentation](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows)
 - [Trivy Action](https://github.com/aquasecurity/trivy-action)
 - [adr.github.io](https://adr.github.io/)
-- Audit-Ergebnis vom 2026-01-26
+- Audit result from 2026-01-26

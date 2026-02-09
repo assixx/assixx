@@ -30,6 +30,7 @@ export default [
       // =============================================================
       // STANDARD IGNORES
       // =============================================================
+      '.svelte-kit/**',
       'node_modules/**',
       'archive/**',
       'scripts/analyze-css.cjs',
@@ -46,7 +47,7 @@ export default [
       'backend/archive/**',
       'coverage/**',
       'vitest.frontend-setup.ts',
-      'vitest.mocks/**',
+      'frontend/test/**',
       '*.log',
       'backend/logs/**',
       '.env',
@@ -58,10 +59,8 @@ export default [
       '**/*.yml',
       '**/*.yaml',
       'backups/**',
-      '.storybook/**',
-      'stories/**',
-      'design-system/stories/**',
-      'design-system/build/**',
+      'frontend/.storybook/**',
+      'archive/**',
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
       'backend/src/server-old.js',
@@ -72,7 +71,6 @@ export default [
       '**/*.min.css',
       'backend/src/routes/mocks/**',
       '**/__tests__/**',
-      '**/test/**',
       '**/tests/**',
       '**/*.html',
       'frontend-legacy/**',
@@ -89,6 +87,7 @@ export default [
     ignores: [
       'backend/**/*.test.ts',
       'backend/**/*.spec.ts',
+      'backend/test/**',
       'shared/**/*.test.ts',
       'shared/**/*.spec.ts',
     ],
@@ -559,7 +558,7 @@ export default [
       'backend/**/*.spec.ts',
       'shared/**/*.test.ts',
       'shared/**/*.spec.ts',
-      'api-tests/**/*.ts',
+      'backend/test/**/*.ts',
     ],
     languageOptions: {
       parser: tseslint.parser,
@@ -569,7 +568,7 @@ export default [
         project: [
           './backend/tsconfig.test.json',
           './shared/tsconfig.test.json',
-          './api-tests/tsconfig.json',
+          './backend/test/tsconfig.json',
         ],
         tsconfigRootDir: import.meta.dirname,
       },

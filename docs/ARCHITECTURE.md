@@ -225,7 +225,7 @@ Assixx/
 │   ├── docker-compose.yml         # Main orchestration
 │   ├── Dockerfile.dev             # Dev container
 │   └── .env                       # Environment vars
-├── api-tests/                     # Vitest API integration tests
+├── backend/test/                  # Vitest API integration tests (NestJS convention)
 ├── database/
 │   └── migrations/                # SQL migrations
 └── docs/                          # Documentation
