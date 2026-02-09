@@ -632,7 +632,7 @@
     background: var(--color-primary);
     border-color: var(--color-primary);
     box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-    border-radius: var( --radius-md );
+    border-radius: var(--radius-md);
   }
 
   .perm-check input:checked + .perm-check__box .perm-check__icon {
