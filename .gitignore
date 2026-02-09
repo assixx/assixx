@@ -28,6 +28,7 @@ uploads/
 frontend/dist/
 frontend/build/
 frontend/.svelte-kit/
+.svelte-kit/
 frontend/stats.html
 frontend-legacy/
 *.min.js

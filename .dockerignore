@@ -64,9 +64,8 @@ pnpm-debug.log*
 # Testing files (not needed in production image)
 Testing/
 backend/test/
-stories/
 storybook-static/
-.storybook/
+frontend/.storybook/
 
 # -----------------------------------------------------------------------------
 # Documentation (not needed in image)
@@ -124,6 +123,3 @@ docker-compose*.yml
 
 # Infrastructure (Terraform, etc.)
 infrastructure/
-
-# Design system docs (CSS already in frontend/)
-design-system/

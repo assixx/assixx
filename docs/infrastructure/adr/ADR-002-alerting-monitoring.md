@@ -1,4 +1,4 @@
-# ADR-002: Alerting und Monitoring Stack
+# ADR-002: Alerting and Monitoring Stack
 
 **Date:** 2026-01-11
 
@@ -8,15 +8,15 @@
 
 ### Implementation Progress
 
-| Phase | Component         | Status      | Notes                                                        |
-| ----- | ----------------- | ----------- | ------------------------------------------------------------ |
-| 1a    | Pino Backend      | ✅ Complete | Replaced Winston, pino-pretty in dev, JSON in prod           |
-| 1b    | Pino Frontend     | ✅ Complete | logger.ts utility, esbuild.drop, security fixes (2026-01-12) |
-| 1c    | Console Migration | ✅ Complete | 334 calls → createLogger() - Best Practice (2026-01-13)      |
-| 2     | Sentry Backend    | ✅ Complete | @sentry/nestjs integrated, 5xx errors only                   |
-| 3     | Sentry Frontend   | ✅ Complete | @sentry/sveltekit with Session Replay, explicit capture      |
-| 4     | Source Maps       | 🔲 Future   | CI/CD Pipeline - nicht blockierend für Dev                   |
-| 5     | PLG Stack         | ✅ Complete | Prometheus + Loki + Grafana + pino-loki (2026-01-12)         |
+| Phase | Component         | Status            | Notes                                                        |
+| ----- | ----------------- | ----------------- | ------------------------------------------------------------ |
+| 1a    | Pino Backend      | \u2705 Complete   | Replaced Winston, pino-pretty in dev, JSON in prod           |
+| 1b    | Pino Frontend     | \u2705 Complete   | logger.ts utility, esbuild.drop, security fixes (2026-01-12) |
+| 1c    | Console Migration | \u2705 Complete   | 334 calls \u2192 createLogger() - Best Practice (2026-01-13) |
+| 2     | Sentry Backend    | \u2705 Complete   | @sentry/nestjs integrated, 5xx errors only                   |
+| 3     | Sentry Frontend   | \u2705 Complete   | @sentry/sveltekit with Session Replay, explicit capture      |
+| 4     | Source Maps       | \U0001f532 Future | CI/CD Pipeline - not blocking for dev                        |
+| 5     | PLG Stack         | \u2705 Complete   | Prometheus + Loki + Grafana + pino-loki (2026-01-12)         |
 
 ### Files Created/Modified (Phase 1-3)
 
@@ -24,13 +24,13 @@
 # Backend (Phase 1a + Phase 2)
 backend/src/nest/instrument.ts           # Sentry init (MUST be first import)
 backend/src/nest/common/logger/          # Pino logging module
-  ├── logger.module.ts
-  └── logger.constants.ts
+  \u251c\u2500\u2500 logger.module.ts
+  \u2514\u2500\u2500 logger.constants.ts
 backend/src/utils/logger.ts              # Standalone Pino logger
 backend/src/nest/main.ts                 # Import instrument.js first
 backend/src/nest/app.module.ts           # SentryModule + LoggerModule
 backend/src/nest/common/filters/         # Sentry.captureException for 5xx
-  └── all-exceptions.filter.ts
+  \u2514\u2500\u2500 all-exceptions.filter.ts
 docker/.env.example                      # SENTRY_DSN placeholder
 docker/docker-compose.yml                # SENTRY_DSN environment variable
 
@@ -48,9 +48,9 @@ frontend/src/hooks.server.ts             # Sentry.sentryHandle() + handleError
 frontend/svelte.config.js                # experimental.instrumentation.server
 frontend/vite.config.ts                  # sentrySvelteKit() plugin
 frontend/src/routes/sentry-example-page/ # Test page for Sentry errors
-  └── +page.svelte
+  \u2514\u2500\u2500 +page.svelte
 frontend/src/routes/sentry-example-api/  # Test API route with explicit capture
-  └── +server.ts
+  \u2514\u2500\u2500 +server.ts
 ```
 
 ### Environment Variables
@@ -62,8 +62,8 @@ frontend/src/routes/sentry-example-api/  # Test API route with explicit capture
 
 **Frontend requires both:**
 
-1. **Build ARG** in Dockerfile.frontend → embedded in client bundle via `$env/static/public`
-2. **Runtime ENV** in docker-compose.yml → used by `instrumentation.server.ts` (SSR)
+1. **Build ARG** in Dockerfile.frontend \u2192 embedded in client bundle via `$env/static/public`
+2. **Runtime ENV** in docker-compose.yml \u2192 used by `instrumentation.server.ts` (SSR)
 
 **DSN = Public** (not a secret): Only allows event submission, not data access. Can be rotated in Sentry dashboard if abused.
 
@@ -77,66 +77,66 @@ frontend/src/routes/sentry-example-api/  # Test API route with explicit capture
 
 ## Context
 
-Nach Abschluss der SvelteKit-Migration (Phase 3) benötigen wir ein Alerting- und Monitoring-System für Production. Ohne Error Tracking sind wir blind wenn die App crasht.
+After completing the SvelteKit migration (Phase 3), we need an alerting and monitoring system for production. Without error tracking, we are blind when the app crashes.
 
-Unser Tech-Stack besteht aus SvelteKit 5 (Frontend), NestJS 11 + Fastify 5 (Backend), TypeScript, PostgreSQL 17, Redis 7, Nginx und Docker Compose. Logging wird auf Pino migriert (siehe PINO-LOGGING-PLAN.md).
+Our tech stack consists of SvelteKit 5 (Frontend), NestJS 11 + Fastify 5 (Backend), TypeScript, PostgreSQL 17, Redis 7, Nginx, and Docker Compose. Logging is being migrated to Pino (see PINO-LOGGING-PLAN.md).
 
-Wir haben drei Optionen evaluiert:
+We evaluated three options:
 
-**Option 1: Sentry SaaS** - Error Tracking als Cloud-Dienst mit nativen SDKs für SvelteKit (`@sentry/sveltekit`) und NestJS (`@sentry/nestjs`). Features: Automatisches Error Capture, Source Maps, Distributed Tracing, Session Replay, Alerting. Keine Infrastruktur nötig.
+**Option 1: Sentry SaaS** - Error tracking as a cloud service with native SDKs for SvelteKit (`@sentry/sveltekit`) and NestJS (`@sentry/nestjs`). Features: Automatic error capture, source maps, distributed tracing, session replay, alerting. No infrastructure required.
 
-**Option 2: Sentry Self-Hosted** - Gleiche Features wie SaaS, aber selbst gehostet. Benötigt mindestens 32 GB RAM (16 GB + 16 GB Swap), 4 CPU Cores mit SSE 4.2, und deployed 23+ Docker Container (Kafka, Zookeeper, ClickHouse, Snuba, etc.). Quelle: [Sentry Self-Hosted Docs](https://develop.sentry.dev/self-hosted/)
+**Option 2: Sentry Self-Hosted** - Same features as SaaS, but self-hosted. Requires at least 32 GB RAM (16 GB + 16 GB Swap), 4 CPU cores with SSE 4.2, and deploys 23+ Docker containers (Kafka, Zookeeper, ClickHouse, Snuba, etc.). Source: [Sentry Self-Hosted Docs](https://develop.sentry.dev/self-hosted/)
 
-**Option 3: PLG Stack (Prometheus + Loki + Grafana)** - Open-Source Observability Stack. Prometheus für Metrics, Loki für Log Aggregation (perfekte Pino-Integration), Grafana für Dashboards. Benötigt nur 4-8 GB RAM und 4 Container. Bietet jedoch kein automatisches Error Tracking, keine Source Maps, kein Session Replay.
+**Option 3: PLG Stack (Prometheus + Loki + Grafana)** - Open-source observability stack. Prometheus for metrics, Loki for log aggregation (perfect Pino integration), Grafana for dashboards. Requires only 4-8 GB RAM and 4 containers. However, does not provide automatic error tracking, source maps, or session replay.
 
 ## Decision
 
-Wir nutzen einen **kombinierten Observability Stack**:
+We use a **combined observability stack**:
 
-1. **Sentry SaaS** für Error Tracking (Exceptions, Session Replay, Alerting)
-2. **PLG Stack** für Logs, Metrics und Dashboards (Prometheus + Loki + Grafana)
-3. **Pino** als zentraler Logger mit pino-loki Transport zu Grafana
+1. **Sentry SaaS** for error tracking (exceptions, session replay, alerting)
+2. **PLG Stack** for logs, metrics, and dashboards (Prometheus + Loki + Grafana)
+3. **Pino** as the central logger with pino-loki transport to Grafana
 
-Sentry Self-Hosted wird abgelehnt wegen unverhältnismäßigem Ressourcenbedarf (32 GB RAM, 23+ Container für Error Tracking) - dies verletzt das KISS-Prinzip massiv.
+Sentry Self-Hosted is rejected due to disproportionate resource requirements (32 GB RAM, 23+ containers for error tracking) - this massively violates the KISS principle.
 
-**Sentry SaaS** ist optimal für Error Tracking weil:
+**Sentry SaaS** is optimal for error tracking because:
 
-- Native SDKs für exakt unseren Stack (SvelteKit + NestJS)
-- Zero-Config Error Tracking mit Source Maps
-- Session Replay ermöglicht "Video-Reproduktion" von Bugs
-- Distributed Tracing von Frontend bis Backend
+- Native SDKs for exactly our stack (SvelteKit + NestJS)
+- Zero-config error tracking with source maps
+- Session replay enables "video reproduction" of bugs
+- Distributed tracing from frontend to backend
 
-**PLG Stack** ist notwendig für Observability weil:
+**PLG Stack** is necessary for observability because:
 
-- Zentrale Log-Aggregation (alle Pino-Logs durchsuchbar in Grafana)
-- System-Metriken (CPU, RAM, Requests/sec, Response Times)
-- Custom Dashboards für Team-Sichtbarkeit
-- Alerting bei Performance-Problemen (nicht nur Errors)
-- Sentry trackt nur Errors, nicht normale Logs oder Metrics
+- Centralized log aggregation (all Pino logs searchable in Grafana)
+- System metrics (CPU, RAM, requests/sec, response times)
+- Custom dashboards for team visibility
+- Alerting on performance issues (not just errors)
+- Sentry only tracks errors, not regular logs or metrics
 
 ## Consequences
 
-**Positiv:**
+**Positive:**
 
-- Sofortige Sichtbarkeit von Production-Errors (Sentry)
-- Session Replay beschleunigt Bug-Reproduktion (Sentry)
-- Zentrale Log-Suche über alle Container (Loki)
-- System-Metriken und Performance-Monitoring (Prometheus)
-- Custom Dashboards für Team (Grafana)
-- Pino-Logs fließen automatisch nach Grafana (pino-loki)
+- Immediate visibility of production errors (Sentry)
+- Session replay accelerates bug reproduction (Sentry)
+- Centralized log search across all containers (Loki)
+- System metrics and performance monitoring (Prometheus)
+- Custom dashboards for team (Grafana)
+- Pino logs flow automatically to Grafana (pino-loki)
 
-**Negativ:**
+**Negative:**
 
-- Externe Abhängigkeit von Sentry (SaaS)
-- Error-Daten liegen bei Drittanbieter
-- Free Tier hat Limits (5k Errors, 1 User, 7-Tage Retention)
-- PLG Stack benötigt ~4-8 GB RAM extra
-- 3-4 zusätzliche Container (Loki, Prometheus, Grafana)
+- External dependency on Sentry (SaaS)
+- Error data stored with third-party provider
+- Free tier has limits (5k errors, 1 user, 7-day retention)
+- PLG Stack requires ~4-8 GB extra RAM
+- 3-4 additional containers (Loki, Prometheus, Grafana)
 
 **Neutral:**
 
-- Sentry und PLG Stack sind komplementär, nicht konkurrierend
-- PLG Stack ist self-hosted (volle Kontrolle über Log-Daten)
+- Sentry and PLG Stack are complementary, not competing
+- PLG Stack is self-hosted (full control over log data)
 
 ---
 
@@ -154,89 +154,89 @@ Sentry Self-Hosted wird abgelehnt wegen unverhältnismäßigem Ressourcenbedarf 
 - [Grafana Loki Documentation](https://grafana.com/docs/loki/latest/)
 - [Prometheus Documentation](https://grafana.com/docs/grafana/latest/datasources/prometheus/)
 
-### Pino → Loki Integration
+### Pino \u2192 Loki Integration
 
-- [pino-loki v3.0.0 (npm)](https://www.npmjs.com/package/pino-loki) - Pino Transport für Loki
+- [pino-loki v3.0.0 (npm)](https://www.npmjs.com/package/pino-loki) - Pino transport for Loki
 - [pino-loki (GitHub)](https://github.com/Julien-R44/pino-loki) - Source Code
-- [Grafana Dashboard: Pino HTTP Logs](https://grafana.com/grafana/dashboards/21900-pino-http-logs/) - Fertiges Dashboard für pino-http
+- [Grafana Dashboard: Pino HTTP Logs](https://grafana.com/grafana/dashboards/21900-pino-http-logs/) - Ready-made dashboard for pino-http
 
 ---
 
 ## Phase 5: PLG Stack Implementation Plan
 
-### Architektur
+### Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     OBSERVABILITY STACK                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐        │
-│  │   Backend   │     │  Frontend   │     │   Nginx     │        │
-│  │  (NestJS)   │     │ (SvelteKit) │     │             │        │
-│  └──────┬──────┘     └──────┬──────┘     └──────┬──────┘        │
-│         │                   │                   │                │
-│         │ Pino Logs         │ (future)          │ Access Logs   │
-│         ▼                   ▼                   ▼                │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                      pino-loki                           │    │
-│  │              (Transport: Pino → Loki)                   │    │
-│  └─────────────────────────┬───────────────────────────────┘    │
-│                            │                                     │
-│                            ▼                                     │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                        LOKI                              │    │
-│  │              (Log Aggregation & Storage)                │    │
-│  │                     Port: 3100                          │    │
-│  └─────────────────────────┬───────────────────────────────┘    │
-│                            │                                     │
-│  ┌─────────────────────────┼───────────────────────────────┐    │
-│  │                         │                                │    │
-│  │                    ┌────▼────┐                          │    │
-│  │                    │ GRAFANA │                          │    │
-│  │                    │Port:3050│                          │    │
-│  │                    └────┬────┘                          │    │
-│  │                         │                                │    │
-│  │            ┌────────────┼────────────┐                  │    │
-│  │            │            │            │                   │    │
-│  │       ┌────▼───┐  ┌─────▼────┐  ┌───▼────┐             │    │
-│  │       │  Logs  │  │ Metrics  │  │ Alerts │             │    │
-│  │       │ (Loki) │  │(Promethe)│  │        │             │    │
-│  │       └────────┘  └──────────┘  └────────┘             │    │
-│  │                                                         │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    PROMETHEUS                            │    │
-│  │              (Metrics Collection)                        │    │
-│  │                     Port: 9090                          │    │
-│  │                                                         │    │
-│  │  Scrapes:                                               │    │
-│  │  - Backend /metrics (NestJS)                            │    │
-│  │  - Node Exporter (System Metrics)                       │    │
-│  │  - PostgreSQL Exporter (DB Metrics)                     │    │
-│  │  - Redis Exporter (Cache Metrics)                       │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502                     OBSERVABILITY STACK                          \u2502
+\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
+\u2502                                                                  \u2502
+\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510     \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510     \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510        \u2502
+\u2502  \u2502   Backend   \u2502     \u2502  Frontend   \u2502     \u2502   Nginx     \u2502        \u2502
+\u2502  \u2502  (NestJS)   \u2502     \u2502 (SvelteKit) \u2502     \u2502             \u2502        \u2502
+\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2518     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2518     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2518        \u2502
+\u2502         \u2502                   \u2502                   \u2502                \u2502
+\u2502         \u2502 Pino Logs         \u2502 (future)          \u2502 Access Logs   \u2502
+\u2502         \u25bc                   \u25bc                   \u25bc                \u2502
+\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u2502
+\u2502  \u2502                      pino-loki                           \u2502    \u2502
+\u2502  \u2502              (Transport: Pino \u2192 Loki)                   \u2502    \u2502
+\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2502
+\u2502                            \u2502                                     \u2502
+\u2502                            \u25bc                                     \u2502
+\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u2502
+\u2502  \u2502                        LOKI                              \u2502    \u2502
+\u2502  \u2502              (Log Aggregation & Storage)                \u2502    \u2502
+\u2502  \u2502                     Port: 3100                          \u2502    \u2502
+\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2502
+\u2502                            \u2502                                     \u2502
+\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u2502
+\u2502  \u2502                         \u2502                                \u2502    \u2502
+\u2502  \u2502                    \u250c\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2510                          \u2502    \u2502
+\u2502  \u2502                    \u2502 GRAFANA \u2502                          \u2502    \u2502
+\u2502  \u2502                    \u2502Port:3050\u2502                          \u2502    \u2502
+\u2502  \u2502                    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518                          \u2502    \u2502
+\u2502  \u2502                         \u2502                                \u2502    \u2502
+\u2502  \u2502            \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510                  \u2502    \u2502
+\u2502  \u2502            \u2502            \u2502            \u2502                   \u2502    \u2502
+\u2502  \u2502       \u250c\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2510  \u250c\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2510  \u250c\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2510             \u2502    \u2502
+\u2502  \u2502       \u2502  Logs  \u2502  \u2502 Metrics  \u2502  \u2502 Alerts \u2502             \u2502    \u2502
+\u2502  \u2502       \u2502 (Loki) \u2502  \u2502(Promethe)\u2502  \u2502        \u2502             \u2502    \u2502
+\u2502  \u2502       \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518             \u2502    \u2502
+\u2502  \u2502                                                         \u2502    \u2502
+\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2502
+\u2502                                                                  \u2502
+\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u2502
+\u2502  \u2502                    PROMETHEUS                            \u2502    \u2502
+\u2502  \u2502              (Metrics Collection)                        \u2502    \u2502
+\u2502  \u2502                     Port: 9090                          \u2502    \u2502
+\u2502  \u2502                                                         \u2502    \u2502
+\u2502  \u2502  Scrapes:                                               \u2502    \u2502
+\u2502  \u2502  - Backend /metrics (NestJS)                            \u2502    \u2502
+\u2502  \u2502  - Node Exporter (System Metrics)                       \u2502    \u2502
+\u2502  \u2502  - PostgreSQL Exporter (DB Metrics)                     \u2502    \u2502
+\u2502  \u2502  - Redis Exporter (Cache Metrics)                       \u2502    \u2502
+\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2502
+\u2502                                                                  \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
 ```
 
 ### Implementation Tasks
 
-**Phase 5a: Docker Compose + Loki** ✅
+**Phase 5a: Docker Compose + Loki** \u2705
 
 - [x] Add Loki container to docker-compose.yml
 - [x] Add Grafana container to docker-compose.yml
 - [x] Configure Loki data source in Grafana
 - [x] Test Loki is receiving logs
 
-**Phase 5b: pino-loki Transport** ✅
+**Phase 5b: pino-loki Transport** \u2705
 
 - [x] Install pino-loki in backend: `pnpm add pino-loki`
 - [x] Configure pino transport to send logs to Loki
 - [x] Verify logs appear in Grafana
 
-**Phase 5c: Prometheus Metrics** ✅
+**Phase 5c: Prometheus Metrics** \u2705
 
 - [x] Add Prometheus container to docker-compose.yml
 - [x] Add @willsoto/nestjs-prometheus to backend
@@ -245,13 +245,13 @@ Sentry Self-Hosted wird abgelehnt wegen unverhältnismäßigem Ressourcenbedarf 
 - [x] Add Prometheus data source in Grafana
 - [x] Configure remote_write to Grafana Cloud
 
-**Phase 5d: Grafana Dashboards** ✅
+**Phase 5d: Grafana Dashboards** \u2705
 
 - [x] Create custom Assixx Backend Overview dashboard (assixx-overview.json)
 - [x] Create Assixx Full Dashboard with Logs (assixx-full-dashboard.json)
 - [x] Configure Grafana Cloud remote access
 
-**Phase 5e: Grafana Cloud Integration** ✅ (2026-01-12)
+**Phase 5e: Grafana Cloud Integration** \u2705 (2026-01-12)
 
 - [x] Create Grafana Cloud account (assixxdev stack)
 - [x] Configure remote_write in prometheus.yml

@@ -1,82 +1,82 @@
-# API Integration Testing mit Vitest
+# API Integration Testing with Vitest
 
-> **Vitest** läuft als pnpm-Dependency — kein globales Install nötig!
-> 18 Module, 175 Assertions, 100% passing.
+> **Vitest** runs as a pnpm dependency — no global install needed!
+> 18 modules, 175 assertions, 100% passing.
 
 ---
 
-## Isolierter Test-Tenant: apitest
+## Isolated Test Tenant: apitest
 
-Tests laufen in einem **isolierten Tenant** namens `apitest`:
+Tests run in an **isolated tenant** called `apitest`:
 
 - **Tenant**: API Test GmbH (ID: 1)
 - **Admin**: admin@apitest.de / ApiTest12345!
 - **Employee**: employee@apitest.de / ApiTest12345!
 - **Domain**: apitest.de
 
-**Vorteile:**
+**Benefits:**
 
-- Test-Daten verschmutzen NICHT den Dev-Tenant
-- Reproduzierbare Tests
-- Einfaches Cleanup (nur Test-Tenant betroffen)
+- Test data does NOT pollute the dev tenant
+- Reproducible tests
+- Easy cleanup (only test tenant affected)
 
 ---
 
 ## Quick Start
 
 ```bash
-# Alle API Integration Tests ausführen
+# Run all API integration tests
 pnpm run test:api:vitest
 
-# Oder direkt mit vitest CLI
+# Or directly with vitest CLI
 vitest run --project api
 ```
 
 ---
 
-## Voraussetzungen
+## Prerequisites
 
-### 1. Docker läuft und ist healthy
+### 1. Docker is running and healthy
 
 ```bash
 cd /home/scs/projects/Assixx/docker
 doppler run -- docker-compose ps
 
-# Erwartete Ausgabe: alle Container "healthy"
+# Expected output: all containers "healthy"
 ```
 
-### 2. Backend erreichbar
+### 2. Backend reachable
 
 ```bash
 curl -s http://localhost:3000/health | jq .
 
-# Erwartete Ausgabe: { "status": "ok", ... }
+# Expected output: { "status": "ok", ... }
 ```
 
-### 3. Datenbank-Prerequisites (einmalig nach DB-Setup)
+### 3. Database Prerequisites (one-time after DB setup)
 
-Ohne diese schlagen KVP-Tests fehl:
+Without these, KVP tests will fail:
 
 ```sql
--- Alle Features für apitest-Tenant aktivieren
+-- Enable all features for apitest tenant
 INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at)
 SELECT 1, id, 1, NOW() FROM features WHERE is_active = 1
 ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1;
 
--- Brunotest-User (id=1) als Teamleiter setzen (für KVP-Create)
+-- Set brunotest user (id=1) as team lead (required for KVP create)
 UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
 ```
 
 ### 4. Rate Limit Problem?
 
 ```bash
-# Symptom: 429 Too Many Requests bei Login
+# Symptom: 429 Too Many Requests on login
 
-# Lösung 1: Redis Rate-Limit-Keys flushen (Auth-Tokens bleiben erhalten)
+# Solution 1: Flush Redis rate-limit keys (auth tokens remain intact)
 docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' \
   --no-auth-warning FLUSHDB
 
-# Lösung 2: Docker komplett neu starten
+# Solution 2: Full Docker restart
 cd /home/scs/projects/Assixx/docker
 doppler run -- docker-compose restart
 sleep 20 && doppler run -- docker-compose ps
@@ -84,7 +84,7 @@ sleep 20 && doppler run -- docker-compose ps
 
 ---
 
-## Projektstruktur
+## Project Structure
 
 ```
 backend/test/                        # NestJS convention: integration tests at project level
@@ -98,10 +98,10 @@ backend/test/                        # NestJS convention: integration tests at p
 ├── notifications.api.test.ts        # Notifications CRUD + preferences + stats
 ├── blackboard.api.test.ts           # Blackboard CRUD
 ├── calendar.api.test.ts             # Calendar Events
-├── kvp.api.test.ts                  # KVP (Verbesserungsvorschläge)
+├── kvp.api.test.ts                  # KVP (Improvement Proposals)
 ├── machines.api.test.ts             # Machines CRUD
 ├── surveys.api.test.ts              # Surveys CRUD
-├── chat.api.test.ts                 # Chat (braucht 2. User via ensureTestEmployee)
+├── chat.api.test.ts                 # Chat (requires 2nd user via ensureTestEmployee)
 ├── documents.api.test.ts            # Documents
 ├── shifts.api.test.ts               # Shifts + Rotation + Cleanup
 ├── logs.api.test.ts                 # Audit Log Export (JSON/CSV/TXT + Validation)
@@ -115,75 +115,75 @@ backend/test/                        # NestJS convention: integration tests at p
 
 ## Vitest Config
 
-Definiert in `vitest.config.ts` als `api`-Projekt:
+Defined in `vitest.config.ts` as the `api` project:
 
-| Einstellung   | Wert                                | Warum                                      |
-| ------------- | ----------------------------------- | ------------------------------------------ |
-| `name`        | `api`                               | Projekt-Selektor: `--project api`          |
-| `pool`        | `forks`                             | Prozess-basiert (kein Worker-Sharing)      |
-| `maxWorkers`  | `1`                                 | Sequenziell (Tests teilen Auth-State)      |
-| `isolate`     | `false`                             | Module-Cache shared (Login-Request nur 1x) |
-| `testTimeout` | `30_000`                            | 30s pro Test (externe HTTP-Calls)          |
-| `hookTimeout` | `30_000`                            | 30s pro beforeAll/afterAll                 |
-| `include`     | `backend/test/**/*.api.test.ts` | Nur `.api.test.ts`-Dateien                 |
-| `globals`     | `true`                              | `describe`, `it`, `expect` ohne Import     |
+| Setting       | Value                           | Why                                           |
+| ------------- | ------------------------------- | --------------------------------------------- |
+| `name`        | `api`                           | Project selector: `--project api`             |
+| `pool`        | `forks`                         | Process-based (no worker sharing)             |
+| `maxWorkers`  | `1`                             | Sequential (tests share auth state)           |
+| `isolate`     | `false`                         | Shared module cache (login request only once) |
+| `testTimeout` | `30_000`                        | 30s per test (external HTTP calls)            |
+| `hookTimeout` | `30_000`                        | 30s per beforeAll/afterAll                    |
+| `include`     | `backend/test/**/*.api.test.ts` | Only `.api.test.ts` files                     |
+| `globals`     | `true`                          | `describe`, `it`, `expect` without import     |
 
-**Kein Setup-File:** Keine Mocks — echte HTTP-Requests gegen Docker-Backend.
+**No setup file:** No mocks — real HTTP requests against the Docker backend.
 
 ---
 
 ## npm Scripts
 
-| Script                     | Beschreibung                                    |
-| -------------------------- | ----------------------------------------------- |
-| `pnpm run test:api:vitest` | Alle 18 Module (175 Tests) mit Vitest ausführen |
+| Script                     | Description                                |
+| -------------------------- | ------------------------------------------ |
+| `pnpm run test:api:vitest` | Run all 18 modules (175 tests) with Vitest |
 
-### Nützliche Vitest CLI-Flags
+### Useful Vitest CLI Flags
 
 ```bash
-# Alle Tests ausführen
+# Run all tests
 pnpm run test:api:vitest
 
-# Einzelne Test-Datei ausführen
+# Run a single test file
 vitest run --project api backend/test/calendar.api.test.ts
 
-# Mehrere Module ausführen
+# Run multiple modules
 vitest run --project api backend/test/auth.api.test.ts backend/test/users.api.test.ts
 
-# Tests nach Name filtern (--testNamePattern / -t)
+# Filter tests by name (--testNamePattern / -t)
 vitest run --project api -t "should return 200"
 
-# Verbose-Ausgabe (jeder Test einzeln)
+# Verbose output (each test individually)
 vitest run --project api --reporter verbose
 
-# Watch-Mode (re-run bei Dateiänderung)
+# Watch mode (re-run on file changes)
 vitest --project api
 
-# Mit Vitest UI (Browser-Dashboard auf Port 5175)
+# With Vitest UI (browser dashboard on port 5175)
 vitest --project api --ui
 ```
 
 ---
 
-## Test-Architektur
+## Test Architecture
 
-### Login-Caching
+### Login Caching
 
-`helpers.ts` cached den Login-Request auf Modul-Ebene. Mit `isolate: false` wird
-nur **EIN** Login-Request für den gesamten Test-Lauf gemacht:
+`helpers.ts` caches the login request at module level. With `isolate: false`, only
+**ONE** login request is made for the entire test run:
 
 ```typescript
-// Jede Test-Datei: gleicher cached Token
+// Every test file: same cached token
 let auth: AuthState;
 beforeAll(async () => {
-  auth = await loginApitest(); // → cached nach erstem Aufruf
+  auth = await loginApitest(); // -> cached after first call
 });
 ```
 
 ### One-Request-per-Describe Pattern
 
-Jeder `describe`-Block macht **einen** HTTP-Request in `beforeAll`.
-Die `it()`-Blöcke prüfen nur synchron die gespeicherte Response:
+Each `describe` block makes **one** HTTP request in `beforeAll`.
+The `it()` blocks only synchronously check the stored response:
 
 ```typescript
 describe('Module: List', () => {
@@ -206,17 +206,17 @@ describe('Module: List', () => {
 });
 ```
 
-**Warum:** Dieses Pattern verhindert doppelte HTTP-Calls und Rate-Limiting-Probleme.
+**Why:** This pattern prevents duplicate HTTP calls and rate-limiting issues.
 
-### Auth-Header-Pattern
+### Auth Header Pattern
 
-Fastify **lehnt** `Content-Type: application/json` bei Requests OHNE Body ab (400 Bad Request).
+Fastify **rejects** `Content-Type: application/json` on requests WITHOUT a body (400 Bad Request).
 
 ```typescript
-// POST/PUT mit Body → authHeaders (inkl. Content-Type)
+// POST/PUT with body -> authHeaders (includes Content-Type)
 fetch(url, { method: 'POST', headers: authHeaders(token), body: JSON.stringify({...}) });
 
-// GET/DELETE/PUT-ohne-Body → authOnly (nur Authorization)
+// GET/DELETE/PUT-without-body -> authOnly (Authorization only)
 fetch(url, { headers: authOnly(token) });
 fetch(url, { method: 'DELETE', headers: authOnly(token) });
 ```
@@ -225,25 +225,25 @@ fetch(url, { method: 'DELETE', headers: authOnly(token) });
 
 ## helpers.ts Exports
 
-| Export                 | Typ / Signatur                                   | Zweck                                                          |
+| Export                 | Type / Signature                                 | Purpose                                                        |
 | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------- |
 | `BASE_URL`             | `string`                                         | `http://localhost:3000/api/v2`                                 |
 | `APITEST_EMAIL`        | `string`                                         | `admin@apitest.de`                                             |
 | `APITEST_PASSWORD`     | `string`                                         | `ApiTest12345!`                                                |
-| `loginApitest()`       | `() => Promise<AuthState>`                       | Cached Login — EIN HTTP-Request für gesamte Suite              |
+| `loginApitest()`       | `() => Promise<AuthState>`                       | Cached login — ONE HTTP request for entire suite               |
 | `authHeaders(token)`   | `(string) => Record<string, string>`             | `Authorization` + `Content-Type: application/json`             |
-| `authOnly(token)`      | `(string) => Record<string, string>`             | Nur `Authorization` (für GET/DELETE)                           |
-| `fetchWithRetry()`     | `(url, options?, retries?) => Promise<Response>` | Auto-Retry bei 429 mit exponentiellem Backoff                  |
-| `flushThrottleKeys()`  | `() => void`                                     | Flusht `throttle:*` Redis-Keys (für Export-Rate-Limit)         |
-| `ensureTestEmployee()` | `(token) => Promise<number>`                     | Erstellt/findet Test-Employee (für Chat-Tests)                 |
+| `authOnly(token)`      | `(string) => Record<string, string>`             | `Authorization` only (for GET/DELETE)                          |
+| `fetchWithRetry()`     | `(url, options?, retries?) => Promise<Response>` | Auto-retry on 429 with exponential backoff                     |
+| `flushThrottleKeys()`  | `() => void`                                     | Flushes `throttle:*` Redis keys (for export rate limit)        |
+| `ensureTestEmployee()` | `(token) => Promise<number>`                     | Creates/finds test employee (for chat tests)                   |
 | `AuthState`            | `interface`                                      | `{ authToken, refreshToken, userId, tenantId }`                |
-| `JsonBody`             | `type`                                           | `Record<string, any>` (Integration-Tests prüfen per Assertion) |
+| `JsonBody`             | `type`                                           | `Record<string, any>` (integration tests verify via assertion) |
 
 ---
 
-## Neuen Test erstellen
+## Creating a New Test
 
-### Template für GET (List)
+### Template for GET (List)
 
 ```typescript
 import { type AuthState, BASE_URL, type JsonBody, authOnly, loginApitest } from './helpers.js';
@@ -279,7 +279,7 @@ describe('Module: List', () => {
 });
 ```
 
-### Template für POST (Create)
+### Template for POST (Create)
 
 ```typescript
 import { type AuthState, BASE_URL, type JsonBody, authHeaders, authOnly, loginApitest } from './helpers.js';
@@ -290,7 +290,7 @@ beforeAll(async () => {
   auth = await loginApitest();
 });
 
-// Shared state (wie bru.setVar)
+// Shared state (like bru.setVar)
 let resourceId: number;
 
 describe('Module: Create', () => {
@@ -300,7 +300,7 @@ describe('Module: Create', () => {
   beforeAll(async () => {
     res = await fetch(`${BASE_URL}/resources`, {
       method: 'POST',
-      headers: authHeaders(auth.authToken), // inkl. Content-Type
+      headers: authHeaders(auth.authToken), // includes Content-Type
       body: JSON.stringify({
         name: `Test ${Date.now()}`,
         description: 'Vitest API Test',
@@ -308,7 +308,7 @@ describe('Module: Create', () => {
     });
     body = (await res.json()) as JsonBody;
 
-    // State für nachfolgende describe-Blöcke speichern
+    // Save state for subsequent describe blocks
     if (body.data?.id) {
       resourceId = body.data.id as number;
     }
@@ -324,14 +324,14 @@ describe('Module: Create', () => {
   });
 });
 
-// Nachfolgende Tests nutzen resourceId
+// Subsequent tests use resourceId
 describe('Module: Get By ID', () => {
   let res: Response;
   let body: JsonBody;
 
   beforeAll(async () => {
     res = await fetch(`${BASE_URL}/resources/${resourceId}`, {
-      headers: authOnly(auth.authToken), // kein Content-Type bei GET
+      headers: authOnly(auth.authToken), // no Content-Type for GET
     });
     body = (await res.json()) as JsonBody;
   });
@@ -347,7 +347,7 @@ describe('Module: Delete', () => {
   it('should return 200 OK', async () => {
     const res = await fetch(`${BASE_URL}/resources/${resourceId}`, {
       method: 'DELETE',
-      headers: authOnly(auth.authToken), // kein Content-Type bei DELETE
+      headers: authOnly(auth.authToken), // no Content-Type for DELETE
     });
     const body = (await res.json()) as JsonBody;
 
@@ -357,7 +357,7 @@ describe('Module: Delete', () => {
 });
 ```
 
-### Template für Rate-Limited Endpoints (Export)
+### Template for Rate-Limited Endpoints (Export)
 
 ```typescript
 import { type AuthState, BASE_URL, type JsonBody, authOnly, flushThrottleKeys, loginApitest } from './helpers.js';
@@ -373,7 +373,7 @@ describe('Module: Export JSON', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    flushThrottleKeys(); // Redis throttle:* Keys löschen VOR jedem Request
+    flushThrottleKeys(); // Flush Redis throttle:* keys BEFORE each request
     res = await fetch(`${BASE_URL}/logs/export?format=json&dateFrom=2026-01-01&dateTo=2026-01-31`, {
       headers: authOnly(auth.authToken),
     });
@@ -388,39 +388,39 @@ describe('Module: Export JSON', () => {
 
 ---
 
-## TypeScript-Regeln für Test-Dateien
+## TypeScript Rules for Test Files
 
-### 1. Import-Extensions erforderlich
+### 1. Import Extensions Required
 
-`moduleResolution: NodeNext` in `backend/test/tsconfig.json` erfordert `.js`-Extension:
+`moduleResolution: NodeNext` in `backend/test/tsconfig.json` requires `.js` extension:
 
 ```typescript
-import { ... } from './helpers.js';  // ✅ korrekt
-import { ... } from './helpers';     // ❌ TS-Fehler
+import { ... } from './helpers.js';  // correct
+import { ... } from './helpers';     // TS error
 ```
 
-### 2. Response-Body casten
+### 2. Cast Response Body
 
-`res.json()` gibt `Promise<unknown>` zurück (Node-Types). Immer explizit casten:
+`res.json()` returns `Promise<unknown>` (Node types). Always cast explicitly:
 
 ```typescript
-const body = (await res.json()) as JsonBody;  // ✅ korrekt
-const body: JsonBody = await res.json();       // ❌ TS-Fehler
+const body = (await res.json()) as JsonBody;  // correct
+const body: JsonBody = await res.json();       // TS error
 ```
 
 ### 3. Conditional Expects
 
-Wenn Assertions nur bei vorhandenen Daten laufen, brauchen sie `eslint-disable`:
+When assertions only run on existing data, they need `eslint-disable`:
 
 ```typescript
 if (Array.isArray(body) && body.length > 0) {
   const entry = body[0] as JsonBody;
-  // eslint-disable-next-line vitest/no-conditional-expect -- Integration: Struktur-Check nur wenn Daten vorhanden
+  // eslint-disable-next-line vitest/no-conditional-expect -- Integration: structure check only when data exists
   expect(entry).toHaveProperty('id');
 }
 ```
 
-### 4. Keine `any` ohne Begründung
+### 4. No `any` Without Justification
 
 ```typescript
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Integration: JsonBody = Record<string, any>
@@ -431,44 +431,44 @@ export type JsonBody = Record<string, any>;
 
 ## Troubleshooting
 
-| Symptom                     | Ursache                          | Lösung                                                          |
-| --------------------------- | -------------------------------- | --------------------------------------------------------------- |
-| `429 Too Many Requests`     | Rate Limit (Login/Export)        | Redis FLUSHDB (siehe oben) oder `flushThrottleKeys()`           |
-| `401 Unauthorized`          | Token fehlt/abgelaufen           | Login-Cache prüfen, Docker neu starten                          |
-| `400 Bad Request`           | Content-Type bei GET/DELETE      | `authOnly()` statt `authHeaders()` verwenden                    |
-| `400 Bad Request`           | Validation Error                 | Body-Format prüfen (Zod-Schema)                                 |
-| `403 Forbidden` (KVP)       | User kein Teamleiter             | `UPDATE teams SET team_lead_id = 1 WHERE id = 2`                |
-| `403 Forbidden` (Feature)   | Feature nicht aktiviert          | `INSERT INTO tenant_features ...` (siehe Prerequisites)         |
-| `404 Not Found`             | Resource existiert nicht         | Create-describe muss VOR Get/Delete stehen                      |
-| `500 Internal Server Error` | Backend Bug                      | `docker logs assixx-backend`                                    |
-| `ECONNREFUSED`              | Backend down                     | `doppler run -- docker-compose up -d`                           |
-| `ECONNRESET`                | Backend crashed                  | `doppler run -- docker-compose restart`                         |
-| Test-Timeout (30s)          | hookTimeout zu kurz              | `beforeAll(async () => {...}, 60_000)` als 2. Argument          |
-| Double-wrapped Response     | Controller + ResponseInterceptor | Controller soll Daten direkt returnen (nicht `{success, data}`) |
+| Symptom                     | Cause                            | Solution                                                       |
+| --------------------------- | -------------------------------- | -------------------------------------------------------------- |
+| `429 Too Many Requests`     | Rate limit (login/export)        | Redis FLUSHDB (see above) or `flushThrottleKeys()`             |
+| `401 Unauthorized`          | Token missing/expired            | Check login cache, restart Docker                              |
+| `400 Bad Request`           | Content-Type on GET/DELETE       | Use `authOnly()` instead of `authHeaders()`                    |
+| `400 Bad Request`           | Validation error                 | Check body format (Zod schema)                                 |
+| `403 Forbidden` (KVP)       | User is not team lead            | `UPDATE teams SET team_lead_id = 1 WHERE id = 2`               |
+| `403 Forbidden` (Feature)   | Feature not enabled              | `INSERT INTO tenant_features ...` (see Prerequisites)          |
+| `404 Not Found`             | Resource does not exist          | Create describe must come BEFORE Get/Delete                    |
+| `500 Internal Server Error` | Backend bug                      | `docker logs assixx-backend`                                   |
+| `ECONNREFUSED`              | Backend down                     | `doppler run -- docker-compose up -d`                          |
+| `ECONNRESET`                | Backend crashed                  | `doppler run -- docker-compose restart`                        |
+| Test timeout (30s)          | hookTimeout too short            | `beforeAll(async () => {...}, 60_000)` as 2nd argument         |
+| Double-wrapped response     | Controller + ResponseInterceptor | Controller should return data directly (not `{success, data}`) |
 
-### Debug: Backend Logs anzeigen
+### Debug: View Backend Logs
 
 ```bash
-# Letzte 50 Zeilen
+# Last 50 lines
 docker logs assixx-backend --tail 50
 
-# Live-Stream
+# Live stream
 docker logs assixx-backend -f
 ```
 
-### Debug: Redis Rate-Limit-Keys prüfen
+### Debug: Check Redis Rate-Limit Keys
 
 ```bash
-# Alle throttle-Keys anzeigen
+# Show all throttle keys
 docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' \
   --no-auth-warning KEYS 'throttle:*'
 
-# Alle Keys flushen (Auth-Tokens sind im Node-Prozess, NICHT in Redis)
+# Flush all keys (auth tokens are in Node process, NOT in Redis)
 docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' \
   --no-auth-warning FLUSHDB
 ```
 
-### Debug: Einzelne Endpoints manuell testen
+### Debug: Manually Test Individual Endpoints
 
 ```bash
 # Login
@@ -478,41 +478,41 @@ curl -s http://localhost:3000/api/v2/auth/login \
 {"email":"admin@apitest.de","password":"ApiTest12345!"}
 EOF
 
-# GET mit Token
+# GET with token
 curl -s http://localhost:3000/api/v2/departments \
   -H "Authorization: Bearer <TOKEN>" | jq .
 ```
 
 ---
 
-## Bekannte Spezialfälle
+## Known Special Cases
 
 ### ResponseInterceptor Double-Wrapping
 
-NestJS `ResponseInterceptor` wrapped alle Responses in `{ success, data, timestamp }`.
-Controller dürfen **NICHT** manuell wrappen — sonst doppelt:
+NestJS `ResponseInterceptor` wraps all responses in `{ success, data, timestamp }`.
+Controllers must **NOT** manually wrap — otherwise double-wrapped:
 
 ```typescript
-// ❌ FALSCH — wird zu { success, data: { success, data: {...} }, timestamp }
+// WRONG — becomes { success, data: { success, data: {...} }, timestamp }
 return { success: true, data: result };
 
-// ✅ KORREKT — Interceptor wrapped automatisch
+// CORRECT — Interceptor wraps automatically
 return result;
 ```
 
 ### ExportThrottle (1 Request/Minute)
 
-`ExportThrottle`-Decorator erlaubt nur **1 Request pro 60 Sekunden** (ADR-001).
-In Tests: `flushThrottleKeys()` vor jedem Export-Request aufrufen.
+`ExportThrottle` decorator allows only **1 request per 60 seconds** (ADR-001).
+In tests: call `flushThrottleKeys()` before each export request.
 
-### KVP braucht Teamleiter-Rolle
+### KVP Requires Team Lead Role
 
-`kvp.service.ts` prüft ob Admin/Root-User ein Teamleiter ist
-(`orgInfo.teamLeadOf.length > 0`). Ohne Team-Lead-Zuweisung → 403 Forbidden.
+`kvp.service.ts` checks whether admin/root user is a team lead
+(`orgInfo.teamLeadOf.length > 0`). Without team lead assignment -> 403 Forbidden.
 
 ---
 
-## Test-Ergebnisse interpretieren
+## Interpreting Test Results
 
 ```
 ✓ backend/test/auth.api.test.ts (9 tests)
@@ -526,34 +526,34 @@ Test Files  18 passed (18)
   Duration  ...
 ```
 
-- **Test Files**: Jede `.api.test.ts`-Datei = 1 Modul
-- **Tests**: Jeder `it()`-Block = 1 Test
-- **Duration**: Gesamtlaufzeit (typisch 10-20s bei warmem Backend)
+- **Test Files**: Each `.api.test.ts` file = 1 module
+- **Tests**: Each `it()` block = 1 test
+- **Duration**: Total runtime (typically 10-20s with warm backend)
 
 ---
 
-## Workflow: Neues Feature testen
+## Workflow: Testing a New Feature
 
 ```bash
-# 1. Docker starten (falls nicht läuft)
+# 1. Start Docker (if not running)
 cd /home/scs/projects/Assixx/docker
 doppler run -- docker-compose up -d
 
-# 2. Alle API Tests ausführen
+# 2. Run all API tests
 pnpm run test:api:vitest
 
-# 3. Bei Fehlern: Einzelne Module debuggen (verbose)
+# 3. On failures: debug individual modules (verbose)
 vitest run --project api backend/test/calendar.api.test.ts --reporter verbose
 
-# 4. Backend Logs prüfen bei 500er
+# 4. Check backend logs on 500 errors
 docker logs assixx-backend --tail 100
 
-# 5. Neuen Test schreiben
-# → Datei erstellen: backend/test/{module}.api.test.ts
-# → Pattern: import helpers.js → beforeAll login → describe-per-request → it-per-assertion
-# → ESLint prüfen: cd /home/scs/projects/Assixx && pnpm exec eslint backend/test/
+# 5. Write new test
+# -> Create file: backend/test/{module}.api.test.ts
+# -> Pattern: import helpers.js -> beforeAll login -> describe-per-request -> it-per-assertion
+# -> ESLint check: cd /home/scs/projects/Assixx && pnpm exec eslint backend/test/
 ```
 
 ---
 
-_Erstellt: 2026-02-04 | Aktualisiert: 2026-02-09_
+_Created: 2026-02-04 | Updated: 2026-02-09_

@@ -30,6 +30,7 @@ export default [
       // =============================================================
       // STANDARD IGNORES
       // =============================================================
+      '.svelte-kit/**',
       'node_modules/**',
       'archive/**',
       'scripts/analyze-css.cjs',
@@ -46,7 +47,7 @@ export default [
       'backend/archive/**',
       'coverage/**',
       'vitest.frontend-setup.ts',
-      'vitest.mocks/**',
+      'frontend/test/**',
       '*.log',
       'backend/logs/**',
       '.env',
@@ -58,10 +59,8 @@ export default [
       '**/*.yml',
       '**/*.yaml',
       'backups/**',
-      '.storybook/**',
-      'stories/**',
-      'design-system/stories/**',
-      'design-system/build/**',
+      'frontend/.storybook/**',
+      'archive/**',
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
       'backend/src/server-old.js',

@@ -16,7 +16,7 @@
 | **Database**       | `assixx`                             |
 | **App User**       | `app_user` (RLS enforced)            |
 | **Admin User**     | `assixx_user` (superuser, BYPASSRLS) |
-| **Tables**         | 109 total (84 mit RLS, 25 global)    |
+| **Tables**         | 109 total (84 with RLS, 25 global)   |
 | **RLS Policies**   | 89                                   |
 | **Migration Tool** | `node-pg-migrate` 8.x                |
 | **Tracking Table** | `pgmigrations`                       |
@@ -24,92 +24,92 @@
 
 ---
 
-## Architektur
+## Architecture
 
 ```
 /database/
-├── migrations/                    ← node-pg-migrate TypeScript Migrationen
-│   ├── 20260127000000_baseline.ts        (komplettes Schema)
+├── migrations/                    <- node-pg-migrate TypeScript migrations
+│   ├── 20260127000000_baseline.ts        (complete schema)
 │   ├── 20260127000001_drop-unused-tables.ts
 │   ├── 20260127000002_feature-visits.ts
-│   ├── ...                               (UTC-Timestamp + Beschreibung)
-│   ├── template.ts                       (Referenz-Template, KEIN Migration)
-│   └── archive/                          (originale SQL-Dateien, historisch)
+│   ├── ...                               (UTC timestamp + description)
+│   ├── template.ts                       (reference template, NOT a migration)
+│   └── archive/                          (original SQL files, historical)
 │       ├── 001_baseline_complete_schema.sql
 │       ├── 002_seed_data.sql
 │       └── ...
-├── seeds/                         ← Idempotente Seed-Daten (separate!)
+├── seeds/                         <- Idempotent seed data (separate!)
 │   └── 001_global-seed-data.sql          (ON CONFLICT DO NOTHING)
-└── backups/                       ← pg_dump Backups
+└── backups/                       <- pg_dump backups
 
-/customer/fresh-install/           ← Kunden-Deployment (in .gitignore)
+/customer/fresh-install/           <- Customer deployment (in .gitignore)
 ├── 001_schema.sql
 ├── 002_seed_data.sql
 ├── install.sh
 └── README.md
 
 /scripts/
-├── run-migrations.sh              ← DATABASE_URL Wrapper für node-pg-migrate
-└── run-seeds.sh                   ← Seed Runner (psql)
+├── run-migrations.sh              <- DATABASE_URL wrapper for node-pg-migrate
+└── run-seeds.sh                   <- Seed runner (psql)
 ```
 
-**Wichtig:**
+**Important:**
 
-- `database/migrations/*.ts` = Inkrementelle Migration-Historie, im Git
-- `database/seeds/` = Seed-Daten (global, kein tenant_id), im Git
-- `database/migrations/archive/` = Originale SQL-Dateien (historisch, nicht mehr direkt ausgeführt)
-- `customer/fresh-install/` = Kopie für Kunden, in .gitignore
+- `database/migrations/*.ts` = Incremental migration history, in Git
+- `database/seeds/` = Seed data (global, no tenant_id), in Git
+- `database/migrations/archive/` = Original SQL files (historical, no longer executed directly)
+- `customer/fresh-install/` = Copy for customers, in .gitignore
 
 ---
 
 ## Credentials
 
-Siehe `docker/.env` für Passwörter.
+See `docker/.env` for passwords.
 
-| User          | Zweck              | RLS                 | DDL-Rechte |
-| ------------- | ------------------ | ------------------- | ---------- |
-| `app_user`    | Backend-Verbindung | Ja (unterliegt RLS) | Nein       |
-| `assixx_user` | Migrationen, Admin | Nein (BYPASSRLS)    | Ja         |
+| User          | Purpose            | RLS                  | DDL Rights |
+| ------------- | ------------------ | -------------------- | ---------- |
+| `app_user`    | Backend connection | Yes (subject to RLS) | No         |
+| `assixx_user` | Migrations, admin  | No (BYPASSRLS)       | Yes        |
 
-**Migrationen MÜSSEN als `assixx_user` ausgeführt werden** - `app_user` hat keine DDL-Rechte (kein CREATE TABLE, ALTER, DROP).
+**Migrations MUST be run as `assixx_user`** — `app_user` has no DDL rights (no CREATE TABLE, ALTER, DROP).
 
 ---
 
 ## Migration CLI Commands
 
-Alle Befehle über Doppler ausführen (Secrets werden injected):
+All commands run via Doppler (secrets are injected):
 
 ```bash
-# Migration ausführen (alle pending)
+# Run migrations (all pending)
 doppler run -- ./scripts/run-migrations.sh up
 
-# Letzte Migration zurückrollen
+# Roll back last migration
 doppler run -- ./scripts/run-migrations.sh down
 
-# Dry-Run (zeigt was passieren würde, führt nichts aus)
+# Dry run (shows what would happen, executes nothing)
 doppler run -- ./scripts/run-migrations.sh up --dry-run
 
-# Neue Migration erstellen (UTC-Timestamp + Name)
+# Create new migration (UTC timestamp + name)
 doppler run -- pnpm run db:migrate:create add-employee-skills
-# → database/migrations/20260128XXXXXX_add-employee-skills.ts
+# -> database/migrations/20260128XXXXXX_add-employee-skills.ts
 
-# Redo (down + up der letzten Migration)
+# Redo (down + up of the last migration)
 doppler run -- ./scripts/run-migrations.sh redo
 
-# Seeds anwenden (idempotent, sicher mehrfach ausführbar)
+# Apply seeds (idempotent, safe to run multiple times)
 doppler run -- pnpm run db:seed
 
-# Status prüfen (welche Migrationen wurden ausgeführt?)
+# Check status (which migrations have been applied?)
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;"
 ```
 
-**Alternative ohne Doppler** (für lokale Entwicklung mit docker/.env):
+**Alternative without Doppler** (for local development with docker/.env):
 
 ```bash
-# Env-Vars manuell setzen und Migration ausführen
+# Set env vars manually and run migration
 export POSTGRES_USER=assixx_user
-export POSTGRES_PASSWORD=<aus docker/.env>
+export POSTGRES_PASSWORD=<from docker/.env>
 export POSTGRES_DB=assixx
 export DB_HOST=localhost
 export DB_PORT=5432
@@ -118,19 +118,19 @@ export DB_PORT=5432
 
 ---
 
-## Workflow: Neue Migration erstellen
+## Workflow: Creating a New Migration
 
-### 1. Migration-Datei generieren
+### 1. Generate Migration File
 
 ```bash
 doppler run -- pnpm run db:migrate:create add-employee-skills
 ```
 
-Dies erstellt `database/migrations/20260128XXXXXX_add-employee-skills.ts`.
+This creates `database/migrations/20260128XXXXXX_add-employee-skills.ts`.
 
-### 2. Migration implementieren
+### 2. Implement Migration
 
-Öffne die generierte Datei und implementiere `up()` und `down()`:
+Open the generated file and implement `up()` and `down()`:
 
 ```typescript
 /**
@@ -160,7 +160,7 @@ export function up(pgm: MigrationBuilder): void {
     CREATE INDEX IF NOT EXISTS idx_employee_skills_employee
     ON employee_skills(employee_id);
 
-    -- RLS (PFLICHT bei tenant-isolated tables!)
+    -- RLS (MANDATORY for tenant-isolated tables!)
     ALTER TABLE employee_skills ENABLE ROW LEVEL SECURITY;
     ALTER TABLE employee_skills FORCE ROW LEVEL SECURITY;
 
@@ -171,7 +171,7 @@ export function up(pgm: MigrationBuilder): void {
             OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
         );
 
-    -- Permissions für app_user (PFLICHT!)
+    -- Permissions for app_user (MANDATORY!)
     GRANT SELECT, INSERT, UPDATE, DELETE ON employee_skills TO app_user;
     GRANT USAGE, SELECT ON SEQUENCE employee_skills_id_seq TO app_user;
   `);
@@ -182,151 +182,151 @@ export function down(pgm: MigrationBuilder): void {
 }
 ```
 
-**Siehe auch:** `database/migrations/template.ts` für vollständiges Referenz-Template.
+**See also:** `database/migrations/template.ts` for the complete reference template.
 
-### 3. Dry-Run
+### 3. Dry Run
 
 ```bash
 doppler run -- ./scripts/run-migrations.sh up --dry-run
 ```
 
-### 4. Migration ausführen
+### 4. Run Migration
 
 ```bash
-# Backup erstellen (PFLICHT!)
+# Create backup (MANDATORY!)
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
     --format=custom --compress=9 \
     > database/backups/full_backup_${TIMESTAMP}.dump
 
-# Migration ausführen
+# Run migration
 doppler run -- ./scripts/run-migrations.sh up
 ```
 
-### 5. Verifizieren
+### 5. Verify
 
 ```bash
-# Tabelle prüfen
+# Check table
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d employee_skills"
 
-# RLS Policy prüfen
+# Check RLS policy
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT * FROM pg_policies WHERE tablename = 'employee_skills';"
 
-# Migration in Tracking-Tabelle prüfen
+# Check migration in tracking table
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT * FROM pgmigrations ORDER BY run_on DESC LIMIT 5;"
 
-# Backend neustarten
+# Restart backend
 cd /home/scs/projects/Assixx/docker && docker-compose restart backend deletion-worker
 ```
 
-### 6. Customer Fresh-Install aktualisieren (PFLICHT!)
+### 6. Update Customer Fresh-Install (MANDATORY!)
 
 ```bash
-# Automatisch: Schema, Seeds und pgmigrations synchronisieren
+# Automatic: Sync schema, seeds, and pgmigrations
 ./scripts/sync-customer-migrations.sh
 ```
 
-Das Script macht:
+The script does:
 
-1. Schema dumpen → `database/migrations/archive/001_baseline_complete_schema.sql` + `customer/fresh-install/001_schema.sql`
-2. Seed-Data dumpen → `customer/fresh-install/002_seed_data.sql`
-3. `005_pgmigrations.sql` generieren (registriert alle Migrationen für node-pg-migrate)
+1. Dump schema -> `database/migrations/archive/001_baseline_complete_schema.sql` + `customer/fresh-install/001_schema.sql`
+2. Dump seed data -> `customer/fresh-install/002_seed_data.sql`
+3. Generate `005_pgmigrations.sql` (registers all migrations for node-pg-migrate)
 
 ---
 
-## Rollback (Migration zurückrollen)
+## Rollback (Rolling Back a Migration)
 
 ```bash
-# Letzte Migration zurückrollen
+# Roll back last migration
 doppler run -- ./scripts/run-migrations.sh down
 
-# ACHTUNG: Nicht alle Migrationen sind reversibel!
-# z.B. ENUM-Werte können in PostgreSQL NICHT entfernt werden.
-# Solche Migrationen werfen einen Error in down().
+# WARNING: Not all migrations are reversible!
+# e.g. ENUM values CANNOT be removed in PostgreSQL.
+# Such migrations throw an error in down().
 ```
 
-**Irreversible Migrationen:**
+**Irreversible Migrations:**
 
-- ENUM-Wert hinzufügen (`ALTER TYPE ... ADD VALUE`)
-- Daten-Migrationen (Daten wurden transformiert)
-- Baseline (vollständiges Schema droppen ist keine Option)
+- Adding ENUM value (`ALTER TYPE ... ADD VALUE`)
+- Data migrations (data was transformed)
+- Baseline (dropping the complete schema is not an option)
 
 ---
 
 ## Seeds
 
-Seeds sind **globale Konfigurationsdaten** ohne tenant_id:
+Seeds are **global configuration data** without tenant_id:
 
-| Tabelle              | Rows | Beschreibung                                         |
+| Table                | Rows | Description                                          |
 | -------------------- | ---- | ---------------------------------------------------- |
-| `plans`              | 3    | Subscription-Pläne (Basic, Professional, Enterprise) |
-| `features`           | 12   | Verfügbare Features                                  |
-| `plan_features`      | 36   | Zuordnung Plan zu Features                           |
-| `kvp_categories`     | 6    | KVP Vorschlagskategorien                             |
-| `machine_categories` | 11   | Maschinenkategorien                                  |
+| `plans`              | 3    | Subscription plans (Basic, Professional, Enterprise) |
+| `features`           | 12   | Available features                                   |
+| `plan_features`      | 36   | Plan-to-feature mapping                              |
+| `kvp_categories`     | 6    | KVP proposal categories                              |
+| `machine_categories` | 11   | Machine categories                                   |
 
 ```bash
-# Seeds anwenden (idempotent - sicher mehrfach ausführbar)
+# Apply seeds (idempotent — safe to run multiple times)
 doppler run -- pnpm run db:seed
 
-# Seeds verwenden ON CONFLICT (id) DO NOTHING
-# und synchronisieren Sequences automatisch
+# Seeds use ON CONFLICT (id) DO NOTHING
+# and synchronize sequences automatically
 ```
 
-**Neue Seed-Daten hinzufügen:** Datei in `database/seeds/` erstellen (z.B. `002_new-seed.sql`). Dateien werden alphabetisch sortiert ausgeführt.
+**Adding new seed data:** Create a file in `database/seeds/` (e.g. `002_new-seed.sql`). Files are executed in alphabetical order.
 
 ---
 
-## Bestehende DB migrieren (Day 1 Setup)
+## Migrating an Existing DB (Day 1 Setup)
 
-Für existierende Datenbanken die bereits alle Migrationen manuell ausgeführt haben:
+For existing databases that have already had all migrations applied manually:
 
 ```bash
-# 1. Backup erstellen
+# 1. Create backup
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
     --format=custom --compress=9 \
     > database/backups/pre-node-pg-migrate.dump
 
-# 2. Alle 15 Migrationen als "bereits ausgeführt" markieren (KEIN SQL wird ausgeführt!)
+# 2. Mark all 15 migrations as "already applied" (NO SQL is executed!)
 doppler run -- ./scripts/run-migrations.sh up --fake
 
-# 3. Verifizieren: 15 Einträge in pgmigrations
+# 3. Verify: 15 entries in pgmigrations
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;"
 
-# 4. Seeds anwenden (idempotent, sicher)
+# 4. Apply seeds (idempotent, safe)
 doppler run -- pnpm run db:seed
 ```
 
-**Was macht `--fake`?** Markiert Migrationen in der `pgmigrations`-Tabelle als ausgeführt, ohne das SQL tatsächlich auszuführen. Nötig wenn die DB bereits auf dem aktuellen Stand ist.
+**What does `--fake` do?** Marks migrations in the `pgmigrations` table as applied without actually executing the SQL. Needed when the DB is already up to date.
 
 ---
 
-## Migrations-Dateien Übersicht
+## Migration Files Overview
 
-| Datei                                                      | Inhalt                                   |
-| ---------------------------------------------------------- | ---------------------------------------- |
-| `20260127000000_baseline.ts`                               | Komplettes Schema (109 Tabellen, 89 RLS) |
-| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables entfernt                |
-| `20260127000002_feature-visits.ts`                         | Feature Visit Tracking mit RLS           |
-| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id          |
-| `20260127000004_audit-log-partitioning.ts`                 | Monatliche Partitionierung               |
-| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM zu INTEGER Migration                |
-| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"           |
-| `20260127000007_audit-trail-request-id.ts`                 | UUID Request Correlation                 |
-| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only Kommentar Trigger             |
-| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate Limiting Trigger                    |
-| `20260127000010_kvp-confirmations.ts`                      | Read-Tracking mit RLS                    |
-| `20260127000011_blackboard-confirmations-first-seen.ts`    | Neu-Badge vs. Read-Status                |
-| `20260127000012_kvp-confirmations-first-seen.ts`           | Selbes Pattern für KVP                   |
-| `20260127000013_kvp-status-restored.ts`                    | ENUM-Wert "restored" hinzugefügt         |
-| `20260127000014_remove-deprecated-availability-columns.ts` | Daten-Migration + Column Drop            |
+| File                                                       | Content                              |
+| ---------------------------------------------------------- | ------------------------------------ |
+| `20260127000000_baseline.ts`                               | Complete schema (109 tables, 89 RLS) |
+| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed             |
+| `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS      |
+| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id      |
+| `20260127000004_audit-log-partitioning.ts`                 | Monthly partitioning                 |
+| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration            |
+| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"       |
+| `20260127000007_audit-trail-request-id.ts`                 | UUID request correlation             |
+| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger           |
+| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                |
+| `20260127000010_kvp-confirmations.ts`                      | Read tracking with RLS               |
+| `20260127000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status            |
+| `20260127000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                 |
+| `20260127000013_kvp-status-restored.ts`                    | ENUM value "restored" added          |
+| `20260127000014_remove-deprecated-availability-columns.ts` | Data migration + column drop         |
 
 ---
 
-## Config-Dateien
+## Config Files
 
 ### `.node-pg-migraterc.json` (Root)
 
@@ -345,29 +345,29 @@ doppler run -- pnpm run db:seed
 
 ### `scripts/run-migrations.sh`
 
-Wrapper-Script das `DATABASE_URL` aus Doppler-Env-Vars konstruiert:
+Wrapper script that constructs `DATABASE_URL` from Doppler env vars:
 
-- Verwendet `POSTGRES_USER` / `POSTGRES_PASSWORD` (assixx_user)
-- Erkennt Docker-Hostname (`DB_HOST=postgres` → `localhost`)
-- Leitet alle Argumente an `pnpm run db:migrate` weiter
+- Uses `POSTGRES_USER` / `POSTGRES_PASSWORD` (assixx_user)
+- Detects Docker hostname (`DB_HOST=postgres` -> `localhost`)
+- Forwards all arguments to `pnpm run db:migrate`
 
 ---
 
 ## Connection Commands
 
-### Via Docker (Empfohlen)
+### Via Docker (Recommended)
 
 ```bash
-# Interaktive psql Shell
+# Interactive psql shell
 docker exec -it assixx-postgres psql -U assixx_user -d assixx
 
-# Einzelner SQL Befehl
+# Single SQL command
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT 1;"
 
-# SQL-Datei ausführen
+# Execute SQL file
 docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/migration.sql
 
-# Mit app_user (RLS aktiv - für Tests)
+# With app_user (RLS active — for testing)
 docker exec assixx-postgres psql -U app_user -d assixx -c "SELECT * FROM users;"
 ```
 
@@ -377,74 +377,74 @@ docker exec assixx-postgres psql -U app_user -d assixx -c "SELECT * FROM users;"
 Host: localhost
 Port: 5432
 Database: assixx
-User: assixx_user (Admin) oder app_user (RLS)
-Password: siehe docker/.env
+User: assixx_user (Admin) or app_user (RLS)
+Password: see docker/.env
 ```
 
-> **Tipp:** DBeaver auf Windows installieren, NICHT in WSL. Docker exposed Ports automatisch.
+> **Tip:** Install DBeaver on Windows, NOT in WSL. Docker exposes ports automatically.
 
 ---
 
-## Migration Checkliste
+## Migration Checklist
 
-### VOR der Migration
+### BEFORE the Migration
 
-- [ ] Backup erstellt (`pg_dump --format=custom --compress=9`)
-- [ ] Dry-Run ausgeführt (`./scripts/run-migrations.sh up --dry-run`)
-- [ ] RLS Policy vorhanden (für tenant-isolated tables)
-- [ ] GRANTs für `app_user` vorhanden
-- [ ] `down()` implementiert (oder Error für irreversible Migrationen)
+- [ ] Backup created (`pg_dump --format=custom --compress=9`)
+- [ ] Dry run executed (`./scripts/run-migrations.sh up --dry-run`)
+- [ ] RLS policy present (for tenant-isolated tables)
+- [ ] GRANTs for `app_user` present
+- [ ] `down()` implemented (or error for irreversible migrations)
 
-### NACH der Migration
+### AFTER the Migration
 
-- [ ] `pgmigrations` Tabelle geprüft
-- [ ] Tabellen/Spalten verifiziert
-- [ ] RLS Policies geprüft (`pg_policies`)
-- [ ] Backend neugestartet
-- [ ] Customer Fresh-Install aktualisiert
+- [ ] `pgmigrations` table checked
+- [ ] Tables/columns verified
+- [ ] RLS policies checked (`pg_policies`)
+- [ ] Backend restarted
+- [ ] Customer fresh-install updated
 
 ---
 
 ## PostgreSQL vs MySQL Syntax
 
-| MySQL                     | PostgreSQL                                   | Notiz                      |
-| ------------------------- | -------------------------------------------- | -------------------------- |
-| `AUTO_INCREMENT`          | `SERIAL` oder `GENERATED ALWAYS AS IDENTITY` |                            |
-| `?` Placeholder           | `$1, $2, $3`                                 | In Queries                 |
-| `LIMIT ?, ?`              | `LIMIT $1 OFFSET $2`                         |                            |
-| `` `column` ``            | `"column"`                                   | Quoting                    |
-| `IFNULL(a, b)`            | `COALESCE(a, b)`                             |                            |
-| `NOW()`                   | `NOW()`                                      | Identisch                  |
-| `DATETIME`                | `TIMESTAMPTZ`                                | Mit Timezone               |
-| `TINYINT(1)`              | `BOOLEAN`                                    |                            |
-| `JSON`                    | `JSONB`                                      | Besser! Native Indexierung |
-| `ENUM('a','b')`           | `CREATE TYPE ... AS ENUM`                    | Eigener Typ                |
-| `ON DUPLICATE KEY UPDATE` | `ON CONFLICT ... DO UPDATE`                  | Upsert                     |
+| MySQL                     | PostgreSQL                                 | Note                    |
+| ------------------------- | ------------------------------------------ | ----------------------- |
+| `AUTO_INCREMENT`          | `SERIAL` or `GENERATED ALWAYS AS IDENTITY` |                         |
+| `?` Placeholder           | `$1, $2, $3`                               | In queries              |
+| `LIMIT ?, ?`              | `LIMIT $1 OFFSET $2`                       |                         |
+| `` `column` ``            | `"column"`                                 | Quoting                 |
+| `IFNULL(a, b)`            | `COALESCE(a, b)`                           |                         |
+| `NOW()`                   | `NOW()`                                    | Identical               |
+| `DATETIME`                | `TIMESTAMPTZ`                              | With timezone           |
+| `TINYINT(1)`              | `BOOLEAN`                                  |                         |
+| `JSON`                    | `JSONB`                                    | Better! Native indexing |
+| `ENUM('a','b')`           | `CREATE TYPE ... AS ENUM`                  | Own type                |
+| `ON DUPLICATE KEY UPDATE` | `ON CONFLICT ... DO UPDATE`                | Upsert                  |
 
 ---
 
 ## Row Level Security (RLS)
 
-### Konzept
+### Concept
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ PostgreSQL mit RLS                                          │
+│ PostgreSQL with RLS                                          │
 │                                                             │
-│  Request → app_user → SET app.tenant_id = X → Query         │
+│  Request -> app_user -> SET app.tenant_id = X -> Query       │
 │                                                             │
 │  SELECT * FROM users;                                       │
-│  ↓ (RLS Policy filtert automatisch)                        │
+│  ↓ (RLS policy filters automatically)                      │
 │  SELECT * FROM users WHERE tenant_id = X;                   │
 │                                                             │
-│  Kein "AND tenant_id = ?" mehr in Queries nötig!            │
+│  No more "AND tenant_id = ?" needed in queries!             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Tenant Context setzen (Backend)
+### Setting Tenant Context (Backend)
 
 ```typescript
-// Automatisch in db.ts implementiert
+// Automatically implemented in db.ts
 const client = await pool.connect();
 await client.query('SET app.tenant_id = $1', [tenantId.toString()]);
 ```
@@ -452,35 +452,35 @@ await client.query('SET app.tenant_id = $1', [tenantId.toString()]);
 ### RLS Policy Template
 
 ```sql
--- Standard RLS Policy für Tenant-Tabellen
--- WICHTIG: NULLIF() im ersten Teil ist PFLICHT!
--- Nach set_config() + COMMIT wird app.tenant_id zu '' (empty string), NICHT NULL!
--- Ohne NULLIF würde '' IS NULL = FALSE → RLS blockiert ALLES!
+-- Standard RLS policy for tenant tables
+-- IMPORTANT: NULLIF() in the first part is MANDATORY!
+-- After set_config() + COMMIT, app.tenant_id becomes '' (empty string), NOT NULL!
+-- Without NULLIF, '' IS NULL = FALSE -> RLS blocks EVERYTHING!
 CREATE POLICY tenant_isolation ON table_name
     FOR ALL
     USING (
-        -- Root/Admin Zugriff (kein Tenant Context oder empty string)
+        -- Root/Admin access (no tenant context or empty string)
         NULLIF(current_setting('app.tenant_id', true), '') IS NULL
-        -- Oder passender Tenant
+        -- Or matching tenant
         OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
     );
 ```
 
-### RLS testen
+### Testing RLS
 
 ```bash
-# Als app_user MIT Tenant Context
+# As app_user WITH tenant context
 docker exec assixx-postgres psql -U app_user -d assixx -c "
 SET app.tenant_id = '1';
-SELECT COUNT(*) FROM users;  -- Nur Tenant 1 Daten
+SELECT COUNT(*) FROM users;  -- Only Tenant 1 data
 "
 
-# Als app_user OHNE Tenant Context (Root-Zugriff)
+# As app_user WITHOUT tenant context (root access)
 docker exec assixx-postgres psql -U app_user -d assixx -c "
-SELECT COUNT(*) FROM users;  -- Alle Daten (wenn Policy es erlaubt)
+SELECT COUNT(*) FROM users;  -- All data (if policy allows)
 "
 
-# RLS Policies anzeigen
+# Show RLS policies
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "
 SELECT tablename, policyname, qual FROM pg_policies WHERE schemaname = 'public';
 "
@@ -488,33 +488,33 @@ SELECT tablename, policyname, qual FROM pg_policies WHERE schemaname = 'public';
 
 ---
 
-## ENUM Typen
+## ENUM Types
 
-PostgreSQL ENUMs sind strenge Typen:
+PostgreSQL ENUMs are strict types:
 
 ```sql
--- ENUM erstellen
+-- Create ENUM
 CREATE TYPE user_role AS ENUM ('root', 'admin', 'employee');
 
--- ENUM verwenden
+-- Use ENUM
 CREATE TABLE users (
     role user_role DEFAULT 'employee'
 );
 
--- ENUM Werte anzeigen
+-- Show ENUM values
 SELECT enumlabel FROM pg_enum WHERE enumtypid = 'user_role'::regtype;
 
--- ENUM erweitern (Wert hinzufügen)
+-- Extend ENUM (add value)
 ALTER TYPE user_role ADD VALUE 'manager' AFTER 'admin';
 
--- ACHTUNG: ENUM-Werte können NICHT entfernt werden in PostgreSQL!
--- down() Migrations müssen einen Error werfen.
+-- WARNING: ENUM values CANNOT be removed in PostgreSQL!
+-- down() migrations must throw an error.
 ```
 
-### Existierende ENUMs
+### Existing ENUMs
 
 ```bash
-# Alle ENUMs auflisten
+# List all ENUMs
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "
 SELECT t.typname, e.enumlabel
 FROM pg_type t
@@ -527,14 +527,14 @@ ORDER BY t.typname, e.enumsortorder;
 
 ## Protected Tables
 
-Diese Tabellen sind vor DELETE geschützt:
+These tables are protected from DELETE:
 
-- `plans` - Subscription Pläne
-- `features` - Verfügbare Features
-- `plan_features` - Plan-Feature Zuordnung
+- `plans` - Subscription plans
+- `features` - Available features
+- `plan_features` - Plan-to-feature mapping
 
 ```sql
--- DELETE Versuch wird geblockt
+-- DELETE attempt will be blocked
 DELETE FROM plans WHERE id = 1;
 -- ERROR: PROTECTED TABLE: DELETE not allowed on plans - system critical data
 ```
@@ -543,23 +543,23 @@ DELETE FROM plans WHERE id = 1;
 
 ## Backup & Restore
 
-### Backup erstellen
+### Creating a Backup
 
 ```bash
-# Vollständiges Backup (komprimiert - EMPFOHLEN)
+# Full backup (compressed — RECOMMENDED)
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
     --format=custom --compress=9 \
     > database/backups/full_backup_$(date +%Y%m%d_%H%M%S).dump
 
-# Vollständiges Backup (SQL-Format)
+# Full backup (SQL format)
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx \
     > database/backups/full_backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Schema only (keine Daten)
+# Schema only (no data)
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx --schema-only \
     > database/backups/schema_only.sql
 
-# Einzelne Tabelle
+# Single table
 docker exec assixx-postgres pg_dump -U assixx_user -d assixx -t users \
     > database/backups/users_backup.sql
 ```
@@ -567,39 +567,39 @@ docker exec assixx-postgres pg_dump -U assixx_user -d assixx -t users \
 ### Restore
 
 ```bash
-# Aus .dump (pg_restore)
+# From .dump (pg_restore)
 docker exec -i assixx-postgres pg_restore -U assixx_user -d assixx \
     < database/backups/full_backup_XXXXXX.dump
 
-# Aus .sql
+# From .sql
 docker exec -i assixx-postgres psql -U assixx_user -d assixx \
     < database/backups/backup.sql
 
-# WICHTIG: Nach Restore GRANTs wiederherstellen!
+# IMPORTANT: After restore, restore GRANTs!
 cd /home/scs/projects/Assixx/customer/fresh-install && ./install.sh --grants-only
 ```
 
-> **WICHTIG:** Nach einem Restore fehlen die GRANTs für `app_user` weil das Backup mit `--no-privileges` erstellt wird. Ohne GRANTs bekommt das Backend "permission denied" Fehler!
+> **IMPORTANT:** After a restore, GRANTs for `app_user` are missing because the backup is created with `--no-privileges`. Without GRANTs, the backend gets "permission denied" errors!
 
 ---
 
-## Häufige Probleme
+## Common Problems
 
-### Problem 1: RLS blockiert Query
+### Problem 1: RLS Blocks Query
 
 ```
 ERROR: new row violates row-level security policy for table "users"
 ```
 
-**Lösung:** Tenant Context setzen oder als `assixx_user` (BYPASSRLS) ausführen.
+**Solution:** Set tenant context or run as `assixx_user` (BYPASSRLS).
 
-### Problem 2: ENUM Wert existiert nicht
+### Problem 2: ENUM Value Does Not Exist
 
 ```
 ERROR: invalid input value for enum user_role: "new_role"
 ```
 
-**Lösung:** ENUM erweitern mit Migration:
+**Solution:** Extend ENUM with a migration:
 
 ```sql
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'new_role';
@@ -611,7 +611,7 @@ ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'new_role';
 ERROR: insert or update on table "X" violates foreign key constraint
 ```
 
-**Lösung:** Abhängige Daten zuerst einfügen oder Constraint prüfen:
+**Solution:** Insert dependent data first or check the constraint:
 
 ```sql
 SELECT tc.constraint_name, kcu.column_name,
@@ -622,65 +622,65 @@ JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.
 WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = 'your_table';
 ```
 
-### Problem 4: Sequence out of sync
+### Problem 4: Sequence Out of Sync
 
 ```
 ERROR: duplicate key value violates unique constraint
 ```
 
-**Lösung:** Sequence zurücksetzen:
+**Solution:** Reset the sequence:
 
 ```sql
 SELECT setval('table_name_id_seq', (SELECT MAX(id) FROM table_name));
 ```
 
-### Problem 5: Migration fehlgeschlagen (partial apply)
+### Problem 5: Migration Failed (Partial Apply)
 
 ```
 ERROR: relation "xxx" already exists
 ```
 
-**Lösung:** Migration verwendet `IF NOT EXISTS` / `IF EXISTS` für Idempotenz. Falls nicht:
+**Solution:** Migration uses `IF NOT EXISTS` / `IF EXISTS` for idempotency. If not:
 
 ```bash
-# Manuell fixen, dann als "already applied" markieren
+# Fix manually, then mark as "already applied"
 doppler run -- ./scripts/run-migrations.sh up --fake
 ```
 
 ---
 
-## Nützliche Queries
+## Useful Queries
 
-### Datenbank-Übersicht
+### Database Overview
 
 ```sql
--- Alle Tabellen mit Zeilen-Anzahl
+-- All tables with row counts
 SELECT schemaname, relname AS table_name, n_live_tup AS row_count
 FROM pg_stat_user_tables ORDER BY n_live_tup DESC;
 
--- Tabellen mit RLS
+-- Tables with RLS
 SELECT tablename, rowsecurity FROM pg_tables
 WHERE schemaname = 'public' ORDER BY tablename;
 
--- Tabellengröße
+-- Table sizes
 SELECT relname AS table_name,
        pg_size_pretty(pg_total_relation_size(relid)) AS total_size
 FROM pg_catalog.pg_statio_user_tables
 ORDER BY pg_total_relation_size(relid) DESC;
 
--- Migration-Status
+-- Migration status
 SELECT id, name, run_on FROM pgmigrations ORDER BY run_on;
 ```
 
-### Schema-Informationen
+### Schema Information
 
 ```sql
--- Spalten einer Tabelle
+-- Columns of a table
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns WHERE table_name = 'users'
 ORDER BY ordinal_position;
 
--- Indexes einer Tabelle
+-- Indexes of a table
 SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'users';
 ```
 
@@ -689,7 +689,7 @@ SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'users';
 ## Test Commands
 
 ```bash
-# Quick Test Suite
+# Quick test suite
 echo "=== PostgreSQL Version ==="
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT version();"
 
@@ -714,24 +714,24 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 
 ## pg_stat_statements - Query Performance Monitoring
 
-### Was ist pg_stat_statements?
+### What is pg_stat_statements?
 
-PostgreSQL Extension die alle Queries trackt und Performance-Statistiken sammelt.
+PostgreSQL extension that tracks all queries and collects performance statistics.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Jede Query wird normalisiert und getrackt:                 │
+│  Every query is normalized and tracked:                      │
 │                                                             │
 │  SELECT * FROM users WHERE id = 123                         │
 │  SELECT * FROM users WHERE id = 456                         │
 │                 ↓                                           │
-│  Normalisiert: SELECT * FROM users WHERE id = $1            │
+│  Normalized: SELECT * FROM users WHERE id = $1              │
 │                                                             │
-│  Statistiken: calls, total_time, mean_time, rows, etc.      │
+│  Statistics: calls, total_time, mean_time, rows, etc.       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Konfiguration (automatisch in docker-compose.yml)
+### Configuration (automatic in docker-compose.yml)
 
 ```yaml
 command:
@@ -746,24 +746,24 @@ command:
   - 'track_io_timing=on'
 ```
 
-### Extension aktivieren (einmalig nach Container-Neustart)
+### Enable Extension (one-time after container restart)
 
 ```bash
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
 ```
 
-### Nützliche Queries
+### Useful Queries
 
 ```sql
--- Top 10 langsamste Queries (nach Gesamtzeit)
+-- Top 10 slowest queries (by total time)
 SELECT left(query, 80) as query_preview, calls,
        round(total_exec_time::numeric, 2) as total_ms,
        round(mean_exec_time::numeric, 2) as avg_ms, rows
 FROM pg_stat_statements WHERE query NOT LIKE '%pg_stat%'
 ORDER BY total_exec_time DESC LIMIT 10;
 
--- Häufigste Queries (potentielle N+1 Probleme)
+-- Most frequent queries (potential N+1 problems)
 SELECT left(query, 80) as query_preview, calls, rows,
        round(mean_exec_time::numeric, 4) as avg_ms
 FROM pg_stat_statements WHERE query NOT LIKE '%pg_stat%'
@@ -774,23 +774,23 @@ ORDER BY calls DESC LIMIT 10;
 
 ## is_active Convention
 
-Konsistente Status-Werte für alle Tabellen:
+Consistent status values for all tables:
 
-| Wert | Bedeutung | Beschreibung                         |
-| ---- | --------- | ------------------------------------ |
-| `0`  | inactive  | Deaktiviert, nicht sichtbar          |
-| `1`  | active    | Aktiv, normal sichtbar               |
-| `3`  | archive   | Archiviert, nur über Filter sichtbar |
-| `4`  | deleted   | Soft Delete, nicht sichtbar          |
-
----
-
-## Verwandte Dokumentation
-
-- [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) - Datenbankstruktur und Tabellen-Übersicht
-- [POSTGRESQL-MIGRATION-PLAN.md](./POSTGRESQL-MIGRATION-PLAN.md) - Historischer Migrationsplan MySQL → PostgreSQL
-- [DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md](./DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md) - Alte MySQL Anleitung (Backup)
+| Value | Meaning  | Description                       |
+| ----- | -------- | --------------------------------- |
+| `0`   | inactive | Deactivated, not visible          |
+| `1`   | active   | Active, normally visible          |
+| `3`   | archive  | Archived, only visible via filter |
+| `4`   | deleted  | Soft delete, not visible          |
 
 ---
 
-**Merke:** PostgreSQL mit RLS = Wasserdichte Multi-Tenant-Isolation auf DB-Ebene!
+## Related Documentation
+
+- [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) - Database structure and table overview
+- [POSTGRESQL-MIGRATION-PLAN.md](./POSTGRESQL-MIGRATION-PLAN.md) - Historical migration plan MySQL -> PostgreSQL
+- [DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md](./DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md) - Old MySQL guide (backup)
+
+---
+
+**Remember:** PostgreSQL with RLS = Watertight multi-tenant isolation at the database level!

@@ -14,7 +14,7 @@ module.exports = {
   // EXCLUDED:
   //   - tailwind.css & tailwind/** (Tailwind v4 has built-in purge)
   //   - lib/** (third-party: FontAwesome, FullCalendar, Bootstrap)
-  //   - design-system/** (design tokens - keep all for consistency)
+  //   - frontend/src/design-system/** (design tokens - keep all for consistency)
   //   - base/** (CSS variables - must keep)
   css: [
     // Page-specific stylesheets only (no subdirectories)
@@ -86,8 +86,8 @@ module.exports = {
     'frontend/src/**/*.js',
 
     // Storybook stories
-    'stories/**/*.js',
-    'stories/**/*.ts',
+    'frontend/.storybook/stories/**/*.js',
+    'frontend/.storybook/stories/**/*.ts',
 
     // Backend templates (might reference frontend classes)
     'backend/templates/**/*.html',

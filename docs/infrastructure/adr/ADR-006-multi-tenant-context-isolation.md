@@ -11,28 +11,28 @@
 
 ## Context
 
-Assixx ist eine Multi-Tenant SaaS-Anwendung:
+Assixx is a multi-tenant SaaS application:
 
-- **Tenant = Firma** - Jede Firma hat eigene Daten
-- **Strikte Isolation** - Tenant A darf niemals Daten von Tenant B sehen
-- **Alle Tabellen** haben `tenant_id` Column
-- **Jede Query** muss `WHERE tenant_id = ?` enthalten
+- **Tenant = Company** - Each company has its own data
+- **Strict Isolation** - Tenant A must never see data from Tenant B
+- **All tables** have a `tenant_id` column
+- **Every query** must contain `WHERE tenant_id = ?`
 
 ### Problem
 
-Wie propagiert man `tenantId` durch alle Service-Layer ohne:
+How to propagate `tenantId` through all service layers without:
 
-1. Jeden Service-Parameter um `tenantId` zu erweitern?
-2. Risiko zu vergessen, `tenantId` in einer Query zu verwenden?
-3. Controller-zu-Service-zu-Repository Parameter-Drilling?
+1. Extending every service parameter with `tenantId`?
+2. Risking forgetting to use `tenantId` in a query?
+3. Controller-to-service-to-repository parameter drilling?
 
-### Anforderungen
+### Requirements
 
-- Tenant-Context muss in ALLEN Services verfügbar sein
-- Kein manuelles Durchreichen von `tenantId`
-- Request-Scope (nicht global!)
-- TypeScript-typisiert
-- Einfach zu debuggen
+- Tenant context must be available in ALL services
+- No manual passing of `tenantId`
+- Request-scoped (not global!)
+- TypeScript-typed
+- Easy to debug
 
 ---
 
@@ -40,75 +40,75 @@ Wie propagiert man `tenantId` durch alle Service-Layer ohne:
 
 ### CLS (Continuation-Local Storage) via nestjs-cls
 
-Wir verwenden **nestjs-cls** für Request-Scoped Context:
+We use **nestjs-cls** for request-scoped context:
 
 ```typescript
-// Setzen (in Guard/Interceptor)
+// Setting (in Guard/Interceptor)
 this.cls.set('tenantId', user.tenantId);
 
-// Lesen (in jedem Service)
+// Reading (in any service)
 const tenantId = this.cls.get('tenantId');
 ```
 
-### Architektur
+### Architecture
 
 ```
 Request
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│ JwtAuthGuard                            │
-│ → Validates JWT                         │
-│ → Loads User from DB                    │
-│ → Sets CLS: tenantId, userId, userRole  │
-└─────────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│ TenantContextInterceptor (Backup)       │
-│ → Sets CLS from request.user            │
-│ → Logging für Debug                     │
-└─────────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│ Controller                              │
-│ → Keine tenantId Parameter nötig        │
-└─────────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│ Service                                 │
-│ const tenantId = this.cls.get('tenantId')│
-│ → Automatisch verfügbar!                │
-└─────────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│ Database Query                          │
-│ WHERE tenant_id = $tenantId             │
-└─────────────────────────────────────────┘
+    \u2502
+    \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 JwtAuthGuard                            \u2502
+\u2502 \u2192 Validates JWT                         \u2502
+\u2502 \u2192 Loads User from DB                    \u2502
+\u2502 \u2192 Sets CLS: tenantId, userId, userRole  \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+    \u2502
+    \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 TenantContextInterceptor (Backup)       \u2502
+\u2502 \u2192 Sets CLS from request.user            \u2502
+\u2502 \u2192 Logging for debug                     \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+    \u2502
+    \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 Controller                              \u2502
+\u2502 \u2192 No tenantId parameter needed          \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+    \u2502
+    \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 Service                                 \u2502
+\u2502 const tenantId = this.cls.get('tenantId')\u2502
+\u2502 \u2192 Automatically available!              \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+    \u2502
+    \u25bc
+\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+\u2502 Database Query                          \u2502
+\u2502 WHERE tenant_id = $tenantId             \u2502
+\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
 ```
 
 ### CLS Values
 
-| Key         | Type   | Gesetzt von              | Verwendung             |
+| Key         | Type   | Set by                   | Usage                  |
 | ----------- | ------ | ------------------------ | ---------------------- |
-| `tenantId`  | number | JwtAuthGuard             | Alle DB-Queries        |
-| `userId`    | number | JwtAuthGuard             | Audit-Logs, Created-By |
-| `userRole`  | string | JwtAuthGuard             | Service-Level Auth     |
+| `tenantId`  | number | JwtAuthGuard             | All DB queries         |
+| `userId`    | number | JwtAuthGuard             | Audit logs, created-by |
+| `userRole`  | string | JwtAuthGuard             | Service-level auth     |
 | `userEmail` | string | TenantContextInterceptor | Logging                |
 
-### Warum Double-Setting (Guard + Interceptor)?
+### Why Double-Setting (Guard + Interceptor)?
 
 ```
-Guard:       Setzt CLS bei erfolgreicher Auth
-Interceptor: Backup + Logging für Debug
+Guard:       Sets CLS on successful auth
+Interceptor: Backup + logging for debug
 
-Reihenfolge: Guard → Interceptor → Controller
+Order: Guard \u2192 Interceptor \u2192 Controller
 ```
 
-Der Interceptor ist ein **Safety-Net** falls CLS im Guard nicht gesetzt wurde.
+The interceptor is a **safety net** in case CLS was not set in the guard.
 
 ---
 
@@ -129,14 +129,14 @@ async findAll(tenantId: number) {
 }
 ```
 
-| Pro         | Contra                                  |
-| ----------- | --------------------------------------- |
-| Explizit    | Jede Methode braucht tenantId Parameter |
-| Keine Magic | Leicht zu vergessen                     |
-|             | Tiefe Call-Stacks = viele Parameter     |
-|             | Refactoring-Aufwand bei Änderungen      |
+| Pros     | Cons                                    |
+| -------- | --------------------------------------- |
+| Explicit | Every method needs a tenantId parameter |
+| No magic | Easy to forget                          |
+|          | Deep call stacks = many parameters      |
+|          | Refactoring effort on changes           |
 
-**Entscheidung:** Abgelehnt - Zu fehleranfällig bei 50+ Services.
+**Decision:** Rejected - Too error-prone with 50+ services.
 
 ### 2. Request-Scoped Services
 
@@ -151,16 +151,16 @@ export class UsersService {
 }
 ```
 
-| Pro                   | Contra                                     |
-| --------------------- | ------------------------------------------ |
-| Automatisch verfügbar | ALLE Services müssen REQUEST-scoped sein   |
-| Keine CLS-Dependency  | Performance-Impact (keine Singletons mehr) |
-|                       | Circular Dependency Probleme               |
-|                       | Nicht in Background-Jobs verfügbar         |
+| Pros                    | Cons                                    |
+| ----------------------- | --------------------------------------- |
+| Automatically available | ALL services must be REQUEST-scoped     |
+| No CLS dependency       | Performance impact (no more singletons) |
+|                         | Circular dependency problems            |
+|                         | Not available in background jobs        |
 
-**Entscheidung:** Abgelehnt - Performance-Kosten zu hoch.
+**Decision:** Rejected - Performance costs too high.
 
-### 3. AsyncLocalStorage direkt (Node.js native)
+### 3. AsyncLocalStorage directly (Node.js native)
 
 ```typescript
 import { AsyncLocalStorage } from 'async_hooks';
@@ -168,14 +168,14 @@ import { AsyncLocalStorage } from 'async_hooks';
 const als = new AsyncLocalStorage<{ tenantId: number }>();
 ```
 
-| Pro              | Contra                             |
-| ---------------- | ---------------------------------- |
-| Keine Dependency | Manuelles Setup                    |
-| Node.js native   | Kein NestJS Integration            |
-|                  | Kein TypeScript Support out-of-box |
-|                  | Middleware-Setup selbst schreiben  |
+| Pros           | Cons                                 |
+| -------------- | ------------------------------------ |
+| No dependency  | Manual setup                         |
+| Node.js native | No NestJS integration                |
+|                | No TypeScript support out-of-box     |
+|                | Must write middleware setup yourself |
 
-**Entscheidung:** Abgelehnt - nestjs-cls bietet bessere DX.
+**Decision:** Rejected - nestjs-cls offers better DX.
 
 ### 4. PostgreSQL Row-Level Security (RLS)
 
@@ -184,14 +184,14 @@ CREATE POLICY tenant_isolation ON users
   USING (tenant_id = current_setting('app.tenant_id')::int);
 ```
 
-| Pro                  | Contra                                |
-| -------------------- | ------------------------------------- |
-| DB-Level Enforcement | SET vor jeder Query nötig             |
-| Unmöglich zu umgehen | Connection Pooling kompliziert        |
-|                      | Debugging schwieriger                 |
-|                      | Nicht alle Queries brauchen Isolation |
+| Pros                 | Cons                            |
+| -------------------- | ------------------------------- |
+| DB-level enforcement | SET required before every query |
+| Impossible to bypass | Connection pooling complicated  |
+|                      | Debugging more difficult        |
+|                      | Not all queries need isolation  |
 
-**Entscheidung:** Teilweise verwendet - RLS als zusätzliche Sicherheitsschicht, aber nicht primär.
+**Decision:** Partially used - RLS as an additional security layer, but not primary.
 
 ---
 
@@ -199,26 +199,26 @@ CREATE POLICY tenant_isolation ON users
 
 ### Positive
 
-1. **Kein Parameter-Drilling** - Services haben automatisch Zugriff
-2. **Typsicher** - `cls.get<number>('tenantId')`
-3. **Debuggable** - Interceptor loggt Context
-4. **Request-Isolated** - Keine Cross-Request Contamination
-5. **Testbar** - CLS kann in Tests gemockt werden
-6. **Flexibel** - Auch für userId, userRole, etc. verwendbar
+1. **No parameter drilling** - Services have automatic access
+2. **Type-safe** - `cls.get<number>('tenantId')`
+3. **Debuggable** - Interceptor logs context
+4. **Request-isolated** - No cross-request contamination
+5. **Testable** - CLS can be mocked in tests
+6. **Flexible** - Also usable for userId, userRole, etc.
 
 ### Negative
 
-1. **Implicit Dependency** - Services brauchen ClsService injection
-2. **Runtime Error** - `cls.get()` kann undefined sein wenn nicht gesetzt
-3. **Learning Curve** - Entwickler müssen CLS verstehen
+1. **Implicit dependency** - Services need ClsService injection
+2. **Runtime error** - `cls.get()` can be undefined if not set
+3. **Learning curve** - Developers need to understand CLS
 
 ### Mitigations
 
-| Problem        | Mitigation                       |
-| -------------- | -------------------------------- |
-| Undefined CLS  | Guard setzt IMMER vor Controller |
-| Implicit Dep   | Dokumentation + Code Review      |
-| Learning Curve | ADR + Inline Docs                |
+| Problem        | Mitigation                          |
+| -------------- | ----------------------------------- |
+| Undefined CLS  | Guard ALWAYS sets before controller |
+| Implicit dep   | Documentation + code review         |
+| Learning curve | ADR + inline docs                   |
 
 ---
 
@@ -228,12 +228,12 @@ CREATE POLICY tenant_isolation ON users
 
 ```
 backend/src/nest/
-├── common/
-│   ├── guards/
-│   │   └── jwt-auth.guard.ts           # Sets CLS context
-│   └── interceptors/
-│       └── tenant-context.interceptor.ts # Backup + Logging
-├── app.module.ts                        # ClsModule registration
+\u251c\u2500\u2500 common/
+\u2502   \u251c\u2500\u2500 guards/
+\u2502   \u2502   \u2514\u2500\u2500 jwt-auth.guard.ts           # Sets CLS context
+\u2502   \u2514\u2500\u2500 interceptors/
+\u2502       \u2514\u2500\u2500 tenant-context.interceptor.ts # Backup + logging
+\u251c\u2500\u2500 app.module.ts                        # ClsModule registration
 ```
 
 ### Module Registration
@@ -278,7 +278,7 @@ export class UsersService {
 ### Type-Safe Wrapper (Optional)
 
 ```typescript
-// Empfohlen für häufige Verwendung
+// Recommended for frequent usage
 @Injectable()
 export class TenantContext {
   constructor(private readonly cls: ClsService) {}
@@ -303,11 +303,11 @@ export class TenantContext {
 
 | Scenario              | Expected                           | Status |
 | --------------------- | ---------------------------------- | ------ |
-| Authenticated Request | tenantId in CLS                    | ✅     |
-| Service Query         | WHERE tenant_id = ?                | ✅     |
-| Parallel Requests     | Isolation (no cross-contamination) | ✅     |
-| Public Endpoint       | CLS empty (OK)                     | ✅     |
-| Background Job        | Manuelles CLS Setup möglich        | ✅     |
+| Authenticated Request | tenantId in CLS                    | \u2705 |
+| Service Query         | WHERE tenant_id = ?                | \u2705 |
+| Parallel Requests     | Isolation (no cross-contamination) | \u2705 |
+| Public Endpoint       | CLS empty (OK)                     | \u2705 |
+| Background Job        | Manual CLS setup possible          | \u2705 |
 
 ---
 

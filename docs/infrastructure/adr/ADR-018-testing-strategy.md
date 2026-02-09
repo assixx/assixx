@@ -1,203 +1,203 @@
 # ADR-018: Testing Strategy (Unit + API Integration)
 
-| Metadata                | Value                                                                                                 |
-| ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                              |
-| **Date**                | 2026-02-04                                                                                            |
-| **Decision Makers**     | SCS Technik                                                                                           |
+| Metadata                | Value                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                          |
+| **Date**                | 2026-02-04                                                                                        |
+| **Decision Makers**     | SCS Technik                                                                                       |
 | **Affected Components** | `vitest.config.ts`, `backend/test/`, `backend/src/**/*.test.ts`, `shared/src/**/*.test.ts`, CI/CD |
 
 ---
 
 ## Context
 
-### Ausgangslage
+### Starting Point
 
-Assixx hatte bis Anfang 2026 **keine automatisierten Tests**. API-Endpunkte wurden manuell mit der Bruno Desktop-App getestet. Es gab:
+Assixx had **no automated tests** until early 2026. API endpoints were manually tested with the Bruno Desktop app. There were:
 
-- Keine Unit-Tests
-- Keine Coverage-Messung
-- Keine Test-Gate in CI/CD
-- Kein Regressionsschutz bei Refactoring
+- No unit tests
+- No coverage measurement
+- No test gate in CI/CD
+- No regression protection during refactoring
 
-### Problem: Manuelles Testing skaliert nicht
+### Problem: Manual Testing Does Not Scale
 
-| Problem                       | Auswirkung                                                                        |
-| ----------------------------- | --------------------------------------------------------------------------------- |
-| Kein Regressionsschutz        | Refactoring bricht Features, die erst in Production auffallen                     |
-| Bruno CLI ist fragil          | Rate-Limiting, State-Abhängigkeiten, kein parallelisierbares Feedback             |
-| Keine Edge-Case-Dokumentation | `is_active` Multi-State (0/1/3/4), Password-Regeln, Coercion-Logik undokumentiert |
-| Kein Merge-Gate               | Kaputter Code kann in `main` landen                                               |
-| Kein Coverage-Tracking        | Unklar welche Code-Pfade getestet sind                                            |
+| Problem                    | Impact                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| No regression protection   | Refactoring breaks features that are only noticed in production                |
+| Bruno CLI is fragile       | Rate limiting, state dependencies, no parallelizable feedback                  |
+| No edge case documentation | `is_active` multi-state (0/1/3/4), password rules, coercion logic undocumented |
+| No merge gate              | Broken code can land in `main`                                                 |
+| No coverage tracking       | Unclear which code paths are tested                                            |
 
-### Anforderungen
+### Requirements
 
-1. **Unit-Tests** fuer reine Funktionen (Helpers, Schemas, Utils) — schnell, isoliert, ohne DB/Docker
-2. **API-Integration-Tests** fuer HTTP-Endpunkte — gegen echtes Docker-Backend
-3. **Einheitliches Tool** fuer beide Test-Typen — kein Tool-Wildwuchs
-4. **ESM-native** — Assixx nutzt `"type": "module"` durchgehend
-5. **CI/CD-Integration** als Merge-Gate — kein kaputtes Feature in `main`
-6. **Phase-basierter Rollout** — Fundament zuerst, peu a peu erweitern
+1. **Unit tests** for pure functions (helpers, schemas, utils) — fast, isolated, without DB/Docker
+2. **API integration tests** for HTTP endpoints — against real Docker backend
+3. **Unified tool** for both test types — no tool sprawl
+4. **ESM-native** — Assixx uses `"type": "module"` throughout
+5. **CI/CD integration** as merge gate — no broken features in `main`
+6. **Phase-based rollout** — foundation first, expand gradually
 
 ---
 
 ## Decision Drivers
 
-1. **ESM-Kompatibilitaet** — Projekt nutzt `"type": "module"`, Tool muss ESM nativ unterstuetzen
-2. **Single-Tool-Strategie** — Ein Test-Runner fuer Unit + Integration, kein Jest + Bruno + Supertest Mix
-3. **Geschwindigkeit** — Unit-Tests muessen in <1s laufen, kein DI-Container-Overhead
-4. **Workspace-Support** — Separate Konfiguration fuer Unit (schnell, isolated) vs. API (sequentiell, real HTTP)
-5. **NestJS-Unabhaengigkeit** — Pure-Function-Tests brauchen keinen DI-Container
-6. **Zuverlaessigkeit** — API-Tests muessen 100% deterministisch sein (kein Flaky durch Rate-Limiting)
+1. **ESM Compatibility** — Project uses `"type": "module"`, tool must support ESM natively
+2. **Single-Tool Strategy** — One test runner for unit + integration, no Jest + Bruno + Supertest mix
+3. **Speed** — Unit tests must run in <1s, no DI container overhead
+4. **Workspace Support** — Separate configuration for unit (fast, isolated) vs. API (sequential, real HTTP)
+5. **NestJS Independence** — Pure function tests don't need a DI container
+6. **Reliability** — API tests must be 100% deterministic (no flakiness from rate limiting)
 
 ---
 
 ## Options Considered
 
-### Option A: Jest + @nestjs/testing + Bruno CLI (beibehalten)
+### Option A: Jest + @nestjs/testing + Bruno CLI (keep existing)
 
 **Pros:**
 
-- NestJS-Dokumentation empfiehlt Jest + @nestjs/testing
-- Bruno CLI existiert bereits (96 Requests, 169 Tests)
-- Grosse Community
+- NestJS documentation recommends Jest + @nestjs/testing
+- Bruno CLI already exists (96 requests, 169 tests)
+- Large community
 
 **Cons:**
 
-- **ESM-Inkompatibel** — Jest braucht `--experimental-vm-modules` Flag, instabil mit ESM
-- **Langsam** — @nestjs/testing startet DI-Container pro Test-Suite (~2-5s Overhead)
-- **Zwei Tools** — Bruno CLI fuer API, Jest fuer Unit — unterschiedliche Configs, Outputs, CI-Setups
-- **Bruno CLI fragil** — State-Abhaengigkeiten (`bru.setVar()`), Rate-Limiting bricht Tests
-- **Kein Workspace-Support** — Keine native Trennung von Unit vs. Integration
+- **ESM Incompatible** — Jest requires `--experimental-vm-modules` flag, unstable with ESM
+- **Slow** — @nestjs/testing starts DI container per test suite (~2-5s overhead)
+- **Two Tools** — Bruno CLI for API, Jest for unit — different configs, outputs, CI setups
+- **Bruno CLI fragile** — State dependencies (`bru.setVar()`), rate limiting breaks tests
+- **No Workspace Support** — No native separation of unit vs. integration
 
-**Verdict:** REJECTED — ESM-Inkompatibilitaet ist Dealbreaker, zwei Tools erhoehen Komplexitaet
+**Verdict:** REJECTED — ESM incompatibility is a dealbreaker, two tools increase complexity
 
-### Option B: Vitest + @nestjs/testing (DI-Container-Tests)
+### Option B: Vitest + @nestjs/testing (DI Container Tests)
 
 **Pros:**
 
-- Vitest ist ESM-native und schnell
-- @nestjs/testing erlaubt Service-Tests mit echtem DI-Container
+- Vitest is ESM-native and fast
+- @nestjs/testing allows service tests with real DI container
 
 **Cons:**
 
-- **Overhead** — DI-Container-Setup pro Suite (~2-5s), obwohl wir reine Funktionen testen
-- **Komplexitaet** — Mocking von Providers, Module-Registrierung, Token-Injection
-- **Fragilitaet** — Tests brechen bei DI-Refactoring (Module-Struktur aendern = Tests anpassen)
-- **Overkill** — 80% unserer testbaren Logik sind Pure Functions (Helpers, Schemas, Utils)
+- **Overhead** — DI container setup per suite (~2-5s), even though we're testing pure functions
+- **Complexity** — Mocking providers, module registration, token injection
+- **Fragility** — Tests break on DI refactoring (changing module structure = adapting tests)
+- **Overkill** — 80% of our testable logic is pure functions (helpers, schemas, utils)
 
-**Verdict:** REJECTED — Zu viel Overhead fuer Pure-Function-Tests. Fuer Service-Tests mit DB-Abhaengigkeit: `vi.mock()` statt DI-Container.
+**Verdict:** REJECTED — Too much overhead for pure function tests. For service tests with DB dependency: `vi.mock()` instead of DI container.
 
-### Option C: Vitest + native fetch() — Two-Tier Strategy (EMPFOHLEN)
+### Option C: Vitest + native fetch() — Two-Tier Strategy (RECOMMENDED)
 
 **Pros:**
 
-- **ESM-native** — Keine Workarounds, kein `--experimental-vm-modules`
-- **Single Tool** — Vitest fuer Unit UND Integration (Workspace-Projects)
-- **Schnell** — 824 Unit-Tests in ~4s, 19 Frontend-Tests in <1s, 175 API-Tests in ~6s
-- **Workspace-Trennung** — `--project unit` (schnell, isolated) vs. `--project api` (sequentiell, real HTTP)
-- **Pure-Function-First** — Kein DI-Container fuer Helpers/Schemas/Utils
-- **fetch()-basiert** — API-Tests nutzen native `fetch()`, keine Abstraktion (Bruno CLI, Supertest)
-- **Login-Caching** — Ein Login-Request fuer 175 Tests (`isolate: false`)
-- **Deterministisch** — `flushThrottleKeys()` loest Rate-Limit-Problem sauber
+- **ESM-native** — No workarounds, no `--experimental-vm-modules`
+- **Single Tool** — Vitest for unit AND integration (workspace projects)
+- **Fast** — 824 unit tests in ~4s, 19 frontend tests in <1s, 175 API tests in ~6s
+- **Workspace Separation** — `--project unit` (fast, isolated) vs. `--project api` (sequential, real HTTP)
+- **Pure-Function-First** — No DI container for helpers/schemas/utils
+- **fetch()-based** — API tests use native `fetch()`, no abstraction (Bruno CLI, Supertest)
+- **Login Caching** — One login request for 175 tests (`isolate: false`)
+- **Deterministic** — `flushThrottleKeys()` solves rate limit problem cleanly
 
 **Cons:**
 
-- **Service-Mocking nötig** — Fuer Phase 5+ muessen DB-Calls manuell gemockt werden (`vi.mock()`)
-- **Kein DI-Container-Validation** — Wir testen nicht ob NestJS-DI korrekt verdrahtet ist (akzeptables Risiko)
-- **Sequentielle API-Tests** — `maxWorkers: 1` ist langsamer als parallele Ausfuehrung (aber notwendig wegen Shared State)
+- **Service mocking needed** — For Phase 5+, DB calls must be manually mocked (`vi.mock()`)
+- **No DI container validation** — We don't test whether NestJS DI is correctly wired (acceptable risk)
+- **Sequential API tests** — `maxWorkers: 1` is slower than parallel execution (but necessary due to shared state)
 
-**Verdict:** ACCEPTED — Bester Kompromiss aus Geschwindigkeit, Einfachheit und Zuverlaessigkeit
+**Verdict:** ACCEPTED — Best compromise of speed, simplicity, and reliability
 
 ---
 
 ## Decision
 
-**Two-Tier Testing Strategy mit Vitest als Single Test-Runner.**
+**Two-Tier Testing Strategy with Vitest as single test runner.**
 
-### Architektur-Schema
+### Architecture Schema
 
 ```
                         VITEST TEST PYRAMID
                         ==================
 
                          ┌─────────────┐
-                         │   E2E Tests │  (Zukunft: Playwright)
-                         │   Browser   │  nicht Teil dieser ADR
+                         │   E2E Tests │  (Future: Playwright)
+                         │   Browser   │  not part of this ADR
                          └──────┬──────┘
                                 │
                    ┌────────────┴────────────┐
                    │  API Integration Tests   │  Tier 2: Real HTTP
-                   │  18 Dateien, 175 Tests   │  gegen Docker-Backend
+                   │  18 files, 175 tests     │  against Docker backend
                    │  vitest --project api    │  Sequential, fetch()
                    └────────────┬─────────────┘
                                 │
           ┌─────────────────────┴─────────────────────┐
           │           Unit Tests                       │  Tier 1: Pure Functions
-          │  31 Dateien, 824 Tests (Phase 0-8)        │  Kein Docker nötig
+          │  31 files, 824 tests (Phase 0-8)           │  No Docker needed
           │  vitest --project unit                     │  Parallel, <1s
           ├────────────────────────────────────────────┤
           │           Frontend Unit Tests              │  Tier 1b: Frontend Utils
-          │  5 Dateien, 19 Tests (Phase 7)             │  Kein Docker nötig
+          │  5 files, 19 tests (Phase 7)               │  No Docker needed
           │  vitest --project frontend-unit            │  Parallel, <1s
           └────────────────────────────────────────────┘
 ```
 
 ### Tier 1: Unit Tests (Pure Functions)
 
-| Aspekt      | Entscheidung                                                                 |
-| ----------- | ---------------------------------------------------------------------------- |
-| Tool        | Vitest v4 (`vitest run --project unit`)                                      |
-| Scope       | `backend/src/**/*.test.ts` + `shared/src/**/*.test.ts`                       |
-| Ausfuehrung | Parallel, isolated, <1s Gesamtdauer                                          |
-| Mocking     | `vi.mock()` fuer DB-Services (Phase 5+), `vi.useFakeTimers()` fuer Dates     |
-| Dateien     | Co-located: `source.ts` neben `source.test.ts`                               |
-| Pattern     | AAA (Arrange-Act-Assert), ein Konzept pro `it()`, minimaler Input            |
-| Coverage    | v8 Provider, HTML + JSON + Text Reporter                                     |
-| Naming      | `describe('FunctionName')` > `describe('when context')` > `it('should ...')` |
+| Aspect    | Decision                                                                     |
+| --------- | ---------------------------------------------------------------------------- |
+| Tool      | Vitest v4 (`vitest run --project unit`)                                      |
+| Scope     | `backend/src/**/*.test.ts` + `shared/src/**/*.test.ts`                       |
+| Execution | Parallel, isolated, <1s total duration                                       |
+| Mocking   | `vi.mock()` for DB services (Phase 5+), `vi.useFakeTimers()` for dates       |
+| Files     | Co-located: `source.ts` next to `source.test.ts`                             |
+| Pattern   | AAA (Arrange-Act-Assert), one concept per `it()`, minimal input              |
+| Coverage  | v8 Provider, HTML + JSON + Text Reporter                                     |
+| Naming    | `describe('FunctionName')` > `describe('when context')` > `it('should ...')` |
 
-**Was wird Unit-getestet:**
+**What is unit-tested:**
 
 ```
 Phase 1: fieldMapper.ts          — dbToApi(), apiToDb()              ✅ 16 Tests
 Phase 2: date-helpers.ts         — formatDate(), isToday(), etc.     ✅ 27 Tests
-         is-active.ts            — Status-Konstanten                 ✅  9 Tests
-Phase 3: common.schema.ts        — Zod-Schemas (ID, Email, PW)      ✅ 63 Tests
+         is-active.ts            — Status constants                  ✅  9 Tests
+Phase 3: common.schema.ts        — Zod schemas (ID, Email, PW)      ✅ 63 Tests
 Phase 4: shifts.helpers.ts       — parseTime, calculateHours         ✅ 22 Tests
          users.helpers.ts        — mapSortField, buildUpdateFields   ✅ 20 Tests
          kvp.helpers.ts          — isUuid, buildFilterConditions     ✅ 24 Tests
          audit.helpers.ts        — sanitizeData, singularize         ✅ 41 Tests
-Phase 5: Service-Logik (Mocking) — roles, rotation, features, auth   ✅ 86 Tests
-Phase 6: Restliche Helpers       — blackboard, calendar, chat, etc.  ✅ 27 Tests
-Phase 7: Frontend Utils          — password-strength, jwt, auth      ✅ 19 Tests
-Phase 8: DTO-Validierungen       — Alle Module (13 Dateien)          ✅ 460 Tests
-Phase 9: Weitere Service-Tests   — Coverage von 10% → 30%+           ← Nächste
+Phase 5: Service logic (Mocking) — roles, rotation, features, auth   ✅ 86 Tests
+Phase 6: Remaining helpers       — blackboard, calendar, chat, etc.  ✅ 27 Tests
+Phase 7: Frontend utils          — password-strength, jwt, auth      ✅ 19 Tests
+Phase 8: DTO validations         — All modules (13 files)            ✅ 460 Tests
+Phase 9: Additional service tests— Coverage from 10% → 30%+          ← Next
 ```
 
-**Was wird NICHT Unit-getestet:**
+**What is NOT unit-tested:**
 
-- `*.module.ts` — NestJS DI-Wiring (reines Deklarativ)
-- `*.controller.ts` — HTTP-Layer (Tier 2 deckt das ab)
+- `*.module.ts` — NestJS DI wiring (purely declarative)
+- `*.controller.ts` — HTTP layer (Tier 2 covers this)
 - `main.ts` — Bootstrap
-- `index.ts` — Barrel-Exports
-- `types/` — Reine Type-Definitionen
+- `index.ts` — Barrel exports
+- `types/` — Pure type definitions
 
 ### Tier 2: API Integration Tests (Real HTTP)
 
-| Aspekt        | Entscheidung                                                      |
-| ------------- | ----------------------------------------------------------------- |
-| Tool          | Vitest v4 (`vitest run --project api`)                            |
-| Scope         | `backend/test/**/*.api.test.ts`                               |
-| Ausfuehrung   | Sequentiell (`maxWorkers: 1`, `isolate: false`)                   |
-| HTTP-Client   | Native `fetch()` — keine Abstraktion (kein Supertest, kein Axios) |
-| Auth          | `loginApitest()` — cached, ein Request fuer gesamte Suite         |
-| Rate-Limiting | `flushThrottleKeys()` — flusht Redis `throttle:*` Keys            |
-| Timeout       | 30s pro Test, 30s pro Hook                                        |
-| Voraussetzung | Docker-Backend laeuft (`docker-compose up -d`)                    |
+| Aspect        | Decision                                                   |
+| ------------- | ---------------------------------------------------------- |
+| Tool          | Vitest v4 (`vitest run --project api`)                     |
+| Scope         | `backend/test/**/*.api.test.ts`                            |
+| Execution     | Sequential (`maxWorkers: 1`, `isolate: false`)             |
+| HTTP Client   | Native `fetch()` — no abstraction (no Supertest, no Axios) |
+| Auth          | `loginApitest()` — cached, one request for entire suite    |
+| Rate Limiting | `flushThrottleKeys()` — flushes Redis `throttle:*` keys    |
+| Timeout       | 30s per test, 30s per hook                                 |
+| Prerequisite  | Docker backend running (`docker-compose up -d`)            |
 
-**18 Module, 175 Tests:**
+**18 Modules, 175 Tests:**
 
-| Module        | Tests | Besonderheiten                              |
+| Module        | Tests | Specifics                                   |
 | ------------- | ----- | ------------------------------------------- |
 | auth          | 9     | Login + Refresh + Logout                    |
 | users         | 10    | CRUD + ensureTestEmployee                   |
@@ -210,7 +210,7 @@ Phase 9: Weitere Service-Tests   — Coverage von 10% → 30%+           ← Nä
 | kvp           | 15    | CRUD + categories + comments + dashboard    |
 | machines      | 15    | CRUD + categories + maintenance + stats     |
 | surveys       | 10    | CRUD + templates + statistics               |
-| chat          | 6     | Braucht 2. User (ensureTestEmployee)        |
+| chat          | 6     | Needs 2nd user (ensureTestEmployee)         |
 | documents     | 4     | Folders + list                              |
 | shifts        | 12    | Rotation generation + week/history deletion |
 | logs          | 24    | Export JSON/CSV/TXT + validation + throttle |
@@ -218,26 +218,26 @@ Phase 9: Weitere Service-Tests   — Coverage von 10% → 30%+           ← Nä
 | features      | 4     | List + categories + my-features             |
 | areas         | 3     | List + stats                                |
 
-**Kritische Patterns:**
+**Critical Patterns:**
 
 ```typescript
-// 1. Auth-Header-Trennung (Fastify lehnt Content-Type bei body-losen Requests ab)
-authHeaders(token)  // POST/PUT mit Body → inkl. Content-Type
-authOnly(token)     // GET/DELETE → nur Authorization
+// 1. Auth header separation (Fastify rejects Content-Type on body-less requests)
+authHeaders(token)  // POST/PUT with body → includes Content-Type
+authOnly(token)     // GET/DELETE → only Authorization
 
-// 2. One-Request-per-Describe (verhindert Rate-Limiting)
+// 2. One-Request-per-Describe (prevents rate limiting)
 describe('Module: List', () => {
   let res: Response;
   beforeAll(async () => { res = await fetch(...); });
   it('should return 200', () => { expect(res.status).toBe(200); });
 });
 
-// 3. Throttle-Flush fuer rate-limited Endpoints
-flushThrottleKeys();  // Redis EVAL loescht throttle:* Keys
+// 3. Throttle flush for rate-limited endpoints
+flushThrottleKeys();  // Redis EVAL deletes throttle:* keys
 const res = await fetch(`${BASE_URL}/logs/export?format=json...`);
 ```
 
-### Vitest Config (Workspace-Projects)
+### Vitest Config (Workspace Projects)
 
 ```typescript
 // vitest.config.ts — 3 Projects
@@ -277,7 +277,7 @@ export default defineConfig({
           setupFiles: ['./vitest.frontend-setup.ts'],
         },
       },
-      // Tier 2: API Integration Tests (real HTTP gegen Docker)
+      // Tier 2: API Integration Tests (real HTTP against Docker)
       {
         test: {
           name: 'api',
@@ -285,8 +285,8 @@ export default defineConfig({
           testTimeout: 30_000,
           hookTimeout: 30_000,
           pool: 'forks',
-          maxWorkers: 1, // Sequentiell (Shared Auth State)
-          isolate: false, // Module-Cache shared (Login nur 1x)
+          maxWorkers: 1, // Sequential (shared auth state)
+          isolate: false, // Module cache shared (login only 1x)
         },
       },
     ],
@@ -294,75 +294,75 @@ export default defineConfig({
 });
 ```
 
-### Alle Test-Befehle (Quick Reference)
+### All Test Commands (Quick Reference)
 
 ```bash
-# ── Alle Tests ────────────────────────────────────────────────
-pnpm test                                           # Alle 3 Projects (unit + frontend-unit + api)
-pnpm test -- --reporter=verbose                     # Mit Details
+# ── All Tests ────────────────────────────────────────────────
+pnpm test                                           # All 3 projects (unit + frontend-unit + api)
+pnpm test -- --reporter=verbose                     # With details
 
 # ── Backend Unit Tests ────────────────────────────────────────
-pnpm test --project unit                            # 824 Tests (~4s, kein Docker)
-pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Einzelne Datei
+pnpm test --project unit                            # 824 tests (~4s, no Docker)
+pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Single file
 
 # ── Frontend Unit Tests ───────────────────────────────────────
-pnpm test --project frontend-unit                   # 19 Tests (<1s, kein Docker)
+pnpm test --project frontend-unit                   # 19 tests (<1s, no Docker)
 
 # ── API Integration Tests ────────────────────────────────────
-pnpm test --project api                             # 175 Tests (~6s, Docker MUSS laufen!)
-pnpm vitest run --project api -- backend/test/calendar.api.test.ts  # Einzelnes Modul
+pnpm test --project api                             # 175 tests (~6s, Docker MUST be running!)
+pnpm vitest run --project api -- backend/test/calendar.api.test.ts  # Single module
 
 # ── Coverage ──────────────────────────────────────────────────
-pnpm test:coverage                                  # Alle Projects mit Coverage
-pnpm vitest run --project unit --project frontend-unit --coverage  # Nur CI-relevante (ohne api)
+pnpm test:coverage                                  # All projects with coverage
+pnpm vitest run --project unit --project frontend-unit --coverage  # CI-relevant only (without api)
 
-# ── CI-Befehl (identisch mit GitHub Actions) ──────────────────
-cd frontend && pnpm exec svelte-kit sync && cd ..   # SvelteKit Types generieren
+# ── CI Command (identical to GitHub Actions) ──────────────────
+cd frontend && pnpm exec svelte-kit sync && cd ..   # Generate SvelteKit types
 pnpm vitest run --project unit --project frontend-unit --coverage
 
-# ── Watch Mode (Entwicklung) ─────────────────────────────────
-pnpm test:watch                                     # Alle Projects im Watch-Mode
-pnpm vitest --project unit                          # Nur Unit Tests watchen
+# ── Watch Mode (Development) ─────────────────────────────────
+pnpm test:watch                                     # All projects in watch mode
+pnpm vitest --project unit                          # Watch only unit tests
 
 # ── Browser UI ────────────────────────────────────────────────
-pnpm test:ui                                        # Vitest UI auf http://localhost:5175
+pnpm test:ui                                        # Vitest UI at http://localhost:5175
 
-# ── Linting (kein Vitest, aber relevant) ──────────────────────
+# ── Linting (not Vitest, but relevant) ──────────────────────
 docker exec assixx-backend pnpm exec eslint backend/src  # Backend ESLint
 cd frontend && pnpm run lint                             # Frontend ESLint
-pnpm run validate:all                                    # ALLES auf einmal
+pnpm run validate:all                                    # EVERYTHING at once
 ```
 
-### Phase-basierter Rollout
+### Phase-Based Rollout
 
 ```
-Phase 0: Config & Infrastruktur    ✅ DONE     6/6 Checks
+Phase 0: Config & Infrastructure    ✅ DONE     6/6 Checks
 Phase 1: Proof of Concept          ✅ DONE    16 Tests   (fieldMapper)
 Phase 2: Shared Package            ✅ DONE    36 Tests   (date-helpers, is-active)
 Phase 3: Zod Schemas               ✅ DONE    63 Tests   (common.schema)
 Phase 4: Backend Helpers            ✅ DONE   107 Tests   (shifts, users, kvp, audit)
 Phase 5: Services (Mocking)         ✅ DONE    86 Tests   (roles, rotation, features, auth)
-Phase 6: Restliche Helpers          ✅ DONE    27 Tests   (blackboard, calendar, chat, etc.)
+Phase 6: Remaining Helpers          ✅ DONE    27 Tests   (blackboard, calendar, chat, etc.)
 Phase 7: Frontend Utils             ✅ DONE    19 Tests   (password-strength, auth, jwt)
-Phase 8: DTO-Validierungen          ✅ DONE   460 Tests   (13 Module, 13 Dateien)
+Phase 8: DTO Validations            ✅ DONE   460 Tests   (13 modules, 13 files)
 ──────────────────────────────────────────────────────────────────────
-TOTAL: 824 Unit + 19 Frontend + 175 API = 1018 Tests (54 Dateien)
+TOTAL: 824 Unit + 19 Frontend + 175 API = 1018 Tests (54 files)
 ──────────────────────────────────────────────────────────────────────
-Phase 9: Weitere Service-Tests      PENDING              (Coverage 10% → 30%+)
+Phase 9: Additional Service Tests   PENDING              (Coverage 10% → 30%+)
 ```
 
-### Coverage-Thresholds (aktiv seit 2026-02-05)
+### Coverage Thresholds (active since 2026-02-05)
 
-| Metrik     | Aktuell (~Phase 8) | Threshold (Floor) | Langfrist-Ziel |
+| Metric     | Current (~Phase 8) | Threshold (Floor) | Long-term Goal |
 | ---------- | ------------------ | ----------------- | -------------- |
 | Lines      | ~10%               | **10%**           | 50%            |
 | Branches   | ~11%               | **10%**           | 50%            |
 | Functions  | ~9%                | **8%**            | 50%            |
 | Statements | ~10%               | **10%**           | 50%            |
 
-> **Warum niedrig trotz 824 Tests?** Die Tests decken Helpers, Schemas und DTOs gut ab (50-100%), aber die 16 Service-Dateien (der Grossteil des Codes) haben 0% Coverage.
+> **Why low despite 824 tests?** The tests cover helpers, schemas, and DTOs well (50-100%), but the 16 service files (the bulk of the code) have 0% coverage.
 
-### CI/CD Integration (✅ implementiert 2026-02-05)
+### CI/CD Integration (implemented 2026-02-05)
 
 ```yaml
 # .github/workflows/code-quality-checks.yml — Job: unit-tests
@@ -383,16 +383,16 @@ unit-tests:
       with: { name: coverage-report, path: coverage/, retention-days: 30 }
 ```
 
-**CI-Learnings:**
+**CI Learnings:**
 
-- `svelte-kit sync` ist **Pflicht** — `frontend/tsconfig.json` extends `.svelte-kit/tsconfig.json`
-- `*.guard.ts` aus Coverage excluden — Rollup kann TypeScript-Decorators nicht parsen
-- `*.test.ts` aus `.prettierignore` entfernt — sonst formatiert `validate:all` Test-Files nicht, aber CI checkt sie
+- `svelte-kit sync` is **mandatory** — `frontend/tsconfig.json` extends `.svelte-kit/tsconfig.json`
+- `*.guard.ts` excluded from coverage — Rollup cannot parse TypeScript decorators
+- `*.test.ts` removed from `.prettierignore` — otherwise `validate:all` doesn't format test files, but CI checks them
 
-**Wichtig:** API-Integration-Tests (`--project api`) laufen NICHT in CI — sie brauchen Docker mit DB/Redis.
-Unit + Frontend-Tests (`--project unit --project frontend-unit`) laufen in CI — sie brauchen nur Node.js.
+**Important:** API integration tests (`--project api`) do NOT run in CI — they require Docker with DB/Redis.
+Unit + frontend tests (`--project unit --project frontend-unit`) run in CI — they only need Node.js.
 
-### Branch Protection (GitHub, ✅ konfiguriert)
+### Branch Protection (GitHub, configured)
 
 ```
 Settings → Branches → main:
@@ -403,7 +403,7 @@ Settings → Branches → main:
   ✅ Require branches to be up to date
 ```
 
-> Erfordert GitHub Team Plan ($4/User/Monat) fuer private Repos.
+> Requires GitHub Team Plan ($4/user/month) for private repos.
 
 ---
 
@@ -411,71 +411,71 @@ Settings → Branches → main:
 
 ### Positive
 
-- **Single Tool** — Vitest fuer Unit + Integration, keine Tool-Fragmentierung
-- **ESM-native** — Keine Workarounds, keine `--experimental-vm-modules` Flags
-- **Schnell** — 824 Unit-Tests in ~4s, 175 API-Tests in ~6s, 19 Frontend-Tests in <1s
-- **Deterministisch** — `vi.useFakeTimers()` fuer Dates, `flushThrottleKeys()` fuer Rate-Limiting
-- **Workspace-Trennung** — Unit-Tests (CI-tauglich, kein Docker) vs. API-Tests (Docker required)
-- **Bruno CLI eliminiert** — 329 npm-Packages entfernt, kein State-Management via `bru.setVar()`
-- **Tests als Dokumentation** — Edge Cases (is_active Multi-State, Password NIST-Regeln) werden durch Tests sichtbar
-- **Bugs durch Tests entdeckt und gefixt** — sanitizeData camelCase-Bug (SENSITIVE_FIELDS lowercase-Normalisierung, gefixt 2026-02-05), EmailSchema Trim-Order dokumentiert
-- **Regressionsschutz** — 1018 automatisierte Tests (824 Unit + 19 Frontend + 175 API)
-- **CI als Merge-Gate** — Unit-Tests + Coverage-Thresholds blockieren Merge bei Failure
-- **Coverage-Floor** — Thresholds verhindern dass Coverage schleichend sinkt
+- **Single Tool** — Vitest for unit + integration, no tool fragmentation
+- **ESM-native** — No workarounds, no `--experimental-vm-modules` flags
+- **Fast** — 824 unit tests in ~4s, 175 API tests in ~6s, 19 frontend tests in <1s
+- **Deterministic** — `vi.useFakeTimers()` for dates, `flushThrottleKeys()` for rate limiting
+- **Workspace Separation** — Unit tests (CI-compatible, no Docker) vs. API tests (Docker required)
+- **Bruno CLI eliminated** — 329 npm packages removed, no state management via `bru.setVar()`
+- **Tests as Documentation** — Edge cases (is_active multi-state, password NIST rules) become visible through tests
+- **Bugs discovered and fixed through tests** — sanitizeData camelCase bug (SENSITIVE_FIELDS lowercase normalization, fixed 2026-02-05), EmailSchema trim order documented
+- **Regression Protection** — 1018 automated tests (824 unit + 19 frontend + 175 API)
+- **CI as Merge Gate** — Unit tests + coverage thresholds block merge on failure
+- **Coverage Floor** — Thresholds prevent coverage from gradually declining
 
 ### Negative
 
-- **Kein DI-Container-Testing** — Wir testen nicht ob NestJS Module korrekt verdrahtet sind (akzeptables Risiko — API-Tests decken das indirekt ab)
-- **API-Tests brauchen Docker** — Koennen nicht in Standard-CI laufen, nur lokal oder in Docker-CI
-- **Sequentielle API-Tests** — `maxWorkers: 1` ist langsamer als parallel (aber notwendig wegen Shared State)
-- **Phase-basiert = langsam** — Voller Coverage-Ausbau dauert mehrere Phasen
-- **Service-Mocking-Overhead** — Ab Phase 5: `vi.mock()` fuer DB-Services manuell pflegen
+- **No DI Container Testing** — We don't test whether NestJS modules are correctly wired (acceptable risk — API tests cover this indirectly)
+- **API Tests Need Docker** — Cannot run in standard CI, only locally or in Docker CI
+- **Sequential API Tests** — `maxWorkers: 1` is slower than parallel (but necessary due to shared state)
+- **Phase-based = Slow** — Full coverage expansion takes multiple phases
+- **Service Mocking Overhead** — From Phase 5: `vi.mock()` for DB services must be maintained manually
 
 ### Neutral
 
-- Bruno `.bru`-Dateien entfernt (waren nur noch fuer CLI, Desktop-App wird nicht genutzt)
-- `@usebruno/cli` Dependency entfernt (-329 Packages)
-- `test:api` Script umgeleitet auf Vitest (war vorher Bruno CLI)
-- Bestehende `vitest.setup.ts` beibehalten (clearAllMocks, resetModules, Test-ENV-Vars)
+- Bruno `.bru` files removed (were only used for CLI, desktop app is not used)
+- `@usebruno/cli` dependency removed (-329 packages)
+- `test:api` script redirected to Vitest (was previously Bruno CLI)
+- Existing `vitest.setup.ts` retained (clearAllMocks, resetModules, test ENV vars)
 
 ---
 
-## Resolved Issues (durch Testing-Migration entdeckt)
+## Resolved Issues (discovered through testing migration)
 
 ### 1. ResponseInterceptor Double-Wrapping (Shifts)
 
-**Problem:** Controller wrappten manuell in `{ success, data }`, aber der globale `ResponseInterceptor` wrapped AUCH — doppeltes Wrapping.
+**Problem:** Controllers manually wrapped in `{ success, data }`, but the global `ResponseInterceptor` ALSO wraps — double wrapping.
 
-**Fix:** 3 Controller-Methoden bereinigt (`rotation.controller.ts`, `shifts.controller.ts`). Controller returnen jetzt Daten direkt.
+**Fix:** 3 controller methods cleaned up (`rotation.controller.ts`, `shifts.controller.ts`). Controllers now return data directly.
 
-**Betroffene Dateien:** `rotation.controller.ts:270-283`, `rotation.controller.ts:323-349`, `shifts.controller.ts:476-494`
+**Affected Files:** `rotation.controller.ts:270-283`, `rotation.controller.ts:323-349`, `shifts.controller.ts:476-494`
 
-### 2. ExportThrottle Rate-Limiting (Logs)
+### 2. ExportThrottle Rate Limiting (Logs)
 
-**Problem:** `ExportThrottle` erlaubt 1 Request/Minute. 6 sequentielle Export-Requests in Tests loesten 429er aus.
+**Problem:** `ExportThrottle` allows 1 request/minute. 6 sequential export requests in tests triggered 429 errors.
 
-**Fix:** `flushThrottleKeys()` in `helpers.ts` — flusht Redis `throttle:*` Keys per `docker exec` + EVAL. Auth-Tokens sind im Node-Prozess gecached (nicht Redis), daher sicher.
+**Fix:** `flushThrottleKeys()` in `helpers.ts` — flushes Redis `throttle:*` keys via `docker exec` + EVAL. Auth tokens are cached in the Node process (not Redis), therefore safe.
 
-### 3. KVP Team-Lead-Requirement
+### 3. KVP Team Lead Requirement
 
-**Problem:** `kvp.service.ts` verlangt dass Admin/Root-User ein Teamleiter ist (`orgInfo.teamLeadOf.length > 0`), sonst 403.
+**Problem:** `kvp.service.ts` requires that admin/root user is a team leader (`orgInfo.teamLeadOf.length > 0`), otherwise 403.
 
-**Fix:** DB-Setup: `UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1`
+**Fix:** DB setup: `UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1`
 
 ---
 
 ## Related Documents
 
-- [VITEST-UNIT-TEST-PLAN.md](../../VITEST-UNIT-TEST-PLAN.md) — Detaillierter Phase-Plan (Phase 0-8)
-- [VITEST-API-MIGRATION.md](../../VITEST-API-MIGRATION.md) — Bruno → Vitest Migration (103 Tests)
-- [HOW-TO-TEST-WITH-VITEST.md](../../HOW-TO-TEST-WITH-VITEST.md) — Bedienungsanleitung fuer API-Tests
+- [VITEST-UNIT-TEST-PLAN.md](../../VITEST-UNIT-TEST-PLAN.md) — Detailed phase plan (Phase 0-8)
+- [VITEST-API-MIGRATION.md](../../VITEST-API-MIGRATION.md) — Bruno → Vitest migration (103 tests)
+- [HOW-TO-TEST-WITH-VITEST.md](../../HOW-TO-TEST-WITH-VITEST.md) — User guide for API tests
 
 ## Related ADRs
 
-- **ADR-001** — Rate Limiting (ExportThrottle: 1 req/min, relevant fuer Logs-Tests)
-- **ADR-005** — Authentication Strategy (JWT Guard, relevant fuer Login-Caching)
-- **ADR-007** — API Response Standardization (ResponseInterceptor, relevant fuer Double-Wrapping-Fix)
-- **ADR-013** — CI/CD Pipeline Hardening (Unit-Tests als zukuenftiges Merge-Gate)
+- **ADR-001** — Rate Limiting (ExportThrottle: 1 req/min, relevant for logs tests)
+- **ADR-005** — Authentication Strategy (JWT Guard, relevant for login caching)
+- **ADR-007** — API Response Standardization (ResponseInterceptor, relevant for double-wrapping fix)
+- **ADR-013** — CI/CD Pipeline Hardening (unit tests as future merge gate)
 
 ---
 

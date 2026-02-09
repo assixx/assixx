@@ -11,34 +11,34 @@
 
 ## Context
 
-Das Assixx-Backend benötigt Rate Limiting zum Schutz vor:
+The Assixx backend requires rate limiting for protection against:
 
-1. **Brute-Force-Attacken** auf Login/Signup-Endpoints
-2. **DoS-Attacken** durch Request-Flooding
-3. **API-Missbrauch** durch übermäßige Nutzung
-4. **Resource-Erschöpfung** bei Upload-Endpoints
+1. **Brute-force attacks** on login/signup endpoints
+2. **DoS attacks** through request flooding
+3. **API abuse** through excessive usage
+4. **Resource exhaustion** on upload endpoints
 
-### Anforderungen
+### Requirements
 
-- Multi-Tier Rate Limiting (unterschiedliche Limits pro Endpoint-Typ)
-- Distributed Rate Limiting (funktioniert über mehrere Backend-Instanzen)
-- User-basiertes Tracking (nicht nur IP-basiert)
-- Integration mit NestJS + Fastify
-- Persistente Speicherung (überlebt Container-Restart)
+- Multi-tier rate limiting (different limits per endpoint type)
+- Distributed rate limiting (works across multiple backend instances)
+- User-based tracking (not just IP-based)
+- Integration with NestJS + Fastify
+- Persistent storage (survives container restart)
 
-### Bestehendes Setup
+### Existing Setup
 
 - Backend: NestJS 11 + Fastify 5
-- Cache: Redis 7 (bereits in Docker-Compose vorhanden)
-- Auth: JWT-basiert mit HttpOnly Cookies
+- Cache: Redis 7 (already present in Docker Compose)
+- Auth: JWT-based with HttpOnly Cookies
 
 ---
 
 ## Decision
 
-Wir implementieren Rate Limiting mit:
+We implement rate limiting with:
 
-### Technologie-Stack
+### Technology Stack
 
 | Component     | Choice                              | Version |
 | ------------- | ----------------------------------- | ------- |
@@ -48,20 +48,20 @@ Wir implementieren Rate Limiting mit:
 
 ### Rate Limit Tiers
 
-| Tier     | Limit | Window | Use Case            |
-| -------- | ----- | ------ | ------------------- |
-| `auth`   | 10    | 5 min  | Brute-Force-Schutz  |
-| `public` | 100   | 15 min | Public Endpoints    |
-| `user`   | 1000  | 15 min | Authenticated Users |
-| `admin`  | 2000  | 15 min | Admin Endpoints     |
-| `upload` | 20    | 1 hour | File Uploads        |
+| Tier     | Limit | Window | Use Case               |
+| -------- | ----- | ------ | ---------------------- |
+| `auth`   | 10    | 5 min  | Brute-force protection |
+| `public` | 100   | 15 min | Public Endpoints       |
+| `user`   | 1000  | 15 min | Authenticated Users    |
+| `admin`  | 2000  | 15 min | Admin Endpoints        |
+| `upload` | 20    | 1 hour | File Uploads           |
 
-### Tracking-Strategie
+### Tracking Strategy
 
-- **Unauthenticated Requests**: IP-Adresse (mit Proxy-Header-Support)
-- **Authenticated Requests**: User ID aus JWT
+- **Unauthenticated Requests**: IP address (with proxy header support)
+- **Authenticated Requests**: User ID from JWT
 
-### Guard-Reihenfolge
+### Guard Order
 
 ```
 1. CustomThrottlerGuard  → Rate Limiting
@@ -75,42 +75,42 @@ Wir implementieren Rate Limiting mit:
 
 ### 1. @fastify/rate-limit
 
-| Pro                         | Contra                     |
-| --------------------------- | -------------------------- |
-| Native Fastify Integration  | Keine NestJS Decorators    |
-| Hook-basiert                | Manuelles Guard-Setup      |
-| Direkte Redis-Unterstützung | Weniger NestJS-idiomatisch |
+| Pros                       | Cons                  |
+| -------------------------- | --------------------- |
+| Native Fastify Integration | No NestJS Decorators  |
+| Hook-based                 | Manual guard setup    |
+| Direct Redis support       | Less NestJS-idiomatic |
 
-**Entscheidung**: Abgelehnt - `@nestjs/throttler` bietet bessere DX mit Decorators.
+**Decision**: Rejected - `@nestjs/throttler` offers better DX with decorators.
 
 ### 2. Custom Implementation
 
-| Pro                | Contra                   |
-| ------------------ | ------------------------ |
-| Volle Kontrolle    | Erhöhter Wartungsaufwand |
-| Keine Dependencies | Fehleranfällig           |
-| Exakt passend      | Zeitaufwändig            |
+| Pros             | Cons                         |
+| ---------------- | ---------------------------- |
+| Full control     | Increased maintenance effort |
+| No dependencies  | Error-prone                  |
+| Exactly tailored | Time-consuming               |
 
-**Entscheidung**: Abgelehnt - Official NestJS Package ist battle-tested.
+**Decision**: Rejected - Official NestJS package is battle-tested.
 
-### 3. In-Memory Storage (kein Redis)
+### 3. In-Memory Storage (no Redis)
 
-| Pro                      | Contra                       |
-| ------------------------ | ---------------------------- |
-| Einfacher                | Nicht distributed            |
-| Keine Redis-Abhängigkeit | Verloren bei Restart         |
-|                          | Multi-Instance nicht möglich |
+| Pros                | Cons                        |
+| ------------------- | --------------------------- |
+| Simpler             | Not distributed             |
+| No Redis dependency | Lost on restart             |
+|                     | Multi-instance not possible |
 
-**Entscheidung**: Abgelehnt - Redis bereits vorhanden, distributed Rate Limiting erforderlich.
+**Decision**: Rejected - Redis already available, distributed rate limiting required.
 
 ### 4. nestjs-throttler-storage-redis (kkoomen)
 
-| Pro             | Contra                   |
-| --------------- | ------------------------ |
-| Bekannt         | **ARCHIVED** (Sept 2024) |
-| Viele Tutorials | Keine Maintenance        |
+| Pros           | Cons                     |
+| -------------- | ------------------------ |
+| Well-known     | **ARCHIVED** (Sept 2024) |
+| Many tutorials | No maintenance           |
 
-**Entscheidung**: Abgelehnt - Paket ist deprecated. Stattdessen `@nest-lab/throttler-storage-redis` (aktiver Fork).
+**Decision**: Rejected - Package is deprecated. Using `@nest-lab/throttler-storage-redis` (active fork) instead.
 
 ---
 
@@ -118,23 +118,23 @@ Wir implementieren Rate Limiting mit:
 
 ### Positive
 
-1. **Brute-Force-Schutz**: Login mit 10 Attempts pro 5 Min
-2. **Skalierbarkeit**: Redis-backed = Multi-Instance ready
-3. **User-Tracking**: Verhindert IP-Rotation-Umgehung
-4. **DX**: Einfache `@AuthThrottle()` Decorator-Nutzung
-5. **Observability**: Logging bei Rate-Limit-Verletzungen
-6. **Custom Error Messages**: User-freundliche Fehlermeldungen
+1. **Brute-force protection**: Login with 10 attempts per 5 min
+2. **Scalability**: Redis-backed = multi-instance ready
+3. **User tracking**: Prevents IP rotation circumvention
+4. **DX**: Simple `@AuthThrottle()` decorator usage
+5. **Observability**: Logging on rate limit violations
+6. **Custom error messages**: User-friendly error messages
 
 ### Negative
 
-1. **Redis-Abhängigkeit**: Backend startet nicht ohne Redis
-2. **Komplexität**: Zusätzliche Konfiguration erforderlich
-3. **Dev-Friction**: Entwickler können sich selbst aussperren (→ Manual Reset Docs)
+1. **Redis dependency**: Backend does not start without Redis
+2. **Complexity**: Additional configuration required
+3. **Dev friction**: Developers can lock themselves out (-> Manual Reset Docs)
 
 ### Neutral
 
-1. **Monitoring**: Rate-Limit-Logs müssen überwacht werden
-2. **Tuning**: Limits müssen ggf. nach Production-Erfahrung angepasst werden
+1. **Monitoring**: Rate limit logs must be monitored
+2. **Tuning**: Limits may need adjustment based on production experience
 
 ---
 
@@ -169,20 +169,20 @@ REDIS_PORT: 6379
 
 ---
 
-## Critical: SkipThrottle für Named Throttlers
+## Critical: SkipThrottle for Named Throttlers
 
-**Problem (2026-01-19):** Login wurde nach 1-2 Requests geblockt, obwohl `auth` Tier 10/5min erlaubt.
+**Problem (2026-01-19):** Login was blocked after 1-2 requests, even though the `auth` tier allows 10/5min.
 
-**Root Cause:** `@nestjs/throttler` wendet ALLE definierten Throttler an, nicht nur den im Decorator genannten. Der `export` Throttler (1/min) blockte sofort.
+**Root Cause:** `@nestjs/throttler` applies ALL defined throttlers, not just the one named in the decorator. The `export` throttler (1/min) blocked immediately.
 
-**Lösung:** Jeder Decorator muss explizit die anderen Throttler skippen:
+**Solution:** Each decorator must explicitly skip the other throttlers:
 
 ```typescript
-// FALSCH - alle 6 Throttler werden angewendet!
+// WRONG - all 6 throttlers are applied\!
 export const AuthThrottle = () =>
   Throttle({ auth: { limit: 10, ttl: 5 * MS_MINUTE } });
 
-// RICHTIG - nur auth Throttler aktiv
+// CORRECT - only auth throttler active
 export const AuthThrottle = () =>
   applyDecorators(
     Throttle({ auth: { limit: 10, ttl: 5 * MS_MINUTE } }),
@@ -190,7 +190,7 @@ export const AuthThrottle = () =>
   );
 ```
 
-**Wichtig aus NestJS Docs:**
+**Important from NestJS Docs:**
 
 > "Simply using `@SkipThrottle()` without an object will not skip any named throttlers."
 

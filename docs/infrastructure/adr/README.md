@@ -1,27 +1,27 @@
 # Architecture Decision Records (ADRs)
 
-Dieses Verzeichnis enthält Architecture Decision Records (ADRs) für das Assixx-Projekt.
+This directory contains Architecture Decision Records (ADRs) for the Assixx project.
 
-## Was sind ADRs?
+## What are ADRs?
 
-ADRs dokumentieren wichtige architektonische Entscheidungen:
+ADRs document important architectural decisions:
 
-- **Warum** wurde eine bestimmte Technologie/Approach gewählt?
-- **Welche Alternativen** wurden betrachtet?
-- **Welche Konsequenzen** hat die Entscheidung?
+- **Why** was a particular technology/approach chosen?
+- **What alternatives** were considered?
+- **What consequences** does the decision have?
 
 ## ADR Status
 
-| Status         | Bedeutung                                   |
-| -------------- | ------------------------------------------- |
-| **Proposed**   | Vorgeschlagen, noch nicht entschieden       |
-| **Accepted**   | Akzeptiert und implementiert                |
-| **Deprecated** | Veraltet, durch neuere Entscheidung ersetzt |
-| **Superseded** | Ersetzt durch ADR-XXX                       |
+| Status         | Meaning                                  |
+| -------------- | ---------------------------------------- |
+| **Proposed**   | Proposed, not yet decided                |
+| **Accepted**   | Accepted and implemented                 |
+| **Deprecated** | Outdated, superseded by a newer decision |
+| **Superseded** | Replaced by ADR-XXX                      |
 
 ## Index
 
-| ADR                                                        | Titel                               | Status   | Datum      |
+| ADR                                                        | Title                               | Status   | Date       |
 | ---------------------------------------------------------- | ----------------------------------- | -------- | ---------- |
 | [ADR-001](./ADR-001-rate-limiting.md)                      | Rate Limiting Implementation        | Accepted | 2026-01-06 |
 | [ADR-002](./ADR-002-alerting-monitoring.md)                | Alerting & Monitoring               | Accepted | 2026-01-07 |
@@ -46,7 +46,7 @@ ADRs dokumentieren wichtige architektonische Entscheidungen:
 
 ## Template
 
-Für neue ADRs verwende folgendes Template:
+Use the following template for new ADRs:
 
 ```markdown
 # ADR-XXX: [Title]
@@ -62,29 +62,29 @@ Für neue ADRs verwende folgendes Template:
 
 ## Context
 
-[Beschreibe das Problem und den Kontext]
+[Describe the problem and context]
 
 ## Decision
 
-[Beschreibe die getroffene Entscheidung]
+[Describe the decision made]
 
 ## Alternatives Considered
 
-[Liste der betrachteten Alternativen mit Pro/Contra]
+[List of alternatives considered with pros/cons]
 
 ## Consequences
 
 ### Positive
 
-[Positive Auswirkungen]
+[Positive impacts]
 
 ### Negative
 
-[Negative Auswirkungen]
+[Negative impacts]
 
 ## References
 
-[Links zu relevanten Dokumenten]
+[Links to relevant documents]
 ```
 
 ## Naming Convention
@@ -93,5 +93,5 @@ Für neue ADRs verwende folgendes Template:
 ADR-XXX-short-title.md
 ```
 
-- `XXX`: Fortlaufende Nummer (001, 002, ...)
-- `short-title`: Kebab-case Kurztitel
+- `XXX`: Sequential number (001, 002, ...)
+- `short-title`: Kebab-case short title

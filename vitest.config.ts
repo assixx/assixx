@@ -96,7 +96,7 @@ export default defineConfig({
           alias: {
             '$app/environment': resolve(
               rootDir,
-              './vitest.mocks/app-environment.ts',
+              './frontend/test/mocks/app-environment.ts',
             ),
             $lib: resolve(rootDir, './frontend/src/lib'),
           },
