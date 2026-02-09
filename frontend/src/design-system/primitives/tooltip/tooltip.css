@@ -202,22 +202,34 @@
    SEMANTIC VARIANTS
    ======================================== */
 
-/* Info Tooltip */
+/* Info Tooltip - btn-light style */
 .tooltip__content--info {
-  border-color: var(--color-icon-primary);
+  border: 1px solid rgb(189 189 189);
   border-radius: var(--radius-xl);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
 
-  background: var(--color-black);
+  background: linear-gradient(
+    145deg,
+    rgb(224 224 224 / 11%),
+    rgb(158 158 158 / 15%)
+  );
+  backdrop-filter: blur(4000px);
   padding: var(--spacing-3);
   width: 200px;
+
+  color: var(--color-text-primary);
+}
+
+.tooltip__content--info.tooltip__content--top::before {
+  border-top-color: rgb(189 189 189);
 }
 
 .tooltip__content--info.tooltip__content--bottom::before {
-  border-bottom-color: rgb(33 150 243 / 95%);
+  border-bottom-color: rgb(189 189 189);
 }
 
 .tooltip__content--info.tooltip__content--right::before {
-  border-right-color: rgb(33 150 243 / 95%);
+  border-right-color: rgb(189 189 189);
 }
 
 /* Warning Tooltip */
