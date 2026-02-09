@@ -46,7 +46,7 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
 1. **ESM Compatibility** — Project uses `"type": "module"`, tool must support ESM natively
 2. **Single-Tool Strategy** — One test runner for unit + integration, no Jest + Bruno + Supertest mix
 3. **Speed** — Unit tests must run in <1s, no DI container overhead
-4. **Workspace Support** — Separate configuration for unit (fast, isolated) vs. API (sequential, real HTTP)
+4. **Workspace Support** — Separate projects for unit, permission (security-critical), frontend-unit, and API
 5. **NestJS Independence** — Pure function tests don't need a DI container
 6. **Reliability** — API tests must be 100% deterministic (no flakiness from rate limiting)
 
@@ -94,8 +94,8 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
 
 - **ESM-native** — No workarounds, no `--experimental-vm-modules`
 - **Single Tool** — Vitest for unit AND integration (workspace projects)
-- **Fast** — 824 unit tests in ~4s, 19 frontend tests in <1s, 175 API tests in ~6s
-- **Workspace Separation** — `--project unit` (fast, isolated) vs. `--project api` (sequential, real HTTP)
+- **Fast** — 3182 unit tests in ~8s, 308 permission in ~1s, 19 frontend in <1s, 175 API in ~6s
+- **Workspace Separation** — `--project unit` (fast, isolated) vs. `--project permission` (security-critical subset) vs. `--project api` (sequential, real HTTP)
 - **Pure-Function-First** — No DI container for helpers/schemas/utils
 - **fetch()-based** — API tests use native `fetch()`, no abstraction (Bruno CLI, Supertest)
 - **Login Caching** — One login request for 175 tests (`isolate: false`)
@@ -134,8 +134,12 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
                                 │
           ┌─────────────────────┴─────────────────────┐
           │           Unit Tests                       │  Tier 1: Pure Functions
-          │  31 files, 824 tests (Phase 0-8)           │  No Docker needed
-          │  vitest --project unit                     │  Parallel, <1s
+          │  147 files, 3182 tests                     │  No Docker needed
+          │  vitest --project unit                     │  Parallel, <4s
+          ├────────────────────────────────────────────┤
+          │  🔴 Permission/Security Tests              │  Tier 1a: CRITICAL subset
+          │  14 files, 308 tests                       │  Access control, auth, RBAC
+          │  vitest --project permission               │  Badged: SECURITY:
           ├────────────────────────────────────────────┤
           │           Frontend Unit Tests              │  Tier 1b: Frontend Utils
           │  5 files, 19 tests (Phase 7)               │  No Docker needed
@@ -240,7 +244,7 @@ const res = await fetch(`${BASE_URL}/logs/export?format=json...`);
 ### Vitest Config (Workspace Projects)
 
 ```typescript
-// vitest.config.ts — 3 Projects
+// vitest.config.ts — 4 Projects
 export default defineConfig({
   test: {
     coverage: {
@@ -264,6 +268,28 @@ export default defineConfig({
         test: {
           name: 'unit',
           include: ['backend/src/**/*.{test,spec}.ts', 'shared/src/**/*.{test,spec}.ts'],
+          testTimeout: 10_000,
+          setupFiles: ['./vitest.setup.ts'],
+        },
+      },
+      // Tier 1a: Permission/Security Tests (CRITICAL subset of unit)
+      {
+        test: {
+          name: 'permission',
+          include: [
+            'backend/src/nest/admin-permissions/**/*.test.ts',
+            'backend/src/nest/user-permissions/**/*.test.ts',
+            'backend/src/nest/common/guards/permission.guard.test.ts',
+            'backend/src/nest/common/decorators/require-permission.decorator.test.ts',
+            'backend/src/nest/common/permission-registry/**/*.test.ts',
+            'backend/src/nest/hierarchy-permission/**/*.test.ts',
+            'backend/src/nest/calendar/calendar-permission.service.test.ts',
+            'backend/src/nest/blackboard/blackboard-access.service.test.ts',
+            'backend/src/nest/surveys/survey-access.service.test.ts',
+            'backend/src/nest/auth/auth.service.test.ts',
+            'backend/src/nest/roles/roles.service.test.ts',
+            'backend/src/nest/role-switch/role-switch.service.test.ts',
+          ],
           testTimeout: 10_000,
           setupFiles: ['./vitest.setup.ts'],
         },
@@ -298,12 +324,15 @@ export default defineConfig({
 
 ```bash
 # ── All Tests ────────────────────────────────────────────────
-pnpm test                                           # All 3 projects (unit + frontend-unit + api)
+pnpm test                                           # All 4 projects (unit + permission + frontend-unit + api)
 pnpm test -- --reporter=verbose                     # With details
 
 # ── Backend Unit Tests ────────────────────────────────────────
-pnpm test --project unit                            # 824 tests (~4s, no Docker)
+pnpm test --project unit                            # 3182 tests (~8s, no Docker)
 pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Single file
+
+# ── 🔴 Permission/Security Tests ─────────────────────────────
+pnpm run test:permission                            # 308 tests (~1s, CRITICAL subset of unit)
 
 # ── Frontend Unit Tests ───────────────────────────────────────
 pnpm test --project frontend-unit                   # 19 tests (<1s, no Docker)
@@ -346,7 +375,7 @@ Phase 6: Remaining Helpers          ✅ DONE    27 Tests   (blackboard, calendar
 Phase 7: Frontend Utils             ✅ DONE    19 Tests   (password-strength, auth, jwt)
 Phase 8: DTO Validations            ✅ DONE   460 Tests   (13 modules, 13 files)
 ──────────────────────────────────────────────────────────────────────
-TOTAL: 824 Unit + 19 Frontend + 175 API = 1018 Tests (54 files)
+TOTAL: 3182 Unit + 308 Permission (subset) + 19 Frontend + 175 API = 3376 Tests
 ──────────────────────────────────────────────────────────────────────
 Phase 9: Additional Service Tests   PENDING              (Coverage 10% → 30%+)
 ```
@@ -413,13 +442,13 @@ Settings → Branches → main:
 
 - **Single Tool** — Vitest for unit + integration, no tool fragmentation
 - **ESM-native** — No workarounds, no `--experimental-vm-modules` flags
-- **Fast** — 824 unit tests in ~4s, 175 API tests in ~6s, 19 frontend tests in <1s
+- **Fast** — 3182 unit tests in ~8s, 308 permission tests in ~1s, 175 API tests in ~6s, 19 frontend tests in <1s
 - **Deterministic** — `vi.useFakeTimers()` for dates, `flushThrottleKeys()` for rate limiting
 - **Workspace Separation** — Unit tests (CI-compatible, no Docker) vs. API tests (Docker required)
 - **Bruno CLI eliminated** — 329 npm packages removed, no state management via `bru.setVar()`
 - **Tests as Documentation** — Edge cases (is_active multi-state, password NIST rules) become visible through tests
 - **Bugs discovered and fixed through tests** — sanitizeData camelCase bug (SENSITIVE_FIELDS lowercase normalization, fixed 2026-02-05), EmailSchema trim order documented
-- **Regression Protection** — 1018 automated tests (824 unit + 19 frontend + 175 API)
+- **Regression Protection** — 3376 automated tests (3182 unit + 308 permission [subset] + 19 frontend + 175 API)
 - **CI as Merge Gate** — Unit tests + coverage thresholds block merge on failure
 - **Coverage Floor** — Thresholds prevent coverage from gradually declining
 
@@ -479,4 +508,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-02-05 (v2 - Phase 8 complete, CI implemented, Coverage Thresholds active)_
+_Last Updated: 2026-02-09 (v3 - Permission project added, SECURITY badges on 14 test files, 3376 total tests)_

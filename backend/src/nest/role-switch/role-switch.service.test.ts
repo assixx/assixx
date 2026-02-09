@@ -49,7 +49,7 @@ function makeUserRow(overrides: Record<string, unknown> = {}) {
 // RoleSwitchService
 // =============================================================
 
-describe('RoleSwitchService', () => {
+describe('SECURITY: RoleSwitchService', () => {
   let service: RoleSwitchService;
   let mockJwtService: ReturnType<typeof createMockJwtService>;
 

@@ -9,13 +9,14 @@
 import { Module } from '@nestjs/common';
 
 import { UserAvailabilityService } from './user-availability.service.js';
+import { UserProfileService } from './user-profile.service.js';
 import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
 
 @Module({
   controllers: [UsersController],
-  providers: [UserAvailabilityService, UsersService],
-  exports: [UsersService, UserAvailabilityService],
+  providers: [UserAvailabilityService, UserProfileService, UsersService],
+  exports: [UsersService, UserAvailabilityService, UserProfileService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are empty by design
 export class UsersModule {}
