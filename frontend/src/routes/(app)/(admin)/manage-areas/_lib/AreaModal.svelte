@@ -93,6 +93,15 @@
     if (e.target === e.currentTarget) onclose();
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      typeDropdownOpen = false;
+      statusDropdownOpen = false;
+      areaLeadDropdownOpen = false;
+    }
+  });
+
   // Close dropdowns on outside click
   $effect(() => {
     if (typeDropdownOpen || statusDropdownOpen || areaLeadDropdownOpen) {

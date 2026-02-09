@@ -102,6 +102,13 @@
     return el !== null && !el.contains(target);
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      statusDropdownOpen = false;
+    }
+  });
+
   $effect(() => {
     if (statusDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {

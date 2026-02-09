@@ -104,6 +104,20 @@
   // EFFECTS
   // =============================================================================
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      positionDropdownOpen = false;
+      showPassword = false;
+      showPasswordConfirm = false;
+      emailError = false;
+      passwordError = false;
+      passwordScore = -1;
+      passwordLabel = '';
+      passwordTime = '';
+    }
+  });
+
   // Outside click handler for position dropdown
   $effect(() => {
     if (positionDropdownOpen) {

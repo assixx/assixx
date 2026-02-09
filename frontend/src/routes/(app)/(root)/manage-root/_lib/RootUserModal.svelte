@@ -76,6 +76,16 @@
     statusDropdownOpen = !statusDropdownOpen;
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      positionDropdownOpen = false;
+      statusDropdownOpen = false;
+      showPassword = false;
+      showPasswordConfirm = false;
+    }
+  });
+
   // Close dropdowns on outside click
   $effect(() => {
     if (positionDropdownOpen || statusDropdownOpen) {
