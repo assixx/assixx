@@ -441,7 +441,7 @@
                   <strong class="block font-semibold"
                     >{MESSAGES.upcomingEvents}</strong
                   >
-                  <p class="mt-1 text-[var(--color-text-secondary)]">
+                  <p class="mt-1 text-(--color-text-secondary)">
                     {MESSAGES.noEvents}
                   </p>
                 </div>

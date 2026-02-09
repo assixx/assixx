@@ -104,6 +104,20 @@
   // EFFECTS
   // =============================================================================
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      positionDropdownOpen = false;
+      showPassword = false;
+      showPasswordConfirm = false;
+      emailError = false;
+      passwordError = false;
+      passwordScore = -1;
+      passwordLabel = '';
+      passwordTime = '';
+    }
+  });
+
   // Outside click handler for position dropdown
   $effect(() => {
     if (positionDropdownOpen) {
@@ -375,7 +389,7 @@
             required
             bind:value={formEmployeeNumber}
           />
-          <span class="form-field__message text-[var(--color-text-secondary)]"
+          <span class="form-field__message text-(--color-text-secondary)"
             >{MESSAGES.HINT_EMPLOYEE_NUMBER}</span
           >
         </div>

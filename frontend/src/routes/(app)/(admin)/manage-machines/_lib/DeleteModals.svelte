@@ -65,7 +65,7 @@
         </button>
       </div>
       <div class="ds-modal__body">
-        <p class="text-[var(--color-text-secondary)]">
+        <p class="text-(--color-text-secondary)">
           {MESSAGES.DELETE_CONFIRM_MESSAGE}
         </p>
       </div>

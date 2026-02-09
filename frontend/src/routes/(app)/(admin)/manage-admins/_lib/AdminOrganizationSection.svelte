@@ -125,8 +125,8 @@
 </script>
 
 <!-- N:M Organization Assignment Section -->
-<div class="mt-6 border-t border-[var(--color-border)] pt-6">
-  <h4 class="mb-4 font-medium text-[var(--color-text-primary)]">
+<div class="mt-6 border-t border-(--color-border) pt-6">
+  <h4 class="mb-4 font-medium text-(--color-text-primary)">
     <i class="fas fa-sitemap mr-2"></i>
     Organisationszuweisung
   </h4>
@@ -145,7 +145,7 @@
         {MESSAGES.FULL_ACCESS_LABEL}
       </span>
     </label>
-    <span class="form-field__message mt-2 block text-[var(--color-danger)]">
+    <span class="form-field__message mt-2 block text-(--color-danger)">
       <i class="fas fa-exclamation-triangle mr-1"></i>
       {MESSAGES.FULL_ACCESS_WARNING}
     </span>
@@ -184,7 +184,7 @@
         </option>
       {/each}
     </select>
-    <span class="form-field__message text-[var(--color-text-secondary)]">
+    <span class="form-field__message text-(--color-text-secondary)">
       <i class="fas fa-info-circle mr-1"></i>
       {MESSAGES.HINT_MULTISELECT}
       {MESSAGES.HINT_AREAS}
@@ -222,7 +222,7 @@
         </option>
       {/each}
     </select>
-    <span class="form-field__message text-[var(--color-text-secondary)]">
+    <span class="form-field__message text-(--color-text-secondary)">
       <i class="fas fa-info-circle mr-1"></i>
       {MESSAGES.HINT_MULTISELECT}
       {MESSAGES.HINT_DEPARTMENTS}
@@ -294,9 +294,7 @@
         {/each}
       </div>
     </div>
-    <span
-      class="form-field__message mt-1 block text-[var(--color-text-secondary)]"
-    >
+    <span class="form-field__message mt-1 block text-(--color-text-secondary)">
       {MESSAGES.HINT_STATUS}
     </span>
   </div>
@@ -305,16 +303,16 @@
   {#if onupgrade !== undefined || ondowngrade !== undefined}
     <div
       bind:this={dangerZoneEl}
-      class="mt-6 border-t-2 border-[var(--color-danger)] pt-6"
+      class="mt-6 border-t-2 border-(--color-danger) pt-6"
     >
-      <h4 class="mb-2 font-medium text-[var(--color-danger)]">
+      <h4 class="mb-2 font-medium text-(--color-danger)">
         <i class="fas fa-exclamation-triangle mr-2"></i>
         {MESSAGES.UPGRADE_TITLE}
       </h4>
 
       <!-- Upgrade: Admin -> Root -->
       {#if onupgrade}
-        <p class="mb-4 text-sm text-[var(--color-text-secondary)]">
+        <p class="mb-4 text-sm text-(--color-text-secondary)">
           {MESSAGES.UPGRADE_DESCRIPTION}
         </p>
         {#if !upgradeConfirmActive}
@@ -369,8 +367,8 @@
 
       <!-- Downgrade: Admin -> Employee -->
       {#if ondowngrade}
-        <div class="mt-4 border-t border-[var(--color-border)] pt-4">
-          <p class="mb-4 text-sm text-[var(--color-text-secondary)]">
+        <div class="mt-4 border-t border-(--color-border) pt-4">
+          <p class="mb-4 text-sm text-(--color-text-secondary)">
             {MESSAGES.DOWNGRADE_DESCRIPTION}
           </p>
           {#if !downgradeConfirmActive}

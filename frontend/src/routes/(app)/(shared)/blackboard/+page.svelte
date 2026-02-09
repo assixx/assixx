@@ -529,16 +529,16 @@
     {#if loading}
       <div class="p-5 text-center">
         <div class="spinner-ring spinner-ring--md"></div>
-        <p class="mt-4 text-[var(--color-text-secondary)]">
+        <p class="mt-4 text-(--color-text-secondary)">
           {MESSAGES.LOADING}
         </p>
       </div>
     {:else if error}
       <div class="p-5 text-center">
         <i
-          class="fas fa-exclamation-triangle mb-4 text-4xl text-[var(--color-danger)]"
+          class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
         ></i>
-        <p class="text-[var(--color-text-secondary)]">{error}</p>
+        <p class="text-(--color-text-secondary)">{error}</p>
         <button
           type="button"
           class="btn btn-primary mt-4"
@@ -548,9 +548,9 @@
     {:else if entries.length === 0}
       <div class="p-5 text-center">
         <i
-          class="fas fa-clipboard-list mb-4 text-4xl text-[var(--color-text-secondary)] opacity-50"
+          class="fas fa-clipboard-list mb-4 text-4xl text-(--color-text-secondary) opacity-50"
         ></i>
-        <p class="text-[var(--color-text-secondary)]">{MESSAGES.NO_ENTRIES}</p>
+        <p class="text-(--color-text-secondary)">{MESSAGES.NO_ENTRIES}</p>
         {#if isAdmin}
           <button
             type="button"
