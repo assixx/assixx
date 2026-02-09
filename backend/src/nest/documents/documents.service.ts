@@ -696,6 +696,16 @@ export class DocumentsService {
     `;
     const params: unknown[] = [tenantId, userId];
 
+    // Chat privacy: ALL users (including admins) can only see chat docs
+    // where they are a conversation participant (same logic as buildDocumentQuery)
+    query += ` AND (
+      d.access_scope != 'chat'
+      OR EXISTS (
+        SELECT 1 FROM conversation_participants cp
+        WHERE cp.conversation_id = d.conversation_id AND cp.user_id = $2
+      )
+    )`;
+
     // Apply access scope filter for non-admin users (same logic as buildDocumentQuery)
     if (!isAdmin) {
       query += ` AND (
