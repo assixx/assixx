@@ -97,6 +97,15 @@
     return el?.contains(target) !== true;
   }
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (show) {
+      areaDropdownOpen = false;
+      leadDropdownOpen = false;
+      statusDropdownOpen = false;
+    }
+  });
+
   // Close dropdowns on outside click
   $effect(() => {
     const anyDropdownOpen =

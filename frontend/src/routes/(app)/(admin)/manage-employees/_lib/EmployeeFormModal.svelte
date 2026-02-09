@@ -150,9 +150,18 @@
     return el !== null && !el.contains(target);
   }
 
-  // Reset upgrade confirmation when modal closes
+  // Reset local UI state when modal opens
   $effect(() => {
-    if (!show) upgradeConfirmActive = false;
+    if (show) {
+      positionDropdownOpen = false;
+      statusDropdownOpen = false;
+      upgradeConfirmActive = false;
+      showPassword = false;
+      showPasswordConfirm = false;
+      passwordScore = -1;
+      passwordLabel = '';
+      passwordTime = '';
+    }
   });
 
   $effect(() => {

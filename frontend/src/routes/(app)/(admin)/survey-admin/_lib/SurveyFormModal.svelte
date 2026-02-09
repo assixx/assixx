@@ -158,6 +158,13 @@
   // OUTSIDE CLICK HANDLER
   // =============================================================================
 
+  // Reset local UI state when modal opens
+  $effect(() => {
+    if (surveyAdminState.showModal) {
+      activeDropdown = null;
+    }
+  });
+
   function handleDocumentClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest('.dropdown')) {
