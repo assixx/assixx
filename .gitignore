@@ -74,7 +74,7 @@ coverage/
 # Test directories
 **/__tests__/
 
-# api-tests/ is tracked (Vitest API integration tests live there)
+# backend/test/ is tracked (Vitest API integration tests — NestJS convention)
 
 # ESLint
 eslint-report.json

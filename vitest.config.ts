@@ -11,7 +11,7 @@ const rootDir = import.meta.dirname;
  * Three projects:
  *   - unit:          backend/src + shared/src (fast, isolated, mocked)
  *   - frontend-unit: frontend/src utils (pure functions, mocked SvelteKit env)
- *   - api:           api-tests/vitest (real HTTP against Docker backend)
+ *   - api:           backend/test (real HTTP against Docker backend)
  *
  * Vitest 4: uses `projects` array (vitest.workspace.ts is deprecated since v3.2)
  *
@@ -119,7 +119,7 @@ export default defineConfig({
           name: 'api',
           environment: 'node',
           globals: true,
-          include: ['api-tests/vitest/**/*.api.test.ts'],
+          include: ['backend/test/**/*.api.test.ts'],
           testTimeout: 30_000,
           hookTimeout: 30_000,
           // Sequential execution: tests depend on shared state (auth tokens, resource IDs)

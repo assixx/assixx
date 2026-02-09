@@ -929,15 +929,9 @@ cd backend && pnpm add -D @types/pg-cursor
 
 ## Testing
 
-### API Tests (Bruno)
+### API Integration Tests (Vitest)
 
-```
-api-tests/logs/
-├── export-json.bru          # Test JSON export
-├── export-csv.bru           # Test CSV export
-├── export-txt.bru           # Test TXT export
-└── export-validation.bru    # Test required params
-```
+Tests in `backend/test/logs.api.test.ts` (JSON/CSV/TXT export + validation).
 
 ### Unit Tests
 
