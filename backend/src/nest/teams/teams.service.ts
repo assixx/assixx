@@ -13,9 +13,8 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import type { RowDataPacket } from '../../utils/db.js';
-import { execute } from '../../utils/db.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import { DatabaseService } from '../database/database.service.js';
 import type { CreateTeamDto } from './dto/create-team.dto.js';
 import type { UpdateTeamDto } from './dto/update-team.dto.js';
 
@@ -30,7 +29,7 @@ const ERROR_MESSAGES = {
 /**
  * Database team row type
  */
-export interface TeamRow extends RowDataPacket {
+export interface TeamRow {
   id: number;
   name: string;
   description: string | null;
@@ -115,7 +114,7 @@ export interface TeamFilters {
 /**
  * Database row type for team member queries
  */
-interface TeamMemberRow extends RowDataPacket {
+interface TeamMemberRow {
   id: number;
   username: string;
   email: string;
@@ -166,7 +165,10 @@ const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
 export class TeamsService {
   private readonly logger = new Logger(TeamsService.name);
 
-  constructor(private readonly activityLogger: ActivityLoggerService) {}
+  constructor(
+    private readonly activityLogger: ActivityLoggerService,
+    private readonly db: DatabaseService,
+  ) {}
 
   /**
    * SQL query for fetching teams with extended info
@@ -229,7 +231,7 @@ export class TeamsService {
   ): Promise<TeamResponse[]> {
     this.logger.debug(`Fetching teams for tenant ${tenantId}`);
 
-    const [rows] = await execute<TeamRow[]>(this.FIND_ALL_TEAMS_QUERY, [
+    const rows = await this.db.query<TeamRow>(this.FIND_ALL_TEAMS_QUERY, [
       tenantId,
     ]);
 
@@ -259,7 +261,7 @@ export class TeamsService {
   async getTeamById(id: number, tenantId: number): Promise<TeamResponse> {
     this.logger.debug(`Fetching team ${id} for tenant ${tenantId}`);
 
-    const [rows] = await execute<TeamRow[]>(
+    const rows = await this.db.query<TeamRow>(
       `SELECT t.*,
         d.name as department_name,
         a.name as department_area_name,
@@ -297,7 +299,7 @@ export class TeamsService {
     tenantId: number,
     excludeId?: number,
   ): Promise<void> {
-    const [existing] = await execute<TeamRow[]>(
+    const existing = await this.db.query<TeamRow>(
       'SELECT id FROM teams WHERE LOWER(name) = LOWER($1) AND tenant_id = $2',
       [name, tenantId],
     );
@@ -317,7 +319,7 @@ export class TeamsService {
   ): Promise<void> {
     if (departmentId === null || departmentId === undefined) return;
 
-    const [rows] = await execute<RowDataPacket[]>(
+    const rows = await this.db.query<{ id: number }>(
       'SELECT id FROM departments WHERE id = $1 AND tenant_id = $2',
       [departmentId, tenantId],
     );
@@ -336,12 +338,12 @@ export class TeamsService {
   ): Promise<void> {
     if (leaderId === null || leaderId === undefined) return;
 
-    interface UserRow extends RowDataPacket {
+    interface UserRow {
       role: string;
     }
 
     // SECURITY: Only allow ACTIVE users (is_active = 1) as team leaders
-    const [rows] = await execute<UserRow[]>(
+    const rows = await this.db.query<UserRow>(
       'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [leaderId, tenantId],
     );
@@ -365,13 +367,13 @@ export class TeamsService {
     tenantId: number,
   ): Promise<void> {
     try {
-      const [existing] = await execute<RowDataPacket[]>(
+      const existing = await this.db.query<{ id: number }>(
         'SELECT id FROM user_teams WHERE user_id = $1 AND team_id = $2',
         [leaderId, teamId],
       );
 
       if (existing.length > 0) {
-        await execute(
+        await this.db.query(
           'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3',
           ['lead', leaderId, teamId],
         );
@@ -379,7 +381,7 @@ export class TeamsService {
           `Updated existing member ${leaderId} to lead role in team ${teamId}`,
         );
       } else {
-        await execute(
+        await this.db.query(
           `INSERT INTO user_teams (tenant_id, user_id, team_id, role, joined_at)
            VALUES ($1, $2, $3, $4, NOW())`,
           [tenantId, leaderId, teamId, 'lead'],
@@ -410,7 +412,7 @@ export class TeamsService {
     await this.checkDuplicateName(dto.name, tenantId);
 
     const teamUuid = uuidv7();
-    const [rows] = await execute<{ id: number }[]>(
+    const rows = await this.db.query<{ id: number }>(
       `INSERT INTO teams (name, description, department_id, team_lead_id, is_active, tenant_id, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, 1, $5, $6, NOW())
        RETURNING id`,
@@ -493,7 +495,7 @@ export class TeamsService {
   ): Promise<void> {
     if (dto.leaderId === undefined || dto.leaderId === null) return;
     if (currentLeaderId !== null && currentLeaderId !== dto.leaderId) {
-      await execute(
+      await this.db.query(
         'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3',
         ['member', currentLeaderId, teamId],
       );
@@ -512,7 +514,7 @@ export class TeamsService {
   ): Promise<TeamResponse> {
     this.logger.log(`Updating team ${id}`);
 
-    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
       id,
       tenantId,
     ]);
@@ -537,7 +539,7 @@ export class TeamsService {
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
       values.push(id);
-      await execute(
+      await this.db.query(
         `UPDATE teams SET ${fields.join(', ')} WHERE id = $${values.length}`,
         values,
       );
@@ -578,7 +580,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting team ${id}, force: ${force}`);
 
-    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
       id,
       tenantId,
     ]);
@@ -589,7 +591,7 @@ export class TeamsService {
 
     const existingTeam = existing[0] as TeamRow;
 
-    const [members] = await execute<RowDataPacket[]>(
+    const members = await this.db.query<{ user_id: number }>(
       'SELECT user_id FROM user_teams WHERE team_id = $1',
       [id],
     );
@@ -602,10 +604,10 @@ export class TeamsService {
         });
       }
 
-      await execute('DELETE FROM user_teams WHERE team_id = $1', [id]);
+      await this.db.query('DELETE FROM user_teams WHERE team_id = $1', [id]);
     }
 
-    await execute('DELETE FROM teams WHERE id = $1', [id]);
+    await this.db.query('DELETE FROM teams WHERE id = $1', [id]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -641,7 +643,7 @@ export class TeamsService {
       `Fetching members for team ${id}, dateRange: ${dateRangeStr}`,
     );
 
-    const [existing] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
       id,
       tenantId,
     ]);
@@ -660,7 +662,7 @@ export class TeamsService {
       : TEAM_MEMBERS_CURRENT_DATE_QUERY;
     const params = hasDateRange ? [id, endDate, startDate] : [id];
 
-    const [members] = await execute<TeamMemberRow[]>(query, params);
+    const members = await this.db.query<TeamMemberRow>(query, params);
 
     return members.map((member: TeamMemberRow) => ({
       id: member.id,
@@ -688,7 +690,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Adding user ${userId} to team ${teamId}`);
 
-    const [teamRows] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
       teamId,
       tenantId,
     ]);
@@ -697,7 +699,7 @@ export class TeamsService {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
 
-    const [userRows] = await execute<RowDataPacket[]>(
+    const userRows = await this.db.query<{ id: number }>(
       'SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
       [userId, tenantId],
     );
@@ -706,7 +708,7 @@ export class TeamsService {
       throw new BadRequestException('Invalid user ID');
     }
 
-    const [existing] = await execute<RowDataPacket[]>(
+    const existing = await this.db.query<{ id: number }>(
       'SELECT id FROM user_teams WHERE user_id = $1 AND team_id = $2',
       [userId, teamId],
     );
@@ -715,7 +717,7 @@ export class TeamsService {
       throw new ConflictException('User is already a member of this team');
     }
 
-    await execute(
+    await this.db.query(
       `INSERT INTO user_teams (tenant_id, user_id, team_id, role, joined_at)
        VALUES ($1, $2, $3, $4, NOW())`,
       [tenantId, userId, teamId, 'member'],
@@ -734,7 +736,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Removing user ${userId} from team ${teamId}`);
 
-    const [teamRows] = await execute<TeamRow[]>(FIND_TEAM_BY_ID_QUERY, [
+    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
       teamId,
       tenantId,
     ]);
@@ -743,7 +745,7 @@ export class TeamsService {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
 
-    const [existing] = await execute<RowDataPacket[]>(
+    const existing = await this.db.query<{ id: number }>(
       'SELECT id FROM user_teams WHERE user_id = $1 AND team_id = $2',
       [userId, teamId],
     );
@@ -752,7 +754,7 @@ export class TeamsService {
       throw new BadRequestException('User is not a member of this team');
     }
 
-    await execute(
+    await this.db.query(
       'DELETE FROM user_teams WHERE user_id = $1 AND team_id = $2',
       [userId, teamId],
     );
@@ -769,7 +771,7 @@ export class TeamsService {
   ): Promise<TeamMachine[]> {
     this.logger.debug(`Fetching machines for team ${teamId}`);
 
-    interface MachineRow extends RowDataPacket {
+    interface MachineRow {
       id: number;
       name: string;
       serial_number: string | null;
@@ -779,7 +781,7 @@ export class TeamsService {
       notes: string | null;
     }
 
-    const [machines] = await execute<MachineRow[]>(
+    const machines = await this.db.query<MachineRow>(
       `SELECT m.id, m.name, m.serial_number, m.status, mt.is_primary, mt.assigned_at, mt.notes
        FROM machine_teams mt
        JOIN machines m ON mt.machine_id = m.id
@@ -809,7 +811,7 @@ export class TeamsService {
   ): Promise<{ id: number; message: string }> {
     this.logger.log(`Adding machine ${machineId} to team ${teamId}`);
 
-    const [machineRows] = await execute<RowDataPacket[]>(
+    const machineRows = await this.db.query<{ id: number }>(
       'SELECT id FROM machines WHERE id = $1 AND tenant_id = $2',
       [machineId, tenantId],
     );
@@ -818,7 +820,7 @@ export class TeamsService {
       throw new NotFoundException('Machine not found');
     }
 
-    const [existing] = await execute<RowDataPacket[]>(
+    const existing = await this.db.query<{ id: number }>(
       'SELECT id FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
       [machineId, teamId, tenantId],
     );
@@ -827,7 +829,7 @@ export class TeamsService {
       throw new ConflictException('Machine already assigned to this team');
     }
 
-    const [rows] = await execute<{ id: number }[]>(
+    const rows = await this.db.query<{ id: number }>(
       `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, assigned_at, is_primary)
        VALUES ($1, $2, $3, $4, NOW(), false)
        RETURNING id`,
@@ -850,7 +852,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Removing machine ${machineId} from team ${teamId}`);
 
-    const [existing] = await execute<RowDataPacket[]>(
+    const existing = await this.db.query<{ id: number }>(
       'SELECT id FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
       [machineId, teamId, tenantId],
     );
@@ -859,7 +861,7 @@ export class TeamsService {
       throw new NotFoundException('Machine not assigned to this team');
     }
 
-    await execute(
+    await this.db.query(
       'DELETE FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
       [machineId, teamId, tenantId],
     );
