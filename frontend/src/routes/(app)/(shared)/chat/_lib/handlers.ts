@@ -27,6 +27,7 @@ import {
   MESSAGES,
   WS_MESSAGE_TYPES,
 } from './constants';
+import { decryptIncomingMessage } from './e2e-handlers';
 import {
   isImageFile,
   validateScheduleTime,
@@ -43,7 +44,6 @@ import {
   updateConversationsUserStatus,
   markMessageAsRead,
   updateConversationWithMessage,
-  buildSendMessage,
   buildTypingStartMessage,
   buildTypingStopMessage,
   buildPingMessage,
@@ -122,6 +122,7 @@ export interface WebSocketCallbacks {
   onAuthError: () => void;
   getActiveConversationId: () => number | null;
   getCurrentUserId: () => number;
+  getTenantId: () => number;
   getConversations: () => Conversation[];
 }
 
@@ -250,11 +251,20 @@ export interface UploadedAttachmentInfo {
   size: number;
 }
 
+/** E2E encryption fields for scheduled message */
+export interface ScheduledE2eFields {
+  encryptedContent: string;
+  e2eNonce: string;
+  e2eKeyVersion: number;
+  e2eKeyEpoch: number;
+}
+
 export async function sendScheduledMessage(
   conversationId: number,
   content: string,
   scheduledFor: Date,
   attachments: UploadedAttachmentInfo[],
+  e2e?: ScheduledE2eFields,
 ): Promise<ScheduledMessage[]> {
   // For now, only support single attachment (first one)
   const firstAttachment = attachments.length > 0 ? attachments[0] : undefined;
@@ -270,9 +280,10 @@ export async function sendScheduledMessage(
 
   await createScheduledMessage(
     conversationId,
-    content,
+    e2e !== undefined ? null : content,
     scheduledFor.toISOString(),
     attachmentInfo,
+    e2e,
   );
   return await apiLoadScheduledMessages(conversationId);
 }
@@ -553,7 +564,17 @@ function handleAuthError(data: unknown, callbacks: WebSocketCallbacks): void {
 
 function handleNewMessage(data: unknown, callbacks: WebSocketCallbacks): void {
   const newMessage = transformRawMessage(data as RawWebSocketMessage);
-  callbacks.onNewMessage(newMessage);
+
+  // E2E: decrypt message client-side if encrypted
+  if (
+    newMessage.isE2e === true &&
+    newMessage.encryptedContent !== null &&
+    newMessage.encryptedContent !== undefined
+  ) {
+    void decryptIncomingMessage(newMessage, callbacks);
+  } else {
+    callbacks.onNewMessage(newMessage);
+  }
 }
 
 function handleTypingStart(data: unknown, callbacks: WebSocketCallbacks): void {
@@ -764,5 +785,4 @@ export {
   updateConversationsUserStatus,
   markMessageAsRead,
   updateConversationWithMessage,
-  buildSendMessage,
 };

@@ -30,7 +30,7 @@ vi.mock('./chat.helpers.js', () => ({
 }));
 
 vi.mock('./chat.types.js', () => ({
-  MAX_SCHEDULE_DAYS: 30,
+  MAX_SCHEDULE_DAYS: 60,
   MIN_SCHEDULE_MINUTES: 5,
   SCHEDULED_STATUS: {
     CANCELLED: 0,

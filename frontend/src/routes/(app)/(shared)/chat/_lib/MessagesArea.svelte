@@ -82,10 +82,21 @@
       const prevMessage = messages[index - 1];
       const showDateSeparator = shouldShowDateSeparator(prevMessage, message);
 
+      // E2E messages: use decryptedContent; fallback to empty string on null
+      let displayContent: string;
+      if (message.isE2e === true) {
+        displayContent =
+          message.decryptionFailed === true ?
+            ''
+          : (message.decryptedContent ?? '');
+      } else {
+        displayContent = message.content ?? '';
+      }
+
       return {
         ...message,
         formattedTime: formatMessageTime(message.createdAt),
-        linkifiedContent: linkify(message.content),
+        linkifiedContent: displayContent !== '' ? linkify(displayContent) : '',
         isOwn: message.senderId === currentUserId,
         showDateSeparator,
         dateSeparatorText:
@@ -119,10 +130,18 @@
       const highlights = new SvelteMap<number, string>();
 
       for (const msg of processedMessages) {
-        if (messageMatchesQuery(msg.content, searchQuery)) {
+        // Use decryptedContent for E2E messages, content for plaintext
+        const searchContent =
+          msg.isE2e === true ?
+            (msg.decryptedContent ?? null)
+          : (msg.content ?? null);
+        if (
+          searchContent !== null &&
+          messageMatchesQuery(searchContent, searchQuery)
+        ) {
           highlights.set(
             msg.id,
-            highlightSearchInMessage(msg.content, searchQuery),
+            highlightSearchInMessage(searchContent, searchQuery),
           );
         }
       }
@@ -168,69 +187,6 @@
       <p>{MESSAGES.emptyFirstMessage}</p>
     </div>
   {:else}
-    <!-- Scheduled Messages First -->
-    {#each scheduledMessages as scheduled (scheduled.id)}
-      {@const att = scheduled.attachment}
-      {@const isImage = att?.type.startsWith('image/') === true}
-      <div
-        class="message own message--scheduled"
-        data-scheduled-id={scheduled.id}
-      >
-        <div class="message-bubble">
-          <div class="message-content">
-            {#if scheduled.content}
-              <p class="message-text">{scheduled.content}</p>
-            {/if}
-
-            <!-- Scheduled message attachment preview -->
-            {#if att !== null}
-              {#if isImage}
-                <div class="attachment image-attachment scheduled-attachment">
-                  <div class="attachment-image-wrapper">
-                    <img
-                      src={`/api/v2/documents/uuid/${att.path}/download?inline=true`}
-                      alt={att.name}
-                      loading="lazy"
-                    />
-                    <div class="attachment-overlay scheduled-overlay">
-                      <i class="far fa-clock"></i>
-                    </div>
-                  </div>
-                </div>
-              {:else}
-                <div class="attachment file-attachment scheduled-attachment">
-                  <i class="fas {getFileIcon(att.type)}"></i>
-                  <div class="file-info">
-                    <span class="file-name">{att.name}</span>
-                    <span class="file-size">{formatFileSize(att.size)}</span>
-                  </div>
-                </div>
-              {/if}
-            {/if}
-
-            <div class="message--scheduled-info">
-              <i class="far fa-clock"></i>
-              <span>
-                {MESSAGES.labelScheduledFor}
-                {formatScheduleTime(new Date(scheduled.scheduledFor))}
-              </span>
-              <button
-                type="button"
-                class="message--scheduled-cancel"
-                title={MESSAGES.labelCancelScheduled}
-                aria-label={MESSAGES.labelCancelScheduled}
-                onclick={() => {
-                  oncancelscheduled(scheduled);
-                }}
-              >
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    {/each}
-
     <!-- Regular Messages (using pre-processed data for performance) -->
     {#each processedMessages as message (message.id)}
       {#if message.showDateSeparator}
@@ -247,13 +203,23 @@
         <div class="message-bubble">
           <div class="message-content">
             <!-- eslint-disable svelte/no-at-html-tags -- Content from API is trusted -->
-            <p class="message-text">
-              {#if searchHighlightedMessages.has(message.id)}
-                {@html searchHighlightedMessages.get(message.id)}
-              {:else}
-                {@html message.linkifiedContent}
-              {/if}
-            </p>
+            {#if message.isE2e === true && message.decryptionFailed === true}
+              <p
+                class="message-text e2e-decrypt-failed"
+                title="Entschlüsselung fehlgeschlagen"
+              >
+                <i class="fas fa-lock"></i>
+                Verschlüsselte Nachricht konnte nicht entschlüsselt werden
+              </p>
+            {:else}
+              <p class="message-text">
+                {#if searchHighlightedMessages.has(message.id)}
+                  {@html searchHighlightedMessages.get(message.id)}
+                {:else}
+                  {@html message.linkifiedContent}
+                {/if}
+              </p>
+            {/if}
             <!-- eslint-enable svelte/no-at-html-tags -->
 
             <!-- Attachments (only render block if hasAttachments) -->
@@ -423,6 +389,14 @@
 
             <!-- Time + Read Indicator (using pre-formatted time) -->
             <div class="message-time">
+              {#if message.isE2e === true}
+                <span
+                  class="e2e-indicator"
+                  title="Ende-zu-Ende verschlüsselt"
+                >
+                  <i class="fas fa-lock"></i>
+                </span>
+              {/if}
               {message.formattedTime}
               {#if message.isOwn}
                 <span
@@ -432,6 +406,68 @@
                   {#if message.isRead}✓✓{:else}✓{/if}
                 </span>
               {/if}
+            </div>
+          </div>
+        </div>
+      </div>
+    {/each}
+
+    <!-- Scheduled Messages (after regular messages - future timestamps at bottom) -->
+    {#each scheduledMessages as scheduled (scheduled.id)}
+      {@const att = scheduled.attachment}
+      {@const isImage = att?.type.startsWith('image/') === true}
+      <div
+        class="message own message--scheduled"
+        data-scheduled-id={scheduled.id}
+      >
+        <div class="message-bubble">
+          <div class="message-content">
+            {#if scheduled.decryptedContent ?? scheduled.content}
+              <p class="message-text">
+                {scheduled.decryptedContent ?? scheduled.content}
+              </p>
+            {/if}
+            {#if att !== null}
+              {#if isImage}
+                <div class="attachment image-attachment scheduled-attachment">
+                  <div class="attachment-image-wrapper">
+                    <img
+                      src={`/api/v2/documents/uuid/${att.path}/download?inline=true`}
+                      alt={att.name}
+                      loading="lazy"
+                    />
+                    <div class="attachment-overlay scheduled-overlay">
+                      <i class="far fa-clock"></i>
+                    </div>
+                  </div>
+                </div>
+              {:else}
+                <div class="attachment file-attachment scheduled-attachment">
+                  <i class="fas {getFileIcon(att.type)}"></i>
+                  <div class="file-info">
+                    <span class="file-name">{att.name}</span>
+                    <span class="file-size">{formatFileSize(att.size)}</span>
+                  </div>
+                </div>
+              {/if}
+            {/if}
+            <div class="message--scheduled-info">
+              <i class="far fa-clock"></i>
+              <span>
+                {MESSAGES.labelScheduledFor}
+                {formatScheduleTime(new Date(scheduled.scheduledFor))}
+              </span>
+              <button
+                type="button"
+                class="message--scheduled-cancel"
+                title={MESSAGES.labelCancelScheduled}
+                aria-label={MESSAGES.labelCancelScheduled}
+                onclick={() => {
+                  oncancelscheduled(scheduled);
+                }}
+              >
+                <i class="fas fa-times"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -574,5 +610,22 @@
   .scheduled-attachment.file-attachment .file-size {
     font-size: 0.75rem;
     opacity: 0.7;
+  }
+
+  /* E2E encryption indicators */
+  .e2e-indicator {
+    color: var(--success-color, #4caf50);
+    font-size: 0.65em;
+    margin-right: 2px;
+  }
+
+  .e2e-decrypt-failed {
+    color: var(--error-color, #f44336);
+    font-style: italic;
+    opacity: 0.8;
+  }
+
+  .e2e-decrypt-failed i {
+    margin-right: 4px;
   }
 </style>

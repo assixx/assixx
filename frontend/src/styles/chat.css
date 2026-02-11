@@ -69,7 +69,6 @@
   position: relative;
   flex-shrink: 0; /* Verhindert Größenänderung */
   flex-direction: column;
-  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-glass-border);
   border-left: 1px solid var(--color-glass-border);
   border-right: 1px solid var(--color-glass-border);
@@ -108,16 +107,14 @@
 
 /* New chat button now uses Design System .btn .btn-icon */
 
-/* Chat sidebar search - no border-radius (exception for chat page) */
+/* Chat sidebar search input - flush edges (exception for chat page) */
 .chat-sidebar .search-input-wrapper,
 .chat-sidebar .search-input,
 .chat-sidebar .search-input__field {
   border-radius: 0;
 }
 
-.chat-sidebar .search-input__results {
-  border-radius: 0;
-}
+/* Results dropdown keeps border-radius for Primer-style overlay */
 
 .conversations-list {
   flex: 1;

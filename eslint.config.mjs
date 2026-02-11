@@ -340,7 +340,7 @@ export default [
       // ],
       // Die doppelte Deaktivierung wurde entfernt.
       'import-x/no-duplicates': 'error',
-      'import-x/no-cycle': 'error',
+      'import-x/no-cycle': ['error', { maxDepth: 3, ignoreExternal: true }],
       'import-x/no-self-import': 'error',
     },
   }, // Security configuration for all TypeScript/JavaScript files

@@ -20,23 +20,23 @@ UUIDv7 (RFC 9562) bietet gegenüber sequentiellen Integer-IDs und UUIDv4 entsche
 
 ### Tabellen MIT UUIDv7 (Korrekt implementiert)
 
-| Tabelle            |  uuid   | uuid_created_at | file_uuid |    API nutzt UUID?     |
-| ------------------ | :-----: | :-------------: | :-------: | :--------------------: |
-| blackboard_entries |   ✅    |       ✅        |     -     |       ✅ String        |
-| calendar_events    |   ✅    |       ✅        |     -     | ✅ Dual-Mode (id+uuid) |
-| conversations      |   ✅    |       ✅        |     -     |       ✅ String        |
-| documents          |   ✅    |       ✅        |    ✅     | ✅ Dual-Mode (id+uuid) |
-| kvp_suggestions    |   ✅    |       ✅        |     -     |       ✅ String        |
-| kvp_attachments    |    -    |        -        |    ✅     |      ✅ fileUuid       |
-| shift_plans        |   ✅    |       ✅        |     -     | ✅ Dual-Mode (id+uuid) |
-| surveys            |   ✅    |       ✅        |     -     |       ✅ String        |
-| scheduled_messages | id=UUID |        -        |     -     |           ✅           |
+| Tabelle                 |  uuid   | uuid_created_at | file_uuid |    API nutzt UUID?     |
+| ----------------------- | :-----: | :-------------: | :-------: | :--------------------: |
+| blackboard_entries      |   ✅    |       ✅        |     -     |       ✅ String        |
+| calendar_events         |   ✅    |       ✅        |     -     | ✅ Dual-Mode (id+uuid) |
+| conversations           |   ✅    |       ✅        |     -     |       ✅ String        |
+| documents               |   ✅    |       ✅        |    ✅     | ✅ Dual-Mode (id+uuid) |
+| kvp_suggestions         |   ✅    |       ✅        |     -     |       ✅ String        |
+| kvp_attachments         |    -    |        -        |    ✅     |      ✅ fileUuid       |
+| shift_plans             |   ✅    |       ✅        |     -     | ✅ Dual-Mode (id+uuid) |
+| surveys                 |   ✅    |       ✅        |     -     |       ✅ String        |
+| chat_scheduled_messages | id=UUID |        -        |     -     |           ✅           |
 
 ### Tabellen MIT UUIDv7 (Neu migriert - 2026-01-13)
 
 | Tabelle                        |     uuid      | uuid_created_at |      Backend generiert UUIDv7?       |  Status  |
 | ------------------------------ | :-----------: | :-------------: | :----------------------------------: | :------: |
-| **messages**                   |      ✅       |       ✅        |          ✅ chat.service.ts          |   DONE   |
+| **chat_messages**              |      ✅       |       ✅        |          ✅ chat.service.ts          |   DONE   |
 | **users**                      |      ✅       |       ✅        | ✅ users/auth/root/signup.service.ts |   DONE   |
 | **document_shares**            | ✅ share_uuid |       ✅        |     ⏳ Kein INSERT-Code gefunden     | DB READY |
 | **shift_rotation_patterns**    |      ✅       |       ✅        |        ✅ rotation.service.ts        |   DONE   |
@@ -187,22 +187,22 @@ routes/(app)/entity/[uuid]/+page.svelte
 
 ```sql
 -- 1. Spalten hinzufügen (nullable zunächst)
-ALTER TABLE messages ADD COLUMN uuid CHAR(36);
-ALTER TABLE messages ADD COLUMN uuid_created_at TIMESTAMPTZ;
+ALTER TABLE chat_messages ADD COLUMN uuid CHAR(36);
+ALTER TABLE chat_messages ADD COLUMN uuid_created_at TIMESTAMPTZ;
 
 -- 2. Bestehende Rows mit UUIDv7 befüllen
 -- WICHTIG: uuid_created_at = created_at für historische Daten
-UPDATE messages
+UPDATE chat_messages
 SET uuid = gen_random_uuid()::text,  -- Temporär v4, wird durch v7 ersetzt
     uuid_created_at = created_at
 WHERE uuid IS NULL;
 
 -- 3. NOT NULL setzen
-ALTER TABLE messages ALTER COLUMN uuid SET NOT NULL;
-ALTER TABLE messages ALTER COLUMN uuid_created_at SET NOT NULL;
+ALTER TABLE chat_messages ALTER COLUMN uuid SET NOT NULL;
+ALTER TABLE chat_messages ALTER COLUMN uuid_created_at SET NOT NULL;
 
 -- 4. Unique Index
-CREATE UNIQUE INDEX idx_messages_uuid ON messages(uuid);
+CREATE UNIQUE INDEX idx_chat_messages_uuid ON chat_messages(uuid);
 ```
 
 ### Phase 2: Backend Dual-Mode
@@ -244,12 +244,12 @@ async getByUuid(@Param('uuid') uuid: string) { ... }
 
 ### P0: Kritisch (Sicherheitsrisiko)
 
-#### 1. `messages` (Chat-Nachrichten)
+#### 1. `chat_messages` (Chat-Nachrichten)
 
 **Risiko:** Sequentielle IDs → ID-Enumeration-Angriff
 **Betroffene Dateien:**
 
-- `database/migrations/XXX-add-uuid-to-messages.sql`
+- `database/migrations/XXX-add-uuid-to-chat-messages.sql`
 - `backend/src/nest/chat/chat.service.ts`
 - `backend/src/nest/chat/chat.controller.ts`
 - `backend/src/nest/chat/dto/message-param.dto.ts`
@@ -258,11 +258,11 @@ async getByUuid(@Param('uuid') uuid: string) { ... }
 **Schema-Änderung:**
 
 ```sql
-ALTER TABLE messages
+ALTER TABLE chat_messages
 ADD COLUMN uuid CHAR(36) NOT NULL,
 ADD COLUMN uuid_created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
-CREATE UNIQUE INDEX idx_messages_uuid ON messages(uuid);
+CREATE UNIQUE INDEX idx_chat_messages_uuid ON chat_messages(uuid);
 ```
 
 **Service-Änderung:**
@@ -271,7 +271,7 @@ CREATE UNIQUE INDEX idx_messages_uuid ON messages(uuid);
 // chat.service.ts - insertMessage()
 const messageUuid = uuidv7();
 const query = `
-  INSERT INTO messages (tenant_id, conversation_id, sender_id, content, uuid, uuid_created_at, ...)
+  INSERT INTO chat_messages (tenant_id, conversation_id, sender_id, content, uuid, uuid_created_at, ...)
   VALUES ($1, $2, $3, $4, $5, NOW(), ...)
   RETURNING id, uuid
 `;
@@ -425,7 +425,7 @@ async getByUuid(@Param() params: CalendarEventUuidParamDto) {
 
 | Phase                  | Dauer           | Inhalt                                 |
 | ---------------------- | --------------- | -------------------------------------- |
-| **1. P0 Migration**    | 1-2 Tage        | messages, users, document_shares       |
+| **1. P0 Migration**    | 1-2 Tage        | chat_messages, users, document_shares  |
 | **2. Inkonsistenzen**  | 1 Tag           | calendar, documents, shifts Controller |
 | **3. P1 Migration**    | 1 Tag           | notifications, machines                |
 | **4. P2/P3 Migration** | 2 Tage          | Restliche Tabellen                     |
@@ -448,7 +448,7 @@ async getByUuid(@Param() params: CalendarEventUuidParamDto) {
 **Durchgeführte Änderungen:**
 
 1. **Database Migration** (`database/migrations/003-add-uuid-to-p0-tables.sql`)
-   - `messages`: uuid + uuid_created_at hinzugefügt, 136 Rows aktualisiert
+   - `chat_messages`: uuid + uuid_created_at hinzugefügt, 136 Rows aktualisiert
    - `users`: uuid + uuid_created_at hinzugefügt, 8 Rows aktualisiert
    - `document_shares`: share_uuid + uuid_created_at hinzugefügt, 0 Rows (leer)
    - Unique Indexes auf alle UUID-Spalten erstellt
@@ -592,19 +592,19 @@ private async resolveEntityIdByUuid(uuid: string, tenantId: number): Promise<num
 
 **Aktueller Stand:**
 
-| Bereich                           | Status      |
-| --------------------------------- | ----------- |
-| P0 DB-Migration (messages, users) | ✅ Erledigt |
-| calendar.controller UUID          | ✅ Erledigt |
-| documents.controller UUID         | ✅ Erledigt |
-| shifts.controller UUID            | ✅ Erledigt |
-| users.controller UUID             | ✅ Erledigt |
-| websocket.ts UUID-Bug             | ✅ Erledigt |
-| rotation.controller UUID          | ✅ Erledigt |
-| notifications.controller UUID     | ✅ Erledigt |
-| machines.controller UUID          | ✅ Erledigt |
-| P2 Migration (survey_responses)   | ✅ Erledigt |
-| P3 Migration (teams, etc)         | ✅ Erledigt |
+| Bereich                                | Status      |
+| -------------------------------------- | ----------- |
+| P0 DB-Migration (chat_messages, users) | ✅ Erledigt |
+| calendar.controller UUID               | ✅ Erledigt |
+| documents.controller UUID              | ✅ Erledigt |
+| shifts.controller UUID                 | ✅ Erledigt |
+| users.controller UUID                  | ✅ Erledigt |
+| websocket.ts UUID-Bug                  | ✅ Erledigt |
+| rotation.controller UUID               | ✅ Erledigt |
+| notifications.controller UUID          | ✅ Erledigt |
+| machines.controller UUID               | ✅ Erledigt |
+| P2 Migration (survey_responses)        | ✅ Erledigt |
+| P3 Migration (teams, etc)              | ✅ Erledigt |
 
 ### 2026-01-13: P2/P3 Migration abgeschlossen
 
@@ -654,7 +654,7 @@ Die `message_attachments` Junction-Tabelle war **DEPRECATED** und wurde nie verw
 
 2. **Schema-Dateien aktualisiert:**
    - `database/database-setup.sql` - Tabellen-Definition entfernt, Kommentar hinzugefügt
-   - `database/docker-init.sql` - Tabellen-Definition entfernt, Kommentar hinzugefügt
+   - `database/docker-init.sql` - Gelöscht (legacy MySQL-Dump, ersetzt durch node-pg-migrate)
 
 3. **Chat-Attachment-Implementierung** (chat.controller.ts):
    - `uploadConversationAttachment()` - Speichert in documents mit conversation_id

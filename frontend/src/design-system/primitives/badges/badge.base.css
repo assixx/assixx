@@ -43,6 +43,13 @@
 
 /* ========== SIZE VARIANTS ========== */
 
+/* Extra Small - Inline badges (search results, metadata) */
+.badge--xs {
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 0.6rem;
+}
+
 /* Small - Compact badges (roles, tags) */
 .badge--sm {
   border-radius: 8px;

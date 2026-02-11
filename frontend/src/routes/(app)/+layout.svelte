@@ -16,6 +16,8 @@
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+  import { e2e } from '$lib/crypto/e2e-state.svelte';
+  import { clearPublicKeyCache } from '$lib/crypto/public-key-cache';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { syncThemeFromSSR } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
@@ -278,6 +280,10 @@
       log.error({ err }, 'Logout API error (continuing with logout)');
     }
 
+    // Clear E2E encryption state + private key from Worker memory + IndexedDB
+    await e2e.lock();
+    clearPublicKeyCache();
+
     // CRITICAL: Reset ALL Svelte state to prevent stale data on re-login
     user = null;
     userRole = 'employee';
@@ -345,6 +351,7 @@
       },
       getActiveConversationId: () => null,
       getCurrentUserId: () => userId,
+      getTenantId: () => data.user?.tenantId ?? 0,
       getConversations: () => [],
     };
 
@@ -471,6 +478,12 @@
     perf.timeSync('layout:sse:connect', () => {
       notificationStore.connect();
     });
+
+    // Initialize E2E encryption (generates keys if needed, uploads public key)
+    // Silent — no user interaction required. Keys are device-bound + user-scoped.
+    if (ssrUser?.id !== undefined) {
+      void e2e.initialize(ssrUser.id);
+    }
 
     // Connect WebSocket for presence tracking (user appears "online" app-wide)
     void connectPresenceWebSocket();

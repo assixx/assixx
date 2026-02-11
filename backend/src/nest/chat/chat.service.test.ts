@@ -18,6 +18,7 @@ import type { ChatConversationsService } from './chat-conversations.service.js';
 import type { ChatMessagesService } from './chat-messages.service.js';
 import type { ChatScheduledService } from './chat-scheduled.service.js';
 import { ChatService } from './chat.service.js';
+import type { PresenceStore } from './presence.store.js';
 
 // =============================================================
 // Module mocks
@@ -101,6 +102,14 @@ function createMockScheduledService() {
   };
 }
 
+function createMockPresenceStore() {
+  return {
+    getOnlineUserIds: vi.fn().mockReturnValue(new Set<number>()),
+    setOnline: vi.fn(),
+    setOffline: vi.fn(),
+  };
+}
+
 // =============================================================
 // ChatService
 // =============================================================
@@ -114,6 +123,7 @@ describe('ChatService', () => {
   >;
   let mockMessagesService: ReturnType<typeof createMockMessagesService>;
   let mockScheduledService: ReturnType<typeof createMockScheduledService>;
+  let mockPresenceStore: ReturnType<typeof createMockPresenceStore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -122,12 +132,14 @@ describe('ChatService', () => {
     mockConversationsService = createMockConversationsService();
     mockMessagesService = createMockMessagesService();
     mockScheduledService = createMockScheduledService();
+    mockPresenceStore = createMockPresenceStore();
     service = new ChatService(
       mockCls as never,
       mockDb as unknown as DatabaseService,
       mockConversationsService as unknown as ChatConversationsService,
       mockMessagesService as unknown as ChatMessagesService,
       mockScheduledService as unknown as ChatScheduledService,
+      mockPresenceStore as unknown as PresenceStore,
     );
   });
 

@@ -38,7 +38,7 @@ interface ScheduledMessageRow {
   tenant_id: number;
   conversation_id: number;
   sender_id: number;
-  content: string;
+  content: string | null;
   attachment_path: string | null;
   attachment_name: string | null;
   attachment_type: string | null;
@@ -47,6 +47,16 @@ interface ScheduledMessageRow {
   is_active: number;
   created_at: Date;
   sent_at: Date | null;
+  /** E2E: base64 ciphertext (NULL for plaintext messages) */
+  encrypted_content: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2e_nonce: string | null;
+  /** E2E: whether this scheduled message is end-to-end encrypted */
+  is_e2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2e_key_version: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2e_key_epoch: number | null;
 }
 
 /** Recipient info for notifications */
@@ -102,7 +112,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
     try {
       // Get all due messages (FOR UPDATE SKIP LOCKED for concurrency safety)
       const dueMessages = await this.db.query<ScheduledMessageRow>(
-        `SELECT * FROM scheduled_messages
+        `SELECT * FROM chat_scheduled_messages
          WHERE is_active = $1 AND scheduled_for <= NOW()
          ORDER BY scheduled_for ASC
          LIMIT $2
@@ -154,13 +164,14 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
   ): Promise<void> {
     const messageUuid = uuidv7();
 
-    // 1. Insert the message into the messages table
+    // 1. Insert the message into the messages table (with E2E fields if encrypted)
     const insertResult = await this.db.query<{ id: number }>(
-      `INSERT INTO messages (
+      `INSERT INTO chat_messages (
         tenant_id, conversation_id, sender_id, content,
         attachment_path, attachment_name, attachment_type, attachment_size,
-        uuid, uuid_created_at, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+        uuid, uuid_created_at, created_at,
+        encrypted_content, e2e_nonce, is_e2e, e2e_key_version, e2e_key_epoch
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), $10, $11, $12, $13, $14)
       RETURNING id`,
       [
         scheduled.tenant_id,
@@ -172,6 +183,11 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
         scheduled.attachment_type,
         scheduled.attachment_size,
         messageUuid,
+        scheduled.encrypted_content,
+        scheduled.e2e_nonce,
+        scheduled.is_e2e,
+        scheduled.e2e_key_version,
+        scheduled.e2e_key_epoch,
       ],
     );
 
@@ -182,13 +198,13 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
 
     // 2. Update conversation timestamp
     await this.db.query(
-      `UPDATE conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [scheduled.conversation_id, scheduled.tenant_id],
     );
 
     // 3. Mark scheduled message as sent
     await this.db.query(
-      `UPDATE scheduled_messages SET is_active = $1, sent_at = NOW() WHERE id = $2`,
+      `UPDATE chat_scheduled_messages SET is_active = $1, sent_at = NOW() WHERE id = $2`,
       [SCHEDULED_STATUS.SENT, scheduled.id],
     );
 
@@ -210,23 +226,25 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
     messageUuid: string,
   ): Promise<void> {
     try {
-      // Get recipients (all participants except sender)
+      // Get ALL participants including sender — scheduled messages are sent
+      // by the processor, not the user, so sender also needs notification
       const recipients = await this.db.query<RecipientRow>(
-        `SELECT user_id FROM conversation_participants
-         WHERE conversation_id = $1 AND user_id != $2`,
-        [scheduled.conversation_id, scheduled.sender_id],
+        `SELECT user_id FROM chat_conversation_participants
+         WHERE conversation_id = $1`,
+        [scheduled.conversation_id],
       );
 
       const recipientIds = recipients.map((r: RecipientRow) => r.user_id);
 
-      // Emit event
+      // Emit event (E2E messages get empty preview — server cannot read ciphertext)
       eventBus.emitNewMessage(scheduled.tenant_id, {
         id: messageId,
         uuid: messageUuid,
         conversationId: scheduled.conversation_id,
         senderId: scheduled.sender_id,
         recipientIds,
-        preview: scheduled.content.substring(0, 50),
+        preview:
+          scheduled.is_e2e ? '' : (scheduled.content ?? '').substring(0, 50),
       });
     } catch (error) {
       // Non-critical - log but don't fail the message send

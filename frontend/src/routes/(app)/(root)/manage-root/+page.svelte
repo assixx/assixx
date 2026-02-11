@@ -13,7 +13,7 @@
     return (resolve as (p: string) => string)(path);
   }
 
-  import HighlightText from '$lib/components/HighlightText.svelte';
+  import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import {
     showSuccessAlert,
     showWarningAlert,
@@ -440,47 +440,24 @@
               </div>
             {:else if currentSearchQuery}
               {#each filteredUsers.slice(0, 5) as user (user.id)}
-                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div
-                  class="search-input__result-item"
+                <SearchResultUser
+                  id={user.id}
+                  firstName={user.firstName}
+                  lastName={user.lastName}
+                  email={user.email}
+                  employeeNumber={user.employeeNumber}
+                  role="root"
+                  position={user.position ?? MESSAGES.NO_POSITION}
+                  query={currentSearchQuery}
                   onclick={() => {
                     handleSearchResultClick(user.id);
                   }}
-                >
-                  <div class="search-result-item">
-                    <div class="search-result-item__name">
-                      <HighlightText
-                        text={`${user.firstName} ${user.lastName}`}
-                        query={currentSearchQuery}
-                      />
-                    </div>
-                    <div class="search-result-item__email">
-                      <HighlightText
-                        text={user.email}
-                        query={currentSearchQuery}
-                      />
-                    </div>
-                    <div class="search-result-item__meta">
-                      <span>
-                        <HighlightText
-                          text={user.position ?? MESSAGES.NO_POSITION}
-                          query={currentSearchQuery}
-                        />
-                      </span>
-                      {#if user.employeeNumber}
-                        <span>
-                          • <HighlightText
-                            text={user.employeeNumber}
-                            query={currentSearchQuery}
-                          />
-                        </span>
-                      {/if}
-                    </div>
-                  </div>
-                </div>
+                />
               {/each}
               {#if filteredUsers.length > 5}
-                <div class="search-input__result-item search-result-item__more">
+                <div
+                  class="search-input__result-item search-input__result-more"
+                >
                   {MESSAGES.moreResults(filteredUsers.length - 5)}
                 </div>
               {/if}

@@ -27,22 +27,35 @@ const config = {
     },
 
     // CSP Headers für Sicherheit
-    // Sentry + Google Fonts must be whitelisted
+    // nonce-based: SvelteKit generates per-request cryptographic nonce for inline SSR scripts
+    // This is strictly better than unsafe-inline — only scripts with the correct nonce execute
+    // @see docs/plans/IMPLEMENT-E2E-ENCRYPTION.md (Section 6.6)
     csp: {
-      mode: 'auto',
+      mode: 'nonce',
       directives: {
-        // Allow connections to Sentry for error/performance data
-        'connect-src': ['self', '*.ingest.de.sentry.io', '*.sentry.io'],
-        // Allow scripts: self + inline (Svelte) + Sentry
-        'script-src': ['self', 'unsafe-inline'],
+        'default-src': ['self'],
+        // nonce added automatically by SvelteKit for inline scripts (SSR hydration)
+        'script-src': ['self'],
         // Allow styles: self + inline + Google Fonts
         'style-src': ['self', 'unsafe-inline', 'https://fonts.googleapis.com'],
         // Allow fonts: self + Google Fonts
         'font-src': ['self', 'https://fonts.gstatic.com'],
-        // Allow Sentry replay worker
+        // Allow connections: Sentry + WebSocket (dev + prod)
+        'connect-src': [
+          'self',
+          '*.ingest.de.sentry.io',
+          '*.sentry.io',
+          'ws://localhost:*',
+          'wss://*.assixx.com',
+        ],
+        // Allow Web Workers (CryptoWorker uses blob: in dev, self in prod)
         'worker-src': ['self', 'blob:'],
         // Allow images: self + data URIs (for inline SVGs, etc.)
         'img-src': ['self', 'data:', 'blob:'],
+        // Security: block object embeds and frame ancestors
+        'object-src': ['none'],
+        'base-uri': ['self'],
+        'frame-ancestors': ['none'],
       },
     },
 

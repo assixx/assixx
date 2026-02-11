@@ -174,6 +174,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      # Grace period covers TS build (~60s) + NestJS bootstrap (~10s)
+      # start_interval polls every 5s during startup for fast detection
+      start_period: 120s
+      start_interval: 5s
     # Development command - build shared + NestJS, then run
     # 1. Build @assixx/shared (TS → JS for Node runtime resolution)
     # 2. Build backend (tsc for decorator metadata - tsx can't emit it)
@@ -298,6 +302,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      # Worker runs pre-compiled JS — starts in ~3-5s
+      start_period: 30s
+      start_interval: 5s
     # Worker command - run compiled JS (tsx can't handle parameter decorators like @Inject)
     # Backend build (via service_healthy dependency) populates dist/ on shared volume
     command: ["node", "backend/dist/workers/deletionWorker.js"]
@@ -361,6 +368,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      # SvelteKit production image starts in ~2-5s
+      start_period: 15s
+      start_interval: 5s
     profiles:
       - production
 
@@ -398,6 +408,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+      start_interval: 5s
     profiles:
       - production
 
@@ -438,6 +449,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 45s
+      start_interval: 10s
     profiles:
       - observability
       - production
@@ -485,6 +497,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+      start_interval: 10s
     profiles:
       - observability
       - production
@@ -541,6 +554,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+      start_interval: 10s
     profiles:
       - observability
       - production
