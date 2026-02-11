@@ -170,7 +170,8 @@ describe('UserProfileService', () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
       // bcryptjs.compare defaults to true (mocked)
       // bcryptjs.hash defaults to 'hashed-password' (mocked)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE users
+      mockDb.query.mockResolvedValueOnce([{ count: '2' }]); // revoke refresh_tokens
 
       const result = await service.changePassword(
         1,
@@ -183,6 +184,10 @@ describe('UserProfileService', () => {
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE users SET password'),
         expect.arrayContaining(['hashed-password', 1, 10]),
+      );
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE refresh_tokens SET is_revoked'),
+        [1, 10],
       );
     });
   });

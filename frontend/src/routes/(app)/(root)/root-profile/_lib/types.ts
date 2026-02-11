@@ -54,6 +54,7 @@ export interface ProfileUpdatePayload {
 export interface PasswordChangePayload {
   currentPassword: string;
   newPassword: string;
+  confirmPassword: string;
 }
 
 /** API response wrapper variants */

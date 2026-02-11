@@ -180,6 +180,14 @@ export async function changePassword(
 }
 
 /**
+ * Call backend logout to revoke tokens and clear HttpOnly cookies
+ * Used after password change to force re-login on all sessions
+ */
+export async function logoutAllSessions(): Promise<void> {
+  await apiClient.post('/auth/logout');
+}
+
+/**
  * Approve tenant deletion request
  * @param id - Approval queue ID
  */

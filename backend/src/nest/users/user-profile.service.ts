@@ -144,6 +144,19 @@ export class UserProfileService {
       [hashedPassword, userId, tenantId],
     );
 
+    // SECURITY: Revoke all refresh tokens to force re-login on all sessions
+    const result = await this.databaseService.query<{ count: string }>(
+      `WITH updated AS (
+         UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1 AND tenant_id = $2 RETURNING 1
+       )
+       SELECT COUNT(*) as count FROM updated`,
+      [userId, tenantId],
+    );
+    const revokedCount = Number.parseInt(result[0]?.count ?? '0', 10);
+    this.logger.log(
+      `Password changed for user ${userId}: revoked ${revokedCount} refresh tokens`,
+    );
+
     return { message: 'Password changed successfully' };
   }
 

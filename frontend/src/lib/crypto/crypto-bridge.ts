@@ -12,6 +12,13 @@
  * @see docs/plans/IMPLEMENT-E2E-ENCRYPTION.md (Section 6.4)
  */
 
+/** Argon2 parameters stored alongside the escrow blob */
+interface Argon2Params {
+  memory: number;
+  iterations: number;
+  parallelism: number;
+}
+
 /** Response types from the Worker */
 type WorkerResponse = { requestId: string } & (
   | { type: 'ready'; hasKey: boolean; persisted: boolean }
@@ -22,6 +29,15 @@ type WorkerResponse = { requestId: string } & (
   | { type: 'decryptFailed'; reason: string }
   | { type: 'publicKey'; publicKey: string }
   | { type: 'fingerprint'; fingerprint: string }
+  | {
+      type: 'privateKeyWrapped';
+      encryptedBlob: string;
+      argon2Salt: string;
+      xchachaNonce: string;
+      argon2Params: Argon2Params;
+    }
+  | { type: 'privateKeyUnwrapped'; publicKey: string; fingerprint: string }
+  | { type: 'unwrapFailed'; reason: string }
   | { type: 'locked' }
   | { type: 'pong' }
   | { type: 'error'; message: string }
@@ -160,6 +176,69 @@ class CryptoBridge {
       throw new Error(response.message);
     }
     throw new Error(`Unexpected getFingerprint response: ${response.type}`);
+  }
+
+  /**
+   * Wrap the in-memory private key with a password-derived wrapping key.
+   * Returns the encrypted blob + KDF parameters for server escrow storage.
+   * Uses Argon2id for KDF + XChaCha20-Poly1305 for wrapping (ADR-022).
+   */
+  async wrapKey(password: string): Promise<{
+    encryptedBlob: string;
+    argon2Salt: string;
+    xchachaNonce: string;
+    argon2Params: Argon2Params;
+  }> {
+    const response = await this.send({ type: 'wrapPrivateKey', password });
+    if (response.type === 'privateKeyWrapped') {
+      return {
+        encryptedBlob: response.encryptedBlob,
+        argon2Salt: response.argon2Salt,
+        xchachaNonce: response.xchachaNonce,
+        argon2Params: response.argon2Params,
+      };
+    }
+    if (response.type === 'error') {
+      throw new Error(response.message);
+    }
+    throw new Error(`Unexpected wrapKey response: ${response.type}`);
+  }
+
+  /**
+   * Unwrap a private key from a server escrow blob using the user's password.
+   * On success, the key is loaded into Worker memory + IndexedDB.
+   * Returns null if password was wrong (invalid tag from XChaCha20).
+   * Uses Argon2id for KDF + XChaCha20-Poly1305 for unwrapping (ADR-022).
+   */
+  async unwrapKey(
+    password: string,
+    encryptedBlob: string,
+    argon2Salt: string,
+    xchachaNonce: string,
+    argon2Params: Argon2Params,
+  ): Promise<{ publicKey: string; fingerprint: string } | null> {
+    const response = await this.send({
+      type: 'unwrapPrivateKey',
+      password,
+      encryptedBlob,
+      argon2Salt,
+      xchachaNonce,
+      argon2Params,
+    });
+    if (response.type === 'privateKeyUnwrapped') {
+      return {
+        publicKey: response.publicKey,
+        fingerprint: response.fingerprint,
+      };
+    }
+    if (response.type === 'unwrapFailed') {
+      // Wrong password or corrupted blob — caller decides what to do
+      return null;
+    }
+    if (response.type === 'error') {
+      throw new Error(response.message);
+    }
+    throw new Error(`Unexpected unwrapKey response: ${response.type}`);
   }
 
   /**

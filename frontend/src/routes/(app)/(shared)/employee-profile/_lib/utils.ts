@@ -3,22 +3,32 @@
  * @module employee-profile/_lib/utils
  */
 
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showWarningAlert,
+  showInfoAlert,
+} from '$lib/stores/toast';
+
 import { POSITION_MAP } from './constants';
 
 import type { ToastType } from './types';
 
+/** Toast type to store function mapping */
+const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
+  success: showSuccessAlert,
+  error: showErrorAlert,
+  warning: showWarningAlert,
+  info: showInfoAlert,
+};
+
 /**
- * Show toast notification via custom event
+ * Show toast notification via toast store
  * @param message - Toast message
  * @param type - Toast type
  */
 export function showToast(message: string, type: ToastType = 'info'): void {
-  if (typeof window === 'undefined') return;
-
-  const event = new CustomEvent('show-toast', {
-    detail: { message, type },
-  });
-  window.dispatchEvent(event);
+  TOAST_FN_MAP[type](message);
 }
 
 /**
