@@ -532,14 +532,14 @@ User logs in (any authenticated page, via +layout.svelte in (app) group)
 **File:** `database/migrations/20260210000023_e2e-message-columns.ts` (applied 2026-02-10)
 
 ```sql
-ALTER TABLE messages ADD COLUMN encrypted_content TEXT;
-ALTER TABLE messages ADD COLUMN e2e_nonce TEXT;
-ALTER TABLE messages ADD COLUMN is_e2e BOOLEAN NOT NULL DEFAULT false;  -- false = safer during deployment, flips to true per-message
-ALTER TABLE messages ADD COLUMN e2e_key_version INTEGER;
-ALTER TABLE messages ADD COLUMN e2e_key_epoch INTEGER;  -- Math.floor(Date.now() / 86_400_000), stored for decryption
-ALTER TABLE messages ALTER COLUMN content DROP NOT NULL;
+ALTER TABLE chat_messages ADD COLUMN encrypted_content TEXT;
+ALTER TABLE chat_messages ADD COLUMN e2e_nonce TEXT;
+ALTER TABLE chat_messages ADD COLUMN is_e2e BOOLEAN NOT NULL DEFAULT false;  -- false = safer during deployment, flips to true per-message
+ALTER TABLE chat_messages ADD COLUMN e2e_key_version INTEGER;
+ALTER TABLE chat_messages ADD COLUMN e2e_key_epoch INTEGER;  -- Math.floor(Date.now() / 86_400_000), stored for decryption
+ALTER TABLE chat_messages ALTER COLUMN content DROP NOT NULL;
 
-CREATE INDEX idx_messages_e2e ON messages(is_e2e) WHERE is_e2e = true;
+CREATE INDEX idx_chat_messages_e2e ON chat_messages(is_e2e) WHERE is_e2e = true;
 ```
 
 **Why `DEFAULT false`:** During deployment, if the backend is live but the frontend hasn't been deployed yet, system messages and any legacy code paths will create messages with `is_e2e = false` by default. The frontend explicitly sets `is_e2e = true` for encrypted messages. `DEFAULT true` would be dangerous — any message created without explicit E2E fields would claim to be encrypted while storing plaintext.
@@ -548,17 +548,17 @@ CREATE INDEX idx_messages_e2e ON messages(is_e2e) WHERE is_e2e = true;
 
 Run `Grep` for `\.content` and `messages.content` across entire codebase. Every hit needs null-safety. Known files (7+ files, NOT just 5):
 
-| #   | File                                                               | Lines | What to check                                                                                                                    |
-| --- | ------------------------------------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `backend/src/websocket.ts`                                         | 948   | Inline SQL `INSERT INTO messages (...content...)`, broadcast object `data.content`, `processAndBroadcastMessage()` content field |
-| 2   | `backend/src/nest/chat/chat-messages.service.ts`                   | 534   | Every `SELECT content`, every `row.content`, `insertMessageRecord()`, `getMessages()` response mapping                           |
-| 3   | `backend/src/nest/chat/chat.types.ts`                              | 288   | `MessageRow.content` → `string \| null`, `Message.content` → `string \| null`                                                    |
-| 4   | `backend/src/nest/chat/chat.controller.ts`                         | 543   | Response mapping, any direct content access                                                                                      |
-| 5   | `backend/src/nest/chat/chat-scheduled.service.ts`                  | 221   | `scheduled_messages.content` — separate table but same pattern                                                                   |
-| 6   | `frontend/src/routes/(app)/(shared)/chat/_lib/types.ts`            | 310   | `Message.content` → `string \| null`                                                                                             |
-| 7   | `frontend/src/routes/(app)/(shared)/chat/_lib/handlers.ts`         | 769   | `handleNewMessage()`, `sendMessage()`, WS message construction                                                                   |
-| 8   | `frontend/src/routes/(app)/(shared)/chat/_lib/MessagesArea.svelte` | 579   | Every `{message.content}` render, search highlighting on content                                                                 |
-| 9   | Any notification service                                           | ?     | Check if message preview/snippet uses `.content` (e.g., SSE badge with last message text)                                        |
+| #   | File                                                               | Lines | What to check                                                                                                                         |
+| --- | ------------------------------------------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `backend/src/websocket.ts`                                         | 948   | Inline SQL `INSERT INTO chat_messages (...content...)`, broadcast object `data.content`, `processAndBroadcastMessage()` content field |
+| 2   | `backend/src/nest/chat/chat-messages.service.ts`                   | 534   | Every `SELECT content`, every `row.content`, `insertMessageRecord()`, `getMessages()` response mapping                                |
+| 3   | `backend/src/nest/chat/chat.types.ts`                              | 288   | `MessageRow.content` → `string \| null`, `Message.content` → `string \| null`                                                         |
+| 4   | `backend/src/nest/chat/chat.controller.ts`                         | 543   | Response mapping, any direct content access                                                                                           |
+| 5   | `backend/src/nest/chat/chat-scheduled.service.ts`                  | 221   | `chat_scheduled_messages.content` — separate table but same pattern                                                                   |
+| 6   | `frontend/src/routes/(app)/(shared)/chat/_lib/types.ts`            | 310   | `Message.content` → `string \| null`                                                                                                  |
+| 7   | `frontend/src/routes/(app)/(shared)/chat/_lib/handlers.ts`         | 769   | `handleNewMessage()`, `sendMessage()`, WS message construction                                                                        |
+| 8   | `frontend/src/routes/(app)/(shared)/chat/_lib/MessagesArea.svelte` | 579   | Every `{message.content}` render, search highlighting on content                                                                      |
+| 9   | Any notification service                                           | ?     | Check if message preview/snippet uses `.content` (e.g., SSE badge with last message text)                                             |
 
 **Rule:** Every `message.content` access in display code must use `message.decryptedContent ?? message.content ?? ''` for E2E messages, or `message.content ?? ''` for system messages. Type system enforces this via `content: string | null`.
 
@@ -746,10 +746,10 @@ Since we TRUNCATE, the scheduled messages table is empty. Disable the feature in
 
 ```sql
 -- TRUNCATE all chat data (maintenance window)
-TRUNCATE TABLE messages CASCADE;
-TRUNCATE TABLE conversations CASCADE;
-TRUNCATE TABLE conversation_participants CASCADE;
-TRUNCATE TABLE scheduled_messages CASCADE;
+TRUNCATE TABLE chat_messages CASCADE;
+TRUNCATE TABLE chat_conversations CASCADE;
+TRUNCATE TABLE chat_conversation_participants CASCADE;
+TRUNCATE TABLE chat_scheduled_messages CASCADE;
 ```
 
 **Deployment order:**

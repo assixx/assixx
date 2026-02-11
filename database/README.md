@@ -8,13 +8,12 @@
 
 ```
 database/
-├── docker-init.sql                  # Main schema file (PostgreSQL)
 ├── database-setup.sql               # Setup script
-├── migrations/                      # node-pg-migrate TypeScript migrations (ADR-014)
+├── migrations/                      # node-pg-migrate TypeScript migrations (ADR-014) — SOURCE OF TRUTH
 │   ├── 20260127000000_baseline.ts
 │   ├── 20260127000001_drop-unused-tables.ts
 │   ├── ...
-│   ├── 20260202000018_fix-position-umlauts.ts
+│   ├── 20260211000025_rename-chat-tables.ts
 │   └── archive/                     # Old SQL migrations (pre node-pg-migrate)
 ├── seeds/                           # Seed data
 │   └── 001_global-seed-data.sql
@@ -33,14 +32,8 @@ database/
 ### Fresh Installation
 
 ```bash
-docker cp database/docker-init.sql assixx-postgres:/tmp/
-docker exec assixx-postgres psql -U assixx_user -d assixx -f /tmp/docker-init.sql
-```
-
-### Apply Migration
-
-```bash
-# Migrations run via node-pg-migrate (see ADR-014)
+# Migrations are the source of truth (ADR-014).
+# The baseline migration creates all tables from scratch.
 docker exec assixx-backend pnpm run migrate:up
 ```
 
@@ -71,4 +64,4 @@ docker exec assixx-postgres pg_dump -U assixx_user -d assixx > backups/backup_$(
 - **Daily**: Automatic backups at 02:00 AM
 - **Weekly**: Schema validation check
 - **Monthly**: Archive old backups
-- **On Change**: Update docker-init.sql after major migrations
+- **On Change**: Create new TypeScript migration via node-pg-migrate (ADR-014)
