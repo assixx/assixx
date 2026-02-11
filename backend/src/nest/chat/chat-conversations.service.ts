@@ -21,6 +21,7 @@ import {
 } from './chat.helpers.js';
 import type {
   Conversation,
+  ConversationParticipant,
   ConversationRow,
   PaginationMeta,
   ParticipantRow,
@@ -31,6 +32,7 @@ import type {
   GetConversationsQuery,
   UpdateConversationBody,
 } from './dto/conversation.dto.js';
+import { PresenceStore } from './presence.store.js';
 
 @Injectable()
 export class ChatConversationsService {
@@ -39,6 +41,7 @@ export class ChatConversationsService {
   constructor(
     private readonly cls: ClsService,
     private readonly databaseService: DatabaseService,
+    private readonly presenceStore: PresenceStore,
   ) {}
 
   // ============================================
@@ -101,9 +104,21 @@ export class ChatConversationsService {
       await this.fetchParticipantsForConversations(conversationIds);
     const unreadCounts = await this.getUnreadCounts(conversationIds, userId);
 
-    const data = conversations.map((conv: ConversationRow) =>
-      mapConversationToApiFormat(conv, participants, unreadCounts),
-    );
+    const onlineIds = this.presenceStore.getOnlineUserIds();
+    const data = conversations.map((conv: ConversationRow) => {
+      const mapped = mapConversationToApiFormat(
+        conv,
+        participants,
+        unreadCounts,
+      );
+      mapped.participants = mapped.participants.map(
+        (p: ConversationParticipant) => ({
+          ...p,
+          status: onlineIds.has(p.id) ? 'online' : 'offline',
+        }),
+      );
+      return mapped;
+    });
 
     return {
       data,
@@ -138,10 +153,6 @@ export class ChatConversationsService {
       [conversationId, tenantId],
     );
 
-    if (conversations.length === 0) {
-      throw new NotFoundException('Conversation not found');
-    }
-
     const conv = conversations[0];
     if (conv === undefined) {
       throw new NotFoundException('Conversation not found');
@@ -156,6 +167,7 @@ export class ChatConversationsService {
       [conversationId, tenantId],
     );
 
+    const onlineIds = this.presenceStore.getOnlineUserIds();
     const convParticipants = participants.map((p: ParticipantRow) => ({
       id: p.user_id,
       userId: p.user_id,
@@ -165,6 +177,8 @@ export class ChatConversationsService {
       profileImageUrl: p.profile_picture ?? undefined,
       joinedAt: new Date(p.joined_at),
       isActive: true,
+      status:
+        onlineIds.has(p.user_id) ? ('online' as const) : ('offline' as const),
     }));
 
     return {

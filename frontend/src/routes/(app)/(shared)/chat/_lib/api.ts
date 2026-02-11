@@ -53,6 +53,38 @@ export async function loadConversations(): Promise<Conversation[]> {
 }
 
 /**
+ * Fetch a single conversation by ID (with participants and metadata)
+ * Used when a WebSocket message arrives for a conversation not yet in the sidebar.
+ * @param conversationId - The conversation ID to fetch
+ * @returns The conversation object, or null if not found / not accessible
+ */
+export async function fetchConversationById(
+  conversationId: number,
+): Promise<Conversation | null> {
+  try {
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.conversations}/${conversationId}`,
+    );
+
+    if (response !== null && typeof response === 'object') {
+      const obj = response as Record<string, unknown>;
+      if (obj.conversation !== null && typeof obj.conversation === 'object') {
+        const conv = obj.conversation as Conversation;
+        return {
+          ...conv,
+          participants:
+            Array.isArray(conv.participants) ? conv.participants : [],
+        };
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Create a new conversation with specified participants
  * @param participantIds - Array of user IDs to include
  * @param isGroup - Whether this is a group conversation
@@ -165,26 +197,42 @@ interface ScheduledAttachmentInfo {
 }
 
 /**
+ * E2E encryption fields for scheduled message
+ */
+interface ScheduledE2eInfo {
+  encryptedContent: string;
+  e2eNonce: string;
+  e2eKeyVersion: number;
+  e2eKeyEpoch: number;
+}
+
+/**
  * Create a scheduled message
  * @param conversationId - ID of the conversation
- * @param content - Message content
+ * @param content - Message content (null for E2E messages)
  * @param scheduledFor - ISO date string for when to send
  * @param attachment - Optional attachment info (first upload only for now)
+ * @param e2e - Optional E2E encryption fields
  */
 export async function createScheduledMessage(
   conversationId: number,
-  content: string,
+  content: string | null,
   scheduledFor: string,
   attachment?: ScheduledAttachmentInfo,
+  e2e?: ScheduledE2eInfo,
 ): Promise<void> {
   await apiClient.post(API_ENDPOINTS.createScheduled, {
     conversationId,
-    content,
+    content: e2e !== undefined ? undefined : content,
     scheduledFor,
     attachmentPath: attachment?.path,
     attachmentName: attachment?.name,
     attachmentType: attachment?.type,
     attachmentSize: attachment?.size,
+    encryptedContent: e2e?.encryptedContent,
+    e2eNonce: e2e?.e2eNonce,
+    e2eKeyVersion: e2e?.e2eKeyVersion,
+    e2eKeyEpoch: e2e?.e2eKeyEpoch,
   });
 }
 
@@ -235,7 +283,8 @@ export async function searchUsers(query: string): Promise<ChatUser[]> {
     return (
       user.username.toLowerCase().includes(searchLower) ||
       fullName.includes(searchLower) ||
-      (user.email ?? '').toLowerCase().includes(searchLower)
+      (user.email ?? '').toLowerCase().includes(searchLower) ||
+      (user.employeeNumber ?? '').toLowerCase().includes(searchLower)
     );
   });
 }

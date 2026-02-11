@@ -181,13 +181,27 @@ export interface ScheduledMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  content: string;
+  content: string | null;
   scheduledFor: string;
   status: ScheduledMessageStatus;
   createdAt: string;
   sentAt: string | null;
   /** Attachment info (nested object from backend) */
   attachment: ScheduledAttachment | null;
+  /** E2E: base64-encoded ciphertext */
+  encryptedContent?: string | null;
+  /** E2E: base64-encoded XChaCha20-Poly1305 nonce */
+  e2eNonce?: string | null;
+  /** E2E: whether this scheduled message is end-to-end encrypted */
+  isE2e?: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2eKeyVersion?: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2eKeyEpoch?: number | null;
+  /** Client-side: decrypted plaintext (filled after CryptoWorker decryption) */
+  decryptedContent?: string;
+  /** Client-side: true if decryption failed */
+  decryptionFailed?: boolean;
 }
 
 /**

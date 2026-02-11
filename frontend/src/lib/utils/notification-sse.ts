@@ -31,8 +31,15 @@ export type NotificationEventType =
 
 export interface NotificationEvent {
   type: NotificationEventType;
-  data?: SurveyEventData | DocumentEventData | KvpEventData | MessageEventData;
   timestamp: string;
+  /** Message data — present when type is 'NEW_MESSAGE' */
+  message?: MessageEventData;
+  /** Survey data — present when type is 'NEW_SURVEY' */
+  survey?: SurveyEventData;
+  /** Document data — present when type is 'NEW_DOCUMENT' */
+  document?: DocumentEventData;
+  /** KVP data — present when type is 'NEW_KVP' */
+  kvp?: KvpEventData;
   user?: {
     id: number;
     role: string;
@@ -57,7 +64,7 @@ interface KvpEventData {
   submitted_by?: string;
 }
 
-interface MessageEventData {
+export interface MessageEventData {
   id: number;
   senderId: number;
   conversationId: number;

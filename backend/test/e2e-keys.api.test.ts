@@ -103,7 +103,8 @@ describe('E2E Keys: Get Own Keys (after registration)', () => {
     expect(body.data).not.toBeNull();
     expect(body.data.publicKey).toBeDefined();
     expect(body.data.fingerprint).toBeDefined();
-    expect(body.data.keyVersion).toBe(1);
+    // Version may be > 1 if other tests rotated the key (e.g., roundtrip test)
+    expect(body.data.keyVersion).toBeGreaterThanOrEqual(1);
   });
 });
 

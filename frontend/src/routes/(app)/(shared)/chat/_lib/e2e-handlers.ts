@@ -10,7 +10,7 @@ import { createLogger } from '$lib/utils/logger';
 
 import { buildSendMessage } from './websocket';
 
-import type { Conversation, Message } from './types';
+import type { Conversation, Message, ScheduledMessage } from './types';
 
 const log = createLogger('E2eHandlers');
 
@@ -311,5 +311,70 @@ export async function decryptLoadedMessages(
       return { ...msg, decryptedContent: plaintext };
     }
     return { ...msg, decryptionFailed: true };
+  });
+}
+
+/** Decrypt E2E scheduled messages loaded via REST API. Non-E2E pass through. */
+export async function decryptLoadedScheduledMessages(
+  scheduled: ScheduledMessage[],
+  currentUserId: number,
+  tenantId: number,
+  conversations: Conversation[],
+): Promise<ScheduledMessage[]> {
+  if (!e2e.state.isReady) return scheduled;
+
+  const e2eScheduled = scheduled.filter(
+    (
+      s,
+    ): s is ScheduledMessage & {
+      encryptedContent: string;
+      e2eNonce: string;
+      e2eKeyEpoch: number;
+    } =>
+      s.isE2e === true &&
+      s.encryptedContent !== null &&
+      s.encryptedContent !== undefined &&
+      s.e2eNonce !== null &&
+      s.e2eNonce !== undefined &&
+      s.e2eKeyEpoch !== null &&
+      s.e2eKeyEpoch !== undefined,
+  );
+  if (e2eScheduled.length === 0) return scheduled;
+
+  const results = new Map<string, string | null>();
+  await Promise.allSettled(
+    e2eScheduled.map(async (s) => {
+      try {
+        const params = await resolveE2eParams(
+          s.conversationId,
+          currentUserId,
+          tenantId,
+          conversations,
+        );
+        if (params === null) {
+          results.set(s.id, null);
+          return;
+        }
+        const plaintext = await cryptoBridge.decrypt(
+          s.encryptedContent,
+          s.e2eNonce,
+          params.publicKey,
+          params.salt,
+          s.e2eKeyEpoch,
+        );
+        results.set(s.id, plaintext);
+      } catch {
+        results.set(s.id, null);
+      }
+    }),
+  );
+
+  return scheduled.map((s) => {
+    if (!results.has(s.id)) return s;
+    const plaintext = results.get(s.id);
+    if (plaintext !== null && plaintext !== undefined) {
+      return { ...s, decryptedContent: plaintext };
+    }
+    return { ...s, decryptionFailed: true };
   });
 }

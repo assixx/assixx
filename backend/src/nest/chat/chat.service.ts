@@ -50,6 +50,7 @@ import type {
 } from './dto/message.dto.js';
 import type { CreateScheduledMessageBody } from './dto/scheduled-message.dto.js';
 import type { GetUsersQuery } from './dto/user.dto.js';
+import { PresenceStore } from './presence.store.js';
 
 @Injectable()
 export class ChatService {
@@ -61,6 +62,7 @@ export class ChatService {
     private readonly conversationsService: ChatConversationsService,
     private readonly messagesService: ChatMessagesService,
     private readonly scheduledService: ChatScheduledService,
+    private readonly presenceStore: PresenceStore,
   ) {}
 
   // ============================================
@@ -106,9 +108,12 @@ export class ChatService {
       currentUser,
     );
     const filteredUsers = filterUsersBySearch(users, query.search);
-    const chatUsers = filteredUsers.map((user: ChatUserRow) =>
-      mapRowToChatUser(user),
-    );
+    const onlineIds = this.presenceStore.getOnlineUserIds();
+    const chatUsers = filteredUsers.map((user: ChatUserRow) => {
+      const mapped = mapRowToChatUser(user);
+      if (onlineIds.has(user.id)) mapped.status = 'online';
+      return mapped;
+    });
 
     return { users: chatUsers, total: chatUsers.length };
   }

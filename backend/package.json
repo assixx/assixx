@@ -70,6 +70,9 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@noble/ciphers": "2.1.1",
+    "@noble/curves": "2.0.1",
+    "@noble/hashes": "2.0.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.23",
     "@types/node": "~24.10.12",

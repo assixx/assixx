@@ -85,24 +85,35 @@ export class ChatScheduledService {
       throw new BadRequestException(validationError);
     }
 
+    // Determine if this is an E2E message
+    const isE2e =
+      typeof dto.encryptedContent === 'string' &&
+      dto.encryptedContent.length > 0;
+
     // Insert scheduled message
     const result = await this.databaseService.query<ScheduledMessageRow>(
       `INSERT INTO scheduled_messages (
         tenant_id, conversation_id, sender_id, content,
         attachment_path, attachment_name, attachment_type, attachment_size,
-        scheduled_for
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        scheduled_for,
+        encrypted_content, e2e_nonce, is_e2e, e2e_key_version, e2e_key_epoch
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
       [
         tenantId,
         dto.conversationId,
         userId,
-        dto.content,
+        isE2e ? null : dto.content,
         dto.attachmentPath ?? null,
         dto.attachmentName ?? null,
         dto.attachmentType ?? null,
         dto.attachmentSize ?? null,
         scheduledFor.toISOString(),
+        dto.encryptedContent ?? null,
+        dto.e2eNonce ?? null,
+        isE2e,
+        dto.e2eKeyVersion ?? null,
+        dto.e2eKeyEpoch ?? null,
       ],
     );
 

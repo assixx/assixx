@@ -6,6 +6,10 @@
 // Pure functions that handle the message-sending sub-steps.
 // State mutations remain in the factory (chat-page-state.svelte.ts).
 
+import { computeConversationSalt } from '$lib/crypto/conversation-salt';
+import { cryptoBridge } from '$lib/crypto/crypto-bridge';
+import { e2e } from '$lib/crypto/e2e-state.svelte';
+import { getPublicKey as fetchRecipientPublicKey } from '$lib/crypto/public-key-cache';
 import { createLogger } from '$lib/utils/logger';
 
 import { MESSAGES } from './constants';
@@ -43,8 +47,17 @@ export async function uploadMessageFiles(
   return uploaded;
 }
 
+/** E2E context needed for encrypting scheduled messages */
+export interface ScheduleE2eContext {
+  isGroup: boolean;
+  recipientId: number | null;
+  currentUserId: number;
+  tenantId: number;
+}
+
 /**
- * Send a scheduled message. Returns updated scheduled list, or null on failure.
+ * Send a scheduled message. Encrypts if eligible for E2E (1:1, E2E ready).
+ * Returns updated scheduled list, or null on failure.
  * Shows success/error notification internally.
  */
 export async function scheduleMessage(
@@ -53,19 +66,100 @@ export async function scheduleMessage(
   time: Date,
   attachments: handlers.UploadedAttachmentInfo[],
   notify: NotifyFn,
+  e2eContext?: ScheduleE2eContext,
 ): Promise<ScheduledMessage[] | null> {
   try {
+    // Encrypt if eligible: 1:1 conversation, E2E ready, recipient has key
+    let e2eFields: handlers.ScheduledE2eFields | undefined;
+
+    if (
+      e2eContext !== undefined &&
+      !e2eContext.isGroup &&
+      e2eContext.recipientId !== null &&
+      e2e.state.isReady
+    ) {
+      const encrypted = await encryptForScheduledMessage(
+        content,
+        conversationId,
+        e2eContext.recipientId,
+        e2eContext.currentUserId,
+        e2eContext.tenantId,
+      );
+      if (encrypted !== null) {
+        e2eFields = encrypted;
+      }
+      // encrypted === null means recipient has no key → send plaintext
+    }
+
     const result = await handlers.sendScheduledMessage(
       conversationId,
       content,
       time,
       attachments,
+      e2eFields,
     );
     notify(MESSAGES.successScheduled, 'success');
     return result;
-  } catch {
+  } catch (err) {
+    if (err instanceof E2eError) {
+      log.error(
+        { code: err.code, message: err.message },
+        'E2E ERROR — scheduled message NOT created',
+      );
+      notify(getE2eErrorMessage(err.code), 'error');
+      return null;
+    }
     notify(MESSAGES.errorScheduleMessage, 'error');
     return null;
+  }
+}
+
+/**
+ * Encrypt content for a scheduled message.
+ * Returns E2E fields or null if recipient has no key.
+ * Throws E2eError if encryption fails.
+ */
+async function encryptForScheduledMessage(
+  content: string,
+  conversationId: number,
+  recipientId: number,
+  currentUserId: number,
+  tenantId: number,
+): Promise<handlers.ScheduledE2eFields | null> {
+  const recipientKey = await fetchRecipientPublicKey(recipientId);
+  if (recipientKey === null) {
+    log.warn(
+      { recipientId },
+      'Recipient has no E2E key — scheduling as plaintext',
+    );
+    return null;
+  }
+
+  try {
+    const salt = computeConversationSalt(
+      tenantId,
+      conversationId,
+      currentUserId,
+      recipientId,
+    );
+    const encrypted = await cryptoBridge.encrypt(
+      content,
+      recipientKey.publicKey,
+      salt,
+    );
+    log.info(
+      { keyEpoch: encrypted.keyEpoch },
+      'Scheduled message encrypted successfully',
+    );
+    return {
+      encryptedContent: encrypted.ciphertext,
+      e2eNonce: encrypted.nonce,
+      e2eKeyVersion: recipientKey.keyVersion,
+      e2eKeyEpoch: encrypted.keyEpoch,
+    };
+  } catch (err) {
+    log.error({ err }, 'E2E encryption failed for scheduled message');
+    throw new E2eError('Encryption failed', 'encrypt_failed');
   }
 }
 
