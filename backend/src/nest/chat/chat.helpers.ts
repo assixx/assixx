@@ -289,6 +289,11 @@ export function mapScheduledMessage(
     createdAt: row.created_at.toISOString(),
     sentAt: row.sent_at?.toISOString() ?? null,
     attachment,
+    encryptedContent: row.encrypted_content ?? null,
+    e2eNonce: row.e2e_nonce ?? null,
+    isE2e: row.is_e2e,
+    e2eKeyVersion: row.e2e_key_version ?? null,
+    e2eKeyEpoch: row.e2e_key_epoch ?? null,
   };
 }
 

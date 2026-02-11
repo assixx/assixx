@@ -120,7 +120,10 @@
         />
       </div>
       <div class="search-input__result-detail">
-        {#if employeeNumber}#{employeeNumber} ·
+        {#if employeeNumber}#<HighlightText
+            text={employeeNumber}
+            {query}
+          /> ·
         {/if}
         {#if email}
           <HighlightText

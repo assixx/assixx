@@ -216,8 +216,8 @@
       <!-- Employee Team Info Bar -->
       {#if shiftsState.employeeTeamInfo !== null}
         <div
-          class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[rgba(255,255,255,0.1)]
-            bg-[rgba(255,255,255,0.03)] p-4"
+          class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-(--color-glass-border)
+            bg-(--glass-bg) p-4"
           role="status"
         >
           <i class="fas fa-users text-(--color-text-secondary)"></i>

@@ -268,6 +268,13 @@ export class ChatMessagesService {
 
     await verifyAccess(conversationId, userId, tenantId);
 
+    // Find unread messages from OTHER users (for read receipts)
+    const unreadMessages = await this.getUnreadMessageEntries(
+      conversationId,
+      userId,
+      tenantId,
+    );
+
     // Get latest message ID
     const latestMessage = await this.databaseService.query<{
       max_id: number | null;
@@ -286,7 +293,43 @@ export class ChatMessagesService {
       [lastMessageId, conversationId, userId, tenantId],
     );
 
+    // Notify senders their messages were read (real-time read receipts)
+    if (unreadMessages.length > 0) {
+      eventBus.emitMessagesRead({
+        readByUserId: userId,
+        entries: unreadMessages,
+      });
+    }
+
     return { markedCount: lastMessageId };
+  }
+
+  /** Get unread message IDs + sender IDs for read receipt notifications */
+  private async getUnreadMessageEntries(
+    conversationId: number,
+    userId: number,
+    tenantId: number,
+  ): Promise<{ messageId: number; senderId: number }[]> {
+    const lastReadRow = await this.databaseService.query<{
+      last_read_message_id: number | null;
+    }>(
+      `SELECT last_read_message_id FROM conversation_participants
+       WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
+      [conversationId, userId, tenantId],
+    );
+
+    const lastReadId = lastReadRow[0]?.last_read_message_id ?? 0;
+
+    return await this.databaseService.query<{
+      messageId: number;
+      senderId: number;
+    }>(
+      `SELECT id AS "messageId", sender_id AS "senderId"
+       FROM messages
+       WHERE conversation_id = $1 AND tenant_id = $2
+         AND id > $3 AND sender_id != $4`,
+      [conversationId, tenantId, lastReadId, userId],
+    );
   }
 
   /**

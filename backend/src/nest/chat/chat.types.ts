@@ -238,7 +238,7 @@ export interface ScheduledMessageRow {
   tenant_id: number;
   conversation_id: number;
   sender_id: number;
-  content: string;
+  content: string | null;
   attachment_path: string | null;
   attachment_name: string | null;
   attachment_type: string | null;
@@ -247,6 +247,16 @@ export interface ScheduledMessageRow {
   is_active: number;
   created_at: Date;
   sent_at: Date | null;
+  /** E2E: base64 ciphertext (NULL for plaintext messages) */
+  encrypted_content: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2e_nonce: string | null;
+  /** E2E: whether this scheduled message is end-to-end encrypted */
+  is_e2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2e_key_version: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2e_key_epoch: number | null;
 }
 
 /**
@@ -256,12 +266,22 @@ export interface ScheduledMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  content: string;
+  content: string | null;
   scheduledFor: string;
   status: 'pending' | 'sent' | 'cancelled';
   createdAt: string;
   sentAt: string | null;
   attachment: { path: string; name: string; type: string; size: number } | null;
+  /** E2E: base64 ciphertext (null for plaintext messages) */
+  encryptedContent: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2eNonce: string | null;
+  /** E2E: whether this scheduled message is end-to-end encrypted */
+  isE2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2eKeyVersion: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2eKeyEpoch: number | null;
 }
 
 // ============================================

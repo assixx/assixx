@@ -30,6 +30,7 @@ import 'reflect-metadata';
 
 import { ChatWebSocketServer } from '../websocket.js';
 import { AppModule } from './app.module.js';
+import { PresenceStore } from './chat/presence.store.js';
 import {
   REDACTED_VALUE,
   REDACT_PATHS,
@@ -249,7 +250,12 @@ async function bootstrap(): Promise<void> {
   // Setup WebSocket server for chat (attaches to the same HTTP server)
   const httpServer = app.getHttpServer();
   const dbService = app.get(DatabaseService);
-  chatWsInstance = new ChatWebSocketServer(httpServer, dbService);
+  const presenceStore = app.get(PresenceStore);
+  chatWsInstance = new ChatWebSocketServer(
+    httpServer,
+    dbService,
+    presenceStore,
+  );
   chatWsInstance.startHeartbeat();
   bootstrapLogger.log('WebSocket server started on /chat-ws');
 

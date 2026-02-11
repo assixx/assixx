@@ -3,8 +3,9 @@ import { Redis } from 'ioredis';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
+import type { PresenceStore } from './nest/chat/presence.store.js';
 import { DatabaseService } from './nest/database/database.service.js';
-import { eventBus } from './utils/eventBus.js';
+import { type ReadReceiptEntry, eventBus } from './utils/eventBus.js';
 import { logger } from './utils/logger.js';
 import {
   type E2eFields,
@@ -69,6 +70,7 @@ export class ChatWebSocketServer {
   constructor(
     server: Server,
     private readonly db: DatabaseService,
+    private readonly presenceStore: PresenceStore,
   ) {
     this.wss = new WebSocketServer({
       server,
@@ -106,11 +108,34 @@ export class ChatWebSocketServer {
     });
 
     this.init();
+    this.listenForReadReceipts();
   }
 
   // ==========================================================================
   // Connection Lifecycle
   // ==========================================================================
+
+  /** Forward read receipts from REST markAsRead to WebSocket senders */
+  private listenForReadReceipts(): void {
+    eventBus.on(
+      'messages.read',
+      (data: { readByUserId: number; entries: ReadReceiptEntry[] }) => {
+        for (const entry of data.entries) {
+          const senderWs = this.clients.get(entry.senderId);
+          if (senderWs?.readyState === WebSocket.OPEN) {
+            this.sendMessage(senderWs, {
+              type: 'message_read',
+              data: {
+                messageId: entry.messageId,
+                readBy: data.readByUserId,
+                timestamp: new Date().toISOString(),
+              },
+            });
+          }
+        }
+      },
+    );
+  }
 
   private init(): void {
     this.wss.on(
@@ -201,6 +226,7 @@ export class ChatWebSocketServer {
     ws.role = role;
     ws.isAlive = true;
     this.clients.set(userId, ws);
+    this.presenceStore.add(userId);
 
     ws.on(
       'message',
@@ -622,6 +648,7 @@ export class ChatWebSocketServer {
   private async handleDisconnection(ws: ExtendedWebSocket): Promise<void> {
     if (ws.userId !== undefined) {
       this.clients.delete(ws.userId);
+      this.presenceStore.remove(ws.userId);
 
       // Offline-Status senden
       if (ws.tenantId !== undefined) {

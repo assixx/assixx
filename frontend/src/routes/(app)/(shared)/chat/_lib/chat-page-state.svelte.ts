@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 // =============================================================================
 // CHAT PAGE STATE - Business Logic & State Management
 // =============================================================================
@@ -24,7 +25,10 @@ import {
   type NotificationEvent,
 } from '$lib/utils/notification-sse';
 
-import { markConversationAsRead as apiMarkConversationAsRead } from './api';
+import {
+  markConversationAsRead as apiMarkConversationAsRead,
+  fetchConversationById,
+} from './api';
 import {
   cancelScheduledMessage,
   uploadMessageFiles,
@@ -32,7 +36,10 @@ import {
   sendImmediateMessage,
 } from './chat-message-pipeline';
 import { MESSAGES } from './constants';
-import { decryptLoadedMessages } from './e2e-handlers';
+import {
+  decryptLoadedMessages,
+  decryptLoadedScheduledMessages,
+} from './e2e-handlers';
 import * as handlers from './handlers';
 import {
   getChatPartner,
@@ -110,6 +117,8 @@ export function createChatPageState(deps: ChatPageDeps) {
   let typingUsers: number[] = $state([]);
   let isDisconnected = $state(false);
   let sseUnsubscribe: (() => void) | null = null;
+  /** Guard: conversation IDs currently being fetched (prevents duplicate requests) */
+  const pendingConversationFetches = new Set<number>();
   let messagesAreaRef = $state<MessagesAreaRef | null>(null);
   let previousMessageCount = $state(0);
   let lastMessageId = $state<number | null>(null);
@@ -194,17 +203,77 @@ export function createChatPageState(deps: ChatPageDeps) {
     } else if (!isOwnMessage) {
       notificationStore.incrementCount('chat');
     }
-    conversations = updateConversationWithMessage(
-      conversations,
-      newMessage.conversationId,
-      newMessage,
-      isActiveConv,
-      currentUser?.id ?? 0,
+
+    const conversationExists = conversations.some(
+      (c) => c.id === newMessage.conversationId,
     );
+
+    if (conversationExists) {
+      conversations = updateConversationWithMessage(
+        conversations,
+        newMessage.conversationId,
+        newMessage,
+        isActiveConv,
+        currentUser?.id ?? 0,
+      );
+    } else {
+      // New conversation not yet in sidebar — fetch from backend
+      void fetchAndAddConversation(newMessage.conversationId, newMessage);
+    }
+
     typingUsers = removeTypingUser(typingUsers, newMessage.senderId);
   }
 
-  /** Handle user status change — updates sidebar + active conversation */
+  /** Build sidebar preview from a trigger message (handles E2E decryption) */
+  function buildTriggerPreview(msg: Message): {
+    content: string;
+    createdAt: string;
+    isE2e?: boolean;
+  } {
+    const content =
+      msg.isE2e === true ? (msg.decryptedContent ?? '') : (msg.content ?? '');
+    return {
+      content,
+      createdAt: msg.createdAt,
+      ...(msg.isE2e === true ? { isE2e: true } : {}),
+    };
+  }
+
+  /**
+   * Fetch an unknown conversation from the backend and add it to the sidebar.
+   * Guards against duplicate requests for the same conversation ID.
+   */
+  async function fetchAndAddConversation(
+    conversationId: number,
+    triggerMessage: Message | null,
+  ): Promise<void> {
+    if (pendingConversationFetches.has(conversationId)) return;
+    pendingConversationFetches.add(conversationId);
+
+    try {
+      const conv = await fetchConversationById(conversationId);
+      if (conv === null) {
+        log.warn({ conversationId }, 'Failed to fetch new conversation');
+        return;
+      }
+
+      if (triggerMessage !== null) {
+        const isOwnMessage = triggerMessage.senderId === currentUser?.id;
+        conv.unreadCount = isOwnMessage ? 0 : 1;
+        conv.lastMessage = buildTriggerPreview(triggerMessage);
+      }
+
+      // Only add if it still doesn't exist (race condition guard)
+      if (!conversations.some((c) => c.id === conversationId)) {
+        conversations = [conv, ...conversations];
+        log.info({ conversationId }, 'New conversation added to sidebar');
+      }
+    } finally {
+      pendingConversationFetches.delete(conversationId);
+    }
+  }
+
+  /** Handle user status change — updates sidebar, active conversation, and search results */
   function handleUserStatus(userId: number, status: string): void {
     conversations = updateConversationsUserStatus(
       conversations,
@@ -218,6 +287,12 @@ export function createChatPageState(deps: ChatPageDeps) {
           p.id === userId ? { ...p, status: status as UserStatus } : p,
         ),
       };
+    }
+    // Keep search results in sync with live presence
+    if (userSearchResults.length > 0) {
+      userSearchResults = userSearchResults.map((u) =>
+        u.id === userId ? { ...u, status: status as UserStatus } : u,
+      );
     }
   }
 
@@ -279,9 +354,7 @@ export function createChatPageState(deps: ChatPageDeps) {
     const sse = getNotificationSSE();
     sseUnsubscribe = sse.subscribe((event: NotificationEvent) => {
       if (event.type !== 'NEW_MESSAGE') return;
-      const messageData = event.data as
-        | { conversationId: number; senderId: number; preview?: string }
-        | undefined;
+      const messageData = event.message;
       if (messageData === undefined) return;
       log.info(
         {
@@ -307,6 +380,9 @@ export function createChatPageState(deps: ChatPageDeps) {
             conv,
             ...conversations.filter((_, i) => i !== convIndex),
           ];
+        } else {
+          // New conversation not in sidebar — fetch from backend
+          void fetchAndAddConversation(messageData.conversationId, null);
         }
       }
     });
@@ -336,7 +412,12 @@ export function createChatPageState(deps: ChatPageDeps) {
         deps.getSsrTenantId(),
         conversations,
       );
-      scheduledMessages = result.scheduled;
+      scheduledMessages = await decryptLoadedScheduledMessages(
+        result.scheduled,
+        currentUser?.id ?? 0,
+        deps.getSsrTenantId(),
+        conversations,
+      );
       updateSidebarPreviewFromMessages(activeConversation.id, messages);
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
     } catch (error) {
@@ -391,7 +472,12 @@ export function createChatPageState(deps: ChatPageDeps) {
         deps.getSsrTenantId(),
         conversations,
       );
-      scheduledMessages = result.scheduled;
+      scheduledMessages = await decryptLoadedScheduledMessages(
+        result.scheduled,
+        currentUser?.id ?? 0,
+        deps.getSsrTenantId(),
+        conversations,
+      );
       updateSidebarPreviewFromMessages(conversation.id, messages);
       const conv = conversations.find((c) => c.id === conversation.id);
       if (conv) {
@@ -409,6 +495,25 @@ export function createChatPageState(deps: ChatPageDeps) {
     }
   }
 
+  /**
+   * Enrich search results with known presence from conversation participants.
+   * The REST API returns all users with status='offline' (it has no WebSocket
+   * awareness). We cross-reference with conversations where participants
+   * already carry live status from WebSocket presence events.
+   */
+  function enrichWithKnownPresence(results: ChatUser[]): ChatUser[] {
+    const knownStatuses = new Map<number, UserStatus>();
+    for (const conv of conversations) {
+      for (const p of conv.participants) {
+        if (p.status !== undefined) knownStatuses.set(p.id, p.status);
+      }
+    }
+    return results.map((user) => {
+      const known = knownStatuses.get(user.id);
+      return known !== undefined ? { ...user, status: known } : user;
+    });
+  }
+
   async function searchUsers(query: string): Promise<void> {
     if (!query.trim()) {
       userSearchResults = [];
@@ -416,7 +521,8 @@ export function createChatPageState(deps: ChatPageDeps) {
     }
     isSearchingUsers = true;
     try {
-      userSearchResults = await handlers.searchUsers(query);
+      const raw = await handlers.searchUsers(query);
+      userSearchResults = enrichWithKnownPresence(raw);
     } finally {
       isSearchingUsers = false;
     }
@@ -452,6 +558,21 @@ export function createChatPageState(deps: ChatPageDeps) {
     return persistedConversation.id;
   }
 
+  /** Build E2E context used by both schedule and immediate message paths */
+  function getE2eContext(): {
+    isGroup: boolean;
+    recipientId: number | null;
+    currentUserId: number;
+    tenantId: number;
+  } {
+    return {
+      isGroup: activeConversation?.isGroup ?? false,
+      recipientId: chatPartner?.id ?? null,
+      currentUserId: currentUser?.id ?? 0,
+      tenantId: deps.getSsrTenantId(),
+    };
+  }
+
   /** Route message to schedule or immediate send (extracted for cyclomatic complexity) */
   async function dispatchMessage(
     conversationId: number,
@@ -459,6 +580,7 @@ export function createChatPageState(deps: ChatPageDeps) {
     uploaded: handlers.UploadedAttachmentInfo[],
     schedule: Date | null,
   ): Promise<{ sent: boolean; scheduled?: ScheduledMessage[] }> {
+    const e2eCtx = getE2eContext();
     if (schedule !== null) {
       const result = await scheduleMessage(
         conversationId,
@@ -466,20 +588,13 @@ export function createChatPageState(deps: ChatPageDeps) {
         schedule,
         uploaded,
         showNotification,
+        e2eCtx,
       );
       return { sent: true, scheduled: result ?? undefined };
     }
     return {
       sent: await sendImmediateMessage(
-        {
-          conversationId,
-          content,
-          attachments: uploaded,
-          isGroup: activeConversation?.isGroup ?? false,
-          recipientId: chatPartner?.id ?? null,
-          currentUserId: currentUser?.id ?? 0,
-          tenantId: deps.getSsrTenantId(),
-        },
+        { conversationId, content, attachments: uploaded, ...e2eCtx },
         showNotification,
       ),
     };

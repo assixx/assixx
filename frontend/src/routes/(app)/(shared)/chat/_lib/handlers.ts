@@ -251,11 +251,20 @@ export interface UploadedAttachmentInfo {
   size: number;
 }
 
+/** E2E encryption fields for scheduled message */
+export interface ScheduledE2eFields {
+  encryptedContent: string;
+  e2eNonce: string;
+  e2eKeyVersion: number;
+  e2eKeyEpoch: number;
+}
+
 export async function sendScheduledMessage(
   conversationId: number,
   content: string,
   scheduledFor: Date,
   attachments: UploadedAttachmentInfo[],
+  e2e?: ScheduledE2eFields,
 ): Promise<ScheduledMessage[]> {
   // For now, only support single attachment (first one)
   const firstAttachment = attachments.length > 0 ? attachments[0] : undefined;
@@ -271,9 +280,10 @@ export async function sendScheduledMessage(
 
   await createScheduledMessage(
     conversationId,
-    content,
+    e2e !== undefined ? null : content,
     scheduledFor.toISOString(),
     attachmentInfo,
+    e2e,
   );
   return await apiLoadScheduledMessages(conversationId);
 }

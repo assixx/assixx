@@ -15,6 +15,7 @@ import { ChatPermissionRegistrar } from './chat-permission.registrar.js';
 import { ChatScheduledService } from './chat-scheduled.service.js';
 import { ChatController } from './chat.controller.js';
 import { ChatService } from './chat.service.js';
+import { PresenceStore } from './presence.store.js';
 import { ScheduledMessageProcessorService } from './scheduled-message-processor.service.js';
 
 @Module({
@@ -25,11 +26,12 @@ import { ScheduledMessageProcessorService } from './scheduled-message-processor.
     ChatMessagesService,
     ChatScheduledService,
     ChatService,
+    PresenceStore,
     ScheduledMessageProcessorService,
     // Permission registration (ADR-020)
     ChatPermissionRegistrar,
   ],
-  exports: [ChatService],
+  exports: [ChatService, PresenceStore],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS module pattern requires empty class
 export class ChatModule {}

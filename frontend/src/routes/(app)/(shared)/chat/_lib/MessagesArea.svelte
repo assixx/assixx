@@ -187,69 +187,6 @@
       <p>{MESSAGES.emptyFirstMessage}</p>
     </div>
   {:else}
-    <!-- Scheduled Messages First -->
-    {#each scheduledMessages as scheduled (scheduled.id)}
-      {@const att = scheduled.attachment}
-      {@const isImage = att?.type.startsWith('image/') === true}
-      <div
-        class="message own message--scheduled"
-        data-scheduled-id={scheduled.id}
-      >
-        <div class="message-bubble">
-          <div class="message-content">
-            {#if scheduled.content}
-              <p class="message-text">{scheduled.content}</p>
-            {/if}
-
-            <!-- Scheduled message attachment preview -->
-            {#if att !== null}
-              {#if isImage}
-                <div class="attachment image-attachment scheduled-attachment">
-                  <div class="attachment-image-wrapper">
-                    <img
-                      src={`/api/v2/documents/uuid/${att.path}/download?inline=true`}
-                      alt={att.name}
-                      loading="lazy"
-                    />
-                    <div class="attachment-overlay scheduled-overlay">
-                      <i class="far fa-clock"></i>
-                    </div>
-                  </div>
-                </div>
-              {:else}
-                <div class="attachment file-attachment scheduled-attachment">
-                  <i class="fas {getFileIcon(att.type)}"></i>
-                  <div class="file-info">
-                    <span class="file-name">{att.name}</span>
-                    <span class="file-size">{formatFileSize(att.size)}</span>
-                  </div>
-                </div>
-              {/if}
-            {/if}
-
-            <div class="message--scheduled-info">
-              <i class="far fa-clock"></i>
-              <span>
-                {MESSAGES.labelScheduledFor}
-                {formatScheduleTime(new Date(scheduled.scheduledFor))}
-              </span>
-              <button
-                type="button"
-                class="message--scheduled-cancel"
-                title={MESSAGES.labelCancelScheduled}
-                aria-label={MESSAGES.labelCancelScheduled}
-                onclick={() => {
-                  oncancelscheduled(scheduled);
-                }}
-              >
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    {/each}
-
     <!-- Regular Messages (using pre-processed data for performance) -->
     {#each processedMessages as message (message.id)}
       {#if message.showDateSeparator}
@@ -469,6 +406,68 @@
                   {#if message.isRead}✓✓{:else}✓{/if}
                 </span>
               {/if}
+            </div>
+          </div>
+        </div>
+      </div>
+    {/each}
+
+    <!-- Scheduled Messages (after regular messages - future timestamps at bottom) -->
+    {#each scheduledMessages as scheduled (scheduled.id)}
+      {@const att = scheduled.attachment}
+      {@const isImage = att?.type.startsWith('image/') === true}
+      <div
+        class="message own message--scheduled"
+        data-scheduled-id={scheduled.id}
+      >
+        <div class="message-bubble">
+          <div class="message-content">
+            {#if scheduled.decryptedContent ?? scheduled.content}
+              <p class="message-text">
+                {scheduled.decryptedContent ?? scheduled.content}
+              </p>
+            {/if}
+            {#if att !== null}
+              {#if isImage}
+                <div class="attachment image-attachment scheduled-attachment">
+                  <div class="attachment-image-wrapper">
+                    <img
+                      src={`/api/v2/documents/uuid/${att.path}/download?inline=true`}
+                      alt={att.name}
+                      loading="lazy"
+                    />
+                    <div class="attachment-overlay scheduled-overlay">
+                      <i class="far fa-clock"></i>
+                    </div>
+                  </div>
+                </div>
+              {:else}
+                <div class="attachment file-attachment scheduled-attachment">
+                  <i class="fas {getFileIcon(att.type)}"></i>
+                  <div class="file-info">
+                    <span class="file-name">{att.name}</span>
+                    <span class="file-size">{formatFileSize(att.size)}</span>
+                  </div>
+                </div>
+              {/if}
+            {/if}
+            <div class="message--scheduled-info">
+              <i class="far fa-clock"></i>
+              <span>
+                {MESSAGES.labelScheduledFor}
+                {formatScheduleTime(new Date(scheduled.scheduledFor))}
+              </span>
+              <button
+                type="button"
+                class="message--scheduled-cancel"
+                title={MESSAGES.labelCancelScheduled}
+                aria-label={MESSAGES.labelCancelScheduled}
+                onclick={() => {
+                  oncancelscheduled(scheduled);
+                }}
+              >
+                <i class="fas fa-times"></i>
+              </button>
             </div>
           </div>
         </div>
