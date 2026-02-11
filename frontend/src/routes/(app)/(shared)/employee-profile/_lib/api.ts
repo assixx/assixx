@@ -77,3 +77,11 @@ export async function changePassword(
 ): Promise<void> {
   await apiClient.put('/users/me/password', payload);
 }
+
+/**
+ * Call backend logout to revoke tokens and clear HttpOnly cookies
+ * Used after password change to force re-login on all sessions
+ */
+export async function logoutAllSessions(): Promise<void> {
+  await apiClient.post('/auth/logout');
+}

@@ -4,6 +4,13 @@
  */
 
 import {
+  showSuccessAlert,
+  showErrorAlert,
+  showWarningAlert,
+  showInfoAlert,
+} from '$lib/stores/toast';
+
+import {
   STATUS_TEXT_MAP,
   STATUS_BADGE_CLASS,
   TIMELINE_ICONS,
@@ -167,16 +174,19 @@ export function shouldShowEmergencyStop(item: DeletionStatusItem): boolean {
   );
 }
 
+/** Toast type to store function mapping */
+const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
+  success: showSuccessAlert,
+  error: showErrorAlert,
+  warning: showWarningAlert,
+  info: showInfoAlert,
+};
+
 /**
- * Show toast notification via custom event
+ * Show toast notification via toast store
  * @param message - Toast message
  * @param type - Toast type
  */
 export function showToast(message: string, type: ToastType = 'info'): void {
-  if (typeof window !== 'undefined') {
-    const event = new CustomEvent('show-toast', {
-      detail: { message, type },
-    });
-    window.dispatchEvent(event);
-  }
+  TOAST_FN_MAP[type](message);
 }

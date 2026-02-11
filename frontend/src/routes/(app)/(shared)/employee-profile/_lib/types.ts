@@ -42,6 +42,7 @@ export type ToastType = 'success' | 'error' | 'info' | 'warning';
 export interface PasswordChangePayload {
   currentPassword: string;
   newPassword: string;
+  confirmPassword: string;
 }
 
 /** Profile picture upload response */

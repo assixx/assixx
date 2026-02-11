@@ -5,9 +5,10 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
 
@@ -24,6 +25,7 @@
     changePassword as apiChangePassword,
     approveRequest as apiApproveRequest,
     rejectRequest as apiRejectRequest,
+    logoutAllSessions,
   } from './_lib/api';
   import { MESSAGES, PASSWORD_TOOLTIP, PASSWORD_RULES } from './_lib/constants';
   import {
@@ -256,6 +258,19 @@
   // PASSWORD ACTIONS
   // =============================================================================
 
+  /** SECURITY: Force logout after password change to require re-login */
+  async function performSecurityLogout(): Promise<void> {
+    try {
+      await logoutAllSessions();
+    } catch {
+      // Token revocation already happened server-side during password change
+    }
+    await e2e.lock();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('tokenReceivedAt');
+    await goto('/login', { replaceState: true });
+  }
+
   /** Handle password change API errors */
   function handlePasswordChangeError(err: unknown): void {
     const msg = err instanceof Error ? err.message : '';
@@ -291,9 +306,15 @@
       await apiChangePassword({
         currentPassword: currentPwd,
         newPassword: newPwd,
+        confirmPassword: newPwd,
       });
+      // Re-encrypt escrow blob with new password before logout (ADR-022)
+      void e2e.reEncryptEscrow(newPwd);
       resetPasswordForm();
       showToast(MESSAGES.passwordChanged, 'success');
+
+      // SECURITY: Logout after 3s to force re-login with new password
+      setTimeout(() => void performSecurityLogout(), 1500);
     } catch (err) {
       handlePasswordChangeError(err);
     } finally {

@@ -5,6 +5,7 @@
   import { goto, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { setLoginPassword } from '$lib/crypto/login-password-bridge';
   import {
     isDark,
     forceDark,
@@ -367,6 +368,10 @@
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('userRole', user.role);
             localStorage.setItem('activeRole', user.role);
+
+            // Bridge login password for E2E key escrow recovery (ADR-022)
+            // Must happen before goto() — consumed by e2e-state.initialize()
+            setLoginPassword(password);
 
             // Redirect to dashboard
             await goto(redirectTo ?? '/admin-dashboard');

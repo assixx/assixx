@@ -24,6 +24,7 @@ import { x25519 } from '@noble/curves/ed25519.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { randomBytes } from '@noble/hashes/utils.js';
+import { argon2id } from 'hash-wasm';
 
 // =============================================================================
 // TYPES
@@ -50,6 +51,15 @@ type WorkerRequest = { requestId: string } & (
     }
   | { type: 'exportPublicKey' }
   | { type: 'getFingerprint' }
+  | { type: 'wrapPrivateKey'; password: string }
+  | {
+      type: 'unwrapPrivateKey';
+      password: string;
+      encryptedBlob: string;
+      argon2Salt: string;
+      xchachaNonce: string;
+      argon2Params: { memory: number; iterations: number; parallelism: number };
+    }
   | { type: 'lock' }
   | { type: 'ping' }
 );
@@ -64,6 +74,15 @@ type WorkerResponse = { requestId: string } & (
   | { type: 'decryptFailed'; reason: string }
   | { type: 'publicKey'; publicKey: string }
   | { type: 'fingerprint'; fingerprint: string }
+  | {
+      type: 'privateKeyWrapped';
+      encryptedBlob: string;
+      argon2Salt: string;
+      xchachaNonce: string;
+      argon2Params: { memory: number; iterations: number; parallelism: number };
+    }
+  | { type: 'privateKeyUnwrapped'; publicKey: string; fingerprint: string }
+  | { type: 'unwrapFailed'; reason: string }
   | { type: 'locked' }
   | { type: 'pong' }
   | { type: 'error'; message: string }
@@ -88,6 +107,15 @@ const STORE_NAME = 'private-keys';
 const ACTIVE_KEY_VERSION = 1;
 const HKDF_INFO_PREFIX = 'assixx-e2e-v1:';
 const NONCE_LENGTH = 24;
+const ESCROW_NONCE_LENGTH = 24;
+
+/** Default Argon2id parameters for escrow key derivation (ADR-022) */
+const DEFAULT_ARGON2_PARAMS = {
+  memory: 65536,
+  iterations: 3,
+  parallelism: 1,
+  hashLength: 32,
+};
 
 // =============================================================================
 // STATE (Worker-scoped, never leaves this thread)
@@ -518,6 +546,172 @@ function handleGetFingerprint(requestId: string): void {
   });
 }
 
+/**
+ * Wrap the in-memory private key with a password-derived key for server escrow.
+ * Uses Argon2id for KDF + XChaCha20-Poly1305 for wrapping.
+ * Password is used only for derivation, then discarded.
+ *
+ * @see ADR-022 (E2E Key Escrow)
+ */
+async function handleWrapPrivateKey(
+  requestId: string,
+  password: string,
+): Promise<void> {
+  if (privateKey === null) {
+    respond({ requestId, type: 'error', message: 'No private key to wrap' });
+    return;
+  }
+
+  try {
+    const salt = randomBytes(32);
+    const nonce = randomBytes(ESCROW_NONCE_LENGTH);
+
+    const wrappingKeyHex = await argon2id({
+      password,
+      salt,
+      memorySize: DEFAULT_ARGON2_PARAMS.memory,
+      iterations: DEFAULT_ARGON2_PARAMS.iterations,
+      parallelism: DEFAULT_ARGON2_PARAMS.parallelism,
+      hashLength: DEFAULT_ARGON2_PARAMS.hashLength,
+      outputType: 'hex',
+    });
+    const wrappingKey = hexToBytes(wrappingKeyHex);
+
+    const cipher = xchacha20poly1305(wrappingKey, nonce);
+    const encryptedBytes = cipher.encrypt(privateKey);
+
+    respond({
+      requestId,
+      type: 'privateKeyWrapped',
+      encryptedBlob: toBase64(encryptedBytes),
+      argon2Salt: toBase64(salt),
+      xchachaNonce: toBase64(nonce),
+      argon2Params: {
+        memory: DEFAULT_ARGON2_PARAMS.memory,
+        iterations: DEFAULT_ARGON2_PARAMS.iterations,
+        parallelism: DEFAULT_ARGON2_PARAMS.parallelism,
+      },
+    });
+  } catch (err) {
+    respond({
+      requestId,
+      type: 'error',
+      message:
+        err instanceof Error ? err.message : 'Failed to wrap private key',
+    });
+  }
+}
+
+/**
+ * Unwrap a private key from an escrow blob using the user's password.
+ * On success, loads the key into Worker memory + IndexedDB.
+ *
+ * @see ADR-022 (E2E Key Escrow)
+ */
+async function handleUnwrapPrivateKey(
+  requestId: string,
+  password: string,
+  encryptedBlob: string,
+  argon2Salt: string,
+  xchachaNonce: string,
+  argon2Params: { memory: number; iterations: number; parallelism: number },
+): Promise<void> {
+  try {
+    const salt = fromBase64(argon2Salt);
+    const nonce = fromBase64(xchachaNonce);
+    const encryptedBytes = fromBase64(encryptedBlob);
+
+    const wrappingKeyHex = await argon2id({
+      password,
+      salt,
+      memorySize: argon2Params.memory,
+      iterations: argon2Params.iterations,
+      parallelism: argon2Params.parallelism,
+      hashLength: 32,
+      outputType: 'hex',
+    });
+    const wrappingKey = hexToBytes(wrappingKeyHex);
+
+    const cipher = xchacha20poly1305(wrappingKey, nonce);
+    const decryptedKey = cipher.decrypt(encryptedBytes);
+
+    // Validate: must be exactly 32 bytes (X25519 private key)
+    if (decryptedKey.length !== 32) {
+      respond({
+        requestId,
+        type: 'unwrapFailed',
+        reason: `Invalid key length: expected 32, got ${decryptedKey.length}`,
+      });
+      return;
+    }
+
+    // Derive public key from recovered private key
+    const recoveredPublicKey = x25519.getPublicKey(decryptedKey);
+    const recoveredPublicKeyB64 = toBase64(recoveredPublicKey);
+
+    // Store in IndexedDB + load into Worker memory
+    await storeKeyInDb(decryptedKey, recoveredPublicKeyB64);
+    privateKey = decryptedKey;
+    publicKeyBase64 = recoveredPublicKeyB64;
+    sharedSecretCache.clear();
+    epochKeyCache.clear();
+
+    respond({
+      requestId,
+      type: 'privateKeyUnwrapped',
+      publicKey: recoveredPublicKeyB64,
+      fingerprint: computeFingerprint(recoveredPublicKeyB64),
+    });
+  } catch (err) {
+    const reason =
+      err instanceof Error ? err.message : 'Failed to unwrap private key';
+    // "invalid tag" from XChaCha20 = wrong password
+    respond({ requestId, type: 'unwrapFailed', reason });
+  }
+}
+
+/** Store a recovered/generated key in IndexedDB */
+async function storeKeyInDb(
+  key: Uint8Array,
+  publicKeyB64: string,
+): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const keyData: StoredPrivateKey = {
+      keyVersion: ACTIVE_KEY_VERSION,
+      privateKey: key,
+      publicKey: publicKeyB64,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    const putReq = store.put(keyData);
+    putReq.onsuccess = () => {
+      resolve();
+    };
+    putReq.onerror = () => {
+      reject(
+        new Error(
+          `IndexedDB put failed: ${putReq.error?.message ?? 'unknown'}`,
+        ),
+      );
+    };
+    tx.oncomplete = () => {
+      db.close();
+    };
+  });
+}
+
+/** Convert hex string to Uint8Array */
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
 /** Clear keys from Worker memory only — IndexedDB persists for key continuity across sessions */
 function handleLock(requestId: string): void {
   privateKey = null;
@@ -533,9 +727,37 @@ function handleLock(requestId: string): void {
 // MESSAGE DISPATCHER
 // =============================================================================
 
+/** Dispatch escrow-related Worker messages (ADR-022) */
+async function handleEscrowMessage(request: WorkerRequest): Promise<boolean> {
+  const { requestId } = request;
+
+  switch (request.type) {
+    case 'wrapPrivateKey':
+      await handleWrapPrivateKey(requestId, request.password);
+      return true;
+    case 'unwrapPrivateKey':
+      await handleUnwrapPrivateKey(
+        requestId,
+        request.password,
+        request.encryptedBlob,
+        request.argon2Salt,
+        request.xchachaNonce,
+        request.argon2Params,
+      );
+      return true;
+    default:
+      return false;
+  }
+}
+
 /** Dispatch incoming Worker messages to the appropriate handler */
 async function handleMessage(request: WorkerRequest): Promise<void> {
   const { requestId } = request;
+
+  // Try escrow handlers first (ADR-022)
+  if (await handleEscrowMessage(request)) {
+    return;
+  }
 
   switch (request.type) {
     case 'init':
