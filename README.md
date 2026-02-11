@@ -37,10 +37,23 @@ Assixx digitizes existing paper-based processes in industrial companies. From TP
 ```bash
 git clone https://github.com/assixx-dev/Assixx.git
 cd Assixx/docker
-./docker-init.sh
+
+# With Doppler (team members):
+doppler run -- ./docker-init.sh
+
+# Without Doppler (external contributors):
+./docker-init.sh --local
+```
+
+After setup completes, start the frontend dev server:
+
+```bash
+cd .. && pnpm run dev:svelte
 ```
 
 Development: `http://localhost:5173` | Production: `http://localhost`
+
+> **Full setup guide:** [docs/DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)
 
 ---
 
