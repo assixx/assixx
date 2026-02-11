@@ -9,6 +9,7 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
 
@@ -22,6 +23,7 @@
     uploadProfilePicture,
     removeProfilePicture,
     changePassword as apiChangePassword,
+    logoutAllSessions,
   } from './_lib/api';
   import {
     MESSAGES,
@@ -229,6 +231,19 @@
   // PASSWORD ACTIONS
   // =============================================================================
 
+  /** SECURITY: Force logout after password change to require re-login */
+  async function performSecurityLogout(): Promise<void> {
+    try {
+      await logoutAllSessions();
+    } catch {
+      // Token revocation already happened server-side during password change
+    }
+    await e2e.lock();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('tokenReceivedAt');
+    await goto('/login', { replaceState: true });
+  }
+
   async function handleChangePassword(event: Event): Promise<void> {
     event.preventDefault();
     currentPasswordError = false;
@@ -247,7 +262,13 @@
     passwordSaving = true;
 
     try {
-      await apiChangePassword({ currentPassword, newPassword });
+      await apiChangePassword({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      // Re-encrypt escrow blob with new password before logout (ADR-022)
+      void e2e.reEncryptEscrow(newPassword);
       showToast(MESSAGES.passwordChanged, 'success');
 
       // Reset form - using direct assignment (not based on previous values)
@@ -258,11 +279,8 @@
       /* eslint-enable require-atomic-updates */
       passwordStrength = null;
 
-      // Logout after 2 seconds (password changed = security logout)
-      setTimeout(() => {
-        localStorage.removeItem('accessToken');
-        void goto('/login', { replaceState: true });
-      }, 2000);
+      // SECURITY: Logout after 3s to force re-login with new password
+      setTimeout(() => void performSecurityLogout(), 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (isCurrentPasswordError(msg)) {

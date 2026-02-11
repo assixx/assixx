@@ -74,13 +74,41 @@ async function resolveE2eParams(
   conversations: Conversation[],
 ): Promise<{ publicKey: string; salt: string } | null> {
   const conv = conversations.find((c) => c.id === conversationId);
-  const otherUserId = conv?.participants.find(
-    (p) => p.id !== currentUserId,
-  )?.id;
-  if (otherUserId === undefined) return null;
+  if (conv === undefined) {
+    log.warn(
+      { conversationId, conversationCount: conversations.length },
+      'resolveE2eParams — conversation not found in state',
+    );
+    return null;
+  }
+
+  const otherUserId = conv.participants.find((p) => p.id !== currentUserId)?.id;
+  if (otherUserId === undefined) {
+    log.warn(
+      { conversationId, currentUserId, participants: conv.participants.length },
+      'resolveE2eParams — other participant not found',
+    );
+    return null;
+  }
 
   const otherKey = await fetchRecipientPublicKey(otherUserId);
-  if (otherKey === null) return null;
+  if (otherKey === null) {
+    log.warn(
+      { conversationId, otherUserId },
+      'resolveE2eParams — recipient has no public key on server',
+    );
+    return null;
+  }
+
+  log.debug(
+    {
+      conversationId,
+      otherUserId,
+      fingerprint: otherKey.fingerprint.substring(0, 16) + '…',
+      keyVersion: otherKey.keyVersion,
+    },
+    'resolveE2eParams — resolved other user key',
+  );
 
   const salt = computeConversationSalt(
     tenantId,
@@ -108,7 +136,13 @@ async function decryptSingleMessage(
     tenantId,
     conversations,
   );
-  if (params === null) return null;
+  if (params === null) {
+    log.warn(
+      { messageId: msg.id, conversationId: msg.conversationId },
+      'decryptSingleMessage — resolveE2eParams returned null, skipping',
+    );
+    return null;
+  }
 
   return await cryptoBridge.decrypt(
     msg.encryptedContent,
@@ -278,12 +312,20 @@ export async function decryptLoadedMessages(
   tenantId: number,
   conversations: Conversation[],
 ): Promise<Message[]> {
-  if (!e2e.state.isReady) return loadedMessages;
+  if (!e2e.state.isReady) {
+    log.info('decryptLoadedMessages skipped — E2E not ready');
+    return loadedMessages;
+  }
 
   const e2eMessages = loadedMessages
     .filter((m) => m.isE2e === true)
     .filter(hasRequiredE2eFields);
   if (e2eMessages.length === 0) return loadedMessages;
+
+  log.info(
+    { total: loadedMessages.length, e2eCount: e2eMessages.length },
+    'decryptLoadedMessages — starting batch decryption',
+  );
 
   const results = new Map<number, string | null>();
   await Promise.allSettled(
@@ -298,19 +340,80 @@ export async function decryptLoadedMessages(
             conversations,
           ),
         );
-      } catch {
+      } catch (err: unknown) {
+        log.error(
+          {
+            messageId: msg.id,
+            conversationId: msg.conversationId,
+            e2eKeyEpoch: msg.e2eKeyEpoch,
+            err: err instanceof Error ? err.message : String(err),
+          },
+          'decryptLoadedMessages — single message decrypt FAILED',
+        );
         results.set(msg.id, null);
       }
     }),
   );
 
-  return loadedMessages.map((msg) => {
+  logBatchResult(results);
+  return applyDecryptionResults(loadedMessages, results);
+}
+
+/** Log batch decryption statistics */
+function logBatchResult(results: Map<number, string | null>): void {
+  const succeeded = [...results.values()].filter((v) => v !== null).length;
+  log.info(
+    { succeeded, failed: results.size - succeeded, total: results.size },
+    'decryptLoadedMessages — batch complete',
+  );
+}
+
+/** Apply decryption results map back onto original messages */
+function applyDecryptionResults(
+  messages: Message[],
+  results: Map<number, string | null>,
+): Message[] {
+  return messages.map((msg) => {
     if (!results.has(msg.id)) return msg;
     const plaintext = results.get(msg.id);
     if (plaintext !== null && plaintext !== undefined) {
       return { ...msg, decryptedContent: plaintext };
     }
     return { ...msg, decryptionFailed: true };
+  });
+}
+
+/** Type guard for scheduled messages with all required E2E fields */
+type E2eScheduledMessage = ScheduledMessage & {
+  encryptedContent: string;
+  e2eNonce: string;
+  e2eKeyEpoch: number;
+};
+
+function isE2eScheduled(s: ScheduledMessage): s is E2eScheduledMessage {
+  return (
+    s.isE2e === true &&
+    s.encryptedContent !== null &&
+    s.encryptedContent !== undefined &&
+    s.e2eNonce !== null &&
+    s.e2eNonce !== undefined &&
+    s.e2eKeyEpoch !== null &&
+    s.e2eKeyEpoch !== undefined
+  );
+}
+
+/** Apply string-keyed decryption results onto scheduled messages */
+function applyScheduledDecryptionResults(
+  messages: ScheduledMessage[],
+  results: Map<string, string | null>,
+): ScheduledMessage[] {
+  return messages.map((s) => {
+    if (!results.has(s.id)) return s;
+    const plaintext = results.get(s.id);
+    if (plaintext !== null && plaintext !== undefined) {
+      return { ...s, decryptedContent: plaintext };
+    }
+    return { ...s, decryptionFailed: true };
   });
 }
 
@@ -323,22 +426,7 @@ export async function decryptLoadedScheduledMessages(
 ): Promise<ScheduledMessage[]> {
   if (!e2e.state.isReady) return scheduled;
 
-  const e2eScheduled = scheduled.filter(
-    (
-      s,
-    ): s is ScheduledMessage & {
-      encryptedContent: string;
-      e2eNonce: string;
-      e2eKeyEpoch: number;
-    } =>
-      s.isE2e === true &&
-      s.encryptedContent !== null &&
-      s.encryptedContent !== undefined &&
-      s.e2eNonce !== null &&
-      s.e2eNonce !== undefined &&
-      s.e2eKeyEpoch !== null &&
-      s.e2eKeyEpoch !== undefined,
-  );
+  const e2eScheduled = scheduled.filter(isE2eScheduled);
   if (e2eScheduled.length === 0) return scheduled;
 
   const results = new Map<string, string | null>();
@@ -363,18 +451,20 @@ export async function decryptLoadedScheduledMessages(
           s.e2eKeyEpoch,
         );
         results.set(s.id, plaintext);
-      } catch {
+      } catch (err: unknown) {
+        log.error(
+          {
+            scheduledId: s.id,
+            conversationId: s.conversationId,
+            e2eKeyEpoch: s.e2eKeyEpoch,
+            err: err instanceof Error ? err.message : String(err),
+          },
+          'decryptLoadedScheduledMessages — decrypt FAILED',
+        );
         results.set(s.id, null);
       }
     }),
   );
 
-  return scheduled.map((s) => {
-    if (!results.has(s.id)) return s;
-    const plaintext = results.get(s.id);
-    if (plaintext !== null && plaintext !== undefined) {
-      return { ...s, decryptedContent: plaintext };
-    }
-    return { ...s, decryptionFailed: true };
-  });
+  return applyScheduledDecryptionResults(scheduled, results);
 }

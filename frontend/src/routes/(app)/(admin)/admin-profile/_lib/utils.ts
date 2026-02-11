@@ -3,13 +3,16 @@
  * @module admin-profile/_lib/utils
  */
 
-import { createLogger } from '$lib/utils/logger';
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showWarningAlert,
+  showInfoAlert,
+} from '$lib/stores/toast';
 
 import { MESSAGES, POSITION_MAP } from './constants';
 
 import type { ToastType } from './types';
-
-const log = createLogger('AdminProfileUtils');
 
 /** Error code to message mapping for picture upload */
 const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
@@ -27,19 +30,21 @@ export function getPictureUploadErrorMessage(error: unknown): string {
   return PICTURE_UPLOAD_ERROR_MAP[code] ?? MESSAGES.pictureUploadError;
 }
 
+/** Toast type to store function mapping */
+const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
+  success: showSuccessAlert,
+  error: showErrorAlert,
+  warning: showWarningAlert,
+  info: showInfoAlert,
+};
+
 /**
- * Show toast notification via custom event
+ * Show toast notification via toast store
  * @param message - Toast message
  * @param type - Toast type
  */
 export function showToast(message: string, type: ToastType = 'info'): void {
-  if (typeof window !== 'undefined') {
-    const event = new CustomEvent('show-toast', {
-      detail: { message, type },
-    });
-    window.dispatchEvent(event);
-  }
-  log.warn({ type }, message);
+  TOAST_FN_MAP[type](message);
 }
 
 /**

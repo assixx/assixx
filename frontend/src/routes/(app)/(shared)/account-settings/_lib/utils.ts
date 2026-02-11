@@ -3,7 +3,12 @@
  * @module account-settings/_lib/utils
  */
 
-import { createLogger } from '$lib/utils/logger';
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showWarningAlert,
+  showInfoAlert,
+} from '$lib/stores/toast';
 
 import {
   STATUS_LABELS,
@@ -12,8 +17,6 @@ import {
 } from './constants';
 
 import type { ToastType, DeletionStatus } from './types';
-
-const log = createLogger('AccountSettingsUtils');
 
 /**
  * Format date for display (German locale)
@@ -40,19 +43,21 @@ export function getStatusLabel(status: string): string {
   return status;
 }
 
+/** Toast type to store function mapping */
+const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
+  success: showSuccessAlert,
+  error: showErrorAlert,
+  warning: showWarningAlert,
+  info: showInfoAlert,
+};
+
 /**
- * Show toast notification via custom event
+ * Show toast notification via toast store
  * @param message - Toast message
  * @param type - Toast type
  */
 export function showToast(message: string, type: ToastType = 'info'): void {
-  if (typeof window !== 'undefined') {
-    const event = new CustomEvent('show-toast', {
-      detail: { message, type },
-    });
-    window.dispatchEvent(event);
-  }
-  log.warn({ type }, message);
+  TOAST_FN_MAP[type](message);
 }
 
 /**

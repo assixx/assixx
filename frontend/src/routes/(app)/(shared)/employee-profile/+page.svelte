@@ -9,6 +9,7 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
 
@@ -22,6 +23,7 @@
     uploadProfilePicture,
     removeProfilePicture,
     changePassword as apiChangePassword,
+    logoutAllSessions,
   } from './_lib/api';
   import {
     MESSAGES,
@@ -236,6 +238,19 @@
   // PASSWORD ACTIONS
   // =============================================================================
 
+  /** SECURITY: Force logout after password change to require re-login */
+  async function performSecurityLogout(): Promise<void> {
+    try {
+      await logoutAllSessions();
+    } catch {
+      // Token revocation already happened server-side during password change
+    }
+    await e2e.lock();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('tokenReceivedAt');
+    await goto('/login', { replaceState: true });
+  }
+
   /** Validate password form, returns true if valid */
   function validatePasswordForm(): boolean {
     currentPasswordError = false;
@@ -263,7 +278,7 @@
     }
   }
 
-  /** Reset form and schedule logout after password change */
+  /** Reset form and schedule logout after successful password change */
   function onPasswordChangeSuccess(): void {
     showToast(MESSAGES.passwordChanged, 'success');
 
@@ -272,11 +287,8 @@
     confirmPassword = '';
     passwordStrength = null;
 
-    // Logout after 2 seconds (password changed = security logout)
-    setTimeout(() => {
-      localStorage.removeItem('accessToken');
-      void goto('/login', { replaceState: true });
-    }, 2000);
+    // SECURITY: Logout after 3s to force re-login with new password
+    setTimeout(() => void performSecurityLogout(), 1500);
   }
 
   async function handleChangePassword(event: Event): Promise<void> {
@@ -294,7 +306,10 @@
       await apiChangePassword({
         currentPassword: currentPwd,
         newPassword: newPwd,
+        confirmPassword: newPwd,
       });
+      // Re-encrypt escrow blob with new password before logout (ADR-022)
+      void e2e.reEncryptEscrow(newPwd);
       onPasswordChangeSuccess();
     } catch (err) {
       handlePasswordChangeError(err);

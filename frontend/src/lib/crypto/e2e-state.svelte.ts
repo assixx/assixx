@@ -10,6 +10,10 @@ import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
 import { cryptoBridge } from './crypto-bridge';
+import {
+  consumeLoginPassword,
+  clearLoginPassword,
+} from './login-password-bridge';
 
 const log = createLogger('E2eState');
 
@@ -60,8 +64,10 @@ export const e2e = {
    * Initialize E2E encryption for a specific user.
    * - Starts the CryptoWorker with user-scoped IndexedDB
    * - Checks for existing keys
+   * - Attempts escrow recovery if no local key but server has escrow (ADR-022)
    * - Generates keys if needed (auto, silent)
    * - Uploads public key to server
+   * - Creates server escrow blob for future recovery
    *
    * Safe to call multiple times — no-ops if already ready.
    */
@@ -75,8 +81,10 @@ export const e2e = {
       const { hasKey, persisted } = await cryptoBridge.init(userId);
       log.info({ hasKey, persisted }, 'Worker init complete');
 
-      const resolved =
-        hasKey ? await resolveExistingKey() : await generateAndRegisterKey();
+      // Consume login password once for escrow operations (ADR-022)
+      // Only available during login flow — null on page refresh or session resume
+      const loginPassword = consumeLoginPassword();
+      const resolved = await resolveOrRecoverKey(hasKey, loginPassword);
 
       log.info(
         { fingerprint: resolved.fingerprint.substring(0, 16) + '…' },
@@ -102,6 +110,35 @@ export const e2e = {
         error: message,
       });
       log.error({ err: message }, 'E2E initialization FAILED');
+    } finally {
+      // Safety net — ensure login password never lingers in memory
+      clearLoginPassword();
+    }
+  },
+
+  /**
+   * Re-encrypt the escrow blob with a new password.
+   * Call after a successful password change to keep the escrow in sync.
+   * Non-fatal: logs a warning but does not throw on failure.
+   *
+   * @see ADR-022 (E2E Key Escrow)
+   */
+  async reEncryptEscrow(newPassword: string): Promise<void> {
+    if (!e2eState.isReady) {
+      log.warn('Cannot re-encrypt escrow — E2E not ready');
+      return;
+    }
+
+    try {
+      const wrapped = await cryptoBridge.wrapKey(newPassword);
+      const apiClient = getApiClient();
+      await apiClient.put('/e2e/escrow', wrapped);
+      log.info('Escrow blob re-encrypted with new password');
+    } catch (err) {
+      log.warn(
+        { err: err instanceof Error ? err.message : 'unknown' },
+        'Failed to re-encrypt escrow — old escrow may become unusable after password change',
+      );
     }
   },
 
@@ -130,6 +167,37 @@ export const e2e = {
 // =============================================================================
 // KEY RESOLUTION HELPERS
 // =============================================================================
+
+/**
+ * Resolve the user's E2E key — either from IndexedDB, server escrow, or new generation.
+ * Orchestrates the escrow recovery + backfill logic from ADR-022.
+ */
+async function resolveOrRecoverKey(
+  hasKey: boolean,
+  loginPassword: string | null,
+): Promise<ResolvedKey> {
+  if (hasKey) {
+    const resolved = await resolveExistingKey();
+    // Backfill: create escrow if missing (for users who had keys before escrow feature)
+    if (loginPassword !== null) {
+      void tryCreateEscrowIfMissing(loginPassword);
+    }
+    return resolved;
+  }
+
+  // No local key — try escrow recovery before generating a new key pair
+  if (loginPassword !== null && (await tryRecoverFromEscrow(loginPassword))) {
+    return await resolveExistingKey();
+  }
+
+  // No recovery possible — generate fresh key pair
+  const resolved = await generateAndRegisterKey();
+  // Create escrow blob for the newly generated key
+  if (loginPassword !== null) {
+    void tryCreateEscrow(loginPassword);
+  }
+  return resolved;
+}
 
 interface ResolvedKey {
   publicKey: string;
@@ -288,5 +356,108 @@ async function registerKeyOnServer(publicKey: string): Promise<ServerKeyData> {
       throw new Error('E2E key conflict but no key found on server');
     }
     return existing;
+  }
+}
+
+// =============================================================================
+// ESCROW HELPERS (ADR-022 — Zero-Knowledge Key Recovery)
+// =============================================================================
+
+/** Server escrow response shape (matches E2eEscrowResponse from backend) */
+interface EscrowData {
+  encryptedBlob: string;
+  argon2Salt: string;
+  xchachaNonce: string;
+  argon2Params: { memory: number; iterations: number; parallelism: number };
+  blobVersion: number;
+}
+
+/**
+ * Attempt to recover a private key from the server escrow blob.
+ * Returns true if recovery succeeded (key loaded into Worker + IndexedDB).
+ */
+async function tryRecoverFromEscrow(password: string): Promise<boolean> {
+  try {
+    const apiClient = getApiClient();
+    const escrow = await apiClient.get<EscrowData | null>('/e2e/escrow');
+
+    if (escrow === null) {
+      log.info('No escrow blob on server — will generate new key');
+      return false;
+    }
+
+    log.info(
+      { blobVersion: escrow.blobVersion },
+      'Escrow blob found — attempting recovery',
+    );
+
+    const result = await cryptoBridge.unwrapKey(
+      password,
+      escrow.encryptedBlob,
+      escrow.argon2Salt,
+      escrow.xchachaNonce,
+      escrow.argon2Params,
+    );
+
+    if (result === null) {
+      log.warn(
+        'Escrow unwrap failed — password may have changed since escrow creation',
+      );
+      return false;
+    }
+
+    log.info(
+      { fingerprint: result.fingerprint.substring(0, 16) + '…' },
+      'Private key RECOVERED from escrow',
+    );
+    return true;
+  } catch (err) {
+    log.error(
+      { err: err instanceof Error ? err.message : 'unknown' },
+      'Escrow recovery error — non-fatal, will generate new key',
+    );
+    return false;
+  }
+}
+
+/**
+ * Create an escrow blob on the server for future key recovery.
+ * Fire-and-forget: logs but does not throw on failure.
+ */
+async function tryCreateEscrow(password: string): Promise<void> {
+  try {
+    const wrapped = await cryptoBridge.wrapKey(password);
+    const apiClient = getApiClient();
+    await apiClient.post('/e2e/escrow', wrapped, { silent: true });
+    log.info('Escrow blob created on server');
+  } catch (err) {
+    if (isConflictError(err)) {
+      log.info('Escrow already exists — skipping creation');
+      return;
+    }
+    log.warn(
+      { err: err instanceof Error ? err.message : 'unknown' },
+      'Failed to create escrow — non-fatal',
+    );
+  }
+}
+
+/**
+ * Create an escrow blob only if none exists yet (backfill for existing keys).
+ * Fire-and-forget: logs but does not throw on failure.
+ */
+async function tryCreateEscrowIfMissing(password: string): Promise<void> {
+  try {
+    const apiClient = getApiClient();
+    const existing = await apiClient.get<EscrowData | null>('/e2e/escrow');
+    if (existing !== null) {
+      return; // Already has escrow — nothing to do
+    }
+    await tryCreateEscrow(password);
+  } catch (err) {
+    log.warn(
+      { err: err instanceof Error ? err.message : 'unknown' },
+      'Escrow backfill check failed — non-fatal',
+    );
   }
 }
