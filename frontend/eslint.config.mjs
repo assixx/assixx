@@ -80,7 +80,7 @@ export default ts.config(
     ],
     languageOptions: {
       parserOptions: {
-        project: true, // Uses tsconfig.json (respects exclude patterns)
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
         extraFileExtensions: ['.svelte'],
       },
