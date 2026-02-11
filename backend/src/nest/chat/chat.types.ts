@@ -324,6 +324,6 @@ export const SCHEDULED_STATUS = {
 } as const;
 
 export const MIN_SCHEDULE_MINUTES = 5;
-export const MAX_SCHEDULE_DAYS = 30;
+export const MAX_SCHEDULE_DAYS = 60;
 
 export const ERROR_FEATURE_NOT_IMPLEMENTED = 'Feature not yet implemented';

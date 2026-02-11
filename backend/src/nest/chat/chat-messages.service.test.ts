@@ -234,6 +234,8 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     it('marks conversation as read', async () => {
       const verifyAccess = vi.fn().mockResolvedValue(undefined);
       mockDb.query
+        .mockResolvedValueOnce([{ last_read_message_id: 10 }]) // getUnreadMessageEntries → last_read
+        .mockResolvedValueOnce([]) // getUnreadMessageEntries → unread messages (none)
         .mockResolvedValueOnce([{ max_id: 42 }]) // MAX message id
         .mockResolvedValueOnce([]); // UPDATE last_read
 

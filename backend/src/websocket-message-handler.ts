@@ -102,8 +102,8 @@ export class WebSocketMessageHandler {
   ): Promise<number[]> {
     const participantQuery = `
       SELECT cp.user_id
-      FROM conversation_participants cp
-      JOIN conversations c ON cp.conversation_id = c.id
+      FROM chat_conversation_participants cp
+      JOIN chat_conversations c ON cp.conversation_id = c.id
       WHERE cp.conversation_id = $1
       AND c.tenant_id = $2
       AND cp.tenant_id = $3
@@ -123,8 +123,8 @@ export class WebSocketMessageHandler {
   ): Promise<number[]> {
     const participants = await this.db.query<ConversationParticipantResult>(
       `SELECT cp.user_id
-       FROM conversation_participants cp
-       JOIN conversations c ON cp.conversation_id = c.id
+       FROM chat_conversation_participants cp
+       JOIN chat_conversations c ON cp.conversation_id = c.id
        WHERE cp.conversation_id = $1
        AND c.tenant_id = $2
        AND cp.tenant_id = $3
@@ -144,9 +144,9 @@ export class WebSocketMessageHandler {
   ): Promise<number[]> {
     const partners = await this.db.query<ConversationParticipantResult>(
       `SELECT DISTINCT cp2.user_id
-       FROM conversation_participants cp1
-       JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
-       JOIN conversations c ON cp1.conversation_id = c.id
+       FROM chat_conversation_participants cp1
+       JOIN chat_conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
+       JOIN chat_conversations c ON cp1.conversation_id = c.id
        WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3`,
       [userId, tenantId, userId],
     );
@@ -245,20 +245,20 @@ export class WebSocketMessageHandler {
     userId: number,
   ): Promise<MarkReadResult | null> {
     await this.db.query(
-      `UPDATE messages
+      `UPDATE chat_messages
        SET is_read = true
        WHERE id = $1
        AND tenant_id = $2
        AND EXISTS (
-         SELECT 1 FROM conversation_participants cp
-         WHERE cp.conversation_id = messages.conversation_id
+         SELECT 1 FROM chat_conversation_participants cp
+         WHERE cp.conversation_id = chat_messages.conversation_id
          AND cp.user_id = $3
        )`,
       [messageId, tenantId, userId],
     );
 
     const messageInfo = await this.db.query<MessageInfoResult>(
-      'SELECT sender_id, conversation_id FROM messages WHERE id = $1',
+      'SELECT sender_id, conversation_id FROM chat_messages WHERE id = $1',
       [messageId],
     );
 
@@ -306,7 +306,7 @@ export class WebSocketMessageHandler {
     const isE2e = e2eFields !== undefined;
 
     const messageQuery = `
-      INSERT INTO messages (conversation_id, sender_id, content, tenant_id,
+      INSERT INTO chat_messages (conversation_id, sender_id, content, tenant_id,
         encrypted_content, e2e_nonce, is_e2e, e2e_key_version, e2e_key_epoch,
         uuid, uuid_created_at, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())

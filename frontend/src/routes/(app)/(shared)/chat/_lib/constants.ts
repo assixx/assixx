@@ -24,8 +24,8 @@ export const SCHEDULE_CONSTRAINTS = {
   minFutureTime: 5 * 60 * 1000,
   /** Default time in future for modal (ms) - 6 minutes (buffer for user) */
   defaultFutureTime: 6 * 60 * 1000,
-  /** Maximum time in future (ms) - 30 days */
-  maxFutureTime: 30 * 24 * 60 * 60 * 1000,
+  /** Maximum time in future (ms) - 60 days */
+  maxFutureTime: 60 * 24 * 60 * 60 * 1000,
 } as const;
 
 /**
@@ -58,7 +58,7 @@ export const MESSAGES = {
   // Warnings
   warningSelectDateTime: 'Bitte wählen Sie Datum und Uhrzeit',
   warningMinFutureTime: 'Zeit muss mindestens 5 Minuten in der Zukunft liegen',
-  warningMaxFutureTime: 'Zeit darf maximal 30 Tage in der Zukunft liegen',
+  warningMaxFutureTime: 'Zeit darf maximal 60 Tage in der Zukunft liegen',
 
   // Info
   infoScheduledAt: 'Nachricht wird gesendet am',
@@ -98,7 +98,7 @@ export const MESSAGES = {
   labelSchedule: 'Planen',
   labelDate: 'Datum',
   labelTime: 'Uhrzeit',
-  labelScheduleHint: 'Mindestens 5 Minuten in der Zukunft, maximal 30 Tage.',
+  labelScheduleHint: 'Mindestens 5 Minuten in der Zukunft, maximal 60 Tage.',
   labelScheduleTitle: 'Nachricht planen',
   labelScheduleDescription:
     'Wählen Sie Datum und Uhrzeit, wann die Nachricht gesendet werden soll.',

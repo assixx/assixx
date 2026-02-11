@@ -701,7 +701,7 @@ export class DocumentsService {
     query += ` AND (
       d.access_scope != 'chat'
       OR EXISTS (
-        SELECT 1 FROM conversation_participants cp
+        SELECT 1 FROM chat_conversation_participants cp
         WHERE cp.conversation_id = d.conversation_id AND cp.user_id = $2
       )
     )`;
@@ -741,9 +741,9 @@ export class DocumentsService {
          (COUNT(d.id) OVER (PARTITION BY c.id))::integer as "attachmentCount",
          c.is_group as "isGroup",
          c.name as "groupName"
-       FROM conversations c
-       JOIN conversation_participants cp ON c.id = cp.conversation_id
-       JOIN conversation_participants cp2 ON c.id = cp2.conversation_id AND cp2.user_id != $1
+       FROM chat_conversations c
+       JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
+       JOIN chat_conversation_participants cp2 ON c.id = cp2.conversation_id AND cp2.user_id != $1
        JOIN users u ON cp2.user_id = u.id
        LEFT JOIN documents d ON d.conversation_id = c.id AND d.is_active = 1
        WHERE cp.user_id = $1 AND c.tenant_id = $2

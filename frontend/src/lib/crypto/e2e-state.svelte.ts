@@ -26,6 +26,8 @@ interface E2eState {
   fingerprint: string | null;
   /** Whether storage persistence was granted */
   persisted: boolean;
+  /** Server key version — needed for server-side version validation on send */
+  keyVersion: number | null;
   /** Error message if initialization failed */
   error: string | null;
 }
@@ -34,6 +36,7 @@ let e2eState = $state<E2eState>({
   isReady: false,
   publicKey: null,
   fingerprint: null,
+  keyVersion: null,
   persisted: false,
   error: null,
 });
@@ -83,6 +86,7 @@ export const e2e = {
         isReady: true,
         publicKey: resolved.publicKey,
         fingerprint: resolved.fingerprint,
+        keyVersion: resolved.keyVersion,
         persisted,
         error: null,
       });
@@ -93,6 +97,7 @@ export const e2e = {
         isReady: false,
         publicKey: null,
         fingerprint: null,
+        keyVersion: null,
         persisted: false,
         error: message,
       });
@@ -115,6 +120,7 @@ export const e2e = {
       isReady: false,
       publicKey: null,
       fingerprint: null,
+      keyVersion: null,
       persisted: false,
       error: null,
     });
@@ -128,6 +134,14 @@ export const e2e = {
 interface ResolvedKey {
   publicKey: string;
   fingerprint: string;
+  keyVersion: number;
+}
+
+/** Key data returned by the E2E server endpoints */
+interface ServerKeyData {
+  publicKey: string;
+  fingerprint: string;
+  keyVersion: number;
 }
 
 /** Load existing key from IndexedDB and verify server has it */
@@ -142,12 +156,6 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
   log.info('Verifying server has our key (ensureKeyOnServer)…');
   const serverKey = await ensureKeyOnServer(localPublicKey);
 
-  if (serverKey === null) {
-    // ensureKeyOnServer uploaded our local key → use local
-    log.info('Server had no key — uploaded local key');
-    return { publicKey: localPublicKey, fingerprint: localFingerprint };
-  }
-
   // Compare server key with local key
   if (serverKey.publicKey === localPublicKey) {
     log.info(
@@ -157,6 +165,7 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
     return {
       publicKey: serverKey.publicKey,
       fingerprint: serverKey.fingerprint,
+      keyVersion: serverKey.keyVersion,
     };
   }
 
@@ -175,6 +184,7 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
   return {
     publicKey: rotated.publicKey,
     fingerprint: rotated.fingerprint,
+    keyVersion: rotated.keyVersion,
   };
 }
 
@@ -182,24 +192,35 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
 async function generateAndRegisterKey(): Promise<ResolvedKey> {
   log.info('No local key found — generating new X25519 key pair');
   const generated = await cryptoBridge.generateKeys();
-  let publicKey = generated.publicKey;
-  let fingerprint = generated.fingerprint;
   log.info(
-    { fingerprint: fingerprint.substring(0, 16) + '…' },
+    { fingerprint: generated.fingerprint.substring(0, 16) + '…' },
     'Key pair generated',
   );
 
   log.info('Uploading public key to server…');
-  const conflictData = await registerKeyOnServer(publicKey);
-  if (conflictData !== null) {
-    log.warn('Server returned conflict — using existing server key');
-    publicKey = conflictData.publicKey;
-    fingerprint = conflictData.fingerprint;
-  } else {
-    log.info('Public key registered on server successfully');
+  const serverResult = await registerKeyOnServer(generated.publicKey);
+
+  // If server returned a different key (409 conflict from another tab/session),
+  // our NEW local private key doesn't match the OLD server public key.
+  // Rotate server to match our new local key — otherwise ECDH shared secret diverges.
+  if (serverResult.publicKey !== generated.publicKey) {
+    log.warn(
+      'Server has different key (conflict) — rotating to match new local key',
+    );
+    const rotated = await rotateKeyOnServer(generated.publicKey);
+    return {
+      publicKey: rotated.publicKey,
+      fingerprint: rotated.fingerprint,
+      keyVersion: rotated.keyVersion,
+    };
   }
 
-  return { publicKey, fingerprint };
+  log.info('Public key registered on server successfully');
+  return {
+    publicKey: serverResult.publicKey,
+    fingerprint: serverResult.fingerprint,
+    keyVersion: serverResult.keyVersion,
+  };
 }
 
 // =============================================================================
@@ -219,14 +240,9 @@ function isConflictError(err: unknown): boolean {
 }
 
 /** Verify server has our key; if missing (interrupted prior upload), re-register it */
-async function ensureKeyOnServer(
-  publicKey: string,
-): Promise<{ publicKey: string; fingerprint: string } | null> {
+async function ensureKeyOnServer(publicKey: string): Promise<ServerKeyData> {
   const apiClient = getApiClient();
-  const existing = await apiClient.get<{
-    publicKey: string;
-    fingerprint: string;
-  } | null>('/e2e/keys/me');
+  const existing = await apiClient.get<ServerKeyData | null>('/e2e/keys/me');
 
   if (existing !== null) {
     // Server has a key — use it (may differ if another device registered first)
@@ -238,15 +254,11 @@ async function ensureKeyOnServer(
 }
 
 /** Rotate key on server: deactivate old + register new atomically (PUT /e2e/keys/me) */
-async function rotateKeyOnServer(
-  publicKey: string,
-): Promise<{ publicKey: string; fingerprint: string }> {
+async function rotateKeyOnServer(publicKey: string): Promise<ServerKeyData> {
   const apiClient = getApiClient();
-  const result = await apiClient.put<{
-    publicKey: string;
-    fingerprint: string;
-    keyVersion: number;
-  }>('/e2e/keys/me', { publicKey });
+  const result = await apiClient.put<ServerKeyData>('/e2e/keys/me', {
+    publicKey,
+  });
   log.info(
     {
       keyVersion: result.keyVersion,
@@ -254,25 +266,27 @@ async function rotateKeyOnServer(
     },
     'Server key rotated successfully',
   );
-  return { publicKey: result.publicKey, fingerprint: result.fingerprint };
+  return result;
 }
 
 /** Register public key on server, handling 409 conflict from concurrent tabs */
-async function registerKeyOnServer(
-  publicKey: string,
-): Promise<{ publicKey: string; fingerprint: string } | null> {
+async function registerKeyOnServer(publicKey: string): Promise<ServerKeyData> {
   const apiClient = getApiClient();
   try {
-    await apiClient.post('/e2e/keys', { publicKey }, { silent: true });
-    return null;
+    return await apiClient.post<ServerKeyData>(
+      '/e2e/keys',
+      { publicKey },
+      { silent: true },
+    );
   } catch (err: unknown) {
     if (!isConflictError(err)) {
       throw err;
     }
     // 409 = another tab registered first — fetch the existing key
-    return await apiClient.get<{
-      publicKey: string;
-      fingerprint: string;
-    } | null>('/e2e/keys/me');
+    const existing = await apiClient.get<ServerKeyData | null>('/e2e/keys/me');
+    if (existing === null) {
+      throw new Error('E2E key conflict but no key found on server');
+    }
+    return existing;
   }
 }

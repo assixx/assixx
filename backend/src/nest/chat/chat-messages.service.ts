@@ -98,7 +98,7 @@ export class ChatMessagesService {
     const participantInfo = await this.databaseService.query<{
       deleted_at: Date | null;
     }>(
-      `SELECT deleted_at FROM conversation_participants
+      `SELECT deleted_at FROM chat_conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
     );
@@ -223,7 +223,7 @@ export class ChatMessagesService {
     const rows = await this.databaseService.tenantTransaction(
       async (client: PoolClient) => {
         const result = await client.query<{ is_e2e: boolean }>(
-          `SELECT is_e2e FROM messages WHERE id = $1`,
+          `SELECT is_e2e FROM chat_messages WHERE id = $1`,
           [messageId],
         );
         return result.rows;
@@ -279,7 +279,7 @@ export class ChatMessagesService {
     const latestMessage = await this.databaseService.query<{
       max_id: number | null;
     }>(
-      `SELECT MAX(id) as max_id FROM messages WHERE conversation_id = $1 AND tenant_id = $2`,
+      `SELECT MAX(id) as max_id FROM chat_messages WHERE conversation_id = $1 AND tenant_id = $2`,
       [conversationId, tenantId],
     );
 
@@ -287,7 +287,7 @@ export class ChatMessagesService {
 
     // Update last read
     await this.databaseService.query(
-      `UPDATE conversation_participants
+      `UPDATE chat_conversation_participants
        SET last_read_message_id = $1, last_read_at = NOW()
        WHERE conversation_id = $2 AND user_id = $3 AND tenant_id = $4`,
       [lastMessageId, conversationId, userId, tenantId],
@@ -313,7 +313,7 @@ export class ChatMessagesService {
     const lastReadRow = await this.databaseService.query<{
       last_read_message_id: number | null;
     }>(
-      `SELECT last_read_message_id FROM conversation_participants
+      `SELECT last_read_message_id FROM chat_conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
     );
@@ -325,7 +325,7 @@ export class ChatMessagesService {
       senderId: number;
     }>(
       `SELECT id AS "messageId", sender_id AS "senderId"
-       FROM messages
+       FROM chat_messages
        WHERE conversation_id = $1 AND tenant_id = $2
          AND id > $3 AND sender_id != $4`,
       [conversationId, tenantId, lastReadId, userId],
@@ -356,9 +356,9 @@ export class ChatMessagesService {
           THEN 1
         END) as "unreadCount",
         MAX(m.created_at) as "lastMessageTime"
-       FROM conversations c
-       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-       LEFT JOIN messages m ON m.conversation_id = c.id
+       FROM chat_conversations c
+       INNER JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
+       LEFT JOIN chat_messages m ON m.conversation_id = c.id
        WHERE c.tenant_id = $2
        AND c.is_active = 1
        AND cp.user_id = $1
@@ -408,13 +408,13 @@ export class ChatMessagesService {
   ): Promise<void> {
     const messageUuid = uuidv7();
     await this.databaseService.query(
-      `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, uuid, uuid_created_at, created_at)
+      `INSERT INTO chat_messages (tenant_id, conversation_id, sender_id, content, uuid, uuid_created_at, created_at)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
       [tenantId, conversationId, senderId, content, messageUuid],
     );
 
     await this.databaseService.query(
-      `UPDATE conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [conversationId, tenantId],
     );
   }
@@ -521,7 +521,7 @@ export class ChatMessagesService {
     params: unknown[],
   ): Promise<number> {
     const countResult = await this.databaseService.query<{ count: string }>(
-      `SELECT COUNT(*) as count FROM messages m ${whereClause}`,
+      `SELECT COUNT(*) as count FROM chat_messages m ${whereClause}`,
       params,
     );
     return Number.parseInt(countResult[0]?.count ?? '0', 10);
@@ -550,7 +550,7 @@ export class ChatMessagesService {
         CASE
           WHEN m.sender_id = ${userId} THEN
             CASE WHEN EXISTS (
-              SELECT 1 FROM conversation_participants other_cp
+              SELECT 1 FROM chat_conversation_participants other_cp
               WHERE other_cp.conversation_id = m.conversation_id
               AND other_cp.user_id != ${userId}
               AND other_cp.last_read_message_id >= m.id
@@ -559,9 +559,9 @@ export class ChatMessagesService {
           ELSE 0
         END as is_read,
         CASE WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN cp.last_read_at ELSE NULL END as read_at
-       FROM messages m
+       FROM chat_messages m
        INNER JOIN users u ON m.sender_id = u.id
-       LEFT JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
+       LEFT JOIN chat_conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
        ${whereClause}
        ORDER BY m.created_at ASC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
@@ -635,7 +635,7 @@ export class ChatMessagesService {
       id: number;
       uuid: string;
     }>(
-      `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
+      `INSERT INTO chat_messages (tenant_id, conversation_id, sender_id, content,
          attachment_path, attachment_name, attachment_type, attachment_size,
          encrypted_content, e2e_nonce, is_e2e, e2e_key_version, e2e_key_epoch,
          uuid, uuid_created_at, created_at)
