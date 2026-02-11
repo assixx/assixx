@@ -72,11 +72,16 @@ export function mapConversationToApiFormat(
       isActive: true,
     }));
 
-  let lastMessage: { content: string; createdAt: string } | null = null;
-  if (conv.last_message_content !== null && conv.last_message_time !== null) {
+  let lastMessage: {
+    content: string;
+    createdAt: string;
+    isE2e?: boolean;
+  } | null = null;
+  if (conv.last_message_time !== null) {
     lastMessage = {
-      content: conv.last_message_content,
+      content: conv.last_message_content ?? '',
       createdAt: new Date(conv.last_message_time).toISOString(),
+      ...(conv.last_message_is_e2e === true ? { isE2e: true } : {}),
     };
   }
 
@@ -127,7 +132,22 @@ export function transformMessage(msg: MessageRow): Message {
     readAt: msg.read_at !== null ? new Date(msg.read_at) : null,
     createdAt: new Date(msg.created_at),
     updatedAt: new Date(msg.created_at),
+    encryptedContent: msg.encrypted_content ?? null,
+    e2eNonce: msg.e2e_nonce ?? null,
+    isE2e: msg.is_e2e,
+    e2eKeyVersion: msg.e2e_key_version ?? null,
+    e2eKeyEpoch: msg.e2e_key_epoch ?? null,
   };
+}
+
+/**
+ * E2E fields for building sent message response
+ */
+export interface SentMessageE2eFields {
+  encryptedContent: string;
+  e2eNonce: string;
+  e2eKeyVersion: number;
+  e2eKeyEpoch: number;
 }
 
 /**
@@ -137,9 +157,10 @@ export function buildSentMessage(
   messageId: number,
   conversationId: number,
   senderId: number,
-  content: string,
+  content: string | null,
   sender: SenderInfo,
   attachment?: MessageAttachmentInput,
+  e2eFields?: SentMessageE2eFields,
 ): Message {
   const fullName =
     `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim();
@@ -165,6 +186,11 @@ export function buildSentMessage(
     readAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    encryptedContent: e2eFields?.encryptedContent ?? null,
+    e2eNonce: e2eFields?.e2eNonce ?? null,
+    isE2e: e2eFields !== undefined,
+    e2eKeyVersion: e2eFields?.e2eKeyVersion ?? null,
+    e2eKeyEpoch: e2eFields?.e2eKeyEpoch ?? null,
   };
 }
 
@@ -318,13 +344,19 @@ export function validateScheduledTime(
 }
 
 /**
- * Resolve message content, using placeholder for attachment-only messages
- * Returns error message if both content and attachment are missing
+ * Resolve message content, using placeholder for attachment-only messages.
+ * For E2E messages, content is NULL (server stores only ciphertext).
+ * Returns error message if both content and attachment are missing AND not E2E.
  */
 export function resolveMessageContent(
   message: string | undefined,
   hasAttachment: boolean,
-): { content: string } | { error: string } {
+  isE2e: boolean = false,
+): { content: string | null } | { error: string } {
+  // E2E messages: content is NULL on server (ciphertext stored separately)
+  if (isE2e) {
+    return { content: null };
+  }
   let content = message ?? '';
   if (hasAttachment && content === '') {
     content = '📎 Attachment';

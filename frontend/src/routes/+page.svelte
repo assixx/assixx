@@ -180,7 +180,7 @@
     id="security"
   >
     <div class="security-section__container">
-      <h2 class="security-section__title">🔒 Ihre Daten sind bei uns sicher</h2>
+      <h2 class="security-section__title">Ihre Daten sind bei uns sicher</h2>
       <p class="security-section__subtitle">
         Datenschutz und Sicherheit haben bei uns höchste Priorität. Ihre
         sensiblen Unternehmensdaten sind durch modernste Verschlüsselung und
@@ -306,7 +306,7 @@
           Vertraut von führenden Industrieunternehmen
         </p>
         <div class="trust-badges__list">
-          <div class="u-fs-09rem">🔒 SSL-verschlüsselt</div>
+          <div class="u-fs-09rem">SSL-verschlüsselt</div>
           <div class="u-fs-09rem">✅ DSGVO-konform</div>
           <div class="u-fs-09rem">🇩🇪 Made in Germany</div>
           <div class="u-fs-09rem">🛡️ ISO 27001</div>

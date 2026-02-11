@@ -42,7 +42,7 @@
 ```sql
 CREATE TABLE documents (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  tenant_id INT NOT NULL,                      -- 🔒 TENANT ISOLATION
+  tenant_id INT NOT NULL,                      --  TENANT ISOLATION
 
   -- WHO CAN SEE IT (Access Control)
   recipient_type ENUM('user','team','department','company') DEFAULT 'user',
@@ -539,7 +539,7 @@ Keep backend validation as-is, but ensure frontend ALWAYS sends DB ENUM values (
 
 ---
 
-## 🔒 SECURITY VERIFICATION MATRIX
+## SECURITY VERIFICATION MATRIX
 
 ### Test Scenarios (Must ALL Pass)
 

@@ -44,6 +44,10 @@ export const MESSAGES = {
   errorConnectionLost:
     'Verbindung zum Server konnte nicht wiederhergestellt werden. Bitte Seite neu laden.',
   errorConnectionRetry: 'Verbindung verloren. Bitte versuchen Sie es erneut.',
+  errorE2eNoRecipientKey:
+    'Empfänger hat die Verschlüsselung noch nicht eingerichtet. Bitte bitten Sie ihn, sich zuerst anzumelden.',
+  errorE2eEncryptFailed:
+    'Nachricht konnte nicht verschlüsselt werden. Bitte versuchen Sie es erneut.',
   reconnecting: 'Verbindung unterbrochen – Wiederverbindung läuft...',
 
   // Success
@@ -114,6 +118,9 @@ export const MESSAGES = {
   labelConversation: 'Unterhaltung',
   labelGroupConversation: 'Gruppenunterhaltung',
   labelUnknown: 'Unbekannt',
+
+  // E2E
+  e2eEncryptedPreview: 'Verschlüsselte Nachricht',
 
   // Role labels
   roleAdmin: 'Admin',

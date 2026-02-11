@@ -182,7 +182,7 @@ describe('transformRawMessage', () => {
     expect(result.id).toBe(0);
     expect(result.conversationId).toBe(0);
     expect(result.senderId).toBe(0);
-    expect(result.content).toBe('');
+    expect(result.content).toBeNull();
     expect(result.isRead).toBe(false);
     expect(result.type).toBe('text');
     expect(result.attachments).toEqual([]);
@@ -401,6 +401,16 @@ describe('updateConversationWithMessage', () => {
     expect(result[2].id).toBe(2);
   });
 
+  it('should return unchanged array if conversation not found', () => {
+    const convs = [createMockConversation({ id: 1 })];
+    const msg = createMockMessage();
+
+    const result = updateConversationWithMessage(convs, 999, msg, false, 1);
+    expect(result).toBe(convs);
+  });
+});
+
+describe('updateConversationWithMessage - unreadCount', () => {
   it('should increment unreadCount for non-active, non-self messages', () => {
     const convs = [createMockConversation({ id: 1, unreadCount: 2 })];
     const msg = createMockMessage({ senderId: 99 }); // not currentUserId
@@ -432,13 +442,52 @@ describe('updateConversationWithMessage', () => {
     const result = updateConversationWithMessage(convs, 1, msg, false, 1);
     expect(result[0].unreadCount).toBe(1);
   });
+});
 
-  it('should return unchanged array if conversation not found', () => {
+describe('updateConversationWithMessage - E2E preview', () => {
+  it('should show decrypted content in preview for E2E messages', () => {
     const convs = [createMockConversation({ id: 1 })];
-    const msg = createMockMessage();
+    const msg = createMockMessage({
+      isE2e: true,
+      content: null,
+      decryptedContent: 'Secret text',
+    });
 
-    const result = updateConversationWithMessage(convs, 999, msg, false, 1);
-    expect(result).toBe(convs);
+    const result = updateConversationWithMessage(convs, 1, msg, false, 1);
+    expect(result[0].lastMessage?.content).toBe('Secret text');
+  });
+
+  it('should set isE2e flag on lastMessage for E2E messages', () => {
+    const convs = [createMockConversation({ id: 1 })];
+    const msg = createMockMessage({
+      isE2e: true,
+      content: null,
+      decryptedContent: 'Secret text',
+    });
+
+    const result = updateConversationWithMessage(convs, 1, msg, false, 1);
+    expect(result[0].lastMessage?.isE2e).toBe(true);
+  });
+
+  it('should NOT set isE2e flag on lastMessage for plaintext messages', () => {
+    const convs = [createMockConversation({ id: 1 })];
+    const msg = createMockMessage({ content: 'Plain' });
+
+    const result = updateConversationWithMessage(convs, 1, msg, false, 1);
+    expect(result[0].lastMessage?.isE2e).toBeUndefined();
+  });
+
+  it('should show lock icon fallback for undecrypted E2E messages', () => {
+    const convs = [createMockConversation({ id: 1 })];
+    const msg = createMockMessage({
+      isE2e: true,
+      content: null,
+    });
+
+    const result = updateConversationWithMessage(convs, 1, msg, false, 1);
+    expect(result[0].lastMessage?.content).toContain(
+      'Verschlüsselte Nachricht',
+    );
   });
 });
 

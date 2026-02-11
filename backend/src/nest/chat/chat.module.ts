@@ -8,6 +8,7 @@
 import { Module } from '@nestjs/common';
 
 import { DocumentsModule } from '../documents/documents.module.js';
+import { E2eKeysModule } from '../e2e-keys/e2e-keys.module.js';
 import { ChatConversationsService } from './chat-conversations.service.js';
 import { ChatMessagesService } from './chat-messages.service.js';
 import { ChatPermissionRegistrar } from './chat-permission.registrar.js';
@@ -17,7 +18,7 @@ import { ChatService } from './chat.service.js';
 import { ScheduledMessageProcessorService } from './scheduled-message-processor.service.js';
 
 @Module({
-  imports: [DocumentsModule],
+  imports: [DocumentsModule, E2eKeysModule],
   controllers: [ChatController],
   providers: [
     ChatConversationsService,

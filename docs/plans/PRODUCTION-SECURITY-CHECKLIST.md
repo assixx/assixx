@@ -1,4 +1,4 @@
-# 🔒 Production Security Checklist für Assixx
+# Production Security Checklist für Assixx
 
 ## JWT Secret Configuration
 

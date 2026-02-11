@@ -114,6 +114,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         updated_at: new Date('2025-01-02'),
         last_message_content: 'Hello',
         last_message_time: new Date('2025-01-02'),
+        last_message_is_e2e: false,
       };
 
       mockDb.query

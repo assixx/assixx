@@ -1,5 +1,5 @@
 <script lang="ts">
-  import HighlightText from '$lib/components/HighlightText.svelte';
+  import SearchResultUser from '$lib/components/SearchResultUser.svelte';
 
   import { MESSAGES } from './constants';
 
@@ -28,58 +28,22 @@
     </div>
   {:else if searchQuery !== ''}
     {#each employees.slice(0, 5) as employee (employee.id)}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="search-input__result-item"
+      <SearchResultUser
+        id={employee.id}
+        firstName={employee.firstName}
+        lastName={employee.lastName}
+        email={employee.email}
+        employeeNumber={employee.employeeNumber}
+        role="employee"
+        position={employee.position}
+        query={searchQuery}
         onclick={() => {
           onresultclick(employee.id);
         }}
-      >
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-          <div style="font-weight: 500; color: var(--color-text-primary);">
-            <HighlightText
-              text={`${employee.firstName} ${employee.lastName}`}
-              query={searchQuery}
-            />
-          </div>
-          <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-            <HighlightText
-              text={employee.email}
-              query={searchQuery}
-            />
-          </div>
-          <div
-            style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;"
-          >
-            <span>
-              <HighlightText
-                text={employee.position ?? ''}
-                query={searchQuery}
-              />
-            </span>
-            {#if employee.employeeNumber}
-              <span>
-                • <HighlightText
-                  text={employee.employeeNumber}
-                  query={searchQuery}
-                />
-              </span>
-            {/if}
-          </div>
-        </div>
-      </div>
+      />
     {/each}
     {#if employees.length > 5}
-      <div
-        class="search-input__result-item"
-        style="
-          font-size: 0.813rem;
-          color: var(--color-primary);
-          text-align: center;
-          border-top: 1px solid rgb(255 255 255 / 5%);
-        "
-      >
+      <div class="search-input__result-item search-input__result-more">
         {employees.length - 5}
         {MESSAGES.SEARCH_MORE_RESULTS}
       </div>

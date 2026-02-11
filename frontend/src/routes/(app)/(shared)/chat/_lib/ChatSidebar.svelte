@@ -1,14 +1,12 @@
 <script lang="ts">
+  import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils';
 
   import { MESSAGES } from './constants';
   import {
-    highlightSearchTerm,
     formatConversationTime,
     getConversationAvatar,
     getChatPartnerName,
-    getRoleLabel,
-    getRoleBadgeClass,
   } from './utils';
 
   import type { ChatUser, Conversation } from './types';
@@ -107,64 +105,21 @@
           id="chatUserSearchResults"
         >
           {#each userSearchResults as user (user.id)}
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div
-              class="search-input__result-item"
-              data-user-id={user.id}
+            <SearchResultUser
+              id={user.id}
+              firstName={user.firstName}
+              lastName={user.lastName}
+              username={user.username}
+              email={user.email}
+              imageUrl={user.profileImageUrl}
+              status={user.status}
+              role={user.role}
+              employeeNumber={user.employeeNumber}
+              query={userSearchQuery}
               onclick={() => {
                 onstartconversation(user);
               }}
-            >
-              <div class="flex w-full items-center gap-3">
-                <div
-                  class="avatar avatar--sm {(
-                    user.profileImageUrl !== undefined &&
-                    user.profileImageUrl !== ''
-                  ) ?
-                    ''
-                  : getAvatarColorClass(user.id)}"
-                >
-                  {#if user.profileImageUrl}
-                    <img
-                      src={user.profileImageUrl}
-                      alt={user.username}
-                      class="avatar__image"
-                    />
-                  {:else}
-                    <span class="avatar__initials">
-                      {getInitials(user.firstName, user.lastName)}
-                    </span>
-                  {/if}
-                  <span
-                    class="avatar__status avatar__status--{user.status ??
-                      'offline'}"
-                  ></span>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="user-name">
-                    <!-- eslint-disable svelte/no-at-html-tags -- Highlighting search term -->
-                    {@html highlightSearchTerm(
-                      `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-                      userSearchQuery,
-                    )}
-                    <!-- eslint-enable svelte/no-at-html-tags -->
-                  </div>
-                  <div class="user-details">
-                    {#if user.employeeNumber}#{user.employeeNumber} ·{/if}
-                    {user.email ?? user.username}
-                  </div>
-                  <div class="user-meta">
-                    {#if user.role}
-                      <span
-                        class="badge {getRoleBadgeClass(user.role)} badge--xs"
-                      >
-                        {getRoleLabel(user.role)}
-                      </span>
-                    {/if}
-                  </div>
-                </div>
-              </div>
-            </div>
+            />
           {/each}
         </div>
       {/if}
@@ -222,7 +177,13 @@
               {conv.name ?? getChatPartnerName(partner ?? null, undefined)}
             </h4>
             {#if conv.lastMessage}
-              <p class="conversation-preview">{conv.lastMessage.content}</p>
+              <p class="conversation-preview">
+                {#if conv.lastMessage.isE2e === true && (conv.lastMessage.content === null || conv.lastMessage.content === '')}
+                  <i class="fas fa-lock"></i> {MESSAGES.e2eEncryptedPreview}
+                {:else}
+                  {conv.lastMessage.content}
+                {/if}
+              </p>
             {/if}
           </div>
           <div class="conversation-meta">
@@ -242,30 +203,6 @@
 </div>
 
 <style>
-  .user-name {
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-
-  .user-details {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-  }
-
-  .user-meta {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    margin-top: 2px;
-  }
-
-  .badge--xs {
-    font-size: 0.6rem;
-    padding: 1px 5px;
-  }
-
   .loading-spinner {
     display: flex;
     align-items: center;

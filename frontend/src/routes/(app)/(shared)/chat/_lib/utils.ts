@@ -522,7 +522,12 @@ export function filterMessagesByQuery(
   if (query.trim() === '') return messages;
 
   const queryLower = query.toLowerCase();
-  return messages.filter((m) => m.content.toLowerCase().includes(queryLower));
+  return messages.filter((m) => {
+    // E2E messages: search decryptedContent (not ciphertext)
+    const searchable =
+      m.isE2e === true ? (m.decryptedContent ?? null) : (m.content ?? null);
+    return searchable?.toLowerCase().includes(queryLower) === true;
+  });
 }
 
 /**
