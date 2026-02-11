@@ -3,6 +3,7 @@
  *
  * Phase 13 Batch C (C5): Pure placeholder generators + mocked Pool/CLS methods.
  */
+import { ConflictException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DatabaseService } from './database.service.js';
@@ -211,6 +212,19 @@ describe('transaction', () => {
         throw new Error('DB error');
       }),
     ).rejects.toThrow('DB error');
+
+    expect(pool.mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(pool.mockClient.release).toHaveBeenCalled();
+  });
+
+  it('should ROLLBACK on HttpException without ERROR log', async () => {
+    const { service, pool } = createService();
+
+    await expect(
+      service.transaction(async () => {
+        throw new ConflictException('Key already exists');
+      }),
+    ).rejects.toThrow('Key already exists');
 
     expect(pool.mockClient.query).toHaveBeenCalledWith('ROLLBACK');
     expect(pool.mockClient.release).toHaveBeenCalled();

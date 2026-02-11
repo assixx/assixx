@@ -65,8 +65,10 @@ export interface ConversationParticipant {
  * Last message preview in conversation list
  */
 export interface ConversationLastMessage {
-  content: string;
+  content: string | null;
   createdAt: string;
+  /** Whether the last message is end-to-end encrypted */
+  isE2e?: boolean;
 }
 
 /**
@@ -134,7 +136,8 @@ export interface Message {
   senderName?: string;
   senderUsername?: string;
   senderProfilePicture?: string;
-  content: string;
+  /** Plaintext content (NULL for E2E messages — server stores only ciphertext) */
+  content: string | null;
   createdAt: string;
   isRead: boolean;
   readAt?: string;
@@ -143,6 +146,22 @@ export interface Message {
   attachments?: Attachment[];
   attachment?: LegacyAttachment | null;
   type?: MessageType;
+  /** E2E: base64-encoded ciphertext */
+  encryptedContent?: string | null;
+  /** E2E: base64-encoded XChaCha20-Poly1305 nonce */
+  e2eNonce?: string | null;
+  /** E2E: whether this message is end-to-end encrypted */
+  isE2e?: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2eKeyVersion?: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2eKeyEpoch?: number | null;
+  /** Client-side: decrypted plaintext (filled after CryptoWorker decryption) */
+  decryptedContent?: string;
+  /** Client-side: true if decryption failed */
+  decryptionFailed?: boolean;
+  /** Client-side: true if encryption failed (show retry button) */
+  encryptionFailed?: boolean;
 }
 
 /**
@@ -289,11 +308,24 @@ export interface MessageReadData {
 /**
  * Raw message from WebSocket (API v2 camelCase)
  */
+/** Image/PDF preview data for modal display */
+export interface PreviewFile {
+  src: string;
+  alt: string;
+  /** MIME type for determining preview method (image vs pdf) */
+  mimeType?: string;
+}
+
+/** Ref interface exposed by MessagesArea component */
+export interface MessagesAreaRef {
+  scrollToBottom: () => void;
+}
+
 export interface RawWebSocketMessage {
   id?: number;
   conversationId?: number;
   senderId?: number;
-  content?: string;
+  content?: string | null;
   createdAt?: string;
   isRead?: boolean;
   type?: string;
@@ -306,4 +338,14 @@ export interface RawWebSocketMessage {
   userId?: number;
   messageId?: number;
   status?: string;
+  /** E2E: base64-encoded ciphertext */
+  encryptedContent?: string | null;
+  /** E2E: base64-encoded nonce */
+  e2eNonce?: string | null;
+  /** E2E: whether message is encrypted */
+  isE2e?: boolean;
+  /** E2E: sender's key version */
+  e2eKeyVersion?: number | null;
+  /** E2E: HKDF epoch */
+  e2eKeyEpoch?: number | null;
 }

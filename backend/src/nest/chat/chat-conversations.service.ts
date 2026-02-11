@@ -388,7 +388,11 @@ export class ChatConversationsService {
         (SELECT m.created_at FROM messages m
          WHERE m.conversation_id = c.id
            AND (cp.deleted_at IS NULL OR m.created_at > cp.deleted_at)
-         ORDER BY m.created_at DESC LIMIT 1) as last_message_time
+         ORDER BY m.created_at DESC LIMIT 1) as last_message_time,
+        (SELECT m.is_e2e FROM messages m
+         WHERE m.conversation_id = c.id
+           AND (cp.deleted_at IS NULL OR m.created_at > cp.deleted_at)
+         ORDER BY m.created_at DESC LIMIT 1) as last_message_is_e2e
        FROM conversations c
        INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
        WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = 1

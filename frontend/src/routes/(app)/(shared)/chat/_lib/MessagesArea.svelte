@@ -82,10 +82,21 @@
       const prevMessage = messages[index - 1];
       const showDateSeparator = shouldShowDateSeparator(prevMessage, message);
 
+      // E2E messages: use decryptedContent; fallback to empty string on null
+      let displayContent: string;
+      if (message.isE2e === true) {
+        displayContent =
+          message.decryptionFailed === true ?
+            ''
+          : (message.decryptedContent ?? '');
+      } else {
+        displayContent = message.content ?? '';
+      }
+
       return {
         ...message,
         formattedTime: formatMessageTime(message.createdAt),
-        linkifiedContent: linkify(message.content),
+        linkifiedContent: displayContent !== '' ? linkify(displayContent) : '',
         isOwn: message.senderId === currentUserId,
         showDateSeparator,
         dateSeparatorText:
@@ -119,10 +130,18 @@
       const highlights = new SvelteMap<number, string>();
 
       for (const msg of processedMessages) {
-        if (messageMatchesQuery(msg.content, searchQuery)) {
+        // Use decryptedContent for E2E messages, content for plaintext
+        const searchContent =
+          msg.isE2e === true ?
+            (msg.decryptedContent ?? null)
+          : (msg.content ?? null);
+        if (
+          searchContent !== null &&
+          messageMatchesQuery(searchContent, searchQuery)
+        ) {
           highlights.set(
             msg.id,
-            highlightSearchInMessage(msg.content, searchQuery),
+            highlightSearchInMessage(searchContent, searchQuery),
           );
         }
       }
@@ -247,13 +266,23 @@
         <div class="message-bubble">
           <div class="message-content">
             <!-- eslint-disable svelte/no-at-html-tags -- Content from API is trusted -->
-            <p class="message-text">
-              {#if searchHighlightedMessages.has(message.id)}
-                {@html searchHighlightedMessages.get(message.id)}
-              {:else}
-                {@html message.linkifiedContent}
-              {/if}
-            </p>
+            {#if message.isE2e === true && message.decryptionFailed === true}
+              <p
+                class="message-text e2e-decrypt-failed"
+                title="Entschlüsselung fehlgeschlagen"
+              >
+                <i class="fas fa-lock"></i>
+                Verschlüsselte Nachricht konnte nicht entschlüsselt werden
+              </p>
+            {:else}
+              <p class="message-text">
+                {#if searchHighlightedMessages.has(message.id)}
+                  {@html searchHighlightedMessages.get(message.id)}
+                {:else}
+                  {@html message.linkifiedContent}
+                {/if}
+              </p>
+            {/if}
             <!-- eslint-enable svelte/no-at-html-tags -->
 
             <!-- Attachments (only render block if hasAttachments) -->
@@ -423,6 +452,14 @@
 
             <!-- Time + Read Indicator (using pre-formatted time) -->
             <div class="message-time">
+              {#if message.isE2e === true}
+                <span
+                  class="e2e-indicator"
+                  title="Ende-zu-Ende verschlüsselt"
+                >
+                  <i class="fas fa-lock"></i>
+                </span>
+              {/if}
               {message.formattedTime}
               {#if message.isOwn}
                 <span
@@ -574,5 +611,22 @@
   .scheduled-attachment.file-attachment .file-size {
     font-size: 0.75rem;
     opacity: 0.7;
+  }
+
+  /* E2E encryption indicators */
+  .e2e-indicator {
+    color: var(--success-color, #4caf50);
+    font-size: 0.65em;
+    margin-right: 2px;
+  }
+
+  .e2e-decrypt-failed {
+    color: var(--error-color, #f44336);
+    font-style: italic;
+    opacity: 0.8;
+  }
+
+  .e2e-decrypt-failed i {
+    margin-right: 4px;
   }
 </style>

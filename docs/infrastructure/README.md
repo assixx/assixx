@@ -55,7 +55,7 @@ docker-compose --profile observability up -d
 # - Loki: http://localhost:3100
 ```
 
-## 🔒 Sicherheit
+## Sicherheit
 
 ### SSL/TLS Setup
 

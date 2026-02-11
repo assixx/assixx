@@ -9,12 +9,15 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/eventBus.js';
 import { DatabaseService } from '../database/database.service.js';
+import { E2eKeysService } from '../e2e-keys/e2e-keys.service.js';
 import {
   buildPaginationMeta,
   buildSentMessage,
@@ -43,6 +46,7 @@ export class ChatMessagesService {
   constructor(
     private readonly cls: ClsService,
     private readonly databaseService: DatabaseService,
+    private readonly e2eKeysService: E2eKeysService,
   ) {}
 
   // ============================================
@@ -126,8 +130,10 @@ export class ChatMessagesService {
   }
 
   /**
-   * Send a message to a conversation
+   * Send a message to a conversation.
+   * Supports both plaintext (group) and E2E encrypted (1:1) messages.
    */
+  // eslint-disable-next-line max-lines-per-function -- 17-line signature (3 injected callbacks) inflates count; body logic is linear
   async sendMessage(
     conversationId: number,
     dto: SendMessageBody,
@@ -150,14 +156,30 @@ export class ChatMessagesService {
     const senderId = this.getUserId();
     await verifyAccess(conversationId, senderId, tenantId);
 
+    const isE2e =
+      dto.encryptedContent !== undefined && dto.e2eNonce !== undefined;
+
+    await this.validateE2eKeyVersionIfNeeded(isE2e, tenantId, senderId, dto);
+
     const contentResult = resolveMessageContent(
       dto.message,
       attachment !== undefined,
+      isE2e,
     );
     if ('error' in contentResult) {
       throw new BadRequestException(contentResult.error);
     }
     const content = contentResult.content;
+
+    const e2eFields =
+      isE2e ?
+        {
+          encryptedContent: dto.encryptedContent as string,
+          e2eNonce: dto.e2eNonce as string,
+          e2eKeyVersion: dto.e2eKeyVersion as number,
+          e2eKeyEpoch: dto.e2eKeyEpoch as number,
+        }
+      : undefined;
 
     const { id: messageId, uuid: messageUuid } = await this.insertMessageRecord(
       tenantId,
@@ -165,21 +187,20 @@ export class ChatMessagesService {
       senderId,
       content,
       attachment,
+      e2eFields,
     );
     await updateTimestamp(conversationId, tenantId);
     const sender = await this.fetchSenderInfo(senderId, tenantId);
-
-    // Emit event for SSE notifications (notify all participants except sender)
-    const recipientIds = await getRecipientIds(conversationId, senderId);
-    eventBus.emitNewMessage(tenantId, {
-      id: messageId,
-      uuid: messageUuid,
+    await this.emitNewMessageEvent(
+      tenantId,
+      messageId,
+      messageUuid,
       conversationId,
       senderId,
-      recipientIds,
-      preview: content.substring(0, 50),
-    });
-
+      content,
+      isE2e,
+      getRecipientIds,
+    );
     return {
       message: buildSentMessage(
         messageId,
@@ -188,15 +209,38 @@ export class ChatMessagesService {
         content,
         sender,
         attachment,
+        e2eFields,
       ),
     };
   }
 
   /**
-   * Edit a message (stub)
+   * Edit a message (stub).
+   * E2E encrypted messages cannot be edited (HTTP 422).
+   * Non-E2E editing is not yet implemented (HTTP 400).
    */
-  // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async editMessage(_messageId: number, _dto: EditMessageBody): Promise<never> {
+  async editMessage(messageId: number, _dto: EditMessageBody): Promise<never> {
+    const rows = await this.databaseService.tenantTransaction(
+      async (client: PoolClient) => {
+        const result = await client.query<{ is_e2e: boolean }>(
+          `SELECT is_e2e FROM messages WHERE id = $1`,
+          [messageId],
+        );
+        return result.rows;
+      },
+    );
+
+    const message = rows[0];
+    if (message === undefined) {
+      throw new NotFoundException(`Message ${messageId} not found`);
+    }
+
+    if (message.is_e2e) {
+      throw new UnprocessableEntityException(
+        'Editing is not supported for encrypted messages',
+      );
+    }
+
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -302,7 +346,8 @@ export class ChatMessagesService {
   }
 
   /**
-   * Search messages (stub)
+   * Search messages (stub).
+   * E2E messages are excluded from server-side search (server has only ciphertext).
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async searchMessages(_query: SearchMessagesQuery): Promise<never> {
@@ -335,6 +380,52 @@ export class ChatMessagesService {
   // Private Helpers
   // ============================================
 
+  /** Emit SSE notification for a new message to all recipients. */
+  private async emitNewMessageEvent(
+    tenantId: number,
+    messageId: number,
+    messageUuid: string,
+    conversationId: number,
+    senderId: number,
+    content: string | null,
+    isE2e: boolean,
+    getRecipientIds: (cid: number, excludeId: number) => Promise<number[]>,
+  ): Promise<void> {
+    const preview = isE2e ? '' : (content ?? '').substring(0, 50);
+    const recipientIds = await getRecipientIds(conversationId, senderId);
+    eventBus.emitNewMessage(tenantId, {
+      id: messageId,
+      uuid: messageUuid,
+      conversationId,
+      senderId,
+      recipientIds,
+      preview,
+    });
+  }
+
+  /**
+   * Validate sender's E2E key version before accepting encrypted message.
+   * Prevents storing messages encrypted with a stale key version.
+   */
+  private async validateE2eKeyVersionIfNeeded(
+    isE2e: boolean,
+    tenantId: number,
+    senderId: number,
+    dto: SendMessageBody,
+  ): Promise<void> {
+    if (!isE2e || dto.e2eKeyVersion === undefined) return;
+    const isValid = await this.e2eKeysService.validateKeyVersion(
+      tenantId,
+      senderId,
+      dto.e2eKeyVersion,
+    );
+    if (!isValid) {
+      throw new UnprocessableEntityException(
+        'E2E key version mismatch. Client must re-fetch key data.',
+      );
+    }
+  }
+
   /**
    * Build WHERE clause for messages query based on filters
    * WhatsApp-style: Filters messages to only show those after deletedAt timestamp
@@ -357,7 +448,8 @@ export class ChatMessagesService {
     }
 
     if (query.search !== undefined && query.search !== '') {
-      whereClause += ` AND m.content LIKE $${paramIndex}`;
+      // Exclude E2E messages from server-side search (server has only ciphertext)
+      whereClause += ` AND m.is_e2e = false AND m.content LIKE $${paramIndex}`;
       params.push(`%${query.search}%`);
       paramIndex++;
     }
@@ -408,6 +500,7 @@ export class ChatMessagesService {
       `SELECT
         m.id, m.conversation_id, m.sender_id, m.content,
         m.attachment_path, m.attachment_name, m.attachment_type, m.attachment_size,
+        m.encrypted_content, m.e2e_nonce, m.is_e2e, m.e2e_key_version, m.e2e_key_epoch,
         m.created_at,
         u.username as sender_username, u.first_name as sender_first_name,
         u.last_name as sender_last_name, u.profile_picture as sender_profile_picture,
@@ -476,24 +569,34 @@ export class ChatMessagesService {
   }
 
   /**
-   * Insert a message record and return its ID and UUID
+   * Insert a message record and return its ID and UUID.
+   * Supports both plaintext and E2E encrypted messages.
    */
   private async insertMessageRecord(
     tenantId: number,
     conversationId: number,
     senderId: number,
-    content: string,
+    content: string | null,
     attachment?: MessageAttachmentInput,
+    e2eFields?: {
+      encryptedContent: string;
+      e2eNonce: string;
+      e2eKeyVersion: number;
+      e2eKeyEpoch: number;
+    },
   ): Promise<{ id: number; uuid: string }> {
     const messageUuid = uuidv7();
+    const isE2e = e2eFields !== undefined;
+
     const insertResult = await this.databaseService.query<{
       id: number;
       uuid: string;
     }>(
       `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
          attachment_path, attachment_name, attachment_type, attachment_size,
+         encrypted_content, e2e_nonce, is_e2e, e2e_key_version, e2e_key_epoch,
          uuid, uuid_created_at, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
        RETURNING id, uuid`,
       [
         tenantId,
@@ -504,6 +607,11 @@ export class ChatMessagesService {
         attachment?.filename ?? null,
         attachment?.mimeType ?? null,
         attachment?.size ?? null,
+        isE2e ? e2eFields.encryptedContent : null,
+        isE2e ? e2eFields.e2eNonce : null,
+        isE2e,
+        isE2e ? e2eFields.e2eKeyVersion : null,
+        isE2e ? e2eFields.e2eKeyEpoch : null,
         messageUuid,
       ],
     );

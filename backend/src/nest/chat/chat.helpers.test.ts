@@ -115,6 +115,7 @@ describe('mapConversationToApiFormat', () => {
     updated_at: new Date('2025-01-02'),
     last_message_content: 'Hello!',
     last_message_time: new Date('2025-01-02T10:00:00Z'),
+    last_message_is_e2e: false,
   };
 
   it('should combine participants and unread counts', () => {
@@ -156,6 +157,26 @@ describe('mapConversationToApiFormat', () => {
     const result = mapConversationToApiFormat(baseConv, [], new Map());
 
     expect(result.unreadCount).toBe(0);
+  });
+
+  it('should set isE2e on lastMessage when last message is E2E encrypted', () => {
+    const conv: ConversationRow = {
+      ...baseConv,
+      last_message_content: null,
+      last_message_is_e2e: true,
+    };
+
+    const result = mapConversationToApiFormat(conv, [], new Map());
+
+    expect(result.lastMessage).not.toBeNull();
+    expect(result.lastMessage!.content).toBe('');
+    expect(result.lastMessage!.isE2e).toBe(true);
+  });
+
+  it('should not set isE2e on lastMessage for plaintext messages', () => {
+    const result = mapConversationToApiFormat(baseConv, [], new Map());
+
+    expect(result.lastMessage?.isE2e).toBeUndefined();
   });
 
   it('should default participant firstName to empty string when null', () => {

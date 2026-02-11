@@ -166,3 +166,48 @@ export async function ensureTestEmployee(token: string): Promise<number> {
 
   return employee.id;
 }
+
+/**
+ * Ensure the authenticated user has an E2E key registered.
+ * Idempotent: checks GET /e2e/keys/me first, registers only if absent.
+ * Returns { keyVersion } for use in encrypted message tests.
+ */
+export async function ensureE2eKey(
+  token: string,
+): Promise<{ keyVersion: number }> {
+  // Check if key already exists
+  const checkRes = await fetch(`${BASE_URL}/e2e/keys/me`, {
+    headers: authOnly(token),
+  });
+  const checkBody = (await checkRes.json()) as JsonBody;
+
+  if (checkBody.data !== null && checkBody.data !== undefined) {
+    return { keyVersion: checkBody.data.keyVersion as number };
+  }
+
+  // Register a deterministic 32-byte X25519 test key (all zeros, base64)
+  const testPublicKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+  const registerRes = await fetch(`${BASE_URL}/e2e/keys`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ publicKey: testPublicKey }),
+  });
+
+  if (registerRes.status === 409) {
+    // Race condition: another process registered between check and register
+    const refetchRes = await fetch(`${BASE_URL}/e2e/keys/me`, {
+      headers: authOnly(token),
+    });
+    const refetchBody = (await refetchRes.json()) as JsonBody;
+    return { keyVersion: (refetchBody.data?.keyVersion as number) ?? 1 };
+  }
+
+  if (!registerRes.ok) {
+    throw new Error(
+      `E2E key registration failed: ${registerRes.status} ${registerRes.statusText}`,
+    );
+  }
+
+  const registerBody = (await registerRes.json()) as JsonBody;
+  return { keyVersion: registerBody.data.keyVersion as number };
+}

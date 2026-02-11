@@ -74,7 +74,7 @@
   });
 </script>
 
-{#each segments as segment (`${segment.text}-${segment.isMatch}`)}
+{#each segments as segment, i (i)}
   {#if segment.isMatch}
     <strong>{segment.text}</strong>
   {:else}

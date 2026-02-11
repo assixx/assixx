@@ -45,6 +45,9 @@
   "dependencies": {
     "@assixx/shared": "workspace:*",
     "@event-calendar/core": "^5.3.2",
+    "@noble/ciphers": "2.1.1",
+    "@noble/curves": "2.0.1",
+    "@noble/hashes": "2.0.1",
     "@sentry/sveltekit": "^10.38.0",
     "dompurify": "^3.3.1",
     "pino": "^10.3.1",

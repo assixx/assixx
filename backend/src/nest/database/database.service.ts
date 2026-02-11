@@ -7,7 +7,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { HttpException, Inject, Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import type { PoolClient, QueryResultRow } from 'pg';
 import { Pool } from 'pg';
@@ -98,7 +98,17 @@ export class DatabaseService {
       return result;
     } catch (error: unknown) {
       await client.query('ROLLBACK');
-      this.logger.error('Transaction failed, rolled back', error);
+
+      // HttpExceptions are intentional business-logic rejections (e.g. ConflictException 409),
+      // not DB failures — log at debug level to avoid ERROR noise and Sentry triggers
+      if (error instanceof HttpException) {
+        this.logger.debug(
+          `Transaction rolled back (HTTP ${String(error.getStatus())}: ${error.message})`,
+        );
+      } else {
+        this.logger.error('Transaction failed, rolled back', error);
+      }
+
       throw error;
     } finally {
       client.release();

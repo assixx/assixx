@@ -1,15 +1,20 @@
 import { IncomingMessage, Server } from 'http';
 import { Redis } from 'ioredis';
-import { v7 as uuidv7 } from 'uuid';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
 import { DatabaseService } from './nest/database/database.service.js';
 import { eventBus } from './utils/eventBus.js';
 import { logger } from './utils/logger.js';
+import {
+  type E2eFields,
+  type ProcessedMessageResult,
+  type SendMessageData,
+  WebSocketMessageHandler,
+} from './websocket-message-handler.js';
 
 // ============================================================================
-// Connection Ticket Types (must match connection-ticket.service.ts)
+// Connection & Transport Types
 // ============================================================================
 
 interface ConnectionTicketData {
@@ -33,12 +38,6 @@ interface WebSocketMessage {
   data: unknown;
 }
 
-interface SendMessageData {
-  conversationId: number;
-  content: string;
-  attachments?: number[]; // Document IDs from frontend upload
-}
-
 interface TypingData {
   conversationId: number;
 }
@@ -48,31 +47,15 @@ interface MarkReadData {
 }
 
 // ============================================================================
-// Database Query Result Interfaces
+// ChatWebSocketServer - Connection management, routing, presence, heartbeat
 // ============================================================================
-
-interface ConversationParticipantResult {
-  user_id: number;
-}
-
-interface UserInfoResult {
-  id: number;
-  username: string;
-  first_name: string | null;
-  last_name: string | null;
-  profile_picture_url: string | null;
-}
-
-interface MessageInfoResult {
-  sender_id: number;
-  conversation_id: number;
-}
 
 export class ChatWebSocketServer {
   private wss: WebSocketServer;
   private clients: Map<number, ExtendedWebSocket>;
   private redis: Redis;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly messageHandler: WebSocketMessageHandler;
 
   /** Lua script for atomic GET + DELETE (single-use ticket) */
   private readonly CONSUME_TICKET_SCRIPT = `
@@ -93,6 +76,7 @@ export class ChatWebSocketServer {
     });
 
     this.clients = new Map();
+    this.messageHandler = new WebSocketMessageHandler(db);
 
     // Initialize Redis client for connection ticket validation
     const redisHost = process.env['REDIS_HOST'] ?? 'redis';
@@ -123,6 +107,10 @@ export class ChatWebSocketServer {
 
     this.init();
   }
+
+  // ==========================================================================
+  // Connection Lifecycle
+  // ==========================================================================
 
   private init(): void {
     this.wss.on(
@@ -297,6 +285,10 @@ export class ChatWebSocketServer {
     }
   }
 
+  // ==========================================================================
+  // Message Routing
+  // ==========================================================================
+
   private async handleMessage(
     ws: ExtendedWebSocket,
     data: WebSocketData,
@@ -345,264 +337,37 @@ export class ChatWebSocketServer {
     }
   }
 
-  private async verifyConversationAccess(
-    conversationId: number,
+  // ==========================================================================
+  // Message Handling (orchestration — DB work delegated to messageHandler)
+  // ==========================================================================
+
+  /** Resolve E2E fields and validate that message has content (plaintext or encrypted) */
+  private async validateAndResolveE2e(
+    data: SendMessageData,
     tenantId: number,
-  ): Promise<number[]> {
-    const participantQuery = `
-      SELECT cp.user_id
-      FROM conversation_participants cp
-      JOIN conversations c ON cp.conversation_id = c.id
-      WHERE cp.conversation_id = $1
-      AND c.tenant_id = $2
-      AND cp.tenant_id = $3
-    `;
-    const participants = await this.db.query<ConversationParticipantResult>(
-      participantQuery,
-      [conversationId, tenantId, tenantId],
-    );
-
-    return participants.map((p: ConversationParticipantResult) => p.user_id);
-  }
-
-  /** Get participant IDs for a conversation, excluding a specific user */
-  private async getOtherParticipantIds(
-    conversationId: number,
-    tenantId: number,
-    excludeUserId: number,
-  ): Promise<number[]> {
-    const participants = await this.db.query<ConversationParticipantResult>(
-      `SELECT cp.user_id
-       FROM conversation_participants cp
-       JOIN conversations c ON cp.conversation_id = c.id
-       WHERE cp.conversation_id = $1
-       AND c.tenant_id = $2
-       AND cp.tenant_id = $3
-       AND cp.user_id != $4`,
-      [conversationId, tenantId, tenantId, excludeUserId],
-    );
-    return participants.map((p: ConversationParticipantResult) => p.user_id);
-  }
-
-  private async saveMessage(
-    conversationId: number,
-    senderId: number,
-    content: string,
-    tenantId: number,
-  ): Promise<{ id: number; uuid: string }> {
-    const messageUuid = uuidv7();
-    const messageQuery = `
-      INSERT INTO messages (conversation_id, sender_id, content, tenant_id, uuid, uuid_created_at, created_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-      RETURNING id
-    `;
-    // PostgreSQL RETURNING clause returns rows, not MySQL-style insertId
-    interface InsertResult {
-      id: number;
-    }
-    const rows = await this.db.query<InsertResult>(messageQuery, [
-      conversationId,
-      senderId,
-      content,
-      tenantId,
-      messageUuid,
-    ]);
-
-    const insertedRow = rows[0];
-    if (insertedRow === undefined) {
-      throw new Error('Failed to insert message - no row returned');
-    }
-    return { id: insertedRow.id, uuid: messageUuid };
-  }
-
-  /**
-   * Link uploaded documents to a message
-   */
-  private async linkAttachmentsToMessage(
-    messageId: number,
-    attachmentIds: number[],
-    tenantId: number,
-  ): Promise<void> {
-    if (attachmentIds.length === 0) return;
-
-    // Update documents to link them to this message
-    const placeholders = attachmentIds
-      .map((_: number, i: number) => `$${i + 3}`)
-      .join(', ');
-    const updateQuery = `
-      UPDATE documents
-      SET message_id = $1
-      WHERE id IN (${placeholders})
-      AND tenant_id = $2
-      AND message_id IS NULL
-    `;
-    await this.db.query(updateQuery, [messageId, tenantId, ...attachmentIds]);
-    logger.info(
-      `Linked ${attachmentIds.length} attachments to message ${messageId}`,
-    );
-  }
-
-  /**
-   * Get attachment details for a message
-   */
-  private async getMessageAttachments(
-    attachmentIds: number[],
-    tenantId: number,
-  ): Promise<
-    {
-      id: number;
-      fileUuid: string;
-      fileName: string;
-      originalName: string;
-      fileSize: number;
-      mimeType: string;
-      downloadUrl: string;
-    }[]
-  > {
-    if (attachmentIds.length === 0) return [];
-
-    const placeholders = attachmentIds
-      .map((_: number, i: number) => `$${i + 2}`)
-      .join(', ');
-    const attachmentQuery = `
-      SELECT id, file_uuid, filename, original_name, file_size, mime_type
-      FROM documents
-      WHERE id IN (${placeholders})
-      AND tenant_id = $1
-    `;
-    interface AttachmentRow {
-      id: number;
-      file_uuid: string;
-      filename: string;
-      original_name: string;
-      file_size: number;
-      mime_type: string;
-    }
-    const rows = await this.db.query<AttachmentRow>(attachmentQuery, [
-      tenantId,
-      ...attachmentIds,
-    ]);
-
-    return rows.map((row: AttachmentRow) => ({
-      id: row.id,
-      fileUuid: row.file_uuid,
-      fileName: row.filename,
-      originalName: row.original_name,
-      fileSize: row.file_size,
-      mimeType: row.mime_type,
-      downloadUrl: `/api/v2/documents/${row.id}/download`,
-    }));
-  }
-
-  private async getSenderInfo(
     userId: number,
-    tenantId: number,
   ): Promise<
-    | {
-        id: number;
-        username: string;
-        first_name: string | null;
-        last_name: string | null;
-        profile_picture_url: string | null;
-      }
-    | undefined
+    | { error: string; isE2e?: undefined; fields?: undefined }
+    | { error: undefined; isE2e: boolean; fields: E2eFields | undefined }
   > {
-    const senderQuery = `
-      SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
-      FROM users WHERE id = $1 AND tenant_id = $2
-    `;
-    const senderInfo = await this.db.query<UserInfoResult>(senderQuery, [
-      userId,
+    const e2eResult = await this.messageHandler.resolveE2eFields(
+      data,
       tenantId,
-    ]);
-    return senderInfo[0] as
-      | {
-          id: number;
-          username: string;
-          first_name: string | null;
-          last_name: string | null;
-          profile_picture_url: string | null;
-        }
-      | undefined;
-  }
-
-  /**
-   * Get display name from sender info with fallbacks
-   */
-  private getSenderDisplayName(
-    sender:
-      | {
-          first_name?: string | null;
-          last_name?: string | null;
-          username?: string | null;
-        }
-      | null
-      | undefined,
-    fallback: string,
-  ): string {
-    if (sender === null || sender === undefined) return fallback;
-
-    const fullName = [sender.first_name, sender.last_name]
-      .filter(
-        (part: string | null | undefined): part is string =>
-          part !== undefined && part !== null && part !== '',
-      )
-      .join(' ');
-    if (fullName !== '') return fullName;
-
-    if (
-      sender.username !== undefined &&
-      sender.username !== null &&
-      sender.username !== ''
-    ) {
-      return sender.username;
+      userId,
+    );
+    const validationError =
+      e2eResult.error ??
+      (!e2eResult.isE2e && (data.content === undefined || data.content === '') ?
+        'Message content or encrypted content required'
+      : undefined);
+    if (validationError !== undefined) {
+      return { error: validationError };
     }
-
-    return fallback;
-  }
-
-  private buildMessageData(
-    messageId: number,
-    conversationId: number,
-    content: string,
-    senderId: number,
-    sender: ReturnType<typeof this.getSenderInfo> extends Promise<infer T> ? T
-    : never,
-    attachments: unknown[],
-  ): unknown {
-    const UNKNOWN_USER = 'Unbekannter Benutzer';
-    // API v2 Standard: camelCase für alle Felder
     return {
-      id: messageId,
-      conversationId,
-      content,
-      senderId,
-      senderName: this.getSenderDisplayName(sender, UNKNOWN_USER),
-      firstName: sender?.first_name ?? '',
-      lastName: sender?.last_name ?? '',
-      senderUsername: sender?.username ?? '',
-      senderProfilePicture: sender?.profile_picture_url ?? null,
-      createdAt: new Date().toISOString(),
-      deliveryStatus: 'sent',
-      isRead: false,
-      attachments,
+      error: undefined,
+      isE2e: e2eResult.isE2e,
+      fields: e2eResult.fields,
     };
-  }
-
-  /**
-   * Broadcast message to all participants in a conversation
-   */
-  private broadcastToParticipants(
-    participantIds: number[],
-    type: string,
-    data: unknown,
-  ): void {
-    for (const participantId of participantIds) {
-      const clientWs = this.clients.get(participantId);
-      if (clientWs?.readyState === WebSocket.OPEN) {
-        this.sendMessage(clientWs, { type, data });
-      }
-    }
   }
 
   private async handleSendMessage(
@@ -619,8 +384,22 @@ export class ChatWebSocketServer {
       return;
     }
 
+    const validation = await this.validateAndResolveE2e(
+      data,
+      ws.tenantId,
+      ws.userId,
+    );
+    if (validation.error !== undefined) {
+      this.sendMessage(ws, {
+        type: 'error',
+        data: { message: validation.error },
+      });
+      return;
+    }
+    const { isE2e, fields: e2eFields } = validation;
+
     try {
-      const participantIds = await this.verifyConversationAccess(
+      const participantIds = await this.messageHandler.verifyConversationAccess(
         conversationId,
         ws.tenantId,
       );
@@ -633,19 +412,16 @@ export class ChatWebSocketServer {
         return;
       }
 
-      const messageId = await this.processAndBroadcastMessage(
+      const result = await this.messageHandler.processMessage(
         ws.userId,
         ws.tenantId,
         conversationId,
-        content,
+        isE2e ? null : (content ?? ''),
         attachmentIds,
-        participantIds,
+        e2eFields,
       );
 
-      this.sendMessage(ws, {
-        type: 'message_sent',
-        data: { messageId, timestamp: new Date().toISOString() },
-      });
+      this.broadcastAndConfirm(ws, participantIds, conversationId, result);
     } catch (error: unknown) {
       logger.error({ err: error }, 'Fehler beim Senden der Nachricht');
       this.sendMessage(ws, {
@@ -653,56 +429,6 @@ export class ChatWebSocketServer {
         data: { message: 'Fehler beim Senden der Nachricht' },
       });
     }
-  }
-
-  /** Saves message, links attachments, broadcasts to participants, and emits SSE event */
-  private async processAndBroadcastMessage(
-    userId: number,
-    tenantId: number,
-    conversationId: number,
-    content: string,
-    attachmentIds: number[],
-    participantIds: number[],
-  ): Promise<number> {
-    const { id: messageId, uuid: messageUuid } = await this.saveMessage(
-      conversationId,
-      userId,
-      content,
-      tenantId,
-    );
-
-    if (attachmentIds.length > 0) {
-      await this.linkAttachmentsToMessage(messageId, attachmentIds, tenantId);
-    }
-
-    const attachments = await this.getMessageAttachments(
-      attachmentIds,
-      tenantId,
-    );
-    const sender = await this.getSenderInfo(userId, tenantId);
-    const messageData = this.buildMessageData(
-      messageId,
-      conversationId,
-      content,
-      userId,
-      sender,
-      attachments,
-    );
-
-    this.broadcastToParticipants(participantIds, 'new_message', messageData);
-
-    // Emit SSE event so sidebar badges update for users NOT on the chat page
-    const recipientIds = participantIds.filter((id: number) => id !== userId);
-    eventBus.emitNewMessage(tenantId, {
-      id: messageId,
-      uuid: messageUuid,
-      conversationId,
-      senderId: userId,
-      recipientIds,
-      preview: content.substring(0, 50),
-    });
-
-    return messageId;
   }
 
   private async handleTyping(
@@ -713,7 +439,7 @@ export class ChatWebSocketServer {
     const { conversationId } = data;
 
     try {
-      const participantIds = await this.getOtherParticipantIds(
+      const participantIds = await this.messageHandler.getOtherParticipantIds(
         conversationId,
         ws.tenantId as number,
         ws.userId as number,
@@ -739,34 +465,15 @@ export class ChatWebSocketServer {
     const { messageId } = data;
 
     try {
-      // Nachricht als gelesen markieren
-      await this.db.query(
-        `
-        UPDATE messages
-        SET is_read = true
-        WHERE id = $1
-        AND tenant_id = $2
-        AND EXISTS (
-          SELECT 1 FROM conversation_participants cp
-          WHERE cp.conversation_id = messages.conversation_id
-          AND cp.user_id = $3
-        )
-      `,
-        [messageId, ws.tenantId, ws.userId],
+      const result = await this.messageHandler.markAsRead(
+        messageId,
+        ws.tenantId as number,
+        ws.userId as number,
       );
 
-      // Sender über Lesebestätigung informieren
-      const messageQuery = `
-        SELECT sender_id, conversation_id FROM messages WHERE id = $1
-      `;
-      const messageInfo = await this.db.query<MessageInfoResult>(messageQuery, [
-        messageId,
-      ]);
-
-      if (messageInfo.length > 0 && messageInfo[0] !== undefined) {
-        const senderId = messageInfo[0].sender_id;
-        const senderWs = this.clients.get(senderId);
-
+      // Notify sender about the read receipt
+      if (result !== null) {
+        const senderWs = this.clients.get(result.senderId);
         if (senderWs?.readyState === WebSocket.OPEN) {
           this.sendMessage(senderWs, {
             type: 'message_read',
@@ -783,39 +490,68 @@ export class ChatWebSocketServer {
     }
   }
 
-  private async handleDisconnection(ws: ExtendedWebSocket): Promise<void> {
-    if (ws.userId !== undefined) {
-      this.clients.delete(ws.userId);
+  // ==========================================================================
+  // Broadcasting & Transport
+  // ==========================================================================
 
-      // Offline-Status senden
-      if (ws.tenantId !== undefined) {
-        await this.broadcastUserStatus(ws.userId, ws.tenantId, 'offline');
+  /** Broadcast new message to participants, emit SSE event, and confirm to sender */
+  private broadcastAndConfirm(
+    ws: ExtendedWebSocket,
+    participantIds: number[],
+    conversationId: number,
+    result: ProcessedMessageResult,
+  ): void {
+    this.broadcastToParticipants(
+      participantIds,
+      'new_message',
+      result.messageData,
+    );
+
+    // Emit SSE event so sidebar badges update for users NOT on the chat page
+    const recipientIds = participantIds.filter(
+      (id: number) => id !== ws.userId,
+    );
+    eventBus.emitNewMessage(ws.tenantId as number, {
+      id: result.messageId,
+      uuid: result.messageUuid,
+      conversationId,
+      senderId: ws.userId as number,
+      recipientIds,
+      preview: result.preview,
+    });
+
+    this.sendMessage(ws, {
+      type: 'message_sent',
+      data: {
+        messageId: result.messageId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+  /** Broadcast message to all participants in a conversation */
+  private broadcastToParticipants(
+    participantIds: number[],
+    type: string,
+    data: unknown,
+  ): void {
+    for (const participantId of participantIds) {
+      const clientWs = this.clients.get(participantId);
+      if (clientWs?.readyState === WebSocket.OPEN) {
+        this.sendMessage(clientWs, { type, data });
       }
     }
   }
 
-  private handleError(_ws: ExtendedWebSocket, error: unknown): void {
-    logger.error({ err: error }, 'WebSocket Fehler');
+  private sendMessage(ws: ExtendedWebSocket, message: WebSocketMessage): void {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message));
+    }
   }
 
-  /**
-   * Get all distinct conversation partner IDs for a user across all conversations.
-   * Shared by broadcastUserStatus and sendPresenceSnapshot.
-   */
-  private async getConversationPartnerIds(
-    userId: number,
-    tenantId: number,
-  ): Promise<number[]> {
-    const partners = await this.db.query<ConversationParticipantResult>(
-      `SELECT DISTINCT cp2.user_id
-       FROM conversation_participants cp1
-       JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
-       JOIN conversations c ON cp1.conversation_id = c.id
-       WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3`,
-      [userId, tenantId, userId],
-    );
-    return partners.map((p: ConversationParticipantResult) => p.user_id);
-  }
+  // ==========================================================================
+  // Presence & Status
+  // ==========================================================================
 
   private async broadcastUserStatus(
     userId: number,
@@ -823,7 +559,10 @@ export class ChatWebSocketServer {
     status: string,
   ): Promise<void> {
     try {
-      const partnerIds = await this.getConversationPartnerIds(userId, tenantId);
+      const partnerIds = await this.messageHandler.getConversationPartnerIds(
+        userId,
+        tenantId,
+      );
 
       for (const partnerId of partnerIds) {
         const clientWs = this.clients.get(partnerId);
@@ -849,7 +588,7 @@ export class ChatWebSocketServer {
    */
   private async sendPresenceSnapshot(ws: ExtendedWebSocket): Promise<void> {
     try {
-      const partnerIds = await this.getConversationPartnerIds(
+      const partnerIds = await this.messageHandler.getConversationPartnerIds(
         ws.userId as number,
         ws.tenantId as number,
       );
@@ -876,13 +615,26 @@ export class ChatWebSocketServer {
     }
   }
 
-  private sendMessage(ws: ExtendedWebSocket, message: WebSocketMessage): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
+  // ==========================================================================
+  // Disconnection, Heartbeat & Shutdown
+  // ==========================================================================
+
+  private async handleDisconnection(ws: ExtendedWebSocket): Promise<void> {
+    if (ws.userId !== undefined) {
+      this.clients.delete(ws.userId);
+
+      // Offline-Status senden
+      if (ws.tenantId !== undefined) {
+        await this.broadcastUserStatus(ws.userId, ws.tenantId, 'offline');
+      }
     }
   }
 
-  // Heartbeat-System für Verbindungsüberwachung
+  private handleError(_ws: ExtendedWebSocket, error: unknown): void {
+    logger.error({ err: error }, 'WebSocket Fehler');
+  }
+
+  // Heartbeat-System for connection monitoring
   public startHeartbeat(): void {
     this.heartbeatInterval = setInterval(() => {
       this.wss.clients.forEach((ws: ExtendedWebSocket) => {
@@ -894,7 +646,7 @@ export class ChatWebSocketServer {
         ws.isAlive = false;
         ws.ping();
       });
-    }, 30000); // Alle 30 Sekunden
+    }, 30000); // Every 30 seconds
   }
 
   /**

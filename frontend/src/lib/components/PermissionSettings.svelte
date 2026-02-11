@@ -610,7 +610,7 @@
   .perm-check__box {
     width: 25px;
     height: 25px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     border: 2px solid var(--color-glass-border);
     display: flex;
     align-items: center;

@@ -2088,7 +2088,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 - ✅ **FIX:** `deletion-approval-body.dto.ts` - `password` Feld hinzugefügt (required)
 - ✅ **FIX:** `root.controller.ts` - Password an Service übergeben
 - ✅ **FIX:** `root.service.ts` - bcrypt.compare() für Password-Verifizierung
-- 🔒 **Zwei-Personen-Prinzip** jetzt korrekt implementiert
+- **Zwei-Personen-Prinzip** jetzt korrekt implementiert
 
 **SvelteKit Layout-Wechsel Pattern:**
 
