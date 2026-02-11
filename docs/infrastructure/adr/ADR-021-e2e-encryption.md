@@ -288,15 +288,15 @@ CREATE UNIQUE INDEX idx_e2e_user_keys_one_active
 
 RLS enabled with standard `tenant_isolation` policy (ADR-019).
 
-**Columns on `messages`** (Phase 1 — migration `20260210000023`)
+**Columns on `chat_messages`** (Phase 1 — migration `20260210000023`)
 
 ```sql
-ALTER TABLE messages ADD COLUMN encrypted_content TEXT;
-ALTER TABLE messages ADD COLUMN e2e_nonce TEXT;
-ALTER TABLE messages ADD COLUMN is_e2e BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE messages ADD COLUMN e2e_key_version INTEGER;
-ALTER TABLE messages ADD COLUMN e2e_key_epoch INTEGER;
-ALTER TABLE messages ALTER COLUMN content DROP NOT NULL;
+ALTER TABLE chat_messages ADD COLUMN encrypted_content TEXT;
+ALTER TABLE chat_messages ADD COLUMN e2e_nonce TEXT;
+ALTER TABLE chat_messages ADD COLUMN is_e2e BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE chat_messages ADD COLUMN e2e_key_version INTEGER;
+ALTER TABLE chat_messages ADD COLUMN e2e_key_epoch INTEGER;
+ALTER TABLE chat_messages ALTER COLUMN content DROP NOT NULL;
 ```
 
 `DEFAULT false` is critical: during deployment, any message created without explicit E2E fields defaults to plaintext (safe). `DEFAULT true` would cause plaintext messages to claim encryption.
@@ -440,19 +440,19 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "
   FROM e2e_user_keys WHERE is_active = 1;
 "
 
-# 2. Check messages table has encrypted content
+# 2. Check chat_messages table has encrypted content
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "
   SELECT id, is_e2e, content IS NULL AS content_null,
          encrypted_content IS NOT NULL AS has_encrypted,
          e2e_key_epoch
-  FROM messages WHERE is_e2e = true LIMIT 5;
+  FROM chat_messages WHERE is_e2e = true LIMIT 5;
 "
 
 # 3. Verify server CANNOT read content (only ciphertext visible)
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "
   SELECT id, LEFT(encrypted_content, 40) AS ciphertext_preview,
          content  -- should be NULL for E2E messages
-  FROM messages WHERE is_e2e = true LIMIT 3;
+  FROM chat_messages WHERE is_e2e = true LIMIT 3;
 "
 
 # 4. Verify RLS on e2e_user_keys

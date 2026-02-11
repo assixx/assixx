@@ -75,7 +75,7 @@
     "@noble/hashes": "2.0.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.23",
-    "@types/node": "~24.10.12",
+    "@types/node": "~24.10.13",
     "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "@types/pg-cursor": "2.7.2",
