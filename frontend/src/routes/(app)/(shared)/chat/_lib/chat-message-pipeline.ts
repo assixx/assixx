@@ -154,7 +154,7 @@ async function encryptForScheduledMessage(
     return {
       encryptedContent: encrypted.ciphertext,
       e2eNonce: encrypted.nonce,
-      e2eKeyVersion: recipientKey.keyVersion,
+      e2eKeyVersion: e2e.state.keyVersion ?? 1,
       e2eKeyEpoch: encrypted.keyEpoch,
     };
   } catch (err) {

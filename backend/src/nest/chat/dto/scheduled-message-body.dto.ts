@@ -12,7 +12,7 @@ import { z } from 'zod';
 // Constants
 const MAX_SCHEDULED_MESSAGE_LENGTH = 10000;
 const MIN_SCHEDULE_MINUTES = 5;
-const MAX_SCHEDULE_DAYS = 30;
+const MAX_SCHEDULE_DAYS = 60;
 /** Base64 ciphertext upper bound (~10000 chars plaintext + AEAD tag + base64 overhead) */
 const MAX_ENCRYPTED_LENGTH = 100_000;
 /** Base64 encoded 24-byte nonce is ~32-36 chars */

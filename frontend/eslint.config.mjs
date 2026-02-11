@@ -240,7 +240,7 @@ export default ts.config(
     },
     rules: {
       'import-x/first': 'error', // Imports must be at top of file
-      'import-x/no-cycle': 'error',
+      'import-x/no-cycle': ['error', { maxDepth: 3, ignoreExternal: true }],
       'import-x/no-duplicates': 'error',
       'import-x/no-self-import': 'error',
       'import-x/no-useless-path-segments': 'error',

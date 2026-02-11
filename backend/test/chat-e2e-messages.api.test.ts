@@ -248,12 +248,15 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
     expect(plaintextMsg!.content).not.toBeNull();
     expect(plaintextMsg!.encryptedContent).toBeNull();
 
-    // Find our specific E2E message (by ciphertext, not just any E2E message,
-    // because the shared direct conversation may contain messages from other tests)
-    const e2eMsg = messages.find(
-      (m: Record<string, unknown>) =>
-        m.isE2e === true && m.encryptedContent === FAKE_CIPHERTEXT,
-    );
+    // Find our specific E2E message from THIS run (search from newest first,
+    // because stale messages from previous runs may have a different key version)
+    const e2eMsg = messages
+      .slice()
+      .reverse()
+      .find(
+        (m: Record<string, unknown>) =>
+          m.isE2e === true && m.encryptedContent === FAKE_CIPHERTEXT,
+      );
     expect(e2eMsg).toBeDefined();
     expect(e2eMsg!.content).toBeNull();
     expect(e2eMsg!.encryptedContent).toBe(FAKE_CIPHERTEXT);
