@@ -15,6 +15,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { ChatConversationsService } from './chat-conversations.service.js';
+import type { PresenceStore } from './presence.store.js';
+
+/** Minimal PresenceStore mock for unit tests */
+const mockPresenceStore = {
+  getOnlineUserIds: vi.fn().mockReturnValue(new Set<number>()),
+  setOnline: vi.fn(),
+  setOffline: vi.fn(),
+} as unknown as PresenceStore;
 
 vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
@@ -41,6 +49,7 @@ function createServiceWithMock(): {
   const service = new ChatConversationsService(
     mockCls as unknown as ClsService,
     mockDb as unknown as DatabaseService,
+    mockPresenceStore,
   );
 
   return { service, mockDb, mockCls };
@@ -114,6 +123,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         updated_at: new Date('2025-01-02'),
         last_message_content: 'Hello',
         last_message_time: new Date('2025-01-02'),
+        last_message_is_e2e: false,
       };
 
       mockDb.query

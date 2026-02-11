@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MESSAGES } from './constants';
+  import { MESSAGES, SCHEDULE_CONSTRAINTS } from './constants';
 
   interface Props {
     show: boolean;
@@ -20,6 +20,18 @@
     onconfirm,
   }: Props = $props();
   /* eslint-enable prefer-const */
+
+  /** Today's date as YYYY-MM-DD for min attribute */
+  const minDate: string = $derived(
+    new Date().toISOString().split('T')[0] ?? '',
+  );
+
+  /** Max selectable date (today + 60 days) as YYYY-MM-DD */
+  const maxDate: string = $derived(
+    new Date(Date.now() + SCHEDULE_CONSTRAINTS.maxFutureTime)
+      .toISOString()
+      .split('T')[0] ?? '',
+  );
 </script>
 
 {#if show}
@@ -54,6 +66,8 @@
               id="scheduleDate"
               class="form-field__control"
               required
+              min={minDate}
+              max={maxDate}
               bind:value={date}
             />
           </div>

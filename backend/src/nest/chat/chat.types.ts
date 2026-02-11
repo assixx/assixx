@@ -71,6 +71,8 @@ export interface ConversationRow {
   updated_at: Date;
   last_message_content: string | null;
   last_message_time: Date | null;
+  /** Whether the last message is end-to-end encrypted */
+  last_message_is_e2e: boolean | null;
 }
 
 /**
@@ -111,7 +113,7 @@ export interface Conversation {
   isGroup: boolean;
   createdAt: Date;
   updatedAt: Date;
-  lastMessage: { content: string; createdAt: string } | null;
+  lastMessage: { content: string; createdAt: string; isE2e?: boolean } | null;
   unreadCount: number;
   participants: ConversationParticipant[];
 }
@@ -151,7 +153,7 @@ export interface MessageRow {
   sender_first_name: string | null;
   sender_last_name: string | null;
   sender_profile_picture: string | null;
-  content: string;
+  content: string | null;
   attachment_path: string | null;
   attachment_name: string | null;
   attachment_type: string | null;
@@ -159,6 +161,16 @@ export interface MessageRow {
   created_at: Date;
   is_read: number;
   read_at: Date | null;
+  /** E2E: base64 ciphertext (NULL for plaintext messages) */
+  encrypted_content: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2e_nonce: string | null;
+  /** E2E: whether this message is end-to-end encrypted */
+  is_e2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2e_key_version: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2e_key_epoch: number | null;
 }
 
 /**
@@ -181,13 +193,23 @@ export interface Message {
   senderName: string;
   senderUsername: string;
   senderProfilePicture: string | null;
-  content: string;
+  content: string | null;
   attachment: MessageAttachment | null;
   attachments: DocumentAttachment[];
   isRead: boolean;
   readAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  /** E2E: base64 ciphertext (null for plaintext messages) */
+  encryptedContent: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2eNonce: string | null;
+  /** E2E: whether this message is end-to-end encrypted */
+  isE2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2eKeyVersion: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2eKeyEpoch: number | null;
 }
 
 /**
@@ -216,7 +238,7 @@ export interface ScheduledMessageRow {
   tenant_id: number;
   conversation_id: number;
   sender_id: number;
-  content: string;
+  content: string | null;
   attachment_path: string | null;
   attachment_name: string | null;
   attachment_type: string | null;
@@ -225,6 +247,16 @@ export interface ScheduledMessageRow {
   is_active: number;
   created_at: Date;
   sent_at: Date | null;
+  /** E2E: base64 ciphertext (NULL for plaintext messages) */
+  encrypted_content: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2e_nonce: string | null;
+  /** E2E: whether this scheduled message is end-to-end encrypted */
+  is_e2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2e_key_version: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2e_key_epoch: number | null;
 }
 
 /**
@@ -234,12 +266,22 @@ export interface ScheduledMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  content: string;
+  content: string | null;
   scheduledFor: string;
   status: 'pending' | 'sent' | 'cancelled';
   createdAt: string;
   sentAt: string | null;
   attachment: { path: string; name: string; type: string; size: number } | null;
+  /** E2E: base64 ciphertext (null for plaintext messages) */
+  encryptedContent: string | null;
+  /** E2E: base64 XChaCha20-Poly1305 nonce */
+  e2eNonce: string | null;
+  /** E2E: whether this scheduled message is end-to-end encrypted */
+  isE2e: boolean;
+  /** E2E: sender's key version at time of encryption */
+  e2eKeyVersion: number | null;
+  /** E2E: HKDF epoch for decryption key derivation */
+  e2eKeyEpoch: number | null;
 }
 
 // ============================================
@@ -282,6 +324,6 @@ export const SCHEDULED_STATUS = {
 } as const;
 
 export const MIN_SCHEDULE_MINUTES = 5;
-export const MAX_SCHEDULE_DAYS = 30;
+export const MAX_SCHEDULE_DAYS = 60;
 
 export const ERROR_FEATURE_NOT_IMPLEMENTED = 'Feature not yet implemented';

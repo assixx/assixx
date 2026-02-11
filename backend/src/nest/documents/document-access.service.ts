@@ -66,8 +66,8 @@ export class DocumentAccessService {
     tenantId: number,
   ): Promise<boolean> {
     const rows = await this.databaseService.query<{ user_id: number }>(
-      `SELECT user_id FROM conversation_participants cp
-       JOIN conversations c ON cp.conversation_id = c.id
+      `SELECT user_id FROM chat_conversation_participants cp
+       JOIN chat_conversations c ON cp.conversation_id = c.id
        WHERE cp.conversation_id = $1 AND cp.user_id = $2 AND c.tenant_id = $3`,
       [conversationId, userId, tenantId],
     );
@@ -122,7 +122,7 @@ export class DocumentAccessService {
     baseQuery += ` AND (
       d.access_scope != 'chat'
       OR EXISTS (
-        SELECT 1 FROM conversation_participants cp
+        SELECT 1 FROM chat_conversation_participants cp
         WHERE cp.conversation_id = d.conversation_id AND cp.user_id = $${paramIndex}
       )
     )`;

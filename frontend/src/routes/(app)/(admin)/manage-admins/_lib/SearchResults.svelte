@@ -1,5 +1,5 @@
 <script lang="ts">
-  import HighlightText from '$lib/components/HighlightText.svelte';
+  import SearchResultUser from '$lib/components/SearchResultUser.svelte';
 
   import { MESSAGES } from './constants';
   import { getPositionDisplay } from './utils';
@@ -25,54 +25,24 @@
   </div>
 {:else if searchQuery}
   {#each filteredAdmins.slice(0, 5) as admin (admin.id)}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="search-input__result-item"
+    <SearchResultUser
+      id={admin.id}
+      firstName={admin.firstName}
+      lastName={admin.lastName}
+      username={admin.username}
+      email={admin.email}
+      imageUrl={admin.profilePicture}
+      employeeNumber={admin.employeeNumber}
+      role="admin"
+      position={getPositionDisplay(admin.position ?? '')}
+      query={searchQuery}
       onclick={() => {
         onresultClick(admin.id);
       }}
-    >
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="font-weight: 500; color: var(--color-text-primary);">
-          <HighlightText
-            text={`${admin.firstName} ${admin.lastName}`}
-            query={searchQuery}
-          />
-        </div>
-        <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-          <HighlightText
-            text={admin.email}
-            query={searchQuery}
-          />
-        </div>
-        <div
-          style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;"
-        >
-          <span>
-            <HighlightText
-              text={getPositionDisplay(admin.position ?? '')}
-              query={searchQuery}
-            />
-          </span>
-          {#if admin.employeeNumber}
-            <span>
-              • <HighlightText
-                text={admin.employeeNumber}
-                query={searchQuery}
-              />
-            </span>
-          {/if}
-        </div>
-      </div>
-    </div>
+    />
   {/each}
   {#if filteredAdmins.length > 5}
-    <div
-      class="search-input__result-item"
-      style="font-size: 0.813rem; color: var(--color-primary); text-align: center;
-        border-top: 1px solid rgb(255 255 255 / 5%);"
-    >
+    <div class="search-input__result-item search-input__result-more">
       {filteredAdmins.length - 5}
       {MESSAGES.SEARCH_MORE_RESULTS}
     </div>

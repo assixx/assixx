@@ -42,6 +42,16 @@ interface MessageEvent {
   };
 }
 
+export interface ReadReceiptEntry {
+  messageId: number;
+  senderId: number;
+}
+
+interface MessagesReadEvent {
+  readByUserId: number;
+  entries: ReadReceiptEntry[];
+}
+
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus | null = null;
 
@@ -83,6 +93,11 @@ class NotificationEventBus extends EventEmitter {
   emitNewMessage(tenantId: number, message: MessageEvent['message']): void {
     logger.info(`[EventBus] Emitting message.created for tenant ${tenantId}`);
     this.emit('message.created', { tenantId, message });
+  }
+
+  /** Notify senders that their messages were read */
+  emitMessagesRead(data: MessagesReadEvent): void {
+    this.emit('messages.read', data);
   }
 
   // Get active listener count for monitoring

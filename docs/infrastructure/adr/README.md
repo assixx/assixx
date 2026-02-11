@@ -43,6 +43,7 @@ ADRs document important architectural decisions:
 | [ADR-018](./ADR-018-testing-strategy.md)                   | Testing Strategy (Unit + API)       | Accepted | 2026-02-04 |
 | [ADR-019](./ADR-019-multi-tenant-rls-isolation.md)         | Multi-Tenant RLS Data Isolation     | Accepted | 2026-02-07 |
 | [ADR-020](./ADR-020-per-user-feature-permissions.md)       | Per-User Feature Permission Control | Accepted | 2026-02-07 |
+| [ADR-021](./ADR-021-e2e-encryption.md)                     | E2E Encryption for 1:1 Chat         | Accepted | 2026-02-10 |
 
 ## Template
 

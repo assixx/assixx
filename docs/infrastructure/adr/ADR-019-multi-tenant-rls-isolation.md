@@ -145,14 +145,14 @@ For sensitive data where tenant isolation is not enough (e.g., private messages)
 
 ```sql
 -- Messages: Only visible to conversation participants
-CREATE POLICY participant_isolation ON messages AS RESTRICTIVE
+CREATE POLICY participant_isolation ON chat_messages AS RESTRICTIVE
     USING (
         NULLIF(current_setting('app.user_id', true), '') IS NULL
         OR EXISTS (
-            SELECT 1 FROM conversation_participants cp
-            WHERE cp.conversation_id = messages.conversation_id
+            SELECT 1 FROM chat_conversation_participants cp
+            WHERE cp.conversation_id = chat_messages.conversation_id
               AND cp.user_id = NULLIF(current_setting('app.user_id', true), '')::integer
-              AND cp.tenant_id = messages.tenant_id
+              AND cp.tenant_id = chat_messages.tenant_id
         )
     );
 ```
@@ -165,7 +165,7 @@ CREATE POLICY chat_participant_isolation ON documents
         OR (
             NULLIF(current_setting('app.user_id', true), '') IS NULL
             OR (conversation_id IS NOT NULL AND EXISTS (
-                SELECT 1 FROM conversation_participants cp
+                SELECT 1 FROM chat_conversation_participants cp
                 WHERE cp.conversation_id = documents.conversation_id
                   AND cp.user_id = NULLIF(current_setting('app.user_id', true), '')::integer
                   AND cp.tenant_id = documents.tenant_id

@@ -362,7 +362,7 @@ WHERE tenant_id = {TENANT_ID};
 SELECT
     (SELECT COUNT(*) FROM users WHERE tenant_id = {TENANT_ID}) as users,
     (SELECT COUNT(*) FROM documents WHERE tenant_id = {TENANT_ID}) as documents,
-    (SELECT COUNT(*) FROM messages WHERE sender_tenant_id = {TENANT_ID}) as messages;
+    (SELECT COUNT(*) FROM chat_messages WHERE tenant_id = {TENANT_ID}) as messages;
 ```
 
 ### Lösch-Historie

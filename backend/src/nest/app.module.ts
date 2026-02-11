@@ -37,6 +37,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
+import { E2eKeysModule } from './e2e-keys/e2e-keys.module.js';
 import { FeatureCheckModule } from './feature-check/feature-check.module.js';
 import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { FeaturesModule } from './features/features.module.js';
@@ -148,6 +149,7 @@ import { UsersModule } from './users/users.module.js';
     TeamsModule,
     CalendarModule,
     DocumentsModule,
+    E2eKeysModule,
     BlackboardModule,
     FeatureCheckModule,
     FeatureVisitsModule,

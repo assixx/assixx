@@ -101,7 +101,7 @@
           Folgende Filter werden gelöscht:
         </p>
         <div
-          class="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.3)] p-4"
+          class="rounded-lg border border-(--color-glass-border) bg-(--glass-bg) p-4"
         >
           {#if hasActiveFilters}
             {#if filterUser !== ''}

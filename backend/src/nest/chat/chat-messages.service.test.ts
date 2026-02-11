@@ -9,6 +9,7 @@ import type { ClsService } from 'nestjs-cls';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
+import type { E2eKeysService } from '../e2e-keys/e2e-keys.service.js';
 import { ChatMessagesService } from './chat-messages.service.js';
 
 // ============================================================
@@ -17,10 +18,20 @@ import { ChatMessagesService } from './chat-messages.service.js';
 
 function createServiceWithMock(): {
   service: ChatMessagesService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: {
+    query: ReturnType<typeof vi.fn>;
+    tenantTransaction: ReturnType<typeof vi.fn>;
+  };
   mockCls: { get: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const mockDb = {
+    query: vi.fn(),
+    tenantTransaction: vi.fn((callback: (client: unknown) => unknown) =>
+      callback({
+        query: vi.fn().mockResolvedValue({ rows: [] }),
+      }),
+    ),
+  };
   const mockCls = {
     get: vi.fn((key: string) => {
       if (key === 'tenantId') return 1;
@@ -28,10 +39,14 @@ function createServiceWithMock(): {
       return undefined;
     }),
   };
+  const mockE2eKeys = {
+    validateKeyVersion: vi.fn().mockResolvedValue(true),
+  };
 
   const service = new ChatMessagesService(
     mockCls as unknown as ClsService,
     mockDb as unknown as DatabaseService,
+    mockE2eKeys as unknown as E2eKeysService,
   );
 
   return { service, mockDb, mockCls };
@@ -111,11 +126,13 @@ describe('ChatMessagesService – pure helpers', () => {
 
 describe('ChatMessagesService – context helpers', () => {
   it('throws ForbiddenException when tenantId is undefined', () => {
-    const mockDb = { query: vi.fn() };
+    const mockDb = { query: vi.fn(), tenantTransaction: vi.fn() };
     const mockCls = { get: vi.fn().mockReturnValue(undefined) };
+    const mockE2eKeys = { validateKeyVersion: vi.fn() };
     const service = new ChatMessagesService(
       mockCls as unknown as ClsService,
       mockDb as unknown as DatabaseService,
+      mockE2eKeys as unknown as E2eKeysService,
     );
 
     expect(() => service['getTenantId']()).toThrow(ForbiddenException);
@@ -135,7 +152,15 @@ describe('ChatMessagesService – stubs', () => {
   });
 
   it('editMessage throws BadRequestException', async () => {
-    await expect(service.editMessage(1, {} as never)).rejects.toThrow(
+    const result = createServiceWithMock();
+    // tenantTransaction must return a non-e2e row so editMessage reaches the stub throw
+    result.mockDb.tenantTransaction.mockImplementation(
+      async (callback: (client: unknown) => unknown) =>
+        callback({
+          query: vi.fn().mockResolvedValue({ rows: [{ is_e2e: false }] }),
+        }),
+    );
+    await expect(result.service.editMessage(1, {} as never)).rejects.toThrow(
       BadRequestException,
     );
   });
@@ -209,6 +234,8 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     it('marks conversation as read', async () => {
       const verifyAccess = vi.fn().mockResolvedValue(undefined);
       mockDb.query
+        .mockResolvedValueOnce([{ last_read_message_id: 10 }]) // getUnreadMessageEntries → last_read
+        .mockResolvedValueOnce([]) // getUnreadMessageEntries → unread messages (none)
         .mockResolvedValueOnce([{ max_id: 42 }]) // MAX message id
         .mockResolvedValueOnce([]); // UPDATE last_read
 

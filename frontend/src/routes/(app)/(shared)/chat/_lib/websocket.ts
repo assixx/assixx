@@ -2,7 +2,7 @@
 // CHAT PAGE - WEBSOCKET UTILITIES
 // =============================================================================
 
-import { WS_MESSAGE_TYPES, WEBSOCKET_CONFIG } from './constants';
+import { WS_MESSAGE_TYPES, WEBSOCKET_CONFIG, MESSAGES } from './constants';
 
 import type {
   Message,
@@ -35,19 +35,29 @@ export function buildWebSocketUrl(ticket: string): string {
 // MESSAGE TRANSFORMATION
 // =============================================================================
 
-/**
- * Extract base message fields with defaults
- */
+/** Extract E2E encryption fields with defaults */
+function extractE2eFields(raw: RawWebSocketMessage) {
+  return {
+    encryptedContent: raw.encryptedContent ?? null,
+    e2eNonce: raw.e2eNonce ?? null,
+    isE2e: raw.isE2e ?? false,
+    e2eKeyVersion: raw.e2eKeyVersion ?? null,
+    e2eKeyEpoch: raw.e2eKeyEpoch ?? null,
+  };
+}
+
+/** Extract base message fields with defaults */
 function extractBaseMessageFields(raw: RawWebSocketMessage) {
   return {
     id: raw.id ?? 0,
     conversationId: raw.conversationId ?? 0,
     senderId: raw.senderId ?? 0,
-    content: raw.content ?? '',
+    content: raw.content ?? null,
     createdAt: raw.createdAt ?? new Date().toISOString(),
     isRead: raw.isRead ?? false,
     type: (raw.type as Message['type']) ?? 'text',
     attachments: raw.attachments ?? [],
+    ...extractE2eFields(raw),
   };
 }
 
@@ -201,9 +211,15 @@ export function updateConversationWithMessage(
   if (convIndex < 0) return conversations;
 
   const conv = { ...conversations[convIndex] };
+  // E2E messages: show decrypted content in preview, or lock icon if not decrypted
+  const previewContent =
+    newMessage.isE2e === true ?
+      (newMessage.decryptedContent ?? ` ${MESSAGES.e2eEncryptedPreview}`)
+    : (newMessage.content ?? '');
   conv.lastMessage = {
-    content: newMessage.content,
+    content: previewContent,
     createdAt: newMessage.createdAt,
+    ...(newMessage.isE2e === true ? { isE2e: true } : {}),
   };
 
   // Increment unread count if not active and not own message
@@ -219,18 +235,42 @@ export function updateConversationWithMessage(
 // WEBSOCKET MESSAGE BUILDERS
 // =============================================================================
 
+/** E2E encrypted message fields */
+export interface E2eSendFields {
+  encryptedContent: string;
+  e2eNonce: string;
+  e2eKeyVersion: number;
+  e2eKeyEpoch: number;
+}
+
 /**
- * Build send message payload
+ * Build send message payload.
+ * For E2E messages, pass e2eFields instead of content.
  * @param conversationId - Conversation ID
- * @param content - Message content
+ * @param content - Plaintext content (null for E2E)
  * @param attachments - Attachment IDs
+ * @param e2eFields - Optional E2E encryption fields
  * @returns WebSocket message object
  */
 export function buildSendMessage(
   conversationId: number,
-  content: string,
+  content: string | null,
   attachments: number[],
+  e2eFields?: E2eSendFields,
 ): WebSocketMessage {
+  if (e2eFields !== undefined) {
+    return {
+      type: WS_MESSAGE_TYPES.SEND_MESSAGE,
+      data: {
+        conversationId,
+        attachments,
+        encryptedContent: e2eFields.encryptedContent,
+        e2eNonce: e2eFields.e2eNonce,
+        e2eKeyVersion: e2eFields.e2eKeyVersion,
+        e2eKeyEpoch: e2eFields.e2eKeyEpoch,
+      },
+    };
+  }
   return {
     type: WS_MESSAGE_TYPES.SEND_MESSAGE,
     data: { conversationId, content, attachments },
