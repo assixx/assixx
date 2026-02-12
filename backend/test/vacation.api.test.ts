@@ -424,6 +424,76 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
   });
 });
 
+// ── seq: 14b — Requests: POST with omitted optional fields (Zod defaults) ──
+
+describe('Vacation: Create Request — Zod defaults applied for omitted fields', () => {
+  let res: Response;
+  let body: JsonBody;
+  let defaultsRequestId: string | undefined;
+
+  beforeAll(async () => {
+    // Random offset (450-800 days from now) to avoid overlap with seq 14
+    const randomOffset = 450 + Math.floor(Math.random() * 350);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + randomOffset);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 2);
+
+    // Skip weekends
+    while (startDate.getDay() === 0 || startDate.getDay() === 6) {
+      startDate.setDate(startDate.getDate() + 1);
+      endDate.setDate(endDate.getDate() + 1);
+    }
+
+    const fmt = (d: Date): string => d.toISOString().slice(0, 10);
+
+    // Intentionally omit halfDayStart, halfDayEnd, vacationType
+    // Zod schema defines defaults: halfDayStart='none', halfDayEnd='none', vacationType='regular'
+    res = await fetch(`${VACATION_URL}/requests`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        startDate: fmt(startDate),
+        endDate: fmt(endDate),
+        requestNote: 'Zod defaults test',
+      }),
+    });
+    body = (await res.json()) as JsonBody;
+
+    if (body.data?.id) {
+      defaultsRequestId = body.data.id as string;
+    }
+  });
+
+  afterAll(async () => {
+    // Cleanup: cancel the auto-approved request
+    if (defaultsRequestId !== undefined) {
+      await fetch(`${VACATION_URL}/requests/${defaultsRequestId}/cancel`, {
+        method: 'PATCH',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({ reason: 'Zod defaults test cleanup' }),
+      });
+    }
+  });
+
+  it('should return 201 Created', () => {
+    expect(res.status).toBe(201);
+    expect(body.success).toBe(true);
+  });
+
+  it('should apply Zod default halfDayStart=none', () => {
+    expect(body.data.halfDayStart).toBe('none');
+  });
+
+  it('should apply Zod default halfDayEnd=none', () => {
+    expect(body.data.halfDayEnd).toBe('none');
+  });
+
+  it('should apply Zod default vacationType=regular', () => {
+    expect(body.data.vacationType).toBe('regular');
+  });
+});
+
 // ── seq: 15 — Requests: GET own requests (paginated) ────────────────────────
 
 describe('Vacation: List My Requests', () => {
