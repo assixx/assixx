@@ -24,7 +24,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -89,8 +88,6 @@ const MOD_OVERVIEW = 'vacation-overview';
 @Controller('vacation')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class VacationController {
-  private readonly logger = new Logger(VacationController.name);
-
   constructor(
     private readonly vacationService: VacationService,
     private readonly queriesService: VacationQueriesService,
@@ -116,9 +113,6 @@ export class VacationController {
     @Body() dto: CreateVacationRequestDto,
   ): Promise<VacationRequest> {
     await this.ensureFeatureEnabled(user.tenantId);
-    this.logger.debug(
-      `User ${user.id} creating vacation request ${dto.startDate} → ${dto.endDate}`,
-    );
     return await this.vacationService.createRequest(
       user.id,
       user.tenantId,

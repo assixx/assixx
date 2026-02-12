@@ -33,6 +33,7 @@ export class ZodValidationPipe implements PipeTransform {
 
     // Check if the metatype has a Zod schema (from nestjs-zod)
     const metatype = metadata.metatype as { schema?: z.ZodType } | undefined;
+
     if (metatype?.schema !== undefined) {
       return this.validate(value, metatype.schema);
     }
