@@ -27,7 +27,7 @@
 {#if isLoading}
   <div class="capacity-indicator capacity-indicator--loading">
     <div class="spinner-ring spinner-ring--sm mr-2"></div>
-    Kapazität  wird geprueft...
+    Kapazität wird geprueft...
   </div>
 {:else if analysis !== null}
   <div class="capacity-indicator">
