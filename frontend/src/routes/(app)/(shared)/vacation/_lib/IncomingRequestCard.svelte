@@ -86,7 +86,7 @@
   <div class="incoming-card__actions">
     <button
       type="button"
-      class="btn btn-secondary btn-sm"
+      class="btn btn-secondary"
       onclick={() => {
         onDetail(request);
       }}
@@ -98,7 +98,7 @@
     {#if isPending}
       <button
         type="button"
-        class="btn btn-primary btn-sm"
+        class="btn btn-primary"
         onclick={() => {
           onApprove(request);
         }}
@@ -109,7 +109,7 @@
 
       <button
         type="button"
-        class="btn btn-danger btn-sm"
+        class="btn btn-danger"
         onclick={() => {
           onDeny(request);
         }}

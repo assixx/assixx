@@ -248,7 +248,7 @@
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Withdraw failed');
-      showErrorAlert('Fehler beim Zurueckziehen');
+      showErrorAlert('Fehler beim Zurückziehen');
     }
   }
 

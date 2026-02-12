@@ -47,7 +47,7 @@ Diese Entscheidungen wurden im Brainstorming + Q&A getroffen und sind **nicht me
 | A10 | **Email + SSE Notifications**                               | SSE sofort (ADR-003). Email-Interface vorbereiten (SMTP noch nicht konfiguriert).                                                                                                              |
 | A11 | **Audit Trail in V1**                                       | Jede Statusaenderung via `vacation_request_status_log` + `audit_trail` Tabelle.                                                                                                                |
 | A12 | **`employee_availability` komplett erneuern**               | Umbenennen zu `user_availability`, `employee_id` → `user_id`. Legacy `absences` Tabelle droppen.                                                                                               |
-| A13 | **`cancelled` vs `withdrawn`** klar getrennt                | `withdrawn` = Requester zieht zurueck. `cancelled` = Approver/Admin storniert genehmigten Urlaub.                                                                                              |
+| A13 | **`cancelled` vs `withdrawn`** klar getrennt                | `withdrawn` = Requester zieht zurück. `cancelled` = Approver/Admin storniert genehmigten Urlaub.                                                                                               |
 
 ---
 
@@ -588,7 +588,7 @@ backend/src/nest/vacation/
 ### 2.2 Wichtige Patterns (NICHT verletzen!)
 
 ```typescript
-// ✅ RICHTIG: Controller gibt Daten DIREKT zurueck (ADR-007 ResponseInterceptor wrapped)
+// ✅ RICHTIG: Controller gibt Daten DIREKT zurück (ADR-007 ResponseInterceptor wrapped)
 @Get()
 async listRequests(...): Promise<VacationRequest[]> {
     return await this.vacationService.getMyRequests(userId, tenantId, query);
@@ -989,7 +989,7 @@ GET    /api/v2/vacation/requests/incoming            # Eingehende Anträge fuer 
 GET    /api/v2/vacation/requests/:id                 # Einzelner Antrag (UUID)
 PATCH  /api/v2/vacation/requests/:id                 # Antrag bearbeiten (nur pending, nur eigene)
 PATCH  /api/v2/vacation/requests/:id/respond         # Genehmigen/Ablehnen (Approver)
-PATCH  /api/v2/vacation/requests/:id/withdraw        # Zurueckziehen (Requester)
+PATCH  /api/v2/vacation/requests/:id/withdraw        # Zurückziehen (Requester)
 PATCH  /api/v2/vacation/requests/:id/cancel          # Stornieren (Admin/Root, nur approved)
 
 # === Capacity ===
@@ -1342,7 +1342,7 @@ export const dataState = {
 ### 3.6 apiClient Pattern (KRITISCH — Kaizen-Bug vermeiden!)
 
 ```typescript
-// ✅ RICHTIG: apiClient.get<T>() gibt DIREKT data zurueck (unwrapped)
+// ✅ RICHTIG: apiClient.get<T>() gibt DIREKT data zurück (unwrapped)
 const balance = await apiClient.get<VacationBalance>('/vacation/entitlements/me');
 // balance ist DIREKT das VacationBalance-Objekt
 
@@ -1552,7 +1552,7 @@ backend/test/vacation.api.test.ts
 - [ ] SSE Notifications: Typed EventBus Methods (`emitVacationRequest*`) + SSE Handler in `registerSSEHandlers()`
 - [ ] Email-Interface vorbereitet (Stub, loggt nur)
 - [ ] Pagination auf allen List-Endpoints
-- [ ] ResponseInterceptor — Controller gibt Daten DIREKT zurueck (kein manuelles Wrapping!)
+- [ ] ResponseInterceptor — Controller gibt Daten DIREKT zurück (kein manuelles Wrapping!)
 - [ ] db.tenantTransaction() fuer ALLE tenant-scoped Queries (ADR-019)
 - [ ] Permission Registrar (ADR-020) registriert vacation-Module via `PermissionRegistryService`
 - [ ] `vacation.permissions.ts` Companion-File mit `VACATION_PERMISSIONS` Konstante

@@ -92,7 +92,7 @@
   <div class="request-card__actions">
     <button
       type="button"
-      class="btn btn-secondary btn-sm"
+      class="btn btn-secondary"
       onclick={() => {
         onDetail(request);
       }}
@@ -104,7 +104,7 @@
     {#if isPending}
       <button
         type="button"
-        class="btn btn-secondary btn-sm"
+        class="btn btn-secondary"
         onclick={() => {
           onEdit(request);
         }}
@@ -115,13 +115,13 @@
 
       <button
         type="button"
-        class="btn btn-danger btn-sm"
+        class="btn btn-danger"
         onclick={() => {
           onWithdraw(request);
         }}
       >
         <i class="fas fa-undo mr-1"></i>
-        Zurueckziehen
+        Zurückziehen
       </button>
     {/if}
   </div>

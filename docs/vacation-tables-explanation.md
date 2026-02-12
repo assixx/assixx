@@ -80,7 +80,7 @@ Der eigentliche Antrag. Wer will wann frei, welcher Typ (regulaer, Arztbesuch, H
 ```
 pending → approved    (Lead genehmigt)
 pending → denied      (Lead lehnt ab — Grund Pflicht)
-pending → withdrawn   (Antragsteller zieht zurueck)
+pending → withdrawn   (Antragsteller zieht zurück)
 approved → withdrawn  (Antragsteller storniert vor Urlaubsbeginn)
 approved → cancelled  (Admin/Root storniert genehmigten Urlaub)
 ```

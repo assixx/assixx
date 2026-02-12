@@ -245,7 +245,7 @@ Folgende Entscheidungen wurden in der Q&A-Session getroffen und sind **bindend**
 | A10 | **Email + SSE Notifications**                | SSE sofort (ADR-003). Email-Interface als Stub vorbereitet.                                           |
 | A11 | **Audit Trail in V1**                        | `vacation_request_status_log` + globaler `audit_trail`.                                               |
 | A12 | **Availability komplett erneuern**           | `employee_availability` → `user_availability`. Legacy `absences` droppen.                             |
-| A13 | **`cancelled` vs `withdrawn`**               | `withdrawn` = Requester zieht zurueck. `cancelled` = Admin storniert genehmigten Urlaub.              |
+| A13 | **`cancelled` vs `withdrawn`**               | `withdrawn` = Requester zieht zurück. `cancelled` = Admin storniert genehmigten Urlaub.               |
 
 ---
 
