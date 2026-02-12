@@ -40,7 +40,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
 import { FeatureCheckService } from '../feature-check/feature-check.service.js';
-import type {
+import {
   CapacityQueryDto,
   CreateBlackoutDto,
   CreateEntitlementDto,
