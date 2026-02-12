@@ -133,9 +133,6 @@
     transition: transform 0.15s ease;
   }
 
-  .request-card:hover {
-    transform: translateY(-1px);
-  }
 
   .request-card__header {
     display: flex;

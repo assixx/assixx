@@ -127,9 +127,7 @@
     transition: transform 0.15s ease;
   }
 
-  .incoming-card:hover {
-    transform: translateY(-1px);
-  }
+
 
   .incoming-card__header {
     display: flex;
