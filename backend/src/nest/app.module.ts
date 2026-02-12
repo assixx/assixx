@@ -60,6 +60,7 @@ import { TeamsModule } from './teams/teams.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
 import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
 import { UsersModule } from './users/users.module.js';
+import { VacationModule } from './vacation/vacation.module.js';
 
 @Module({
   imports: [
@@ -169,6 +170,7 @@ import { UsersModule } from './users/users.module.js';
     SettingsModule,
     ShiftsModule,
     SignupModule,
+    VacationModule,
     ChatModule,
     UserPermissionsModule,
   ],

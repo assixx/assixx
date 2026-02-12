@@ -1,0 +1,371 @@
+<script lang="ts">
+  /**
+   * RequestForm — Create or edit a vacation request.
+   * Includes date pickers, type selector, half-day options, note, and
+   * live capacity check (300ms debounce).
+   *
+   * Designed to be embedded inside a ds-modal structure:
+   * - Parent provides ds-modal__header and ds-modal__footer
+   * - This component renders form fields for ds-modal__body
+   */
+  import { onDestroy } from 'svelte';
+
+  import CapacityIndicator from './CapacityIndicator.svelte';
+  import {
+    CAPACITY_DEBOUNCE_MS,
+    HALF_DAY_LABELS,
+    TYPE_LABELS,
+  } from './constants';
+
+  import type {
+    CreateVacationRequestPayload,
+    VacationCapacityAnalysis,
+    VacationHalfDay,
+    VacationRequest,
+    VacationType,
+  } from './types';
+
+  const {
+    editingRequest = null,
+    onsubmit,
+    onCapacityCheck,
+  }: {
+    editingRequest?: VacationRequest | null;
+    onsubmit: (payload: CreateVacationRequestPayload) => void;
+    onCapacityCheck: (
+      startDate: string,
+      endDate: string,
+    ) => Promise<VacationCapacityAnalysis | null>;
+  } = $props();
+
+  // ─── Form state ─────────────────────────────────────────────────────
+
+  let startDate = $state('');
+  let endDate = $state('');
+  let halfDayStart = $state<VacationHalfDay>('none');
+  let halfDayEnd = $state<VacationHalfDay>('none');
+  let vacationType = $state<VacationType>('regular');
+  let requestNote = $state('');
+
+  // One-shot initialization from prop (component is recreated per modal open)
+  let hasInitialized = $state(false);
+  $effect(() => {
+    if (!hasInitialized) {
+      hasInitialized = true;
+      if (editingRequest !== null) {
+        startDate = editingRequest.startDate;
+        endDate = editingRequest.endDate;
+        halfDayStart = editingRequest.halfDayStart;
+        halfDayEnd = editingRequest.halfDayEnd;
+        vacationType = editingRequest.vacationType;
+        requestNote = editingRequest.requestNote ?? '';
+      }
+    }
+  });
+
+  let capacityAnalysis = $state<VacationCapacityAnalysis | null>(null);
+  let isCheckingCapacity = $state(false);
+
+  // NOT $state — timer handle is internal, not reactive UI state
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // ─── Dropdown state ─────────────────────────────────────────────────
+
+  let activeDropdown = $state<string | null>(null);
+
+  function toggleDropdown(id: string): void {
+    activeDropdown = activeDropdown === id ? null : id;
+  }
+
+  function closeAllDropdowns(): void {
+    activeDropdown = null;
+  }
+
+  // ─── Display texts ────────────────────────────────────────────────
+
+  const vacationTypeDisplay = $derived(TYPE_LABELS[vacationType]);
+  const halfDayStartDisplay = $derived(HALF_DAY_LABELS[halfDayStart]);
+  const halfDayEndDisplay = $derived(HALF_DAY_LABELS[halfDayEnd]);
+
+  // ─── Derived ────────────────────────────────────────────────────────
+
+  const isSingleDay = $derived(startDate === endDate && startDate !== '');
+
+  const canSubmit = $derived(
+    startDate !== '' && endDate !== '' && endDate >= startDate,
+  );
+
+  const vacationTypes = $derived(
+    Object.entries(TYPE_LABELS) as [VacationType, string][],
+  );
+
+  const halfDayOptions = $derived(
+    Object.entries(HALF_DAY_LABELS) as [VacationHalfDay, string][],
+  );
+
+  // ─── Capacity check with debounce ──────────────────────────────────
+
+  function triggerCapacityCheck() {
+    if (startDate === '' || endDate === '' || endDate < startDate) {
+      capacityAnalysis = null;
+      return;
+    }
+
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+      isCheckingCapacity = true;
+      void onCapacityCheck(startDate, endDate)
+        .then((result) => {
+          capacityAnalysis = result;
+        })
+        .finally(() => {
+          isCheckingCapacity = false;
+        });
+    }, CAPACITY_DEBOUNCE_MS);
+  }
+
+  $effect(() => {
+    // Track date dependencies — trigger capacity check when dates change
+    const trackedStart = startDate;
+    const trackedEnd = endDate;
+    void trackedStart;
+    void trackedEnd;
+    triggerCapacityCheck();
+  });
+
+  onDestroy(() => {
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+  });
+
+  // ─── Selection handlers ───────────────────────────────────────────
+
+  function handleVacationTypeSelect(value: VacationType): void {
+    vacationType = value;
+    closeAllDropdowns();
+  }
+
+  function handleHalfDayStartSelect(value: VacationHalfDay): void {
+    halfDayStart = value;
+    closeAllDropdowns();
+  }
+
+  function handleHalfDayEndSelect(value: VacationHalfDay): void {
+    halfDayEnd = value;
+    closeAllDropdowns();
+  }
+
+  // ─── Submit (called by parent via form onsubmit) ───────────────────
+
+  /** Build and emit payload. Exported so parent form can call it. */
+  export function submitForm(): void {
+    if (!canSubmit) return;
+
+    const payload: CreateVacationRequestPayload = {
+      startDate,
+      endDate,
+      vacationType,
+    };
+
+    if (halfDayStart !== 'none') payload.halfDayStart = halfDayStart;
+    if (halfDayEnd !== 'none') payload.halfDayEnd = halfDayEnd;
+    if (requestNote.trim() !== '') payload.requestNote = requestNote.trim();
+
+    onsubmit(payload);
+  }
+
+  /** Expose canSubmit for parent to disable/enable submit button */
+  export function getCanSubmit(): boolean {
+    return canSubmit;
+  }
+</script>
+
+<!-- Close dropdowns on outside click -->
+<svelte:window
+  onclick={(e: MouseEvent) => {
+    if (e.target instanceof HTMLElement && !e.target.closest('.dropdown')) {
+      closeAllDropdowns();
+    }
+  }}
+/>
+
+<!-- Dates -->
+<div class="request-form__row">
+  <div class="form-field">
+    <label
+      class="form-field__label"
+      for="start-date">Von</label
+    >
+    <input
+      id="start-date"
+      type="date"
+      class="form-field__control"
+      bind:value={startDate}
+    />
+  </div>
+  <div class="form-field">
+    <label
+      class="form-field__label"
+      for="end-date">Bis</label
+    >
+    <input
+      id="end-date"
+      type="date"
+      class="form-field__control"
+      bind:value={endDate}
+      min={startDate}
+    />
+  </div>
+</div>
+
+<!-- Half-day options -->
+<div class="request-form__row">
+  <div class="form-field">
+    <span class="form-field__label">Erster Tag</span>
+    <div
+      class="dropdown mt-2"
+      data-dropdown="halfDayStart"
+    >
+      <button
+        type="button"
+        class="dropdown__trigger"
+        class:active={activeDropdown === 'halfDayStart'}
+        onclick={() => {
+          toggleDropdown('halfDayStart');
+        }}
+      >
+        <span>{halfDayStartDisplay}</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div
+        class="dropdown__menu"
+        class:active={activeDropdown === 'halfDayStart'}
+      >
+        {#each halfDayOptions as [value, label] (value)}
+          <button
+            type="button"
+            class="dropdown__option"
+            data-action="select-half-day-start"
+            data-value={value}
+            onclick={() => {
+              handleHalfDayStartSelect(value);
+            }}
+          >
+            {label}
+          </button>
+        {/each}
+      </div>
+    </div>
+  </div>
+  {#if !isSingleDay}
+    <div class="form-field">
+      <span class="form-field__label">Letzter Tag</span>
+      <div
+        class="dropdown mt-2"
+        data-dropdown="halfDayEnd"
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={activeDropdown === 'halfDayEnd'}
+          onclick={() => {
+            toggleDropdown('halfDayEnd');
+          }}
+        >
+          <span>{halfDayEndDisplay}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={activeDropdown === 'halfDayEnd'}
+        >
+          {#each halfDayOptions as [value, label] (value)}
+            <button
+              type="button"
+              class="dropdown__option"
+              data-action="select-half-day-end"
+              data-value={value}
+              onclick={() => {
+                handleHalfDayEndSelect(value);
+              }}
+            >
+              {label}
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+</div>
+
+<!-- Type -->
+<div class="form-field">
+  <span class="form-field__label">Urlaubsart</span>
+  <div
+    class="dropdown mt-2"
+    data-dropdown="vacationType"
+  >
+    <button
+      type="button"
+      class="dropdown__trigger"
+      class:active={activeDropdown === 'vacationType'}
+      onclick={() => {
+        toggleDropdown('vacationType');
+      }}
+    >
+      <span>{vacationTypeDisplay}</span>
+      <i class="fas fa-chevron-down"></i>
+    </button>
+    <div
+      class="dropdown__menu"
+      class:active={activeDropdown === 'vacationType'}
+    >
+      {#each vacationTypes as [value, label] (value)}
+        <button
+          type="button"
+          class="dropdown__option"
+          data-action="select-vacation-type"
+          data-value={value}
+          onclick={() => {
+            handleVacationTypeSelect(value);
+          }}
+        >
+          {label}
+        </button>
+      {/each}
+    </div>
+  </div>
+</div>
+
+<!-- Note -->
+<div class="form-field">
+  <label
+    class="form-field__label"
+    for="request-note">Bemerkung (optional)</label
+  >
+  <textarea
+    id="request-note"
+    class="form-field__control"
+    rows="2"
+    bind:value={requestNote}
+    placeholder="z.B. Grund fuer Sonderurlaub..."
+  ></textarea>
+</div>
+
+<!-- Capacity Check Result -->
+<CapacityIndicator
+  analysis={capacityAnalysis}
+  isLoading={isCheckingCapacity}
+/>
+
+<style>
+  .request-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-4, 1rem);
+  }
+</style>

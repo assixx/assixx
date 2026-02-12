@@ -144,7 +144,7 @@ const TEAM_MEMBERS_DATE_RANGE_QUERY = `
          ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
   FROM users u
   JOIN user_teams ut ON u.id = ut.user_id
-  LEFT JOIN employee_availability ea ON u.id = ea.employee_id
+  LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND ea.start_date <= $2::date AND ea.end_date >= $3::date
   WHERE ut.team_id = $1`;
 
@@ -157,7 +157,7 @@ const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
          ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
   FROM users u
   JOIN user_teams ut ON u.id = ut.user_id
-  LEFT JOIN employee_availability ea ON u.id = ea.employee_id
+  LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
   WHERE ut.team_id = $1`;
 

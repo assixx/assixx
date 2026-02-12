@@ -1,0 +1,60 @@
+/* ========================================
+   Vacation Page Styles
+   Same pattern as kvp.css — external file,
+   no Svelte scoping interference.
+   ======================================== */
+
+/* ========================================
+   Filter Layout
+   ======================================== */
+
+.vacation-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  align-items: flex-end;
+}
+
+/* Dropdown sizing — same pattern as kvp.css */
+.vacation-filter-row [data-dropdown] .dropdown__trigger {
+  width: auto;
+  min-width: 180px;
+}
+
+.vacation-filter-row [data-dropdown] .dropdown__menu {
+  min-width: 180px;
+  left: auto;
+  right: auto;
+}
+
+/* ========================================
+   Request List
+   ======================================== */
+
+.request-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/* ========================================
+   Load More
+   ======================================== */
+
+.vacation-load-more {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-glass-border);
+  margin-top: var(--spacing-4);
+}
+
+/* ========================================
+   Respond Modal
+   ======================================== */
+
+.respond-modal__info {
+  padding: var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+}

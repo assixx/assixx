@@ -164,7 +164,7 @@ doppler run -- docker-compose down
 doppler run -- docker-compose restart backend
 ```
 
-## MANDATORY CHECKLIST (TodoWrite with 10+ items) read
+## MANDATORY CHECKLIST (TodoWrite with 10+ items) read (use Agent for reading)
 
 1. Docker Check (with "skip": WITHOUT dev-status.sh) (read whole file)
 2. Read(~/projects/Assixx/CLAUDE-KAIZEN-MANIFEST.md)

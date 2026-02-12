@@ -40,6 +40,7 @@ export const ICONS: Record<string, string> = {
   calendar: '<i class="fas fa-calendar-alt"></i>',
   lean: '<i class="fas fa-chart-line"></i>',
   clock: '<i class="fas fa-clock"></i>',
+  vacation: '<i class="fas fa-umbrella-beach"></i>',
   chat: '<i class="fas fa-comments"></i>',
   settings: '<i class="fas fa-cog"></i>',
   user: '<i class="fas fa-user"></i>',
@@ -143,6 +144,12 @@ export const rootMenuItems: NavItem[] = [
     badgeType: 'calendar',
   },
   {
+    id: 'vacation',
+    icon: ICONS.vacation,
+    label: 'Urlaub',
+    url: '/vacation',
+  },
+  {
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
@@ -228,6 +235,12 @@ export const adminMenuItems: NavItem[] = [
     badgeType: 'calendar',
   },
   {
+    id: 'vacation',
+    icon: ICONS.vacation,
+    label: 'Urlaub',
+    url: '/vacation',
+  },
+  {
     id: 'lean-management',
     icon: ICONS.lean,
     label: 'LEAN-Management',
@@ -287,6 +300,12 @@ export const employeeMenuItems: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
+  },
+  {
+    id: 'vacation',
+    icon: ICONS.vacation,
+    label: 'Urlaub',
+    url: '/vacation',
   },
   {
     id: 'lean-management',

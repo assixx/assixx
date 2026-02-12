@@ -58,6 +58,26 @@ curl -s http://localhost:3000/api/v2/users \
   -H "X-Tenant-ID: apitest" | jq '.'
 ```
 
+## Schnelltest: Token aus Browser kopieren
+
+Einfachster Weg — Token aus Browser DevTools (Network Tab) kopieren und direkt verwenden:
+
+```bash
+# Beliebigen Endpoint testen (Token aus Browser einfügen)
+curl -s http://localhost:3000/api/v2/notifications/stream \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "X-Tenant-ID: testfirma" -m 5
+
+# Beispiel: User-Profil abfragen
+curl -s http://localhost:3000/api/v2/users/me \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "X-Tenant-ID: testfirma" | jq '.'
+```
+
+**Wo Token finden:** Browser → F12 → Network Tab → beliebiger API Request → Headers → `Authorization: Bearer eyJ...` kopieren.
+
+**Hinweis:** `-m 5` setzt ein 5-Sekunden-Timeout (nützlich bei SSE-Streams wie `/notifications/stream`).
+
 ## Credentials (apitest Tenant)
 
 | Feld     | Wert             |

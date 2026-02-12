@@ -20,7 +20,7 @@ const AvailabilityStatusSchema = z.enum([
 
 /**
  * Update availability request body schema
- * Now writes to employee_availability table (users table columns deprecated)
+ * Now writes to user_availability table (users table columns deprecated)
  */
 export const UpdateAvailabilitySchema = z.object({
   availabilityStatus: AvailabilityStatusSchema,

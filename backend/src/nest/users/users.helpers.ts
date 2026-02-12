@@ -100,13 +100,13 @@ export function isUniqueConstraintViolation(
 
 /**
  * Build update fields and params from DTO data
- * NOTE: Availability fields removed - now managed via employee_availability table
+ * NOTE: Availability fields removed - now managed via user_availability table
  */
 export function buildUpdateFields(
   data: Record<string, unknown>,
   hasFullAccess: boolean | undefined,
 ): { updates: string[]; params: unknown[]; paramIndex: number } {
-  // Availability fields removed - now in employee_availability table
+  // Availability fields removed - now in user_availability table
   const fieldMap: Record<string, string> = {
     email: 'email',
     firstName: 'first_name',

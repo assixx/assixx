@@ -23,7 +23,7 @@
 
   interface AvailabilityEntry {
     id: number;
-    employeeId: number;
+    userId: number;
     status: string;
     startDate: string;
     endDate: string;

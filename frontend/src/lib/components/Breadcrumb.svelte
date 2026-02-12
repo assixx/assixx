@@ -87,6 +87,7 @@
       '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
       '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
       '/features': { label: 'Features', icon: 'fa-tools' },
+      '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',

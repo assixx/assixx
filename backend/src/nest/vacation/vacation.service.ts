@@ -1,0 +1,846 @@
+/**
+ * Vacation Service — Core Business Logic
+ *
+ * Mutation operations for the vacation request lifecycle:
+ * create, approve/deny, withdraw, cancel, edit, and approver determination.
+ *
+ * Read-only queries are in VacationQueriesService (vacation-queries.service.ts).
+ * Validation logic is in VacationValidationService (vacation-validation.service.ts).
+ *
+ * All queries via db.tenantTransaction() (ADR-019).
+ * Returns raw data — ResponseInterceptor wraps (ADR-007).
+ * FOR UPDATE lock on status transitions (Race condition R6).
+ */
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import type { PoolClient } from 'pg';
+import { v7 as uuidv7 } from 'uuid';
+
+import { DatabaseService } from '../database/database.service.js';
+import type { CreateVacationRequestDto } from './dto/create-vacation-request.dto.js';
+import type { RespondVacationRequestDto } from './dto/respond-vacation-request.dto.js';
+import type { UpdateVacationRequestDto } from './dto/update-vacation-request.dto.js';
+import { VacationValidationService } from './vacation-validation.service.js';
+import type {
+  ApproverResult,
+  VacationRequest,
+  VacationRequestRow,
+  VacationRequestStatus,
+} from './vacation.types.js';
+
+/** User role lookup row */
+interface UserRoleRow {
+  id: number;
+  role: string;
+}
+
+/** Team info with lead/deputy */
+interface UserTeamInfoRow {
+  team_id: number;
+  team_name: string;
+  team_lead_id: number | null;
+  deputy_lead_id: number | null;
+  department_id: number | null;
+}
+
+/** Area lead lookup row */
+interface AreaLeadRow {
+  area_lead_id: number | null;
+}
+
+@Injectable()
+export class VacationService {
+  private readonly logger: Logger = new Logger(VacationService.name);
+
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly validation: VacationValidationService,
+  ) {}
+
+  // ==========================================================================
+  // Request lifecycle
+  // ==========================================================================
+
+  /** Create a new vacation request with full validation chain. */
+  async createRequest(
+    userId: number,
+    tenantId: number,
+    dto: CreateVacationRequestDto,
+  ): Promise<VacationRequest> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<VacationRequest> => {
+        const teamInfo = await this.getUserTeamInfo(client, tenantId, userId);
+        await this.validation.validateNewRequest(client, tenantId, userId, dto);
+        const computedDays = await this.validation.computeWorkdays(
+          tenantId,
+          dto.startDate,
+          dto.endDate,
+          dto.halfDayStart,
+          dto.halfDayEnd,
+        );
+        const approver = await this.getApprover(tenantId, userId);
+        const status: VacationRequestStatus =
+          approver.autoApproved ? 'approved' : 'pending';
+        await this.validation.validateBalanceAndBlackouts(
+          tenantId,
+          userId,
+          dto,
+          computedDays,
+          teamInfo.team_id,
+          teamInfo.department_id ?? undefined,
+        );
+        return await this.finalizeCreateRequest(
+          client,
+          tenantId,
+          userId,
+          dto,
+          computedDays,
+          status,
+          approver,
+        );
+      },
+    );
+  }
+
+  /** Determine the approver for a vacation request. */
+  async getApprover(tenantId: number, userId: number): Promise<ApproverResult> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<ApproverResult> => {
+        if (await this.isUserAreaLead(client, tenantId, userId)) {
+          return { approverId: null, autoApproved: true };
+        }
+        const user = await this.getUserRole(client, tenantId, userId);
+        if (user.role === 'root')
+          return { approverId: null, autoApproved: true };
+        if (user.role === 'admin') {
+          return await this.resolveAreaLeadOrAutoApprove(client, userId);
+        }
+        return await this.getApproverForEmployee(client, tenantId, userId);
+      },
+    );
+  }
+
+  /** Approve or deny a vacation request with FOR UPDATE lock. */
+  async respondToRequest(
+    responderId: number,
+    tenantId: number,
+    requestId: string,
+    dto: RespondVacationRequestDto,
+  ): Promise<VacationRequest> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<VacationRequest> => {
+        const request = await this.lockPendingRequest(
+          client,
+          tenantId,
+          requestId,
+        );
+        await this.validateResponder(client, tenantId, responderId, request);
+        return dto.action === 'approved' ?
+            await this.approveRequest(
+              client,
+              tenantId,
+              responderId,
+              request,
+              dto,
+            )
+          : await this.denyRequest(client, tenantId, responderId, request, dto);
+      },
+    );
+  }
+
+  /** Withdraw a vacation request (requester only). */
+  async withdrawRequest(
+    requesterId: number,
+    tenantId: number,
+    requestId: string,
+  ): Promise<void> {
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        const request = await this.lockOwnRequest(
+          client,
+          tenantId,
+          requestId,
+          requesterId,
+        );
+        if (request.status === 'pending') {
+          await this.transitionStatus(
+            client,
+            tenantId,
+            requestId,
+            'pending',
+            'withdrawn',
+            requesterId,
+            null,
+          );
+          return;
+        }
+        if (request.status === 'approved') {
+          this.validation.guardFutureStartDate(request.start_date);
+          await this.transitionStatus(
+            client,
+            tenantId,
+            requestId,
+            'approved',
+            'withdrawn',
+            requesterId,
+            null,
+          );
+          await this.deactivateAvailability(
+            client,
+            tenantId,
+            request.requester_id,
+            request.start_date,
+            request.end_date,
+          );
+          return;
+        }
+        throw new ConflictException(
+          `Cannot withdraw a request with status '${request.status}'`,
+        );
+      },
+    );
+  }
+
+  /** Cancel an approved vacation request (admin/root only). */
+  async cancelRequest(
+    adminId: number,
+    tenantId: number,
+    requestId: string,
+    reason: string,
+  ): Promise<void> {
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        const user = await this.getUserRole(client, tenantId, adminId);
+        if (user.role !== 'admin' && user.role !== 'root') {
+          throw new ForbiddenException(
+            'Only admins or root users can cancel approved requests',
+          );
+        }
+        const row = await this.lockRequestById(client, tenantId, requestId);
+        if (row.status !== 'approved') {
+          throw new ConflictException(
+            `Can only cancel approved requests. Current: '${row.status}'`,
+          );
+        }
+        await this.transitionStatus(
+          client,
+          tenantId,
+          requestId,
+          'approved',
+          'cancelled',
+          adminId,
+          reason,
+        );
+        await this.deactivateAvailability(
+          client,
+          tenantId,
+          row.requester_id,
+          row.start_date,
+          row.end_date,
+        );
+        this.logger.log(
+          `Request ${requestId} cancelled by admin ${String(adminId)}`,
+        );
+      },
+    );
+  }
+
+  /** Edit a pending vacation request (requester only). */
+  async editRequest(
+    requesterId: number,
+    tenantId: number,
+    requestId: string,
+    dto: UpdateVacationRequestDto,
+  ): Promise<VacationRequest> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<VacationRequest> => {
+        const existing = await this.lockOwnRequest(
+          client,
+          tenantId,
+          requestId,
+          requesterId,
+        );
+        if (existing.status !== 'pending') {
+          throw new ConflictException(
+            `Can only edit pending requests. Current: '${existing.status}'`,
+          );
+        }
+        const merged = this.validation.mergeWithExisting(dto, existing);
+        const teamInfo = await this.getUserTeamInfo(
+          client,
+          tenantId,
+          requesterId,
+        );
+        await this.validation.validateEditedRequest(
+          client,
+          tenantId,
+          requesterId,
+          requestId,
+          merged,
+          teamInfo.team_id,
+          teamInfo.department_id ?? undefined,
+        );
+        const row = await this.applyRequestUpdate(
+          client,
+          tenantId,
+          requestId,
+          requesterId,
+          dto,
+          merged,
+        );
+        this.logger.log(
+          `Request ${requestId} edited by ${String(requesterId)}`,
+        );
+        return this.mapRowToRequest(row);
+      },
+    );
+  }
+
+  // ==========================================================================
+  // Private — createRequest helpers
+  // ==========================================================================
+
+  private async finalizeCreateRequest(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+    dto: CreateVacationRequestDto,
+    computedDays: number,
+    status: VacationRequestStatus,
+    approver: ApproverResult,
+  ): Promise<VacationRequest> {
+    const id: string = uuidv7();
+    const row = await this.insertRequest(
+      client,
+      id,
+      tenantId,
+      userId,
+      approver.approverId,
+      dto,
+      computedDays,
+      status,
+    );
+    await this.insertStatusLog(
+      client,
+      tenantId,
+      id,
+      null,
+      status,
+      userId,
+      null,
+    );
+    if (approver.autoApproved) {
+      await this.insertAvailability(
+        client,
+        tenantId,
+        userId,
+        dto.startDate,
+        dto.endDate,
+        userId,
+      );
+    }
+    this.logger.log(
+      `Vacation ${id} created (${status}) for user ${String(userId)}`,
+    );
+    return this.mapRowToRequest(row);
+  }
+
+  // ==========================================================================
+  // Private — Approver determination
+  // ==========================================================================
+
+  private async getApproverForEmployee(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+  ): Promise<ApproverResult> {
+    const teamInfo = await this.getUserTeamInfo(client, tenantId, userId);
+    if (teamInfo.team_lead_id === null) {
+      throw new BadRequestException(
+        'Team has no lead assigned. Contact your administrator.',
+      );
+    }
+    if (teamInfo.team_lead_id === userId) {
+      return await this.resolveAreaLeadOrAutoApprove(client, userId);
+    }
+    if (!(await this.isUserAbsent(client, teamInfo.team_lead_id))) {
+      return { approverId: teamInfo.team_lead_id, autoApproved: false };
+    }
+    if (
+      teamInfo.deputy_lead_id !== null &&
+      teamInfo.deputy_lead_id !== userId
+    ) {
+      return { approverId: teamInfo.deputy_lead_id, autoApproved: false };
+    }
+    return { approverId: teamInfo.team_lead_id, autoApproved: false };
+  }
+
+  private async resolveAreaLeadOrAutoApprove(
+    client: PoolClient,
+    userId: number,
+  ): Promise<ApproverResult> {
+    const result = await client.query<AreaLeadRow>(
+      `SELECT a.area_lead_id FROM areas a
+       JOIN departments d ON a.id = d.area_id
+       JOIN user_departments ud ON d.id = ud.department_id
+       WHERE ud.user_id = $1 AND ud.is_primary = true`,
+      [userId],
+    );
+    const areaLeadId = result.rows[0]?.area_lead_id;
+    if (areaLeadId !== undefined && areaLeadId !== null) {
+      return { approverId: areaLeadId, autoApproved: false };
+    }
+    return { approverId: null, autoApproved: true };
+  }
+
+  private async isUserAreaLead(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+  ): Promise<boolean> {
+    const result = await client.query<{ found: boolean }>(
+      `SELECT EXISTS (SELECT 1 FROM areas WHERE area_lead_id = $1 AND tenant_id = $2) AS found`,
+      [userId, tenantId],
+    );
+    return result.rows[0]?.found === true;
+  }
+
+  private async isUserAbsent(
+    client: PoolClient,
+    userId: number,
+  ): Promise<boolean> {
+    const result = await client.query<{ found: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM user_availability
+        WHERE user_id = $1 AND status != 'available'
+          AND start_date <= NOW() AND end_date >= NOW()
+      ) AS found`,
+      [userId],
+    );
+    return result.rows[0]?.found === true;
+  }
+
+  // ==========================================================================
+  // Private — Approve/deny
+  // ==========================================================================
+
+  private async approveRequest(
+    client: PoolClient,
+    tenantId: number,
+    responderId: number,
+    request: VacationRequestRow,
+    dto: RespondVacationRequestDto,
+  ): Promise<VacationRequest> {
+    if (!dto.isSpecialLeave && request.vacation_type !== 'unpaid') {
+      await this.validation.reCheckBalanceForApproval(
+        tenantId,
+        request,
+        Number.parseFloat(request.computed_days),
+      );
+    }
+    const row = await this.updateStatus(
+      client,
+      tenantId,
+      request.id,
+      responderId,
+      dto,
+      'approved',
+    );
+    await this.insertStatusLog(
+      client,
+      tenantId,
+      request.id,
+      'pending',
+      'approved',
+      responderId,
+      dto.responseNote ?? null,
+    );
+    await this.insertAvailability(
+      client,
+      tenantId,
+      request.requester_id,
+      request.start_date,
+      request.end_date,
+      responderId,
+    );
+    return this.mapRowToRequest(row);
+  }
+
+  private async denyRequest(
+    client: PoolClient,
+    tenantId: number,
+    responderId: number,
+    request: VacationRequestRow,
+    dto: RespondVacationRequestDto,
+  ): Promise<VacationRequest> {
+    const row = await this.updateStatus(
+      client,
+      tenantId,
+      request.id,
+      responderId,
+      dto,
+      'denied',
+    );
+    await this.insertStatusLog(
+      client,
+      tenantId,
+      request.id,
+      'pending',
+      'denied',
+      responderId,
+      dto.responseNote ?? null,
+    );
+    return this.mapRowToRequest(row);
+  }
+
+  // ==========================================================================
+  // Private — Locking + authorization
+  // ==========================================================================
+
+  private async lockPendingRequest(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+  ): Promise<VacationRequestRow> {
+    const row = await this.lockRequestById(client, tenantId, requestId);
+    if (row.status !== 'pending') {
+      throw new ConflictException(
+        `Request has already been ${row.status}. Cannot respond.`,
+      );
+    }
+    return row;
+  }
+
+  private async lockRequestById(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+  ): Promise<VacationRequestRow> {
+    const result = await client.query<VacationRequestRow>(
+      `SELECT * FROM vacation_requests
+       WHERE id = $1 AND tenant_id = $2 AND is_active = 1 FOR UPDATE`,
+      [requestId, tenantId],
+    );
+    const row = result.rows[0];
+    if (row === undefined)
+      throw new NotFoundException(`Request ${requestId} not found`);
+    return row;
+  }
+
+  private async lockOwnRequest(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    requesterId: number,
+  ): Promise<VacationRequestRow> {
+    const row = await this.lockRequestById(client, tenantId, requestId);
+    if (row.requester_id !== requesterId) {
+      throw new ForbiddenException('You can only modify your own requests');
+    }
+    return row;
+  }
+
+  private async validateResponder(
+    client: PoolClient,
+    tenantId: number,
+    responderId: number,
+    request: VacationRequestRow,
+  ): Promise<void> {
+    if (request.approver_id === responderId) return;
+    const result = await client.query<{ has_full_access: number | null }>(
+      `SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      [responderId, tenantId],
+    );
+    if (result.rows[0]?.has_full_access !== 1) {
+      throw new ForbiddenException(
+        'You are not authorized to respond to this request',
+      );
+    }
+  }
+
+  // ==========================================================================
+  // Private — DB helpers
+  // ==========================================================================
+
+  private async getUserTeamInfo(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+  ): Promise<UserTeamInfoRow> {
+    const result = await client.query<UserTeamInfoRow>(
+      `SELECT t.id AS team_id, t.name AS team_name,
+              t.team_lead_id, t.deputy_lead_id, t.department_id
+       FROM teams t JOIN user_teams ut ON t.id = ut.team_id
+       WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = 1`,
+      [userId, tenantId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) {
+      throw new BadRequestException(
+        'Employee must be assigned to a team before requesting vacation',
+      );
+    }
+    return row;
+  }
+
+  private async getUserRole(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+  ): Promise<UserRoleRow> {
+    const result = await client.query<UserRoleRow>(
+      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      [userId, tenantId],
+    );
+    const row = result.rows[0];
+    if (row === undefined)
+      throw new NotFoundException(`User ${String(userId)} not found`);
+    return row;
+  }
+
+  private async insertRequest(
+    client: PoolClient,
+    id: string,
+    tenantId: number,
+    requesterId: number,
+    approverId: number | null,
+    dto: CreateVacationRequestDto,
+    computedDays: number,
+    status: VacationRequestStatus,
+  ): Promise<VacationRequestRow> {
+    const result = await client.query<VacationRequestRow>(
+      `INSERT INTO vacation_requests
+         (id, tenant_id, requester_id, approver_id, substitute_id,
+          start_date, end_date, half_day_start, half_day_end,
+          vacation_type, status, computed_days, is_special_leave, request_note)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [
+        id,
+        tenantId,
+        requesterId,
+        approverId,
+        dto.substituteId ?? null,
+        dto.startDate,
+        dto.endDate,
+        dto.halfDayStart,
+        dto.halfDayEnd,
+        dto.vacationType,
+        status,
+        computedDays,
+        false,
+        dto.requestNote ?? null,
+      ],
+    );
+    const row = result.rows[0];
+    if (row === undefined)
+      throw new Error('INSERT into vacation_requests returned no rows');
+    return row;
+  }
+
+  private async insertStatusLog(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    oldStatus: VacationRequestStatus | null,
+    newStatus: VacationRequestStatus,
+    changedBy: number,
+    note: string | null,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO vacation_request_status_log
+         (id, tenant_id, request_id, old_status, new_status, changed_by, note)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [uuidv7(), tenantId, requestId, oldStatus, newStatus, changedBy, note],
+    );
+  }
+
+  private async insertAvailability(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+    startDate: string,
+    endDate: string,
+    createdBy: number,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO user_availability
+         (user_id, tenant_id, status, start_date, end_date, reason, created_by)
+       VALUES ($1,$2,'vacation',$3,$4,'Approved vacation',$5)`,
+      [userId, tenantId, startDate, endDate, createdBy],
+    );
+  }
+
+  private async deactivateAvailability(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<void> {
+    await client.query(
+      `DELETE FROM user_availability
+       WHERE user_id = $1 AND tenant_id = $2 AND status = 'vacation'
+         AND start_date = $3 AND end_date = $4`,
+      [userId, tenantId, startDate, endDate],
+    );
+  }
+
+  private async updateStatus(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    responderId: number,
+    dto: RespondVacationRequestDto,
+    status: 'approved' | 'denied',
+  ): Promise<VacationRequestRow> {
+    const result = await client.query<VacationRequestRow>(
+      `UPDATE vacation_requests
+       SET status = $1, is_special_leave = $2, response_note = $3,
+           responded_at = NOW(), responded_by = $4, updated_at = NOW()
+       WHERE id = $5 AND tenant_id = $6 AND is_active = 1 RETURNING *`,
+      [
+        status,
+        status === 'approved' ? dto.isSpecialLeave : false,
+        dto.responseNote ?? null,
+        responderId,
+        requestId,
+        tenantId,
+      ],
+    );
+    const row = result.rows[0];
+    if (row === undefined)
+      throw new Error('UPDATE vacation_requests returned no rows');
+    return row;
+  }
+
+  private async transitionStatus(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    oldStatus: VacationRequestStatus,
+    newStatus: VacationRequestStatus,
+    changedBy: number,
+    note: string | null,
+  ): Promise<void> {
+    await client.query(
+      `UPDATE vacation_requests SET status = $1, updated_at = NOW()
+       WHERE id = $2 AND tenant_id = $3 AND is_active = 1`,
+      [newStatus, requestId, tenantId],
+    );
+    await this.insertStatusLog(
+      client,
+      tenantId,
+      requestId,
+      oldStatus,
+      newStatus,
+      changedBy,
+      note,
+    );
+  }
+
+  // ==========================================================================
+  // Private — Edit helpers
+  // ==========================================================================
+
+  private async applyRequestUpdate(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    requesterId: number,
+    dto: UpdateVacationRequestDto,
+    merged: {
+      startDate: string;
+      endDate: string;
+      halfDayStart: string;
+      halfDayEnd: string;
+      vacationType: string;
+    },
+  ): Promise<VacationRequestRow> {
+    const computedDays = await this.validation.countWorkdays(
+      tenantId,
+      merged.startDate,
+      merged.endDate,
+      merged.halfDayStart as 'none' | 'morning' | 'afternoon',
+      merged.halfDayEnd as 'none' | 'morning' | 'afternoon',
+    );
+    const result = await client.query<VacationRequestRow>(
+      `UPDATE vacation_requests
+       SET start_date=$1, end_date=$2, half_day_start=$3, half_day_end=$4,
+           vacation_type=$5, computed_days=$6, substitute_id=$7,
+           request_note=$8, updated_at=NOW()
+       WHERE id=$9 AND tenant_id=$10 AND is_active=1 RETURNING *`,
+      [
+        merged.startDate,
+        merged.endDate,
+        merged.halfDayStart,
+        merged.halfDayEnd,
+        merged.vacationType,
+        computedDays,
+        dto.substituteId,
+        dto.requestNote,
+        requestId,
+        tenantId,
+      ],
+    );
+    const row = result.rows[0];
+    if (row === undefined)
+      throw new Error('UPDATE vacation_requests returned no rows');
+    await this.insertStatusLog(
+      client,
+      tenantId,
+      requestId,
+      'pending',
+      'pending',
+      requesterId,
+      'Request edited',
+    );
+    return row;
+  }
+
+  // ==========================================================================
+  // Private — Mapping
+  // ==========================================================================
+
+  private mapRowToRequest(row: VacationRequestRow): VacationRequest {
+    return {
+      id: row.id,
+      requesterId: row.requester_id,
+      approverId: row.approver_id,
+      substituteId: row.substitute_id,
+      startDate: this.fmtDateStr(row.start_date),
+      endDate: this.fmtDateStr(row.end_date),
+      halfDayStart: row.half_day_start,
+      halfDayEnd: row.half_day_end,
+      vacationType: row.vacation_type,
+      status: row.status,
+      computedDays: Number.parseFloat(row.computed_days),
+      isSpecialLeave: row.is_special_leave,
+      requestNote: row.request_note,
+      responseNote: row.response_note,
+      respondedAt: row.responded_at,
+      respondedBy: row.responded_by,
+      createdAt:
+        typeof row.created_at === 'string' ?
+          row.created_at
+        : new Date(row.created_at).toISOString(),
+      updatedAt:
+        typeof row.updated_at === 'string' ?
+          row.updated_at
+        : new Date(row.updated_at).toISOString(),
+    };
+  }
+
+  private fmtDateStr(dateInput: string | Date): string {
+    if (typeof dateInput === 'string') return dateInput.slice(0, 10);
+    const y = dateInput.getFullYear();
+    const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const d = String(dateInput.getDate()).padStart(2, '0');
+    return `${String(y)}-${m}-${d}`;
+  }
+}

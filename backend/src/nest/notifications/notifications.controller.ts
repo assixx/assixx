@@ -92,6 +92,18 @@ interface NotificationEventData {
     recipientIds: number[];
     preview?: string;
   };
+  request?: {
+    id: string;
+    requesterId: number;
+    approverId: number | null;
+    startDate: string;
+    endDate: string;
+    vacationType: string;
+    status: string;
+    computedDays: number;
+    requesterName?: string | undefined;
+    approverName?: string | undefined;
+  };
 }
 
 /**
@@ -111,6 +123,10 @@ const SSE_EVENTS = {
   DOCUMENT_UPLOADED: 'document.uploaded',
   KVP_SUBMITTED: 'kvp.submitted',
   MESSAGE_CREATED: 'message.created',
+  VACATION_REQUEST_CREATED: 'vacation.request.created',
+  VACATION_REQUEST_RESPONDED: 'vacation.request.responded',
+  VACATION_REQUEST_WITHDRAWN: 'vacation.request.withdrawn',
+  VACATION_REQUEST_CANCELLED: 'vacation.request.cancelled',
 } as const;
 
 /**
@@ -176,6 +192,38 @@ function registerHandler(
   handlers.push({ event, handler });
 }
 
+/** Register vacation-related SSE event handlers */
+function registerVacationHandlers(
+  handlers: EventHandler[],
+  makeHandler: (
+    type: string,
+    key: string,
+  ) => (e: NotificationEventData) => void,
+): void {
+  const vacationEvents = [
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_CREATED,
+      type: 'VACATION_REQUEST_CREATED',
+    },
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_RESPONDED,
+      type: 'VACATION_REQUEST_RESPONDED',
+    },
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_WITHDRAWN,
+      type: 'VACATION_REQUEST_WITHDRAWN',
+    },
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_CANCELLED,
+      type: 'VACATION_REQUEST_CANCELLED',
+    },
+  ] as const;
+
+  for (const { event, type } of vacationEvents) {
+    registerHandler(handlers, event, makeHandler(type, 'request'));
+  }
+}
+
 /**
  * Register SSE handlers based on user role AND feature permissions (ADR-020).
  * Only registers handlers for features the user has read access to.
@@ -189,26 +237,21 @@ function registerSSEHandlers(
   readableFeatures: Set<string> | null,
 ): EventHandler[] {
   const handlers: EventHandler[] = [];
-  const makeHandler = (
+  const make = (
     type: string,
     key: string,
   ): ((e: NotificationEventData) => void) =>
     createSSEHandler(type, key, tenantId, eventSubject);
+  const canAccess = (code: string): boolean =>
+    readableFeatures === null || readableFeatures.has(code);
 
-  /** Check if user can access a feature (null = bypass, all allowed) */
-  const canAccess = (featureCode: string): boolean =>
-    readableFeatures === null || readableFeatures.has(featureCode);
-
-  // Documents: only if user has documents permission
   if (canAccess('documents')) {
     registerHandler(
       handlers,
       SSE_EVENTS.DOCUMENT_UPLOADED,
-      makeHandler('NEW_DOCUMENT', 'document'),
+      make('NEW_DOCUMENT', 'document'),
     );
   }
-
-  // Chat: only if user has chat permission
   if (canAccess('chat')) {
     registerHandler(
       handlers,
@@ -216,37 +259,30 @@ function registerSSEHandlers(
       createMessageHandler(userId, tenantId, eventSubject),
     );
   }
-
-  // Employee: survey notifications (only if user has surveys permission)
   if (role === 'employee' && canAccess('surveys')) {
     registerHandler(
       handlers,
       SSE_EVENTS.SURVEY_CREATED,
-      makeHandler('NEW_SURVEY', 'survey'),
+      make('NEW_SURVEY', 'survey'),
     );
     registerHandler(
       handlers,
       SSE_EVENTS.SURVEY_UPDATED,
-      makeHandler('SURVEY_UPDATED', 'survey'),
+      make('SURVEY_UPDATED', 'survey'),
     );
   }
-
-  // Admin/Root: KVP and survey notifications
-  if (role === 'admin' || role === 'root') {
-    if (canAccess('kvp')) {
-      registerHandler(
-        handlers,
-        SSE_EVENTS.KVP_SUBMITTED,
-        makeHandler('NEW_KVP', 'kvp'),
-      );
-    }
-    if (canAccess('surveys')) {
-      registerHandler(
-        handlers,
-        SSE_EVENTS.SURVEY_CREATED,
-        makeHandler('NEW_SURVEY_CREATED', 'survey'),
-      );
-    }
+  if (canAccess('vacation')) {
+    registerVacationHandlers(handlers, make);
+  }
+  if ((role === 'admin' || role === 'root') && canAccess('kvp')) {
+    registerHandler(handlers, SSE_EVENTS.KVP_SUBMITTED, make('NEW_KVP', 'kvp'));
+  }
+  if ((role === 'admin' || role === 'root') && canAccess('surveys')) {
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_CREATED,
+      make('NEW_SURVEY_CREATED', 'survey'),
+    );
   }
 
   return handlers;
@@ -612,6 +648,18 @@ export class NotificationsController {
         ),
         [SSE_EVENTS.MESSAGE_CREATED]: eventBus.getListenerCount(
           SSE_EVENTS.MESSAGE_CREATED,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_CREATED]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_CREATED,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_RESPONDED]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_RESPONDED,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_WITHDRAWN]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_WITHDRAWN,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_CANCELLED]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_CANCELLED,
         ),
       },
       timestamp: new Date().toISOString(),
