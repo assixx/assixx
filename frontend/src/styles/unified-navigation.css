@@ -676,6 +676,7 @@ body:has(.sidebar.collapsed) .header .logo {
   align-items: center;
 
   box-sizing: border-box;
+  width: 100%;
 
   /* 34px in rem */
   margin-bottom: 0.3rem;
@@ -767,6 +768,11 @@ body:has(.sidebar.collapsed) .header .logo {
 
 .sidebar-item.has-submenu .sidebar-link {
   position: relative;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
 }
 
 /* Hover nur wenn NICHT collapsed UND NICHT active - moved here to fix specificity order */
@@ -808,7 +814,7 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-bottom: 0.313rem;
 
   /* 5px in rem */
-  margin-left: 2rem;
+  margin-left: 3rem;
 
   /* 32px in rem */
   padding: 0;

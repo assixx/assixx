@@ -106,6 +106,12 @@ export interface OrgTeam {
   departmentId?: number;
 }
 
+export interface OrgMachine {
+  id: number;
+  name: string;
+  departmentId?: number;
+}
+
 // ─── SSR page data ──────────────────────────────────────────────────
 
 export interface VacationRulesPageData {

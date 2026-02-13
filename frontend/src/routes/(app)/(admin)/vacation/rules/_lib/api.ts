@@ -7,6 +7,7 @@ import { getApiClient } from '$lib/utils/api-client';
 import type {
   CreateBlackoutPayload,
   CreateStaffingRulePayload,
+  OrgMachine,
   UpdateBlackoutPayload,
   UpdateSettingsPayload,
   UpdateStaffingRulePayload,
@@ -75,6 +76,19 @@ export async function updateStaffingRule(
 
 export async function deleteStaffingRule(id: string): Promise<void> {
   await apiClient.delete<undefined>(`/vacation/staffing-rules/${id}`);
+}
+
+// ─── Organization Hierarchy (for cascade dropdowns) ─────────────────
+
+/** Fetch machines filtered by department (for staffing rule creation cascade). */
+export async function fetchMachinesByDepartment(
+  departmentId: number,
+): Promise<OrgMachine[]> {
+  const response = await apiClient.get<OrgMachine[] | { data: OrgMachine[] }>(
+    `/machines?departmentId=${departmentId}`,
+  );
+  if (Array.isArray(response)) return response;
+  return response.data;
 }
 
 // ─── Settings ───────────────────────────────────────────────────────

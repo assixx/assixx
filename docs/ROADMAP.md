@@ -100,7 +100,7 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 
 - [ ] Stripe SDK Integration + Webhook-Handler
 - [ ] Subscription-Pläne (Basic/Premium/Enterprise)
-- [ ] Tenant-Signup mit Bezahlung (Registrierung -> Plan waehlen -> Zahlung -> Tenant erstellt)
+- [ ] Tenant-Signup mit Bezahlung (Registrierung -> Plan wählen -> Zahlung -> Tenant erstellt)
 - [ ] Feature-Aktivierung per Plan (verknuepft mit ADR-020 Per-User Permissions)
 - [ ] Automatische Rechnungserstellung
 - [ ] Payment History Dashboard
@@ -122,7 +122,7 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 ### Signup + Payment + Feature-Aktivierung (kritischer Pfad)
 
 - [ ] Neuen Tenant registrieren (Signup-Formular)
-- [ ] Plan waehlen und mit Stripe bezahlen
+- [ ] Plan wählen und mit Stripe bezahlen
 - [ ] Feature-Aktivierung per Plan verifizieren (Basic vs Premium vs Enterprise)
 - [ ] Upgrade/Downgrade-Flow testen
 - [ ] Kuendigungs-Flow testen
