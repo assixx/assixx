@@ -93,6 +93,9 @@
   let respondCapacity = $state<VacationCapacityAnalysis | null>(null);
   let isLoadingCapacity = $state(false);
 
+  // Pre-fetched capacity for edit modal
+  let editCapacity = $state<VacationCapacityAnalysis | null>(null);
+
   // ==========================================================================
   // SYNC SSR → STATE STORE
   // ==========================================================================
@@ -290,8 +293,25 @@
     vacationState.openDetailModal(request);
   }
 
-  function handleEdit(request: VacationRequest) {
+  async function handleEdit(request: VacationRequest) {
+    // Start capacity fetch immediately, open modal in parallel
+    const targetId = request.id;
+    const capacityPromise = api.analyzeCapacity(
+      request.startDate,
+      request.endDate,
+    );
+    editCapacity = null;
     vacationState.openEditModal(request);
+
+    try {
+      const result = await capacityPromise;
+      // Guard: only update if still editing the same request
+      if (vacationState.selectedRequest?.id === targetId) {
+        editCapacity = result;
+      }
+    } catch (err) {
+      log.error({ err }, 'Edit capacity pre-fetch failed');
+    }
   }
 
   async function handleWithdraw(request: VacationRequest) {
@@ -947,6 +967,7 @@
         <RequestForm
           bind:this={editFormRef}
           editingRequest={vacationState.selectedRequest}
+          initialCapacity={editCapacity}
           onsubmit={handleEditSubmit}
           onCapacityCheck={handleCapacityCheck}
         />
@@ -1062,8 +1083,7 @@
           </label>
           <textarea
             id="response-note"
-            class="form-field__textarea"
-            rows="3"
+            class="form-field__control form-field__control--textarea"
             bind:value={responseNote}
             placeholder={respondAction === 'deny' ?
               'Bitte geben Sie den Grund fuer die Ablehnung an...'

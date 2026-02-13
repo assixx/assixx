@@ -14,7 +14,7 @@ export const STATUS_LABELS: Record<VacationRequestStatus, string> = {
   pending: 'Ausstehend',
   approved: 'Genehmigt',
   denied: 'Abgelehnt',
-  withdrawn: 'Zurueckgezogen',
+  withdrawn: 'Zurückgezogen',
   cancelled: 'Storniert',
 };
 
@@ -70,7 +70,7 @@ export const STATUS_FILTER_OPTIONS: {
   { value: 'pending', label: 'Ausstehend' },
   { value: 'approved', label: 'Genehmigt' },
   { value: 'denied', label: 'Abgelehnt' },
-  { value: 'withdrawn', label: 'Zurueckgezogen' },
+  { value: 'withdrawn', label: 'Zurückgezogen' },
   { value: 'cancelled', label: 'Storniert' },
 ];
 

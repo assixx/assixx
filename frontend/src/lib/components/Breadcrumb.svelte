@@ -88,6 +88,7 @@
       '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
       '/features': { label: 'Features', icon: 'fa-tools' },
       '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
+      '/vacation/rules': { label: 'Urlaubsregeln', icon: 'fa-shield-alt' },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',

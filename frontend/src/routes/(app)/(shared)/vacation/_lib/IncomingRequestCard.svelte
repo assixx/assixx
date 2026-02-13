@@ -98,7 +98,7 @@
     {#if isPending}
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-success"
         onclick={() => {
           onApprove(request);
         }}

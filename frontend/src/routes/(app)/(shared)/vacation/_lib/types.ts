@@ -106,9 +106,9 @@ export interface BlackoutConflict {
 }
 
 export interface EntitlementCheck {
-  currentBalance: number;
+  availableDays: number;
   requestedDays: number;
-  remainingAfter: number;
+  remainingAfterApproval: number;
   sufficient: boolean;
 }
 

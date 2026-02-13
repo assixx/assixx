@@ -104,6 +104,20 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   },
 ];
 
+/** Vacation submenu for root/admin (includes rules management) */
+const VACATION_ADMIN_SUBMENU: NavItem[] = [
+  {
+    id: 'vacation-requests',
+    label: 'Anträge',
+    url: '/vacation',
+  },
+  {
+    id: 'vacation-rules',
+    label: 'Regeln & Einstellungen',
+    url: '/vacation/rules',
+  },
+];
+
 export const rootMenuItems: NavItem[] = [
   {
     id: 'dashboard',
@@ -147,7 +161,7 @@ export const rootMenuItems: NavItem[] = [
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
-    url: '/vacation',
+    submenu: VACATION_ADMIN_SUBMENU,
   },
   {
     id: 'documents',
@@ -238,7 +252,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
-    url: '/vacation',
+    submenu: VACATION_ADMIN_SUBMENU,
   },
   {
     id: 'lean-management',

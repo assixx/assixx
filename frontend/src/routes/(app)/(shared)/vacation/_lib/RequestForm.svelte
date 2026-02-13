@@ -27,10 +27,13 @@
 
   const {
     editingRequest = null,
+    initialCapacity = null,
     onsubmit,
     onCapacityCheck,
   }: {
     editingRequest?: VacationRequest | null;
+    /** Pre-fetched capacity from parent (edit mode). Avoids redundant API call on mount. */
+    initialCapacity?: VacationCapacityAnalysis | null;
     onsubmit: (payload: CreateVacationRequestPayload) => void;
     onCapacityCheck: (
       startDate: string,
@@ -47,6 +50,10 @@
   let vacationType = $state<VacationType>('regular');
   let requestNote = $state('');
 
+  // Track initial dates to avoid overwriting parent pre-fetch with stale own-check
+  let initialStartDate = '';
+  let initialEndDate = '';
+
   // One-shot initialization from prop (component is recreated per modal open)
   let hasInitialized = $state(false);
   $effect(() => {
@@ -59,6 +66,8 @@
         halfDayEnd = editingRequest.halfDayEnd;
         vacationType = editingRequest.vacationType;
         requestNote = editingRequest.requestNote ?? '';
+        initialStartDate = editingRequest.startDate;
+        initialEndDate = editingRequest.endDate;
       }
     }
   });
@@ -105,6 +114,20 @@
 
   // ─── Capacity check with debounce ──────────────────────────────────
 
+  let isFirstCheck = true;
+
+  /** Fire API call immediately (no debounce) */
+  function fireCapacityRequest() {
+    isCheckingCapacity = true;
+    void onCapacityCheck(startDate, endDate)
+      .then((result) => {
+        capacityAnalysis = result;
+      })
+      .finally(() => {
+        isCheckingCapacity = false;
+      });
+  }
+
   function triggerCapacityCheck() {
     if (startDate === '' || endDate === '' || endDate < startDate) {
       capacityAnalysis = null;
@@ -115,16 +138,16 @@
       clearTimeout(debounceTimer);
     }
 
-    debounceTimer = setTimeout(() => {
-      isCheckingCapacity = true;
-      void onCapacityCheck(startDate, endDate)
-        .then((result) => {
-          capacityAnalysis = result;
-        })
-        .finally(() => {
-          isCheckingCapacity = false;
-        });
-    }, CAPACITY_DEBOUNCE_MS);
+    if (isFirstCheck) {
+      isFirstCheck = false;
+      // First valid date pair: fire immediately, no debounce
+      // In edit mode, parent also pre-fetches — whichever arrives first wins
+      fireCapacityRequest();
+      return;
+    }
+
+    // Subsequent date changes: debounce to avoid rapid-fire API calls
+    debounceTimer = setTimeout(fireCapacityRequest, CAPACITY_DEBOUNCE_MS);
   }
 
   $effect(() => {
@@ -134,6 +157,18 @@
     void trackedStart;
     void trackedEnd;
     triggerCapacityCheck();
+  });
+
+  // Sync pre-fetched capacity from parent (edit mode)
+  $effect(() => {
+    if (
+      initialCapacity !== null &&
+      startDate === initialStartDate &&
+      endDate === initialEndDate
+    ) {
+      capacityAnalysis = initialCapacity;
+      isCheckingCapacity = false;
+    }
   });
 
   onDestroy(() => {
@@ -349,8 +384,7 @@
   >
   <textarea
     id="request-note"
-    class="form-field__control"
-    rows="2"
+    class="form-field__control form-field__control--textarea"
     bind:value={requestNote}
     placeholder="z.B. Grund fuer Sonderurlaub..."
   ></textarea>

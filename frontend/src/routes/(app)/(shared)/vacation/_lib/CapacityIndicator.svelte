@@ -47,13 +47,14 @@
         <div class="capacity-indicator__warning">
           <i class="fas fa-exclamation-triangle mr-1"></i>
           Nicht genuegend Urlaubstage:
-          {analysis.entitlementCheck.currentBalance} verfuegbar,
+          {analysis.entitlementCheck.availableDays} verfuegbar,
           {analysis.entitlementCheck.requestedDays} benötigt
         </div>
       {:else}
         <div class="capacity-indicator__ok">
           <i class="fas fa-check-circle mr-1"></i>
-          {analysis.entitlementCheck.remainingAfter} Tage verbleibend nach Genehmigung
+          {analysis.entitlementCheck.remainingAfterApproval} Tage verbleibend nach
+          Genehmigung
         </div>
       {/if}
     </div>

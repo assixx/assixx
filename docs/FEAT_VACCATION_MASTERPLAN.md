@@ -1,7 +1,7 @@
 # FEAT: Vacation Request System — Execution Masterplan
 
 > **Created:** 2026-02-12
-> **Status:** ACTIVE — Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 COMPLETE, Phase 4 COMPLETE, Phase 5 IN PROGRESS (Session 16 done)
+> **Status:** ACTIVE — Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 COMPLETE, Phase 4 COMPLETE, Phase 5 IN PROGRESS (Session 17 done)
 > **Branch:** `feat/vaccation-request`
 > **Spec:** [prompt_vacation.md](./prompt_vacation.md)
 > **Context:** [brainstorming_vacation.md](./brainstorming_vacation.md)
@@ -655,7 +655,7 @@ backend/src/nest/vacation/
 > **Dependency:** Phase 2 complete (backend endpoints available)
 > **Pattern:** Calendar module (`frontend/src/routes/(app)/(shared)/calendar/`)
 
-### Step 5.1: /vacation Main Page [DONE - Session 16, 2026-02-12]
+### Step 5.1: /vacation Main Page [DONE — Session 16, 2026-02-12]
 
 **14 new files + 1 modified:**
 
@@ -702,13 +702,32 @@ frontend/src/routes/(app)/
             SpecialLeaveCheckbox.svelte # Special leave toggle [DONE Session 16]
 
     (admin)/vacation/
-        rules/+page.svelte + +page.server.ts + _lib/
+        rules/+page.svelte + +page.server.ts + _lib/  [DONE Session 17]
         entitlements/+page.svelte + +page.server.ts + _lib/
         overview/+page.svelte + +page.server.ts + _lib/
 
     (root)/vacation/
         holidays/+page.svelte + +page.server.ts + _lib/
 ```
+
+### Step 5.2: /vacation/rules Admin Page [DONE — Session 17, 2026-02-13]
+
+**6 new files + 1 CSS file + 2 modified:**
+
+1. `rules/_lib/types.ts` — 8 frontend interfaces (VacationBlackout, VacationStaffingRule, VacationSettings, BlackoutScopeType, CRUD payloads, VacationRulesPageData)
+2. `rules/_lib/constants.ts` — German labels (SCOPE_TYPE_LABELS, MONTH_LABELS, SETTINGS_LABELS), RulesTab type, RULES_TABS with icons
+3. `rules/_lib/api.ts` — 10 browser-side API functions via apiClient (blackouts CRUD x4, staffing rules CRUD x4, settings get/update x2)
+4. `rules/_lib/state.svelte.ts` — Svelte 5 Runes state: data (blackouts, staffingRules, settings) + UI (activeTab, 4 modals, editing/deleting items, isEditingSettings)
+5. `rules/+page.server.ts` — SSR: parallel fetch (blackouts + staffingRules + settings via Promise.all)
+6. `rules/+page.svelte` — 3-tab page: Sperrzeiten (blackout list + create/edit/delete modals), Besetzungsregeln (staffing rule list + create/edit/delete modals), Einstellungen (read-only display / inline edit form with 6 fields)
+7. `frontend/src/styles/vacation-rules.css` — Rules list items, settings grid/display, responsive layout
+
+**Modified files:**
+
+- `(app)/_lib/navigation-config.ts` — Root + admin vacation items changed from single URL to submenu (VACATION_ADMIN_SUBMENU: "Anträge" + "Regeln & Einstellungen")
+- `frontend/src/lib/components/Breadcrumb.svelte` — Added `/vacation/rules` breadcrumb entry
+
+**Quality:** svelte-check 0 errors, 0 warnings. Backend type-check clean. 3984 unit tests passing.
 
 ### Key Frontend Patterns
 
@@ -747,7 +766,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 - [x] RequestForm with live capacity check (300ms debounce) (Session 16)
 - [x] IncomingRequestCard with capacity + special leave checkbox (Session 16)
 - [x] Approve/deny flow works (deny requires reason) (Session 16)
-- [ ] `/vacation/rules` page for blackouts + staffing rules + settings
+- [x] `/vacation/rules` page for blackouts + staffing rules + settings (Session 17 — 3-tab page, full CRUD, settings inline edit)
 - [ ] `/vacation/entitlements` page with add-days modal
 - [ ] `/vacation/holidays` page with CRUD
 - [ ] `/vacation/overview` with team calendar
@@ -819,7 +838,7 @@ Session 13: Phase 3 — Unit tests (core + holidays + entitlements, 64 tests) [D
 Session 14: Phase 3 — Unit tests (capacity + blackouts + staffing, 115 total) [DONE 2026-02-12]
 Session 15: Phase 4 — API integration tests (29 tests) [DONE 2026-02-12]
 Session 16: Phase 5 — Frontend: /vacation main page [DONE 2026-02-12] (14 files: 3 foundation + 3 state + 7 components + 1 page, ESLint 0 errors)
-Session 17: Phase 5 — Frontend: /vacation/rules
+Session 17: Phase 5 — Frontend: /vacation/rules [DONE 2026-02-13] (6 files: 4 foundation + 1 state + 1 page + 1 CSS, svelte-check 0 errors)
 Session 18: Phase 5 — Frontend: /vacation/entitlements + /vacation/holidays
 Session 19: Phase 5 — Frontend: /vacation/overview
 Session 20: Phase 6 — Integration + documentation + ADR-023
@@ -877,33 +896,41 @@ Session 20: Phase 6 — Integration + documentation + ADR-023
 
 ### Frontend (new)
 
-| Path                                                                           | Purpose                                        | Status          |
-| ------------------------------------------------------------------------------ | ---------------------------------------------- | --------------- |
-| `frontend/src/routes/(app)/(shared)/vacation/+page.svelte`                     | Main vacation page (tabs, lists, modals)       | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/+page.server.ts`                  | SSR: parallel fetch + canApprove logic         | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/types.ts`                    | 12 frontend TypeScript interfaces              | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/constants.ts`                | German labels, badges, filters, pagination     | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/api.ts`                      | 10 apiClient functions                         | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/state.svelte.ts`             | Unified state re-export                        | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/state-data.svelte.ts`        | Data state (requests, balance, capacity)       | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/state-ui.svelte.ts`          | UI state (tabs, filters, 6 modals, pagination) | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/RequestForm.svelte`          | Create/edit form + 300ms capacity debounce     | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/RequestCard.svelte`          | Own request card                               | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/IncomingRequestCard.svelte`  | Incoming request card (approve/deny)           | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/CapacityIndicator.svelte`    | Capacity analysis display                      | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/EntitlementBadge.svelte`     | Balance progress bar                           | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/VacationFilters.svelte`      | Tab toggle + status/year filters               | DONE Session 16 |
-| `frontend/src/routes/(app)/(shared)/vacation/_lib/SpecialLeaveCheckbox.svelte` | Special leave toggle                           | DONE Session 16 |
-| `frontend/src/routes/(app)/(admin)/vacation/rules/`                            | Rules management                               |                 |
-| `frontend/src/routes/(app)/(admin)/vacation/entitlements/`                     | Entitlement management                         |                 |
-| `frontend/src/routes/(app)/(admin)/vacation/overview/`                         | Overview + calendar                            |                 |
-| `frontend/src/routes/(app)/(root)/vacation/holidays/`                          | Holiday management                             |                 |
+| Path                                                                           | Purpose                                            | Status          |
+| ------------------------------------------------------------------------------ | -------------------------------------------------- | --------------- |
+| `frontend/src/routes/(app)/(shared)/vacation/+page.svelte`                     | Main vacation page (tabs, lists, modals)           | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/+page.server.ts`                  | SSR: parallel fetch + canApprove logic             | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/types.ts`                    | 12 frontend TypeScript interfaces                  | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/constants.ts`                | German labels, badges, filters, pagination         | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/api.ts`                      | 10 apiClient functions                             | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/state.svelte.ts`             | Unified state re-export                            | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/state-data.svelte.ts`        | Data state (requests, balance, capacity)           | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/state-ui.svelte.ts`          | UI state (tabs, filters, 6 modals, pagination)     | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/RequestForm.svelte`          | Create/edit form + 300ms capacity debounce         | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/RequestCard.svelte`          | Own request card                                   | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/IncomingRequestCard.svelte`  | Incoming request card (approve/deny)               | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/CapacityIndicator.svelte`    | Capacity analysis display                          | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/EntitlementBadge.svelte`     | Balance progress bar                               | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/VacationFilters.svelte`      | Tab toggle + status/year filters                   | DONE Session 16 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/SpecialLeaveCheckbox.svelte` | Special leave toggle                               | DONE Session 16 |
+| `frontend/src/routes/(app)/(admin)/vacation/rules/_lib/types.ts`               | 8 frontend interfaces (blackouts, rules, settings) | DONE Session 17 |
+| `frontend/src/routes/(app)/(admin)/vacation/rules/_lib/constants.ts`           | German labels, tabs, month names                   | DONE Session 17 |
+| `frontend/src/routes/(app)/(admin)/vacation/rules/_lib/api.ts`                 | 10 apiClient functions (CRUD x3 groups)            | DONE Session 17 |
+| `frontend/src/routes/(app)/(admin)/vacation/rules/_lib/state.svelte.ts`        | Runes state (data + UI + modals)                   | DONE Session 17 |
+| `frontend/src/routes/(app)/(admin)/vacation/rules/+page.server.ts`             | SSR: parallel fetch blackouts/rules/settings       | DONE Session 17 |
+| `frontend/src/routes/(app)/(admin)/vacation/rules/+page.svelte`                | 3-tab page (blackouts, staffing, settings)         | DONE Session 17 |
+| `frontend/src/styles/vacation-rules.css`                                       | Rules list + settings grid styles                  | DONE Session 17 |
+| `frontend/src/routes/(app)/(admin)/vacation/entitlements/`                     | Entitlement management                             |                 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/`                         | Overview + calendar                                |                 |
+| `frontend/src/routes/(app)/(root)/vacation/holidays/`                          | Holiday management                                 |                 |
 
 ### Frontend (modified)
 
-| File                                                  | Change                                                            | Status          |
-| ----------------------------------------------------- | ----------------------------------------------------------------- | --------------- |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Added `vacation` icon + menu item to root, admin, employee arrays | DONE Session 16 |
+| File                                                  | Change                                                                                 | Status          |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------- |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Added `vacation` icon + menu item to root, admin, employee arrays                      | DONE Session 16 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Root + admin vacation: single URL → submenu (VACATION_ADMIN_SUBMENU: Anträge + Regeln) | DONE Session 17 |
+| `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/rules` breadcrumb entry                                               | DONE Session 17 |
 
 ---
 
