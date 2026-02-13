@@ -245,6 +245,7 @@
           <AppDatePicker
             bind:value={editEndDate}
             min={editStartDate}
+            placeholder={editStartDate}
             required
           />
         </div>

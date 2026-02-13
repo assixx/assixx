@@ -296,6 +296,7 @@
                 <AppDatePicker
                   bind:value={formEndDate}
                   min={formStartDate}
+                  placeholder={formStartDate}
                 />
                 <div class="time-picker time-picker--24h">
                   <i class="time-picker__icon fas fa-clock"></i>

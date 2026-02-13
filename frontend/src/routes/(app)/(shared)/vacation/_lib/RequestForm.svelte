@@ -244,6 +244,7 @@
     <AppDatePicker
       bind:value={endDate}
       min={startDate}
+      placeholder={startDate}
     />
   </div>
 </div>

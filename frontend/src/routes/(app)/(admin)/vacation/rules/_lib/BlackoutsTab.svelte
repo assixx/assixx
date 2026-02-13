@@ -435,6 +435,7 @@
             <AppDatePicker
               bind:value={blackoutEndDate}
               min={blackoutStartDate}
+              placeholder={blackoutStartDate}
               required
             />
           </div>

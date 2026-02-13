@@ -488,7 +488,10 @@
               Enddatum
               <small class="text-(--color-text-secondary)">(optional)</small>
             </label>
-            <AppDatePicker bind:value={endDate} />
+            <AppDatePicker
+              bind:value={endDate}
+              placeholder={startDate}
+            />
           </div>
         </div>
 

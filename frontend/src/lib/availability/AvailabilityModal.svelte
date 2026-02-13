@@ -259,6 +259,7 @@
             bind:value={availabilityEnd}
             name="availabilityEnd"
             min={availabilityStart}
+            placeholder={availabilityStart}
           />
         </div>
 

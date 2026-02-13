@@ -198,6 +198,7 @@
         <AppDatePicker
           bind:value={exportDateTo}
           min={exportDateFrom}
+          placeholder={exportDateFrom}
           onchange={clearQuickTimerangeSelection}
         />
       </div>

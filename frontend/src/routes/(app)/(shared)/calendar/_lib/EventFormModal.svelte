@@ -1,5 +1,6 @@
 <script lang="ts">
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import AppTimePicker from '$lib/components/AppTimePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -238,36 +239,29 @@
       <!-- Date/Time -->
       <div class="grid grid-cols-2 gap-4">
         <div class="form-field">
-          <label class="form-field__label" for="eventStartTime">
+          <span class="form-field__label">
             Beginn <span class="text-red-500">*</span>
-          </label>
+          </span>
           <AppDatePicker
             bind:value={startDate}
             required
           />
-          <input
-            type="time"
-            class="form-field__control mt-2"
-            id="eventStartTime"
-            bind:value={startTime}
-            required
-          />
+          <div class="mt-2">
+            <AppTimePicker bind:value={startTime} />
+          </div>
         </div>
         <div class="form-field">
-          <label class="form-field__label" for="eventEndTime">
+          <span class="form-field__label">
             Ende <span class="text-red-500">*</span>
-          </label>
+          </span>
           <AppDatePicker
             bind:value={endDate}
+            placeholder={startDate}
             required
           />
-          <input
-            type="time"
-            class="form-field__control mt-2"
-            id="eventEndTime"
-            bind:value={endTime}
-            required
-          />
+          <div class="mt-2">
+            <AppTimePicker bind:value={endTime} />
+          </div>
         </div>
       </div>
 

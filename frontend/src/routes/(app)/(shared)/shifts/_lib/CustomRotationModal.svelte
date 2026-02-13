@@ -221,6 +221,7 @@
             <AppDatePicker
               required
               bind:value={endDate}
+              placeholder={startDate}
             />
           </div>
         </div>

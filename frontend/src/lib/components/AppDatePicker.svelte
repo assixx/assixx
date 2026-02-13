@@ -20,6 +20,8 @@
     min?: string;
     /** Maximum selectable date as YYYY-MM-DD string */
     max?: string;
+    /** Initial month to show when no value is set (YYYY-MM-DD string) */
+    placeholder?: string;
     /** Label text shown above the picker */
     label?: string;
     /** HTML name attribute */
@@ -41,6 +43,7 @@
     value = $bindable(''),
     min,
     max,
+    placeholder,
     label,
     name,
     required = false,
@@ -80,7 +83,7 @@
   const minValue: DateValue | undefined = $derived(parseDate(min));
   const maxValue: DateValue | undefined = $derived(parseDate(max));
   const placeholderValue: DateValue = $derived(
-    parseDate(value) ?? today(getLocalTimeZone()),
+    parseDate(value) ?? parseDate(placeholder) ?? today(getLocalTimeZone()),
   );
 
   function handleValueChange(newValue: DateValue | undefined): void {
@@ -125,7 +128,10 @@
     <DatePicker.Trigger>
       {#snippet child({ props })}
         <!-- eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- bits-ui child snippet spread -->
-        <div {...props} class="app-date-picker__field">
+        <div
+          {...props}
+          class="app-date-picker__field"
+        >
           <i class="app-date-picker__icon fas fa-calendar"></i>
           <DatePicker.Input
             {name}
@@ -155,52 +161,52 @@
         sideOffset={8}
         collisionPadding={16}
       >
-      <DatePicker.Calendar class="app-date-picker__calendar">
-        {#snippet children({ months, weekdays })}
-          <DatePicker.Header class="app-date-picker__header">
-            <DatePicker.PrevButton class="app-date-picker__nav-btn">
-              <i class="fas fa-chevron-left"></i>
-            </DatePicker.PrevButton>
-            <DatePicker.Heading class="app-date-picker__heading" />
-            <DatePicker.NextButton class="app-date-picker__nav-btn">
-              <i class="fas fa-chevron-right"></i>
-            </DatePicker.NextButton>
-          </DatePicker.Header>
+        <DatePicker.Calendar class="app-date-picker__calendar">
+          {#snippet children({ months, weekdays })}
+            <DatePicker.Header class="app-date-picker__header">
+              <DatePicker.PrevButton class="app-date-picker__nav-btn">
+                <i class="fas fa-chevron-left"></i>
+              </DatePicker.PrevButton>
+              <DatePicker.Heading class="app-date-picker__heading" />
+              <DatePicker.NextButton class="app-date-picker__nav-btn">
+                <i class="fas fa-chevron-right"></i>
+              </DatePicker.NextButton>
+            </DatePicker.Header>
 
-          <!-- eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- bits-ui snippet props not resolvable by eslint-plugin-svelte -->
-          {#each months as month (`${String(month.value.year)}-${String(month.value.month)}`)}
-            <DatePicker.Grid class="app-date-picker__grid">
-              <DatePicker.GridHead>
-                <DatePicker.GridRow class="app-date-picker__grid-row">
-                  {#each weekdays as weekday, wdIndex (wdIndex)}
-                    <DatePicker.HeadCell class="app-date-picker__head-cell">
-                      {weekday}
-                    </DatePicker.HeadCell>
-                  {/each}
-                </DatePicker.GridRow>
-              </DatePicker.GridHead>
-              <DatePicker.GridBody>
-                {#each month.weeks as week, weekIndex (weekIndex)}
+            <!-- eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- bits-ui snippet props not resolvable by eslint-plugin-svelte -->
+            {#each months as month (`${String(month.value.year)}-${String(month.value.month)}`)}
+              <DatePicker.Grid class="app-date-picker__grid">
+                <DatePicker.GridHead>
                   <DatePicker.GridRow class="app-date-picker__grid-row">
-                    <!-- eslint-disable-next-line @typescript-eslint/no-unsafe-call -- bits-ui snippet props not resolvable by eslint-plugin-svelte -->
-                    {#each week as day (day.toString())}
-                      <DatePicker.Cell
-                        date={day}
-                        month={month.value}
-                        class="app-date-picker__cell"
-                      >
-                        <DatePicker.Day class="app-date-picker__day">
-                          {day.day}
-                        </DatePicker.Day>
-                      </DatePicker.Cell>
+                    {#each weekdays as weekday, wdIndex (wdIndex)}
+                      <DatePicker.HeadCell class="app-date-picker__head-cell">
+                        {weekday}
+                      </DatePicker.HeadCell>
                     {/each}
                   </DatePicker.GridRow>
-                {/each}
-              </DatePicker.GridBody>
-            </DatePicker.Grid>
-          {/each}
-        {/snippet}
-      </DatePicker.Calendar>
+                </DatePicker.GridHead>
+                <DatePicker.GridBody>
+                  {#each month.weeks as week, weekIndex (weekIndex)}
+                    <DatePicker.GridRow class="app-date-picker__grid-row">
+                      <!-- eslint-disable-next-line @typescript-eslint/no-unsafe-call -- bits-ui snippet props not resolvable by eslint-plugin-svelte -->
+                      {#each week as day (day.toString())}
+                        <DatePicker.Cell
+                          date={day}
+                          month={month.value}
+                          class="app-date-picker__cell"
+                        >
+                          <DatePicker.Day class="app-date-picker__day">
+                            {day.day}
+                          </DatePicker.Day>
+                        </DatePicker.Cell>
+                      {/each}
+                    </DatePicker.GridRow>
+                  {/each}
+                </DatePicker.GridBody>
+              </DatePicker.Grid>
+            {/each}
+          {/snippet}
+        </DatePicker.Calendar>
       </DatePicker.Content>
     </DatePicker.Portal>
   </DatePicker.Root>
