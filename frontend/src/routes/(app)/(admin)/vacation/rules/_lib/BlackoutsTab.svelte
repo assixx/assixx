@@ -6,6 +6,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -418,10 +419,7 @@
               class="form-field__label"
               for="bo-start">Startdatum</label
             >
-            <input
-              id="bo-start"
-              type="date"
-              class="form-field__control"
+            <AppDatePicker
               bind:value={blackoutStartDate}
               required
             />
@@ -434,12 +432,9 @@
               class="form-field__label"
               for="bo-end">Enddatum</label
             >
-            <input
-              id="bo-end"
-              type="date"
-              class="form-field__control"
-              min={blackoutStartDate}
+            <AppDatePicker
               bind:value={blackoutEndDate}
+              min={blackoutStartDate}
               required
             />
           </div>

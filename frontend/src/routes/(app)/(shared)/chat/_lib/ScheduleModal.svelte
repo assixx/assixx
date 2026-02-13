@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { MESSAGES, SCHEDULE_CONSTRAINTS } from './constants';
 
   interface Props {
@@ -61,10 +63,7 @@
             >
               {MESSAGES.labelDate}
             </label>
-            <input
-              type="date"
-              id="scheduleDate"
-              class="form-field__control"
+            <AppDatePicker
               required
               min={minDate}
               max={maxDate}

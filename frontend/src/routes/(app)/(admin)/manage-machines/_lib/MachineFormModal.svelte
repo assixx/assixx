@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
   import { MESSAGES, MACHINE_TYPE_OPTIONS, STATUS_OPTIONS } from './constants';
   import { machineState } from './state.svelte';
@@ -527,21 +528,13 @@
           >
             {MESSAGES.LABEL_NEXT_MAINTENANCE}
           </label>
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="machine-next-maintenance"
-              name="nextMaintenance"
-              class="date-picker__input"
-              value={machineState.formNextMaintenance}
-              oninput={(e) => {
-                machineState.setFormNextMaintenance(
-                  (e.target as HTMLInputElement).value,
-                );
-              }}
-            />
-          </div>
+          <AppDatePicker
+            value={machineState.formNextMaintenance}
+            name="nextMaintenance"
+            onchange={(v: string) => {
+              machineState.setFormNextMaintenance(v);
+            }}
+          />
         </div>
       </div>
 

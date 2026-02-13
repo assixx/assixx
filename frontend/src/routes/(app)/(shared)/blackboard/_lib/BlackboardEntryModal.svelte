@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -437,13 +438,10 @@
           for="entryExpiresAt"
           class="form-field__label">Gültig bis (optional)</label
         >
-        <input
-          type="date"
-          class="form-field__control"
-          id="entryExpiresAt"
+        <AppDatePicker
           value={expiresAt}
-          oninput={(e) => {
-            onexpireschange((e.target as HTMLInputElement).value);
+          onchange={(v: string) => {
+            onexpireschange(v);
           }}
         />
       </div>

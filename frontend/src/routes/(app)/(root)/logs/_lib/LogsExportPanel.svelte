@@ -6,6 +6,7 @@
    *
    * @see ADR-009 Central Audit Logging
    */
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { createLogger } from '$lib/utils/logger';
 
   import {
@@ -182,12 +183,9 @@
           class="form-field__label"
           for="export-date-from">Von Datum</label
         >
-        <input
-          type="date"
-          id="export-date-from"
-          class="form-field__control"
+        <AppDatePicker
           bind:value={exportDateFrom}
-          oninput={clearQuickTimerangeSelection}
+          onchange={clearQuickTimerangeSelection}
         />
       </div>
 
@@ -197,13 +195,10 @@
           class="form-field__label"
           for="export-date-to">Bis Datum</label
         >
-        <input
-          type="date"
-          id="export-date-to"
-          class="form-field__control"
-          min={exportDateFrom}
+        <AppDatePicker
           bind:value={exportDateTo}
-          oninput={clearQuickTimerangeSelection}
+          min={exportDateFrom}
+          onchange={clearQuickTimerangeSelection}
         />
       </div>
 

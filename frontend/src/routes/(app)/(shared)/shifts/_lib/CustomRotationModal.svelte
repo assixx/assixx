@@ -4,6 +4,8 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { getEmployeeDisplayName } from './utils';
 
   import type { Employee, CustomRotationConfig } from './types';
@@ -203,12 +205,9 @@
               <i class="fas fa-calendar mr-1"></i>
               Startdatum
             </label>
-            <input
-              type="date"
-              id="custom-rotation-start-date"
-              class="form-field__control"
-              bind:value={startDate}
+            <AppDatePicker
               required
+              bind:value={startDate}
             />
           </div>
           <div class="form-field">
@@ -219,12 +218,9 @@
               <i class="fas fa-calendar-check mr-1"></i>
               Enddatum (max. 1.5 Jahre)
             </label>
-            <input
-              type="date"
-              id="custom-rotation-end-date"
-              class="form-field__control"
-              bind:value={endDate}
+            <AppDatePicker
               required
+              bind:value={endDate}
             />
           </div>
         </div>

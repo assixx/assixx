@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -272,16 +273,7 @@
                 for="startDate">Startdatum und -zeit</label
               >
               <div class="flex gap-3">
-                <div class="date-picker flex-1">
-                  <i class="date-picker__icon fas fa-calendar"></i>
-                  <input
-                    type="date"
-                    id="startDate"
-                    name="start_date"
-                    class="date-picker__input"
-                    bind:value={formStartDate}
-                  />
-                </div>
+                <AppDatePicker bind:value={formStartDate} />
                 <div class="time-picker time-picker--24h">
                   <i class="time-picker__icon fas fa-clock"></i>
                   <input
@@ -301,17 +293,10 @@
                 for="endDate">Enddatum und -zeit</label
               >
               <div class="flex gap-3">
-                <div class="date-picker flex-1">
-                  <i class="date-picker__icon fas fa-calendar"></i>
-                  <input
-                    type="date"
-                    id="endDate"
-                    name="end_date"
-                    class="date-picker__input"
-                    min={formStartDate}
-                    bind:value={formEndDate}
-                  />
-                </div>
+                <AppDatePicker
+                  bind:value={formEndDate}
+                  min={formStartDate}
+                />
                 <div class="time-picker time-picker--24h">
                   <i class="time-picker__icon fas fa-clock"></i>
                   <input

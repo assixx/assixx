@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
@@ -557,16 +558,10 @@
                   <!-- Date -->
                 {:else if question.questionType === 'date'}
                   <div class="form-field">
-                    <input
-                      type="date"
-                      class="form-field__control"
-                      placeholder="Datum wählen..."
+                    <AppDatePicker
                       {required}
-                      oninput={(e) => {
-                        handleDateChange(
-                          question.id,
-                          (e.target as HTMLInputElement).value,
-                        );
+                      onchange={(v: string) => {
+                        handleDateChange(question.id, v);
                       }}
                     />
                   </div>

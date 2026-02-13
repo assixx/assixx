@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -31,6 +32,32 @@
   // prettier-ignore
   let { formData = $bindable(), editingEvent, isAdmin, departments, teams, areas, onclose, onsave }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
+
+  /** Split "YYYY-MM-DDThh:mm" into date + time parts */
+  function splitDatetime(dt: string): { date: string; time: string } {
+    const parts = dt.split('T');
+    return { date: parts[0] ?? '', time: parts[1] ?? '09:00' };
+  }
+
+  /** Merge date (YYYY-MM-DD) + time (HH:MM) back to datetime-local format */
+  function mergeDatetime(date: string, time: string): string {
+    if (date === '') return '';
+    return `${date}T${time !== '' ? time : '09:00'}`;
+  }
+
+  // Split formData.startTime/endTime into reactive date + time pairs
+  let startDate = $state(splitDatetime(formData.startTime).date);
+  let startTime = $state(splitDatetime(formData.startTime).time);
+  let endDate = $state(splitDatetime(formData.endTime).date);
+  let endTime = $state(splitDatetime(formData.endTime).time);
+
+  // Sync back to formData when date or time changes
+  $effect(() => {
+    formData.startTime = mergeDatetime(startDate, startTime);
+  });
+  $effect(() => {
+    formData.endTime = mergeDatetime(endDate, endTime);
+  });
 
   // Dropdown states
   let recurrenceDropdownOpen = $state(false);
@@ -211,32 +238,34 @@
       <!-- Date/Time -->
       <div class="grid grid-cols-2 gap-4">
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="eventStart"
-          >
+          <label class="form-field__label" for="eventStartTime">
             Beginn <span class="text-red-500">*</span>
           </label>
+          <AppDatePicker
+            bind:value={startDate}
+            required
+          />
           <input
-            type="datetime-local"
-            class="form-field__control"
-            id="eventStart"
-            bind:value={formData.startTime}
+            type="time"
+            class="form-field__control mt-2"
+            id="eventStartTime"
+            bind:value={startTime}
             required
           />
         </div>
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="eventEnd"
-          >
+          <label class="form-field__label" for="eventEndTime">
             Ende <span class="text-red-500">*</span>
           </label>
+          <AppDatePicker
+            bind:value={endDate}
+            required
+          />
           <input
-            type="datetime-local"
-            class="form-field__control"
-            id="eventEnd"
-            bind:value={formData.endTime}
+            type="time"
+            class="form-field__control mt-2"
+            id="eventEndTime"
+            bind:value={endTime}
             required
           />
         </div>
@@ -531,12 +560,7 @@
               class="form-field__label"
               for="recurrenceUntil">Enddatum</label
             >
-            <input
-              type="date"
-              class="form-field__control"
-              id="recurrenceUntil"
-              bind:value={formData.recurrenceUntil}
-            />
+            <AppDatePicker bind:value={formData.recurrenceUntil} />
           </div>
         {/if}
       {/if}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { tick } from 'svelte';
 
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -510,16 +512,7 @@
             class="form-field__label"
             for="employee-dateOfBirth">Geburtsdatum</label
           >
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="employee-dateOfBirth"
-              name="dateOfBirth"
-              class="date-picker__input"
-              bind:value={formDateOfBirth}
-            />
-          </div>
+          <AppDatePicker bind:value={formDateOfBirth} />
         </div>
 
         <!-- Team Assignment Section -->

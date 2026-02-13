@@ -5,6 +5,7 @@
    * Based on: frontend/src/scripts/shifts/rotation.ts
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils/alerts';
   import { createLogger } from '$lib/utils/logger';
 
@@ -474,10 +475,7 @@
               Startdatum
               <span class="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              id="rotation-start"
-              class="form-field__control"
+            <AppDatePicker
               required
               bind:value={startDate}
             />
@@ -490,12 +488,7 @@
               Enddatum
               <small class="text-(--color-text-secondary)">(optional)</small>
             </label>
-            <input
-              type="date"
-              id="rotation-end"
-              class="form-field__control"
-              bind:value={endDate}
-            />
+            <AppDatePicker bind:value={endDate} />
           </div>
         </div>
 

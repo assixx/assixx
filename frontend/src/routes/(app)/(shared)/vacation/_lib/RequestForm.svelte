@@ -11,6 +11,7 @@
   import { onDestroy } from 'svelte';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
   import CapacityIndicator from './CapacityIndicator.svelte';
   import {
@@ -233,22 +234,14 @@
       class="form-field__label"
       for="start-date">Von</label
     >
-    <input
-      id="start-date"
-      type="date"
-      class="form-field__control"
-      bind:value={startDate}
-    />
+    <AppDatePicker bind:value={startDate} />
   </div>
   <div class="form-field">
     <label
       class="form-field__label"
       for="end-date">Bis</label
     >
-    <input
-      id="end-date"
-      type="date"
-      class="form-field__control"
+    <AppDatePicker
       bind:value={endDate}
       min={startDate}
     />

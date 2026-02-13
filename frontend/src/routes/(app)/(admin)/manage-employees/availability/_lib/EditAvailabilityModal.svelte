@@ -8,6 +8,7 @@
    */
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
   import { AVAILABILITY_STATUS_OPTIONS } from '../../_lib/constants';
 
@@ -230,16 +231,10 @@
             class="form-field__label"
             for="edit-start-date">Von Datum</label
           >
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="edit-start-date"
-              class="date-picker__input"
-              bind:value={editStartDate}
-              required
-            />
-          </div>
+          <AppDatePicker
+            bind:value={editStartDate}
+            required
+          />
         </div>
 
         <div class="form-field">
@@ -247,17 +242,11 @@
             class="form-field__label"
             for="edit-end-date">Bis Datum</label
           >
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="edit-end-date"
-              class="date-picker__input"
-              min={editStartDate}
-              bind:value={editEndDate}
-              required
-            />
-          </div>
+          <AppDatePicker
+            bind:value={editEndDate}
+            min={editStartDate}
+            required
+          />
         </div>
 
         <!-- Reason -->

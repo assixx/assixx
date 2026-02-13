@@ -8,6 +8,7 @@
   import { onDestroy } from 'svelte';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -584,12 +585,7 @@
           >
             {ENTITLEMENT_LABELS.carryOverExpiresAt}
           </label>
-          <input
-            id="ent-expires"
-            type="date"
-            class="form-field__control"
-            bind:value={formExpiresAt}
-          />
+          <AppDatePicker bind:value={formExpiresAt} />
         </div>
       </div>
 

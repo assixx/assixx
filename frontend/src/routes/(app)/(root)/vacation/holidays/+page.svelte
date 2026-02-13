@@ -9,6 +9,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -382,10 +383,7 @@
             class="form-field__label"
             for="hol-date">Datum</label
           >
-          <input
-            id="hol-date"
-            type="date"
-            class="form-field__control"
+          <AppDatePicker
             bind:value={holidayDate}
             required
           />
