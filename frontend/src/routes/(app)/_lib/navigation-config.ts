@@ -104,7 +104,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   },
 ];
 
-/** Vacation submenu for root/admin (includes rules management) */
+/** Vacation submenu for admin (requests + rules + entitlements) */
 const VACATION_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'vacation-requests',
@@ -115,6 +115,35 @@ const VACATION_ADMIN_SUBMENU: NavItem[] = [
     id: 'vacation-rules',
     label: 'Regeln & Einstellungen',
     url: '/vacation/rules',
+  },
+  {
+    id: 'vacation-entitlements',
+    label: 'Urlaubsansprüche',
+    url: '/vacation/entitlements',
+  },
+];
+
+/** Vacation submenu for root (admin items + holidays) */
+const VACATION_ROOT_SUBMENU: NavItem[] = [
+  {
+    id: 'vacation-requests',
+    label: 'Anträge',
+    url: '/vacation',
+  },
+  {
+    id: 'vacation-rules',
+    label: 'Regeln & Einstellungen',
+    url: '/vacation/rules',
+  },
+  {
+    id: 'vacation-entitlements',
+    label: 'Urlaubsansprüche',
+    url: '/vacation/entitlements',
+  },
+  {
+    id: 'vacation-holidays',
+    label: 'Feiertage',
+    url: '/vacation/holidays',
   },
 ];
 
@@ -161,7 +190,7 @@ export const rootMenuItems: NavItem[] = [
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
-    submenu: VACATION_ADMIN_SUBMENU,
+    submenu: VACATION_ROOT_SUBMENU,
   },
   {
     id: 'documents',

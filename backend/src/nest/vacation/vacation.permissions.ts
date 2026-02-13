@@ -25,7 +25,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
     },
     {
       code: 'vacation-entitlements',
-      label: 'Urlaubsansprueche',
+      label: 'Urlaubsansprüche',
       icon: 'fa-calculator',
       allowedPermissions: ['canRead', 'canWrite'],
     },

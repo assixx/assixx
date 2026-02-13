@@ -563,7 +563,9 @@
     {:else}
       <div
         class="pinboard-grid"
-        style="--zoom-level: {zoomLevel / 100};"
+        style="
+
+--zoom-level: {zoomLevel / 100};"
       >
         {#each entries as entry (entry.id)}
           <BlackboardEntryCard

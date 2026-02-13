@@ -198,7 +198,7 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 | `/vacation`              | Root/Area-Lead               | Direkte Eintragung (kein Approval noetig) + Uebersicht                                       |
 | `/vacation/rules`        | Lead/Admin/Root              | Mindestbesetzung pro Maschine, Urlaubssperren, Vorlaufzeit                                   |
 | `/vacation/overview`     | Lead/Admin/Root              | Team-Kalender, Jahresuebersicht, Statistiken                                                 |
-| `/vacation/entitlements` | Admin/Root                   | Urlaubsansprueche pro Mitarbeiter, Uebertrag-Einstellungen                                   |
+| `/vacation/entitlements` | Admin/Root                   | Urlaubsansprüche pro Mitarbeiter, Uebertrag-Einstellungen                                    |
 | `/vacation/holidays`     | Root / has_full_access Admin | Feiertage fuer Tenant verwalten                                                              |
 
 ---

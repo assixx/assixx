@@ -487,6 +487,7 @@
   .messages-container {
     /* Enable smooth scrolling with GPU acceleration */
     will-change: scroll-position;
+
     /* Contain layout calculations to this element */
     contain: strict;
   }
@@ -495,8 +496,10 @@
   .message {
     /* Skip rendering of off-screen messages (native browser virtualization) */
     content-visibility: auto;
+
     /* Estimated height for messages - prevents layout shift */
     contain-intrinsic-size: auto 60px;
+
     /* Isolate repaints */
     contain: layout style paint;
   }
@@ -559,7 +562,7 @@
 
   /* Scheduled message attachment styles */
   .scheduled-attachment {
-    opacity: 0.85;
+    opacity: 85%;
     position: relative;
   }
 
@@ -582,7 +585,7 @@
     justify-content: center;
     background: rgb(0 0 0 / 30%);
     border-radius: var(--radius-md, 8px);
-    color: white;
+    color: #fff;
     font-size: 1.5rem;
   }
 
@@ -609,7 +612,7 @@
 
   .scheduled-attachment.file-attachment .file-size {
     font-size: 0.75rem;
-    opacity: 0.7;
+    opacity: 70%;
   }
 
   /* E2E encryption indicators */
@@ -622,7 +625,7 @@
   .e2e-decrypt-failed {
     color: var(--error-color, #f44336);
     font-style: italic;
-    opacity: 0.8;
+    opacity: 80%;
   }
 
   .e2e-decrypt-failed i {

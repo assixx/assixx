@@ -220,7 +220,7 @@
    ============================================================ */
 
 /* High contrast mode */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
   .date-picker__input {
     border-width: 2px;
   }

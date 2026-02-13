@@ -136,7 +136,7 @@
 
   .incoming-card__requester {
     font-weight: 600;
-    font-size: 0.9375rem;
+    font-size: 0.938rem;
   }
 
   .incoming-card__body {
@@ -157,11 +157,11 @@
   }
 
   .incoming-card__meta {
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   .incoming-card__note {
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--text-muted);
     padding: 0.375rem 0.5rem;
     border-radius: var(--radius-sm, 0.25rem);

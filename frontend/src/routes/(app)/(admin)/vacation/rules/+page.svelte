@@ -6,7 +6,7 @@
    */
   import { onDestroy } from 'svelte';
 
-  import '../../../../styles/vacation-rules.css';
+  import '$styles/vacation-rules.css';
 
   import BlackoutsTab from './_lib/BlackoutsTab.svelte';
   import { RULES_TABS } from './_lib/constants';

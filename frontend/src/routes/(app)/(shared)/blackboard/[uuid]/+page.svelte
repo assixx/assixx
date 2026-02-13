@@ -572,24 +572,29 @@
     align-items: center;
     text-align: center;
   }
+
   .confirmation-done .text-success {
     font-size: 2rem;
     color: var(--color-success);
   }
+
   .attachment-info {
     flex: 1;
     min-width: 0;
   }
+
   .attachment-name {
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .attachment-meta {
     font-size: 0.8rem;
     color: rgb(255 255 255 / 60%);
   }
+
   .photo-placeholder {
     width: 100%;
     height: 100%;

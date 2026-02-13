@@ -226,6 +226,6 @@
 
   .conversations-empty i {
     font-size: 1.5rem;
-    opacity: 0.5;
+    opacity: 50%;
   }
 </style>

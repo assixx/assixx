@@ -117,7 +117,7 @@ Jede Statusaenderung wird protokolliert. Antrag gestellt → pending. Genehmigt 
 
 ## 5. `vacation_blackouts` — Urlaubssperren
 
-Zeitraeume, in denen kein Urlaub genommen werden darf. Z.B. "Inventur 15.-20. Maerz" oder "Messezeit Juni". Kann global (alle), pro Team oder pro Abteilung gelten. Wenn ein Mitarbeiter in einem gesperrten Zeitraum Urlaub beantragt → System blockt sofort.
+Zeitraeume, in denen kein Urlaub genommen werden darf. Z.B. "Inventur 15.-20. März" oder "Messezeit Juni". Kann global (alle), pro Team oder pro Abteilung gelten. Wenn ein Mitarbeiter in einem gesperrten Zeitraum Urlaub beantragt → System blockt sofort.
 
 | Spalte       | Typ          | Bedeutung                                    |
 | ------------ | ------------ | -------------------------------------------- |
@@ -167,16 +167,16 @@ Sagt: "CNC-Fraese 1 braucht mindestens 3 Bediener." Wenn jemand Urlaub beantragt
 
 Eine einzige Zeile pro Tenant. Globale Regeln: Wie viele Urlaubstage standardmaessig (30), wie viel Uebertrag maximal (10 Tage), bis wann Uebertrag verfaellt (31.03.), wie viel Vorlaufzeit ein Antrag braucht (0 Tage = sofort moeglich), maximale zusammenhaengende Urlaubstage (null = unbegrenzt).
 
-| Spalte                      | Typ          | Bedeutung                                                         |
-| --------------------------- | ------------ | ----------------------------------------------------------------- |
-| `id`                        | UUID         | Primaerschluessel (UUIDv7)                                        |
-| `tenant_id`                 | INTEGER      | Welche Firma                                                      |
-| `default_annual_days`       | NUMERIC(4,1) | Standard-Jahresurlaub (Default: 30)                               |
-| `max_carry_over_days`       | NUMERIC(4,1) | Max. Uebertrag ins naechste Jahr (Default: 10)                    |
-| `carry_over_deadline_month` | INTEGER      | Monat bis wann Uebertrag genutzt werden muss (Default: 3 = Maerz) |
-| `carry_over_deadline_day`   | INTEGER      | Tag des Deadline-Monats (Default: 31)                             |
-| `advance_notice_days`       | INTEGER      | Mindest-Vorlaufzeit fuer Anträge in Tagen (Default: 0)            |
-| `max_consecutive_days`      | INTEGER      | Max. zusammenhaengende Urlaubstage (NULL = unbegrenzt)            |
+| Spalte                      | Typ          | Bedeutung                                                        |
+| --------------------------- | ------------ | ---------------------------------------------------------------- |
+| `id`                        | UUID         | Primaerschluessel (UUIDv7)                                       |
+| `tenant_id`                 | INTEGER      | Welche Firma                                                     |
+| `default_annual_days`       | NUMERIC(4,1) | Standard-Jahresurlaub (Default: 30)                              |
+| `max_carry_over_days`       | NUMERIC(4,1) | Max. Uebertrag ins naechste Jahr (Default: 10)                   |
+| `carry_over_deadline_month` | INTEGER      | Monat bis wann Uebertrag genutzt werden muss (Default: 3 = März) |
+| `carry_over_deadline_day`   | INTEGER      | Tag des Deadline-Monats (Default: 31)                            |
+| `advance_notice_days`       | INTEGER      | Mindest-Vorlaufzeit fuer Anträge in Tagen (Default: 0)           |
+| `max_consecutive_days`      | INTEGER      | Max. zusammenhaengende Urlaubstage (NULL = unbegrenzt)           |
 
 **Unique:** Genau eine Zeile pro Firma (`tenant_id`).
 

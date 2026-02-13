@@ -84,7 +84,7 @@ ON CONFLICT (code) DO NOTHING;
 -- Permission modules for ADR-020
 -- vacation-requests: Anträge stellen/verwalten
 -- vacation-rules: Sperren + Mindestbesetzung
--- vacation-entitlements: Urlaubsansprueche verwalten
+-- vacation-entitlements: Urlaubsansprüche verwalten
 -- vacation-holidays: Feiertage verwalten
 -- vacation-overview: Team-Kalender + Statistiken
 ```
@@ -1045,7 +1045,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
   modules: [
     { code: 'vacation-requests', name: 'UrlaubsAnträge' },
     { code: 'vacation-rules', name: 'Regeln & Sperren' },
-    { code: 'vacation-entitlements', name: 'Urlaubsansprueche' },
+    { code: 'vacation-entitlements', name: 'Urlaubsansprüche' },
     { code: 'vacation-holidays', name: 'Feiertage' },
     { code: 'vacation-overview', name: 'Uebersicht & Kalender' },
   ],
@@ -1288,7 +1288,7 @@ Employee waehlt Datum:
      [OK]   Keine Urlaubssperre
      [WARN] Maschine CNC-1: Mindestbesetzung 3, nach Genehmigung nur 3
      [OK]   Team: 1 von 8 im Urlaub
-     [BLOCKED] Urlaubssperre "Inventur" 15-20 Maerz → Antrag nicht moeglich
+     [BLOCKED] Urlaubssperre "Inventur" 15-20 März → Antrag nicht moeglich
 
 Lead oeffnet eingehenden Antrag:
   → Automatischer API-Call an GET /vacation/capacity?startDate=X&endDate=Y&requesterId=Z

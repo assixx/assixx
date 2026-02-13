@@ -282,7 +282,7 @@
    ============================================================ */
 
 /* High contrast mode */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
   .plan-card {
     border-width: 2px;
   }

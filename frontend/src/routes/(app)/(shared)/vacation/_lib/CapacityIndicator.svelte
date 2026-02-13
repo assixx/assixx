@@ -115,13 +115,13 @@
 
   .capacity-indicator__warning {
     color: var(--color-warning, #f59e0b);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     font-weight: 500;
   }
 
   .capacity-indicator__ok {
     color: var(--color-success, #22c55e);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   .capacity-indicator__conflicts {
@@ -133,7 +133,7 @@
   .capacity-indicator__list {
     margin: 0;
     padding-left: 1.25rem;
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--text-muted);
   }
 </style>

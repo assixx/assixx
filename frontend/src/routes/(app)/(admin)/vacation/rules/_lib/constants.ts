@@ -30,7 +30,7 @@ export const RULES_TABS: { value: RulesTab; label: string; icon: string }[] = [
 export const MONTH_LABELS: Record<number, string> = {
   1: 'Januar',
   2: 'Februar',
-  3: 'Maerz',
+  3: 'März',
   4: 'April',
   5: 'Mai',
   6: 'Juni',
@@ -46,9 +46,9 @@ export const MONTH_LABELS: Record<number, string> = {
 
 export const SETTINGS_LABELS: Record<string, string> = {
   defaultAnnualDays: 'Standard-Jahresurlaub (Tage)',
-  maxCarryOverDays: 'Max. Uebertragbare Tage',
-  carryOverDeadlineMonth: 'Uebertragungsfrist (Monat)',
-  carryOverDeadlineDay: 'Uebertragungsfrist (Tag)',
+  maxCarryOverDays: 'Max. Übertragbare Tage',
+  carryOverDeadlineMonth: 'Übertragungsfrist (Monat)',
+  carryOverDeadlineDay: 'Übertragungsfrist (Tag)',
   advanceNoticeDays: 'Vorlaufzeit (Tage)',
   maxConsecutiveDays: 'Max. aufeinanderfolgende Tage',
 };

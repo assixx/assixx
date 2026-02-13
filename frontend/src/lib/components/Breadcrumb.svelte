@@ -89,6 +89,11 @@
       '/features': { label: 'Features', icon: 'fa-tools' },
       '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
       '/vacation/rules': { label: 'Urlaubsregeln', icon: 'fa-shield-alt' },
+      '/vacation/entitlements': {
+        label: 'Urlaubsansprüche',
+        icon: 'fa-calculator',
+      },
+      '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',
