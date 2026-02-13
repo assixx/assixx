@@ -35,6 +35,7 @@
   import { shiftIndicators } from './_lib/shift-indicators.svelte';
   import { calendarState } from './_lib/state.svelte';
   import { formatDatetimeLocal } from './_lib/utils';
+  import { vacationIndicators } from './_lib/vacation-indicators.svelte';
 
   import type { PageData } from './$types';
   import type {
@@ -207,9 +208,15 @@
     endStr: string;
   }): Promise<EventInput[]> {
     try {
-      // Fetch shifts in parallel (for DOM rendering later)
+      // Fetch shifts + vacations in parallel (for DOM rendering later)
       if (shiftIndicators.showShifts) {
         void shiftIndicators.fetchAndRenderShifts(
+          fetchInfo.startStr,
+          fetchInfo.endStr,
+        );
+      }
+      if (vacationIndicators.showVacations) {
+        void vacationIndicators.fetchAndRenderVacations(
           fetchInfo.startStr,
           fetchInfo.endStr,
         );
@@ -464,6 +471,24 @@
               <i class="fas fa-clock"></i>
               Schichten
             </button>
+            <!-- Urlaub Toggle -->
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={vacationIndicators.showVacations}
+              id="showVacationsToggle"
+              title="Urlaub anzeigen/ausblenden"
+              data-action="toggle-vacations"
+              onclick={() => {
+                const isNowActive = vacationIndicators.toggle();
+                if (isNowActive) {
+                  refetchCalendarEvents();
+                }
+              }}
+            >
+              <i class="fas fa-umbrella-beach"></i>
+              Urlaub
+            </button>
           </div>
         </div>
 
@@ -490,6 +515,10 @@
             <div class="legend-item">
               <span class="legend-color legend-personal"></span>
               <span class="legend-label">Persoenlich</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color legend-vacation"></span>
+              <span class="legend-label">Urlaub</span>
             </div>
           </div>
         </div>

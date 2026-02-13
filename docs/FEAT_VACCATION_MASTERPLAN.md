@@ -47,7 +47,7 @@
 ## Phase 1: Database Migrations
 
 > **Dependency:** None (first phase)
-> **Files affected:** 5 new migration files + 12 backend/frontend files (SQL + comments + tests + DTOs)
+> **Files affected:** 6 new migration files + 12 backend/frontend files (SQL + comments + tests + DTOs)
 > **Last migration:** `20260211000026_e2e-key-escrow.ts` → next is `000027`
 
 ### Step 1.1: Feature Flag + Teams Extension [DONE - Session 1, 2026-02-12]
@@ -91,7 +91,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d user_teams" | g
 3. `vacation_entitlements` — per-user per-year entitlement (UUID PK, RLS, UNIQUE tenant_id+user_id+year)
 4. `vacation_requests` — the core requests table (UUID PK, RLS, 5 constraints)
 5. `vacation_request_status_log` — audit per request (UUID PK, RLS)
-6. `vacation_blackouts` — blackout periods (UUID PK, RLS, scope_type polymorphism)
+6. `vacation_blackouts` — blackout periods (UUID PK, RLS, `is_global` + junction table `vacation_blackout_scopes`)
 7. `vacation_staffing_rules` — min staffing per machine (UUID PK, RLS, UNIQUE tenant_id+machine_id)
 8. `vacation_settings` — tenant-wide config (UUID PK, RLS, UNIQUE tenant_id)
 
@@ -171,9 +171,33 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt employee_avail
 3. `DROP TYPE IF EXISTS absences_type CASCADE`
 4. `DROP TYPE IF EXISTS absences_status CASCADE`
 
-### Phase 1 Definition of Done [ALL COMPLETE - 2026-02-12]
+### Step 1.5: Blackout Multi-Scope Migration [DONE - Session 21, 2026-02-13]
 
-- [x] 5 migration files created with `up()` AND `down()`
+**New file:**
+
+- `database/migrations/20260213000032_blackout-multi-scope.ts` [CREATED + APPLIED]
+
+**What happens:**
+
+1. CREATE ENUM `vacation_blackout_org_type` ('department', 'team', 'area')
+2. ADD COLUMN `is_global BOOLEAN NOT NULL DEFAULT false` to `vacation_blackouts`
+3. CREATE TABLE `vacation_blackout_scopes` (junction table with RLS + GRANTs)
+4. Migrate existing data: `scope_type='global'` → `is_global=true`, team/dept → junction rows
+5. DROP old columns `scope_type`, `scope_id` + CHECK constraint `valid_scope`
+6. Replace `idx_vb_scope` with `idx_vb_global`
+
+**Why:** The blackouts service code (Session 8) was written for multi-scope model (is_global + junction table), but migration 29 only created the simple scope_type/scope_id columns. This migration bridges that gap.
+
+**Verification:**
+
+```bash
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d vacation_blackouts" | grep is_global
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d vacation_blackout_scopes"
+```
+
+### Phase 1 Definition of Done [ALL COMPLETE - 2026-02-13]
+
+- [x] 6 migration files created with `up()` AND `down()`
 - [x] All migrations pass dry-run: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
 - [x] All migrations applied successfully
 - [x] 7 new `vacation_*` tables exist with RLS policies (7/7 verified)
@@ -183,7 +207,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt employee_avail
 - [x] `absences` table dropped
 - [x] Backend compiles with zero errors after availability rename (`tsc --noEmit` clean)
 - [x] Existing availability tests pass after rename: 24/24 passed + 164 users + 48 teams
-- [x] All 5 migration files applied (pgmigrations IDs 32-38, gap from rollback cycle)
+- [x] All 6 migration files applied (pgmigrations IDs 32-39, gap from rollback cycle)
 - [x] Backup taken before (full_backup_20260212_123139.dump, 1.9MB)
 
 ---
@@ -642,8 +666,8 @@ backend/src/nest/vacation/
 
 ### Phase 4 Definition of Done
 
-- [x] > = 20 API integration test assertions (29 tests)
-- [x] All tests pass
+- [x] > = 20 API integration test assertions (33 tests)
+- [x] All tests pass (33/33 after migration 32 + scopeType→isGlobal test fix)
 - [x] Tenant isolation verified (RLS via tenantTransaction)
 - [x] Feature-flag gating verified (ensureFeatureEnabled on all endpoints)
 - [x] Pagination verified on list endpoints (data/total/page/limit/totalPages)
@@ -911,6 +935,7 @@ Session 17: Phase 5 — Frontend: /vacation/rules [DONE 2026-02-13] (6 files: 4 
 Session 18: Phase 5 — Frontend: /vacation/entitlements + /vacation/holidays [DONE 2026-02-13] (12 files: 8 foundation + 2 state + 2 pages + nav/breadcrumb updates, svelte-check 0 errors, ESLint 0 errors)
 Session 19: Phase 5 — Frontend: /vacation/overview [DONE 2026-02-13] (6 files: 4 foundation + 1 state + 1 page + nav/breadcrumb updates, svelte-check 0 errors, ESLint 0 errors)
 Session 20: Phase 6 — Integration + documentation + ADR-023
+Session 21: Phase 1 — Migration 32 (blackout multi-scope) + API test fix (scopeType→isGlobal) [DONE 2026-02-13]
 ```
 
 ---
@@ -955,13 +980,14 @@ Session 20: Phase 6 — Integration + documentation + ADR-023
 
 ### Database (new)
 
-| File                                                            | Purpose                            |
-| --------------------------------------------------------------- | ---------------------------------- |
-| `database/migrations/20260212000027_vacation-feature-flag.ts`   | Feature registration               |
-| `database/migrations/20260212000028_teams-deputy-lead.ts`       | Teams extension + Business Rule A1 |
-| `database/migrations/20260212000029_vacation-core-tables.ts`    | 7 tables + 3 ENUMs                 |
-| `database/migrations/20260212000030_availability-rebuild.ts`    | Rename employee_availability       |
-| `database/migrations/20260212000031_vacation-legacy-cleanup.ts` | Drop absences                      |
+| File                                                            | Purpose                             |
+| --------------------------------------------------------------- | ----------------------------------- |
+| `database/migrations/20260212000027_vacation-feature-flag.ts`   | Feature registration                |
+| `database/migrations/20260212000028_teams-deputy-lead.ts`       | Teams extension + Business Rule A1  |
+| `database/migrations/20260212000029_vacation-core-tables.ts`    | 7 tables + 3 ENUMs                  |
+| `database/migrations/20260212000030_availability-rebuild.ts`    | Rename employee_availability        |
+| `database/migrations/20260212000031_vacation-legacy-cleanup.ts` | Drop absences                       |
+| `database/migrations/20260213000032_blackout-multi-scope.ts`    | Blackout multi-scope junction table |
 
 ### Frontend (new)
 

@@ -202,7 +202,7 @@ describe('Vacation: Create Blackout', () => {
 
   it('should return blackout with global scope', () => {
     expect(body.data).toHaveProperty('id');
-    expect(body.data.scopeType).toBe('global');
+    expect(body.data.isGlobal).toBe(true);
   });
 });
 

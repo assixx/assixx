@@ -370,6 +370,48 @@ export async function loadUserShifts(
 }
 
 // =============================================================================
+// USER VACATIONS (Calendar Integration - Legacy DOM-based)
+// =============================================================================
+
+/**
+ * Approved vacation range from API
+ * Represents a date range (not expanded days) for calendar indicator rendering.
+ */
+export interface CalendarVacationEntry {
+  startDate: string;
+  endDate: string;
+  vacationType: string;
+  halfDayStart: string;
+  halfDayEnd: string;
+}
+
+/**
+ * Load user's approved vacations for calendar display
+ * API: GET /api/v2/vacation/my-calendar-vacations
+ * Returns date ranges — DOM rendering + expansion handled by component
+ */
+export async function loadUserVacations(
+  startDate: string,
+  endDate: string,
+): Promise<CalendarVacationEntry[]> {
+  try {
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+    });
+
+    const response = await apiClient.get<CalendarVacationEntry[]>(
+      `/vacation/my-calendar-vacations?${params}`,
+    );
+
+    return Array.isArray(response) ? response : [];
+  } catch (err) {
+    log.error({ err }, 'Error loading user vacations');
+    return [];
+  }
+}
+
+// =============================================================================
 // ORGANIZATION DATA
 // =============================================================================
 

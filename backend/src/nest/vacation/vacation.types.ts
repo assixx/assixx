@@ -390,3 +390,16 @@ export interface TeamCalendarEntry {
   halfDayStart: VacationHalfDay;
   halfDayEnd: VacationHalfDay;
 }
+
+// ============================================================================
+// Calendar Vacation Indicator (personal calendar integration)
+// ============================================================================
+
+/** Approved vacation range for calendar indicator display */
+export interface CalendarVacationEntry {
+  startDate: string;
+  endDate: string;
+  vacationType: VacationType;
+  halfDayStart: VacationHalfDay;
+  halfDayEnd: VacationHalfDay;
+}

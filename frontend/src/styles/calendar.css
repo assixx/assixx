@@ -282,6 +282,28 @@ html:not(.dark) .ec-day-grid .ec-day-head {
 }
 
 /* ============================================================================
+   VACATION INDICATORS FOR CALENDAR (U) - DO NOT MODIFY
+   ============================================================================ */
+
+.vacation-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  margin-top: 3px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #26a69a; /* Teal — distinct from team green */
+  background: var(--glass-bg-active);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+/* ============================================================================
    UPCOMING EVENTS SECTION
    ============================================================================ */
 
@@ -458,6 +480,10 @@ html:not(.dark) .ec-day-grid .ec-day-head {
 
 .legend-personal {
   background-color: #9b59b6;
+}
+
+.legend-vacation {
+  background-color: #26a69a; /* Teal — distinct from team green */
 }
 
 /* ============================================================================

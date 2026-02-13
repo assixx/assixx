@@ -5,7 +5,7 @@
 | **Status**              | Accepted                                                                                    |
 | **Date**                | 2026-02-13                                                                                  |
 | **Decision Makers**     | SCS-Technik Team                                                                            |
-| **Affected Components** | PostgreSQL (7 tables, 5 migrations), Backend (NestJS vacation module), Frontend (SvelteKit) |
+| **Affected Components** | PostgreSQL (7 tables, 6 migrations), Backend (NestJS vacation module), Frontend (SvelteKit) |
 | **Supersedes**          | —                                                                                           |
 | **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-019 (RLS), ADR-020 (Permissions)     |
 
@@ -51,19 +51,20 @@ Before this feature, Assixx had no vacation management. Industrial companies use
 
 ## Decision
 
-### 1. Database: 5 Incremental Migrations + 7 Core Tables
+### 1. Database: 6 Incremental Migrations + 7 Core Tables
 
-**Why 5 migrations instead of 1?**
+**Why 6 migrations instead of 1?**
 
 Each migration is independently reversible. If migration 30 (availability rebuild) fails, migrations 27-29 remain intact. This was critical because migration 30 renamed a live table (`employee_availability` → `user_availability`) that affected running backend code.
 
-| Migration | Purpose                                                 | Risk Mitigation                                    |
-| --------- | ------------------------------------------------------- | -------------------------------------------------- |
-| 027       | Feature flag (`tenant_features` row for "vacation")     | Idempotent INSERT, no schema change                |
-| 028       | Teams extension (`deputy_lead_id`, `UNIQUE user_teams`) | Pre-check query, RAISE EXCEPTION if duplicate data |
-| 029       | 7 core tables + RLS policies + indexes + status log     | All in single transaction, full RLS from day one   |
-| 030       | Rename `employee_availability` → `user_availability`    | Deployed atomically with backend code changes      |
-| 031       | Legacy cleanup (`absences` table removal)               | Checks for data, RAISE NOTICE for manual review    |
+| Migration | Purpose                                                 | Risk Mitigation                                     |
+| --------- | ------------------------------------------------------- | --------------------------------------------------- |
+| 027       | Feature flag (`tenant_features` row for "vacation")     | Idempotent INSERT, no schema change                 |
+| 028       | Teams extension (`deputy_lead_id`, `UNIQUE user_teams`) | Pre-check query, RAISE EXCEPTION if duplicate data  |
+| 029       | 7 core tables + RLS policies + indexes + status log     | All in single transaction, full RLS from day one    |
+| 030       | Rename `employee_availability` → `user_availability`    | Deployed atomically with backend code changes       |
+| 031       | Legacy cleanup (`absences` table removal)               | Checks for data, RAISE NOTICE for manual review     |
+| 032       | Blackout multi-scope (`is_global` + junction table)     | Data migration from scope_type/scope_id, reversible |
 
 **7 Core Tables:**
 
@@ -314,7 +315,7 @@ Single `/vacation` GraphQL endpoint with queries and mutations.
 6. **Half-day support** — morning/afternoon splits at range boundaries, `NUMERIC(5,1)` for precise day counts
 7. **Frontend consistency** — all 5 vacation pages follow identical `_lib/` pattern, predictable for future developers
 8. **SSR + client-side hybrid** — fast initial load, responsive interactions
-9. **5 incremental migrations** — each independently reversible, risk-mitigated
+9. **6 incremental migrations** — each independently reversible, risk-mitigated
 
 ### Negative
 
@@ -339,16 +340,16 @@ Single `/vacation` GraphQL endpoint with queries and mutations.
 
 ## Implementation Summary
 
-| Phase | Content                                                           | Sessions | Status   |
-| ----- | ----------------------------------------------------------------- | -------- | -------- |
-| 1     | Database: 5 migrations (feature flag → core → rebuild)            | 1-4      | Complete |
-| 2     | Backend: 11 services + controller (26 endpoints)                  | 5-12     | Complete |
-| 3     | Unit tests: 115 tests across 5 test files                         | 13-14    | Complete |
-| 4     | API integration tests: 29 endpoint tests                          | 15       | Complete |
-| 5     | Frontend: 5 pages (main, rules, entitlements, holidays, overview) | 16-19    | Complete |
-| 6     | Integration + documentation                                       | 20       | Active   |
+| Phase | Content                                                              | Sessions | Status   |
+| ----- | -------------------------------------------------------------------- | -------- | -------- |
+| 1     | Database: 6 migrations (feature flag → core → rebuild → multi-scope) | 1-4, 21  | Complete |
+| 2     | Backend: 11 services + controller (26 endpoints)                     | 5-12     | Complete |
+| 3     | Unit tests: 115 tests across 5 test files                            | 13-14    | Complete |
+| 4     | API integration tests: 29 endpoint tests                             | 15       | Complete |
+| 5     | Frontend: 5 pages (main, rules, entitlements, holidays, overview)    | 16-19    | Complete |
+| 6     | Integration + documentation                                          | 20       | Active   |
 
-**Total: 19 implementation sessions, 5 migrations, 20+ backend files, 30+ frontend files, 144 tests.**
+**Total: 21 implementation sessions, 6 migrations, 20+ backend files, 30+ frontend files, 148 tests (115 unit + 33 API).**
 
 ---
 

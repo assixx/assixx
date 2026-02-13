@@ -17,6 +17,7 @@ import type { PoolClient } from 'pg';
 import { DatabaseService } from '../database/database.service.js';
 import type { VacationQueryDto } from './dto/vacation-query.dto.js';
 import type {
+  CalendarVacationEntry,
   PaginatedResult,
   TeamCalendarData,
   TeamCalendarEntry,
@@ -48,6 +49,15 @@ interface StatusLogRow {
   changed_by_name: string | null;
   note: string | null;
   created_at: string;
+}
+
+/** Calendar vacation row (own vacations for calendar indicator) */
+interface CalVacRow {
+  start_date: string;
+  end_date: string;
+  vacation_type: string;
+  half_day_start: string;
+  half_day_end: string;
 }
 
 /** Calendar query row */
@@ -176,6 +186,43 @@ export class VacationQueriesService {
           monthEnd,
         );
         return { teamId, teamName, month, year, entries };
+      },
+    );
+  }
+
+  /** Get current user's approved vacations for calendar indicator display. */
+  async getMyCalendarVacations(
+    userId: number,
+    tenantId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<CalendarVacationEntry[]> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<CalendarVacationEntry[]> => {
+        const result = await client.query<CalVacRow>(
+          `SELECT vr.start_date, vr.end_date, vr.vacation_type,
+                  vr.half_day_start, vr.half_day_end
+           FROM vacation_requests vr
+           WHERE vr.tenant_id = $1
+             AND vr.requester_id = $2
+             AND vr.status = 'approved'
+             AND vr.is_active = 1
+             AND vr.start_date <= $4
+             AND vr.end_date >= $3
+           ORDER BY vr.start_date ASC`,
+          [tenantId, userId, startDate, endDate],
+        );
+        return result.rows.map(
+          (row: CalVacRow): CalendarVacationEntry => ({
+            startDate: this.fmtDate(row.start_date),
+            endDate: this.fmtDate(row.end_date),
+            vacationType:
+              row.vacation_type as CalendarVacationEntry['vacationType'],
+            halfDayStart:
+              row.half_day_start as CalendarVacationEntry['halfDayStart'],
+            halfDayEnd: row.half_day_end as CalendarVacationEntry['halfDayEnd'],
+          }),
+        );
       },
     );
   }

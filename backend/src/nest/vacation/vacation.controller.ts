@@ -65,6 +65,7 @@ import { VacationSettingsService } from './vacation-settings.service.js';
 import { VacationStaffingRulesService } from './vacation-staffing-rules.service.js';
 import { VacationService } from './vacation.service.js';
 import type {
+  CalendarVacationEntry,
   PaginatedResult,
   TeamCalendarData,
   VacationBalance,
@@ -527,6 +528,31 @@ export class VacationController {
       user.tenantId,
       user.id,
       dto,
+    );
+  }
+
+  // ==========================================================================
+  // Calendar Integration (1 endpoint)
+  // ==========================================================================
+
+  /**
+   * GET /vacation/my-calendar-vacations — Own approved vacations for calendar display.
+   * Returns date ranges (not expanded days) for calendar indicator rendering.
+   * MUST be before `:id` style routes to avoid param collision.
+   */
+  @Get('my-calendar-vacations')
+  @RequirePermission(FEAT, MOD_REQUESTS, 'canRead')
+  async getMyCalendarVacations(
+    @CurrentUser() user: JwtPayload,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ): Promise<CalendarVacationEntry[]> {
+    await this.ensureFeatureEnabled(user.tenantId);
+    return await this.queriesService.getMyCalendarVacations(
+      user.id,
+      user.tenantId,
+      startDate,
+      endDate,
     );
   }
 

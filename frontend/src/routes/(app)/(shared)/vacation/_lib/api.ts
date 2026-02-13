@@ -73,13 +73,22 @@ export async function editRequest(
   );
 }
 
+/** Map UI action verbs to backend status values */
+const ACTION_TO_STATUS = {
+  approve: 'approved',
+  deny: 'denied',
+} as const;
+
 export async function respondToRequest(
   id: string,
   payload: RespondPayload,
 ): Promise<VacationRequest> {
   return await apiClient.patch<VacationRequest>(
     `/vacation/requests/${id}/respond`,
-    payload,
+    {
+      ...payload,
+      action: ACTION_TO_STATUS[payload.action],
+    },
   );
 }
 
