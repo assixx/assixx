@@ -1,7 +1,7 @@
 # FEAT: Vacation Request System — Execution Masterplan
 
 > **Created:** 2026-02-12
-> **Status:** ACTIVE — Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 COMPLETE, Phase 4 COMPLETE, Phase 5 IN PROGRESS (Session 18 done)
+> **Status:** ACTIVE — Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 3 COMPLETE, Phase 4 COMPLETE, Phase 5 COMPLETE (Session 19 done)
 > **Branch:** `feat/vaccation-request`
 > **Spec:** [prompt_vacation.md](./prompt_vacation.md)
 > **Context:** [brainstorming_vacation.md](./brainstorming_vacation.md)
@@ -798,7 +798,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 - [x] `/vacation/rules` page for blackouts + staffing rules + settings (Session 17 — 3-tab page, full CRUD, settings inline edit)
 - [x] `/vacation/entitlements` page with add-days modal (Session 18 — employee list + balance display + entitlement form + add-days modal)
 - [x] `/vacation/holidays` page with CRUD (Session 18 — holiday list + year filter + create/edit/delete modals)
-- [ ] `/vacation/overview` with team calendar
+- [x] `/vacation/overview` with team calendar (Session 19 — team selector + month/year nav + calendar grid + own balance + legend)
 - [x] EntitlementBadge shows "X/Y days remaining" (Session 16 — progress bar + colors)
 - [x] Svelte 5 Runes ($state, $derived, $effect) (Session 16)
 - [x] apiClient generic = DATA shape (not wrapper) (Session 16)
@@ -822,15 +822,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 - If overlapping shifts exist: send notification to team lead
 - DO NOT auto-delete shifts (lead decides manually)
 
-### Seeds
+### ~~Seeds~~ — GESTRICHEN
 
-- `database/seeds/002_vacation-holidays-de.sql` — German default holidays for demo tenant
-- Idempotent (ON CONFLICT DO NOTHING)
+> **Entscheidung (Session 20, 2026-02-13):** Keine Seed-Dateien. Test erfolgt direkt mit Testdaten über die UI/UX. Begründung: Seed-Daten sind tenant-spezifisch (Feiertage unterscheiden sich je nach Bundesland/Firma). Der Admin legt Feiertage und Ansprüche über die vorhandenen CRUD-Oberflächen an — genau so, wie es in Produktion funktionieren soll.
 
 ### Documentation
 
 - `docs/infrastructure/adr/ADR-023-vacation-request-architecture.md` — architecture decisions
-- `docs/context.md` — add vacation controller/endpoints
+- ~~`docs/context.md` — add vacation controller/endpoints~~ — GESTRICHEN (nicht nötig)
 - `docs/FEATURES.md` — update vacation feature status
 - `brainstorming_vacation.md` — mark open points as "Resolved"
 
@@ -838,11 +837,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 - [ ] Approved vacations visible in calendar
 - [ ] Shift overlap warning works
-- [ ] German holidays seeded for demo
-- [ ] ADR-023 written
-- [ ] context.md updated
-- [ ] FEATURES.md updated
-- [ ] Customer fresh-install synced: `./scripts/sync-customer-migrations.sh`
+- ~~[ ] German holidays seeded for demo~~ — GESTRICHEN (Test via UI)
+- [x] ADR-023 written (Session 20)
+- ~~[ ] context.md updated~~ — GESTRICHEN
+- [x] FEATURES.md updated (Session 20)
+- [x] Customer fresh-install synced: `./scripts/sync-customer-migrations.sh` (Session 20 — 33 Migrationen)
 
 ---
 
@@ -869,7 +868,7 @@ Session 15: Phase 4 — API integration tests (29 tests) [DONE 2026-02-12]
 Session 16: Phase 5 — Frontend: /vacation main page [DONE 2026-02-12] (14 files: 3 foundation + 3 state + 7 components + 1 page, ESLint 0 errors)
 Session 17: Phase 5 — Frontend: /vacation/rules [DONE 2026-02-13] (6 files: 4 foundation + 1 state + 1 page + 1 CSS, svelte-check 0 errors)
 Session 18: Phase 5 — Frontend: /vacation/entitlements + /vacation/holidays [DONE 2026-02-13] (12 files: 8 foundation + 2 state + 2 pages + nav/breadcrumb updates, svelte-check 0 errors, ESLint 0 errors)
-Session 19: Phase 5 — Frontend: /vacation/overview
+Session 19: Phase 5 — Frontend: /vacation/overview [DONE 2026-02-13] (6 files: 4 foundation + 1 state + 1 page + nav/breadcrumb updates, svelte-check 0 errors, ESLint 0 errors)
 Session 20: Phase 6 — Integration + documentation + ADR-023
 ```
 
@@ -961,7 +960,12 @@ Session 20: Phase 6 — Integration + documentation + ADR-023
 | `frontend/src/routes/(app)/(root)/vacation/holidays/_lib/state.svelte.ts`      | Runes state (holidays, year, modals, sorted)                   | DONE Session 18 |
 | `frontend/src/routes/(app)/(root)/vacation/holidays/+page.server.ts`           | SSR: fetch holidays for current year                           | DONE Session 18 |
 | `frontend/src/routes/(app)/(root)/vacation/holidays/+page.svelte`              | Holiday list + year filter + CRUD modals                       | DONE Session 18 |
-| `frontend/src/routes/(app)/(admin)/vacation/overview/`                         | Overview + calendar                                            |                 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/_lib/types.ts`            | 8 interfaces (calendar, balance, grid, page data)              | DONE Session 19 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/_lib/constants.ts`        | German labels (months, weekdays, type labels/colors, half-day) | DONE Session 19 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/_lib/api.ts`              | 2 apiClient functions (team-calendar, overview balance)        | DONE Session 19 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/_lib/state.svelte.ts`     | Runes state (teams, calendar grid, month/year nav, balance)    | DONE Session 19 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/+page.server.ts`          | SSR: fetch teams list for selector                             | DONE Session 19 |
+| `frontend/src/routes/(app)/(admin)/vacation/overview/+page.svelte`             | Team calendar grid + balance summary + legend                  | DONE Session 19 |
 
 ### Frontend (modified)
 
@@ -970,8 +974,10 @@ Session 20: Phase 6 — Integration + documentation + ADR-023
 | `frontend/src/routes/(app)/_lib/navigation-config.ts` | Added `vacation` icon + menu item to root, admin, employee arrays                      | DONE Session 16 |
 | `frontend/src/routes/(app)/_lib/navigation-config.ts` | Root + admin vacation: single URL → submenu (VACATION_ADMIN_SUBMENU: Anträge + Regeln) | DONE Session 17 |
 | `frontend/src/routes/(app)/_lib/navigation-config.ts` | Split VACATION_ADMIN_SUBMENU (3 items) + VACATION_ROOT_SUBMENU (4 items with holidays) | DONE Session 18 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Added "Übersicht" as first item in both VACATION_ADMIN_SUBMENU + VACATION_ROOT_SUBMENU | DONE Session 19 |
 | `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/rules` breadcrumb entry                                               | DONE Session 17 |
 | `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/entitlements` + `/vacation/holidays` breadcrumb entries               | DONE Session 18 |
+| `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/overview` breadcrumb entry                                            | DONE Session 19 |
 
 ---
 

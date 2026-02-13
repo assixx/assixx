@@ -104,8 +104,13 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   },
 ];
 
-/** Vacation submenu for admin (requests + rules + entitlements) */
+/** Vacation submenu for admin (requests + rules + entitlements + overview) */
 const VACATION_ADMIN_SUBMENU: NavItem[] = [
+  {
+    id: 'vacation-overview',
+    label: 'Übersicht',
+    url: '/vacation/overview',
+  },
   {
     id: 'vacation-requests',
     label: 'Anträge',
@@ -125,6 +130,11 @@ const VACATION_ADMIN_SUBMENU: NavItem[] = [
 
 /** Vacation submenu for root (admin items + holidays) */
 const VACATION_ROOT_SUBMENU: NavItem[] = [
+  {
+    id: 'vacation-overview',
+    label: 'Übersicht',
+    url: '/vacation/overview',
+  },
   {
     id: 'vacation-requests',
     label: 'Anträge',

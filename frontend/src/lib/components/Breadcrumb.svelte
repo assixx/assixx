@@ -94,6 +94,10 @@
         icon: 'fa-calculator',
       },
       '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
+      '/vacation/overview': {
+        label: 'Urlaubsübersicht',
+        icon: 'fa-calendar-alt',
+      },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',
