@@ -708,7 +708,7 @@
   .calendar-cell__half-indicator {
     font-size: 0.625rem;
     font-weight: 700;
-    color: white;
+    color: #fff;
     text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
   }
 
@@ -751,7 +751,7 @@
     justify-content: center;
     font-size: 0.5rem;
     font-weight: 700;
-    color: white;
+    color: #fff;
   }
 
   .calendar-legend__label {

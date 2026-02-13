@@ -1,13 +1,13 @@
 # ADR-023: Vacation Request System Architecture
 
-| Metadata                | Value                                                                                     |
-| ----------------------- | ----------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                  |
-| **Date**                | 2026-02-13                                                                                |
-| **Decision Makers**     | SCS-Technik Team                                                                          |
+| Metadata                | Value                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                    |
+| **Date**                | 2026-02-13                                                                                  |
+| **Decision Makers**     | SCS-Technik Team                                                                            |
 | **Affected Components** | PostgreSQL (7 tables, 5 migrations), Backend (NestJS vacation module), Frontend (SvelteKit) |
-| **Supersedes**          | —                                                                                         |
-| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-019 (RLS), ADR-020 (Permissions)  |
+| **Supersedes**          | —                                                                                           |
+| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-019 (RLS), ADR-020 (Permissions)     |
 
 ---
 
@@ -26,13 +26,13 @@ Assixx is a Multi-Tenant SaaS for industrial companies. Industrial vacation plan
 
 Before this feature, Assixx had no vacation management. Industrial companies used external tools (Excel, paper forms, SAP) with these pain points:
 
-| Problem                        | Impact                                              |
-| ------------------------------ | --------------------------------------------------- |
-| No capacity pre-check          | Approved vacations violate machine staffing rules    |
-| No blackout enforcement        | Employees book during mandatory production windows   |
-| No cross-team calendar         | Managers discover conflicts after approval           |
-| Manual entitlement tracking    | Carry-over errors, incorrect remaining day counts    |
-| No audit trail                 | Disputes about who approved/denied and why           |
+| Problem                     | Impact                                             |
+| --------------------------- | -------------------------------------------------- |
+| No capacity pre-check       | Approved vacations violate machine staffing rules  |
+| No blackout enforcement     | Employees book during mandatory production windows |
+| No cross-team calendar      | Managers discover conflicts after approval         |
+| Manual entitlement tracking | Carry-over errors, incorrect remaining day counts  |
+| No audit trail              | Disputes about who approved/denied and why         |
 
 ### Requirements
 
@@ -57,13 +57,13 @@ Before this feature, Assixx had no vacation management. Industrial companies use
 
 Each migration is independently reversible. If migration 30 (availability rebuild) fails, migrations 27-29 remain intact. This was critical because migration 30 renamed a live table (`employee_availability` → `user_availability`) that affected running backend code.
 
-| Migration | Purpose                                                  | Risk Mitigation                                    |
-| --------- | -------------------------------------------------------- | -------------------------------------------------- |
-| 027       | Feature flag (`tenant_features` row for "vacation")      | Idempotent INSERT, no schema change                |
-| 028       | Teams extension (`deputy_lead_id`, `UNIQUE user_teams`)  | Pre-check query, RAISE EXCEPTION if duplicate data |
-| 029       | 7 core tables + RLS policies + indexes + status log      | All in single transaction, full RLS from day one   |
-| 030       | Rename `employee_availability` → `user_availability`     | Deployed atomically with backend code changes      |
-| 031       | Legacy cleanup (`absences` table removal)                | Checks for data, RAISE NOTICE for manual review    |
+| Migration | Purpose                                                 | Risk Mitigation                                    |
+| --------- | ------------------------------------------------------- | -------------------------------------------------- |
+| 027       | Feature flag (`tenant_features` row for "vacation")     | Idempotent INSERT, no schema change                |
+| 028       | Teams extension (`deputy_lead_id`, `UNIQUE user_teams`) | Pre-check query, RAISE EXCEPTION if duplicate data |
+| 029       | 7 core tables + RLS policies + indexes + status log     | All in single transaction, full RLS from day one   |
+| 030       | Rename `employee_availability` → `user_availability`    | Deployed atomically with backend code changes      |
+| 031       | Legacy cleanup (`absences` table removal)               | Checks for data, RAISE NOTICE for manual review    |
 
 **7 Core Tables:**
 
@@ -113,6 +113,7 @@ vacation-permission.registrar.ts      — OnModuleInit registration (ADR-020)
 **Key architectural pattern: `tenantTransaction()` everywhere**
 
 Every DB access goes through `db.tenantTransaction()` (ADR-019). This:
+
 1. Acquires a PoolClient from the tenant connection pool
 2. Sets `SET LOCAL app.tenant_id = $1` for RLS
 3. Executes the callback within a transaction
@@ -159,6 +160,7 @@ analyzeCapacity(tenantId, startDate, endDate, requesterId)
 **Why not just approve/deny?**
 
 The frontend shows capacity analysis **live** (300ms debounce) as the user fills in the vacation request form. This prevents wasted approvals and gives immediate feedback:
+
 - "Team Montage has only 2 of 5 members available" → warning
 - "Machine CNC-01 would fall below minimum staffing" → blocked
 - "Blackout period 'Inventur' overlaps" → blocked
@@ -209,12 +211,18 @@ Each vacation page follows the same internal structure:
 // Module-level reactive state using $state and $derived
 let data = $state<T[]>([]);
 let selectedItem = $state<T | null>(null);
-const filteredData = $derived.by(() => { /* computed */ });
+const filteredData = $derived.by(() => {
+  /* computed */
+});
 
 // Exported as single object with getters/setters
 export const pageState = {
-  get data() { return data; },
-  setData: (val: T[]) => { data = val; },
+  get data() {
+    return data;
+  },
+  setData: (val: T[]) => {
+    data = val;
+  },
   // ...
 };
 ```
@@ -226,6 +234,7 @@ This pattern avoids Svelte stores (deprecated in Svelte 5) and keeps state co-lo
 **Decision:** No seed SQL files for vacation data. Testing happens directly through the CRUD UI.
 
 **Rationale:**
+
 - Holidays are tenant-specific (different per Bundesland/company)
 - Entitlements are per-employee, per-year — no meaningful default
 - The CRUD pages (holidays, entitlements, rules, settings) ARE the test surface
@@ -240,6 +249,7 @@ This pattern avoids Svelte stores (deprecated in Svelte 5) and keeps state co-lo
 All 26 endpoint handlers + business logic + queries in one file.
 
 **Rejected:**
+
 - Would exceed 3000 lines (current split keeps each file under 400 lines)
 - Violates SRP — mutations, queries, capacity, entitlements are distinct concerns
 - Harder to test in isolation (capacity tests shouldn't need mutation setup)
@@ -250,6 +260,7 @@ All 26 endpoint handlers + business logic + queries in one file.
 `VacationRequestsModule`, `VacationEntitlementsModule`, `VacationBlackoutsModule`, etc. — each with its own controller.
 
 **Rejected:**
+
 - Over-engineering — all resources share the same `vacation_*` tables and `tenantTransaction()` pattern
 - Cross-service dependencies would create circular imports (capacity needs entitlements, holidays, blackouts, staffing rules)
 - Single controller with 26 endpoints is still readable (grouped by comment sections)
@@ -260,6 +271,7 @@ All 26 endpoint handlers + business logic + queries in one file.
 Store every status change as an event, derive current status from event stream.
 
 **Rejected:**
+
 - Over-engineering for a simple state machine (5 states, 5 transitions)
 - The `vacation_request_status_log` table provides the same audit trail without CQRS complexity
 - Status is written directly to `vacation_requests.status` for fast reads
@@ -271,6 +283,7 @@ Store every status change as an event, derive current status from event stream.
 Count vacation days by iterating calendar days in JavaScript, checking weekends inline.
 
 **Rejected:**
+
 - Holidays would require a second pass or in-memory cache
 - Different tenants have different holidays — requires DB lookup anyway
 - `countWorkdays()` in `vacation-holidays.service.ts` queries the `vacation_holidays` table once and counts correctly
@@ -281,6 +294,7 @@ Count vacation days by iterating calendar days in JavaScript, checking weekends 
 Single `/vacation` GraphQL endpoint with queries and mutations.
 
 **Rejected:**
+
 - Rest of Assixx is REST (ADR-007) — introducing GraphQL for one module creates inconsistency
 - 26 endpoints are well-structured with clear HTTP semantics (GET, POST, PUT, PATCH, DELETE)
 - No deep nesting requirement that would benefit from GraphQL's query flexibility
@@ -312,27 +326,27 @@ Single `/vacation` GraphQL endpoint with queries and mutations.
 
 ### Risks & Mitigations
 
-| Risk                                                              | Mitigation                                                                              |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| R1: `user_teams` has users in multiple teams → UNIQUE constraint  | Pre-check query in migration 028, RAISE EXCEPTION with message                          |
-| R2: `employee_availability` rename breaks running backend         | Migration 030 + backend code changes deployed atomically (same session)                  |
-| R3: `absences` table has data → DROP loses it                     | Migration 031 checks for data, RAISE NOTICE, manual review required                     |
-| R4: Cross-year day splitting edge cases                           | 5+ cross-year unit test scenarios in vacation-entitlements.service.test.ts               |
-| R5: Self-approval loop (team_lead approves own vacation)          | Explicit check + escalation to deputy_lead_id (migration 028) → area_lead → admin       |
-| R6: Race condition on concurrent approve/deny                     | `SELECT ... FOR UPDATE` lock on vacation_requests row before status change               |
+| Risk                                                             | Mitigation                                                                        |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| R1: `user_teams` has users in multiple teams → UNIQUE constraint | Pre-check query in migration 028, RAISE EXCEPTION with message                    |
+| R2: `employee_availability` rename breaks running backend        | Migration 030 + backend code changes deployed atomically (same session)           |
+| R3: `absences` table has data → DROP loses it                    | Migration 031 checks for data, RAISE NOTICE, manual review required               |
+| R4: Cross-year day splitting edge cases                          | 5+ cross-year unit test scenarios in vacation-entitlements.service.test.ts        |
+| R5: Self-approval loop (team_lead approves own vacation)         | Explicit check + escalation to deputy_lead_id (migration 028) → area_lead → admin |
+| R6: Race condition on concurrent approve/deny                    | `SELECT ... FOR UPDATE` lock on vacation_requests row before status change        |
 
 ---
 
 ## Implementation Summary
 
-| Phase | Content                                                  | Sessions | Status   |
-| ----- | -------------------------------------------------------- | -------- | -------- |
-| 1     | Database: 5 migrations (feature flag → core → rebuild)   | 1-4      | Complete |
-| 2     | Backend: 11 services + controller (26 endpoints)         | 5-12     | Complete |
-| 3     | Unit tests: 115 tests across 5 test files                | 13-14    | Complete |
-| 4     | API integration tests: 29 endpoint tests                 | 15       | Complete |
+| Phase | Content                                                           | Sessions | Status   |
+| ----- | ----------------------------------------------------------------- | -------- | -------- |
+| 1     | Database: 5 migrations (feature flag → core → rebuild)            | 1-4      | Complete |
+| 2     | Backend: 11 services + controller (26 endpoints)                  | 5-12     | Complete |
+| 3     | Unit tests: 115 tests across 5 test files                         | 13-14    | Complete |
+| 4     | API integration tests: 29 endpoint tests                          | 15       | Complete |
 | 5     | Frontend: 5 pages (main, rules, entitlements, holidays, overview) | 16-19    | Complete |
-| 6     | Integration + documentation                              | 20       | Active   |
+| 6     | Integration + documentation                                       | 20       | Active   |
 
 **Total: 19 implementation sessions, 5 migrations, 20+ backend files, 30+ frontend files, 144 tests.**
 

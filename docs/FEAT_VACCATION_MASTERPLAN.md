@@ -816,11 +816,50 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 - Frontend-side merge: Calendar component fetches approved vacations for the month
 - Show vacation entries with distinct color in calendar view
 
-### Shift Planning Warning
+### Schichtplan-Integration (überarbeitet Session 20)
 
-- After vacation approval: query shifts for requester in vacation date range
-- If overlapping shifts exist: send notification to team lead
-- DO NOT auto-delete shifts (lead decides manually)
+**Problem:** Schichtpläne können bis zu 2 Jahre im Voraus belegt sein. Automatische Benachrichtigungen oder Schichtlöschungen sind nicht sinnvoll — der Admin muss selbst entscheiden.
+
+**Lösung: 3 Bausteine**
+
+#### A) UI-Warnung in Incoming Requests (Frontend)
+
+In der **IncomingRequestCard** und im **Details-Modal** eine Info-Box anzeigen:
+
+```
+⚠️ Achtung: Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan eingeplant sein.
+   Bitte Schichtplan manuell überprüfen!
+```
+
+- Design: `badge--warning` / Info-Box im Design-System-Stil
+- Wird bei **jedem** eingehenden Antrag angezeigt (kein Backend-Check nötig — ist eine generelle Erinnerung)
+- Keine automatische Schichtlöschung — Admin entscheidet manuell
+
+#### B) 🔴 KRITISCH: `user_availability` automatisch setzen (Backend)
+
+Nach Genehmigung eines Urlaubsantrags **MUSS** automatisch ein `user_availability`-Eintrag erstellt werden:
+
+```
+Typ: "Urlaub"
+Zeitraum: start_date — end_date (aus vacation_request)
+User: requester_id
+```
+
+**Warum kritisch?** Das bestehende Schichtplan-Modul liest bereits `user_availability`:
+
+- `/manage-employees/availability/[uuid]` zeigt Verfügbarkeiten an
+- Schichtplan-Ansicht zeigt Badge: `🛫 Urlaub | 31.01.2026 - 02.02.2026`
+- Wenn Availability gesetzt ist → Schichtplan erkennt Abwesenheit automatisch
+
+**Ohne diesen Eintrag** bleibt der Mitarbeiter im Schichtplan als "verfügbar" sichtbar — obwohl er genehmigten Urlaub hat!
+
+**Bei Storno/Widerruf:** `user_availability`-Eintrag wieder entfernen (oder deaktivieren).
+
+#### C) Keine automatische Schichtlöschung
+
+- Schichten werden NICHT automatisch gelöscht oder umgeplant
+- Der Admin/Teamleiter sieht im Schichtplan die Availability-Badge und entscheidet selbst
+- Das ist bewusst so — Schichtplanung ist zu komplex für automatische Umplanung
 
 ### ~~Seeds~~ — GESTRICHEN
 
@@ -836,7 +875,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 ### Phase 6 Definition of Done
 
 - [ ] Approved vacations visible in calendar
-- [ ] Shift overlap warning works
+- [ ] Schichtplan-Warnung in IncomingRequestCard + Details-Modal (Frontend UI-Box)
+- [ ] 🔴 `user_availability` automatisch setzen bei Genehmigung + entfernen bei Storno/Widerruf (Backend)
+- [ ] Schichtplan erkennt genehmigte Urlaube automatisch via Availability-Badge
 - ~~[ ] German holidays seeded for demo~~ — GESTRICHEN (Test via UI)
 - [x] ADR-023 written (Session 20)
 - ~~[ ] context.md updated~~ — GESTRICHEN
