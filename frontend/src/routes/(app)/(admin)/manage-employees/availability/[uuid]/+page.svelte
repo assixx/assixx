@@ -11,6 +11,8 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import {
     formatDate,
     formatDateTime,
@@ -200,12 +202,6 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#year-dropdown')) yearDropdownOpen = false;
-    if (!target.closest('#month-dropdown')) monthDropdownOpen = false;
-  }
-
   function handleKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       yearDropdownOpen = false;
@@ -214,6 +210,14 @@
       if (showDeleteModal) closeDeleteModal();
     }
   }
+
+  // Capture-phase click-outside: consistent with all other dropdown pages
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      yearDropdownOpen = false;
+      monthDropdownOpen = false;
+    });
+  });
 </script>
 
 <svelte:head>
@@ -223,10 +227,7 @@
   >
 </svelte:head>
 
-<svelte:window
-  onclick={handleClickOutside}
-  onkeydown={handleKeyDown}
-/>
+<svelte:window onkeydown={handleKeyDown} />
 
 <div class="container">
   <!-- Back Button -->

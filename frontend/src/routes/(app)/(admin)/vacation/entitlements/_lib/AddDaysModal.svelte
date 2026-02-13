@@ -84,7 +84,7 @@
         <input
           id="add-days"
           type="number"
-          class="form-field__input"
+          class="form-field__control"
           min="-365"
           max="365"
           step="0.5"

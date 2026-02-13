@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     showWarningAlert,
     showErrorAlert,
@@ -68,12 +69,10 @@
     closeAllDropdowns();
   }
 
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 
   function handlePhotoClick() {
     fileInput?.click();
@@ -236,8 +235,6 @@
     }
   }
 </script>
-
-<svelte:document onclick={handleDocumentClick} />
 
 <div class="modal-overlay modal-overlay--active">
   <form

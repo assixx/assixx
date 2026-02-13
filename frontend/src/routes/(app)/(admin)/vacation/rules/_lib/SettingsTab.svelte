@@ -5,11 +5,16 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   import * as api from './api';
-  import { MONTH_LABELS, SETTINGS_LABELS } from './constants';
+  import {
+    MONTH_LABELS,
+    MONTH_DROPDOWN_OPTIONS,
+    SETTINGS_LABELS,
+  } from './constants';
   import { rulesState } from './state.svelte';
 
   import type { UpdateSettingsPayload, VacationSettings } from './types';
@@ -22,6 +27,17 @@
 
   let settingsForm = $state<UpdateSettingsPayload>({});
   let isSaving = $state(false);
+
+  // Dropdown state
+  let monthDropdownOpen = $state(false);
+  const monthDisplayText = $derived(
+    MONTH_LABELS[settingsForm.carryOverDeadlineMonth ?? 3] ?? 'März',
+  );
+
+  function handleMonthSelect(value: number): void {
+    settingsForm.carryOverDeadlineMonth = value;
+    monthDropdownOpen = false;
+  }
 
   /** Populate settings form from current settings */
   $effect(() => {
@@ -78,6 +94,13 @@
     }
     return String(value);
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      monthDropdownOpen = false;
+    });
+  });
 </script>
 
 <!-- ================================================================
@@ -150,7 +173,7 @@
           <input
             id="set-annual-days"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="0"
             step="0.5"
             bind:value={settingsForm.defaultAnnualDays}
@@ -167,28 +190,48 @@
           <input
             id="set-carry-over"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="0"
             bind:value={settingsForm.maxCarryOverDays}
           />
         </div>
 
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="set-deadline-month"
-          >
+          <span class="form-field__label">
             {SETTINGS_LABELS.carryOverDeadlineMonth}
-          </label>
-          <select
-            id="set-deadline-month"
-            class="form-field__select"
-            bind:value={settingsForm.carryOverDeadlineMonth}
+          </span>
+          <div
+            class="dropdown"
+            data-dropdown="deadline-month"
           >
-            {#each Object.entries(MONTH_LABELS) as [num, name] (num)}
-              <option value={Number(num)}>{name}</option>
-            {/each}
-          </select>
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={monthDropdownOpen}
+              onclick={() => {
+                monthDropdownOpen = !monthDropdownOpen;
+              }}
+            >
+              <span>{monthDisplayText}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={monthDropdownOpen}
+            >
+              {#each MONTH_DROPDOWN_OPTIONS as option (option.value)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    handleMonthSelect(option.value);
+                  }}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </div>
+          </div>
         </div>
 
         <div class="form-field">
@@ -201,7 +244,7 @@
           <input
             id="set-deadline-day"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="1"
             max="31"
             bind:value={settingsForm.carryOverDeadlineDay}
@@ -218,7 +261,7 @@
           <input
             id="set-advance-days"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="0"
             bind:value={settingsForm.advanceNoticeDays}
           />
@@ -234,7 +277,7 @@
           <input
             id="set-max-consecutive"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="1"
             placeholder="Leer = Unbegrenzt"
             value={settingsForm.maxConsecutiveDays ?? ''}

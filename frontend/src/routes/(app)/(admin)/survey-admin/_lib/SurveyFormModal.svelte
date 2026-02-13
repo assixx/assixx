@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -165,15 +166,11 @@
     }
   });
 
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 </script>
-
-<svelte:document onclick={handleDocumentClick} />
 
 {#if surveyAdminState.showModal}
   <div class="modal-overlay modal-overlay--active">

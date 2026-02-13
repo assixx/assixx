@@ -8,6 +8,7 @@
 
   import { invalidateAll } from '$app/navigation';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -59,9 +60,12 @@
   // YEAR CHANGE (client-side refetch)
   // ==========================================================================
 
-  async function handleYearChange(e: Event): Promise<void> {
-    const target = e.target as HTMLSelectElement;
-    const year = Number(target.value);
+  // Dropdown state for year select
+  let yearDropdownOpen = $state(false);
+  const yearDisplayText = $derived(String(holidaysState.selectedYear));
+
+  async function handleYearSelect(year: number): Promise<void> {
+    yearDropdownOpen = false;
     holidaysState.setSelectedYear(year);
     holidaysState.setLoading(true);
     try {
@@ -74,6 +78,13 @@
       holidaysState.setLoading(false);
     }
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      yearDropdownOpen = false;
+    });
+  });
 
   // ==========================================================================
   // FORM STATE
@@ -167,23 +178,39 @@
           Feiertage verwalten
         </h2>
         <div class="flex items-center gap-3">
-          <label
-            class="form-field__label mb-0"
-            for="hol-year">Jahr:</label
+          <span class="form-field__label mb-0">Jahr:</span>
+          <div
+            class="dropdown"
+            data-dropdown="hol-year"
           >
-          <select
-            id="hol-year"
-            class="form-field__select"
-            style="width: auto;"
-            value={holidaysState.selectedYear}
-            onchange={(e) => {
-              void handleYearChange(e);
-            }}
-          >
-            {#each yearOptions() as year (year)}
-              <option value={year}>{year}</option>
-            {/each}
-          </select>
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={yearDropdownOpen}
+              onclick={() => {
+                yearDropdownOpen = !yearDropdownOpen;
+              }}
+            >
+              <span>{yearDisplayText}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={yearDropdownOpen}
+            >
+              {#each yearOptions() as year (year)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    void handleYearSelect(year);
+                  }}
+                >
+                  {year}
+                </button>
+              {/each}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -342,7 +369,7 @@
           <input
             id="hol-name"
             type="text"
-            class="form-field__input"
+            class="form-field__control"
             placeholder="z.B. Neujahr"
             maxlength="100"
             bind:value={holidayName}
@@ -358,20 +385,21 @@
           <input
             id="hol-date"
             type="date"
-            class="form-field__input"
+            class="form-field__control"
             bind:value={holidayDate}
             required
           />
         </div>
 
         <div class="form-field">
-          <label class="toggle">
+          <label class="toggle-switch">
             <input
               type="checkbox"
-              class="toggle__input"
+              class="toggle-switch__input"
               bind:checked={holidayRecurring}
             />
-            <span class="toggle__label"> Jaehrlich wiederkehrend </span>
+            <span class="toggle-switch__slider"></span>
+            <span class="toggle-switch__label"> Jaehrlich wiederkehrend </span>
           </label>
           <p class="form-field__hint">
             Wiederkehrende Feiertage werden jedes Jahr am gleichen Tag

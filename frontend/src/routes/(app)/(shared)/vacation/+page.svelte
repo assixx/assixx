@@ -9,6 +9,7 @@
 
   import { invalidateAll } from '$app/navigation';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   // Vacation-specific styles (same pattern as KVP — external file, no scoping)
   import '../../../../styles/vacation.css';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
@@ -150,12 +151,10 @@
     activeDropdown = null;
   }
 
-  function handleDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 
   // ==========================================================================
   // FILTER / TAB HANDLERS
@@ -458,7 +457,6 @@
 </svelte:head>
 
 <svelte:window onkeydown={handleKeyDown} />
-<svelte:document onclick={handleDocumentClick} />
 
 <!-- ========================================================================
      MAIN CONTENT

@@ -93,7 +93,7 @@
 /* Thumb (Circle that slides) */
 .toggle-switch__slider::before {
   position: absolute;
-  top: 2px;
+  top: 1px;
   left: 2px;
 
   /* Smooth slide animation */

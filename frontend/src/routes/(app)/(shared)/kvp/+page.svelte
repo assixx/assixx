@@ -13,6 +13,7 @@
 
   // KVP-specific styles (migrated from legacy)
   import '../../../../styles/kvp.css';
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showWarningAlert } from '$lib/utils';
   import { getApiClient } from '$lib/utils/api-client';
@@ -169,13 +170,10 @@
     debouncedSearch();
   }
 
-  // Close dropdowns when clicking outside
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 
   // ==========================================================================
   // SUGGESTION ACTIONS
@@ -253,8 +251,6 @@
 <svelte:head>
   <title>KVP System - Assixx</title>
 </svelte:head>
-
-<svelte:document onclick={handleDocumentClick} />
 
 <div class="container">
   <!-- Admin Info Box -->

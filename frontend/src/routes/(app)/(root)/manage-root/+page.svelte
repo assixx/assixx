@@ -337,9 +337,9 @@
         const el = document.querySelector('.search-input-wrapper');
         if (el && !el.contains(e.target as HTMLElement)) searchOpen = false;
       };
-      document.addEventListener('click', handler);
+      document.addEventListener('click', handler, true);
       return () => {
-        document.removeEventListener('click', handler);
+        document.removeEventListener('click', handler, true);
       };
     }
   });

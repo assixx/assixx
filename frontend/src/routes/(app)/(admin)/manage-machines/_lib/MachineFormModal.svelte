@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import { MESSAGES, MACHINE_TYPE_OPTIONS, STATUS_OPTIONS } from './constants';
   import { machineState } from './state.svelte';
   import { getStatusBadgeClass, getStatusLabel } from './utils';
@@ -87,6 +89,13 @@
   function handleOverlayClick(e: MouseEvent) {
     if (e.target === e.currentTarget) onclose();
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      machineState.closeAllDropdowns();
+    });
+  });
 </script>
 
 {#if machineState.showMachineModal}

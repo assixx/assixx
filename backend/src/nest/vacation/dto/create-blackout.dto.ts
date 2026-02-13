@@ -2,12 +2,14 @@
  * Create Blackout DTO
  *
  * Zod schema for creating a vacation blackout period.
- * scope_type='global' requires scope_id=null, 'team'/'department' requires scope_id.
+ * Multi-scope model: isGlobal OR array(s) of departmentIds/teamIds/areaIds.
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { BlackoutScopeTypeSchema, DateSchema } from './common.dto.js';
+import { DateSchema } from './common.dto.js';
+
+const OrgIdArray = z.array(z.number().int().positive()).optional().default([]);
 
 const BaseSchema = z.object({
   name: z
@@ -22,8 +24,10 @@ const BaseSchema = z.object({
     .optional(),
   startDate: DateSchema,
   endDate: DateSchema,
-  scopeType: BlackoutScopeTypeSchema.default('global'),
-  scopeId: z.number().int().positive().optional(),
+  isGlobal: z.boolean().default(true),
+  departmentIds: OrgIdArray,
+  teamIds: OrgIdArray,
+  areaIds: OrgIdArray,
 });
 
 type BaseInput = z.infer<typeof BaseSchema>;
@@ -36,15 +40,23 @@ export const CreateBlackoutSchema = BaseSchema.refine(
   },
 ).refine(
   (data: BaseInput) => {
-    if (data.scopeType === 'global') {
-      return data.scopeId === undefined;
+    if (data.isGlobal) {
+      return (
+        data.departmentIds.length === 0 &&
+        data.teamIds.length === 0 &&
+        data.areaIds.length === 0
+      );
     }
-    return data.scopeId !== undefined;
+    return (
+      data.departmentIds.length > 0 ||
+      data.teamIds.length > 0 ||
+      data.areaIds.length > 0
+    );
   },
   {
     message:
-      'scope_id must be null for global scope, and required for team/department scope',
-    path: ['scopeId'],
+      'Global blackouts must not have org targets. Non-global blackouts must have at least one department, team, or area.',
+    path: ['isGlobal'],
   },
 );
 

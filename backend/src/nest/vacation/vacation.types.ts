@@ -27,7 +27,7 @@ export type VacationType =
 
 export type VacationHalfDay = 'none' | 'morning' | 'afternoon';
 
-export type BlackoutScopeType = 'global' | 'team' | 'department';
+export type BlackoutOrgType = 'department' | 'team' | 'area';
 
 export type CapacityStatus = 'ok' | 'warning' | 'critical';
 
@@ -102,7 +102,7 @@ export interface VacationRequestStatusLogRow {
   created_at: string;
 }
 
-/** Row type for `vacation_blackouts` table */
+/** Row type for `vacation_blackouts` table (post-migration 32: multi-scope) */
 export interface VacationBlackoutRow {
   id: string;
   tenant_id: number;
@@ -110,12 +110,20 @@ export interface VacationBlackoutRow {
   reason: string | null;
   start_date: string;
   end_date: string;
-  scope_type: BlackoutScopeType;
-  scope_id: number | null;
+  is_global: boolean;
   is_active: number;
   created_by: number;
   created_at: string;
   updated_at: string;
+}
+
+/** Row type for `vacation_blackout_scopes` junction table */
+export interface VacationBlackoutScopeRow {
+  id: number;
+  blackout_id: string;
+  org_type: BlackoutOrgType;
+  org_id: number;
+  created_at: string;
 }
 
 /** Row type for `vacation_staffing_rules` table */
@@ -227,16 +235,17 @@ export interface VacationStatusLogEntry {
   createdAt: string;
 }
 
-/** Blackout period as returned by the API */
+/** Blackout period as returned by the API (multi-scope via junction table) */
 export interface VacationBlackout {
   id: string;
   name: string;
   reason: string | null;
   startDate: string;
   endDate: string;
-  scopeType: BlackoutScopeType;
-  scopeId: number | null;
-  scopeName?: string;
+  isGlobal: boolean;
+  departmentIds: number[];
+  teamIds: number[];
+  areaIds: number[];
   createdBy: number;
   createdAt: string;
   updatedAt: string;
@@ -316,7 +325,7 @@ export interface BlackoutConflict {
   name: string;
   startDate: string;
   endDate: string;
-  scopeType: BlackoutScopeType;
+  isGlobal: boolean;
 }
 
 /** Entitlement check result during capacity analysis */

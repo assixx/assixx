@@ -1,29 +1,6 @@
 /**
  * Vacation Rules — Constants & Labels (German)
  */
-import type { BlackoutScopeType } from './types';
-
-// ─── Scope type labels ──────────────────────────────────────────────
-
-export const SCOPE_TYPE_LABELS: Record<BlackoutScopeType, string> = {
-  global: 'Global',
-  team: 'Team',
-  department: 'Abteilung',
-};
-
-// ─── Tab navigation ─────────────────────────────────────────────────
-
-export type RulesTab = 'blackouts' | 'staffing-rules' | 'settings';
-
-export const RULES_TABS: { value: RulesTab; label: string; icon: string }[] = [
-  { value: 'blackouts', label: 'Sperrzeiten', icon: 'fas fa-ban' },
-  {
-    value: 'staffing-rules',
-    label: 'Besetzungsregeln',
-    icon: 'fas fa-users-cog',
-  },
-  { value: 'settings', label: 'Einstellungen', icon: 'fas fa-cog' },
-];
 
 // ─── Month labels for carry-over deadline ───────────────────────────
 
@@ -41,6 +18,27 @@ export const MONTH_LABELS: Record<number, string> = {
   11: 'November',
   12: 'Dezember',
 };
+
+/** Dropdown options for carry-over deadline month */
+export const MONTH_DROPDOWN_OPTIONS: { value: number; label: string }[] =
+  Object.entries(MONTH_LABELS).map(([num, name]) => ({
+    value: Number(num),
+    label: name,
+  }));
+
+// ─── Tab navigation ─────────────────────────────────────────────────
+
+export type RulesTab = 'blackouts' | 'staffing-rules' | 'settings';
+
+export const RULES_TABS: { value: RulesTab; label: string; icon: string }[] = [
+  { value: 'blackouts', label: 'Sperrzeiten', icon: 'fas fa-ban' },
+  {
+    value: 'staffing-rules',
+    label: 'Besetzungsregeln',
+    icon: 'fas fa-users-cog',
+  },
+  { value: 'settings', label: 'Einstellungen', icon: 'fas fa-cog' },
+];
 
 // ─── Settings field labels ──────────────────────────────────────────
 

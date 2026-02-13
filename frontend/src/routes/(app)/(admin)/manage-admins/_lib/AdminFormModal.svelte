@@ -126,9 +126,9 @@
         const el = document.getElementById('position-dropdown');
         if (el && !el.contains(target)) positionDropdownOpen = false;
       };
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });

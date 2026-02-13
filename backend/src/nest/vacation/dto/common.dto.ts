@@ -35,12 +35,6 @@ export const VacationHalfDaySchema = z.enum(['none', 'morning', 'afternoon'], {
   message: 'Invalid half day value. Must be none, morning, or afternoon',
 });
 
-/** Blackout scope type enum */
-export const BlackoutScopeTypeSchema = z.enum(
-  ['global', 'team', 'department'],
-  { message: 'Invalid scope type. Must be global, team, or department' },
-);
-
 /** Respond action enum (approve or deny) */
 export const RespondActionSchema = z.enum(['approved', 'denied'], {
   message: 'Action must be approved or denied',

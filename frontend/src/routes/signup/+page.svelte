@@ -265,22 +265,27 @@
     showInfoAlert(HELP_MESSAGE, 10000);
   }
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.custom-country-select')) {
-      countryDropdownOpen = false;
+  // Capture-phase click-outside: bypasses stopPropagation
+  $effect(() => {
+    function handler(event: MouseEvent): void {
+      if (!(event.target instanceof HTMLElement)) return;
+      if (!event.target.closest('.custom-country-select')) {
+        countryDropdownOpen = false;
+      }
+      if (!event.target.closest('.custom-plan-select')) {
+        planDropdownOpen = false;
+      }
     }
-    if (!target.closest('.custom-plan-select')) {
-      planDropdownOpen = false;
-    }
-  }
+    document.addEventListener('click', handler, true);
+    return () => {
+      document.removeEventListener('click', handler, true);
+    };
+  });
 </script>
 
 <svelte:head>
   <title>Registrieren - Assixx</title>
 </svelte:head>
-
-<svelte:window onclick={handleClickOutside} />
 
 <!-- Back to Homepage Button -->
 <a

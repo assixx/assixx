@@ -9,6 +9,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
 
@@ -426,19 +427,17 @@
   // DROPDOWN HANDLERS
   // ==========================================================================
 
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
       kvpDetailState.closeAllDropdowns();
-    }
-  }
+    });
+  });
 </script>
 
 <svelte:head>
   <title>KVP Vorschlag - Assixx</title>
 </svelte:head>
-
-<svelte:document onclick={handleDocumentClick} />
 
 <div class="container">
   <!-- Back Button -->

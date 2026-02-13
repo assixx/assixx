@@ -50,7 +50,6 @@ export { VacationQueryDto, VacationQuerySchema } from './vacation-query.dto.js';
 
 // Common schemas (for reuse in services/tests)
 export {
-  BlackoutScopeTypeSchema,
   DateSchema,
   DaysSchema,
   LimitSchema,

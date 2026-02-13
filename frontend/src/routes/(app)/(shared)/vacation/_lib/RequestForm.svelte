@@ -10,6 +10,8 @@
    */
   import { onDestroy } from 'svelte';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import CapacityIndicator from './CapacityIndicator.svelte';
   import {
     CAPACITY_DEBOUNCE_MS,
@@ -89,6 +91,11 @@
   function closeAllDropdowns(): void {
     activeDropdown = null;
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 
   // ─── Display texts ────────────────────────────────────────────────
 
@@ -218,15 +225,6 @@
     return canSubmit;
   }
 </script>
-
-<!-- Close dropdowns on outside click -->
-<svelte:window
-  onclick={(e: MouseEvent) => {
-    if (e.target instanceof HTMLElement && !e.target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }}
-/>
 
 <!-- Dates -->
 <div class="request-form__row">

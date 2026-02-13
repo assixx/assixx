@@ -1,8 +1,8 @@
 /**
- * Vacation Blackouts Service – Unit Tests (Phase 3, Session 14)
+ * Vacation Blackouts Service – Unit Tests
  *
  * Mocked dependency: DatabaseService (tenantTransaction).
- * Tests: CRUD, getConflicts (scope polymorphism), scope validation.
+ * Tests: CRUD, getConflicts (multi-scope via junction table), scope sync.
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
@@ -24,14 +24,9 @@ function createMockDb() {
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
-/** Extended row with scope_name from JOIN */
-interface BlackoutWithScopeRow extends VacationBlackoutRow {
-  scope_name: string | null;
-}
-
 function createMockBlackoutRow(
-  overrides?: Partial<BlackoutWithScopeRow>,
-): BlackoutWithScopeRow {
+  overrides?: Partial<VacationBlackoutRow>,
+): VacationBlackoutRow {
   return {
     id: 'bo-001',
     tenant_id: 1,
@@ -39,13 +34,11 @@ function createMockBlackoutRow(
     reason: 'Peak production',
     start_date: '2026-07-15',
     end_date: '2026-07-31',
-    scope_type: 'global',
-    scope_id: null,
+    is_global: true,
     is_active: 1,
     created_by: 10,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
-    scope_name: null,
     ...overrides,
   };
 }
@@ -80,10 +73,13 @@ describe('VacationBlackoutsService', () => {
   // -----------------------------------------------------------
 
   describe('getBlackouts()', () => {
-    it('should return mapped blackouts', async () => {
+    it('should return mapped blackouts with scope arrays', async () => {
+      // 1. Main query returns blackout rows
       mockClient.query.mockResolvedValueOnce({
         rows: [createMockBlackoutRow()],
       });
+      // 2. Scope query returns empty (global blackout has no scopes)
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       const result = await service.getBlackouts(1);
 
@@ -92,8 +88,10 @@ describe('VacationBlackoutsService', () => {
       expect(result[0]?.name).toBe('Summer Freeze');
       expect(result[0]?.startDate).toBe('2026-07-15');
       expect(result[0]?.endDate).toBe('2026-07-31');
-      expect(result[0]?.scopeType).toBe('global');
-      expect(result[0]?.scopeId).toBeNull();
+      expect(result[0]?.isGlobal).toBe(true);
+      expect(result[0]?.departmentIds).toEqual([]);
+      expect(result[0]?.teamIds).toEqual([]);
+      expect(result[0]?.areaIds).toEqual([]);
     });
 
     it('should return empty array when no blackouts exist', async () => {
@@ -104,22 +102,42 @@ describe('VacationBlackoutsService', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should include scope_name for team-scoped blackouts', async () => {
+    it('should aggregate scope arrays from junction table', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createMockBlackoutRow({ is_global: false })],
+      });
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          createMockBlackoutRow({
-            scope_type: 'team',
-            scope_id: 42,
-            scope_name: 'Team Alpha',
-          }),
+          {
+            id: 1,
+            blackout_id: 'bo-001',
+            org_type: 'department',
+            org_id: 5,
+            created_at: '',
+          },
+          {
+            id: 2,
+            blackout_id: 'bo-001',
+            org_type: 'team',
+            org_id: 42,
+            created_at: '',
+          },
+          {
+            id: 3,
+            blackout_id: 'bo-001',
+            org_type: 'area',
+            org_id: 2,
+            created_at: '',
+          },
         ],
       });
 
       const result = await service.getBlackouts(1);
 
-      expect(result[0]?.scopeType).toBe('team');
-      expect(result[0]?.scopeId).toBe(42);
-      expect(result[0]?.scopeName).toBe('Team Alpha');
+      expect(result[0]?.isGlobal).toBe(false);
+      expect(result[0]?.departmentIds).toEqual([5]);
+      expect(result[0]?.teamIds).toEqual([42]);
+      expect(result[0]?.areaIds).toEqual([2]);
     });
 
     it('should filter by year when provided', async () => {
@@ -148,68 +166,62 @@ describe('VacationBlackoutsService', () => {
         name: 'Summer Freeze',
         startDate: '2026-07-15',
         endDate: '2026-07-31',
-        scopeType: 'global',
+        isGlobal: true,
+        departmentIds: [],
+        teamIds: [],
+        areaIds: [],
       });
 
       expect(result.name).toBe('Summer Freeze');
-      expect(result.scopeType).toBe('global');
+      expect(result.isGlobal).toBe(true);
+      expect(result.departmentIds).toEqual([]);
       expect(mockClient.query).toHaveBeenCalledOnce();
     });
 
-    it('should validate scope_id for team-scoped blackout', async () => {
-      // 1. validateScopeId → team found
-      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 42 }] });
-      // 2. INSERT
+    it('should create scoped blackout with junction table sync', async () => {
+      // 1. INSERT into vacation_blackouts
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createMockBlackoutRow({ is_global: false })],
+      });
+      // 2. DELETE existing scopes
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // 3. INSERT department scope
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // 4. INSERT team scope
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // 5. Load scopes back
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          createMockBlackoutRow({
-            scope_type: 'team',
-            scope_id: 42,
-            scope_name: 'Team Alpha',
-          }),
+          {
+            id: 1,
+            blackout_id: 'bo-001',
+            org_type: 'department',
+            org_id: 5,
+            created_at: '',
+          },
+          {
+            id: 2,
+            blackout_id: 'bo-001',
+            org_type: 'team',
+            org_id: 42,
+            created_at: '',
+          },
         ],
       });
 
       const result = await service.createBlackout(1, 10, {
-        name: 'Team Freeze',
+        name: 'Scoped Freeze',
         startDate: '2026-07-15',
         endDate: '2026-07-31',
-        scopeType: 'team',
-        scopeId: 42,
+        isGlobal: false,
+        departmentIds: [5],
+        teamIds: [42],
+        areaIds: [],
       });
 
-      expect(result.scopeType).toBe('team');
-      expect(result.scopeId).toBe(42);
-      expect(mockClient.query).toHaveBeenCalledTimes(2);
-    });
-
-    it('should throw NotFoundException for invalid team scope_id', async () => {
-      // validateScopeId → not found
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-
-      await expect(
-        service.createBlackout(1, 10, {
-          name: 'Bad Team',
-          startDate: '2026-07-15',
-          endDate: '2026-07-31',
-          scopeType: 'team',
-          scopeId: 999,
-        }),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException for invalid department scope_id', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-
-      await expect(
-        service.createBlackout(1, 10, {
-          name: 'Bad Dept',
-          startDate: '2026-07-15',
-          endDate: '2026-07-31',
-          scopeType: 'department',
-          scopeId: 999,
-        }),
-      ).rejects.toThrow(NotFoundException);
+      expect(result.isGlobal).toBe(false);
+      expect(result.departmentIds).toEqual([5]);
+      expect(result.teamIds).toEqual([42]);
     });
   });
 
@@ -219,9 +231,16 @@ describe('VacationBlackoutsService', () => {
 
   describe('updateBlackout()', () => {
     it('should update and return updated blackout', async () => {
+      // 1. UPDATE query
       mockClient.query.mockResolvedValueOnce({
         rows: [createMockBlackoutRow({ name: 'Updated Name' })],
       });
+      // 2. getBlackoutById SELECT
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createMockBlackoutRow({ name: 'Updated Name' })],
+      });
+      // 3. loadScopes
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       const result = await service.updateBlackout(1, 'bo-001', {
         name: 'Updated Name',
@@ -243,6 +262,7 @@ describe('VacationBlackoutsService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createMockBlackoutRow()],
       });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       const result = await service.updateBlackout(1, 'bo-001', {});
 
@@ -275,7 +295,7 @@ describe('VacationBlackoutsService', () => {
   });
 
   // -----------------------------------------------------------
-  // getConflicts — scope polymorphism
+  // getConflicts — multi-scope via junction table
   // -----------------------------------------------------------
 
   describe('getConflicts()', () => {
@@ -287,7 +307,7 @@ describe('VacationBlackoutsService', () => {
             name: 'Summer Freeze',
             start_date: '2026-07-15',
             end_date: '2026-07-31',
-            scope_type: 'global',
+            is_global: true,
           },
         ],
       });
@@ -297,10 +317,10 @@ describe('VacationBlackoutsService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]?.blackoutId).toBe('bo-001');
       expect(result[0]?.name).toBe('Summer Freeze');
-      expect(result[0]?.scopeType).toBe('global');
+      expect(result[0]?.isGlobal).toBe(true);
     });
 
-    it('should return team-scoped conflicts with matching teamId', async () => {
+    it('should return scoped conflicts', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
           {
@@ -308,7 +328,7 @@ describe('VacationBlackoutsService', () => {
             name: 'Team Freeze',
             start_date: '2026-08-01',
             end_date: '2026-08-15',
-            scope_type: 'team',
+            is_global: false,
           },
         ],
       });
@@ -322,7 +342,7 @@ describe('VacationBlackoutsService', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(result[0]?.scopeType).toBe('team');
+      expect(result[0]?.isGlobal).toBe(false);
     });
 
     it('should return empty when no conflicts', async () => {
@@ -339,7 +359,7 @@ describe('VacationBlackoutsService', () => {
       await service.getConflicts(1, '2026-07-20', '2026-07-25', 42, 7);
 
       expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('scope_type'),
+        expect.stringContaining('vacation_blackout_scopes'),
         [1, '2026-07-20', '2026-07-25', 42, 7],
       );
     });

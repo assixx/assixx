@@ -233,7 +233,7 @@
           <input
             id="sr-machine"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="1"
             placeholder="Maschinen-ID eingeben"
             bind:value={ruleMachineId}
@@ -257,7 +257,7 @@
           <input
             id="sr-min-staff"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="1"
             bind:value={ruleMinStaff}
             required

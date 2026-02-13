@@ -107,7 +107,7 @@
   }
 
   onMount(() => {
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('click', handleClickOutside, true);
     if (
       ssrIsEmployee &&
       ssrEmployeeTeamInfo !== null &&
@@ -116,7 +116,7 @@
       void loadShiftPlan();
     }
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
     };
   });
 

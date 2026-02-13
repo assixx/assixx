@@ -11,6 +11,9 @@ import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
+  OrgArea,
+  OrgDepartment,
+  OrgTeam,
   VacationBlackout,
   VacationSettings,
   VacationStaffingRule,
@@ -70,7 +73,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
   const currentYear = new Date().getFullYear();
 
-  const [blackoutsData, staffingRulesData, settingsData] = await Promise.all([
+  const [
+    blackoutsData,
+    staffingRulesData,
+    settingsData,
+    areasData,
+    departmentsData,
+    teamsData,
+  ] = await Promise.all([
     apiFetch<VacationBlackout[]>(
       `/vacation/blackouts?year=${currentYear}`,
       token,
@@ -78,12 +88,18 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     ),
     apiFetch<VacationStaffingRule[]>('/vacation/staffing-rules', token, fetch),
     apiFetch<VacationSettings>('/vacation/settings', token, fetch),
+    apiFetch<OrgArea[]>('/areas', token, fetch),
+    apiFetch<OrgDepartment[]>('/departments', token, fetch),
+    apiFetch<OrgTeam[]>('/teams', token, fetch),
   ]);
 
   return {
     blackouts: blackoutsData ?? [],
     staffingRules: staffingRulesData ?? [],
     settings: settingsData,
+    areas: areasData ?? [],
+    departments: departmentsData ?? [],
+    teams: teamsData ?? [],
     currentYear,
   };
 };

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -161,24 +162,22 @@
     onfileschange(filtered.length > 0 ? filtered : null);
   }
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#entry-priority-dropdown'))
-      priorityDropdownOpen = false;
-  }
-
   function handleKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       priorityDropdownOpen = false;
       onclose();
     }
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      priorityDropdownOpen = false;
+    });
+  });
 </script>
 
-<svelte:window
-  onclick={handleClickOutside}
-  onkeydown={handleKeyDown}
-/>
+<svelte:window onkeydown={handleKeyDown} />
 
 <div
   class="modal-overlay modal-overlay--active"

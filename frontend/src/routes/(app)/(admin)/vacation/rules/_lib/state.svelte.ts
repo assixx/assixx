@@ -5,6 +5,9 @@
 
 import type { RulesTab } from './constants';
 import type {
+  OrgArea,
+  OrgDepartment,
+  OrgTeam,
   VacationBlackout,
   VacationSettings,
   VacationStaffingRule,
@@ -15,6 +18,9 @@ import type {
 let blackouts = $state<VacationBlackout[]>([]);
 let staffingRules = $state<VacationStaffingRule[]>([]);
 let settings = $state<VacationSettings | null>(null);
+let areas = $state<OrgArea[]>([]);
+let departments = $state<OrgDepartment[]>([]);
+let teams = $state<OrgTeam[]>([]);
 
 // ─── UI ─────────────────────────────────────────────────────────────
 
@@ -107,6 +113,9 @@ function reset() {
   blackouts = [];
   staffingRules = [];
   settings = null;
+  areas = [];
+  departments = [];
+  teams = [];
   isLoading = false;
   activeTab = 'blackouts';
   showBlackoutForm = false;
@@ -131,6 +140,15 @@ export const rulesState = {
   get settings() {
     return settings;
   },
+  get areas() {
+    return areas;
+  },
+  get departments() {
+    return departments;
+  },
+  get teams() {
+    return teams;
+  },
 
   // Data setters
   setBlackouts: (data: VacationBlackout[]) => {
@@ -141,6 +159,15 @@ export const rulesState = {
   },
   setSettings: (data: VacationSettings | null) => {
     settings = data;
+  },
+  setAreas: (data: OrgArea[]) => {
+    areas = data;
+  },
+  setDepartments: (data: OrgDepartment[]) => {
+    departments = data;
+  },
+  setTeams: (data: OrgTeam[]) => {
+    teams = data;
   },
 
   // UI getters

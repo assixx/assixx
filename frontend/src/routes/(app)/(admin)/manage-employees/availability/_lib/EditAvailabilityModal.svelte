@@ -7,6 +7,8 @@
    * Self-contained with internal state and API calls.
    */
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import { AVAILABILITY_STATUS_OPTIONS } from '../../_lib/constants';
 
   import {
@@ -127,15 +129,13 @@
     }
   }
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#edit-status-dropdown')) {
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
       editStatusDropdownOpen = false;
-    }
-  }
+    });
+  });
 </script>
-
-<svelte:window onclick={handleClickOutside} />
 
 {#if show && entry !== null}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->

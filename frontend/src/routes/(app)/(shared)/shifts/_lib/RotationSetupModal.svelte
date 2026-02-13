@@ -4,6 +4,7 @@
    * Extracted from +page.svelte for ESLint max-lines compliance
    * Based on: frontend/src/scripts/shifts/rotation.ts
    */
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils/alerts';
   import { createLogger } from '$lib/utils/logger';
 
@@ -312,6 +313,13 @@
   function handleClose() {
     onclose();
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      patternDropdownOpen = false;
+    });
+  });
 </script>
 
 <div

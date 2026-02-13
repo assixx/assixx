@@ -340,7 +340,7 @@ describe('VacationCapacityService', () => {
           name: 'Summer Freeze',
           startDate: '2026-06-01',
           endDate: '2026-06-30',
-          scopeType: 'global',
+          isGlobal: true,
         },
       ]);
 

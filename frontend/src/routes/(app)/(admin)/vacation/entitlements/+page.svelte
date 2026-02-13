@@ -7,6 +7,7 @@
    */
   import { onDestroy } from 'svelte';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -68,13 +69,24 @@
     void loadBalance(emp);
   }
 
-  function handleYearChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    entitlementsState.setSelectedYear(Number(target.value));
+  // Dropdown state for year select
+  let yearDropdownOpen = $state(false);
+  const yearDisplayText = $derived(String(entitlementsState.selectedYear));
+
+  function handleYearSelect(year: number): void {
+    entitlementsState.setSelectedYear(year);
+    yearDropdownOpen = false;
     if (entitlementsState.selectedEmployee !== null) {
       void loadBalance(entitlementsState.selectedEmployee);
     }
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      yearDropdownOpen = false;
+    });
+  });
 
   // ==========================================================================
   // HELPERS
@@ -202,21 +214,39 @@
           Urlaubsansprüche verwalten
         </h2>
         <div class="flex items-center gap-3">
-          <label
-            class="form-field__label mb-0"
-            for="ent-year">Jahr:</label
+          <span class="form-field__label mb-0">Jahr:</span>
+          <div
+            class="dropdown"
+            data-dropdown="ent-year"
           >
-          <select
-            id="ent-year"
-            class="form-field__select"
-            style="width: auto;"
-            value={entitlementsState.selectedYear}
-            onchange={handleYearChange}
-          >
-            {#each yearOptions() as year (year)}
-              <option value={year}>{year}</option>
-            {/each}
-          </select>
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={yearDropdownOpen}
+              onclick={() => {
+                yearDropdownOpen = !yearDropdownOpen;
+              }}
+            >
+              <span>{yearDisplayText}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={yearDropdownOpen}
+            >
+              {#each yearOptions() as year (year)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    handleYearSelect(year);
+                  }}
+                >
+                  {year}
+                </button>
+              {/each}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -244,7 +274,7 @@
         <div class="form-field mt-3 mb-0">
           <input
             type="text"
-            class="form-field__input"
+            class="form-field__control"
             placeholder="Suchen..."
             value={entitlementsState.searchQuery}
             oninput={(e) => {
@@ -502,7 +532,7 @@
           <input
             id="ent-total"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="0"
             max="365"
             step="0.5"
@@ -521,7 +551,7 @@
           <input
             id="ent-carried"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="0"
             max="365"
             step="0.5"
@@ -539,7 +569,7 @@
           <input
             id="ent-additional"
             type="number"
-            class="form-field__input"
+            class="form-field__control"
             min="0"
             max="365"
             step="0.5"
@@ -557,7 +587,7 @@
           <input
             id="ent-expires"
             type="date"
-            class="form-field__input"
+            class="form-field__control"
             bind:value={formExpiresAt}
           />
         </div>

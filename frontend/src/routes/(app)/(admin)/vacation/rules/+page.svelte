@@ -26,12 +26,18 @@
   const ssrBlackouts = $derived(data.blackouts);
   const ssrStaffingRules = $derived(data.staffingRules);
   const ssrSettings = $derived(data.settings);
+  const ssrAreas = $derived(data.areas);
+  const ssrDepartments = $derived(data.departments);
+  const ssrTeams = $derived(data.teams);
 
   // Sync SSR data into reactive state
   $effect(() => {
     rulesState.setBlackouts(ssrBlackouts);
     rulesState.setStaffingRules(ssrStaffingRules);
     rulesState.setSettings(ssrSettings);
+    rulesState.setAreas(ssrAreas);
+    rulesState.setDepartments(ssrDepartments);
+    rulesState.setTeams(ssrTeams);
     rulesState.setLoading(false);
   });
 

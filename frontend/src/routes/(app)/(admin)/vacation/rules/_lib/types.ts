@@ -3,10 +3,6 @@
  * Mirrors backend vacation.types.ts for blackouts, staffing rules, settings.
  */
 
-// ─── Enums ──────────────────────────────────────────────────────────
-
-export type BlackoutScopeType = 'global' | 'team' | 'department';
-
 // ─── API response types ─────────────────────────────────────────────
 
 export interface VacationBlackout {
@@ -15,9 +11,10 @@ export interface VacationBlackout {
   reason: string | null;
   startDate: string;
   endDate: string;
-  scopeType: BlackoutScopeType;
-  scopeId: number | null;
-  scopeName?: string;
+  isGlobal: boolean;
+  departmentIds: number[];
+  teamIds: number[];
+  areaIds: number[];
   createdBy: number;
   createdAt: string;
   updatedAt: string;
@@ -53,8 +50,10 @@ export interface CreateBlackoutPayload {
   reason?: string;
   startDate: string;
   endDate: string;
-  scopeType: BlackoutScopeType;
-  scopeId?: number;
+  isGlobal: boolean;
+  departmentIds: number[];
+  teamIds: number[];
+  areaIds: number[];
 }
 
 export interface UpdateBlackoutPayload {
@@ -62,8 +61,10 @@ export interface UpdateBlackoutPayload {
   reason?: string | null;
   startDate?: string;
   endDate?: string;
-  scopeType?: BlackoutScopeType;
-  scopeId?: number | null;
+  isGlobal?: boolean;
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
 }
 
 export interface CreateStaffingRulePayload {
@@ -84,10 +85,34 @@ export interface UpdateSettingsPayload {
   maxConsecutiveDays?: number | null;
 }
 
+// ─── Organization types (for scope selects) ─────────────────────────
+
+export interface OrgArea {
+  id: number;
+  name: string;
+  departmentCount?: number;
+}
+
+export interface OrgDepartment {
+  id: number;
+  name: string;
+  areaId?: number;
+  areaName?: string;
+}
+
+export interface OrgTeam {
+  id: number;
+  name: string;
+  departmentId?: number;
+}
+
 // ─── SSR page data ──────────────────────────────────────────────────
 
 export interface VacationRulesPageData {
   blackouts: VacationBlackout[];
   staffingRules: VacationStaffingRule[];
   settings: VacationSettings | null;
+  areas: OrgArea[];
+  departments: OrgDepartment[];
+  teams: OrgTeam[];
 }

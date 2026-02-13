@@ -1,13 +1,13 @@
 /**
  * Vacation Blackouts Service
  *
- * Manages blackout periods (vacation freeze windows) with scope polymorphism:
- * - 'global': applies to ALL employees (scope_id = NULL)
- * - 'team': applies to a specific team (scope_id = team.id)
- * - 'department': applies to a specific department (scope_id = area.id)
+ * Manages blackout periods (vacation freeze windows) with multi-scope support:
+ * - is_global=true: applies to ALL employees
+ * - Junction table `vacation_blackout_scopes`: maps to departments, teams, areas
  *
- * Blackouts table: `vacation_blackouts` (Migration 29)
- * - CHECK(scope_type='global' AND scope_id IS NULL OR scope_type IN ('team','department') AND scope_id IS NOT NULL)
+ * Pattern mirrors blackboard_entry_organizations (ADR-019 RLS applied).
+ *
+ * Tables: `vacation_blackouts` + `vacation_blackout_scopes` (Migration 29 + 32)
  * - CHECK(end_date \>= start_date)
  * - RLS enforced via `db.tenantTransaction()` (ADR-019)
  *
@@ -22,15 +22,11 @@ import type { CreateBlackoutDto } from './dto/create-blackout.dto.js';
 import type { UpdateBlackoutDto } from './dto/update-blackout.dto.js';
 import type {
   BlackoutConflict,
-  BlackoutScopeType,
+  BlackoutOrgType,
   VacationBlackout,
   VacationBlackoutRow,
+  VacationBlackoutScopeRow,
 } from './vacation.types.js';
-
-/** Row shape for blackout query with scope name JOIN */
-interface BlackoutWithScopeRow extends VacationBlackoutRow {
-  scope_name: string | null;
-}
 
 @Injectable()
 export class VacationBlackoutsService {
@@ -41,7 +37,7 @@ export class VacationBlackoutsService {
   /**
    * Get all active blackout periods for a tenant.
    * Optionally filters by year (blackout overlaps with the given year).
-   * JOINs teams/areas to resolve scope_name.
+   * Loads scope arrays from junction table.
    */
   async getBlackouts(
     tenantId: number,
@@ -51,31 +47,33 @@ export class VacationBlackoutsService {
       async (client: PoolClient): Promise<VacationBlackout[]> => {
         let sql: string = `
           SELECT vb.id, vb.tenant_id, vb.name, vb.reason,
-                 vb.start_date, vb.end_date,
-                 vb.scope_type, vb.scope_id,
-                 vb.is_active, vb.created_by, vb.created_at, vb.updated_at,
-                 CASE
-                   WHEN vb.scope_type = 'team' THEN t.name
-                   WHEN vb.scope_type = 'department' THEN a.name
-                   ELSE NULL
-                 END AS scope_name
+                 vb.start_date, vb.end_date, vb.is_global,
+                 vb.is_active, vb.created_by, vb.created_at, vb.updated_at
           FROM vacation_blackouts vb
-          LEFT JOIN teams t ON vb.scope_type = 'team' AND vb.scope_id = t.id
-          LEFT JOIN areas a ON vb.scope_type = 'department' AND vb.scope_id = a.id
           WHERE vb.tenant_id = $1 AND vb.is_active = 1`;
         const params: unknown[] = [tenantId];
 
         if (year !== undefined) {
-          // Blackout overlaps with the given year
           sql += ` AND vb.start_date <= $2 AND vb.end_date >= $3`;
           params.push(`${year}-12-31`, `${year}-01-01`);
         }
 
         sql += ` ORDER BY vb.start_date ASC`;
 
-        const result = await client.query<BlackoutWithScopeRow>(sql, params);
-        return result.rows.map((row: BlackoutWithScopeRow) =>
-          this.mapRowToBlackout(row),
+        const result = await client.query<VacationBlackoutRow>(sql, params);
+
+        if (result.rows.length === 0) {
+          return [];
+        }
+
+        const blackoutIds: string[] = result.rows.map(
+          (row: VacationBlackoutRow) => row.id,
+        );
+        const scopeMap: Map<string, VacationBlackoutScopeRow[]> =
+          await this.loadScopesForBlackouts(client, blackoutIds);
+
+        return result.rows.map((row: VacationBlackoutRow) =>
+          this.mapRowToBlackout(row, scopeMap.get(row.id) ?? []),
         );
       },
     );
@@ -83,9 +81,7 @@ export class VacationBlackoutsService {
 
   /**
    * Create a new blackout period.
-   * Scope validation (global=no scope_id, team/dept=scope_id required)
-   * is handled by the DTO's Zod refine, but we also validate scope_id
-   * references a real team/area in the DB.
+   * Inserts into vacation_blackouts, then syncs scopes in junction table.
    */
   async createBlackout(
     tenantId: number,
@@ -94,38 +90,14 @@ export class VacationBlackoutsService {
   ): Promise<VacationBlackout> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationBlackout> => {
-        // Validate scope_id references an existing team/area
-        if (dto.scopeType !== 'global' && dto.scopeId !== undefined) {
-          await this.validateScopeId(
-            client,
-            tenantId,
-            dto.scopeType,
-            dto.scopeId,
-          );
-        }
-
         const id: string = uuidv7();
 
-        const result = await client.query<BlackoutWithScopeRow>(
-          `WITH inserted AS (
-            INSERT INTO vacation_blackouts
-              (id, tenant_id, name, reason, start_date, end_date,
-               scope_type, scope_id, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING *
-          )
-          SELECT ins.id, ins.tenant_id, ins.name, ins.reason,
-                 ins.start_date, ins.end_date,
-                 ins.scope_type, ins.scope_id,
-                 ins.is_active, ins.created_by, ins.created_at, ins.updated_at,
-                 CASE
-                   WHEN ins.scope_type = 'team' THEN t.name
-                   WHEN ins.scope_type = 'department' THEN a.name
-                   ELSE NULL
-                 END AS scope_name
-          FROM inserted ins
-          LEFT JOIN teams t ON ins.scope_type = 'team' AND ins.scope_id = t.id
-          LEFT JOIN areas a ON ins.scope_type = 'department' AND ins.scope_id = a.id`,
+        const result = await client.query<VacationBlackoutRow>(
+          `INSERT INTO vacation_blackouts
+             (id, tenant_id, name, reason, start_date, end_date,
+              is_global, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING *`,
           [
             id,
             tenantId,
@@ -133,21 +105,33 @@ export class VacationBlackoutsService {
             dto.reason ?? null,
             dto.startDate,
             dto.endDate,
-            dto.scopeType,
-            dto.scopeId ?? null,
+            dto.isGlobal,
             userId,
           ],
         );
 
-        const row: BlackoutWithScopeRow | undefined = result.rows[0];
+        const row: VacationBlackoutRow | undefined = result.rows[0];
         if (row === undefined) {
           throw new Error('INSERT into vacation_blackouts returned no rows');
         }
 
+        if (!dto.isGlobal) {
+          await this.syncBlackoutScopes(
+            client,
+            id,
+            dto.departmentIds,
+            dto.teamIds,
+            dto.areaIds,
+          );
+        }
+
+        const scopes: VacationBlackoutScopeRow[] =
+          dto.isGlobal ? [] : await this.loadScopes(client, id);
+
         this.logger.log(
-          `Blackout created: "${dto.name}" ${dto.startDate}–${dto.endDate} scope=${dto.scopeType} (tenant ${tenantId})`,
+          `Blackout created: "${dto.name}" ${dto.startDate}\u2013${dto.endDate} global=${String(dto.isGlobal)} (tenant ${tenantId})`,
         );
-        return this.mapRowToBlackout(row);
+        return this.mapRowToBlackout(row, scopes);
       },
     );
   }
@@ -163,35 +147,44 @@ export class VacationBlackoutsService {
   ): Promise<VacationBlackout> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationBlackout> => {
-        const { setClauses, params } = this.buildBlackoutSetClauses(dto);
+        const { setClauses, params } = this.buildUpdateSetClauses(dto);
 
-        if (setClauses.length === 0) {
+        if (setClauses.length === 0 && !this.hasScopeChanges(dto)) {
           return await this.getBlackoutById(client, tenantId, id);
         }
 
-        await this.validateScopeChange(client, tenantId, dto);
+        if (setClauses.length > 0) {
+          setClauses.push(`updated_at = NOW()`);
+          const idParam: number = params.length + 1;
+          params.push(id);
+          const tenantParam: number = params.length + 1;
+          params.push(tenantId);
 
-        setClauses.push(`updated_at = NOW()`);
-        const idParam: number = params.length + 1;
-        params.push(id);
-        const tenantParam: number = params.length + 1;
-        params.push(tenantId);
-
-        const row: BlackoutWithScopeRow | undefined =
-          await this.executeUpdateWithScope(
-            client,
-            setClauses,
+          const result = await client.query<VacationBlackoutRow>(
+            `UPDATE vacation_blackouts
+             SET ${setClauses.join(', ')}
+             WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = 1
+             RETURNING *`,
             params,
-            idParam,
-            tenantParam,
           );
 
-        if (row === undefined) {
-          throw new NotFoundException(`Blackout ${id} not found`);
+          if (result.rows[0] === undefined) {
+            throw new NotFoundException(`Blackout ${id} not found`);
+          }
+        }
+
+        if (this.hasScopeChanges(dto)) {
+          await this.syncBlackoutScopes(
+            client,
+            id,
+            dto.departmentIds ?? [],
+            dto.teamIds ?? [],
+            dto.areaIds ?? [],
+          );
         }
 
         this.logger.log(`Blackout updated: ${id} (tenant ${tenantId})`);
-        return this.mapRowToBlackout(row);
+        return await this.getBlackoutById(client, tenantId, id);
       },
     );
   }
@@ -223,9 +216,9 @@ export class VacationBlackoutsService {
   /**
    * Find blackout conflicts for a date range.
    * Returns blackouts that overlap with [startDate, endDate] AND match the user's scope:
-   * - 'global' blackouts always conflict
-   * - 'team' blackouts conflict if userTeamId matches scope_id
-   * - 'department' blackouts conflict if userDeptId matches scope_id
+   * - is_global=true blackouts always conflict
+   * - Scoped blackouts conflict if junction table has matching team/department/area
+   * - Area matching: resolves user's area from their department
    *
    * Used by capacity service and vacation request validation.
    */
@@ -238,25 +231,33 @@ export class VacationBlackoutsService {
   ): Promise<BlackoutConflict[]> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<BlackoutConflict[]> => {
-        // Date overlap: blackout.start <= request.end AND blackout.end >= request.start
         const result = await client.query<
           Pick<
             VacationBlackoutRow,
-            'id' | 'name' | 'start_date' | 'end_date' | 'scope_type'
+            'id' | 'name' | 'start_date' | 'end_date' | 'is_global'
           >
         >(
-          `SELECT id, name, start_date, end_date, scope_type
-           FROM vacation_blackouts
-           WHERE tenant_id = $1
-             AND is_active = 1
-             AND start_date <= $3
-             AND end_date >= $2
+          `SELECT vb.id, vb.name, vb.start_date, vb.end_date, vb.is_global
+           FROM vacation_blackouts vb
+           WHERE vb.tenant_id = $1
+             AND vb.is_active = 1
+             AND vb.start_date <= $3
+             AND vb.end_date >= $2
              AND (
-               scope_type = 'global'
-               OR (scope_type = 'team' AND scope_id = $4)
-               OR (scope_type = 'department' AND scope_id = $5)
+               vb.is_global = true
+               OR EXISTS (
+                 SELECT 1 FROM vacation_blackout_scopes vbs
+                 WHERE vbs.blackout_id = vb.id
+                 AND (
+                   (vbs.org_type = 'team' AND vbs.org_id = $4)
+                   OR (vbs.org_type = 'department' AND vbs.org_id = $5)
+                   OR (vbs.org_type = 'area' AND $5 IS NOT NULL AND vbs.org_id = (
+                     SELECT area_id FROM departments WHERE id = $5 LIMIT 1
+                   ))
+                 )
+               )
              )
-           ORDER BY start_date ASC`,
+           ORDER BY vb.start_date ASC`,
           [
             tenantId,
             startDate,
@@ -268,7 +269,7 @@ export class VacationBlackoutsService {
 
         type ConflictRow = Pick<
           VacationBlackoutRow,
-          'id' | 'name' | 'start_date' | 'end_date' | 'scope_type'
+          'id' | 'name' | 'start_date' | 'end_date' | 'is_global'
         >;
 
         return result.rows.map((row: ConflictRow) => ({
@@ -276,7 +277,7 @@ export class VacationBlackoutsService {
           name: row.name,
           startDate: this.formatDate(new Date(row.start_date)),
           endDate: this.formatDate(new Date(row.end_date)),
-          scopeType: row.scope_type,
+          isGlobal: row.is_global,
         }));
       },
     );
@@ -287,76 +288,86 @@ export class VacationBlackoutsService {
   // ==========================================================================
 
   /**
-   * Validate that a scope_id references an existing team or area.
-   * Throws NotFoundException if invalid.
+   * Sync blackout scopes in junction table (delete + re-insert pattern).
+   * Mirrors blackboard_entry_organizations syncEntryOrganizations.
    */
-  private async validateScopeId(
+  private async syncBlackoutScopes(
     client: PoolClient,
-    tenantId: number,
-    scopeType: BlackoutScopeType,
-    scopeId: number,
+    blackoutId: string,
+    departmentIds: number[],
+    teamIds: number[],
+    areaIds: number[],
   ): Promise<void> {
-    const table: string = scopeType === 'team' ? 'teams' : 'areas';
-    const result = await client.query<{ id: number }>(
-      `SELECT id FROM ${table}
-       WHERE id = $1 AND tenant_id = $2`,
-      [scopeId, tenantId],
+    await client.query(
+      'DELETE FROM vacation_blackout_scopes WHERE blackout_id = $1',
+      [blackoutId],
     );
 
-    if (result.rows[0] === undefined) {
-      throw new NotFoundException(
-        `${scopeType === 'team' ? 'Team' : 'Department'} with ID ${scopeId} not found`,
+    for (const orgId of departmentIds) {
+      await client.query(
+        'INSERT INTO vacation_blackout_scopes (blackout_id, org_type, org_id) VALUES ($1, $2, $3)',
+        [blackoutId, 'department', orgId],
+      );
+    }
+
+    for (const orgId of teamIds) {
+      await client.query(
+        'INSERT INTO vacation_blackout_scopes (blackout_id, org_type, org_id) VALUES ($1, $2, $3)',
+        [blackoutId, 'team', orgId],
+      );
+    }
+
+    for (const orgId of areaIds) {
+      await client.query(
+        'INSERT INTO vacation_blackout_scopes (blackout_id, org_type, org_id) VALUES ($1, $2, $3)',
+        [blackoutId, 'area', orgId],
       );
     }
   }
 
-  /** Validate scope_id if scope type changes to team/department. */
-  private async validateScopeChange(
+  /** Load all scopes for a single blackout. */
+  private async loadScopes(
     client: PoolClient,
-    tenantId: number,
-    dto: UpdateBlackoutDto,
-  ): Promise<void> {
-    if (
-      dto.scopeType !== undefined &&
-      dto.scopeType !== 'global' &&
-      dto.scopeId !== undefined &&
-      dto.scopeId !== null
-    ) {
-      await this.validateScopeId(client, tenantId, dto.scopeType, dto.scopeId);
-    }
+    blackoutId: string,
+  ): Promise<VacationBlackoutScopeRow[]> {
+    const result = await client.query<VacationBlackoutScopeRow>(
+      `SELECT id, blackout_id, org_type, org_id, created_at
+       FROM vacation_blackout_scopes
+       WHERE blackout_id = $1
+       ORDER BY org_type, org_id`,
+      [blackoutId],
+    );
+    return result.rows;
   }
 
-  /** Execute UPDATE with CTE + scope name JOIN. */
-  private async executeUpdateWithScope(
+  /** Load scopes for multiple blackouts in a single query. Returns Map(blackoutId, scopes). */
+  private async loadScopesForBlackouts(
     client: PoolClient,
-    setClauses: string[],
-    params: unknown[],
-    idParam: number,
-    tenantParam: number,
-  ): Promise<BlackoutWithScopeRow | undefined> {
-    const result = await client.query<BlackoutWithScopeRow>(
-      `WITH updated AS (
-        UPDATE vacation_blackouts
-        SET ${setClauses.join(', ')}
-        WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = 1
-        RETURNING *
-      )
-      SELECT upd.id, upd.tenant_id, upd.name, upd.reason,
-             upd.start_date, upd.end_date,
-             upd.scope_type, upd.scope_id,
-             upd.is_active, upd.created_by, upd.created_at, upd.updated_at,
-             CASE
-               WHEN upd.scope_type = 'team' THEN t.name
-               WHEN upd.scope_type = 'department' THEN a.name
-               ELSE NULL
-             END AS scope_name
-      FROM updated upd
-      LEFT JOIN teams t ON upd.scope_type = 'team' AND upd.scope_id = t.id
-      LEFT JOIN areas a ON upd.scope_type = 'department' AND upd.scope_id = a.id`,
-      params,
+    blackoutIds: string[],
+  ): Promise<Map<string, VacationBlackoutScopeRow[]>> {
+    if (blackoutIds.length === 0) {
+      return new Map();
+    }
+
+    const placeholders: string = blackoutIds
+      .map((_: string, i: number) => `$${i + 1}`)
+      .join(', ');
+    const result = await client.query<VacationBlackoutScopeRow>(
+      `SELECT id, blackout_id, org_type, org_id, created_at
+       FROM vacation_blackout_scopes
+       WHERE blackout_id IN (${placeholders})
+       ORDER BY blackout_id, org_type, org_id`,
+      blackoutIds,
     );
 
-    return result.rows[0];
+    const map = new Map<string, VacationBlackoutScopeRow[]>();
+    for (const row of result.rows) {
+      const existing: VacationBlackoutScopeRow[] =
+        map.get(row.blackout_id) ?? [];
+      existing.push(row);
+      map.set(row.blackout_id, existing);
+    }
+    return map;
   }
 
   /** Get a single blackout by ID (internal helper). */
@@ -365,33 +376,28 @@ export class VacationBlackoutsService {
     tenantId: number,
     id: string,
   ): Promise<VacationBlackout> {
-    const result = await client.query<BlackoutWithScopeRow>(
-      `SELECT vb.id, vb.tenant_id, vb.name, vb.reason,
-              vb.start_date, vb.end_date,
-              vb.scope_type, vb.scope_id,
-              vb.is_active, vb.created_by, vb.created_at, vb.updated_at,
-              CASE
-                WHEN vb.scope_type = 'team' THEN t.name
-                WHEN vb.scope_type = 'department' THEN a.name
-                ELSE NULL
-              END AS scope_name
-       FROM vacation_blackouts vb
-       LEFT JOIN teams t ON vb.scope_type = 'team' AND vb.scope_id = t.id
-       LEFT JOIN areas a ON vb.scope_type = 'department' AND vb.scope_id = a.id
-       WHERE vb.id = $1 AND vb.tenant_id = $2 AND vb.is_active = 1`,
+    const result = await client.query<VacationBlackoutRow>(
+      `SELECT id, tenant_id, name, reason, start_date, end_date,
+              is_global, is_active, created_by, created_at, updated_at
+       FROM vacation_blackouts
+       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
       [id, tenantId],
     );
 
-    const row: BlackoutWithScopeRow | undefined = result.rows[0];
+    const row: VacationBlackoutRow | undefined = result.rows[0];
     if (row === undefined) {
       throw new NotFoundException(`Blackout ${id} not found`);
     }
 
-    return this.mapRowToBlackout(row);
+    const scopes: VacationBlackoutScopeRow[] = await this.loadScopes(
+      client,
+      id,
+    );
+    return this.mapRowToBlackout(row, scopes);
   }
 
-  /** Build dynamic SET clause and params for blackout update. */
-  private buildBlackoutSetClauses(dto: UpdateBlackoutDto): {
+  /** Build dynamic SET clause and params for blackout update (non-scope fields only). */
+  private buildUpdateSetClauses(dto: UpdateBlackoutDto): {
     setClauses: string[];
     params: unknown[];
   } {
@@ -404,8 +410,7 @@ export class VacationBlackoutsService {
       { column: 'reason', value: dto.reason },
       { column: 'start_date', value: dto.startDate },
       { column: 'end_date', value: dto.endDate },
-      { column: 'scope_type', value: dto.scopeType },
-      { column: 'scope_id', value: dto.scopeId },
+      { column: 'is_global', value: dto.isGlobal },
     ];
 
     for (const field of fields) {
@@ -419,9 +424,21 @@ export class VacationBlackoutsService {
     return { setClauses, params };
   }
 
-  /** Map DB row to API response type (snake_case → camelCase). */
-  private mapRowToBlackout(row: BlackoutWithScopeRow): VacationBlackout {
-    const base: VacationBlackout = {
+  /** Check if the DTO contains scope array changes. */
+  private hasScopeChanges(dto: UpdateBlackoutDto): boolean {
+    return (
+      dto.departmentIds !== undefined ||
+      dto.teamIds !== undefined ||
+      dto.areaIds !== undefined
+    );
+  }
+
+  /** Map DB row + scope rows to API response type. */
+  private mapRowToBlackout(
+    row: VacationBlackoutRow,
+    scopes: VacationBlackoutScopeRow[],
+  ): VacationBlackout {
+    return {
       id: row.id,
       name: row.name,
       reason: row.reason,
@@ -433,8 +450,10 @@ export class VacationBlackoutsService {
         typeof row.end_date === 'string' ?
           row.end_date.slice(0, 10)
         : this.formatDate(new Date(row.end_date)),
-      scopeType: row.scope_type,
-      scopeId: row.scope_id,
+      isGlobal: row.is_global,
+      departmentIds: this.extractOrgIds(scopes, 'department'),
+      teamIds: this.extractOrgIds(scopes, 'team'),
+      areaIds: this.extractOrgIds(scopes, 'area'),
       createdBy: row.created_by,
       createdAt:
         typeof row.created_at === 'string' ?
@@ -445,12 +464,16 @@ export class VacationBlackoutsService {
           row.updated_at
         : new Date(row.updated_at).toISOString(),
     };
+  }
 
-    if (row.scope_name !== null) {
-      base.scopeName = row.scope_name;
-    }
-
-    return base;
+  /** Extract org IDs of a specific type from scope rows. */
+  private extractOrgIds(
+    scopes: VacationBlackoutScopeRow[],
+    orgType: BlackoutOrgType,
+  ): number[] {
+    return scopes
+      .filter((s: VacationBlackoutScopeRow) => s.org_type === orgType)
+      .map((s: VacationBlackoutScopeRow) => s.org_id);
   }
 
   /** Format a Date as YYYY-MM-DD (no timezone issues). */
