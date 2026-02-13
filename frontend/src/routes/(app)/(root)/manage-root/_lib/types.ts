@@ -6,9 +6,15 @@ import type {
   IsActiveStatus,
   FormIsActiveStatus,
   StatusFilter,
+  AvailabilityStatus,
 } from '@assixx/shared';
 
-export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
+export type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+  AvailabilityStatus,
+};
 
 /**
  * Root User interface
@@ -27,6 +33,12 @@ export interface RootUser {
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
+
+  // Availability
+  availabilityStatus?: AvailabilityStatus;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityNotes?: string;
 }
 
 /**

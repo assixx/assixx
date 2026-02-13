@@ -122,6 +122,16 @@
       icon: 'fa-calendar-alt',
     },
     {
+      pattern: /^\/manage-admins\/availability\/[^/]+$/,
+      label: 'Admin Name Placeholder',
+      icon: 'fa-calendar-alt',
+    },
+    {
+      pattern: /^\/manage-root\/availability\/[^/]+$/,
+      label: 'Root Name Placeholder',
+      icon: 'fa-calendar-alt',
+    },
+    {
       pattern: /^\/manage-employees\/permission\/[^/]+$/,
       label: 'Employee Name Placeholder',
       icon: 'fa-shield-alt',
@@ -179,6 +189,18 @@
       label: 'Mitarbeiter verwalten',
       href: '/manage-employees',
       icon: 'fa-users',
+    },
+    {
+      pattern: /^\/manage-admins\/availability\/[^/]+$/,
+      label: 'Admins verwalten',
+      href: '/manage-admins',
+      icon: 'fa-user-shield',
+    },
+    {
+      pattern: /^\/manage-root\/availability\/[^/]+$/,
+      label: 'Root User Verwaltung',
+      href: '/manage-root',
+      icon: 'fa-shield-alt',
     },
     {
       pattern: /^\/manage-employees\/permission\/[^/]+$/,

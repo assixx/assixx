@@ -160,7 +160,7 @@
     "prettier-plugin-svelte": "3.4.1",
     "purgecss": "8.0.0",
     "storybook": "^10.2.8",
-    "stylelint": "^17.2.0",
+    "stylelint": "^17.3.0",
     "stylelint-config-clean-order": "^8.0.1",
     "stylelint-config-standard": "40.0.0",
     "stylelint-order": "^7.0.1",

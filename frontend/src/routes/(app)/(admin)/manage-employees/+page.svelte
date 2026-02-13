@@ -7,6 +7,7 @@
    */
   import { goto, invalidateAll } from '$app/navigation';
 
+  import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import {
     showSuccessAlert,
     showErrorAlert,
@@ -30,7 +31,6 @@
     syncTeamMemberships,
     buildEmployeePayload,
   } from './_lib/api';
-  import AvailabilityModal from './_lib/AvailabilityModal.svelte';
   import { MESSAGES } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import EmployeeFormModal from './_lib/EmployeeFormModal.svelte';
@@ -746,7 +746,7 @@
 <!-- Availability Modal Component -->
 <AvailabilityModal
   show={showAvailabilityModal}
-  employee={availabilityEmployee}
+  person={availabilityEmployee}
   submitting={availabilitySubmitting}
   bind:availabilityStatus
   bind:availabilityStart

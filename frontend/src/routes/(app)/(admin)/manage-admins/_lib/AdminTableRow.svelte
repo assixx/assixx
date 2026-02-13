@@ -9,6 +9,9 @@
     getAreasBadge,
     getDepartmentsBadge,
     getTeamsBadge,
+    getAvailabilityBadge,
+    getPlannedAvailability,
+    getTruncatedNotes,
   } from './utils';
 
   import type { Admin } from './types';
@@ -20,11 +23,13 @@
   interface Props {
     admin: Admin;
     onedit: (adminId: number) => void;
+    onavailability: (adminId: number) => void;
     onpermission: (uuid: string) => void;
     ondelete: (adminId: number) => void;
   }
 
-  const { admin, onedit, onpermission, ondelete }: Props = $props();
+  const { admin, onedit, onavailability, onpermission, ondelete }: Props =
+    $props();
 
   // =============================================================================
   // DERIVED VALUES
@@ -38,6 +43,9 @@
   const areasBadge = $derived(getAreasBadge(admin));
   const deptsBadge = $derived(getDepartmentsBadge(admin));
   const teamsBadge = $derived(getTeamsBadge(admin));
+  const availabilityBadge = $derived(getAvailabilityBadge(admin));
+  const plannedAvailability = $derived(getPlannedAvailability(admin));
+  const notes = $derived(getTruncatedNotes(admin.availabilityNotes));
 </script>
 
 <tr>
@@ -100,6 +108,15 @@
     </span>
   </td>
   <td>
+    <span class="badge {availabilityBadge.class}">
+      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"
+        ></i>{/if}
+      {availabilityBadge.text}
+    </span>
+  </td>
+  <td>{plannedAvailability}</td>
+  <td title={notes.title}>{notes.text}</td>
+  <td>
     <div class="flex gap-2">
       <button
         type="button"
@@ -111,6 +128,17 @@
         }}
       >
         <i class="fas fa-edit"></i>
+      </button>
+      <button
+        type="button"
+        class="action-icon action-icon--info"
+        title="Verfügbarkeit bearbeiten"
+        aria-label="Verfügbarkeit bearbeiten"
+        onclick={() => {
+          onavailability(admin.id);
+        }}
+      >
+        <i class="fas fa-calendar-alt"></i>
       </button>
       <button
         type="button"

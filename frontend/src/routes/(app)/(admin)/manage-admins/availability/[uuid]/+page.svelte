@@ -1,10 +1,9 @@
 <script lang="ts">
   /**
-   * Availability History - Page Component
-   * @module manage-employees/availability/[uuid]/+page
+   * Availability History - Page Component (Admin)
+   * @module manage-admins/availability/[uuid]/+page
    *
-   * Displays availability history for a specific employee.
-   * Design pattern: Similar to blackboard (custom dropdowns)
+   * Displays availability history for a specific admin.
    */
   import { SvelteURLSearchParams } from 'svelte/reactivity';
 
@@ -138,7 +137,7 @@
   // =============================================================================
 
   function goBack(): void {
-    void goto(resolvePath('/manage-employees'));
+    void goto(resolvePath('/manage-admins'));
   }
 
   function navigateWithFilter(year: string, month: string): void {
@@ -149,7 +148,7 @@
     const uuid = employee?.uuid ?? '';
     void goto(
       resolvePath(
-        `/manage-employees/availability/${uuid}${queryString !== '' ? `?${queryString}` : ''}`,
+        `/manage-admins/availability/${uuid}${queryString !== '' ? `?${queryString}` : ''}`,
       ),
     );
   }
@@ -166,7 +165,7 @@
 
   function clearFilter(): void {
     const uuid = employee?.uuid ?? '';
-    void goto(resolvePath(`/manage-employees/availability/${uuid}`));
+    void goto(resolvePath(`/manage-admins/availability/${uuid}`));
   }
 
   // =============================================================================
@@ -236,7 +235,7 @@
       class="btn btn-light"
       onclick={goBack}
     >
-      <i class="fas fa-arrow-left mr-2"></i>Zurück zur Mitarbeiterverwaltung
+      <i class="fas fa-arrow-left mr-2"></i>Zurück zur Admin-Verwaltung
     </button>
   </div>
 
@@ -397,7 +396,7 @@
             onclick={goBack}
           >
             <i class="fas fa-arrow-left mr-2"></i>
-            Zurück zur Mitarbeiterverwaltung
+            Zurück zur Admin-Verwaltung
           </button>
         </div>
       {:else}

@@ -308,6 +308,7 @@
                     id="endDate"
                     name="end_date"
                     class="date-picker__input"
+                    min={formStartDate}
                     bind:value={formEndDate}
                   />
                 </div>

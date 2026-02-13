@@ -1,23 +1,16 @@
+<!--
+  EditAvailabilityModal.svelte (Shared)
+  Modal for editing existing availability entries.
+  Self-contained with internal state and API calls.
+  Used by availability history pages across all management sections.
+-->
 <script lang="ts">
-  /**
-   * Edit Availability Modal Component
-   * @module manage-employees/availability/_lib/EditAvailabilityModal
-   *
-   * Modal for editing existing availability entries.
-   * Self-contained with internal state and API calls.
-   */
-
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
 
-  import { AVAILABILITY_STATUS_OPTIONS } from '../../_lib/constants';
+  import { AVAILABILITY_STATUS_OPTIONS } from './constants';
+  import { formatDateForInput, getStatusIcon, getStatusText } from './helpers';
 
-  import {
-    formatDateForInput,
-    getStatusIcon,
-    getStatusText,
-  } from './availability-helpers';
-
-  import type { AvailabilityStatus } from '../../_lib/types';
+  import type { AvailabilityStatus } from '@assixx/shared';
 
   // =============================================================================
   // TYPES

@@ -225,7 +225,7 @@
           Feiertage
           <span class="text-muted ml-2">
             ({holidaysState.holidays.length} gesamt, {holidaysState.recurringCount}
-            jaehrlich, {holidaysState.oneTimeCount} einmalig)
+            jährlich, {holidaysState.oneTimeCount} einmalig)
           </span>
         </h3>
         <button
@@ -490,7 +490,7 @@
             style="font-size: 0.875rem;"
           >
             <i class="fas fa-exclamation-circle mr-1"></i>
-            Dieser Feiertag ist jaehrlich wiederkehrend. Er wird in keinem Jahr mehr
+            Dieser Feiertag ist jährlich wiederkehrend. Er wird in keinem Jahr mehr
             beruecksichtigt.
           </p>
         {/if}

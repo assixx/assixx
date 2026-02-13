@@ -6,6 +6,15 @@ import type { FormIsActiveStatus } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
+// Re-export shared availability constants
+export {
+  AVAILABILITY_BADGE_CLASSES,
+  AVAILABILITY_ICONS,
+  AVAILABILITY_LABELS,
+  AVAILABILITY_STATUS_LABELS,
+  AVAILABILITY_STATUS_OPTIONS,
+} from '$lib/availability/constants';
+
 /**
  * Position options for admin selection dropdown
  */
@@ -220,6 +229,9 @@ export const MESSAGES = {
   TH_AREAS: 'Bereiche',
   TH_DEPARTMENTS: 'Abteilungen',
   TH_TEAMS: 'Teams',
+  TH_AVAILABILITY: 'Verfügbarkeit',
+  TH_PLANNED: 'Geplant',
+  TH_NOTES: 'Notizen',
   TH_ACTIONS: 'Aktionen',
 } as const;
 

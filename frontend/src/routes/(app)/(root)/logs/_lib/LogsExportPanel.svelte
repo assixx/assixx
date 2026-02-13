@@ -201,6 +201,7 @@
           type="date"
           id="export-date-to"
           class="form-field__control"
+          min={exportDateFrom}
           bind:value={exportDateTo}
           oninput={clearQuickTimerangeSelection}
         />

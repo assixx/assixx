@@ -1,16 +1,13 @@
-/**
- * Availability Helper Functions
- * @module manage-employees/availability/_lib/availability-helpers
- *
- * Shared utility functions for availability history display.
- * Used by both main page and modal components.
- */
+// =============================================================================
+// SHARED AVAILABILITY HELPERS
+// =============================================================================
+// Used by availability history pages across manage-employees, manage-admins, manage-root
 
 import {
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
-} from '$lib/availability/constants';
+} from './constants';
 
 import type { AvailabilityStatus } from '@assixx/shared';
 

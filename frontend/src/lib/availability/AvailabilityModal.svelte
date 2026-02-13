@@ -1,17 +1,33 @@
 <!--
-  AvailabilityModal.svelte
+  AvailabilityModal.svelte (Shared)
   Modal for quick availability editing (updates users table)
-  Uses ds-modal design system components
+  Uses ds-modal design system components.
+  Generic: works for employees, admins, and root users.
 -->
 <script lang="ts">
-  import { AVAILABILITY_STATUS_OPTIONS, AVAILABILITY_ICONS } from './constants';
-  import { getAvailabilityLabel } from './utils';
+  import {
+    AVAILABILITY_STATUS_OPTIONS,
+    AVAILABILITY_ICONS,
+    AVAILABILITY_LABELS,
+  } from './constants';
 
-  import type { AvailabilityStatus, Employee } from './types';
+  import type { AvailabilityStatus } from '@assixx/shared';
+
+  /** Minimal person shape needed by this modal */
+  interface AvailabilityPerson {
+    firstName: string;
+    lastName: string;
+    uuid: string;
+  }
 
   /** Get icon class for status (type-safe helper) */
   function getStatusIcon(status: AvailabilityStatus): string {
     return AVAILABILITY_ICONS[status];
+  }
+
+  /** Get label for status */
+  function getAvailabilityLabel(status: AvailabilityStatus): string {
+    return AVAILABILITY_LABELS[status];
   }
 
   // =============================================================================
@@ -20,7 +36,7 @@
 
   interface Props {
     show: boolean;
-    employee: Employee | null;
+    person: AvailabilityPerson | null;
     submitting: boolean;
 
     // Bound form values (parent uses bind:)
@@ -40,7 +56,7 @@
   /* eslint-disable @typescript-eslint/no-useless-default-assignment -- $bindable() required for bind: */
   let {
     show,
-    employee,
+    person,
     submitting,
     availabilityStatus = $bindable(),
     availabilityStart = $bindable(),
@@ -63,8 +79,8 @@
   // DERIVED
   // =============================================================================
 
-  const employeeName = $derived(
-    employee !== null ? `${employee.firstName} ${employee.lastName}` : '',
+  const personName = $derived(
+    person !== null ? `${person.firstName} ${person.lastName}` : '',
   );
 
   // =============================================================================
@@ -126,7 +142,7 @@
   });
 </script>
 
-{#if show && employee !== null}
+{#if show && person !== null}
   <!-- Availability Modal -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
@@ -156,7 +172,7 @@
           id="availability-modal-title"
         >
           <i class="fas fa-calendar-alt mr-2"></i>
-          Verfügbarkeit: {employeeName}
+          Verfügbarkeit: {personName}
         </h3>
         <button
           type="button"
@@ -303,8 +319,8 @@
           type="button"
           class="btn btn-secondary"
           onclick={() => {
-            // employee guaranteed non-null by outer {#if} block
-            onmanage(employee.uuid);
+            // person guaranteed non-null by outer {#if} block
+            onmanage(person.uuid);
           }}
         >
           <i class="fas fa-history mr-2"></i>Historie
