@@ -127,8 +127,6 @@
     transition: transform 0.15s ease;
   }
 
-
-
   .incoming-card__header {
     display: flex;
     justify-content: space-between;

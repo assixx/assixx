@@ -23,7 +23,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={() => {
             kvpDetailState.closePreviewModal();
           }}
@@ -85,7 +85,7 @@
           }}
         >
           <i class="fas fa-times mr-2"></i>
-          Schliessen
+          Schließen
         </button>
         <button
           type="button"

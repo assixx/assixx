@@ -250,7 +250,7 @@
       <button
         type="button"
         class="ds-modal__close"
-        aria-label="Schliessen"
+        aria-label="Schließen"
         onclick={handleClose}
       >
         <i class="fas fa-times"></i>

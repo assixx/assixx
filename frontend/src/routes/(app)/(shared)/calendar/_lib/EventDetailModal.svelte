@@ -62,7 +62,7 @@
       <button
         type="button"
         class="ds-modal__close"
-        aria-label="Schliessen"
+        aria-label="Schließen"
         onclick={onclose}
       >
         <i class="fas fa-times"></i>
@@ -191,7 +191,7 @@
             class="btn btn-cancel"
             onclick={onclose}
           >
-            <i class="fas fa-times"></i> Schliessen
+            <i class="fas fa-times"></i> Schließen
           </button>
         </div>
       </div>

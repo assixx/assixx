@@ -16,7 +16,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={() => {
             kvpDetailState.closeShareModal();
           }}

@@ -133,7 +133,6 @@
     transition: transform 0.15s ease;
   }
 
-
   .request-card__header {
     display: flex;
     justify-content: space-between;

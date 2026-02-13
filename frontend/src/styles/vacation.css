@@ -58,3 +58,33 @@
   border-radius: var(--radius-md);
   background: var(--glass-bg);
 }
+
+/* ========================================
+   Detail Modal Grid
+   ======================================== */
+
+.detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.detail-grid__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--color-glass-border);
+}
+
+.detail-grid__row:last-child {
+  border-bottom: none;
+}
+
+.detail-grid__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-right: var(--spacing-4);
+}

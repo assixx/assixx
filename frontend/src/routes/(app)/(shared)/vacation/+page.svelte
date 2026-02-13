@@ -18,7 +18,11 @@
   import CapacityIndicator from './_lib/CapacityIndicator.svelte';
   import {
     DEFAULT_PAGE_SIZE,
+    HALF_DAY_LABELS,
+    STATUS_BADGE_CLASS,
     STATUS_FILTER_OPTIONS,
+    STATUS_LABELS,
+    TYPE_LABELS,
     VIEW_TABS,
   } from './_lib/constants';
   import EntitlementBadge from './_lib/EntitlementBadge.svelte';
@@ -83,6 +87,7 @@
     getCanSubmit(): boolean;
   }
   let createFormRef = $state<RequestFormRef | null>(null);
+  let editFormRef = $state<RequestFormRef | null>(null);
 
   // Capacity for respond modal
   let respondCapacity = $state<VacationCapacityAnalysis | null>(null);
@@ -111,6 +116,10 @@
     if (e.key === 'Escape') {
       if (showRespondModal) {
         closeRespondModal();
+      } else if (vacationState.showEditModal) {
+        vacationState.closeEditModal();
+      } else if (vacationState.showDetailModal) {
+        vacationState.closeDetailModal();
       } else if (showCreateModal) {
         showCreateModal = false;
       }
@@ -227,6 +236,50 @@
       log.error({ err }, 'Capacity check failed');
       return null;
     }
+  }
+
+  // ==========================================================================
+  // EDIT REQUEST
+  // ==========================================================================
+
+  async function handleEditSubmit(payload: CreateVacationRequestPayload) {
+    const request = vacationState.selectedRequest;
+    if (request === null) return;
+
+    try {
+      await api.editRequest(request.id, payload);
+      vacationState.closeEditModal();
+      showSuccessAlert('Antrag aktualisiert');
+      await invalidateAll();
+    } catch (err) {
+      log.error({ err }, 'Edit request failed');
+      showErrorAlert('Fehler beim Aktualisieren des Antrags');
+    }
+  }
+
+  // ==========================================================================
+  // DETAIL VIEW HELPERS
+  // ==========================================================================
+
+  /** Format ISO date to German locale display */
+  function formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  /** Build half-day info string for detail view */
+  function getHalfDayInfo(request: VacationRequest): string {
+    const parts: string[] = [];
+    if (request.halfDayStart !== 'none') {
+      parts.push(`Start: ${HALF_DAY_LABELS[request.halfDayStart]}`);
+    }
+    if (request.halfDayEnd !== 'none') {
+      parts.push(`Ende: ${HALF_DAY_LABELS[request.halfDayEnd]}`);
+    }
+    return parts.join(' | ');
   }
 
   // ==========================================================================
@@ -666,7 +719,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={() => {
             showCreateModal = false;
           }}
@@ -698,6 +751,223 @@
         >
           <i class="fas fa-paper-plane mr-1"></i>
           Antrag einreichen
+        </button>
+      </div>
+    </form>
+  </div>
+{/if}
+
+<!-- ========================================================================
+     DETAIL MODAL (read-only view)
+     ======================================================================== -->
+
+{#if vacationState.showDetailModal && vacationState.selectedRequest !== null}
+  {@const req = vacationState.selectedRequest}
+  <div
+    class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    onclick={() => {
+      vacationState.closeDetailModal();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') vacationState.closeDetailModal();
+    }}
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="ds-modal"
+      role="document"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <div class="ds-modal__header">
+        <h3 class="ds-modal__title">
+          <i class="fas fa-eye mr-2"></i>
+          Antragsdetails
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={() => {
+            vacationState.closeDetailModal();
+          }}
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="ds-modal__body">
+        <div class="detail-grid">
+          <div class="detail-grid__row">
+            <span class="detail-grid__label">Status</span>
+            <span class="badge {STATUS_BADGE_CLASS[req.status]}">
+              {STATUS_LABELS[req.status]}
+            </span>
+          </div>
+
+          <div class="detail-grid__row">
+            <span class="detail-grid__label">Urlaubsart</span>
+            <span>{TYPE_LABELS[req.vacationType]}</span>
+          </div>
+
+          <div class="detail-grid__row">
+            <span class="detail-grid__label">Zeitraum</span>
+            <span>
+              {formatDate(req.startDate)} — {formatDate(req.endDate)}
+            </span>
+          </div>
+
+          <div class="detail-grid__row">
+            <span class="detail-grid__label">Tage</span>
+            <span>
+              {req.computedDays}
+              {req.computedDays === 1 ? 'Tag' : 'Tage'}
+            </span>
+          </div>
+
+          {#if getHalfDayInfo(req) !== ''}
+            <div class="detail-grid__row">
+              <span class="detail-grid__label">Halbe Tage</span>
+              <span>{getHalfDayInfo(req)}</span>
+            </div>
+          {/if}
+
+          {#if req.requesterName}
+            <div class="detail-grid__row">
+              <span class="detail-grid__label">Antragsteller</span>
+              <span>{req.requesterName}</span>
+            </div>
+          {/if}
+
+          {#if req.requestNote !== null}
+            <div class="detail-grid__row">
+              <span class="detail-grid__label">Bemerkung</span>
+              <span>{req.requestNote}</span>
+            </div>
+          {/if}
+
+          {#if req.responseNote !== null}
+            <div class="detail-grid__row">
+              <span class="detail-grid__label">Antwort</span>
+              <span>{req.responseNote}</span>
+            </div>
+          {/if}
+
+          {#if req.approverName}
+            <div class="detail-grid__row">
+              <span class="detail-grid__label">Bearbeitet von</span>
+              <span>{req.approverName}</span>
+            </div>
+          {/if}
+
+          {#if req.respondedAt !== null}
+            <div class="detail-grid__row">
+              <span class="detail-grid__label">Bearbeitet am</span>
+              <span>{formatDate(req.respondedAt)}</span>
+            </div>
+          {/if}
+
+          <div class="detail-grid__row">
+            <span class="detail-grid__label">Erstellt am</span>
+            <span>{formatDate(req.createdAt)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={() => {
+            vacationState.closeDetailModal();
+          }}
+        >
+          Schließen
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- ========================================================================
+     EDIT MODAL
+     ======================================================================== -->
+
+{#if vacationState.showEditModal && vacationState.selectedRequest !== null}
+  <div
+    class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    onclick={() => {
+      vacationState.closeEditModal();
+    }}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') vacationState.closeEditModal();
+    }}
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <form
+      class="ds-modal"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
+      onsubmit={(e) => {
+        e.preventDefault();
+        editFormRef?.submitForm();
+      }}
+    >
+      <div class="ds-modal__header">
+        <h3 class="ds-modal__title">
+          <i class="fas fa-edit mr-2"></i>
+          Antrag bearbeiten
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={() => {
+            vacationState.closeEditModal();
+          }}
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="ds-modal__body">
+        <RequestForm
+          bind:this={editFormRef}
+          editingRequest={vacationState.selectedRequest}
+          onsubmit={handleEditSubmit}
+          onCapacityCheck={handleCapacityCheck}
+        />
+      </div>
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={() => {
+            vacationState.closeEditModal();
+          }}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="submit"
+          class="btn btn-modal"
+          disabled={!editFormRef}
+        >
+          <i class="fas fa-save mr-1"></i>
+          Änderungen speichern
         </button>
       </div>
     </form>
@@ -747,7 +1017,7 @@
           type="button"
           class="ds-modal__close"
           onclick={closeRespondModal}
-          aria-label="Schliessen"
+          aria-label="Schließen"
         >
           <i class="fas fa-times"></i>
         </button>

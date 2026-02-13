@@ -749,7 +749,7 @@
     <button
       type="button"
       class="lightbox-close"
-      aria-label="Schliessen"
+      aria-label="Schließen"
       onclick={handleCloseLightbox}
     >
       <i class="fas fa-times"></i>
