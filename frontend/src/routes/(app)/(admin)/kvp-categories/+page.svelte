@@ -312,7 +312,7 @@
             onclick={handleSaveOverrides}
           >
             {#if isSaving}
-              <i class="fas fa-spinner fa-spin"></i>
+              <span class="spinner-ring spinner-ring--sm"></span>
               Speichern...
             {:else}
               <i class="fas fa-save"></i>
@@ -513,7 +513,7 @@
                   onclick={handleCreateCustom}
                 >
                   {#if isCreating}
-                    <i class="fas fa-spinner fa-spin"></i>
+                    <span class="spinner-ring spinner-ring--sm"></span>
                     Erstellen...
                   {:else}
                     <i class="fas fa-plus"></i>

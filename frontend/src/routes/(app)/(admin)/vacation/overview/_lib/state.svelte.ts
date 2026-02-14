@@ -1,11 +1,14 @@
 // =============================================================================
 // VACATION OVERVIEW — REACTIVE STATE (Svelte 5 Runes)
-// Team selection, month/year navigation, calendar data
+// Cascade: Machine → Team → Year → Month → Calendar
 // =============================================================================
 
 import type {
+  BlackoutPeriod,
   CalendarDayCell,
   CalendarUserRow,
+  MachineListItem,
+  StaffingRule,
   TeamCalendarData,
   TeamCalendarEntry,
   TeamListItem,
@@ -15,41 +18,93 @@ import type {
 
 // ─── Data ───────────────────────────────────────────────────────────
 
+let machines = $state<MachineListItem[]>([]);
 let teams = $state<TeamListItem[]>([]);
-let selectedTeamId = $state<number | null>(null);
+let blackouts = $state<BlackoutPeriod[]>([]);
+let staffingRules = $state<StaffingRule[]>([]);
 let calendarData = $state<TeamCalendarData | null>(null);
 let balance = $state<VacationBalance | null>(null);
 
-// ─── Navigation ─────────────────────────────────────────────────────
+// ─── Cascade selection ──────────────────────────────────────────────
 
-let selectedMonth = $state<number>(new Date().getMonth() + 1);
-let selectedYear = $state<number>(new Date().getFullYear());
+let selectedMachineId = $state<number | null>(null);
+let selectedTeamId = $state<number | null>(null);
+let selectedYear = $state<number | null>(null);
+let selectedMonth = $state<number | null>(null);
 
 // ─── UI ─────────────────────────────────────────────────────────────
 
 let isLoading = $state(false);
+let isLoadingTeams = $state(false);
 let isLoadingCalendar = $state(false);
 let isLoadingBalance = $state(false);
 
 // ─── Derived ────────────────────────────────────────────────────────
 
+/** Whether team dropdown is enabled (machine selected) */
+const canSelectTeam = $derived(selectedMachineId !== null);
+
+/** Whether year dropdown is enabled (team selected) */
+const canSelectYear = $derived(selectedTeamId !== null);
+
+/** Whether month dropdown is enabled (year selected) */
+const canSelectMonth = $derived(selectedYear !== null);
+
 /** Number of days in the selected month */
 const daysInMonth = $derived(
-  new Date(selectedYear, selectedMonth, 0).getDate(),
+  selectedYear !== null && selectedMonth !== null ?
+    new Date(selectedYear, selectedMonth, 0).getDate()
+  : 0,
 );
+
+/**
+ * Map of day numbers (1-based) that fall within a blackout period.
+ * Value = blackout name for tooltip.
+ */
+const blackoutDays = $derived.by((): Map<number, string> => {
+  const result = new Map<number, string>();
+  if (blackouts.length === 0 || selectedYear === null || selectedMonth === null)
+    return result;
+
+  const monthStartDate = new Date(selectedYear, selectedMonth - 1, 1);
+  const monthEndDate = new Date(selectedYear, selectedMonth - 1, daysInMonth);
+
+  for (const bo of blackouts) {
+    const boStart = new Date(bo.startDate + 'T00:00:00');
+    const boEnd = new Date(bo.endDate + 'T00:00:00');
+
+    if (boEnd < monthStartDate || boStart > monthEndDate) continue;
+
+    const rangeStart = boStart > monthStartDate ? boStart : monthStartDate;
+    const rangeEnd = boEnd < monthEndDate ? boEnd : monthEndDate;
+
+    const current = new Date(rangeStart);
+    while (current <= rangeEnd) {
+      result.set(current.getDate(), bo.name);
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  return result;
+});
+
+/** Selected machine name */
+const selectedMachineName = $derived.by(() => {
+  if (selectedMachineId === null) return '';
+  return machines.find((m) => m.id === selectedMachineId)?.name ?? '';
+});
 
 /** Selected team name */
 const selectedTeamName = $derived.by(() => {
   if (selectedTeamId === null) return '';
-  const team = teams.find((t) => t.id === selectedTeamId);
-  return team?.name ?? '';
+  return teams.find((t) => t.id === selectedTeamId)?.name ?? '';
 });
 
 /** Transform calendar entries into a grid structure for rendering */
 const calendarGrid = $derived.by((): CalendarUserRow[] => {
-  if (calendarData === null) return [];
+  if (calendarData === null || selectedYear === null || selectedMonth === null)
+    return [];
 
-  /** Group entries by userId */
   const userMap = new Map<
     number,
     { userName: string; entries: TeamCalendarEntry[] }
@@ -67,7 +122,6 @@ const calendarGrid = $derived.by((): CalendarUserRow[] => {
     }
   }
 
-  /** Build grid rows */
   const rows: CalendarUserRow[] = [];
 
   for (const [userId, { userName, entries }] of userMap) {
@@ -80,7 +134,6 @@ const calendarGrid = $derived.by((): CalendarUserRow[] => {
     rows.push({ userId, userName, days });
   }
 
-  /** Sort by name */
   rows.sort((a, b) => a.userName.localeCompare(b.userName, 'de'));
 
   return rows;
@@ -93,10 +146,11 @@ function fillDaysFromEntry(
   days: Map<number, CalendarDayCell>,
   entry: TeamCalendarEntry,
 ): void {
+  if (selectedYear === null || selectedMonth === null) return;
+
   const entryStart = new Date(entry.startDate + 'T00:00:00');
   const entryEnd = new Date(entry.endDate + 'T00:00:00');
 
-  /** Clip to month boundaries */
   const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
   const monthEnd = new Date(selectedYear, selectedMonth - 1, daysInMonth);
 
@@ -126,48 +180,52 @@ function fillDaysFromEntry(
   }
 }
 
-// ─── Methods ────────────────────────────────────────────────────────
+// ─── Cascade methods ────────────────────────────────────────────────
 
+/** Select machine → reset downstream (team, year, month, calendar) */
+function selectMachine(machineId: number) {
+  selectedMachineId = machineId;
+  selectedTeamId = null;
+  selectedYear = null;
+  selectedMonth = null;
+  teams = [];
+  calendarData = null;
+}
+
+/** Select team → reset downstream (year, month, calendar) */
 function selectTeam(teamId: number) {
   selectedTeamId = teamId;
+  selectedYear = null;
+  selectedMonth = null;
   calendarData = null;
 }
 
-function navigateMonth(direction: -1 | 1) {
-  let newMonth = selectedMonth + direction;
-  let newYear = selectedYear;
-
-  if (newMonth < 1) {
-    newMonth = 12;
-    newYear -= 1;
-  } else if (newMonth > 12) {
-    newMonth = 1;
-    newYear += 1;
-  }
-
-  selectedMonth = newMonth;
-  selectedYear = newYear;
+/** Select year → reset downstream (month, calendar) */
+function setYear(year: number) {
+  selectedYear = year;
+  selectedMonth = null;
   calendarData = null;
 }
 
+/** Select month → reset calendar (will be loaded after) */
 function setMonth(month: number) {
   selectedMonth = month;
   calendarData = null;
 }
 
-function setYear(year: number) {
-  selectedYear = year;
-  calendarData = null;
-}
-
 function reset() {
+  machines = [];
   teams = [];
+  blackouts = [];
+  staffingRules = [];
+  selectedMachineId = null;
   selectedTeamId = null;
   calendarData = null;
   balance = null;
-  selectedMonth = new Date().getMonth() + 1;
-  selectedYear = new Date().getFullYear();
+  selectedYear = null;
+  selectedMonth = null;
   isLoading = false;
+  isLoadingTeams = false;
   isLoadingCalendar = false;
   isLoadingBalance = false;
 }
@@ -176,8 +234,14 @@ function reset() {
 
 export const overviewState = {
   // Data getters
+  get machines() {
+    return machines;
+  },
   get teams() {
     return teams;
+  },
+  get selectedMachineId() {
+    return selectedMachineId;
   },
   get selectedTeamId() {
     return selectedTeamId;
@@ -197,16 +261,45 @@ export const overviewState = {
   get daysInMonth() {
     return daysInMonth;
   },
+  get selectedMachineName() {
+    return selectedMachineName;
+  },
   get selectedTeamName() {
     return selectedTeamName;
   },
   get calendarGrid() {
     return calendarGrid;
   },
+  get blackoutDays() {
+    return blackoutDays;
+  },
+  get staffingRules() {
+    return staffingRules;
+  },
+
+  // Cascade flags
+  get canSelectTeam() {
+    return canSelectTeam;
+  },
+  get canSelectYear() {
+    return canSelectYear;
+  },
+  get canSelectMonth() {
+    return canSelectMonth;
+  },
 
   // Data setters
+  setMachines: (data: MachineListItem[]) => {
+    machines = data;
+  },
   setTeams: (data: TeamListItem[]) => {
     teams = data;
+  },
+  setBlackouts: (data: BlackoutPeriod[]) => {
+    blackouts = data;
+  },
+  setStaffingRules: (data: StaffingRule[]) => {
+    staffingRules = data;
   },
   setCalendarData: (data: TeamCalendarData | null) => {
     calendarData = data;
@@ -219,6 +312,9 @@ export const overviewState = {
   get isLoading() {
     return isLoading;
   },
+  get isLoadingTeams() {
+    return isLoadingTeams;
+  },
   get isLoadingCalendar() {
     return isLoadingCalendar;
   },
@@ -230,6 +326,9 @@ export const overviewState = {
   setLoading: (val: boolean) => {
     isLoading = val;
   },
+  setLoadingTeams: (val: boolean) => {
+    isLoadingTeams = val;
+  },
   setLoadingCalendar: (val: boolean) => {
     isLoadingCalendar = val;
   },
@@ -237,9 +336,9 @@ export const overviewState = {
     isLoadingBalance = val;
   },
 
-  // Navigation
+  // Cascade navigation
+  selectMachine,
   selectTeam,
-  navigateMonth,
   setMonth,
   setYear,
 

@@ -81,7 +81,7 @@
           onclick={onconfirmUpgrade}
         >
           {#if upgradeLoading}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
           {/if}
           {MESSAGES.UPGRADE_CONFIRM_BUTTON}
         </button>
@@ -139,7 +139,7 @@
           onclick={onconfirmDowngrade}
         >
           {#if downgradeLoading}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
           {/if}
           {MESSAGES.DOWNGRADE_CONFIRM_BUTTON}
         </button>

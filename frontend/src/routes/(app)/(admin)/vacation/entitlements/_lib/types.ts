@@ -39,6 +39,7 @@ export interface EmployeeListItem {
   email: string;
   role: string;
   position: string | null;
+  employeeNumber?: string;
   teamNames?: string[];
 }
 

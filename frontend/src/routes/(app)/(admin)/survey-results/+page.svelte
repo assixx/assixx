@@ -224,7 +224,7 @@
             disabled={isExporting}
           >
             {#if isExporting}
-              <i class="fas fa-spinner fa-spin"></i>
+              <span class="spinner-ring spinner-ring--sm"></span>
             {:else}
               <i class="fas fa-file-excel"></i>
             {/if}

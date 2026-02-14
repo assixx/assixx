@@ -176,7 +176,7 @@
 >
   {#if isLoading}
     <div class="loading-spinner">
-      <i class="fas fa-spinner fa-spin"></i>
+      <span class="spinner-ring spinner-ring--sm"></span>
     </div>
   {:else if messages.length === 0 && scheduledMessages.length === 0}
     <div class="empty-chat">

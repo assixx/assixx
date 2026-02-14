@@ -100,7 +100,7 @@
   <div class="request-card__actions">
     <button
       type="button"
-      class="btn btn-secondary"
+      class="btn btn-cancel"
       onclick={() => {
         onDetail(request);
       }}
@@ -112,7 +112,7 @@
     {#if isPending}
       <button
         type="button"
-        class="btn btn-secondary"
+        class="btn btn-cancel"
         onclick={() => {
           onEdit(request);
         }}

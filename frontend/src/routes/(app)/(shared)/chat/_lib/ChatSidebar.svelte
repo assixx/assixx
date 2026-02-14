@@ -130,7 +130,7 @@
   <div class="conversations-list">
     {#if isLoading}
       <div class="loading-spinner">
-        <i class="fas fa-spinner fa-spin"></i>
+        <span class="spinner-ring spinner-ring--sm"></span>
       </div>
     {:else if conversations.length === 0}
       <div class="conversations-empty">

@@ -544,7 +544,7 @@
         disabled={kvpState.isSubmitting}
       >
         {#if kvpState.isSubmitting}
-          <i class="fas fa-spinner fa-spin"></i>
+          <span class="spinner-ring spinner-ring--sm"></span>
           Wird eingereicht...
         {:else}
           <i class="fas fa-save"></i>

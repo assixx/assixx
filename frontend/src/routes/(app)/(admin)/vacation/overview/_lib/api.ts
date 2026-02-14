@@ -4,9 +4,29 @@
  */
 import { getApiClient } from '$lib/utils/api-client';
 
-import type { TeamCalendarData, VacationBalance } from './types';
+import type { TeamCalendarData, TeamListItem, VacationBalance } from './types';
 
 const apiClient = getApiClient();
+
+// ─── Machine → Teams (cascade) ──────────────────────────────────
+
+/** Raw response from GET /machines/:id/teams */
+interface MachineTeamRaw {
+  teamId: number;
+  teamName: string;
+}
+
+/** Fetch teams assigned to a machine. */
+export async function getTeamsForMachine(
+  machineId: number,
+): Promise<TeamListItem[]> {
+  const raw = await apiClient.get<MachineTeamRaw[]>(
+    `/machines/${machineId}/teams`,
+  );
+  return raw
+    .map((t) => ({ id: t.teamId, name: t.teamName }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
 
 // ─── Team Calendar ───────────────────────────────────────────────
 

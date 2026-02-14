@@ -68,6 +68,7 @@
   const ssrTeamMembers = $derived(data.teamMembers);
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
+  const ssrStaffingRules = $derived(data.staffingRules);
   const ssrIsEmployee = $derived(data.isEmployee);
   let ssrInitialized = $state(false);
 
@@ -153,6 +154,17 @@
     shiftsState.setMachines(machs);
     shiftsState.setTeams(tms);
   }
+
+  /** Min staff count derived from SSR staffing rules + selected machine */
+  const minStaffCount = $derived.by(() => {
+    const machineId = shiftsState.selectedContext.machineId;
+    if (machineId === null) return null;
+    const rule = ssrStaffingRules.find(
+      (r: { machineId: number; minStaffCount: number }) =>
+        r.machineId === machineId,
+    );
+    return rule?.minStaffCount ?? null;
+  });
 
   function handleMachineChange(machineId: number): void {
     shiftsState.setSelectedContext({ machineId });
@@ -368,6 +380,7 @@
               isEditMode={shiftsState.isEditMode}
               currentPlanId={shiftsState.currentPlanId}
               hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
+              {minStaffCount}
               ondragstart={handleDragStart}
               ondragend={handleDragEnd}
             />

@@ -244,21 +244,23 @@
             <div class="rules-list__actions">
               <button
                 type="button"
-                class="btn btn-secondary btn-sm"
+                class="action-icon action-icon--edit"
+                title="Bearbeiten"
+                aria-label="Personalregel bearbeiten"
                 onclick={() => {
                   rulesState.openEditStaffingRule(rule);
                 }}
-                aria-label="Bearbeiten"
               >
                 <i class="fas fa-edit"></i>
               </button>
               <button
                 type="button"
-                class="btn btn-danger btn-sm"
+                class="action-icon action-icon--delete"
+                title="Löschen"
+                aria-label="Personalregel löschen"
                 onclick={() => {
                   rulesState.openDeleteStaffingRule(rule);
                 }}
-                aria-label="Loeschen"
               >
                 <i class="fas fa-trash"></i>
               </button>

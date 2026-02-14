@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
    * Vacation Overview — Admin Page
-   * Team calendar showing approved vacations per team member per day.
-   * SSR: Teams list loaded in +page.server.ts.
-   * Client-side: Calendar fetched on team/month selection.
+   * Cascade: Machine → Team → Year → Month → Calendar
+   * SSR: Machines, blackouts, staffing rules loaded in +page.server.ts.
+   * Client-side: Teams fetched on machine selection, calendar on month selection.
    */
   import { onDestroy } from 'svelte';
 
@@ -23,7 +23,11 @@
   import { overviewState } from './_lib/state.svelte';
 
   import type { PageData } from './$types';
-  import type { CalendarDayCell, TeamListItem } from './_lib/types';
+  import type {
+    CalendarDayCell,
+    MachineListItem,
+    TeamListItem,
+  } from './_lib/types';
 
   const log = createLogger('VacationOverview');
 
@@ -33,14 +37,14 @@
 
   const { data }: { data: PageData } = $props();
 
-  const ssrTeams = $derived(data.teams);
-  const ssrCurrentYear = $derived(data.currentYear);
-  const ssrCurrentMonth = $derived(data.currentMonth);
+  const ssrMachines = $derived(data.machines);
+  const ssrBlackouts = $derived(data.blackouts);
+  const ssrStaffingRules = $derived(data.staffingRules);
 
   $effect(() => {
-    overviewState.setTeams(ssrTeams);
-    overviewState.setYear(ssrCurrentYear);
-    overviewState.setMonth(ssrCurrentMonth);
+    overviewState.setMachines(ssrMachines);
+    overviewState.setBlackouts(ssrBlackouts);
+    overviewState.setStaffingRules(ssrStaffingRules);
     overviewState.setLoading(false);
   });
 
@@ -49,11 +53,54 @@
   });
 
   // ==========================================================================
-  // CALENDAR LOADING
+  // CASCADE HANDLERS
   // ==========================================================================
 
+  /** Machine selected → load teams for that machine */
+  async function handleMachineSelect(machine: MachineListItem): Promise<void> {
+    machineDropdownOpen = false;
+    overviewState.selectMachine(machine.id);
+
+    overviewState.setLoadingTeams(true);
+    try {
+      const teams = await api.getTeamsForMachine(machine.id);
+      overviewState.setTeams(teams);
+    } catch (err) {
+      log.error({ err }, 'Teams load failed');
+      showErrorAlert('Fehler beim Laden der Teams');
+      overviewState.setTeams([]);
+    } finally {
+      overviewState.setLoadingTeams(false);
+    }
+  }
+
+  /** Team selected */
+  function handleTeamSelect(team: TeamListItem): void {
+    teamDropdownOpen = false;
+    overviewState.selectTeam(team.id);
+  }
+
+  /** Year selected */
+  function handleYearSelect(year: number): void {
+    yearDropdownOpen = false;
+    overviewState.setYear(year);
+  }
+
+  /** Month selected → load calendar */
+  async function handleMonthSelect(month: number): Promise<void> {
+    monthDropdownOpen = false;
+    overviewState.setMonth(month);
+    await loadCalendar();
+  }
+
+  /** Load calendar data for selected team/month/year */
   async function loadCalendar(): Promise<void> {
-    if (overviewState.selectedTeamId === null) return;
+    if (
+      overviewState.selectedTeamId === null ||
+      overviewState.selectedMonth === null ||
+      overviewState.selectedYear === null
+    )
+      return;
 
     overviewState.setLoadingCalendar(true);
     try {
@@ -73,75 +120,50 @@
   }
 
   // ==========================================================================
-  // TEAM SELECT
+  // DROPDOWN STATE
   // ==========================================================================
 
+  let machineDropdownOpen = $state(false);
   let teamDropdownOpen = $state(false);
-  const teamDisplayText = $derived(
-    overviewState.selectedTeamId !== null ?
-      overviewState.selectedTeamName
-    : 'Team wählen...',
-  );
-
-  function handleTeamSelect(team: TeamListItem): void {
-    teamDropdownOpen = false;
-    overviewState.selectTeam(team.id);
-    void loadCalendar();
-  }
-
-  // ==========================================================================
-  // MONTH / YEAR NAVIGATION
-  // ==========================================================================
-
-  let monthDropdownOpen = $state(false);
-  const monthDisplayText = $derived(
-    MONTH_NAMES[overviewState.selectedMonth] ?? '',
-  );
-
-  function handleMonthSelect(month: number): void {
-    monthDropdownOpen = false;
-    overviewState.setMonth(month);
-    if (overviewState.selectedTeamId !== null) {
-      void loadCalendar();
-    }
-  }
-
-  function handlePrevMonth(): void {
-    overviewState.navigateMonth(-1);
-    if (overviewState.selectedTeamId !== null) {
-      void loadCalendar();
-    }
-  }
-
-  function handleNextMonth(): void {
-    overviewState.navigateMonth(1);
-    if (overviewState.selectedTeamId !== null) {
-      void loadCalendar();
-    }
-  }
-
   let yearDropdownOpen = $state(false);
-  const yearDisplayText = $derived(String(overviewState.selectedYear));
+  let monthDropdownOpen = $state(false);
+
+  const machineDisplayText = $derived(
+    overviewState.selectedMachineId !== null ?
+      overviewState.selectedMachineName
+    : 'Maschine wählen...',
+  );
+
+  const teamDisplayText = $derived(
+    overviewState.isLoadingTeams ? 'Laden...'
+    : overviewState.selectedTeamId !== null ? overviewState.selectedTeamName
+    : 'Erst Maschine wählen...',
+  );
+
+  const yearDisplayText = $derived(
+    overviewState.selectedYear !== null ?
+      String(overviewState.selectedYear)
+    : 'Erst Team wählen...',
+  );
+
+  const monthDisplayText = $derived(
+    overviewState.selectedMonth !== null ?
+      (MONTH_NAMES[overviewState.selectedMonth] ?? '')
+    : 'Erst Jahr wählen...',
+  );
 
   function yearOptions(): number[] {
     const current = new Date().getFullYear();
     return [current - 1, current, current + 1];
   }
 
-  function handleYearSelect(year: number): void {
-    yearDropdownOpen = false;
-    overviewState.setYear(year);
-    if (overviewState.selectedTeamId !== null) {
-      void loadCalendar();
-    }
-  }
-
   // Close all dropdowns on outside click
   $effect(() => {
     return onClickOutsideDropdown(() => {
+      machineDropdownOpen = false;
       teamDropdownOpen = false;
-      monthDropdownOpen = false;
       yearDropdownOpen = false;
+      monthDropdownOpen = false;
     });
   });
 
@@ -149,13 +171,18 @@
   // CALENDAR GRID HELPERS
   // ==========================================================================
 
-  /** Day numbers array (1-based) */
   const dayNumbers = $derived(
-    Array.from({ length: overviewState.daysInMonth }, (_, i) => i + 1),
+    overviewState.daysInMonth > 0 ?
+      Array.from({ length: overviewState.daysInMonth }, (_, i) => i + 1)
+    : [],
   );
 
-  /** Get weekday index (0=Sun) for a given day */
   function getWeekday(day: number): number {
+    if (
+      overviewState.selectedYear === null ||
+      overviewState.selectedMonth === null
+    )
+      return 0;
     return new Date(
       overviewState.selectedYear,
       overviewState.selectedMonth - 1,
@@ -163,18 +190,15 @@
     ).getDay();
   }
 
-  /** Whether a day is weekend (Sa/So) */
   function isWeekend(day: number): boolean {
     const wd = getWeekday(day);
     return wd === 0 || wd === 6;
   }
 
-  /** Get cell background color for a vacation cell */
   function cellColor(cell: CalendarDayCell): string {
     return TYPE_COLORS[cell.vacationType] ?? 'var(--color-primary-500)';
   }
 
-  /** Build tooltip for a vacation cell */
   function cellTooltip(cell: CalendarDayCell): string {
     const typeLabel = TYPE_LABELS[cell.vacationType] ?? cell.vacationType;
     if (cell.halfDay !== 'none') {
@@ -183,6 +207,16 @@
     }
     return typeLabel;
   }
+
+  /** Staffing rule for selected machine */
+  const machineStaffingRule = $derived.by(() => {
+    if (overviewState.selectedMachineId === null) return null;
+    return (
+      overviewState.staffingRules.find(
+        (r) => r.machineId === overviewState.selectedMachineId,
+      ) ?? null
+    );
+  });
 </script>
 
 <svelte:head>
@@ -195,140 +229,207 @@
        ================================================================ -->
   <div class="card mb-6">
     <div class="card__header">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center justify-between">
         <h2 class="card__title">
           <i class="fas fa-calendar-alt mr-2"></i>
           Urlaubsübersicht
         </h2>
-        <div class="flex flex-wrap items-center gap-3">
-          <!-- Team Selector -->
-          <div
-            class="dropdown"
-            data-dropdown="ov-team"
+        {#if machineStaffingRule !== null}
+          <span
+            class="badge badge--warning badge--sm"
+            title="Mindestbesetzung: {machineStaffingRule.machineName}"
           >
+            <i class="fas fa-hard-hat"></i>
+            Mindestbesetzung: {machineStaffingRule.minStaffCount}
+          </span>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       CASCADE FILTER ROW (like shifts page)
+       ================================================================ -->
+  <div class="vacation-filter-row">
+    <!-- 1. Maschine -->
+    <div class="info-item">
+      <div class="info-label">Maschine</div>
+      <div
+        class="dropdown"
+        data-dropdown="ov-machine"
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={machineDropdownOpen}
+          onclick={() => {
+            machineDropdownOpen = !machineDropdownOpen;
+          }}
+        >
+          <span>{machineDisplayText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={machineDropdownOpen}
+        >
+          {#each overviewState.machines as machine (machine.id)}
             <button
               type="button"
-              class="dropdown__trigger"
-              class:active={teamDropdownOpen}
+              class="dropdown__option"
+              class:selected={overviewState.selectedMachineId === machine.id}
               onclick={() => {
-                teamDropdownOpen = !teamDropdownOpen;
+                void handleMachineSelect(machine);
               }}
             >
-              <i class="fas fa-users mr-1"></i>
-              <span>{teamDisplayText}</span>
-              <i class="fas fa-chevron-down"></i>
+              {machine.name}
             </button>
-            <div
-              class="dropdown__menu"
-              class:active={teamDropdownOpen}
-            >
-              {#each overviewState.teams as team (team.id)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  class:selected={overviewState.selectedTeamId === team.id}
-                  onclick={() => {
-                    handleTeamSelect(team);
-                  }}
-                >
-                  {team.name}
-                </button>
-              {/each}
-              {#if overviewState.teams.length === 0}
-                <div class="dropdown__option dropdown__option--disabled">
-                  Keine Teams vorhanden
-                </div>
-              {/if}
+          {/each}
+          {#if overviewState.machines.length === 0}
+            <div class="dropdown__option dropdown__option--disabled">
+              Keine Maschinen vorhanden
             </div>
-          </div>
+          {/if}
+        </div>
+      </div>
+    </div>
 
-          <!-- Month Navigation -->
-          <div class="flex items-center gap-1">
+    <!-- 2. Team (enabled after machine) -->
+    <div class="info-item">
+      <div class="info-label">Team</div>
+      <div
+        class="dropdown"
+        class:dropdown--disabled={!overviewState.canSelectTeam}
+        data-dropdown="ov-team"
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={teamDropdownOpen}
+          disabled={!overviewState.canSelectTeam}
+          style={!overviewState.canSelectTeam ?
+            'pointer-events: none; opacity: 0.5;'
+          : ''}
+          onclick={() => {
+            if (overviewState.canSelectTeam) {
+              teamDropdownOpen = !teamDropdownOpen;
+            }
+          }}
+        >
+          <span>{teamDisplayText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={teamDropdownOpen}
+        >
+          {#each overviewState.teams as team (team.id)}
             <button
               type="button"
-              class="btn btn-secondary btn-sm btn-icon"
-              onclick={handlePrevMonth}
-              aria-label="Vorheriger Monat"
-            >
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <div
-              class="dropdown"
-              data-dropdown="ov-month"
-            >
-              <button
-                type="button"
-                class="dropdown__trigger"
-                class:active={monthDropdownOpen}
-                onclick={() => {
-                  monthDropdownOpen = !monthDropdownOpen;
-                }}
-              >
-                <span>{monthDisplayText}</span>
-                <i class="fas fa-chevron-down"></i>
-              </button>
-              <div
-                class="dropdown__menu"
-                class:active={monthDropdownOpen}
-              >
-                {#each Array.from({ length: 12 }, (_, i) => i + 1) as m (m)}
-                  <button
-                    type="button"
-                    class="dropdown__option"
-                    class:selected={overviewState.selectedMonth === m}
-                    onclick={() => {
-                      handleMonthSelect(m);
-                    }}
-                  >
-                    {MONTH_NAMES[m]}
-                  </button>
-                {/each}
-              </div>
-            </div>
-            <button
-              type="button"
-              class="btn btn-secondary btn-sm btn-icon"
-              onclick={handleNextMonth}
-              aria-label="Nächster Monat"
-            >
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
-
-          <!-- Year Selector -->
-          <div
-            class="dropdown"
-            data-dropdown="ov-year"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={yearDropdownOpen}
+              class="dropdown__option"
+              class:selected={overviewState.selectedTeamId === team.id}
               onclick={() => {
-                yearDropdownOpen = !yearDropdownOpen;
+                handleTeamSelect(team);
               }}
             >
-              <span>{yearDisplayText}</span>
-              <i class="fas fa-chevron-down"></i>
+              {team.name}
             </button>
-            <div
-              class="dropdown__menu"
-              class:active={yearDropdownOpen}
-            >
-              {#each yearOptions() as year (year)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  class:selected={overviewState.selectedYear === year}
-                  onclick={() => {
-                    handleYearSelect(year);
-                  }}
-                >
-                  {year}
-                </button>
-              {/each}
+          {/each}
+          {#if overviewState.canSelectTeam && overviewState.teams.length === 0 && !overviewState.isLoadingTeams}
+            <div class="dropdown__option dropdown__option--disabled">
+              Keine Teams zugewiesen
             </div>
-          </div>
+          {/if}
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Jahr (enabled after team) -->
+    <div class="info-item">
+      <div class="info-label">Jahr</div>
+      <div
+        class="dropdown"
+        class:dropdown--disabled={!overviewState.canSelectYear}
+        data-dropdown="ov-year"
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={yearDropdownOpen}
+          disabled={!overviewState.canSelectYear}
+          style={!overviewState.canSelectYear ?
+            'pointer-events: none; opacity: 0.5;'
+          : ''}
+          onclick={() => {
+            if (overviewState.canSelectYear) {
+              yearDropdownOpen = !yearDropdownOpen;
+            }
+          }}
+        >
+          <span>{yearDisplayText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={yearDropdownOpen}
+        >
+          {#each yearOptions() as year (year)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:selected={overviewState.selectedYear === year}
+              onclick={() => {
+                handleYearSelect(year);
+              }}
+            >
+              {year}
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Monat (enabled after year) -->
+    <div class="info-item">
+      <div class="info-label">Monat</div>
+      <div
+        class="dropdown"
+        class:dropdown--disabled={!overviewState.canSelectMonth}
+        data-dropdown="ov-month"
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={monthDropdownOpen}
+          disabled={!overviewState.canSelectMonth}
+          style={!overviewState.canSelectMonth ?
+            'pointer-events: none; opacity: 0.5;'
+          : ''}
+          onclick={() => {
+            if (overviewState.canSelectMonth) {
+              monthDropdownOpen = !monthDropdownOpen;
+            }
+          }}
+        >
+          <span>{monthDisplayText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={monthDropdownOpen}
+        >
+          {#each Array.from({ length: 12 }, (_, i) => i + 1) as m (m)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:selected={overviewState.selectedMonth === m}
+              onclick={() => {
+                void handleMonthSelect(m);
+              }}
+            >
+              {MONTH_NAMES[m]}
+            </button>
+          {/each}
         </div>
       </div>
     </div>
@@ -352,14 +453,15 @@
       </div>
     </div>
     <div class="card__body">
-      {#if overviewState.selectedTeamId === null}
+      {#if overviewState.selectedMonth === null}
         <div class="empty-state empty-state--in-card">
           <div class="empty-state__icon">
-            <i class="fas fa-users"></i>
+            <i class="fas fa-filter"></i>
           </div>
-          <h3 class="empty-state__title">Team auswählen</h3>
+          <h3 class="empty-state__title">Filter auswählen</h3>
           <p class="empty-state__description">
-            Wählen Sie oben ein Team aus, um den Urlaubskalender anzuzeigen.
+            Wählen Sie oben Maschine, Team, Jahr und Monat aus, um den
+            Urlaubskalender anzuzeigen.
           </p>
         </div>
       {:else if overviewState.isLoadingCalendar}
@@ -367,7 +469,7 @@
           class="text-center"
           style="padding: var(--spacing-8);"
         >
-          <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+          <div class="spinner-ring spinner-ring--sm"></div>
           <p class="text-muted mt-3">Kalender wird geladen...</p>
         </div>
       {:else if overviewState.calendarGrid.length === 0}
@@ -387,14 +489,20 @@
               <tr>
                 <th class="calendar-grid__name-header">Mitarbeiter</th>
                 {#each dayNumbers as day (day)}
+                  {@const blackoutName = overviewState.blackoutDays.get(day)}
                   <th
                     class="calendar-grid__day-header"
                     class:weekend={isWeekend(day)}
+                    class:blackout={blackoutName !== undefined}
+                    title={blackoutName ?? ''}
                   >
                     <span class="calendar-grid__weekday">
                       {WEEKDAY_SHORT[getWeekday(day)]}
                     </span>
                     <span class="calendar-grid__day-num">{day}</span>
+                    {#if blackoutName !== undefined}
+                      <span class="calendar-grid__blackout-dot"></span>
+                    {/if}
                   </th>
                 {/each}
               </tr>
@@ -405,9 +513,14 @@
                   <td class="calendar-grid__name-cell">{row.userName}</td>
                   {#each dayNumbers as day (day)}
                     {@const cell = row.days.get(day)}
+                    {@const blackoutName = overviewState.blackoutDays.get(day)}
                     <td
                       class="calendar-grid__cell"
                       class:weekend={isWeekend(day)}
+                      class:blackout={blackoutName !== undefined}
+                      title={cell === undefined && blackoutName !== undefined ?
+                        `Sperre: ${blackoutName}`
+                      : ''}
                     >
                       {#if cell !== undefined}
                         <div
@@ -445,6 +558,13 @@
             ></span>
             <span class="calendar-legend__label">Halber Tag</span>
           </div>
+          {#if overviewState.blackoutDays.size > 0}
+            <div class="calendar-legend__item">
+              <span class="calendar-legend__dot calendar-legend__dot--blackout"
+              ></span>
+              <span class="calendar-legend__label">Urlaubssperre</span>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -452,6 +572,42 @@
 </div>
 
 <style>
+  /* ─── Cascade Filter Row (mirrors shift-info-row pattern) ──────── */
+
+  .vacation-filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+    margin-bottom: var(--spacing-6);
+    box-shadow:
+      0 4px 16px rgb(0 0 0 / 30%),
+      inset 0 1px 0 var(--color-glass-border);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-hover);
+    padding: var(--spacing-6);
+  }
+
+  .vacation-filter-row :global(.info-item) {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .vacation-filter-row :global(.info-label) {
+    margin-bottom: var(--spacing-1);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
   /* ─── Calendar Grid ────────────────────────────────────────────── */
 
   .calendar-scroll {
@@ -609,10 +765,63 @@
     color: var(--text-muted);
   }
 
-  /* ─── Button icon variant ──────────────────────────────────────── */
+  /* ─── Blackout day marking ─────────────────────────────────────── */
 
-  :global(.btn-icon) {
-    padding: var(--spacing-1) var(--spacing-2) !important;
-    min-width: auto;
+  .calendar-grid__day-header.blackout {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgb(239 68 68 / 12%) 3px,
+      rgb(239 68 68 / 12%) 6px
+    );
+    color: var(--color-danger-600);
+    position: relative;
+  }
+
+  .calendar-grid__blackout-dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-danger-500);
+    margin: 1px auto 0;
+  }
+
+  .calendar-grid__cell.blackout {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgb(239 68 68 / 8%) 3px,
+      rgb(239 68 68 / 8%) 6px
+    );
+  }
+
+  .calendar-grid__cell.blackout.weekend {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--glass-bg),
+      var(--glass-bg) 3px,
+      rgb(239 68 68 / 10%) 3px,
+      rgb(239 68 68 / 10%) 6px
+    );
+  }
+
+  .calendar-legend__dot--blackout {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 2px,
+      rgb(239 68 68 / 25%) 2px,
+      rgb(239 68 68 / 25%) 4px
+    );
+    border: 1px solid var(--color-danger-400);
+  }
+
+  @media (width >= 1024px) {
+    .vacation-filter-row {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 </style>

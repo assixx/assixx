@@ -100,7 +100,7 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 | `special_move`        | Umzug                   | Default: zieht ab. Lead kann `is_special_leave` setzen → kein Abzug |
 | `unpaid`              | Unbezahlter Urlaub      | Kein Kontingent, aber Genehmigung noetig. Keine Balance-Pruefung.   |
 
-**Sonderurlaub-Logik (Q&A A7):** KEIN separates Kontingent. Default: Sonderurlaub zieht vom regulaeren Kontingent ab. Lead hat bei Genehmigung eine Checkbox `is_special_leave` — wenn gesetzt, kein Abzug. Lead kann auch `additional_days` zum Kontingent hinzufuegen.
+**Sonderurlaub-Logik (Q&A A7):** KEIN separates Kontingent. Default: Sonderurlaub zieht vom regulaeren Kontingent ab. Lead hat bei Genehmigung eine Checkbox `is_special_leave` — wenn gesetzt, kein Abzug. Lead kann auch `additional_days` zum Kontingent hinzufügen.
 
 ### 4.4 Stellvertreter (Substitute)
 
@@ -198,7 +198,7 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 | `/vacation`              | Root/Area-Lead               | Direkte Eintragung (kein Approval noetig) + Uebersicht                                       |
 | `/vacation/rules`        | Lead/Admin/Root              | Mindestbesetzung pro Maschine, Urlaubssperren, Vorlaufzeit                                   |
 | `/vacation/overview`     | Lead/Admin/Root              | Team-Kalender, Jahresuebersicht, Statistiken                                                 |
-| `/vacation/entitlements` | Admin/Root                   | Urlaubsansprüche pro Mitarbeiter, Uebertrag-Einstellungen                                    |
+| `/vacation/entitlements` | Admin/Root                   | Urlaubsansprüche pro Mitarbeiter, Übertrag-Einstellungen                                     |
 | `/vacation/holidays`     | Root / has_full_access Admin | Feiertage fuer Tenant verwalten                                                              |
 
 ---
@@ -218,12 +218,12 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 
 ## 8. Offene Punkte → RESOLVED
 
-| #   | Punkt                                                     | Entscheidung                                                                                                                               | Referenz                  |
-| --- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| 1   | `employee_availability` umbenennen oder separate Tabelle? | **Umbenennen zu `user_availability`**, `employee_id` → `user_id`. Legacy `absences` droppen.                                               | Q&A A12                   |
-| 2   | Genauer Sonderurlaubs-Katalog (Tage pro Typ)              | **Kein separates Kontingent.** Lead markiert bei Genehmigung als `is_special_leave` → kein Abzug. Lead kann `additional_days` hinzufuegen. | Q&A A7                    |
-| 3   | Individuelle Operator-Zuordnung noetig?                   | **Nein.** Team-basiert reicht. 1 Team pro Employee (Business Rule).                                                                        | Q&A A1                    |
-| 4   | Integration mit Shift-Modul?                              | **V1: Warnung an Lead** wenn Schichten im Urlaubszeitraum existieren. NICHT automatisch loeschen. V2: Automatische Umplanung.              | prompt_vacation Phase 4.2 |
+| #   | Punkt                                                     | Entscheidung                                                                                                                              | Referenz                  |
+| --- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| 1   | `employee_availability` umbenennen oder separate Tabelle? | **Umbenennen zu `user_availability`**, `employee_id` → `user_id`. Legacy `absences` droppen.                                              | Q&A A12                   |
+| 2   | Genauer Sonderurlaubs-Katalog (Tage pro Typ)              | **Kein separates Kontingent.** Lead markiert bei Genehmigung als `is_special_leave` → kein Abzug. Lead kann `additional_days` hinzufügen. | Q&A A7                    |
+| 3   | Individuelle Operator-Zuordnung noetig?                   | **Nein.** Team-basiert reicht. 1 Team pro Employee (Business Rule).                                                                       | Q&A A1                    |
+| 4   | Integration mit Shift-Modul?                              | **V1: Warnung an Lead** wenn Schichten im Urlaubszeitraum existieren. NICHT automatisch loeschen. V2: Automatische Umplanung.             | prompt_vacation Phase 4.2 |
 
 ---
 
@@ -239,7 +239,7 @@ Folgende Entscheidungen wurden in der Q&A-Session getroffen und sind **bindend**
 | A4  | **Kein `used_days` Counter**                 | Balance wird BERECHNET aus approved Requests. Kein fragiler Zaehler.                                  |
 | A5  | **`computed_days` server-seitig**            | Niemals vom Client. Server berechnet aus Datum + Feiertage + halbe Tage.                              |
 | A6  | **`deputy_lead_id` auf `teams`**             | Stellvertreter-Lead fuer Genehmigungen.                                                               |
-| A7  | **Sonderurlaub via `is_special_leave`**      | Checkbox bei Genehmigung. Default: zieht ab. Lead kann Abzug verhindern + Tage hinzufuegen.           |
+| A7  | **Sonderurlaub via `is_special_leave`**      | Checkbox bei Genehmigung. Default: zieht ab. Lead kann Abzug verhindern + Tage hinzufügen.            |
 | A8  | **Cross-Year Splitting**                     | Urlaub ueber Jahreswechsel: Tage pro Kalenderjahr berechnet und vom jeweiligen Entitlement abgezogen. |
 | A9  | **UUID PRIMARY KEY** (UUIDv7)                | Folgt neuestem Pattern. Application-generated via `uuidv7()`.                                         |
 | A10 | **Email + SSE Notifications**                | SSE sofort (ADR-003). Email-Interface als Stub vorbereitet.                                           |

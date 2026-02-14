@@ -207,7 +207,7 @@
           disabled={kvpDetailState.isSharing}
         >
           {#if kvpDetailState.isSharing}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {/if}
           Teilen
         </button>

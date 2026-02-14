@@ -395,7 +395,7 @@
             class="form-field__label"
             for="survey-department-select"
           >
-            <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i> Zusätzliche Abteilungen
           </label>
           <select
             id="survey-department-select"
@@ -509,7 +509,7 @@
           onclick={onsavedraft}
         >
           {#if surveyAdminState.isSaving}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-save"></i>
           {/if}
@@ -522,7 +522,7 @@
           onclick={onsaveactive}
         >
           {#if surveyAdminState.isSaving}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-paper-plane"></i>
           {/if}

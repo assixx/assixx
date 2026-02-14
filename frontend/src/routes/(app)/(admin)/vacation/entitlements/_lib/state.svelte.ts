@@ -29,7 +29,14 @@ const filteredEmployees = $derived.by(() => {
   const q = searchQuery.trim().toLowerCase();
   return employees.filter((emp) => {
     const name = `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.toLowerCase();
-    return name.includes(q) || emp.email.toLowerCase().includes(q);
+    const empNum = emp.employeeNumber?.toLowerCase() ?? '';
+    const pos = emp.position?.toLowerCase() ?? '';
+    return (
+      name.includes(q) ||
+      emp.email.toLowerCase().includes(q) ||
+      empNum.includes(q) ||
+      pos.includes(q)
+    );
   });
 });
 

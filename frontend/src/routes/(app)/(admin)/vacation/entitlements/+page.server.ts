@@ -21,16 +21,6 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-interface PaginatedUsersResponse {
-  data: RawUser[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    pageSize: number;
-    totalItems: number;
-  };
-}
-
 interface RawUser {
   id: number;
   firstName: string | null;
@@ -38,6 +28,7 @@ interface RawUser {
   email: string;
   role: string;
   position: string | null;
+  employeeNumber?: string;
   teamNames?: string[];
 }
 
@@ -86,23 +77,25 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
   const currentYear = new Date().getFullYear();
 
-  // Fetch active employees (role=employee + active admins for completeness)
-  const usersData = await apiFetch<PaginatedUsersResponse>(
-    '/users?limit=500&isActive=1&sortBy=lastName&sortOrder=asc',
+  // Fetch active employees
+  // ResponseInterceptor flattens paginated responses: data = [...users] directly
+  const usersData = await apiFetch<RawUser[]>(
+    '/users?limit=100&isActive=1&sortBy=lastName&sortOrder=asc',
     token,
     fetch,
   );
 
-  const employees: EmployeeListItem[] =
-    usersData?.data.map((u) => ({
-      id: u.id,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      email: u.email,
-      role: u.role,
-      position: u.position,
-      teamNames: u.teamNames,
-    })) ?? [];
+  const rawUsers = Array.isArray(usersData) ? usersData : [];
+  const employees: EmployeeListItem[] = rawUsers.map((u) => ({
+    id: u.id,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    email: u.email,
+    role: u.role,
+    position: u.position,
+    employeeNumber: u.employeeNumber,
+    teamNames: u.teamNames,
+  }));
 
   return {
     employees,

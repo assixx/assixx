@@ -6,8 +6,8 @@
 
 export const BALANCE_LABELS: Record<string, string> = {
   totalDays: 'Jahresurlaub',
-  carriedOverDays: 'Uebertrag',
-  effectiveCarriedOver: 'Eff. Uebertrag',
+  carriedOverDays: 'Übertrag',
+  effectiveCarriedOver: 'Eff. Übertrag',
   additionalDays: 'Zusatztage',
   availableDays: 'Verfuegbar gesamt',
   usedDays: 'Genommen',
@@ -20,9 +20,9 @@ export const BALANCE_LABELS: Record<string, string> = {
 
 export const ENTITLEMENT_LABELS: Record<string, string> = {
   totalDays: 'Jahresurlaub (Tage)',
-  carriedOverDays: 'Uebertragene Tage',
-  additionalDays: 'Zusaetzliche Tage',
-  carryOverExpiresAt: 'Uebertrag verfaellt am',
+  carriedOverDays: 'Übertragene Tage',
+  additionalDays: 'Zusätzliche Tage',
+  carryOverExpiresAt: 'Übertrag verfällt am',
 };
 
 // ─── Default page size for employee list ────────────────────────────

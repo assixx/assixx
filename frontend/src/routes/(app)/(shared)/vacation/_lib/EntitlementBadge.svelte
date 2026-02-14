@@ -2,14 +2,18 @@
   /**
    * EntitlementBadge — Shows vacation balance summary.
    * Displays "X/Y days remaining" with progress bar.
+   * @prop {boolean} compact - If true, minimal version (no stats grid). Default: true.
    */
   import type { VacationBalance } from './types';
 
-  const { balance }: { balance: VacationBalance | null } = $props();
+  const {
+    balance,
+    compact = true,
+  }: { balance: VacationBalance | null; compact?: boolean } = $props();
 
-  const percentage = $derived(
+  const remainingPercent = $derived(
     balance !== null && balance.availableDays > 0 ?
-      Math.round((balance.usedDays / balance.availableDays) * 100)
+      Math.round((balance.remainingDays / balance.availableDays) * 100)
     : 0,
   );
 
@@ -23,89 +27,145 @@
 </script>
 
 {#if balance !== null}
-  <div class="entitlement-badge">
-    <div class="entitlement-badge__header">
-      <span class="entitlement-badge__label">Urlaubskonto {balance.year}</span>
-      <span class="entitlement-badge__value">
-        {balance.remainingDays} / {balance.availableDays} Tage
-      </span>
+  {#if compact}
+    <!-- Compact version (entitlements page) -->
+    <div class="card mb-4">
+      <div class="card__body">
+        <div class="mb-2 flex items-center justify-between">
+          <span
+            class="text-muted"
+            style="font-size: 0.875rem;"
+          >
+            {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
+          </span>
+          <span
+            style="font-size: 0.875rem; font-weight: 600; color: {barColor};"
+          >
+            {remainingPercent}%
+          </span>
+        </div>
+        <div
+          style="height: 8px; background: var(--glass-bg); border-radius: 4px; overflow: hidden;"
+        >
+          <div
+            style="height: 100%; width: {remainingPercent}%; background: {barColor}; border-radius: 4px; transition: width 0.3s;"
+          ></div>
+        </div>
+      </div>
     </div>
-
-    <div class="entitlement-badge__bar">
-      <div
-        class="entitlement-badge__fill"
-        style="width: {percentage}%; background: {barColor};"
-      ></div>
+  {:else}
+    <!-- Full version (vacation main page) -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <h3 class="card__title">
+          <i class="fas fa-chart-pie mr-2"></i>
+          Mein Urlaubskonto ({balance.year})
+        </h3>
+      </div>
+      <div class="card__body">
+        <div class="balance-summary">
+          <div class="balance-summary__bar">
+            <div class="mb-2 flex items-center justify-between">
+              <span
+                class="text-muted"
+                style="font-size: 0.875rem;"
+              >
+                {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
+              </span>
+              <span
+                style="font-size: 0.875rem; font-weight: 600; color: {barColor};"
+              >
+                {remainingPercent}%
+              </span>
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-bar__fill"
+                style="width: {remainingPercent}%; background: {barColor};"
+              ></div>
+            </div>
+          </div>
+          <div class="balance-summary__stats">
+            <div class="balance-stat">
+              <span class="balance-stat__label">Verfügbar</span>
+              <span class="balance-stat__value">{balance.availableDays}</span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat__label">Genommen</span>
+              <span class="balance-stat__value">{balance.usedDays}</span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat__label">Beantragt</span>
+              <span class="balance-stat__value text-warning">
+                {balance.pendingDays}
+              </span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat__label">Verbleibend</span>
+              <span
+                class="balance-stat__value"
+                class:text-success={balance.remainingDays > 0}
+                class:text-danger={balance.remainingDays <= 0}
+              >
+                {balance.remainingDays}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div class="entitlement-badge__details">
-      <span>Genommen: {balance.usedDays}</span>
-      {#if balance.pendingDays > 0}
-        <span class="text-warning">Ausstehend: {balance.pendingDays}</span>
-      {/if}
-      {#if balance.carriedOverDays > 0}
-        <span>Uebertrag: {balance.effectiveCarriedOver}</span>
-      {/if}
-    </div>
-  </div>
+  {/if}
 {:else}
-  <div class="entitlement-badge entitlement-badge--empty">
-    <span class="text-muted">Kein Urlaubskonto vorhanden</span>
+  <div class="card mb-6">
+    <div class="card__body">
+      <span class="text-muted">Kein Urlaubskonto vorhanden</span>
+    </div>
   </div>
 {/if}
 
 <style>
-  .entitlement-badge {
-    padding: 1rem;
-    border-radius: var(--radius-lg, 0.75rem);
-    background: var(--glass-bg, hsl(0deg 0% 100% / 8%));
-    border: 1px solid var(--glass-border, hsl(0deg 0% 100% / 12%));
-  }
-
-  .entitlement-badge--empty {
+  /* Full version styles (vacation main page) */
+  .balance-summary {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 4rem;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
-  .entitlement-badge__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .entitlement-badge__label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
-
-  .entitlement-badge__value {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .entitlement-badge__bar {
-    height: 0.5rem;
-    border-radius: 999px;
-    background: var(--glass-bg, hsl(0deg 0% 100% / 5%));
+  .progress-bar {
+    height: 8px;
+    background: var(--glass-bg);
+    border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 0.5rem;
   }
 
-  .entitlement-badge__fill {
+  .progress-bar__fill {
     height: 100%;
-    border-radius: 999px;
-    transition: width 0.3s ease;
+    border-radius: 4px;
+    transition: width 0.3s;
   }
 
-  .entitlement-badge__details {
-    display: flex;
+  .balance-summary__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
+  }
+
+  .balance-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .balance-stat__label {
     font-size: 0.75rem;
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .balance-stat__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
   }
 </style>

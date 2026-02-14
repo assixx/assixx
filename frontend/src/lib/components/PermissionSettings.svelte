@@ -395,7 +395,7 @@
             disabled={isSaving}
           >
             {#if isSaving}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
               Speichern...
             {:else}
               <i class="fas fa-save mr-2"></i>

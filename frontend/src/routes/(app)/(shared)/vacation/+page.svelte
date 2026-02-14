@@ -62,17 +62,16 @@
 
   const balancePercent = $derived(
     balance !== null && balance.availableDays > 0 ?
-      Math.max(
-        0,
-        Math.min(100, (balance.remainingDays / balance.availableDays) * 100),
-      )
+      Math.round((balance.remainingDays / balance.availableDays) * 100)
     : 0,
   );
 
   const balanceColor = $derived(
-    balancePercent > 50 ? 'var(--color-success)'
-    : balancePercent > 20 ? 'var(--color-warning)'
-    : 'var(--color-danger)',
+    balance !== null ?
+      balance.remainingDays <= 2 ? 'var(--color-danger)'
+      : balance.remainingDays <= 5 ? 'var(--color-warning)'
+      : 'var(--color-success)'
+    : 'var(--color-muted)',
   );
 
   // ==========================================================================
@@ -246,9 +245,23 @@
       showCreateModal = false;
       showSuccessAlert('Urlaubsantrag eingereicht');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Create request failed');
-      showErrorAlert('Fehler beim Einreichen des Antrags');
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('blackout')) {
+        showErrorAlert(
+          'Antrag nicht möglich: Dieser Zeitraum liegt in einer Urlaubssperre. Bitte sprechen Sie Ihren Vorgesetzten an.',
+        );
+      } else if (
+        message.includes('entitlement') ||
+        message.includes('insufficient')
+      ) {
+        showErrorAlert(
+          'Antrag nicht möglich: Ihr Urlaubskontingent reicht nicht aus. Bitte sprechen Sie Ihren Vorgesetzten an.',
+        );
+      } else {
+        showErrorAlert('Fehler beim Einreichen des Antrags');
+      }
     }
   }
 
@@ -531,7 +544,7 @@
               <span
                 style="font-size: 0.875rem; font-weight: 600; color: {balanceColor};"
               >
-                {balancePercent.toFixed(0)}%
+                {balancePercent}%
               </span>
             </div>
             <div class="progress-bar">
@@ -539,32 +552,6 @@
                 class="progress-bar__fill"
                 style="width: {balancePercent}%; background: {balanceColor};"
               ></div>
-            </div>
-          </div>
-          <div class="balance-summary__stats">
-            <div class="balance-stat">
-              <span class="balance-stat__label">Verfügbar</span>
-              <span class="balance-stat__value">{balance.availableDays}</span>
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat__label">Genommen</span>
-              <span class="balance-stat__value">{balance.usedDays}</span>
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat__label">Beantragt</span>
-              <span class="balance-stat__value text-warning">
-                {balance.pendingDays}
-              </span>
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat__label">Verbleibend</span>
-              <span
-                class="balance-stat__value"
-                class:text-success={balance.remainingDays > 0}
-                class:text-danger={balance.remainingDays <= 0}
-              >
-                {balance.remainingDays}
-              </span>
             </div>
           </div>
         </div>
@@ -776,7 +763,7 @@
         <div class="vacation-load-more">
           <button
             type="button"
-            class="btn btn-secondary btn-sm"
+            class="btn btn-cancel btn"
             onclick={loadNextPage}
             disabled={isLoadingMore}
           >

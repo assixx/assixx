@@ -247,7 +247,7 @@
           class="text-center"
           style="padding: var(--spacing-8);"
         >
-          <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+          <div class="spinner-ring spinner-ring--sm"></div>
           <p class="text-muted mt-3">Feiertage werden geladen...</p>
         </div>
       {:else if holidaysState.sortedHolidays.length === 0}
@@ -284,21 +284,23 @@
               <div class="holiday-list__actions">
                 <button
                   type="button"
-                  class="btn btn-secondary btn-sm"
+                  class="action-icon action-icon--edit"
+                  title="Bearbeiten"
+                  aria-label="Feiertag bearbeiten"
                   onclick={() => {
                     holidaysState.openEditHoliday(holiday);
                   }}
-                  aria-label="Bearbeiten"
                 >
                   <i class="fas fa-edit"></i>
                 </button>
                 <button
                   type="button"
-                  class="btn btn-danger btn-sm"
+                  class="action-icon action-icon--delete"
+                  title="Löschen"
+                  aria-label="Feiertag löschen"
                   onclick={() => {
                     holidaysState.openDeleteHoliday(holiday);
                   }}
-                  aria-label="Loeschen"
                 >
                   <i class="fas fa-trash"></i>
                 </button>

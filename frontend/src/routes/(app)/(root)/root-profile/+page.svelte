@@ -484,8 +484,8 @@
             }}
             disabled={pictureUploading}
           >
-            {#if pictureUploading}<i class="fas fa-spinner fa-spin"
-              ></i>{:else}<i class="fas fa-camera"></i>{/if}
+            {#if pictureUploading}<span class="spinner-ring spinner-ring--sm"
+              ></span>{:else}<i class="fas fa-camera"></i>{/if}
             Bild ändern
           </button>
           {#if hasProfilePicture}
@@ -564,9 +564,8 @@
           class="btn btn-modal"
           disabled={profileSaving}
         >
-          {#if profileSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-              class="fas fa-save"
-            ></i>{/if}
+          {#if profileSaving}<span class="spinner-ring spinner-ring--sm"
+            ></span>{:else}<i class="fas fa-save"></i>{/if}
           Änderungen speichern
         </button>
       </form>
@@ -749,9 +748,8 @@
           class="btn btn-modal"
           disabled={passwordSaving}
         >
-          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-              class="fas fa-key"
-            ></i>{/if}
+          {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"
+            ></span>{:else}<i class="fas fa-key"></i>{/if}
           Passwort ändern
         </button>
       </form>

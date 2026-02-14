@@ -430,7 +430,7 @@
           disabled={loading || !isFormValid}
         >
           {#if loading}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {/if}
           {buttonText}
         </button>

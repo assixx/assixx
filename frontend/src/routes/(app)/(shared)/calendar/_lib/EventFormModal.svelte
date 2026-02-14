@@ -381,7 +381,7 @@
             class="form-field__label"
             for="event-department-select"
           >
-            <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i> Zusätzliche Abteilungen
           </label>
           <select
             id="event-department-select"

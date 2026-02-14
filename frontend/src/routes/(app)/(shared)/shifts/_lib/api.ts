@@ -51,6 +51,8 @@ const API_ENDPOINTS = {
   // Favorites
   FAVORITES: '/shifts/favorites',
 
+  // Vacation / Staffing
+
   // Rotation
   ROTATION_PATTERNS: '/shifts/rotation/patterns',
   ROTATION_HISTORY: '/shifts/rotation/history',

@@ -588,7 +588,7 @@
           disabled={surveyEmployeeState.isSubmitting}
         >
           {#if surveyEmployeeState.isSubmitting}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-paper-plane"></i>
           {/if}

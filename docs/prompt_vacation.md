@@ -33,21 +33,21 @@ Build a vacation request system where employees submit leave requests to their d
 
 Diese Entscheidungen wurden im Brainstorming + Q&A getroffen und sind **nicht mehr verhandelbar**:
 
-| #   | Entscheidung                                                | Begruendung                                                                                                                                                                                    |
-| --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A1  | **1 Team pro Employee** (Business Rule)                     | Mitarbeiter gehoert genau einem Team an. Validation bei Team-Zuweisung.                                                                                                                        |
-| A2  | **Feature Flag** `vacation` in `features` (category=basic)  | Flexibel: Tenant kann deaktivieren. Teil des Basic-Pakets.                                                                                                                                     |
-| A3  | **3 getrennte Regel-Tabellen** statt einer `vacation_rules` | `vacation_blackouts`, `vacation_staffing_rules`, `vacation_settings` — saubere Trennung.                                                                                                       |
-| A4  | **Kein `used_days` Counter** in `vacation_entitlements`     | Balance wird BERECHNET aus approved Requests. Kein fragiler denormalisierter Zaehler.                                                                                                          |
-| A5  | **`days_count` server-seitig berechnet**                    | Niemals vom Client senden. Server berechnet aus Datum + Feiertage + halbe Tage.                                                                                                                |
-| A6  | **`deputy_lead_id`** auf `teams` Tabelle                    | Stellvertreter-Lead fuer Genehmigungen wenn Lead abwesend.                                                                                                                                     |
-| A7  | **Sonderurlaub-Logik**: `is_special_leave` Checkbox         | Default: Sonderurlaub zieht vom regulaeren Kontingent ab. Lead markiert bei Genehmigung als "Sonderregelung" → kein Abzug. Lead kann auch Tage zum Kontingent hinzufuegen (`additional_days`). |
-| A8  | **Cross-Year Splitting**                                    | Urlaub ueber Jahreswechsel: Arbeitstage werden pro Kalenderjahr berechnet und vom jeweiligen Jahres-Entitlement abgezogen.                                                                     |
-| A9  | **UUID PRIMARY KEY** (UUIDv7) fuer alle neuen Tabellen      | Folgt neuestem Pattern (e2e_key_escrow). Application-generated via `uuidv7()`.                                                                                                                 |
-| A10 | **Email + SSE Notifications**                               | SSE sofort (ADR-003). Email-Interface vorbereiten (SMTP noch nicht konfiguriert).                                                                                                              |
-| A11 | **Audit Trail in V1**                                       | Jede Statusaenderung via `vacation_request_status_log` + `audit_trail` Tabelle.                                                                                                                |
-| A12 | **`employee_availability` komplett erneuern**               | Umbenennen zu `user_availability`, `employee_id` → `user_id`. Legacy `absences` Tabelle droppen.                                                                                               |
-| A13 | **`cancelled` vs `withdrawn`** klar getrennt                | `withdrawn` = Requester zieht zurück. `cancelled` = Approver/Admin storniert genehmigten Urlaub.                                                                                               |
+| #   | Entscheidung                                                | Begruendung                                                                                                                                                                                   |
+| --- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | **1 Team pro Employee** (Business Rule)                     | Mitarbeiter gehoert genau einem Team an. Validation bei Team-Zuweisung.                                                                                                                       |
+| A2  | **Feature Flag** `vacation` in `features` (category=basic)  | Flexibel: Tenant kann deaktivieren. Teil des Basic-Pakets.                                                                                                                                    |
+| A3  | **3 getrennte Regel-Tabellen** statt einer `vacation_rules` | `vacation_blackouts`, `vacation_staffing_rules`, `vacation_settings` — saubere Trennung.                                                                                                      |
+| A4  | **Kein `used_days` Counter** in `vacation_entitlements`     | Balance wird BERECHNET aus approved Requests. Kein fragiler denormalisierter Zaehler.                                                                                                         |
+| A5  | **`days_count` server-seitig berechnet**                    | Niemals vom Client senden. Server berechnet aus Datum + Feiertage + halbe Tage.                                                                                                               |
+| A6  | **`deputy_lead_id`** auf `teams` Tabelle                    | Stellvertreter-Lead fuer Genehmigungen wenn Lead abwesend.                                                                                                                                    |
+| A7  | **Sonderurlaub-Logik**: `is_special_leave` Checkbox         | Default: Sonderurlaub zieht vom regulaeren Kontingent ab. Lead markiert bei Genehmigung als "Sonderregelung" → kein Abzug. Lead kann auch Tage zum Kontingent hinzufügen (`additional_days`). |
+| A8  | **Cross-Year Splitting**                                    | Urlaub ueber Jahreswechsel: Arbeitstage werden pro Kalenderjahr berechnet und vom jeweiligen Jahres-Entitlement abgezogen.                                                                    |
+| A9  | **UUID PRIMARY KEY** (UUIDv7) fuer alle neuen Tabellen      | Folgt neuestem Pattern (e2e_key_escrow). Application-generated via `uuidv7()`.                                                                                                                |
+| A10 | **Email + SSE Notifications**                               | SSE sofort (ADR-003). Email-Interface vorbereiten (SMTP noch nicht konfiguriert).                                                                                                             |
+| A11 | **Audit Trail in V1**                                       | Jede Statusaenderung via `vacation_request_status_log` + `audit_trail` Tabelle.                                                                                                               |
+| A12 | **`employee_availability` komplett erneuern**               | Umbenennen zu `user_availability`, `employee_id` → `user_id`. Legacy `absences` Tabelle droppen.                                                                                              |
+| A13 | **`cancelled` vs `withdrawn`** klar getrennt                | `withdrawn` = Requester zieht zurück. `cancelled` = Approver/Admin storniert genehmigten Urlaub.                                                                                              |
 
 ---
 
@@ -414,7 +414,7 @@ CREATE TABLE vacation_settings (
 -- Eine Zeile pro Tenant. Wird beim Feature-Aktivierung angelegt.
 -- advance_notice_days: Mindest-Vorlaufzeit fuer Anträge (0 = sofort moeglich)
 -- max_consecutive_days: NULL = unbegrenzt
--- carry_over_deadline: Bis wann Uebertrag-Tage genutzt werden muessen (Default: 31.03.)
+-- carry_over_deadline: Bis wann Übertrag-Tage genutzt werden muessen (Default: 31.03.)
 
 ALTER TABLE vacation_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vacation_settings FORCE ROW LEVEL SECURITY;
@@ -911,7 +911,7 @@ updateSettings(tenantId: number, userId: number, dto: UpdateSettingsDto): Promis
 
 ensureDefaults(tenantId: number): Promise<void>
     → INSERT ... ON CONFLICT DO NOTHING
-    → Erstellt Default-Zeile (30 Tage, 10 Uebertrag, Deadline 31.03, etc.)
+    → Erstellt Default-Zeile (30 Tage, 10 Übertrag, Deadline 31.03, etc.)
     → Wird automatisch aufgerufen wenn Feature fuer Tenant aktiviert wird
 ```
 
@@ -999,7 +999,7 @@ GET    /api/v2/vacation/capacity                    # Kapazität scheck (query: 
 GET    /api/v2/vacation/entitlements/me              # Eigener Anspruch + Balance
 GET    /api/v2/vacation/entitlements/:userId          # Anspruch eines Users (Admin/Root)
 PUT    /api/v2/vacation/entitlements/:userId          # Anspruch bearbeiten (Admin/Root)
-POST   /api/v2/vacation/entitlements/:userId/add-days # Tage hinzufuegen (Lead/Admin/Root)
+POST   /api/v2/vacation/entitlements/:userId/add-days # Tage hinzufügen (Lead/Admin/Root)
 
 # === Blackouts ===
 GET    /api/v2/vacation/blackouts                   # Alle Sperren (query: year)
@@ -1075,7 +1075,7 @@ export class VacationPermissionRegistrar implements OnModuleInit {
 **Schritt 1: EventBus erweitern** (`backend/src/utils/eventBus.ts`):
 
 ```typescript
-// Event-Interface hinzufuegen:
+// Event-Interface hinzufügen:
 export interface VacationRequestEvent {
     request: {
         id: string;
@@ -1086,7 +1086,7 @@ export interface VacationRequestEvent {
     };
 }
 
-// Typed Methoden in NotificationEventBus Klasse hinzufuegen:
+// Typed Methoden in NotificationEventBus Klasse hinzufügen:
 emitVacationRequestCreated(tenantId: number, request: VacationRequestEvent['request']): void {
     this.emit('vacation.request.created', { tenantId, request });
 }
@@ -1214,7 +1214,7 @@ frontend/src/routes/(app)/
                 types.ts
                 EntitlementTable.svelte      # Tabelle aller Mitarbeiter
                 EntitlementEditModal.svelte   # Anspruch bearbeiten
-                AddDaysModal.svelte          # Tage hinzufuegen (mit Grund)
+                AddDaysModal.svelte          # Tage hinzufügen (mit Grund)
 
         overview/
             +page.svelte
@@ -1567,7 +1567,7 @@ backend/test/vacation.api.test.ts
 - [ ] IncomingRequestCard mit Kapazität s-Hinweisen + Sonderregelung-Checkbox
 - [ ] Genehmigen/Ablehnen mit Pflicht-Grund bei Ablehnung
 - [ ] /vacation/rules fuer Blackouts + Staffing Rules + Settings
-- [ ] /vacation/entitlements fuer Urlaubsanspruch-Verwaltung + Tage hinzufuegen
+- [ ] /vacation/entitlements fuer Urlaubsanspruch-Verwaltung + Tage hinzufügen
 - [ ] /vacation/holidays fuer Feiertags-Verwaltung
 - [ ] /vacation/overview fuer Team-Kalender + Jahresuebersicht
 - [ ] EntitlementBadge auf Hauptseite

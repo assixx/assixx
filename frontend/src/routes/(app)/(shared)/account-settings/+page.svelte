@@ -359,7 +359,7 @@
           disabled={!canDelete || deleteLoading}
         >
           {#if deleteLoading}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
             Lösche...
           {:else}
             <i class="fas fa-trash-alt"></i>

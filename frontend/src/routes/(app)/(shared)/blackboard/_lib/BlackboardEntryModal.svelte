@@ -325,7 +325,7 @@
           for="entry-department-select"
           class="form-field__label"
         >
-          <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
+          <i class="fas fa-sitemap mr-1"></i>Zusätzliche Abteilungen
         </label>
         <select
           id="entry-department-select"

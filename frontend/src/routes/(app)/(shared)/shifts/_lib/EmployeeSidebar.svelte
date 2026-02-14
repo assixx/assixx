@@ -28,6 +28,7 @@
     isEditMode: boolean;
     currentPlanId: number | null;
     hasRotationHistory: boolean;
+    minStaffCount: number | null;
 
     // Event handlers
     ondragstart: (event: DragEvent, employeeId: number) => void;
@@ -41,6 +42,7 @@
     isEditMode,
     currentPlanId,
     hasRotationHistory,
+    minStaffCount,
     ondragstart,
     ondragend,
   }: Props = $props();
@@ -62,6 +64,17 @@
 
 <div class="employee-sidebar">
   <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
+  {#if minStaffCount !== null}
+    <div class="mt-2 mb-2">
+      <span
+        class="badge badge--warning"
+        title="Mindestbesetzung für diese Maschine"
+      >
+        <i class="fas fa-hard-hat"></i>
+        Mindestbesetzung: {minStaffCount}
+      </span>
+    </div>
+  {/if}
   <div class="employee-list">
     {#each employees as employee (employee.id)}
       {@const isFullyUnavailable =

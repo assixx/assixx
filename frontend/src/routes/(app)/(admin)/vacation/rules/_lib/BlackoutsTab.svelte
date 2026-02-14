@@ -246,26 +246,60 @@
     {:else}
       <div class="rules-list">
         {#each rulesState.blackouts as blackout (blackout.id)}
-          <div class="rules-list__item">
-            <div class="rules-list__info">
-              <span class="rules-list__name">{blackout.name}</span>
-              <div class="rules-list__meta">
+          <div class="blackout-card">
+            <div class="blackout-card__header">
+              <div class="blackout-card__title-row">
+                <i class="fas fa-ban blackout-card__icon"></i>
+                <span class="blackout-card__name">{blackout.name}</span>
+                {#if blackout.isGlobal}
+                  <span class="badge badge--danger badge--sm">
+                    <i class="fas fa-globe mr-1"></i>Unternehmensweit
+                  </span>
+                {/if}
+              </div>
+              <div class="blackout-card__actions">
+                <button
+                  type="button"
+                  class="action-icon action-icon--edit"
+                  title="Bearbeiten"
+                  aria-label="Sperrzeit bearbeiten"
+                  onclick={() => {
+                    rulesState.openEditBlackout(blackout);
+                  }}
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon action-icon--delete"
+                  title="Löschen"
+                  aria-label="Sperrzeit löschen"
+                  onclick={() => {
+                    rulesState.openDeleteBlackout(blackout);
+                  }}
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="blackout-card__body">
+              <div class="blackout-card__date">
+                <i class="fas fa-calendar-alt"></i>
                 <span>
-                  <i class="fas fa-calendar-alt mr-1"></i>
                   {formatDate(blackout.startDate)} — {formatDate(
                     blackout.endDate,
                   )}
                 </span>
-                {#if blackout.isGlobal}
-                  <span class="badge badge--danger">
-                    <i class="fas fa-globe mr-1"></i>Gesamtes Unternehmen
-                  </span>
-                {:else}
+              </div>
+
+              {#if !blackout.isGlobal}
+                <div class="blackout-card__scopes">
                   {#each blackout.areaIds as areaId (areaId)}
                     {@const area = rulesState.areas.find(
                       (a) => a.id === areaId,
                     )}
-                    <span class="badge badge--info">
+                    <span class="badge badge--info badge--sm">
                       <i class="fas fa-layer-group mr-1"></i>{area?.name ??
                         `#${areaId}`}
                     </span>
@@ -274,7 +308,7 @@
                     {@const dept = rulesState.departments.find(
                       (d) => d.id === deptId,
                     )}
-                    <span class="badge badge--info">
+                    <span class="badge badge--info badge--sm">
                       <i class="fas fa-sitemap mr-1"></i>{dept?.name ??
                         `#${deptId}`}
                     </span>
@@ -283,41 +317,20 @@
                     {@const team = rulesState.teams.find(
                       (t) => t.id === teamId,
                     )}
-                    <span class="badge badge--info">
+                    <span class="badge badge--info badge--sm">
                       <i class="fas fa-users mr-1"></i>{team?.name ??
                         `#${teamId}`}
                     </span>
                   {/each}
-                {/if}
-                {#if blackout.reason !== null}
-                  <span>
-                    <i class="fas fa-info-circle mr-1"></i>
-                    {blackout.reason}
-                  </span>
-                {/if}
-              </div>
-            </div>
-            <div class="rules-list__actions">
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                onclick={() => {
-                  rulesState.openEditBlackout(blackout);
-                }}
-                aria-label="Bearbeiten"
-              >
-                <i class="fas fa-edit"></i>
-              </button>
-              <button
-                type="button"
-                class="btn btn-danger btn-sm"
-                onclick={() => {
-                  rulesState.openDeleteBlackout(blackout);
-                }}
-                aria-label="Loeschen"
-              >
-                <i class="fas fa-trash"></i>
-              </button>
+                </div>
+              {/if}
+
+              {#if blackout.reason !== null}
+                <div class="blackout-card__reason">
+                  <i class="fas fa-info-circle"></i>
+                  <span>{blackout.reason}</span>
+                </div>
+              {/if}
             </div>
           </div>
         {/each}
@@ -524,7 +537,7 @@
             for="bo-department-select"
             class="form-field__label"
           >
-            <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i>Zusätzliche Abteilungen
           </label>
           <select
             id="bo-department-select"

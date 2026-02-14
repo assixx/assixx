@@ -26,18 +26,18 @@ Speichert die Feiertage pro Firma. Weihnachten, Neujahr, Tag der Arbeit etc. Wer
 
 ## 2. `vacation_entitlements` — Urlaubsanspruch
 
-Eine Zeile pro Mitarbeiter pro Jahr. Sagt: "Mueller hat 2026 insgesamt 30 Tage, davon 3 Tage Uebertrag aus 2025, plus 2 Sondertage vom Chef." Kein `used_days`-Zaehler — wie viel verbraucht ist, wird immer LIVE aus den genehmigten Anträgen berechnet.
+Eine Zeile pro Mitarbeiter pro Jahr. Sagt: "Mueller hat 2026 insgesamt 30 Tage, davon 3 Tage Übertrag aus 2025, plus 2 Sondertage vom Chef." Kein `used_days`-Zaehler — wie viel verbraucht ist, wird immer LIVE aus den genehmigten Anträgen berechnet.
 
-| Spalte                  | Typ          | Bedeutung                                  |
-| ----------------------- | ------------ | ------------------------------------------ |
-| `id`                    | UUID         | Primaerschluessel (UUIDv7)                 |
-| `tenant_id`             | INTEGER      | Welche Firma                               |
-| `user_id`               | INTEGER      | Welcher Mitarbeiter                        |
-| `year`                  | INTEGER      | Fuer welches Jahr (z.B. 2026)              |
-| `total_days`            | NUMERIC(4,1) | Grundanspruch (z.B. 30.0)                  |
-| `carried_over_days`     | NUMERIC(4,1) | Uebertrag aus Vorjahr (z.B. 5.0)           |
-| `additional_days`       | NUMERIC(4,1) | Sondertage vom Lead/Admin (z.B. 2.0)       |
-| `carry_over_expires_at` | DATE         | Wann der Uebertrag verfaellt (z.B. 31.03.) |
+| Spalte                  | Typ          | Bedeutung                                |
+| ----------------------- | ------------ | ---------------------------------------- |
+| `id`                    | UUID         | Primaerschluessel (UUIDv7)               |
+| `tenant_id`             | INTEGER      | Welche Firma                             |
+| `user_id`               | INTEGER      | Welcher Mitarbeiter                      |
+| `year`                  | INTEGER      | Fuer welches Jahr (z.B. 2026)            |
+| `total_days`            | NUMERIC(4,1) | Grundanspruch (z.B. 30.0)                |
+| `carried_over_days`     | NUMERIC(4,1) | Übertrag aus Vorjahr (z.B. 5.0)          |
+| `additional_days`       | NUMERIC(4,1) | Sondertage vom Lead/Admin (z.B. 2.0)     |
+| `carry_over_expires_at` | DATE         | Wann der Übertrag verfällt (z.B. 31.03.) |
 
 **Unique:** Pro Mitarbeiter nur ein Eintrag pro Jahr (`tenant_id + user_id + year`).
 
@@ -165,18 +165,18 @@ Sagt: "CNC-Fraese 1 braucht mindestens 3 Bediener." Wenn jemand Urlaub beantragt
 
 ## 7. `vacation_settings` — Einstellungen pro Firma
 
-Eine einzige Zeile pro Tenant. Globale Regeln: Wie viele Urlaubstage standardmaessig (30), wie viel Uebertrag maximal (10 Tage), bis wann Uebertrag verfaellt (31.03.), wie viel Vorlaufzeit ein Antrag braucht (0 Tage = sofort moeglich), maximale zusammenhaengende Urlaubstage (null = unbegrenzt).
+Eine einzige Zeile pro Tenant. Globale Regeln: Wie viele Urlaubstage standardmaessig (30), wie viel Übertrag maximal (10 Tage), bis wann Übertrag verfällt (31.03.), wie viel Vorlaufzeit ein Antrag braucht (0 Tage = sofort moeglich), maximale zusammenhaengende Urlaubstage (null = unbegrenzt).
 
-| Spalte                      | Typ          | Bedeutung                                                        |
-| --------------------------- | ------------ | ---------------------------------------------------------------- |
-| `id`                        | UUID         | Primaerschluessel (UUIDv7)                                       |
-| `tenant_id`                 | INTEGER      | Welche Firma                                                     |
-| `default_annual_days`       | NUMERIC(4,1) | Standard-Jahresurlaub (Default: 30)                              |
-| `max_carry_over_days`       | NUMERIC(4,1) | Max. Uebertrag ins naechste Jahr (Default: 10)                   |
-| `carry_over_deadline_month` | INTEGER      | Monat bis wann Uebertrag genutzt werden muss (Default: 3 = März) |
-| `carry_over_deadline_day`   | INTEGER      | Tag des Deadline-Monats (Default: 31)                            |
-| `advance_notice_days`       | INTEGER      | Mindest-Vorlaufzeit fuer Anträge in Tagen (Default: 0)           |
-| `max_consecutive_days`      | INTEGER      | Max. zusammenhaengende Urlaubstage (NULL = unbegrenzt)           |
+| Spalte                      | Typ          | Bedeutung                                                       |
+| --------------------------- | ------------ | --------------------------------------------------------------- |
+| `id`                        | UUID         | Primaerschluessel (UUIDv7)                                      |
+| `tenant_id`                 | INTEGER      | Welche Firma                                                    |
+| `default_annual_days`       | NUMERIC(4,1) | Standard-Jahresurlaub (Default: 30)                             |
+| `max_carry_over_days`       | NUMERIC(4,1) | Max. Übertrag ins naechste Jahr (Default: 10)                   |
+| `carry_over_deadline_month` | INTEGER      | Monat bis wann Übertrag genutzt werden muss (Default: 3 = März) |
+| `carry_over_deadline_day`   | INTEGER      | Tag des Deadline-Monats (Default: 31)                           |
+| `advance_notice_days`       | INTEGER      | Mindest-Vorlaufzeit fuer Anträge in Tagen (Default: 0)          |
+| `max_consecutive_days`      | INTEGER      | Max. zusammenhaengende Urlaubstage (NULL = unbegrenzt)          |
 
 **Unique:** Genau eine Zeile pro Firma (`tenant_id`).
 

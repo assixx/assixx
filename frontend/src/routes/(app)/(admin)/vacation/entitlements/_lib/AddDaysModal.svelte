@@ -54,7 +54,7 @@
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">
         <i class="fas fa-plus mr-2"></i>
-        Urlaubstage hinzufuegen
+        Urlaubstage hinzufügen
       </h3>
       <button
         type="button"
@@ -92,7 +92,7 @@
           required
         />
         <p class="form-field__hint">
-          Positive Zahl = Tage hinzufuegen, negative Zahl = Tage abziehen
+          Positive Zahl = Tage hinzufügen, negative Zahl = Tage abziehen
         </p>
       </div>
     </div>
@@ -111,7 +111,7 @@
         disabled={!canAddDays || isSaving}
       >
         <i class="fas fa-check mr-1"></i>
-        Uebernehmen
+        Übernehmen
       </button>
     </div>
   </form>

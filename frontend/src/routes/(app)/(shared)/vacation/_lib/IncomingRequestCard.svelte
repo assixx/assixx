@@ -109,7 +109,7 @@
   <div class="incoming-card__actions">
     <button
       type="button"
-      class="btn btn-secondary"
+      class="btn btn-cancel"
       onclick={() => {
         onDetail(request);
       }}

@@ -22,6 +22,26 @@
   const insufficientBalance = $derived(
     analysis !== null && !analysis.entitlementCheck.sufficient,
   );
+
+  const hasMachineCritical = $derived(
+    analysis?.machineAnalysis.some((m) => m.status === 'critical') ?? false,
+  );
+
+  /**
+   * Context-aware badge label.
+   * Shows the specific reason instead of generic "Kapazität nicht ausreichend".
+   */
+  const statusLabel = $derived.by(() => {
+    if (analysis === null) return '';
+    if (analysis.overallStatus !== 'blocked') {
+      return CAPACITY_STATUS_LABELS[analysis.overallStatus];
+    }
+    // Blocked — show the specific reason
+    if (insufficientBalance) return 'Urlaubskontingent erschöpft';
+    if (hasConflicts) return 'Sperrzeitraum-Konflikt';
+    if (hasMachineCritical) return 'Maschinenbesetzung kritisch';
+    return CAPACITY_STATUS_LABELS.blocked;
+  });
 </script>
 
 {#if isLoading}
@@ -34,7 +54,7 @@
     <!-- Overall Status -->
     <div class="capacity-indicator__status">
       <span class="badge {CAPACITY_STATUS_CLASS[analysis.overallStatus]}">
-        {CAPACITY_STATUS_LABELS[analysis.overallStatus]}
+        {statusLabel}
       </span>
       <span class="text-muted ml-2">
         {analysis.workdays} Arbeitstage

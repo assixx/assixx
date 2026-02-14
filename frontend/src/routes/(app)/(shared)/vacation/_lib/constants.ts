@@ -48,10 +48,11 @@ export const HALF_DAY_LABELS: Record<VacationHalfDay, string> = {
 
 // ─── Capacity status labels ──────────────────────────────────────────
 
+/** Fallback labels — use getCapacityStatusLabel() for context-aware text */
 export const CAPACITY_STATUS_LABELS: Record<OverallCapacityStatus, string> = {
-  ok: 'Kapazität  OK',
-  warning: 'Engpass moeglich',
-  blocked: 'Kapazität  nicht ausreichend',
+  ok: 'Kapazität OK',
+  warning: 'Engpass möglich',
+  blocked: 'Nicht genehmigungsfähig',
 };
 
 export const CAPACITY_STATUS_CLASS: Record<OverallCapacityStatus, string> = {

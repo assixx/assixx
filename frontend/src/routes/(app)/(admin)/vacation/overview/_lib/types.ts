@@ -74,10 +74,38 @@ export interface CalendarDayCell {
   isContinuation: boolean;
 }
 
+// ─── Blackout types ─────────────────────────────────────────────
+
+export interface BlackoutPeriod {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isGlobal: boolean;
+}
+
+// ─── Machine types ──────────────────────────────────────────────
+
+export interface MachineListItem {
+  id: number;
+  name: string;
+}
+
+// ─── Staffing rule types ─────────────────────────────────────────
+
+export interface StaffingRule {
+  id: string;
+  machineId: number;
+  machineName: string;
+  minStaffCount: number;
+}
+
 // ─── SSR page data ───────────────────────────────────────────────
 
 export interface VacationOverviewPageData {
-  teams: TeamListItem[];
+  machines: MachineListItem[];
+  blackouts: BlackoutPeriod[];
+  staffingRules: StaffingRule[];
   currentYear: number;
   currentMonth: number;
 }

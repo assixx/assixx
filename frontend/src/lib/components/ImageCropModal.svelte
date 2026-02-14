@@ -250,7 +250,7 @@
           disabled={saving || croppedAreaPixels === null}
         >
           {#if saving}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
             Wird verarbeitet...
           {:else}
             <i class="fas fa-check mr-2"></i>

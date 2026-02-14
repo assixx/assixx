@@ -439,7 +439,7 @@
             disabled={confirmModalLoading}
           >
             {#if confirmModalLoading}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {/if}
             Ja
           </button>
@@ -475,7 +475,7 @@
             disabled={confirmModalLoading}
           >
             {#if confirmModalLoading}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {/if}
             Emergency Stop aktivieren
           </button>
@@ -515,7 +515,7 @@
             disabled={confirmModalLoading || !isRejectReasonValid}
           >
             {#if confirmModalLoading}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {/if}
             Ablehnen
           </button>

@@ -59,6 +59,116 @@
 }
 
 /* ========================================
+   Blackout Card — Enhanced list item
+   Same glass pattern as rules-list__item
+   but with header/body separation
+   ======================================== */
+
+.blackout-card {
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--color-glass-border);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.blackout-card:hover {
+  border-color: var(--color-glass-border-hover, var(--color-glass-border));
+}
+
+.blackout-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.blackout-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.blackout-card__icon {
+  color: var(--text-muted);
+  font-size: 0.813rem;
+  flex-shrink: 0;
+}
+
+.blackout-card__name {
+  font-weight: 600;
+  font-size: 0.938rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blackout-card__actions {
+  display: flex;
+  gap: var(--spacing-1);
+  flex-shrink: 0;
+  margin-left: var(--spacing-3);
+}
+
+.blackout-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-4) var(--spacing-3);
+}
+
+.blackout-card__date {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.813rem;
+  color: var(--text-muted);
+}
+
+.blackout-card__date i {
+  width: 1rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.blackout-card__scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.blackout-card__reason {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  font-size: 0.813rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.blackout-card__reason i {
+  width: 1rem;
+  text-align: center;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+@media (width <= 640px) {
+  .blackout-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+
+  .blackout-card__actions {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+}
+
+/* ========================================
    Settings Grid
    ======================================== */
 

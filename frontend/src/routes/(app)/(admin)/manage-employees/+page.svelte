@@ -807,7 +807,7 @@
           onclick={() => void confirmUpgradeEmployee()}
         >
           {#if upgradeLoading}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
           {/if}
           {MESSAGES.UPGRADE_CONFIRM_BUTTON}
         </button>

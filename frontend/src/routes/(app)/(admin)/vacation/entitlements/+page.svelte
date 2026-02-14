@@ -12,9 +12,12 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
+  import EntitlementBadge from '../../../(shared)/vacation/_lib/EntitlementBadge.svelte';
+
   import AddDaysModal from './_lib/AddDaysModal.svelte';
   import * as api from './_lib/api';
   import { BALANCE_LABELS, ENTITLEMENT_LABELS } from './_lib/constants';
+  import SearchResults from './_lib/SearchResults.svelte';
   import { entitlementsState } from './_lib/state.svelte';
 
   import type { PageData } from './$types';
@@ -70,6 +73,47 @@
     void loadBalance(emp);
   }
 
+  // ==========================================================================
+  // SEARCH (local state — same pattern as manage-employees)
+  // ==========================================================================
+
+  let currentSearchQuery = $state('');
+  let searchOpen = $state(false);
+
+  /** Filtered employees based on local search query */
+  const filteredEmployees = $derived.by(() => {
+    if (currentSearchQuery.trim() === '') return entitlementsState.employees;
+    const q = currentSearchQuery.trim().toLowerCase();
+    return entitlementsState.employees.filter((emp) => {
+      const name = `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.toLowerCase();
+      const empNum = emp.employeeNumber?.toLowerCase() ?? '';
+      const pos = emp.position?.toLowerCase() ?? '';
+      return (
+        name.includes(q) ||
+        emp.email.toLowerCase().includes(q) ||
+        empNum.includes(q) ||
+        pos.includes(q)
+      );
+    });
+  });
+
+  function handleSearchInput(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    currentSearchQuery = input.value;
+    searchOpen = currentSearchQuery.trim().length > 0;
+  }
+
+  function clearSearch(): void {
+    currentSearchQuery = '';
+    searchOpen = false;
+  }
+
+  function handleSearchResultClick(emp: EmployeeListItem): void {
+    handleSelectEmployee(emp);
+    searchOpen = false;
+    currentSearchQuery = '';
+  }
+
   // Dropdown state for year select
   let yearDropdownOpen = $state(false);
   const yearDisplayText = $derived(String(entitlementsState.selectedYear));
@@ -104,24 +148,6 @@
     const current = new Date().getFullYear();
     return [current - 1, current, current + 1];
   }
-
-  /** Progress bar percentage (0-100) for remaining vs available */
-  function balancePercent(): number {
-    const bal = entitlementsState.balance;
-    if (bal === null || bal.availableDays === 0) return 0;
-    return Math.max(
-      0,
-      Math.min(100, (bal.remainingDays / bal.availableDays) * 100),
-    );
-  }
-
-  function balanceColor(): string {
-    const pct = balancePercent();
-    if (pct > 50) return 'var(--color-success-500)';
-    if (pct > 20) return 'var(--color-warning-500)';
-    return 'var(--color-danger-500)';
-  }
-
   // ==========================================================================
   // ENTITLEMENT FORM
   // ==========================================================================
@@ -268,21 +294,40 @@
         <h3 class="card__title">
           <i class="fas fa-users mr-2"></i>
           Mitarbeiter
-          <span class="text-muted ml-2"
-            >({entitlementsState.filteredEmployees.length})</span
-          >
+          <span class="text-muted ml-2">({filteredEmployees.length})</span>
         </h3>
-        <div class="form-field mt-3 mb-0">
-          <input
-            type="text"
-            class="form-field__control"
-            placeholder="Suchen..."
-            value={entitlementsState.searchQuery}
-            oninput={(e) => {
-              entitlementsState.setSearchQuery(
-                (e.target as HTMLInputElement).value,
-              );
-            }}
+        <div
+          class="search-input-wrapper mt-3 mb-0"
+          class:search-input-wrapper--open={searchOpen}
+        >
+          <div
+            class="search-input"
+            id="entitlement-search-container"
+          >
+            <i class="search-input__icon fas fa-search"></i>
+            <input
+              type="search"
+              id="entitlement-search"
+              class="search-input__field"
+              placeholder="Mitarbeiter suchen..."
+              autocomplete="off"
+              value={currentSearchQuery}
+              oninput={handleSearchInput}
+            />
+            <button
+              class="search-input__clear"
+              class:search-input__clear--visible={currentSearchQuery.length > 0}
+              type="button"
+              aria-label="Suche löschen"
+              onclick={clearSearch}
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <SearchResults
+            searchQuery={currentSearchQuery}
+            employees={filteredEmployees}
+            onresultclick={handleSearchResultClick}
           />
         </div>
       </div>
@@ -290,7 +335,7 @@
         class="card__body"
         style="overflow-y: auto; flex: 1; padding: 0;"
       >
-        {#if entitlementsState.filteredEmployees.length === 0}
+        {#if filteredEmployees.length === 0}
           <div
             class="empty-state empty-state--in-card"
             style="padding: var(--spacing-4);"
@@ -299,7 +344,7 @@
           </div>
         {:else}
           <div class="employee-list">
-            {#each entitlementsState.filteredEmployees as emp (emp.id)}
+            {#each filteredEmployees as emp (emp.id)}
               <button
                 type="button"
                 class="employee-list__item"
@@ -360,7 +405,7 @@
               <div class="flex gap-2">
                 <button
                   type="button"
-                  class="btn btn-secondary btn-sm"
+                  class="btn btn-cancel btn"
                   onclick={() => {
                     entitlementsState.openEntitlementForm();
                   }}
@@ -370,13 +415,13 @@
                 </button>
                 <button
                   type="button"
-                  class="btn btn-primary btn-sm"
+                  class="btn btn-secondary"
                   onclick={() => {
                     entitlementsState.openAddDaysModal();
                   }}
                 >
                   <i class="fas fa-plus mr-1"></i>
-                  Tage hinzufuegen
+                  Tage hinzufügen
                 </button>
               </div>
             </div>
@@ -390,7 +435,7 @@
               class="card__body text-center"
               style="padding: var(--spacing-8);"
             >
-              <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+              <div class="spinner-ring spinner-ring--sm"></div>
               <p class="text-muted mt-3">Urlaubskonto wird geladen...</p>
             </div>
           </div>
@@ -398,30 +443,7 @@
           {@const bal = entitlementsState.balance}
 
           <!-- Progress Bar -->
-          <div class="card mb-4">
-            <div class="card__body">
-              <div class="mb-2 flex items-center justify-between">
-                <span
-                  class="text-muted"
-                  style="font-size: 0.875rem;"
-                >
-                  {bal.remainingDays} von {bal.availableDays} Tagen verbleibend
-                </span>
-                <span
-                  style="font-size: 0.875rem; font-weight: 600; color: {balanceColor()};"
-                >
-                  {balancePercent().toFixed(0)}%
-                </span>
-              </div>
-              <div
-                style="height: 8px; background: var(--glass-bg); border-radius: 4px; overflow: hidden;"
-              >
-                <div
-                  style="height: 100%; width: {balancePercent()}%; background: {balanceColor()}; border-radius: 4px; transition: width 0.3s ease;"
-                ></div>
-              </div>
-            </div>
-          </div>
+          <EntitlementBadge balance={bal} />
 
           <!-- Balance Details -->
           <div class="card">
