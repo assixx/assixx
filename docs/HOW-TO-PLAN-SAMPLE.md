@@ -15,13 +15,13 @@ Ein Masterplan ist kein Overhead. Er ist **Versicherung gegen Chaos**.
 
 ---
 
-## Template: FEAT_{NAME}_MASTERPLAN.md
+## Template: FEAT\_{NAME}\_MASTERPLAN.md
 
 Kopiere das folgende Template und passe es an dein Feature an.
 
 ---
 
-```markdown
+````markdown
 # FEAT: {Feature Name} — Execution Masterplan
 
 > **Created:** {YYYY-MM-DD}
@@ -38,16 +38,17 @@ Kopiere das folgende Template und passe es an dein Feature an.
 
 ## Changelog
 
-| Version | Datum      | Änderung                                    |
-| ------- | ---------- | ------------------------------------------- |
-| 0.1.0   | YYYY-MM-DD | Initial Draft — Phasen 1-6 geplant          |
-| 0.2.0   | YYYY-MM-DD | Phase 1 Detail-Design nach DB-Analyse       |
-| 1.0.0   | YYYY-MM-DD | Phase 1 COMPLETE — Migrationen angewendet   |
-| 1.1.0   | YYYY-MM-DD | Phase 2 COMPLETE — Backend fertig            |
-| 1.2.0   | YYYY-MM-DD | Phase 3 COMPLETE — Unit Tests grün           |
+| Version | Datum      | Änderung                                       |
+| ------- | ---------- | ---------------------------------------------- |
+| 0.1.0   | YYYY-MM-DD | Initial Draft — Phasen 1-6 geplant             |
+| 0.2.0   | YYYY-MM-DD | Phase 1 Detail-Design nach DB-Analyse          |
+| 1.0.0   | YYYY-MM-DD | Phase 1 COMPLETE — Migrationen angewendet      |
+| 1.1.0   | YYYY-MM-DD | Phase 2 COMPLETE — Backend fertig              |
+| 1.2.0   | YYYY-MM-DD | Phase 3 COMPLETE — Unit Tests grün             |
 | 2.0.0   | YYYY-MM-DD | Alle Phasen COMPLETE — Feature produktionsreif |
 
 > **Versionierungsregel:**
+>
 > - `0.x.0` = Planungsphase (Draft)
 > - `1.x.0` = Implementierung läuft (je Phase ein Minor-Bump)
 > - `2.0.0` = Feature vollständig abgeschlossen
@@ -68,26 +69,26 @@ Kopiere das folgende Template und passe es an dein Feature an.
 
 ### 0.2 Risk Register
 
-| #   | Risiko                        | Impact        | Wahrscheinlichkeit    | Mitigation                              | Verifikation                                  |
-| --- | ----------------------------- | ------------- | --------------------- | --------------------------------------- | --------------------------------------------- |
-| R1  | {Beschreibung}                | {Hoch/Mittel} | {Hoch/Mittel/Niedrig} | {Konkrete Gegenmaßnahme}               | {Test/Query/Check der beweist, dass es wirkt} |
+| #   | Risiko                        | Impact        | Wahrscheinlichkeit    | Mitigation                              | Verifikation                                      |
+| --- | ----------------------------- | ------------- | --------------------- | --------------------------------------- | ------------------------------------------------- |
+| R1  | {Beschreibung}                | {Hoch/Mittel} | {Hoch/Mittel/Niedrig} | {Konkrete Gegenmaßnahme}                | {Test/Query/Check der beweist, dass es wirkt}     |
 | R2  | Race Condition bei {X}        | Hoch          | Mittel                | `FOR UPDATE` Lock auf Row               | Unit Test: paralleler Approve → ConflictException |
-| R3  | Migration bricht bei Daten ab | Hoch          | Niedrig               | Pre-Check Query + RAISE EXCEPTION       | Dry-Run mit Testdaten vor Apply               |
-| R4  | Cross-Modul-Abhängigkeit      | Mittel        | Hoch                  | Atomisches Deployment (gleiche Session) | Type-Check + bestehende Tests nach Deploy     |
+| R3  | Migration bricht bei Daten ab | Hoch          | Niedrig               | Pre-Check Query + RAISE EXCEPTION       | Dry-Run mit Testdaten vor Apply                   |
+| R4  | Cross-Modul-Abhängigkeit      | Mittel        | Hoch                  | Atomisches Deployment (gleiche Session) | Type-Check + bestehende Tests nach Deploy         |
 
 > **Regel:** Jedes Risiko MUSS eine konkrete Mitigation UND eine Verifikation haben.
 > "Aufpassen" ist KEINE Mitigation. "Wird schon passen" ist KEINE Verifikation.
 
 ### 0.3 Ecosystem Integration Points
 
-| Bestehendes System        | Art der Integration                       | Phase | Verifiziert am |
-| ------------------------- | ----------------------------------------- | ----- | -------------- |
-| {z.B. audit_trail}        | Jede Statusänderung → Audit Entry         | 2     |                |
-| {z.B. EventBus}           | {N} neue typed Emit-Methoden              | 2     |                |
-| {z.B. SSE/Notifications}  | {N} neue Event-Handler                    | 2     |                |
-| {z.B. Permission Registry}| Neuer Registrar via OnModuleInit           | 2     |                |
-| {z.B. FeatureCheckService}| Feature-Gate auf jedem Controller-Endpoint | 2     |                |
-| {z.B. Kalender}           | Frontend-Merge: Daten im Kalender zeigen  | 5     |                |
+| Bestehendes System         | Art der Integration                        | Phase | Verifiziert am |
+| -------------------------- | ------------------------------------------ | ----- | -------------- |
+| {z.B. audit_trail}         | Jede Statusänderung → Audit Entry          | 2     |                |
+| {z.B. EventBus}            | {N} neue typed Emit-Methoden               | 2     |                |
+| {z.B. SSE/Notifications}   | {N} neue Event-Handler                     | 2     |                |
+| {z.B. Permission Registry} | Neuer Registrar via OnModuleInit           | 2     |                |
+| {z.B. FeatureCheckService} | Feature-Gate auf jedem Controller-Endpoint | 2     |                |
+| {z.B. Kalender}            | Frontend-Merge: Daten im Kalender zeigen   | 5     |                |
 
 > **Warum diese Tabelle?** Sie zwingt dich, VOR dem Coding alle Berührungspunkte
 > zu identifizieren. Session 11 im Vacation-Masterplan hätte ohne diese Tabelle
@@ -104,14 +105,17 @@ Kopiere das folgende Template und passe es an dein Feature an.
 ### Step 1.1: {Beschreibung} [STATUS]
 
 **Neue Dateien:**
+
 - `database/migrations/{timestamp}_{name}.ts`
 
 **Was passiert:**
+
 1. {SQL-Operation 1}
 2. {SQL-Operation 2}
 3. {SQL-Operation 3}
 
 **Mandatory Checklist pro Tabelle (Multi-Tenant!):**
+
 - [ ] `id UUID PRIMARY KEY` (UUIDv7)
 - [ ] `tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE`
 - [ ] `ENABLE ROW LEVEL SECURITY` + `FORCE ROW LEVEL SECURITY`
@@ -123,10 +127,12 @@ Kopiere das folgende Template und passe es an dein Feature an.
 - [ ] `up()` UND `down()` implementiert
 
 **Verifikation:**
+
 ```bash
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt {tabellenname}"
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT tablename, policyname FROM pg_policies WHERE tablename LIKE '{prefix}_%';"
 ```
+````
 
 ### Step 1.N: ... [STATUS]
 
@@ -154,6 +160,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT tablename, 
 **Neues Verzeichnis:** `backend/src/nest/{feature}/`
 
 **Dateistruktur:**
+
 ```
 backend/src/nest/{feature}/
     {feature}.module.ts                    # NestJS Modul
@@ -167,6 +174,7 @@ backend/src/nest/{feature}/
 ```
 
 **Registrierung in app.module.ts:**
+
 - [ ] `{Feature}Module` zu imports Array (alphabetisch sortiert)
 
 ### Step 2.2 - 2.N: Services (Abhängigkeitsreihenfolge!)
@@ -176,16 +184,16 @@ backend/src/nest/{feature}/
 
 **Empfohlene Reihenfolge:**
 
-| #   | Service                         | Warum diese Reihenfolge                  |
-| --- | ------------------------------- | ---------------------------------------- |
-| 2.2 | {Basis-Service}                 | Keine Abhängigkeiten, wird von allen genutzt |
-| 2.3 | {Config/Settings-Service}       | Andere Services brauchen Config-Werte    |
-| 2.4 | {Berechnung-Service}            | Wird von Validierung + Core gebraucht    |
-| 2.5 | {CRUD-Service A}                | Eigenständig, wird von Core referenziert |
-| 2.6 | {CRUD-Service B}                | Eigenständig, wird von Core referenziert |
-| 2.7 | {Analyse/Capacity-Service}      | Braucht alle CRUD-Services als Input     |
-| 2.8 | {Core-Service (Mutationen)}     | Das Herz — braucht ALLES                 |
-| 2.9 | {Notification-Service}          | Reagiert auf Core-Events                 |
+| #   | Service                     | Warum diese Reihenfolge                      |
+| --- | --------------------------- | -------------------------------------------- |
+| 2.2 | {Basis-Service}             | Keine Abhängigkeiten, wird von allen genutzt |
+| 2.3 | {Config/Settings-Service}   | Andere Services brauchen Config-Werte        |
+| 2.4 | {Berechnung-Service}        | Wird von Validierung + Core gebraucht        |
+| 2.5 | {CRUD-Service A}            | Eigenständig, wird von Core referenziert     |
+| 2.6 | {CRUD-Service B}            | Eigenständig, wird von Core referenziert     |
+| 2.7 | {Analyse/Capacity-Service}  | Braucht alle CRUD-Services als Input         |
+| 2.8 | {Core-Service (Mutationen)} | Das Herz — braucht ALLES                     |
+| 2.9 | {Notification-Service}      | Reagiert auf Core-Events                     |
 
 **Pro Service dokumentieren:**
 
@@ -197,12 +205,14 @@ backend/src/nest/{feature}/
 **Warum jetzt:** {Begründung der Reihenfolge}
 
 **Methoden:**
+
 - `methodA(tenantId, ...)` — {Beschreibung}
 - `methodB(tenantId, ...)` — {Beschreibung}
 
 **Abhängigkeiten:** {Liste der injizierten Services}
 
 **Kritische Patterns:**
+
 - Alle Queries via `db.tenantTransaction()` (ADR-019)
 - Return raw Data, KEIN `{ success, data }` Wrapping (ADR-007)
 - `$1, $2, $3` Placeholders (PostgreSQL)
@@ -215,15 +225,16 @@ backend/src/nest/{feature}/
 
 **Endpoints ({N} total):**
 
-| Method | Route                          | Guard/Permission                | Beschreibung        |
-| ------ | ------------------------------ | ------------------------------- | ------------------- |
-| GET    | /{feature}                     | canRead                         | Liste (paginiert)   |
-| POST   | /{feature}                     | canWrite                        | Erstellen           |
-| GET    | /{feature}/:id                 | canRead                         | Einzelnes Item      |
-| PATCH  | /{feature}/:id                 | canWrite                        | Aktualisieren       |
-| DELETE | /{feature}/:id                 | canDelete                       | Soft-Delete         |
+| Method | Route          | Guard/Permission | Beschreibung      |
+| ------ | -------------- | ---------------- | ----------------- |
+| GET    | /{feature}     | canRead          | Liste (paginiert) |
+| POST   | /{feature}     | canWrite         | Erstellen         |
+| GET    | /{feature}/:id | canRead          | Einzelnes Item    |
+| PATCH  | /{feature}/:id | canWrite         | Aktualisieren     |
+| DELETE | /{feature}/:id | canDelete        | Soft-Delete       |
 
 **Jeder Endpoint MUSS:**
+
 - [ ] `FeatureCheckService.checkTenantAccess(tenantId, '{feature}')` aufrufen
 - [ ] `@RequirePermission(...)` Decorator verwenden
 - [ ] Raw Data zurückgeben (ResponseInterceptor wrapped automatisch)
@@ -263,6 +274,7 @@ backend/src/nest/{feature}/
 ### Kritische Test-Szenarien (MUSS abgedeckt sein)
 
 **Geschäftslogik:**
+
 - [ ] Happy Path für jede Mutation
 - [ ] Validierungsfehler → BadRequestException
 - [ ] Duplikat/Konflikt → ConflictException
@@ -270,19 +282,21 @@ backend/src/nest/{feature}/
 - [ ] Nicht gefunden → NotFoundException
 
 **Edge Cases:**
+
 - [ ] Grenzwerte (0, MAX, negative Werte)
 - [ ] Cross-{Domain}-Szenarien (z.B. jahresübergreifend)
 - [ ] Race Conditions (FOR UPDATE Lock verifizieren)
 - [ ] Self-Referenz-Schleifen (z.B. Self-Approval)
 
 **Datenintegrität:**
+
 - [ ] Tenant-Isolation (Tenant A sieht nicht Tenant B)
 - [ ] Cascade-Verhalten bei DELETE
 - [ ] Audit-Trail-Einträge werden geschrieben
 
 ### Phase 3 — Definition of Done
 
-- [ ] >= {N} Unit Tests total (Minimum: 75)
+- [ ] > = {N} Unit Tests total (Minimum: 75)
 - [ ] Alle Tests grün: `docker exec assixx-backend pnpm exec vitest run backend/src/nest/{feature}/`
 - [ ] Jeder ConflictException / BadRequestException Pfad abgedeckt
 - [ ] Edge Cases für {Domain-spezifische Szenarien} getestet
@@ -303,10 +317,12 @@ backend/src/nest/{feature}/
 ### Szenarien (>= 20 Assertions)
 
 **Auth & Feature:**
+
 - [ ] Unauthenticated → 401
 - [ ] Feature disabled → 403
 
 **CRUD pro Endpoint:**
+
 - [ ] POST → 201 (Happy Path)
 - [ ] POST → 400 (Validierungsfehler)
 - [ ] POST → 409 (Duplikat)
@@ -315,11 +331,12 @@ backend/src/nest/{feature}/
 - [ ] DELETE → 200 (Soft-Delete)
 
 **RLS:**
+
 - [ ] Tenant A kann Tenant B Daten nicht sehen
 
 ### Phase 4 — Definition of Done
 
-- [ ] >= 20 API Integration Tests
+- [ ] > = 20 API Integration Tests
 - [ ] Alle Tests grün
 - [ ] Tenant-Isolation verifiziert
 - [ ] Feature-Flag-Gating verifiziert
@@ -357,6 +374,7 @@ frontend/src/routes/(app)/
 **Neue Dateien:** {N}
 
 **Qualitätsprüfung:**
+
 ```bash
 cd frontend && pnpm exec svelte-check --tsconfig ./tsconfig.json
 cd frontend && pnpm exec eslint src/routes/(app)/(shared)/{feature}/
@@ -369,6 +387,7 @@ cd frontend && pnpm exec eslint src/routes/(app)/(shared)/{feature}/
 ### Frontend-Patterns (PFLICHT)
 
 **apiClient — KRITISCH (Kaizen-Bug!):**
+
 ```typescript
 // apiClient.get<T>() returned Data DIREKT (bereits unwrapped)
 const data = await apiClient.get<MyType>('/my-endpoint');
@@ -376,6 +395,7 @@ const data = await apiClient.get<MyType>('/my-endpoint');
 ```
 
 **State Management (Svelte 5 Runes):**
+
 ```typescript
 // state-data.svelte.ts
 let items = $state<MyType[]>([]);
@@ -383,6 +403,7 @@ let selected = $state<MyType | null>(null);
 ```
 
 **+page.server.ts Pattern:**
+
 ```typescript
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
@@ -439,19 +460,19 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 > **Regel:** Jede Session = ein logischer Arbeitsblock. Nicht zu klein (1 Funktion),
 > nicht zu groß (ganzes Modul). Ideal: 1-3 Stunden fokussierte Arbeit.
 
-| Session | Phase | Beschreibung                                          | Status | Datum      |
-| ------- | ----- | ----------------------------------------------------- | ------ | ---------- |
-| 1       | 1     | Migration {N}: {Beschreibung}                         | DONE   | YYYY-MM-DD |
-| 2       | 1     | Migration {N+1}: {Beschreibung}                       | DONE   | YYYY-MM-DD |
-| 3       | 2     | Module Skeleton + Types + DTOs                        | DONE   | YYYY-MM-DD |
-| 4       | 2     | {Basis-Service} + {Config-Service}                    |        |            |
-| 5       | 2     | {CRUD-Services}                                       |        |            |
-| 6       | 2     | {Core-Service} + Controller                           |        |            |
-| 7       | 3     | Unit Tests ({N}+ Tests)                               |        |            |
-| 8       | 4     | API Integration Tests ({N}+ Tests)                    |        |            |
-| 9       | 5     | Frontend: Hauptseite                                  |        |            |
-| 10      | 5     | Frontend: Admin-Seiten                                |        |            |
-| 11      | 6     | Integration + Polish + ADR                            |        |            |
+| Session | Phase | Beschreibung                       | Status | Datum      |
+| ------- | ----- | ---------------------------------- | ------ | ---------- |
+| 1       | 1     | Migration {N}: {Beschreibung}      | DONE   | YYYY-MM-DD |
+| 2       | 1     | Migration {N+1}: {Beschreibung}    | DONE   | YYYY-MM-DD |
+| 3       | 2     | Module Skeleton + Types + DTOs     | DONE   | YYYY-MM-DD |
+| 4       | 2     | {Basis-Service} + {Config-Service} |        |            |
+| 5       | 2     | {CRUD-Services}                    |        |            |
+| 6       | 2     | {Core-Service} + Controller        |        |            |
+| 7       | 3     | Unit Tests ({N}+ Tests)            |        |            |
+| 8       | 4     | API Integration Tests ({N}+ Tests) |        |            |
+| 9       | 5     | Frontend: Hauptseite               |        |            |
+| 10      | 5     | Frontend: Admin-Seiten             |        |            |
+| 11      | 6     | Integration + Polish + ADR         |        |            |
 
 ### Session-Protokoll (pro Session ausfüllen)
 
@@ -463,11 +484,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 **Neue Dateien:** {Liste}
 **Geänderte Dateien:** {Liste}
 **Verifikation:**
+
 - ESLint: {0 Errors / N Errors → gefixt}
 - Type-Check: {0 Errors}
 - Tests: {N/N passed}
-**Abweichungen vom Plan:** {Was lief anders als geplant und warum}
-**Nächste Session:** {Was kommt als nächstes}
+  **Abweichungen vom Plan:** {Was lief anders als geplant und warum}
+  **Nächste Session:** {Was kommt als nächstes}
 ```
 
 ---
@@ -476,33 +498,33 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 ### Backend (neu)
 
-| Datei                                          | Zweck                  |
-| ---------------------------------------------- | ---------------------- |
-| `backend/src/nest/{feature}/{feature}.module.ts`    | NestJS Modul           |
-| `backend/src/nest/{feature}/{feature}.controller.ts`| REST Controller        |
-| `backend/src/nest/{feature}/{feature}.service.ts`   | Core Business Logic    |
-| `backend/src/nest/{feature}/{feature}.types.ts`     | Alle Interfaces        |
-| `backend/src/nest/{feature}/dto/*.ts`               | DTOs (Zod)             |
+| Datei                                                | Zweck               |
+| ---------------------------------------------------- | ------------------- |
+| `backend/src/nest/{feature}/{feature}.module.ts`     | NestJS Modul        |
+| `backend/src/nest/{feature}/{feature}.controller.ts` | REST Controller     |
+| `backend/src/nest/{feature}/{feature}.service.ts`    | Core Business Logic |
+| `backend/src/nest/{feature}/{feature}.types.ts`      | Alle Interfaces     |
+| `backend/src/nest/{feature}/dto/*.ts`                | DTOs (Zod)          |
 
 ### Backend (geändert)
 
-| Datei                                     | Änderung                        |
-| ----------------------------------------- | ------------------------------- |
-| `backend/src/nest/app.module.ts`          | Module Import hinzugefügt       |
-| `backend/src/utils/eventBus.ts`           | Event Interface + Emit-Methoden |
+| Datei                            | Änderung                        |
+| -------------------------------- | ------------------------------- |
+| `backend/src/nest/app.module.ts` | Module Import hinzugefügt       |
+| `backend/src/utils/eventBus.ts`  | Event Interface + Emit-Methoden |
 
 ### Database (neu)
 
-| Datei                                                  | Zweck             |
-| ------------------------------------------------------ | ----------------- |
-| `database/migrations/{timestamp}_{name}.ts`            | Migration {N}     |
+| Datei                                       | Zweck         |
+| ------------------------------------------- | ------------- |
+| `database/migrations/{timestamp}_{name}.ts` | Migration {N} |
 
 ### Frontend (neu)
 
-| Pfad                                                    | Zweck                  |
-| ------------------------------------------------------- | ---------------------- |
-| `frontend/src/routes/(app)/(shared)/{feature}/`         | Hauptseite             |
-| `frontend/src/routes/(app)/(admin)/{feature}/{sub}/`    | Admin-Seiten           |
+| Pfad                                                 | Zweck        |
+| ---------------------------------------------------- | ------------ |
+| `frontend/src/routes/(app)/(shared)/{feature}/`      | Hauptseite   |
+| `frontend/src/routes/(app)/(admin)/{feature}/{sub}/` | Admin-Seiten |
 
 ---
 
@@ -511,9 +533,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 > **Wichtig:** Wenn der Spec/Prompt vom tatsächlichen Code abweicht,
 > IMMER dem tatsächlichen Code folgen und die Abweichung hier dokumentieren.
 
-| #   | Spec sagt                     | Tatsächlicher Code             | Entscheidung               |
-| --- | ----------------------------- | ------------------------------ | -------------------------- |
-| D1  | {Spec-Angabe}                 | {Was wirklich gilt}            | {Was wir machen und warum} |
+| #   | Spec sagt     | Tatsächlicher Code  | Entscheidung               |
+| --- | ------------- | ------------------- | -------------------------- |
+| D1  | {Spec-Angabe} | {Was wirklich gilt} | {Was wir machen und warum} |
 
 ---
 
@@ -531,10 +553,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 ## Post-Mortem (nach Abschluss ausfüllen)
 
 ### Was lief gut
+
 - {Punkt 1}
 - {Punkt 2}
 
 ### Was lief schlecht
+
 - {Punkt 1 + wie wir es beim nächsten Mal vermeiden}
 - {Punkt 2 + wie wir es beim nächsten Mal vermeiden}
 
@@ -556,7 +580,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 **Dieses Dokument ist der Execution Plan. Jede Session startet hier,
 nimmt das nächste unchecked Item, und markiert es als done.**
+
 ```
+
 ```
 
 ---
@@ -578,6 +604,7 @@ Jede Phase hat eine DoD. Jeder Punkt ist eine Checkbox. Du darfst die nächste P
 ### 3. Session = Atomare Einheit
 
 Eine Session hat:
+
 - **Ein Ziel** (nicht fünf)
 - **Verifikation am Ende** (ESLint, Type-Check, Tests)
 - **Protokoll** (was wurde gemacht, was wich ab)
@@ -587,6 +614,7 @@ Wenn du eine Session nicht sauber abschließen kannst, ist sie zu groß. Teile s
 ### 4. Verifikation ist nicht optional
 
 Nach JEDER Session:
+
 ```bash
 # Backend
 docker exec assixx-backend pnpm exec eslint backend/src/nest/{feature}/
@@ -604,6 +632,7 @@ Wenn du das nicht machst, akkumulierst du Schulden. Schulden kosten Zinsen. Sess
 ### 5. Risk Register ernst nehmen
 
 Jedes identifizierte Risiko braucht:
+
 - **Impact** (was passiert im Worst Case)
 - **Mitigation** (was tun wir dagegen)
 - **Verifikation** (wie prüfen wir, dass die Mitigation wirkt)
@@ -617,6 +646,7 @@ Wenn der Spec etwas sagt, der Code aber anders funktioniert → SOFORT in die De
 ### 7. Known Limitations = Anti-Scope-Creep
 
 Schreibe explizit auf, was du NICHT baust. Das verhindert:
+
 - Scope Creep ("ach, könnten wir nicht auch noch...")
 - Falsche Erwartungen ("ich dachte das kann auch X")
 - Endlose Sessions ("nur noch dieses eine Feature...")

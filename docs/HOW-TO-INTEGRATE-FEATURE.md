@@ -157,7 +157,7 @@ private async ensureFeatureEnabled(tenantId: number): Promise<void> {
 
 ```typescript
 export const FEATURE_PERMISSIONS: PermissionCategoryDef = {
-  code: 'feature-code',        // MUSS features.code in DB matchen
+  code: 'feature-code', // MUSS features.code in DB matchen
   label: 'Feature Name',
   icon: 'fa-icon-name',
   modules: [
@@ -193,8 +193,9 @@ export class FeaturePermissionRegistrar implements OnModuleInit {
 - [ ] Nach jeder Mutation aufgerufen (fire-and-forget mit `void`):
 
 ```typescript
-void this.activityLogger.logCreate(tenantId, userId, 'feature-entity', entityId,
-  `Feature erstellt: ${name}`, { relevantFields });
+void this.activityLogger.logCreate(tenantId, userId, 'feature-entity', entityId, `Feature erstellt: ${name}`, {
+  relevantFields,
+});
 ```
 
 - [ ] `entityType` zum `ActivityEntityType` Union hinzugefügt falls neu
@@ -243,10 +244,10 @@ emitFeatureEvent(tenantId: number, payload: FeaturePayload): void {
 
 - [ ] Richtige Route Group gewählt:
 
-| Gruppe | Pfad | Zugriff |
-|--------|------|---------|
-| `(root)` | `frontend/src/routes/(app)/(root)/<feature>/` | Nur Root |
-| `(admin)` | `frontend/src/routes/(app)/(admin)/<feature>/` | Admin + Root |
+| Gruppe     | Pfad                                            | Zugriff                     |
+| ---------- | ----------------------------------------------- | --------------------------- |
+| `(root)`   | `frontend/src/routes/(app)/(root)/<feature>/`   | Nur Root                    |
+| `(admin)`  | `frontend/src/routes/(app)/(admin)/<feature>/`  | Admin + Root                |
 | `(shared)` | `frontend/src/routes/(app)/(shared)/<feature>/` | Alle authentifizierten User |
 
 - [ ] Neuer Ordner in der richtigen Gruppe erstellt
@@ -357,7 +358,9 @@ const [items, stats] = await Promise.all([
 - [ ] Mock-Factory Pattern:
 
 ```typescript
-function createMockDb() { return { query: vi.fn() }; }
+function createMockDb() {
+  return { query: vi.fn() };
+}
 function createService() {
   const mockDb = createMockDb();
   const service = new FeatureService(mockDb as unknown as DatabaseService);
@@ -387,13 +390,25 @@ function createService() {
 
 ```typescript
 let auth: AuthState;
-beforeAll(async () => { auth = await loginApitest(); });
+beforeAll(async () => {
+  auth = await loginApitest();
+});
 
-describe('Unauthenticated → 401', () => { /* ohne Token */ });
-describe('Create', () => { /* POST mit authHeaders(token) */ });
-describe('Read', () => { /* GET mit authOnly(token) */ });
-describe('Update', () => { /* PUT mit authHeaders(token) */ });
-describe('Delete/Cleanup', () => { /* DELETE mit authOnly(token) */ });
+describe('Unauthenticated → 401', () => {
+  /* ohne Token */
+});
+describe('Create', () => {
+  /* POST mit authHeaders(token) */
+});
+describe('Read', () => {
+  /* GET mit authOnly(token) */
+});
+describe('Update', () => {
+  /* PUT mit authHeaders(token) */
+});
+describe('Delete/Cleanup', () => {
+  /* DELETE mit authOnly(token) */
+});
 ```
 
 - [ ] **KRITISCH:** `authHeaders(token)` für Requests MIT Body, `authOnly(token)` für Requests OHNE Body (Fastify!)
@@ -434,16 +449,16 @@ HTTP Request
 
 ## 7. VERGESSENE INTEGRATION = TECH DEBT
 
-| Vergessen | Konsequenz |
-|-----------|------------|
-| RLS Policy | **Datenleck zwischen Tenants** |
-| GRANT für app_user | Feature funktioniert in Prod nicht (Permission Denied) |
-| Feature Flag | Feature ist für niemanden sichtbar |
-| Sidebar Entry | User findet das Feature nicht |
-| Breadcrumb | Verwirrende Navigation |
-| Permission Registrar | Admin kann keine User-Permissions vergeben |
-| Activity Logging | Root Dashboard zeigt keine Aktivität |
-| ensureFeatureEnabled() | Feature ist für alle Tenants offen (Bypass!) |
-| API Test | Regression bleibt unbemerkt |
-| Notification Badge | User sieht keine neuen Einträge |
-| Route Group | Falsche Rolle hat Zugriff |
+| Vergessen              | Konsequenz                                             |
+| ---------------------- | ------------------------------------------------------ |
+| RLS Policy             | **Datenleck zwischen Tenants**                         |
+| GRANT für app_user     | Feature funktioniert in Prod nicht (Permission Denied) |
+| Feature Flag           | Feature ist für niemanden sichtbar                     |
+| Sidebar Entry          | User findet das Feature nicht                          |
+| Breadcrumb             | Verwirrende Navigation                                 |
+| Permission Registrar   | Admin kann keine User-Permissions vergeben             |
+| Activity Logging       | Root Dashboard zeigt keine Aktivität                   |
+| ensureFeatureEnabled() | Feature ist für alle Tenants offen (Bypass!)           |
+| API Test               | Regression bleibt unbemerkt                            |
+| Notification Badge     | User sieht keine neuen Einträge                        |
+| Route Group            | Falsche Rolle hat Zugriff                              |
