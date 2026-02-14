@@ -1,12 +1,8 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
-  import { MESSAGES, MACHINE_TYPE_OPTIONS, STATUS_OPTIONS } from './constants';
+  import { MESSAGES, MACHINE_TYPE_OPTIONS } from './constants';
   import { machineState } from './state.svelte';
-  import { getStatusBadgeClass, getStatusLabel } from './utils';
-
-  import type { MachineStatus } from './types';
 
   interface Props {
     onsubmit: (e: Event) => void;
@@ -56,18 +52,6 @@
   function selectType(type: string) {
     machineState.setFormMachineType(type);
     machineState.setTypeDropdownOpen(false);
-  }
-
-  function toggleStatusDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    const wasOpen = machineState.statusDropdownOpen;
-    machineState.closeAllDropdowns();
-    machineState.setStatusDropdownOpen(!wasOpen);
-  }
-
-  function selectStatus(status: MachineStatus) {
-    machineState.setFormStatus(status);
-    machineState.setStatusDropdownOpen(false);
   }
 
   function toggleTeamsDropdown(e: MouseEvent) {
@@ -448,93 +432,6 @@
               {/each}
             </div>
           </div>
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="machine-status">{MESSAGES.LABEL_STATUS}</label
-          >
-          <input
-            type="hidden"
-            id="machine-status"
-            name="status"
-            value={machineState.formStatus}
-          />
-          <div
-            class="dropdown"
-            id="status-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={machineState.statusDropdownOpen}
-              onclick={toggleStatusDropdown}
-            >
-              <span
-                class="badge {getStatusBadgeClass(machineState.formStatus)}"
-              >
-                {getStatusLabel(machineState.formStatus)}
-              </span>
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={machineState.statusDropdownOpen}
-            >
-              {#each STATUS_OPTIONS as option (option.value)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectStatus(option.value);
-                  }}
-                >
-                  <span class="badge {option.class}">{option.label}</span>
-                </div>
-              {/each}
-            </div>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="machine-hours">{MESSAGES.LABEL_HOURS}</label
-          >
-          <input
-            type="number"
-            id="machine-hours"
-            name="operatingHours"
-            class="form-field__control"
-            min="0"
-            step="1"
-            value={machineState.formOperatingHours ?? ''}
-            oninput={(e) => {
-              const val = (e.target as HTMLInputElement).value;
-              machineState.setFormOperatingHours(
-                val !== '' ? Math.round(Number(val)) : null,
-              );
-            }}
-          />
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="machine-next-maintenance"
-          >
-            {MESSAGES.LABEL_NEXT_MAINTENANCE}
-          </label>
-          <AppDatePicker
-            value={machineState.formNextMaintenance}
-            name="nextMaintenance"
-            onchange={(v: string) => {
-              machineState.setFormNextMaintenance(v);
-            }}
-          />
         </div>
       </div>
 

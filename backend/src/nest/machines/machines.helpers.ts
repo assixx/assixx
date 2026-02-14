@@ -122,6 +122,7 @@ export function mapDbMachineToApi(row: DbMachineRow): MachineResponse {
   return {
     id: row.id,
     tenantId: row.tenant_id,
+    uuid: row.uuid.trim(),
     name: row.name,
     machineType: row.machine_type,
     status: row.status,

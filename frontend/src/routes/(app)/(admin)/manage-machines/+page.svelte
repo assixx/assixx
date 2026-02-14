@@ -6,9 +6,16 @@
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    * Note: Uses external state store for UI state (forms, modals, dropdowns).
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
+  import { resolve } from '$app/paths';
 
   import HighlightText from '$lib/components/HighlightText.svelte';
+  import {
+    MACHINE_AVAILABILITY_BADGE_CLASSES,
+    MACHINE_AVAILABILITY_ICONS,
+    MACHINE_AVAILABILITY_LABELS,
+  } from '$lib/machine-availability/constants';
+  import MachineAvailabilityModal from '$lib/machine-availability/MachineAvailabilityModal.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -25,6 +32,7 @@
     setMachineTeams as apiSetMachineTeams,
     saveMachine as apiSaveMachine,
     deleteMachine as apiDeleteMachine,
+    updateMachineAvailability as apiUpdateMachineAvailability,
   } from './_lib/api';
   import { MESSAGES } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
@@ -32,11 +40,6 @@
   import MachineFormModal from './_lib/MachineFormModal.svelte';
   import { machineState } from './_lib/state.svelte';
   import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    getMaintenanceWarningStatus,
-    formatDateDE,
-    formatOperatingHours,
     getEmptyStateTitle,
     getEmptyStateDescription,
     buildMachineFormData,
@@ -46,6 +49,7 @@
     getDepartmentBadgeData,
   } from './_lib/utils';
 
+  import type { MachineAvailabilityStatus } from '$lib/machine-availability/constants';
   import type { PageData } from './$types';
   import type { Machine, MachineStatusFilter } from './_lib/types';
 
@@ -249,6 +253,110 @@
   }
 
   // =============================================================================
+  // MACHINE AVAILABILITY STATE & HANDLERS
+  // =============================================================================
+
+  let showAvailabilityModal = $state(false);
+  let availabilityMachine = $state<{ name: string; uuid: string } | null>(null);
+  let availabilitySubmitting = $state(false);
+  let availabilityStatus = $state<MachineAvailabilityStatus>('maintenance');
+  let availabilityStart = $state('');
+  let availabilityEnd = $state('');
+  let availabilityReason = $state('');
+  let availabilityNotes = $state('');
+
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
+
+  function openAvailabilityModal(machine: {
+    name: string;
+    uuid: string;
+  }): void {
+    availabilityMachine = machine;
+    availabilityStatus = 'maintenance';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+    showAvailabilityModal = true;
+  }
+
+  function closeAvailabilityModal(): void {
+    showAvailabilityModal = false;
+    availabilityMachine = null;
+  }
+
+  function navigateToAvailabilityHistory(uuid: string): void {
+    closeAvailabilityModal();
+    void goto(resolvePath(`/manage-machines/availability/${uuid}`));
+  }
+
+  async function saveAvailability(): Promise<void> {
+    if (availabilityMachine === null) return;
+
+    // Validate: non-operational status requires dates
+    if (availabilityStatus !== 'operational') {
+      if (availabilityStart === '' || availabilityEnd === '') {
+        showErrorAlert('Start- und Enddatum sind erforderlich');
+        return;
+      }
+      if (availabilityEnd < availabilityStart) {
+        showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein');
+        return;
+      }
+    }
+
+    availabilitySubmitting = true;
+    try {
+      await apiUpdateMachineAvailability(availabilityMachine.uuid, {
+        availabilityStatus,
+        ...(availabilityStart !== '' && { availabilityStart }),
+        ...(availabilityEnd !== '' && { availabilityEnd }),
+        ...(availabilityReason !== '' && { availabilityReason }),
+        ...(availabilityNotes !== '' && { availabilityNotes }),
+      });
+
+      showSuccessAlert('Maschinenverfügbarkeit aktualisiert');
+      closeAvailabilityModal();
+      await invalidateAll();
+    } catch (err) {
+      log.error({ err }, 'Error saving machine availability');
+      const errorMsg =
+        err instanceof Error ? err.message : 'Fehler beim Speichern';
+      showErrorAlert(errorMsg);
+    } finally {
+      availabilitySubmitting = false;
+    }
+  }
+
+  /** Get badge class for machine availability status */
+  function getAvailabilityBadgeClass(status: string): string {
+    if (status in MACHINE_AVAILABILITY_BADGE_CLASSES) {
+      return MACHINE_AVAILABILITY_BADGE_CLASSES[
+        status as MachineAvailabilityStatus
+      ];
+    }
+    return 'badge--secondary';
+  }
+
+  /** Get icon for machine availability status */
+  function getAvailabilityIcon(status: string): string {
+    if (status in MACHINE_AVAILABILITY_ICONS) {
+      return MACHINE_AVAILABILITY_ICONS[status as MachineAvailabilityStatus];
+    }
+    return 'fa-question-circle';
+  }
+
+  /** Get label for machine availability status */
+  function getAvailabilityLabel(status: string): string {
+    if (status in MACHINE_AVAILABILITY_LABELS) {
+      return MACHINE_AVAILABILITY_LABELS[status as MachineAvailabilityStatus];
+    }
+    return status;
+  }
+
+  // =============================================================================
   // OUTSIDE CLICK HANDLERS
   // =============================================================================
 
@@ -273,13 +381,6 @@
       selector: '#type-dropdown',
       close: () => {
         machineState.setTypeDropdownOpen(false);
-      },
-    },
-    {
-      isOpen: () => machineState.statusDropdownOpen,
-      selector: '#status-dropdown',
-      close: () => {
-        machineState.setStatusDropdownOpen(false);
       },
     },
     {
@@ -326,7 +427,8 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (machineState.showDeleteConfirmModal)
+      if (showAvailabilityModal) closeAvailabilityModal();
+      else if (machineState.showDeleteConfirmModal)
         machineState.closeDeleteConfirmModal();
       else if (machineState.showDeleteModal) machineState.closeDeleteModal();
       else if (machineState.showMachineModal) machineState.closeMachineModal();
@@ -400,6 +502,39 @@
           >
             <i class="fas fa-tools"></i>
             {MESSAGES.FILTER_REPAIR}
+          </button>
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={machineState.currentStatusFilter === 'standby'}
+            onclick={() => {
+              handleStatusToggle('standby');
+            }}
+          >
+            <i class="fas fa-pause-circle"></i>
+            {MESSAGES.FILTER_STANDBY}
+          </button>
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={machineState.currentStatusFilter === 'cleaning'}
+            onclick={() => {
+              handleStatusToggle('cleaning');
+            }}
+          >
+            <i class="fas fa-broom"></i>
+            {MESSAGES.FILTER_CLEANING}
+          </button>
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={machineState.currentStatusFilter === 'other'}
+            onclick={() => {
+              handleStatusToggle('other');
+            }}
+          >
+            <i class="fas fa-clock"></i>
+            {MESSAGES.FILTER_OTHER}
           </button>
         </div>
 
@@ -535,17 +670,11 @@
                   <th scope="col">{MESSAGES.TH_AREA}</th>
                   <th scope="col">{MESSAGES.TH_DEPARTMENT}</th>
                   <th scope="col">{MESSAGES.TH_TEAMS}</th>
-                  <th scope="col">{MESSAGES.TH_STATUS}</th>
-                  <th scope="col">{MESSAGES.TH_HOURS}</th>
-                  <th scope="col">{MESSAGES.TH_MAINTENANCE}</th>
                   <th scope="col">{MESSAGES.TH_ACTIONS}</th>
                 </tr>
               </thead>
               <tbody>
                 {#each filteredMachines as machine (machine.id)}
-                  {@const maintenanceWarning = getMaintenanceWarningStatus(
-                    machine.nextMaintenance,
-                  )}
                   {@const areaBadge = getAreaBadgeData(machine.areaName)}
                   {@const deptBadge = getDepartmentBadgeData(
                     machine.departmentName,
@@ -581,27 +710,21 @@
                       </span>
                     </td>
                     <td>
-                      <span class="badge {getStatusBadgeClass(machine.status)}">
-                        {getStatusLabel(machine.status)}
-                      </span>
-                    </td>
-                    <td>{formatOperatingHours(machine.operatingHours)}</td>
-                    <td>
-                      {formatDateDE(machine.nextMaintenance)}
-                      {#if maintenanceWarning === 'overdue'}
-                        <i
-                          class="fas fa-exclamation-triangle ms-2 text-red-500"
-                          title="Wartung überfällig"
-                        ></i>
-                      {:else if maintenanceWarning === 'soon'}
-                        <i
-                          class="fas fa-exclamation-circle ms-2 text-yellow-500"
-                          title="Wartung bald fällig"
-                        ></i>
-                      {/if}
-                    </td>
-                    <td>
                       <div class="flex gap-2">
+                        <button
+                          type="button"
+                          class="action-icon action-icon--info"
+                          title="Verfügbarkeit"
+                          aria-label="Maschinenverfügbarkeit bearbeiten"
+                          onclick={() => {
+                            openAvailabilityModal({
+                              name: machine.name,
+                              uuid: machine.uuid,
+                            });
+                          }}
+                        >
+                          <i class="fas fa-calendar-alt"></i>
+                        </button>
                         <button
                           type="button"
                           class="action-icon action-icon--edit"
@@ -653,3 +776,20 @@
   }}
 />
 <DeleteModals ondelete={deleteMachine} />
+
+<!-- Machine Availability Modal -->
+<MachineAvailabilityModal
+  show={showAvailabilityModal}
+  machine={availabilityMachine}
+  submitting={availabilitySubmitting}
+  bind:availabilityStatus
+  bind:availabilityStart
+  bind:availabilityEnd
+  bind:availabilityReason
+  bind:availabilityNotes
+  onclose={closeAvailabilityModal}
+  onsave={() => {
+    void saveAvailability();
+  }}
+  onmanage={navigateToAvailabilityHistory}
+/>

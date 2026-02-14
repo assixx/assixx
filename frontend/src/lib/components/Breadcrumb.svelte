@@ -59,7 +59,7 @@
       },
       '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-building' },
       '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
-      '/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-industry' },
+      '/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-cogs' },
       '/manage-root': { label: 'Root User Verwaltung', icon: 'fa-shield-alt' },
       '/blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
       '/blackboard-detail': {
@@ -129,6 +129,11 @@
     {
       pattern: /^\/manage-root\/availability\/[^/]+$/,
       label: 'Root Name Placeholder',
+      icon: 'fa-calendar-alt',
+    },
+    {
+      pattern: /^\/manage-machines\/availability\/[^/]+$/,
+      label: 'Machine Name Placeholder',
       icon: 'fa-calendar-alt',
     },
     {
@@ -214,6 +219,12 @@
       href: '/manage-admins',
       icon: 'fa-user-shield',
     },
+    {
+      pattern: /^\/manage-machines\/availability\/[^/]+$/,
+      label: 'Maschinen verwalten',
+      href: '/manage-machines',
+      icon: 'fa-cogs',
+    },
   ];
 
   // =============================================================================
@@ -246,6 +257,18 @@
     return 'Mitarbeiter';
   }
 
+  /** Resolve machine name from page data for machine availability breadcrumb */
+  function getMachineNameFromPageData(): string {
+    const pageData = $page.data as {
+      machine?: { name?: string };
+    };
+    const machine = pageData.machine;
+    if (machine?.name !== undefined) {
+      return machine.name;
+    }
+    return 'Maschine';
+  }
+
   /** Build breadcrumb items for a matched dynamic route */
   function buildDynamicRouteItems(
     dynamicMatch: { pattern: RegExp; label: string; icon: string },
@@ -266,13 +289,23 @@
       });
     }
 
-    // Special handling for employee availability route
+    // Special handling for availability routes (employee vs machine)
     const isAvailabilityRoute = currentPath.includes('/availability/');
+    const isMachineAvailabilityRoute = currentPath.startsWith(
+      '/manage-machines/availability/',
+    );
 
     // Special handling for permission routes (employees, admins, root)
     const isPermissionRoute = currentPath.includes('/permission/');
 
-    if (isAvailabilityRoute) {
+    if (isMachineAvailabilityRoute) {
+      items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
+      items.push({
+        label: getMachineNameFromPageData(),
+        icon: 'fa-cog',
+        current: true,
+      });
+    } else if (isAvailabilityRoute) {
       items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
       items.push({
         label: getEmployeeNameFromPageData(),

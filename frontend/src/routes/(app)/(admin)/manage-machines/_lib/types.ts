@@ -15,6 +15,7 @@ export interface MachineTeamInfo {
  */
 export interface Machine {
   id: number;
+  uuid: string;
   name: string;
   model?: string;
   manufacturer?: string;
@@ -109,7 +110,10 @@ export type MachineStatusFilter =
   | 'all'
   | 'operational'
   | 'maintenance'
-  | 'repair';
+  | 'repair'
+  | 'standby'
+  | 'cleaning'
+  | 'other';
 
 /**
  * Generic API response wrapper

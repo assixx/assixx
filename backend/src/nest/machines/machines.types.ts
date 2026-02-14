@@ -51,6 +51,7 @@ export interface MachineTeamInfo {
 export interface DbMachineRow {
   id: number;
   tenant_id: number;
+  uuid: string;
   name: string;
   model: string | null;
   manufacturer: string | null;
@@ -158,6 +159,7 @@ export interface MachineFilters {
 export interface MachineResponse {
   id: number;
   tenantId: number;
+  uuid: string;
   name: string;
   model?: string;
   manufacturer?: string;

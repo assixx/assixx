@@ -2,20 +2,25 @@
  * Machines Controller
  *
  * HTTP endpoints for machine management:
- * - GET    /machines                    - List all machines
- * - GET    /machines/statistics         - Get machine statistics
- * - GET    /machines/categories         - Get machine categories
- * - GET    /machines/upcoming-maintenance - Get upcoming maintenance
- * - POST   /machines/maintenance        - Add maintenance record (admin)
- * - GET    /machines/:id                - Get machine by ID
- * - GET    /machines/:id/maintenance    - Get maintenance history
- * - GET    /machines/:id/teams          - Get teams assigned to machine
- * - PUT    /machines/:id/teams          - Set teams for machine (admin)
- * - POST   /machines                    - Create machine (admin)
- * - PUT    /machines/:id                - Update machine (admin)
- * - DELETE /machines/:id                - Delete machine (admin)
- * - PUT    /machines/:id/deactivate     - Deactivate machine (admin)
- * - PUT    /machines/:id/activate       - Activate machine (admin)
+ * - GET    /machines                               - List all machines
+ * - GET    /machines/statistics                     - Get machine statistics
+ * - GET    /machines/categories                     - Get machine categories
+ * - GET    /machines/upcoming-maintenance           - Get upcoming maintenance
+ * - POST   /machines/maintenance                    - Add maintenance record (admin)
+ * - PUT    /machines/uuid/:uuid/availability        - Create availability entry (admin)
+ * - GET    /machines/uuid/:uuid/availability/history - Get availability history
+ * - PUT    /machines/availability/:id               - Update availability entry (admin)
+ * - DELETE /machines/availability/:id               - Delete availability entry (admin)
+ * - GET    /machines/uuid/:uuid                     - Get machine by UUID
+ * - GET    /machines/:id                            - Get machine by ID
+ * - GET    /machines/:id/maintenance                - Get maintenance history
+ * - GET    /machines/:id/teams                      - Get teams assigned to machine
+ * - PUT    /machines/:id/teams                      - Set teams for machine (admin)
+ * - POST   /machines                                - Create machine (admin)
+ * - PUT    /machines/:id                            - Update machine (admin)
+ * - DELETE /machines/:id                            - Delete machine (admin)
+ * - PUT    /machines/:id/deactivate                 - Deactivate machine (admin)
+ * - PUT    /machines/:id/activate                   - Activate machine (admin)
  */
 import {
   Body,
@@ -39,10 +44,15 @@ import {
   AddMaintenanceRecordDto,
   CreateMachineDto,
   ListMachinesQueryDto,
+  MachineAvailabilityHistoryQueryDto,
   SetMachineTeamsDto,
   UpcomingMaintenanceQueryDto,
+  UpdateMachineAvailabilityDto,
+  UpdateMachineAvailabilityEntryDto,
   UpdateMachineDto,
 } from './dto/index.js';
+import type { MachineAvailabilityHistoryResponse } from './dto/machine-availability-history-query.dto.js';
+import { MachineAvailabilityService } from './machine-availability.service.js';
 import { MachinesService } from './machines.service.js';
 import type {
   MachineCategory,
@@ -73,7 +83,10 @@ interface MessageResponse {
 
 @Controller('machines')
 export class MachinesController {
-  constructor(private readonly machinesService: MachinesService) {}
+  constructor(
+    private readonly machinesService: MachinesService,
+    private readonly machineAvailabilityService: MachineAvailabilityService,
+  ) {}
 
   @Get()
   async listMachines(
@@ -158,6 +171,94 @@ export class MachinesController {
       userAgent,
     );
   }
+
+  // ============================================
+  // Machine Availability Endpoints
+  // ============================================
+
+  /**
+   * PUT /machines/uuid/:uuid/availability
+   * Create a new machine availability entry (maintenance window, repair period, etc.)
+   */
+  @Put('uuid/:uuid/availability')
+  @Roles('admin', 'root')
+  async updateMachineAvailabilityByUuid(
+    @Param('uuid') uuid: string,
+    @Body() dto: UpdateMachineAvailabilityDto,
+    @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.machineAvailabilityService.updateAvailabilityByUuid(
+      uuid,
+      dto,
+      tenantId,
+      user.id,
+    );
+  }
+
+  /**
+   * GET /machines/uuid/:uuid/availability/history
+   * Get availability history for a machine
+   */
+  @Get('uuid/:uuid/availability/history')
+  async getMachineAvailabilityHistory(
+    @Param('uuid') uuid: string,
+    @Query() query: MachineAvailabilityHistoryQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<MachineAvailabilityHistoryResponse> {
+    const year =
+      query.year !== undefined ? Number.parseInt(query.year, 10) : undefined;
+    const month =
+      query.month !== undefined ? Number.parseInt(query.month, 10) : undefined;
+    return await this.machineAvailabilityService.getAvailabilityHistoryByUuid(
+      uuid,
+      tenantId,
+      year,
+      month,
+    );
+  }
+
+  /**
+   * PUT /machines/availability/:id
+   * Update an existing availability entry (only if endDate >= today)
+   */
+  @Put('availability/:id')
+  @Roles('admin', 'root')
+  async updateMachineAvailabilityEntry(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMachineAvailabilityEntryDto,
+    @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.machineAvailabilityService.updateAvailabilityEntry(
+      id,
+      dto,
+      tenantId,
+      user.id,
+    );
+  }
+
+  /**
+   * DELETE /machines/availability/:id
+   * Delete an availability entry
+   */
+  @Delete('availability/:id')
+  @Roles('admin', 'root')
+  async deleteMachineAvailabilityEntry(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.machineAvailabilityService.deleteAvailabilityEntry(
+      id,
+      tenantId,
+      user.id,
+    );
+  }
+
+  // ============================================
+  // Machine CRUD Endpoints
+  // ============================================
 
   /**
    * GET /machines/uuid/:uuid

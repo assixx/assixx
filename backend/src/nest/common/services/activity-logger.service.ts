@@ -46,6 +46,7 @@ export type ActivityEntityType =
   | 'calendar'
   | 'shift'
   | 'availability'
+  | 'machine_availability'
   | 'vacation'
   | 'vacation_blackout'
   | 'vacation_holiday'
