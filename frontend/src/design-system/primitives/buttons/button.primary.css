@@ -1,46 +1,109 @@
 /**
- * Design System - Primary Button
+ * Primary Button (Gradient Border Design)
  *
- * Purpose: Main call-to-action button (Second-Level)
- * Usage: Forms, dialogs, main actions (Save, Submit, Upload)
+ * Elegant gradient border design - unique and modern.
+ * The border itself is a gradient, not the background.
  *
- * Visual: Blue gradient background with white text
- * Hierarchy: Second-Level (with background)
+ * Design philosophy:
+ * - Gradient border (blue to lighter blue)
+ * - Clean minimal background
+ * - Subtle glow
+ * - No transforms
+ * - Unique - no other button has gradient border
  *
- * DO NOT confuse with .btn-primary-first (transparent, no gradient)
+ * Use case: Primary actions everywhere (Save, Create, Confirm, Submit, etc.)
  */
 
 .btn-primary {
-  /* ========== VISUAL ========== */
-  box-shadow: var(--shadow-btn-primary);
+  /* Simple transition */
+  transition: all 0.2s ease;
 
-  /* No border - gradient is the visual boundary */
-  border: none;
+  /* No shadow on default */
+  box-shadow: none;
 
-  /* Padding - Standard size */
+  /* Transparent border for gradient trick */
+  border: 1px solid transparent;
+
+  /* GRADIENT BORDER - This is the signature */
+  /* Light mode: bright bg with blue gradient border */
+  background:
+    linear-gradient(rgb(255 255 255 / 95%), rgb(240 242 245)) padding-box,
+    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
+
+  /* Spacing - Standard */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* Text - theme-aware */
+  color: var(--text-primary);
 }
 
-/* Focus state - Accessibility */
+/* Dark mode: dark bg with same gradient border */
+html.dark .btn-primary {
+  background:
+    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
+    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
+  color: var(--color-white);
+}
+
+/* Hover State - Intensify Gradient */
+.btn-primary:hover {
+  background:
+    linear-gradient(rgb(240 242 248), rgb(230 235 242)) padding-box,
+    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+}
+
+html.dark .btn-primary:hover {
+  background:
+    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
+    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+}
+
+/* Active State - Pressed Effect */
+.btn-primary:active {
+  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+  background:
+    linear-gradient(rgb(232 236 245), rgb(220 225 235)) padding-box,
+    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+}
+
+html.dark .btn-primary:active {
+  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+  background:
+    linear-gradient(rgb(5 5 5 / 98%), rgb(25 25 25)) padding-box,
+    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+}
+
+/* Focus State - Accessibility */
 .btn-primary:focus-visible {
-  box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
+  /* Outline for accessibility */
+  outline: 2px solid rgb(33 150 243 / 50%);
+  outline-offset: 2px;
 }
 
-/**
- * WHY THIS DESIGN?
- *
- * - Gradient: Premium, modern look (like iOS)
- * - Shadow: Creates depth in dark UI
- * - White text: Maximum contrast for accessibility
- * - Hover lift: Clear interactive feedback
- *
- * WHEN TO USE:
- * ✅ Primary form submit (Save, Create, Send)
- * ✅ Main dialog action (Confirm, Submit)
- * ✅ Feature CTAs in content areas
- *
- * WHEN NOT TO USE:
- * ❌ Hero/Landing page CTAs (use .btn-primary-first)
- * ❌ Destructive actions (use .btn-danger)
- * ❌ Cancel/back actions (use .btn-cancel)
- */
+/* Disabled State */
+.btn-primary:disabled {
+  /* No shadow */
+  box-shadow: none;
+
+  /* Muted border */
+  border-color: var(--color-glass-border-hover);
+
+  /* Reduced opacity */
+  color: var(--color-text-muted);
+}
+
+/* Loading State */
+.btn-primary.is-loading {
+  /* Reduce opacity */
+  opacity: 70%;
+
+  /* Disable pointer events */
+  pointer-events: none;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary {
+    transition: opacity 0.15s ease;
+  }
+}

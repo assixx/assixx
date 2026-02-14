@@ -142,7 +142,7 @@
         >
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={downloadFile}
           ><i class="fas fa-download mr-2"></i>Herunterladen</button
         >

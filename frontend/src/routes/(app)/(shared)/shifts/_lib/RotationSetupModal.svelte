@@ -678,7 +678,7 @@
       >
       <button
         type="button"
-        class="btn btn-modal"
+        class="btn btn-primary"
         onclick={() => void handleSave()}
         disabled={saving}
       >

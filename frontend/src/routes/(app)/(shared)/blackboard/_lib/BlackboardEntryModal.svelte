@@ -534,7 +534,7 @@
       >
       <button
         type="submit"
-        class="btn btn-modal">Speichern</button
+        class="btn btn-primary">Speichern</button
       >
     </div>
   </form>

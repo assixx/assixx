@@ -623,7 +623,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={isSavingEntitlement}
         >
           <i class="fas fa-save mr-1"></i>

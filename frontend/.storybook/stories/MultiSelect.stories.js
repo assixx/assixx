@@ -310,7 +310,7 @@ export const InModalContext = {
           </div>
           <div class="ds-modal__footer">
             <button class="btn btn-cancel">Abbrechen</button>
-            <button class="btn btn-modal">
+            <button class="btn btn-primary">
               <i class="fas fa-save"></i>
               Speichern
             </button>

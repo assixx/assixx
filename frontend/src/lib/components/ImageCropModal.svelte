@@ -245,7 +245,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={handleSave}
           disabled={saving || croppedAreaPixels === null}
         >

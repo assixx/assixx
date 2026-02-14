@@ -202,7 +202,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={onconfirm}
           disabled={kvpDetailState.isSharing}
         >

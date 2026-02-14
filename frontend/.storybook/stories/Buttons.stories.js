@@ -688,7 +688,7 @@ export const ModalContext = {
           </div>
           <div class="ds-modal__body">
             <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-4);">
-              This demonstrates the <strong>btn-modal</strong> button in its natural habitat - the modal footer.
+              This demonstrates the <strong>btn-primary</strong> button in its natural habitat - the modal footer.
             </p>
             <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-6);">
               Notice the elegant simplicity:
@@ -704,7 +704,7 @@ export const ModalContext = {
             <button class="btn btn-cancel">
               Cancel
             </button>
-            <button class="btn btn-modal">
+            <button class="btn btn-primary">
               Save Changes
             </button>
           </div>
@@ -756,7 +756,7 @@ export const ModalButtonStates = {
       card.appendChild(title);
 
       const button = document.createElement('button');
-      button.className = `btn btn-modal ${props.class || ''}`;
+      button.className = `btn btn-primary ${props.class || ''}`;
       button.disabled = props.disabled || false;
       button.textContent = text;
 

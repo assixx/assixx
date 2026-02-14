@@ -203,31 +203,42 @@
    ======================================== */
 
 .settings-display {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  column-gap: var(--spacing-2);
 }
 
 .settings-display__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: contents;
+}
+
+/* Border between rows via the label cell (first column spans visual row) */
+.settings-display__label {
   padding: var(--spacing-2) 0;
   border-bottom: 1px solid var(--color-glass-border);
-}
-
-.settings-display__row:last-child {
-  border-bottom: none;
-}
-
-.settings-display__label {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-muted);
 }
 
+.settings-display__row > .tooltip {
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--color-glass-border);
+}
+
 .settings-display__value {
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--color-glass-border);
   font-size: 0.938rem;
   font-weight: 600;
   color: var(--text-primary);
+  text-align: right;
+}
+
+/* Remove bottom border on last row */
+.settings-display__row:last-child > .settings-display__label,
+.settings-display__row:last-child > .tooltip,
+.settings-display__row:last-child > .settings-display__value {
+  border-bottom: none;
 }

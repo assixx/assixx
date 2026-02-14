@@ -131,7 +131,6 @@
       {#each LEGEND_STATUSES as status (status)}
         <div class="machine-avail-legend-item">
           <div class="machine-avail-legend-swatch legend-{status}"></div>
-          <i class="fas {MACHINE_AVAILABILITY_ICONS[status]}"></i>
           <span class="machine-avail-legend-label"
             >{MACHINE_AVAILABILITY_LABELS[status]}</span
           >

@@ -106,7 +106,7 @@
         >
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={onconfirm}
         >
           <i class="far fa-clock"></i>

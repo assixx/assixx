@@ -841,7 +841,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={!createFormRef}
         >
           <i class="fas fa-paper-plane mr-1"></i>
@@ -1074,7 +1074,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={!editFormRef}
         >
           <i class="fas fa-save mr-1"></i>
@@ -1192,7 +1192,7 @@
         </button>
         <button
           type="submit"
-          class={respondAction === 'approve' ? 'btn btn-modal' : (
+          class={respondAction === 'approve' ? 'btn btn-primary' : (
             'btn btn-danger'
           )}
         >

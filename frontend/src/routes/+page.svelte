@@ -294,7 +294,7 @@
         <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
           href={`${resolve('/signup', {})}?plan=enterprise`}
-          class="btn btn-primary enterprise-box__button"
+          class="btn btn-index enterprise-box__button"
           >Enterprise-Beratung anfragen</a
         >
         <!-- eslint-enable svelte/no-navigation-without-resolve -->
@@ -374,7 +374,7 @@
           <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
           <a
             href={`${resolve('/signup', {})}?plan=professional`}
-            class="btn btn-primary pricing-card__button pricing-card__button--transparent"
+            class="btn btn-index pricing-card__button pricing-card__button--transparent"
           >
             Kostenlos testen
           </a>
@@ -603,7 +603,7 @@
       </p>
       <a
         href={resolve('/signup', {})}
-        class="btn btn-primary u-w-full">Zur Registrierung</a
+        class="btn btn-index u-w-full">Zur Registrierung</a
       >
       <button
         type="button"

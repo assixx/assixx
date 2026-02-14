@@ -540,7 +540,7 @@
       >
       <button
         type="submit"
-        class="btn btn-modal"
+        class="btn btn-primary"
         disabled={kvpState.isSubmitting}
       >
         {#if kvpState.isSubmitting}

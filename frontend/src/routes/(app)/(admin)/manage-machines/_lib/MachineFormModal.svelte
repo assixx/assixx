@@ -445,7 +445,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={machineState.submitting}
         >
           {#if machineState.submitting}<span

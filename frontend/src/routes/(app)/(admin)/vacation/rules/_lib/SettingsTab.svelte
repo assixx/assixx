@@ -14,6 +14,7 @@
     MONTH_LABELS,
     MONTH_DROPDOWN_OPTIONS,
     SETTINGS_LABELS,
+    SETTINGS_TOOLTIPS,
   } from './constants';
   import { rulesState } from './state.svelte';
 
@@ -79,6 +80,14 @@
       });
   }
 
+  /** Keys to skip in the read-only display (shown combined with another field) */
+  const HIDDEN_DISPLAY_KEYS = new Set(['carryOverDeadlineDay']);
+
+  /** Type-safe tooltip lookup */
+  function getTooltip(key: string): string | undefined {
+    return SETTINGS_TOOLTIPS[key];
+  }
+
   /** Format a settings value for display */
   function formatSettingsValue(
     key: string,
@@ -87,7 +96,8 @@
     const value = settings[key as keyof VacationSettings];
 
     if (key === 'carryOverDeadlineMonth') {
-      return MONTH_LABELS[value as number] ?? String(value);
+      const monthName = MONTH_LABELS[value as number] ?? String(value);
+      return `${String(settings.carryOverDeadlineDay)}. ${monthName}`;
     }
     if (key === 'maxConsecutiveDays' && value === null) {
       return 'Unbegrenzt';
@@ -117,7 +127,7 @@
       {#if !rulesState.isEditingSettings}
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-edit"
           onclick={() => {
             rulesState.startEditSettings();
           }}
@@ -145,12 +155,24 @@
     {:else if !rulesState.isEditingSettings}
       <div class="settings-display">
         {#each Object.entries(SETTINGS_LABELS) as [key, label] (key)}
-          <div class="settings-display__row">
-            <span class="settings-display__label">{label}</span>
-            <span class="settings-display__value">
-              {formatSettingsValue(key, rulesState.settings)}
-            </span>
-          </div>
+          {#if !HIDDEN_DISPLAY_KEYS.has(key)}
+            {@const tip = getTooltip(key)}
+            <div class="settings-display__row">
+              <span class="settings-display__label">{label}</span>
+              {#if tip !== undefined}
+                <span class="tooltip">
+                  <i class="fas fa-info-circle"></i>
+                  <span
+                    class="tooltip__content tooltip__content--info tooltip__content--top"
+                    role="tooltip">{tip}</span
+                  >
+                </span>
+              {/if}
+              <span class="settings-display__value">
+                {formatSettingsValue(key, rulesState.settings)}
+              </span>
+            </div>
+          {/if}
         {/each}
       </div>
 
@@ -169,6 +191,13 @@
             for="set-annual-days"
           >
             {SETTINGS_LABELS.defaultAnnualDays}
+            <span class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--top"
+                role="tooltip">{SETTINGS_TOOLTIPS.defaultAnnualDays}</span
+              >
+            </span>
           </label>
           <input
             id="set-annual-days"
@@ -186,6 +215,13 @@
             for="set-carry-over"
           >
             {SETTINGS_LABELS.maxCarryOverDays}
+            <span class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--top"
+                role="tooltip">{SETTINGS_TOOLTIPS.maxCarryOverDays}</span
+              >
+            </span>
           </label>
           <input
             id="set-carry-over"
@@ -199,6 +235,13 @@
         <div class="form-field">
           <span class="form-field__label">
             {SETTINGS_LABELS.carryOverDeadlineMonth}
+            <span class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--top"
+                role="tooltip">{SETTINGS_TOOLTIPS.carryOverDeadlineMonth}</span
+              >
+            </span>
           </span>
           <div
             class="dropdown"
@@ -240,6 +283,13 @@
             for="set-deadline-day"
           >
             {SETTINGS_LABELS.carryOverDeadlineDay}
+            <span class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--top"
+                role="tooltip">{SETTINGS_TOOLTIPS.carryOverDeadlineDay}</span
+              >
+            </span>
           </label>
           <input
             id="set-deadline-day"
@@ -257,6 +307,13 @@
             for="set-advance-days"
           >
             {SETTINGS_LABELS.advanceNoticeDays}
+            <span class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--top"
+                role="tooltip">{SETTINGS_TOOLTIPS.advanceNoticeDays}</span
+              >
+            </span>
           </label>
           <input
             id="set-advance-days"
@@ -273,6 +330,13 @@
             for="set-max-consecutive"
           >
             {SETTINGS_LABELS.maxConsecutiveDays}
+            <span class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--top"
+                role="tooltip">{SETTINGS_TOOLTIPS.maxConsecutiveDays}</span
+              >
+            </span>
           </label>
           <input
             id="set-max-consecutive"

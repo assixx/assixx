@@ -118,7 +118,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={handleDownload}
         >
           <i class="fas fa-download mr-2"></i>

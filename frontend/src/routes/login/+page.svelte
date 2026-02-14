@@ -426,7 +426,7 @@
       <div class="mt-6 flex justify-end">
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-index"
           disabled={loading || !isFormValid}
         >
           {#if loading}

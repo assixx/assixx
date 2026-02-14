@@ -616,7 +616,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={!canSubmit || isSaving}
         >
           <i class="fas fa-save mr-1"></i>
