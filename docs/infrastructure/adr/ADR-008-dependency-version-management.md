@@ -45,7 +45,7 @@ During the development of Assixx, the question arose of how dependency versions 
 
 ```dockerfile
 # Dockerfile.frontend / Dockerfile.dev
-ARG NODE_VERSION=24.13.0-alpine3.22
+ARG NODE_VERSION=24.13.1-alpine3.22
 FROM node:${NODE_VERSION}
 ```
 
@@ -210,8 +210,8 @@ Branch: main (stable)          Branch: testing/svelte-upgrade
 
 ```bash
 # docker/.env
-NODE_VERSION_PROD=24.13.0-alpine3.22  # Production: LTS
-NODE_VERSION_DEV=24.13.0-alpine3.22   # Development: can be set to a newer version
+NODE_VERSION_PROD=24.13.1-alpine3.22  # Production: LTS
+NODE_VERSION_DEV=24.13.1-alpine3.22   # Development: can be set to a newer version
 PNPM_VERSION=10.28.0                   # Both environments
 ```
 
@@ -223,11 +223,11 @@ PNPM_VERSION=10.28.0                   # Both environments
 # docker/.env
 
 # BEFORE (both the same):
-NODE_VERSION_PROD=24.13.0-alpine3.22
-NODE_VERSION_DEV=24.13.0-alpine3.22
+NODE_VERSION_PROD=24.13.1-alpine3.22
+NODE_VERSION_DEV=24.13.1-alpine3.22
 
 # AFTER (only DEV changed):
-NODE_VERSION_PROD=24.13.0-alpine3.22      # \u2190 stays
+NODE_VERSION_PROD=24.13.1-alpine3.22      # \u2190 stays
 NODE_VERSION_DEV=26.0.0-alpine3.22        # \u2190 NEW
 ```
 
@@ -243,7 +243,7 @@ docker-compose build backend
 ```
 \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
 \u2502                                                                 \u2502
-\u2502  Production (Frontend + Nginx):  Node 24.13.0 LTS  \u2190 unchanged  \u2502
+\u2502  Production (Frontend + Nginx):  Node 24.13.1 LTS  \u2190 unchanged  \u2502
 \u2502  Development (Backend):          Node 26.0.0 LTS   \u2190 NEW       \u2502
 \u2502                                                                 \u2502
 \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518

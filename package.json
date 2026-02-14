@@ -4,7 +4,7 @@
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
-    "node": ">=24.13.0",
+    "node": ">=24.13.1",
     "pnpm": ">=10.0.0",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
