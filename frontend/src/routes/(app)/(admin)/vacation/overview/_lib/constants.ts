@@ -44,13 +44,13 @@ export const TYPE_LABELS: Record<string, string> = {
 };
 
 export const TYPE_COLORS: Record<string, string> = {
-  regular: 'var(--color-primary-500)',
-  special_doctor: 'var(--color-info-500)',
-  special_bereavement: 'var(--color-neutral-500)',
-  special_birth: 'var(--color-success-500)',
-  special_wedding: 'var(--color-warning-500)',
-  special_move: 'var(--color-accent, var(--color-info-400))',
-  unpaid: 'var(--color-danger-500)',
+  regular: 'var(--color-primary)',
+  special_doctor: '#00acc1',
+  special_bereavement: 'var(--color-gray-500)',
+  special_birth: 'var(--color-success)',
+  special_wedding: 'var(--color-warning)',
+  special_move: '#8e24aa',
+  unpaid: 'var(--color-danger)',
 };
 
 // ─── Half-day labels ─────────────────────────────────────────────

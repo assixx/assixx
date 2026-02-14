@@ -89,6 +89,21 @@
         {request.requestNote}
       </div>
     {/if}
+
+    {#if isPending}
+      <div class="alert alert--warning">
+        <div class="alert__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="alert__content">
+          <div class="alert__title">Schichtplan-Hinweis</div>
+          <div class="alert__message">
+            Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan eingeplant
+            sein. Bitte Schichtplan manuell überprüfen!
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 
   <div class="incoming-card__actions">

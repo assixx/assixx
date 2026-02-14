@@ -918,10 +918,10 @@ User: requester_id
 
 ### Phase 6 Definition of Done
 
-- [ ] Approved vacations visible in calendar
-- [ ] Schichtplan-Warnung in IncomingRequestCard + Details-Modal (Frontend UI-Box)
-- [ ] 🔴 `user_availability` automatisch setzen bei Genehmigung + entfernen bei Storno/Widerruf (Backend)
-- [ ] Schichtplan erkennt genehmigte Urlaube automatisch via Availability-Badge
+- [x] Approved vacations visible in calendar (vacation-indicators.svelte.ts)
+- [x] Schichtplan-Warnung in IncomingRequestCard + Details-Modal (Frontend UI-Box)
+- [x] 🔴 `user_availability` automatisch setzen bei Genehmigung + entfernen bei Storno/Widerruf (Backend)
+- [x] Schichtplan erkennt genehmigte Urlaube automatisch via Availability-Badge
 - ~~[ ] German holidays seeded for demo~~ — GESTRICHEN (Test via UI)
 - [x] ADR-023 written (Session 20)
 - ~~[ ] context.md updated~~ — GESTRICHEN

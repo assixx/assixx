@@ -27,7 +27,6 @@
     TYPE_LABELS,
     VIEW_TABS,
   } from './_lib/constants';
-  import EntitlementBadge from './_lib/EntitlementBadge.svelte';
   import IncomingRequestCard from './_lib/IncomingRequestCard.svelte';
   import RequestCard from './_lib/RequestCard.svelte';
   import RequestForm from './_lib/RequestForm.svelte';
@@ -56,6 +55,25 @@
   const balance = $derived(data.balance);
   const canApprove = $derived(data.canApprove);
   const unreadRequestIds = $derived(new Set(data.unreadRequestIds));
+
+  // ==========================================================================
+  // BALANCE HELPERS
+  // ==========================================================================
+
+  const balancePercent = $derived(
+    balance !== null && balance.availableDays > 0 ?
+      Math.max(
+        0,
+        Math.min(100, (balance.remainingDays / balance.availableDays) * 100),
+      )
+    : 0,
+  );
+
+  const balanceColor = $derived(
+    balancePercent > 50 ? 'var(--color-success)'
+    : balancePercent > 20 ? 'var(--color-warning)'
+    : 'var(--color-danger)',
+  );
 
   // ==========================================================================
   // LOCAL UI STATE
@@ -492,9 +510,73 @@
   </div>
 
   <!-- Balance -->
-  <div class="mb-6">
-    <EntitlementBadge {balance} />
-  </div>
+  {#if balance !== null}
+    <div class="card mb-6">
+      <div class="card__header">
+        <h3 class="card__title">
+          <i class="fas fa-chart-pie mr-2"></i>
+          Mein Urlaubskonto ({balance.year})
+        </h3>
+      </div>
+      <div class="card__body">
+        <div class="balance-summary">
+          <div class="balance-summary__bar">
+            <div class="mb-2 flex items-center justify-between">
+              <span
+                class="text-muted"
+                style="font-size: 0.875rem;"
+              >
+                {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
+              </span>
+              <span
+                style="font-size: 0.875rem; font-weight: 600; color: {balanceColor};"
+              >
+                {balancePercent.toFixed(0)}%
+              </span>
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-bar__fill"
+                style="width: {balancePercent}%; background: {balanceColor};"
+              ></div>
+            </div>
+          </div>
+          <div class="balance-summary__stats">
+            <div class="balance-stat">
+              <span class="balance-stat__label">Verfügbar</span>
+              <span class="balance-stat__value">{balance.availableDays}</span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat__label">Genommen</span>
+              <span class="balance-stat__value">{balance.usedDays}</span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat__label">Beantragt</span>
+              <span class="balance-stat__value text-warning">
+                {balance.pendingDays}
+              </span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat__label">Verbleibend</span>
+              <span
+                class="balance-stat__value"
+                class:text-success={balance.remainingDays > 0}
+                class:text-danger={balance.remainingDays <= 0}
+              >
+                {balance.remainingDays}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {:else}
+    <div class="card mb-6">
+      <div class="card__body">
+        <span class="text-muted">Kein Urlaubskonto vorhanden</span>
+      </div>
+    </div>
+  {/if}
 
   <!-- Filter Card (same pattern as KVP) -->
   <div class="card mb-6">
@@ -905,6 +987,21 @@
             <span>{formatDate(req.createdAt)}</span>
           </div>
         </div>
+
+        {#if req.status === 'pending' && canApprove}
+          <div class="alert alert--warning mb-4">
+            <div class="alert__icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert__content">
+              <div class="alert__title">Schichtplan-Hinweis</div>
+              <div class="alert__message">
+                Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan
+                eingeplant sein. Bitte Schichtplan manuell überprüfen!
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
 
       <div class="ds-modal__footer">

@@ -3,7 +3,7 @@
    * Vacation Overview — Admin Page
    * Team calendar showing approved vacations per team member per day.
    * SSR: Teams list loaded in +page.server.ts.
-   * Client-side: Calendar + balance fetched on team/month selection.
+   * Client-side: Calendar fetched on team/month selection.
    */
   import { onDestroy } from 'svelte';
 
@@ -71,19 +71,6 @@
     }
   }
 
-  async function loadBalance(): Promise<void> {
-    overviewState.setLoadingBalance(true);
-    try {
-      const bal = await api.getOverviewBalance(overviewState.selectedYear);
-      overviewState.setBalance(bal);
-    } catch (err) {
-      log.error({ err }, 'Balance load failed');
-      overviewState.setBalance(null);
-    } finally {
-      overviewState.setLoadingBalance(false);
-    }
-  }
-
   // ==========================================================================
   // TEAM SELECT
   // ==========================================================================
@@ -143,7 +130,6 @@
   function handleYearSelect(year: number): void {
     yearDropdownOpen = false;
     overviewState.setYear(year);
-    void loadBalance();
     if (overviewState.selectedTeamId !== null) {
       void loadCalendar();
     }
@@ -196,31 +182,6 @@
     }
     return typeLabel;
   }
-
-  // ==========================================================================
-  // BALANCE HELPERS
-  // ==========================================================================
-
-  function balancePercent(): number {
-    const bal = overviewState.balance;
-    if (bal === null || bal.availableDays === 0) return 0;
-    return Math.max(
-      0,
-      Math.min(100, (bal.remainingDays / bal.availableDays) * 100),
-    );
-  }
-
-  function balanceColor(): string {
-    const pct = balancePercent();
-    if (pct > 50) return 'var(--color-success-500)';
-    if (pct > 20) return 'var(--color-warning-500)';
-    return 'var(--color-danger-500)';
-  }
-
-  // Load own balance on mount
-  $effect(() => {
-    void loadBalance();
-  });
 </script>
 
 <svelte:head>
@@ -373,72 +334,6 @@
   </div>
 
   <!-- ================================================================
-       OWN BALANCE CARD
-       ================================================================ -->
-  {#if overviewState.balance !== null}
-    {@const bal = overviewState.balance}
-    <div class="card mb-6">
-      <div class="card__header">
-        <h3 class="card__title">
-          <i class="fas fa-chart-pie mr-2"></i>
-          Mein Urlaubskonto ({overviewState.selectedYear})
-        </h3>
-      </div>
-      <div class="card__body">
-        <div class="balance-summary">
-          <div class="balance-summary__bar">
-            <div class="mb-2 flex items-center justify-between">
-              <span
-                class="text-muted"
-                style="font-size: 0.875rem;"
-              >
-                {bal.remainingDays} von {bal.availableDays} Tagen verbleibend
-              </span>
-              <span
-                style="font-size: 0.875rem; font-weight: 600; color: {balanceColor()};"
-              >
-                {balancePercent().toFixed(0)}%
-              </span>
-            </div>
-            <div class="progress-bar">
-              <div
-                class="progress-bar__fill"
-                style="width: {balancePercent()}%; background: {balanceColor()};"
-              ></div>
-            </div>
-          </div>
-          <div class="balance-summary__stats">
-            <div class="balance-stat">
-              <span class="balance-stat__label">Verfügbar</span>
-              <span class="balance-stat__value">{bal.availableDays}</span>
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat__label">Genommen</span>
-              <span class="balance-stat__value">{bal.usedDays}</span>
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat__label">Beantragt</span>
-              <span class="balance-stat__value text-warning"
-                >{bal.pendingDays}</span
-              >
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat__label">Verbleibend</span>
-              <span
-                class="balance-stat__value"
-                class:text-success={bal.remainingDays > 0}
-                class:text-danger={bal.remainingDays <= 0}
-              >
-                {bal.remainingDays}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- ================================================================
        TEAM CALENDAR
        ================================================================ -->
   <div class="card">
@@ -556,52 +451,6 @@
 </div>
 
 <style>
-  /* ─── Balance Summary ──────────────────────────────────────────── */
-
-  .balance-summary {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-4);
-  }
-
-  .progress-bar {
-    height: 8px;
-    background: var(--glass-bg);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .progress-bar__fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s ease;
-  }
-
-  .balance-summary__stats {
-    display: flex;
-    gap: var(--spacing-6);
-    flex-wrap: wrap;
-  }
-
-  .balance-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .balance-stat__label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .balance-stat__value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
   /* ─── Calendar Grid ────────────────────────────────────────────── */
 
   .calendar-scroll {
@@ -621,7 +470,7 @@
     position: sticky;
     left: 0;
     z-index: 2;
-    background: var(--glass-bg-solid, var(--color-neutral-50));
+    background: var(--color-surface);
     text-align: left;
     padding: var(--spacing-2) var(--spacing-3);
     font-weight: 600;
@@ -639,7 +488,7 @@
   }
 
   .calendar-grid__day-header.weekend {
-    background: var(--color-neutral-100, rgb(0 0 0 / 5%));
+    background: var(--glass-bg-active);
     color: var(--text-muted);
   }
 
@@ -660,7 +509,7 @@
     position: sticky;
     left: 0;
     z-index: 1;
-    background: var(--glass-bg-solid, var(--color-neutral-50));
+    background: var(--color-surface);
     padding: var(--spacing-2) var(--spacing-3);
     font-weight: 500;
     white-space: nowrap;
@@ -676,7 +525,7 @@
   }
 
   .calendar-grid__cell.weekend {
-    background: var(--color-neutral-100, rgb(0 0 0 / 3%));
+    background: var(--glass-bg);
   }
 
   /* ─── Calendar Cell (vacation indicator) ───────────────────────── */
@@ -764,17 +613,5 @@
   :global(.btn-icon) {
     padding: var(--spacing-1) var(--spacing-2) !important;
     min-width: auto;
-  }
-
-  /* ─── Responsive ───────────────────────────────────────────────── */
-
-  @media (width <= 768px) {
-    .balance-summary__stats {
-      gap: var(--spacing-4);
-    }
-
-    .balance-stat__value {
-      font-size: 1rem;
-    }
   }
 </style>
