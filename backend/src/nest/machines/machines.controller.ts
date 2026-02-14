@@ -11,6 +11,7 @@
  * - GET    /machines/uuid/:uuid/availability/history - Get availability history
  * - PUT    /machines/availability/:id               - Update availability entry (admin)
  * - DELETE /machines/availability/:id               - Delete availability entry (admin)
+ * - GET    /machines/:id/availability               - Get availability entries for date range
  * - GET    /machines/uuid/:uuid                     - Get machine by UUID
  * - GET    /machines/:id                            - Get machine by ID
  * - GET    /machines/:id/maintenance                - Get maintenance history
@@ -45,13 +46,17 @@ import {
   CreateMachineDto,
   ListMachinesQueryDto,
   MachineAvailabilityHistoryQueryDto,
+  MachineAvailabilityRangeQueryDto,
   SetMachineTeamsDto,
   UpcomingMaintenanceQueryDto,
   UpdateMachineAvailabilityDto,
   UpdateMachineAvailabilityEntryDto,
   UpdateMachineDto,
 } from './dto/index.js';
-import type { MachineAvailabilityHistoryResponse } from './dto/machine-availability-history-query.dto.js';
+import type {
+  MachineAvailabilityHistoryEntry,
+  MachineAvailabilityHistoryResponse,
+} from './dto/machine-availability-history-query.dto.js';
 import { MachineAvailabilityService } from './machine-availability.service.js';
 import { MachinesService } from './machines.service.js';
 import type {
@@ -93,8 +98,7 @@ export class MachinesController {
     @Query() query: ListMachinesQueryDto,
     @TenantId() tenantId: number,
   ): Promise<MachineResponse[]> {
-    // Note: pagination (page, limit, sortBy, sortOrder) not supported by legacy service
-    return await this.machinesService.listMachines(tenantId, {
+    const machines = await this.machinesService.listMachines(tenantId, {
       ...(query.search !== undefined && { search: query.search }),
       ...(query.status !== undefined && { status: query.status }),
       ...(query.machineType !== undefined && {
@@ -107,6 +111,23 @@ export class MachinesController {
         needs_maintenance: query.needsMaintenance,
       }),
     });
+
+    // Enrich with availability data (batch query for efficiency)
+    const machineIds = machines.map((m: MachineResponse) => m.id);
+    const availabilityMap =
+      await this.machineAvailabilityService.getMachineAvailabilityBatch(
+        machineIds,
+        tenantId,
+      );
+
+    for (const machine of machines) {
+      this.machineAvailabilityService.addAvailabilityInfo(
+        machine,
+        availabilityMap.get(machine.id),
+      );
+    }
+
+    return machines;
   }
 
   @Get('statistics')
@@ -220,7 +241,7 @@ export class MachinesController {
 
   /**
    * PUT /machines/availability/:id
-   * Update an existing availability entry (only if endDate >= today)
+   * Update an existing availability entry (only if endDate \>= today)
    */
   @Put('availability/:id')
   @Roles('admin', 'root')
@@ -253,6 +274,25 @@ export class MachinesController {
       id,
       tenantId,
       user.id,
+    );
+  }
+
+  /**
+   * GET /machines/:id/availability
+   * Get all availability entries overlapping with a date range.
+   * Used by shift planning to visually mark cells where a machine is unavailable.
+   */
+  @Get(':id/availability')
+  async getMachineAvailabilityRange(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: MachineAvailabilityRangeQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<MachineAvailabilityHistoryEntry[]> {
+    return await this.machineAvailabilityService.getMachineAvailabilityForDateRange(
+      id,
+      tenantId,
+      query.startDate,
+      query.endDate,
     );
   }
 

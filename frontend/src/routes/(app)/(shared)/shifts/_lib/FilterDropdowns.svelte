@@ -124,7 +124,7 @@
 
 <div
   id="admin-filter-controls"
-  class="shift-info-row mt-6"
+  class="card shift-info-row mt-6"
 >
   <!-- Area Dropdown -->
   <div class="info-item">
@@ -195,9 +195,6 @@
         }}
         role="button"
         tabindex={selectedContext.areaId === null ? -1 : 0}
-        style={selectedContext.areaId === null ?
-          'pointer-events: none; opacity: 0.5;'
-        : ''}
       >
         <span>{getSelectedDepartmentName()}</span>
         <i class="fas fa-chevron-down"></i>
@@ -251,9 +248,6 @@
         }}
         role="button"
         tabindex={selectedContext.departmentId === null ? -1 : 0}
-        style={selectedContext.departmentId === null ?
-          'pointer-events: none; opacity: 0.5;'
-        : ''}
       >
         <span>{getSelectedMachineName()}</span>
         <i class="fas fa-chevron-down"></i>
@@ -307,9 +301,6 @@
         }}
         role="button"
         tabindex={selectedContext.machineId === null ? -1 : 0}
-        style={selectedContext.machineId === null ?
-          'pointer-events: none; opacity: 0.5;'
-        : ''}
       >
         <span>{getSelectedTeamName()}</span>
         <i class="fas fa-chevron-down"></i>

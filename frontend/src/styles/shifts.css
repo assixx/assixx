@@ -9,36 +9,24 @@
 /* Custom styles for shift planning interface - Glassmorphismus Design */
 /* NOTE: .shift-planning-container removed - not used in SvelteKit (Design System card used instead) */
 
-/* Shift Info Row Styles */
+/* Shift Info Row Styles - visual styles provided by .card class */
 .shift-info-row {
   display: grid;
   position: relative;
-  grid-template-columns: 1fr 1fr;
-  justify-content: center;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--spacing-6);
   z-index: 1;
-  backdrop-filter: blur(10px);
-
-  margin-bottom: var(--spacing-6);
-  box-shadow:
-    0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 var(--color-glass-border);
-  border: var(--glass-border);
-  border-radius: var(--radius-xl);
-
-  background: var(--glass-bg-hover);
-  padding: var(--spacing-6);
 }
 
-@media (width >= 768px) and (width < 1024px) {
+@media (width < 1024px) {
   .shift-info-row {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (width >= 1024px) {
+@media (width < 768px) {
   .shift-info-row {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 1fr;
   }
 }
 
@@ -63,23 +51,12 @@
 
 /* Dropdown styles now provided by Design System (custom-dropdown.css) */
 
-/* Week Navigation */
+/* Week Navigation - visual styles provided by .card class */
 .week-navigation {
-  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
   gap: var(--spacing-6);
-  backdrop-filter: blur(10px);
-
-  margin-bottom: var(--spacing-8);
-  box-shadow:
-    0 4px 16px rgb(0 0 0 / 30%),
-    inset 0 1px 0 var(--color-glass-border);
-  border: var(--glass-border);
-  border-radius: var(--radius-xl);
-
-  background: var(--glass-bg);
-  padding: var(--spacing-6);
 }
 
 /* DEPRECATED: .week-nav-btn - Use Design System buttons instead:
@@ -263,6 +240,202 @@
 
 .shift-cell.locked .employee-card {
   pointer-events: none;
+}
+
+/* Machine Availability Status - Visual markers on shift cells */
+.shift-cell.machine-avail-maintenance {
+  border-top: 3px solid #ffc107;
+  background:
+    linear-gradient(180deg, rgb(255 193 7 / 12%) 0%, transparent 40%),
+    var(--glass-bg);
+}
+
+.shift-cell.machine-avail-repair {
+  border-top: 3px solid #dc3545;
+  background:
+    linear-gradient(180deg, rgb(220 53 69 / 12%) 0%, transparent 40%),
+    var(--glass-bg);
+}
+
+.shift-cell.machine-avail-standby {
+  border-top: 3px solid #3498db;
+  background:
+    linear-gradient(180deg, rgb(52 152 219 / 12%) 0%, transparent 40%),
+    var(--glass-bg);
+}
+
+.shift-cell.machine-avail-cleaning {
+  border-top: 3px solid #6c757d;
+  background:
+    linear-gradient(180deg, rgb(108 117 125 / 12%) 0%, transparent 40%),
+    var(--glass-bg);
+}
+
+.shift-cell.machine-avail-other {
+  border-top: 3px solid #95a5a6;
+  background:
+    linear-gradient(180deg, rgb(149 165 166 / 12%) 0%, transparent 40%),
+    var(--glass-bg);
+}
+
+/* Machine availability indicator icon in the cell corner */
+.machine-avail-indicator {
+  display: flex;
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  align-items: center;
+  gap: 2px;
+
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.machine-avail-indicator.avail-maintenance {
+  color: #ffc107;
+}
+
+.machine-avail-indicator.avail-repair {
+  color: #dc3545;
+}
+
+.machine-avail-indicator.avail-standby {
+  color: #3498db;
+}
+
+.machine-avail-indicator.avail-cleaning {
+  color: #6c757d;
+}
+
+.machine-avail-indicator.avail-other {
+  color: #95a5a6;
+}
+
+/* Light mode: darker indicator colors */
+html:not(.dark) .machine-avail-indicator.avail-maintenance {
+  color: #ab8000;
+}
+
+html:not(.dark) .machine-avail-indicator.avail-repair {
+  color: #c62828;
+}
+
+html:not(.dark) .machine-avail-indicator.avail-standby {
+  color: #1565c0;
+}
+
+html:not(.dark) .machine-avail-indicator.avail-cleaning {
+  color: #546e7a;
+}
+
+html:not(.dark) .machine-avail-indicator.avail-other {
+  color: #37474f;
+}
+
+/* Machine Availability Legend */
+.machine-avail-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  backdrop-filter: blur(10px);
+
+  margin-bottom: var(--spacing-4);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+
+  background: var(--glass-bg);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.machine-avail-legend-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.machine-avail-legend-title i {
+  color: var(--text-tertiary);
+  font-size: 16px;
+}
+
+.machine-avail-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.machine-avail-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 14px;
+}
+
+.machine-avail-legend-swatch {
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+
+  box-shadow: 0 0 4px rgb(0 0 0 / 20%);
+}
+
+.machine-avail-legend-swatch.legend-maintenance {
+  background: #ffc107;
+}
+
+.machine-avail-legend-swatch.legend-repair {
+  background: #dc3545;
+}
+
+.machine-avail-legend-swatch.legend-standby {
+  background: #3498db;
+}
+
+.machine-avail-legend-swatch.legend-cleaning {
+  background: #6c757d;
+}
+
+.machine-avail-legend-swatch.legend-other {
+  background: #95a5a6;
+}
+
+.machine-avail-legend-item i {
+  font-size: 14px;
+}
+
+.machine-avail-legend-item i.fa-wrench {
+  color: #ffc107;
+}
+
+.machine-avail-legend-item i.fa-tools {
+  color: #dc3545;
+}
+
+.machine-avail-legend-item i.fa-pause-circle {
+  color: #3498db;
+}
+
+.machine-avail-legend-item i.fa-broom {
+  color: #6c757d;
+}
+
+.machine-avail-legend-item i.fa-clock {
+  color: #95a5a6;
+}
+
+.machine-avail-legend-label {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* Week 2 cells for Kontischicht mode (NO inline styles - all styling via CSS) */

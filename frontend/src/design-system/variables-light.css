@@ -98,7 +98,7 @@
   --color-accent-bg: #a9d9ff;
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
-  --glass-bg: rgb(0 0 0 / 5%);
+  --glass-bg: rgb(0 0 0 / 2%);
   --glass-bg-hover: rgb(0 0 0 / 3%);
   --glass-bg-active: rgb(0 0 0 / 5%);
   --glass-border: 1px solid rgb(0 0 0 / 8%);

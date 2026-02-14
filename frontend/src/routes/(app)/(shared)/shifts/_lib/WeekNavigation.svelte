@@ -12,7 +12,7 @@
   const { weekRangeText, onnavigateWeek }: Props = $props();
 </script>
 
-<div class="week-navigation">
+<div class="card week-navigation">
   <button
     type="button"
     class="btn btn-secondary"

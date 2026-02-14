@@ -192,6 +192,11 @@ export interface MachineResponse {
   isActive: boolean;
   // Teams assigned to this machine (for list display)
   teams?: MachineTeamInfo[];
+  // Availability info (next relevant entry from machine_availability table)
+  availabilityStatus: string | null;
+  availabilityStart: string | null;
+  availabilityEnd: string | null;
+  availabilityNotes: string | null;
 }
 
 /** Maintenance history response */

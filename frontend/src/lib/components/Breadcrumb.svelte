@@ -21,6 +21,9 @@
   }
   const { userRole = 'employee' }: Props = $props();
 
+  // Frequently used icon constants
+  const ICON_CALENDAR = 'fa-calendar-alt';
+
   // =============================================================================
   // FULLSCREEN PAGES (no breadcrumb)
   // Pages that use fullscreen layout and don't need breadcrumb navigation
@@ -66,7 +69,7 @@
         label: 'Schwarzes Brett Details',
         icon: 'fa-info-circle',
       },
-      '/calendar': { label: 'Kalender', icon: 'fa-calendar-alt' },
+      '/calendar': { label: 'Kalender', icon: ICON_CALENDAR },
       '/chat': { label: 'Chat', icon: 'fa-comments' },
       '/documents': { label: 'Dokumente', icon: 'fa-file-alt' },
       '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
@@ -96,7 +99,7 @@
       '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
       '/vacation/overview': {
         label: 'Urlaubsübersicht',
-        icon: 'fa-calendar-alt',
+        icon: ICON_CALENDAR,
       },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/tenant-deletion-status': {
@@ -119,22 +122,22 @@
     {
       pattern: /^\/manage-employees\/availability\/[^/]+$/,
       label: 'Employee Name Placeholder',
-      icon: 'fa-calendar-alt',
+      icon: ICON_CALENDAR,
     },
     {
       pattern: /^\/manage-admins\/availability\/[^/]+$/,
       label: 'Admin Name Placeholder',
-      icon: 'fa-calendar-alt',
+      icon: ICON_CALENDAR,
     },
     {
       pattern: /^\/manage-root\/availability\/[^/]+$/,
       label: 'Root Name Placeholder',
-      icon: 'fa-calendar-alt',
+      icon: ICON_CALENDAR,
     },
     {
       pattern: /^\/manage-machines\/availability\/[^/]+$/,
       label: 'Machine Name Placeholder',
-      icon: 'fa-calendar-alt',
+      icon: ICON_CALENDAR,
     },
     {
       pattern: /^\/manage-employees\/permission\/[^/]+$/,
@@ -299,14 +302,14 @@
     const isPermissionRoute = currentPath.includes('/permission/');
 
     if (isMachineAvailabilityRoute) {
-      items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
+      items.push({ label: 'Verfügbarkeit', icon: ICON_CALENDAR });
       items.push({
         label: getMachineNameFromPageData(),
         icon: 'fa-cog',
         current: true,
       });
     } else if (isAvailabilityRoute) {
-      items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
+      items.push({ label: 'Verfügbarkeit', icon: ICON_CALENDAR });
       items.push({
         label: getEmployeeNameFromPageData(),
         icon: 'fa-user',

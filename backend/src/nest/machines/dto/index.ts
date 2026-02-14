@@ -4,6 +4,7 @@
 export * from './create-machine.dto.js';
 export * from './list-machines-query.dto.js';
 export * from './machine-availability-history-query.dto.js';
+export * from './machine-availability-range-query.dto.js';
 export * from './machine-availability-shared.js';
 export * from './machine-id-param.dto.js';
 export * from './maintenance.dto.js';

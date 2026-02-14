@@ -129,6 +129,11 @@ export function mapDbMachineToApi(row: DbMachineRow): MachineResponse {
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
     isActive: Boolean(row.is_active),
+    // Availability defaults — overwritten by controller via addAvailabilityInfo()
+    availabilityStatus: null,
+    availabilityStart: null,
+    availabilityEnd: null,
+    availabilityNotes: null,
     ...buildMachineStringFields(row),
     ...buildMachineDateFields(row),
     ...buildMachineReferenceFields(row),

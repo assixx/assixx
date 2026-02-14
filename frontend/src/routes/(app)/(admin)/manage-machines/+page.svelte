@@ -11,9 +11,8 @@
 
   import HighlightText from '$lib/components/HighlightText.svelte';
   import {
-    MACHINE_AVAILABILITY_BADGE_CLASSES,
-    MACHINE_AVAILABILITY_ICONS,
     MACHINE_AVAILABILITY_LABELS,
+    MACHINE_AVAILABILITY_BADGE_CLASSES,
   } from '$lib/machine-availability/constants';
   import MachineAvailabilityModal from '$lib/machine-availability/MachineAvailabilityModal.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
@@ -23,8 +22,6 @@
 
   // Page-specific CSS
   import '../../../../styles/manage-machines.css';
-
-  // Import state and components
 
   // Import from _lib/ modules
   import {
@@ -292,31 +289,50 @@
     void goto(resolvePath(`/manage-machines/availability/${uuid}`));
   }
 
+  /** Validate availability form, returns error message or null */
+  function validateAvailabilityForm(): string | null {
+    if (availabilityStatus === 'operational') return null;
+    if (availabilityStart === '' || availabilityEnd === '') {
+      return 'Start- und Enddatum sind erforderlich';
+    }
+    if (availabilityEnd < availabilityStart) {
+      return 'Bis-Datum muss nach oder gleich Von-Datum sein';
+    }
+    return null;
+  }
+
+  /** Build the payload, only including non-empty optional fields */
+  function buildAvailabilityPayload(): {
+    availabilityStatus: string;
+    availabilityStart?: string;
+    availabilityEnd?: string;
+    availabilityReason?: string;
+    availabilityNotes?: string;
+  } {
+    return {
+      availabilityStatus,
+      ...(availabilityStart !== '' && { availabilityStart }),
+      ...(availabilityEnd !== '' && { availabilityEnd }),
+      ...(availabilityReason !== '' && { availabilityReason }),
+      ...(availabilityNotes !== '' && { availabilityNotes }),
+    };
+  }
+
   async function saveAvailability(): Promise<void> {
     if (availabilityMachine === null) return;
 
-    // Validate: non-operational status requires dates
-    if (availabilityStatus !== 'operational') {
-      if (availabilityStart === '' || availabilityEnd === '') {
-        showErrorAlert('Start- und Enddatum sind erforderlich');
-        return;
-      }
-      if (availabilityEnd < availabilityStart) {
-        showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein');
-        return;
-      }
+    const validationError = validateAvailabilityForm();
+    if (validationError !== null) {
+      showErrorAlert(validationError);
+      return;
     }
 
     availabilitySubmitting = true;
     try {
-      await apiUpdateMachineAvailability(availabilityMachine.uuid, {
-        availabilityStatus,
-        ...(availabilityStart !== '' && { availabilityStart }),
-        ...(availabilityEnd !== '' && { availabilityEnd }),
-        ...(availabilityReason !== '' && { availabilityReason }),
-        ...(availabilityNotes !== '' && { availabilityNotes }),
-      });
-
+      await apiUpdateMachineAvailability(
+        availabilityMachine.uuid,
+        buildAvailabilityPayload(),
+      );
       showSuccessAlert('Maschinenverfügbarkeit aktualisiert');
       closeAvailabilityModal();
       await invalidateAll();
@@ -328,32 +344,6 @@
     } finally {
       availabilitySubmitting = false;
     }
-  }
-
-  /** Get badge class for machine availability status */
-  function getAvailabilityBadgeClass(status: string): string {
-    if (status in MACHINE_AVAILABILITY_BADGE_CLASSES) {
-      return MACHINE_AVAILABILITY_BADGE_CLASSES[
-        status as MachineAvailabilityStatus
-      ];
-    }
-    return 'badge--secondary';
-  }
-
-  /** Get icon for machine availability status */
-  function getAvailabilityIcon(status: string): string {
-    if (status in MACHINE_AVAILABILITY_ICONS) {
-      return MACHINE_AVAILABILITY_ICONS[status as MachineAvailabilityStatus];
-    }
-    return 'fa-question-circle';
-  }
-
-  /** Get label for machine availability status */
-  function getAvailabilityLabel(status: string): string {
-    if (status in MACHINE_AVAILABILITY_LABELS) {
-      return MACHINE_AVAILABILITY_LABELS[status as MachineAvailabilityStatus];
-    }
-    return status;
   }
 
   // =============================================================================
@@ -424,6 +414,12 @@
   // =============================================================================
   // ESCAPE KEY HANDLER
   // =============================================================================
+
+  /** Format ISO date string to German locale (dd.mm.yyyy) */
+  function formatDate(isoDate: string): string {
+    const [year, month, day] = isoDate.split('-');
+    return `${day}.${month}.${year}`;
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -670,6 +666,7 @@
                   <th scope="col">{MESSAGES.TH_AREA}</th>
                   <th scope="col">{MESSAGES.TH_DEPARTMENT}</th>
                   <th scope="col">{MESSAGES.TH_TEAMS}</th>
+                  <th scope="col">{MESSAGES.TH_NEXT_ABSENCE}</th>
                   <th scope="col">{MESSAGES.TH_ACTIONS}</th>
                 </tr>
               </thead>
@@ -708,6 +705,23 @@
                       >
                         {teamsBadge.text}
                       </span>
+                    </td>
+                    <td>
+                      {#if machine.availabilityStatus !== undefined && machine.availabilityStatus !== 'operational' && machine.availabilityStart !== undefined}
+                        {@const statusKey =
+                          machine.availabilityStatus as MachineAvailabilityStatus}
+                        <span
+                          class="badge {MACHINE_AVAILABILITY_BADGE_CLASSES[
+                            statusKey
+                          ]}"
+                          title={machine.availabilityNotes ?? ''}
+                        >
+                          {formatDate(machine.availabilityStart)}
+                          – {MACHINE_AVAILABILITY_LABELS[statusKey]}
+                        </span>
+                      {:else}
+                        <span class="text-(--color-text-tertiary)">–</span>
+                      {/if}
                     </td>
                     <td>
                       <div class="flex gap-2">

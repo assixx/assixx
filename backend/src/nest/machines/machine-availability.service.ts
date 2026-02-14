@@ -113,8 +113,8 @@ export class MachineAvailabilityService {
   /**
    * Get availability for a single machine
    * Returns the "next relevant" entry:
-   * - Priority 1: Entry where start_date <= TODAY AND end_date >= TODAY (current active)
-   * - Priority 2: Entry where start_date > TODAY (next future, earliest first)
+   * - Priority 1: Entry where start_date \<= TODAY AND end_date \>= TODAY (current active)
+   * - Priority 2: Entry where start_date \> TODAY (next future, earliest first)
    */
   async getMachineAvailability(
     machineId: number,
@@ -203,6 +203,42 @@ export class MachineAvailabilityService {
     response.availabilityEnd =
       availability.end_date?.toISOString().split('T')[0] ?? null;
     response.availabilityNotes = availability.notes;
+  }
+
+  // ============================================
+  // Public Methods - Date Range Query (for shift planning)
+  // ============================================
+
+  /**
+   * Get all availability entries for a machine that overlap with a date range.
+   * Used by shift planning to visually mark cells where a machine is unavailable.
+   *
+   * Overlap condition: entry.start_date before/on rangeEnd AND entry.end_date on/after rangeStart
+   */
+  async getMachineAvailabilityForDateRange(
+    machineId: number,
+    tenantId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<MachineAvailabilityHistoryEntry[]> {
+    const rows = await this.databaseService.query<AvailabilityRow>(
+      `SELECT ma.id, ma.machine_id, ma.status, ma.start_date, ma.end_date,
+              ma.reason, ma.notes, ma.created_by,
+              CONCAT(u.first_name, ' ', u.last_name) AS created_by_name,
+              ma.created_at, ma.updated_at
+       FROM machine_availability ma
+       LEFT JOIN users u ON ma.created_by = u.id
+       WHERE ma.machine_id = $1
+         AND ma.tenant_id = $2
+         AND ma.start_date <= $4::date
+         AND ma.end_date >= $3::date
+       ORDER BY ma.start_date ASC`,
+      [machineId, tenantId, startDate, endDate],
+    );
+
+    return rows.map((row: AvailabilityRow) =>
+      this.mapAvailabilityRowToEntry(row),
+    );
   }
 
   // ============================================

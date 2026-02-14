@@ -356,6 +356,7 @@
             canEditShifts={shiftsState.canEditShifts}
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
+            machineAvailabilityMap={shiftsState.machineAvailabilityMap}
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}

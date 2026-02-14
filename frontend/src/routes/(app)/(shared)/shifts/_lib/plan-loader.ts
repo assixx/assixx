@@ -6,6 +6,7 @@
 import { tick } from 'svelte';
 
 import {
+  fetchMachineAvailability,
   fetchShiftPlan,
   fetchRotationHistory,
   fetchRotationPatternById,
@@ -131,6 +132,8 @@ export async function loadShiftPlan(): Promise<void> {
 
   try {
     const teamId = shiftsState.selectedContext.teamId;
+    const machineId = shiftsState.selectedContext.machineId;
+
     const [members, { planResponse, rotationHistory, planData, rotationData }] =
       await Promise.all([
         fetchTeamMembers(teamId, startDate, endDate),
@@ -139,6 +142,18 @@ export async function loadShiftPlan(): Promise<void> {
 
     // Update employees with fresh availability data for this week
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
+
+    // Load machine availability for the displayed week (if a machine is selected)
+    if (machineId !== null && machineId !== 0) {
+      const availEntries = await fetchMachineAvailability(
+        machineId,
+        startDate,
+        endDate,
+      );
+      shiftsState.setMachineAvailability(availEntries);
+    } else {
+      shiftsState.clearMachineAvailability();
+    }
 
     // Load pattern type from rotation history
     const { patternId, patternType } = await loadPatternFromHistory(

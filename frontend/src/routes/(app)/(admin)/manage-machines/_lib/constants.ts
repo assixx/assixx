@@ -170,6 +170,7 @@ export const MESSAGES = {
   TH_STATUS: 'Status',
   TH_HOURS: 'Betriebsstunden',
   TH_MAINTENANCE: 'Nächste Wartung',
+  TH_NEXT_ABSENCE: 'Nächste Abwesenheit',
   TH_ACTIONS: 'Aktionen',
 
   // Teams display

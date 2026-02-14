@@ -236,7 +236,7 @@
         </h2>
         {#if machineStaffingRule !== null}
           <span
-            class="badge badge--warning badge--sm"
+            class="badge badge--warning badge"
             title="Mindestbesetzung: {machineStaffingRule.machineName}"
           >
             <i class="fas fa-hard-hat"></i>
@@ -250,7 +250,7 @@
   <!-- ================================================================
        CASCADE FILTER ROW (like shifts page)
        ================================================================ -->
-  <div class="vacation-filter-row">
+  <div class="card vacation-filter-row">
     <!-- 1. Maschine -->
     <div class="info-item">
       <div class="info-label">Maschine</div>
@@ -580,15 +580,6 @@
     gap: var(--spacing-6);
     position: relative;
     z-index: 1;
-    backdrop-filter: blur(10px);
-    margin-bottom: var(--spacing-6);
-    box-shadow:
-      0 4px 16px rgb(0 0 0 / 30%),
-      inset 0 1px 0 var(--color-glass-border);
-    border: var(--glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg-hover);
-    padding: var(--spacing-6);
   }
 
   .vacation-filter-row :global(.info-item) {

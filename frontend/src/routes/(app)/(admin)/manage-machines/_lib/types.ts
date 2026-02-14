@@ -44,6 +44,11 @@ export interface Machine {
   updatedAt: string;
   // Teams assigned to this machine (for list display with badges)
   teams?: MachineTeamInfo[];
+  // Availability info (next relevant entry from machine_availability table)
+  availabilityStatus?: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityNotes?: string;
 }
 
 /**

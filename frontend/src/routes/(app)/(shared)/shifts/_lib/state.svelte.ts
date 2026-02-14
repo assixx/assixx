@@ -218,12 +218,17 @@ export const shiftsState = {
   get isContextComplete() {
     return contextState.isContextComplete;
   },
+  get machineAvailabilityMap() {
+    return contextState.machineAvailabilityMap;
+  },
   setSelectedContext: contextState.setSelectedContext,
   resetSelectedContext: contextState.resetSelectedContext,
   setCurrentPlanId: contextState.setCurrentPlanId,
   setCurrentPatternId: contextState.setCurrentPatternId,
   setCurrentPatternType: contextState.setCurrentPatternType,
   isHierarchyValid: contextState.isHierarchyValid,
+  setMachineAvailability: contextState.setMachineAvailability,
+  clearMachineAvailability: contextState.clearMachineAvailability,
 
   // Rotation state
   get autofillConfig() {

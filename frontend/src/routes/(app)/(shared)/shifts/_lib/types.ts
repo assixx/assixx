@@ -352,3 +352,16 @@ export interface DropdownOption {
   id: number;
   name: string;
 }
+
+/**
+ * Machine availability entry (from GET /machines/:id/availability)
+ * Used by shift planning to visually mark cells where a machine is unavailable.
+ */
+export interface MachineAvailabilityEntry {
+  id: number;
+  machineId: number;
+  status: string;
+  startDate: string;
+  endDate: string;
+  notes: string | null;
+}

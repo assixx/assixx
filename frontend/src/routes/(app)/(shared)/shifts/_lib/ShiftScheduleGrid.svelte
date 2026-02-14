@@ -4,10 +4,25 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
+  import {
+    MACHINE_AVAILABILITY_ICONS,
+    MACHINE_AVAILABILITY_LABELS,
+    type MachineAvailabilityStatus,
+  } from '$lib/machine-availability/constants';
+
   import { FULL_DAY_NAMES, SHIFT_TYPES, SHIFT_TIMES } from './constants';
   import { formatDate, getEmployeeDisplayName } from './utils';
 
   import type { Employee, ShiftDetailData } from './types';
+
+  /** Machine availability statuses that should be shown in the legend */
+  const LEGEND_STATUSES: MachineAvailabilityStatus[] = [
+    'maintenance',
+    'repair',
+    'standby',
+    'cleaning',
+    'other',
+  ];
 
   /**
    * Props interface for ShiftScheduleGrid
@@ -18,6 +33,9 @@
     canEditShifts: boolean;
     isEditMode: boolean;
     currentPlanId: number | null;
+
+    /** Machine availability: date (YYYY-MM-DD) → status string */
+    machineAvailabilityMap: Map<string, string>;
 
     // Data access callbacks
     getShiftEmployees: (dateKey: string, shiftType: string) => number[];
@@ -44,6 +62,7 @@
     canEditShifts,
     isEditMode,
     currentPlanId,
+    machineAvailabilityMap,
     getShiftEmployees,
     getEmployeeById,
     getShiftDetail,
@@ -93,9 +112,34 @@
     if (currentPlanId !== null) return false;
     return !hasRotationShift(`${dateKey}_${shiftType}_${empId}`);
   }
+
+  /** Get machine availability CSS class for a date (empty string if operational/none) */
+  function getMachineAvailClass(dateKey: string): string {
+    const status = machineAvailabilityMap.get(dateKey);
+    if (status === undefined) return '';
+    return `machine-avail-${status}`;
+  }
 </script>
 
 <div class="week-schedule">
+  <!-- Machine Availability Legend (always visible) -->
+  <div class="machine-avail-legend">
+    <span class="machine-avail-legend-title">
+      <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
+    </span>
+    <div class="machine-avail-legend-items">
+      {#each LEGEND_STATUSES as status (status)}
+        <div class="machine-avail-legend-item">
+          <div class="machine-avail-legend-swatch legend-{status}"></div>
+          <i class="fas {MACHINE_AVAILABILITY_ICONS[status]}"></i>
+          <span class="machine-avail-legend-label"
+            >{MACHINE_AVAILABILITY_LABELS[status]}</span
+          >
+        </div>
+      {/each}
+    </div>
+  </div>
+
   <!-- Schedule Header -->
   <div class="schedule-header">
     <div class="day-header">Schicht</div>
@@ -122,8 +166,9 @@
       {#each weekDates as date, dayIndex (formatDate(date))}
         {@const dateKey = formatDate(date)}
         {@const employeeIds = getShiftEmployees(dateKey, shiftType)}
+        {@const availStatus = machineAvailabilityMap.get(dateKey)}
         <div
-          class="shift-cell"
+          class="shift-cell {getMachineAvailClass(dateKey)}"
           class:locked={isCellLocked(dateKey, shiftType, employeeIds)}
           data-day={dayNames[dayIndex]}
           data-shift={shiftType}
@@ -137,6 +182,17 @@
           role="gridcell"
           tabindex="0"
         >
+          <!-- Machine availability indicator icon -->
+          {#if availStatus !== undefined}
+            {@const statusKey = availStatus as MachineAvailabilityStatus}
+            <div
+              class="machine-avail-indicator avail-{availStatus}"
+              title={MACHINE_AVAILABILITY_LABELS[statusKey]}
+            >
+              <i class="fas {MACHINE_AVAILABILITY_ICONS[statusKey]}"></i>
+            </div>
+          {/if}
+
           <div class="employee-assignment">
             {#if employeeIds.length === 0}
               <!-- Show "+" for admins/editors, "-" for employees (readonly) -->
