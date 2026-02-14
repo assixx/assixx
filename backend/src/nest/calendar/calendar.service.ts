@@ -296,6 +296,14 @@ export class CalendarService {
       throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
+    // Past-event protection: events whose end_date is in the past cannot be edited
+    const endDate = new Date(existing.end_date);
+    if (endDate < new Date()) {
+      throw new ForbiddenException(
+        'Vergangene Kalendereinträge können nicht bearbeitet werden',
+      );
+    }
+
     if (
       existing.user_id !== userId &&
       userRole !== 'admin' &&

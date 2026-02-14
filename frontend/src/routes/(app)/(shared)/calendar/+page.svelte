@@ -601,6 +601,7 @@
     event={calendarState.viewingEvent}
     canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
     canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
+    isPast={calendarState.isEventPast(calendarState.viewingEvent)}
     {areas}
     {departments}
     {teams}

@@ -7,6 +7,7 @@
    */
   import { onDestroy } from 'svelte';
 
+  import '../../../../../styles/vacation.css';
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';

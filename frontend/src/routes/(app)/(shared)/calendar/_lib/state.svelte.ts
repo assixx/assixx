@@ -61,6 +61,7 @@ export const calendarState = {
     return userState.canCreateEvents;
   },
   setUser: userState.setUser,
+  isEventPast: userState.isEventPast,
   canEditEvent: userState.canEditEvent,
   canDeleteEvent: userState.canDeleteEvent,
 

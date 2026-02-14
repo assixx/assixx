@@ -27,6 +27,18 @@
   right: auto;
 }
 
+/* Overview page dropdowns — same sizing pattern */
+[data-dropdown^='ov-'] .dropdown__trigger {
+  width: auto;
+  min-width: 150px;
+}
+
+[data-dropdown^='ov-'] .dropdown__menu {
+  min-width: 150px;
+  left: auto;
+  right: auto;
+}
+
 /* ========================================
    Request List
    ======================================== */

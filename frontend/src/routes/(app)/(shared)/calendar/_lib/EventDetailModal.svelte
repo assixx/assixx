@@ -12,6 +12,7 @@
     event: CalendarEvent;
     canEdit: boolean;
     canDelete: boolean;
+    isPast: boolean;
     areas?: Area[];
     departments?: Department[];
     teams?: Team[];
@@ -24,6 +25,7 @@
     event,
     canEdit,
     canDelete,
+    isPast,
     areas = [],
     departments = [],
     teams = [],
@@ -163,6 +165,13 @@
           </div>
         {/if}
 
+        {#if isPast}
+          <div class="past-event-notice">
+            <i class="fas fa-lock"></i>
+            <span>Vergangene Termine können nicht bearbeitet werden.</span>
+          </div>
+        {/if}
+
         <div class="modal-actions">
           {#if canEdit}
             <button
@@ -228,6 +237,20 @@
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
     background: rgb(255 255 255 / 3%);
+  }
+
+  /* Past event lock notice */
+  .past-event-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-top: 20px;
+    border-radius: var(--radius-lg);
+    background: rgb(255 193 7 / 10%);
+    border: 1px solid rgb(255 193 7 / 25%);
+    color: var(--color-amber-400, #fbbf24);
+    font-size: 0.875rem;
   }
 
   /* Modal actions */

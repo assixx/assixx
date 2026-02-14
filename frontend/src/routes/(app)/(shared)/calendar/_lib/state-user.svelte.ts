@@ -42,8 +42,14 @@ function createUserState() {
     return event.userId === currentUserId;
   }
 
-  /** Check if user can edit event */
+  /** Check if event end time is in the past */
+  function isEventPast(event: CalendarEvent): boolean {
+    return new Date(event.endTime) < new Date();
+  }
+
+  /** Check if user can edit event (past events are locked) */
   function canEditEvent(event: CalendarEvent): boolean {
+    if (isEventPast(event)) return false;
     return hasEventManagementAccess(event);
   }
 
@@ -74,6 +80,7 @@ function createUserState() {
       return true;
     },
     setUser,
+    isEventPast,
     canEditEvent,
     canDeleteEvent,
     reset,
