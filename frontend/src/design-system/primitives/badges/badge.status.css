@@ -90,3 +90,48 @@
   border-color: rgb(52 58 64 / 40%);
   background: rgb(52 58 64 / 20%);
 }
+
+/* ========== Machine Availability Status Badges ========== */
+/* Colors match legend/indicator colors across shifts + vacation overview */
+
+/* Operational - Green */
+.badge--avail-operational {
+  border-color: rgb(76 175 80 / 30%);
+  background: rgb(76 175 80 / 15%);
+  color: #4caf50;
+}
+
+/* Maintenance - Gold */
+.badge--avail-maintenance {
+  border-color: rgb(255 193 7 / 30%);
+  background: rgb(255 193 7 / 15%);
+  color: #ffc107;
+}
+
+/* Repair - Red */
+.badge--avail-repair {
+  border-color: rgb(220 53 69 / 30%);
+  background: rgb(220 53 69 / 15%);
+  color: #dc3545;
+}
+
+/* Standby - Blue */
+.badge--avail-standby {
+  border-color: rgb(52 152 219 / 30%);
+  background: rgb(52 152 219 / 15%);
+  color: #3498db;
+}
+
+/* Cleaning - Teal */
+.badge--avail-cleaning {
+  border-color: rgb(32 201 151 / 30%);
+  background: rgb(32 201 151 / 15%);
+  color: #20c997;
+}
+
+/* Other - Purple */
+.badge--avail-other {
+  border-color: rgb(111 66 193 / 30%);
+  background: rgb(111 66 193 / 15%);
+  color: #6f42c1;
+}

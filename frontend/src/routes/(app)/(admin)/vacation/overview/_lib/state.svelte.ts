@@ -7,6 +7,7 @@ import type {
   BlackoutPeriod,
   CalendarDayCell,
   CalendarUserRow,
+  MachineAvailabilityEntry,
   MachineListItem,
   StaffingRule,
   TeamCalendarData,
@@ -31,6 +32,10 @@ let selectedMachineId = $state<number | null>(null);
 let selectedTeamId = $state<number | null>(null);
 let selectedYear = $state<number | null>(null);
 let selectedMonth = $state<number | null>(null);
+
+// ─── Machine availability ───────────────────────────────────────────
+
+let machineAvailEntries = $state<MachineAvailabilityEntry[]>([]);
 
 // ─── UI ─────────────────────────────────────────────────────────────
 
@@ -88,6 +93,23 @@ const blackoutDays = $derived.by((): Map<number, string> => {
   return result;
 });
 
+/** Map of day numbers (1-based) to machine availability status. */
+const machineAvailDays = $derived.by((): Map<number, string> => {
+  if (
+    machineAvailEntries.length === 0 ||
+    selectedYear === null ||
+    selectedMonth === null
+  )
+    return new Map();
+
+  return buildAvailDayMap(
+    machineAvailEntries,
+    selectedYear,
+    selectedMonth,
+    daysInMonth,
+  );
+});
+
 /** Selected machine name */
 const selectedMachineName = $derived.by(() => {
   if (selectedMachineId === null) return '';
@@ -141,6 +163,53 @@ const calendarGrid = $derived.by((): CalendarUserRow[] => {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
+/** Fill day numbers from a single availability entry, clipped to month bounds. */
+function fillAvailDays(
+  result: Map<number, string>,
+  entry: MachineAvailabilityEntry,
+  monthStart: Date,
+  monthEnd: Date,
+): void {
+  const entryStart = new Date(entry.startDate + 'T00:00:00');
+  const entryEnd = new Date(entry.endDate + 'T00:00:00');
+
+  if (entryEnd < monthStart || entryStart > monthEnd) return;
+
+  const rangeStart = entryStart > monthStart ? entryStart : monthStart;
+  const rangeEnd = entryEnd < monthEnd ? entryEnd : monthEnd;
+
+  const cursor = new Date(rangeStart);
+  while (cursor <= rangeEnd) {
+    const dayNum = cursor.getDate();
+    if (!result.has(dayNum)) {
+      result.set(dayNum, entry.status);
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
+
+/**
+ * Build a day-number-to-status map from availability entries,
+ * clipped to the given month. First entry wins per day.
+ */
+function buildAvailDayMap(
+  entries: MachineAvailabilityEntry[],
+  year: number,
+  month: number,
+  days: number,
+): Map<number, string> {
+  const result = new Map<number, string>();
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month - 1, days);
+
+  for (const entry of entries) {
+    if (entry.status === 'operational') continue;
+    fillAvailDays(result, entry, monthStart, monthEnd);
+  }
+
+  return result;
+}
+
 /** Fill day cells from a single calendar entry, clipped to the selected month. */
 function fillDaysFromEntry(
   days: Map<number, CalendarDayCell>,
@@ -190,6 +259,7 @@ function selectMachine(machineId: number) {
   selectedMonth = null;
   teams = [];
   calendarData = null;
+  machineAvailEntries = [];
 }
 
 /** Select team → reset downstream (year, month, calendar) */
@@ -211,6 +281,7 @@ function setYear(year: number) {
 function setMonth(month: number) {
   selectedMonth = month;
   calendarData = null;
+  machineAvailEntries = [];
 }
 
 function reset() {
@@ -224,6 +295,7 @@ function reset() {
   balance = null;
   selectedYear = null;
   selectedMonth = null;
+  machineAvailEntries = [];
   isLoading = false;
   isLoadingTeams = false;
   isLoadingCalendar = false;
@@ -276,6 +348,9 @@ export const overviewState = {
   get staffingRules() {
     return staffingRules;
   },
+  get machineAvailDays() {
+    return machineAvailDays;
+  },
 
   // Cascade flags
   get canSelectTeam() {
@@ -306,6 +381,9 @@ export const overviewState = {
   },
   setBalance: (data: VacationBalance | null) => {
     balance = data;
+  },
+  setMachineAvailEntries: (data: MachineAvailabilityEntry[]) => {
+    machineAvailEntries = data;
   },
 
   // UI getters

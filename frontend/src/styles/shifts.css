@@ -265,16 +265,16 @@
 }
 
 .shift-cell.machine-avail-cleaning {
-  border-top: 3px solid #6c757d;
+  border-top: 3px solid #20c997;
   background:
-    linear-gradient(180deg, rgb(108 117 125 / 12%) 0%, transparent 40%),
+    linear-gradient(180deg, rgb(32 201 151 / 12%) 0%, transparent 40%),
     var(--glass-bg);
 }
 
 .shift-cell.machine-avail-other {
-  border-top: 3px solid #95a5a6;
+  border-top: 3px solid #6f42c1;
   background:
-    linear-gradient(180deg, rgb(149 165 166 / 12%) 0%, transparent 40%),
+    linear-gradient(180deg, rgb(111 66 193 / 12%) 0%, transparent 40%),
     var(--glass-bg);
 }
 
@@ -306,11 +306,11 @@
 }
 
 .machine-avail-indicator.avail-cleaning {
-  color: #6c757d;
+  color: #20c997;
 }
 
 .machine-avail-indicator.avail-other {
-  color: #95a5a6;
+  color: #6f42c1;
 }
 
 /* Light mode: darker indicator colors */
@@ -327,11 +327,11 @@ html:not(.dark) .machine-avail-indicator.avail-standby {
 }
 
 html:not(.dark) .machine-avail-indicator.avail-cleaning {
-  color: #546e7a;
+  color: #1a9e7a;
 }
 
 html:not(.dark) .machine-avail-indicator.avail-other {
-  color: #37474f;
+  color: #5a32a3;
 }
 
 /* Machine Availability Legend */
@@ -402,11 +402,11 @@ html:not(.dark) .machine-avail-indicator.avail-other {
 }
 
 .machine-avail-legend-swatch.legend-cleaning {
-  background: #6c757d;
+  background: #20c997;
 }
 
 .machine-avail-legend-swatch.legend-other {
-  background: #95a5a6;
+  background: #6f42c1;
 }
 
 .machine-avail-legend-item i {
@@ -426,11 +426,11 @@ html:not(.dark) .machine-avail-indicator.avail-other {
 }
 
 .machine-avail-legend-item i.fa-broom {
-  color: #6c757d;
+  color: #20c997;
 }
 
 .machine-avail-legend-item i.fa-clock {
-  color: #95a5a6;
+  color: #6f42c1;
 }
 
 .machine-avail-legend-label {

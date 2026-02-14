@@ -37,12 +37,12 @@ export const MACHINE_AVAILABILITY_BADGE_CLASSES: Record<
   MachineAvailabilityStatus,
   string
 > = {
-  operational: 'badge--success',
-  maintenance: 'badge--warning',
-  repair: 'badge--danger',
-  standby: 'badge--info',
-  cleaning: 'badge--secondary',
-  other: 'badge--dark',
+  operational: 'badge--avail-operational',
+  maintenance: 'badge--avail-maintenance',
+  repair: 'badge--avail-repair',
+  standby: 'badge--avail-standby',
+  cleaning: 'badge--avail-cleaning',
+  other: 'badge--avail-other',
 };
 
 /**

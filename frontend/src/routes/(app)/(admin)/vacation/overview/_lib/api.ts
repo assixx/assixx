@@ -4,7 +4,12 @@
  */
 import { getApiClient } from '$lib/utils/api-client';
 
-import type { TeamCalendarData, TeamListItem, VacationBalance } from './types';
+import type {
+  MachineAvailabilityEntry,
+  TeamCalendarData,
+  TeamListItem,
+  VacationBalance,
+} from './types';
 
 const apiClient = getApiClient();
 
@@ -39,6 +44,20 @@ export async function getTeamCalendar(
   return await apiClient.get<TeamCalendarData>(
     `/vacation/team-calendar?teamId=${teamId}&month=${month}&year=${year}`,
   );
+}
+
+// ─── Machine Availability (for day-header marking) ─────────────
+
+/** Fetch machine availability entries overlapping a date range. */
+export async function getMachineAvailability(
+  machineId: number,
+  startDate: string,
+  endDate: string,
+): Promise<MachineAvailabilityEntry[]> {
+  const raw = await apiClient.get<MachineAvailabilityEntry[]>(
+    `/machines/${machineId}/availability?startDate=${startDate}&endDate=${endDate}`,
+  );
+  return Array.isArray(raw) ? raw : [];
 }
 
 // ─── Own Balance (overview) ──────────────────────────────────────

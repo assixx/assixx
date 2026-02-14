@@ -100,6 +100,16 @@ export interface StaffingRule {
   minStaffCount: number;
 }
 
+// ─── Machine availability (for day-header marking) ──────────────
+
+export interface MachineAvailabilityEntry {
+  id: number;
+  machineId: number;
+  status: string;
+  startDate: string;
+  endDate: string;
+}
+
 // ─── SSR page data ───────────────────────────────────────────────
 
 export interface VacationOverviewPageData {

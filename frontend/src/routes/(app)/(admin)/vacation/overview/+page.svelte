@@ -9,6 +9,10 @@
 
   import '../../../../../styles/vacation.css';
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import {
+    MACHINE_AVAILABILITY_LABELS,
+    type MachineAvailabilityStatus,
+  } from '$lib/machine-availability/constants';
   import { showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -30,6 +34,24 @@
   } from './_lib/types';
 
   const log = createLogger('VacationOverview');
+
+  /** Machine availability statuses shown in the legend */
+  const AVAIL_LEGEND: MachineAvailabilityStatus[] = [
+    'maintenance',
+    'repair',
+    'standby',
+    'cleaning',
+    'other',
+  ];
+
+  /** CSS color per availability status (matches shifts page) */
+  const AVAIL_COLORS: Record<string, string> = {
+    maintenance: '#ffc107',
+    repair: '#dc3545',
+    standby: '#3498db',
+    cleaning: '#20c997',
+    other: '#6f42c1',
+  };
 
   // ==========================================================================
   // SSR DATA
@@ -93,23 +115,32 @@
     await loadCalendar();
   }
 
-  /** Load calendar data for selected team/month/year */
+  /** Load calendar data + machine availability for selected filters */
   async function loadCalendar(): Promise<void> {
-    if (
-      overviewState.selectedTeamId === null ||
-      overviewState.selectedMonth === null ||
-      overviewState.selectedYear === null
-    )
-      return;
+    const teamId = overviewState.selectedTeamId;
+    const month = overviewState.selectedMonth;
+    const year = overviewState.selectedYear;
+    const machineId = overviewState.selectedMachineId;
+
+    if (teamId === null || month === null || year === null) return;
 
     overviewState.setLoadingCalendar(true);
     try {
-      const data = await api.getTeamCalendar(
-        overviewState.selectedTeamId,
-        overviewState.selectedMonth,
-        overviewState.selectedYear,
-      );
-      overviewState.setCalendarData(data);
+      // Build date range for the selected month
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      // Fetch calendar + availability in parallel
+      const [calendarData, availEntries] = await Promise.all([
+        api.getTeamCalendar(teamId, month, year),
+        machineId !== null ?
+          api.getMachineAvailability(machineId, startDate, endDate)
+        : Promise.resolve([]),
+      ]);
+
+      overviewState.setCalendarData(calendarData);
+      overviewState.setMachineAvailEntries(availEntries);
     } catch (err) {
       log.error({ err }, 'Calendar load failed');
       showErrorAlert('Fehler beim Laden des Teamkalenders');
@@ -490,11 +521,17 @@
                 <th class="calendar-grid__name-header">Mitarbeiter</th>
                 {#each dayNumbers as day (day)}
                   {@const blackoutName = overviewState.blackoutDays.get(day)}
+                  {@const availStatus = overviewState.machineAvailDays.get(day)}
                   <th
                     class="calendar-grid__day-header"
                     class:weekend={isWeekend(day)}
                     class:blackout={blackoutName !== undefined}
-                    title={blackoutName ?? ''}
+                    title={blackoutName ??
+                      (availStatus !== undefined ?
+                        MACHINE_AVAILABILITY_LABELS[
+                          availStatus as MachineAvailabilityStatus
+                        ]
+                      : '')}
                   >
                     <span class="calendar-grid__weekday">
                       {WEEKDAY_SHORT[getWeekday(day)]}
@@ -502,6 +539,12 @@
                     <span class="calendar-grid__day-num">{day}</span>
                     {#if blackoutName !== undefined}
                       <span class="calendar-grid__blackout-dot"></span>
+                    {:else if availStatus !== undefined}
+                      <span
+                        class="calendar-grid__avail-dot"
+                        style="background: {AVAIL_COLORS[availStatus] ??
+                          '#6f42c1'};"
+                      ></span>
                     {/if}
                   </th>
                 {/each}
@@ -566,6 +609,24 @@
             </div>
           {/if}
         </div>
+
+        <!-- Machine Availability Legend -->
+        <div class="calendar-legend calendar-legend--machine-avail">
+          <span class="calendar-legend__section-title">
+            <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
+          </span>
+          {#each AVAIL_LEGEND as status (status)}
+            <div class="calendar-legend__item">
+              <span
+                class="calendar-legend__dot"
+                style="background: {AVAIL_COLORS[status]};"
+              ></span>
+              <span class="calendar-legend__label">
+                {MACHINE_AVAILABILITY_LABELS[status]}
+              </span>
+            </div>
+          {/each}
+        </div>
       {/if}
     </div>
   </div>
@@ -597,217 +658,6 @@
     font-size: 16px;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-  }
-
-  /* ─── Calendar Grid ────────────────────────────────────────────── */
-
-  .calendar-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .calendar-grid {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 1px;
-    font-size: 0.75rem;
-    min-width: 800px;
-  }
-
-  .calendar-grid__name-header {
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    background: var(--color-surface);
-    text-align: left;
-    padding: var(--spacing-2) var(--spacing-3);
-    font-weight: 600;
-    white-space: nowrap;
-    min-width: 160px;
-    border-bottom: 2px solid var(--color-glass-border);
-  }
-
-  .calendar-grid__day-header {
-    text-align: center;
-    padding: var(--spacing-1) var(--spacing-1);
-    font-weight: 500;
-    min-width: 32px;
-    border-bottom: 2px solid var(--color-glass-border);
-  }
-
-  .calendar-grid__day-header.weekend {
-    background: var(--glass-bg-active);
-    color: var(--text-muted);
-  }
-
-  .calendar-grid__weekday {
-    display: block;
-    font-size: 0.625rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-
-  .calendar-grid__day-num {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .calendar-grid__name-cell {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: var(--color-surface);
-    padding: var(--spacing-2) var(--spacing-3);
-    font-weight: 500;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--color-glass-border);
-  }
-
-  .calendar-grid__cell {
-    padding: 2px;
-    height: 32px;
-    min-width: 32px;
-    border-bottom: 1px solid var(--color-glass-border);
-    vertical-align: middle;
-  }
-
-  .calendar-grid__cell.weekend {
-    background: var(--glass-bg);
-  }
-
-  /* ─── Calendar Cell (vacation indicator) ───────────────────────── */
-
-  .calendar-cell {
-    width: 100%;
-    height: 100%;
-    min-height: 24px;
-    border-radius: 3px;
-    opacity: 85%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity var(--transition-fast);
-  }
-
-  .calendar-cell:hover {
-    opacity: 100%;
-  }
-
-  .calendar-cell--half {
-    opacity: 60%;
-  }
-
-  .calendar-cell--half:hover {
-    opacity: 85%;
-  }
-
-  .calendar-cell__half-indicator {
-    font-size: 0.625rem;
-    font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
-  }
-
-  /* ─── Legend ────────────────────────────────────────────────────── */
-
-  .calendar-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-3);
-    margin-top: var(--spacing-4);
-    padding-top: var(--spacing-4);
-    border-top: 1px solid var(--color-glass-border);
-  }
-
-  .calendar-legend__item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-1);
-  }
-
-  .calendar-legend__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-
-  .calendar-legend__dot--half {
-    background: var(--color-primary-500);
-    opacity: 50%;
-    position: relative;
-  }
-
-  .calendar-legend__dot--half::after {
-    content: '½';
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.5rem;
-    font-weight: 700;
-    color: #fff;
-  }
-
-  .calendar-legend__label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
-  /* ─── Blackout day marking ─────────────────────────────────────── */
-
-  .calendar-grid__day-header.blackout {
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 3px,
-      rgb(239 68 68 / 12%) 3px,
-      rgb(239 68 68 / 12%) 6px
-    );
-    color: var(--color-danger-600);
-    position: relative;
-  }
-
-  .calendar-grid__blackout-dot {
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--color-danger-500);
-    margin: 1px auto 0;
-  }
-
-  .calendar-grid__cell.blackout {
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 3px,
-      rgb(239 68 68 / 8%) 3px,
-      rgb(239 68 68 / 8%) 6px
-    );
-  }
-
-  .calendar-grid__cell.blackout.weekend {
-    background: repeating-linear-gradient(
-      -45deg,
-      var(--glass-bg),
-      var(--glass-bg) 3px,
-      rgb(239 68 68 / 10%) 3px,
-      rgb(239 68 68 / 10%) 6px
-    );
-  }
-
-  .calendar-legend__dot--blackout {
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 2px,
-      rgb(239 68 68 / 25%) 2px,
-      rgb(239 68 68 / 25%) 4px
-    );
-    border: 1px solid var(--color-danger-400);
   }
 
   @media (width >= 1024px) {
