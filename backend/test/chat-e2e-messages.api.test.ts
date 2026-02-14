@@ -225,7 +225,7 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
     expect(conversationId).toBeDefined();
 
     const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
+      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
       {
         headers: authOnly(auth.authToken),
       },
@@ -269,7 +269,7 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
     expect(conversationId).toBeDefined();
 
     const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
+      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
       {
         headers: authOnly(auth.authToken),
       },

@@ -8,6 +8,7 @@
 import { Module } from '@nestjs/common';
 
 import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
+import { VacationApproverService } from './vacation-approver.service.js';
 import { VacationBlackoutsService } from './vacation-blackouts.service.js';
 import { VacationCapacityService } from './vacation-capacity.service.js';
 import { VacationEntitlementsService } from './vacation-entitlements.service.js';
@@ -27,7 +28,7 @@ import { VacationService } from './vacation.service.js';
   providers: [
     // Permission registration (ADR-020)
     VacationPermissionRegistrar,
-    // Services (order: holidays → settings → entitlements → blackouts/staffing → capacity → validation → core)
+    // Services (order: holidays → settings → entitlements → blackouts/staffing → capacity → validation → approver → core)
     VacationHolidaysService,
     VacationSettingsService,
     VacationEntitlementsService,
@@ -36,6 +37,7 @@ import { VacationService } from './vacation.service.js';
     VacationCapacityService,
     VacationValidationService,
     VacationNotificationService,
+    VacationApproverService,
     VacationService,
     VacationQueriesService,
   ],

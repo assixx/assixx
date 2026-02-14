@@ -14,11 +14,14 @@
 
   const {
     request,
+    isNew = false,
     onDetail,
     onEdit,
     onWithdraw,
   }: {
     request: VacationRequest;
+    /** Show "Neu" badge when there's an unread notification for this request */
+    isNew?: boolean;
     onDetail: (req: VacationRequest) => void;
     onEdit: (req: VacationRequest) => void;
     onWithdraw: (req: VacationRequest) => void;
@@ -53,9 +56,14 @@
       <i class="fas fa-umbrella-beach mr-1"></i>
       {TYPE_LABELS[request.vacationType]}
     </div>
-    <span class="badge {STATUS_BADGE_CLASS[request.status]}">
-      {STATUS_LABELS[request.status]}
-    </span>
+    <div class="flex items-center gap-2">
+      {#if isNew}
+        <span class="badge badge--sm badge--success">Neu</span>
+      {/if}
+      <span class="badge {STATUS_BADGE_CLASS[request.status]}">
+        {STATUS_LABELS[request.status]}
+      </span>
+    </div>
   </div>
 
   <div class="request-card__body">

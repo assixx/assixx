@@ -9,6 +9,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { VacationHolidaysService } from './vacation-holidays.service.js';
 import type { VacationHolidayRow } from './vacation.types.js';
@@ -23,6 +24,10 @@ function createMockDb() {
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
+
+function createMockActivityLogger() {
+  return { log: vi.fn().mockResolvedValue(undefined) };
+}
 
 function createMockHolidayRow(
   overrides?: Partial<VacationHolidayRow>,
@@ -62,7 +67,10 @@ describe('VacationHolidaysService', () => {
       },
     );
 
-    service = new VacationHolidaysService(mockDb as unknown as DatabaseService);
+    service = new VacationHolidaysService(
+      mockDb as unknown as DatabaseService,
+      createMockActivityLogger() as unknown as ActivityLoggerService,
+    );
   });
 
   // -----------------------------------------------------------
@@ -141,7 +149,7 @@ describe('VacationHolidaysService', () => {
         rows: [createMockHolidayRow({ name: 'Updated Name' })],
       });
 
-      const result = await service.updateHoliday(1, 'hol-001', {
+      const result = await service.updateHoliday(1, 10, 'hol-001', {
         name: 'Updated Name',
       });
 
@@ -152,7 +160,7 @@ describe('VacationHolidaysService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.updateHoliday(1, 'nonexistent', { name: 'X' }),
+        service.updateHoliday(1, 10, 'nonexistent', { name: 'X' }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -164,18 +172,18 @@ describe('VacationHolidaysService', () => {
   describe('deleteHoliday()', () => {
     it('should soft-delete successfully', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 'hol-001' }],
+        rows: [{ id: 'hol-001', name: 'Weihnachten' }],
       });
 
       await expect(
-        service.deleteHoliday(1, 'hol-001'),
+        service.deleteHoliday(1, 10, 'hol-001'),
       ).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when holiday not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deleteHoliday(1, 'nonexistent')).rejects.toThrow(
+      await expect(service.deleteHoliday(1, 10, 'nonexistent')).rejects.toThrow(
         NotFoundException,
       );
     });

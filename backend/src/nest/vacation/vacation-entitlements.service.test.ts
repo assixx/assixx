@@ -10,6 +10,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { VacationEntitlementsService } from './vacation-entitlements.service.js';
 import type { VacationHolidaysService } from './vacation-holidays.service.js';
@@ -36,6 +37,10 @@ function createMockHolidaysService() {
     deleteHoliday: vi.fn(),
     isHoliday: vi.fn(),
   };
+}
+
+function createMockActivityLogger() {
+  return { log: vi.fn().mockResolvedValue(undefined) };
 }
 
 function createMockSettingsService() {
@@ -104,6 +109,7 @@ describe('VacationEntitlementsService', () => {
       mockDb as unknown as DatabaseService,
       mockHolidays as unknown as VacationHolidaysService,
       mockSettings as unknown as VacationSettingsService,
+      createMockActivityLogger() as unknown as ActivityLoggerService,
     );
   });
 
@@ -495,7 +501,7 @@ describe('VacationEntitlementsService', () => {
         rows: [createEntitlementRow({ additional_days: '7' })],
       });
 
-      const result = await service.addDays(1, 5, 2026, 5);
+      const result = await service.addDays(1, 10, 5, 2026, 5);
 
       expect(result.additionalDays).toBe(7);
       expect(mockClient.query).toHaveBeenCalledWith(
@@ -507,7 +513,7 @@ describe('VacationEntitlementsService', () => {
     it('should throw NotFoundException when no entitlement exists', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.addDays(1, 5, 2026, 5)).rejects.toThrow(
+      await expect(service.addDays(1, 10, 5, 2026, 5)).rejects.toThrow(
         NotFoundException,
       );
     });

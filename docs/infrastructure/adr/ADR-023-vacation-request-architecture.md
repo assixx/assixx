@@ -1,13 +1,13 @@
 # ADR-023: Vacation Request System Architecture
 
-| Metadata                | Value                                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                    |
-| **Date**                | 2026-02-13                                                                                  |
-| **Decision Makers**     | SCS-Technik Team                                                                            |
-| **Affected Components** | PostgreSQL (7 tables, 6 migrations), Backend (NestJS vacation module), Frontend (SvelteKit) |
-| **Supersedes**          | —                                                                                           |
-| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-019 (RLS), ADR-020 (Permissions)     |
+| Metadata                | Value                                                                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                                                                                         |
+| **Date**                | 2026-02-13                                                                                                                                                       |
+| **Decision Makers**     | SCS-Technik Team                                                                                                                                                 |
+| **Affected Components** | PostgreSQL (7 tables, 6 migrations), Backend (NestJS vacation module), Frontend (SvelteKit)                                                                      |
+| **Supersedes**          | —                                                                                                                                                                |
+| **Related ADRs**        | ADR-003 (SSE), ADR-004 (Feature Notifications), ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-009 (Audit Logging), ADR-019 (RLS), ADR-020 (Permissions) |
 
 ---
 
@@ -87,9 +87,9 @@ vacation_holidays          — tenant holidays (excluded from workday count)
 - `vacation_request_status_log` is append-only — immutable audit trail
 - UUIDv7 primary keys on all vacation tables — consistent with project-wide convention
 
-### 2. Backend: 11 Service Files + 1 Controller (Responsibility Split)
+### 2. Backend: 12 Service Files + 1 Controller (Responsibility Split)
 
-**Why 11 services instead of 1 monolith?**
+**Why 12 services instead of 1 monolith?**
 
 The vacation module has 26 API endpoints across 8 resource groups. A single service would exceed 2000 lines and violate the Single Responsibility Principle. The split follows **bounded context** within the module:
 
@@ -100,6 +100,7 @@ vacation.types.ts                     — all interfaces (DB rows + application 
 vacation.permissions.ts               — decentralized permission definitions (ADR-020)
 vacation-permission.registrar.ts      — OnModuleInit registration (ADR-020)
 ├── vacation.service.ts               — mutations (create, edit, respond, withdraw, cancel)
+├── vacation-approver.service.ts     — approver determination (role-based chain, self-approval prevention R5)
 ├── vacation-validation.service.ts    — business-rule validation (date checks, status transitions)
 ├── vacation-queries.service.ts       — read-only queries (paginated lists, team calendar)
 ├── vacation-capacity.service.ts      — pre-approval capacity analysis (THE HEART)
@@ -108,7 +109,7 @@ vacation-permission.registrar.ts      — OnModuleInit registration (ADR-020)
 ├── vacation-blackouts.service.ts     — CRUD + conflict check
 ├── vacation-staffing-rules.service.ts — CRUD for machine staffing minimums
 ├── vacation-settings.service.ts      — tenant-wide settings (get + update)
-└── vacation-notification.service.ts  — SSE + email stub via EventBus
+└── vacation-notification.service.ts  — SSE + persistent DB notifications (ADR-004) + email stub
 ```
 
 **Key architectural pattern: `tenantTransaction()` everywhere**
@@ -251,7 +252,7 @@ All 26 endpoint handlers + business logic + queries in one file.
 
 **Rejected:**
 
-- Would exceed 3000 lines (current split keeps each file under 400 lines)
+- Would exceed 3000 lines (current split keeps each file under 800 countable lines)
 - Violates SRP — mutations, queries, capacity, entitlements are distinct concerns
 - Harder to test in isolation (capacity tests shouldn't need mutation setup)
 - Merge conflicts when working on multiple features simultaneously
@@ -308,7 +309,7 @@ Single `/vacation` GraphQL endpoint with queries and mutations.
 ### Positive
 
 1. **Pre-approval capacity analysis prevents staffing violations** — the primary business value for industrial companies
-2. **11 focused services** — each under 400 lines, testable in isolation (115 unit tests + 29 API tests)
+2. **12 focused services** — each under 800 countable lines, testable in isolation (115 unit tests + 33 API tests)
 3. **RLS isolation on all 7 tables** — cross-tenant data leaks impossible (ADR-019)
 4. **Decentralized permissions** (ADR-020) — 5 permission modules (requests, rules, entitlements, holidays, overview) registered automatically
 5. **Append-only status log** — complete audit trail for compliance (who approved, when, with what note)
@@ -340,16 +341,57 @@ Single `/vacation` GraphQL endpoint with queries and mutations.
 
 ## Implementation Summary
 
-| Phase | Content                                                              | Sessions | Status   |
-| ----- | -------------------------------------------------------------------- | -------- | -------- |
-| 1     | Database: 6 migrations (feature flag → core → rebuild → multi-scope) | 1-4, 21  | Complete |
-| 2     | Backend: 11 services + controller (26 endpoints)                     | 5-12     | Complete |
-| 3     | Unit tests: 115 tests across 5 test files                            | 13-14    | Complete |
-| 4     | API integration tests: 29 endpoint tests                             | 15       | Complete |
-| 5     | Frontend: 5 pages (main, rules, entitlements, holidays, overview)    | 16-19    | Complete |
-| 6     | Integration + documentation                                          | 20       | Active   |
+| Phase | Content                                                              | Sessions  | Status   |
+| ----- | -------------------------------------------------------------------- | --------- | -------- |
+| 1     | Database: 6 migrations (feature flag → core → rebuild → multi-scope) | 1-4, 21   | Complete |
+| 2     | Backend: 12 services + controller (26 endpoints)                     | 5-12, 22  | Complete |
+| 3     | Unit tests: 115 tests across 5 test files                            | 13-14     | Complete |
+| 4     | API integration tests: 29 endpoint tests                             | 15        | Complete |
+| 5     | Frontend: 5 pages (main, rules, entitlements, holidays, overview)    | 16-19     | Complete |
+| 6     | Integration: notifications, audit logging, calendar, documentation   | 20, 23-24 | Active   |
 
-**Total: 21 implementation sessions, 6 migrations, 20+ backend files, 30+ frontend files, 148 tests (115 unit + 33 API).**
+**Total: 24 implementation sessions, 6 migrations, 20+ backend files, 30+ frontend files, 148+ tests (115 unit + 33+ API).**
+
+### Notification Integration (Session 23)
+
+Vacation notifications follow the ADR-004 pattern (hybrid SSE + persistent DB):
+
+- **Persistent DB notifications:** Every lifecycle event (create, respond, withdraw, cancel) creates a row in `notifications` table with `type='vacation'`, `recipient_type='user'`, `metadata={requestId}`
+- **Sidebar badge:** Dashboard counts include vacation unread count; navigation shows badge on vacation menu items
+- **Mark-as-read:** `POST /notifications/mark-read/vacation` bulk-marks all vacation notifications as read (called on page visit)
+- **"Neu" badges:** `GET /vacation/notifications/unread-ids` returns request IDs with unread notifications; frontend shows "Neu" badge on RequestCard + IncomingRequestCard
+- **SSE real-time:** 4 event types (VACATION_REQUEST_CREATED/RESPONDED/WITHDRAWN/CANCELLED) increment frontend vacation count in real-time
+
+### Audit Logging Integration (Session 24)
+
+Vacation mutations are now logged via `ActivityLoggerService` (ADR-009 dual-table architecture):
+
+- **`audit_trail` (automatic):** The `AuditTrailInterceptor` captures every HTTP request (controller-level). No changes needed.
+- **`root_logs` (manual via ActivityLoggerService):** Every mutation now fires a `void this.activityLogger.log({...})` call after successful transaction commit. This ensures vacation actions appear in the Root Dashboard activity feed.
+
+**6 services instrumented:**
+
+| Service                              | Logged Actions                                         |
+| ------------------------------------ | ------------------------------------------------------ |
+| `vacation.service.ts`                | create, respond (approve/deny), withdraw, cancel, edit |
+| `vacation-blackouts.service.ts`      | create, update, delete                                 |
+| `vacation-holidays.service.ts`       | create, update, delete                                 |
+| `vacation-staffing-rules.service.ts` | create, update, delete                                 |
+| `vacation-entitlements.service.ts`   | createOrUpdate, addDays                                |
+| `vacation-settings.service.ts`       | update                                                 |
+
+**Infrastructure changes:**
+
+- `ActivityEntityType` extended with 6 types: `vacation`, `vacation_blackout`, `vacation_holiday`, `vacation_staffing_rule`, `vacation_entitlement`, `vacation_settings`
+- `RESOURCE_TABLE_MAP` extended with 5 entries for DELETE/UPDATE pre-fetch: `request`, `blackout`, `holiday`, `staffing-rule`, `entitlement`
+- Service method signatures updated: `userId` parameter added to `updateBlackout`, `deleteBlackout`, `updateHoliday`, `deleteHoliday`, `updateStaffingRule`, `deleteStaffingRule`; `addDays` signature changed to `(tenantId, performedBy, targetUserId, year, days)` to distinguish admin from target employee
+
+**Design decisions:**
+
+- **Fire-and-forget:** `void this.activityLogger.log({...})` — never blocks, never throws, never rolls back the main transaction
+- **Log after commit:** Activity log calls happen AFTER `tenantTransaction()` completes, preventing phantom log entries on rollback
+- **UUID entity IDs:** Vacation entities use UUID strings, but `logCreate/logUpdate/logDelete` require `entityId: number`. Solution: use base `log()` method (entityId optional), include UUID in `details` and `newValues`
+- **German log messages:** Consistent with existing activity log entries (e.g. "Urlaubsantrag erstellt", "Urlaubssperre gelöscht")
 
 ---
 

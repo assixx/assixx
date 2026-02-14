@@ -46,13 +46,14 @@ export class VacationValidationService {
     private readonly holidaysService: VacationHolidaysService,
   ) {}
 
-  /** Validate a new request: advance notice, max consecutive, overlap. */
+  /** Validate a new request: past-date, advance notice, max consecutive, overlap. */
   async validateNewRequest(
     client: PoolClient,
     tenantId: number,
     userId: number,
     dto: CreateVacationRequestDto,
   ): Promise<void> {
+    this.validateStartDateNotInPast(dto.startDate);
     const settings = await this.settingsService.getSettings(tenantId);
     this.validateAdvanceNotice(dto.startDate, settings.advanceNoticeDays);
     this.validateMaxConsecutive(
@@ -190,6 +191,7 @@ export class VacationValidationService {
     if (merged.endDate < merged.startDate) {
       throw new BadRequestException('End date must be on or after start date');
     }
+    this.validateStartDateNotInPast(merged.startDate);
     const settings = await this.settingsService.getSettings(tenantId);
     this.validateAdvanceNotice(merged.startDate, settings.advanceNoticeDays);
     this.validateMaxConsecutive(
@@ -236,6 +238,19 @@ export class VacationValidationService {
   // ==========================================================================
   // Private helpers
   // ==========================================================================
+
+  /** Reject start dates in the past — independent of advance_notice_days. */
+  private validateStartDateNotInPast(startDate: string): void {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    if (start < today) {
+      throw new BadRequestException(
+        'Startdatum darf nicht in der Vergangenheit liegen',
+      );
+    }
+  }
 
   private validateAdvanceNotice(startDate: string, advanceDays: number): void {
     if (advanceDays === 0) return;

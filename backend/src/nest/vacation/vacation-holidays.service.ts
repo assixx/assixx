@@ -18,6 +18,7 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateHolidayDto } from './dto/create-holiday.dto.js';
 import type { UpdateHolidayDto } from './dto/update-holiday.dto.js';
@@ -31,7 +32,10 @@ import type {
 export class VacationHolidaysService {
   private readonly logger: Logger = new Logger(VacationHolidaysService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get all active holidays for a tenant, optionally filtered by year.
@@ -98,6 +102,21 @@ export class VacationHolidaysService {
           this.logger.log(
             `Holiday created: ${dto.name} on ${dto.holidayDate} (tenant ${tenantId})`,
           );
+
+          void this.activityLogger.log({
+            tenantId,
+            userId,
+            action: 'create',
+            entityType: 'vacation_holiday',
+            details: `Feiertag erstellt: "${dto.name}" am ${dto.holidayDate}`,
+            newValues: {
+              holidayId: id,
+              name: dto.name,
+              holidayDate: dto.holidayDate,
+              recurring: dto.recurring,
+            },
+          });
+
           return this.mapRowToHoliday(row);
         } catch (error: unknown) {
           if (this.isUniqueViolation(error)) {
@@ -118,6 +137,7 @@ export class VacationHolidaysService {
    */
   async updateHoliday(
     tenantId: number,
+    userId: number,
     id: string,
     dto: UpdateHolidayDto,
   ): Promise<VacationHoliday> {
@@ -150,7 +170,23 @@ export class VacationHolidaysService {
             throw new NotFoundException(`Holiday ${id} not found`);
           }
 
-          return this.mapRowToHoliday(row);
+          const holiday = this.mapRowToHoliday(row);
+
+          void this.activityLogger.log({
+            tenantId,
+            userId,
+            action: 'update',
+            entityType: 'vacation_holiday',
+            details: `Feiertag aktualisiert: "${holiday.name}" (${id})`,
+            newValues: {
+              holidayId: id,
+              name: dto.name,
+              holidayDate: dto.holidayDate,
+              recurring: dto.recurring,
+            },
+          });
+
+          return holiday;
         } catch (error: unknown) {
           if (error instanceof NotFoundException) {
             throw error;
@@ -170,22 +206,36 @@ export class VacationHolidaysService {
    * Soft-delete a holiday (is_active = 4).
    * Throws NotFoundException if not found.
    */
-  async deleteHoliday(tenantId: number, id: string): Promise<void> {
+  async deleteHoliday(
+    tenantId: number,
+    userId: number,
+    id: string,
+  ): Promise<void> {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: string }>(
+        const result = await client.query<{ id: string; name: string }>(
           `UPDATE vacation_holidays
            SET is_active = 4, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 AND is_active = 1
-           RETURNING id`,
+           RETURNING id, name`,
           [id, tenantId],
         );
 
-        if (result.rows[0] === undefined) {
+        const deleted = result.rows[0];
+        if (deleted === undefined) {
           throw new NotFoundException(`Holiday ${id} not found`);
         }
 
         this.logger.log(`Holiday soft-deleted: ${id} (tenant ${tenantId})`);
+
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'delete',
+          entityType: 'vacation_holiday',
+          details: `Feiertag gelöscht: "${deleted.name}" (${id})`,
+          oldValues: { holidayId: id, name: deleted.name },
+        });
       },
     );
   }

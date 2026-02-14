@@ -5,11 +5,12 @@
    * SSR: Data loaded in +page.server.ts
    * Svelte 5 Runes: $derived for SSR, $state for local UI
    */
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
 
   import { invalidateAll } from '$app/navigation';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   // Vacation-specific styles (same pattern as KVP — external file, no scoping)
   import '../../../../styles/vacation.css';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
@@ -54,6 +55,7 @@
   const incomingRequests = $derived(data.incomingRequests);
   const balance = $derived(data.balance);
   const canApprove = $derived(data.canApprove);
+  const unreadRequestIds = $derived(new Set(data.unreadRequestIds));
 
   // ==========================================================================
   // LOCAL UI STATE
@@ -106,6 +108,10 @@
     vacationState.setIncomingRequests(incomingRequests);
     vacationState.setBalance(balance);
     vacationState.setLoading(false);
+  });
+
+  onMount(() => {
+    void notificationStore.markTypeAsRead('vacation');
   });
 
   onDestroy(() => {
@@ -651,6 +657,7 @@
             {#each vacationState.myRequests.data as request (request.id)}
               <RequestCard
                 {request}
+                isNew={unreadRequestIds.has(request.id)}
                 onDetail={handleDetail}
                 onEdit={handleEdit}
                 onWithdraw={handleWithdraw}
@@ -673,6 +680,7 @@
           {#each vacationState.incomingRequests.data as request (request.id)}
             <IncomingRequestCard
               {request}
+              isNew={unreadRequestIds.has(request.id)}
               onApprove={handleApproveClick}
               onDeny={handleDenyClick}
               onDetail={handleDetail}

@@ -14,6 +14,7 @@ import { BlackboardService } from '../blackboard/blackboard.service.js';
 import { CalendarService } from '../calendar/calendar.service.js';
 import { ChatService } from '../chat/chat.service.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import { DatabaseService } from '../database/database.service.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import { KvpService } from '../kvp/kvp.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -21,6 +22,7 @@ import { SurveysService } from '../surveys/surveys.service.js';
 import { UserPermissionsService } from '../user-permissions/user-permissions.service.js';
 import type {
   ChatCounts,
+  CountItem,
   DashboardCounts,
   NotificationStats,
 } from './dto/dashboard-counts.dto.js';
@@ -38,6 +40,18 @@ const EMPTY_NOTIFICATIONS: NotificationStats = {
 /** Fallback for simple counts on error */
 const EMPTY_COUNT = { count: 0 };
 
+/** Return type for fetchAllCounts — fixed-length tuple for safe destructuring */
+type AllCounts = [
+  ChatCounts,
+  NotificationStats,
+  CountItem,
+  CountItem,
+  CountItem,
+  CountItem,
+  CountItem,
+  CountItem,
+];
+
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
@@ -47,6 +61,7 @@ export class DashboardService {
     private readonly notificationsService: NotificationsService,
     private readonly blackboardService: BlackboardService,
     private readonly calendarService: CalendarService,
+    private readonly db: DatabaseService,
     private readonly documentsService: DocumentsService,
     private readonly kvpService: KvpService,
     private readonly surveysService: SurveysService,
@@ -75,8 +90,16 @@ export class DashboardService {
     const canAccess = await this.buildFeatureAccessCheck(user);
 
     // Execute count queries in parallel — skip features without permission
-    const [chat, notifications, blackboard, calendar, documents, kvp, surveys] =
-      await this.fetchAllCounts(user, tenantId, canAccess);
+    const [
+      chat,
+      notifications,
+      blackboard,
+      calendar,
+      documents,
+      kvp,
+      surveys,
+      vacation,
+    ] = await this.fetchAllCounts(user, tenantId, canAccess);
 
     return {
       chat,
@@ -86,7 +109,34 @@ export class DashboardService {
       documents,
       kvp,
       surveys,
+      vacation,
       fetchedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Create a guarded fetcher that skips features without permission.
+   * Returns a function that catches errors and returns the fallback.
+   */
+  private createGuard(
+    canAccess: (code: string) => boolean,
+  ): <T>(
+    feature: string | null,
+    fetcher: () => Promise<T>,
+    fallback: T,
+  ) => Promise<T> {
+    return <T>(
+      feature: string | null,
+      fetcher: () => Promise<T>,
+      fallback: T,
+    ): Promise<T> => {
+      if (feature !== null && !canAccess(feature)) {
+        return Promise.resolve(fallback);
+      }
+      return fetcher().catch((err: unknown) => {
+        this.logger.warn(`${feature ?? 'global'} count failed: ${String(err)}`);
+        return fallback;
+      });
     };
   }
 
@@ -98,60 +148,34 @@ export class DashboardService {
     user: NestAuthUser,
     tenantId: number,
     canAccess: (featureCode: string) => boolean,
-  ): Promise<
-    [
-      ChatCounts,
-      NotificationStats,
-      { count: number },
-      { count: number },
-      { count: number },
-      { count: number },
-      { count: number },
-    ]
-  > {
+  ): Promise<AllCounts> {
+    const g = this.createGuard(canAccess);
+    const uid: number = user.id;
     return await Promise.all([
-      canAccess('chat') ?
-        this.fetchChatCounts().catch((err: unknown) => {
-          this.logger.warn(`Chat counts failed: ${String(err)}`);
-          return EMPTY_CHAT;
-        })
-      : Promise.resolve(EMPTY_CHAT),
-      this.fetchNotificationStats(user.id, tenantId).catch((err: unknown) => {
-        this.logger.warn(`Notification stats failed: ${String(err)}`);
-        return EMPTY_NOTIFICATIONS;
-      }),
-      canAccess('blackboard') ?
-        this.fetchBlackboardCount(user.id, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Blackboard count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        })
-      : Promise.resolve(EMPTY_COUNT),
-      canAccess('calendar') ?
-        this.fetchCalendarCount(user, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Calendar count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        })
-      : Promise.resolve(EMPTY_COUNT),
-      canAccess('documents') ?
-        this.fetchDocumentsCount(user, tenantId).catch((err: unknown) => {
-          this.logger.warn(`Documents count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        })
-      : Promise.resolve(EMPTY_COUNT),
-      canAccess('kvp') ?
-        this.fetchKvpCount(user.id, tenantId).catch((err: unknown) => {
-          this.logger.warn(`KVP count failed: ${String(err)}`);
-          return EMPTY_COUNT;
-        })
-      : Promise.resolve(EMPTY_COUNT),
-      canAccess('surveys') ?
-        this.fetchSurveyPendingCount(user.id, tenantId).catch(
-          (err: unknown) => {
-            this.logger.warn(`Survey count failed: ${String(err)}`);
-            return EMPTY_COUNT;
-          },
-        )
-      : Promise.resolve(EMPTY_COUNT),
+      g('chat', () => this.fetchChatCounts(), EMPTY_CHAT),
+      g(
+        null,
+        () => this.fetchNotificationStats(uid, tenantId),
+        EMPTY_NOTIFICATIONS,
+      ),
+      g(
+        'blackboard',
+        () => this.fetchBlackboardCount(uid, tenantId),
+        EMPTY_COUNT,
+      ),
+      g('calendar', () => this.fetchCalendarCount(user, tenantId), EMPTY_COUNT),
+      g(
+        'documents',
+        () => this.fetchDocumentsCount(user, tenantId),
+        EMPTY_COUNT,
+      ),
+      g('kvp', () => this.fetchKvpCount(uid, tenantId), EMPTY_COUNT),
+      g(
+        'surveys',
+        () => this.fetchSurveyPendingCount(uid, tenantId),
+        EMPTY_COUNT,
+      ),
+      g(null, () => this.fetchVacationCount(uid, tenantId), EMPTY_COUNT),
     ]);
   }
 
@@ -280,5 +304,30 @@ export class DashboardService {
     tenantId: number,
   ): Promise<{ count: number }> {
     return await this.surveysService.getPendingSurveyCount(userId, tenantId);
+  }
+
+  /**
+   * Fetch unread vacation notification count.
+   * Counts notifications of type='vacation' targeted at the user
+   * that have no entry in notification_read_status.
+   * No permission gating — every user can have vacation notifications.
+   */
+  private async fetchVacationCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    const rows = await this.db.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM notifications n
+       LEFT JOIN notification_read_status nrs
+         ON n.id = nrs.notification_id AND nrs.user_id = $2
+       WHERE n.tenant_id = $1
+         AND n.type = 'vacation'
+         AND n.recipient_type = 'user'
+         AND n.recipient_id = $2
+         AND nrs.id IS NULL`,
+      [tenantId, userId],
+    );
+    return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };
   }
 }

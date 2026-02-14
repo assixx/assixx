@@ -410,18 +410,18 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
 
 ### Step 2.8: Vacation Service (Core business logic) [DONE - Session 10, 2026-02-12]
 
-**Architecture: 3-file split** (ESLint max-lines: 800 per file with skipBlankLines+skipComments)
+**Architecture: 4-file split** (ESLint max-lines: 800 per file with skipBlankLines+skipComments)
 
 | File                             | Lines                    | Purpose                                                                                                                  |
 | -------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `vacation.service.ts`            | 846 raw (~700 countable) | Mutations: create, approve/deny, withdraw, cancel, edit + approver determination                                         |
+| `vacation.service.ts`            | 820 raw (~738 countable) | Mutations: create, approve/deny, withdraw, cancel, edit                                                                  |
+| `vacation-approver.service.ts`   | ~175                     | Approver determination: role-based chain with self-approval prevention (R5)                                              |
 | `vacation-validation.service.ts` | 366                      | Business-rule validation: advance notice, max consecutive, overlap, balance, blackouts, workday computation, merge logic |
 | `vacation-queries.service.ts`    | 374                      | Read-only queries: getRequestById, getMyRequests, getIncomingRequests, getStatusLog, getTeamCalendar                     |
 
 **VacationService methods (mutations):**
 
 - `createRequest(userId, tenantId, dto)` — full validation chain → INSERT + status_log + auto-approve flow
-- `getApprover(tenantId, userId)` — role-based approver with self-approval prevention (R5)
 - `respondToRequest(responderId, tenantId, requestId, dto)` — FOR UPDATE lock (R6) + approve/deny
 - `withdrawRequest(requesterId, tenantId, requestId)` — pending or future-approved only
 - `cancelRequest(adminId, tenantId, requestId, reason)` — admin/root cancels approved
@@ -446,7 +446,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
 - `mergeWithExisting(dto, existing)` — merge edit DTO with existing row
 - `validateEditedRequest(client, tenantId, requesterId, requestId, merged, teamId, deptId?)` — full edit validation
 
-**Approver determination logic (critical):**
+**VacationApproverService** (extracted Session 22 — exceeded 800-line ESLint limit):
 
 ```
 employee → team_lead_id (or deputy_lead_id if lead absent, or escalate to area_lead if lead IS the user)
@@ -455,7 +455,7 @@ root → auto-approve (no approver needed)
 area_lead (user is area_lead_id in areas table) → auto-approve
 ```
 
-**Verification:** ESLint 0 errors, type-check 0 errors (all 3 files + module)
+**Verification:** ESLint 0 errors, type-check 0 errors (all 4 files + module)
 
 ### Step 2.9: Notification Service + EventBus [DONE - Session 11, 2026-02-12]
 
@@ -494,12 +494,25 @@ VACATION_REQUEST_CANCELLED: 'vacation.request.cancelled',
 
 **VacationNotificationService methods:**
 
-- `notifyCreated(tenantId, request)` — emits SSE event + email stub
-- `notifyResponded(tenantId, request)` — emits SSE event + email stub
-- `notifyWithdrawn(tenantId, requestId, requesterId)` — emits SSE event (minimal payload)
-- `notifyCancelled(tenantId, requestId, requesterId)` — emits SSE event (minimal payload)
+- `notifyCreated(tenantId, request)` — emits SSE event + persistent DB notification (→ approver) + email stub
+- `notifyResponded(tenantId, request)` — emits SSE event + persistent DB notification (→ requester) + email stub
+- `notifyWithdrawn(tenantId, requestId, requesterId, approverId, requesterName)` — emits SSE event + persistent DB notification (→ approver)
+- `notifyCancelled(tenantId, requestId, requesterId, adminId, reason)` — emits SSE event + persistent DB notification (→ requester)
 - `toEventPayload(request)` — private mapper from `VacationRequest` to event payload
+- `createPersistentNotification(...)` — private: INSERT INTO notifications with type='vacation', recipient_type='user', metadata={requestId} (ADR-004 pattern)
 - `sendEmailStub(action, tenantId, request)` — private email placeholder
+
+**Persistent notification integration (Session 23, 2026-02-14):**
+
+- `vacation.service.ts` — Injected VacationNotificationService, notify calls after create/respond/withdraw/cancel
+- `vacation-queries.service.ts` — New method `getUnreadNotificationRequestIds()` for "Neu" badges
+- `vacation.controller.ts` — New endpoint `GET /vacation/notifications/unread-ids`
+- `notification-feature.service.ts` — Extended type union to include 'vacation'
+- `notifications.service.ts` — Extended facade type union to include 'vacation'
+- `notifications.controller.ts` — Extended mark-read endpoint to accept 'vacation'
+- `dashboard.service.ts` — Added `fetchVacationCount()` + vacation in parallel fetch
+- `dashboard-counts.dto.ts` — Added `vacation: CountItemSchema` to Zod schema
+- Frontend: notification-sse.ts (4 vacation SSE types), notification.store.svelte.ts (vacation counts + SSE handler + mark-read), navigation-config.ts (badgeType: 'vacation'), RequestCard + IncomingRequestCard ("Neu" badge), +page.server.ts (parallel unread-ids fetch), +page.svelte (onMount markTypeAsRead)
 
 **Verification:** ESLint 0 errors, type-check 0 errors (all 4 files)
 
@@ -524,7 +537,7 @@ export class VacationController {
 ### Phase 2 Definition of Done
 
 - [x] `VacationModule` registered in `app.module.ts` (Session 5)
-- [x] All 11 services implemented and injected (Sessions 6-11: holidays, settings, entitlements, blackouts, staffing-rules, capacity, validation, service, queries, notification + permission registrar)
+- [x] All 12 services implemented and injected (Sessions 6-11: holidays, settings, entitlements, blackouts, staffing-rules, capacity, validation, service, queries, notification + permission registrar; Session 22: approver extracted from vacation.service.ts)
 - [x] Controller with all 29 endpoints (Session 12 — 8 requests + 1 capacity + 4 entitlements + 4 blackouts + 4 staffing + 4 holidays + 2 settings + 2 overview)
 - [x] `VacationPermissionRegistrar` registers on module init (Session 5)
 - [x] Feature check on every controller method (Session 12 — `ensureFeatureEnabled()` private helper)
@@ -549,7 +562,8 @@ export class VacationController {
 
 ```
 backend/src/nest/vacation/
-    vacation.service.test.ts              # 31 tests (core logic + race condition, Session 13+14)
+    vacation.service.test.ts              # 20 tests (core mutations + race condition, Session 13+14; approver tests extracted Session 22)
+    vacation-approver.service.test.ts     # 11 tests (approver determination, extracted Session 22)
     vacation-holidays.service.test.ts     # 20 tests (countWorkdays critical, Session 13)
     vacation-entitlements.service.test.ts # 17 tests (balance + 4 cross-year scenarios, Session 13+14)
     vacation-capacity.service.test.ts     # 17 tests (capacity analysis, Session 14)
@@ -559,7 +573,7 @@ backend/src/nest/vacation/
 
 ### Critical Test Scenarios
 
-**vacation.service.test.ts (core):**
+**vacation-approver.service.test.ts (approver determination, extracted Session 22):**
 
 - Employee → approver = team_lead_id
 - Employee + absent lead → approver = deputy_lead_id
@@ -567,8 +581,14 @@ backend/src/nest/vacation/
 - Admin → approver = area_lead_id
 - Root → auto-approved
 - Area-lead user → auto-approved
+- Admin + no area_lead → auto-approved
 - Employee without team → BadRequestException
 - Team without lead → BadRequestException
+- Absent lead + no deputy → fallback to lead
+- Deputy IS requester → fallback to lead
+
+**vacation.service.test.ts (core mutations):**
+
 - Insufficient balance → BadRequestException
 - Blackout period → BadRequestException
 - Overlapping request → ConflictException
@@ -907,6 +927,8 @@ User: requester_id
 - ~~[ ] context.md updated~~ — GESTRICHEN
 - [x] FEATURES.md updated (Session 20)
 - [x] Customer fresh-install synced: `./scripts/sync-customer-migrations.sh` (Session 20 — 33 Migrationen)
+- [x] Vacation notifications integrated (Session 23): persistent DB notifications (ADR-004 pattern), sidebar badge counts, mark-read/vacation endpoint, dashboard vacation count, "Neu" badges on RequestCard + IncomingRequestCard, SSE types + frontend store
+- [x] Audit logging integration (Session 24, ADR-009): ActivityLoggerService in alle 6 Mutation-Services (vacation, blackouts, holidays, staffing-rules, entitlements, settings), 6 neue ActivityEntityTypes, 5 RESOURCE_TABLE_MAP Einträge, fire-and-forget nach Transaction-Commit, 85 Unit Tests grün
 
 ---
 
@@ -936,6 +958,9 @@ Session 18: Phase 5 — Frontend: /vacation/entitlements + /vacation/holidays [D
 Session 19: Phase 5 — Frontend: /vacation/overview [DONE 2026-02-13] (6 files: 4 foundation + 1 state + 1 page + nav/breadcrumb updates, svelte-check 0 errors, ESLint 0 errors)
 Session 20: Phase 6 — Integration + documentation + ADR-023
 Session 21: Phase 1 — Migration 32 (blackout multi-scope) + API test fix (scopeType→isGlobal) [DONE 2026-02-13]
+Session 22: Phase 2 — Extract VacationApproverService (vacation.service.ts exceeded 800-line ESLint limit → 4-file split) [DONE 2026-02-14]
+Session 23: Phase 6 — Vacation notification integration: persistent DB notifications (ADR-004), sidebar badge counts, mark-read, dashboard counts, "Neu" badges on request cards [DONE 2026-02-14]
+Session 24: Phase 6 — Audit logging integration (ADR-009): ActivityLoggerService in alle 6 Vacation Services injiziert, 6 neue EntityTypes, 5 RESOURCE_TABLE_MAP Einträge, userId-Parameter hinzugefügt wo fehlend [DONE 2026-02-14]
 ```
 
 ---
@@ -944,39 +969,47 @@ Session 21: Phase 1 — Migration 32 (blackout multi-scope) + API test fix (scop
 
 ### Backend (new)
 
-| File                                                           | Purpose                         |
-| -------------------------------------------------------------- | ------------------------------- |
-| `backend/src/nest/vacation/vacation.module.ts`                 | NestJS module                   |
-| `backend/src/nest/vacation/vacation.controller.ts`             | REST controller (26 endpoints)  |
-| `backend/src/nest/vacation/vacation.service.ts`                | Core business logic (mutations) |
-| `backend/src/nest/vacation/vacation-validation.service.ts`     | Business-rule validation        |
-| `backend/src/nest/vacation/vacation-queries.service.ts`        | Read-only queries (paginated)   |
-| `backend/src/nest/vacation/vacation-capacity.service.ts`       | Capacity analysis               |
-| `backend/src/nest/vacation/vacation-holidays.service.ts`       | Holidays + countWorkdays        |
-| `backend/src/nest/vacation/vacation-entitlements.service.ts`   | Entitlements + getBalance       |
-| `backend/src/nest/vacation/vacation-blackouts.service.ts`      | Blackout CRUD + conflict check  |
-| `backend/src/nest/vacation/vacation-staffing-rules.service.ts` | Min staffing CRUD               |
-| `backend/src/nest/vacation/vacation-settings.service.ts`       | Tenant settings                 |
-| `backend/src/nest/vacation/vacation-notification.service.ts`   | SSE + email stub                |
-| `backend/src/nest/vacation/vacation.types.ts`                  | All interfaces                  |
-| `backend/src/nest/vacation/vacation.permissions.ts`            | Permission definition           |
-| `backend/src/nest/vacation/vacation-permission.registrar.ts`   | Permission registration         |
-| `backend/src/nest/vacation/dto/*.ts`                           | 15 DTO files                    |
+| File                                                           | Purpose                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------- |
+| `backend/src/nest/vacation/vacation.module.ts`                 | NestJS module                                            |
+| `backend/src/nest/vacation/vacation.controller.ts`             | REST controller (26 endpoints)                           |
+| `backend/src/nest/vacation/vacation.service.ts`                | Core business logic (mutations)                          |
+| `backend/src/nest/vacation/vacation-approver.service.ts`       | Approver determination chain                             |
+| `backend/src/nest/vacation/vacation-validation.service.ts`     | Business-rule validation                                 |
+| `backend/src/nest/vacation/vacation-queries.service.ts`        | Read-only queries (paginated)                            |
+| `backend/src/nest/vacation/vacation-capacity.service.ts`       | Capacity analysis                                        |
+| `backend/src/nest/vacation/vacation-holidays.service.ts`       | Holidays + countWorkdays                                 |
+| `backend/src/nest/vacation/vacation-entitlements.service.ts`   | Entitlements + getBalance                                |
+| `backend/src/nest/vacation/vacation-blackouts.service.ts`      | Blackout CRUD + conflict check                           |
+| `backend/src/nest/vacation/vacation-staffing-rules.service.ts` | Min staffing CRUD                                        |
+| `backend/src/nest/vacation/vacation-settings.service.ts`       | Tenant settings                                          |
+| `backend/src/nest/vacation/vacation-notification.service.ts`   | SSE + persistent DB notifications (ADR-004) + email stub |
+| `backend/src/nest/vacation/vacation.types.ts`                  | All interfaces                                           |
+| `backend/src/nest/vacation/vacation.permissions.ts`            | Permission definition                                    |
+| `backend/src/nest/vacation/vacation-permission.registrar.ts`   | Permission registration                                  |
+| `backend/src/nest/vacation/dto/*.ts`                           | 15 DTO files                                             |
 
 ### Backend (modified)
 
-| File                                                         | Change                                                                                                                                                   |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/src/nest/app.module.ts`                             | Add VacationModule import                                                                                                                                |
-| `backend/src/utils/eventBus.ts`                              | Add VacationRequestEvent interface + 4 emit methods [DONE Session 11]                                                                                    |
-| `backend/src/nest/notifications/notifications.controller.ts` | Add 4 SSE_EVENTS + NotificationEventData.request + canAccess('vacation') block + registerVacationHandlers() helper + 4 listener counts [DONE Session 11] |
-| `backend/src/nest/users/user-availability.service.ts`        | Rename 12 SQL + 8 column references (employee_availability → user_availability)                                                                          |
-| `backend/src/nest/teams/teams.service.ts`                    | Rename 2 LEFT JOIN references                                                                                                                            |
-| `backend/src/nest/users/users.service.ts`                    | Update 3 comment references                                                                                                                              |
-| `backend/src/nest/users/users.helpers.ts`                    | Update 2 comment references                                                                                                                              |
-| `backend/src/nest/users/users.types.ts`                      | Update 1 comment reference                                                                                                                               |
-| `backend/src/nest/users/dto/update-availability.dto.ts`      | Update 1 comment reference                                                                                                                               |
-| `backend/src/nest/users/user-availability.service.test.ts`   | **CRITICAL:** Update test data (employee_id → user_id) + SQL assertions                                                                                  |
+| File                                                             | Change                                                                                                                                                   |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/src/nest/app.module.ts`                                 | Add VacationModule import                                                                                                                                |
+| `backend/src/utils/eventBus.ts`                                  | Add VacationRequestEvent interface + 4 emit methods [DONE Session 11]                                                                                    |
+| `backend/src/nest/notifications/notifications.controller.ts`     | Add 4 SSE_EVENTS + NotificationEventData.request + canAccess('vacation') block + registerVacationHandlers() helper + 4 listener counts [DONE Session 11] |
+| `backend/src/nest/users/user-availability.service.ts`            | Rename 12 SQL + 8 column references (employee_availability → user_availability)                                                                          |
+| `backend/src/nest/teams/teams.service.ts`                        | Rename 2 LEFT JOIN references                                                                                                                            |
+| `backend/src/nest/users/users.service.ts`                        | Update 3 comment references                                                                                                                              |
+| `backend/src/nest/users/users.helpers.ts`                        | Update 2 comment references                                                                                                                              |
+| `backend/src/nest/users/users.types.ts`                          | Update 1 comment reference                                                                                                                               |
+| `backend/src/nest/users/dto/update-availability.dto.ts`          | Update 1 comment reference                                                                                                                               |
+| `backend/src/nest/users/user-availability.service.test.ts`       | **CRITICAL:** Update test data (employee_id → user_id) + SQL assertions                                                                                  |
+| `backend/src/nest/dashboard/dashboard.service.ts`                | Added DatabaseService injection + `fetchVacationCount()` + vacation in parallel fetch [Session 23]                                                       |
+| `backend/src/nest/dashboard/dto/dashboard-counts.dto.ts`         | Added `vacation: CountItemSchema` to Zod schema [Session 23]                                                                                             |
+| `backend/src/nest/notifications/notification-feature.service.ts` | Extended type union to include 'vacation' [Session 23]                                                                                                   |
+| `backend/src/nest/notifications/notifications.service.ts`        | Extended facade type union to include 'vacation' [Session 23]                                                                                            |
+| `backend/src/nest/notifications/notifications.controller.ts`     | Extended mark-read/:type to accept 'vacation' [Session 23]                                                                                               |
+| `backend/src/nest/common/services/activity-logger.service.ts`    | 6 neue EntityTypes: vacation, vacation_blackout, vacation_holiday, vacation_staffing_rule, vacation_entitlement, vacation_settings [Session 24]          |
+| `backend/src/nest/common/audit/audit.constants.ts`               | 5 neue RESOURCE_TABLE_MAP Einträge: request, blackout, holiday, staffing-rule, entitlement [Session 24]                                                  |
 
 ### Database (new)
 
@@ -1036,15 +1069,22 @@ Session 21: Phase 1 — Migration 32 (blackout multi-scope) + API test fix (scop
 
 ### Frontend (modified)
 
-| File                                                  | Change                                                                                 | Status          |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------- |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Added `vacation` icon + menu item to root, admin, employee arrays                      | DONE Session 16 |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Root + admin vacation: single URL → submenu (VACATION_ADMIN_SUBMENU: Anträge + Regeln) | DONE Session 17 |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Split VACATION_ADMIN_SUBMENU (3 items) + VACATION_ROOT_SUBMENU (4 items with holidays) | DONE Session 18 |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts` | Added "Übersicht" as first item in both VACATION_ADMIN_SUBMENU + VACATION_ROOT_SUBMENU | DONE Session 19 |
-| `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/rules` breadcrumb entry                                               | DONE Session 17 |
-| `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/entitlements` + `/vacation/holidays` breadcrumb entries               | DONE Session 18 |
-| `frontend/src/lib/components/Breadcrumb.svelte`       | Added `/vacation/overview` breadcrumb entry                                            | DONE Session 19 |
+| File                                                                          | Change                                                                                 | Status          |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------- |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts`                         | Added `vacation` icon + menu item to root, admin, employee arrays                      | DONE Session 16 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts`                         | Root + admin vacation: single URL → submenu (VACATION_ADMIN_SUBMENU: Anträge + Regeln) | DONE Session 17 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts`                         | Split VACATION_ADMIN_SUBMENU (3 items) + VACATION_ROOT_SUBMENU (4 items with holidays) | DONE Session 18 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts`                         | Added "Übersicht" as first item in both VACATION_ADMIN_SUBMENU + VACATION_ROOT_SUBMENU | DONE Session 19 |
+| `frontend/src/lib/components/Breadcrumb.svelte`                               | Added `/vacation/rules` breadcrumb entry                                               | DONE Session 17 |
+| `frontend/src/lib/components/Breadcrumb.svelte`                               | Added `/vacation/entitlements` + `/vacation/holidays` breadcrumb entries               | DONE Session 18 |
+| `frontend/src/lib/components/Breadcrumb.svelte`                               | Added `/vacation/overview` breadcrumb entry                                            | DONE Session 19 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts`                         | Added `badgeType: 'vacation'` to vacation menu items (all 3 roles)                     | DONE Session 23 |
+| `frontend/src/lib/utils/notification-sse.ts`                                  | Added 4 vacation SSE event types + VacationRequestEventData interface                  | DONE Session 23 |
+| `frontend/src/lib/stores/notification.store.svelte.ts`                        | Added vacation to NotificationCounts, SSE handler, FeatureType, initFromSSR, mark-read | DONE Session 23 |
+| `frontend/src/routes/(app)/(shared)/vacation/+page.server.ts`                 | Added parallel fetch for unread notification request IDs                               | DONE Session 23 |
+| `frontend/src/routes/(app)/(shared)/vacation/+page.svelte`                    | Added onMount markTypeAsRead('vacation') + isNew prop to cards                         | DONE Session 23 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/RequestCard.svelte`         | Added isNew prop + "Neu" badge (badge--sm badge--success)                              | DONE Session 23 |
+| `frontend/src/routes/(app)/(shared)/vacation/_lib/IncomingRequestCard.svelte` | Added isNew prop + "Neu" badge                                                         | DONE Session 23 |
 
 ---
 

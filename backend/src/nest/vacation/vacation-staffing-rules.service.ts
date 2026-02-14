@@ -22,6 +22,7 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateStaffingRuleDto } from './dto/create-staffing-rule.dto.js';
 import type { UpdateStaffingRuleDto } from './dto/update-staffing-rule.dto.js';
@@ -41,7 +42,10 @@ export class VacationStaffingRulesService {
     VacationStaffingRulesService.name,
   );
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get all active staffing rules for a tenant.
@@ -107,6 +111,20 @@ export class VacationStaffingRulesService {
           this.logger.log(
             `Staffing rule created: machine ${dto.machineId} → min ${dto.minStaffCount} (tenant ${tenantId})`,
           );
+
+          void this.activityLogger.log({
+            tenantId,
+            userId,
+            action: 'create',
+            entityType: 'vacation_staffing_rule',
+            details: `Besetzungsregel erstellt: Maschine ${String(dto.machineId)} → min. ${String(dto.minStaffCount)}`,
+            newValues: {
+              ruleId: id,
+              machineId: dto.machineId,
+              minStaffCount: dto.minStaffCount,
+            },
+          });
+
           return this.mapRowToStaffingRule(row);
         } catch (error: unknown) {
           if (this.isUniqueViolation(error)) {
@@ -126,6 +144,7 @@ export class VacationStaffingRulesService {
    */
   async updateStaffingRule(
     tenantId: number,
+    userId: number,
     id: string,
     dto: UpdateStaffingRuleDto,
   ): Promise<VacationStaffingRule> {
@@ -154,6 +173,20 @@ export class VacationStaffingRulesService {
         this.logger.log(
           `Staffing rule updated: ${id} → min ${dto.minStaffCount} (tenant ${tenantId})`,
         );
+
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'update',
+          entityType: 'vacation_staffing_rule',
+          details: `Besetzungsregel aktualisiert: ${row.machine_name ?? String(row.machine_id)} → min. ${String(dto.minStaffCount)}`,
+          newValues: {
+            ruleId: id,
+            machineId: row.machine_id,
+            minStaffCount: dto.minStaffCount,
+          },
+        });
+
         return this.mapRowToStaffingRule(row);
       },
     );
@@ -163,24 +196,46 @@ export class VacationStaffingRulesService {
    * Soft-delete a staffing rule (is_active = 4).
    * Throws NotFoundException if not found.
    */
-  async deleteStaffingRule(tenantId: number, id: string): Promise<void> {
+  async deleteStaffingRule(
+    tenantId: number,
+    userId: number,
+    id: string,
+  ): Promise<void> {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: string }>(
+        const result = await client.query<{
+          id: string;
+          machine_id: number;
+          min_staff_count: number;
+        }>(
           `UPDATE vacation_staffing_rules
            SET is_active = 4, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 AND is_active = 1
-           RETURNING id`,
+           RETURNING id, machine_id, min_staff_count`,
           [id, tenantId],
         );
 
-        if (result.rows[0] === undefined) {
+        const deleted = result.rows[0];
+        if (deleted === undefined) {
           throw new NotFoundException(`Staffing rule ${id} not found`);
         }
 
         this.logger.log(
           `Staffing rule soft-deleted: ${id} (tenant ${tenantId})`,
         );
+
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'delete',
+          entityType: 'vacation_staffing_rule',
+          details: `Besetzungsregel gelöscht: Maschine ${String(deleted.machine_id)} (${id})`,
+          oldValues: {
+            ruleId: id,
+            machineId: deleted.machine_id,
+            minStaffCount: deleted.min_staff_count,
+          },
+        });
       },
     );
   }

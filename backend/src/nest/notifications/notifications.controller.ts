@@ -182,6 +182,60 @@ function createMessageHandler(
   };
 }
 
+/**
+ * Create SSE vacation handler that only sends to the intended recipient.
+ *
+ * Recipient logic per event type:
+ * - CREATED / WITHDRAWN → approverId (the person who needs to act)
+ * - RESPONDED / CANCELLED → requesterId (the person who submitted the request)
+ *
+ * This prevents the requester from seeing their own badge increment when
+ * they create a request — matching the persistent notification targeting.
+ */
+function createVacationHandler(
+  messageType: string,
+  userId: number,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): (eventData: NotificationEventData) => void {
+  /** Event types where the requester is the recipient (not the actor) */
+  const REQUESTER_IS_RECIPIENT = new Set([
+    'VACATION_REQUEST_RESPONDED',
+    'VACATION_REQUEST_CANCELLED',
+  ]);
+
+  return (eventData: NotificationEventData): void => {
+    const { request } = eventData;
+    if (eventData.tenantId !== tenantId || request === undefined) return;
+
+    const recipientId =
+      REQUESTER_IS_RECIPIENT.has(messageType) ?
+        request.requesterId
+      : request.approverId;
+
+    if (recipientId !== userId) return;
+
+    eventSubject.next({
+      data: {
+        type: messageType,
+        request: {
+          id: request.id,
+          requesterId: request.requesterId,
+          approverId: request.approverId,
+          startDate: request.startDate,
+          endDate: request.endDate,
+          vacationType: request.vacationType,
+          status: request.status,
+          computedDays: request.computedDays,
+          requesterName: request.requesterName,
+          approverName: request.approverName,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+}
+
 /** Register a handler on eventBus and track it for cleanup */
 function registerHandler(
   handlers: EventHandler[],
@@ -192,13 +246,12 @@ function registerHandler(
   handlers.push({ event, handler });
 }
 
-/** Register vacation-related SSE event handlers */
+/** Register vacation-related SSE event handlers with recipient filtering */
 function registerVacationHandlers(
   handlers: EventHandler[],
-  makeHandler: (
-    type: string,
-    key: string,
-  ) => (e: NotificationEventData) => void,
+  userId: number,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
 ): void {
   const vacationEvents = [
     {
@@ -220,7 +273,11 @@ function registerVacationHandlers(
   ] as const;
 
   for (const { event, type } of vacationEvents) {
-    registerHandler(handlers, event, makeHandler(type, 'request'));
+    registerHandler(
+      handlers,
+      event,
+      createVacationHandler(type, userId, tenantId, eventSubject),
+    );
   }
 }
 
@@ -272,7 +329,7 @@ function registerSSEHandlers(
     );
   }
   if (canAccess('vacation')) {
-    registerVacationHandlers(handlers, make);
+    registerVacationHandlers(handlers, userId, tenantId, eventSubject);
   }
   if ((role === 'admin' || role === 'root') && canAccess('kvp')) {
     registerHandler(handlers, SSE_EVENTS.KVP_SUBMITTED, make('NEW_KVP', 'kvp'));
@@ -416,16 +473,17 @@ export class NotificationsController {
    * POST /notifications/mark-read/:type
    * Mark all notifications of a feature type as read (ADR-004)
    *
-   * @param type - 'survey' | 'document' | 'kvp'
+   * @param type - 'survey' | 'document' | 'kvp' | 'vacation'
    */
   @Post('mark-read/:type')
+  @HttpCode(HttpStatus.OK)
   async markFeatureTypeAsRead(
     @Param('type') type: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ marked: number; message: string }> {
     // Validate type
-    const validTypes = ['survey', 'document', 'kvp'];
+    const validTypes = ['survey', 'document', 'kvp', 'vacation'];
     if (!validTypes.includes(type)) {
       throw new BadRequestException(
         `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
@@ -433,7 +491,7 @@ export class NotificationsController {
     }
 
     const marked = await this.notificationsService.markFeatureTypeAsRead(
-      type as 'survey' | 'document' | 'kvp',
+      type as 'survey' | 'document' | 'kvp' | 'vacation',
       user.id,
       tenantId,
     );

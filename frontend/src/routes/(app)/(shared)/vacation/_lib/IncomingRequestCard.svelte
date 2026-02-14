@@ -14,11 +14,14 @@
 
   const {
     request,
+    isNew = false,
     onApprove,
     onDeny,
     onDetail,
   }: {
     request: VacationRequest;
+    /** Show "Neu" badge when there's an unread notification for this request */
+    isNew?: boolean;
     onApprove: (req: VacationRequest) => void;
     onDeny: (req: VacationRequest) => void;
     onDetail: (req: VacationRequest) => void;
@@ -52,9 +55,14 @@
       <i class="fas fa-user mr-1"></i>
       {request.requesterName ?? 'Unbekannt'}
     </div>
-    <span class="badge {STATUS_BADGE_CLASS[request.status]}">
-      {STATUS_LABELS[request.status]}
-    </span>
+    <div class="flex items-center gap-2">
+      {#if isNew}
+        <span class="badge badge--sm badge--success">Neu</span>
+      {/if}
+      <span class="badge {STATUS_BADGE_CLASS[request.status]}">
+        {STATUS_LABELS[request.status]}
+      </span>
+    </div>
   </div>
 
   <div class="incoming-card__body">

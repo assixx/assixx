@@ -2,21 +2,22 @@
  * Vacation Service – Unit Tests (Phase 3, Session 13)
  *
  * Core business logic: create, respond (approve/deny), withdraw, cancel, edit.
- * Approver determination: employee→lead, absent lead→deputy, IS lead→escalate,
- * admin→area_lead, root→auto, area-lead→auto, no team→BadRequest, no lead→BadRequest.
- *
- * Mocked dependencies: DatabaseService (tenantTransaction), VacationValidationService.
+ * Mocked dependencies: DatabaseService (tenantTransaction), VacationApproverService,
+ * VacationValidationService, VacationNotificationService.
+ * Approver tests are in vacation-approver.service.test.ts.
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
 import {
-  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { VacationApproverService } from './vacation-approver.service.js';
+import type { VacationNotificationService } from './vacation-notification.service.js';
 import type { VacationValidationService } from './vacation-validation.service.js';
 import { VacationService } from './vacation.service.js';
 import type { VacationRequestRow } from './vacation.types.js';
@@ -31,6 +32,28 @@ function createMockDb() {
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
+
+function createMockApprover() {
+  return {
+    getApprover: vi.fn().mockResolvedValue({
+      approverId: 10,
+      autoApproved: false,
+    }),
+  };
+}
+
+function createMockActivityLogger() {
+  return { log: vi.fn().mockResolvedValue(undefined) };
+}
+
+function createMockNotification() {
+  return {
+    notifyCreated: vi.fn(),
+    notifyResponded: vi.fn(),
+    notifyWithdrawn: vi.fn(),
+    notifyCancelled: vi.fn(),
+  };
+}
 
 function createMockValidation() {
   return {
@@ -87,13 +110,17 @@ describe('VacationService', () => {
   let service: VacationService;
   let mockDb: MockDb;
   let mockClient: { query: ReturnType<typeof vi.fn> };
+  let mockApprover: ReturnType<typeof createMockApprover>;
   let mockValidation: ReturnType<typeof createMockValidation>;
+  let mockNotification: ReturnType<typeof createMockNotification>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockClient = { query: vi.fn() };
+    mockApprover = createMockApprover();
     mockValidation = createMockValidation();
+    mockNotification = createMockNotification();
 
     mockDb.tenantTransaction.mockImplementation(
       async (callback: (client: typeof mockClient) => Promise<unknown>) => {
@@ -103,234 +130,11 @@ describe('VacationService', () => {
 
     service = new VacationService(
       mockDb as unknown as DatabaseService,
+      mockApprover as unknown as VacationApproverService,
       mockValidation as unknown as VacationValidationService,
+      mockNotification as unknown as VacationNotificationService,
+      createMockActivityLogger() as unknown as ActivityLoggerService,
     );
-  });
-
-  // -----------------------------------------------------------
-  // getApprover — Approver determination
-  // -----------------------------------------------------------
-
-  describe('getApprover()', () => {
-    it('should return team_lead for employee', async () => {
-      // isUserAreaLead → false
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      // getUserRole → employee
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 5, role: 'employee' }],
-      });
-      // getUserTeamInfo → team with lead
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: 10,
-            deputy_lead_id: 11,
-            department_id: 1,
-          },
-        ],
-      });
-      // isUserAbsent(lead) → false
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-
-      const result = await service.getApprover(1, 5);
-
-      expect(result.approverId).toBe(10);
-      expect(result.autoApproved).toBe(false);
-    });
-
-    it('should return deputy_lead when lead is absent', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 5, role: 'employee' }],
-      });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: 10,
-            deputy_lead_id: 11,
-            department_id: 1,
-          },
-        ],
-      });
-      // lead IS absent
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
-
-      const result = await service.getApprover(1, 5);
-
-      expect(result.approverId).toBe(11);
-      expect(result.autoApproved).toBe(false);
-    });
-
-    it('should escalate to area_lead when employee IS team_lead (self-approval prevention)', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 10, role: 'employee' }],
-      });
-      // getUserTeamInfo → requester IS the team_lead
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: 10,
-            deputy_lead_id: 11,
-            department_id: 1,
-          },
-        ],
-      });
-      // resolveAreaLeadOrAutoApprove → area lead exists
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ area_lead_id: 99 }],
-      });
-
-      const result = await service.getApprover(1, 10);
-
-      expect(result.approverId).toBe(99);
-      expect(result.autoApproved).toBe(false);
-    });
-
-    it('should return area_lead for admin', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 20, role: 'admin' }],
-      });
-      // resolveAreaLeadOrAutoApprove → area lead exists
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ area_lead_id: 99 }],
-      });
-
-      const result = await service.getApprover(1, 20);
-
-      expect(result.approverId).toBe(99);
-      expect(result.autoApproved).toBe(false);
-    });
-
-    it('should auto-approve for root', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 1, role: 'root' }],
-      });
-
-      const result = await service.getApprover(1, 1);
-
-      expect(result.approverId).toBeNull();
-      expect(result.autoApproved).toBe(true);
-    });
-
-    it('should auto-approve for area_lead user', async () => {
-      // isUserAreaLead → true
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
-
-      const result = await service.getApprover(1, 50);
-
-      expect(result.approverId).toBeNull();
-      expect(result.autoApproved).toBe(true);
-    });
-
-    it('should auto-approve admin when no area_lead found', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 20, role: 'admin' }],
-      });
-      // resolveAreaLeadOrAutoApprove → no area lead
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-
-      const result = await service.getApprover(1, 20);
-
-      expect(result.approverId).toBeNull();
-      expect(result.autoApproved).toBe(true);
-    });
-
-    it('should throw BadRequestException when employee has no team', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 5, role: 'employee' }],
-      });
-      // getUserTeamInfo → no team
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-
-      await expect(service.getApprover(1, 5)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should throw BadRequestException when team has no lead', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 5, role: 'employee' }],
-      });
-      // team with no lead
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: null,
-            deputy_lead_id: null,
-            department_id: 1,
-          },
-        ],
-      });
-
-      await expect(service.getApprover(1, 5)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should fall back to lead when lead absent and no deputy', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 5, role: 'employee' }],
-      });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: 10,
-            deputy_lead_id: null,
-            department_id: 1,
-          },
-        ],
-      });
-      // lead absent
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
-
-      const result = await service.getApprover(1, 5);
-
-      // Falls back to lead since no deputy
-      expect(result.approverId).toBe(10);
-      expect(result.autoApproved).toBe(false);
-    });
-
-    it('should not assign deputy when deputy IS the requester', async () => {
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 11, role: 'employee' }],
-      });
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: 10,
-            deputy_lead_id: 11, // requester IS the deputy
-            department_id: 1,
-          },
-        ],
-      });
-      // lead absent
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
-
-      const result = await service.getApprover(1, 11);
-
-      // Falls back to lead (can't self-approve via deputy)
-      expect(result.approverId).toBe(10);
-    });
   });
 
   // -----------------------------------------------------------
@@ -351,27 +155,7 @@ describe('VacationService', () => {
           },
         ],
       });
-      // --- getApprover inner transaction ---
-      // isUserAreaLead → false
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
-      // getUserRole → employee
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 5, role: 'employee' }],
-      });
-      // getUserTeamInfo (in getApproverForEmployee)
-      mockClient.query.mockResolvedValueOnce({
-        rows: [
-          {
-            team_id: 1,
-            team_name: 'Team A',
-            team_lead_id: 10,
-            deputy_lead_id: null,
-            department_id: 1,
-          },
-        ],
-      });
-      // isUserAbsent → false
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
+      // approver.getApprover already mocked via createMockApprover (returns approverId: 10)
       // insertRequest → RETURNING *
       mockClient.query.mockResolvedValueOnce({
         rows: [createMockRequestRow({ status: 'pending', approver_id: 10 })],
@@ -390,6 +174,7 @@ describe('VacationService', () => {
       expect(result.status).toBe('pending');
       expect(result.approverId).toBe(10);
       expect(result.requesterId).toBe(5);
+      expect(mockApprover.getApprover).toHaveBeenCalledWith(1, 5);
       expect(mockValidation.validateNewRequest).toHaveBeenCalledOnce();
       expect(mockValidation.computeWorkdays).toHaveBeenCalledOnce();
       expect(mockValidation.validateBalanceAndBlackouts).toHaveBeenCalledOnce();
@@ -604,6 +389,10 @@ describe('VacationService', () => {
     it('should throw ConflictException when withdrawing denied request', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createMockRequestRow({ status: 'denied' })],
+      });
+      // resolveUserName
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ first_name: 'Test', last_name: 'User' }],
       });
 
       await expect(service.withdrawRequest(5, 1, 'req-001')).rejects.toThrow(

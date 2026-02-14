@@ -31,6 +31,21 @@ type BaseInput = z.infer<typeof BaseSchema>;
 
 export const UpdateVacationRequestSchema = BaseSchema.refine(
   (data: BaseInput) => {
+    if (data.startDate !== undefined) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(data.startDate);
+      start.setHours(0, 0, 0, 0);
+      return start >= today;
+    }
+    return true;
+  },
+  {
+    message: 'Startdatum darf nicht in der Vergangenheit liegen',
+    path: ['startDate'],
+  },
+).refine(
+  (data: BaseInput) => {
     if (data.startDate !== undefined && data.endDate !== undefined) {
       return data.endDate >= data.startDate;
     }

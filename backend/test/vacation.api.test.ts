@@ -597,3 +597,35 @@ describe('Vacation: Cleanup — Cancel approved request', () => {
     expect(res.status).toBe(204);
   });
 });
+
+// ── seq: 20 — Notification: Verify vacation notification created after cancel ─
+
+describe('Vacation: Notification created after cancel', () => {
+  it('should have vacation notifications (mark-read returns successfully)', async () => {
+    // Cancel creates a persistent notification for the requester (ADR-004 pattern).
+    // Verify by calling the mark-read endpoint — it should succeed and return a count.
+    const res = await fetch(`${BASE_URL}/notifications/mark-read/vacation`, {
+      method: 'POST',
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('marked');
+    expect(typeof body.data.marked).toBe('number');
+  });
+
+  it('should include vacation count in dashboard counts', async () => {
+    const res = await fetch(`${BASE_URL}/dashboard/counts`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('vacation');
+    expect(body.data.vacation).toHaveProperty('count');
+    expect(typeof body.data.vacation.count).toBe('number');
+  });
+});

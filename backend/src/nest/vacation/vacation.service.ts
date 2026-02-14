@@ -2,7 +2,8 @@
  * Vacation Service — Core Business Logic
  *
  * Mutation operations for the vacation request lifecycle:
- * create, approve/deny, withdraw, cancel, edit, and approver determination.
+ * create, approve/deny, withdraw, cancel, edit.
+ * Approver determination is in VacationApproverService (vacation-approver.service.ts).
  *
  * Read-only queries are in VacationQueriesService (vacation-queries.service.ts).
  * Validation logic is in VacationValidationService (vacation-validation.service.ts).
@@ -22,10 +23,13 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateVacationRequestDto } from './dto/create-vacation-request.dto.js';
 import type { RespondVacationRequestDto } from './dto/respond-vacation-request.dto.js';
 import type { UpdateVacationRequestDto } from './dto/update-vacation-request.dto.js';
+import { VacationApproverService } from './vacation-approver.service.js';
+import { VacationNotificationService } from './vacation-notification.service.js';
 import { VacationValidationService } from './vacation-validation.service.js';
 import type {
   ApproverResult,
@@ -49,18 +53,16 @@ interface UserTeamInfoRow {
   department_id: number | null;
 }
 
-/** Area lead lookup row */
-interface AreaLeadRow {
-  area_lead_id: number | null;
-}
-
 @Injectable()
 export class VacationService {
   private readonly logger: Logger = new Logger(VacationService.name);
 
   constructor(
     private readonly db: DatabaseService,
+    private readonly approver: VacationApproverService,
     private readonly validation: VacationValidationService,
+    private readonly notification: VacationNotificationService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ==========================================================================
@@ -73,7 +75,7 @@ export class VacationService {
     tenantId: number,
     dto: CreateVacationRequestDto,
   ): Promise<VacationRequest> {
-    return await this.db.tenantTransaction(
+    const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationRequest> => {
         const teamInfo = await this.getUserTeamInfo(client, tenantId, userId);
         await this.validation.validateNewRequest(client, tenantId, userId, dto);
@@ -84,7 +86,7 @@ export class VacationService {
           dto.halfDayStart,
           dto.halfDayEnd,
         );
-        const approver = await this.getApprover(tenantId, userId);
+        const approver = await this.approver.getApprover(tenantId, userId);
         const status: VacationRequestStatus =
           approver.autoApproved ? 'approved' : 'pending';
         await this.validation.validateBalanceAndBlackouts(
@@ -106,24 +108,24 @@ export class VacationService {
         );
       },
     );
-  }
 
-  /** Determine the approver for a vacation request. */
-  async getApprover(tenantId: number, userId: number): Promise<ApproverResult> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<ApproverResult> => {
-        if (await this.isUserAreaLead(client, tenantId, userId)) {
-          return { approverId: null, autoApproved: true };
-        }
-        const user = await this.getUserRole(client, tenantId, userId);
-        if (user.role === 'root')
-          return { approverId: null, autoApproved: true };
-        if (user.role === 'admin') {
-          return await this.resolveAreaLeadOrAutoApprove(client, userId);
-        }
-        return await this.getApproverForEmployee(client, tenantId, userId);
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'vacation',
+      details: `Urlaubsantrag erstellt: ${result.startDate} – ${result.endDate} (${result.vacationType}, ${String(result.computedDays)} Tage, Status: ${result.status})`,
+      newValues: {
+        requestId: result.id,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        vacationType: result.vacationType,
+        computedDays: result.computedDays,
+        status: result.status,
       },
-    );
+    });
+
+    return result;
   }
 
   /** Approve or deny a vacation request with FOR UPDATE lock. */
@@ -133,7 +135,7 @@ export class VacationService {
     requestId: string,
     dto: RespondVacationRequestDto,
   ): Promise<VacationRequest> {
-    return await this.db.tenantTransaction(
+    const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationRequest> => {
         const request = await this.lockPendingRequest(
           client,
@@ -152,6 +154,24 @@ export class VacationService {
           : await this.denyRequest(client, tenantId, responderId, request, dto);
       },
     );
+    this.notification.notifyResponded(tenantId, result);
+
+    void this.activityLogger.log({
+      tenantId,
+      userId: responderId,
+      action: 'update',
+      entityType: 'vacation',
+      details: `Urlaubsantrag ${dto.action === 'approved' ? 'genehmigt' : 'abgelehnt'}: ${result.startDate} – ${result.endDate}`,
+      oldValues: { status: 'pending' },
+      newValues: {
+        requestId: result.id,
+        status: result.status,
+        responseNote: dto.responseNote,
+        isSpecialLeave: dto.isSpecialLeave,
+      },
+    });
+
+    return result;
   }
 
   /** Withdraw a vacation request (requester only). */
@@ -160,6 +180,9 @@ export class VacationService {
     tenantId: number,
     requestId: string,
   ): Promise<void> {
+    let approverId: number | null = null;
+    let requesterName: string | undefined;
+
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         const request = await this.lockOwnRequest(
@@ -168,42 +191,81 @@ export class VacationService {
           requestId,
           requesterId,
         );
-        if (request.status === 'pending') {
-          await this.transitionStatus(
-            client,
-            tenantId,
-            requestId,
-            'pending',
-            'withdrawn',
-            requesterId,
-            null,
-          );
-          return;
-        }
-        if (request.status === 'approved') {
-          this.validation.guardFutureStartDate(request.start_date);
-          await this.transitionStatus(
-            client,
-            tenantId,
-            requestId,
-            'approved',
-            'withdrawn',
-            requesterId,
-            null,
-          );
-          await this.deactivateAvailability(
-            client,
-            tenantId,
-            request.requester_id,
-            request.start_date,
-            request.end_date,
-          );
-          return;
-        }
-        throw new ConflictException(
-          `Cannot withdraw a request with status '${request.status}'`,
+        approverId = request.approver_id;
+        requesterName = await this.resolveUserName(
+          client,
+          tenantId,
+          requesterId,
+        );
+        await this.executeWithdraw(
+          client,
+          tenantId,
+          requestId,
+          requesterId,
+          request,
         );
       },
+    );
+    this.notification.notifyWithdrawn(
+      tenantId,
+      requestId,
+      requesterId,
+      approverId,
+      requesterName,
+    );
+
+    void this.activityLogger.log({
+      tenantId,
+      userId: requesterId,
+      action: 'update',
+      entityType: 'vacation',
+      details: `Urlaubsantrag zurückgezogen: ${requestId}`,
+      newValues: { requestId, status: 'withdrawn' },
+    });
+  }
+
+  /** Execute the withdraw status transition inside a transaction. */
+  private async executeWithdraw(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    requesterId: number,
+    request: VacationRequestRow,
+  ): Promise<void> {
+    if (request.status === 'pending') {
+      await this.transitionStatus(
+        client,
+        tenantId,
+        requestId,
+        'pending',
+        'withdrawn',
+        requesterId,
+        null,
+      );
+      return;
+    }
+    if (request.status === 'approved') {
+      this.validation.guardFutureStartDate(request.start_date);
+      await this.transitionStatus(
+        client,
+        tenantId,
+        requestId,
+        'approved',
+        'withdrawn',
+        requesterId,
+        null,
+      );
+      await this.deactivateAvailability(
+        client,
+        tenantId,
+        request.requester_id,
+        request.start_date,
+        request.end_date,
+      );
+      return;
+    }
+    throw new ConflictException(
+      `Cannot withdraw a request with status '${request.status}'`,
     );
   }
 
@@ -214,6 +276,8 @@ export class VacationService {
     requestId: string,
     reason: string,
   ): Promise<void> {
+    let requesterId = 0;
+
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         const user = await this.getUserRole(client, tenantId, adminId);
@@ -228,6 +292,7 @@ export class VacationService {
             `Can only cancel approved requests. Current: '${row.status}'`,
           );
         }
+        requesterId = row.requester_id;
         await this.transitionStatus(
           client,
           tenantId,
@@ -249,6 +314,23 @@ export class VacationService {
         );
       },
     );
+    this.notification.notifyCancelled(
+      tenantId,
+      requestId,
+      requesterId,
+      adminId,
+      reason,
+    );
+
+    void this.activityLogger.log({
+      tenantId,
+      userId: adminId,
+      action: 'update',
+      entityType: 'vacation',
+      details: `Urlaubsantrag storniert: ${requestId} (Grund: ${reason})`,
+      oldValues: { status: 'approved' },
+      newValues: { requestId, status: 'cancelled', reason },
+    });
   }
 
   /** Edit a pending vacation request (requester only). */
@@ -258,7 +340,7 @@ export class VacationService {
     requestId: string,
     dto: UpdateVacationRequestDto,
   ): Promise<VacationRequest> {
-    return await this.db.tenantTransaction(
+    const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationRequest> => {
         const existing = await this.lockOwnRequest(
           client,
@@ -300,6 +382,10 @@ export class VacationService {
         return this.mapRowToRequest(row);
       },
     );
+
+    this.logRequestEdited(tenantId, requesterId, result);
+
+    return result;
   }
 
   // ==========================================================================
@@ -348,82 +434,9 @@ export class VacationService {
     this.logger.log(
       `Vacation ${id} created (${status}) for user ${String(userId)}`,
     );
-    return this.mapRowToRequest(row);
-  }
-
-  // ==========================================================================
-  // Private — Approver determination
-  // ==========================================================================
-
-  private async getApproverForEmployee(
-    client: PoolClient,
-    tenantId: number,
-    userId: number,
-  ): Promise<ApproverResult> {
-    const teamInfo = await this.getUserTeamInfo(client, tenantId, userId);
-    if (teamInfo.team_lead_id === null) {
-      throw new BadRequestException(
-        'Team has no lead assigned. Contact your administrator.',
-      );
-    }
-    if (teamInfo.team_lead_id === userId) {
-      return await this.resolveAreaLeadOrAutoApprove(client, userId);
-    }
-    if (!(await this.isUserAbsent(client, teamInfo.team_lead_id))) {
-      return { approverId: teamInfo.team_lead_id, autoApproved: false };
-    }
-    if (
-      teamInfo.deputy_lead_id !== null &&
-      teamInfo.deputy_lead_id !== userId
-    ) {
-      return { approverId: teamInfo.deputy_lead_id, autoApproved: false };
-    }
-    return { approverId: teamInfo.team_lead_id, autoApproved: false };
-  }
-
-  private async resolveAreaLeadOrAutoApprove(
-    client: PoolClient,
-    userId: number,
-  ): Promise<ApproverResult> {
-    const result = await client.query<AreaLeadRow>(
-      `SELECT a.area_lead_id FROM areas a
-       JOIN departments d ON a.id = d.area_id
-       JOIN user_departments ud ON d.id = ud.department_id
-       WHERE ud.user_id = $1 AND ud.is_primary = true`,
-      [userId],
-    );
-    const areaLeadId = result.rows[0]?.area_lead_id;
-    if (areaLeadId !== undefined && areaLeadId !== null) {
-      return { approverId: areaLeadId, autoApproved: false };
-    }
-    return { approverId: null, autoApproved: true };
-  }
-
-  private async isUserAreaLead(
-    client: PoolClient,
-    tenantId: number,
-    userId: number,
-  ): Promise<boolean> {
-    const result = await client.query<{ found: boolean }>(
-      `SELECT EXISTS (SELECT 1 FROM areas WHERE area_lead_id = $1 AND tenant_id = $2) AS found`,
-      [userId, tenantId],
-    );
-    return result.rows[0]?.found === true;
-  }
-
-  private async isUserAbsent(
-    client: PoolClient,
-    userId: number,
-  ): Promise<boolean> {
-    const result = await client.query<{ found: boolean }>(
-      `SELECT EXISTS (
-        SELECT 1 FROM user_availability
-        WHERE user_id = $1 AND status != 'available'
-          AND start_date <= NOW() AND end_date >= NOW()
-      ) AS found`,
-      [userId],
-    );
-    return result.rows[0]?.found === true;
+    const request = this.mapRowToRequest(row);
+    this.notification.notifyCreated(tenantId, request);
+    return request;
   }
 
   // ==========================================================================
@@ -567,6 +580,26 @@ export class VacationService {
   // ==========================================================================
   // Private — DB helpers
   // ==========================================================================
+
+  private async resolveUserName(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+  ): Promise<string | undefined> {
+    const result = await client.query<{
+      first_name: string | null;
+      last_name: string | null;
+    }>(
+      `SELECT first_name, last_name FROM users WHERE id = $1 AND tenant_id = $2`,
+      [userId, tenantId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    const parts = [row.first_name, row.last_name].filter(
+      (p: string | null): p is string => p !== null && p !== '',
+    );
+    return parts.length > 0 ? parts.join(' ') : undefined;
+  }
 
   private async getUserTeamInfo(
     client: PoolClient,
@@ -801,6 +834,32 @@ export class VacationService {
       'Request edited',
     );
     return row;
+  }
+
+  // ==========================================================================
+  // Private — Activity logging
+  // ==========================================================================
+
+  /** Log activity for an edited vacation request. */
+  private logRequestEdited(
+    tenantId: number,
+    requesterId: number,
+    request: VacationRequest,
+  ): void {
+    void this.activityLogger.log({
+      tenantId,
+      userId: requesterId,
+      action: 'update',
+      entityType: 'vacation',
+      details: `Urlaubsantrag bearbeitet: ${request.startDate} – ${request.endDate}`,
+      newValues: {
+        requestId: request.id,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        vacationType: request.vacationType,
+        computedDays: request.computedDays,
+      },
+    });
   }
 
   // ==========================================================================

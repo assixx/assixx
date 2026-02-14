@@ -334,13 +334,13 @@
     background: rgb(255 255 255 / 95%);
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-2xl);
-    box-shadow: 0 20px 40px rgb(0 0 0 / 12%);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 50%);
     padding: var(--spacing-4);
     min-width: 280px;
   }
 
   :global(html.dark .app-date-picker__content) {
-    background: rgb(15 15 15 / 95%);
+    background: rgb(15 15 15 / 0%);
     box-shadow:
       0 20px 40px rgb(0 0 0 / 30%),
       0 0 1px rgb(255 255 255 / 10%);

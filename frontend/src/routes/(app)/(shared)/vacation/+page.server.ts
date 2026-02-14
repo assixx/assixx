@@ -86,9 +86,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const currentYear = new Date().getFullYear();
   const queryParams = `?page=1&limit=10&year=${currentYear}`;
 
-  // Parallel fetch: my requests + incoming requests + balance
-  const [myRequestsData, incomingRequestsData, balanceData] = await Promise.all(
-    [
+  // Parallel fetch: my requests + incoming requests + balance + unread notification IDs
+  const [myRequestsData, incomingRequestsData, balanceData, unreadIdsData] =
+    await Promise.all([
       apiFetch<PaginatedResult<VacationRequest>>(
         `/vacation/requests${queryParams}`,
         token,
@@ -104,8 +104,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
         token,
         fetch,
       ),
-    ],
-  );
+      apiFetch<string[]>('/vacation/notifications/unread-ids', token, fetch),
+    ]);
 
   const myRequests = myRequestsData ?? emptyPage<VacationRequest>();
   const incomingRequests = incomingRequestsData ?? emptyPage<VacationRequest>();
@@ -122,5 +122,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     userRole: user.role,
     userId: user.id,
     canApprove,
+    /** Request IDs with unread vacation notifications (for "Neu" badges) */
+    unreadRequestIds: unreadIdsData ?? [],
   };
 };

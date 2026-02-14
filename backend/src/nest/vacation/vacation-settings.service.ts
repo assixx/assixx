@@ -18,6 +18,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { UpdateSettingsDto } from './dto/update-settings.dto.js';
 import type {
@@ -29,7 +30,10 @@ import type {
 export class VacationSettingsService {
   private readonly logger: Logger = new Logger(VacationSettingsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get vacation settings for a tenant.
@@ -62,7 +66,7 @@ export class VacationSettingsService {
     userId: number,
     dto: UpdateSettingsDto,
   ): Promise<VacationSettings> {
-    return await this.db.tenantTransaction(
+    const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationSettings> => {
         const existing: VacationSettingsRow | undefined =
           await this.findSettings(client, tenantId);
@@ -74,6 +78,24 @@ export class VacationSettingsService {
         return await this.applyUpdate(client, tenantId, userId, dto);
       },
     );
+
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'vacation_settings',
+      details: `Urlaubseinstellungen aktualisiert (Tenant ${String(tenantId)})`,
+      newValues: {
+        defaultAnnualDays: dto.defaultAnnualDays,
+        maxCarryOverDays: dto.maxCarryOverDays,
+        carryOverDeadlineMonth: dto.carryOverDeadlineMonth,
+        carryOverDeadlineDay: dto.carryOverDeadlineDay,
+        advanceNoticeDays: dto.advanceNoticeDays,
+        maxConsecutiveDays: dto.maxConsecutiveDays,
+      },
+    });
+
+    return result;
   }
 
   // ==========================================================================

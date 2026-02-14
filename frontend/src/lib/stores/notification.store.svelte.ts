@@ -27,6 +27,7 @@ export interface NotificationCounts {
   chat: number;
   blackboard: number;
   calendar: number;
+  vacation: number;
 }
 
 interface NotificationState {
@@ -51,6 +52,7 @@ function createInitialCounts(): NotificationCounts {
     chat: 0,
     blackboard: 0,
     calendar: 0,
+    vacation: 0,
   };
 }
 
@@ -67,33 +69,34 @@ function incrementCount(state: NotificationState, type: CountType): void {
  */
 const suppressedSSETypes = new Set<string>();
 
+/** Map SSE event types to their corresponding count key */
+const SSE_EVENT_TO_COUNT = new Map<string, CountType>([
+  ['NEW_SURVEY', 'surveys'],
+  ['NEW_DOCUMENT', 'documents'],
+  ['NEW_KVP', 'kvp'],
+  ['NEW_MESSAGE', 'chat'],
+  ['VACATION_REQUEST_CREATED', 'vacation'],
+  ['VACATION_REQUEST_RESPONDED', 'vacation'],
+  ['VACATION_REQUEST_WITHDRAWN', 'vacation'],
+  ['VACATION_REQUEST_CANCELLED', 'vacation'],
+]);
+
 function handleSSEEvent(
   state: NotificationState,
   event: NotificationEvent,
 ): void {
-  // Skip types suppressed by active feature pages (prevents double-counting)
   if (suppressedSSETypes.has(event.type)) return;
 
-  switch (event.type) {
-    case 'CONNECTED':
-      state.isConnected = true;
-      state.connectionState = 'connected';
-      state.lastUpdate = new Date();
-      break;
-    case 'HEARTBEAT':
-      break;
-    case 'NEW_SURVEY':
-      incrementCount(state, 'surveys');
-      break;
-    case 'NEW_DOCUMENT':
-      incrementCount(state, 'documents');
-      break;
-    case 'NEW_KVP':
-      incrementCount(state, 'kvp');
-      break;
-    case 'NEW_MESSAGE':
-      incrementCount(state, 'chat');
-      break;
+  if (event.type === 'CONNECTED') {
+    state.isConnected = true;
+    state.connectionState = 'connected';
+    state.lastUpdate = new Date();
+    return;
+  }
+
+  const countKey = SSE_EVENT_TO_COUNT.get(event.type);
+  if (countKey !== undefined) {
+    incrementCount(state, countKey);
   }
 }
 
@@ -121,17 +124,19 @@ function setCountsMut(
     chat: counts.chat ?? 0,
     blackboard: counts.blackboard ?? 0,
     calendar: counts.calendar ?? 0,
+    vacation: counts.vacation ?? 0,
   };
   state.lastUpdate = new Date();
 }
 
-export type FeatureType = 'survey' | 'document' | 'kvp';
+export type FeatureType = 'survey' | 'document' | 'kvp' | 'vacation';
 
 /** Map feature type to store count key */
 const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
   survey: 'surveys',
   document: 'documents',
   kvp: 'kvp',
+  vacation: 'vacation',
 };
 
 /** Rollback count after failed API call */
@@ -195,6 +200,8 @@ interface DashboardCountsResponse {
     kvp?: { count: number };
     /** Pending surveys count (active surveys not yet responded to by user) */
     surveys?: { count: number };
+    /** Unread vacation notifications */
+    vacation?: { count: number };
     fetchedAt?: string;
   };
 }
@@ -272,6 +279,8 @@ interface SSRCounts {
   kvp?: { count: number };
   /** Pending surveys count (active surveys not yet responded to by user) */
   surveys?: { count: number };
+  /** Unread vacation notifications */
+  vacation?: { count: number };
 }
 
 /** Safely extract count from an optional API field (defensive against missing data) */
@@ -287,15 +296,17 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const blackboard = safeCount(counts.blackboard);
   const calendar = safeCount(counts.calendar);
   const documents = safeCount(counts.documents);
+  const vacation = safeCount(counts.vacation);
 
   state.counts = {
-    total: chat + surveys + documents + kvp + blackboard + calendar,
+    total: chat + surveys + documents + kvp + blackboard + calendar + vacation,
     chat,
     surveys,
     documents,
     kvp,
     blackboard,
     calendar,
+    vacation,
   };
   state.lastUpdate = new Date();
 

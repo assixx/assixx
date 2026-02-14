@@ -30,24 +30,35 @@ const BaseSchema = z.object({
 type BaseInput = z.infer<typeof BaseSchema>;
 
 export const CreateVacationRequestSchema = BaseSchema.refine(
-  (data: BaseInput) => data.endDate >= data.startDate,
+  (data: BaseInput) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(data.startDate);
+    start.setHours(0, 0, 0, 0);
+    return start >= today;
+  },
   {
+    message: 'Startdatum darf nicht in der Vergangenheit liegen',
+    path: ['startDate'],
+  },
+)
+  .refine((data: BaseInput) => data.endDate >= data.startDate, {
     message: 'End date must be on or after start date',
     path: ['endDate'],
-  },
-).refine(
-  (data: BaseInput) => {
-    // Single-day: at most ONE half-day modifier (DB constraint valid_half_day_single)
-    if (data.startDate === data.endDate) {
-      return data.halfDayStart === 'none' || data.halfDayEnd === 'none';
-    }
-    return true;
-  },
-  {
-    message: 'Single-day requests can only have one half-day modifier',
-    path: ['halfDayEnd'],
-  },
-);
+  })
+  .refine(
+    (data: BaseInput) => {
+      // Single-day: at most ONE half-day modifier (DB constraint valid_half_day_single)
+      if (data.startDate === data.endDate) {
+        return data.halfDayStart === 'none' || data.halfDayEnd === 'none';
+      }
+      return true;
+    },
+    {
+      message: 'Single-day requests can only have one half-day modifier',
+      path: ['halfDayEnd'],
+    },
+  );
 
 export class CreateVacationRequestDto extends createZodDto(
   CreateVacationRequestSchema,

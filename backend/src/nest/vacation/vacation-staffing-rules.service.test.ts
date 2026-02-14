@@ -9,6 +9,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { VacationStaffingRulesService } from './vacation-staffing-rules.service.js';
 import type { VacationStaffingRuleRow } from './vacation.types.js';
@@ -23,6 +24,10 @@ function createMockDb() {
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
+
+function createMockActivityLogger() {
+  return { log: vi.fn().mockResolvedValue(undefined) };
+}
 
 /** Extended row with machine_name from JOIN */
 interface StaffingRuleWithMachineRow extends VacationStaffingRuleRow {
@@ -68,6 +73,7 @@ describe('VacationStaffingRulesService', () => {
 
     service = new VacationStaffingRulesService(
       mockDb as unknown as DatabaseService,
+      createMockActivityLogger() as unknown as ActivityLoggerService,
     );
   });
 
@@ -143,7 +149,7 @@ describe('VacationStaffingRulesService', () => {
         rows: [createMockStaffingRuleRow({ min_staff_count: 3 })],
       });
 
-      const result = await service.updateStaffingRule(1, 'sr-001', {
+      const result = await service.updateStaffingRule(1, 10, 'sr-001', {
         minStaffCount: 3,
       });
 
@@ -154,7 +160,7 @@ describe('VacationStaffingRulesService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.updateStaffingRule(1, 'nonexistent', { minStaffCount: 3 }),
+        service.updateStaffingRule(1, 10, 'nonexistent', { minStaffCount: 3 }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -166,11 +172,11 @@ describe('VacationStaffingRulesService', () => {
   describe('deleteStaffingRule()', () => {
     it('should soft-delete successfully', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 'sr-001' }],
+        rows: [{ id: 'sr-001', machine_id: 100, min_staff_count: 2 }],
       });
 
       await expect(
-        service.deleteStaffingRule(1, 'sr-001'),
+        service.deleteStaffingRule(1, 10, 'sr-001'),
       ).resolves.toBeUndefined();
     });
 
@@ -178,7 +184,7 @@ describe('VacationStaffingRulesService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.deleteStaffingRule(1, 'nonexistent'),
+        service.deleteStaffingRule(1, 10, 'nonexistent'),
       ).rejects.toThrow(NotFoundException);
     });
   });

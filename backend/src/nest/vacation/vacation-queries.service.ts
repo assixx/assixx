@@ -227,6 +227,37 @@ export class VacationQueriesService {
     );
   }
 
+  /**
+   * Get request IDs that have unread vacation notifications for the given user.
+   * Used by the frontend to show "Neu" badges on request cards.
+   * Queries: notifications WHERE type='vacation' + LEFT JOIN notification_read_status.
+   */
+  async getUnreadNotificationRequestIds(
+    tenantId: number,
+    userId: number,
+  ): Promise<string[]> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<string[]> => {
+        const result = await client.query<{ request_id: string }>(
+          `SELECT DISTINCT n.metadata->>'requestId' AS request_id
+           FROM notifications n
+           LEFT JOIN notification_read_status nrs
+             ON n.id = nrs.notification_id AND nrs.user_id = $2
+           WHERE n.tenant_id = $1
+             AND n.type = 'vacation'
+             AND n.recipient_type = 'user'
+             AND n.recipient_id = $2
+             AND nrs.id IS NULL
+             AND n.metadata->>'requestId' IS NOT NULL`,
+          [tenantId, userId],
+        );
+        return result.rows.map(
+          (row: { request_id: string }): string => row.request_id,
+        );
+      },
+    );
+  }
+
   // ==========================================================================
   // Private helpers
   // ==========================================================================

@@ -154,6 +154,22 @@ export class VacationController {
     );
   }
 
+  /**
+   * GET /vacation/notifications/unread-ids — Request IDs with unread notifications.
+   * Used by the frontend to show "Neu" badges on request cards.
+   */
+  @Get('notifications/unread-ids')
+  @RequirePermission(FEAT, MOD_REQUESTS, 'canRead')
+  async getUnreadNotificationRequestIds(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<string[]> {
+    await this.ensureFeatureEnabled(user.tenantId);
+    return await this.queriesService.getUnreadNotificationRequestIds(
+      user.tenantId,
+      user.id,
+    );
+  }
+
   /** GET /vacation/requests/:id — Get a single vacation request by ID. */
   @Get('requests/:id')
   @RequirePermission(FEAT, MOD_REQUESTS, 'canRead')
@@ -317,6 +333,7 @@ export class VacationController {
     await this.ensureFeatureEnabled(user.tenantId);
     return await this.entitlementsService.addDays(
       user.tenantId,
+      user.id,
       userId,
       year,
       days,
@@ -365,7 +382,12 @@ export class VacationController {
     @Body() dto: UpdateBlackoutDto,
   ): Promise<VacationBlackout> {
     await this.ensureFeatureEnabled(user.tenantId);
-    return await this.blackoutsService.updateBlackout(user.tenantId, id, dto);
+    return await this.blackoutsService.updateBlackout(
+      user.tenantId,
+      user.id,
+      id,
+      dto,
+    );
   }
 
   /** DELETE /vacation/blackouts/:id — Delete a blackout period (admin/root). */
@@ -378,7 +400,7 @@ export class VacationController {
     @Param('id') id: string,
   ): Promise<void> {
     await this.ensureFeatureEnabled(user.tenantId);
-    await this.blackoutsService.deleteBlackout(user.tenantId, id);
+    await this.blackoutsService.deleteBlackout(user.tenantId, user.id, id);
   }
 
   // ==========================================================================
@@ -424,6 +446,7 @@ export class VacationController {
     await this.ensureFeatureEnabled(user.tenantId);
     return await this.staffingRulesService.updateStaffingRule(
       user.tenantId,
+      user.id,
       id,
       dto,
     );
@@ -439,7 +462,11 @@ export class VacationController {
     @Param('id') id: string,
   ): Promise<void> {
     await this.ensureFeatureEnabled(user.tenantId);
-    await this.staffingRulesService.deleteStaffingRule(user.tenantId, id);
+    await this.staffingRulesService.deleteStaffingRule(
+      user.tenantId,
+      user.id,
+      id,
+    );
   }
 
   // ==========================================================================
@@ -484,7 +511,12 @@ export class VacationController {
     @Body() dto: UpdateHolidayDto,
   ): Promise<VacationHoliday> {
     await this.ensureFeatureEnabled(user.tenantId);
-    return await this.holidaysService.updateHoliday(user.tenantId, id, dto);
+    return await this.holidaysService.updateHoliday(
+      user.tenantId,
+      user.id,
+      id,
+      dto,
+    );
   }
 
   /** DELETE /vacation/holidays/:id — Delete a holiday (admin/root). */
@@ -497,7 +529,7 @@ export class VacationController {
     @Param('id') id: string,
   ): Promise<void> {
     await this.ensureFeatureEnabled(user.tenantId);
-    await this.holidaysService.deleteHoliday(user.tenantId, id);
+    await this.holidaysService.deleteHoliday(user.tenantId, user.id, id);
   }
 
   // ==========================================================================

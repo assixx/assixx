@@ -9,6 +9,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { VacationBlackoutsService } from './vacation-blackouts.service.js';
 import type { VacationBlackoutRow } from './vacation.types.js';
@@ -23,6 +24,10 @@ function createMockDb() {
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
+
+function createMockActivityLogger() {
+  return { log: vi.fn().mockResolvedValue(undefined) };
+}
 
 function createMockBlackoutRow(
   overrides?: Partial<VacationBlackoutRow>,
@@ -65,6 +70,7 @@ describe('VacationBlackoutsService', () => {
 
     service = new VacationBlackoutsService(
       mockDb as unknown as DatabaseService,
+      createMockActivityLogger() as unknown as ActivityLoggerService,
     );
   });
 
@@ -242,7 +248,7 @@ describe('VacationBlackoutsService', () => {
       // 3. loadScopes
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.updateBlackout(1, 'bo-001', {
+      const result = await service.updateBlackout(1, 10, 'bo-001', {
         name: 'Updated Name',
       });
 
@@ -253,7 +259,7 @@ describe('VacationBlackoutsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.updateBlackout(1, 'nonexistent', { name: 'X' }),
+        service.updateBlackout(1, 10, 'nonexistent', { name: 'X' }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -264,7 +270,7 @@ describe('VacationBlackoutsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.updateBlackout(1, 'bo-001', {});
+      const result = await service.updateBlackout(1, 10, 'bo-001', {});
 
       expect(result.name).toBe('Summer Freeze');
     });
@@ -277,20 +283,20 @@ describe('VacationBlackoutsService', () => {
   describe('deleteBlackout()', () => {
     it('should soft-delete successfully', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 'bo-001' }],
+        rows: [{ id: 'bo-001', name: 'Summer Freeze' }],
       });
 
       await expect(
-        service.deleteBlackout(1, 'bo-001'),
+        service.deleteBlackout(1, 10, 'bo-001'),
       ).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when blackout not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deleteBlackout(1, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.deleteBlackout(1, 10, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

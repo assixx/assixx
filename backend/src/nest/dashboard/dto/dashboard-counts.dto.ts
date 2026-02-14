@@ -51,6 +51,8 @@ export const DashboardCountsSchema = z.object({
   kvp: CountItemSchema,
   /** Pending surveys count (active surveys not yet responded to by user) */
   surveys: CountItemSchema,
+  /** Unread vacation notifications (new requests for approvers, responses for requesters) */
+  vacation: CountItemSchema,
   /** Timestamp when counts were fetched */
   fetchedAt: z.string(),
 });

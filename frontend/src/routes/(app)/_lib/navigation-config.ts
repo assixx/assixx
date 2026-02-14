@@ -27,7 +27,8 @@ export interface NavItem {
     | 'kvp'
     | 'chat'
     | 'blackboard'
-    | 'calendar';
+    | 'calendar'
+    | 'vacation';
 }
 
 export const ICONS: Record<string, string> = {
@@ -115,6 +116,7 @@ const VACATION_ADMIN_SUBMENU: NavItem[] = [
     id: 'vacation-requests',
     label: 'Anträge',
     url: '/vacation',
+    badgeType: 'vacation',
   },
   {
     id: 'vacation-rules',
@@ -139,6 +141,7 @@ const VACATION_ROOT_SUBMENU: NavItem[] = [
     id: 'vacation-requests',
     label: 'Anträge',
     url: '/vacation',
+    badgeType: 'vacation',
   },
   {
     id: 'vacation-rules',
@@ -359,6 +362,7 @@ export const employeeMenuItems: NavItem[] = [
     icon: ICONS.vacation,
     label: 'Urlaub',
     url: '/vacation',
+    badgeType: 'vacation',
   },
   {
     id: 'lean-management',

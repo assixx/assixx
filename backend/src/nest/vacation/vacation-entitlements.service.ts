@@ -21,6 +21,7 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateEntitlementDto } from './dto/create-entitlement.dto.js';
 import type { UpdateEntitlementDto } from './dto/update-entitlement.dto.js';
@@ -57,6 +58,7 @@ export class VacationEntitlementsService {
     private readonly db: DatabaseService,
     private readonly holidaysService: VacationHolidaysService,
     private readonly settingsService: VacationSettingsService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   /**
@@ -165,10 +167,9 @@ export class VacationEntitlementsService {
     userId: number,
     dto: CreateEntitlementDto,
   ): Promise<VacationEntitlement> {
-    return await this.db.tenantTransaction(
+    const entitlement = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationEntitlement> => {
         const id: string = uuidv7();
-
         try {
           const result = await client.query<VacationEntitlementRow>(
             `INSERT INTO vacation_entitlements
@@ -197,14 +198,12 @@ export class VacationEntitlementsService {
               userId,
             ],
           );
-
           const row: VacationEntitlementRow | undefined = result.rows[0];
           if (row === undefined) {
             throw new Error(
               'UPSERT into vacation_entitlements returned no rows',
             );
           }
-
           this.logger.log(
             `Entitlement upserted: user ${dto.userId}, year ${dto.year} (tenant ${tenantId})`,
           );
@@ -219,6 +218,10 @@ export class VacationEntitlementsService {
         }
       },
     );
+
+    this.logEntitlementUpserted(tenantId, userId, dto);
+
+    return entitlement;
   }
 
   /**
@@ -227,7 +230,8 @@ export class VacationEntitlementsService {
    */
   async addDays(
     tenantId: number,
-    userId: number,
+    performedBy: number,
+    targetUserId: number,
     year: number,
     days: number,
   ): Promise<VacationEntitlement> {
@@ -241,19 +245,34 @@ export class VacationEntitlementsService {
                      carried_over_days, additional_days,
                      carry_over_expires_at, is_active,
                      created_by, created_at, updated_at`,
-          [days, tenantId, userId, year],
+          [days, tenantId, targetUserId, year],
         );
 
         const row: VacationEntitlementRow | undefined = result.rows[0];
         if (row === undefined) {
           throw new NotFoundException(
-            `No entitlement found for user ${userId}, year ${year}`,
+            `No entitlement found for user ${targetUserId}, year ${year}`,
           );
         }
 
         this.logger.log(
-          `Added ${days} days to user ${userId}, year ${year} (tenant ${tenantId})`,
+          `Added ${days} days to user ${targetUserId}, year ${year} (tenant ${tenantId})`,
         );
+
+        void this.activityLogger.log({
+          tenantId,
+          userId: performedBy,
+          action: 'update',
+          entityType: 'vacation_entitlement',
+          details: `${String(days)} Urlaubstage hinzugefügt: User ${String(targetUserId)}, Jahr ${String(year)}`,
+          newValues: {
+            targetUserId,
+            year,
+            addedDays: days,
+            newAdditionalDays: Number.parseFloat(row.additional_days),
+          },
+        });
+
         return this.mapRowToEntitlement(row);
       },
     );
@@ -656,6 +675,28 @@ export class VacationEntitlementsService {
     }
 
     return { setClauses, params };
+  }
+
+  /** Log activity for entitlement upsert. */
+  private logEntitlementUpserted(
+    tenantId: number,
+    userId: number,
+    dto: CreateEntitlementDto,
+  ): void {
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'vacation_entitlement',
+      details: `Urlaubsanspruch aktualisiert: User ${String(dto.userId)}, Jahr ${String(dto.year)}, ${String(dto.totalDays)} Tage`,
+      newValues: {
+        targetUserId: dto.userId,
+        year: dto.year,
+        totalDays: dto.totalDays,
+        carriedOverDays: dto.carriedOverDays,
+        additionalDays: dto.additionalDays,
+      },
+    });
   }
 
   /** Map DB row to API response type (NUMERIC strings → numbers). */

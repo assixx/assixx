@@ -17,6 +17,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateBlackoutDto } from './dto/create-blackout.dto.js';
 import type { UpdateBlackoutDto } from './dto/update-blackout.dto.js';
@@ -32,7 +33,10 @@ import type {
 export class VacationBlackoutsService {
   private readonly logger: Logger = new Logger(VacationBlackoutsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get all active blackout periods for a tenant.
@@ -88,10 +92,9 @@ export class VacationBlackoutsService {
     userId: number,
     dto: CreateBlackoutDto,
   ): Promise<VacationBlackout> {
-    return await this.db.tenantTransaction(
+    const blackout = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationBlackout> => {
         const id: string = uuidv7();
-
         const result = await client.query<VacationBlackoutRow>(
           `INSERT INTO vacation_blackouts
              (id, tenant_id, name, reason, start_date, end_date,
@@ -109,12 +112,10 @@ export class VacationBlackoutsService {
             userId,
           ],
         );
-
         const row: VacationBlackoutRow | undefined = result.rows[0];
         if (row === undefined) {
           throw new Error('INSERT into vacation_blackouts returned no rows');
         }
-
         if (!dto.isGlobal) {
           await this.syncBlackoutScopes(
             client,
@@ -124,16 +125,18 @@ export class VacationBlackoutsService {
             dto.areaIds,
           );
         }
-
         const scopes: VacationBlackoutScopeRow[] =
           dto.isGlobal ? [] : await this.loadScopes(client, id);
-
         this.logger.log(
           `Blackout created: "${dto.name}" ${dto.startDate}\u2013${dto.endDate} global=${String(dto.isGlobal)} (tenant ${tenantId})`,
         );
         return this.mapRowToBlackout(row, scopes);
       },
     );
+
+    this.logBlackoutCreated(tenantId, userId, dto);
+
+    return blackout;
   }
 
   /**
@@ -142,6 +145,7 @@ export class VacationBlackoutsService {
    */
   async updateBlackout(
     tenantId: number,
+    userId: number,
     id: string,
     dto: UpdateBlackoutDto,
   ): Promise<VacationBlackout> {
@@ -184,7 +188,24 @@ export class VacationBlackoutsService {
         }
 
         this.logger.log(`Blackout updated: ${id} (tenant ${tenantId})`);
-        return await this.getBlackoutById(client, tenantId, id);
+        const result = await this.getBlackoutById(client, tenantId, id);
+
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'update',
+          entityType: 'vacation_blackout',
+          details: `Urlaubssperre aktualisiert: "${result.name}" (${id})`,
+          newValues: {
+            blackoutId: id,
+            name: dto.name,
+            startDate: dto.startDate,
+            endDate: dto.endDate,
+            isGlobal: dto.isGlobal,
+          },
+        });
+
+        return result;
       },
     );
   }
@@ -193,22 +214,36 @@ export class VacationBlackoutsService {
    * Soft-delete a blackout period (is_active = 4).
    * Throws NotFoundException if not found.
    */
-  async deleteBlackout(tenantId: number, id: string): Promise<void> {
+  async deleteBlackout(
+    tenantId: number,
+    userId: number,
+    id: string,
+  ): Promise<void> {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: string }>(
+        const result = await client.query<{ id: string; name: string }>(
           `UPDATE vacation_blackouts
            SET is_active = 4, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 AND is_active = 1
-           RETURNING id`,
+           RETURNING id, name`,
           [id, tenantId],
         );
 
-        if (result.rows[0] === undefined) {
+        const deleted = result.rows[0];
+        if (deleted === undefined) {
           throw new NotFoundException(`Blackout ${id} not found`);
         }
 
         this.logger.log(`Blackout soft-deleted: ${id} (tenant ${tenantId})`);
+
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'delete',
+          entityType: 'vacation_blackout',
+          details: `Urlaubssperre gelöscht: "${deleted.name}" (${id})`,
+          oldValues: { blackoutId: id, name: deleted.name },
+        });
       },
     );
   }
@@ -394,6 +429,27 @@ export class VacationBlackoutsService {
       id,
     );
     return this.mapRowToBlackout(row, scopes);
+  }
+
+  /** Log activity for blackout creation. */
+  private logBlackoutCreated(
+    tenantId: number,
+    userId: number,
+    dto: CreateBlackoutDto,
+  ): void {
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'vacation_blackout',
+      details: `Urlaubssperre erstellt: "${dto.name}" ${dto.startDate} – ${dto.endDate}`,
+      newValues: {
+        name: dto.name,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        isGlobal: dto.isGlobal,
+      },
+    });
   }
 
   /** Build dynamic SET clause and params for blackout update (non-scope fields only). */

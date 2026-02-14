@@ -53,6 +53,15 @@
   let vacationType = $state<VacationType>('regular');
   let requestNote = $state('');
 
+  // Today as YYYY-MM-DD — minimum selectable date (no past-date requests)
+  const todayStr = $derived.by(() => {
+    const now = new Date();
+    const y = String(now.getFullYear());
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
+
   // Track initial dates to avoid overwriting parent pre-fetch with stale own-check
   let initialStartDate = '';
   let initialEndDate = '';
@@ -109,7 +118,10 @@
   const isSingleDay = $derived(startDate === endDate && startDate !== '');
 
   const canSubmit = $derived(
-    startDate !== '' && endDate !== '' && endDate >= startDate,
+    startDate !== '' &&
+      endDate !== '' &&
+      endDate >= startDate &&
+      startDate >= todayStr,
   );
 
   const vacationTypes = $derived(
@@ -234,7 +246,10 @@
       class="form-field__label"
       for="start-date">Von</label
     >
-    <AppDatePicker bind:value={startDate} />
+    <AppDatePicker
+      bind:value={startDate}
+      min={todayStr}
+    />
   </div>
   <div class="form-field">
     <label

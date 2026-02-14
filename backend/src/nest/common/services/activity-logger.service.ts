@@ -45,7 +45,13 @@ export type ActivityEntityType =
   | 'settings'
   | 'calendar'
   | 'shift'
-  | 'availability';
+  | 'availability'
+  | 'vacation'
+  | 'vacation_blackout'
+  | 'vacation_holiday'
+  | 'vacation_staffing_rule'
+  | 'vacation_entitlement'
+  | 'vacation_settings';
 
 /**
  * Parameters for logging an activity
