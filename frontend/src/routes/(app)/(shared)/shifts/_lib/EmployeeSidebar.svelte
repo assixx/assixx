@@ -4,6 +4,8 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
+  import { resolve } from '$app/paths';
+
   import {
     AVAILABILITY_ICONS,
     AVAILABILITY_LABELS,
@@ -65,7 +67,7 @@
 <div class="employee-sidebar">
   <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
   {#if minStaffCount !== null}
-    <div class="mt-2 mb-2">
+    <div class="mt-2 mb-2 flex items-center gap-2">
       <span
         class="badge badge--warning"
         title="Mindestbesetzung für diese Maschine"
@@ -73,6 +75,13 @@
         <i class="fas fa-hard-hat"></i>
         Mindestbesetzung: {minStaffCount}
       </span>
+      <a
+        href={`${resolve('/vacation/rules', {})}?tab=staffing-rules`}
+        class="action-icon action-icon--edit"
+        title="Besetzungsregeln bearbeiten"
+      >
+        <i class="fas fa-edit"></i>
+      </a>
     </div>
   {/if}
   <div class="employee-list">

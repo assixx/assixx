@@ -3,8 +3,11 @@
    * Vacation Rules — Admin Page (Orchestrator)
    * Tabs: Sperrzeiten (Blackouts), Besetzungsregeln (Staffing Rules), Einstellungen (Settings)
    * SSR: Data loaded in +page.server.ts, tab content delegated to child components.
+   * Supports ?tab=staffing-rules|blackouts|settings query param for deep-linking.
    */
   import { onDestroy } from 'svelte';
+
+  import { page } from '$app/state';
 
   import '$styles/vacation-rules.css';
 
@@ -22,6 +25,23 @@
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // ==========================================================================
+  // QUERY PARAM: ?tab=staffing-rules|blackouts|settings
+  // ==========================================================================
+
+  const VALID_TABS: RulesTab[] = ['blackouts', 'staffing-rules', 'settings'];
+
+  function isValidTab(value: string | null): value is RulesTab {
+    if (value === null) return false;
+    return (VALID_TABS as string[]).includes(value);
+  }
+
+  // Apply query param on mount (once)
+  const tabParam = page.url.searchParams.get('tab');
+  if (isValidTab(tabParam)) {
+    rulesState.setActiveTab(tabParam);
+  }
 
   const ssrBlackouts = $derived(data.blackouts);
   const ssrStaffingRules = $derived(data.staffingRules);

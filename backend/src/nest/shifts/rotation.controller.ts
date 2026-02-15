@@ -23,6 +23,7 @@ import {
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -59,6 +60,7 @@ const SHIFT_ROTATION = 'shift-rotation';
 
 @Controller('shifts/rotation')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@TenantFeature('shift_planning')
 export class RotationController {
   private readonly logger = new Logger(RotationController.name);
 

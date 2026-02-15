@@ -63,6 +63,31 @@
   );
 
   // ==========================================================================
+  // SEARCH / FILTER
+  // ==========================================================================
+
+  let searchQuery = $state('');
+
+  /** Staffing rules filtered by machine name */
+  const filteredRules = $derived.by(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q === '') return rulesState.staffingRules;
+    return rulesState.staffingRules.filter((rule) => {
+      const name = (rule.machineName ?? '').toLowerCase();
+      return name.includes(q);
+    });
+  });
+
+  function handleSearchInput(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    searchQuery = input.value;
+  }
+
+  function clearSearch(): void {
+    searchQuery = '';
+  }
+
+  // ==========================================================================
   // DROPDOWN HELPERS
   // ==========================================================================
 
@@ -213,6 +238,34 @@
         Neue Regel
       </button>
     </div>
+    {#if rulesState.staffingRules.length > 0}
+      <div class="search-input-wrapper mt-3 mb-0">
+        <div
+          class="search-input"
+          id="staffing-search-container"
+        >
+          <i class="search-input__icon fas fa-search"></i>
+          <input
+            type="search"
+            id="staffing-search"
+            class="search-input__field"
+            placeholder="Maschine suchen..."
+            autocomplete="off"
+            value={searchQuery}
+            oninput={handleSearchInput}
+          />
+          <button
+            class="search-input__clear"
+            class:search-input__clear--visible={searchQuery.length > 0}
+            type="button"
+            aria-label="Suche löschen"
+            onclick={clearSearch}
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    {/if}
   </div>
   <div class="card__body">
     {#if rulesState.staffingRules.length === 0}
@@ -226,9 +279,15 @@
           mindestens anwesend sein muessen.
         </p>
       </div>
+    {:else if filteredRules.length === 0}
+      <div class="empty-state empty-state--in-card">
+        <p class="empty-state__description">
+          Keine Ergebnisse für „{searchQuery}"
+        </p>
+      </div>
     {:else}
       <div class="rules-list">
-        {#each rulesState.staffingRules as rule (rule.id)}
+        {#each filteredRules as rule (rule.id)}
           <div class="rules-list__item">
             <div class="rules-list__info">
               <span class="rules-list__name">
