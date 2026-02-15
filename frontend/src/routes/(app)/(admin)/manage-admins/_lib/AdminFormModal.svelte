@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import { calculatePasswordStrength } from './utils';
@@ -354,21 +356,11 @@
         </div>
 
         {#if formPassword}
-          <div
-            class="password-strength-container"
-            id="admin-password-strength-container"
-          >
-            <div class="password-strength-meter">
-              <div
-                class="password-strength-bar"
-                data-score={passwordScore}
-              ></div>
-            </div>
-            <div class="password-strength-info">
-              <span class="password-strength-label">{passwordLabel}</span>
-              <span class="password-strength-time">{passwordTime}</span>
-            </div>
-          </div>
+          <PasswordStrengthIndicator
+            score={passwordScore}
+            label={passwordLabel}
+            crackTime={passwordTime}
+          />
         {/if}
 
         <div class="form-field">

@@ -1,5 +1,4 @@
 <script lang="ts">
-  /* eslint-disable max-lines -- Page includes inline modals (create + respond), splitting would add complexity without benefit */
   /**
    * Vacation — Main Page Component
    * SSR: Data loaded in +page.server.ts
@@ -11,8 +10,6 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  // Vacation-specific styles (same pattern as KVP — external file, no scoping)
-  import '../../../../styles/vacation.css';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -1202,3 +1199,100 @@
     </form>
   </div>
 {/if}
+
+<style>
+  /* ─── Filter Layout ──────── */
+
+  .vacation-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    align-items: flex-end;
+  }
+
+  .vacation-filter-row :global([data-dropdown] .dropdown__trigger) {
+    width: auto;
+    min-width: 200px;
+  }
+
+  .vacation-filter-row :global([data-dropdown] .dropdown__menu) {
+    min-width: 180px;
+    left: auto;
+    right: auto;
+  }
+
+  /* ─── Request List ──────── */
+
+  .request-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  /* ─── Load More ──────── */
+
+  .vacation-load-more {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--color-glass-border);
+    margin-top: var(--spacing-4);
+  }
+
+  /* ─── Respond Modal ──────── */
+
+  .respond-modal__info {
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+  }
+
+  /* ─── Detail Modal Grid ──────── */
+
+  .detail-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .detail-grid__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--color-glass-border);
+  }
+
+  .detail-grid__row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-grid__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-right: var(--spacing-4);
+  }
+
+  /* ─── Balance Summary Card ──────── */
+
+  .balance-summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: var(--glass-bg);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar__fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+</style>

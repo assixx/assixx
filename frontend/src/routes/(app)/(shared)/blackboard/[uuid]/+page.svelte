@@ -17,9 +17,6 @@
     showSuccessAlert,
   } from '$lib/utils';
 
-  // Page-specific CSS (reuses kvp-detail layout)
-  import '../../../../../styles/kvp-detail.css';
-
   // Shared components (parent _lib)
   import BlackboardEditModal from '../_lib/BlackboardEditModal.svelte';
   import DeleteConfirmModal from '../_lib/DeleteConfirmModal.svelte';
@@ -565,6 +562,136 @@
 {/if}
 
 <style>
+  /* ─── Layout (shared with kvp-detail) ──────── */
+
+  .detail-container {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 475px;
+    gap: var(--spacing-6);
+  }
+
+  .detail-main {
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-8);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .detail-sidebar {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+  }
+
+  .sidebar-card {
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+    padding: var(--spacing-6);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* ─── Header ──────── */
+
+  .detail-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-8);
+  }
+
+  .detail-title {
+    margin-bottom: var(--spacing-2);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: var(--spacing-6);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .detail-meta span {
+    display: inline-flex;
+    gap: var(--spacing-2);
+    align-items: center;
+  }
+
+  .detail-meta i {
+    color: var(--primary-color);
+  }
+
+  .detail-meta__expires {
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  .detail-meta__expires i {
+    color: var(--text-muted);
+  }
+
+  .detail-meta__expires--expired {
+    color: var(--color-red-400, #f87171);
+  }
+
+  .detail-meta__expires--expired i {
+    color: var(--color-red-400, #f87171);
+  }
+
+  .status-priority {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: var(--spacing-3);
+    align-items: center;
+  }
+
+  /* ─── Content Sections ──────── */
+
+  .content-section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .section-title {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .section-content {
+    padding: var(--spacing-4);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    box-shadow: var(--glass-card-shadow);
+  }
+
+  /* ─── Sidebar Specific ──────── */
+
   .confirmation-done {
     display: flex;
     flex-direction: column;
@@ -573,9 +700,31 @@
     text-align: center;
   }
 
-  .confirmation-done .text-success {
+  .confirmation-done :global(.text-success) {
     font-size: 2rem;
     color: var(--color-success);
+  }
+
+  .attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .attachment-item {
+    cursor: pointer;
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .attachment-item:hover {
+    border-color: var(--primary-color);
+    background: var(--glass-bg-active);
   }
 
   .attachment-info {
@@ -595,14 +744,70 @@
     color: rgb(255 255 255 / 60%);
   }
 
-  .photo-placeholder {
+  .action-buttons {
+    display: inline-grid;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-6);
+  }
+
+  /* ─── Photo Gallery ──────── */
+
+  .photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+  }
+
+  .photo-thumbnail {
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 2px solid transparent;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-active);
+  }
+
+  .photo-thumbnail:hover {
+    transform: scale(1.05);
+    border-color: var(--primary-color);
+  }
+
+  .photo-thumbnail img {
     width: 100%;
     height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-2, #2a2a3a);
-    color: var(--color-text-secondary, #888);
-    font-size: 2rem;
+    width: 100%;
+    height: 100%;
+    font-size: 1.5rem;
+    color: var(--color-text-disabled);
+    background: var(--glass-bg-active);
+  }
+
+  .photo-count {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgb(0 0 0 / 70%);
+  }
+
+  /* ─── Responsive ──────── */
+
+  @media (width < 768px) {
+    .detail-container {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

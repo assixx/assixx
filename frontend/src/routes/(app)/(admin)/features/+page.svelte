@@ -12,8 +12,6 @@
 
   const log = createLogger('FeaturesPage');
 
-  import '../../../../styles/features.css';
-
   import {
     applyTenantFeaturesToCategories,
     changePlan as apiChangePlan,
@@ -612,3 +610,216 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Plan Badge */
+  .plan-badge {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+
+    padding: 8px 16px;
+    border: 1px solid rgb(255 255 255 / 20%);
+    border-radius: 20px;
+
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+
+    background: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 15%),
+      rgb(255 255 255 / 5%)
+    );
+    backdrop-filter: blur(10px);
+  }
+
+  .plan-badge.enterprise {
+    border-color: rgb(255 215 0 / 30%);
+    color: #ffd700;
+    background: linear-gradient(
+      135deg,
+      rgb(255 215 0 / 15%),
+      rgb(255 215 0 / 5%)
+    );
+  }
+
+  /* Addon Cards */
+  .addon-card {
+    padding: 24px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: 12px;
+
+    text-align: center;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+
+    transition: all 0.2s ease;
+  }
+
+  .addon-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-glass-border-hover);
+    background: var(--glass-bg-hover);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  }
+
+  .addon-icon {
+    margin-bottom: 12px;
+    font-size: 32px;
+  }
+
+  .addon-name {
+    margin-bottom: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .addon-price {
+    margin-bottom: 4px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .addon-unit {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    opacity: 70%;
+  }
+
+  .addon-current {
+    margin: 12px 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+
+  .addon-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .addon-btn {
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: 50%;
+
+    color: var(--color-text-primary);
+
+    background: var(--glass-bg);
+
+    transition: all 0.2s ease;
+  }
+
+  .addon-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--glass-bg-active);
+  }
+
+  .addon-value {
+    min-width: 40px;
+
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-align: center;
+  }
+
+  /* Summary Bar */
+  .summary-bar {
+    position: fixed;
+    z-index: 900;
+    right: 0;
+    bottom: 0;
+    left: var(--sidebar-width, 250px);
+
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-glass-border);
+
+    background: rgb(20 20 30 / 95%);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -4px 20px rgb(0 0 0 / 30%);
+
+    transition: left 0.3s ease;
+  }
+
+  .summary-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .summary-items {
+    display: flex;
+    gap: 32px;
+  }
+
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .summary-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    opacity: 70%;
+  }
+
+  .summary-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .summary-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-save {
+    cursor: pointer;
+
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--radius-xl);
+
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+
+    background: var(--color-primary);
+
+    transition: all 0.2s ease;
+  }
+
+  .btn-save:hover {
+    background: var(--color-primary-dark);
+    box-shadow: 0 4px 12px rgb(33 150 243 / 30%);
+  }
+
+  /* Feature Categories */
+  .feature-category {
+    margin-bottom: 32px;
+  }
+
+  @media (width < 768px) {
+    .summary-bar {
+      left: 0;
+    }
+  }
+</style>

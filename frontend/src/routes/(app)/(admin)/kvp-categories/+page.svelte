@@ -3,6 +3,7 @@
 
   import { invalidateAll } from '$app/navigation';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     showSuccessAlert,
     showErrorAlert,
@@ -52,6 +53,25 @@
   let newIcon = $state('lightbulb');
   let newDescription = $state('');
   let isCreating = $state(false);
+
+  // Dropdown state
+  let activeDropdown = $state<string | null>(null);
+
+  function toggleDropdown(name: string): void {
+    activeDropdown = activeDropdown === name ? null : name;
+  }
+
+  /** Display label for selected icon */
+  const selectedIconLabel = $derived(
+    ICON_OPTIONS.find((o) => o.value === newIcon)?.label ?? 'Icon wählen',
+  );
+
+  // Close dropdowns on outside click
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      activeDropdown = null;
+    });
+  });
 
   // Delete confirmation modal state
   let showDeleteModal = $state(false);
@@ -463,21 +483,50 @@
                   </div>
 
                   <div class="form-field">
-                    <label
-                      class="form-field__label form-field__label--required"
-                      for="newCatIcon"
-                    >
+                    <span class="form-field__label form-field__label--required">
                       Icon
-                    </label>
-                    <select
-                      id="newCatIcon"
-                      class="form-field__control"
-                      bind:value={newIcon}
+                    </span>
+                    <div
+                      class="dropdown mt-2"
+                      data-dropdown="icon"
                     >
-                      {#each ICON_OPTIONS as opt (opt.value)}
-                        <option value={opt.value}>{opt.label}</option>
-                      {/each}
-                    </select>
+                      <button
+                        type="button"
+                        class="dropdown__trigger"
+                        class:active={activeDropdown === 'icon'}
+                        onclick={() => {
+                          toggleDropdown('icon');
+                        }}
+                      >
+                        <span>
+                          <i
+                            class="fas fa-{newIcon} mr-2"
+                            style="color: {newColor}"
+                          ></i>
+                          {selectedIconLabel}
+                        </span>
+                        <i class="fas fa-chevron-down"></i>
+                      </button>
+                      <div
+                        class="dropdown__menu"
+                        class:active={activeDropdown === 'icon'}
+                      >
+                        {#each ICON_OPTIONS as opt (opt.value)}
+                          <button
+                            type="button"
+                            class="dropdown__option"
+                            class:selected={newIcon === opt.value}
+                            onclick={() => {
+                              newIcon = opt.value;
+                              activeDropdown = null;
+                            }}
+                          >
+                            <i class="fas fa-{opt.value} mr-2"></i>
+                            {opt.label}
+                          </button>
+                        {/each}
+                      </div>
+                    </div>
                     <div class="mt-2">
                       <i
                         class="fas fa-{newIcon} text-lg"

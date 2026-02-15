@@ -14,9 +14,6 @@
 
   const log = createLogger('SurveyEmployeePage');
 
-  // Survey-specific styles (migrated from legacy)
-  import '../../../../styles/survey-employee.css';
-
   import {
     loadSurveyById,
     fetchUserResponse,
@@ -671,3 +668,200 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Survey Employee - Layout */
+  .surveys-section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+
+    margin-bottom: var(--spacing-6);
+    color: var(--text-primary);
+    font-weight: 600;
+
+    font-size: 1.5rem;
+  }
+
+  .surveys-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-6);
+  }
+
+  .section-divider {
+    position: relative;
+    margin: var(--spacing-8) 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent-color),
+      transparent
+    );
+    height: 1px;
+  }
+
+  /* Response Viewing */
+  .response-info {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid rgb(33 150 243 / 30%);
+    border-radius: var(--radius-xl);
+
+    background: rgb(33 150 243 / 10%);
+    padding: var(--spacing-3);
+  }
+
+  .response-info p {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+
+    margin: 0;
+
+    color: var(--text-primary);
+  }
+
+  .response-answers {
+    padding-right: var(--spacing-2);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .response-question {
+    margin-bottom: var(--spacing-6);
+    border-bottom: 1px solid var(--color-glass-border);
+    padding-bottom: var(--spacing-6);
+  }
+
+  .response-question:last-child {
+    border-bottom: none;
+  }
+
+  .response-question h4 {
+    margin-bottom: var(--spacing-4);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+  }
+
+  .response-answer {
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-active);
+    padding: var(--spacing-3);
+  }
+
+  .response-answer p {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+
+    margin: 0;
+
+    color: var(--text-secondary);
+  }
+
+  .response-answer em {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .response-answer .fa-check-square {
+    color: var(--success-color);
+  }
+
+  /* Question Display */
+  .question-item {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+    padding: var(--spacing-6);
+  }
+
+  .question-header {
+    display: flex;
+    align-items: start;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .question-number {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+
+    background: var(--primary-color);
+
+    width: 30px;
+    height: 30px;
+    color: #fff;
+
+    font-weight: 600;
+  }
+
+  .question-text {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+  }
+
+  .required-indicator {
+    margin-left: 4px;
+    color: #f44336;
+  }
+
+  .answer-container {
+    margin-top: var(--spacing-4);
+  }
+
+  /* Rating Button */
+  .rating-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid var(--color-glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg-active);
+
+    color: #d1d5db;
+    font-size: 1rem;
+    font-weight: 500;
+
+    transition: all 0.2s ease;
+  }
+
+  .rating-button:hover {
+    transform: scale(1.1);
+    border-color: rgb(96 165 250 / 50%);
+
+    background: rgb(59 130 246 / 10%);
+    box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+
+    color: #60a5fa;
+  }
+
+  .rating-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(59 130 246 / 50%);
+  }
+
+  .rating-button--selected {
+    transform: scale(1.1);
+    border-color: #3b82f6 !important;
+
+    background: rgb(59 130 246 / 20%) !important;
+
+    color: #60a5fa !important;
+  }
+</style>

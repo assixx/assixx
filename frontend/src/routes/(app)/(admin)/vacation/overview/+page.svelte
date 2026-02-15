@@ -7,7 +7,6 @@
    */
   import { onDestroy } from 'svelte';
 
-  import '../../../../../styles/vacation.css';
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     MACHINE_AVAILABILITY_LABELS,
@@ -636,7 +635,7 @@
   /* ─── Cascade Filter Row (mirrors shift-info-row pattern) ──────── */
 
   .vacation-filter-row {
-    display: grid;
+    display: inline-grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-6);
     position: relative;
@@ -658,6 +657,259 @@
     font-size: 16px;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+  }
+
+  /* ─── Overview Dropdown Sizing ──────── */
+
+  :global([data-dropdown^='ov-'] .dropdown__trigger) {
+    width: auto;
+    min-width: 150px;
+  }
+
+  :global([data-dropdown^='ov-'] .dropdown__menu) {
+    min-width: 150px;
+    left: auto;
+    right: auto;
+  }
+
+  /* ─── Calendar Grid ──────── */
+
+  .calendar-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 1px;
+    font-size: 0.75rem;
+    min-width: 800px;
+  }
+
+  .calendar-grid__name-header {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--color-surface);
+    text-align: left;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 160px;
+    border-bottom: 2px solid var(--color-glass-border);
+  }
+
+  .calendar-grid__day-header {
+    text-align: center;
+    padding: var(--spacing-1);
+    font-weight: 500;
+    min-width: 32px;
+    border-bottom: 2px solid var(--color-glass-border);
+  }
+
+  .calendar-grid__day-header.weekend {
+    background: var(--glass-bg-active);
+    color: var(--text-muted);
+  }
+
+  .calendar-grid__weekday {
+    display: block;
+    font-size: 0.625rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .calendar-grid__day-num {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .calendar-grid__name-cell {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--color-surface);
+    padding: var(--spacing-2) var(--spacing-3);
+    font-weight: 500;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-glass-border);
+  }
+
+  .calendar-grid__cell {
+    padding: 2px;
+    height: 32px;
+    min-width: 32px;
+    border-bottom: 1px solid var(--color-glass-border);
+    vertical-align: middle;
+  }
+
+  .calendar-grid__cell.weekend {
+    background: var(--glass-bg);
+  }
+
+  /* ─── Calendar Cell (vacation indicator) ──────── */
+
+  .calendar-cell {
+    width: 100%;
+    height: 100%;
+    min-height: 24px;
+    border-radius: 3px;
+    opacity: 85%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity var(--transition-fast);
+  }
+
+  .calendar-cell:hover {
+    opacity: 100%;
+  }
+
+  .calendar-cell--half {
+    opacity: 60%;
+  }
+
+  .calendar-cell--half:hover {
+    opacity: 85%;
+  }
+
+  .calendar-cell__half-indicator {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
+  }
+
+  /* ─── Calendar Legend ──────── */
+
+  .calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--color-glass-border);
+  }
+
+  .calendar-legend__item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+  }
+
+  .calendar-legend__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .calendar-legend__dot--half {
+    background: var(--color-primary-500);
+    opacity: 50%;
+    position: relative;
+  }
+
+  .calendar-legend__dot--half::after {
+    content: '½';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .calendar-legend__label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* ─── Blackout Day Marking ──────── */
+
+  .calendar-grid__day-header.blackout {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgb(239 68 68 / 12%) 3px,
+      rgb(239 68 68 / 12%) 6px
+    );
+    color: var(--color-danger-600);
+    position: relative;
+  }
+
+  .calendar-grid__blackout-dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-danger-500);
+    margin: 1px auto 0;
+  }
+
+  .calendar-grid__cell.blackout {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgb(239 68 68 / 8%) 3px,
+      rgb(239 68 68 / 8%) 6px
+    );
+  }
+
+  .calendar-grid__cell.blackout.weekend {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--glass-bg),
+      var(--glass-bg) 3px,
+      rgb(239 68 68 / 10%) 3px,
+      rgb(239 68 68 / 10%) 6px
+    );
+  }
+
+  .calendar-legend__dot--blackout {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 2px,
+      rgb(239 68 68 / 25%) 2px,
+      rgb(239 68 68 / 25%) 4px
+    );
+    border: 1px solid var(--color-danger-400);
+  }
+
+  /* ─── Machine Availability (day header marking) ──────── */
+
+  .calendar-grid__avail-dot {
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin: 2px auto 0;
+  }
+
+  .calendar-legend--machine-avail {
+    margin-top: var(--spacing-2);
+    padding-top: var(--spacing-2);
+    border-top: 1px dashed var(--color-glass-border);
+  }
+
+  .calendar-legend__section-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .calendar-legend__section-title :global(i) {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
   }
 
   @media (width >= 1024px) {

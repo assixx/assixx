@@ -1,109 +1,128 @@
 /**
- * Primary Button (Gradient Border Design)
+ * Primary Button (Light Design)
  *
- * Elegant gradient border design - unique and modern.
- * The border itself is a gradient, not the background.
+ * Subtle gray gradient with solid border.
+ * Clean, minimal appearance for primary actions.
  *
  * Design philosophy:
- * - Gradient border (blue to lighter blue)
- * - Clean minimal background
- * - Subtle glow
- * - No transforms
- * - Unique - no other button has gradient border
+ * - Light gray gradient background
+ * - Solid gray border
+ * - Subtle shadow
+ * - No transforms on hover
  *
  * Use case: Primary actions everywhere (Save, Create, Confirm, Submit, etc.)
+ *
+ * NOTE: Previously this was the "btn-light" design.
+ * The old gradient-border design is now "btn-modal" (see button.modal.css).
  */
 
 .btn-primary {
-  /* Simple transition */
-  transition: all 0.2s ease;
+  /* Transitions */
+  transition: var(--transition-all);
 
-  /* No shadow on default */
-  box-shadow: none;
+  /* Shadow - subtle */
+  box-shadow: var(--shadow-btn-light, 0 1px 3px rgb(0 0 0 / 8%));
+  border: var(--glass-border);
 
-  /* Transparent border for gradient trick */
-  border: 1px solid transparent;
+  background: linear-gradient(
+    145deg,
+    rgb(224 224 224 / 11%),
+    rgb(158 158 158 / 15%)
+  ); /* Subtle gray gradient */
 
-  /* GRADIENT BORDER - This is the signature */
-  /* Light mode: bright bg with blue gradient border */
-  background:
-    linear-gradient(rgb(255 255 255 / 95%), rgb(240 242 245)) padding-box,
-    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
-
-  /* Spacing - Standard */
+  /* Padding - Standard */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 
-  /* Text - theme-aware */
-  color: var(--text-primary);
+  /* Colors */
+  color: var(--color-text-primary);
 }
 
-/* Dark mode: dark bg with same gradient border */
-html.dark .btn-primary {
-  background:
-    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
-    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
-  color: var(--color-white);
+/* Hover State - Brighten the gradient */
+.btn-primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
+  background: linear-gradient(
+    145deg,
+    rgb(224 224 224 / 18%),
+    rgb(158 158 158 / 25%)
+  );
 }
 
-/* Hover State - Intensify Gradient */
-.btn-primary:hover {
-  background:
-    linear-gradient(rgb(240 242 248), rgb(230 235 242)) padding-box,
-    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+/* Active/Pressed State */
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-light-active, inset 0 1px 2px rgb(0 0 0 / 10%));
+  border-color: var(--color-gray-500);
+  background: var(--color-gray-300);
 }
 
-html.dark .btn-primary:hover {
-  background:
-    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
-    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
-}
-
-/* Active State - Pressed Effect */
-.btn-primary:active {
-  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
-  background:
-    linear-gradient(rgb(232 236 245), rgb(220 225 235)) padding-box,
-    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
-}
-
-html.dark .btn-primary:active {
-  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
-  background:
-    linear-gradient(rgb(5 5 5 / 98%), rgb(25 25 25)) padding-box,
-    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+html.dark .btn-primary:active:not(:disabled) {
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 30%);
+  border-color: var(--color-gray-600);
+  background: var(--color-gray-700);
 }
 
 /* Focus State - Accessibility */
 .btn-primary:focus-visible {
-  /* Outline for accessibility */
-  outline: 2px solid rgb(33 150 243 / 50%);
+  outline: 2px solid transparent;
   outline-offset: 2px;
+  box-shadow:
+    0 0 0 3px rgb(158 158 158 / 20%),
+    var(--shadow-btn-light);
 }
 
 /* Disabled State */
-.btn-primary:disabled {
-  /* No shadow */
+.btn-primary:disabled,
+.btn-primary.disabled {
+  opacity: 60%;
+  cursor: not-allowed;
   box-shadow: none;
 
-  /* Muted border */
-  border-color: var(--color-glass-border-hover);
+  border-color: var(--color-gray-300);
+  background: var(--color-gray-100);
 
-  /* Reduced opacity */
-  color: var(--color-text-muted);
+  color: var(--color-gray-500);
+}
+
+html.dark .btn-primary:disabled,
+html.dark .btn-primary.disabled {
+  border-color: var(--color-gray-700);
+  background: var(--color-gray-800);
+
+  color: var(--color-gray-500);
 }
 
 /* Loading State */
 .btn-primary.is-loading {
-  /* Reduce opacity */
-  opacity: 70%;
-
-  /* Disable pointer events */
   pointer-events: none;
+  color: transparent;
+}
+
+.btn-primary.is-loading::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  animation: spin-primary 0.6s linear infinite;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid var(--color-gray-900);
+  border-top-color: transparent;
+  border-radius: 50%;
+
+  width: 16px;
+  height: 16px;
+  content: '';
+}
+
+@keyframes spin-primary {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   .btn-primary {
-    transition: opacity 0.15s ease;
+    transition: var(--transition-colors);
   }
 }

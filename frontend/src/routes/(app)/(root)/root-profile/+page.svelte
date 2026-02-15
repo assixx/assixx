@@ -8,13 +8,10 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
-
-  // Page-specific CSS
-  import '../../../../styles/root-profile.css';
-  import '../../../../styles/password-strength.css';
 
   // Local modules
   import {
@@ -657,50 +654,19 @@
           </div>
 
           {#if passwordStrength !== null || strengthLoading}
-            <div
-              class="password-strength-container"
-              class:is-loading={strengthLoading}
-            >
-              <div class="password-strength-meter">
-                <div
-                  class="password-strength-bar"
-                  data-score={passwordStrength?.score ?? -1}
-                ></div>
-              </div>
-              {#if passwordStrength}
-                <div class="password-strength-info">
-                  <span class="password-strength-label"
-                    >{passwordStrength.label}</span
-                  >
-                  <span class="password-strength-time"
-                    >{passwordStrength.crackTime}</span
-                  >
-                </div>
-              {/if}
-            </div>
+            <PasswordStrengthIndicator
+              score={passwordStrength?.score ?? -1}
+              label={passwordStrength?.label ?? ''}
+              crackTime={passwordStrength?.crackTime ?? ''}
+              loading={strengthLoading}
+              feedback={passwordStrength?.feedback ?? null}
+            />
           {/if}
 
           {#if newPasswordError}
             <span class="form-field__message form-field__message--error"
               >{MESSAGES.passwordRequirements}</span
             >
-          {/if}
-
-          {#if (passwordStrength?.feedback.warning !== undefined && passwordStrength.feedback.warning !== '') || (passwordStrength?.feedback.suggestions !== undefined && passwordStrength.feedback.suggestions.length > 0)}
-            <div class="password-feedback">
-              {#if passwordStrength.feedback.warning !== ''}
-                <span class="password-feedback-warning"
-                  >{passwordStrength.feedback.warning}</span
-                >
-              {/if}
-              {#if passwordStrength.feedback.suggestions.length > 0}
-                <ul class="password-feedback-suggestions">
-                  {#each passwordStrength.feedback.suggestions as suggestion, i (i)}
-                    <li>{suggestion}</li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
           {/if}
         </div>
 
@@ -764,3 +730,152 @@
   onclose={handleCropClose}
   onsave={handleCropSave}
 />
+
+<style>
+  /* Root Profile - Page-Specific Styles */
+  /* Design System provides: Cards, Avatar, Forms, Buttons */
+  /* This file only contains page-specific layout */
+
+  /* ===== CONTAINER WIDTH ===== */
+  .profile-card {
+    margin-right: auto;
+    margin-left: auto;
+    max-width: 800px;
+  }
+
+  /* ===== PROFILE PICTURE LAYOUT ===== */
+  .profile-picture-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+  }
+
+  /* Blue border ring around avatar (page-specific decoration) */
+  .profile-picture-container {
+    border: 3px solid rgb(0 142 255 / 30%);
+    border-radius: 50%;
+    background: transparent;
+    padding: 3px;
+  }
+
+  /* Button stack (vertical layout) */
+  .profile-picture-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* ===== FORM LAYOUT ===== */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+  }
+
+  /* ===== APPROVAL SECTION ===== */
+  .approval-section {
+    margin-bottom: var(--spacing-8);
+    border: 1px solid rgb(255 193 7 / 20%);
+    border-radius: var(--radius-xl);
+
+    background: rgb(255 193 7 / 5%);
+    padding: var(--spacing-6);
+  }
+
+  .approval-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+  }
+
+  .approval-header i {
+    color: var(--color-warning);
+    font-size: 24px;
+  }
+
+  .approval-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .approval-item {
+    transition: all var(--transition-fast);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg);
+    padding: var(--spacing-3);
+  }
+
+  .approval-item:hover {
+    transform: translateY(-2px);
+    background: var(--glass-bg-active);
+  }
+
+  .approval-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: var(--spacing-2);
+  }
+
+  .approval-item-info {
+    flex: 1;
+  }
+
+  .approval-item-actions {
+    display: flex;
+    gap: var(--spacing-2);
+  }
+
+  .approval-status {
+    display: inline-block;
+    border-radius: 12px;
+
+    padding: 4px 12px;
+    font-weight: 600;
+
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  .approval-status.pending {
+    background: rgb(255 193 7 / 20%);
+    color: var(--color-warning);
+  }
+
+  .cooling-off-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+
+    margin-top: var(--spacing-2);
+    border: 1px solid rgb(255 152 0 / 30%);
+    border-radius: var(--radius-xl);
+
+    background: rgb(255 152 0 / 10%);
+    padding: var(--spacing-3);
+
+    font-size: 13px;
+  }
+
+  .cooling-off-warning i {
+    color: #ff9800;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (width < 768px) {
+    .profile-picture-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

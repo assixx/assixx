@@ -20,9 +20,6 @@
 
   const log = createLogger('ManageMachinesPage');
 
-  // Page-specific CSS
-  import '../../../../styles/manage-machines.css';
-
   // Import from _lib/ modules
   import {
     getMachineTeams as apiGetMachineTeams,
@@ -807,3 +804,69 @@
   }}
   onmanage={navigateToAvailabilityHistory}
 />
+
+<style>
+  /* Cascading Dropdowns - Disabled State */
+  .dropdown.disabled :global(.dropdown__trigger),
+  :global(.dropdown__trigger.disabled) {
+    opacity: 50%;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: var(--color-glass-light);
+  }
+
+  /* Teams Multi-Select Dropdown */
+  :global(.dropdown__menu--multi) {
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  :global(.dropdown__option--checkbox) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+
+  :global(.dropdown__option--checkbox:hover) {
+    background-color: var(--color-glass-light);
+  }
+
+  :global(.dropdown__checkbox) {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  :global(.dropdown__option--disabled) {
+    opacity: 50%;
+    cursor: not-allowed;
+    font-style: italic;
+  }
+
+  /* Search Result Items */
+  :global(.search-result__content) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  :global(.search-result__name) {
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  :global(.search-result__details) {
+    font-size: 0.813rem;
+    color: var(--color-text-secondary);
+  }
+
+  :global(.search-result__more) {
+    font-size: 0.813rem;
+    color: var(--color-primary);
+    text-align: center;
+    border-top: 1px solid rgb(255 255 255 / 5%);
+  }
+</style>

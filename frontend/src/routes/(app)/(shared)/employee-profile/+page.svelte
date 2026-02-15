@@ -9,13 +9,10 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
-
-  // Page-specific CSS
-  import '../../../../styles/employee-profile.css';
-  import '../../../../styles/password-strength.css';
 
   // Local modules
   import {
@@ -113,17 +110,6 @@
     doPasswordsMatch(newPassword, confirmPassword),
   );
   const isPasswordValid = $derived(isPasswordLengthValid(newPassword));
-
-  // Password feedback visibility helpers
-  const hasWarning = $derived(
-    passwordStrength?.feedback.warning !== undefined &&
-      passwordStrength.feedback.warning !== '',
-  );
-  const hasSuggestions = $derived(
-    passwordStrength?.feedback.suggestions !== undefined &&
-      passwordStrength.feedback.suggestions.length > 0,
-  );
-  const hasPasswordFeedback = $derived(hasWarning || hasSuggestions);
 
   // =============================================================================
   // PROFILE PICTURE ACTIONS
@@ -586,50 +572,19 @@
           </div>
 
           {#if passwordStrength !== null || strengthLoading}
-            <div
-              class="password-strength-container"
-              class:is-loading={strengthLoading}
-            >
-              <div class="password-strength-meter">
-                <div
-                  class="password-strength-bar"
-                  data-score={passwordStrength?.score ?? -1}
-                ></div>
-              </div>
-              {#if passwordStrength !== null}
-                <div class="password-strength-info">
-                  <span class="password-strength-label"
-                    >{passwordStrength.label}</span
-                  >
-                  <span class="password-strength-time"
-                    >{passwordStrength.crackTime}</span
-                  >
-                </div>
-              {/if}
-            </div>
+            <PasswordStrengthIndicator
+              score={passwordStrength?.score ?? -1}
+              label={passwordStrength?.label ?? ''}
+              crackTime={passwordStrength?.crackTime ?? ''}
+              loading={strengthLoading}
+              feedback={passwordStrength?.feedback ?? null}
+            />
           {/if}
 
           {#if newPasswordError}
             <span class="form-field__message form-field__message--error">
               {MESSAGES.passwordRequirements}
             </span>
-          {/if}
-
-          {#if hasPasswordFeedback && passwordStrength !== null}
-            <div class="password-feedback">
-              {#if hasWarning}
-                <span class="password-feedback-warning"
-                  >{passwordStrength.feedback.warning}</span
-                >
-              {/if}
-              {#if hasSuggestions}
-                <ul class="password-feedback-suggestions">
-                  {#each passwordStrength.feedback.suggestions as suggestion, i (i)}
-                    <li>{suggestion}</li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
           {/if}
         </div>
 
@@ -693,3 +648,82 @@
   onclose={handleCropClose}
   onsave={handleCropSave}
 />
+
+<style>
+  /* ===== CONTAINER WIDTH ===== */
+  .profile-card {
+    margin-right: auto;
+    margin-left: auto;
+    max-width: 800px;
+  }
+
+  /* ===== PROFILE PICTURE LAYOUT ===== */
+  .profile-picture-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+  }
+
+  /* Blue border ring around avatar (page-specific decoration) */
+  .profile-picture-container {
+    border: 3px solid rgb(0 142 255 / 30%);
+    border-radius: 50%;
+    background: transparent;
+    padding: 3px;
+  }
+
+  /* Button stack (vertical layout) */
+  .profile-picture-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* ===== FORM LAYOUT ===== */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+  }
+
+  /* ===== INFO BOX (Employee-specific: readonly fields info) ===== */
+  .info-box {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid rgb(33 150 243 / 20%);
+    border-radius: var(--radius-xl);
+    background: rgb(33 150 243 / 5%);
+    padding: var(--spacing-3);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .info-box i {
+    margin-right: var(--spacing-1);
+    color: #2196f3;
+  }
+
+  /* Non-editable fields styling */
+  .non-editable {
+    cursor: default;
+    background: rgb(255 255 255 / 1%);
+  }
+
+  .non-editable:focus {
+    box-shadow: none;
+    border-color: rgb(255 255 255 / 10%);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (width < 768px) {
+    .profile-picture-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

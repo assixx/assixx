@@ -14,10 +14,6 @@
     showSuccessAlert,
   } from '$lib/stores/toast';
 
-  // Page-specific CSS
-  import '../../../../styles/root-dashboard.css';
-  import '../../../../styles/logs.css';
-
   // Module imports
   import { saveEmployeeNumber as saveEmployeeNumberApi } from './_lib/api';
   import { EMPLOYEE_NUMBER, MESSAGES } from './_lib/constants';
@@ -256,3 +252,56 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Dashboard Stats Grid Container
+   * WHY: Dynamically created by root.ts loadDashboardData() (Line 261)
+   * Container for stat-card elements in root dashboard */
+  #dashboard-data .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: 32px;
+  }
+
+  /* Stat Value - Large number display
+   * WHY: Dynamically created by root.ts (Line 263)
+   * Displays the actual count/metric value */
+  #dashboard-data :global(.stat-value) {
+    margin-right: 10px;
+    margin-bottom: 8px;
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 2.5rem;
+    text-shadow: 0 0 10px rgb(33 150 243 / 50%);
+  }
+
+  /* Stat Label - Description text
+   * WHY: Dynamically created by root.ts (Line 264)
+   * Shows label like "Admins", "Mitarbeiter", etc. */
+  #dashboard-data :global(.stat-label) {
+    color: var(--text-secondary);
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* User Info in Activity Logs Table — Ensures badges align vertically */
+  #activity-logs-table .user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  #activity-logs-table .user-name {
+    display: inline-block;
+    width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #activity-logs-table .user-info .badge {
+    flex-shrink: 0;
+  }
+</style>

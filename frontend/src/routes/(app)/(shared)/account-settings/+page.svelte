@@ -8,9 +8,6 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  // Page-specific CSS
-  import '../../../../styles/account-settings.css';
-
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('AccountSettingsPage');
@@ -370,3 +367,25 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Danger Border Variant - Visual indicator for dangerous operations */
+  .card--danger-border {
+    border-color: rgb(244 67 54 / 30%);
+  }
+
+  .card--danger-border:hover {
+    border-color: rgb(244 67 54 / 50%);
+  }
+
+  /* Info Box - Two-person-principle information */
+  .info-box {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid rgb(33 150 243 / 20%);
+    border-radius: var(--radius-xl);
+    background: rgb(33 150 243 / 5%);
+    padding: var(--spacing-3);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+</style>

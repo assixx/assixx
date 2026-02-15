@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
 
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import {
@@ -416,21 +417,11 @@
         </div>
 
         {#if formPassword}
-          <div
-            class="password-strength-container"
-            id="employee-password-strength-container"
-          >
-            <div class="password-strength-meter">
-              <div
-                class="password-strength-bar"
-                data-score={passwordScore}
-              ></div>
-            </div>
-            <div class="password-strength-info">
-              <span class="password-strength-label">{passwordLabel}</span>
-              <span class="password-strength-time">{passwordTime}</span>
-            </div>
-          </div>
+          <PasswordStrengthIndicator
+            score={passwordScore}
+            label={passwordLabel}
+            crackTime={passwordTime}
+          />
         {/if}
 
         <div class="form-field">

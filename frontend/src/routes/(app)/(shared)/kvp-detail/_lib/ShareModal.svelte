@@ -215,3 +215,17 @@
     </div>
   </div>
 {/if}
+
+<style>
+  :global([data-dropdown='shareDept'] .dropdown__trigger),
+  :global([data-dropdown='shareArea'] .dropdown__trigger) {
+    min-width: 220px;
+    width: 50%;
+  }
+
+  :global([data-dropdown='shareDept'] .dropdown__menu),
+  :global([data-dropdown='shareArea'] .dropdown__menu) {
+    min-width: 220px;
+    width: 50%;
+  }
+</style>

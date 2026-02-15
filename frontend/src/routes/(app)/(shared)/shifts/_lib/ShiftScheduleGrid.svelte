@@ -5,7 +5,6 @@
 -->
 <script lang="ts">
   import {
-    MACHINE_AVAILABILITY_ICONS,
     MACHINE_AVAILABILITY_LABELS,
     type MachineAvailabilityStatus,
   } from '$lib/machine-availability/constants';
@@ -181,15 +180,13 @@
           role="gridcell"
           tabindex="0"
         >
-          <!-- Machine availability indicator icon -->
+          <!-- Machine availability dot -->
           {#if availStatus !== undefined}
             {@const statusKey = availStatus as MachineAvailabilityStatus}
-            <div
-              class="machine-avail-indicator avail-{availStatus}"
+            <span
+              class="machine-avail-dot avail-{availStatus}"
               title={MACHINE_AVAILABILITY_LABELS[statusKey]}
-            >
-              <i class="fas {MACHINE_AVAILABILITY_ICONS[statusKey]}"></i>
-            </div>
+            ></span>
           {/if}
 
           <div class="employee-assignment">

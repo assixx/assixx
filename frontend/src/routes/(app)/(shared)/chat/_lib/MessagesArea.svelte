@@ -429,7 +429,17 @@
             {/if}
             {#if att !== null}
               {#if isImage}
-                <div class="attachment image-attachment scheduled-attachment">
+                <button
+                  type="button"
+                  class="attachment image-attachment scheduled-attachment"
+                  onclick={() => {
+                    onimageclick({
+                      src: `/api/v2/documents/uuid/${att.path}/download?inline=true`,
+                      alt: att.name,
+                      mimeType: att.type,
+                    });
+                  }}
+                >
                   <div class="attachment-image-wrapper">
                     <img
                       src={`/api/v2/documents/uuid/${att.path}/download?inline=true`}
@@ -440,15 +450,28 @@
                       <i class="far fa-clock"></i>
                     </div>
                   </div>
-                </div>
+                </button>
               {:else}
-                <div class="attachment file-attachment scheduled-attachment">
+                <a
+                  class="attachment file-attachment scheduled-attachment"
+                  href={`/api/v2/documents/uuid/${att.path}/download`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <i class="fas {getFileIcon(att.type)}"></i>
                   <div class="file-info">
                     <span class="file-name">{att.name}</span>
                     <span class="file-size">{formatFileSize(att.size)}</span>
                   </div>
-                </div>
+                  <div class="attachment-actions">
+                    <span
+                      class="btn btn-icon btn-sm"
+                      aria-label="Download"
+                    >
+                      <i class="fas fa-download"></i>
+                    </span>
+                  </div>
+                </a>
               {/if}
             {/if}
             <div class="message--scheduled-info">

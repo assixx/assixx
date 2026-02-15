@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -328,21 +330,11 @@
         </div>
 
         {#if password}
-          <div class="password-strength-container">
-            <div class="password-strength-meter">
-              <div
-                class="password-strength-bar"
-                data-score={passwordStrength.score}
-              ></div>
-            </div>
-            <div class="password-strength-info">
-              <span class="password-strength-label"
-                >{passwordStrength.label}</span
-              >
-              <span class="password-strength-time">{passwordStrength.time}</span
-              >
-            </div>
-          </div>
+          <PasswordStrengthIndicator
+            score={passwordStrength.score}
+            label={passwordStrength.label}
+            crackTime={passwordStrength.time}
+          />
         {/if}
 
         <div class="form-field">

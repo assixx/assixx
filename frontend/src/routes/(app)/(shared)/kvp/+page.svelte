@@ -11,8 +11,6 @@
   import { invalidateAll, goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  // KVP-specific styles (migrated from legacy)
-  import '../../../../styles/kvp.css';
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showWarningAlert } from '$lib/utils';
@@ -659,3 +657,295 @@
     onsuccess={handleModalSuccess}
   />
 {/if}
+
+<style>
+  /* KVP Suggestion Cards */
+  [data-dropdown='status'] .dropdown__trigger {
+    width: auto;
+    min-width: 180px;
+  }
+
+  [data-dropdown='status'] .dropdown__menu {
+    min-width: 180px;
+    left: auto;
+    right: auto;
+  }
+
+  .kvp-card {
+    position: relative;
+    cursor: pointer;
+    box-shadow:
+      0 12px 40px rgb(0 0 0 / 50%),
+      inset 0 1px 0 var(--color-glass-border-hover);
+  }
+
+  .kvp-card:hover {
+    transform: translateY(-4px);
+    border-color: rgb(0 142 255 / 50%);
+  }
+
+  /* Status Container */
+  .kvp-status-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    position: absolute;
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+  }
+
+  /* Read Confirmation Status */
+  .kvp-read-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .kvp-read-status--read {
+    background: rgb(16 185 129 / 20%);
+    color: rgb(16 185 129);
+  }
+
+  .kvp-read-status--unread {
+    background: rgb(245 158 11 / 20%);
+    color: rgb(245 158 11);
+  }
+
+  .kvp-read-status:hover {
+    transform: scale(1.1);
+  }
+
+  /* Suggestion Card Content */
+  .suggestion-title {
+    margin-bottom: var(--spacing-2);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .suggestion-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    color: var(--text-muted);
+    padding-bottom: 10px;
+
+    font-size: 0.85rem;
+  }
+
+  .suggestion-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  .suggestion-meta i {
+    color: var(--primary-color);
+  }
+
+  .suggestion-description {
+    position: relative;
+    margin: var(--spacing-4) 0;
+
+    max-height: 4.8em;
+
+    overflow: hidden;
+    color: var(--color-text-secondary);
+
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .suggestion-description::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+
+    padding-left: 20px;
+    content: '...';
+  }
+
+  .suggestion-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    align-items: flex-start;
+
+    margin-top: var(--spacing-6);
+    border-top: 1px solid var(--color-glass-border);
+    padding-top: var(--spacing-4);
+  }
+
+  .category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+
+    padding: 4px 12px;
+
+    font-size: 0.8rem;
+  }
+
+  /* Photo Upload (child component: KvpCreateModal) */
+  :global(.upload-box) {
+    cursor: pointer;
+    border: 2px dashed var(--color-glass-border-hover);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg);
+
+    padding: var(--spacing-8);
+
+    text-align: center;
+  }
+
+  :global(.upload-box:hover) {
+    border-color: var(--primary-color);
+    background: var(--glass-bg-active);
+  }
+
+  :global(.upload-box i) {
+    margin-bottom: var(--spacing-4);
+    color: var(--text-muted);
+    font-size: 2.5rem;
+  }
+
+  :global(.upload-box p) {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  :global(.photo-preview-item) {
+    position: relative;
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+
+    width: 100px;
+    height: 100px;
+
+    overflow: hidden;
+  }
+
+  :global(.photo-preview-item img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(.photo-preview-item .remove-photo) {
+    display: flex;
+
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+
+    background: rgb(244 67 54 / 90%);
+
+    width: 24px;
+    height: 24px;
+    color: #fff;
+
+    font-size: 0.9rem;
+  }
+
+  :global(.photo-preview-item .remove-photo:hover) {
+    transform: scale(1.1);
+    background: #f44336;
+  }
+
+  /* Share Info */
+  .share-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .share-info > i {
+    color: #666;
+    font-size: 0.875rem;
+  }
+
+  /* KVP Filter Layout */
+  .kvp-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    align-items: flex-end;
+  }
+
+  .kvp-search-field {
+    width: 220px;
+  }
+
+  /* User Info (inlined from user-info-update.css) */
+  .user-departments-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-top: 8px;
+
+    font-size: 0.75rem;
+  }
+
+  .user-departments-badge .badge {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 12px;
+
+    background: rgb(255 255 255 / 10%);
+    padding: 4px 12px;
+
+    font-size: 0.75rem;
+  }
+
+  .user-departments-badge .badge.loading {
+    opacity: 60%;
+  }
+
+  .user-departments-badge .badge.badge-warning {
+    border-color: rgb(255 193 7 / 30%);
+    background: rgb(255 193 7 / 20%);
+    color: #ffc107;
+  }
+
+  .user-departments-badge .badge.badge-info {
+    border-color: rgb(0 123 255 / 30%);
+    background: rgb(0 123 255 / 20%);
+    color: #007bff;
+  }
+
+  .user-departments-badge .badge.badge-success {
+    border-color: rgb(40 167 69 / 30%);
+    background: rgb(40 167 69 / 20%);
+    color: #28a745;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header .header-actions {
+    margin-left: auto;
+  }
+</style>

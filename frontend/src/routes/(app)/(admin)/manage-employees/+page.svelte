@@ -18,10 +18,6 @@
 
   const log = createLogger('ManageEmployeesPage');
 
-  // Page-specific CSS
-  import '../../../../styles/manage-employees.css';
-  import '../../../../styles/password-strength.css';
-
   // Local modules
   import {
     saveEmployee as apiSaveEmployee,

@@ -16,8 +16,6 @@
   import { filterState } from '../kvp/_lib/state-filters.svelte';
   import { isFaIcon } from '../kvp/_lib/utils';
 
-  import '../../../../styles/kvp-detail.css';
-
   import {
     addComment,
     updateSuggestionStatus,
@@ -764,3 +762,264 @@
   oncancel={handleCancelRejection}
 />
 <AttachmentPreviewModal />
+
+<style>
+  /* ─── Layout ──────── */
+
+  .detail-container {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 475px;
+    gap: var(--spacing-6);
+  }
+
+  .detail-main {
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-8);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ─── Header ──────── */
+
+  .detail-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-8);
+  }
+
+  .detail-title {
+    margin-bottom: var(--spacing-2);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: var(--spacing-6);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .detail-meta span {
+    display: inline-flex;
+    gap: var(--spacing-2);
+    align-items: center;
+  }
+
+  .detail-meta i {
+    color: var(--primary-color);
+  }
+
+  .category-tag {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: var(--radius-xl);
+    font-size: 0.8rem;
+  }
+
+  .status-priority {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: var(--spacing-3);
+    align-items: center;
+  }
+
+  .share-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .share-info > :global(i.fa-share-alt) {
+    font-size: 0.875rem;
+    color: #666 !important;
+  }
+
+  /* ─── Content Sections ──────── */
+
+  .content-section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .section-title {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .section-content {
+    padding: var(--spacing-4);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    box-shadow: var(--glass-card-shadow);
+  }
+
+  /* ─── Status Dropdown Override ──────── */
+
+  :global([data-dropdown='status'] .dropdown__trigger) {
+    width: auto;
+    min-width: 180px;
+  }
+
+  :global([data-dropdown='status'] .dropdown__menu) {
+    min-width: 180px;
+    left: auto;
+    right: auto;
+  }
+
+  /* ─── Photo Gallery ──────── */
+
+  .photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+  }
+
+  .photo-thumbnail {
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 2px solid transparent;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-active);
+  }
+
+  .photo-thumbnail:hover {
+    transform: scale(1.05);
+    border-color: var(--primary-color);
+  }
+
+  .photo-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 1.5rem;
+    color: var(--color-text-disabled);
+    background: var(--glass-bg-active);
+  }
+
+  /* ─── Lightbox ──────── */
+
+  .lightbox {
+    cursor: pointer;
+    position: fixed;
+    z-index: 2000;
+    top: 0;
+    left: 0;
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: rgb(0 0 0 / 90%);
+  }
+
+  .lightbox.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+  }
+
+  .lightbox-close {
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    font-size: 2rem;
+    color: #fff;
+  }
+
+  .lightbox-close:hover {
+    transform: scale(1.2);
+  }
+
+  .lightbox-nav {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    font-size: 1.5rem;
+    color: #fff;
+    background: rgb(255 255 255 / 15%);
+    border: none;
+    border-radius: 50%;
+    transition:
+      background 0.2s,
+      transform 0.2s;
+  }
+
+  .lightbox-nav:hover {
+    background: rgb(255 255 255 / 30%);
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  .lightbox-nav--prev {
+    left: 24px;
+  }
+
+  .lightbox-nav--next {
+    right: 24px;
+  }
+
+  .lightbox-counter {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    font-size: 0.875rem;
+    color: #fff;
+    background: rgb(0 0 0 / 50%);
+    border-radius: 12px;
+  }
+
+  /* ─── Responsive ──────── */
+
+  @media (width < 768px) {
+    .detail-container {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

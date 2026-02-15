@@ -13,9 +13,6 @@
 
   const log = createLogger('ManageTeamsPage');
 
-  // Page-specific CSS
-  import '../../../../styles/manage-teams.css';
-
   // Local modules
   import {
     saveTeam as apiSaveTeam,

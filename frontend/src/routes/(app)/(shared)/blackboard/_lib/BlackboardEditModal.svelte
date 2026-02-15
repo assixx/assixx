@@ -15,8 +15,6 @@
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
-  import '../../../../../styles/blackboard.css';
-
   import { uploadAttachment } from './api';
   import BlackboardEntryModal from './BlackboardEntryModal.svelte';
 

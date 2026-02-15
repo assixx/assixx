@@ -1,6 +1,102 @@
 /**
- * DEPRECATED - btn-modal wurde zu btn-primary umbenannt.
- * Siehe: button.primary.css
+ * Modal Button (Gradient Border Design)
  *
- * Diese Datei ist leer und kann gelöscht werden.
+ * Elegant gradient border design - unique and modern.
+ * The border itself is a gradient, not the background.
+ *
+ * Design philosophy:
+ * - Gradient border (blue to lighter blue)
+ * - Clean minimal background
+ * - Subtle glow
+ * - No transforms
+ * - Unique - no other button has gradient border
+ *
+ * Use case: Modal actions (Save, Create, Confirm inside modals)
+ *
+ * NOTE: This was previously the "btn-primary" design.
  */
+
+.btn-modal {
+  /* Simple transition */
+  transition: all 0.2s ease;
+
+  /* No shadow on default */
+  box-shadow: none;
+
+  /* Transparent border for gradient trick */
+  border: 1px solid transparent;
+
+  /* GRADIENT BORDER - This is the signature */
+  /* Light mode: bright bg with blue gradient border */
+  background:
+    linear-gradient(rgb(255 255 255 / 95%), rgb(240 242 245)) padding-box,
+    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
+
+  /* Spacing - Standard */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* Text - theme-aware */
+  color: var(--text-primary);
+}
+
+/* Dark mode: dark bg with same gradient border */
+html.dark .btn-modal {
+  background:
+    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
+    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
+  color: var(--color-white);
+}
+
+/* Hover State - Intensify Gradient */
+.btn-modal:hover {
+  background:
+    linear-gradient(rgb(240 242 248), rgb(230 235 242)) padding-box,
+    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+}
+
+html.dark .btn-modal:hover {
+  background:
+    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
+    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+}
+
+/* Active State - Pressed Effect */
+.btn-modal:active {
+  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+  background:
+    linear-gradient(rgb(232 236 245), rgb(220 225 235)) padding-box,
+    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+}
+
+html.dark .btn-modal:active {
+  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+  background:
+    linear-gradient(rgb(5 5 5 / 98%), rgb(25 25 25)) padding-box,
+    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+}
+
+/* Focus State - Accessibility */
+.btn-modal:focus-visible {
+  outline: 2px solid rgb(33 150 243 / 50%);
+  outline-offset: 2px;
+}
+
+/* Disabled State */
+.btn-modal:disabled {
+  box-shadow: none;
+  border-color: var(--color-glass-border-hover);
+  color: var(--color-text-muted);
+}
+
+/* Loading State */
+.btn-modal.is-loading {
+  opacity: 70%;
+  pointer-events: none;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .btn-modal {
+    transition: opacity 0.15s ease;
+  }
+}

@@ -59,9 +59,6 @@
     AvailabilityStatus,
   } from './_lib/types';
 
-  import '../../../../styles/manage-root.css';
-  import '../../../../styles/password-strength.css';
-
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
   // =============================================================================
