@@ -1,21 +1,27 @@
 # FEAT: Frontend Feature Guards — Execution Masterplan
 
 > **Created:** 2026-02-15
-> **Version:** 0.1.0 (Draft)
-> **Status:** DRAFT — Phase 0 (Planung)
+> **Version:** 2.0.0 (Feature Complete)
+> **Status:** DONE ✅ — Alle 5 Phasen abgeschlossen
 > **Branch:** `todo` (aktueller Branch)
 > **Context:** Backend TenantFeatureGuard bereits implementiert (Session 1-2)
 > **Estimated Sessions:** 5
-> **Actual Sessions:** 0 / 5
+> **Actual Sessions:** 5 / 5
 
 ---
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                      |
-| ------- | ---------- | ------------------------------------------------------------- |
-| 0.1.0   | 2026-02-15 | Initial Draft — Phasen 1-3 geplant (rein Frontend-Feat.)      |
-| 0.2.0   | 2026-02-15 | Double-Check: Exakte Dateiliste (16), ADR-Referenzen, 403-Fix |
+| Version | Datum      | Änderung                                                                                |
+| ------- | ---------- | --------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-02-15 | Initial Draft — Phasen 1-3 geplant (rein Frontend-Feat.)                                |
+| 0.2.0   | 2026-02-15 | Double-Check: Exakte Dateiliste (16), ADR-Referenzen, 403-Fix                           |
+| 1.0.0   | 2026-02-15 | Phase 1 DONE: Sidebar Feature-Filterung (SSR), manuell getestet                         |
+| 1.1.0   | 2026-02-15 | Phase 2 DONE: Page-Level Guards (17 Dateien) + 403-Handling + /feature-unavailable      |
+| 1.2.0   | 2026-02-15 | ESLint-Fix: `?? []` entfernt (10×), `features/+page.svelte` ternary→`??` (2×)           |
+| 1.3.0   | 2026-02-15 | Phase 3 Tests: 31 Tests navigation-config + 26 Tests feature-guard = 57 neue Tests      |
+| 1.4.0   | 2026-02-15 | Phase 4: Features Page komplett modernisiert (Design System, Dark/Light, Confirm Modal) |
+| 2.0.0   | 2026-02-15 | Feature COMPLETE: ADR-024 + FEATURES.md + DAILY-PROGRESS.md — alle 5 Phasen done        |
 
 > **Versionierungsregel:**
 >
@@ -65,7 +71,7 @@ Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
 | Unit Tests (52 Tests)       | DONE   | TenantFeatureGuard (16) + VacationController (36)                    |
 | Guard Reihenfolge           | DONE   | JwtAuth → Roles → **TenantFeature** → Permission                     |
 
-### Frontend (PROBLEM — aktueller Stand)
+### Frontend (GELÖST — Phase 1+2 implementiert)
 
 | Problem                               | Impact                                                                                                                                                                                         |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,13 +109,13 @@ Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
 
 | Bestehendes System            | Art der Integration                                       | Phase | Verifiziert am |
 | ----------------------------- | --------------------------------------------------------- | ----- | -------------- |
-| `+layout.server.ts`           | Neuer paralleler Fetch: `/features/my-features`           | 1     |                |
-| `navigation-config.ts`        | Neues `featureCode?` Feld auf `NavItem` + Filter-Funktion | 1     |                |
-| `+layout.svelte`              | `menuItems` Derived-Chain erweitern um Feature-Filter     | 1     |                |
-| `api-client.ts`               | 403 Feature-Error abfangen VOR handleAuthenticationError  | 2     |                |
-| 17× Feature `+page.server.ts` | Page-Level Guard: Feature-Check + redirect                | 2     |                |
-| `feature-unavailable/` (NEU)  | Neue Fehlerseite für deaktivierte Features                | 2     |                |
-| ADR-012 Pattern               | `requireFeature()` folgt dem Group-Layout-Guard-Muster    | 2     |                |
+| `+layout.server.ts`           | Neuer paralleler Fetch: `/features/my-features`           | 1     | 2026-02-15     |
+| `navigation-config.ts`        | Neues `featureCode?` Feld auf `NavItem` + Filter-Funktion | 1     | 2026-02-15     |
+| `+layout.svelte`              | `menuItems` Derived-Chain erweitern um Feature-Filter     | 1     | 2026-02-15     |
+| `api-client.ts`               | 403 Feature-Error abfangen VOR handleAuthenticationError  | 2     | 2026-02-15     |
+| 17× Feature `+page.server.ts` | Page-Level Guard: Feature-Check + redirect                | 2     | 2026-02-15     |
+| `feature-unavailable/` (NEU)  | Neue Fehlerseite für deaktivierte Features                | 2     | 2026-02-15     |
+| ADR-012 Pattern               | `requireFeature()` folgt dem Group-Layout-Guard-Muster    | 2     | 2026-02-15     |
 
 ---
 
@@ -118,7 +124,7 @@ Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
 > **Abhängigkeit:** Backend TenantFeatureGuard (DONE)
 > **Ziel:** Sidebar zeigt NUR Features an, die für den Tenant aktiviert sind
 
-### Step 1.1: Feature-Daten im Layout laden [PENDING]
+### Step 1.1: Feature-Daten im Layout laden [DONE ✅]
 
 **Datei:** `frontend/src/routes/(app)/+layout.server.ts`
 
@@ -164,7 +170,7 @@ return {
 
 **Performance:** Kein zusätzlicher Roundtrip — läuft parallel zu bestehenden Fetches.
 
-### Step 1.2: NavItem um `featureCode` erweitern [PENDING]
+### Step 1.2: NavItem um `featureCode` erweitern [DONE]
 
 **Datei:** `frontend/src/routes/(app)/_lib/navigation-config.ts`
 
@@ -247,7 +253,7 @@ export function filterMenuByFeatures(items: NavItem[], activeFeatures: ReadonlyS
 }
 ```
 
-### Step 1.3: Layout Sidebar-Filterung aktivieren [PENDING]
+### Step 1.3: Layout Sidebar-Filterung aktivieren [DONE]
 
 **Datei:** `frontend/src/routes/(app)/+layout.svelte`
 
@@ -279,19 +285,19 @@ const menuItems = $derived<NavItem[]>(
 2. `filterMenuByAccess()` → `has_full_access` filtert Admin-spezifische Items
 3. `filterMenuByFeatures()` → Tenant-Feature-Aktivierung filtert Rest
 
-### Phase 1 — Definition of Done
+### Phase 1 — Definition of Done ✅
 
-- [ ] `GET /features/my-features` wird parallel im Layout geladen (kein Extra-Roundtrip)
-- [ ] `NavItem` Interface hat optionales `featureCode?: string` Feld
-- [ ] Alle 8 Feature-NavItems haben korrektes `featureCode` zugewiesen
-- [ ] `filterMenuByFeatures()` Funktion existiert und ist rekursiv (Submenus)
-- [ ] Items OHNE `featureCode` werden NIE gefiltert (Core-Features sicher)
-- [ ] Leere Eltern-Container (z.B. "LEAN-Management" ohne kvp+surveys) werden entfernt
-- [ ] `+layout.svelte` verwendet 3-stufige Filter-Chain
-- [ ] Kein Sidebar-Flash (SSR → Daten sofort verfügbar)
-- [ ] svelte-check 0 Errors
-- [ ] ESLint 0 Errors in geänderten Dateien
-- [ ] Manueller Test: Feature deaktivieren → Sidebar-Item verschwindet
+- [x] `GET /features/my-features` wird parallel im Layout geladen (kein Extra-Roundtrip)
+- [x] `NavItem` Interface hat optionales `featureCode?: string` Feld
+- [x] Alle 8 Feature-NavItems haben korrektes `featureCode` zugewiesen
+- [x] `filterMenuByFeatures()` Funktion existiert und ist rekursiv (Submenus)
+- [x] Items OHNE `featureCode` werden NIE gefiltert (Core-Features sicher)
+- [x] Leere Eltern-Container (z.B. "LEAN-Management" ohne kvp+surveys) werden entfernt
+- [x] `+layout.svelte` verwendet 3-stufige Filter-Chain
+- [x] Kein Sidebar-Flash (SSR → Daten sofort verfügbar)
+- [x] svelte-check 0 Errors
+- [x] ESLint 0 Errors in geänderten Dateien
+- [x] Manueller Test: Feature deaktivieren → Sidebar-Item verschwindet
 
 ---
 
@@ -300,7 +306,7 @@ const menuItems = $derived<NavItem[]>(
 > **Abhängigkeit:** Phase 1 complete
 > **Ziel:** Direkt-Navigation zu deaktivierten Features → sauberer Redirect statt leere Seite
 
-### Step 2.1: Feature-Unavailable-Seite erstellen [PENDING]
+### Step 2.1: Feature-Unavailable-Seite erstellen [DONE]
 
 **Datei:** `frontend/src/routes/(app)/feature-unavailable/+page.svelte` (NEU)
 **Datei:** `frontend/src/routes/(app)/feature-unavailable/+page.server.ts` (NEU)
@@ -325,7 +331,7 @@ Semantisch verschiedene Fehler mit verschiedenen Lösungswegen:
 - Buttons: "Zurück" + "Zur Startseite"
 - Optional Query-Param `?feature=vacation` für spezifischere Meldung
 
-### Step 2.2: Page-Level Feature Guards [PENDING]
+### Step 2.2: Page-Level Feature Guards [DONE]
 
 **Konzept:** Analog zu `(admin)/+layout.server.ts` (RBAC-Guard), aber für Feature-Aktivierung.
 
@@ -410,7 +416,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 **ACHTUNG:** 8 der 17 Dateien rufen `await parent()` noch NICHT auf.
 Diese brauchen `parent` als zusätzlichen Parameter im load-Destrukturierung.
 
-### Step 2.3: api-client 403 Feature-Error Handling [PENDING]
+### Step 2.3: api-client 403 Feature-Error Handling [DONE]
 
 **Datei:** `frontend/src/lib/utils/api-client.ts`
 
@@ -465,18 +471,18 @@ if (response.status === 401 || response.status === 403) {
 
 **Warum nötig:** Page-Level Guards decken SSR ab, aber Client-Side API-Calls (`apiClient.get()`) können auch Feature-403 zurückgeben — z.B. bei SPA-Navigation oder AJAX-Calls innerhalb einer bereits geladenen Seite.
 
-### Phase 2 — Definition of Done
+### Phase 2 — Definition of Done ✅
 
-- [ ] `/feature-unavailable` Seite existiert mit korrektem Design-System Styling
-- [ ] `requireFeature()` Utility-Funktion erstellt
-- [ ] Alle 17 Feature-gated `+page.server.ts` Dateien verwenden `requireFeature()`
-- [ ] 8 Dateien ohne `await parent()` → `parent` Parameter ergänzt
-- [ ] `api-client.ts` unterscheidet Feature-403 von Auth-403
-- [ ] Direkt-Navigation zu deaktiviertem Feature → Redirect zu `/feature-unavailable`
-- [ ] Client-Side 403 (apiClient) → Redirect zu `/feature-unavailable`
-- [ ] svelte-check 0 Errors
-- [ ] ESLint 0 Errors
-- [ ] Manueller Test: URL direkt eingeben für deaktiviertes Feature → Feature-Unavailable-Seite
+- [x] `/feature-unavailable` Seite existiert mit korrektem Design-System Styling
+- [x] `requireFeature()` Utility-Funktion erstellt
+- [x] Alle 17 Feature-gated `+page.server.ts` Dateien verwenden `requireFeature()`
+- [x] 8 Dateien ohne `await parent()` → `parent` Parameter ergänzt
+- [x] `api-client.ts` unterscheidet Feature-403 von Auth-403
+- [x] Direkt-Navigation zu deaktiviertem Feature → Redirect zu `/feature-unavailable`
+- [x] Client-Side 403 (apiClient) → Redirect zu `/feature-unavailable`
+- [x] svelte-check 0 Errors
+- [x] ESLint 0 Errors
+- [x] Manueller Test: URL direkt eingeben für deaktiviertes Feature → Feature-Unavailable-Seite
 
 ---
 
@@ -485,7 +491,7 @@ if (response.status === 401 || response.status === 403) {
 > **Abhängigkeit:** Phase 2 complete
 > **Ziel:** Alles abgesichert, edge cases getestet, Dokumentation aktualisiert
 
-### Step 3.1: Unit Tests für navigation-config [PENDING]
+### Step 3.1: Unit Tests für navigation-config [DONE — 31 Tests]
 
 **Datei:** `frontend/src/routes/(app)/_lib/navigation-config.test.ts` (NEU)
 
@@ -511,7 +517,7 @@ if (response.status === 401 || response.status === 403) {
    - `filterMenuByAccess` → `filterMenuByFeatures` Reihenfolge korrekt
    - Kein Konflikt zwischen Access-Filter und Feature-Filter
 
-### Step 3.2: Unit Test für feature-guard Utility [PENDING]
+### Step 3.2: Unit Test für feature-guard Utility [DONE — 26 Tests]
 
 **Datei:** `frontend/src/lib/utils/feature-guard.test.ts` (NEU)
 
@@ -522,34 +528,83 @@ if (response.status === 401 || response.status === 403) {
 3. Leere `activeFeatures` → Redirect
 4. Alle 8 Feature-Codes durchiterieren
 
-### Step 3.3: Dokumentation [PENDING]
+### Step 3.3: Dokumentation [DONE ✅]
 
-- [ ] ADR für Frontend Feature Guards (Architekturentscheidung: Utility statt Layout-Group)
-- [ ] FEATURES.md aktualisieren (Frontend Feature-Gating als System-Feature)
-- [ ] DAILY-PROGRESS.md aktualisieren
+- [x] ADR-024 für Frontend Feature Guards (Architekturentscheidung: Utility statt Layout-Group)
+- [x] FEATURES.md aktualisiert (Frontend Feature-Gating als System-Feature #10)
+- [x] DAILY-PROGRESS.md erstellt
 
-### Phase 3 — Definition of Done
+### Phase 3 — Definition of Done ✅
 
-- [ ] > = 20 Unit Tests für `filterMenuByFeatures()`
-- [ ] > = 8 Unit Tests für `requireFeature()`
-- [ ] Alle Tests grün
-- [ ] ADR geschrieben
-- [ ] FEATURES.md aktualisiert
-- [ ] Kein TODO im Code
-- [ ] ESLint 0 Errors in allen geänderten/neuen Dateien
-- [ ] svelte-check 0 Errors
+- [x] > = 20 Unit Tests für `filterMenuByFeatures()` → **31 Tests**
+- [x] > = 8 Unit Tests für `requireFeature()` → **26 Tests**
+- [x] Alle Tests grün (238 frontend-unit total)
+- [x] ADR-024 geschrieben
+- [x] FEATURES.md aktualisiert
+- [x] Kein TODO im Code
+- [x] ESLint 0 Errors in allen geänderten/neuen Dateien
+- [x] svelte-check 0 Errors (2128 Dateien)
+
+---
+
+## Phase 4: Features Page Modernisierung [DONE ✅]
+
+> **Abhängigkeit:** Phase 1-3 complete
+> **Ziel:** `/features` Admin-Seite komplett modernisiert mit Design System
+
+### Step 4.1: Feature Cards Redesign [DONE ✅]
+
+**Dateien:** `features/+page.svelte`, `choice-card.feature.css`, `features/_lib/constants.ts`
+
+**Was gemacht:**
+
+1. Feature Cards komplett neu: 3-Zonen-Layout (Header mit Icon+Titel+Badge, Description, Footer mit Plan-Badge+Action)
+2. `FEATURE_ICONS` Map in `constants.ts` — FontAwesome-Icons pro Feature-Code
+3. Kategorie-Emojis (🔧💬📋) im Category-Header
+4. CSS komplett neu geschrieben: minimalistisch, kein `translateY` hover, nur `border-color` Transition
+5. BEM-Struktur: `.feature-card__header`, `.feature-card__icon`, `.feature-card__title-group`, `.feature-card__footer`
+6. Feature Cards verwenden gleiche Border/Shadow/Radius wie `.card` (`var(--glass-border)`, `var(--shadow-md)`, `var(--radius-xl)`)
+
+### Step 4.2: Plan Cards + Addon Cards [DONE ✅]
+
+1. Plan-Badges: Custom `.plan-badge` → Design System `badge badge--lg badge--primary/warning`
+2. Addon Cards mit BEM-Naming + Icons (👥 Mitarbeiter, 👨‍💼 Admins, 💾 Speicher)
+3. Individuelle Plan-Beschreibungen, €-Symbol bei Preisen
+
+### Step 4.3: Summary Card + Confirm Modal [DONE ✅]
+
+1. Summary Bar → reguläre `card summary-card` im normalen Dokument-Flow (kein fixed/sticky)
+2. Native `confirm()` ersetzt durch `confirm-modal confirm-modal--danger`
+3. `changePlan()` aufgeteilt in `requestPlanChange()` + `confirmPlanChange()`
+
+### Step 4.4: Dark/Light Mode [DONE ✅]
+
+1. Alle Farben über CSS-Variablen
+2. Light Mode Overrides mit `html:not(.dark)` in `choice-card.feature.css`
+3. Premium Plan-Badge: Dark Orange `#c0621e` in Light Mode
+
+### Phase 4 — Definition of Done ✅
+
+- [x] Feature Cards: 3-Zonen-Layout mit Icon, Titel, Badge, Description, Footer
+- [x] Design System Komponenten statt Custom CSS (badge, card, btn, confirm-modal)
+- [x] Dark Mode + Light Mode korrekt (variable-basiert, `html:not(.dark)` Overrides)
+- [x] Feature Cards Border/Shadow/Radius identisch mit `.card`
+- [x] Native `confirm()` ersetzt durch `confirm-modal--danger`
+- [x] Summary als reguläre Card im Flow
+- [x] Premium Plan-Badge in Light Mode gut lesbar (dark orange)
+- [x] Ungenutzte Imports entfernt
 
 ---
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                                     | Status  | Datum |
-| ------- | ----- | ---------------------------------------------------------------- | ------- | ----- |
-| 1       | 1     | Layout Feature-Fetch + NavItem featureCode + Filtering           | PENDING |       |
-| 2       | 2     | Feature-Unavailable-Seite + requireFeature Utility               | PENDING |       |
-| 3       | 2     | Page-Level Guards in 17 Dateien (8 ohne parent) + api-client Fix | PENDING |       |
-| 4       | 3     | Unit Tests (navigation-config + feature-guard)                   | PENDING |       |
-| 5       | 3     | ADR + Dokumentation + Final Polish                               | PENDING |       |
+| Session | Phase | Beschreibung                                                     | Status | Datum      |
+| ------- | ----- | ---------------------------------------------------------------- | ------ | ---------- |
+| 1       | 1     | Layout Feature-Fetch + NavItem featureCode + Filtering           | DONE   | 2026-02-15 |
+| 2       | 2     | Feature-Unavailable-Seite + requireFeature Utility               | DONE   | 2026-02-15 |
+| 3       | 2     | Page-Level Guards in 17 Dateien (8 ohne parent) + api-client Fix | DONE   | 2026-02-15 |
+| 4       | 3+4   | Tests (57) + Features Page Modernisierung (Design System)        | DONE   | 2026-02-15 |
+| 5       | 3+5   | ADR-024 + FEATURES.md + DAILY-PROGRESS.md + Masterplan 2.0.0     | DONE   | 2026-02-15 |
 
 ---
 

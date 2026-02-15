@@ -29,6 +29,8 @@ export interface NavItem {
     | 'blackboard'
     | 'calendar'
     | 'vacation';
+  /** Tenant feature code — items with this field are hidden when feature is not active */
+  featureCode?: string;
 }
 
 export const ICONS: Record<string, string> = {
@@ -83,6 +85,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'kvp',
     label: LABELS.KVP_SYSTEM,
+    featureCode: 'kvp',
     submenu: [
       {
         id: 'kvp-main',
@@ -102,6 +105,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
     label: LABELS.SURVEYS,
     url: '/survey-admin',
     badgeType: 'surveys',
+    featureCode: 'surveys',
   },
 ];
 
@@ -171,6 +175,7 @@ export const rootMenuItems: NavItem[] = [
     id: 'blackboard',
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
+    featureCode: 'blackboard',
     submenu: BLACKBOARD_SUBMENU,
   },
   {
@@ -198,17 +203,20 @@ export const rootMenuItems: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
+    featureCode: 'calendar',
   },
   {
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
+    featureCode: 'vacation',
     submenu: VACATION_ROOT_SUBMENU,
   },
   {
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
+    featureCode: 'documents',
     submenu: DOCUMENTS_SUBMENU,
   },
   {
@@ -223,6 +231,7 @@ export const rootMenuItems: NavItem[] = [
     label: 'Chat',
     url: '/chat',
     badgeType: 'chat',
+    featureCode: 'chat',
   },
   { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
   { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
@@ -262,6 +271,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'blackboard',
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
+    featureCode: 'blackboard',
     submenu: BLACKBOARD_SUBMENU,
   },
   {
@@ -281,6 +291,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
+    featureCode: 'documents',
     submenu: DOCUMENTS_SUBMENU,
   },
   {
@@ -289,11 +300,13 @@ export const adminMenuItems: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
+    featureCode: 'calendar',
   },
   {
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
+    featureCode: 'vacation',
     submenu: VACATION_ADMIN_SUBMENU,
   },
   {
@@ -302,13 +315,20 @@ export const adminMenuItems: NavItem[] = [
     label: 'LEAN-Management',
     submenu: LEAN_ADMIN_SUBMENU,
   },
-  { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
+  {
+    id: 'shifts',
+    icon: ICONS.clock,
+    label: 'Schichtplanung',
+    url: '/shifts',
+    featureCode: 'shift_planning',
+  },
   {
     id: 'chat',
     icon: ICONS.chat,
     label: 'Chat',
     url: '/chat',
     badgeType: 'chat',
+    featureCode: 'chat',
   },
   {
     id: 'settings',
@@ -343,11 +363,13 @@ export const employeeMenuItems: NavItem[] = [
     label: LABELS.BLACKBOARD,
     url: '/blackboard',
     badgeType: 'blackboard',
+    featureCode: 'blackboard',
   },
   {
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
+    featureCode: 'documents',
     submenu: DOCUMENTS_SUBMENU,
   },
   {
@@ -356,6 +378,7 @@ export const employeeMenuItems: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
+    featureCode: 'calendar',
   },
   {
     id: 'vacation',
@@ -363,18 +386,26 @@ export const employeeMenuItems: NavItem[] = [
     label: 'Urlaub',
     url: '/vacation',
     badgeType: 'vacation',
+    featureCode: 'vacation',
   },
   {
     id: 'lean-management',
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: [
-      { id: 'kvp', label: LABELS.KVP_SYSTEM, url: '/kvp', badgeType: 'kvp' },
+      {
+        id: 'kvp',
+        label: LABELS.KVP_SYSTEM,
+        url: '/kvp',
+        badgeType: 'kvp',
+        featureCode: 'kvp',
+      },
       {
         id: 'surveys',
         label: LABELS.SURVEYS,
         url: '/survey-employee',
         badgeType: 'surveys',
+        featureCode: 'surveys',
       },
     ],
   },
@@ -384,8 +415,15 @@ export const employeeMenuItems: NavItem[] = [
     label: 'Chat',
     url: '/chat',
     badgeType: 'chat',
+    featureCode: 'chat',
   },
-  { id: 'shifts', icon: ICONS.clock, label: 'Schichtplanung', url: '/shifts' },
+  {
+    id: 'shifts',
+    icon: ICONS.clock,
+    label: 'Schichtplanung',
+    url: '/shifts',
+    featureCode: 'shift_planning',
+  },
   {
     id: 'settings',
     icon: ICONS.settings,
@@ -438,6 +476,40 @@ export function filterMenuByAccess(
 
     if (item.submenu !== undefined) {
       const filtered = filterMenuByAccess(item.submenu, hasFullAccess);
+      if (filtered.length > 0 || item.url !== undefined) {
+        acc.push({ ...item, submenu: filtered });
+      }
+      return acc;
+    }
+
+    acc.push(item);
+    return acc;
+  }, []);
+}
+
+/**
+ * Filter menu items based on tenant feature activation.
+ * Items without featureCode always pass through (core features like dashboard, profile, settings).
+ * Recursive for nested submenus — removes empty parent containers (e.g., LEAN-Management
+ * disappears when both kvp and surveys are disabled).
+ */
+export function filterMenuByFeatures(
+  items: NavItem[],
+  activeFeatures: ReadonlySet<string>,
+): NavItem[] {
+  return items.reduce<NavItem[]>((acc, item) => {
+    // Item has featureCode and feature is NOT active → skip entirely
+    if (
+      item.featureCode !== undefined &&
+      !activeFeatures.has(item.featureCode)
+    ) {
+      return acc;
+    }
+
+    // Recurse into submenus
+    if (item.submenu !== undefined) {
+      const filtered = filterMenuByFeatures(item.submenu, activeFeatures);
+      // Keep parent only if it has remaining children OR its own URL
       if (filtered.length > 0 || item.url !== undefined) {
         acc.push({ ...item, submenu: filtered });
       }

@@ -10,6 +10,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -316,6 +317,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   const parentData = await parent();
+  requireFeature(parentData.activeFeatures, 'shift_planning');
   if (!parentData.user) {
     redirect(302, '/login');
   }

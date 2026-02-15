@@ -1,8 +1,8 @@
 # Assixx Features & Overview
 
-> **Last Updated:** 2026-02-13
-> **Version:** 1.1.0
-> **Status:** Production Ready (9 of 11 main features live)
+> **Last Updated:** 2026-02-15
+> **Version:** 1.2.0
+> **Status:** Production Ready (10 of 11 main features live)
 
 ## Table of Contents
 
@@ -102,6 +102,18 @@
 - Status Audit Trail (append-only log with notes)
 - 5 Admin Pages: Anträge, Regeln, Urlaubsansprüche, Feiertage, Übersicht
 
+#### 10. **Feature-Gating System** (NEW — System Feature)
+
+- Per-Tenant Feature Activation/Deactivation
+- Backend: `TenantFeatureGuard` (APP_GUARD) on all Feature-Controllers
+- Frontend: Sidebar-Filterung (SSR, kein Flash), Page-Level Guards, api-client 403-Handling
+- Admin-Seite `/features` für Feature-Verwaltung (modernisiert mit Design System)
+- Separate `/feature-unavailable` Fehlerseite (vs. `/permission-denied` für Rollen)
+- Rekursive Submenu-Filterung (leere Container werden entfernt)
+- 57 Unit Tests (navigation-config 31 + feature-guard 26)
+- Core-Features (Dashboard, Profil, Settings) werden NIE gefiltert
+- Architektur: ADR-024
+
 ### In Development
 
 #### 10. **Survey Tool** (80% complete)
@@ -125,6 +137,7 @@
 | Chat System         | Basic    | Extended  | Full Version | Live            |
 | Backup System       | Yes      | Yes       | Yes          | Live            |
 | Vacation Management | No       | Yes       | Yes          | Live            |
+| Feature-Gating      | Yes      | Yes       | Yes          | Live            |
 | Survey Tool         | No       | Yes       | Yes          | In Development  |
 | Mobile App          | No       | No        | Yes          | Planned Q2/2025 |
 

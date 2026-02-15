@@ -6,6 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -54,11 +55,14 @@ async function apiFetch<T>(
   }
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
+
+  const { activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'surveys');
 
   // Load all surveys, filter to only active/completed (employees don't see draft/paused/archived)
   const surveysData = await apiFetch<Survey[]>('/surveys', token, fetch);

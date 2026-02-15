@@ -46,6 +46,7 @@ ADRs document important architectural decisions:
 | [ADR-021](./ADR-021-e2e-encryption.md)                     | E2E Encryption for 1:1 Chat          | Accepted | 2026-02-10 |
 | [ADR-022](./ADR-022-e2e-key-escrow.md)                     | E2E Key Escrow (Zero-Knowledge)      | Proposed | 2026-02-11 |
 | [ADR-023](./ADR-023-vacation-request-architecture.md)      | Vacation Request System Architecture | Accepted | 2026-02-13 |
+| [ADR-024](./ADR-024-frontend-feature-guards.md)            | Frontend Feature Guards              | Accepted | 2026-02-15 |
 
 ## Template
 

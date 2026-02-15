@@ -53,6 +53,7 @@
   import AppSidebar from './_lib/AppSidebar.svelte';
   import {
     filterMenuByAccess,
+    filterMenuByFeatures,
     getMenuItemsForRole,
     type NavItem,
   } from './_lib/navigation-config';
@@ -237,12 +238,16 @@
     document.title = count > 0 ? `(${count}) ${base}` : base;
   });
 
-  // Navigation menu items - filtered by has_full_access for admin users
+  // Navigation menu items - filtered by access level and tenant feature activation
   const hasFullAccess = $derived(
     data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
   );
+  const activeFeaturesSet = $derived(new Set(data.activeFeatures));
   const menuItems = $derived<NavItem[]>(
-    filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
+    filterMenuByFeatures(
+      filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
+      activeFeaturesSet,
+    ),
   );
 
   // --- HELPER FUNCTIONS ---

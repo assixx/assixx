@@ -234,7 +234,9 @@ describe('Features: Guarded endpoint returns 403 when feature disabled', () => {
   });
 
   it('should return correct error message', () => {
-    expect(body.error.message).toContain('Vacation feature is not enabled');
+    expect(body.error.message).toContain(
+      'vacation feature is not enabled for this tenant',
+    );
   });
 });
 

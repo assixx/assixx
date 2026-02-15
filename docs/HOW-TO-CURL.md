@@ -85,3 +85,8 @@ curl -s http://localhost:3000/api/v2/users/me \
 | Email    | admin@apitest.de |
 | Passwort | ApiTest12345!    |
 | Tenant   | apitest          |
+
+thats the right bash :
+● Bash(curl -s http://localhost:3000/api/v2/features/my-features -H "Authorization: Bearer
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJhZG1pbkB0ZXNmaXJ…)
+⎿ Running…

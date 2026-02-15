@@ -6,6 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -70,7 +71,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   // Get user data from parent layout (no extra fetch needed)
-  const { user } = await parent();
+  const { user, activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'surveys');
 
   // Parallel fetch: surveys + templates + org data
   const [surveysData, templatesData, departmentsData, teamsData, areasData] =

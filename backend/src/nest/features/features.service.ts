@@ -562,8 +562,17 @@ export class FeaturesService {
       );
     }
 
+    // Reset all user permissions for this feature to false (Defense in Depth).
+    // Prevents "magic restore" of old permissions when feature is re-activated.
+    await this.db.query(
+      `UPDATE user_feature_permissions
+       SET can_read = false, can_write = false, can_delete = false, updated_at = NOW()
+       WHERE tenant_id = $1 AND feature_code = $2`,
+      [tenantId, featureCode],
+    );
+
     this.logger.log(
-      `Feature ${featureCode} deactivated for tenant ${tenantId}`,
+      `Feature ${featureCode} deactivated for tenant ${tenantId}, user permissions reset`,
     );
   }
 

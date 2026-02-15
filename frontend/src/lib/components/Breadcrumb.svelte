@@ -89,7 +89,7 @@
       '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
       '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
       '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
-      '/features': { label: 'Features', icon: 'fa-tools' },
+      '/features': { label: 'Features', icon: 'fas fa-puzzle-piece' },
       '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
       '/vacation/rules': { label: 'Urlaubsregeln', icon: 'fa-shield-alt' },
       '/vacation/entitlements': {

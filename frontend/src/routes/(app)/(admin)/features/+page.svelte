@@ -18,15 +18,17 @@
     saveAddons as apiSaveAddons,
     toggleFeature as apiToggleFeature,
   } from './_lib/api';
-  import { DEFAULT_TENANT_NAME, FEATURE_CATEGORIES } from './_lib/constants';
+  import {
+    DEFAULT_TENANT_NAME,
+    FEATURE_CATEGORIES,
+    FEATURE_ICONS,
+  } from './_lib/constants';
   import {
     calculateTotalCost,
     canActivateFeature,
     cloneFeatureCategories,
     countActiveFeatures,
     getFeatureCardClasses,
-    getFeatureStatusClass,
-    getFeatureStatusText,
     getPlanBadge,
     isFeatureIncludedInPlan,
   } from './_lib/utils';
@@ -81,6 +83,10 @@
 
   let currentFilter: FeatureFilter = $state('all');
 
+  // Confirm modal state for plan change
+  let showPlanChangeModal = $state(false);
+  let pendingPlanCode = $state('');
+
   // =============================================================================
   // DERIVED VALUES
   // =============================================================================
@@ -118,18 +124,21 @@
   // API ACTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
-  async function changePlan(newPlanCode: string): Promise<void> {
+  /** Request plan change - shows confirmation modal */
+  function requestPlanChange(newPlanCode: string): void {
     if (newPlanCode === currentPlan) return;
+    if (!plans[newPlanCode]) return;
 
-    const planData = plans[newPlanCode];
-    if (!planData) return;
+    pendingPlanCode = newPlanCode;
+    showPlanChangeModal = true;
+  }
 
-    if (!confirm(`Möchten Sie wirklich zum ${planData.name} Plan wechseln?`))
-      return;
+  /** Execute plan change after confirmation */
+  async function confirmPlanChange(): Promise<void> {
+    showPlanChangeModal = false;
 
     try {
-      await apiChangePlan(currentTenantId, newPlanCode);
-      // Level 3: Trigger SSR refetch
+      await apiChangePlan(currentTenantId, pendingPlanCode);
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error changing plan');
@@ -197,7 +206,7 @@
 
   function handlePlanChange(e: Event): void {
     const input = e.target as HTMLInputElement;
-    if (input.checked) void changePlan(input.value);
+    if (input.checked) requestPlanChange(input.value);
   }
 
   // =============================================================================
@@ -213,7 +222,7 @@
 </svelte:head>
 
 <div class="container">
-  <!-- Page Header Card -->
+  <!-- Page Header -->
   <div class="card mb-6">
     <div class="card__header flex items-center justify-between">
       <div>
@@ -226,17 +235,18 @@
           <strong>{tenantName}</strong>
         </p>
       </div>
-      <div
-        class="plan-badge"
-        class:enterprise={currentPlan === 'enterprise'}
+      <span
+        class="badge badge--lg"
+        class:badge--primary={currentPlan !== 'enterprise'}
+        class:badge--warning={currentPlan === 'enterprise'}
       >
         <i class="fas fa-crown"></i>
-        <span>{currentPlanName} Plan</span>
-      </div>
+        {currentPlanName} Plan
+      </span>
     </div>
   </div>
 
-  <!-- Available Plans Section -->
+  <!-- Verfügbare Pläne -->
   <div class="card mb-6">
     <div class="card__header">
       <h2 class="card__title">
@@ -272,21 +282,35 @@
               <div class="plan-card__content">
                 <div class="plan-card__header">
                   <h4 class="plan-card__title">{plan.name}</h4>
-                  <span class="plan-card__price"
-                    >{plan.basePrice.toFixed(0)}/Monat</span
-                  >
+                  <span class="plan-card__price">
+                    {plan.basePrice.toFixed(0)}€/Monat
+                  </span>
                 </div>
                 <p class="plan-card__description">
-                  Für kleine bis mittlere Teams
+                  {#if planCode === 'basic'}
+                    Für kleine Teams zum Einstieg
+                  {:else if planCode === 'professional'}
+                    Für wachsende Unternehmen
+                  {:else}
+                    Für große Organisationen
+                  {/if}
                 </p>
                 <ul class="plan-card__features">
                   <li class="plan-card__feature">
-                    {plan.maxEmployees ?? ''} Mitarbeiter
+                    {plan.maxEmployees ?? 'Unbegrenzt'} Mitarbeiter
                   </li>
                   <li class="plan-card__feature">
-                    {plan.maxAdmins ?? ''} Admins
+                    {plan.maxAdmins ?? 'Unbegrenzt'} Admins
                   </li>
-                  <li class="plan-card__feature">Alle Basis-Features</li>
+                  <li class="plan-card__feature">
+                    {#if planCode === 'basic'}
+                      Kern-Features
+                    {:else if planCode === 'professional'}
+                      Alle Basic + Kommunikation
+                    {:else}
+                      Alle Features inklusive
+                    {/if}
+                  </li>
                 </ul>
               </div>
             </label>
@@ -296,7 +320,7 @@
     </div>
   </div>
 
-  <!-- Features Section -->
+  <!-- Features -->
   <div class="card mb-6">
     <div class="card__header flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -309,7 +333,6 @@
         </p>
       </div>
 
-      <!-- Toggle Group Filter -->
       <div
         class="toggle-group"
         id="feature-status-toggle"
@@ -323,8 +346,7 @@
             handleFilterChange('all');
           }}
         >
-          <i class="fas fa-th"></i>
-          Alle
+          <i class="fas fa-th"></i> Alle
         </button>
         <button
           type="button"
@@ -335,8 +357,7 @@
             handleFilterChange('active');
           }}
         >
-          <i class="fas fa-check-circle"></i>
-          Aktiv
+          <i class="fas fa-check-circle"></i> Aktiv
         </button>
         <button
           type="button"
@@ -347,8 +368,7 @@
             handleFilterChange('included');
           }}
         >
-          <i class="fas fa-box"></i>
-          Im Plan enthalten
+          <i class="fas fa-box"></i> Im Plan
         </button>
         {#if currentPlan !== 'enterprise'}
           <button
@@ -360,8 +380,7 @@
               handleFilterChange('addons');
             }}
           >
-            <i class="fas fa-plus-circle"></i>
-            Zusätzlich buchbar
+            <i class="fas fa-plus-circle"></i> Zusätzlich
           </button>
         {/if}
       </div>
@@ -369,14 +388,15 @@
 
     <div class="card__body">
       {#if error}
-        <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
-          <p class="text-(--color-text-secondary)">{error}</p>
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3 class="empty-state__title">Fehler beim Laden</h3>
+          <p class="empty-state__description">{error}</p>
           <button
             type="button"
-            class="btn btn-primary mt-4"
+            class="btn btn-primary"
             onclick={() => {
               window.location.reload();
             }}
@@ -391,11 +411,13 @@
               categoryData.features.filter(isFeatureVisible)}
             {#if visibleFeatures.length > 0}
               <div
-                class="feature-category mb-8"
+                class="mb-8"
                 data-category={categoryName}
               >
-                <h3 class="mb-4 flex items-center gap-2 text-xl font-semibold">
-                  <span class="text-2xl">{categoryData.icon}</span>
+                <h3
+                  class="mb-4 flex items-center gap-2 text-lg font-semibold text-(--color-text-primary)"
+                >
+                  <span class="text-xl">{categoryData.icon}</span>
                   {categoryName}
                 </h3>
                 <div class="features-grid">
@@ -404,37 +426,59 @@
                       currentPlan,
                       feature.minPlan,
                     )}
-                    {@const statusClass = getFeatureStatusClass(
-                      feature.active,
-                      canActivate,
-                    )}
-                    {@const statusText = getFeatureStatusText(
-                      feature.active,
-                      canActivate,
-                    )}
                     <div
                       class={getFeatureCardClasses(feature, currentPlan)}
                       data-feature={feature.code}
-                      data-min-plan={feature.minPlan}
                     >
-                      <span class="feature-status {statusClass}"
-                        >{statusText}</span
-                      >
-                      <h4 class="feature-name">{feature.name}</h4>
-                      <p class="feature-description">{feature.description}</p>
-                      <div class="feature-plan-badge">
-                        {getPlanBadge(feature.minPlan)}
+                      <!-- Header: Icon + Name + Status -->
+                      <div class="feature-card__header">
+                        <div
+                          class="feature-card__icon"
+                          class:feature-card__icon--active={feature.active}
+                        >
+                          <i
+                            class={FEATURE_ICONS[feature.code] ?? 'fas fa-cube'}
+                          ></i>
+                        </div>
+                        <div class="feature-card__title-group">
+                          <h4 class="feature-name">{feature.name}</h4>
+                          <span
+                            class="badge badge--sm"
+                            class:badge--success={feature.active}
+                            class:badge--secondary={!feature.active &&
+                              canActivate}
+                            class:badge--warning={!canActivate}
+                          >
+                            {#if feature.active}
+                              Aktiv
+                            {:else if !canActivate}
+                              Gesperrt
+                            {:else}
+                              Inaktiv
+                            {/if}
+                          </span>
+                        </div>
                       </div>
-                      <div class="feature-actions">
+
+                      <!-- Description -->
+                      <p class="feature-description">{feature.description}</p>
+
+                      <!-- Footer: Plan Badge + Action -->
+                      <div class="feature-card__footer">
+                        <span class="feature-plan-badge">
+                          {getPlanBadge(feature.minPlan)}
+                        </span>
                         {#if !canActivate}
                           <a
                             href="#plans-container"
-                            class="btn btn-primary">Plan upgraden</a
+                            class="btn btn-primary btn--sm"
                           >
+                            Upgraden
+                          </a>
                         {:else if feature.active}
                           <button
                             type="button"
-                            class="btn btn-status-active"
+                            class="btn btn-status-active btn--sm"
                             onclick={() => toggleFeature(feature.code, false)}
                           >
                             Deaktivieren
@@ -442,7 +486,7 @@
                         {:else}
                           <button
                             type="button"
-                            class="btn btn-status-inactive"
+                            class="btn btn-status-inactive btn--sm"
                             onclick={() => toggleFeature(feature.code, true)}
                           >
                             Aktivieren
@@ -460,8 +504,8 @@
     </div>
   </div>
 
-  <!-- Add-ons Section -->
-  <div class="card mb-24">
+  <!-- Zusätzliche Ressourcen -->
+  <div class="card mb-6">
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-cubes mr-2"></i>
@@ -473,19 +517,21 @@
     </div>
     <div class="card__body">
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <!-- Zusätzliche Mitarbeiter -->
+        <!-- Mitarbeiter -->
         <div class="addon-card">
-          <div class="addon-icon"></div>
-          <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
-          <div class="addon-price">5</div>
-          <div class="addon-unit">pro Mitarbeiter/Monat</div>
-          <div class="addon-current">
+          <div class="addon-card__icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3 class="addon-card__name">Zusätzliche Mitarbeiter</h3>
+          <div class="addon-card__price">5€</div>
+          <div class="addon-card__unit">pro Mitarbeiter / Monat</div>
+          <div class="addon-card__current">
             Aktuell: <strong>{pendingAddons.employees ?? 0}</strong> zusätzlich
           </div>
-          <div class="addon-controls">
+          <div class="addon-card__controls">
             <button
               type="button"
-              class="addon-btn"
+              class="addon-card__btn"
               onclick={() => {
                 adjustAddon('employees', -1);
               }}
@@ -493,10 +539,11 @@
             >
               <i class="fas fa-minus"></i>
             </button>
-            <span class="addon-value">{pendingAddons.employees ?? 0}</span>
+            <span class="addon-card__value">{pendingAddons.employees ?? 0}</span
+            >
             <button
               type="button"
-              class="addon-btn"
+              class="addon-card__btn"
               onclick={() => {
                 adjustAddon('employees', 1);
               }}
@@ -507,19 +554,21 @@
           </div>
         </div>
 
-        <!-- Zusätzliche Admins -->
+        <!-- Admins -->
         <div class="addon-card">
-          <div class="addon-icon"></div>
-          <h3 class="addon-name">Zusätzliche Admins</h3>
-          <div class="addon-price">10</div>
-          <div class="addon-unit">pro Admin/Monat</div>
-          <div class="addon-current">
+          <div class="addon-card__icon">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <h3 class="addon-card__name">Zusätzliche Admins</h3>
+          <div class="addon-card__price">10€</div>
+          <div class="addon-card__unit">pro Admin / Monat</div>
+          <div class="addon-card__current">
             Aktuell: <strong>{pendingAddons.admins ?? 0}</strong> zusätzlich
           </div>
-          <div class="addon-controls">
+          <div class="addon-card__controls">
             <button
               type="button"
-              class="addon-btn"
+              class="addon-card__btn"
               onclick={() => {
                 adjustAddon('admins', -1);
               }}
@@ -527,10 +576,10 @@
             >
               <i class="fas fa-minus"></i>
             </button>
-            <span class="addon-value">{pendingAddons.admins ?? 0}</span>
+            <span class="addon-card__value">{pendingAddons.admins ?? 0}</span>
             <button
               type="button"
-              class="addon-btn"
+              class="addon-card__btn"
               onclick={() => {
                 adjustAddon('admins', 1);
               }}
@@ -541,19 +590,21 @@
           </div>
         </div>
 
-        <!-- Zusätzlicher Speicher -->
+        <!-- Speicher -->
         <div class="addon-card">
-          <div class="addon-icon"></div>
-          <h3 class="addon-name">Zusätzlicher Speicher</h3>
-          <div class="addon-price">10</div>
-          <div class="addon-unit">pro 100GB/Monat</div>
-          <div class="addon-current">
-            Aktuell: <strong>100GB</strong> inklusive
+          <div class="addon-card__icon">
+            <i class="fas fa-hdd"></i>
           </div>
-          <div class="addon-controls">
+          <h3 class="addon-card__name">Zusätzlicher Speicher</h3>
+          <div class="addon-card__price">10€</div>
+          <div class="addon-card__unit">pro 100 GB / Monat</div>
+          <div class="addon-card__current">
+            Aktuell: <strong>100 GB</strong> inklusive
+          </div>
+          <div class="addon-card__controls">
             <button
               type="button"
-              class="addon-btn"
+              class="addon-card__btn"
               onclick={() => {
                 adjustAddon('storage', -100);
               }}
@@ -561,10 +612,12 @@
             >
               <i class="fas fa-minus"></i>
             </button>
-            <span class="addon-value">{pendingAddons.storage_gb ?? 0}GB</span>
+            <span class="addon-card__value"
+              >{pendingAddons.storage_gb ?? 0} GB</span
+            >
             <button
               type="button"
-              class="addon-btn"
+              class="addon-card__btn"
               onclick={() => {
                 adjustAddon('storage', 100);
               }}
@@ -577,249 +630,248 @@
       </div>
     </div>
   </div>
-</div>
-
-<!-- Summary Bar -->
-<div class="summary-bar">
-  <div class="summary-content">
-    <div class="summary-items">
-      <div class="summary-item">
-        <span class="summary-label">Aktueller Plan</span>
-        <span class="summary-value">{currentPlanName}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Aktive Features</span>
-        <span class="summary-value"
-          >{activeFeatureCount.active} / {activeFeatureCount.total}</span
+  <!-- Summary -->
+  <div class="card summary-card">
+    <div class="card__body">
+      <div class="summary-card__content">
+        <div class="summary-card__items">
+          <div class="summary-card__item">
+            <span class="summary-card__label">Aktueller Plan</span>
+            <span class="summary-card__value">{currentPlanName}</span>
+          </div>
+          <div class="summary-card__item">
+            <span class="summary-card__label">Aktive Features</span>
+            <span class="summary-card__value">
+              {activeFeatureCount.active} / {activeFeatureCount.total}
+            </span>
+          </div>
+          <div class="summary-card__item">
+            <span class="summary-card__label">Monatliche Kosten</span>
+            <span class="summary-card__value">{totalCost.toFixed(2)}€</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={saveChanges}
         >
+          <i class="fas fa-save mr-2"></i>
+          Änderungen speichern
+        </button>
       </div>
-      <div class="summary-item">
-        <span class="summary-label">Monatliche Kosten</span>
-        <span class="summary-value">{totalCost.toFixed(2)}</span>
-      </div>
-    </div>
-    <div class="summary-actions">
-      <button
-        type="button"
-        class="btn-save"
-        onclick={saveChanges}
-      >
-        <i class="fas fa-save mr-2"></i>
-        Änderungen speichern
-      </button>
     </div>
   </div>
 </div>
 
+<!-- Plan Change Confirmation Modal -->
+{#if showPlanChangeModal}
+  {@const pendingPlan = plans[pendingPlanCode]}
+  <div class="modal-overlay modal-overlay--active">
+    <div class="confirm-modal confirm-modal--danger">
+      <div class="confirm-modal__icon">
+        <i class="fas fa-exchange-alt"></i>
+      </div>
+      <h3 class="confirm-modal__title">Plan wechseln</h3>
+      <p class="confirm-modal__message">
+        Möchten Sie wirklich zum
+        <strong>{pendingPlan?.name ?? pendingPlanCode}</strong> Plan wechseln?
+      </p>
+      <div class="confirm-modal__actions confirm-modal__actions--centered">
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
+          onclick={() => {
+            showPlanChangeModal = false;
+          }}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger confirm-modal__btn--wide"
+          onclick={() => void confirmPlanChange()}
+        >
+          Plan wechseln
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
-  /* Plan Badge */
-  .plan-badge {
-    display: inline-flex;
-    gap: 8px;
-    align-items: center;
+  /* ==========================================================
+     ADDON CARDS - BEM, Design System variables, dark/light
+     ========================================================== */
 
-    padding: 8px 16px;
-    border: 1px solid rgb(255 255 255 / 20%);
-    border-radius: 20px;
-
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text-primary);
-
-    background: linear-gradient(
-      135deg,
-      rgb(255 255 255 / 15%),
-      rgb(255 255 255 / 5%)
-    );
-    backdrop-filter: blur(10px);
-  }
-
-  .plan-badge.enterprise {
-    border-color: rgb(255 215 0 / 30%);
-    color: #ffd700;
-    background: linear-gradient(
-      135deg,
-      rgb(255 215 0 / 15%),
-      rgb(255 215 0 / 5%)
-    );
-  }
-
-  /* Addon Cards */
   .addon-card {
-    padding: 24px;
-    border: 1px solid var(--color-glass-border);
-    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
 
-    text-align: center;
+    padding: var(--spacing-6);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
 
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
 
-    transition: all 0.2s ease;
+    text-align: center;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .addon-card:hover {
-    transform: translateY(-2px);
     border-color: var(--color-glass-border-hover);
-    background: var(--glass-bg-hover);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+    box-shadow: var(--shadow-lg);
   }
 
-  .addon-icon {
-    margin-bottom: 12px;
-    font-size: 32px;
+  .addon-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+
+    background: rgb(33 150 243 / 10%);
+    color: var(--color-primary);
+    font-size: 20px;
   }
 
-  .addon-name {
-    margin-bottom: 8px;
+  .addon-card__name {
+    margin: 0;
     font-size: 16px;
     font-weight: 600;
     color: var(--color-text-primary);
   }
 
-  .addon-price {
-    margin-bottom: 4px;
-    font-size: 20px;
+  .addon-card__price {
+    font-size: 24px;
     font-weight: 700;
     color: var(--color-primary);
   }
 
-  .addon-unit {
+  .addon-card__unit {
     font-size: 12px;
-    color: var(--color-text-secondary);
-    opacity: 70%;
+    color: var(--color-text-tertiary);
   }
 
-  .addon-current {
-    margin: 12px 0;
+  .addon-card__current {
     font-size: 14px;
     color: var(--color-text-secondary);
   }
 
-  .addon-controls {
+  .addon-card__controls {
     display: flex;
-    gap: 12px;
+    gap: var(--spacing-3);
     align-items: center;
-    justify-content: center;
+    margin-top: var(--spacing-2);
   }
 
-  .addon-btn {
+  .addon-card__btn {
     cursor: pointer;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: 1px solid var(--color-glass-border);
     border-radius: 50%;
 
     color: var(--color-text-primary);
-
     background: var(--glass-bg);
 
-    transition: all 0.2s ease;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
   }
 
-  .addon-btn:hover {
+  .addon-card__btn:hover {
     border-color: var(--color-primary);
-    background: var(--glass-bg-active);
+    background: rgb(33 150 243 / 10%);
   }
 
-  .addon-value {
-    min-width: 40px;
-
+  .addon-card__value {
+    min-width: 48px;
     font-size: 18px;
     font-weight: 600;
     color: var(--color-text-primary);
     text-align: center;
   }
 
-  /* Summary Bar */
-  .summary-bar {
-    position: fixed;
-    z-index: 900;
-    right: 0;
-    bottom: 0;
-    left: var(--sidebar-width, 250px);
+  /* ==========================================================
+     SUMMARY CARD
+     ========================================================== */
 
-    padding: 16px 24px;
-    border-top: 1px solid var(--color-glass-border);
+  /* No positioning needed - behaves like a regular card in the container */
 
-    background: rgb(20 20 30 / 95%);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 -4px 20px rgb(0 0 0 / 30%);
-
-    transition: left 0.3s ease;
-  }
-
-  .summary-content {
+  .summary-card__content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-
-    max-width: 100%;
-    margin: 0;
   }
 
-  .summary-items {
+  .summary-card__items {
     display: flex;
-    gap: 32px;
+    gap: var(--spacing-8);
   }
 
-  .summary-item {
+  .summary-card__item {
     display: flex;
     flex-direction: column;
+    gap: 2px;
   }
 
-  .summary-label {
+  .summary-card__label {
     font-size: 11px;
-    color: var(--color-text-secondary);
+    font-weight: 500;
+    color: var(--color-text-tertiary);
     text-transform: uppercase;
-    opacity: 70%;
+    letter-spacing: 0.5px;
   }
 
-  .summary-value {
+  .summary-card__value {
     font-size: 16px;
     font-weight: 700;
     color: var(--color-text-primary);
   }
 
-  .summary-actions {
-    display: flex;
-    gap: 12px;
+  /* ==========================================================
+     LIGHT MODE OVERRIDES
+     ========================================================== */
+
+  :global(html:not(.dark)) .addon-card__icon {
+    background: rgb(33 150 243 / 8%);
   }
 
-  .btn-save {
-    cursor: pointer;
-
-    padding: 10px 24px;
-    border: none;
-    border-radius: var(--radius-xl);
-
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-
-    background: var(--color-primary);
-
-    transition: all 0.2s ease;
-  }
-
-  .btn-save:hover {
-    background: var(--color-primary-dark);
-    box-shadow: 0 4px 12px rgb(33 150 243 / 30%);
-  }
-
-  /* Feature Categories */
-  .feature-category {
-    margin-bottom: 32px;
-  }
+  /* ==========================================================
+     RESPONSIVE
+     ========================================================== */
 
   @media (width < 768px) {
-    .summary-bar {
-      left: 0;
+    .summary-card__items {
+      gap: var(--spacing-4);
+    }
+
+    .summary-card__content {
+      flex-direction: column;
+      gap: var(--spacing-3);
+    }
+  }
+
+  /* ==========================================================
+     ACCESSIBILITY
+     ========================================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .addon-card,
+    .addon-card__btn {
+      transition: none;
     }
   }
 </style>

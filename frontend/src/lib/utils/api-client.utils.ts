@@ -8,6 +8,108 @@
 import { ApiError, type ApiConfig } from './api-client.types';
 
 // =============================================================================
+// PERMISSION ERROR HUMANIZATION
+// =============================================================================
+
+/** Action labels for user-facing messages */
+const ACTION_LABELS: Record<string, string> = {
+  canRead: 'Lesen',
+  canWrite: 'Bearbeiten',
+  canDelete: 'Löschen',
+};
+
+/** Feature/module labels for user-facing messages */
+const FEATURE_LABELS: Record<string, string> = {
+  calendar: 'Kalender',
+  'calendar-events': 'Kalendereinträge',
+  blackboard: 'Schwarzes Brett',
+  posts: 'Beiträge',
+  chat: 'Chat',
+  messages: 'Nachrichten',
+  documents: 'Dokumente',
+  'document-explorer': 'Dokumenten-Explorer',
+  shifts: 'Schichtplanung',
+  'shift-plans': 'Schichtpläne',
+  vacation: 'Urlaub',
+  requests: 'Anträge',
+  entitlements: 'Urlaubsansprüche',
+  rules: 'Urlaubsregeln',
+  survey: 'Umfragen',
+  kvp: 'KVP',
+  suggestions: 'Verbesserungsvorschläge',
+  users: 'Benutzerverwaltung',
+  settings: 'Einstellungen',
+  features: 'Features',
+  'machine-status': 'Maschinenstatus',
+};
+
+/**
+ * Translate a technical permission error into a user-friendly German message.
+ *
+ * Recognizes three backend patterns:
+ * 1. Permission Guard:  "Permission denied: canWrite access required for calendar/calendar-events"
+ * 2. Roles Guard:       "Access denied. Required roles: admin, root. Your role: employee"
+ * 3. Service-level:     Various custom English messages
+ *
+ * Returns null if the message doesn't match a known pattern (pass through as-is).
+ */
+export function humanizePermissionError(message: string): string | null {
+  // Pattern 1: Permission Guard — "Permission denied: {action} access required for {feature}/{module}"
+  const permMatch =
+    /^Permission denied:\s*(can\w+)\s+access required for\s+(\S+)$/.exec(
+      message,
+    );
+  if (permMatch !== null) {
+    const [, action, featurePath] = permMatch;
+    const parts = featurePath.split('/');
+    const actionLabel = ACTION_LABELS[action] ?? action;
+
+    // Build human-readable resource name from feature/module parts
+    const resourceLabels = parts
+      .map((part) => FEATURE_LABELS[part] ?? part)
+      .filter((label, index, arr) => arr.indexOf(label) === index); // dedupe same label
+
+    const resource = resourceLabels.join(' – ');
+
+    return (
+      `Keine Berechtigung zum ${actionLabel} von „${resource}". ` +
+      'Bitte kontaktieren Sie Ihren Vorgesetzten oder Administrator.'
+    );
+  }
+
+  // Pattern 2: Roles Guard — "Access denied. Required roles: admin, root. Your role: employee"
+  if (message.startsWith('Access denied. Required roles:')) {
+    return (
+      'Sie haben nicht die erforderliche Rolle für diese Aktion. ' +
+      'Bitte kontaktieren Sie Ihren Administrator.'
+    );
+  }
+
+  // Pattern 3: Common service-level English messages
+  if (message.includes('only modify your own')) {
+    return 'Sie können nur Ihre eigenen Einträge bearbeiten.';
+  }
+  if (message.includes('only delete your own')) {
+    return 'Sie können nur Ihre eigene Einträge löschen.';
+  }
+  if (
+    message.includes("don't have access") ||
+    message.includes('do not have access')
+  ) {
+    return (
+      'Sie haben keinen Zugriff auf diese Ressource. ' +
+      'Bitte kontaktieren Sie Ihren Vorgesetzten oder Administrator.'
+    );
+  }
+  if (message.includes('Only root') || message.includes('only root')) {
+    return 'Diese Aktion ist nur für System-Administratoren verfügbar.';
+  }
+
+  // No known pattern — return null to let caller decide
+  return null;
+}
+
+// =============================================================================
 // ABORT SIGNAL UTILITIES
 // =============================================================================
 
