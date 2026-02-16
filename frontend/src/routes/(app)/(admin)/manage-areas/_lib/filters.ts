@@ -4,12 +4,7 @@
 
 import type { Area, StatusFilter } from './types';
 
-/**
- * Filter areas by status
- * @param areas - All areas array
- * @param status - Status filter value
- * @returns Filtered areas array
- */
+/** Filter areas by status */
 export function filterByStatus(areas: Area[], status: StatusFilter): Area[] {
   switch (status) {
     case 'active':
@@ -26,11 +21,8 @@ export function filterByStatus(areas: Area[], status: StatusFilter): Area[] {
 }
 
 /**
- * Filter areas by search query
+ * Filter areas by search query.
  * Searches in: name, description, address, areaLeadName
- * @param areas - Areas to filter
- * @param query - Search query string
- * @returns Filtered areas array
  */
 export function filterBySearch(areas: Area[], query: string): Area[] {
   const term = query.toLowerCase().trim();
@@ -51,13 +43,7 @@ export function filterBySearch(areas: Area[], query: string): Area[] {
   });
 }
 
-/**
- * Apply all filters to areas
- * @param areas - All areas array
- * @param status - Status filter
- * @param searchQuery - Search query string
- * @returns Filtered areas array
- */
+/** Apply all filters to areas */
 export function applyAllFilters(
   areas: Area[],
   status: StatusFilter,

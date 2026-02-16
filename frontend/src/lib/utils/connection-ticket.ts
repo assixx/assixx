@@ -24,9 +24,6 @@ interface ConnectionTicketResponse {
  * - Valid for 30 seconds
  * - Single-use (deleted after first validation)
  * - Contain no sensitive data (just a random UUID)
- *
- * @param purpose - 'websocket' or 'sse'
- * @returns ticket string or null on error
  */
 export async function getConnectionTicket(
   purpose: TicketPurpose,
@@ -62,13 +59,7 @@ export async function getConnectionTicket(
   }
 }
 
-/**
- * Builds a WebSocket URL with the connection ticket as query parameter.
- *
- * @param basePath - WebSocket path (e.g., '/chat-ws')
- * @param ticket - Connection ticket from getConnectionTicket()
- * @returns Full WebSocket URL with ticket
- */
+/** Builds a WebSocket URL with the connection ticket as query parameter. */
 export function buildWebSocketUrl(basePath: string, ticket: string): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.host;

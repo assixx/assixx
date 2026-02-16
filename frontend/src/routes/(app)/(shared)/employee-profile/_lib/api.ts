@@ -12,11 +12,7 @@ import type { PasswordChangePayload, PictureUploadResponse } from './types';
 
 const apiClient = getApiClient();
 
-/**
- * Load profile picture from user data (SSR source of truth)
- * @param userPicture - Profile picture URL from user data
- * @returns Absolute URL path or null
- */
+/** Load profile picture from user data (SSR source of truth) */
 export function loadProfilePicture(userPicture?: string): string | null {
   // Use user's profile picture directly from SSR data - no caching
   // Caching was removed because it caused profile pictures to be shared
@@ -28,11 +24,7 @@ export function loadProfilePicture(userPicture?: string): string | null {
   return null;
 }
 
-/**
- * Upload profile picture
- * @param file - Image file to upload
- * @returns New profile picture URL or null
- */
+/** Upload profile picture */
 export async function uploadProfilePicture(file: File): Promise<string | null> {
   // Validate file type
   if (!file.type.startsWith('image/')) {
@@ -61,17 +53,12 @@ export async function uploadProfilePicture(file: File): Promise<string | null> {
   return newUrl;
 }
 
-/**
- * Remove profile picture
- */
+/** Remove profile picture */
 export async function removeProfilePicture(): Promise<void> {
   await apiClient.delete('/users/me/profile-picture');
 }
 
-/**
- * Change user password
- * @param payload - Password change data
- */
+/** Change user password */
 export async function changePassword(
   payload: PasswordChangePayload,
 ): Promise<void> {

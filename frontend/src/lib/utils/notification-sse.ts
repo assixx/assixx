@@ -239,10 +239,7 @@ class NotificationSSEClient implements INotificationSSE {
     this.connect();
   }
 
-  /**
-   * Subscribe to notification events
-   * @returns Unsubscribe function
-   */
+  /** Subscribe to notification events. Returns unsubscribe function. */
   subscribe(handler: NotificationHandler): () => void {
     this.handlers.add(handler);
     return () => {

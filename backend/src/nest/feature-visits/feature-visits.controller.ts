@@ -21,8 +21,6 @@ export class FeatureVisitsController {
    * Updates last_visited_at to NOW() for the current user and feature
    *
    * POST /api/v2/feature-visits/mark
-   *
-   * @param dto - Contains feature: 'calendar' | 'kvp' | 'surveys'
    */
   @Post('mark')
   async markVisited(

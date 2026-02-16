@@ -26,20 +26,12 @@ import type {
 // STATUS BADGE HELPERS
 // =============================================================================
 
-/**
- * Get status badge class based on isActive value
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns CSS class for badge
- */
+/** Get status badge class based on isActive value */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
   return STATUS_BADGE_CLASSES[isActive];
 }
 
-/**
- * Get status label for display
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns Human-readable status label
- */
+/** Get status label for display */
 export function getStatusLabel(isActive: IsActiveStatus): string {
   return STATUS_LABELS[isActive];
 }
@@ -48,11 +40,7 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 // DATE HELPERS
 // =============================================================================
 
-/**
- * Format date for display
- * @param dateStr - ISO date string
- * @returns Formatted date string (de-DE locale)
- */
+/** Format date for display (de-DE locale) */
 export function formatDate(dateStr: string): string {
   if (dateStr === '') return '-';
   try {
@@ -66,11 +54,7 @@ export function formatDate(dateStr: string): string {
 // AVATAR HELPERS
 // =============================================================================
 
-/**
- * Get avatar color based on user ID
- * @param id - User ID
- * @returns Color index (0-9)
- */
+/** Get avatar color index (0-9) based on user ID */
 export function getAvatarColor(id: number): number {
   return id % 10;
 }
@@ -79,11 +63,7 @@ export function getAvatarColor(id: number): number {
 // PASSWORD STRENGTH
 // =============================================================================
 
-/**
- * Calculate password strength (simplified)
- * @param password - Password to evaluate
- * @returns Password strength result
- */
+/** Calculate password strength (simplified) */
 export function calculatePasswordStrength(
   password: string,
 ): PasswordStrengthResult {
@@ -116,11 +96,7 @@ export function calculatePasswordStrength(
 // FORM HELPERS
 // =============================================================================
 
-/**
- * Populate form from user data (for edit mode)
- * @param user - User to edit
- * @returns Form data object
- */
+/** Populate form from user data (for edit mode) */
 export function populateFormFromUser(user: RootUser): {
   firstName: string;
   lastName: string;
@@ -147,10 +123,7 @@ export function populateFormFromUser(user: RootUser): {
   };
 }
 
-/**
- * Get default form values for new user
- * @returns Default form data object
- */
+/** Get default form values for new user */
 export function getDefaultFormValues(): typeof FORM_DEFAULTS {
   return { ...FORM_DEFAULTS };
 }
@@ -159,12 +132,7 @@ export function getDefaultFormValues(): typeof FORM_DEFAULTS {
 // VALIDATION HELPERS
 // =============================================================================
 
-/**
- * Validate email match
- * @param email - Email address
- * @param emailConfirm - Email confirmation
- * @returns True if emails match or confirm is empty
- */
+/** Validate email match (returns true if confirm is empty) */
 export function validateEmailMatch(
   email: string,
   emailConfirm: string,
@@ -173,12 +141,7 @@ export function validateEmailMatch(
   return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
-/**
- * Validate password match
- * @param password - Password
- * @param passwordConfirm - Password confirmation
- * @returns True if passwords match or confirm is empty
- */
+/** Validate password match (returns true if confirm is empty) */
 export function validatePasswordMatch(
   password: string,
   passwordConfirm: string,

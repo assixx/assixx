@@ -10,10 +10,7 @@ import type { UserSettingResponse } from './types';
 
 const log = createLogger('DesignSettingsApi');
 
-/**
- * Get the current theme setting from the API.
- * @returns Theme value ('dark' | 'light') or null if not set
- */
+/** Get the current theme setting from the API */
 export async function getThemeSetting(): Promise<'dark' | 'light' | null> {
   try {
     const api = getApiClient();

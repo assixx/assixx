@@ -248,7 +248,6 @@ export class UserProfileService {
     // Delete file from disk
     const filePath = path.join(process.cwd(), normalizedPath);
     try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
       await fs.unlink(filePath);
     } catch (error: unknown) {
       // Log but don't fail if file doesn't exist

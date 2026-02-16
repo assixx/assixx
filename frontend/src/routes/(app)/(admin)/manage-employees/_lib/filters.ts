@@ -4,12 +4,7 @@
 
 import type { Employee, StatusFilter } from './types';
 
-/**
- * Filter employees by status
- * @param employees - All employees array
- * @param status - Status filter value
- * @returns Filtered employees array
- */
+/** Filter employees by status */
 export function filterByStatus(
   employees: Employee[],
   status: StatusFilter,
@@ -28,13 +23,7 @@ export function filterByStatus(
   }
 }
 
-/**
- * Filter employees by search query
- * Searches in: firstName, lastName, email, position, employeeNumber
- * @param employees - Employees to filter
- * @param query - Search query string
- * @returns Filtered employees array
- */
+/** Filter employees by search query (searches in: firstName, lastName, email, position, employeeNumber) */
 export function filterBySearch(
   employees: Employee[],
   query: string,
@@ -57,13 +46,7 @@ export function filterBySearch(
   });
 }
 
-/**
- * Apply all filters to employees
- * @param employees - All employees array
- * @param status - Status filter
- * @param searchQuery - Search query string
- * @returns Filtered employees array
- */
+/** Apply all filters to employees */
 export function applyAllFilters(
   employees: Employee[],
   status: StatusFilter,

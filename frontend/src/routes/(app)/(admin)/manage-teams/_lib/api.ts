@@ -198,10 +198,7 @@ export async function fetchTeamMachines(
   }
 }
 
-/**
- * Save team (create or update)
- * @returns Team ID
- */
+/** Save team (create or update), returns team ID */
 export async function saveTeam(
   payload: TeamPayload,
   editId: number | null,

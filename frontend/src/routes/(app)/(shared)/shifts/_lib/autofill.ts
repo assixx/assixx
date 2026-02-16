@@ -171,10 +171,7 @@ interface ProcessDayParams {
   onAssign: (date: string, shiftType: ShiftType, employeeId: number) => void;
 }
 
-/**
- * Process autofill for a single day
- * @returns AutofillDayResult with success status and optional reason
- */
+/** Process autofill for a single day */
 function processSingleDay(params: ProcessDayParams): AutofillDayResult {
   const {
     dayName,

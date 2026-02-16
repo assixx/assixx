@@ -300,7 +300,6 @@ export function getDefaultExportDateRange(): {
  * Calculate date range from a quick timerange preset.
  *
  * @param minutes - Duration in minutes to go back from now
- * @returns Date range with dateFrom and dateTo in YYYY-MM-DD format
  */
 export function getExportDateRangeFromMinutes(minutes: number): {
   dateFrom: string;

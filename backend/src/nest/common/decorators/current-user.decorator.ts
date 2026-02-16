@@ -12,9 +12,6 @@ import type { NestAuthUser } from '../interfaces/auth.interface.js';
 /**
  * Get the current authenticated user from request
  *
- * @param data - Optional property to extract from user
- * @returns The user object or specific property
- *
  * @example
  * ```typescript
  * // Get entire user object

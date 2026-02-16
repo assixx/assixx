@@ -634,9 +634,7 @@ export class KvpController {
       );
 
       // Create directory and write file
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from validated inputs: tenantId (auth), suggestionId (ParseIntPipe), fileUuid (generated)
       await fs.mkdir(path.dirname(storagePath), { recursive: true });
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path built from validated inputs: tenantId (auth), suggestionId (ParseIntPipe), fileUuid (generated)
       await fs.writeFile(storagePath, file.buffer);
 
       // Add to database
@@ -685,7 +683,6 @@ export class KvpController {
         'Content-Disposition',
         `attachment; filename="${attachment.fileName}"`,
       )
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath from DB, validated at upload time
       .send(createReadStream(attachment.filePath));
   }
 

@@ -12,10 +12,7 @@ import {
 
 import type { ToastType } from './types';
 
-/**
- * Format date for display (German locale with time)
- * @param dateStr - ISO date string
- */
+/** Format date for display (German locale with time) */
 export function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('de-DE', {
     day: '2-digit',
@@ -34,39 +31,24 @@ const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
   info: showInfoAlert,
 };
 
-/**
- * Show toast notification via toast store
- * @param message - Toast message
- * @param type - Toast type
- */
+/** Show toast notification via toast store */
 export function showToast(message: string, type: ToastType = 'info'): void {
   TOAST_FN_MAP[type](message);
 }
 
-/**
- * Trigger file input click programmatically
- * @param inputId - Input element ID
- */
+/** Trigger file input click programmatically */
 export function triggerFileInput(inputId: string): void {
   const input = document.getElementById(inputId);
   if (input) input.click();
 }
 
-/**
- * Check if password error is related to current password
- * @param errorMsg - Error message
- */
+/** Check if password error is related to current password */
 export function isCurrentPasswordError(errorMsg: string): boolean {
   const lower = errorMsg.toLowerCase();
   return lower.includes('current') || lower.includes('aktuell');
 }
 
-/**
- * Validate password length
- * @param password - Password to validate
- * @param minLength - Minimum length (default 12)
- * @param maxLength - Maximum length (default 72)
- */
+/** Validate password length */
 export function isPasswordLengthValid(
   password: string,
   minLength = 12,
@@ -75,11 +57,7 @@ export function isPasswordLengthValid(
   return password.length >= minLength && password.length <= maxLength;
 }
 
-/**
- * Check if passwords match
- * @param password - New password
- * @param confirmPassword - Confirmation password
- */
+/** Check if passwords match */
 export function doPasswordsMatch(
   password: string,
   confirmPassword: string,

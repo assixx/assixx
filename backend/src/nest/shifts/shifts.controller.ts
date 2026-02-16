@@ -69,10 +69,7 @@ export class ShiftsController {
 
   // ============= SHIFTS CRUD =============
 
-  /**
-   * GET /api/v2/shifts
-   * List all shifts with filters
-   */
+  /** GET /api/v2/shifts */
   @Get()
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
   async listShifts(
@@ -100,10 +97,7 @@ export class ShiftsController {
     };
   }
 
-  /**
-   * GET /api/v2/shifts/swap-requests
-   * List swap requests (must be before /:id)
-   */
+  /** GET /api/v2/shifts/swap-requests (must be before /:id) */
   @Get('swap-requests')
   @RequirePermission(SHIFT_FEATURE, SHIFT_SWAP, 'canRead')
   async listSwapRequests(
@@ -114,10 +108,7 @@ export class ShiftsController {
     return await this.shiftsService.listSwapRequests(user.tenantId, query);
   }
 
-  /**
-   * POST /api/v2/shifts/swap-requests
-   * Create swap request
-   */
+  /** POST /api/v2/shifts/swap-requests */
   @Post('swap-requests')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission(SHIFT_FEATURE, SHIFT_SWAP, 'canWrite')
@@ -133,10 +124,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * PUT /api/v2/shifts/swap-requests/:id/status
-   * Update swap request status (admin only)
-   */
+  /** PUT /api/v2/shifts/swap-requests/:id/status */
   @Put('swap-requests/:id/status')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_SWAP, 'canWrite')
@@ -154,10 +142,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * GET /api/v2/shifts/overtime
-   * Get overtime report
-   */
+  /** GET /api/v2/shifts/overtime */
   @Get('overtime')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
   async getOvertimeReport(
@@ -173,10 +158,7 @@ export class ShiftsController {
     return await this.shiftsService.getOvertimeReport(filters, user.tenantId);
   }
 
-  /**
-   * GET /api/v2/shifts/favorites
-   * List user's favorites
-   */
+  /** GET /api/v2/shifts/favorites */
   @Get('favorites')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
   async listFavorites(
@@ -186,10 +168,7 @@ export class ShiftsController {
     return await this.shiftsService.listFavorites(user.tenantId, user.id);
   }
 
-  /**
-   * POST /api/v2/shifts/favorites
-   * Create favorite
-   */
+  /** POST /api/v2/shifts/favorites */
   @Post('favorites')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
@@ -201,10 +180,7 @@ export class ShiftsController {
     return await this.shiftsService.createFavorite(dto, user.tenantId, user.id);
   }
 
-  /**
-   * DELETE /api/v2/shifts/favorites/:id
-   * Delete favorite
-   */
+  /** DELETE /api/v2/shifts/favorites/:id */
   @Delete('favorites/:id')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
   async deleteFavorite(
@@ -216,10 +192,7 @@ export class ShiftsController {
     return { message: 'Favorite deleted successfully' };
   }
 
-  /**
-   * GET /api/v2/shifts/my-calendar-shifts
-   * Get current user's shifts for calendar
-   */
+  /** GET /api/v2/shifts/my-calendar-shifts */
   @Get('my-calendar-shifts')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
   async getMyCalendarShifts(
@@ -235,10 +208,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * GET /api/v2/shifts/export
-   * Export shifts to CSV (admin only)
-   */
+  /** GET /api/v2/shifts/export */
   @Get('export')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
@@ -270,10 +240,7 @@ export class ShiftsController {
       .send(csvData);
   }
 
-  /**
-   * GET /api/v2/shifts/plan
-   * Get shift plan with shifts and notes
-   */
+  /** GET /api/v2/shifts/plan */
   @Get('plan')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
   async getShiftPlan(
@@ -284,10 +251,7 @@ export class ShiftsController {
     return await this.shiftsService.getShiftPlan(query, user.tenantId);
   }
 
-  /**
-   * POST /api/v2/shifts/plan
-   * Create shift plan (admin only)
-   */
+  /** POST /api/v2/shifts/plan */
   @Post('plan')
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
@@ -304,10 +268,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * PUT /api/v2/shifts/plan/uuid/:uuid
-   * Update shift plan by UUID (preferred)
-   */
+  /** PUT /api/v2/shifts/plan/uuid/:uuid */
   @Put('plan/uuid/:uuid')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
   async updateShiftPlanByUuid(
@@ -326,7 +287,6 @@ export class ShiftsController {
 
   /**
    * PUT /api/v2/shifts/plan/:id
-   * Update shift plan
    * @deprecated Use PUT /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Put('plan/:id')
@@ -345,10 +305,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * DELETE /api/v2/shifts/plan/uuid/:uuid
-   * Delete shift plan by UUID (admin only, preferred)
-   */
+  /** DELETE /api/v2/shifts/plan/uuid/:uuid */
   @Delete('plan/uuid/:uuid')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
@@ -363,7 +320,6 @@ export class ShiftsController {
 
   /**
    * DELETE /api/v2/shifts/plan/:id
-   * Delete shift plan (admin only)
    * @deprecated Use DELETE /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Delete('plan/:id')
@@ -378,10 +334,7 @@ export class ShiftsController {
     return { message: 'Shift plan deleted successfully' };
   }
 
-  /**
-   * GET /api/v2/shifts/:id
-   * Get shift by ID
-   */
+  /** GET /api/v2/shifts/:id */
   @Get(':id')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
   async getShiftById(
@@ -392,10 +345,7 @@ export class ShiftsController {
     return await this.shiftsService.getShiftById(id, user.tenantId);
   }
 
-  /**
-   * POST /api/v2/shifts
-   * Create new shift (admin only)
-   */
+  /** POST /api/v2/shifts */
   @Post()
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
@@ -408,10 +358,7 @@ export class ShiftsController {
     return await this.shiftsService.createShift(dto, user.tenantId, user.id);
   }
 
-  /**
-   * PUT /api/v2/shifts/:id
-   * Update shift (admin only)
-   */
+  /** PUT /api/v2/shifts/:id */
   @Put(':id')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
@@ -429,10 +376,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * DELETE /api/v2/shifts/week
-   * Delete all shifts for a team in a date range (admin only)
-   */
+  /** DELETE /api/v2/shifts/week */
   @Delete('week')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
@@ -453,10 +397,7 @@ export class ShiftsController {
     );
   }
 
-  /**
-   * DELETE /api/v2/shifts/team
-   * Delete ALL shifts for a team (admin only)
-   */
+  /** DELETE /api/v2/shifts/team */
   @Delete('team')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
@@ -468,10 +409,7 @@ export class ShiftsController {
     return await this.shiftsService.deleteShiftsByTeam(teamId, user.tenantId);
   }
 
-  /**
-   * DELETE /api/v2/shifts/:id
-   * Delete shift (admin only)
-   */
+  /** DELETE /api/v2/shifts/:id */
   @Delete(':id')
   @Roles('admin', 'root')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')

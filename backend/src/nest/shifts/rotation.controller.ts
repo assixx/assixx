@@ -68,10 +68,7 @@ export class RotationController {
 
   // ============= PATTERNS CRUD =============
 
-  /**
-   * GET /api/v2/shifts/rotation/patterns
-   * List rotation patterns
-   */
+  /** GET /api/v2/shifts/rotation/patterns */
   @Get('patterns')
   @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationPatterns(
@@ -87,10 +84,7 @@ export class RotationController {
     return { success: true, data: { patterns } };
   }
 
-  /**
-   * GET /api/v2/shifts/rotation/patterns/uuid/:uuid
-   * Get single rotation pattern by UUID (preferred)
-   */
+  /** GET /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Get('patterns/uuid/:uuid')
   @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationPatternByUuid(
@@ -107,7 +101,6 @@ export class RotationController {
 
   /**
    * GET /api/v2/shifts/rotation/patterns/:id
-   * Get single rotation pattern
    * @deprecated Use GET /patterns/uuid/:uuid instead
    */
   @Get('patterns/:id')
@@ -124,10 +117,7 @@ export class RotationController {
     return { success: true, data: { pattern } };
   }
 
-  /**
-   * POST /api/v2/shifts/rotation/patterns
-   * Create rotation pattern (admin only)
-   */
+  /** POST /api/v2/shifts/rotation/patterns */
   @Post('patterns')
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
@@ -145,10 +135,7 @@ export class RotationController {
     return { success: true, data: { pattern } };
   }
 
-  /**
-   * PUT /api/v2/shifts/rotation/patterns/uuid/:uuid
-   * Update rotation pattern by UUID (admin only, preferred)
-   */
+  /** PUT /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Put('patterns/uuid/:uuid')
   @Roles('admin', 'root')
   async updateRotationPatternByUuid(
@@ -168,7 +155,6 @@ export class RotationController {
 
   /**
    * PUT /api/v2/shifts/rotation/patterns/:id
-   * Update rotation pattern (admin only)
    * @deprecated Use PUT /patterns/uuid/:uuid instead
    */
   @Put('patterns/:id')
@@ -188,10 +174,7 @@ export class RotationController {
     return { success: true, data: { pattern } };
   }
 
-  /**
-   * DELETE /api/v2/shifts/rotation/patterns/uuid/:uuid
-   * Delete rotation pattern by UUID (admin only, preferred)
-   */
+  /** DELETE /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Delete('patterns/uuid/:uuid')
   @Roles('admin', 'root')
   async deleteRotationPatternByUuid(
@@ -209,7 +192,6 @@ export class RotationController {
 
   /**
    * DELETE /api/v2/shifts/rotation/patterns/:id
-   * Delete rotation pattern (admin only)
    * @deprecated Use DELETE /patterns/uuid/:uuid instead
    */
   @Delete('patterns/:id')
@@ -229,10 +211,7 @@ export class RotationController {
 
   // ============= ASSIGNMENTS =============
 
-  /**
-   * POST /api/v2/shifts/rotation/assign
-   * Assign users to rotation pattern (admin only)
-   */
+  /** POST /api/v2/shifts/rotation/assign */
   @Post('assign')
   @Roles('admin', 'root')
   async assignUsersToPattern(
@@ -251,10 +230,7 @@ export class RotationController {
 
   // ============= GENERATION =============
 
-  /**
-   * POST /api/v2/shifts/rotation/generate
-   * Generate rotation shifts from pattern (admin only)
-   */
+  /** POST /api/v2/shifts/rotation/generate */
   @Post('generate')
   @Roles('admin', 'root')
   async generateRotationShifts(
@@ -271,10 +247,7 @@ export class RotationController {
     return { success: true, data: { generatedShifts } };
   }
 
-  /**
-   * POST /api/v2/shifts/rotation/generate-from-config
-   * Generate rotation shifts from algorithm config (admin only)
-   */
+  /** POST /api/v2/shifts/rotation/generate-from-config */
   @Post('generate-from-config')
   @Roles('admin', 'root')
   async generateRotationFromConfig(
@@ -295,10 +268,7 @@ export class RotationController {
 
   // ============= HISTORY =============
 
-  /**
-   * GET /api/v2/shifts/rotation/history
-   * Get rotation history
-   */
+  /** GET /api/v2/shifts/rotation/history */
   @Get('history')
   @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
   async getRotationHistory(
@@ -325,9 +295,9 @@ export class RotationController {
 
   /**
    * DELETE /api/v2/shifts/rotation/history
-   * Delete rotation history for a team (admin only)
-   * - If patternId provided: deletes ONLY that pattern
-   * - If only teamId: deletes ALL patterns for the team
+   *
+   * If patternId provided: deletes ONLY that pattern.
+   * If only teamId: deletes ALL patterns for the team.
    */
   @Delete('history')
   @Roles('admin', 'root')
@@ -359,10 +329,7 @@ export class RotationController {
     return { message, deletedCounts };
   }
 
-  /**
-   * DELETE /api/v2/shifts/rotation/history/week
-   * Delete rotation history by date range (admin only)
-   */
+  /** DELETE /api/v2/shifts/rotation/history/week */
   @Delete('history/week')
   @Roles('admin', 'root')
   async deleteRotationHistoryByDateRange(
@@ -394,10 +361,7 @@ export class RotationController {
     };
   }
 
-  /**
-   * DELETE /api/v2/shifts/rotation/history/:id
-   * Delete single rotation history entry (admin only)
-   */
+  /** DELETE /api/v2/shifts/rotation/history/:id */
   @Delete('history/:id')
   @Roles('admin', 'root')
   async deleteRotationHistoryEntry(

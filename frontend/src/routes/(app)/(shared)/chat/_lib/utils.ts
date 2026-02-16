@@ -69,11 +69,7 @@ const timeSeparatorCache = new SimpleCache<string>(50);
 // FILE HANDLING
 // =============================================================================
 
-/**
- * Format file size in human-readable format
- * @param bytes - File size in bytes
- * @returns Formatted size string (e.g., "1.5 MB")
- */
+/** Format file size in human-readable format (e.g., "1.5 MB") */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
 
@@ -108,21 +104,13 @@ const MIME_TYPE_MATCHERS: readonly {
   },
 ];
 
-/**
- * Get Font Awesome icon class for a MIME type
- * @param mimeType - File MIME type
- * @returns Font Awesome icon class
- */
+/** Get Font Awesome icon class for a MIME type */
 export function getFileIcon(mimeType: string): string {
   const match = MIME_TYPE_MATCHERS.find((matcher) => matcher.test(mimeType));
   return match?.icon ?? MIME_TYPE_ICONS.default;
 }
 
-/**
- * Check if a file is an image based on MIME type
- * @param file - File object
- * @returns true if file is an image
- */
+/** Check if a file is an image based on MIME type */
 export function isImageFile(file: File): boolean {
   return file.type.startsWith('image/');
 }
@@ -134,9 +122,6 @@ export function isImageFile(file: File): boolean {
 /**
  * Convert URLs in text to clickable links (CACHED)
  * SECURITY: Escapes HTML BEFORE processing to prevent XSS attacks
- *
- * @param text - Text containing URLs (potentially untrusted)
- * @returns Sanitized HTML string with anchor tags
  */
 export function linkify(text: string): string {
   // Check cache first
@@ -170,9 +155,7 @@ export function linkify(text: string): string {
 /** Cache for compiled search regexes - avoids recompilation */
 const searchRegexCache = new SimpleCache<RegExp>(20);
 
-/**
- * Get or create cached regex for search term
- */
+/** Get or create cached regex for search term */
 function getSearchRegex(searchTerm: string): RegExp {
   const cached = searchRegexCache.get(searchTerm);
   if (cached !== undefined) {
@@ -191,10 +174,6 @@ function getSearchRegex(searchTerm: string): RegExp {
 /**
  * Highlight search term in text (OPTIMIZED)
  * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
- *
- * @param text - Text to search in (potentially untrusted)
- * @param searchTerm - Term to highlight
- * @returns Sanitized HTML string with highlighted matches
  */
 export function highlightSearchTerm(text: string, searchTerm: string): string {
   // SECURITY FIX: Escape HTML first
@@ -211,10 +190,6 @@ export function highlightSearchTerm(text: string, searchTerm: string): string {
 /**
  * Highlight search term with mark tag (for message search) (OPTIMIZED)
  * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
- *
- * @param text - Text to search in (potentially untrusted)
- * @param searchTerm - Term to highlight
- * @returns Sanitized HTML string with <mark> tags
  */
 export function highlightSearchInMessage(
   text: string,
@@ -246,9 +221,7 @@ let cachedToday = '';
 let cachedYesterday = '';
 let lastDateCheck = 0;
 
-/**
- * Update cached date strings if day has changed
- */
+/** Update cached date strings if day has changed */
 function updateCachedDates(): void {
   const now = Date.now();
   // Check every 60 seconds max
@@ -268,9 +241,7 @@ function updateCachedDates(): void {
   lastDateCheck = now;
 }
 
-/**
- * Get date string for a date (CACHED)
- */
+/** Get date string for a date (CACHED) */
 function getDateString(dateStr: string): string {
   const cached = dateStringCache.get(dateStr);
   if (cached !== undefined) return cached;
@@ -280,11 +251,7 @@ function getDateString(dateStr: string): string {
   return result;
 }
 
-/**
- * Format message timestamp (HH:MM) (CACHED)
- * @param dateStr - ISO date string
- * @returns Formatted time string
- */
+/** Format message timestamp (HH:MM) (CACHED) */
 export function formatMessageTime(dateStr: string): string {
   const cached = messageTimeCache.get(dateStr);
   if (cached !== undefined) return cached;
@@ -298,11 +265,7 @@ export function formatMessageTime(dateStr: string): string {
   return result;
 }
 
-/**
- * Format conversation time (DD.MM.YYYY HH:MM) (CACHED)
- * @param dateStr - ISO date string
- * @returns Formatted date/time string
- */
+/** Format conversation time (DD.MM.YYYY HH:MM) (CACHED) */
 export function formatConversationTime(dateStr: string): string {
   if (dateStr === '') return '';
 
@@ -321,11 +284,7 @@ export function formatConversationTime(dateStr: string): string {
   return result;
 }
 
-/**
- * Format schedule time for display
- * @param date - Date object
- * @returns Localized date/time string
- */
+/** Format schedule time for display */
 export function formatScheduleTime(date: Date): string {
   return date.toLocaleString('de-DE', {
     day: '2-digit',
@@ -336,11 +295,7 @@ export function formatScheduleTime(date: Date): string {
   });
 }
 
-/**
- * Format date separator (Heute, Gestern, or full date) (CACHED)
- * @param dateStr - ISO date string
- * @returns Localized date string
- */
+/** Format date separator (Heute, Gestern, or full date) (CACHED) */
 export function formatDateSeparator(dateStr: string): string {
   const cached = timeSeparatorCache.get(dateStr);
   if (cached !== undefined) return cached;
@@ -371,9 +326,6 @@ export function formatDateSeparator(dateStr: string): string {
 /**
  * Check if date separator should be shown between messages (OPTIMIZED)
  * Uses cached date strings instead of creating new Date objects
- * @param prev - Previous message (or undefined)
- * @param current - Current message
- * @returns true if dates differ
  */
 export function shouldShowDateSeparator(
   prev: Message | undefined,
@@ -391,12 +343,7 @@ export function shouldShowDateSeparator(
 // CONVERSATION HELPERS
 // =============================================================================
 
-/**
- * Get display name for a conversation
- * @param conv - Conversation object
- * @param currentUserId - Current user's ID
- * @returns Display name string
- */
+/** Get display name for a conversation */
 export function getConversationDisplayName(
   conv: Conversation,
   currentUserId: number,
@@ -411,12 +358,7 @@ export function getConversationDisplayName(
   return fullName !== '' ? fullName : partner.username;
 }
 
-/**
- * Get avatar URL for a conversation
- * @param conv - Conversation object
- * @param currentUserId - Current user's ID
- * @returns Avatar URL or null
- */
+/** Get avatar URL for a conversation */
 export function getConversationAvatar(
   conv: Conversation,
   currentUserId: number,
@@ -427,12 +369,7 @@ export function getConversationAvatar(
   return partner?.profileImageUrl ?? null;
 }
 
-/**
- * Get chat partner from conversation
- * @param conv - Conversation object
- * @param currentUserId - Current user's ID
- * @returns Partner participant or null
- */
+/** Get chat partner from conversation */
 export function getChatPartner(
   conv: Conversation | null,
   currentUserId: number,
@@ -441,12 +378,7 @@ export function getChatPartner(
   return conv.participants.find((p) => p.id !== currentUserId) ?? null;
 }
 
-/**
- * Get chat partner name
- * @param partner - Partner participant
- * @param conversationName - Optional conversation name
- * @returns Display name
- */
+/** Get chat partner name */
 export function getChatPartnerName(
   partner: ConversationParticipant | null,
   conversationName?: string,
@@ -457,11 +389,7 @@ export function getChatPartnerName(
   return fullName !== '' ? fullName : partner.username;
 }
 
-/**
- * Get status label for display
- * @param status - User status
- * @returns Localized status string
- */
+/** Get status label for display */
 export function getStatusLabel(status: UserStatus): string {
   switch (status) {
     case 'online':
@@ -473,11 +401,7 @@ export function getStatusLabel(status: UserStatus): string {
   }
 }
 
-/**
- * Get role label for display
- * @param role - User role
- * @returns Localized role string
- */
+/** Get role label for display */
 export function getRoleLabel(role: string): string {
   switch (role) {
     case 'admin':
@@ -489,11 +413,7 @@ export function getRoleLabel(role: string): string {
   }
 }
 
-/**
- * Get role badge class
- * @param role - User role
- * @returns CSS class for badge
- */
+/** Get role badge class */
 export function getRoleBadgeClass(role: string | null | undefined): string {
   switch (role) {
     case 'admin':
@@ -509,12 +429,7 @@ export function getRoleBadgeClass(role: string | null | undefined): string {
 // MESSAGE HELPERS
 // =============================================================================
 
-/**
- * Filter messages by search query
- * @param messages - Messages array
- * @param query - Search query
- * @returns Filtered messages
- */
+/** Filter messages by search query */
 export function filterMessagesByQuery(
   messages: Message[],
   query: string,
@@ -530,12 +445,7 @@ export function filterMessagesByQuery(
   });
 }
 
-/**
- * Check if message content matches search query
- * @param content - Message content
- * @param query - Search query
- * @returns true if matches
- */
+/** Check if message content matches search query */
 export function messageMatchesQuery(content: string, query: string): boolean {
   if (query.trim() === '') return false;
   return content.toLowerCase().includes(query.toLowerCase());
@@ -545,13 +455,7 @@ export function messageMatchesQuery(content: string, query: string): boolean {
 // SCHEDULE VALIDATION
 // =============================================================================
 
-/**
- * Validate scheduled time
- * @param selectedDate - Selected Date object
- * @param minFutureMs - Minimum future time in ms
- * @param maxFutureMs - Maximum future time in ms
- * @returns Object with isValid and error message
- */
+/** Validate scheduled time against min/max future constraints */
 export function validateScheduleTime(
   selectedDate: Date,
   minFutureMs: number,
@@ -572,11 +476,7 @@ export function validateScheduleTime(
   return { isValid: true, error: null };
 }
 
-/**
- * Get minimum schedule date/time (5 min from now)
- * @param minFutureMs - Minimum future time in ms
- * @returns Object with date and time strings
- */
+/** Get minimum schedule date/time (5 min from now) */
 export function getMinScheduleDateTime(minFutureMs: number): {
   date: string;
   time: string;

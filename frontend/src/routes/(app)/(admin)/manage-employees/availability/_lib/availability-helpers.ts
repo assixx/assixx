@@ -14,11 +14,7 @@ import {
 
 import type { AvailabilityStatus } from '@assixx/shared';
 
-/**
- * Format date string to German locale format (DD.MM.YYYY)
- * @param dateStr - ISO date string or null
- * @returns Formatted date string or '-'
- */
+/** Format date string to German locale format (DD.MM.YYYY) */
 export function formatDate(dateStr: string | null): string {
   if (dateStr === null || dateStr === '') return '-';
   const date = new Date(dateStr);
@@ -29,11 +25,7 @@ export function formatDate(dateStr: string | null): string {
   });
 }
 
-/**
- * Format datetime string to German locale format with time (DD.MM.YYYY HH:MM)
- * @param dateStr - ISO datetime string or null
- * @returns Formatted datetime string or '-'
- */
+/** Format datetime string to German locale format with time (DD.MM.YYYY HH:MM) */
 export function formatDateTime(dateStr: string | null): string {
   if (dateStr === null || dateStr === '') return '-';
   const date = new Date(dateStr);
@@ -46,21 +38,13 @@ export function formatDateTime(dateStr: string | null): string {
   });
 }
 
-/**
- * Format date string for HTML date input (YYYY-MM-DD)
- * @param dateStr - ISO date string or null
- * @returns Date string in YYYY-MM-DD format or empty string
- */
+/** Format date string for HTML date input (YYYY-MM-DD) */
 export function formatDateForInput(dateStr: string | null): string {
   if (dateStr === null || dateStr === '') return '';
   return dateStr.split('T')[0];
 }
 
-/**
- * Get human-readable text for availability status
- * @param status - Availability status key
- * @returns Localized status label
- */
+/** Get human-readable text for availability status */
 export function getStatusText(status: string): string {
   if (status in AVAILABILITY_LABELS) {
     return AVAILABILITY_LABELS[status as AvailabilityStatus];
@@ -68,11 +52,7 @@ export function getStatusText(status: string): string {
   return status;
 }
 
-/**
- * Get CSS badge class for availability status
- * @param status - Availability status key
- * @returns Badge CSS class name
- */
+/** Get CSS badge class for availability status */
 export function getStatusClass(status: string): string {
   if (status in AVAILABILITY_BADGE_CLASSES) {
     return AVAILABILITY_BADGE_CLASSES[status as AvailabilityStatus];
@@ -80,11 +60,7 @@ export function getStatusClass(status: string): string {
   return 'badge--secondary';
 }
 
-/**
- * Get Font Awesome icon class for availability status
- * @param status - Availability status key
- * @returns FA icon class name
- */
+/** Get Font Awesome icon class for availability status */
 export function getStatusIcon(status: string): string {
   if (status in AVAILABILITY_ICONS) {
     return AVAILABILITY_ICONS[status as AvailabilityStatus];
@@ -92,12 +68,7 @@ export function getStatusIcon(status: string): string {
   return 'fa-question-circle';
 }
 
-/**
- * Truncate long text with ellipsis
- * @param text - Text to truncate or null
- * @param maxLength - Maximum length before truncation (default: 50)
- * @returns Truncated text or '-' if null/empty
- */
+/** Truncate long text with ellipsis */
 export function truncateText(
   text: string | null,
   maxLength: number = 50,

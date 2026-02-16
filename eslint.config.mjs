@@ -9,10 +9,8 @@ import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
 import prettier from 'eslint-plugin-prettier';
 import promisePlugin from 'eslint-plugin-promise';
-import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import storybook from 'eslint-plugin-storybook';
-import tsdocPlugin from 'eslint-plugin-tsdoc';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
@@ -126,7 +124,6 @@ export default [
       '@typescript-eslint': tseslint.plugin,
       prettier,
       'import-x': importPlugin,
-      tsdoc: tsdocPlugin,
     },
     settings: {
       'import-x/resolver': {
@@ -152,7 +149,6 @@ export default [
       ...tseslint.plugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
-      'tsdoc/syntax': 'error', // Regel 10: Zero Warnings
 
       // =======================================================================
       // PostgreSQL SQL Injection Prevention
@@ -347,29 +343,10 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
-      security: securityPlugin,
       'no-unsanitized': noUnsanitizedPlugin,
     },
     rules: {
-      // Power of Ten Regel 10: Zero Warnings - Security Rules
-      'security/detect-eval-with-expression': 'error',
-      'security/detect-non-literal-fs-filename': 'error',
-      'security/detect-non-literal-regexp': 'error',
-      'security/detect-unsafe-regex': 'error',
-      'security/detect-buffer-noassert': 'error',
-      'security/detect-child-process': 'error',
-      'security/detect-disable-mustache-escape': 'error',
-      'security/detect-no-csrf-before-method-override': 'error',
-      'security/detect-possible-timing-attacks': 'error',
-      'security/detect-pseudoRandomBytes': 'error',
-      // detect-object-injection DEAKTIVIERT für Frontend
-      // Grund: Extrem hohe False-Positive-Rate, keine Konfigurationsoptionen
-      // TypeScript types schützen bereits bei Record<K,V>[key] Zugriffen
-      // Siehe: https://github.com/nodesecurity/eslint-plugin-security/issues/21
-      // GitLab hat diese Regel ebenfalls deaktiviert: https://gitlab.com/gitlab-org/gitlab/-/issues/351399
-      'security/detect-object-injection': 'off',
-
-      'no-unsanitized/method': 'error', // Regel 10: Zero Warnings
+      'no-unsanitized/method': 'error',
       'no-unsanitized/property': 'error',
 
       'no-restricted-syntax': [
@@ -447,17 +424,6 @@ export default [
       'unicorn/no-new-buffer': 'error', // Security: deprecated API
       'unicorn/prefer-number-properties': 'error', // Regel 10: Zero Warnings - Type safety: Number.isNaN vs isNaN
     },
-  }, // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
-  {
-    files: [
-      '**/controllers/**/*.ts',
-      '**/services/**/*.ts',
-      '**/utils/db.ts',
-      '**/middleware/auth*.ts',
-      '**/routes/v2/**/*.ts',
-      '**/config/*.ts',
-    ],
-    // JSDoc entfernt - wir nutzen nur TSDoc
   }, // No-Secrets Plugin
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
@@ -540,8 +506,6 @@ export default [
       'max-lines-per-function': 'off',
       'no-console': 'off',
       'sonarjs/no-duplicate-string': 'off',
-      'security/detect-object-injection': 'off',
-      'tsdoc/syntax': 'off',
     },
   },
 

@@ -36,9 +36,7 @@ export class RotationGeneratorService {
   // SHIFT TYPE DETERMINATION
   // ============================================================
 
-  /**
-   * Determine alternating shift type for F/S with night shift ignored
-   */
+  /** F/S alternate each cycle week; N stays static */
   private determineAlternatingShiftType(
     shiftGroup: string,
     cycleWeek: number,
@@ -53,9 +51,7 @@ export class RotationGeneratorService {
     return shiftGroup === 'N' ? 'N' : 'F';
   }
 
-  /**
-   * Determine shift type for a given date and pattern
-   */
+  /** Determine shift type based on pattern type, config, and week offset */
   private determineShiftType(
     shiftGroup: string,
     patternType: string,
@@ -96,9 +92,7 @@ export class RotationGeneratorService {
   // PATTERN-BASED GENERATION
   // ============================================================
 
-  /**
-   * Generate shifts for a single assignment
-   */
+  /** Generate shifts for a single assignment across the date range */
   private generateShiftsForAssignment(
     assignment: DbAssignmentRow,
     pattern: RotationPatternResponse,
@@ -150,9 +144,7 @@ export class RotationGeneratorService {
     return shifts;
   }
 
-  /**
-   * Calculate week number for a date
-   */
+  /** Calculate ISO-ish week number for a date */
   private getWeekNumber(date: Date): number {
     const yearStart = new Date(date.getFullYear(), 0, 1);
     return Math.ceil(
@@ -163,12 +155,7 @@ export class RotationGeneratorService {
     );
   }
 
-  /**
-   * Generate rotation shifts from pattern
-   * @param pattern - Pre-fetched pattern from the facade
-   * @param dto - Generation parameters
-   * @param tenantId - Tenant context
-   */
+  /** @param pattern - Pre-fetched pattern from the facade (avoids duplicate DB lookup) */
   async generateRotationShifts(
     pattern: RotationPatternResponse,
     dto: GenerateRotationShiftsDto,
@@ -210,9 +197,7 @@ export class RotationGeneratorService {
     return { shifts: generatedShifts };
   }
 
-  /**
-   * Save generated shifts to history table
-   */
+  /** Persist generated shifts to shift_rotation_history in a transaction */
   private async saveGeneratedShifts(
     shifts: GeneratedShift[],
     patternId: number,
@@ -275,9 +260,7 @@ export class RotationGeneratorService {
   // CONFIG-BASED GENERATION
   // ============================================================
 
-  /**
-   * Map shift type to group enum
-   */
+  /** Map shift type string to single-char group enum */
   private mapShiftTypeToGroup(
     shiftType: 'early' | 'late' | 'night',
   ): 'F' | 'S' | 'N' {
@@ -293,9 +276,7 @@ export class RotationGeneratorService {
     }
   }
 
-  /**
-   * Get group start index in sequence
-   */
+  /** Find starting position of a shift group in the rotation sequence */
   private getGroupStartIndex(
     group: 'F' | 'S' | 'N',
     sequence: ('early' | 'late' | 'night')[],
@@ -316,10 +297,7 @@ export class RotationGeneratorService {
     return index >= 0 ? index : 0;
   }
 
-  /**
-   * Check if a date should be skipped based on special rules
-   * Example: "Jeder 2. Freitag im Monat frei" -\> skip every 2nd Friday
-   */
+  /** @example "Jeder 2. Freitag im Monat frei" -> skip every 2nd Friday */
   private shouldSkipBySpecialRules(
     date: Date,
     specialRules?: { type: string; weekday: number; n: number }[],
@@ -353,9 +331,7 @@ export class RotationGeneratorService {
     return false;
   }
 
-  /**
-   * Creates a rotation pattern for config-based generation
-   */
+  /** Create a rotation pattern DB record for config-based generation */
   private async createPatternForConfig(
     config: GenerateRotationFromConfigDto['config'],
     teamId: number | null | undefined,
@@ -399,9 +375,7 @@ export class RotationGeneratorService {
     return patternResult[0]?.id ?? 0;
   }
 
-  /**
-   * Inserts a single history entry for a shift day
-   */
+  /** Insert a single shift_rotation_history row with upsert */
   private async insertHistoryEntry(params: {
     tenantId: number;
     patternId: number;
@@ -433,9 +407,7 @@ export class RotationGeneratorService {
     );
   }
 
-  /**
-   * Advances cycle state and returns updated values
-   */
+  /** Advance day-in-cycle counter, rotating shift index at cycle boundary */
   private advanceCycleState(
     dayInCycle: number,
     currentShiftIndex: number,
@@ -448,9 +420,7 @@ export class RotationGeneratorService {
     return { dayInCycle: newDayInCycle, currentShiftIndex };
   }
 
-  /**
-   * Generates shift history entries for a single user assignment
-   */
+  /** Generate and persist shift history entries for a single user */
   private async generateUserShiftHistory(params: {
     assignmentId: number;
     userId: number;
@@ -515,9 +485,7 @@ export class RotationGeneratorService {
     return shiftCount;
   }
 
-  /**
-   * Creates assignment and history entries for a single user
-   */
+  /** Create assignment DB record and generate shift history for one user */
   private async createAssignmentWithHistory(
     assignment: { userId: number; startGroup: 'F' | 'S' | 'N' },
     patternId: number,

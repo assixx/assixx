@@ -153,7 +153,7 @@ export class ShiftPlansService {
 
   /**
    * Resolves a shift plan UUID to its internal ID
-   * @throws NotFoundException if plan not found
+   * @throws NotFoundException
    */
   async resolveShiftPlanIdByUuid(
     uuid: string,

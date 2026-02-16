@@ -218,18 +218,12 @@ export async function saveAdminWithPermissions(
 // ROLE UPGRADE
 // =============================================================================
 
-/**
- * Upgrade admin role to root
- * @param adminId - Admin ID to upgrade
- */
+/** Upgrade admin role to root */
 export async function upgradeToRoot(adminId: number): Promise<void> {
   await apiClient.put(`/root/admins/${adminId}`, { role: 'root' });
 }
 
-/**
- * Downgrade admin role to employee
- * @param adminId - Admin ID to downgrade
- */
+/** Downgrade admin role to employee */
 export async function downgradeToEmployee(adminId: number): Promise<void> {
   await apiClient.put(`/users/${adminId}`, { role: 'employee' });
 }
@@ -238,11 +232,7 @@ export async function downgradeToEmployee(adminId: number): Promise<void> {
 // AVAILABILITY FUNCTIONS
 // =============================================================================
 
-/**
- * Update admin availability (quick update via users table)
- * @param adminId - Admin user ID
- * @param availability - Availability data payload
- */
+/** Update admin availability (quick update via users table) */
 export async function updateAdminAvailability(
   adminId: number,
   availability: {

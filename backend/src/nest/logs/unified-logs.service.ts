@@ -87,9 +87,6 @@ export class UnifiedLogsService {
    * - Uses is_local=false for connection-scope (not just transaction)
    *
    * Memory efficient: Only CURSOR_BATCH_SIZE rows in RAM at a time.
-   *
-   * @param filter - Query filters including tenantId (REQUIRED)
-   * @returns AsyncGenerator that yields UnifiedLogEntry objects one at a time
    */
   async *streamLogs(filter: LogFilterParams): AsyncGenerator<UnifiedLogEntry> {
     // CRITICAL: Validate tenantId - NEVER allow 0
@@ -333,6 +330,7 @@ export class UnifiedLogsService {
     }
 
     if (filter.entityType !== undefined) {
+      // eslint-disable-next-line no-useless-assignment -- paramIndex++ kept for consistency so adding a new filter won't reuse the same index
       conditions.push(`resource_type = $${paramIndex++}`);
       params.push(filter.entityType);
     }
@@ -379,6 +377,7 @@ export class UnifiedLogsService {
     }
 
     if (filter.entityType !== undefined) {
+      // eslint-disable-next-line no-useless-assignment -- paramIndex++ kept for consistency so adding a new filter won't reuse the same index
       conditions.push(`r.entity_type = $${paramIndex++}`);
       params.push(filter.entityType);
     }
@@ -389,9 +388,6 @@ export class UnifiedLogsService {
     };
   }
 
-  /**
-   * Map audit_trail row to UnifiedLogEntry.
-   */
   private mapAuditTrailRow(row: AuditTrailRow): UnifiedLogEntry {
     return {
       id: row.id,
@@ -436,9 +432,6 @@ export class UnifiedLogsService {
     };
   }
 
-  /**
-   * Safely parse JSON string, returning undefined on error.
-   */
   private safeJsonParse(value: string | null | undefined): Record<string, unknown> | undefined {
     if (value === null || value === undefined) {
       return undefined;

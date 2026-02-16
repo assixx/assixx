@@ -14,43 +14,25 @@ const SUBDOMAIN_PATTERN = /^[a-z0-9-]+$/;
  */
 const PHONE_PATTERN = /^\d{7,15}$/;
 
-/**
- * Validates subdomain format
- * @param subdomain - The subdomain to validate
- * @returns true if valid or empty, false otherwise
- */
+/** Validates subdomain format */
 export function isSubdomainValid(subdomain: string): boolean {
   if (subdomain === '') return true;
   return SUBDOMAIN_PATTERN.test(subdomain);
 }
 
-/**
- * Validates email format (basic check)
- * @param email - The email to validate
- * @returns true if valid or empty, false otherwise
- */
+/** Validates email format (basic check) */
 export function isEmailValid(email: string): boolean {
   if (email === '') return true;
   return email.includes('@') && email.includes('.');
 }
 
-/**
- * Checks if two email addresses match
- * @param email - Primary email
- * @param emailConfirm - Confirmation email
- * @returns true if they match or confirm is empty
- */
+/** Checks if two email addresses match */
 export function emailsMatch(email: string, emailConfirm: string): boolean {
   if (emailConfirm === '') return true;
   return email === emailConfirm;
 }
 
-/**
- * Checks if two passwords match
- * @param password - Primary password
- * @param passwordConfirm - Confirmation password
- * @returns true if they match or confirm is empty
- */
+/** Checks if two passwords match */
 export function passwordsMatch(
   password: string,
   passwordConfirm: string,
@@ -59,31 +41,21 @@ export function passwordsMatch(
   return password === passwordConfirm;
 }
 
-/**
- * Validates phone number format (7-15 digits)
- * @param phone - The phone number to validate (whitespace will be removed)
- * @returns true if valid or empty, false otherwise
- */
+/** Validates phone number format (7-15 digits, whitespace removed before check) */
 export function isPhoneValid(phone: string): boolean {
   if (phone === '') return true;
   const digitsOnly = phone.replace(/\s/g, '');
   return PHONE_PATTERN.test(digitsOnly);
 }
 
-/**
- * Validates password meets minimum requirements
- * @param password - The password to validate
- * @returns true if password meets minimum length
- */
+/** Validates password meets minimum requirements */
 export function isPasswordValid(password: string): boolean {
   return password.length >= PASSWORD_REQUIREMENTS.minLength;
 }
 
 /**
- * Calculates a simple password strength score based on length
+ * Calculates a simple password strength score based on length.
  * Note: This is a simplified version. For production, use zxcvbn.
- * @param password - The password to score
- * @returns score from 0-4
  */
 export function getPasswordStrengthScore(password: string): 0 | 1 | 2 | 3 | 4 {
   if (password.length === 0) return 0;
@@ -93,11 +65,7 @@ export function getPasswordStrengthScore(password: string): 0 | 1 | 2 | 3 | 4 {
   return 4;
 }
 
-/**
- * Gets password strength label based on score
- * @param score - Password strength score (0-4)
- * @returns Human-readable strength label
- */
+/** Gets password strength label based on score */
 export function getPasswordStrengthLabel(score: 0 | 1 | 2 | 3 | 4): string {
   switch (score) {
     case 0:
@@ -183,11 +151,7 @@ function isSecuritySectionValid(
   );
 }
 
-/**
- * Validates the entire signup form
- * @param data - Form data to validate
- * @returns Validation result with errors
- */
+/** Validates the entire signup form */
 export function validateForm(data: FormData): FormValidation {
   const subdomainValid = isSubdomainValid(data.subdomain);
   const emailValid = isEmailValid(data.email);

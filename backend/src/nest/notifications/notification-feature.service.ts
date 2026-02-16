@@ -22,15 +22,6 @@ export class NotificationFeatureService {
   /**
    * Create notification for a feature event (survey, document, kvp).
    * Uses ON CONFLICT DO NOTHING to prevent duplicates.
-   *
-   * @param type - 'survey' | 'document' | 'kvp'
-   * @param featureId - ID of the created feature
-   * @param title - Notification title
-   * @param message - Notification message
-   * @param recipientType - 'user' | 'department' | 'team' | 'all'
-   * @param recipientId - ID of recipient (null for 'all')
-   * @param tenantId - Tenant ID
-   * @param createdBy - User ID who created the feature
    */
   async createFeatureNotification(
     type: 'survey' | 'document' | 'kvp' | 'vacation',
@@ -77,8 +68,6 @@ export class NotificationFeatureService {
   /**
    * Mark all notifications of a feature type as read for a user.
    * Called when user visits the feature page (e.g., /surveys).
-   *
-   * @returns Number of notifications marked as read
    */
   async markFeatureTypeAsRead(
     type: 'survey' | 'document' | 'kvp' | 'vacation',

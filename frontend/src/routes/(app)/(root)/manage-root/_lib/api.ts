@@ -84,11 +84,7 @@ export async function saveRootUser(
 // AVAILABILITY FUNCTIONS
 // =============================================================================
 
-/**
- * Update root user availability (quick update via users table)
- * @param userId - Root user ID
- * @param availability - Availability data payload
- */
+/** Update root user availability (quick update via users table) */
 export async function updateRootAvailability(
   userId: number,
   availability: {

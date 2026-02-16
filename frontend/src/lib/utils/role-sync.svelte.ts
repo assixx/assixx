@@ -49,9 +49,7 @@ const DASHBOARD_URLS: Record<string, string> = {
 // SSR SAFETY
 // =============================================================================
 
-/**
- * Check if we're running in browser (not SSR)
- */
+/** Check if we're running in browser (not SSR) */
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
@@ -103,10 +101,8 @@ export class RoleSyncManager {
   }
 
   /**
-   * Initialize the sync manager with a callback
-   * Call this in onMount() of your layout component
-   *
-   * @param onRoleSwitch - Callback when role changes in another tab
+   * Initialize the sync manager with a callback.
+   * Call this in onMount() of your layout component.
    */
   init(onRoleSwitch: OnRoleSwitchCallback): void {
     if (!isBrowser()) return;
@@ -228,11 +224,8 @@ export class RoleSyncManager {
   }
 
   /**
-   * Broadcast a role switch to other tabs
-   * Call this AFTER a successful role switch API call
-   *
-   * @param newRole - The new active role
-   * @param token - Optional new access token
+   * Broadcast a role switch to other tabs.
+   * Call this AFTER a successful role switch API call.
    */
   broadcast(newRole: 'root' | 'admin' | 'employee', token?: string): void {
     if (!isBrowser()) return;

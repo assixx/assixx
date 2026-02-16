@@ -91,10 +91,7 @@ const ALLOWED_IMAGE_MIMES = [
 /** Profile pictures upload directory */
 const PROFILE_PICTURES_DIR = 'uploads/profile_pictures';
 
-/**
- * Multer options for profile picture uploads (memory storage)
- * Files are saved manually in the controller for fastify-multer compatibility
- */
+/** Multer options for profile picture uploads (memory storage, manual file write for fastify-multer) */
 const profilePictureOptions = {
   storage: memoryStorage(),
   limits: {
@@ -118,9 +115,7 @@ const profilePictureOptions = {
   },
 };
 
-/**
- * Response type for message-only responses
- */
+/** Response type for message-only responses */
 interface MessageResponse {
   message: string;
 }
@@ -133,10 +128,7 @@ export class UsersController {
     private readonly availabilityService: UserAvailabilityService,
   ) {}
 
-  /**
-   * GET /users
-   * List all users with pagination and filters (admin only)
-   */
+  /** GET /users - List all users with pagination and filters (admin only) */
   @Get()
   @Roles('admin', 'root')
   async listUsers(
@@ -146,10 +138,7 @@ export class UsersController {
     return await this.usersService.listUsers(tenantId, query);
   }
 
-  /**
-   * GET /users/me
-   * Get current authenticated user
-   */
+  /** GET /users/me - Get current authenticated user */
   @Get('me')
   async getCurrentUser(
     @CurrentUser() user: NestAuthUser,
@@ -157,10 +146,7 @@ export class UsersController {
     return await this.usersService.getUserById(user.id, user.tenantId);
   }
 
-  /**
-   * GET /users/uuid/:uuid
-   * Get user by UUID (admin only, preferred)
-   */
+  /** GET /users/uuid/:uuid - Get user by UUID (admin only, preferred) */
   @Get('uuid/:uuid')
   @Roles('admin', 'root')
   async getUserByUuid(
@@ -184,10 +170,7 @@ export class UsersController {
     return await this.usersService.getUserById(id, tenantId);
   }
 
-  /**
-   * POST /users
-   * Create new user (admin only)
-   */
+  /** POST /users - Create new user (admin only) */
   @Post()
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
@@ -199,10 +182,7 @@ export class UsersController {
     return await this.usersService.createUser(dto, user.id, tenantId);
   }
 
-  /**
-   * PUT /users/uuid/:uuid
-   * Update user by UUID (admin only, preferred)
-   */
+  /** PUT /users/uuid/:uuid - Update user by UUID (admin only, preferred) */
   @Put('uuid/:uuid')
   @Roles('admin', 'root')
   async updateUserByUuid(
@@ -242,10 +222,7 @@ export class UsersController {
     );
   }
 
-  /**
-   * PUT /users/me/profile
-   * Update current user's profile (limited fields)
-   */
+  /** PUT /users/me/profile - Update current user's profile (limited fields) */
   @Put('me/profile')
   async updateProfile(
     @Body() dto: UpdateProfileDto,
@@ -258,10 +235,7 @@ export class UsersController {
     );
   }
 
-  /**
-   * PUT /users/me/password
-   * Change current user's password
-   */
+  /** PUT /users/me/password - Change current user's password */
   @Put('me/password')
   async changePassword(
     @Body() dto: ChangePasswordDto,
@@ -275,10 +249,7 @@ export class UsersController {
     );
   }
 
-  /**
-   * DELETE /users/uuid/:uuid
-   * Delete user by UUID (soft delete, admin only, preferred)
-   */
+  /** DELETE /users/uuid/:uuid - Delete user by UUID (soft delete, admin only, preferred) */
   @Delete('uuid/:uuid')
   @Roles('admin', 'root')
   async deleteUserByUuid(
@@ -304,10 +275,7 @@ export class UsersController {
     return await this.usersService.deleteUser(id, user.id, tenantId);
   }
 
-  /**
-   * POST /users/uuid/:uuid/archive
-   * Archive user by UUID (admin only, preferred)
-   */
+  /** POST /users/uuid/:uuid/archive - Archive user by UUID (admin only, preferred) */
   @Post('uuid/:uuid/archive')
   @Roles('admin', 'root')
   async archiveUserByUuid(
@@ -331,10 +299,7 @@ export class UsersController {
     return await this.usersService.archiveUser(id, tenantId);
   }
 
-  /**
-   * POST /users/uuid/:uuid/unarchive
-   * Unarchive user by UUID (admin only, preferred)
-   */
+  /** POST /users/uuid/:uuid/unarchive - Unarchive user by UUID (admin only, preferred) */
   @Post('uuid/:uuid/unarchive')
   @Roles('admin', 'root')
   async unarchiveUserByUuid(
@@ -358,10 +323,7 @@ export class UsersController {
     return await this.usersService.unarchiveUser(id, tenantId);
   }
 
-  /**
-   * PUT /users/uuid/:uuid/availability
-   * Update user availability by UUID (admin only, preferred)
-   */
+  /** PUT /users/uuid/:uuid/availability - Update user availability by UUID (admin only, preferred) */
   @Put('uuid/:uuid/availability')
   @Roles('admin', 'root')
   async updateAvailabilityByUuid(
@@ -444,10 +406,7 @@ export class UsersController {
     );
   }
 
-  /**
-   * DELETE /users/availability/:id
-   * Delete a specific availability history entry (admin only)
-   */
+  /** DELETE /users/availability/:id - Delete a specific availability history entry (admin only) */
   @Delete('availability/:id')
   @Roles('admin', 'root')
   async deleteAvailabilityEntry(
@@ -466,10 +425,7 @@ export class UsersController {
   // PROFILE PICTURE ENDPOINTS
   // ============================================
 
-  /**
-   * PATCH /users/me
-   * Partial update current user's profile (same as PUT /me/profile)
-   */
+  /** PATCH /users/me - Partial update current user's profile (same as PUT /me/profile) */
   @Patch('me')
   async patchProfile(
     @Body() dto: UpdateProfileDto,
@@ -478,10 +434,7 @@ export class UsersController {
     return await this.updateProfile(dto, user);
   }
 
-  /**
-   * GET /users/me/profile-picture
-   * Get current user's profile picture
-   */
+  /** GET /users/me/profile-picture - Get current user's profile picture */
   @Get('me/profile-picture')
   async getProfilePicture(
     @CurrentUser() user: NestAuthUser,
@@ -499,15 +452,10 @@ export class UsersController {
     await reply
       .header('Content-Type', contentType)
       .header('Cache-Control', 'private, max-age=3600')
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath from DB via getProfilePicturePath()
       .send(fs.createReadStream(filePath));
   }
 
-  /**
-   * POST /users/me/profile-picture
-   * Upload profile picture for current user
-   * Uses memory storage + manual file write for fastify-multer compatibility
-   */
+  /** POST /users/me/profile-picture - Upload profile picture (memory storage + manual file write for fastify-multer) */
   @Post('me/profile-picture')
   @UseInterceptors(FileInterceptor('profilePicture', profilePictureOptions))
   @HttpCode(HttpStatus.OK)
@@ -533,7 +481,6 @@ export class UsersController {
     }
 
     // Write file to disk
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath built from constant dir + UUIDv7 + validated extension
     fs.writeFileSync(filePath, file.buffer);
 
     return await this.userProfileService.updateProfilePicture(
@@ -543,10 +490,7 @@ export class UsersController {
     );
   }
 
-  /**
-   * DELETE /users/me/profile-picture
-   * Delete profile picture for current user
-   */
+  /** DELETE /users/me/profile-picture - Delete profile picture for current user */
   @Delete('me/profile-picture')
   async deleteProfilePicture(
     @CurrentUser() user: NestAuthUser,
@@ -557,10 +501,7 @@ export class UsersController {
     );
   }
 
-  /**
-   * Get MIME type for image extension
-   * Uses switch to avoid object injection vulnerability
-   */
+  /** Get MIME type for image extension (switch to avoid object injection) */
   private getImageMimeType(ext: string): string {
     switch (ext) {
       case '.jpg':

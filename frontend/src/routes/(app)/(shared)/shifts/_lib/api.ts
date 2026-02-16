@@ -250,9 +250,8 @@ function toAvailabilityStatus(
 
 /**
  * Fetch team members with availability data
- * @param teamId - Team ID
- * @param startDate - Optional start date for availability range (YYYY-MM-DD)
- * @param endDate - Optional end date for availability range (YYYY-MM-DD)
+ * @param startDate - Optional date range start for availability (YYYY-MM-DD)
+ * @param endDate - Optional date range end for availability (YYYY-MM-DD)
  */
 export async function fetchTeamMembers(
   teamId: number,
@@ -659,8 +658,6 @@ interface DeleteRotationHistoryResponse {
 
 /**
  * Delete rotation data for a team
- * @param teamId - Required: the team to delete from
- * @param patternId - Optional: if provided, only delete this specific pattern
  *
  * Without patternId: deletes ALL patterns, assignments, history, shifts, and plans
  * With patternId: deletes ONLY that pattern and its related data (not plans)

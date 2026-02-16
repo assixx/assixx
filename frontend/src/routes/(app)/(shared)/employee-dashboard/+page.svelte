@@ -45,11 +45,7 @@
 
   const apiClient = getApiClient();
 
-  /**
-   * Open blackboard entry and auto-confirm if not yet read
-   * @param uuid - Entry UUID
-   * @param isConfirmed - Whether entry is already confirmed
-   */
+  /** Open blackboard entry and auto-confirm if not yet read */
   function openBlackboardEntry(uuid: string, isConfirmed: boolean): void {
     // Auto-confirm if not yet read (non-blocking)
     if (!isConfirmed) {

@@ -25,13 +25,7 @@ export class FeatureVisitsService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  /**
-   * Mark a feature as visited (upsert: last_visited_at = NOW())
-   *
-   * @param tenantId - Tenant ID
-   * @param userId - User ID
-   * @param feature - Feature name ('calendar', 'kvp', 'surveys')
-   */
+  /** Mark a feature as visited (upsert: last_visited_at = NOW()) */
   async markVisited(
     tenantId: number,
     userId: number,
@@ -48,14 +42,7 @@ export class FeatureVisitsService {
     );
   }
 
-  /**
-   * Get the last visit timestamp for a feature
-   *
-   * @param tenantId - Tenant ID
-   * @param userId - User ID
-   * @param feature - Feature name
-   * @returns Last visited timestamp or null if never visited
-   */
+  /** Get the last visit timestamp for a feature (null if never visited). */
   async getLastVisited(
     tenantId: number,
     userId: number,
@@ -70,13 +57,7 @@ export class FeatureVisitsService {
     return result?.last_visited_at ?? null;
   }
 
-  /**
-   * Get all feature visits for a user
-   *
-   * @param tenantId - Tenant ID
-   * @param userId - User ID
-   * @returns Map of feature name to last visited timestamp
-   */
+  /** Get all feature visits for a user. */
   async getAllVisits(
     tenantId: number,
     userId: number,

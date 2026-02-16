@@ -247,13 +247,7 @@ export class ApiClient {
   // CORE REQUEST METHOD
   // =============================================================================
 
-  /**
-   * Main request method with AbortController and timeout support
-   *
-   * @param endpoint - API endpoint (e.g., '/users')
-   * @param options - Standard fetch RequestInit options
-   * @param config - ApiConfig with signal, timeout, auth options
-   */
+  /** Main request method with AbortController and timeout support */
   async request<T = unknown>(
     endpoint: string,
     options: RequestInit = {},

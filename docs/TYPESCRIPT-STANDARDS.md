@@ -942,7 +942,6 @@ Our ESLint configuration uses these plugins for maximum code quality:
 | `eslint-plugin-unicorn`        | Modern JavaScript patterns                   |
 | `eslint-plugin-no-secrets`     | Prevents hardcoded secrets/API keys          |
 | `eslint-plugin-no-unsanitized` | XSS prevention (innerHTML, etc.)             |
-| `eslint-plugin-tsdoc`          | TSDoc comment validation                     |
 | `eslint-plugin-storybook`      | Storybook-specific rules                     |
 
 ---

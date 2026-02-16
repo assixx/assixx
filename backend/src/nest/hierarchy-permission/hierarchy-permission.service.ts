@@ -81,10 +81,7 @@ interface TeamIdRow extends QueryResultRow {
 // SERVICE
 // ============================================================================
 
-/**
- * Hierarchy Permission Service
- * Handles all permission checks with hierarchical inheritance
- */
+/** Handles all permission checks with hierarchical inheritance */
 @Injectable()
 export class HierarchyPermissionService {
   private readonly logger = new Logger(HierarchyPermissionService.name);
@@ -96,14 +93,8 @@ export class HierarchyPermissionService {
   // ==========================================================================
 
   /**
-   * Check if user has access to a resource
-   * This is the MAIN entry point for permission checks
-   *
-   * @param userId - User requesting access
-   * @param tenantId - Tenant context
-   * @param resourceType - Type of resource (area, department, team)
-   * @param resourceId - ID of the resource
-   * @param permission - Required permission level (default: read)
+   * Check if user has access to a resource.
+   * This is the MAIN entry point for permission checks.
    */
   async hasAccess(
     userId: number,
@@ -165,9 +156,7 @@ export class HierarchyPermissionService {
   // AREA ACCESS
   // ==========================================================================
 
-  /**
-   * Check direct Area permission
-   */
+  /** Check direct Area permission */
   private async checkAreaAccess(
     userId: number,
     areaId: number,
@@ -192,10 +181,7 @@ export class HierarchyPermissionService {
   // DEPARTMENT ACCESS (with Area inheritance)
   // ==========================================================================
 
-  /**
-   * Check Department access with Area inheritance
-   * Flow: Direct permission → Area inheritance (if area_id not NULL)
-   */
+  /** Check Department access with Area inheritance (Direct permission then Area inheritance) */
   private async checkDepartmentAccess(
     userId: number,
     departmentId: number,
@@ -240,11 +226,7 @@ export class HierarchyPermissionService {
   // TEAM ACCESS (membership only)
   // ==========================================================================
 
-  /**
-   * Check Team access
-   * Teams use MEMBERSHIP only - no permission levels
-   * Inherits from Department if user has department access
-   */
+  /** Check Team access (membership only, inherits from Department) */
   private async checkTeamAccess(
     userId: number,
     teamId: number,
@@ -274,9 +256,7 @@ export class HierarchyPermissionService {
   // BATCH ACCESS CHECKS (for filtering lists)
   // ==========================================================================
 
-  /**
-   * Get all Area IDs user has access to
-   */
+  /** Get all Area IDs user has access to */
   async getAccessibleAreaIds(
     userId: number,
     tenantId: number,
@@ -303,10 +283,7 @@ export class HierarchyPermissionService {
     return assignedAreas.map((a: AreaIdRow) => a.area_id);
   }
 
-  /**
-   * Get all Department IDs user has access to
-   * Includes direct permissions + inherited from Areas
-   */
+  /** Get all Department IDs user has access to (direct + inherited from Areas) */
   async getAccessibleDepartmentIds(
     userId: number,
     tenantId: number,
@@ -353,10 +330,7 @@ export class HierarchyPermissionService {
     return [...deptSet];
   }
 
-  /**
-   * Get all Team IDs user has access to
-   * Includes membership + inherited from Departments
-   */
+  /** Get all Team IDs user has access to (membership + inherited from Departments) */
   async getAccessibleTeamIds(
     userId: number,
     tenantId: number,
@@ -409,9 +383,7 @@ export class HierarchyPermissionService {
   // HELPER METHODS
   // ==========================================================================
 
-  /**
-   * Get user info for permission checks
-   */
+  /** Get user info for permission checks */
   private async getUserInfo(
     userId: number,
     tenantId: number,
@@ -423,9 +395,7 @@ export class HierarchyPermissionService {
     return rows[0] ?? null;
   }
 
-  /**
-   * Get department info for inheritance
-   */
+  /** Get department info for inheritance */
   private async getDepartmentInfo(
     departmentId: number,
     tenantId: number,
@@ -437,9 +407,7 @@ export class HierarchyPermissionService {
     return rows[0] ?? null;
   }
 
-  /**
-   * Get team info for inheritance
-   */
+  /** Get team info for inheritance */
   private async getTeamInfo(
     teamId: number,
     tenantId: number,
@@ -451,9 +419,7 @@ export class HierarchyPermissionService {
     return rows[0] ?? null;
   }
 
-  /**
-   * Check if user is team member
-   */
+  /** Check if user is team member */
   private async isTeamMember(
     userId: number,
     teamId: number,
@@ -466,9 +432,7 @@ export class HierarchyPermissionService {
     return rows.length > 0;
   }
 
-  /**
-   * Check if permission row has required level
-   */
+  /** Check if permission row has required level */
   private hasPermissionLevel(
     perm: PermissionRow,
     level: PermissionLevel,

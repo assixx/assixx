@@ -341,7 +341,6 @@ export class ChatController {
       `${disposition}; filename="${path.basename(params.filename)}"`,
     );
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated via validatePath above
     const fileBuffer = await fs.readFile(filePath);
     return new StreamableFile(fileBuffer);
   }

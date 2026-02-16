@@ -2,7 +2,6 @@
  * KVP Helpers
  *
  * Pure functions for the KVP module: transforms, query builders, visibility checks.
- * No dependency injection, no database calls, no side effects.
  */
 import { dbToApi } from '../../utils/fieldMapper.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
@@ -172,16 +171,14 @@ export function buildOrgParams(
     areaIds: `$${idx++}`,
     deptsAreaIds: `$${idx++}`,
     areaLeadOf: `$${idx++}`,
+    // eslint-disable-next-line no-useless-assignment -- idx++ kept for consistency so adding a new placeholder won't reuse the same index
     userId: `$${idx++}`,
   };
 
   return { params, placeholders };
 }
 
-/**
- * Check if user has org-level access to a suggestion
- * Uses extended org info with proper inheritance
- */
+/** Check if user has org-level access to a suggestion (with proper inheritance) */
 export function hasExtendedOrgAccess(
   orgLevel: string,
   orgId: number,
@@ -355,6 +352,7 @@ export function buildFilterConditions(
   }
   if (filters.search !== undefined && filters.search !== '') {
     clause += ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
+    // eslint-disable-next-line no-useless-assignment -- idx++ kept for consistency so adding a new filter won't reuse the same index
     idx++;
     params.push(`%${filters.search}%`);
   }
@@ -362,10 +360,7 @@ export function buildFilterConditions(
   return { clause, params };
 }
 
-/**
- * Build count query by stripping confirmation JOIN and adjusting placeholders.
- * Pure transformation of a query string — no DB calls.
- */
+/** Build count query by stripping confirmation JOIN and adjusting placeholders */
 export function buildCountQuery(
   query: string,
   params: unknown[],
@@ -441,9 +436,7 @@ export function buildSuggestionUpdateClause(
   return { updates, params };
 }
 
-/**
- * Map organization level to notification recipient
- */
+/** Map organization level to notification recipient */
 export function mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
   type: 'user' | 'department' | 'team' | 'all';
   id: number | null;

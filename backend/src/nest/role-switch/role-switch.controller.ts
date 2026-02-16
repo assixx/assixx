@@ -83,8 +83,6 @@ export class RoleSwitchController {
    *
    * Get current role switch status.
    * All authenticated users can check their status.
-   *
-   * @returns Current role switch status from JWT payload
    */
   @Get('status')
   @HttpCode(HttpStatus.OK)

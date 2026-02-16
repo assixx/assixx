@@ -24,37 +24,24 @@ import type {
   ToastType,
 } from './types';
 
-/**
- * Get status text in German
- * @param status - Deletion status
- */
+/** Get status text in German */
 export function getStatusText(status: DeletionStatus): string {
   return STATUS_TEXT_MAP[status];
 }
 
-/**
- * Get badge class for status
- * @param status - Deletion status
- */
+/** Get badge class for status */
 export function getBadgeClass(status: DeletionStatus): string {
   return STATUS_BADGE_CLASS[status];
 }
 
-/**
- * Calculate remaining cooling-off hours
- * @param item - Deletion status item
- */
+/** Calculate remaining cooling-off hours */
 export function calculateCoolingOff(item: DeletionStatusItem): number {
   const requestedAt = new Date(item.requestedAt);
   const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
   return Math.max(0, item.coolingOffHours - hoursSince);
 }
 
-/**
- * Check if current user is the creator of the deletion request
- * @param item - Deletion status item
- * @param currentUserId - Current user's ID
- */
+/** Check if current user is the creator of the deletion request */
 export function isCurrentUserCreator(
   item: DeletionStatusItem,
   currentUserId: number | null,
@@ -62,18 +49,12 @@ export function isCurrentUserCreator(
   return currentUserId !== null && currentUserId === item.requestedBy;
 }
 
-/**
- * Get requester name
- * @param item - Deletion status item
- */
+/** Get requester name */
 export function getRequesterName(item: DeletionStatusItem): string {
   return item.requestedByName ?? `ID: ${item.requestedBy}`;
 }
 
-/**
- * Format date for German locale
- * @param date - Date object or null
- */
+/** Format date for German locale */
 export function formatDate(date: Date | null): string {
   if (date === null) {
     return MESSAGES.pendingApproval;
@@ -81,10 +62,7 @@ export function formatDate(date: Date | null): string {
   return date.toLocaleString('de-DE');
 }
 
-/**
- * Format date string for German locale (date only)
- * @param dateString - ISO date string or undefined
- */
+/** Format date string for German locale (date only) */
 export function formatDateOnly(dateString: string | undefined): string {
   if (dateString === undefined || dateString === '') {
     return MESSAGES.gracePeriodDefault;
@@ -96,10 +74,7 @@ export function formatDateOnly(dateString: string | undefined): string {
   });
 }
 
-/**
- * Build timeline for a deletion status item
- * @param item - Deletion status item
- */
+/** Build timeline for a deletion status item */
 export function buildTimeline(item: DeletionStatusItem): TimelineItem[] {
   const timeline: TimelineItem[] = [];
 
@@ -144,28 +119,19 @@ export function buildTimeline(item: DeletionStatusItem): TimelineItem[] {
   return timeline;
 }
 
-/**
- * Check if cooling-off warning should be shown
- * @param item - Deletion status item
- */
+/** Check if cooling-off warning should be shown */
 export function shouldShowCoolingOff(item: DeletionStatusItem): boolean {
   const isPending =
     item.status === 'pending' || item.status === 'pending_approval';
   return isPending && calculateCoolingOff(item) > 0;
 }
 
-/**
- * Check if grace period info should be shown
- * @param item - Deletion status item
- */
+/** Check if grace period info should be shown */
 export function shouldShowGracePeriod(item: DeletionStatusItem): boolean {
   return item.status === 'approved' || item.status === 'queued';
 }
 
-/**
- * Check if emergency stop button should be shown
- * @param item - Deletion status item
- */
+/** Check if emergency stop button should be shown */
 export function shouldShowEmergencyStop(item: DeletionStatusItem): boolean {
   return (
     item.status === 'queued' ||
@@ -182,11 +148,7 @@ const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
   info: showInfoAlert,
 };
 
-/**
- * Show toast notification via toast store
- * @param message - Toast message
- * @param type - Toast type
- */
+/** Show toast notification via toast store */
 export function showToast(message: string, type: ToastType = 'info'): void {
   TOAST_FN_MAP[type](message);
 }

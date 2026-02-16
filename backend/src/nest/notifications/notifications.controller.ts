@@ -345,9 +345,6 @@ function registerSSEHandlers(
   return handlers;
 }
 
-/**
- * Cleanup SSE handlers
- */
 function cleanupSSEHandlers(handlers: EventHandler[]): void {
   handlers.forEach(({ event, handler }: EventHandler): void => {
     eventBus.off(event, handler);

@@ -22,10 +22,7 @@ const apiClient = getApiClient();
 // CONVERSATIONS
 // =============================================================================
 
-/**
- * Load all conversations for the current user
- * @returns Promise with normalized conversations
- */
+/** Load all conversations for the current user */
 export async function loadConversations(): Promise<Conversation[]> {
   const response = await apiClient.get(API_ENDPOINTS.conversations);
 
@@ -53,10 +50,8 @@ export async function loadConversations(): Promise<Conversation[]> {
 }
 
 /**
- * Fetch a single conversation by ID (with participants and metadata)
+ * Fetch a single conversation by ID (with participants and metadata).
  * Used when a WebSocket message arrives for a conversation not yet in the sidebar.
- * @param conversationId - The conversation ID to fetch
- * @returns The conversation object, or null if not found / not accessible
  */
 export async function fetchConversationById(
   conversationId: number,
@@ -84,12 +79,7 @@ export async function fetchConversationById(
   }
 }
 
-/**
- * Create a new conversation with specified participants
- * @param participantIds - Array of user IDs to include
- * @param isGroup - Whether this is a group conversation
- * @returns Created conversation data
- */
+/** Create a new conversation with specified participants */
 export async function createConversation(
   participantIds: number[],
   isGroup: boolean = false,
@@ -110,10 +100,7 @@ export async function createConversation(
   throw new Error('Invalid response format from create conversation API');
 }
 
-/**
- * Delete a conversation
- * @param conversationId - ID of conversation to delete
- */
+/** Delete a conversation */
 export async function deleteConversation(
   conversationId: number,
 ): Promise<void> {
@@ -124,11 +111,7 @@ export async function deleteConversation(
 // MESSAGES
 // =============================================================================
 
-/**
- * Load messages for a specific conversation
- * @param conversationId - ID of the conversation
- * @returns Promise with messages array
- */
+/** Load messages for a specific conversation */
 export async function loadMessages(conversationId: number): Promise<Message[]> {
   const response = await apiClient.get(API_ENDPOINTS.messages(conversationId));
 
@@ -146,10 +129,7 @@ export async function loadMessages(conversationId: number): Promise<Message[]> {
   return [];
 }
 
-/**
- * Mark a conversation as read
- * @param conversationId - ID of the conversation
- */
+/** Mark a conversation as read */
 export async function markConversationAsRead(
   conversationId: number,
 ): Promise<void> {
@@ -160,11 +140,7 @@ export async function markConversationAsRead(
 // SCHEDULED MESSAGES
 // =============================================================================
 
-/**
- * Load scheduled messages for a conversation
- * @param conversationId - ID of the conversation
- * @returns Promise with scheduled messages array
- */
+/** Load scheduled messages for a conversation */
 export async function loadScheduledMessages(
   conversationId: number,
 ): Promise<ScheduledMessage[]> {
@@ -186,9 +162,7 @@ export async function loadScheduledMessages(
   return [];
 }
 
-/**
- * Attachment info for scheduled message
- */
+/** Attachment info for scheduled message */
 interface ScheduledAttachmentInfo {
   path: string;
   name: string;
@@ -196,9 +170,7 @@ interface ScheduledAttachmentInfo {
   size: number;
 }
 
-/**
- * E2E encryption fields for scheduled message
- */
+/** E2E encryption fields for scheduled message */
 interface ScheduledE2eInfo {
   encryptedContent: string;
   e2eNonce: string;
@@ -207,12 +179,9 @@ interface ScheduledE2eInfo {
 }
 
 /**
- * Create a scheduled message
- * @param conversationId - ID of the conversation
- * @param content - Message content (null for E2E messages)
- * @param scheduledFor - ISO date string for when to send
- * @param attachment - Optional attachment info (first upload only for now)
- * @param e2e - Optional E2E encryption fields
+ * Create a scheduled message.
+ * @param content - null for E2E messages (use e2e param instead)
+ * @param attachment - Only first upload supported for now
  */
 export async function createScheduledMessage(
   conversationId: number,
@@ -236,10 +205,7 @@ export async function createScheduledMessage(
   });
 }
 
-/**
- * Cancel/delete a scheduled message
- * @param scheduledId - ID of the scheduled message
- */
+/** Cancel/delete a scheduled message */
 export async function cancelScheduledMessage(
   scheduledId: string,
 ): Promise<void> {
@@ -250,11 +216,7 @@ export async function cancelScheduledMessage(
 // USERS
 // =============================================================================
 
-/**
- * Search for users (for starting new conversations)
- * @param query - Search query string
- * @returns Promise with filtered users
- */
+/** Search for users (for starting new conversations) */
 export async function searchUsers(query: string): Promise<ChatUser[]> {
   const response = await apiClient.get(API_ENDPOINTS.users);
 
@@ -293,12 +255,7 @@ export async function searchUsers(query: string): Promise<ChatUser[]> {
 // ATTACHMENTS
 // =============================================================================
 
-/**
- * Upload a file attachment to a conversation
- * @param conversationId - ID of the conversation
- * @param file - File to upload
- * @returns Promise with upload result
- */
+/** Upload a file attachment to a conversation */
 export async function uploadAttachment(
   conversationId: number,
   file: File,
@@ -316,12 +273,7 @@ export async function uploadAttachment(
 // HELPER: Find existing conversation with user
 // =============================================================================
 
-/**
- * Find existing conversation with a specific user
- * @param conversations - Current conversations list
- * @param userId - User ID to find
- * @returns Existing conversation or null
- */
+/** Find existing conversation with a specific user */
 export function findExistingConversation(
   conversations: Conversation[],
   userId: number,
@@ -333,11 +285,7 @@ export function findExistingConversation(
   );
 }
 
-/**
- * Build a new conversation object from API response
- * @param apiConversation - Response from create conversation API
- * @returns Fully typed Conversation object
- */
+/** Build a new conversation object from API response */
 export function buildNewConversation(apiConversation: {
   id: number;
   uuid: string;

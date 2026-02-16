@@ -4,12 +4,7 @@
 
 import type { Team, StatusFilter } from './types';
 
-/**
- * Filter teams by status
- * @param teams - All teams array
- * @param status - Status filter value
- * @returns Filtered teams array
- */
+/** Filter teams by status */
 export function filterByStatus(teams: Team[], status: StatusFilter): Team[] {
   switch (status) {
     case 'active':
@@ -25,13 +20,7 @@ export function filterByStatus(teams: Team[], status: StatusFilter): Team[] {
   }
 }
 
-/**
- * Filter teams by search query
- * Searches in: name, departmentName, leaderName
- * @param teams - Teams to filter
- * @param query - Search query string
- * @returns Filtered teams array
- */
+/** Filter teams by search query (searches in: name, departmentName, leaderName) */
 export function filterBySearch(teams: Team[], query: string): Team[] {
   const term = query.toLowerCase().trim();
   if (!term) return teams;
@@ -47,13 +36,7 @@ export function filterBySearch(teams: Team[], query: string): Team[] {
   });
 }
 
-/**
- * Apply all filters to teams
- * @param teams - All teams array
- * @param status - Status filter
- * @param searchQuery - Search query string
- * @returns Filtered teams array
- */
+/** Apply all filters to teams */
 export function applyAllFilters(
   teams: Team[],
   status: StatusFilter,

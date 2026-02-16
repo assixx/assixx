@@ -23,11 +23,7 @@ export class KvpAttachmentsService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  /**
-   * Get attachments for a suggestion
-   * @param numericId - Resolved numeric suggestion ID (facade handles UUID resolution)
-   * @param tenantId - Tenant ID for isolation
-   */
+  /** Get attachments for a suggestion */
   async getAttachments(
     numericId: number,
     tenantId: number,
@@ -60,10 +56,7 @@ export class KvpAttachmentsService {
     }));
   }
 
-  /**
-   * Add attachment record to database
-   * @param numericId - Resolved numeric suggestion ID (facade handles UUID resolution)
-   */
+  /** Add attachment record to database */
   async addAttachment(
     numericId: number,
     attachmentData: {

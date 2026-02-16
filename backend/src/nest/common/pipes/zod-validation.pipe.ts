@@ -71,9 +71,6 @@ export class ZodValidationPipe implements PipeTransform {
 /**
  * Create a validation pipe for a specific Zod schema
  *
- * @param schema - Zod schema to validate against
- * @returns Validation pipe instance
- *
  * @example
  * ```typescript
  * \@Post()

@@ -110,11 +110,9 @@ export function clearUserCache(): void {
 // =============================================================================
 
 /**
- * Fetch current user data with caching
+ * Fetch current user data with caching.
  * OPTIMIZATION: Uses cache and promise deduplication to prevent duplicate API calls
- * (1:1 like Legacy auth/index.ts pattern)
- *
- * @returns Current user and tenant data
+ * (1:1 like Legacy auth/index.ts pattern).
  */
 export async function fetchCurrentUser(): Promise<{
   user: CurrentUser | null;
