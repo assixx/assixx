@@ -95,3 +95,53 @@
     </label>
   </div>
 </div>
+
+<style>
+  .shift-controls {
+    display: flex;
+    justify-content: center;
+    margin: var(--spacing-4) auto var(--spacing-6);
+  }
+
+  .controls-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-4);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg);
+
+    padding: var(--spacing-4);
+  }
+
+  .divider {
+    margin: 0 var(--spacing-2);
+    background: var(--accent-color);
+    width: 1px;
+    height: 40px;
+  }
+
+  .toggle-hint {
+    display: block;
+    color: var(--color-text-muted, rgb(255 255 255 / 50%));
+    font-weight: 400;
+    font-size: 11px;
+  }
+
+  @media (width < 768px) {
+    .controls-group {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--spacing-2);
+    }
+
+    .divider {
+      margin: var(--spacing-2) 0;
+      width: 100%;
+      height: 1px;
+    }
+  }
+</style>

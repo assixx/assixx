@@ -7,6 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -87,6 +88,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Get user from parent layout FIRST to check role
   const parentData = await parent();
+  requireFeature(parentData.activeFeatures, 'calendar');
   const userRole = parentData.user?.role;
   const canFetchUsers = userRole === 'admin' || userRole === 'root';
 

@@ -12,6 +12,7 @@
     event: CalendarEvent;
     canEdit: boolean;
     canDelete: boolean;
+    isPast: boolean;
     areas?: Area[];
     departments?: Department[];
     teams?: Team[];
@@ -24,6 +25,7 @@
     event,
     canEdit,
     canDelete,
+    isPast,
     areas = [],
     departments = [],
     teams = [],
@@ -43,6 +45,7 @@
 </script>
 
 <div
+  id="calendar-event-detail-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
   onclick={onclose}
@@ -62,7 +65,7 @@
       <button
         type="button"
         class="ds-modal__close"
-        aria-label="Schliessen"
+        aria-label="Schließen"
         onclick={onclose}
       >
         <i class="fas fa-times"></i>
@@ -163,6 +166,15 @@
           </div>
         {/if}
 
+        {#if isPast}
+          <div class="past-event-notice">
+            <i class="fas fa-lock"></i>
+            <span
+              >Vergangene Termine können nicht bearbeitet oder gelöscht werden.</span
+            >
+          </div>
+        {/if}
+
         <div class="modal-actions">
           {#if canEdit}
             <button
@@ -191,7 +203,7 @@
             class="btn btn-cancel"
             onclick={onclose}
           >
-            <i class="fas fa-times"></i> Schliessen
+            <i class="fas fa-times"></i> Schließen
           </button>
         </div>
       </div>
@@ -200,7 +212,49 @@
 </div>
 
 <style>
-  /* Event detail modal */
+  /* ─── Detail Content Typography ──────── */
+
+  #eventDetailContent h3 {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgb(255 255 255 / 10%);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  #eventDetailContent p {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-glass-border);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    background: var(--glass-bg);
+  }
+
+  #eventDetailContent h4 {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  #eventDetailContent h4::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    background: var(--primary-color);
+  }
+
+  /* ─── Details Grid ──────── */
+
   .event-details-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -212,7 +266,42 @@
     background: var(--glass-bg);
   }
 
-  /* Attendee list */
+  .detail-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-glass-border);
+  }
+
+  .detail-item:last-child {
+    border-bottom: none;
+  }
+
+  .detail-item:hover {
+    margin: 0 -10px;
+    padding-right: 10px;
+    padding-left: 10px;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .detail-item i {
+    flex-shrink: 0;
+    width: 20px;
+    font-size: 1rem;
+    color: var(--primary-color);
+    text-align: center;
+  }
+
+  .detail-item span {
+    flex: 1;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+
+  /* ─── Attendee List ──────── */
+
   .attendee-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -230,7 +319,28 @@
     background: rgb(255 255 255 / 3%);
   }
 
-  /* Modal actions */
+  .attendee-item:hover {
+    border-color: rgb(255 255 255 / 12%);
+    background: rgb(255 255 255 / 5%);
+  }
+
+  /* ─── Past Event Notice ──────── */
+
+  .past-event-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-top: 20px;
+    border-radius: var(--radius-lg);
+    background: rgb(255 193 7 / 10%);
+    border: 1px solid rgb(255 193 7 / 25%);
+    color: var(--color-amber-400, #fbbf24);
+    font-size: 0.875rem;
+  }
+
+  /* ─── Modal Actions ──────── */
+
   .modal-actions {
     display: flex;
     gap: 10px;
@@ -238,5 +348,15 @@
     margin-top: 30px;
     padding-top: 20px;
     border-top: 1px solid rgb(255 255 255 / 10%);
+  }
+
+  .modal-actions :global(.btn) {
+    justify-content: center;
+    min-width: 120px;
+  }
+
+  .modal-actions :global(.btn-primary),
+  .modal-actions :global(.btn-danger) {
+    flex: 0 1 auto;
   }
 </style>

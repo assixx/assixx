@@ -141,3 +141,91 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-glass-border);
+    background: var(--glass-bg-hover);
+    padding: 7px 16px;
+  }
+
+  .chat-header-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .chat-header-details h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.3rem;
+  }
+
+  .chat-header-details .status {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .chat-actions {
+    display: flex;
+    gap: var(--spacing-2);
+  }
+
+  /* Search bar */
+  .chat-search-bar {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-secondary);
+    padding: var(--spacing-2) var(--spacing-4);
+  }
+
+  .chat-search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--background-primary);
+    padding: var(--spacing-1) var(--spacing-3);
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .chat-search-icon {
+    color: var(--text-secondary);
+  }
+
+  .chat-search-input {
+    flex: 1;
+    outline: none;
+    border: none;
+    background: transparent;
+    padding: var(--spacing-1) 0;
+    min-width: 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+  }
+
+  .chat-search-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .chat-search-counter {
+    padding: 0 var(--spacing-2);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+  }
+
+  /* Mobile: reduced padding */
+  @media (width < 768px) {
+    .chat-header {
+      padding: var(--spacing-3);
+    }
+  }
+</style>

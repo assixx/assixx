@@ -43,6 +43,8 @@ export interface DbSuggestion {
   category_name?: string;
   category_color?: string;
   category_icon?: string;
+  /** True when the custom category was soft-deleted (is_active = 4) */
+  category_is_deleted?: boolean;
   department_name?: string;
   team_name?: string;
   area_name?: string;
@@ -193,6 +195,8 @@ export interface KVPSuggestionResponse {
     name: string;
     color?: string;
     icon?: string;
+    /** True when the custom category was soft-deleted */
+    isDeleted?: boolean;
   };
   submitter?: {
     firstName: string;

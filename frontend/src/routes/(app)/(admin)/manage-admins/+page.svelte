@@ -7,11 +7,13 @@
    */
   import { goto, invalidateAll } from '$app/navigation';
 
+  import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import {
     showSuccessAlert,
     showWarningAlert,
     showErrorAlert,
   } from '$lib/stores/toast';
+  import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageAdminsPage');
@@ -23,12 +25,19 @@
     deleteAdmin as apiDeleteAdmin,
     upgradeToRoot as apiUpgradeToRoot,
     downgradeToEmployee as apiDowngradeToEmployee,
+    updateAdminAvailability as apiUpdateAvailability,
   } from './_lib/api';
   import { MESSAGES, FORM_DEFAULTS } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
+  import RoleChangeModals from './_lib/RoleChangeModals.svelte';
   import SearchResults from './_lib/SearchResults.svelte';
-  import { buildAdminFormData, populateFormFromAdmin } from './_lib/utils';
+  import {
+    buildAdminFormData,
+    populateFormFromAdmin,
+    validateAvailabilityForm,
+    buildAvailabilityPayload,
+  } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -37,10 +46,8 @@
     Department,
     StatusFilter,
     FormIsActiveStatus,
+    AvailabilityStatus,
   } from './_lib/types';
-
-  import '../../../../styles/manage-admins.css';
-  import '../../../../styles/password-strength.css';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -80,6 +87,16 @@
   let showDowngradeConfirmModal = $state(false);
   let downgradeAdminId = $state<number | null>(null);
   let downgradeLoading = $state(false);
+  let showAvailabilityModal = $state(false);
+
+  // Availability Modal State
+  let availabilityAdminId = $state<number | null>(null);
+  let availabilityStatus = $state<AvailabilityStatus>('available');
+  let availabilityStart = $state('');
+  let availabilityEnd = $state('');
+  let availabilityReason = $state('');
+  let availabilityNotes = $state('');
+  let availabilitySubmitting = $state(false);
 
   // Edit State
   let currentEditId = $state<number | null>(null);
@@ -117,6 +134,13 @@
   // Derived: Filtered admins based on current filter/search state
   const filteredAdmins = $derived(
     applyAllFilters(allAdmins, currentStatusFilter, currentSearchQuery),
+  );
+
+  // Derived: Current admin for availability modal
+  const availabilityAdmin = $derived(
+    availabilityAdminId !== null ?
+      (allAdmins.find((a) => a.id === availabilityAdminId) ?? null)
+    : null,
   );
 
   // =============================================================================
@@ -311,6 +335,79 @@
   }
 
   // =============================================================================
+  // AVAILABILITY MODAL HANDLERS
+  // NOTE: Modal is CREATE-only. PUT/UPDATE is on history page.
+  // =============================================================================
+
+  function openAvailabilityModal(adminId: number): void {
+    const admin = allAdmins.find((a) => a.id === adminId);
+    if (!admin) return;
+
+    availabilityAdminId = adminId;
+    availabilityStatus = 'available';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+    showAvailabilityModal = true;
+  }
+
+  function closeAvailabilityModal(): void {
+    showAvailabilityModal = false;
+    availabilityAdminId = null;
+    availabilityStatus = 'available';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+  }
+
+  async function saveAvailability(): Promise<void> {
+    if (availabilityAdminId === null) return;
+
+    const formData = {
+      status: availabilityStatus,
+      start: availabilityStart,
+      end: availabilityEnd,
+      reason: availabilityReason,
+      notes: availabilityNotes,
+    };
+
+    const validationError = validateAvailabilityForm(formData);
+    if (validationError === 'dates_required') {
+      showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
+      return;
+    }
+    if (validationError === 'end_before_start') {
+      showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
+      return;
+    }
+
+    availabilitySubmitting = true;
+    try {
+      const payload = buildAvailabilityPayload(formData);
+      await apiUpdateAvailability(availabilityAdminId, payload);
+      closeAvailabilityModal();
+      await invalidateAll();
+      showSuccessAlert('Verfügbarkeit aktualisiert');
+    } catch (err) {
+      log.error({ err }, 'Error updating availability');
+      const message =
+        err instanceof ApiError ?
+          err.message
+        : 'Fehler beim Speichern der Verfügbarkeit';
+      showErrorAlert(message);
+    } finally {
+      availabilitySubmitting = false;
+    }
+  }
+
+  function navigateToAvailabilityPage(uuid: string): void {
+    closeAvailabilityModal();
+    void goto(`/manage-admins/availability/${uuid}`);
+  }
+
+  // =============================================================================
   // MODAL HANDLERS
   // =============================================================================
 
@@ -440,9 +537,9 @@
         const el = document.querySelector('.search-input-wrapper');
         if (el && !el.contains(target)) searchOpen = false;
       };
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -453,7 +550,8 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (showDowngradeConfirmModal) closeDowngradeConfirmModal();
+      if (showAvailabilityModal) closeAvailabilityModal();
+      else if (showDowngradeConfirmModal) closeDowngradeConfirmModal();
       else if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
       else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
@@ -628,6 +726,9 @@
                   <th scope="col">{MESSAGES.TH_AREAS}</th>
                   <th scope="col">{MESSAGES.TH_DEPARTMENTS}</th>
                   <th scope="col">{MESSAGES.TH_TEAMS}</th>
+                  <th scope="col">{MESSAGES.TH_AVAILABILITY}</th>
+                  <th scope="col">{MESSAGES.TH_PLANNED}</th>
+                  <th scope="col">{MESSAGES.TH_NOTES}</th>
                   <th scope="col">{MESSAGES.TH_ACTIONS}</th>
                 </tr>
               </thead>
@@ -636,6 +737,7 @@
                   <AdminTableRow
                     {admin}
                     onedit={openEditModal}
+                    onavailability={openAvailabilityModal}
                     onpermission={navigateToPermissionPage}
                     ondelete={openDeleteModal}
                   />
@@ -686,6 +788,21 @@
   ondowngrade={canUpgrade ? downgradeAdmin : undefined}
 />
 
+<!-- Availability Modal Component -->
+<AvailabilityModal
+  show={showAvailabilityModal}
+  person={availabilityAdmin}
+  submitting={availabilitySubmitting}
+  bind:availabilityStatus
+  bind:availabilityStart
+  bind:availabilityEnd
+  bind:availabilityReason
+  bind:availabilityNotes
+  onclose={closeAvailabilityModal}
+  onsave={saveAvailability}
+  onmanage={navigateToAvailabilityPage}
+/>
+
 <!-- Delete Modals Component -->
 <DeleteModals
   {showDeleteModal}
@@ -696,118 +813,14 @@
   onconfirmDelete={deleteAdmin}
 />
 
-<!-- Upgrade Confirm Modal (confirm-modal--warning) -->
-{#if showUpgradeConfirmModal}
-  <div
-    id="upgrade-confirm-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="upgrade-confirm-title"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) closeUpgradeConfirmModal();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closeUpgradeConfirmModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--warning"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-arrow-up"></i>
-      </div>
-      <h3
-        class="confirm-modal__title"
-        id="upgrade-confirm-title"
-      >
-        {MESSAGES.UPGRADE_TITLE}
-      </h3>
-      <p class="confirm-modal__message">
-        <strong>{MESSAGES.UPGRADE_CONFIRM_MESSAGE}</strong>
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          disabled={upgradeLoading}
-          onclick={closeUpgradeConfirmModal}>{MESSAGES.BTN_CANCEL}</button
-        >
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--warning"
-          disabled={upgradeLoading}
-          onclick={() => void confirmUpgradeAdmin()}
-        >
-          {#if upgradeLoading}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
-          {/if}
-          {MESSAGES.UPGRADE_CONFIRM_BUTTON}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- Downgrade Confirm Modal (confirm-modal--warning) -->
-{#if showDowngradeConfirmModal}
-  <div
-    id="downgrade-confirm-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="downgrade-confirm-title"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) closeDowngradeConfirmModal();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closeDowngradeConfirmModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--warning"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-arrow-down"></i>
-      </div>
-      <h3
-        class="confirm-modal__title"
-        id="downgrade-confirm-title"
-      >
-        {MESSAGES.UPGRADE_TITLE}
-      </h3>
-      <p class="confirm-modal__message">
-        <strong>{MESSAGES.DOWNGRADE_CONFIRM_MESSAGE}</strong>
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          disabled={downgradeLoading}
-          onclick={closeDowngradeConfirmModal}>{MESSAGES.BTN_CANCEL}</button
-        >
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--warning"
-          disabled={downgradeLoading}
-          onclick={() => void confirmDowngradeAdmin()}
-        >
-          {#if downgradeLoading}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
-          {/if}
-          {MESSAGES.DOWNGRADE_CONFIRM_BUTTON}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<!-- Role Change Confirm Modals (Upgrade/Downgrade) -->
+<RoleChangeModals
+  showUpgradeModal={showUpgradeConfirmModal}
+  showDowngradeModal={showDowngradeConfirmModal}
+  {upgradeLoading}
+  {downgradeLoading}
+  oncloseUpgrade={closeUpgradeConfirmModal}
+  oncloseDowngrade={closeDowngradeConfirmModal}
+  onconfirmUpgrade={() => void confirmUpgradeAdmin()}
+  onconfirmDowngrade={() => void confirmDowngradeAdmin()}
+/>

@@ -63,8 +63,10 @@ describe('Calendar: Create Event', () => {
       body: JSON.stringify({
         title: `API Test ${Date.now()}`,
         description: 'Created via API test - will be deleted',
-        startTime: '2025-01-15T10:00:00Z',
-        endTime: '2025-01-15T11:00:00Z',
+        startTime: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        endTime: new Date(
+          Date.now() + 7 * 86_400_000 + 3_600_000,
+        ).toISOString(),
         allDay: false,
         orgLevel: 'personal',
       }),

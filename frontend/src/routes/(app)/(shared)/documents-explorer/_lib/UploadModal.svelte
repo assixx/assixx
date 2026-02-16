@@ -120,9 +120,9 @@
         const el = document.getElementById('upload-category-dropdown');
         if (el && !el.contains(target)) categoryDropdownOpen = false;
       };
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -461,7 +461,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={uploadSubmitting}
         >
           <i class="fas fa-cloud-upload-alt mr-2"></i>

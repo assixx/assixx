@@ -136,3 +136,14 @@
     </div>
   </div>
 </div>
+
+<style>
+  .pinboard-item {
+    position: relative;
+    z-index: 1;
+  }
+
+  .pinboard-item:hover {
+    z-index: 10;
+  }
+</style>

@@ -7,7 +7,8 @@
  * - PUT    /kvp/categories/override/:categoryId - Upsert name override
  * - DELETE /kvp/categories/override/:categoryId - Reset override
  * - POST   /kvp/categories/custom       - Create new tenant category
- * - DELETE /kvp/categories/custom/:id   - Delete tenant category
+ * - PUT    /kvp/categories/custom/:id  - Update tenant category
+ * - DELETE /kvp/categories/custom/:id   - Delete tenant category (nullifies refs)
  * - GET    /kvp/dashboard/stats         - Get dashboard statistics
  * - GET    /kvp/unconfirmed-count - Get unread count for notification badge
  * - POST   /kvp/:uuid/confirm     - Mark suggestion as read
@@ -54,6 +55,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -65,6 +67,7 @@ import {
   ListSuggestionsQueryDto,
   OverrideCategoryNameDto,
   ShareSuggestionDto,
+  UpdateCustomCategoryDto,
   UpdateSuggestionDto,
 } from './dto/index.js';
 import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
@@ -105,6 +108,7 @@ const KVP_SUGGESTIONS = 'kvp-suggestions';
 const KVP_COMMENTS = 'kvp-comments';
 
 @Controller('kvp')
+@TenantFeature('kvp')
 export class KvpController {
   constructor(
     private readonly kvpService: KvpService,
@@ -217,8 +221,33 @@ export class KvpController {
   }
 
   /**
+   * PUT /kvp/categories/custom/:id
+   * Update a tenant-specific custom category
+   */
+  @Put('categories/custom/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  async updateCustomCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomCategoryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ id: number }> {
+    const categoryId = Number.parseInt(id, 10);
+    return await this.categoriesService.updateCustom(
+      tenantId,
+      categoryId,
+      user.id,
+      user.role,
+      dto,
+    );
+  }
+
+  /**
    * DELETE /kvp/categories/custom/:id
-   * Delete a tenant-specific custom category
+   * Soft-delete a tenant-specific custom category (is_active = 4).
+   * Preserves category data for existing KVP suggestions (shown with strikethrough).
    */
   @Delete('categories/custom/:id')
   @UseGuards(RolesGuard)
@@ -228,15 +257,18 @@ export class KvpController {
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-  ): Promise<MessageResponse> {
+  ): Promise<{ message: string; affectedSuggestions: number }> {
     const categoryId = Number.parseInt(id, 10);
-    await this.categoriesService.deleteCustom(
+    const result = await this.categoriesService.deleteCustom(
       tenantId,
       categoryId,
       user.id,
       user.role,
     );
-    return { message: 'Custom category deleted' };
+    return {
+      message: 'Custom category deleted',
+      affectedSuggestions: result.affectedSuggestions,
+    };
   }
 
   /**

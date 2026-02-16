@@ -13,7 +13,7 @@ const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 interface AvailabilityEntry {
   id: number;
-  employeeId: number;
+  userId: number;
   status: string;
   startDate: string;
   endDate: string;
@@ -73,7 +73,7 @@ function errorResponse(
 function serializeEntry(e: AvailabilityEntry) {
   return {
     id: e.id,
-    employeeId: e.employeeId,
+    userId: e.userId,
     status: e.status,
     startDate: e.startDate,
     endDate: e.endDate,

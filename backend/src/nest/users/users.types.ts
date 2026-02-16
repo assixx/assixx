@@ -7,7 +7,7 @@
 
 /**
  * User row type from database
- * NOTE: Availability fields removed - now in employee_availability table
+ * NOTE: Availability fields removed - now in user_availability table
  */
 export interface UserRow {
   id: number;

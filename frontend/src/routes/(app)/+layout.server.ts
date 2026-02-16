@@ -131,6 +131,34 @@ async function parseThemeSetting(
   return null;
 }
 
+/** Feature data from /features/my-features endpoint */
+interface FeatureWithTenantInfo {
+  code: string;
+  tenantFeature?: { isActive: boolean };
+}
+
+/**
+ * Parse active feature codes from /features/my-features response.
+ * Returns string[] of active feature codes (e.g., ['blackboard', 'calendar', 'chat']).
+ * Graceful fallback to empty array on error.
+ */
+async function parseActiveFeatures(
+  response: Response | null,
+): Promise<string[]> {
+  if (response?.ok !== true) return [];
+  try {
+    const json = (await response.json()) as ApiResponse<
+      FeatureWithTenantInfo[]
+    >;
+    const features = json.data ?? [];
+    return features
+      .filter((f) => f.tenantFeature?.isActive === true)
+      .map((f) => f.code);
+  } catch {
+    return [];
+  }
+}
+
 /** Clear auth cookies and redirect to login */
 function clearAuthAndRedirect(
   cookies: Parameters<LayoutServerLoad>[0]['cookies'],
@@ -147,13 +175,15 @@ const UNAUTHENTICATED_RESPONSE = {
   isAuthenticated: false,
   dashboardCounts: null,
   theme: null,
+  activeFeatures: [] as string[],
 } as const;
 
-/** Build authenticated response from user data, counts, and theme */
+/** Build authenticated response from user data, counts, theme, and features */
 async function buildAuthenticatedResponse(
   userData: UserData,
   countsResponse: Response | null,
   themeResponse: Response | null,
+  featuresResponse: Response | null,
 ) {
   return {
     user: mapUserData(userData),
@@ -161,39 +191,47 @@ async function buildAuthenticatedResponse(
     isAuthenticated: true,
     dashboardCounts: await parseDashboardCounts(countsResponse),
     theme: await parseThemeSetting(themeResponse),
+    activeFeatures: await parseActiveFeatures(featuresResponse),
   };
 }
 
-/** Fetch dashboard counts + theme in parallel (when RBAC user is available) */
-async function fetchCountsAndTheme(
+/** Fetch dashboard counts, theme, and active features in parallel (when RBAC user is available) */
+async function fetchCountsThemeAndFeatures(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<{
   countsResponse: Response | null;
   themeResponse: Response | null;
+  featuresResponse: Response | null;
 }> {
-  const [countsResponse, themeResponse] = await Promise.all([
+  const [countsResponse, themeResponse, featuresResponse] = await Promise.all([
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(() => null),
   ]);
-  return { countsResponse, themeResponse };
+  return { countsResponse, themeResponse, featuresResponse };
 }
 
-/** Fetch user data, dashboard counts, and theme in parallel */
-async function fetchUserCountsAndTheme(
+/** Fetch user data, dashboard counts, theme, and active features in parallel */
+async function fetchUserCountsThemeAndFeatures(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<{
   userResponse: Response;
   countsResponse: Response | null;
   themeResponse: Response | null;
+  featuresResponse: Response | null;
 }> {
-  const [userResponse, countsResponse, themeResponse] = await Promise.all([
-    fetchFn(`${API_BASE}/users/me`, { headers }),
-    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-  ]);
-  return { userResponse, countsResponse, themeResponse };
+  const [userResponse, countsResponse, themeResponse, featuresResponse] =
+    await Promise.all([
+      fetchFn(`${API_BASE}/users/me`, { headers }),
+      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(
+        () => null,
+      ),
+    ]);
+  return { userResponse, countsResponse, themeResponse, featuresResponse };
 }
 
 /**
@@ -235,24 +273,23 @@ export const load: LayoutServerLoad = async ({
   const rbacUser = locals.user as UserData | undefined;
 
   if (rbacUser !== undefined) {
-    // FAST PATH: Reuse user from RBAC hook - fetch counts + theme in parallel
+    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme + features in parallel
     const fetchStart = performance.now();
-    const { countsResponse, themeResponse } = await fetchCountsAndTheme(
-      fetch,
-      headers,
-    );
+    const { countsResponse, themeResponse, featuresResponse } =
+      await fetchCountsThemeAndFeatures(fetch, headers);
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
     log.debug(
       { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, /counts + /theme fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
+      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /features fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
     );
 
     return await buildAuthenticatedResponse(
       rbacUser,
       countsResponse,
       themeResponse,
+      featuresResponse,
     );
   }
 
@@ -279,8 +316,8 @@ async function loadUserWithFetch(
   pathname: string,
 ) {
   const fetchStart = performance.now();
-  const { userResponse, countsResponse, themeResponse } =
-    await fetchUserCountsAndTheme(fetchFn, headers);
+  const { userResponse, countsResponse, themeResponse, featuresResponse } =
+    await fetchUserCountsThemeAndFeatures(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
   if (!userResponse.ok) {
@@ -299,12 +336,13 @@ async function loadUserWithFetch(
   const totalTime = Math.round(performance.now() - startTime);
   log.debug(
     { fetchTime, totalTime, path: pathname },
-    `🐢 SLOW PATH complete: /users/me + /counts + /theme fetched (${fetchTime}ms, total: ${totalTime}ms)`,
+    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /features fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 
   return await buildAuthenticatedResponse(
     userData,
     countsResponse,
     themeResponse,
+    featuresResponse,
   );
 }

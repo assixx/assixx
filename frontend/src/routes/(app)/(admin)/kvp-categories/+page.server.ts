@@ -6,6 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -67,7 +68,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   // Permission: root always, admin needs has_full_access
-  const { user } = await parent();
+  const { user, activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'kvp');
   if (user !== null && user.role !== 'root' && !user.hasFullAccess) {
     log.warn(
       { role: user.role },

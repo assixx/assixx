@@ -8,12 +8,17 @@ import {
   PASSWORD_STRENGTH_LABELS,
   PASSWORD_CRACK_TIMES,
   FORM_DEFAULTS,
+  AVAILABILITY_BADGE_CLASSES,
+  AVAILABILITY_ICONS,
+  AVAILABILITY_LABELS,
+  AVAILABILITY_STATUS_LABELS,
 } from './constants';
 
 import type {
   RootUser,
   IsActiveStatus,
   FormIsActiveStatus,
+  AvailabilityStatus,
   PasswordStrengthResult,
 } from './types';
 
@@ -180,4 +185,185 @@ export function validatePasswordMatch(
 ): boolean {
   if (passwordConfirm === '') return true;
   return password === passwordConfirm;
+}
+
+// =============================================================================
+// AVAILABILITY BADGE HELPERS
+// =============================================================================
+
+/** Badge display information */
+interface BadgeInfo {
+  class: string;
+  text: string;
+  title: string;
+  icon?: string;
+}
+
+/** Check if a date string is defined and non-empty */
+function isValidDateString(date: string | undefined): date is string {
+  return date !== undefined && date !== '';
+}
+
+/**
+ * Check if today's date falls within a date range
+ */
+function isDateRangeActive(startDate?: string, endDate?: string): boolean {
+  if (!isValidDateString(startDate) && !isValidDateString(endDate)) {
+    return true;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (isValidDateString(startDate)) {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    if (today < start) return false;
+  }
+
+  if (isValidDateString(endDate)) {
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    if (today > end) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Get availability badge info for display
+ */
+export function getAvailabilityBadge(user: RootUser): BadgeInfo {
+  const status = user.availabilityStatus ?? 'available';
+
+  if (status === 'available') {
+    return {
+      class: AVAILABILITY_BADGE_CLASSES.available,
+      text: AVAILABILITY_LABELS.available,
+      title: '',
+      icon: AVAILABILITY_ICONS.available,
+    };
+  }
+
+  const isActive = isDateRangeActive(
+    user.availabilityStart,
+    user.availabilityEnd,
+  );
+
+  if (isActive) {
+    return {
+      class: AVAILABILITY_BADGE_CLASSES[status],
+      text: AVAILABILITY_LABELS[status],
+      title: '',
+      icon: AVAILABILITY_ICONS[status],
+    };
+  }
+
+  return {
+    class: AVAILABILITY_BADGE_CLASSES.available,
+    text: AVAILABILITY_LABELS.available,
+    title: '',
+    icon: AVAILABILITY_ICONS.available,
+  };
+}
+
+/**
+ * Format date to German format (DD.MM.YYYY)
+ */
+function formatDateGerman(dateStr?: string): string {
+  if (dateStr === undefined || dateStr === '') return '?';
+  const date = new Date(dateStr);
+  return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+}
+
+/**
+ * Get planned availability period text
+ */
+export function getPlannedAvailability(user: RootUser): string {
+  const status = user.availabilityStatus ?? 'available';
+  if (status === 'available') return '-';
+
+  const statusText = AVAILABILITY_STATUS_LABELS[status];
+  const startDate = user.availabilityStart;
+  const endDate = user.availabilityEnd;
+
+  if (startDate !== undefined || endDate !== undefined) {
+    const startFormatted = formatDateGerman(startDate);
+    const endFormatted = formatDateGerman(endDate);
+    return `${statusText}: ${startFormatted} - ${endFormatted}`;
+  }
+
+  return statusText;
+}
+
+/**
+ * Get truncated notes with full text as title
+ */
+export function getTruncatedNotes(
+  notes?: string,
+  maxLength: number = 20,
+): { text: string; title: string } {
+  const text = notes ?? '-';
+  return {
+    text: text.length > maxLength ? text.substring(0, maxLength) + '...' : text,
+    title: text,
+  };
+}
+
+// =============================================================================
+// AVAILABILITY MODAL HELPERS
+// =============================================================================
+
+/** Availability form data for validation */
+export interface AvailabilityFormData {
+  status: AvailabilityStatus;
+  start: string;
+  end: string;
+  reason: string;
+  notes: string;
+}
+
+/** Availability validation error types */
+export type AvailabilityValidationError =
+  | 'dates_required'
+  | 'end_before_start'
+  | null;
+
+/**
+ * Validate availability form data
+ */
+export function validateAvailabilityForm(
+  data: AvailabilityFormData,
+): AvailabilityValidationError {
+  if (data.status !== 'available' && (data.start === '' || data.end === '')) {
+    return 'dates_required';
+  }
+  if (data.start !== '' && data.end !== '' && data.end < data.start) {
+    return 'end_before_start';
+  }
+  return null;
+}
+
+/** Availability API payload */
+export interface AvailabilityPayload {
+  availabilityStatus: AvailabilityStatus;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityReason?: string;
+  availabilityNotes?: string;
+}
+
+/**
+ * Build availability API payload from form data
+ */
+export function buildAvailabilityPayload(
+  data: AvailabilityFormData,
+): AvailabilityPayload {
+  return {
+    availabilityStatus: data.status,
+    availabilityStart: data.start !== '' ? data.start : undefined,
+    availabilityEnd: data.end !== '' ? data.end : undefined,
+    availabilityReason: data.reason !== '' ? data.reason : undefined,
+    availabilityNotes: data.notes !== '' ? data.notes : undefined,
+  };
 }

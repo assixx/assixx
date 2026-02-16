@@ -11,6 +11,7 @@ import type { BlackboardService } from '../blackboard/blackboard.service.js';
 import type { CalendarService } from '../calendar/calendar.service.js';
 import type { ChatService } from '../chat/chat.service.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { DatabaseService } from '../database/database.service.js';
 import type { DocumentsService } from '../documents/documents.service.js';
 import type { KvpService } from '../kvp/kvp.service.js';
 import type { NotificationsService } from '../notifications/notifications.service.js';
@@ -77,6 +78,15 @@ function createMockSurveysService() {
  * Mock UserPermissionsService (ADR-020).
  * Default: returns all feature codes as readable (full access).
  */
+/**
+ * Mock DatabaseService for vacation count query.
+ */
+function createMockDatabaseService() {
+  return {
+    query: vi.fn().mockResolvedValue([{ count: '0' }]),
+  };
+}
+
 function createMockPermissionsService() {
   return {
     getReadableFeatureCodes: vi
@@ -123,6 +133,7 @@ describe('DashboardService', () => {
   let mockKvp: ReturnType<typeof createMockKvpService>;
   let mockSurveys: ReturnType<typeof createMockSurveysService>;
   let mockPermissions: ReturnType<typeof createMockPermissionsService>;
+  let mockDb: ReturnType<typeof createMockDatabaseService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -134,11 +145,13 @@ describe('DashboardService', () => {
     mockKvp = createMockKvpService();
     mockSurveys = createMockSurveysService();
     mockPermissions = createMockPermissionsService();
+    mockDb = createMockDatabaseService();
     service = new DashboardService(
       mockChat as unknown as ChatService,
       mockNotifications as unknown as NotificationsService,
       mockBlackboard as unknown as BlackboardService,
       mockCalendar as unknown as CalendarService,
+      mockDb as unknown as DatabaseService,
       mockDocuments as unknown as DocumentsService,
       mockKvp as unknown as KvpService,
       mockSurveys as unknown as SurveysService,
@@ -162,6 +175,7 @@ describe('DashboardService', () => {
       expect(result.documents.count).toBe(1);
       expect(result.kvp.count).toBe(2);
       expect(result.surveys.count).toBe(3);
+      expect(result.vacation.count).toBe(0);
       expect(result.fetchedAt).toBeDefined();
     });
   });

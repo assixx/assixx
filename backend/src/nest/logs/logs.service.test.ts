@@ -76,7 +76,6 @@ interface TestDbLogRow {
   created_at: Date | null;
   tenant_name?: string;
   user_name?: string;
-  user_email?: string;
   user_role?: string;
   user_first_name?: string;
   user_last_name?: string;
@@ -103,7 +102,6 @@ function makeFullDbLogRow(overrides: Partial<TestDbLogRow> = {}): TestDbLogRow {
     was_role_switched: 0,
     created_at: new Date('2025-06-01T10:00:00Z'),
     user_name: 'admin',
-    user_email: 'admin@test.com',
     user_role: 'root',
     user_first_name: 'Admin',
     user_last_name: 'User',
@@ -144,7 +142,7 @@ describe('LogsService – private helpers', () => {
   // =============================================================
 
   describe('addSearchCondition', () => {
-    it('adds 11 ILIKE search params for non-empty search', () => {
+    it('adds 10 ILIKE search params for non-empty search', () => {
       const conditions: string[] = [];
       const params: unknown[] = [10]; // existing tenantId param
 
@@ -152,10 +150,10 @@ describe('LogsService – private helpers', () => {
 
       expect(conditions).toHaveLength(1);
       expect(conditions[0]).toContain('ILIKE');
-      // 1 existing + 11 new search params
-      expect(params).toHaveLength(12);
+      // 1 existing + 10 new search params (email removed, Spec Deviation D1)
+      expect(params).toHaveLength(11);
       expect(params[1]).toBe('%admin%');
-      expect(params[11]).toBe('%admin%');
+      expect(params[10]).toBe('%admin%');
     });
 
     it('does nothing for undefined or empty search', () => {
@@ -211,8 +209,8 @@ describe('LogsService – private helpers', () => {
       });
 
       expect(result.whereClause).toContain('ILIKE');
-      // tenantId(1) + 11 search params
-      expect(result.params).toHaveLength(12);
+      // tenantId(1) + 10 search params
+      expect(result.params).toHaveLength(11);
     });
   });
 
@@ -272,7 +270,6 @@ describe('LogsService – private helpers', () => {
 
       expect(result).toEqual({
         userName: 'admin',
-        userEmail: 'admin@test.com',
         userRole: 'root',
         userFirstName: 'Admin',
         userLastName: 'User',
@@ -546,9 +543,9 @@ describe('LogsService – DB-mocked methods', () => {
       });
 
       expect(result.logs).toHaveLength(1);
-      // COUNT query params: tenantId(1) + 11 search params = 12
+      // COUNT query params: tenantId(1) + 10 search params = 11
       const countParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(countParams).toHaveLength(12);
+      expect(countParams).toHaveLength(11);
     });
   });
 

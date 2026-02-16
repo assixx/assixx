@@ -94,6 +94,12 @@ export const RESOURCE_TABLE_MAP: Record<
   // Admin management resources
   'admin-permission': { table: 'admin_permissions', nameField: 'id' },
   tenant: { table: 'tenants', nameField: 'company_name' },
+  // Vacation module resources (ADR-023)
+  request: { table: 'vacation_requests', nameField: 'id' },
+  blackout: { table: 'vacation_blackouts', nameField: 'name' },
+  holiday: { table: 'vacation_holidays', nameField: 'name' },
+  'staffing-rule': { table: 'vacation_staffing_rules', nameField: 'id' },
+  entitlement: { table: 'vacation_entitlements', nameField: 'id' },
 };
 
 /**

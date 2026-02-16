@@ -33,7 +33,7 @@ export class NotificationFeatureService {
    * @param createdBy - User ID who created the feature
    */
   async createFeatureNotification(
-    type: 'survey' | 'document' | 'kvp',
+    type: 'survey' | 'document' | 'kvp' | 'vacation',
     featureId: number,
     title: string,
     message: string,
@@ -81,7 +81,7 @@ export class NotificationFeatureService {
    * @returns Number of notifications marked as read
    */
   async markFeatureTypeAsRead(
-    type: 'survey' | 'document' | 'kvp',
+    type: 'survey' | 'document' | 'kvp' | 'vacation',
     userId: number,
     tenantId: number,
   ): Promise<number> {

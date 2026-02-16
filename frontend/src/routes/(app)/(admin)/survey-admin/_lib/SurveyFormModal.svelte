@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -165,18 +167,17 @@
     }
   });
 
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 </script>
 
-<svelte:document onclick={handleDocumentClick} />
-
 {#if surveyAdminState.showModal}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="survey-form-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <form
       class="ds-modal ds-modal--lg"
       bind:this={formElement}
@@ -186,7 +187,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={onclose}
         >
           <i class="fas fa-times"></i>
@@ -275,16 +276,7 @@
                 for="startDate">Startdatum und -zeit</label
               >
               <div class="flex gap-3">
-                <div class="date-picker flex-1">
-                  <i class="date-picker__icon fas fa-calendar"></i>
-                  <input
-                    type="date"
-                    id="startDate"
-                    name="start_date"
-                    class="date-picker__input"
-                    bind:value={formStartDate}
-                  />
-                </div>
+                <AppDatePicker bind:value={formStartDate} />
                 <div class="time-picker time-picker--24h">
                   <i class="time-picker__icon fas fa-clock"></i>
                   <input
@@ -304,16 +296,11 @@
                 for="endDate">Enddatum und -zeit</label
               >
               <div class="flex gap-3">
-                <div class="date-picker flex-1">
-                  <i class="date-picker__icon fas fa-calendar"></i>
-                  <input
-                    type="date"
-                    id="endDate"
-                    name="end_date"
-                    class="date-picker__input"
-                    bind:value={formEndDate}
-                  />
-                </div>
+                <AppDatePicker
+                  bind:value={formEndDate}
+                  min={formStartDate}
+                  placeholder={formStartDate}
+                />
                 <div class="time-picker time-picker--24h">
                   <i class="time-picker__icon fas fa-clock"></i>
                   <input
@@ -411,7 +398,7 @@
             class="form-field__label"
             for="survey-department-select"
           >
-            <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i> Zusätzliche Abteilungen
           </label>
           <select
             id="survey-department-select"
@@ -525,7 +512,7 @@
           onclick={onsavedraft}
         >
           {#if surveyAdminState.isSaving}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-save"></i>
           {/if}
@@ -533,12 +520,12 @@
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={surveyAdminState.isSaving}
           onclick={onsaveactive}
         >
           {#if surveyAdminState.isSaving}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-paper-plane"></i>
           {/if}

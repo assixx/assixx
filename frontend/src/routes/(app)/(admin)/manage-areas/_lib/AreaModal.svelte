@@ -117,9 +117,9 @@
           areaLeadDropdownOpen = false;
         }
       };
-      document.addEventListener('click', handleClick);
+      document.addEventListener('click', handleClick, true);
       return () => {
-        document.removeEventListener('click', handleClick);
+        document.removeEventListener('click', handleClick, true);
       };
     }
   });
@@ -444,7 +444,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={submitting}
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

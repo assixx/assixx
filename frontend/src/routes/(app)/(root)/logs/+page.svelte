@@ -8,8 +8,6 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import '../../../../styles/logs.css';
-
   import { showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -501,3 +499,58 @@
     ondelete={(password: string) => void handleDeleteLogs(password)}
   />
 {/if}
+
+<style>
+  /* Filters Section — Domain-specific layout for log filtering */
+  .filters-section {
+    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-6);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+  }
+
+  /* Table Styles — Domain-specific additions */
+  .entity-id {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--color-primary);
+  }
+
+  .ip-cell {
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  /* Loading State */
+  .loading {
+    padding: var(--spacing-10);
+    text-align: center;
+  }
+
+  /* User Info in Tables — Ensures badges align vertically across rows */
+  .data-table .user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  .data-table .user-info .user-name {
+    display: inline-block;
+    width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .data-table .user-info .badge {
+    flex-shrink: 0;
+  }
+</style>

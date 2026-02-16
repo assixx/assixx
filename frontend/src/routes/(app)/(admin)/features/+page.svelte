@@ -12,23 +12,24 @@
 
   const log = createLogger('FeaturesPage');
 
-  import '../../../../styles/features.css';
-
+  import AddonResources from './_lib/AddonResources.svelte';
   import {
     applyTenantFeaturesToCategories,
     changePlan as apiChangePlan,
     saveAddons as apiSaveAddons,
     toggleFeature as apiToggleFeature,
   } from './_lib/api';
-  import { DEFAULT_TENANT_NAME, FEATURE_CATEGORIES } from './_lib/constants';
+  import {
+    DEFAULT_TENANT_NAME,
+    FEATURE_CATEGORIES,
+    FEATURE_ICONS,
+  } from './_lib/constants';
   import {
     calculateTotalCost,
     canActivateFeature,
     cloneFeatureCategories,
     countActiveFeatures,
     getFeatureCardClasses,
-    getFeatureStatusClass,
-    getFeatureStatusText,
     getPlanBadge,
     isFeatureIncludedInPlan,
   } from './_lib/utils';
@@ -83,6 +84,10 @@
 
   let currentFilter: FeatureFilter = $state('all');
 
+  // Confirm modal state for plan change
+  let showPlanChangeModal = $state(false);
+  let pendingPlanCode = $state('');
+
   // =============================================================================
   // DERIVED VALUES
   // =============================================================================
@@ -120,18 +125,21 @@
   // API ACTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
-  async function changePlan(newPlanCode: string): Promise<void> {
+  /** Request plan change - shows confirmation modal */
+  function requestPlanChange(newPlanCode: string): void {
     if (newPlanCode === currentPlan) return;
+    if (!plans[newPlanCode]) return;
 
-    const planData = plans[newPlanCode];
-    if (!planData) return;
+    pendingPlanCode = newPlanCode;
+    showPlanChangeModal = true;
+  }
 
-    if (!confirm(`Möchten Sie wirklich zum ${planData.name} Plan wechseln?`))
-      return;
+  /** Execute plan change after confirmation */
+  async function confirmPlanChange(): Promise<void> {
+    showPlanChangeModal = false;
 
     try {
-      await apiChangePlan(currentTenantId, newPlanCode);
-      // Level 3: Trigger SSR refetch
+      await apiChangePlan(currentTenantId, pendingPlanCode);
       await invalidateAll();
     } catch (err) {
       log.error({ err }, 'Error changing plan');
@@ -151,30 +159,6 @@
       log.error({ err }, 'Error toggling feature');
       showErrorAlert('Fehler beim Ändern des Features');
     }
-  }
-
-  /**
-   * Adjust pending addon values (local state, not saved yet)
-   */
-  function adjustAddon(
-    type: 'employees' | 'admins' | 'storage',
-    change: number,
-  ): void {
-    if (type === 'employees') {
-      pendingAddons.employees = Math.max(
-        0,
-        (pendingAddons.employees ?? 0) + change,
-      );
-    } else if (type === 'admins') {
-      pendingAddons.admins = Math.max(0, (pendingAddons.admins ?? 0) + change);
-    } else {
-      // type === 'storage'
-      pendingAddons.storage_gb = Math.max(
-        0,
-        (pendingAddons.storage_gb ?? 0) + change,
-      );
-    }
-    pendingAddons = { ...pendingAddons };
   }
 
   async function saveChanges(): Promise<void> {
@@ -199,7 +183,7 @@
 
   function handlePlanChange(e: Event): void {
     const input = e.target as HTMLInputElement;
-    if (input.checked) void changePlan(input.value);
+    if (input.checked) requestPlanChange(input.value);
   }
 
   // =============================================================================
@@ -215,7 +199,7 @@
 </svelte:head>
 
 <div class="container">
-  <!-- Page Header Card -->
+  <!-- Page Header -->
   <div class="card mb-6">
     <div class="card__header flex items-center justify-between">
       <div>
@@ -228,17 +212,18 @@
           <strong>{tenantName}</strong>
         </p>
       </div>
-      <div
-        class="plan-badge"
-        class:enterprise={currentPlan === 'enterprise'}
+      <span
+        class="badge badge--lg"
+        class:badge--primary={currentPlan !== 'enterprise'}
+        class:badge--warning={currentPlan === 'enterprise'}
       >
         <i class="fas fa-crown"></i>
-        <span>{currentPlanName} Plan</span>
-      </div>
+        {currentPlanName} Plan
+      </span>
     </div>
   </div>
 
-  <!-- Available Plans Section -->
+  <!-- Verfügbare Pläne -->
   <div class="card mb-6">
     <div class="card__header">
       <h2 class="card__title">
@@ -274,21 +259,35 @@
               <div class="plan-card__content">
                 <div class="plan-card__header">
                   <h4 class="plan-card__title">{plan.name}</h4>
-                  <span class="plan-card__price"
-                    >{plan.basePrice.toFixed(0)}/Monat</span
-                  >
+                  <span class="plan-card__price">
+                    {plan.basePrice.toFixed(0)}€/Monat
+                  </span>
                 </div>
                 <p class="plan-card__description">
-                  Für kleine bis mittlere Teams
+                  {#if planCode === 'basic'}
+                    Für kleine Teams zum Einstieg
+                  {:else if planCode === 'professional'}
+                    Für wachsende Unternehmen
+                  {:else}
+                    Für große Organisationen
+                  {/if}
                 </p>
                 <ul class="plan-card__features">
                   <li class="plan-card__feature">
-                    {plan.maxEmployees ?? ''} Mitarbeiter
+                    {plan.maxEmployees ?? 'Unbegrenzt'} Mitarbeiter
                   </li>
                   <li class="plan-card__feature">
-                    {plan.maxAdmins ?? ''} Admins
+                    {plan.maxAdmins ?? 'Unbegrenzt'} Admins
                   </li>
-                  <li class="plan-card__feature">Alle Basis-Features</li>
+                  <li class="plan-card__feature">
+                    {#if planCode === 'basic'}
+                      Kern-Features
+                    {:else if planCode === 'professional'}
+                      Alle Basic + Kommunikation
+                    {:else}
+                      Alle Features inklusive
+                    {/if}
+                  </li>
                 </ul>
               </div>
             </label>
@@ -298,7 +297,7 @@
     </div>
   </div>
 
-  <!-- Features Section -->
+  <!-- Features -->
   <div class="card mb-6">
     <div class="card__header flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -311,7 +310,6 @@
         </p>
       </div>
 
-      <!-- Toggle Group Filter -->
       <div
         class="toggle-group"
         id="feature-status-toggle"
@@ -325,8 +323,7 @@
             handleFilterChange('all');
           }}
         >
-          <i class="fas fa-th"></i>
-          Alle
+          <i class="fas fa-th"></i> Alle
         </button>
         <button
           type="button"
@@ -337,8 +334,7 @@
             handleFilterChange('active');
           }}
         >
-          <i class="fas fa-check-circle"></i>
-          Aktiv
+          <i class="fas fa-check-circle"></i> Aktiv
         </button>
         <button
           type="button"
@@ -349,8 +345,7 @@
             handleFilterChange('included');
           }}
         >
-          <i class="fas fa-box"></i>
-          Im Plan enthalten
+          <i class="fas fa-box"></i> Im Plan
         </button>
         {#if currentPlan !== 'enterprise'}
           <button
@@ -362,8 +357,7 @@
               handleFilterChange('addons');
             }}
           >
-            <i class="fas fa-plus-circle"></i>
-            Zusätzlich buchbar
+            <i class="fas fa-plus-circle"></i> Zusätzlich
           </button>
         {/if}
       </div>
@@ -371,14 +365,15 @@
 
     <div class="card__body">
       {#if error}
-        <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
-          <p class="text-(--color-text-secondary)">{error}</p>
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3 class="empty-state__title">Fehler beim Laden</h3>
+          <p class="empty-state__description">{error}</p>
           <button
             type="button"
-            class="btn btn-primary mt-4"
+            class="btn btn-primary"
             onclick={() => {
               window.location.reload();
             }}
@@ -393,11 +388,13 @@
               categoryData.features.filter(isFeatureVisible)}
             {#if visibleFeatures.length > 0}
               <div
-                class="feature-category mb-8"
+                class="mb-8"
                 data-category={categoryName}
               >
-                <h3 class="mb-4 flex items-center gap-2 text-xl font-semibold">
-                  <span class="text-2xl">{categoryData.icon}</span>
+                <h3
+                  class="mb-4 flex items-center gap-2 text-lg font-semibold text-(--color-text-primary)"
+                >
+                  <span class="text-xl">{categoryData.icon}</span>
                   {categoryName}
                 </h3>
                 <div class="features-grid">
@@ -406,37 +403,59 @@
                       currentPlan,
                       feature.minPlan,
                     )}
-                    {@const statusClass = getFeatureStatusClass(
-                      feature.active,
-                      canActivate,
-                    )}
-                    {@const statusText = getFeatureStatusText(
-                      feature.active,
-                      canActivate,
-                    )}
                     <div
                       class={getFeatureCardClasses(feature, currentPlan)}
                       data-feature={feature.code}
-                      data-min-plan={feature.minPlan}
                     >
-                      <span class="feature-status {statusClass}"
-                        >{statusText}</span
-                      >
-                      <h4 class="feature-name">{feature.name}</h4>
-                      <p class="feature-description">{feature.description}</p>
-                      <div class="feature-plan-badge">
-                        {getPlanBadge(feature.minPlan)}
+                      <!-- Header: Icon + Name + Status -->
+                      <div class="feature-card__header">
+                        <div
+                          class="feature-card__icon"
+                          class:feature-card__icon--active={feature.active}
+                        >
+                          <i
+                            class={FEATURE_ICONS[feature.code] ?? 'fas fa-cube'}
+                          ></i>
+                        </div>
+                        <div class="feature-card__title-group">
+                          <h4 class="feature-name">{feature.name}</h4>
+                          <span
+                            class="badge badge--sm"
+                            class:badge--success={feature.active}
+                            class:badge--secondary={!feature.active &&
+                              canActivate}
+                            class:badge--warning={!canActivate}
+                          >
+                            {#if feature.active}
+                              Aktiv
+                            {:else if !canActivate}
+                              Gesperrt
+                            {:else}
+                              Inaktiv
+                            {/if}
+                          </span>
+                        </div>
                       </div>
-                      <div class="feature-actions">
+
+                      <!-- Description -->
+                      <p class="feature-description">{feature.description}</p>
+
+                      <!-- Footer: Plan Badge + Action -->
+                      <div class="feature-card__footer">
+                        <span class="feature-plan-badge">
+                          {getPlanBadge(feature.minPlan)}
+                        </span>
                         {#if !canActivate}
                           <a
                             href="#plans-container"
-                            class="btn btn-primary">Plan upgraden</a
+                            class="btn btn-primary btn--sm"
                           >
+                            Upgraden
+                          </a>
                         {:else if feature.active}
                           <button
                             type="button"
-                            class="btn btn-status-active"
+                            class="btn btn-status-active btn--sm"
                             onclick={() => toggleFeature(feature.code, false)}
                           >
                             Deaktivieren
@@ -444,7 +463,7 @@
                         {:else}
                           <button
                             type="button"
-                            class="btn btn-status-inactive"
+                            class="btn btn-status-inactive btn--sm"
                             onclick={() => toggleFeature(feature.code, true)}
                           >
                             Aktivieren
@@ -462,153 +481,127 @@
     </div>
   </div>
 
-  <!-- Add-ons Section -->
-  <div class="card mb-24">
-    <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-cubes mr-2"></i>
-        Zusätzliche Ressourcen
-      </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Erweitern Sie Ihre Kapazitäten nach Bedarf
-      </p>
-    </div>
+  <!-- Zusätzliche Ressourcen -->
+  <AddonResources bind:pendingAddons />
+  <!-- Summary -->
+  <div class="card summary-card">
     <div class="card__body">
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <!-- Zusätzliche Mitarbeiter -->
-        <div class="addon-card">
-          <div class="addon-icon"></div>
-          <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
-          <div class="addon-price">5</div>
-          <div class="addon-unit">pro Mitarbeiter/Monat</div>
-          <div class="addon-current">
-            Aktuell: <strong>{pendingAddons.employees ?? 0}</strong> zusätzlich
+      <div class="summary-card__content">
+        <div class="summary-card__items">
+          <div class="summary-card__item">
+            <span class="summary-card__label">Aktueller Plan</span>
+            <span class="summary-card__value">{currentPlanName}</span>
           </div>
-          <div class="addon-controls">
-            <button
-              type="button"
-              class="addon-btn"
-              onclick={() => {
-                adjustAddon('employees', -1);
-              }}
-              aria-label="Mitarbeiter reduzieren"
-            >
-              <i class="fas fa-minus"></i>
-            </button>
-            <span class="addon-value">{pendingAddons.employees ?? 0}</span>
-            <button
-              type="button"
-              class="addon-btn"
-              onclick={() => {
-                adjustAddon('employees', 1);
-              }}
-              aria-label="Mitarbeiter erhöhen"
-            >
-              <i class="fas fa-plus"></i>
-            </button>
+          <div class="summary-card__item">
+            <span class="summary-card__label">Aktive Features</span>
+            <span class="summary-card__value">
+              {activeFeatureCount.active} / {activeFeatureCount.total}
+            </span>
+          </div>
+          <div class="summary-card__item">
+            <span class="summary-card__label">Monatliche Kosten</span>
+            <span class="summary-card__value">{totalCost.toFixed(2)}€</span>
           </div>
         </div>
-
-        <!-- Zusätzliche Admins -->
-        <div class="addon-card">
-          <div class="addon-icon"></div>
-          <h3 class="addon-name">Zusätzliche Admins</h3>
-          <div class="addon-price">10</div>
-          <div class="addon-unit">pro Admin/Monat</div>
-          <div class="addon-current">
-            Aktuell: <strong>{pendingAddons.admins ?? 0}</strong> zusätzlich
-          </div>
-          <div class="addon-controls">
-            <button
-              type="button"
-              class="addon-btn"
-              onclick={() => {
-                adjustAddon('admins', -1);
-              }}
-              aria-label="Admins reduzieren"
-            >
-              <i class="fas fa-minus"></i>
-            </button>
-            <span class="addon-value">{pendingAddons.admins ?? 0}</span>
-            <button
-              type="button"
-              class="addon-btn"
-              onclick={() => {
-                adjustAddon('admins', 1);
-              }}
-              aria-label="Admins erhöhen"
-            >
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Zusätzlicher Speicher -->
-        <div class="addon-card">
-          <div class="addon-icon"></div>
-          <h3 class="addon-name">Zusätzlicher Speicher</h3>
-          <div class="addon-price">10</div>
-          <div class="addon-unit">pro 100GB/Monat</div>
-          <div class="addon-current">
-            Aktuell: <strong>100GB</strong> inklusive
-          </div>
-          <div class="addon-controls">
-            <button
-              type="button"
-              class="addon-btn"
-              onclick={() => {
-                adjustAddon('storage', -100);
-              }}
-              aria-label="Speicher reduzieren"
-            >
-              <i class="fas fa-minus"></i>
-            </button>
-            <span class="addon-value">{pendingAddons.storage_gb ?? 0}GB</span>
-            <button
-              type="button"
-              class="addon-btn"
-              onclick={() => {
-                adjustAddon('storage', 100);
-              }}
-              aria-label="Speicher erhöhen"
-            >
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Summary Bar -->
-<div class="summary-bar">
-  <div class="summary-content">
-    <div class="summary-items">
-      <div class="summary-item">
-        <span class="summary-label">Aktueller Plan</span>
-        <span class="summary-value">{currentPlanName}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Aktive Features</span>
-        <span class="summary-value"
-          >{activeFeatureCount.active} / {activeFeatureCount.total}</span
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={saveChanges}
         >
+          <i class="fas fa-save mr-2"></i>
+          Änderungen speichern
+        </button>
       </div>
-      <div class="summary-item">
-        <span class="summary-label">Monatliche Kosten</span>
-        <span class="summary-value">{totalCost.toFixed(2)}</span>
-      </div>
-    </div>
-    <div class="summary-actions">
-      <button
-        type="button"
-        class="btn-save"
-        onclick={saveChanges}
-      >
-        <i class="fas fa-save mr-2"></i>
-        Änderungen speichern
-      </button>
     </div>
   </div>
 </div>
+
+<!-- Plan Change Confirmation Modal -->
+{#if showPlanChangeModal}
+  {@const pendingPlan = plans[pendingPlanCode]}
+  <div
+    id="plan-change-modal"
+    class="modal-overlay modal-overlay--active"
+  >
+    <div class="confirm-modal confirm-modal--danger">
+      <div class="confirm-modal__icon">
+        <i class="fas fa-exchange-alt"></i>
+      </div>
+      <h3 class="confirm-modal__title">Plan wechseln</h3>
+      <p class="confirm-modal__message">
+        Möchten Sie wirklich zum
+        <strong>{pendingPlan?.name ?? pendingPlanCode}</strong> Plan wechseln?
+      </p>
+      <div class="confirm-modal__actions confirm-modal__actions--centered">
+        <button
+          type="button"
+          class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
+          onclick={() => {
+            showPlanChangeModal = false;
+          }}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger confirm-modal__btn--wide"
+          onclick={() => void confirmPlanChange()}
+        >
+          Plan wechseln
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<style>
+  /* ==========================================================
+     SUMMARY CARD
+     ========================================================== */
+
+  .summary-card__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .summary-card__items {
+    display: flex;
+    gap: var(--spacing-8);
+  }
+
+  .summary-card__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .summary-card__label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .summary-card__value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  /* ==========================================================
+     RESPONSIVE
+     ========================================================== */
+
+  @media (width < 768px) {
+    .summary-card__items {
+      gap: var(--spacing-4);
+    }
+
+    .summary-card__content {
+      flex-direction: column;
+      gap: var(--spacing-3);
+    }
+  }
+</style>

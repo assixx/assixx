@@ -111,8 +111,7 @@
     {#if loading}
       <!-- Loading State -->
       <div class="py-8">
-        <i class="fas fa-spinner fa-spin mb-4 text-4xl text-(--color-primary)"
-        ></i>
+        <div class="spinner-ring spinner-ring--sm mb-4"></div>
         <p class="text-(--color-text-secondary)">Lade Löschanfrage...</p>
       </div>
     {:else if errorMessage !== null && queueData === null}
@@ -158,7 +157,7 @@
         </div>
       </div>
       <p class="text-(--color-text-secondary)">
-        <i class="fas fa-spinner fa-spin mr-2"></i>
+        <span class="spinner-ring spinner-ring--sm mr-2"></span>
         Weiterleitung zur Statusübersicht...
       </p>
     {:else if queueData !== null}
@@ -295,7 +294,7 @@
             disabled={!canSubmit}
           >
             {#if submitting}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
               Wird genehmigt...
             {:else}
               <i class="fas fa-check mr-2"></i>

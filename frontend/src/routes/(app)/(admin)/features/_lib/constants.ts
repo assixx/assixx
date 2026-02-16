@@ -8,10 +8,22 @@ import type { FeatureCategory } from './types';
 /** Plan order for comparison (lowest to highest) */
 export const PLAN_ORDER = ['basic', 'professional', 'enterprise'] as const;
 
+/** FontAwesome icon class per feature code */
+export const FEATURE_ICONS: Record<string, string> = {
+  employees: 'fas fa-users',
+  documents: 'fas fa-folder-open',
+  blackboard: 'fas fa-chalkboard',
+  chat: 'fas fa-comments',
+  surveys: 'fas fa-poll',
+  calendar: 'fas fa-calendar-alt',
+  shift_planning: 'fas fa-clock',
+  kvp: 'fas fa-lightbulb',
+};
+
 /** Hardcoded feature categories with default inactive state */
 export const FEATURE_CATEGORIES: Record<string, FeatureCategory> = {
   'Kern-Features': {
-    icon: '',
+    icon: '🔧',
     features: [
       {
         code: 'employees',
@@ -30,7 +42,7 @@ export const FEATURE_CATEGORIES: Record<string, FeatureCategory> = {
     ],
   },
   Kommunikation: {
-    icon: '',
+    icon: '💬',
     features: [
       {
         code: 'blackboard',
@@ -56,7 +68,7 @@ export const FEATURE_CATEGORIES: Record<string, FeatureCategory> = {
     ],
   },
   Organisation: {
-    icon: '',
+    icon: '📋',
     features: [
       {
         code: 'calendar',

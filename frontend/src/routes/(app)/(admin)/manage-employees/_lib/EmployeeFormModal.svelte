@@ -1,6 +1,9 @@
 <script lang="ts">
   import { tick } from 'svelte';
 
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -183,9 +186,9 @@
         }
       };
 
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -414,21 +417,11 @@
         </div>
 
         {#if formPassword}
-          <div
-            class="password-strength-container"
-            id="employee-password-strength-container"
-          >
-            <div class="password-strength-meter">
-              <div
-                class="password-strength-bar"
-                data-score={passwordScore}
-              ></div>
-            </div>
-            <div class="password-strength-info">
-              <span class="password-strength-label">{passwordLabel}</span>
-              <span class="password-strength-time">{passwordTime}</span>
-            </div>
-          </div>
+          <PasswordStrengthIndicator
+            score={passwordScore}
+            label={passwordLabel}
+            crackTime={passwordTime}
+          />
         {/if}
 
         <div class="form-field">
@@ -510,16 +503,7 @@
             class="form-field__label"
             for="employee-dateOfBirth">Geburtsdatum</label
           >
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="employee-dateOfBirth"
-              name="dateOfBirth"
-              class="date-picker__input"
-              bind:value={formDateOfBirth}
-            />
-          </div>
+          <AppDatePicker bind:value={formDateOfBirth} />
         </div>
 
         <!-- Team Assignment Section -->
@@ -722,7 +706,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={submitting}
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

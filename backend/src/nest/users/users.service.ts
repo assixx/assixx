@@ -100,7 +100,7 @@ export class UsersService {
     const sortBy = mapSortField(query.sortBy ?? 'createdAt');
     const sortOrder = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
 
-    // Get users (availability fields removed - now from employee_availability table)
+    // Get users (availability fields removed - now from user_availability table)
     const users = await this.databaseService.query<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
@@ -247,7 +247,7 @@ export class UsersService {
 
   /**
    * Insert user record into database
-   * NOTE: Availability fields removed - now managed via employee_availability table
+   * NOTE: Availability fields removed - now managed via user_availability table
    */
   private async insertUserRecord(
     userData: Omit<
@@ -616,7 +616,7 @@ export class UsersService {
   /**
    * Find user by ID
    * SECURITY: Only returns ACTIVE users (is_active = 1)
-   * NOTE: Availability fields removed - now from employee_availability table
+   * NOTE: Availability fields removed - now from user_availability table
    */
   private async findUserById(
     userId: number,

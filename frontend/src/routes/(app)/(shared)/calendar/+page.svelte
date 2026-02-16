@@ -4,21 +4,13 @@
    * SSR: Data loaded in +page.server.ts
    * Level 3: $derived from SSR data + invalidateAll() after mutations
    */
-  import {
-    Calendar,
-    DayGrid,
-    TimeGrid,
-    List,
-    Interaction,
-  } from '@event-calendar/core';
+  import { DayGrid, TimeGrid, List, Interaction } from '@event-calendar/core';
   import { onDestroy } from 'svelte';
 
   import { browser } from '$app/environment';
   import { invalidateAll } from '$app/navigation';
 
   import '@event-calendar/core/index.css';
-  // Global calendar styles - MUST be imported for legend-*, event-level-*, etc. classes
-  import '$styles/calendar.css';
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
@@ -27,6 +19,7 @@
   import { tooltip } from '$design-system/primitives/tooltip/tooltip.svelte';
 
   import * as api from './_lib/api';
+  import CalendarView from './_lib/CalendarView.svelte';
   import { FILTER_OPTIONS, DE_LOCALE } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import EventDetailModal from './_lib/EventDetailModal.svelte';
@@ -35,6 +28,7 @@
   import { shiftIndicators } from './_lib/shift-indicators.svelte';
   import { calendarState } from './_lib/state.svelte';
   import { formatDatetimeLocal } from './_lib/utils';
+  import { vacationIndicators } from './_lib/vacation-indicators.svelte';
 
   import type { PageData } from './$types';
   import type {
@@ -47,15 +41,12 @@
 
   const log = createLogger('CalendarPage');
 
-  // Modal components
-
   // ==========================================================================
   // SSR DATA (single source of truth via $derived)
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
 
-  // Derived from SSR data
   const upcomingEvents = $derived(data.upcomingEvents);
   const recentlyAddedEvents = $derived(data.recentlyAddedEvents);
   const departments = $derived(data.departments);
@@ -69,8 +60,11 @@
   // ==========================================================================
 
   let isFullscreen = $state(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment -- Calendar component type from @event-calendar/core lacks proper types
-  let calendarRef: any = $state();
+
+  interface CalendarViewRef {
+    refetchEvents(): void;
+  }
+  let calendarViewRef = $state<CalendarViewRef | null>(null);
 
   // Form state
   let formData = $state<EventFormData>({
@@ -95,18 +89,9 @@
   // CALENDAR OPTIONS
   // ==========================================================================
 
-  /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- @event-calendar/core lacks types */
   function refetchCalendarEvents(): void {
-    if (calendarRef !== undefined) {
-      if (typeof calendarRef.refetchEvents === 'function') {
-        log.debug({}, 'Refetching events');
-        calendarRef.refetchEvents();
-      } else {
-        log.debug({}, 'refetchEvents not available, calendar may not be ready');
-      }
-    }
+    calendarViewRef?.refetchEvents();
   }
-  /* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 
   const calendarPlugins = $derived([DayGrid, TimeGrid, List, Interaction]);
   const calendarOptions = $derived({
@@ -207,9 +192,15 @@
     endStr: string;
   }): Promise<EventInput[]> {
     try {
-      // Fetch shifts in parallel (for DOM rendering later)
+      // Fetch shifts + vacations in parallel (for DOM rendering later)
       if (shiftIndicators.showShifts) {
         void shiftIndicators.fetchAndRenderShifts(
+          fetchInfo.startStr,
+          fetchInfo.endStr,
+        );
+      }
+      if (vacationIndicators.showVacations) {
+        void vacationIndicators.fetchAndRenderVacations(
           fetchInfo.startStr,
           fetchInfo.endStr,
         );
@@ -464,6 +455,24 @@
               <i class="fas fa-clock"></i>
               Schichten
             </button>
+            <!-- Urlaub Toggle -->
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={vacationIndicators.showVacations}
+              id="showVacationsToggle"
+              title="Urlaub anzeigen/ausblenden"
+              data-action="toggle-vacations"
+              onclick={() => {
+                const isNowActive = vacationIndicators.toggle();
+                if (isNowActive) {
+                  refetchCalendarEvents();
+                }
+              }}
+            >
+              <i class="fas fa-umbrella-beach"></i>
+              Urlaub
+            </button>
           </div>
         </div>
 
@@ -491,57 +500,26 @@
               <span class="legend-color legend-personal"></span>
               <span class="legend-label">Persoenlich</span>
             </div>
+            <div class="legend-item">
+              <span class="legend-color legend-vacation"></span>
+              <span class="legend-label">Urlaub</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Calendar Card -->
-  <div
-    class="card calendar-card mb-6"
-    id="calendarContainer"
-  >
-    <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h3 class="card__title">
-          <i class="fas fa-calendar-alt mr-2"></i>
-          Kalender
-        </h3>
-        <div class="flex gap-2">
-          <button
-            type="button"
-            id="fullscreenBtn"
-            class="btn btn-icon btn-secondary"
-            onclick={toggleFullscreen}
-            title="Vollbild"
-          >
-            <i class="fas fa-expand"></i>
-          </button>
-          <button
-            type="button"
-            id="newEventBtn"
-            class="btn btn-primary"
-            onclick={() => {
-              openEventForm();
-            }}
-          >
-            <i class="fas fa-plus mr-2"></i>
-            Neuer Termin
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="card__body p-0">
-      <div id="calendar">
-        <Calendar
-          bind:this={calendarRef}
-          plugins={calendarPlugins}
-          options={calendarOptions}
-        />
-      </div>
-    </div>
-  </div>
+  <!-- Calendar Card (extracted into CalendarView) -->
+  <CalendarView
+    bind:this={calendarViewRef}
+    plugins={calendarPlugins}
+    options={calendarOptions}
+    onNewEvent={() => {
+      openEventForm();
+    }}
+    onToggleFullscreen={toggleFullscreen}
+  />
 
   <!-- Two-column layout for events -->
   <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -572,6 +550,7 @@
     event={calendarState.viewingEvent}
     canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
     canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
+    isPast={calendarState.isEventPast(calendarState.viewingEvent)}
     {areas}
     {departments}
     {teams}
@@ -607,26 +586,50 @@
   />
 {/if}
 
-<!-- ========================================================================
-     STYLES
-     ======================================================================== -->
-
 <style>
-  /* EventCalendar CSS variables */
-  :root {
-    --ec-border-color: hsl(0deg 0% 83.5% / 35%);
+  /* ─── Legend ──────── */
+
+  .legend-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 5px;
   }
 
-  /* Calendar container */
-  #calendar {
-    width: 100%;
-    padding: 10px;
+  .legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
   }
 
-  /* ==========================================================================
-     ALL LEGEND, UPCOMING EVENTS, EVENT-LEVEL STYLES ARE IN:
-     $styles/calendar.css (imported at top of file)
+  .legend-color {
+    width: 14px;
+    height: 14px;
+    margin-right: 5px;
+    border-radius: 3px;
+  }
 
-     DO NOT DUPLICATE HERE - use global CSS only!
-     ========================================================================== */
+  .legend-company {
+    background-color: #3498db;
+  }
+
+  .legend-department {
+    background-color: #e67e22;
+  }
+
+  .legend-team {
+    background-color: #2ecc71;
+  }
+
+  .legend-area {
+    background-color: #e53935;
+  }
+
+  .legend-personal {
+    background-color: #9b59b6;
+  }
+
+  .legend-vacation {
+    background-color: #26a69a;
+  }
 </style>

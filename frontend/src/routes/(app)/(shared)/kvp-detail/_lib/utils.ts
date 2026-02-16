@@ -227,15 +227,14 @@ export function canUpdateStatus(userRole: string): boolean {
 
 /**
  * Check if user can share suggestion
+ * Admin/Root can share when the suggestion is not yet shared.
+ * Once shared, use "unshare" first before re-sharing at a different level.
  */
 export function canShareSuggestion(
   suggestion: KvpSuggestion,
   userRole: string,
 ): boolean {
-  return (
-    (userRole === 'admin' || userRole === 'root') &&
-    suggestion.orgLevel !== 'company'
-  );
+  return (userRole === 'admin' || userRole === 'root') && !suggestion.isShared;
 }
 
 /**

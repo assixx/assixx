@@ -45,10 +45,9 @@ services:
           memory: 256M
 
   deletion-worker:
-    # Use same CI image as backend - MUST have build context since image doesn't exist in registry
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    # No build section needed - reuses the assixx-backend:ci image built by the backend service.
+    # Having a duplicate build section with the same image tag causes a Buildx race condition:
+    # both services finish in parallel and the second one fails with "already exists".
     image: assixx-backend:ci
     # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
     # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!

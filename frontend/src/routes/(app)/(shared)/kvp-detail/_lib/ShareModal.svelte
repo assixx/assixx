@@ -9,14 +9,17 @@
 </script>
 
 {#if kvpDetailState.showShareModal}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-share-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="ds-modal ds-modal--md">
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">Vorschlag teilen</h3>
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={() => {
             kvpDetailState.closeShareModal();
           }}
@@ -202,12 +205,12 @@
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={onconfirm}
           disabled={kvpDetailState.isSharing}
         >
           {#if kvpDetailState.isSharing}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {/if}
           Teilen
         </button>
@@ -215,3 +218,17 @@
     </div>
   </div>
 {/if}
+
+<style>
+  :global([data-dropdown='shareDept'] .dropdown__trigger),
+  :global([data-dropdown='shareArea'] .dropdown__trigger) {
+    min-width: 220px;
+    width: 50%;
+  }
+
+  :global([data-dropdown='shareDept'] .dropdown__menu),
+  :global([data-dropdown='shareArea'] .dropdown__menu) {
+    min-width: 220px;
+    width: 50%;
+  }
+</style>

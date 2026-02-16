@@ -217,7 +217,7 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 ## 🚫 Don't Use For
 
 - ❌ Primary page actions (use `.btn.btn-primary`)
-- ❌ Forms (use `.btn.btn-modal`)
+- ❌ Forms (use `.btn.btn-primary`)
 - ❌ When text label is needed for clarity
 - ❌ Standalone buttons (need context)
 

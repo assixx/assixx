@@ -34,6 +34,7 @@ function createMockMachineRow(overrides?: Partial<DbMachineRow>): DbMachineRow {
   return {
     id: 1,
     tenant_id: 10,
+    uuid: '01953d6a-0000-7000-8000-000000000001',
     name: 'CNC Milling 001',
     model: null,
     manufacturer: null,

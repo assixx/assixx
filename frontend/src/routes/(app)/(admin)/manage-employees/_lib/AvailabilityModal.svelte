@@ -4,6 +4,8 @@
   Uses ds-modal design system components
 -->
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { AVAILABILITY_STATUS_OPTIONS, AVAILABILITY_ICONS } from './constants';
   import { getAvailabilityLabel } from './utils';
 
@@ -118,9 +120,9 @@
         }
       };
 
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -224,16 +226,10 @@
           >
             Von Datum
           </label>
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="availability-start"
-              name="availabilityStart"
-              class="date-picker__input"
-              bind:value={availabilityStart}
-            />
-          </div>
+          <AppDatePicker
+            bind:value={availabilityStart}
+            name="availabilityStart"
+          />
         </div>
 
         <div class="form-field">
@@ -243,16 +239,12 @@
           >
             Bis Datum
           </label>
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="availability-end"
-              name="availabilityEnd"
-              class="date-picker__input"
-              bind:value={availabilityEnd}
-            />
-          </div>
+          <AppDatePicker
+            bind:value={availabilityEnd}
+            name="availabilityEnd"
+            min={availabilityStart}
+            placeholder={availabilityStart}
+          />
         </div>
 
         <!-- Reason -->
@@ -316,7 +308,7 @@
           >
           <button
             type="submit"
-            class="btn btn-modal"
+            class="btn btn-primary"
             disabled={submitting}
           >
             {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

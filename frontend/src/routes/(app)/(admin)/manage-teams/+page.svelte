@@ -13,9 +13,6 @@
 
   const log = createLogger('ManageTeamsPage');
 
-  // Page-specific CSS
-  import '../../../../styles/manage-teams.css';
-
   // Local modules
   import {
     saveTeam as apiSaveTeam,
@@ -339,9 +336,9 @@
         if (el && !el.contains(target)) searchOpen = false;
       };
 
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });

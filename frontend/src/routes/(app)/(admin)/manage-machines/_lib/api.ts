@@ -188,6 +188,31 @@ export async function deleteMachine(machineId: number): Promise<void> {
 }
 
 // =============================================================================
+// MACHINE AVAILABILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Payload for creating a machine availability entry
+ */
+interface MachineAvailabilityPayload {
+  availabilityStatus: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityReason?: string;
+  availabilityNotes?: string;
+}
+
+/**
+ * Update machine availability by UUID
+ */
+export async function updateMachineAvailability(
+  uuid: string,
+  payload: MachineAvailabilityPayload,
+): Promise<{ message: string }> {
+  return await apiClient.put(`/machines/uuid/${uuid}/availability`, payload);
+}
+
+// =============================================================================
 // HELPER TYPES FOR ERROR HANDLING
 // =============================================================================
 

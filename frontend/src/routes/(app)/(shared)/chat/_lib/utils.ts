@@ -494,7 +494,7 @@ export function getRoleLabel(role: string): string {
  * @param role - User role
  * @returns CSS class for badge
  */
-export function getRoleBadgeClass(role: string): string {
+export function getRoleBadgeClass(role: string | null | undefined): string {
   switch (role) {
     case 'admin':
       return 'badge--warning';

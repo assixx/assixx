@@ -20,6 +20,7 @@ export interface CustomCategory {
   description: string | null;
   color: string;
   icon: string;
+  suggestionCount: number;
 }
 
 /** Full API response for GET /kvp/categories/customizable */

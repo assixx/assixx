@@ -149,6 +149,32 @@ describe('Mark All Notifications as Read', () => {
   });
 });
 
+// ─── Mark Feature Type as Read: vacation (seq: 6b) ──────────────────────────
+
+describe('Mark Feature Type as Read (vacation)', () => {
+  it('should return 200 OK for vacation type', async () => {
+    const res = await fetch(`${BASE_URL}/notifications/mark-read/vacation`, {
+      method: 'POST',
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('marked');
+    expect(typeof body.data.marked).toBe('number');
+  });
+
+  it('should reject invalid feature type', async () => {
+    const res = await fetch(`${BASE_URL}/notifications/mark-read/invalid`, {
+      method: 'POST',
+      headers: authOnly(auth.authToken),
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
 // ─── Get Notification Statistics (seq: 7) ───────────────────────────────────
 
 describe('Get Notification Statistics (Admin)', () => {

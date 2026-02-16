@@ -21,6 +21,9 @@
   }
   const { userRole = 'employee' }: Props = $props();
 
+  // Frequently used icon constants
+  const ICON_CALENDAR = 'fa-calendar-alt';
+
   // =============================================================================
   // FULLSCREEN PAGES (no breadcrumb)
   // Pages that use fullscreen layout and don't need breadcrumb navigation
@@ -59,14 +62,14 @@
       },
       '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-building' },
       '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
-      '/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-industry' },
+      '/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-cogs' },
       '/manage-root': { label: 'Root User Verwaltung', icon: 'fa-shield-alt' },
       '/blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
       '/blackboard-detail': {
         label: 'Schwarzes Brett Details',
         icon: 'fa-info-circle',
       },
-      '/calendar': { label: 'Kalender', icon: 'fa-calendar-alt' },
+      '/calendar': { label: 'Kalender', icon: ICON_CALENDAR },
       '/chat': { label: 'Chat', icon: 'fa-comments' },
       '/documents': { label: 'Dokumente', icon: 'fa-file-alt' },
       '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
@@ -86,7 +89,18 @@
       '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
       '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
       '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
-      '/features': { label: 'Features', icon: 'fa-tools' },
+      '/features': { label: 'Features', icon: 'fas fa-puzzle-piece' },
+      '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
+      '/vacation/rules': { label: 'Urlaubsregeln', icon: 'fa-shield-alt' },
+      '/vacation/entitlements': {
+        label: 'Urlaubsansprüche',
+        icon: 'fa-calculator',
+      },
+      '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
+      '/vacation/overview': {
+        label: 'Urlaubsübersicht',
+        icon: ICON_CALENDAR,
+      },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',
@@ -108,7 +122,22 @@
     {
       pattern: /^\/manage-employees\/availability\/[^/]+$/,
       label: 'Employee Name Placeholder',
-      icon: 'fa-calendar-alt',
+      icon: ICON_CALENDAR,
+    },
+    {
+      pattern: /^\/manage-admins\/availability\/[^/]+$/,
+      label: 'Admin Name Placeholder',
+      icon: ICON_CALENDAR,
+    },
+    {
+      pattern: /^\/manage-root\/availability\/[^/]+$/,
+      label: 'Root Name Placeholder',
+      icon: ICON_CALENDAR,
+    },
+    {
+      pattern: /^\/manage-machines\/availability\/[^/]+$/,
+      label: 'Machine Name Placeholder',
+      icon: ICON_CALENDAR,
     },
     {
       pattern: /^\/manage-employees\/permission\/[^/]+$/,
@@ -170,6 +199,18 @@
       icon: 'fa-users',
     },
     {
+      pattern: /^\/manage-admins\/availability\/[^/]+$/,
+      label: 'Admins verwalten',
+      href: '/manage-admins',
+      icon: 'fa-user-shield',
+    },
+    {
+      pattern: /^\/manage-root\/availability\/[^/]+$/,
+      label: 'Root User Verwaltung',
+      href: '/manage-root',
+      icon: 'fa-shield-alt',
+    },
+    {
       pattern: /^\/manage-employees\/permission\/[^/]+$/,
       label: 'Mitarbeiter verwalten',
       href: '/manage-employees',
@@ -180,6 +221,12 @@
       label: 'Admins verwalten',
       href: '/manage-admins',
       icon: 'fa-user-shield',
+    },
+    {
+      pattern: /^\/manage-machines\/availability\/[^/]+$/,
+      label: 'Maschinen verwalten',
+      href: '/manage-machines',
+      icon: 'fa-cogs',
     },
   ];
 
@@ -213,6 +260,18 @@
     return 'Mitarbeiter';
   }
 
+  /** Resolve machine name from page data for machine availability breadcrumb */
+  function getMachineNameFromPageData(): string {
+    const pageData = $page.data as {
+      machine?: { name?: string };
+    };
+    const machine = pageData.machine;
+    if (machine?.name !== undefined) {
+      return machine.name;
+    }
+    return 'Maschine';
+  }
+
   /** Build breadcrumb items for a matched dynamic route */
   function buildDynamicRouteItems(
     dynamicMatch: { pattern: RegExp; label: string; icon: string },
@@ -233,14 +292,24 @@
       });
     }
 
-    // Special handling for employee availability route
+    // Special handling for availability routes (employee vs machine)
     const isAvailabilityRoute = currentPath.includes('/availability/');
+    const isMachineAvailabilityRoute = currentPath.startsWith(
+      '/manage-machines/availability/',
+    );
 
     // Special handling for permission routes (employees, admins, root)
     const isPermissionRoute = currentPath.includes('/permission/');
 
-    if (isAvailabilityRoute) {
-      items.push({ label: 'Verfügbarkeit', icon: 'fa-calendar-alt' });
+    if (isMachineAvailabilityRoute) {
+      items.push({ label: 'Verfügbarkeit', icon: ICON_CALENDAR });
+      items.push({
+        label: getMachineNameFromPageData(),
+        icon: 'fa-cog',
+        current: true,
+      });
+    } else if (isAvailabilityRoute) {
+      items.push({ label: 'Verfügbarkeit', icon: ICON_CALENDAR });
       items.push({
         label: getEmployeeNameFromPageData(),
         icon: 'fa-user',

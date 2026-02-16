@@ -7,6 +7,7 @@
    */
   import { goto, invalidateAll } from '$app/navigation';
 
+  import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import {
     showSuccessAlert,
     showErrorAlert,
@@ -17,10 +18,6 @@
 
   const log = createLogger('ManageEmployeesPage');
 
-  // Page-specific CSS
-  import '../../../../styles/manage-employees.css';
-  import '../../../../styles/password-strength.css';
-
   // Local modules
   import {
     saveEmployee as apiSaveEmployee,
@@ -30,7 +27,6 @@
     syncTeamMemberships,
     buildEmployeePayload,
   } from './_lib/api';
-  import AvailabilityModal from './_lib/AvailabilityModal.svelte';
   import { MESSAGES } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import EmployeeFormModal from './_lib/EmployeeFormModal.svelte';
@@ -495,9 +491,9 @@
         const el = document.querySelector('.search-input-wrapper');
         if (el && !el.contains(target)) searchOpen = false;
       };
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -746,7 +742,7 @@
 <!-- Availability Modal Component -->
 <AvailabilityModal
   show={showAvailabilityModal}
-  employee={availabilityEmployee}
+  person={availabilityEmployee}
   submitting={availabilitySubmitting}
   bind:availabilityStatus
   bind:availabilityStart
@@ -807,7 +803,7 @@
           onclick={() => void confirmUpgradeEmployee()}
         >
           {#if upgradeLoading}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
           {/if}
           {MESSAGES.UPGRADE_CONFIRM_BUTTON}
         </button>

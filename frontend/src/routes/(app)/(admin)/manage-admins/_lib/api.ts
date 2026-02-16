@@ -235,6 +235,28 @@ export async function downgradeToEmployee(adminId: number): Promise<void> {
 }
 
 // =============================================================================
+// AVAILABILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Update admin availability (quick update via users table)
+ * @param adminId - Admin user ID
+ * @param availability - Availability data payload
+ */
+export async function updateAdminAvailability(
+  adminId: number,
+  availability: {
+    availabilityStatus: string;
+    availabilityStart?: string;
+    availabilityEnd?: string;
+    availabilityReason?: string;
+    availabilityNotes?: string;
+  },
+): Promise<void> {
+  await apiClient.put(`/users/${adminId}`, availability);
+}
+
+// =============================================================================
 // DELETE FUNCTIONS
 // =============================================================================
 

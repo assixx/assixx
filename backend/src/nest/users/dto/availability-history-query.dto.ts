@@ -43,7 +43,7 @@ export class AvailabilityHistoryQueryDto extends createZodDto(
  */
 export interface AvailabilityHistoryEntry {
   id: number;
-  employeeId: number;
+  userId: number;
   status: string; // DB returns string from enum
   startDate: string;
   endDate: string;

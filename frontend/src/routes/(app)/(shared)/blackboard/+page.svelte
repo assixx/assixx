@@ -25,9 +25,6 @@
 
   const log = createLogger('BlackboardPage');
 
-  // Page-specific CSS
-  import '../../../../styles/blackboard.css';
-
   // _lib/ imports
   import { fetchEntryByUuid, uploadAttachment, confirmEntry } from './_lib/api';
   import BlackboardEntryCard from './_lib/BlackboardEntry.svelte';
@@ -563,7 +560,9 @@
     {:else}
       <div
         class="pinboard-grid"
-        style="--zoom-level: {zoomLevel / 100};"
+        style="
+
+--zoom-level: {zoomLevel / 100};"
       >
         {#each entries as entry (entry.id)}
           <BlackboardEntryCard
@@ -649,3 +648,131 @@
   onproceed={proceedDelete}
   onconfirm={deleteEntry}
 />
+
+<style>
+  /* ─── Blackboard Container ──────── */
+
+  .blackboard-container {
+    position: relative;
+    border-radius: 12px;
+    padding: 40px;
+    width: 100%;
+    min-height: calc(100vh - 120px);
+    overflow: visible;
+  }
+
+  .blackboard-container::after {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    border-radius: 12px;
+    background:
+      linear-gradient(45deg, #ffffff57 3%, #9a070700 0),
+      linear-gradient(-45deg, #fff0 3% 0),
+      linear-gradient(45deg, #ffffffb2 3%, #fff0 0),
+      linear-gradient(-45deg, #ffffff3d 3%, #84848400 0);
+    background-position:
+      0 0,
+      -2px 4px,
+      0 0,
+      -17px -12px;
+    background-size: 30px 30px;
+    pointer-events: none;
+    content: '';
+  }
+
+  :global(html:not(.dark)) .blackboard-container::after {
+    background-image:
+      linear-gradient(45deg, #00000057 3%, #9a070700 0),
+      linear-gradient(-45deg, #0000 3% 0),
+      linear-gradient(45deg, #000000b2 3%, #0000 0),
+      linear-gradient(-45deg, #0000003d 3%, #84848400 0);
+  }
+
+  /* ─── Pinboard Grid ──────── */
+
+  .pinboard-grid {
+    display: flex;
+    position: relative;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 2;
+    transform: scale(var(--zoom-level, 1));
+    transform-origin: top center;
+  }
+
+  /* ─── Controls ──────── */
+
+  .controls-flex {
+    display: flex !important;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .zoom-controls {
+    display: flex;
+    position: relative;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px;
+    margin-left: auto;
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    padding: 10px;
+    width: fit-content;
+  }
+
+  .zoom-controls-inline {
+    backdrop-filter: none;
+    margin: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .zoom-level {
+    opacity: 80%;
+    min-width: 45px;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  /* ─── Fullscreen Mode ──────── */
+
+  :global(body.fullscreen-mode #blackboardContainer) {
+    position: fixed !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+    inset: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    overflow-y: auto;
+  }
+
+  :global(body.fullscreen-mode .pinboard-grid) {
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  :global(body.fullscreen-mode .sidebar),
+  :global(body.fullscreen-mode .header),
+  :global(body.fullscreen-mode #breadcrumb-container),
+  :global(body.fullscreen-mode .card.mb-6),
+  :global(body.fullscreen-mode .flex.flex-between.mb-6),
+  :global(body.fullscreen-mode .flex.justify-between.mb-6) {
+    display: none !important;
+  }
+
+  :global(body.fullscreen-mode .zoom-controls) {
+    display: none !important;
+  }
+</style>

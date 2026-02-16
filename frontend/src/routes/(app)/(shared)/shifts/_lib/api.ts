@@ -15,6 +15,7 @@ import type {
   Area,
   Department,
   Machine,
+  MachineAvailabilityEntry,
   Team,
   TeamMember,
   Employee,
@@ -50,6 +51,8 @@ const API_ENDPOINTS = {
 
   // Favorites
   FAVORITES: '/shifts/favorites',
+
+  // Vacation / Staffing
 
   // Rotation
   ROTATION_PATTERNS: '/shifts/rotation/patterns',
@@ -288,6 +291,30 @@ export async function fetchTeamMembers(
     return members;
   } catch (err) {
     log.error({ err }, 'Error loading team members');
+    return [];
+  }
+}
+
+// =============================================================================
+// MACHINE AVAILABILITY (for shift cell visual marking)
+// =============================================================================
+
+/**
+ * Fetch machine availability entries that overlap with a date range.
+ * Used to visually mark shift cells when a machine is unavailable.
+ */
+export async function fetchMachineAvailability(
+  machineId: number,
+  startDate: string,
+  endDate: string,
+): Promise<MachineAvailabilityEntry[]> {
+  try {
+    const response = await apiClient.get<MachineAvailabilityEntry[]>(
+      `${API_ENDPOINTS.MACHINES}/${machineId}/availability?startDate=${startDate}&endDate=${endDate}`,
+    );
+    return Array.isArray(response) ? response : [];
+  } catch (err) {
+    log.error({ err }, 'Error loading machine availability');
     return [];
   }
 }

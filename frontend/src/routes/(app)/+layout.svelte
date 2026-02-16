@@ -11,20 +11,13 @@
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
   import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import RoleSwitch from '$lib/components/RoleSwitch.svelte';
-  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { clearPublicKeyCache } from '$lib/crypto/public-key-cache';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { syncThemeFromSSR } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
-  import {
-    getAvatarColorClass,
-    getProfilePictureUrl,
-  } from '$lib/utils/avatar-helpers';
   import { createLogger } from '$lib/utils/logger';
   import {
     perf,
@@ -50,28 +43,20 @@
     startPeriodicPing,
     type WebSocketCallbacks,
   } from './(shared)/chat/_lib/handlers';
+  import AppHeader from './_lib/AppHeader.svelte';
   import AppSidebar from './_lib/AppSidebar.svelte';
+  import LogoutModal from './_lib/LogoutModal.svelte';
   import {
     filterMenuByAccess,
+    filterMenuByFeatures,
     getMenuItemsForRole,
     type NavItem,
   } from './_lib/navigation-config';
+  import RoleSwitchBanner from './_lib/RoleSwitchBanner.svelte';
 
   import type { LayoutData } from './$types';
 
-  import '../../styles/unified-navigation.css';
-
   const log = createLogger('AppLayout');
-
-  /**
-   * Resolve dynamic path with base prefix.
-   * Type assertion needed for runtime-computed paths that can't be
-   * statically typed by SvelteKit's route system.
-   */
-  function resolveDynamicPath(path: string): string {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Dynamic paths can't match SvelteKit's static route types
-    return resolve(path as any, {});
-  }
 
   const apiClient = getApiClient();
 
@@ -173,13 +158,6 @@
     isRoleSwitched && !roleSwitchBannerDismissed,
   );
 
-  // Role display names for banner
-  const roleDisplayNames: Record<'root' | 'admin' | 'employee', string> = {
-    root: 'Root',
-    admin: 'Administrator',
-    employee: 'Mitarbeiter',
-  };
-
   // Sync SSR user data to local state on invalidateAll() / navigation
   // This ensures UI updates immediately after PATCH /users/me
   $effect(() => {
@@ -239,32 +217,17 @@
     document.title = count > 0 ? `(${count}) ${base}` : base;
   });
 
-  // Navigation menu items - filtered by has_full_access for admin users
+  // Navigation menu items - filtered by access level and tenant feature activation
   const hasFullAccess = $derived(
     data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
   );
+  const activeFeaturesSet = $derived(new Set(data.activeFeatures));
   const menuItems = $derived<NavItem[]>(
-    filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
+    filterMenuByFeatures(
+      filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
+      activeFeaturesSet,
+    ),
   );
-
-  // --- HELPER FUNCTIONS ---
-
-  /** Get user initials for avatar */
-  function getInitials(): string {
-    if (!user) return 'U';
-    const first = user.firstName?.charAt(0) ?? '';
-    const last = user.lastName?.charAt(0) ?? '';
-    return (first + last).toUpperCase() || 'U';
-  }
-
-  /** Get display name */
-  function getDisplayName(): string {
-    if (user === null) return 'User';
-    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-    if (fullName !== '') return fullName;
-    if (user.email !== undefined && user.email !== '') return user.email;
-    return 'User';
-  }
 
   // --- API FUNCTIONS ---
 
@@ -506,163 +469,31 @@
   });
 </script>
 
-<!-- =============================================================================
-     SECURITY: AUTH GUARD - Block ALL content until authenticated
-     CRITICAL: Prevents sensitive data flash on browser back navigation
-     ============================================================================= -->
+<!-- AUTH GUARD: Block ALL content until authenticated -->
 {#if isAuthenticated}
-  <!-- Header -->
-  <header class="header">
-    <button
-      type="button"
-      class="sidebar-toggle"
-      onclick={toggleSidebar}
-      title="Sidebar ein-/ausklappen"
-    >
-      <svg
-        class="toggle-icon"
-        width="30"
-        height="30"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-      >
-        {#if sidebarCollapsed}
-          <path d="M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z"></path>
-        {:else}
-          <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"></path>
-        {/if}
-      </svg>
-    </button>
+  <AppHeader
+    {sidebarCollapsed}
+    {tokenTimeLeft}
+    {tokenWarning}
+    {tokenExpired}
+    {user}
+    {userRole}
+    {activeRole}
+    {currentRole}
+    onToggleSidebar={toggleSidebar}
+    onShowLogoutModal={() => {
+      showLogoutModal = true;
+    }}
+  />
 
-    <a
-      href={resolveDynamicPath(`/${currentRole}-dashboard`)}
-      class="logo-container"
-    >
-      {#if sidebarCollapsed}
-        <img
-          src="/images/logo_collapsed_darkmode.png"
-          alt="Assixx Logo"
-          class="logo logo-dark"
-        />
-        <img
-          src="/images/logo_collapsed_lightmode.png"
-          alt="Assixx Logo"
-          class="logo logo-light"
-        />
-      {:else}
-        <img
-          src="/images/logo_darkmode.png"
-          alt="Assixx Logo"
-          class="logo logo-dark"
-        />
-        <img
-          src="/images/logo_lightmode.png"
-          alt="Assixx Logo"
-          class="logo logo-light"
-        />
-      {/if}
-    </a>
+  <RoleSwitchBanner
+    isVisible={showRoleSwitchBanner}
+    {userRole}
+    {activeRole}
+    onDismiss={dismissRoleSwitchBanner}
+  />
 
-    <div class="header-content">
-      <div class="header-actions">
-        <!-- Role Switch Dropdown (only for root/admin users) -->
-        {#if userRole === 'root' || userRole === 'admin'}
-          <RoleSwitch
-            {userRole}
-            {activeRole}
-          />
-        {/if}
-
-        <span
-          class="token-timer"
-          class:token-timer--warning={tokenWarning}
-          class:token-timer--expired={tokenExpired}
-        >
-          {tokenTimeLeft}
-        </span>
-
-        <div id="user-info">
-          {#if user?.profilePicture}
-            <div class="avatar avatar--md">
-              <img
-                src={getProfilePictureUrl(user.profilePicture)}
-                alt={getDisplayName()}
-                class="avatar__image"
-              />
-            </div>
-          {:else}
-            <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
-              <span class="avatar__initials">{getInitials()}</span>
-            </div>
-          {/if}
-          <span id="user-name">{getDisplayName()}</span>
-        </div>
-
-        <ThemeToggle />
-
-        <button
-          type="button"
-          id="logout-btn"
-          class="btn btn-danger"
-          onclick={() => {
-            showLogoutModal = true;
-          }}
-          title="Abmelden"
-          aria-label="Abmelden"
-        >
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Role Switch Warning Banner -->
-  {#if showRoleSwitchBanner}
-    <div
-      class="role-switch-banner"
-      id="role-switch-warning-banner"
-    >
-      <div class="role-switch-banner-content">
-        <svg
-          width="19"
-          height="19"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          class="mr-2"
-        >
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-          />
-        </svg>
-        <span>
-          Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong
-          >. Ihre ursprüngliche Rolle ist
-          <strong>{roleDisplayNames[userRole]}</strong>.
-        </span>
-        <button
-          type="button"
-          class="role-switch-banner-close"
-          onclick={dismissRoleSwitchBanner}
-          title="Banner schließen"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path
-              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Main Layout -->
   <div class="layout-container">
-    <!-- Mobile sidebar backdrop overlay -->
     {#if mobileMenuOpen}
       <button
         type="button"
@@ -672,7 +503,6 @@
       ></button>
     {/if}
 
-    <!-- Sidebar Navigation (extracted to AppSidebar for modularity) -->
     <AppSidebar
       collapsed={sidebarCollapsed}
       {menuItems}
@@ -684,61 +514,63 @@
       onCloseMobile={closeMobileMenu}
     />
 
-    <!-- Main Content (Child Routes) -->
     <main
       class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-2 md:p-3 lg:p-4"
     >
-      <!-- Breadcrumb Navigation (wrapped for fullscreen CSS selector) -->
       <div id="breadcrumb-container">
         <Breadcrumb userRole={currentRole} />
       </div>
-
-      <!-- Page Content -->
       {@render children()}
     </main>
   </div>
 
-  <!-- Logout Confirmation Modal -->
-  {#if showLogoutModal}
-    <div class="modal-overlay modal-overlay--active">
-      <div
-        class="confirm-modal confirm-modal--info"
-        style="bottom: 10%;"
-      >
-        <div class="confirm-modal__icon">
-          <i class="fas fa-sign-out-alt"></i>
-        </div>
-        <h3 class="confirm-modal__title">Abmeldung bestätigen</h3>
-        <p class="confirm-modal__message">
-          Möchten Sie sich wirklich abmelden?<br />
-          <small
-            ><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen
-            verloren.</small
-          >
-        </p>
-        <div class="confirm-modal__actions confirm-modal__actions--centered">
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
-            onclick={() => {
-              showLogoutModal = false;
-            }}
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            class="btn btn-danger confirm-modal__btn--wide"
-            onclick={() => {
-              showLogoutModal = false;
-              void logout();
-            }}
-          >
-            Abmelden
-          </button>
-        </div>
-      </div>
-    </div>
-  {/if}
+  <LogoutModal
+    isVisible={showLogoutModal}
+    onCancel={() => {
+      showLogoutModal = false;
+    }}
+    onConfirm={() => {
+      showLogoutModal = false;
+      void logout();
+    }}
+  />
 {/if}
-<!-- END: AUTH GUARD -->
+
+<style>
+  .layout-container {
+    display: flex;
+    box-sizing: border-box;
+    min-height: calc(100vh - 60px);
+  }
+
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    cursor: default;
+    border: none;
+    background: rgb(0 0 0 / 50%);
+    backdrop-filter: blur(4px);
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .sidebar-backdrop.active {
+    display: block;
+  }
+
+  /* Cross-component: logo size when sidebar is collapsed */
+  :global(body:has(.sidebar.collapsed)) :global(.header .logo) {
+    margin-bottom: 8px;
+    margin-left: -4px;
+    width: 57px;
+  }
+
+  @media (width < 768px) {
+    .layout-container {
+      flex-direction: column;
+    }
+  }
+</style>

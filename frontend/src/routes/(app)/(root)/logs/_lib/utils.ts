@@ -84,14 +84,16 @@ export function getActionLabel(action: string): string {
 /**
  * Get localized role label
  */
-export function getRoleLabel(role: string): string {
+export function getRoleLabel(role: string | null | undefined): string {
+  if (role === null || role === undefined || role === '') return 'Unbekannt';
   return ROLE_LABELS[role] ?? role;
 }
 
 /**
  * Get CSS class for role badge
  */
-export function getRoleBadgeClass(role: string): string {
+export function getRoleBadgeClass(role: string | null | undefined): string {
+  if (role === null || role === undefined || role === '') return 'badge--info';
   const roleLower = role.toLowerCase();
   return ROLE_BADGE_CLASSES[roleLower] ?? 'badge--info';
 }

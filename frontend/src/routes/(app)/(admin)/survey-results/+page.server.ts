@@ -6,6 +6,7 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -97,11 +98,14 @@ async function fetchSurveyWithPermission(
   return surveyData;
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
+
+  const { activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'surveys');
 
   const surveyId = url.searchParams.get('surveyId');
   if (surveyId === null || surveyId === '') {

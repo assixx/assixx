@@ -113,8 +113,11 @@ export const MESSAGES = {
   // Status filter buttons
   FILTER_ALL: 'Alle',
   FILTER_OPERATIONAL: 'Betriebsbereit',
-  FILTER_MAINTENANCE: 'In Wartung',
-  FILTER_REPAIR: 'In Reparatur',
+  FILTER_MAINTENANCE: 'Wartung',
+  FILTER_REPAIR: 'Reparatur',
+  FILTER_STANDBY: 'Stillstand',
+  FILTER_CLEANING: 'Reinigung',
+  FILTER_OTHER: 'Sonstiges',
 
   // Search
   SEARCH_PLACEHOLDER: 'Name, Modell, Hersteller...',
@@ -129,6 +132,9 @@ export const MESSAGES = {
   EMPTY_OPERATIONAL: 'Keine betriebsbereiten Maschinen',
   EMPTY_MAINTENANCE: 'Keine Maschinen in Wartung',
   EMPTY_REPAIR: 'Keine Maschinen in Reparatur',
+  EMPTY_STANDBY: 'Keine Maschinen im Stillstand',
+  EMPTY_CLEANING: 'Keine Maschinen in Reinigung',
+  EMPTY_OTHER: 'Keine Maschinen unter Sonstiges',
   EMPTY_FILTER_DESC: 'Es gibt aktuell keine Maschinen in dieser Kategorie.',
 
   // Loading
@@ -164,6 +170,7 @@ export const MESSAGES = {
   TH_STATUS: 'Status',
   TH_HOURS: 'Betriebsstunden',
   TH_MAINTENANCE: 'Nächste Wartung',
+  TH_NEXT_ABSENCE: 'Nächste Abwesenheit',
   TH_ACTIONS: 'Aktionen',
 
   // Teams display

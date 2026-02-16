@@ -92,6 +92,18 @@ interface NotificationEventData {
     recipientIds: number[];
     preview?: string;
   };
+  request?: {
+    id: string;
+    requesterId: number;
+    approverId: number | null;
+    startDate: string;
+    endDate: string;
+    vacationType: string;
+    status: string;
+    computedDays: number;
+    requesterName?: string | undefined;
+    approverName?: string | undefined;
+  };
 }
 
 /**
@@ -111,6 +123,10 @@ const SSE_EVENTS = {
   DOCUMENT_UPLOADED: 'document.uploaded',
   KVP_SUBMITTED: 'kvp.submitted',
   MESSAGE_CREATED: 'message.created',
+  VACATION_REQUEST_CREATED: 'vacation.request.created',
+  VACATION_REQUEST_RESPONDED: 'vacation.request.responded',
+  VACATION_REQUEST_WITHDRAWN: 'vacation.request.withdrawn',
+  VACATION_REQUEST_CANCELLED: 'vacation.request.cancelled',
 } as const;
 
 /**
@@ -166,6 +182,60 @@ function createMessageHandler(
   };
 }
 
+/**
+ * Create SSE vacation handler that only sends to the intended recipient.
+ *
+ * Recipient logic per event type:
+ * - CREATED / WITHDRAWN → approverId (the person who needs to act)
+ * - RESPONDED / CANCELLED → requesterId (the person who submitted the request)
+ *
+ * This prevents the requester from seeing their own badge increment when
+ * they create a request — matching the persistent notification targeting.
+ */
+function createVacationHandler(
+  messageType: string,
+  userId: number,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): (eventData: NotificationEventData) => void {
+  /** Event types where the requester is the recipient (not the actor) */
+  const REQUESTER_IS_RECIPIENT = new Set([
+    'VACATION_REQUEST_RESPONDED',
+    'VACATION_REQUEST_CANCELLED',
+  ]);
+
+  return (eventData: NotificationEventData): void => {
+    const { request } = eventData;
+    if (eventData.tenantId !== tenantId || request === undefined) return;
+
+    const recipientId =
+      REQUESTER_IS_RECIPIENT.has(messageType) ?
+        request.requesterId
+      : request.approverId;
+
+    if (recipientId !== userId) return;
+
+    eventSubject.next({
+      data: {
+        type: messageType,
+        request: {
+          id: request.id,
+          requesterId: request.requesterId,
+          approverId: request.approverId,
+          startDate: request.startDate,
+          endDate: request.endDate,
+          vacationType: request.vacationType,
+          status: request.status,
+          computedDays: request.computedDays,
+          requesterName: request.requesterName,
+          approverName: request.approverName,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+}
+
 /** Register a handler on eventBus and track it for cleanup */
 function registerHandler(
   handlers: EventHandler[],
@@ -174,6 +244,41 @@ function registerHandler(
 ): void {
   eventBus.on(event, handler);
   handlers.push({ event, handler });
+}
+
+/** Register vacation-related SSE event handlers with recipient filtering */
+function registerVacationHandlers(
+  handlers: EventHandler[],
+  userId: number,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): void {
+  const vacationEvents = [
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_CREATED,
+      type: 'VACATION_REQUEST_CREATED',
+    },
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_RESPONDED,
+      type: 'VACATION_REQUEST_RESPONDED',
+    },
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_WITHDRAWN,
+      type: 'VACATION_REQUEST_WITHDRAWN',
+    },
+    {
+      event: SSE_EVENTS.VACATION_REQUEST_CANCELLED,
+      type: 'VACATION_REQUEST_CANCELLED',
+    },
+  ] as const;
+
+  for (const { event, type } of vacationEvents) {
+    registerHandler(
+      handlers,
+      event,
+      createVacationHandler(type, userId, tenantId, eventSubject),
+    );
+  }
 }
 
 /**
@@ -189,26 +294,21 @@ function registerSSEHandlers(
   readableFeatures: Set<string> | null,
 ): EventHandler[] {
   const handlers: EventHandler[] = [];
-  const makeHandler = (
+  const make = (
     type: string,
     key: string,
   ): ((e: NotificationEventData) => void) =>
     createSSEHandler(type, key, tenantId, eventSubject);
+  const canAccess = (code: string): boolean =>
+    readableFeatures === null || readableFeatures.has(code);
 
-  /** Check if user can access a feature (null = bypass, all allowed) */
-  const canAccess = (featureCode: string): boolean =>
-    readableFeatures === null || readableFeatures.has(featureCode);
-
-  // Documents: only if user has documents permission
   if (canAccess('documents')) {
     registerHandler(
       handlers,
       SSE_EVENTS.DOCUMENT_UPLOADED,
-      makeHandler('NEW_DOCUMENT', 'document'),
+      make('NEW_DOCUMENT', 'document'),
     );
   }
-
-  // Chat: only if user has chat permission
   if (canAccess('chat')) {
     registerHandler(
       handlers,
@@ -216,37 +316,30 @@ function registerSSEHandlers(
       createMessageHandler(userId, tenantId, eventSubject),
     );
   }
-
-  // Employee: survey notifications (only if user has surveys permission)
   if (role === 'employee' && canAccess('surveys')) {
     registerHandler(
       handlers,
       SSE_EVENTS.SURVEY_CREATED,
-      makeHandler('NEW_SURVEY', 'survey'),
+      make('NEW_SURVEY', 'survey'),
     );
     registerHandler(
       handlers,
       SSE_EVENTS.SURVEY_UPDATED,
-      makeHandler('SURVEY_UPDATED', 'survey'),
+      make('SURVEY_UPDATED', 'survey'),
     );
   }
-
-  // Admin/Root: KVP and survey notifications
-  if (role === 'admin' || role === 'root') {
-    if (canAccess('kvp')) {
-      registerHandler(
-        handlers,
-        SSE_EVENTS.KVP_SUBMITTED,
-        makeHandler('NEW_KVP', 'kvp'),
-      );
-    }
-    if (canAccess('surveys')) {
-      registerHandler(
-        handlers,
-        SSE_EVENTS.SURVEY_CREATED,
-        makeHandler('NEW_SURVEY_CREATED', 'survey'),
-      );
-    }
+  if (canAccess('vacation')) {
+    registerVacationHandlers(handlers, userId, tenantId, eventSubject);
+  }
+  if ((role === 'admin' || role === 'root') && canAccess('kvp')) {
+    registerHandler(handlers, SSE_EVENTS.KVP_SUBMITTED, make('NEW_KVP', 'kvp'));
+  }
+  if ((role === 'admin' || role === 'root') && canAccess('surveys')) {
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_CREATED,
+      make('NEW_SURVEY_CREATED', 'survey'),
+    );
   }
 
   return handlers;
@@ -380,16 +473,17 @@ export class NotificationsController {
    * POST /notifications/mark-read/:type
    * Mark all notifications of a feature type as read (ADR-004)
    *
-   * @param type - 'survey' | 'document' | 'kvp'
+   * @param type - 'survey' | 'document' | 'kvp' | 'vacation'
    */
   @Post('mark-read/:type')
+  @HttpCode(HttpStatus.OK)
   async markFeatureTypeAsRead(
     @Param('type') type: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ marked: number; message: string }> {
     // Validate type
-    const validTypes = ['survey', 'document', 'kvp'];
+    const validTypes = ['survey', 'document', 'kvp', 'vacation'];
     if (!validTypes.includes(type)) {
       throw new BadRequestException(
         `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
@@ -397,7 +491,7 @@ export class NotificationsController {
     }
 
     const marked = await this.notificationsService.markFeatureTypeAsRead(
-      type as 'survey' | 'document' | 'kvp',
+      type as 'survey' | 'document' | 'kvp' | 'vacation',
       user.id,
       tenantId,
     );
@@ -612,6 +706,18 @@ export class NotificationsController {
         ),
         [SSE_EVENTS.MESSAGE_CREATED]: eventBus.getListenerCount(
           SSE_EVENTS.MESSAGE_CREATED,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_CREATED]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_CREATED,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_RESPONDED]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_RESPONDED,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_WITHDRAWN]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_WITHDRAWN,
+        ),
+        [SSE_EVENTS.VACATION_REQUEST_CANCELLED]: eventBus.getListenerCount(
+          SSE_EVENTS.VACATION_REQUEST_CANCELLED,
         ),
       },
       timestamp: new Date().toISOString(),

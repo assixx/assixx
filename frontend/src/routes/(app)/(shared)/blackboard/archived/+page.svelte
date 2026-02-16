@@ -202,6 +202,7 @@
   .cursor-pointer {
     cursor: pointer;
   }
+
   .cursor-pointer:hover {
     background: rgb(255 255 255 / 5%);
   }

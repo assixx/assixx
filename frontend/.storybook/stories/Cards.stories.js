@@ -237,7 +237,7 @@ export const AccentCards = {
             ${args.description}
           </p>
           <div style="display: flex; justify-content: center; margin-top: var(--spacing-4);">
-            <button class="btn btn-modal" style="width: 80%;">
+            <button class="btn btn-primary" style="width: 80%;">
               ${args.buttonText}
             </button>
           </div>

@@ -5,7 +5,7 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   /** Resolve path with base prefix (for dynamic runtime paths) */
@@ -13,12 +13,14 @@
     return (resolve as (p: string) => string)(path);
   }
 
+  import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import {
     showSuccessAlert,
     showWarningAlert,
     showErrorAlert,
   } from '$lib/stores/toast';
+  import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageRootPage');
@@ -27,6 +29,7 @@
     saveRootUser as apiSaveRootUser,
     deleteRootUser as apiDeleteRootUser,
     buildRootUserPayload,
+    updateRootAvailability as apiUpdateAvailability,
   } from './_lib/api';
   import { MESSAGES } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
@@ -41,6 +44,11 @@
     getDefaultFormValues,
     validateEmailMatch,
     validatePasswordMatch,
+    getAvailabilityBadge,
+    getPlannedAvailability,
+    getTruncatedNotes,
+    validateAvailabilityForm,
+    buildAvailabilityPayload,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -48,10 +56,8 @@
     RootUser,
     StatusFilter,
     FormIsActiveStatus,
+    AvailabilityStatus,
   } from './_lib/types';
-
-  import '../../../../styles/manage-root.css';
-  import '../../../../styles/password-strength.css';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -80,6 +86,16 @@
   let showRootModal = $state(false);
   let showDeleteModal = $state(false);
   let showDeleteConfirmModal = $state(false);
+  let showAvailabilityModal = $state(false);
+
+  // Availability Modal State
+  let availabilityUserId = $state<number | null>(null);
+  let availabilityStatus = $state<AvailabilityStatus>('available');
+  let availabilityStart = $state('');
+  let availabilityEnd = $state('');
+  let availabilityReason = $state('');
+  let availabilityNotes = $state('');
+  let availabilitySubmitting = $state(false);
 
   // Edit State
   let currentEditId = $state<number | null>(null);
@@ -113,6 +129,13 @@
   // Derived: Filtered users based on current filter/search state
   const filteredUsers = $derived(
     applyAllFilters(allRootUsers, currentStatusFilter, currentSearchQuery),
+  );
+
+  // Derived: Current user for availability modal
+  const availabilityUser = $derived(
+    availabilityUserId !== null ?
+      (allRootUsers.find((u) => u.id === availabilityUserId) ?? null)
+    : null,
   );
 
   // =============================================================================
@@ -227,6 +250,79 @@
   }
 
   // =============================================================================
+  // AVAILABILITY MODAL HANDLERS
+  // NOTE: Modal is CREATE-only. PUT/UPDATE is on history page.
+  // =============================================================================
+
+  function openAvailabilityModal(userId: number): void {
+    const user = allRootUsers.find((u) => u.id === userId);
+    if (!user) return;
+
+    availabilityUserId = userId;
+    availabilityStatus = 'available';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+    showAvailabilityModal = true;
+  }
+
+  function closeAvailabilityModal(): void {
+    showAvailabilityModal = false;
+    availabilityUserId = null;
+    availabilityStatus = 'available';
+    availabilityStart = '';
+    availabilityEnd = '';
+    availabilityReason = '';
+    availabilityNotes = '';
+  }
+
+  async function saveAvailability(): Promise<void> {
+    if (availabilityUserId === null) return;
+
+    const formData = {
+      status: availabilityStatus,
+      start: availabilityStart,
+      end: availabilityEnd,
+      reason: availabilityReason,
+      notes: availabilityNotes,
+    };
+
+    const validationError = validateAvailabilityForm(formData);
+    if (validationError === 'dates_required') {
+      showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
+      return;
+    }
+    if (validationError === 'end_before_start') {
+      showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
+      return;
+    }
+
+    availabilitySubmitting = true;
+    try {
+      const payload = buildAvailabilityPayload(formData);
+      await apiUpdateAvailability(availabilityUserId, payload);
+      closeAvailabilityModal();
+      await invalidateAll();
+      showSuccessAlert('Verfügbarkeit aktualisiert');
+    } catch (err) {
+      log.error({ err }, 'Error updating availability');
+      const message =
+        err instanceof ApiError ?
+          err.message
+        : 'Fehler beim Speichern der Verfügbarkeit';
+      showErrorAlert(message);
+    } finally {
+      availabilitySubmitting = false;
+    }
+  }
+
+  function navigateToAvailabilityPage(uuid: string): void {
+    closeAvailabilityModal();
+    void goto(resolvePath(`/manage-root/availability/${uuid}`));
+  }
+
+  // =============================================================================
   // MODAL HANDLERS
   // =============================================================================
 
@@ -316,7 +412,8 @@
 
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
-      if (showDeleteConfirmModal) closeDeleteConfirmModal();
+      if (showAvailabilityModal) closeAvailabilityModal();
+      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showRootModal) closeRootModal();
     }
@@ -337,9 +434,9 @@
         const el = document.querySelector('.search-input-wrapper');
         if (el && !el.contains(e.target as HTMLElement)) searchOpen = false;
       };
-      document.addEventListener('click', handler);
+      document.addEventListener('click', handler, true);
       return () => {
-        document.removeEventListener('click', handler);
+        document.removeEventListener('click', handler, true);
       };
     }
   });
@@ -504,15 +601,25 @@
         <div class="table-responsive">
           <table class="data-table data-table--hover data-table--striped">
             <thead>
-              <tr
-                ><th>ID</th><th>Name</th><th>E-Mail</th><th>Personalnummer</th
-                ><th>Position</th><th>Status</th><th>Erstellt am</th><th
-                  >Aktionen</th
-                ></tr
-              >
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>E-Mail</th>
+                <th>Personalnummer</th>
+                <th>Position</th>
+                <th>Status</th>
+                <th>{MESSAGES.TH_AVAILABILITY}</th>
+                <th>{MESSAGES.TH_PLANNED}</th>
+                <th>{MESSAGES.TH_NOTES}</th>
+                <th>Erstellt am</th>
+                <th>Aktionen</th>
+              </tr>
             </thead>
             <tbody>
               {#each filteredUsers as user (user.id)}
+                {@const avBadge = getAvailabilityBadge(user)}
+                {@const planned = getPlannedAvailability(user)}
+                {@const userNotes = getTruncatedNotes(user.availabilityNotes)}
                 <tr>
                   <td>{user.id}</td>
                   <td>
@@ -534,11 +641,20 @@
                   <td>{user.email}</td>
                   <td>{user.employeeNumber ?? '-'}</td>
                   <td>{user.position ?? '-'}</td>
-                  <td
-                    ><span class="badge {getStatusBadgeClass(user.isActive)}"
-                      >{getStatusLabel(user.isActive)}</span
-                    ></td
-                  >
+                  <td>
+                    <span class="badge {getStatusBadgeClass(user.isActive)}">
+                      {getStatusLabel(user.isActive)}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge {avBadge.class}">
+                      {#if avBadge.icon}<i class="fas {avBadge.icon} mr-1"
+                        ></i>{/if}
+                      {avBadge.text}
+                    </span>
+                  </td>
+                  <td>{planned}</td>
+                  <td title={userNotes.title}>{userNotes.text}</td>
                   <td>{formatDate(user.createdAt)}</td>
                   <td>
                     <div class="flex gap-2">
@@ -549,6 +665,15 @@
                         onclick={() => {
                           openEditModal(user.id);
                         }}><i class="fas fa-edit"></i></button
+                      >
+                      <button
+                        type="button"
+                        class="action-icon action-icon--info"
+                        title="Verfügbarkeit bearbeiten"
+                        aria-label="Verfügbarkeit bearbeiten"
+                        onclick={() => {
+                          openAvailabilityModal(user.id);
+                        }}><i class="fas fa-calendar-alt"></i></button
                       >
                       <button
                         type="button"
@@ -621,4 +746,19 @@
   onCloseDeleteConfirm={closeDeleteConfirmModal}
   onProceedToConfirm={proceedToDeleteConfirm}
   onConfirmDelete={deleteUser}
+/>
+
+<!-- Availability Modal Component -->
+<AvailabilityModal
+  show={showAvailabilityModal}
+  person={availabilityUser}
+  submitting={availabilitySubmitting}
+  bind:availabilityStatus
+  bind:availabilityStart
+  bind:availabilityEnd
+  bind:availabilityReason
+  bind:availabilityNotes
+  onclose={closeAvailabilityModal}
+  onsave={saveAvailability}
+  onmanage={navigateToAvailabilityPage}
 />

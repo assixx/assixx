@@ -11,8 +11,7 @@
   import { invalidateAll, goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  // KVP-specific styles (migrated from legacy)
-  import '../../../../styles/kvp.css';
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showWarningAlert } from '$lib/utils';
   import { getApiClient } from '$lib/utils/api-client';
@@ -169,13 +168,10 @@
     debouncedSearch();
   }
 
-  // Close dropdowns when clicking outside
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 
   // ==========================================================================
   // SUGGESTION ACTIONS
@@ -199,9 +195,7 @@
   // ==========================================================================
 
   /** Resolve team ID for current user (direct assignment or team lead) */
-  async function resolveUserTeamId(
-    user: CurrentUser,
-  ): Promise<number | undefined> {
+  async function resolveTeamId(user: CurrentUser): Promise<number | undefined> {
     if (user.teamId !== undefined && user.teamId !== 0) return user.teamId;
     const leadTeam = await findUserTeamAsLead(user.id);
     return leadTeam?.id;
@@ -213,7 +207,7 @@
 
     // Employees: can always create (need team assignment)
     if (user.role === 'employee') {
-      const teamId = await resolveUserTeamId(user);
+      const teamId = await resolveTeamId(user);
       if (teamId === undefined) {
         showErrorAlert(
           'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
@@ -253,8 +247,6 @@
 <svelte:head>
   <title>KVP System - Assixx</title>
 </svelte:head>
-
-<svelte:document onclick={handleDocumentClick} />
 
 <div class="container">
   <!-- Admin Info Box -->
@@ -546,7 +538,7 @@
               suggestion.firstSeenAt === null ||
               suggestion.firstSeenAt === undefined}
             <div
-              class="glass-card kvp-card w-full cursor-pointer text-left"
+              class="card kvp-card w-full cursor-pointer text-left"
               role="button"
               tabindex="0"
               onclick={() => {
@@ -621,6 +613,8 @@
                   </span>
                   <div
                     class="category-tag"
+                    class:category-tag--deleted={suggestion.categoryIsDeleted ===
+                      true}
                     style:background="{suggestion.categoryColor}20"
                     style:color={suggestion.categoryColor}
                     style:border="1px solid {suggestion.categoryColor}"
@@ -663,3 +657,171 @@
     onsuccess={handleModalSuccess}
   />
 {/if}
+
+<style>
+  /* KVP Suggestion Cards */
+  [data-dropdown='status'] .dropdown__trigger {
+    width: auto;
+    min-width: 180px;
+  }
+
+  [data-dropdown='status'] .dropdown__menu {
+    min-width: 180px;
+    left: auto;
+    right: auto;
+  }
+
+  .kvp-card {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .kvp-card:hover {
+    transform: translateY(-4px);
+    border-color: rgb(0 142 255 / 50%);
+  }
+
+  /* Status Container */
+  .kvp-status-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    position: absolute;
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+  }
+
+  /* Read Confirmation Status */
+  .kvp-read-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .kvp-read-status--read {
+    background: rgb(16 185 129 / 20%);
+    color: rgb(16 185 129);
+  }
+
+  .kvp-read-status--unread {
+    background: rgb(245 158 11 / 20%);
+    color: rgb(245 158 11);
+  }
+
+  .kvp-read-status:hover {
+    transform: scale(1.1);
+  }
+
+  /* Suggestion Card Content */
+  .suggestion-title {
+    margin-bottom: var(--spacing-2);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .suggestion-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    color: var(--text-muted);
+    padding-bottom: 10px;
+
+    font-size: 0.85rem;
+  }
+
+  .suggestion-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  .suggestion-meta i {
+    color: var(--primary-color);
+  }
+
+  .suggestion-description {
+    position: relative;
+    margin: var(--spacing-4) 0;
+
+    max-height: 4.8em;
+
+    overflow: hidden;
+    color: var(--color-text-secondary);
+
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .suggestion-description::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+
+    padding-left: 20px;
+    content: '...';
+  }
+
+  .suggestion-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    align-items: flex-start;
+
+    margin-top: var(--spacing-6);
+    border-top: 1px solid var(--color-glass-border);
+    padding-top: var(--spacing-4);
+  }
+
+  .category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+
+    padding: 4px 12px;
+
+    font-size: 0.8rem;
+  }
+
+  /* Soft-deleted category: strikethrough + dimmed opacity */
+  .category-tag--deleted {
+    text-decoration: line-through;
+    opacity: 55%;
+  }
+
+  /* Share Info */
+  .share-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .share-info > i {
+    color: #666;
+    font-size: 0.875rem;
+  }
+
+  /* KVP Filter Layout */
+  .kvp-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    align-items: flex-end;
+  }
+
+  .kvp-search-field {
+    width: 220px;
+  }
+</style>

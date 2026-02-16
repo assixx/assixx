@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import { calculatePasswordStrength } from './utils';
@@ -126,9 +128,9 @@
         const el = document.getElementById('position-dropdown');
         if (el && !el.contains(target)) positionDropdownOpen = false;
       };
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -354,21 +356,11 @@
         </div>
 
         {#if formPassword}
-          <div
-            class="password-strength-container"
-            id="admin-password-strength-container"
-          >
-            <div class="password-strength-meter">
-              <div
-                class="password-strength-bar"
-                data-score={passwordScore}
-              ></div>
-            </div>
-            <div class="password-strength-info">
-              <span class="password-strength-label">{passwordLabel}</span>
-              <span class="password-strength-time">{passwordTime}</span>
-            </div>
-          </div>
+          <PasswordStrengthIndicator
+            score={passwordScore}
+            label={passwordLabel}
+            crackTime={passwordTime}
+          />
         {/if}
 
         <div class="form-field">
@@ -473,7 +465,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={submitting}
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

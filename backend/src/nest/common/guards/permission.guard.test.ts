@@ -138,11 +138,11 @@ describe('SECURITY: PermissionGuard', () => {
   });
 
   // -----------------------------------------------------------
-  // Root Bypass
+  // hasFullAccess Bypass (root + admin with full access)
   // -----------------------------------------------------------
 
-  describe('Root Bypass', () => {
-    it('should pass for root user regardless of DB permissions', async () => {
+  describe('hasFullAccess Bypass', () => {
+    it('should pass for root user (hasFullAccess=true by DB design)', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
         featureCode: 'blackboard',
         moduleCode: 'blackboard-posts',
@@ -150,6 +150,7 @@ describe('SECURITY: PermissionGuard', () => {
       });
       const context = createMockExecutionContext({
         activeRole: 'root',
+        hasFullAccess: true,
       });
 
       const result = await guard.canActivate(context);
@@ -158,28 +159,6 @@ describe('SECURITY: PermissionGuard', () => {
       expect(mockPermissionService.hasPermission).not.toHaveBeenCalled();
     });
 
-    it('should pass for root even with hasFullAccess=false', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
-        moduleCode: 'blackboard-posts',
-        action: 'canRead',
-      });
-      const context = createMockExecutionContext({
-        activeRole: 'root',
-        hasFullAccess: false,
-      });
-
-      const result = await guard.canActivate(context);
-
-      expect(result).toBe(true);
-    });
-  });
-
-  // -----------------------------------------------------------
-  // Admin Full Access Bypass
-  // -----------------------------------------------------------
-
-  describe('Admin Full Access Bypass', () => {
     it('should pass for admin with hasFullAccess=true', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
         featureCode: 'blackboard',
@@ -188,6 +167,44 @@ describe('SECURITY: PermissionGuard', () => {
       });
       const context = createMockExecutionContext({
         activeRole: 'admin',
+        hasFullAccess: true,
+      });
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(mockPermissionService.hasPermission).not.toHaveBeenCalled();
+    });
+
+    it('should pass for role-switched root viewing as employee', async () => {
+      mockReflector.getAllAndOverride.mockReturnValue({
+        featureCode: 'blackboard',
+        moduleCode: 'blackboard-posts',
+        action: 'canRead',
+      });
+      const context = createMockExecutionContext({
+        role: 'root',
+        activeRole: 'employee',
+        isRoleSwitched: true,
+        hasFullAccess: true,
+      });
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(mockPermissionService.hasPermission).not.toHaveBeenCalled();
+    });
+
+    it('should pass for role-switched admin viewing as employee with hasFullAccess', async () => {
+      mockReflector.getAllAndOverride.mockReturnValue({
+        featureCode: 'blackboard',
+        moduleCode: 'blackboard-posts',
+        action: 'canRead',
+      });
+      const context = createMockExecutionContext({
+        role: 'admin',
+        activeRole: 'employee',
+        isRoleSwitched: true,
         hasFullAccess: true,
       });
 
@@ -224,6 +241,23 @@ describe('SECURITY: PermissionGuard', () => {
       mockPermissionService.hasPermission.mockResolvedValue(false);
       const context = createMockExecutionContext({
         activeRole: 'admin',
+        hasFullAccess: false,
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should check DB for user with hasFullAccess=false even if role is root', async () => {
+      mockReflector.getAllAndOverride.mockReturnValue({
+        featureCode: 'blackboard',
+        moduleCode: 'blackboard-posts',
+        action: 'canRead',
+      });
+      mockPermissionService.hasPermission.mockResolvedValue(false);
+      const context = createMockExecutionContext({
+        activeRole: 'root',
         hasFullAccess: false,
       });
 
@@ -298,7 +332,7 @@ describe('SECURITY: PermissionGuard', () => {
   // -----------------------------------------------------------
 
   describe('Role-Switching', () => {
-    it('should check DB for role-switched admin (acting as employee)', async () => {
+    it('should deny role-switched admin without hasFullAccess when DB denies', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
         featureCode: 'blackboard',
         moduleCode: 'blackboard-posts',
@@ -309,6 +343,7 @@ describe('SECURITY: PermissionGuard', () => {
         role: 'admin',
         activeRole: 'employee',
         isRoleSwitched: true,
+        hasFullAccess: false,
       });
 
       await expect(guard.canActivate(context)).rejects.toThrow(
@@ -316,7 +351,7 @@ describe('SECURITY: PermissionGuard', () => {
       );
     });
 
-    it('should pass for role-switched admin when permission granted', async () => {
+    it('should pass for role-switched admin without hasFullAccess when DB grants', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
         featureCode: 'blackboard',
         moduleCode: 'blackboard-posts',
@@ -327,6 +362,7 @@ describe('SECURITY: PermissionGuard', () => {
         role: 'admin',
         activeRole: 'employee',
         isRoleSwitched: true,
+        hasFullAccess: false,
       });
 
       const result = await guard.canActivate(context);

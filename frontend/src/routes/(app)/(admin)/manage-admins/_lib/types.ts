@@ -6,9 +6,15 @@ import type {
   IsActiveStatus,
   FormIsActiveStatus,
   StatusFilter,
+  AvailabilityStatus,
 } from '@assixx/shared';
 
-export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
+export type {
+  IsActiveStatus,
+  FormIsActiveStatus,
+  StatusFilter,
+  AvailabilityStatus,
+};
 
 /**
  * Area entity - Organizational unit containing departments
@@ -54,6 +60,12 @@ export interface Admin {
   areaIds?: number[];
   departmentIds?: number[];
   hasFullAccess?: boolean | number;
+
+  // Availability
+  availabilityStatus?: AvailabilityStatus;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityNotes?: string;
 }
 
 /**

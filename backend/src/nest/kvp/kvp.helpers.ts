@@ -57,6 +57,7 @@ function attachCategoryIfPresent(
     name: string;
     color?: string;
     icon?: string;
+    isDeleted?: boolean;
   } = {
     id: suggestion.category_id,
     name: suggestion.category_name,
@@ -65,6 +66,7 @@ function attachCategoryIfPresent(
     category.color = suggestion.category_color;
   if (suggestion.category_icon !== undefined)
     category.icon = suggestion.category_icon;
+  if (suggestion.category_is_deleted === true) category.isDeleted = true;
   base.category = category;
 }
 
@@ -234,6 +236,7 @@ export function buildListBaseQuery(userIdPlaceholder: string): string {
       COALESCE(kcc_new.custom_name, kcc_override.custom_name, c.name) as category_name,
       COALESCE(kcc_new.color, c.color) as category_color,
       COALESCE(kcc_new.icon, c.icon) as category_icon,
+      CASE WHEN kcc_new.is_active = 4 THEN true ELSE false END as category_is_deleted,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
       a.name as area_name,
@@ -272,6 +275,7 @@ export function buildDetailBaseQuery(userIdPlaceholder: string): string {
       COALESCE(kcc_new.custom_name, kcc_override.custom_name, c.name) as category_name,
       COALESCE(kcc_new.color, c.color) as category_color,
       COALESCE(kcc_new.icon, c.icon) as category_icon,
+      CASE WHEN kcc_new.is_active = 4 THEN true ELSE false END as category_is_deleted,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
       a.name as area_name,

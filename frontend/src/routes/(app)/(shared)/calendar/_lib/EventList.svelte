@@ -98,3 +98,124 @@
     </div>
   </div>
 </div>
+
+<style>
+  .upcoming-events {
+    overflow-y: auto;
+    max-height: 300px;
+  }
+
+  .event-item {
+    display: flex;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .event-item:last-child {
+    border-bottom: none;
+  }
+
+  .event-item:hover {
+    background-color: rgb(var(--primary-rgb), 0.05);
+  }
+
+  .event-date {
+    display: flex;
+    flex: 0 0 90px;
+    flex-direction: column;
+    justify-content: center;
+    margin-right: 15px;
+    padding: 10px;
+    border-radius: var(--radius-xl);
+    text-align: center;
+    background-color: var(--background-dark);
+  }
+
+  .event-day {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--primary-color);
+  }
+
+  .event-month {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .event-time {
+    margin-top: 5px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .event-details {
+    flex: 1;
+  }
+
+  .event-title {
+    margin-bottom: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .event-location {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .event-location i {
+    margin-right: 5px;
+  }
+
+  .event-level {
+    display: inline-block;
+    width: fit-content;
+    margin-top: 5px;
+    padding: 2px 8px;
+    border-radius: var(--radius-xl);
+    font-size: 0.7rem;
+    color: #fff;
+  }
+
+  .event-level-company {
+    background-color: #3498db;
+  }
+
+  .event-level-department {
+    background-color: #e67e22;
+  }
+
+  .event-level-team {
+    background-color: #2ecc71;
+  }
+
+  .event-level-area {
+    background-color: #e53935;
+  }
+
+  .event-level-personal {
+    background-color: #9b59b6;
+  }
+
+  .event-badges {
+    display: grid;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  .event-badges .event-level {
+    margin-top: 0;
+  }
+
+  @media (width < 768px) {
+    .event-date {
+      flex: 0 0 70px;
+    }
+  }
+</style>

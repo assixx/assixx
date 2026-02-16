@@ -93,21 +93,21 @@
   --color-text-tertiary: var(--color-gray-600);
   --color-text-muted: #6b7280;
   --color-text-disabled: var(--color-gray-400);
-  --color-text-placeholder: rgb(0 0 0 / 40%);
+  --color-text-placeholder: rgb(0 0 0 / 80%);
   --color-icon-primary: var(--color-primary);
   --color-accent-bg: #a9d9ff;
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
-  --glass-bg: rgb(0 0 0 / 5%);
+  --glass-bg: rgb(0 0 0 / 1%);
   --glass-bg-hover: rgb(0 0 0 / 3%);
   --glass-bg-active: rgb(0 0 0 / 5%);
-  --glass-border: 1px solid rgb(0 0 0 / 8%);
+  --glass-border: 1px solid rgb(0 0 0 / 30%);
 
   /* Glass Form (light mode) */
-  --glass-form-bg: rgb(0 0 0 / 3%);
+  --glass-form-bg: rgb(255 255 255 / 1%);
   --glass-form-bg-hover: rgb(0 0 0 / 4%);
   --glass-form-bg-focus: rgb(0 0 0 / 5%);
-  --glass-form-border: 1px solid rgb(0 0 0 / 12%);
+  --glass-form-border: 1px solid rgb(0 0 0 / 32%);
 
   /* Legacy Tokens (light mode values) */
   --text-primary: var(--color-text-primary, #212121);

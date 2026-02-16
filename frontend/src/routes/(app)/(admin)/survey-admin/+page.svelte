@@ -7,7 +7,6 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import '../../../../styles/survey-admin.css';
   import { showErrorAlert } from '$lib/utils';
 
   // Extracted Components
@@ -496,4 +495,208 @@
   onupdateoption={updateOptionText}
 />
 
-<!-- No component-specific styles needed - using global styles -->
+<style>
+  /* Survey Stats — used in child card components */
+  :global(.survey-stats) {
+    display: flex;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-4);
+  }
+
+  :global(.survey-stat) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  :global(.survey-stat-value) {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  :global(.survey-stat-label) {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+
+  :global(.survey-actions) {
+    display: grid;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-4);
+  }
+
+  /* Question Builder — used in SurveyFormModal */
+  :global(.question-builder) {
+    margin-top: var(--spacing-6);
+  }
+
+  :global(.question-item) {
+    position: relative;
+
+    margin-bottom: var(--spacing-4);
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: var(--radius-xl);
+
+    background: rgb(255 255 255 / 5%);
+    padding: var(--spacing-6);
+  }
+
+  :global(.question-header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+  }
+
+  :global(.question-number) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+
+    background: var(--primary-color);
+
+    width: 30px;
+    height: 30px;
+    color: #fff;
+    font-weight: 600;
+
+    font-size: 14px;
+  }
+
+  :global(.question-actions) {
+    display: flex;
+    gap: var(--spacing-1);
+  }
+
+  :global(.question-action),
+  :global(.remove-question) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+
+    background: rgb(255 255 255 / 10%);
+    padding: var(--spacing-1);
+
+    width: 32px;
+    height: 32px;
+
+    color: var(--text-secondary);
+  }
+
+  :global(.question-action:hover),
+  :global(.remove-question:hover) {
+    transform: scale(1.1);
+    background: rgb(244 67 54 / 30%);
+    color: #ff5252;
+  }
+
+  :global(.question-action.delete:hover) {
+    background: rgb(244 67 54 / 20%);
+    color: #f44336;
+  }
+
+  :global(.remove-question svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Question Options — used in SurveyFormModal */
+  :global(.option-item) {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-2);
+  }
+
+  :global(.option-input) {
+    flex: 1;
+    border: 1px solid rgb(255 255 255 / 20%);
+    border-radius: var(--radius-xl);
+
+    background: rgb(255 255 255 / 5%);
+
+    padding: var(--spacing-3);
+
+    color: var(--text-primary);
+  }
+
+  :global(.remove-option) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    transition: background 0.2s ease;
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+
+    background: rgb(244 67 54 / 20%);
+    padding: var(--spacing-1);
+
+    width: 28px;
+    height: 28px;
+
+    color: #f44336;
+  }
+
+  :global(.remove-option:hover) {
+    background: rgb(244 67 54 / 30%);
+  }
+
+  :global(.add-option-btn) {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+
+    transition: background 0.2s ease;
+    cursor: pointer;
+
+    margin-bottom: 10px;
+    border: none;
+    border-radius: var(--radius-xl);
+
+    background: rgb(76 175 80 / 20%);
+    padding: var(--spacing-3);
+    color: #4caf50;
+
+    font-size: 0.9rem;
+  }
+
+  :global(.add-option-btn:hover) {
+    background: rgb(76 175 80 / 30%);
+  }
+
+  /* Sections — directly in this template */
+  .completed-section,
+  .drafts-section,
+  .templates-section {
+    margin-top: var(--spacing-8);
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    padding-top: var(--spacing-8);
+  }
+
+  .completed-header,
+  .drafts-header,
+  .templates-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+  }
+
+  .completed-title,
+  .drafts-title,
+  .templates-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.5rem;
+  }
+</style>

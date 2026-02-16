@@ -1,12 +1,15 @@
 /**
  * Design System - Button Light Variant
  *
- * Purpose: Light theme buttons, secondary actions on dark backgrounds
- * Use Case: Cancel buttons on dark modals, light theme toggles
+ * NOTE: The "btn-light" design has been promoted to "btn-primary".
+ * See button.primary.css for the active styles.
  *
- * Color: Light gray with dark text
- * Reference: Material Design surface colors
+ * This file keeps btn-light as an alias for backwards compatibility
+ * with existing components that still use the class directly.
  */
+
+/* btn-light is now identical to btn-primary (same visual) */
+/* Components using btn-light will continue to work */
 
 .btn-light {
   /* Transitions */
@@ -14,29 +17,29 @@
 
   /* Shadow - subtle */
   box-shadow: var(--shadow-btn-light, 0 1px 3px rgb(0 0 0 / 8%));
-  border: 1px solid rgb(189 189 189); /* Solid gray border - avatar style */
+  border: 1px solid rgb(189 189 189);
 
   background: linear-gradient(
     145deg,
     rgb(224 224 224 / 11%),
     rgb(158 158 158 / 15%)
-  ); /* Subtle gray gradient */
+  );
 
   /* Padding - matches other variants */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  padding: var(--spacing-2) var(--spacing-4);
 
   /* Colors */
   color: var(--color-text-primary);
 }
 
-/* Hover State - Brighten the gradient */
+/* Hover State */
 .btn-light:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
   background: linear-gradient(
     145deg,
     rgb(224 224 224 / 18%),
     rgb(158 158 158 / 25%)
-  ); /* Intensiver */
+  );
 }
 
 /* Active/Pressed State */
@@ -44,7 +47,7 @@
   transform: translateY(0);
   box-shadow: var(--shadow-btn-light-active, inset 0 1px 2px rgb(0 0 0 / 10%));
   border-color: var(--color-gray-500);
-  background: var(--color-gray-300);
+  background: var(--color-gray-600);
 }
 
 /* Focus State */
@@ -92,7 +95,6 @@
   content: '';
 }
 
-/* Loading spinner animation */
 @keyframes spin {
   to {
     transform: rotate(360deg);

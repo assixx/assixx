@@ -130,7 +130,7 @@ describe('UserAvailabilityService – pure helpers', () => {
     it('maps DB row to API format', () => {
       const row: AvailabilityRow = {
         id: 1,
-        employee_id: 42,
+        user_id: 42,
         status: 'sick',
         start_date: new Date('2025-06-01T00:00:00Z'),
         end_date: new Date('2025-06-15T00:00:00Z'),
@@ -145,7 +145,7 @@ describe('UserAvailabilityService – pure helpers', () => {
       const result = service['mapAvailabilityRowToEntry'](row);
 
       expect(result.id).toBe(1);
-      expect(result.employeeId).toBe(42);
+      expect(result.userId).toBe(42);
       expect(result.status).toBe('sick');
       expect(result.startDate).toBe('2025-06-01');
       expect(result.endDate).toBe('2025-06-15');
@@ -158,7 +158,7 @@ describe('UserAvailabilityService – pure helpers', () => {
     it('handles null dates and metadata', () => {
       const row: AvailabilityRow = {
         id: 2,
-        employee_id: 43,
+        user_id: 43,
         status: 'vacation',
         start_date: null,
         end_date: null,
@@ -183,7 +183,7 @@ describe('UserAvailabilityService – pure helpers', () => {
     it('builds base query without filters', () => {
       const result = service['buildAvailabilityHistoryQuery'](42, 1);
 
-      expect(result.query).toContain('employee_id = $1');
+      expect(result.query).toContain('user_id = $1');
       expect(result.query).toContain('tenant_id = $2');
       expect(result.params).toEqual([42, 1]);
     });
@@ -381,7 +381,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
-          employee_id: 42,
+          user_id: 42,
           status: 'sick',
           start_date: new Date('2025-05-01'),
           end_date: new Date('2025-05-10'), // past
@@ -424,7 +424,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
         .mockResolvedValueOnce([
           {
             id: 1,
-            employee_id: 42,
+            user_id: 42,
             status: 'vacation',
             start_date: new Date('2025-06-01'),
             end_date: new Date('2025-06-15'),

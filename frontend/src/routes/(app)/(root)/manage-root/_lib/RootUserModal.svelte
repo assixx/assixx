@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+
   import { POSITION_OPTIONS, MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -100,9 +102,9 @@
           if (el && !el.contains(target)) statusDropdownOpen = false;
         }
       };
-      document.addEventListener('click', handleClick);
+      document.addEventListener('click', handleClick, true);
       return () => {
-        document.removeEventListener('click', handleClick);
+        document.removeEventListener('click', handleClick, true);
       };
     }
   });
@@ -328,21 +330,11 @@
         </div>
 
         {#if password}
-          <div class="password-strength-container">
-            <div class="password-strength-meter">
-              <div
-                class="password-strength-bar"
-                data-score={passwordStrength.score}
-              ></div>
-            </div>
-            <div class="password-strength-info">
-              <span class="password-strength-label"
-                >{passwordStrength.label}</span
-              >
-              <span class="password-strength-time">{passwordStrength.time}</span
-              >
-            </div>
-          </div>
+          <PasswordStrengthIndicator
+            score={passwordStrength.score}
+            label={passwordStrength.label}
+            crackTime={passwordStrength.time}
+          />
         {/if}
 
         <div class="form-field">
@@ -489,7 +481,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={submitting}
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

@@ -7,6 +7,9 @@
    * Self-contained with internal state and API calls.
    */
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { AVAILABILITY_STATUS_OPTIONS } from '../../_lib/constants';
 
   import {
@@ -23,7 +26,7 @@
 
   interface AvailabilityEntry {
     id: number;
-    employeeId: number;
+    userId: number;
     status: string;
     startDate: string;
     endDate: string;
@@ -127,19 +130,18 @@
     }
   }
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#edit-status-dropdown')) {
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
       editStatusDropdownOpen = false;
-    }
-  }
+    });
+  });
 </script>
-
-<svelte:window onclick={handleClickOutside} />
 
 {#if show && entry !== null}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
+    id="employee-availability-edit-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -230,16 +232,10 @@
             class="form-field__label"
             for="edit-start-date">Von Datum</label
           >
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="edit-start-date"
-              class="date-picker__input"
-              bind:value={editStartDate}
-              required
-            />
-          </div>
+          <AppDatePicker
+            bind:value={editStartDate}
+            required
+          />
         </div>
 
         <div class="form-field">
@@ -247,16 +243,12 @@
             class="form-field__label"
             for="edit-end-date">Bis Datum</label
           >
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="edit-end-date"
-              class="date-picker__input"
-              bind:value={editEndDate}
-              required
-            />
-          </div>
+          <AppDatePicker
+            bind:value={editEndDate}
+            min={editStartDate}
+            placeholder={editStartDate}
+            required
+          />
         </div>
 
         <!-- Reason -->
@@ -300,7 +292,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={submitting}
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

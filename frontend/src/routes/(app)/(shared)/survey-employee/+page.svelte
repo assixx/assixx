@@ -7,27 +7,24 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('SurveyEmployeePage');
 
-  // Survey-specific styles (migrated from legacy)
-  import '../../../../styles/survey-employee.css';
-
   import {
     loadSurveyById,
     fetchUserResponse,
     submitResponse,
   } from './_lib/api';
+  import ResponseModal from './_lib/ResponseModal.svelte';
   import { surveyEmployeeState } from './_lib/state.svelte';
   import SurveyCard from './_lib/SurveyCard.svelte';
   import {
     getTextFromBuffer,
     isQuestionRequired,
-    formatSurveyDate,
-    formatDateTimeGerman,
     convertDateToISO,
     convertAnswersToArray,
     validateRequiredQuestions,
@@ -362,7 +359,10 @@
 <!-- Survey Response Modal -->
 {#if surveyEmployeeState.showSurveyModal && surveyEmployeeState.currentSurvey !== null}
   {@const survey = surveyEmployeeState.currentSurvey}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="survey-detail-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <form
       class="ds-modal ds-modal--lg"
       onsubmit={handleSubmit}
@@ -557,16 +557,10 @@
                   <!-- Date -->
                 {:else if question.questionType === 'date'}
                   <div class="form-field">
-                    <input
-                      type="date"
-                      class="form-field__control"
-                      placeholder="Datum wählen..."
+                    <AppDatePicker
                       {required}
-                      oninput={(e) => {
-                        handleDateChange(
-                          question.id,
-                          (e.target as HTMLInputElement).value,
-                        );
+                      onchange={(v: string) => {
+                        handleDateChange(question.id, v);
                       }}
                     />
                   </div>
@@ -589,11 +583,11 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={surveyEmployeeState.isSubmitting}
         >
           {#if surveyEmployeeState.isSubmitting}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-paper-plane"></i>
           {/if}
@@ -606,73 +600,140 @@
 
 <!-- Response Viewing Modal -->
 {#if responseModalData}
-  <div class="modal-overlay modal-overlay--active">
-    <div class="ds-modal ds-modal--lg">
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          Ihre Antworten - {getTextFromBuffer(responseModalData.survey.title)}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schließen"
-          onclick={() => {
-            surveyEmployeeState.closeResponseModal();
-          }}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="ds-modal__body">
-        <div class="response-info">
-          <p>
-            <i class="fas fa-clock"></i>
-            Abgeschlossen am: {formatDateTimeGerman(
-              responseModalData.response.completedAt,
-            )}
-          </p>
-        </div>
-        <div class="response-answers">
-          {#each responseModalData.response.answers as answer (answer.questionId)}
-            <div class="response-question">
-              <h4>{answer.questionText}</h4>
-              <div class="response-answer">
-                {#if answer.answerText !== undefined && answer.answerText !== ''}
-                  <p>{answer.answerText}</p>
-                {:else if answer.answerNumber !== undefined}
-                  {#if answer.questionType === 'rating'}
-                    <p>Bewertung: {answer.answerNumber}</p>
-                  {:else}
-                    <p>{answer.answerNumber}</p>
-                  {/if}
-                {:else if answer.answerDate !== undefined}
-                  <p>
-                    <i class="fas fa-calendar"></i>
-                    {formatSurveyDate(answer.answerDate)}
-                  </p>
-                {:else if answer.answerOptions !== undefined && answer.answerOptions.length > 0}
-                  {#each answer.answerOptions as optionText, idx (idx)}
-                    <p><i class="fas fa-check-square"></i> {optionText}</p>
-                  {/each}
-                {:else}
-                  <p><em>Keine Antwort</em></p>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-      <div class="ds-modal__footer ds-modal__footer--right">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            surveyEmployeeState.closeResponseModal();
-          }}
-        >
-          Schließen
-        </button>
-      </div>
-    </div>
-  </div>
+  <ResponseModal
+    survey={responseModalData.survey}
+    response={responseModalData.response}
+    onclose={() => {
+      surveyEmployeeState.closeResponseModal();
+    }}
+  />
 {/if}
+
+<style>
+  /* Survey Employee - Layout */
+  .surveys-section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+
+    margin-bottom: var(--spacing-6);
+    color: var(--text-primary);
+    font-weight: 600;
+
+    font-size: 1.5rem;
+  }
+
+  .surveys-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-6);
+  }
+
+  .section-divider {
+    position: relative;
+    margin: var(--spacing-8) 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent-color),
+      transparent
+    );
+    height: 1px;
+  }
+
+  /* Question Display */
+  .question-item {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+    padding: var(--spacing-6);
+  }
+
+  .question-header {
+    display: flex;
+    align-items: start;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .question-number {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+
+    background: var(--primary-color);
+
+    width: 30px;
+    height: 30px;
+    color: #fff;
+
+    font-weight: 600;
+  }
+
+  .question-text {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+  }
+
+  .required-indicator {
+    margin-left: 4px;
+    color: #f44336;
+  }
+
+  .answer-container {
+    margin-top: var(--spacing-4);
+  }
+
+  /* Rating Button */
+  .rating-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid var(--color-glass-border);
+    border-radius: 0.5rem;
+
+    background: var(--glass-bg-active);
+
+    color: #d1d5db;
+    font-size: 1rem;
+    font-weight: 500;
+
+    transition: all 0.2s ease;
+  }
+
+  .rating-button:hover {
+    transform: scale(1.1);
+    border-color: rgb(96 165 250 / 50%);
+
+    background: rgb(59 130 246 / 10%);
+    box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+
+    color: #60a5fa;
+  }
+
+  .rating-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(59 130 246 / 50%);
+  }
+
+  .rating-button--selected {
+    transform: scale(1.1);
+    border-color: #3b82f6 !important;
+
+    background: rgb(59 130 246 / 20%) !important;
+
+    color: #60a5fa !important;
+  }
+</style>

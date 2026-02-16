@@ -484,6 +484,7 @@ Then update `determineAction()` method with logic for new actions.
 
 - ADR-002: Alerting & Monitoring (Loki setup)
 - ADR-006: Multi-Tenant Context Isolation
+- ADR-025: pg_stat_statements Query Monitoring (Motivation für root_logs Denormalisierung)
 
 ---
 
@@ -493,13 +494,14 @@ Based on analysis, the following improvements are planned:
 
 ### Implemented Features
 
-| Feature                     | Status  | Description                   |
-| --------------------------- | ------- | ----------------------------- |
-| Partitioned Tables          | ✅ Done | 36 monthly partitions         |
-| RLS Tenant Isolation        | ✅ Done | Policy enforced               |
-| DELETE Pre-Fetch            | ✅ Done | Data captured before deletion |
-| Noise Reduction             | ✅ Done | Throttling + smart filtering  |
-| Sensitive Data Sanitization | ✅ Done | OWASP/GDPR compliant          |
+| Feature                     | Status  | Description                                  |
+| --------------------------- | ------- | -------------------------------------------- |
+| Partitioned Tables          | ✅ Done | 36 monthly partitions                        |
+| RLS Tenant Isolation        | ✅ Done | Policy enforced                              |
+| DELETE Pre-Fetch            | ✅ Done | Data captured before deletion                |
+| Noise Reduction             | ✅ Done | Throttling + smart filtering                 |
+| Sensitive Data Sanitization | ✅ Done | OWASP/GDPR compliant                         |
+| root_logs Denormalization   | ✅ Done | 8 Spalten, 6 JOINs eliminiert, Trigger-based |
 
 ### Implemented Improvements (2026-01-22)
 
@@ -574,10 +576,46 @@ interface AuditChanges {
 
 **Rationale:** Different retention policies may be needed. `root_logs` captures business context that interceptor cannot (e.g., workflow decisions, approvals).
 
+### root_logs Denormalization (2026-02-16) ✅ Done
+
+**Problem:** `root_logs` Queries brauchten 6 LEFT JOINs (users, user_departments, departments, areas, user_teams, teams) um User-/Abteilungs-/Team-Namen anzuzeigen. Bei 36 Partitionen: ~42ms Planning Time pro Query.
+
+**Solution:** 8 denormalisierte Spalten direkt auf `root_logs`:
+
+| Spalte            | Typ          | Quelle (vorher)                  |
+| ----------------- | ------------ | -------------------------------- |
+| `user_name`       | VARCHAR(255) | `users.username`                 |
+| `user_role`       | VARCHAR(50)  | `users.role`                     |
+| `employee_number` | VARCHAR(100) | `users.employee_number`          |
+| `first_name`      | VARCHAR(255) | `users.first_name`               |
+| `last_name`       | VARCHAR(255) | `users.last_name`                |
+| `department_name` | VARCHAR(255) | `departments.name` (via 2 JOINs) |
+| `area_name`       | VARCHAR(255) | `areas.name` (via 3 JOINs)       |
+| `team_name`       | VARCHAR(255) | `teams.name` (via 2 JOINs)       |
+
+**Architektur-Entscheidungen:**
+
+1. **Snapshot statt Live-Daten:** Audit-Logs sind historische Schnappschüsse — der Name/Abteilung zum Zeitpunkt der Aktion ist relevant, nicht die aktuelle Zuweisung
+2. **BEFORE INSERT Trigger:** `trg_root_logs_denormalize` füllt Spalten automatisch für alle INSERT-Paths (6 Services umgehen ActivityLoggerService: auth, role-switch, admin-permissions, settings, notifications, signup)
+3. **ActivityLoggerService.resolveUserContext():** Löst User-Context per SELECT+JOINs auf, fire-and-forget mit `NULL_CONTEXT` Fallback
+4. **Kein email in root_logs:** Email nicht im Dashboard angezeigt, per `user_id` + users-Tabelle abrufbar
+
+**Ergebnis:**
+
+| Metrik            | Vorher (6 JOINs) | Nachher (0-1 JOINs) |
+| ----------------- | ---------------- | ------------------- |
+| JOINs pro Query   | 6-7              | 0-1 (nur tenants)   |
+| DISTINCT ON nötig | Ja               | Nein                |
+| Search-Felder     | 11               | 10 (email entfällt) |
+
+**Migration:** `database/migrations/20260216000036_root-logs-denormalize.ts`
+**Masterplan:** `docs/FEAT_ROOT_LOGS_DENORMALIZATION_MASTERPLAN.md`
+**Referenz:** [ADR-025 pg_stat_statements](./ADR-025-pg-stat-statements-query-monitoring.md)
+
 ### Implementation Plan
 
 See: `docs/plans/IMPROVE-AUDIT-TRAIL-LOGGING.md`
 
 ---
 
-_Last Updated: 2026-01-22 (v7 - All Improvements Implemented)_
+_Last Updated: 2026-02-16 (v8 - root_logs Denormalization)_

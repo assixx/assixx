@@ -9,9 +9,6 @@
    */
   import { onMount, untrack } from 'svelte';
 
-  // Page-specific CSS
-  import '../../../../styles/documents-explorer.css';
-
   import ChatFoldersList from './_lib/ChatFoldersList.svelte';
   import { SORT_OPTIONS, CATEGORY_LABELS, MESSAGES } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
@@ -61,9 +58,9 @@
           docExplorerState.setSortDropdownOpen(false);
         }
       };
-      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -445,3 +442,40 @@
   onclose={docExplorerState.closeDeleteConfirmModal}
   onconfirm={docExplorerState.confirmDeleteDocument}
 />
+
+<style>
+  /* Folder Sidebar (child component: FolderSidebar) */
+  :global(.folder-item) {
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    margin-bottom: 4px;
+    border-radius: 6px;
+
+    background: rgb(139 139 139 / 12%);
+  }
+
+  :global(.folder-item:hover) {
+    transform: translateX(2px);
+    background: rgb(139 139 139 / 30%) !important;
+  }
+
+  /* User Info in Tables */
+  :global(.data-table .user-info) {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  :global(.data-table .user-info .user-name) {
+    display: inline-block;
+    width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.data-table .user-info .badge) {
+    flex-shrink: 0;
+  }
+</style>

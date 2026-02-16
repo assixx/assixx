@@ -60,9 +60,13 @@
         const el = globalThis.document.getElementById('edit-category-dropdown');
         if (el && !el.contains(target)) categoryDropdownOpen = false;
       };
-      globalThis.document.addEventListener('click', handleOutsideClick);
+      globalThis.document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        globalThis.document.removeEventListener('click', handleOutsideClick);
+        globalThis.document.removeEventListener(
+          'click',
+          handleOutsideClick,
+          true,
+        );
       };
     }
   });
@@ -243,7 +247,7 @@
         >
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={submitting}
         >
           {#if submitting}

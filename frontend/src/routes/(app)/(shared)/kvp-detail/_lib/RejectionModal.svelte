@@ -14,14 +14,17 @@
 </script>
 
 {#if kvpDetailState.showRejectionModal}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-rejection-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="ds-modal ds-modal--sm">
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">Vorschlag ablehnen</h3>
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={oncancel}
         >
           <i class="fas fa-times"></i>

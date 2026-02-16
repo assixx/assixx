@@ -12,7 +12,10 @@
 </script>
 
 {#if show}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="chat-confirm-dialog"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="confirm-modal confirm-modal--danger">
       <div class="confirm-modal__icon">
         <i class="fas fa-exclamation-triangle"></i>

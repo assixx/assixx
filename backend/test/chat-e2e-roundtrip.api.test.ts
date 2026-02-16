@@ -329,9 +329,9 @@ describe('E2E Roundtrip: Admin → Server → Employee', () => {
   it('should allow the employee to fetch and decrypt the message', async () => {
     expect(sentMessageId).toBeDefined();
 
-    // Employee fetches messages from the conversation
+    // Employee fetches messages from the conversation (limit=100 to handle stale data from prior runs)
     const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
+      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
       {
         headers: authOnly(employeeToken),
       },
@@ -443,9 +443,9 @@ describe('E2E Roundtrip: Employee → Server → Admin', () => {
 
     const msgId = sendBody.data.message.id as number;
 
-    // Admin fetches and decrypts
+    // Admin fetches and decrypts (limit=100 to handle stale data from prior runs)
     const fetchRes = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
+      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
       {
         headers: authOnly(adminAuth.authToken),
       },
@@ -480,7 +480,7 @@ describe('E2E Roundtrip: Server stores only ciphertext', () => {
     expect(conversationId).toBeDefined();
 
     const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
+      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
       {
         headers: authOnly(adminAuth.authToken),
       },

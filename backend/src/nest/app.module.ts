@@ -26,6 +26,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionGuard } from './common/guards/permission.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
+import { TenantFeatureGuard } from './common/guards/tenant-feature.guard.js';
 // CustomThrottlerGuard is NOT global - applied selectively via @AuthThrottle(), @UploadThrottle()
 // Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
 import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interceptor.js';
@@ -60,6 +61,7 @@ import { TeamsModule } from './teams/teams.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
 import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
 import { UsersModule } from './users/users.module.js';
+import { VacationModule } from './vacation/vacation.module.js';
 
 @Module({
   imports: [
@@ -169,6 +171,7 @@ import { UsersModule } from './users/users.module.js';
     SettingsModule,
     ShiftsModule,
     SignupModule,
+    VacationModule,
     ChatModule,
     UserPermissionsModule,
   ],
@@ -187,7 +190,14 @@ import { UsersModule } from './users/users.module.js';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-    // Global Permission Guard (runs after Roles guard, ADR-020)
+    // Global Tenant Feature Guard (runs after Roles guard)
+    // Checks @TenantFeature() decorator against tenant_features table
+    // No root/admin bypass — feature activation is a billing decision
+    {
+      provide: APP_GUARD,
+      useClass: TenantFeatureGuard,
+    },
+    // Global Permission Guard (runs after Tenant Feature guard, ADR-020)
     // Checks @RequirePermission() decorator against user_feature_permissions table
     // Root + admin-with-full-access bypass; all others: fail-closed DB check
     {

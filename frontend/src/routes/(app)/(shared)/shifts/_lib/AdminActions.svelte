@@ -42,7 +42,7 @@
   // 3. isPlanLocked=true + isEditMode=false → Saved plan, locked → Show "Edit" button
 </script>
 
-<div class="admin-actions flex flex-wrap gap-4">
+<div class="admin-actions">
   {#if !isPlanLocked && !isEditMode}
     <!-- NEW/UNLOCKED: Creating new plan - show Save button -->
     <button
@@ -56,7 +56,7 @@
     </button>
     <button
       type="button"
-      class="btn btn-manage"
+      class="btn btn-primary"
       onclick={onsave}
     >
       <i class="fas fa-save mr-2"></i>
@@ -131,3 +131,13 @@
     </button>
   {/if}
 </div>
+
+<style>
+  .admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-6);
+  }
+</style>

@@ -27,7 +27,11 @@ export type NotificationEventType =
   | 'NEW_SURVEY'
   | 'NEW_DOCUMENT'
   | 'NEW_KVP'
-  | 'NEW_MESSAGE';
+  | 'NEW_MESSAGE'
+  | 'VACATION_REQUEST_CREATED'
+  | 'VACATION_REQUEST_RESPONDED'
+  | 'VACATION_REQUEST_WITHDRAWN'
+  | 'VACATION_REQUEST_CANCELLED';
 
 export interface NotificationEvent {
   type: NotificationEventType;
@@ -40,6 +44,8 @@ export interface NotificationEvent {
   document?: DocumentEventData;
   /** KVP data — present when type is 'NEW_KVP' */
   kvp?: KvpEventData;
+  /** Vacation request data — present when type starts with 'VACATION_REQUEST_' */
+  request?: VacationRequestEventData;
   user?: {
     id: number;
     role: string;
@@ -62,6 +68,19 @@ interface KvpEventData {
   id: number;
   title: string;
   submitted_by?: string;
+}
+
+interface VacationRequestEventData {
+  id: string;
+  requesterId: number;
+  approverId: number | null;
+  startDate: string;
+  endDate: string;
+  vacationType: string;
+  status: string;
+  computedDays: number;
+  requesterName?: string;
+  approverName?: string;
 }
 
 export interface MessageEventData {

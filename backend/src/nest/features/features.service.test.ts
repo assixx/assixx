@@ -8,6 +8,7 @@
  *   - mapDbFeatureToApi → via getAllFeatures
  *   - mapTenantFeatureRow + parseCustomConfig → via getTenantFeatures
  */
+import { NotFoundException } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -357,6 +358,151 @@ describe('FeaturesService', () => {
       const result = await service.getFeatureByCode('nonexistent');
 
       expect(result).toBeNull();
+    });
+  });
+
+  // =============================================================
+  // activateFeature
+  // =============================================================
+
+  describe('activateFeature', () => {
+    const baseRequest = {
+      tenantId: 10,
+      featureCode: 'vacation',
+    };
+    const activatedBy = 42;
+
+    it('should INSERT when tenant has no existing entry', async () => {
+      // 1st queryOne: getFeatureByCode → feature found
+      mockDb.queryOne.mockResolvedValueOnce(
+        createDbFeatureRow({ id: 13, code: 'vacation' }),
+      );
+      // 2nd queryOne: check existing → no row
+      mockDb.queryOne.mockResolvedValueOnce(null);
+      // query: INSERT
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.activateFeature(baseRequest, activatedBy);
+
+      // Verify INSERT was called (not UPDATE)
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
+        expect.stringContaining('INSERT INTO tenant_features'),
+        [10, 13, true, null, 42, null],
+      );
+    });
+
+    it('should UPDATE when tenant already has the feature (re-activation)', async () => {
+      // 1st queryOne: getFeatureByCode → feature found
+      mockDb.queryOne.mockResolvedValueOnce(
+        createDbFeatureRow({ id: 13, code: 'vacation' }),
+      );
+      // 2nd queryOne: check existing → row exists
+      mockDb.queryOne.mockResolvedValueOnce({ id: 99 });
+      // query: UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.activateFeature(baseRequest, activatedBy);
+
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
+        expect.stringContaining('UPDATE tenant_features SET is_active = 1'),
+        [null, 42, null, 10, 13],
+      );
+    });
+
+    it('should pass expiresAt to query when provided', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        createDbFeatureRow({ id: 13, code: 'vacation' }),
+      );
+      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.activateFeature(
+        {
+          ...baseRequest,
+          options: { expiresAt: '2026-12-31T23:59:59.000Z' },
+        },
+        activatedBy,
+      );
+
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO tenant_features'),
+        [10, 13, true, '2026-12-31T23:59:59.000Z', 42, null],
+      );
+    });
+
+    it('should JSON.stringify customConfig when provided', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        createDbFeatureRow({ id: 13, code: 'vacation' }),
+      );
+      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const customConfig = { maxDays: 30, allowCarryOver: true };
+
+      await service.activateFeature(
+        { ...baseRequest, options: { customConfig } },
+        activatedBy,
+      );
+
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO tenant_features'),
+        [10, 13, true, null, 42, JSON.stringify(customConfig)],
+      );
+    });
+
+    it('should throw NotFoundException for unknown featureCode', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.activateFeature(
+          { tenantId: 10, featureCode: 'nonexistent' },
+          activatedBy,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // deactivateFeature
+  // =============================================================
+
+  describe('deactivateFeature', () => {
+    it('should UPDATE and succeed when RETURNING yields a row', async () => {
+      // queryOne: getFeatureByCode → feature found
+      mockDb.queryOne.mockResolvedValueOnce(
+        createDbFeatureRow({ id: 13, code: 'vacation' }),
+      );
+      // query: UPDATE RETURNING → 1 row
+      mockDb.query.mockResolvedValueOnce([{ id: 77 }]);
+
+      await expect(
+        service.deactivateFeature(10, 'vacation', 42),
+      ).resolves.toBeUndefined();
+
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE tenant_features'),
+        [10, 13],
+      );
+    });
+
+    it('should throw NotFoundException for unknown featureCode', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.deactivateFeature(10, 'nonexistent', 42),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when tenant does not have the feature', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        createDbFeatureRow({ id: 13, code: 'vacation' }),
+      );
+      // UPDATE RETURNING → 0 rows
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.deactivateFeature(10, 'vacation', 42),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

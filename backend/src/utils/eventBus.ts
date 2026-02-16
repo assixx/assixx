@@ -52,6 +52,22 @@ interface MessagesReadEvent {
   entries: ReadReceiptEntry[];
 }
 
+export interface VacationRequestEvent {
+  tenantId: number;
+  request: {
+    id: string;
+    requesterId: number;
+    approverId: number | null;
+    startDate: string;
+    endDate: string;
+    vacationType: string;
+    status: string;
+    computedDays: number;
+    requesterName?: string | undefined;
+    approverName?: string | undefined;
+  };
+}
+
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus | null = null;
 
@@ -98,6 +114,46 @@ class NotificationEventBus extends EventEmitter {
   /** Notify senders that their messages were read */
   emitMessagesRead(data: MessagesReadEvent): void {
     this.emit('messages.read', data);
+  }
+
+  emitVacationRequestCreated(
+    tenantId: number,
+    request: VacationRequestEvent['request'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting vacation.request.created for tenant ${tenantId}`,
+    );
+    this.emit('vacation.request.created', { tenantId, request });
+  }
+
+  emitVacationRequestResponded(
+    tenantId: number,
+    request: VacationRequestEvent['request'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting vacation.request.responded for tenant ${tenantId}`,
+    );
+    this.emit('vacation.request.responded', { tenantId, request });
+  }
+
+  emitVacationRequestWithdrawn(
+    tenantId: number,
+    request: VacationRequestEvent['request'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting vacation.request.withdrawn for tenant ${tenantId}`,
+    );
+    this.emit('vacation.request.withdrawn', { tenantId, request });
+  }
+
+  emitVacationRequestCancelled(
+    tenantId: number,
+    request: VacationRequestEvent['request'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting vacation.request.cancelled for tenant ${tenantId}`,
+    );
+    this.emit('vacation.request.cancelled', { tenantId, request });
   }
 
   // Get active listener count for monitoring

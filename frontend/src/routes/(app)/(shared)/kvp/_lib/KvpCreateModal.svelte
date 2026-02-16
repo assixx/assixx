@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     showWarningAlert,
     showErrorAlert,
@@ -68,12 +69,10 @@
     closeAllDropdowns();
   }
 
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(closeAllDropdowns);
+  });
 
   function handlePhotoClick() {
     fileInput?.click();
@@ -237,9 +236,10 @@
   }
 </script>
 
-<svelte:document onclick={handleDocumentClick} />
-
-<div class="modal-overlay modal-overlay--active">
+<div
+  id="kvp-create-modal"
+  class="modal-overlay modal-overlay--active"
+>
   <form
     class="ds-modal ds-modal--lg"
     bind:this={formElement}
@@ -250,7 +250,7 @@
       <button
         type="button"
         class="ds-modal__close"
-        aria-label="Schliessen"
+        aria-label="Schließen"
         onclick={handleClose}
       >
         <i class="fas fa-times"></i>
@@ -543,11 +543,11 @@
       >
       <button
         type="submit"
-        class="btn btn-modal"
+        class="btn btn-primary"
         disabled={kvpState.isSubmitting}
       >
         {#if kvpState.isSubmitting}
-          <i class="fas fa-spinner fa-spin"></i>
+          <span class="spinner-ring spinner-ring--sm"></span>
           Wird eingereicht...
         {:else}
           <i class="fas fa-save"></i>
@@ -557,3 +557,68 @@
     </div>
   </form>
 </div>
+
+<style>
+  /* Photo Upload */
+  .upload-box {
+    cursor: pointer;
+    border: 2px dashed var(--color-glass-border-hover);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    padding: var(--spacing-8);
+    text-align: center;
+  }
+
+  .upload-box:hover {
+    border-color: var(--primary-color);
+    background: var(--glass-bg-active);
+  }
+
+  .upload-box i {
+    margin-bottom: var(--spacing-4);
+    color: var(--text-muted);
+    font-size: 2.5rem;
+  }
+
+  .upload-box p {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  .photo-preview-item {
+    position: relative;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-active);
+    width: 100px;
+    height: 100px;
+    overflow: hidden;
+  }
+
+  .photo-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-preview-item .remove-photo {
+    display: flex;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+    background: rgb(244 67 54 / 90%);
+    width: 24px;
+    height: 24px;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+
+  .photo-preview-item .remove-photo:hover {
+    transform: scale(1.1);
+    background: #f44336;
+  }
+</style>

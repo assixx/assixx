@@ -181,3 +181,75 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .detail-sidebar {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+  }
+
+  .sidebar-card {
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+    padding: var(--spacing-6);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .confirmation-done {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .confirmation-done :global(.text-success) {
+    font-size: 2rem;
+    color: var(--color-success);
+  }
+
+  .attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .attachment-item {
+    cursor: pointer;
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .attachment-item:hover {
+    border-color: var(--primary-color);
+    background: var(--glass-bg-active);
+  }
+
+  .action-buttons {
+    display: inline-grid;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-6);
+  }
+
+  .section-title {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+</style>

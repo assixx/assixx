@@ -52,6 +52,7 @@
 
 {#if show && attachment !== null}
   <div
+    id="blackboard-attachment-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={onclose}
     onkeydown={(e) => {
@@ -142,7 +143,7 @@
         >
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={downloadFile}
           ><i class="fas fa-download mr-2"></i>Herunterladen</button
         >
