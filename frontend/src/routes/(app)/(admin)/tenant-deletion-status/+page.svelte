@@ -406,6 +406,7 @@
 {#if showConfirmModal}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    id="tenant-deletion-confirm-modal"
     class="modal-overlay modal-overlay--active"
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}

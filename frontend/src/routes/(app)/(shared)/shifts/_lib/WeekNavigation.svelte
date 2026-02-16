@@ -39,3 +39,18 @@
     <i class="fas fa-chevron-right ml-1"></i>
   </button>
 </div>
+
+<style>
+  .week-navigation {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-6);
+  }
+
+  .week-info {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 18px;
+  }
+</style>

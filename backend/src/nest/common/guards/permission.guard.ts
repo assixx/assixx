@@ -12,8 +12,7 @@
  *
  * Bypass rules:
  *   - No \@RequirePermission() metadata → pass through
- *   - Root user → always pass (full access by design)
- *   - Admin with hasFullAccess → always pass
+ *   - hasFullAccess=true → always pass (root by DB trigger, admin by grant)
  *   - All others → DB lookup, fail-closed (no row = denied)
  *
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
@@ -61,13 +60,12 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // Root always has full access — enforced by DB trigger + design
-    if (user.activeRole === 'root') {
-      return true;
-    }
-
-    // Admin with full access bypasses permission checks
-    if (user.activeRole === 'admin' && user.hasFullAccess) {
+    // Users with hasFullAccess always bypass permission checks.
+    // Root users always have has_full_access=true in DB (enforced by trigger).
+    // Admin users may have it granted individually.
+    // This check uses the DB source of truth, not activeRole, so it works
+    // correctly even when role-switched (e.g. root viewing as employee).
+    if (user.hasFullAccess) {
       return true;
     }
 

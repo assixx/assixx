@@ -337,6 +337,7 @@
 
 {#if rulesState.showStaffingRuleForm}
   <div
+    id="staffing-rule-form-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -463,9 +464,6 @@
                 class="dropdown__trigger"
                 class:active={departmentDropdownOpen}
                 tabindex={selectedAreaId === null ? -1 : 0}
-                style={selectedAreaId === null ?
-                  'pointer-events: none; opacity: 0.5;'
-                : ''}
                 onclick={() => {
                   if (selectedAreaId !== null) {
                     const wasOpen = departmentDropdownOpen;
@@ -523,9 +521,6 @@
                 class="dropdown__trigger"
                 class:active={machineDropdownOpen}
                 tabindex={selectedDepartmentId === null ? -1 : 0}
-                style={selectedDepartmentId === null || isLoadingMachines ?
-                  'pointer-events: none; opacity: 0.5;'
-                : ''}
                 onclick={() => {
                   if (selectedDepartmentId !== null && !isLoadingMachines) {
                     const wasOpen = machineDropdownOpen;
@@ -636,6 +631,7 @@
 {#if rulesState.showDeleteStaffingRuleConfirm && rulesState.deletingStaffingRule !== null}
   {@const rule = rulesState.deletingStaffingRule}
   <div
+    id="staffing-rule-delete-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -705,3 +701,15 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .dropdown--disabled {
+    opacity: 50%;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+
+  .dropdown--disabled .dropdown__trigger {
+    cursor: not-allowed;
+  }
+</style>

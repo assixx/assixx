@@ -366,6 +366,14 @@ export class CalendarService {
       throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
+    // Past-event protection: events whose end_date is in the past cannot be deleted
+    const endDate = new Date(existing.end_date);
+    if (endDate < new Date()) {
+      throw new ForbiddenException(
+        'Vergangene Kalendereinträge können nicht gelöscht werden',
+      );
+    }
+
     if (
       existing.user_id !== userId &&
       userRole !== 'admin' &&

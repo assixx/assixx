@@ -107,7 +107,10 @@
 
 <!-- Employee Number Modal (Design System) -->
 {#if showEmployeeModal}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="employee-count-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="ds-modal ds-modal--sm">
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">Personalnummer eingeben</h3>

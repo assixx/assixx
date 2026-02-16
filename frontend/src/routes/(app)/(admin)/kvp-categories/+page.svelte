@@ -17,22 +17,23 @@
     createCustomCategory,
     deleteCustomCategory,
   } from './_lib/api';
-  import { LABELS, MESSAGES, ICON_OPTIONS } from './_lib/constants';
+  import {
+    LABELS,
+    MESSAGES,
+    ICON_OPTIONS,
+    deleteSuccessWithRefs,
+    deleteConfirmWithRefs,
+  } from './_lib/constants';
+  import EditCategoryModal from './_lib/EditCategoryModal.svelte';
 
-  import type { CustomizableDefault } from './_lib/types';
+  import type { CustomCategory, CustomizableDefault } from './_lib/types';
 
   const log = createLogger('KvpCategoriesPage');
 
   interface PageData {
     categories: {
       defaults: CustomizableDefault[];
-      custom: {
-        id: number;
-        name: string;
-        description: string | null;
-        color: string;
-        icon: string;
-      }[];
+      custom: CustomCategory[];
       totalCount: number;
       maxAllowed: number;
       remainingSlots: number;
@@ -75,7 +76,15 @@
 
   // Delete confirmation modal state
   let showDeleteModal = $state(false);
-  let deleteTarget = $state<{ id: number; name: string } | null>(null);
+  let deleteTarget = $state<{
+    id: number;
+    name: string;
+    suggestionCount: number;
+  } | null>(null);
+
+  // Edit modal state
+  let showEditModal = $state(false);
+  let editTarget = $state<CustomCategory | null>(null);
 
   // Reset override confirmation modal state
   let showResetModal = $state(false);
@@ -212,8 +221,12 @@
   }
 
   /** Open delete confirmation modal */
-  function requestDeleteCustom(id: number, name: string): void {
-    deleteTarget = { id, name };
+  function requestDeleteCustom(cat: CustomCategory): void {
+    deleteTarget = {
+      id: cat.id,
+      name: cat.name,
+      suggestionCount: cat.suggestionCount,
+    };
     showDeleteModal = true;
   }
 
@@ -224,13 +237,23 @@
     const { id } = deleteTarget;
     deleteTarget = null;
 
-    const ok = await deleteCustomCategory(id);
-    if (ok) {
-      showSuccessAlert(MESSAGES.DELETE_SUCCESS);
+    const result = await deleteCustomCategory(id);
+    if (result !== null) {
+      if (result.affectedSuggestions > 0) {
+        showSuccessAlert(deleteSuccessWithRefs(result.affectedSuggestions));
+      } else {
+        showSuccessAlert(MESSAGES.DELETE_SUCCESS);
+      }
       await invalidateAll();
     } else {
       showErrorAlert(MESSAGES.DELETE_ERROR);
     }
+  }
+
+  /** Open edit modal with existing category data */
+  function openEditModal(cat: CustomCategory): void {
+    editTarget = cat;
+    showEditModal = true;
   }
 </script>
 
@@ -379,6 +402,14 @@
                   <tr>
                     <td>
                       <span class="font-medium">{cat.name}</span>
+                      {#if cat.suggestionCount > 0}
+                        <span
+                          class="badge badge--info ml-2"
+                          title="{cat.suggestionCount} Vorschlag/Vorschläge verwenden diese Kategorie"
+                        >
+                          {cat.suggestionCount}
+                        </span>
+                      {/if}
                     </td>
                     <td>
                       <div class="flex items-center gap-2">
@@ -395,17 +426,30 @@
                       <i class="fas fa-{cat.icon}"></i>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        class="action-icon action-icon--delete"
-                        title={LABELS.BTN_DELETE}
-                        aria-label="Kategorie Löschen"
-                        onclick={() => {
-                          requestDeleteCustom(cat.id, cat.name);
-                        }}
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
+                      <div class="flex gap-1">
+                        <button
+                          type="button"
+                          class="action-icon action-icon--edit"
+                          title={LABELS.BTN_EDIT}
+                          aria-label="Kategorie bearbeiten"
+                          onclick={() => {
+                            openEditModal(cat);
+                          }}
+                        >
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="action-icon action-icon--delete"
+                          title={LABELS.BTN_DELETE}
+                          aria-label="Kategorie löschen"
+                          onclick={() => {
+                            requestDeleteCustom(cat);
+                          }}
+                        >
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 {/each}
@@ -609,14 +653,21 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal && deleteTarget !== null}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-category-delete-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="confirm-modal confirm-modal--danger">
       <div class="confirm-modal__icon">
         <i class="fas fa-trash-alt"></i>
       </div>
-      <h3 class="confirm-modal__title">Kategorie Löschen</h3>
+      <h3 class="confirm-modal__title">Kategorie löschen</h3>
       <p class="confirm-modal__message">
-        {MESSAGES.DELETE_CONFIRM}<br />
+        {#if deleteTarget.suggestionCount > 0}
+          {deleteConfirmWithRefs(deleteTarget.suggestionCount)}<br />
+        {:else}
+          {MESSAGES.DELETE_CONFIRM}<br />
+        {/if}
         <strong>"{deleteTarget.name}"</strong>
       </p>
       <div class="confirm-modal__actions confirm-modal__actions--centered">
@@ -645,7 +696,10 @@
 
 <!-- Reset Override Confirmation Modal -->
 {#if showResetModal && resetTarget !== null}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-category-reset-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="confirm-modal confirm-modal--warning">
       <div class="confirm-modal__icon">
         <i class="fas fa-undo"></i>
@@ -677,6 +731,21 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Edit Category Modal -->
+{#if showEditModal && editTarget !== null}
+  <EditCategoryModal
+    categoryId={editTarget.id}
+    categoryName={editTarget.name}
+    categoryColor={editTarget.color}
+    categoryIcon={editTarget.icon}
+    categoryDescription={editTarget.description}
+    onclose={() => {
+      showEditModal = false;
+      editTarget = null;
+    }}
+  />
 {/if}
 
 <style>

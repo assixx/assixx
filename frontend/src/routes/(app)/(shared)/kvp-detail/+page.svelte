@@ -4,7 +4,7 @@
    * SSR: Data loaded in +page.server.ts
    * Level 3: $derived from SSR data + invalidateAll() after mutations
    */
-  import { onDestroy, onMount, untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
 
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -23,7 +23,6 @@
     unshareSuggestion,
     archiveSuggestion,
     unarchiveSuggestion,
-    getAttachmentPreviewUrl,
     getShareLevelText,
     confirmSuggestion,
     unconfirmSuggestion,
@@ -32,6 +31,7 @@
   import CommentsSection from './_lib/CommentsSection.svelte';
   import { STATUS_OPTIONS } from './_lib/constants';
   import DetailSidebar from './_lib/DetailSidebar.svelte';
+  import PhotoGallery from './_lib/PhotoGallery.svelte';
   import RejectionModal from './_lib/RejectionModal.svelte';
   import ShareModal from './_lib/ShareModal.svelte';
   import { kvpDetailState } from './_lib/state.svelte';
@@ -130,23 +130,6 @@
   let commentsSectionRef: CommentsSectionExports | undefined = $state();
   let pendingStatus = $state<KvpStatus | null>(null);
   let rejectionReason = $state('');
-
-  // Lightbox state (index-based for prev/next navigation)
-  let lightboxIndex = $state<number | null>(null);
-  const lightboxUrl = $derived(
-    lightboxIndex !== null && lightboxIndex < photoAttachments.length ?
-      getAttachmentPreviewUrl(photoAttachments[lightboxIndex].fileUuid)
-    : null,
-  );
-
-  // Auth token ready state - triggers re-render after hydration
-  // Required because getAttachmentPreviewUrl() returns "" during SSR
-  let authReady = $state(false);
-
-  onMount(() => {
-    // After hydration, auth token is available - trigger re-render of images
-    authReady = true;
-  });
 
   // Loading states managed by kvpDetailState for child components
 
@@ -397,31 +380,6 @@
   }
 
   // ==========================================================================
-  // LIGHTBOX HANDLERS
-  // ==========================================================================
-
-  function handleOpenLightbox(fileUuid: string) {
-    const idx = photoAttachments.findIndex((p) => p.fileUuid === fileUuid);
-    lightboxIndex = idx >= 0 ? idx : null;
-  }
-
-  function handleCloseLightbox() {
-    lightboxIndex = null;
-  }
-
-  function handleLightboxPrev() {
-    if (lightboxIndex === null || photoAttachments.length <= 1) return;
-    lightboxIndex =
-      lightboxIndex === 0 ? photoAttachments.length - 1 : lightboxIndex - 1;
-  }
-
-  function handleLightboxNext() {
-    if (lightboxIndex === null || photoAttachments.length <= 1) return;
-    lightboxIndex =
-      lightboxIndex === photoAttachments.length - 1 ? 0 : lightboxIndex + 1;
-  }
-
-  // ==========================================================================
   // DROPDOWN HANDLERS
   // ==========================================================================
 
@@ -504,6 +462,8 @@
             <span class="data-list__value">
               <div
                 class="category-tag"
+                class:category-tag--deleted={suggestion.categoryIsDeleted ===
+                  true}
                 style:background="{suggestion.categoryColor}20"
                 style:color={suggestion.categoryColor}
                 style:border="1px solid {suggestion.categoryColor}"
@@ -616,33 +576,7 @@
             <i class="fas fa-images"></i>
             Fotos
           </h3>
-          <div class="photo-gallery">
-            {#each photoAttachments as photo (photo.fileUuid)}
-              <div
-                class="photo-thumbnail"
-                role="button"
-                tabindex="0"
-                onclick={() => {
-                  handleOpenLightbox(photo.fileUuid);
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') handleOpenLightbox(photo.fileUuid);
-                }}
-              >
-                <!-- authReady dependency forces re-render after hydration when token is available -->
-                {#if authReady}
-                  <img
-                    src={getAttachmentPreviewUrl(photo.fileUuid)}
-                    alt={photo.fileName}
-                  />
-                {:else}
-                  <div class="photo-placeholder">
-                    <i class="fas fa-image"></i>
-                  </div>
-                {/if}
-              </div>
-            {/each}
-          </div>
+          <PhotoGallery photos={photoAttachments} />
         </div>
       {/if}
 
@@ -693,66 +627,6 @@
     />
   </div>
 </div>
-
-<!-- Lightbox -->
-{#if lightboxUrl !== null}
-  <div
-    class="lightbox active"
-    role="dialog"
-    aria-label="Bildvorschau"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) handleCloseLightbox();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') handleCloseLightbox();
-      if (e.key === 'ArrowLeft') handleLightboxPrev();
-      if (e.key === 'ArrowRight') handleLightboxNext();
-    }}
-  >
-    {#if photoAttachments.length > 1}
-      <button
-        type="button"
-        class="lightbox-nav lightbox-nav--prev"
-        aria-label="Vorheriges Bild"
-        onclick={handleLightboxPrev}
-      >
-        <i class="fas fa-chevron-left"></i>
-      </button>
-    {/if}
-
-    <img
-      src={lightboxUrl}
-      alt="Vorschau"
-    />
-
-    {#if photoAttachments.length > 1}
-      <button
-        type="button"
-        class="lightbox-nav lightbox-nav--next"
-        aria-label="Nächstes Bild"
-        onclick={handleLightboxNext}
-      >
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    {/if}
-
-    {#if photoAttachments.length > 1}
-      <span class="lightbox-counter">
-        {(lightboxIndex ?? 0) + 1} / {photoAttachments.length}
-      </span>
-    {/if}
-
-    <button
-      type="button"
-      class="lightbox-close"
-      aria-label="Schließen"
-      onclick={handleCloseLightbox}
-    >
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-{/if}
 
 <!-- Modal Components -->
 <ShareModal onconfirm={handleConfirmShare} />
@@ -829,6 +703,12 @@
     font-size: 0.8rem;
   }
 
+  /* Soft-deleted category: strikethrough + dimmed opacity */
+  .category-tag--deleted {
+    text-decoration: line-through;
+    opacity: 55%;
+  }
+
   .status-priority {
     display: flex;
     flex-wrap: wrap;
@@ -887,132 +767,6 @@
     min-width: 180px;
     left: auto;
     right: auto;
-  }
-
-  /* ─── Photo Gallery ──────── */
-
-  .photo-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--spacing-4);
-    margin-top: var(--spacing-4);
-  }
-
-  .photo-thumbnail {
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 1;
-    border: 2px solid transparent;
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg-active);
-  }
-
-  .photo-thumbnail:hover {
-    transform: scale(1.05);
-    border-color: var(--primary-color);
-  }
-
-  .photo-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .photo-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    font-size: 1.5rem;
-    color: var(--color-text-disabled);
-    background: var(--glass-bg-active);
-  }
-
-  /* ─── Lightbox ──────── */
-
-  .lightbox {
-    cursor: pointer;
-    position: fixed;
-    z-index: 2000;
-    top: 0;
-    left: 0;
-    display: none;
-    width: 100%;
-    height: 100%;
-    background: rgb(0 0 0 / 90%);
-  }
-
-  .lightbox.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .lightbox img {
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
-  }
-
-  .lightbox-close {
-    cursor: pointer;
-    position: absolute;
-    top: 20px;
-    right: 40px;
-    font-size: 2rem;
-    color: #fff;
-  }
-
-  .lightbox-close:hover {
-    transform: scale(1.2);
-  }
-
-  .lightbox-nav {
-    cursor: pointer;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    font-size: 1.5rem;
-    color: #fff;
-    background: rgb(255 255 255 / 15%);
-    border: none;
-    border-radius: 50%;
-    transition:
-      background 0.2s,
-      transform 0.2s;
-  }
-
-  .lightbox-nav:hover {
-    background: rgb(255 255 255 / 30%);
-    transform: translateY(-50%) scale(1.1);
-  }
-
-  .lightbox-nav--prev {
-    left: 24px;
-  }
-
-  .lightbox-nav--next {
-    right: 24px;
-  }
-
-  .lightbox-counter {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 4px 12px;
-    font-size: 0.875rem;
-    color: #fff;
-    background: rgb(0 0 0 / 50%);
-    border-radius: 12px;
   }
 
   /* ─── Responsive ──────── */

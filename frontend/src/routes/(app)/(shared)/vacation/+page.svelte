@@ -14,26 +14,24 @@
   import { createLogger } from '$lib/utils/logger';
 
   import * as api from './_lib/api';
-  import CapacityIndicator from './_lib/CapacityIndicator.svelte';
   import {
     DEFAULT_PAGE_SIZE,
-    HALF_DAY_LABELS,
-    STATUS_BADGE_CLASS,
     STATUS_FILTER_OPTIONS,
-    STATUS_LABELS,
-    TYPE_LABELS,
     VIEW_TABS,
   } from './_lib/constants';
+  import CreateModal from './_lib/CreateModal.svelte';
+  import DetailModal from './_lib/DetailModal.svelte';
+  import EditModal from './_lib/EditModal.svelte';
   import IncomingRequestCard from './_lib/IncomingRequestCard.svelte';
   import RequestCard from './_lib/RequestCard.svelte';
-  import RequestForm from './_lib/RequestForm.svelte';
-  import SpecialLeaveCheckbox from './_lib/SpecialLeaveCheckbox.svelte';
+  import RespondModal from './_lib/RespondModal.svelte';
   import { vacationState } from './_lib/state.svelte';
 
   import type { PageData } from './$types';
   import type { ViewTab } from './_lib/constants';
   import type {
     CreateVacationRequestPayload,
+    RespondPayload,
     VacationCapacityAnalysis,
     VacationRequest,
     VacationRequestStatus,
@@ -95,20 +93,6 @@
   let showRespondModal = $state(false);
   let respondingRequest = $state<VacationRequest | null>(null);
   let respondAction = $state<'approve' | 'deny'>('approve');
-  let responseNote = $state('');
-  let isSpecialLeave = $state(false);
-
-  // Form refs
-  interface RequestFormRef {
-    submitForm(): void;
-    getCanSubmit(): boolean;
-  }
-  let createFormRef = $state<RequestFormRef | null>(null);
-  let editFormRef = $state<RequestFormRef | null>(null);
-
-  // Capacity for respond modal
-  let respondCapacity = $state<VacationCapacityAnalysis | null>(null);
-  let isLoadingCapacity = $state(false);
 
   // Pre-fetched capacity for edit modal
   let editCapacity = $state<VacationCapacityAnalysis | null>(null);
@@ -294,31 +278,6 @@
   }
 
   // ==========================================================================
-  // DETAIL VIEW HELPERS
-  // ==========================================================================
-
-  /** Format ISO date to German locale display */
-  function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  }
-
-  /** Build half-day info string for detail view */
-  function getHalfDayInfo(request: VacationRequest): string {
-    const parts: string[] = [];
-    if (request.halfDayStart !== 'none') {
-      parts.push(`Start: ${HALF_DAY_LABELS[request.halfDayStart]}`);
-    }
-    if (request.halfDayEnd !== 'none') {
-      parts.push(`Ende: ${HALF_DAY_LABELS[request.halfDayEnd]}`);
-    }
-    return parts.join(' | ');
-  }
-
-  // ==========================================================================
   // REQUEST ACTIONS (own requests)
   // ==========================================================================
 
@@ -362,63 +321,23 @@
   // INCOMING REQUEST ACTIONS (approve/deny)
   // ==========================================================================
 
-  async function handleApproveClick(request: VacationRequest) {
+  function openRespondModal(
+    request: VacationRequest,
+    action: 'approve' | 'deny',
+  ) {
     respondingRequest = request;
-    respondAction = 'approve';
-    responseNote = '';
-    isSpecialLeave = false;
-    showRespondModal = true;
-
-    // Load capacity for this request
-    isLoadingCapacity = true;
-    try {
-      respondCapacity = await api.analyzeCapacity(
-        request.startDate,
-        request.endDate,
-        request.requesterId,
-      );
-    } finally {
-      isLoadingCapacity = false;
-    }
-  }
-
-  function handleDenyClick(request: VacationRequest) {
-    respondingRequest = request;
-    respondAction = 'deny';
-    responseNote = '';
-    isSpecialLeave = false;
-    respondCapacity = null;
+    respondAction = action;
     showRespondModal = true;
   }
 
-  async function handleRespondSubmit() {
-    const currentRequest = respondingRequest;
-    if (currentRequest === null) return;
-
-    const currentAction = respondAction;
-
-    // Deny requires a reason
-    if (currentAction === 'deny' && responseNote.trim() === '') {
-      showErrorAlert('Bitte geben Sie einen Grund fuer die Ablehnung an');
-      return;
-    }
-
-    const clearRespondState = () => {
-      showRespondModal = false;
-      respondingRequest = null;
-    };
+  async function handleRespondSubmit(payload: RespondPayload) {
+    if (respondingRequest === null) return;
 
     try {
-      await api.respondToRequest(currentRequest.id, {
-        action: currentAction,
-        responseNote:
-          responseNote.trim() !== '' ? responseNote.trim() : undefined,
-        isSpecialLeave:
-          currentAction === 'approve' ? isSpecialLeave : undefined,
-      });
-      clearRespondState();
+      await api.respondToRequest(respondingRequest.id, payload);
+      closeRespondModal();
       showSuccessAlert(
-        currentAction === 'approve' ? 'Antrag genehmigt' : 'Antrag abgelehnt',
+        payload.action === 'approve' ? 'Antrag genehmigt' : 'Antrag abgelehnt',
       );
       await invalidateAll();
     } catch (err) {
@@ -430,7 +349,6 @@
   function closeRespondModal() {
     showRespondModal = false;
     respondingRequest = null;
-    respondCapacity = null;
   }
 
   // ==========================================================================
@@ -747,8 +665,12 @@
             <IncomingRequestCard
               {request}
               isNew={unreadRequestIds.has(request.id)}
-              onApprove={handleApproveClick}
-              onDeny={handleDenyClick}
+              onApprove={(r: VacationRequest) => {
+                openRespondModal(r, 'approve');
+              }}
+              onDeny={(r: VacationRequest) => {
+                openRespondModal(r, 'deny');
+              }}
               onDetail={handleDetail}
             />
           {/each}
@@ -773,431 +695,48 @@
 </div>
 
 <!-- ========================================================================
-     CREATE MODAL
+     MODALS (extracted into _lib/ components)
      ======================================================================== -->
 
 {#if showCreateModal}
-  <div
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={() => {
+  <CreateModal
+    onclose={() => {
       showCreateModal = false;
     }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') showCreateModal = false;
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <form
-      class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      onsubmit={(e) => {
-        e.preventDefault();
-        createFormRef?.submitForm();
-      }}
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-umbrella-beach mr-2"></i>
-          Neuer Urlaubsantrag
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schließen"
-          onclick={() => {
-            showCreateModal = false;
-          }}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="ds-modal__body">
-        <RequestForm
-          bind:this={createFormRef}
-          onsubmit={handleCreateSubmit}
-          onCapacityCheck={handleCapacityCheck}
-        />
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            showCreateModal = false;
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={!createFormRef}
-        >
-          <i class="fas fa-paper-plane mr-1"></i>
-          Antrag einreichen
-        </button>
-      </div>
-    </form>
-  </div>
+    onsubmit={handleCreateSubmit}
+    onCapacityCheck={handleCapacityCheck}
+  />
 {/if}
-
-<!-- ========================================================================
-     DETAIL MODAL (read-only view)
-     ======================================================================== -->
 
 {#if vacationState.showDetailModal && vacationState.selectedRequest !== null}
-  {@const req = vacationState.selectedRequest}
-  <div
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={() => {
+  <DetailModal
+    request={vacationState.selectedRequest}
+    {canApprove}
+    onclose={() => {
       vacationState.closeDetailModal();
     }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') vacationState.closeDetailModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="ds-modal"
-      role="document"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-eye mr-2"></i>
-          Antragsdetails
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schließen"
-          onclick={() => {
-            vacationState.closeDetailModal();
-          }}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="ds-modal__body">
-        <div class="detail-grid">
-          <div class="detail-grid__row">
-            <span class="detail-grid__label">Status</span>
-            <span class="badge {STATUS_BADGE_CLASS[req.status]}">
-              {STATUS_LABELS[req.status]}
-            </span>
-          </div>
-
-          <div class="detail-grid__row">
-            <span class="detail-grid__label">Urlaubsart</span>
-            <span>{TYPE_LABELS[req.vacationType]}</span>
-          </div>
-
-          <div class="detail-grid__row">
-            <span class="detail-grid__label">Zeitraum</span>
-            <span>
-              {formatDate(req.startDate)} — {formatDate(req.endDate)}
-            </span>
-          </div>
-
-          <div class="detail-grid__row">
-            <span class="detail-grid__label">Tage</span>
-            <span>
-              {req.computedDays}
-              {req.computedDays === 1 ? 'Tag' : 'Tage'}
-            </span>
-          </div>
-
-          {#if getHalfDayInfo(req) !== ''}
-            <div class="detail-grid__row">
-              <span class="detail-grid__label">Halbe Tage</span>
-              <span>{getHalfDayInfo(req)}</span>
-            </div>
-          {/if}
-
-          {#if req.requesterName}
-            <div class="detail-grid__row">
-              <span class="detail-grid__label">Antragsteller</span>
-              <span>{req.requesterName}</span>
-            </div>
-          {/if}
-
-          {#if req.requestNote !== null}
-            <div class="detail-grid__row">
-              <span class="detail-grid__label">Bemerkung</span>
-              <span>{req.requestNote}</span>
-            </div>
-          {/if}
-
-          {#if req.responseNote !== null}
-            <div class="detail-grid__row">
-              <span class="detail-grid__label">Antwort</span>
-              <span>{req.responseNote}</span>
-            </div>
-          {/if}
-
-          {#if req.approverName}
-            <div class="detail-grid__row">
-              <span class="detail-grid__label">Bearbeitet von</span>
-              <span>{req.approverName}</span>
-            </div>
-          {/if}
-
-          {#if req.respondedAt !== null}
-            <div class="detail-grid__row">
-              <span class="detail-grid__label">Bearbeitet am</span>
-              <span>{formatDate(req.respondedAt)}</span>
-            </div>
-          {/if}
-
-          <div class="detail-grid__row">
-            <span class="detail-grid__label">Erstellt am</span>
-            <span>{formatDate(req.createdAt)}</span>
-          </div>
-        </div>
-
-        {#if req.status === 'pending' && canApprove}
-          <div class="alert alert--warning mb-4">
-            <div class="alert__icon">
-              <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="alert__content">
-              <div class="alert__title">Schichtplan-Hinweis</div>
-              <div class="alert__message">
-                Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan
-                eingeplant sein. Bitte Schichtplan manuell überprüfen!
-              </div>
-            </div>
-          </div>
-        {/if}
-      </div>
-
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            vacationState.closeDetailModal();
-          }}
-        >
-          Schließen
-        </button>
-      </div>
-    </div>
-  </div>
+  />
 {/if}
-
-<!-- ========================================================================
-     EDIT MODAL
-     ======================================================================== -->
 
 {#if vacationState.showEditModal && vacationState.selectedRequest !== null}
-  <div
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={() => {
+  <EditModal
+    request={vacationState.selectedRequest}
+    initialCapacity={editCapacity}
+    onclose={() => {
       vacationState.closeEditModal();
     }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') vacationState.closeEditModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <form
-      class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      onsubmit={(e) => {
-        e.preventDefault();
-        editFormRef?.submitForm();
-      }}
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-edit mr-2"></i>
-          Antrag bearbeiten
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schließen"
-          onclick={() => {
-            vacationState.closeEditModal();
-          }}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="ds-modal__body">
-        <RequestForm
-          bind:this={editFormRef}
-          editingRequest={vacationState.selectedRequest}
-          initialCapacity={editCapacity}
-          onsubmit={handleEditSubmit}
-          onCapacityCheck={handleCapacityCheck}
-        />
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            vacationState.closeEditModal();
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={!editFormRef}
-        >
-          <i class="fas fa-save mr-1"></i>
-          Änderungen speichern
-        </button>
-      </div>
-    </form>
-  </div>
+    onsubmit={handleEditSubmit}
+    onCapacityCheck={handleCapacityCheck}
+  />
 {/if}
 
-<!-- ========================================================================
-     RESPOND MODAL (Approve / Deny)
-     ======================================================================== -->
-
 {#if showRespondModal && respondingRequest !== null}
-  <div
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={closeRespondModal}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closeRespondModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <form
-      class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      onsubmit={(e) => {
-        e.preventDefault();
-        void handleRespondSubmit();
-      }}
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          {#if respondAction === 'approve'}
-            <i class="fas fa-check-circle text-success mr-2"></i>
-            Antrag genehmigen
-          {:else}
-            <i class="fas fa-times-circle text-danger mr-2"></i>
-            Antrag ablehnen
-          {/if}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={closeRespondModal}
-          aria-label="Schließen"
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="ds-modal__body">
-        <div class="respond-modal__info">
-          <p>
-            <strong>{respondingRequest.requesterName ?? 'Mitarbeiter'}</strong>
-            — {respondingRequest.computedDays}
-            {respondingRequest.computedDays === 1 ? 'Tag' : 'Tage'}
-          </p>
-        </div>
-
-        <!-- Capacity (only for approve) -->
-        {#if respondAction === 'approve'}
-          <CapacityIndicator
-            analysis={respondCapacity}
-            isLoading={isLoadingCapacity}
-          />
-
-          <!-- Special leave checkbox (for special vacation types) -->
-          {#if respondingRequest.vacationType.startsWith('special_')}
-            <SpecialLeaveCheckbox
-              checked={isSpecialLeave}
-              onchange={(val: boolean) => {
-                isSpecialLeave = val;
-              }}
-            />
-          {/if}
-        {/if}
-
-        <!-- Response note -->
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="response-note"
-          >
-            {respondAction === 'deny' ?
-              'Grund (Pflichtfeld)'
-            : 'Bemerkung (optional)'}
-          </label>
-          <textarea
-            id="response-note"
-            class="form-field__control form-field__control--textarea"
-            bind:value={responseNote}
-            placeholder={respondAction === 'deny' ?
-              'Bitte geben Sie den Grund fuer die Ablehnung an...'
-            : 'Optionale Bemerkung...'}
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={closeRespondModal}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="submit"
-          class={respondAction === 'approve' ? 'btn btn-primary' : (
-            'btn btn-danger'
-          )}
-        >
-          {respondAction === 'approve' ? 'Genehmigen' : 'Ablehnen'}
-        </button>
-      </div>
-    </form>
-  </div>
+  <RespondModal
+    request={respondingRequest}
+    action={respondAction}
+    onclose={closeRespondModal}
+    onsubmit={handleRespondSubmit}
+  />
 {/if}
 
 <style>
@@ -1237,42 +776,6 @@
     padding-top: var(--spacing-4);
     border-top: 1px solid var(--color-glass-border);
     margin-top: var(--spacing-4);
-  }
-
-  /* ─── Respond Modal ──────── */
-
-  .respond-modal__info {
-    padding: var(--spacing-3);
-    border-radius: var(--radius-md);
-    background: var(--glass-bg);
-  }
-
-  /* ─── Detail Modal Grid ──────── */
-
-  .detail-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-3);
-  }
-
-  .detail-grid__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-2) 0;
-    border-bottom: 1px solid var(--color-glass-border);
-  }
-
-  .detail-grid__row:last-child {
-    border-bottom: none;
-  }
-
-  .detail-grid__label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    margin-right: var(--spacing-4);
   }
 
   /* ─── Balance Summary Card ──────── */

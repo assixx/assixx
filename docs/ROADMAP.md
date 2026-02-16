@@ -71,7 +71,7 @@
 - [ ] Antragsformular mit Kalender-Integration
 - [ ] Mehrstufiger Genehmigungsworkflow (Employee -> Lead -> Admin)
 - [ ] Resturlaubsberechnung und Kontingent-Verwaltung
-- [ ] Abwesenheitskalender (Team-Uebersicht)
+- [ ] Abwesenheitskalender (Team-Übersicht)
 
 ### TPM-System -- Total Productive Maintenance (nicht begonnen)
 

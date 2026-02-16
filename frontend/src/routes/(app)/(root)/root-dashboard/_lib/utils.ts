@@ -43,7 +43,8 @@ export function getRoleLabel(role: string): string {
  * Get badge CSS class for role
  * @param role - User role
  */
-export function getRoleBadgeClass(role: string): string {
+export function getRoleBadgeClass(role: string | null | undefined): string {
+  if (role === null || role === undefined || role === '') return 'info';
   const normalizedRole = role.toLowerCase();
   return Object.hasOwn(ROLE_BADGE_CLASSES, normalizedRole) ?
       ROLE_BADGE_CLASSES[normalizedRole]

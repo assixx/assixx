@@ -4,22 +4,13 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import {
     isDark,
     forceDark,
     restoreUserTheme,
   } from '$lib/stores/theme.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showInfoAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import {
     analyzePassword,
     type PasswordStrengthResult,
@@ -28,14 +19,15 @@
   // Local modules
   import { registerUser, createRegisterPayload } from './_lib/api';
   import {
-    COUNTRIES,
-    PLANS,
     DEFAULT_COUNTRY,
     DEFAULT_PLAN,
     SUCCESS_REDIRECT_DELAY,
     ERROR_MESSAGES,
-    HELP_MESSAGE,
   } from './_lib/constants';
+  import CountryPhoneInput from './_lib/CountryPhoneInput.svelte';
+  import PlanSelect from './_lib/PlanSelect.svelte';
+  import SignupNav from './_lib/SignupNav.svelte';
+  import SubdomainInput from './_lib/SubdomainInput.svelte';
   import {
     isSubdomainValid,
     isEmailValid,
@@ -45,7 +37,10 @@
     isPasswordValid,
   } from './_lib/validators';
 
-  import type { Country, Plan } from './_lib/types';
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // =============================================================================
   // SVELTE 5 RUNES - Form State
@@ -64,7 +59,6 @@
   let lastName = $state('');
   let phone = $state('');
   let countryCode = $state(DEFAULT_COUNTRY.code);
-  let selectedFlag = $state(DEFAULT_COUNTRY.flag);
 
   // Password
   let password = $state('');
@@ -78,19 +72,14 @@
 
   // Plan
   let selectedPlan = $state(DEFAULT_PLAN.value);
-  let selectedPlanName = $state(DEFAULT_PLAN.name);
 
   // UI State
   let termsAccepted = $state(false);
   let loading = $state(false);
   let showSuccess = $state(false);
-  let countryDropdownOpen = $state(false);
-  let planDropdownOpen = $state(false);
 
   // Error messages
-  let subdomainError: string | null = $state(null);
   let emailMatchError: string | null = $state(null);
-  let phoneError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
 
   // =============================================================================
@@ -140,23 +129,9 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  function handleSubdomainInput(e: Event): void {
-    const target = e.target as HTMLInputElement;
-    subdomain = target.value.toLowerCase();
-    subdomainError =
-      subdomain !== '' && !subdomainValid ?
-        ERROR_MESSAGES.subdomainInvalid
-      : null;
-  }
-
   function handleEmailConfirmInput(): void {
     emailMatchError =
       emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
-  }
-
-  function handlePhoneInput(): void {
-    phoneError =
-      phone !== '' && !phoneValid ? ERROR_MESSAGES.phoneInvalid : null;
   }
 
   /** Minimum characters before running zxcvbn analysis */
@@ -197,28 +172,6 @@
     if (field === 'confirm') showPasswordConfirm = !showPasswordConfirm;
   }
 
-  function selectCountry(country: Country): void {
-    selectedFlag = country.flag;
-    countryCode = country.code;
-    countryDropdownOpen = false;
-  }
-
-  function selectPlanOption(plan: Plan): void {
-    selectedPlan = plan.value;
-    selectedPlanName = plan.name;
-    planDropdownOpen = false;
-  }
-
-  function toggleCountryDropdown(): void {
-    countryDropdownOpen = !countryDropdownOpen;
-    planDropdownOpen = false;
-  }
-
-  function togglePlanDropdown(): void {
-    planDropdownOpen = !planDropdownOpen;
-    countryDropdownOpen = false;
-  }
-
   async function handleSubmit(e: Event): Promise<void> {
     e.preventDefault();
 
@@ -257,51 +210,13 @@
       loading = false;
     }
   }
-
-  function showHelp(): void {
-    showInfoAlert(HELP_MESSAGE, 10000);
-  }
-
-  // Capture-phase click-outside: bypasses stopPropagation
-  $effect(() => {
-    function handler(event: MouseEvent): void {
-      if (!(event.target instanceof HTMLElement)) return;
-      if (!event.target.closest('.custom-country-select')) {
-        countryDropdownOpen = false;
-      }
-      if (!event.target.closest('.custom-plan-select')) {
-        planDropdownOpen = false;
-      }
-    }
-    document.addEventListener('click', handler, true);
-    return () => {
-      document.removeEventListener('click', handler, true);
-    };
-  });
 </script>
 
 <svelte:head>
   <title>Registrieren - Assixx</title>
 </svelte:head>
 
-<!-- Back to Homepage Button -->
-<a
-  href={resolvePath('/')}
-  class="back-button"
->
-  <span class="icon">←</span>
-  <span>Zurück zur Hauptseite</span>
-</a>
-
-<!-- Help Button -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="help-button"
-  onclick={showHelp}
->
-  ?
-</div>
+<SignupNav />
 
 <div class="page-container page-container--centered">
   <!-- Header -->
@@ -366,30 +281,10 @@
         />
       </div>
 
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="subdomain">Subdomain</label
-        >
-        <div class="subdomain-input-group">
-          <input
-            type="text"
-            id="subdomain"
-            name="subdomain"
-            class="subdomain-input"
-            required
-            pattern="[a-z0-9\-]+"
-            placeholder="ihre-firma"
-            value={subdomain}
-            oninput={handleSubdomainInput}
-            disabled={loading}
-          />
-          <span class="subdomain-suffix">.assixx.com</span>
-        </div>
-        {#if subdomainError}
-          <p class="form-field__message">{subdomainError}</p>
-        {/if}
-      </div>
+      <SubdomainInput
+        bind:subdomain
+        disabled={loading}
+      />
 
       <div class="form-field">
         <label
@@ -471,74 +366,11 @@
         />
       </div>
 
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="phone">Telefon</label
-        >
-        <div class="phone-input-group">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="custom-country-select">
-            <div
-              class="country-display"
-              class:active={countryDropdownOpen}
-              onclick={toggleCountryDropdown}
-            >
-              <span id="selectedFlag">{selectedFlag}</span>
-              <span id="selectedCode">{countryCode}</span>
-              <svg
-                width="10"
-                height="6"
-                viewBox="0 0 10 6"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M1 1L5 5L9 1"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </div>
-            <div
-              class="country-dropdown"
-              class:active={countryDropdownOpen}
-            >
-              {#each COUNTRIES as country (country.code)}
-                <div
-                  class="country-option"
-                  onclick={() => {
-                    selectCountry(country);
-                  }}
-                >
-                  {country.flag}
-                  {country.code}
-                </div>
-              {/each}
-            </div>
-          </div>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            class="form-field__control phone-number"
-            class:is-error={phoneError}
-            placeholder="123 456789"
-            autocomplete="tel-national"
-            required
-            bind:value={phone}
-            oninput={handlePhoneInput}
-            disabled={loading}
-          />
-        </div>
-        {#if phoneError}
-          <p class="form-field__message form-field__message--error">
-            {phoneError}
-          </p>
-        {/if}
-      </div>
+      <CountryPhoneInput
+        bind:phone
+        bind:countryCode
+        disabled={loading}
+      />
 
       <!-- Dritte Zeile -->
       <div class="form-field">
@@ -644,53 +476,7 @@
         {/if}
       </div>
 
-      <div class="form-field">
-        <label
-          class="form-field__label"
-          for="planValue">Plan</label
-        >
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="custom-plan-select">
-          <div
-            class="plan-display"
-            class:active={planDropdownOpen}
-            onclick={togglePlanDropdown}
-          >
-            <span id="selectedPlan">{selectedPlanName}</span>
-            <svg
-              width="10"
-              height="6"
-              viewBox="0 0 10 6"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M1 1L5 5L9 1"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </div>
-          <div
-            class="plan-dropdown"
-            class:active={planDropdownOpen}
-          >
-            {#each PLANS as plan (plan.value)}
-              <div
-                class="plan-option"
-                onclick={() => {
-                  selectPlanOption(plan);
-                }}
-              >
-                <span>{plan.name}</span>
-                <span class="plan-price">{plan.price}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
+      <PlanSelect bind:selectedPlan />
 
       <!-- Terms und Submit -->
       <div class="bottom-section">
@@ -730,23 +516,6 @@
 </div>
 
 <style>
-  /* Emoji Font Support */
-  :global(.country-option),
-  :global(#selectedFlag) {
-    font-family:
-      Outfit,
-      'Noto Color Emoji',
-      'Apple Color Emoji',
-      'Segoe UI Emoji',
-      'Segoe UI Symbol',
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      Arial,
-      sans-serif;
-  }
-
   /* Scoped to signup page only */
   :global(body:has(#signupForm)) {
     display: flex;
@@ -781,266 +550,6 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 16px 20px;
     margin-bottom: 20px;
-  }
-
-  /* Subdomain Input Group */
-  .subdomain-input-group {
-    display: flex;
-    align-items: stretch;
-  }
-
-  .subdomain-input {
-    flex: 1;
-    backdrop-filter: var(--glass-form-backdrop);
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
-    border: var(--form-field-border);
-    border-right: none;
-    border-radius: var(--form-field-radius) 0 0 var(--form-field-radius);
-    background: var(--form-field-bg);
-    padding: var(--form-field-padding-y) var(--form-field-padding-x);
-    min-height: 44px;
-    color: var(--form-field-text);
-    font-size: var(--form-field-font-size);
-    line-height: 1.5;
-  }
-
-  .subdomain-input:hover {
-    border: var(--form-field-border-hover);
-    border-right: none;
-    background: var(--form-field-bg-hover);
-  }
-
-  .subdomain-input:focus {
-    outline: none;
-    box-shadow: var(--form-field-focus-ring);
-    border: var(--form-field-border-focus);
-    border-right: none;
-    background: var(--form-field-bg-focus);
-  }
-
-  .subdomain-suffix {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(5px);
-    transition: all 0.2s ease;
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-left: none;
-    border-radius: 0 var(--form-field-radius) var(--form-field-radius) 0;
-    background: rgb(255 255 255 / 8%);
-    padding: 0 16px;
-    color: var(--text-secondary);
-    font-size: 14px;
-    white-space: nowrap;
-  }
-
-  .subdomain-input:focus + .subdomain-suffix {
-    border-color: var(--primary-color);
-    background: rgb(255 255 255 / 12%);
-  }
-
-  /* Phone Input Group */
-  .phone-input-group {
-    display: flex;
-    gap: 8px;
-  }
-
-  .custom-country-select {
-    position: relative;
-    width: 85px;
-  }
-
-  .country-display {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    backdrop-filter: var(--glass-form-backdrop);
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
-    cursor: pointer;
-    border: var(--form-field-border);
-    border-radius: var(--form-field-radius);
-    background: var(--form-field-bg);
-    padding: var(--form-field-padding-y) var(--form-field-padding-x);
-    min-height: 44px;
-    color: var(--form-field-text);
-    font-size: var(--form-field-font-size);
-  }
-
-  .country-display:hover {
-    border: var(--form-field-border-hover);
-    background: var(--form-field-bg-hover);
-  }
-
-  .country-display svg {
-    opacity: 60%;
-    margin-left: auto;
-  }
-
-  .country-display.active svg {
-    transform: rotate(180deg);
-  }
-
-  .country-dropdown {
-    position: absolute;
-    top: calc(100% + 5px);
-    right: 0;
-    left: 0;
-    transform: translateY(-10px);
-    visibility: hidden;
-    opacity: 0%;
-    z-index: 1000;
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid hsl(0deg 0% 100% / 10%);
-    border-radius: var(--radius-xl);
-    background: rgb(18 18 18 / 100%);
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .country-dropdown.active {
-    transform: translateY(0);
-    visibility: visible;
-    opacity: 100%;
-  }
-
-  .country-option {
-    cursor: pointer;
-    border-bottom: 1px solid rgb(255 255 255 / 5%);
-    padding: 10px 12px;
-    color: var(--text-primary);
-    font-size: 13px;
-  }
-
-  .country-option:last-child {
-    border-bottom: none;
-  }
-
-  .country-option:hover {
-    background: rgb(33 150 243 / 20%);
-    padding-left: 16px;
-    color: #fff;
-  }
-
-  .country-option:active {
-    background: rgb(33 150 243 / 30%);
-  }
-
-  /* Scrollbar für Dropdown */
-  .country-dropdown::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .country-dropdown::-webkit-scrollbar-track {
-    background: rgb(255 255 255 / 5%);
-  }
-
-  .country-dropdown::-webkit-scrollbar-thumb {
-    border-radius: 2px;
-    background: rgb(255 255 255 / 20%);
-  }
-
-  .country-dropdown::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 30%);
-  }
-
-  .phone-input-group .phone-number {
-    flex: 1;
-  }
-
-  /* Custom Plan Select */
-  .custom-plan-select {
-    position: relative;
-    width: 100%;
-  }
-
-  .plan-display {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    backdrop-filter: var(--glass-form-backdrop);
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
-    cursor: pointer;
-    border: var(--form-field-border);
-    border-radius: var(--form-field-radius);
-    background: var(--form-field-bg);
-    padding: var(--form-field-padding-y) var(--form-field-padding-x);
-    min-height: 44px;
-    color: var(--form-field-text);
-    font-size: var(--form-field-font-size);
-  }
-
-  .plan-display:hover {
-    border: var(--form-field-border-hover);
-    background: var(--form-field-bg-hover);
-  }
-
-  .plan-display svg {
-    opacity: 60%;
-  }
-
-  .plan-display.active svg {
-    transform: rotate(180deg);
-  }
-
-  .plan-dropdown {
-    position: absolute;
-    top: calc(100% + 5px);
-    right: 0;
-    left: 0;
-    transform: translateY(-10px);
-    visibility: hidden;
-    opacity: 0%;
-    z-index: 1000;
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid hsl(0deg 0% 100% / 10%);
-    border-radius: var(--radius-xl);
-    background: rgb(18 18 18 / 100%);
-  }
-
-  .plan-dropdown.active {
-    transform: translateY(0);
-    visibility: visible;
-    opacity: 100%;
-  }
-
-  .plan-option {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    border-bottom: 1px solid rgb(255 255 255 / 5%);
-    padding: 10px 16px;
-    color: var(--text-primary);
-    font-size: 14px;
-  }
-
-  .plan-option:last-child {
-    border-bottom: none;
-  }
-
-  .plan-option:hover {
-    background: rgb(33 150 243 / 20%);
-    padding-left: 20px;
-    color: #fff;
-  }
-
-  .plan-option:active {
-    background: rgb(33 150 243 / 30%);
-  }
-
-  .plan-price {
-    color: var(--primary-color);
-    font-weight: 500;
-    font-size: 12px;
-  }
-
-  .plan-option:hover .plan-price {
-    color: #fff;
   }
 
   /* Bottom Section */
@@ -1088,84 +597,6 @@
 
   .login-link:hover {
     text-decoration: underline;
-  }
-
-  /* Help Button */
-  .help-button {
-    display: flex;
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    backdrop-filter: blur(10px);
-    cursor: pointer;
-    box-shadow:
-      0 4px 12px rgb(0 0 0 / 20%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
-    border: 1px solid hsl(0deg 0% 100% / 10%);
-    border-radius: 50%;
-    background: rgb(255 255 255 / 8%);
-    width: 36px;
-    height: 36px;
-    color: var(--text-secondary);
-    font-size: 19px;
-  }
-
-  .help-button:hover {
-    transform: scale(1.1);
-    box-shadow:
-      0 6px 16px rgb(33 150 243 / 30%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
-    border-color: var(--primary-color);
-    background: rgb(33 150 243 / 15%);
-    color: var(--primary-color);
-  }
-
-  /* Back Button */
-  .back-button {
-    display: flex;
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    align-items: center;
-    gap: 10px;
-    z-index: 1001;
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow:
-      0 4px 16px rgb(0 0 0 / 20%),
-      inset 0 1px 0 rgb(255 255 255 / 5%);
-    border: 1px solid rgb(255 255 255 / 10%);
-    border-radius: 12px;
-    background: rgb(255 255 255 / 2%);
-    padding: 10px 20px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    font-size: 14px;
-    text-decoration: none;
-  }
-
-  .back-button:hover {
-    transform: translateX(-5px);
-    box-shadow:
-      0 6px 24px rgb(0 0 0 / 30%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
-    border-color: rgb(255 255 255 / 15%);
-    background: rgb(255 255 255 / 5%);
-    color: var(--text-primary);
-  }
-
-  .back-button:active {
-    transform: translateX(-3px) scale(0.98);
-  }
-
-  .back-button .icon {
-    font-size: 18px;
-  }
-
-  .back-button:hover .icon {
-    transform: translateX(-3px);
   }
 
   /* Responsive */

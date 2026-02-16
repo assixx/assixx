@@ -182,8 +182,9 @@ doppler run -- docker-compose restart backend
 14. Read(~/projects/Assixx/docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) - Docker/Nginx/SvelteKit Setup!
 15. Read all ADR in (~/projects/Assixx/docs/infrastructure/adr/ADR-0\*\*.md.) and docs/infrastructure/adr/README.md
 16. Always fetch original docs: like fetch this: https://svelte.dev/docs/svelte/overview and https://svelte.dev/docs/svelte/what-are-runes and https://svelte.dev/docs/kit/$app-paths#resolve
-17. Dont do more than this and than recap fast and than ask user that youre ready.
-18. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
+17. Read(~/projects/Assixx/docs/COMMON-COMMANDS.md) - Alle häufig genutzten Befehle (Docker, pnpm, ESLint, DB, etc.)
+18. Dont do more than this and than recap fast and than ask user that youre ready.
+19. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
 
 ## 📊 PROGRESS DOCUMENTATION
 

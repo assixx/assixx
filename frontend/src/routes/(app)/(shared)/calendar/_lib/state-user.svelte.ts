@@ -53,8 +53,9 @@ function createUserState() {
     return hasEventManagementAccess(event);
   }
 
-  /** Check if user can delete event */
+  /** Check if user can delete event (past events are locked) */
   function canDeleteEvent(event: CalendarEvent): boolean {
+    if (isEventPast(event)) return false;
     return hasEventManagementAccess(event);
   }
 

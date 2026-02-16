@@ -9,12 +9,10 @@
 
   import NotificationBadge from '$lib/components/NotificationBadge.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import {
-    getAvatarColorClass,
-    getProfilePictureUrl,
-  } from '$lib/utils/avatar-helpers';
 
   import { type NavItem } from './navigation-config';
+  import SidebarStorageWidget from './SidebarStorageWidget.svelte';
+  import SidebarUserCard from './SidebarUserCard.svelte';
 
   /**
    * Resolve dynamic path with base prefix.
@@ -86,23 +84,6 @@
   );
 
   // --- HELPERS ---
-
-  /** Get user initials for avatar */
-  function getInitials(): string {
-    if (!user) return 'U';
-    const first = user.firstName?.charAt(0) ?? '';
-    const last = user.lastName?.charAt(0) ?? '';
-    return (first + last).toUpperCase() || 'U';
-  }
-
-  /** Get display name */
-  function getDisplayName(): string {
-    if (user === null) return 'User';
-    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-    if (fullName !== '') return fullName;
-    if (user.email !== undefined && user.email !== '') return user.email;
-    return 'User';
-  }
 
   /** Check if menu item is active (recursive for nested submenus) */
   function isActive(item: NavItem): boolean {
@@ -322,58 +303,487 @@
     </ul>
   </nav>
 
-  <!-- User Info Card -->
-  <div class="user-info-card">
-    {#if user?.profilePicture}
-      <div class="avatar avatar--md">
-        <img
-          src={getProfilePictureUrl(user.profilePicture)}
-          alt={getDisplayName()}
-          class="avatar__image"
-        />
-      </div>
-    {:else}
-      <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
-        <span class="avatar__initials">{getInitials()}</span>
-      </div>
-    {/if}
-    <div class="user-details">
-      <div class="company-info">
-        <div class="company-name">{tenant?.companyName ?? 'Firma'}</div>
-      </div>
-      <div class="user-name">{getDisplayName()}</div>
-      {#if user?.email}
-        <div class="user-email">{user.email}</div>
-      {/if}
-      {#if user?.position}
-        <div class="user-position">{user.position}</div>
-      {/if}
-      {#if user?.employeeNumber}
-        <span class="employee-number__text">{user.employeeNumber}</span>
-      {/if}
-      <span class="badge badge--sm {roleBadgeClass}">{roleBadgeText}</span>
-    </div>
-  </div>
+  <!-- User Info Card (Extracted Component) -->
+  <SidebarUserCard
+    {user}
+    {tenant}
+    {roleBadgeClass}
+    {roleBadgeText}
+  />
 
-  <!-- Storage Widget (Root only) -->
+  <!-- Storage Widget (Root only, Extracted Component) -->
   {#if currentRole === 'root'}
-    <div class="storage-widget">
-      <div class="storage-header">
-        <i class="fas fa-database"></i>
-        <span>Speicherplatz</span>
-      </div>
-      <div class="storage-info">
-        <div class="storage-usage-text">
-          <span>-- GB</span> von <span>-- GB</span>
-        </div>
-        <div class="storage-progress">
-          <div
-            class="storage-progress-bar"
-            style="width: 0%"
-          ></div>
-        </div>
-        <div class="storage-percentage">0% belegt</div>
-      </div>
-    </div>
+    <SidebarStorageWidget />
   {/if}
 </aside>
+
+<style>
+  /* Base sidebar */
+  .sidebar {
+    position: sticky;
+    top: 80px;
+    left: 0;
+    flex-shrink: 0;
+    align-self: flex-start;
+    backdrop-filter: blur(20px);
+    transition:
+      width 0.1s ease,
+      min-width 0.1s ease;
+    margin-top: 0;
+    margin-left: 10px;
+    background: transparent;
+    width: 260px !important;
+    min-width: 260px;
+    height: calc(100vh - 80px);
+    max-height: calc(100vh - 80px);
+    overflow: hidden auto;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar::-webkit-scrollbar-track {
+    background: var(--glass-bg-hover);
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: var(--color-glass-border-hover);
+  }
+
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  .sidebar-nav {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    padding: var(--spacing-4);
+    overflow: visible;
+  }
+
+  /* Collapsed sidebar */
+  .sidebar.collapsed {
+    margin-left: 10px;
+    width: 4.5rem !important;
+    min-width: 4.5rem !important;
+  }
+
+  .sidebar.collapsed :global(.user-info-card) {
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 9rem;
+    margin-left: 4px;
+    padding: 0.9rem 0.7rem 0.7rem;
+    min-height: auto;
+  }
+
+  .sidebar.collapsed :global(.user-details) {
+    display: none;
+  }
+
+  .sidebar.collapsed .sidebar-link .label {
+    display: none;
+  }
+
+  .sidebar.collapsed .sidebar-link {
+    justify-content: flex-start;
+    gap: 0;
+    background: transparent;
+    padding: 0.5rem;
+    overflow: visible !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  .sidebar-link .icon :global(svg) {
+    display: block;
+    width: 1.063rem !important;
+    height: 1.063rem !important;
+  }
+
+  .sidebar.collapsed .sidebar-item.active .sidebar-link {
+    transition: color 0.2s ease;
+    color: var(--color-black) !important;
+  }
+
+  .sidebar.collapsed .sidebar-item.active .sidebar-link .icon {
+    color: var(--color-black);
+  }
+
+  .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
+    position: absolute;
+    z-index: -1;
+    inset: -0.55rem;
+    border-radius: var(--glass-card-radius);
+    background: linear-gradient(135deg, #e9f1f7 0%, #75bffc 100%);
+    content: '';
+  }
+
+  .sidebar.collapsed
+    .sidebar-item:not(.active)
+    .sidebar-link:hover
+    .icon::before {
+    position: absolute;
+    z-index: -1;
+    inset: -0.525rem;
+    border-radius: var(--glass-card-radius);
+    background: var(--nav-hover-bg);
+    content: '';
+  }
+
+  .sidebar.collapsed :global(.storage-widget) {
+    display: none;
+  }
+
+  /* Sidebar menu */
+  .sidebar-menu {
+    flex: 1;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sidebar-link {
+    display: flex;
+    position: relative;
+    align-items: center;
+    box-sizing: border-box;
+    margin-bottom: 0.3rem;
+    border: 1px solid transparent;
+    border-radius: var(--glass-card-radius);
+    padding: 0.5rem;
+    width: 100%;
+    height: 2.1rem;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .sidebar-link .icon {
+    display: flex;
+    position: absolute;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    margin-left: 0;
+    width: 1.063rem;
+    min-width: 1.063rem;
+    height: 1.063rem;
+    text-align: center;
+  }
+
+  .sidebar-link .label {
+    flex: 1;
+    margin-left: 1.75rem;
+    overflow: hidden;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-item {
+    margin: 0;
+    padding: 0;
+  }
+
+  .sidebar-item.has-submenu .sidebar-link {
+    position: relative;
+    cursor: pointer;
+    border: none;
+    background: none;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .sidebar:not(.collapsed) .sidebar-item:not(.active) .sidebar-link:hover {
+    background: var(--nav-hover-bg);
+  }
+
+  .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
+    border-color: var(--color-accent-bg);
+    background: var(--color-accent-bg);
+    color: var(--color-black);
+  }
+
+  /* Submenu */
+  .submenu-arrow {
+    opacity: 60%;
+    margin-left: auto;
+  }
+
+  .sidebar.collapsed .submenu-arrow {
+    display: none;
+  }
+
+  .sidebar-item.has-submenu.open > .sidebar-link > .submenu-arrow {
+    transform: rotate(180deg);
+  }
+
+  .submenu-item.has-submenu.open > .submenu-link > .submenu-arrow {
+    transform: rotate(180deg);
+  }
+
+  .submenu {
+    margin-top: 0.25rem;
+    margin-bottom: 0.313rem;
+    margin-left: 3rem;
+    padding: 0;
+    overflow: hidden;
+    list-style: none;
+  }
+
+  .submenu--nested {
+    margin-left: 0.75rem;
+  }
+
+  .submenu-link--toggle {
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .sidebar.collapsed .submenu {
+    display: none !important;
+  }
+
+  .submenu-item {
+    margin-bottom: 0.125rem;
+  }
+
+  .submenu-link {
+    display: flex;
+    position: relative;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 10px;
+    border-radius: var(--glass-card-radius);
+    padding: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-decoration: none;
+  }
+
+  .submenu-link:hover {
+    background: var(--nav-hover-bg);
+  }
+
+  .submenu-link.active,
+  .submenu-item.active > .submenu-link {
+    border-radius: var(--glass-card-radius);
+    background: var(--nav-active-submenu-bg);
+    text-align: center;
+  }
+
+  /* Navigation Badges — targets NotificationBadge child component */
+  .sidebar :global(.nav-badge) {
+    display: inline-block;
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    border-radius: 50px;
+    background: linear-gradient(
+      0deg,
+      rgb(243 33 33 / 71%),
+      rgb(243 33 33 / 76%)
+    );
+    min-width: 24px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-align: center;
+  }
+
+  .sidebar :global(.nav-badge-kvp) {
+    background: linear-gradient(
+      0deg,
+      rgb(76 175 80 / 71%),
+      rgb(76 175 80 / 76%)
+    );
+  }
+
+  .sidebar :global(.nav-badge-surveys) {
+    right: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgb(255 152 0 / 30%);
+    border-radius: 12px;
+    background: rgb(255 152 0 / 15%);
+    padding: 3px 8px;
+    min-width: 20px;
+    color: #ff9800;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+
+  .sidebar :global(.nav-badge-documents) {
+    border-radius: 10px;
+    background: #2196f3;
+    min-width: 18px;
+    color: #fff;
+  }
+
+  .sidebar :global(.nav-badge-lean-parent) {
+    right: 40px;
+    backdrop-filter: blur(10px);
+    background: rgb(255 153 0 / 70%);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .sidebar :global(.nav-badge-child) {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .sidebar :global(.nav-badge-child-default) {
+    border-radius: 10px;
+    background: #ff5722;
+    min-width: 18px;
+    color: #fff;
+  }
+
+  /* Collapsed sidebar — badges as dots */
+  .sidebar.collapsed :global(.nav-badge) {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    left: auto !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    width: 8px !important;
+    min-width: 8px !important;
+    height: 8px !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    text-indent: -9999px !important;
+  }
+
+  .sidebar.collapsed .submenu-link :global(.nav-badge) {
+    top: 50% !important;
+    right: 8px !important;
+    transform: translateY(-50%) !important;
+  }
+
+  /* Mobile: < 768px */
+  @media (width < 768px) {
+    .sidebar {
+      position: fixed;
+      top: var(--header-height-mobile);
+      left: 0;
+      z-index: 200;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      margin-left: 0;
+      width: 280px;
+      height: calc(100vh - var(--header-height-mobile));
+      max-height: calc(100vh - var(--header-height-mobile));
+    }
+
+    .sidebar.mobile-open {
+      transform: translateX(0);
+      width: 280px !important;
+      min-width: 280px !important;
+    }
+
+    .sidebar.mobile-open .sidebar-link .label {
+      display: inline;
+    }
+
+    .sidebar.mobile-open .submenu-arrow {
+      display: flex;
+    }
+
+    .sidebar.mobile-open .submenu {
+      display: block;
+    }
+
+    .sidebar :global(.storage-widget) {
+      position: relative;
+      right: auto;
+      bottom: auto;
+      left: auto;
+      margin-top: var(--spacing-6);
+    }
+  }
+
+  /* Tablet: 768px – 1023px */
+  @media (width >= 768px) and (width < 1024px) {
+    .sidebar {
+      width: var(--sidebar-width-collapsed) !important;
+      min-width: var(--sidebar-width-collapsed) !important;
+    }
+
+    .sidebar .sidebar-link .label {
+      display: none;
+    }
+
+    .sidebar .submenu-arrow {
+      display: none;
+    }
+
+    .sidebar .submenu {
+      display: none !important;
+    }
+
+    .sidebar :global(.user-details) {
+      display: none;
+    }
+
+    .sidebar :global(.storage-widget) {
+      display: none;
+    }
+
+    .sidebar .sidebar-link {
+      justify-content: flex-start;
+      gap: 0;
+      padding: 0.5rem;
+      overflow: visible !important;
+    }
+
+    .sidebar :global(.user-info-card) {
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 9rem;
+      margin-left: 4px;
+      padding: 0.7rem;
+      min-height: auto;
+    }
+
+    /* Override expanded active style on tablet */
+    .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
+      border-color: transparent;
+      background: transparent;
+      color: var(--color-black) !important;
+    }
+
+    .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link .icon::before {
+      position: absolute;
+      z-index: -1;
+      inset: -0.55rem;
+      border-radius: var(--glass-card-radius);
+      background: linear-gradient(135deg, #e9f1f7 0%, #75bffc 100%);
+      content: '';
+    }
+
+    .sidebar:not(.collapsed)
+      .sidebar-item:not(.active)
+      .sidebar-link:hover
+      .icon::before {
+      position: absolute;
+      z-index: -1;
+      inset: -0.525rem;
+      border-radius: var(--glass-card-radius);
+      background: var(--nav-hover-bg);
+      content: '';
+    }
+
+    .sidebar:not(.collapsed) .sidebar-item:not(.active) .sidebar-link:hover {
+      background: transparent;
+    }
+  }
+</style>

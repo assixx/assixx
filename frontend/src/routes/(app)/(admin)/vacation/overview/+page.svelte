@@ -8,49 +8,18 @@
   import { onDestroy } from 'svelte';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    MACHINE_AVAILABILITY_LABELS,
-    type MachineAvailabilityStatus,
-  } from '$lib/machine-availability/constants';
   import { showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   import * as api from './_lib/api';
-  import {
-    HALF_DAY_LABELS,
-    MONTH_NAMES,
-    TYPE_COLORS,
-    TYPE_LABELS,
-    WEEKDAY_SHORT,
-  } from './_lib/constants';
+  import CalendarGrid from './_lib/CalendarGrid.svelte';
+  import { DROPDOWN_PLACEHOLDERS, MONTH_NAMES } from './_lib/constants';
   import { overviewState } from './_lib/state.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    CalendarDayCell,
-    MachineListItem,
-    TeamListItem,
-  } from './_lib/types';
+  import type { MachineListItem, TeamListItem } from './_lib/types';
 
   const log = createLogger('VacationOverview');
-
-  /** Machine availability statuses shown in the legend */
-  const AVAIL_LEGEND: MachineAvailabilityStatus[] = [
-    'maintenance',
-    'repair',
-    'standby',
-    'cleaning',
-    'other',
-  ];
-
-  /** CSS color per availability status (matches shifts page) */
-  const AVAIL_COLORS: Record<string, string> = {
-    maintenance: '#ffc107',
-    repair: '#dc3545',
-    standby: '#3498db',
-    cleaning: '#20c997',
-    other: '#6f42c1',
-  };
 
   // ==========================================================================
   // SSR DATA
@@ -158,29 +127,35 @@
   let yearDropdownOpen = $state(false);
   let monthDropdownOpen = $state(false);
 
-  const machineDisplayText = $derived(
-    overviewState.selectedMachineId !== null ?
-      overviewState.selectedMachineName
-    : 'Maschine wählen...',
-  );
+  /** Display text helpers — same pattern as FilterDropdowns.svelte (shifts) */
+  function getMachineDisplayText(): string {
+    if (overviewState.selectedMachineId === null)
+      return DROPDOWN_PLACEHOLDERS.MACHINE;
+    return overviewState.selectedMachineName;
+  }
 
-  const teamDisplayText = $derived(
-    overviewState.isLoadingTeams ? 'Laden...'
-    : overviewState.selectedTeamId !== null ? overviewState.selectedTeamName
-    : 'Erst Maschine wählen...',
-  );
+  function getTeamDisplayText(): string {
+    if (overviewState.selectedMachineId === null)
+      return DROPDOWN_PLACEHOLDERS.AWAIT_MACHINE;
+    if (overviewState.selectedTeamId === null)
+      return DROPDOWN_PLACEHOLDERS.TEAM;
+    return overviewState.selectedTeamName;
+  }
 
-  const yearDisplayText = $derived(
-    overviewState.selectedYear !== null ?
-      String(overviewState.selectedYear)
-    : 'Erst Team wählen...',
-  );
+  function getYearDisplayText(): string {
+    if (overviewState.selectedTeamId === null)
+      return DROPDOWN_PLACEHOLDERS.AWAIT_TEAM;
+    if (overviewState.selectedYear === null) return DROPDOWN_PLACEHOLDERS.YEAR;
+    return String(overviewState.selectedYear);
+  }
 
-  const monthDisplayText = $derived(
-    overviewState.selectedMonth !== null ?
-      (MONTH_NAMES[overviewState.selectedMonth] ?? '')
-    : 'Erst Jahr wählen...',
-  );
+  function getMonthDisplayText(): string {
+    if (overviewState.selectedYear === null)
+      return DROPDOWN_PLACEHOLDERS.AWAIT_YEAR;
+    if (overviewState.selectedMonth === null)
+      return DROPDOWN_PLACEHOLDERS.MONTH;
+    return MONTH_NAMES[overviewState.selectedMonth] ?? '';
+  }
 
   function yearOptions(): number[] {
     const current = new Date().getFullYear();
@@ -196,47 +171,6 @@
       monthDropdownOpen = false;
     });
   });
-
-  // ==========================================================================
-  // CALENDAR GRID HELPERS
-  // ==========================================================================
-
-  const dayNumbers = $derived(
-    overviewState.daysInMonth > 0 ?
-      Array.from({ length: overviewState.daysInMonth }, (_, i) => i + 1)
-    : [],
-  );
-
-  function getWeekday(day: number): number {
-    if (
-      overviewState.selectedYear === null ||
-      overviewState.selectedMonth === null
-    )
-      return 0;
-    return new Date(
-      overviewState.selectedYear,
-      overviewState.selectedMonth - 1,
-      day,
-    ).getDay();
-  }
-
-  function isWeekend(day: number): boolean {
-    const wd = getWeekday(day);
-    return wd === 0 || wd === 6;
-  }
-
-  function cellColor(cell: CalendarDayCell): string {
-    return TYPE_COLORS[cell.vacationType] ?? 'var(--color-primary-500)';
-  }
-
-  function cellTooltip(cell: CalendarDayCell): string {
-    const typeLabel = TYPE_LABELS[cell.vacationType] ?? cell.vacationType;
-    if (cell.halfDay !== 'none') {
-      const halfLabel = HALF_DAY_LABELS[cell.halfDay] ?? '';
-      return `${typeLabel} (${halfLabel})`;
-    }
-    return typeLabel;
-  }
 
   /** Staffing rule for selected machine */
   const machineStaffingRule = $derived.by(() => {
@@ -288,32 +222,41 @@
         class="dropdown"
         data-dropdown="ov-machine"
       >
-        <button
-          type="button"
+        <div
           class="dropdown__trigger"
           class:active={machineDropdownOpen}
           onclick={() => {
             machineDropdownOpen = !machineDropdownOpen;
           }}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') machineDropdownOpen = !machineDropdownOpen;
+          }}
+          role="button"
+          tabindex="0"
         >
-          <span>{machineDisplayText}</span>
+          <span>{getMachineDisplayText()}</span>
           <i class="fas fa-chevron-down"></i>
-        </button>
+        </div>
         <div
           class="dropdown__menu"
           class:active={machineDropdownOpen}
         >
           {#each overviewState.machines as machine (machine.id)}
-            <button
-              type="button"
+            <div
               class="dropdown__option"
               class:selected={overviewState.selectedMachineId === machine.id}
               onclick={() => {
                 void handleMachineSelect(machine);
               }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') void handleMachineSelect(machine);
+              }}
+              role="option"
+              aria-selected={overviewState.selectedMachineId === machine.id}
+              tabindex="0"
             >
               {machine.name}
-            </button>
+            </div>
           {/each}
           {#if overviewState.machines.length === 0}
             <div class="dropdown__option dropdown__option--disabled">
@@ -332,38 +275,43 @@
         class:dropdown--disabled={!overviewState.canSelectTeam}
         data-dropdown="ov-team"
       >
-        <button
-          type="button"
+        <div
           class="dropdown__trigger"
           class:active={teamDropdownOpen}
-          disabled={!overviewState.canSelectTeam}
-          style={!overviewState.canSelectTeam ?
-            'pointer-events: none; opacity: 0.5;'
-          : ''}
           onclick={() => {
-            if (overviewState.canSelectTeam) {
+            if (overviewState.canSelectTeam)
               teamDropdownOpen = !teamDropdownOpen;
-            }
           }}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' && overviewState.canSelectTeam)
+              teamDropdownOpen = !teamDropdownOpen;
+          }}
+          role="button"
+          tabindex={overviewState.canSelectTeam ? 0 : -1}
         >
-          <span>{teamDisplayText}</span>
+          <span>{getTeamDisplayText()}</span>
           <i class="fas fa-chevron-down"></i>
-        </button>
+        </div>
         <div
           class="dropdown__menu"
           class:active={teamDropdownOpen}
         >
           {#each overviewState.teams as team (team.id)}
-            <button
-              type="button"
+            <div
               class="dropdown__option"
               class:selected={overviewState.selectedTeamId === team.id}
               onclick={() => {
                 handleTeamSelect(team);
               }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') handleTeamSelect(team);
+              }}
+              role="option"
+              aria-selected={overviewState.selectedTeamId === team.id}
+              tabindex="0"
             >
               {team.name}
-            </button>
+            </div>
           {/each}
           {#if overviewState.canSelectTeam && overviewState.teams.length === 0 && !overviewState.isLoadingTeams}
             <div class="dropdown__option dropdown__option--disabled">
@@ -382,38 +330,43 @@
         class:dropdown--disabled={!overviewState.canSelectYear}
         data-dropdown="ov-year"
       >
-        <button
-          type="button"
+        <div
           class="dropdown__trigger"
           class:active={yearDropdownOpen}
-          disabled={!overviewState.canSelectYear}
-          style={!overviewState.canSelectYear ?
-            'pointer-events: none; opacity: 0.5;'
-          : ''}
           onclick={() => {
-            if (overviewState.canSelectYear) {
+            if (overviewState.canSelectYear)
               yearDropdownOpen = !yearDropdownOpen;
-            }
           }}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' && overviewState.canSelectYear)
+              yearDropdownOpen = !yearDropdownOpen;
+          }}
+          role="button"
+          tabindex={overviewState.canSelectYear ? 0 : -1}
         >
-          <span>{yearDisplayText}</span>
+          <span>{getYearDisplayText()}</span>
           <i class="fas fa-chevron-down"></i>
-        </button>
+        </div>
         <div
           class="dropdown__menu"
           class:active={yearDropdownOpen}
         >
           {#each yearOptions() as year (year)}
-            <button
-              type="button"
+            <div
               class="dropdown__option"
               class:selected={overviewState.selectedYear === year}
               onclick={() => {
                 handleYearSelect(year);
               }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') handleYearSelect(year);
+              }}
+              role="option"
+              aria-selected={overviewState.selectedYear === year}
+              tabindex="0"
             >
               {year}
-            </button>
+            </div>
           {/each}
         </div>
       </div>
@@ -427,38 +380,43 @@
         class:dropdown--disabled={!overviewState.canSelectMonth}
         data-dropdown="ov-month"
       >
-        <button
-          type="button"
+        <div
           class="dropdown__trigger"
           class:active={monthDropdownOpen}
-          disabled={!overviewState.canSelectMonth}
-          style={!overviewState.canSelectMonth ?
-            'pointer-events: none; opacity: 0.5;'
-          : ''}
           onclick={() => {
-            if (overviewState.canSelectMonth) {
+            if (overviewState.canSelectMonth)
               monthDropdownOpen = !monthDropdownOpen;
-            }
           }}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' && overviewState.canSelectMonth)
+              monthDropdownOpen = !monthDropdownOpen;
+          }}
+          role="button"
+          tabindex={overviewState.canSelectMonth ? 0 : -1}
         >
-          <span>{monthDisplayText}</span>
+          <span>{getMonthDisplayText()}</span>
           <i class="fas fa-chevron-down"></i>
-        </button>
+        </div>
         <div
           class="dropdown__menu"
           class:active={monthDropdownOpen}
         >
           {#each Array.from({ length: 12 }, (_, i) => i + 1) as m (m)}
-            <button
-              type="button"
+            <div
               class="dropdown__option"
               class:selected={overviewState.selectedMonth === m}
               onclick={() => {
                 void handleMonthSelect(m);
               }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') void handleMonthSelect(m);
+              }}
+              role="option"
+              aria-selected={overviewState.selectedMonth === m}
+              tabindex="0"
             >
               {MONTH_NAMES[m]}
-            </button>
+            </div>
           {/each}
         </div>
       </div>
@@ -468,167 +426,7 @@
   <!-- ================================================================
        TEAM CALENDAR
        ================================================================ -->
-  <div class="card">
-    <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h3 class="card__title">
-          <i class="fas fa-th mr-2"></i>
-          Teamkalender
-          {#if overviewState.selectedTeamName !== ''}
-            <span class="text-muted ml-2">
-              — {overviewState.selectedTeamName}
-            </span>
-          {/if}
-        </h3>
-      </div>
-    </div>
-    <div class="card__body">
-      {#if overviewState.selectedMonth === null}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-filter"></i>
-          </div>
-          <h3 class="empty-state__title">Filter auswählen</h3>
-          <p class="empty-state__description">
-            Wählen Sie oben Maschine, Team, Jahr und Monat aus, um den
-            Urlaubskalender anzuzeigen.
-          </p>
-        </div>
-      {:else if overviewState.isLoadingCalendar}
-        <div
-          class="text-center"
-          style="padding: var(--spacing-8);"
-        >
-          <div class="spinner-ring spinner-ring--sm"></div>
-          <p class="text-muted mt-3">Kalender wird geladen...</p>
-        </div>
-      {:else if overviewState.calendarGrid.length === 0}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-calendar-check"></i>
-          </div>
-          <h3 class="empty-state__title">Keine Abwesenheiten</h3>
-          <p class="empty-state__description">
-            In diesem Monat sind keine genehmigten Urlaubsanträge vorhanden.
-          </p>
-        </div>
-      {:else}
-        <div class="calendar-scroll">
-          <table class="calendar-grid">
-            <thead>
-              <tr>
-                <th class="calendar-grid__name-header">Mitarbeiter</th>
-                {#each dayNumbers as day (day)}
-                  {@const blackoutName = overviewState.blackoutDays.get(day)}
-                  {@const availStatus = overviewState.machineAvailDays.get(day)}
-                  <th
-                    class="calendar-grid__day-header"
-                    class:weekend={isWeekend(day)}
-                    class:blackout={blackoutName !== undefined}
-                    title={blackoutName ??
-                      (availStatus !== undefined ?
-                        MACHINE_AVAILABILITY_LABELS[
-                          availStatus as MachineAvailabilityStatus
-                        ]
-                      : '')}
-                  >
-                    <span class="calendar-grid__weekday">
-                      {WEEKDAY_SHORT[getWeekday(day)]}
-                    </span>
-                    <span class="calendar-grid__day-num">{day}</span>
-                    {#if blackoutName !== undefined}
-                      <span class="calendar-grid__blackout-dot"></span>
-                    {:else if availStatus !== undefined}
-                      <span
-                        class="calendar-grid__avail-dot"
-                        style="background: {AVAIL_COLORS[availStatus] ??
-                          '#6f42c1'};"
-                      ></span>
-                    {/if}
-                  </th>
-                {/each}
-              </tr>
-            </thead>
-            <tbody>
-              {#each overviewState.calendarGrid as row (row.userId)}
-                <tr>
-                  <td class="calendar-grid__name-cell">{row.userName}</td>
-                  {#each dayNumbers as day (day)}
-                    {@const cell = row.days.get(day)}
-                    {@const blackoutName = overviewState.blackoutDays.get(day)}
-                    <td
-                      class="calendar-grid__cell"
-                      class:weekend={isWeekend(day)}
-                      class:blackout={blackoutName !== undefined}
-                      title={cell === undefined && blackoutName !== undefined ?
-                        `Sperre: ${blackoutName}`
-                      : ''}
-                    >
-                      {#if cell !== undefined}
-                        <div
-                          class="calendar-cell"
-                          class:calendar-cell--half={cell.halfDay !== 'none'}
-                          style="background: {cellColor(cell)};"
-                          title={cellTooltip(cell)}
-                        >
-                          {#if cell.halfDay !== 'none'}
-                            <span class="calendar-cell__half-indicator">½</span>
-                          {/if}
-                        </div>
-                      {/if}
-                    </td>
-                  {/each}
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Legend -->
-        <div class="calendar-legend">
-          {#each Object.entries(TYPE_LABELS) as [key, label] (key)}
-            <div class="calendar-legend__item">
-              <span
-                class="calendar-legend__dot"
-                style="background: {TYPE_COLORS[key]};"
-              ></span>
-              <span class="calendar-legend__label">{label}</span>
-            </div>
-          {/each}
-          <div class="calendar-legend__item">
-            <span class="calendar-legend__dot calendar-legend__dot--half"
-            ></span>
-            <span class="calendar-legend__label">Halber Tag</span>
-          </div>
-          {#if overviewState.blackoutDays.size > 0}
-            <div class="calendar-legend__item">
-              <span class="calendar-legend__dot calendar-legend__dot--blackout"
-              ></span>
-              <span class="calendar-legend__label">Urlaubssperre</span>
-            </div>
-          {/if}
-        </div>
-
-        <!-- Machine Availability Legend -->
-        <div class="calendar-legend calendar-legend--machine-avail">
-          <span class="calendar-legend__section-title">
-            <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
-          </span>
-          {#each AVAIL_LEGEND as status (status)}
-            <div class="calendar-legend__item">
-              <span
-                class="calendar-legend__dot"
-                style="background: {AVAIL_COLORS[status]};"
-              ></span>
-              <span class="calendar-legend__label">
-                {MACHINE_AVAILABILITY_LABELS[status]}
-              </span>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </div>
+  <CalendarGrid />
 </div>
 
 <style>
@@ -642,7 +440,7 @@
     z-index: 1;
   }
 
-  .vacation-filter-row :global(.info-item) {
+  .vacation-filter-row .info-item {
     display: flex;
     position: relative;
     flex-direction: column;
@@ -650,7 +448,7 @@
     text-align: center;
   }
 
-  .vacation-filter-row :global(.info-label) {
+  .vacation-filter-row .info-label {
     margin-bottom: var(--spacing-1);
     color: var(--text-secondary);
     font-weight: 500;
@@ -659,257 +457,33 @@
     text-transform: uppercase;
   }
 
-  /* ─── Overview Dropdown Sizing ──────── */
+  /* ─── Cascade Disabled → Enabled Transition ──────── */
 
-  :global([data-dropdown^='ov-'] .dropdown__trigger) {
-    width: auto;
-    min-width: 150px;
+  .dropdown--disabled {
+    opacity: 50%;
+    pointer-events: none;
+    transition: opacity 300ms ease;
   }
 
-  :global([data-dropdown^='ov-'] .dropdown__menu) {
+  .dropdown--disabled .dropdown__trigger {
+    cursor: not-allowed;
+  }
+
+  .vacation-filter-row .dropdown {
+    transition: opacity 300ms ease;
+  }
+
+  /* ─── Overview Dropdown Sizing ──────── */
+
+  [data-dropdown^='ov-'] .dropdown__trigger {
+    width: auto;
+    min-width: 200px;
+  }
+
+  [data-dropdown^='ov-'] .dropdown__menu {
     min-width: 150px;
     left: auto;
     right: auto;
-  }
-
-  /* ─── Calendar Grid ──────── */
-
-  .calendar-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .calendar-grid {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 1px;
-    font-size: 0.75rem;
-    min-width: 800px;
-  }
-
-  .calendar-grid__name-header {
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    background: var(--color-surface);
-    text-align: left;
-    padding: var(--spacing-2) var(--spacing-3);
-    font-weight: 600;
-    white-space: nowrap;
-    min-width: 160px;
-    border-bottom: 2px solid var(--color-glass-border);
-  }
-
-  .calendar-grid__day-header {
-    text-align: center;
-    padding: var(--spacing-1);
-    font-weight: 500;
-    min-width: 32px;
-    border-bottom: 2px solid var(--color-glass-border);
-  }
-
-  .calendar-grid__day-header.weekend {
-    background: var(--glass-bg-active);
-    color: var(--text-muted);
-  }
-
-  .calendar-grid__weekday {
-    display: block;
-    font-size: 0.625rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-
-  .calendar-grid__day-num {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .calendar-grid__name-cell {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: var(--color-surface);
-    padding: var(--spacing-2) var(--spacing-3);
-    font-weight: 500;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--color-glass-border);
-  }
-
-  .calendar-grid__cell {
-    padding: 2px;
-    height: 32px;
-    min-width: 32px;
-    border-bottom: 1px solid var(--color-glass-border);
-    vertical-align: middle;
-  }
-
-  .calendar-grid__cell.weekend {
-    background: var(--glass-bg);
-  }
-
-  /* ─── Calendar Cell (vacation indicator) ──────── */
-
-  .calendar-cell {
-    width: 100%;
-    height: 100%;
-    min-height: 24px;
-    border-radius: 3px;
-    opacity: 85%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity var(--transition-fast);
-  }
-
-  .calendar-cell:hover {
-    opacity: 100%;
-  }
-
-  .calendar-cell--half {
-    opacity: 60%;
-  }
-
-  .calendar-cell--half:hover {
-    opacity: 85%;
-  }
-
-  .calendar-cell__half-indicator {
-    font-size: 0.625rem;
-    font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
-  }
-
-  /* ─── Calendar Legend ──────── */
-
-  .calendar-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-3);
-    margin-top: var(--spacing-4);
-    padding-top: var(--spacing-4);
-    border-top: 1px solid var(--color-glass-border);
-  }
-
-  .calendar-legend__item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-1);
-  }
-
-  .calendar-legend__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-
-  .calendar-legend__dot--half {
-    background: var(--color-primary-500);
-    opacity: 50%;
-    position: relative;
-  }
-
-  .calendar-legend__dot--half::after {
-    content: '½';
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.5rem;
-    font-weight: 700;
-    color: #fff;
-  }
-
-  .calendar-legend__label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
-  /* ─── Blackout Day Marking ──────── */
-
-  .calendar-grid__day-header.blackout {
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 3px,
-      rgb(239 68 68 / 12%) 3px,
-      rgb(239 68 68 / 12%) 6px
-    );
-    color: var(--color-danger-600);
-    position: relative;
-  }
-
-  .calendar-grid__blackout-dot {
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--color-danger-500);
-    margin: 1px auto 0;
-  }
-
-  .calendar-grid__cell.blackout {
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 3px,
-      rgb(239 68 68 / 8%) 3px,
-      rgb(239 68 68 / 8%) 6px
-    );
-  }
-
-  .calendar-grid__cell.blackout.weekend {
-    background: repeating-linear-gradient(
-      -45deg,
-      var(--glass-bg),
-      var(--glass-bg) 3px,
-      rgb(239 68 68 / 10%) 3px,
-      rgb(239 68 68 / 10%) 6px
-    );
-  }
-
-  .calendar-legend__dot--blackout {
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 2px,
-      rgb(239 68 68 / 25%) 2px,
-      rgb(239 68 68 / 25%) 4px
-    );
-    border: 1px solid var(--color-danger-400);
-  }
-
-  /* ─── Machine Availability (day header marking) ──────── */
-
-  .calendar-grid__avail-dot {
-    display: block;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    margin: 2px auto 0;
-  }
-
-  .calendar-legend--machine-avail {
-    margin-top: var(--spacing-2);
-    padding-top: var(--spacing-2);
-    border-top: 1px dashed var(--color-glass-border);
-  }
-
-  .calendar-legend__section-title {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .calendar-legend__section-title :global(i) {
-    color: var(--text-tertiary);
-    font-size: 0.75rem;
   }
 
   @media (width >= 1024px) {

@@ -345,6 +345,7 @@
 
 {#if rulesState.showBlackoutForm}
   <div
+    id="blackout-form-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -633,6 +634,7 @@
 
 {#if rulesState.showDeleteBlackoutConfirm && rulesState.deletingBlackout !== null}
   <div
+    id="blackout-delete-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

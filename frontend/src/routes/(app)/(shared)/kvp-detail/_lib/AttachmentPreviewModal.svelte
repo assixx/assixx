@@ -10,7 +10,10 @@
 
 {#if kvpDetailState.showPreviewModal && kvpDetailState.previewAttachment !== null}
   {@const attachment = kvpDetailState.previewAttachment}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-attachment-preview-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div
       class="ds-modal ds-modal--lg"
       style="max-height: 95vh;"

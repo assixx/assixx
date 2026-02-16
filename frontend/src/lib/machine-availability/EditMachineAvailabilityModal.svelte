@@ -134,6 +134,7 @@
 {#if show && entry !== null}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
+    id="edit-machine-availability-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

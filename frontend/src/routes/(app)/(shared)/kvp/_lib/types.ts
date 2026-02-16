@@ -84,6 +84,8 @@ export interface KvpSuggestion {
   categoryName: string;
   categoryIcon: string;
   categoryColor: string;
+  /** True when the custom category was soft-deleted (shown with strikethrough) */
+  categoryIsDeleted?: boolean;
   sharedBy?: number;
   sharedByName?: string;
   sharedAt?: string;

@@ -6,15 +6,25 @@ export const MESSAGES = {
   SAVE_SUCCESS: 'Änderungen wurden gespeichert',
   SAVE_ERROR: 'Fehler beim Speichern',
   DELETE_SUCCESS: 'Kategorie wurde gelöscht',
-  DELETE_ERROR: 'Fehler beim löschen',
+  DELETE_ERROR: 'Fehler beim Löschen',
   DELETE_CONFIRM: 'Möchten Sie diese Kategorie wirklich löschen?',
-  DELETE_HAS_SUGGESTIONS:
-    'Diese Kategorie wird von bestehenden Vorschlägen verwendet. Trotzdem löschen?',
+  UPDATE_SUCCESS: 'Kategorie wurde aktualisiert',
+  UPDATE_ERROR: 'Fehler beim Aktualisieren der Kategorie',
   CREATE_SUCCESS: 'Neue Kategorie wurde erstellt',
   CREATE_ERROR: 'Fehler beim Erstellen der Kategorie',
   LIMIT_REACHED: 'Maximale Anzahl an Kategorien erreicht (20)',
   RESET_SUCCESS: 'Bezeichnung wurde zurückgesetzt',
 } as const;
+
+/** Dynamic message: delete success with affected suggestion count */
+export function deleteSuccessWithRefs(count: number): string {
+  return `Kategorie gelöscht. ${count} Vorschlag/Vorschläge zeigen die Kategorie nun durchgestrichen an.`;
+}
+
+/** Dynamic message: delete confirmation when suggestions reference this category */
+export function deleteConfirmWithRefs(count: number): string {
+  return `Diese Kategorie wird von ${count} Vorschlag/Vorschlägen verwendet. Nach dem Löschen wird sie dort durchgestrichen angezeigt.`;
+}
 
 export const LABELS = {
   PAGE_TITLE: 'Definitionen verwalten',
@@ -30,7 +40,8 @@ export const LABELS = {
   COL_ICON: 'Icon',
   BTN_SAVE: 'Änderungen speichern',
   BTN_RESET: 'Zurücksetzen',
-  BTN_DELETE: 'löschen',
+  BTN_EDIT: 'Bearbeiten',
+  BTN_DELETE: 'Löschen',
   BTN_ADD: 'Neue Kategorie hinzufügen',
   counter: (used: number, max: number) =>
     `${used} / ${max} Kategorien verwendet`,

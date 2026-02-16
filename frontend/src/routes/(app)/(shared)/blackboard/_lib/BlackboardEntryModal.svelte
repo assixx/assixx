@@ -181,6 +181,7 @@
 <svelte:window onkeydown={handleKeyDown} />
 
 <div
+  id="blackboard-entry-modal"
   class="modal-overlay modal-overlay--active"
   onclick={onclose}
   onkeydown={(e) => {

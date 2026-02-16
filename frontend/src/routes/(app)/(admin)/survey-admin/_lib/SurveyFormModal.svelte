@@ -174,7 +174,10 @@
 </script>
 
 {#if surveyAdminState.showModal}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="survey-form-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <form
       class="ds-modal ds-modal--lg"
       bind:this={formElement}

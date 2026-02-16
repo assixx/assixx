@@ -131,3 +131,13 @@
     </button>
   {/if}
 </div>
+
+<style>
+  .admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-6);
+  }
+</style>

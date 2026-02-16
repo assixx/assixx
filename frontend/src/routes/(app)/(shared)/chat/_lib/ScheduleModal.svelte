@@ -37,7 +37,10 @@
 </script>
 
 {#if show}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="chat-schedule-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="ds-modal ds-modal--sm">
       <div class="ds-modal__header">
         <h2 class="ds-modal__title">

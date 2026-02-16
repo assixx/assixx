@@ -164,6 +164,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
+  id="custom-rotation-modal"
   class="modal-overlay modal-overlay--active"
   onclick={closeAllDropdowns}
 >
@@ -536,124 +537,73 @@
           <h4 class="mb-2 font-medium text-(--color-text-secondary)">
             Schichtzuweisung (Startschicht)
           </h4>
+          {#snippet shiftDropColumn(
+            label: string,
+            shiftType: 'F' | 'S' | 'N',
+            assignedIds: number[],
+            colorClass: string,
+          )}
+            <div class="shift-column">
+              <div
+                class="column-header mb-2 text-center font-medium {colorClass}"
+              >
+                {label}
+              </div>
+              <div
+                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
+                ondragover={handleDragOver}
+                ondrop={() => {
+                  handleDrop(shiftType);
+                }}
+                role="listbox"
+                tabindex="0"
+              >
+                {#each assignedIds as empId (empId)}
+                  {@const emp = getEmployeeById(empId)}
+                  {#if emp}
+                    <div class="employee-item in-drop-zone">
+                      <span class="employee-name"
+                        >{getEmployeeDisplayName(emp)}</span
+                      >
+                      <button
+                        type="button"
+                        class="btn-remove-rotation"
+                        onclick={() => {
+                          removeFromShift(empId, shiftType);
+                        }}
+                        aria-label="Entfernen"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            </div>
+          {/snippet}
+
+          <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
           <div class="shift-assignment-table grid grid-cols-3 gap-4">
-            <!-- Early Shift Column -->
-            <div class="shift-column">
-              <div
-                class="column-header mb-2 text-center font-medium text-blue-700 dark:text-blue-400"
-              >
-                F (Früh)
-              </div>
-              <div
-                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
-                ondragover={handleDragOver}
-                ondrop={() => {
-                  handleDrop('F');
-                }}
-                role="listbox"
-                tabindex="0"
-              >
-                {#each assignedEarly as empId (empId)}
-                  {@const emp = getEmployeeById(empId)}
-                  {#if emp}
-                    <div class="employee-item in-drop-zone">
-                      <span class="employee-name"
-                        >{getEmployeeDisplayName(emp)}</span
-                      >
-                      <button
-                        type="button"
-                        class="btn-remove-rotation"
-                        onclick={() => {
-                          removeFromShift(empId, 'F');
-                        }}
-                        aria-label="Entfernen"
-                      >
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                  {/if}
-                {/each}
-              </div>
-            </div>
-
-            <!-- Late Shift Column -->
-            <div class="shift-column">
-              <div
-                class="column-header mb-2 text-center font-medium text-yellow-700 dark:text-yellow-400"
-              >
-                S (Spät)
-              </div>
-              <div
-                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
-                ondragover={handleDragOver}
-                ondrop={() => {
-                  handleDrop('S');
-                }}
-                role="listbox"
-                tabindex="0"
-              >
-                {#each assignedLate as empId (empId)}
-                  {@const emp = getEmployeeById(empId)}
-                  {#if emp}
-                    <div class="employee-item in-drop-zone">
-                      <span class="employee-name"
-                        >{getEmployeeDisplayName(emp)}</span
-                      >
-                      <button
-                        type="button"
-                        class="btn-remove-rotation"
-                        onclick={() => {
-                          removeFromShift(empId, 'S');
-                        }}
-                        aria-label="Entfernen"
-                      >
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                  {/if}
-                {/each}
-              </div>
-            </div>
-
-            <!-- Night Shift Column -->
-            <div class="shift-column">
-              <div
-                class="column-header mb-2 text-center font-medium text-purple-700 dark:text-purple-400"
-              >
-                N (Nacht)
-              </div>
-              <div
-                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
-                ondragover={handleDragOver}
-                ondrop={() => {
-                  handleDrop('N');
-                }}
-                role="listbox"
-                tabindex="0"
-              >
-                {#each assignedNight as empId (empId)}
-                  {@const emp = getEmployeeById(empId)}
-                  {#if emp}
-                    <div class="employee-item in-drop-zone">
-                      <span class="employee-name"
-                        >{getEmployeeDisplayName(emp)}</span
-                      >
-                      <button
-                        type="button"
-                        class="btn-remove-rotation"
-                        onclick={() => {
-                          removeFromShift(empId, 'N');
-                        }}
-                        aria-label="Entfernen"
-                      >
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                  {/if}
-                {/each}
-              </div>
-            </div>
+            {@render shiftDropColumn(
+              'F (Früh)',
+              'F',
+              assignedEarly,
+              'text-blue-700 dark:text-blue-400',
+            )}
+            {@render shiftDropColumn(
+              'S (Spät)',
+              'S',
+              assignedLate,
+              'text-yellow-700 dark:text-yellow-400',
+            )}
+            {@render shiftDropColumn(
+              'N (Nacht)',
+              'N',
+              assignedNight,
+              'text-purple-700 dark:text-purple-400',
+            )}
           </div>
+          <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
           <small class="form-field__hint mt-2 block">
             Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
             Startschicht festzulegen
@@ -681,4 +631,132 @@
   </div>
 </div>
 
-<!-- Styles provided by Design System (shifts.css, custom-dropdown.css) -->
+<style>
+  .employee-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .employee-item {
+    cursor: grab;
+
+    margin: 5px 0;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+    padding: 8px 12px;
+    user-select: none;
+  }
+
+  .employee-item:hover {
+    transform: translateX(2px);
+    background: var(--glass-bg-active);
+  }
+
+  .employee-name {
+    padding: 5px;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .shift-assignment-table {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+  }
+
+  .shift-column {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .column-header {
+    border-radius: 4px 4px 0 0;
+
+    background: var(--primary);
+    padding: 10px;
+    color: #fff;
+
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--color-glass-border-hover);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+
+    background: rgb(0 0 0 / 30%);
+    padding: 10px;
+
+    min-height: 150px;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .drop-zone.drag-over {
+    border-color: var(--primary);
+    background: rgb(76 175 80 / 10%);
+  }
+
+  .drop-zone .employee-item {
+    position: relative;
+    margin: 5px 0;
+  }
+
+  .drop-zone .employee-item::after {
+    display: none;
+  }
+
+  .btn-remove-rotation {
+    display: flex;
+
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    justify-content: center;
+    align-items: center;
+    transform: translateY(-50%);
+
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+
+    background: rgb(255 0 0 / 30%);
+    padding: 0;
+
+    width: 20px;
+    height: 20px;
+    color: rgb(255 255 255 / 70%);
+
+    font-size: 12px;
+  }
+
+  .btn-remove-rotation:hover {
+    background: rgb(255 0 0 / 60%);
+    color: #fff;
+  }
+
+  .drop-zone .employee-item.in-drop-zone {
+    display: flex;
+    position: relative;
+    justify-content: space-between;
+    align-items: center;
+
+    padding-right: 35px;
+  }
+
+  @media (width < 768px) {
+    .shift-assignment-table {
+      flex-direction: column;
+    }
+
+    .shift-column {
+      width: 100%;
+    }
+  }
+</style>

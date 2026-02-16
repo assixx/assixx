@@ -236,7 +236,10 @@
   }
 </script>
 
-<div class="modal-overlay modal-overlay--active">
+<div
+  id="kvp-create-modal"
+  class="modal-overlay modal-overlay--active"
+>
   <form
     class="ds-modal ds-modal--lg"
     bind:this={formElement}
@@ -554,3 +557,68 @@
     </div>
   </form>
 </div>
+
+<style>
+  /* Photo Upload */
+  .upload-box {
+    cursor: pointer;
+    border: 2px dashed var(--color-glass-border-hover);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    padding: var(--spacing-8);
+    text-align: center;
+  }
+
+  .upload-box:hover {
+    border-color: var(--primary-color);
+    background: var(--glass-bg-active);
+  }
+
+  .upload-box i {
+    margin-bottom: var(--spacing-4);
+    color: var(--text-muted);
+    font-size: 2.5rem;
+  }
+
+  .upload-box p {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  .photo-preview-item {
+    position: relative;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-active);
+    width: 100px;
+    height: 100px;
+    overflow: hidden;
+  }
+
+  .photo-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-preview-item .remove-photo {
+    display: flex;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+    background: rgb(244 67 54 / 90%);
+    width: 24px;
+    height: 24px;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+
+  .photo-preview-item .remove-photo:hover {
+    transform: scale(1.1);
+    background: #f44336;
+  }
+</style>

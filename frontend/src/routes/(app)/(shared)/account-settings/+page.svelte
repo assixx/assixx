@@ -227,6 +227,7 @@
 {#if showDeleteModal}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    id="account-delete-modal"
     class="modal-overlay modal-overlay--active"
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}

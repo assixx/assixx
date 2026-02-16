@@ -8,6 +8,7 @@
 </script>
 
 <div
+  id="calendar-delete-confirm-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
   onclick={onclose}

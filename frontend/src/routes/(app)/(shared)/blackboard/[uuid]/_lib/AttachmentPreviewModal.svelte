@@ -52,6 +52,7 @@
 
 {#if show && attachment !== null}
   <div
+    id="blackboard-attachment-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={onclose}
     onkeydown={(e) => {

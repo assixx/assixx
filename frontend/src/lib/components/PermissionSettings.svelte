@@ -88,20 +88,19 @@
       key: 'canRead',
       label: 'Lesen',
       icon: 'fa-eye',
-      tooltip: 'Daten und Inhalte einsehen, ohne sie zu verändern.',
+      tooltip: 'Inhalte anzeigen und lesen',
     },
     {
       key: 'canWrite',
       label: 'Schreiben',
       icon: 'fa-pencil-alt',
-      tooltip: 'Neue Einträge erstellen und bestehende bearbeiten.',
+      tooltip: 'Inhalte erstellen und bearbeiten',
     },
     {
       key: 'canDelete',
       label: 'Löschen',
       icon: 'fa-trash-alt',
-      tooltip:
-        'Einträge dauerhaft löschen. Kann nicht rückgängig gemacht werden.',
+      tooltip: 'Inhalte unwiderruflich entfernen',
     },
   ];
 
@@ -305,6 +304,13 @@
                 <div class="perm-col-header">
                   <i class="fas {col.icon}"></i>
                   <span class="perm-col-header__label">{col.label}</span>
+                  <span class="tooltip ml-1">
+                    <i class="fas fa-info-circle"></i>
+                    <span
+                      class="tooltip__content tooltip__content--info tooltip__content--bottom"
+                      role="tooltip">{col.tooltip}</span
+                    >
+                  </span>
                 </div>
               {/each}
             </div>
@@ -337,29 +343,18 @@
                     {/if}
                     <div class="perm-cell">
                       {#if perm.allowedPermissions.includes(col.key)}
-                        <div class="perm-cell__stack">
-                          <label
-                            class="perm-check"
-                            title={col.label}
-                          >
-                            <input
-                              type="checkbox"
-                              bind:checked={perm[col.key]}
-                            />
-                            <span class="perm-check__box">
-                              <i class="fas fa-check perm-check__icon"></i>
-                            </span>
-                          </label>
-                          <span class="tooltip perm-cell__info">
-                            <i class="fas fa-info-circle"></i>
-                            <span
-                              class="tooltip__content tooltip__content--info tooltip__content--top"
-                              role="tooltip"
-                            >
-                              {col.tooltip}
-                            </span>
+                        <label
+                          class="perm-check"
+                          title={col.label}
+                        >
+                          <input
+                            type="checkbox"
+                            bind:checked={perm[col.key]}
+                          />
+                          <span class="perm-check__box">
+                            <i class="fas fa-check perm-check__icon"></i>
                           </span>
-                        </div>
+                        </label>
                       {:else}
                         <span
                           class="perm-cell--na"
@@ -450,7 +445,7 @@
   }
 
   .perm-row--module:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgb(255 255 255 / 3%);
   }
 
   /* ================================================================
@@ -490,59 +485,8 @@
     align-items: center;
     gap: 2px;
     color: var(--color-text-secondary);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
+    font-size: 0.813rem;
     letter-spacing: 0.05em;
-  }
-
-  .perm-col-header__label {
-    font-size: 0.6875rem;
-  }
-
-  /* Checkbox + info icon stacked vertically, centered */
-  .perm-cell__stack {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-
-  /* Info icon centered below checkbox with spacing */
-  .perm-cell__stack {
-    width: 36px;
-  }
-
-  .perm-cell__info {
-    margin-top: 8px;
-    text-align: center;
-    padding-left: 4px;
-  }
-
-  .perm-cell__info > i {
-    opacity: 0.75;
-    transition: opacity 0.2s ease;
-  }
-
-  .perm-cell__info:hover > i {
-    opacity: 1;
-  }
-
-  /* Tooltip anchored right so it doesn't overflow viewport */
-  .perm-cell__info :global(.tooltip__content) {
-    right: 50%;
-    left: auto;
-    transform: translateX(50%) translateY(-4px);
-  }
-
-  .perm-cell__info :global(.tooltip__content.tooltip__content--top) {
-    right: 50%;
-    left: auto;
-    transform: translateX(50%) translateY(-4px);
-  }
-
-  .perm-cell__info:hover :global(.tooltip__content.tooltip__content--top) {
-    transform: translateX(50%) translateY(0);
   }
 
   /* ================================================================
@@ -557,7 +501,7 @@
 
   .perm-cell--na {
     color: var(--color-text-secondary);
-    opacity: 0.25;
+    opacity: 25%;
     font-size: 0.875rem;
   }
 
@@ -570,7 +514,7 @@
   }
 
   .perm-hdivider--light {
-    opacity: 0.4;
+    opacity: 40%;
     margin-left: 28px;
   }
 
@@ -586,7 +530,7 @@
     width: 1px;
     align-self: stretch;
     background: var(--color-glass-border);
-    opacity: 0.5;
+    opacity: 50%;
   }
 
   /* ================================================================
@@ -602,48 +546,48 @@
 
   .perm-check input {
     position: absolute;
-    opacity: 0;
+    opacity: 0%;
     width: 0;
     height: 0;
   }
 
   .perm-check__box {
-    width: 25px;
-    height: 25px;
+    width: 20px;
+    height: 20px;
     border-radius: var(--radius-md);
     border: 2px solid var(--color-glass-border);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgb(255 255 255 / 3%);
   }
 
   .perm-check__icon {
     font-size: 0.875rem;
-    opacity: 0;
+    opacity: 0%;
     transform: scale(0.5);
     transition: all 0.2s ease;
-    color: white;
+    color: var(--color-white);
   }
 
   /* Checked state */
   .perm-check input:checked + .perm-check__box {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    box-shadow: 0 2px 8px rgb(33 150 243 / 30%);
     border-radius: var(--radius-md);
   }
 
   .perm-check input:checked + .perm-check__box .perm-check__icon {
-    opacity: 1;
+    opacity: 100%;
     transform: scale(1);
   }
 
   /* Hover state */
   .perm-check:hover .perm-check__box {
     border-color: var(--color-primary);
-    background: rgba(33, 150, 243, 0.08);
+    background: rgb(33 150 243 / 8%);
   }
 
   /* Focus state (keyboard navigation) */
@@ -655,7 +599,7 @@
   /* ================================================================
      Mobile Responsive
      ================================================================ */
-  @media (max-width: 640px) {
+  @media (width <= 640px) {
     .perm-col-header {
       width: 56px;
     }

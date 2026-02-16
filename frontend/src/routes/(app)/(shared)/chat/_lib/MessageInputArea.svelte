@@ -145,3 +145,219 @@
     </div>
   </div>
 </div>
+
+<style>
+  .message-input-container {
+    position: relative;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--color-glass-border);
+    background: var(--glass-bg-hover);
+    padding: 10px 16px;
+  }
+
+  .message-input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    border: 1px solid var(--color-glass-border-hover);
+    border-radius: 20px;
+    background: var(--glass-bg-active);
+    padding: 6px;
+  }
+
+  .message-input-wrapper:focus-within {
+    box-shadow: 0 0 0 2px rgb(33 150 243 / 10%);
+    border-color: var(--primary-color);
+  }
+
+  .message-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    min-height: 18px;
+    max-height: 100px;
+    resize: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    font-family: inherit;
+  }
+
+  .message-input:focus {
+    outline: none;
+  }
+
+  .message-input::placeholder {
+    opacity: 100%;
+    color: var(--color-text-placeholder);
+  }
+
+  .input-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+  }
+
+  /* Schedule message badge */
+  .schedule-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-xl);
+    background: rgb(33 150 243 / 15%);
+    padding: 4px 10px;
+    color: var(--color-primary);
+    font-size: 0.75rem;
+  }
+
+  .schedule-badge i {
+    font-size: 0.8rem;
+  }
+
+  .schedule-badge__time {
+    font-weight: 500;
+  }
+
+  .schedule-badge__clear {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    margin-left: 2px;
+    border: none;
+    border-radius: 50%;
+    background: var(--glass-bg-active);
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-secondary);
+    font-size: 0.6rem;
+  }
+
+  .schedule-badge__clear:hover {
+    background: rgb(244 67 54 / 20%);
+    color: var(--color-danger);
+  }
+
+  /* File preview before sending */
+  .file-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+    backdrop-filter: blur(10px);
+    margin-bottom: var(--spacing-2);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    padding: var(--spacing-3);
+  }
+
+  .file-preview-item {
+    display: flex;
+    position: relative;
+    align-items: center;
+    gap: var(--spacing-3);
+    transition: opacity var(--duration-fast) var(--ease-standard);
+    border-radius: var(--radius-md);
+    background: var(--glass-bg-active);
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+
+  .file-icon {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg-active);
+    width: 48px;
+    height: 48px;
+    color: var(--text-secondary);
+  }
+
+  .file-icon img {
+    border-radius: var(--radius-md);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .file-icon i {
+    font-size: 1.25rem;
+  }
+
+  .file-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .file-name {
+    margin-bottom: 2px;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-size {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .remove-file {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    transition: all var(--duration-fast) var(--ease-standard);
+    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .remove-file:hover {
+    background: rgb(244 67 54 / 15%);
+    color: var(--color-danger);
+  }
+
+  /* Upload progress states */
+  .file-preview-item.uploading {
+    opacity: 70%;
+  }
+
+  .upload-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: var(--glass-bg-active);
+    width: 100%;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    transition: width 0.3s ease;
+    background: var(--primary-500);
+    width: 0;
+    height: 100%;
+  }
+
+  /* Mobile: reduced padding */
+  @media (width < 768px) {
+    .message-input-container {
+      padding: var(--spacing-3);
+    }
+  }
+</style>

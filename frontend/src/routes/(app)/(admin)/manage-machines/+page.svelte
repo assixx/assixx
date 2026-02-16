@@ -259,10 +259,6 @@
   let availabilityReason = $state('');
   let availabilityNotes = $state('');
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   function openAvailabilityModal(machine: {
     name: string;
     uuid: string;
@@ -283,7 +279,9 @@
 
   function navigateToAvailabilityHistory(uuid: string): void {
     closeAvailabilityModal();
-    void goto(resolvePath(`/manage-machines/availability/${uuid}`));
+    void goto(
+      resolve('/(app)/(admin)/manage-machines/availability/[uuid]', { uuid }),
+    );
   }
 
   /** Validate availability form, returns error message or null */
@@ -298,23 +296,6 @@
     return null;
   }
 
-  /** Build the payload, only including non-empty optional fields */
-  function buildAvailabilityPayload(): {
-    availabilityStatus: string;
-    availabilityStart?: string;
-    availabilityEnd?: string;
-    availabilityReason?: string;
-    availabilityNotes?: string;
-  } {
-    return {
-      availabilityStatus,
-      ...(availabilityStart !== '' && { availabilityStart }),
-      ...(availabilityEnd !== '' && { availabilityEnd }),
-      ...(availabilityReason !== '' && { availabilityReason }),
-      ...(availabilityNotes !== '' && { availabilityNotes }),
-    };
-  }
-
   async function saveAvailability(): Promise<void> {
     if (availabilityMachine === null) return;
 
@@ -326,10 +307,13 @@
 
     availabilitySubmitting = true;
     try {
-      await apiUpdateMachineAvailability(
-        availabilityMachine.uuid,
-        buildAvailabilityPayload(),
-      );
+      await apiUpdateMachineAvailability(availabilityMachine.uuid, {
+        availabilityStatus,
+        ...(availabilityStart !== '' && { availabilityStart }),
+        ...(availabilityEnd !== '' && { availabilityEnd }),
+        ...(availabilityReason !== '' && { availabilityReason }),
+        ...(availabilityNotes !== '' && { availabilityNotes }),
+      });
       showSuccessAlert('Maschinenverfügbarkeit aktualisiert');
       closeAvailabilityModal();
       await invalidateAll();
@@ -806,64 +790,24 @@
 />
 
 <style>
-  /* Cascading Dropdowns - Disabled State */
-  .dropdown.disabled :global(.dropdown__trigger),
-  :global(.dropdown__trigger.disabled) {
-    opacity: 50%;
-    cursor: not-allowed;
-    pointer-events: none;
-    background-color: var(--color-glass-light);
-  }
-
-  /* Teams Multi-Select Dropdown */
-  :global(.dropdown__menu--multi) {
-    max-height: 280px;
-    overflow-y: auto;
-  }
-
-  :global(.dropdown__option--checkbox) {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-  }
-
-  :global(.dropdown__option--checkbox:hover) {
-    background-color: var(--color-glass-light);
-  }
-
-  :global(.dropdown__checkbox) {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--color-primary);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  :global(.dropdown__option--disabled) {
-    opacity: 50%;
-    cursor: not-allowed;
-    font-style: italic;
-  }
-
   /* Search Result Items */
-  :global(.search-result__content) {
+  .search-result__content {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
 
-  :global(.search-result__name) {
+  .search-result__name {
     font-weight: 500;
     color: var(--color-text-primary);
   }
 
-  :global(.search-result__details) {
+  .search-result__details {
     font-size: 0.813rem;
     color: var(--color-text-secondary);
   }
 
-  :global(.search-result__more) {
+  .search-result__more {
     font-size: 0.813rem;
     color: var(--color-primary);
     text-align: center;

@@ -185,6 +185,7 @@
 {#if orgDataLoading}
   <!-- Loading overlay while fetching org data -->
   <div
+    id="blackboard-edit-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

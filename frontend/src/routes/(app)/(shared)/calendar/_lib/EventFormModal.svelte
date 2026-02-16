@@ -171,6 +171,7 @@
 </script>
 
 <div
+  id="calendar-event-form-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
   onclick={onclose}

@@ -93,6 +93,7 @@
 
 {#if show && entry !== null}
   <div
+    id="delete-availability-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

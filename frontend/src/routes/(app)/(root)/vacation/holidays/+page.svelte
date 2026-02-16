@@ -319,6 +319,7 @@
 
 {#if holidaysState.showHolidayForm}
   <div
+    id="holiday-form-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -439,6 +440,7 @@
 
 {#if holidaysState.showDeleteConfirm && holidaysState.deletingHoliday !== null}
   <div
+    id="holiday-delete-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

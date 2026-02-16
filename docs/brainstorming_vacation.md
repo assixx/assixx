@@ -189,13 +189,13 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 
 ---
 
-## 6. Seiten-Uebersicht
+## 6. Seiten-Übersicht
 
 | Seite                    | Rolle                        | Inhalt                                                                                       |
 | ------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `/vacation`              | Employee                     | Eigene Anträge, Inline-Formular neuer Antrag, Restanspruch, Kalender-Preview mit Team-Urlaub |
 | `/vacation`              | Lead/Admin                   | Eingehende Anträge + Kapazität s-Hinweise + Genehmigen/Ablehnen + eigene Anträge             |
-| `/vacation`              | Root/Area-Lead               | Direkte Eintragung (kein Approval noetig) + Uebersicht                                       |
+| `/vacation`              | Root/Area-Lead               | Direkte Eintragung (kein Approval noetig) + Übersicht                                        |
 | `/vacation/rules`        | Lead/Admin/Root              | Mindestbesetzung pro Maschine, Urlaubssperren, Vorlaufzeit                                   |
 | `/vacation/overview`     | Lead/Admin/Root              | Team-Kalender, Jahresuebersicht, Statistiken                                                 |
 | `/vacation/entitlements` | Admin/Root                   | Urlaubsansprüche pro Mitarbeiter, Übertrag-Einstellungen                                     |

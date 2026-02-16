@@ -46,8 +46,8 @@ let isLoadingBalance = $state(false);
 
 // ─── Derived ────────────────────────────────────────────────────────
 
-/** Whether team dropdown is enabled (machine selected) */
-const canSelectTeam = $derived(selectedMachineId !== null);
+/** Whether team dropdown is enabled (machine selected AND teams loaded) */
+const canSelectTeam = $derived(selectedMachineId !== null && !isLoadingTeams);
 
 /** Whether year dropdown is enabled (team selected) */
 const canSelectYear = $derived(selectedTeamId !== null);

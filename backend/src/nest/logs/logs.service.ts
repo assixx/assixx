@@ -33,7 +33,6 @@ interface DbLogRow {
   tenant_name?: string;
   user_id: number;
   user_name?: string;
-  user_email?: string;
   user_role?: string;
   user_first_name?: string;
   user_last_name?: string;
@@ -91,7 +90,6 @@ interface LogsResponse {
   wasRoleSwitched: boolean;
   createdAt: string;
   userName?: string;
-  userEmail?: string;
   userRole?: string;
   userFirstName?: string;
   userLastName?: string;
@@ -193,7 +191,10 @@ export class LogsService {
   // ============================================================
 
   /**
-   * Add search condition to query
+   * Add search condition to query.
+   *
+   * All search fields use denormalized columns on root_logs (rl.* prefix).
+   * No JOINs required. Email search removed (Spec Deviation D1).
    */
   private addSearchCondition(
     search: string | undefined,
@@ -204,23 +205,21 @@ export class LogsService {
 
     const paramIndex = params.length + 1;
     const searchFields = [
-      `u.first_name ILIKE $${paramIndex}`,
-      `u.last_name ILIKE $${paramIndex + 1}`,
-      `CONCAT(u.first_name, ' ', u.last_name) ILIKE $${paramIndex + 2}`,
-      `u.employee_number ILIKE $${paramIndex + 3}`,
-      `u.username ILIKE $${paramIndex + 4}`,
-      `u.email ILIKE $${paramIndex + 5}`,
-      `d.name ILIKE $${paramIndex + 6}`,
-      `a.name ILIKE $${paramIndex + 7}`,
-      `t.name ILIKE $${paramIndex + 8}`,
-      `rl.action ILIKE $${paramIndex + 9}`,
-      `rl.entity_type ILIKE $${paramIndex + 10}`,
+      `rl.first_name ILIKE $${paramIndex}`,
+      `rl.last_name ILIKE $${paramIndex + 1}`,
+      `CONCAT(rl.first_name, ' ', rl.last_name) ILIKE $${paramIndex + 2}`,
+      `rl.employee_number ILIKE $${paramIndex + 3}`,
+      `rl.user_name ILIKE $${paramIndex + 4}`,
+      `rl.department_name ILIKE $${paramIndex + 5}`,
+      `rl.area_name ILIKE $${paramIndex + 6}`,
+      `rl.team_name ILIKE $${paramIndex + 7}`,
+      `rl.action ILIKE $${paramIndex + 8}`,
+      `rl.entity_type ILIKE $${paramIndex + 9}`,
     ];
     conditions.push(`(${searchFields.join(' OR ')})`);
 
     const searchPattern = `%${search}%`;
-    // Push 11 params for 11 search fields
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 10; i++) {
       params.push(searchPattern);
     }
   }
@@ -260,25 +259,26 @@ export class LogsService {
   }
 
   /**
-   * Get total count of logs matching filters
+   * Get total count of logs matching filters.
+   *
+   * No JOINs needed — all search and filter conditions use denormalized
+   * columns on root_logs (rl.* prefix). Simple COUNT(*) in all cases.
    */
-  private async getLogsCount(whereClause: string, params: unknown[]): Promise<number> {
-    const countQuery = `SELECT COUNT(DISTINCT rl.id) as total
-      FROM root_logs rl
-      LEFT JOIN users u ON rl.user_id = u.id
-      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.is_primary = true
-      LEFT JOIN departments d ON ud.department_id = d.id
-      LEFT JOIN areas a ON d.area_id = a.id
-      LEFT JOIN user_teams ut ON u.id = ut.user_id
-      LEFT JOIN teams t ON ut.team_id = t.id
-      WHERE ${whereClause}`;
-
+  private async getLogsCount(
+    whereClause: string,
+    params: unknown[],
+  ): Promise<number> {
+    const countQuery = `SELECT COUNT(*) as total FROM root_logs rl WHERE ${whereClause}`;
     const result = await this.databaseService.query<{ total: string }>(countQuery, params);
     return Number.parseInt(result[0]?.total ?? '0', 10);
   }
 
   /**
-   * Get paginated logs from database
+   * Get paginated logs from database.
+   *
+   * Only 1 JOIN remaining (tenants for tenant_name).
+   * All user/department/area/team data comes from denormalized columns.
+   * DISTINCT ON no longer needed — no 1:N JOINs.
    */
   private async getLogRecords(
     whereClause: string,
@@ -289,26 +289,13 @@ export class LogsService {
     const limitParamIndex = params.length + 1;
     const offsetParamIndex = params.length + 2;
 
-    const logsQuery = `SELECT DISTINCT ON (rl.id)
+    const logsQuery = `SELECT
         rl.*,
-        u.username as user_name,
-        u.email as user_email,
-        u.role as user_role,
-        u.first_name as user_first_name,
-        u.last_name as user_last_name,
-        u.employee_number as employee_number,
-        ten.company_name as tenant_name,
-        d.name as department_name,
-        a.name as area_name,
-        t.name as team_name
+        rl.first_name as user_first_name,
+        rl.last_name as user_last_name,
+        ten.company_name as tenant_name
        FROM root_logs rl
-       LEFT JOIN users u ON rl.user_id = u.id
        LEFT JOIN tenants ten ON rl.tenant_id = ten.id
-       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.is_primary = true
-       LEFT JOIN departments d ON ud.department_id = d.id
-       LEFT JOIN areas a ON d.area_id = a.id
-       LEFT JOIN user_teams ut ON u.id = ut.user_id
-       LEFT JOIN teams t ON ut.team_id = t.id
        WHERE ${whereClause}
        ORDER BY rl.id DESC, rl.created_at DESC
        LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
@@ -343,7 +330,6 @@ export class LogsService {
   private buildUserFields(log: DbLogRow): Partial<LogsResponse> {
     const fields: Partial<LogsResponse> = {};
     if (log.user_name !== undefined) fields.userName = log.user_name;
-    if (log.user_email !== undefined) fields.userEmail = log.user_email;
     if (log.user_role !== undefined) fields.userRole = log.user_role;
     if (log.user_first_name !== undefined) fields.userFirstName = log.user_first_name;
     if (log.user_last_name !== undefined) fields.userLastName = log.user_last_name;
@@ -473,10 +459,10 @@ export class LogsService {
         [tenantId],
       ),
       this.databaseService.query<TopUserResult>(
-        `SELECT rl.user_id, u.username as user_name, COUNT(*) as count
-         FROM root_logs rl LEFT JOIN users u ON rl.user_id = u.id
+        `SELECT rl.user_id, rl.user_name, COUNT(*) as count
+         FROM root_logs rl
          WHERE rl.tenant_id = $1 AND (rl.is_active IS NULL OR rl.is_active != 4)
-         GROUP BY rl.user_id, u.username ORDER BY count DESC LIMIT 10`,
+         GROUP BY rl.user_id, rl.user_name ORDER BY count DESC LIMIT 10`,
         [tenantId],
       ),
     ]);
@@ -582,13 +568,7 @@ export class LogsService {
 
     const whereClause = conditions.join(' AND ');
     const deleteQuery = `UPDATE root_logs SET is_active = 4 WHERE id IN (
-      SELECT DISTINCT rl.id FROM root_logs rl
-      LEFT JOIN users u ON rl.user_id = u.id
-      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.is_primary = true
-      LEFT JOIN departments d ON ud.department_id = d.id
-      LEFT JOIN areas a ON d.area_id = a.id
-      LEFT JOIN user_teams ut ON u.id = ut.user_id
-      LEFT JOIN teams t ON ut.team_id = t.id
+      SELECT rl.id FROM root_logs rl
       WHERE ${whereClause})`;
 
     const result = await this.databaseService.query<{ rowCount: number }>(deleteQuery, params);
@@ -673,13 +653,13 @@ export class LogsService {
     }
 
     const deleteFilters = this.buildDeleteFilters(dto, currentUser.tenantId);
-    const hasSearch = deleteFilters.search !== undefined && deleteFilters.search !== '';
+    const hasSearchFilter = deleteFilters.search !== undefined && deleteFilters.search !== '';
 
-    const deletedCount = hasSearch
+    const deletedCount = hasSearchFilter
       ? await this.deleteLogsWithSearch(deleteFilters)
       : await this.executeStandardDeletion(deleteFilters);
 
-    const suffix = hasSearch ? ' (with search filter)' : '';
+    const suffix = hasSearchFilter ? ' (with search filter)' : '';
     this.logger.log(`Root user ${currentUser.id} deleted ${deletedCount} logs${suffix}`);
 
     return this.buildDeleteResponse(deletedCount);

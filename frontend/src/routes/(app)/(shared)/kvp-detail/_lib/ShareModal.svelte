@@ -9,7 +9,10 @@
 </script>
 
 {#if kvpDetailState.showShareModal}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-share-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="ds-modal ds-modal--md">
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">Vorschlag teilen</h3>

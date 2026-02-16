@@ -37,7 +37,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
     },
     {
       code: 'vacation-overview',
-      label: 'Uebersicht & Kalender',
+      label: 'Übersicht & Kalender',
       icon: 'fa-chart-bar',
       allowedPermissions: ['canRead'],
     },

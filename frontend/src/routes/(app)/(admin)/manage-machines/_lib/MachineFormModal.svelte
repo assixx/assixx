@@ -457,3 +457,45 @@
     </form>
   </div>
 {/if}
+
+<style>
+  /* Cascading Dropdowns — Disabled State */
+  .dropdown.disabled :global(.dropdown__trigger),
+  :global(.dropdown__trigger.disabled) {
+    opacity: 50%;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: var(--color-glass-light);
+  }
+
+  /* Teams Multi-Select Dropdown */
+  .dropdown__menu--multi {
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .dropdown__option--checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+
+  .dropdown__option--checkbox:hover {
+    background-color: var(--color-glass-light);
+  }
+
+  .dropdown__checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .dropdown__option--disabled {
+    opacity: 50%;
+    cursor: not-allowed;
+    font-style: italic;
+  }
+</style>

@@ -57,7 +57,7 @@ Generische Tabelle die trackt wann ein User ein Feature zuletzt besucht hat.
 -- =====================================================
 -- Migration: Feature Visits Tracking
 -- Date: 2026-01-21
--- Author: Claude
+--
 -- Purpose: Track user's last visit per feature for badge reset
 -- =====================================================
 

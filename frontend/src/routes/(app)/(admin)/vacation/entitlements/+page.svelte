@@ -495,6 +495,7 @@
 
 {#if entitlementsState.showEntitlementForm && entitlementsState.selectedEmployee !== null}
   <div
+    id="vacation-entitlement-form-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

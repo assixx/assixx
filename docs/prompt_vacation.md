@@ -1047,7 +1047,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
     { code: 'vacation-rules', name: 'Regeln & Sperren' },
     { code: 'vacation-entitlements', name: 'Urlaubsansprüche' },
     { code: 'vacation-holidays', name: 'Feiertage' },
-    { code: 'vacation-overview', name: 'Uebersicht & Kalender' },
+    { code: 'vacation-overview', name: 'Übersicht & Kalender' },
   ],
 };
 ```
@@ -1275,7 +1275,7 @@ export const load: LayoutServerLoad = async ({ parent }) => {
 **Root/Area-Lead sieht:**
 
 1. Direkte Eintragung (kein Approval-Flow, sofort approved)
-2. Uebersicht aller Abwesenheiten
+2. Übersicht aller Abwesenheiten
 
 ### 3.3 Kapazität s-Hinweise — UX Flow
 

@@ -26,3 +26,7 @@ export {
   OverrideCategoryNameDto,
   OverrideCategoryNameSchema,
 } from './override-category-name.dto.js';
+export {
+  UpdateCustomCategoryDto,
+  UpdateCustomCategorySchema,
+} from './update-custom-category.dto.js';

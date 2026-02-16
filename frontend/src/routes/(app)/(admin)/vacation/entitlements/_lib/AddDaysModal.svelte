@@ -28,6 +28,7 @@
 </script>
 
 <div
+  id="vacation-add-days-modal"
   class="modal-overlay modal-overlay--active"
   role="dialog"
   aria-modal="true"
