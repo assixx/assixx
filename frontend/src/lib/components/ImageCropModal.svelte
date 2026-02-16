@@ -156,6 +156,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    id="image-crop-modal"
     class="modal-overlay modal-overlay--active"
     onclick={handleOverlayClick}
   >
@@ -180,7 +181,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={onclose}
           disabled={saving}
         >
@@ -245,12 +246,12 @@
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={handleSave}
           disabled={saving || croppedAreaPixels === null}
         >
           {#if saving}
-            <i class="fas fa-spinner fa-spin mr-2"></i>
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
             Wird verarbeitet...
           {:else}
             <i class="fas fa-check mr-2"></i>

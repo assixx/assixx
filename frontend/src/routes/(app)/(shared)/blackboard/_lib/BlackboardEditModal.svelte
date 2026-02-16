@@ -15,8 +15,6 @@
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
-  import '../../../../../styles/blackboard.css';
-
   import { uploadAttachment } from './api';
   import BlackboardEntryModal from './BlackboardEntryModal.svelte';
 
@@ -187,6 +185,7 @@
 {#if orgDataLoading}
   <!-- Loading overlay while fetching org data -->
   <div
+    id="blackboard-edit-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

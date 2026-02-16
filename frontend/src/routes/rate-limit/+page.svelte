@@ -9,7 +9,6 @@
   import { onMount, onDestroy } from 'svelte';
 
   import { goto } from '$app/navigation';
-  import '../../styles/rate-limit.css';
 
   // =============================================================================
   // CONSTANTS
@@ -200,3 +199,48 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Entry animation for card */
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+  }
+
+  @keyframes fade-in-up {
+    from {
+      transform: translateY(30px);
+      opacity: 0%;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 100%;
+    }
+  }
+
+  /* Icon with pulse animation */
+  .rate-limit-icon {
+    display: inline-block;
+    margin-bottom: var(--spacing-6);
+    font-size: 64px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 100%;
+    }
+
+    50% {
+      transform: scale(1.1);
+      opacity: 80%;
+    }
+  }
+
+  /* Monospace font for countdown timer */
+  .countdown {
+    font-family: Outfit, monospace;
+  }
+</style>

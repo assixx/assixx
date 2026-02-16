@@ -63,13 +63,35 @@ export async function createCustomCategory(data: {
   }
 }
 
-/** Delete a custom category */
-export async function deleteCustomCategory(id: number): Promise<boolean> {
+/** Update a custom category */
+export async function updateCustomCategory(
+  id: number,
+  data: {
+    name?: string;
+    color?: string;
+    icon?: string;
+    description?: string;
+  },
+): Promise<boolean> {
   try {
-    await apiClient.delete(`${BASE}/custom/${id}`);
+    await apiClient.put(`${BASE}/custom/${id}`, data);
     return true;
   } catch (err) {
-    log.error({ err }, 'Error deleting custom category');
+    log.error({ err }, 'Error updating custom category');
     return false;
+  }
+}
+
+/** Soft-delete a custom category (preserves data for existing KVPs with strikethrough) */
+export async function deleteCustomCategory(
+  id: number,
+): Promise<{ affectedSuggestions: number } | null> {
+  try {
+    return await apiClient.delete<{ affectedSuggestions: number }>(
+      `${BASE}/custom/${id}`,
+    );
+  } catch (err) {
+    log.error({ err }, 'Error deleting custom category');
+    return null;
   }
 }

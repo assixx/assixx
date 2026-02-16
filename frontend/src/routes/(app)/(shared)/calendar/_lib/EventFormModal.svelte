@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import AppTimePicker from '$lib/components/AppTimePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -31,6 +33,32 @@
   // prettier-ignore
   let { formData = $bindable(), editingEvent, isAdmin, departments, teams, areas, onclose, onsave }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
+
+  /** Split "YYYY-MM-DDThh:mm" into date + time parts */
+  function splitDatetime(dt: string): { date: string; time: string } {
+    const parts = dt.split('T');
+    return { date: parts[0] ?? '', time: parts[1] ?? '09:00' };
+  }
+
+  /** Merge date (YYYY-MM-DD) + time (HH:MM) back to datetime-local format */
+  function mergeDatetime(date: string, time: string): string {
+    if (date === '') return '';
+    return `${date}T${time !== '' ? time : '09:00'}`;
+  }
+
+  // Split formData.startTime/endTime into reactive date + time pairs
+  let startDate = $state(splitDatetime(formData.startTime).date);
+  let startTime = $state(splitDatetime(formData.startTime).time);
+  let endDate = $state(splitDatetime(formData.endTime).date);
+  let endTime = $state(splitDatetime(formData.endTime).time);
+
+  // Sync back to formData when date or time changes
+  $effect(() => {
+    formData.startTime = mergeDatetime(startDate, startTime);
+  });
+  $effect(() => {
+    formData.endTime = mergeDatetime(endDate, endTime);
+  });
 
   // Dropdown states
   let recurrenceDropdownOpen = $state(false);
@@ -135,14 +163,15 @@
       }
     }
 
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('click', handleClickOutside, true);
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
     };
   });
 </script>
 
 <div
+  id="calendar-event-form-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
   onclick={onclose}
@@ -165,7 +194,7 @@
       <button
         type="button"
         class="ds-modal__close"
-        aria-label="Schliessen"
+        aria-label="Schließen"
         onclick={onclose}
       >
         <i class="fas fa-times"></i>
@@ -211,34 +240,29 @@
       <!-- Date/Time -->
       <div class="grid grid-cols-2 gap-4">
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="eventStart"
-          >
+          <span class="form-field__label">
             Beginn <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="datetime-local"
-            class="form-field__control"
-            id="eventStart"
-            bind:value={formData.startTime}
+          </span>
+          <AppDatePicker
+            bind:value={startDate}
             required
           />
+          <div class="mt-2">
+            <AppTimePicker bind:value={startTime} />
+          </div>
         </div>
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="eventEnd"
-          >
+          <span class="form-field__label">
             Ende <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="datetime-local"
-            class="form-field__control"
-            id="eventEnd"
-            bind:value={formData.endTime}
+          </span>
+          <AppDatePicker
+            bind:value={endDate}
+            placeholder={startDate}
             required
           />
+          <div class="mt-2">
+            <AppTimePicker bind:value={endTime} />
+          </div>
         </div>
       </div>
 
@@ -358,7 +382,7 @@
             class="form-field__label"
             for="event-department-select"
           >
-            <i class="fas fa-sitemap mr-1"></i> Zusaetzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i> Zusätzliche Abteilungen
           </label>
           <select
             id="event-department-select"
@@ -531,12 +555,7 @@
               class="form-field__label"
               for="recurrenceUntil">Enddatum</label
             >
-            <input
-              type="date"
-              class="form-field__control"
-              id="recurrenceUntil"
-              bind:value={formData.recurrenceUntil}
-            />
+            <AppDatePicker bind:value={formData.recurrenceUntil} />
           </div>
         {/if}
       {/if}
@@ -551,7 +570,7 @@
       </button>
       <button
         type="submit"
-        class="btn btn-modal"
+        class="btn btn-primary"
       >
         <i class="fas fa-save"></i> Speichern
       </button>

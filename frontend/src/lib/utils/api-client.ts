@@ -10,6 +10,9 @@
  */
 
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
+
+import { showErrorAlert } from '$lib/stores/toast';
 
 import { ApiCache } from './api-cache';
 import {
@@ -26,6 +29,7 @@ import {
   extractErrorMessage,
   getContentType,
   getCredentialsMode,
+  humanizePermissionError,
   isAbortError,
   isTimeoutError,
   wrapError,
@@ -421,6 +425,30 @@ export class ApiClient {
     return data;
   }
 
+  /**
+   * Handle 403 Forbidden responses:
+   * - Feature not enabled → redirect to /feature-unavailable
+   * - Permission denied → humanize message + show toast
+   */
+  private handleForbidden(data: Record<string, unknown>): void {
+    const { message } = extractErrorMessage(data);
+
+    if (message.toLowerCase().includes('feature is not enabled')) {
+      if (browser) {
+        void goto('/feature-unavailable');
+      }
+      throw new ApiError('Feature nicht verfügbar', 'FEATURE_DISABLED', 403);
+    }
+
+    const humanMessage = humanizePermissionError(message);
+    if (humanMessage !== null) {
+      if (browser) {
+        showErrorAlert(humanMessage, 6000);
+      }
+      throw new ApiError(humanMessage, 'PERMISSION_DENIED', 403);
+    }
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
 
@@ -434,6 +462,11 @@ export class ApiClient {
       this.handleRateLimit();
     }
 
+    if (response.status === 403) {
+      this.handleForbidden(data);
+    }
+
+    // Auth errors: expired token or invalid token → clear session
     if (response.status === 401 || response.status === 403) {
       this.handleAuthenticationError(data);
     }

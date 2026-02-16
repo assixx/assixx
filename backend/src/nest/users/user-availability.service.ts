@@ -8,7 +8,7 @@
  * - CRUD for availability entries
  *
  * Extracted from UsersService for better separation of concerns.
- * Works with employee_availability table (not user columns).
+ * Works with user_availability table (not user columns).
  */
 import {
   BadRequestException,
@@ -32,7 +32,7 @@ const ERROR_MESSAGES = {
 } as const;
 
 /**
- * User availability row from employee_availability table
+ * User availability row from user_availability table
  * Used for current/planned availability display
  */
 export interface UserAvailabilityRow {
@@ -48,7 +48,7 @@ export interface UserAvailabilityRow {
  */
 export interface AvailabilityRow {
   id: number;
-  employee_id: number;
+  user_id: number;
   status: string;
   start_date: Date | null;
   end_date: Date | null;
@@ -65,7 +65,7 @@ export interface AvailabilityRow {
  */
 export interface AvailabilityHistoryEntry {
   id: number;
-  employeeId: number;
+  userId: number;
   status: string;
   startDate: string;
   endDate: string;
@@ -127,13 +127,13 @@ export class UserAvailabilityService {
   ): Promise<UserAvailabilityRow | null> {
     const rows = await this.databaseService.query<UserAvailabilityRow>(
       `SELECT
-         employee_id AS user_id,
+         user_id,
          status,
          start_date,
          end_date,
          notes
-       FROM employee_availability
-       WHERE employee_id = $1
+       FROM user_availability
+       WHERE user_id = $1
          AND tenant_id = $2
          AND (end_date >= CURRENT_DATE OR end_date IS NULL)
        ORDER BY
@@ -165,20 +165,20 @@ export class UserAvailabilityService {
       .map((_: number, i: number) => `$${i + 2}`)
       .join(', ');
 
-    // Query uses DISTINCT ON to get one entry per employee
+    // Query uses DISTINCT ON to get one entry per user
     // Orders by: 1) is_current (active today first), 2) start_date ASC (earliest future)
     const rows = await this.databaseService.query<UserAvailabilityRow>(
-      `SELECT DISTINCT ON (employee_id)
-         employee_id AS user_id,
+      `SELECT DISTINCT ON (user_id)
+         user_id,
          status,
          start_date,
          end_date,
          notes
-       FROM employee_availability
-       WHERE employee_id IN (${placeholders})
+       FROM user_availability
+       WHERE user_id IN (${placeholders})
          AND tenant_id = $1
          AND (end_date >= CURRENT_DATE OR end_date IS NULL)
-       ORDER BY employee_id,
+       ORDER BY user_id,
          CASE WHEN start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE THEN 0 ELSE 1 END,
          start_date ASC`,
       [tenantId, ...userIds],
@@ -224,7 +224,7 @@ export class UserAvailabilityService {
 
   /**
    * Update availability
-   * NOTE: Now ONLY writes to employee_availability table (users table columns deprecated)
+   * NOTE: Now ONLY writes to user_availability table (users table columns deprecated)
    */
   async updateAvailability(
     userId: number,
@@ -279,8 +279,8 @@ export class UserAvailabilityService {
     createdBy?: number,
   ): Promise<void> {
     const overlapping = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM employee_availability
-       WHERE employee_id = $1
+      `SELECT id FROM user_availability
+       WHERE user_id = $1
          AND tenant_id = $2
          AND start_date <= $4::date
          AND end_date >= $3::date`,
@@ -294,8 +294,8 @@ export class UserAvailabilityService {
     }
 
     await this.databaseService.query(
-      `INSERT INTO employee_availability
-        (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
+      `INSERT INTO user_availability
+        (user_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         userId,
@@ -344,8 +344,8 @@ export class UserAvailabilityService {
 
     // Check for overlapping date ranges
     const overlapping = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM employee_availability
-       WHERE employee_id = $1
+      `SELECT id FROM user_availability
+       WHERE user_id = $1
          AND tenant_id = $2
          AND start_date <= $4::date
          AND end_date >= $3::date`,
@@ -359,8 +359,8 @@ export class UserAvailabilityService {
     }
 
     await this.databaseService.query(
-      `INSERT INTO employee_availability
-        (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
+      `INSERT INTO user_availability
+        (user_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         userId,
@@ -394,7 +394,7 @@ export class UserAvailabilityService {
 
   /**
    * Get availability history for a user by UUID
-   * Queries the employee_availability table for all records
+   * Queries the user_availability table for all records
    */
   async getAvailabilityHistoryByUuid(
     uuid: string,
@@ -478,7 +478,7 @@ export class UserAvailabilityService {
 
     // Execute update
     await this.databaseService.query(
-      `UPDATE employee_availability
+      `UPDATE user_availability
        SET status = $1, start_date = $2, end_date = $3, reason = $4, notes = $5, updated_at = NOW()
        WHERE id = $6 AND tenant_id = $7`,
       [
@@ -533,12 +533,12 @@ export class UserAvailabilityService {
       endDate: entry.end_date?.toISOString().split('T')[0] ?? null,
       reason: entry.reason,
       notes: entry.notes,
-      employeeId: entry.employee_id,
+      userId: entry.user_id,
     };
 
     // Execute delete
     await this.databaseService.query(
-      `DELETE FROM employee_availability WHERE id = $1 AND tenant_id = $2`,
+      `DELETE FROM user_availability WHERE id = $1 AND tenant_id = $2`,
       [entryId, tenantId],
     );
 
@@ -631,13 +631,13 @@ export class UserAvailabilityService {
     let paramIndex = 3;
 
     let query = `
-      SELECT ea.id, ea.employee_id, ea.status, ea.start_date, ea.end_date,
+      SELECT ea.id, ea.user_id, ea.status, ea.start_date, ea.end_date,
              ea.reason, ea.notes, ea.created_by,
              CONCAT(u.first_name, ' ', u.last_name) AS created_by_name,
              ea.created_at, ea.updated_at
-      FROM employee_availability ea
+      FROM user_availability ea
       LEFT JOIN users u ON ea.created_by = u.id
-      WHERE ea.employee_id = $1 AND ea.tenant_id = $2`;
+      WHERE ea.user_id = $1 AND ea.tenant_id = $2`;
 
     if (year !== undefined) {
       query += ` AND (EXTRACT(YEAR FROM ea.start_date) = $${paramIndex}
@@ -665,7 +665,7 @@ export class UserAvailabilityService {
   ): AvailabilityHistoryEntry {
     return {
       id: row.id,
-      employeeId: row.employee_id,
+      userId: row.user_id,
       status: row.status,
       startDate: row.start_date?.toISOString().split('T')[0] ?? '',
       endDate: row.end_date?.toISOString().split('T')[0] ?? '',
@@ -686,9 +686,9 @@ export class UserAvailabilityService {
     tenantId: number,
   ): Promise<AvailabilityRow | null> {
     const rows = await this.databaseService.query<AvailabilityRow>(
-      `SELECT id, employee_id, status, start_date, end_date, reason, notes,
+      `SELECT id, user_id, status, start_date, end_date, reason, notes,
               created_by, created_at, updated_at
-       FROM employee_availability
+       FROM user_availability
        WHERE id = $1 AND tenant_id = $2`,
       [entryId, tenantId],
     );

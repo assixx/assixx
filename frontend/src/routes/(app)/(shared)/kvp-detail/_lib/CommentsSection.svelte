@@ -71,7 +71,7 @@
           disabled={kvpDetailState.isAddingComment}
         >
           {#if kvpDetailState.isAddingComment}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {:else}
             <i class="fas fa-paper-plane"></i>
           {/if}
@@ -130,3 +130,51 @@
     {/each}
   </div>
 </div>
+
+<style>
+  .comments-section {
+    margin-top: var(--spacing-8);
+    padding-top: var(--spacing-8);
+    border-top: 1px solid var(--color-glass-border);
+  }
+
+  .comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .comment-item {
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-2);
+  }
+
+  .comment-author {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+  }
+
+  .comment-internal {
+    border-color: rgb(255 182 107 / 30%);
+    background: rgb(255 182 107 / 5%);
+  }
+
+  .internal-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #ff6b6b;
+    background: rgb(255 182 107 / 20%);
+  }
+</style>

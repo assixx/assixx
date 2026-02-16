@@ -86,7 +86,7 @@ export const BasicModal = {
           </div>
           <div class="ds-modal__footer ${footerClass}">
             <button class="btn btn-cancel">Cancel</button>
-            <button class="btn btn-modal">Confirm</button>
+            <button class="btn btn-primary">Confirm</button>
           </div>
         </div>
       </div>
@@ -234,7 +234,7 @@ export const FormModal = {
             <button class="btn btn-cancel">
               Cancel
             </button>
-            <button class="btn btn-modal">
+            <button class="btn btn-primary">
               <i class="fas fa-save"></i>
               Create Event
             </button>
@@ -347,7 +347,7 @@ export const FormWithDropdown = {
             <button class="btn btn-cancel">
               Cancel
             </button>
-            <button class="btn btn-modal">
+            <button class="btn btn-primary">
               <i class="fas fa-user-plus"></i>
               Add Member
             </button>
@@ -500,7 +500,7 @@ export const InfoDialog = {
             </p>
           </div>
           <div class="ds-modal__footer ds-modal__footer--centered">
-            <button class="btn btn-modal">
+            <button class="btn btn-primary">
               <i class="fas fa-check"></i>
               Stay Logged In
             </button>
@@ -577,7 +577,7 @@ export const ScrollableContent = {
           </div>
           <div class="ds-modal__footer">
             <button class="btn btn-cancel">Decline</button>
-            <button class="btn btn-modal">Accept</button>
+            <button class="btn btn-primary">Accept</button>
           </div>
         </div>
       </div>
@@ -670,7 +670,7 @@ export const AllSizes = {
             </div>
             <div class="ds-modal__footer">
               <button class="btn btn-cancel">Cancel</button>
-              <button class="btn btn-modal">Confirm</button>
+              <button class="btn btn-primary">Confirm</button>
             </div>
           </div>
         </div>

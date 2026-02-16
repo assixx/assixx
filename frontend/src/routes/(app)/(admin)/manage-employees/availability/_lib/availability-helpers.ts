@@ -10,9 +10,9 @@ import {
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
-} from '../../_lib/constants';
+} from '$lib/availability/constants';
 
-import type { AvailabilityStatus } from '../../_lib/types';
+import type { AvailabilityStatus } from '@assixx/shared';
 
 /**
  * Format date string to German locale format (DD.MM.YYYY)

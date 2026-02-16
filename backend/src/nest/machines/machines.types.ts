@@ -51,6 +51,7 @@ export interface MachineTeamInfo {
 export interface DbMachineRow {
   id: number;
   tenant_id: number;
+  uuid: string;
   name: string;
   model: string | null;
   manufacturer: string | null;
@@ -158,6 +159,7 @@ export interface MachineFilters {
 export interface MachineResponse {
   id: number;
   tenantId: number;
+  uuid: string;
   name: string;
   model?: string;
   manufacturer?: string;
@@ -190,6 +192,11 @@ export interface MachineResponse {
   isActive: boolean;
   // Teams assigned to this machine (for list display)
   teams?: MachineTeamInfo[];
+  // Availability info (next relevant entry from machine_availability table)
+  availabilityStatus: string | null;
+  availabilityStart: string | null;
+  availabilityEnd: string | null;
+  availabilityNotes: string | null;
 }
 
 /** Maintenance history response */

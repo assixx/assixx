@@ -43,6 +43,7 @@
 <!-- Delete Modal Step 1 -->
 {#if showDeleteModal}
   <div
+    id="delete-team-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -103,6 +104,7 @@
 <!-- Delete Modal Step 2 -->
 {#if showDeleteConfirmModal}
   <div
+    id="delete-team-confirm-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -160,6 +162,7 @@
 <!-- Force Delete Warning Modal -->
 {#if showForceDeleteModal}
   <div
+    id="team-force-delete-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

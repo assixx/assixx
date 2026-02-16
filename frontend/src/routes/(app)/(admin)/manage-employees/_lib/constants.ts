@@ -2,9 +2,18 @@
 // MANAGE EMPLOYEES - CONSTANTS
 // =============================================================================
 
-import type { AvailabilityOption, AvailabilityStatus } from './types';
+import type { AvailabilityOption } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
+
+// Re-export shared availability constants (single source of truth)
+export {
+  AVAILABILITY_BADGE_CLASSES,
+  AVAILABILITY_ICONS,
+  AVAILABILITY_LABELS,
+  AVAILABILITY_STATUS_LABELS,
+  AVAILABILITY_STATUS_OPTIONS,
+} from '$lib/availability/constants';
 
 /**
  * Default badge class for neutral/no-data states
@@ -30,7 +39,7 @@ export const POSITION_OPTIONS: readonly string[] = [
 ] as const;
 
 /**
- * Availability status options with labels
+ * Availability status options with labels (legacy alias)
  */
 export const AVAILABILITY_OPTIONS: readonly AvailabilityOption[] = [
   { value: 'available', label: 'Verfügbar' },
@@ -40,72 +49,6 @@ export const AVAILABILITY_OPTIONS: readonly AvailabilityOption[] = [
   { value: 'training', label: 'Schulung' },
   { value: 'other', label: 'Sonstiges' },
 ] as const;
-
-/**
- * Availability status badge classes
- * IMPORTANT: Must match shifts/_lib/constants.ts AVAILABILITY_COLORS for consistency!
- */
-export const AVAILABILITY_BADGE_CLASSES: Record<AvailabilityStatus, string> = {
-  available: 'badge--success',
-  vacation: 'badge--warning',
-  sick: 'badge--danger',
-  unavailable: 'badge--error',
-  training: 'badge--info',
-  other: 'badge--dark',
-};
-
-/**
- * Availability status icons (FontAwesome classes)
- * IMPORTANT: Must match shifts/_lib/constants.ts AVAILABILITY_ICONS for consistency!
- */
-export const AVAILABILITY_ICONS: Record<AvailabilityStatus, string> = {
-  available: 'fa-check-circle',
-  vacation: 'fa-plane',
-  sick: 'fa-notes-medical',
-  unavailable: 'fa-ban',
-  training: 'fa-graduation-cap',
-  other: 'fa-clock',
-};
-
-/**
- * Availability status labels
- */
-export const AVAILABILITY_LABELS: Record<AvailabilityStatus, string> = {
-  available: 'Verfügbar',
-  vacation: 'Urlaub',
-  sick: 'Krank',
-  unavailable: 'Nicht verfügbar',
-  training: 'Schulung',
-  other: 'Sonstiges',
-};
-
-/**
- * Availability status labels for planned availability display
- * (Alias for AVAILABILITY_LABELS - used in getPlannedAvailability)
- */
-export const AVAILABILITY_STATUS_LABELS: Record<AvailabilityStatus, string> = {
-  available: 'Verfügbar',
-  vacation: 'Urlaub',
-  sick: 'Krank',
-  unavailable: 'Nicht verfügbar',
-  training: 'Schulung',
-  other: 'Sonstiges',
-};
-
-/**
- * Availability status options for select dropdown
- */
-export const AVAILABILITY_STATUS_OPTIONS: {
-  value: AvailabilityStatus;
-  label: string;
-}[] = [
-  { value: 'available', label: 'Verfügbar' },
-  { value: 'vacation', label: 'Urlaub' },
-  { value: 'sick', label: 'Krank' },
-  { value: 'unavailable', label: 'Nicht verfügbar' },
-  { value: 'training', label: 'Schulung' },
-  { value: 'other', label: 'Sonstiges' },
-];
 
 /**
  * Password strength labels

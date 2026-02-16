@@ -28,6 +28,7 @@ import type { FastifyReply } from 'fastify';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
+import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type {
@@ -55,6 +56,7 @@ const CAL_FEATURE = 'calendar';
 const CAL_EVENTS = 'calendar-events';
 
 @Controller('calendar')
+@TenantFeature('calendar')
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 

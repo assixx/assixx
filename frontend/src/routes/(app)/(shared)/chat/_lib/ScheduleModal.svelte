@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { MESSAGES, SCHEDULE_CONSTRAINTS } from './constants';
 
   interface Props {
@@ -35,7 +37,10 @@
 </script>
 
 {#if show}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="chat-schedule-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div class="ds-modal ds-modal--sm">
       <div class="ds-modal__header">
         <h2 class="ds-modal__title">
@@ -61,10 +66,7 @@
             >
               {MESSAGES.labelDate}
             </label>
-            <input
-              type="date"
-              id="scheduleDate"
-              class="form-field__control"
+            <AppDatePicker
               required
               min={minDate}
               max={maxDate}
@@ -107,7 +109,7 @@
         >
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={onconfirm}
         >
           <i class="far fa-clock"></i>

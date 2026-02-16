@@ -4,9 +4,6 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  // Page-specific CSS
-  import '../../../../styles/tenant-deletion-status.css';
-
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('TenantDeletionStatusPage');
@@ -409,6 +406,7 @@
 {#if showConfirmModal}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    id="tenant-deletion-confirm-modal"
     class="modal-overlay modal-overlay--active"
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
@@ -439,7 +437,7 @@
             disabled={confirmModalLoading}
           >
             {#if confirmModalLoading}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {/if}
             Ja
           </button>
@@ -475,7 +473,7 @@
             disabled={confirmModalLoading}
           >
             {#if confirmModalLoading}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {/if}
             Emergency Stop aktivieren
           </button>
@@ -515,7 +513,7 @@
             disabled={confirmModalLoading || !isRejectReasonValid}
           >
             {#if confirmModalLoading}
-              <i class="fas fa-spinner fa-spin mr-2"></i>
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {/if}
             Ablehnen
           </button>
@@ -524,3 +522,250 @@
     {/if}
   </div>
 {/if}
+
+<style>
+  /* Page Layout */
+  .container {
+    padding: var(--spacing-6);
+  }
+
+  /* Status Grid */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--spacing-6);
+  }
+
+  /* Status Card (Glassmorphism) */
+  .status-card {
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    padding: var(--spacing-6);
+  }
+
+  .status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+  }
+
+  /* Tenant Info */
+  .tenant-info h3 {
+    margin: 0 0 var(--spacing-2);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 1.25rem;
+  }
+
+  .tenant-info p {
+    margin: var(--spacing-1) 0;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+
+  /* Process Info Section */
+  .process-info {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid rgb(33 150 243 / 20%);
+    border-radius: var(--radius-lg);
+    background: rgb(33 150 243 / 5%);
+    padding: var(--spacing-4);
+  }
+
+  .process-info__title {
+    margin-bottom: var(--spacing-3);
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .process-info__content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2) var(--spacing-4);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .process-info__item {
+    display: inline;
+  }
+
+  .process-info__item::after {
+    content: ' · ';
+    color: var(--color-text-muted);
+  }
+
+  .process-info__item:last-child::after {
+    content: '';
+  }
+
+  /* Info Boxes */
+  .info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    margin: var(--spacing-4) 0;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+  }
+
+  .info-box i {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+  }
+
+  .info-box strong {
+    display: block;
+    margin-bottom: var(--spacing-1);
+    color: var(--color-text-primary);
+  }
+
+  .info-box--warning {
+    border: 1px solid rgb(255 152 0 / 30%);
+    background: rgb(255 152 0 / 10%);
+  }
+
+  .info-box--warning i {
+    color: var(--color-warning);
+  }
+
+  .info-box--success {
+    border: 1px solid rgb(76 175 80 / 30%);
+    background: rgb(76 175 80 / 10%);
+  }
+
+  .info-box--success i {
+    color: var(--color-success);
+  }
+
+  .info-box--info {
+    border: 1px solid rgb(33 150 243 / 30%);
+    background: rgb(33 150 243 / 10%);
+  }
+
+  .info-box--info i {
+    color: var(--color-primary);
+  }
+
+  /* Cooling Off Warning */
+  .cooling-off-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-4);
+    border: 1px solid rgb(255 152 0 / 30%);
+    border-radius: var(--radius-lg);
+    background: rgb(255 152 0 / 10%);
+    padding: var(--spacing-4);
+  }
+
+  .cooling-off-warning i {
+    flex-shrink: 0;
+    color: var(--color-warning);
+    font-size: 1.25rem;
+  }
+
+  .cooling-off-warning strong {
+    display: block;
+    margin-bottom: var(--spacing-1);
+    color: var(--color-text-primary);
+  }
+
+  /* Timeline */
+  .timeline {
+    margin-top: var(--spacing-6);
+  }
+
+  .timeline > h4 {
+    margin-bottom: var(--spacing-4);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .timeline-icon {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 5%);
+    width: 40px;
+    height: 40px;
+  }
+
+  .timeline-icon--completed {
+    background: rgb(76 175 80 / 20%);
+    color: var(--color-success);
+  }
+
+  .timeline-icon--pending {
+    background: rgb(255 193 7 / 20%);
+    color: var(--color-warning);
+  }
+
+  .timeline-content {
+    flex: 1;
+  }
+
+  .timeline-content h4 {
+    margin: 0 0 var(--spacing-1);
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 1rem;
+  }
+
+  .timeline-content p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+
+  /* Action Buttons */
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-6);
+  }
+
+  /* Utility Classes */
+  .text-muted {
+    color: var(--color-text-muted);
+  }
+
+  .block {
+    display: block;
+  }
+
+  /* Responsive */
+  @media (width < 768px) {
+    .status-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .action-buttons :global(.btn) {
+      width: 100%;
+    }
+  }
+</style>

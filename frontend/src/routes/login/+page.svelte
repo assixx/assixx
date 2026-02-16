@@ -39,9 +39,6 @@
 
   const { form }: { form: ActionData } = $props();
 
-  // Page-specific CSS
-  import '../../styles/login.css';
-
   // =============================================================================
   // SVELTE 5 RUNES - Reactive State
   // =============================================================================
@@ -426,11 +423,11 @@
       <div class="mt-6 flex justify-end">
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-index"
           disabled={loading || !isFormValid}
         >
           {#if loading}
-            <i class="fas fa-spinner fa-spin"></i>
+            <span class="spinner-ring spinner-ring--sm"></span>
           {/if}
           {buttonText}
         </button>
@@ -457,4 +454,178 @@
   </div>
 </div>
 
-<!-- Styles kommen aus /styles/login.css (global) -->
+<style>
+  /* Back Button */
+  .back-button {
+    display: flex;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    align-items: center;
+    gap: 10px;
+    z-index: 1001;
+    backdrop-filter: blur(20px) saturate(180%);
+
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+      0 4px 16px rgb(0 0 0 / 20%),
+      inset 0 1px 0 rgb(255 255 255 / 5%);
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 12px;
+
+    background: rgb(255 255 255 / 2%);
+
+    padding: 10px 20px;
+    color: var(--text-secondary);
+    font-weight: 500;
+
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  .back-button:hover {
+    transform: translateX(-5px);
+    box-shadow:
+      0 6px 24px rgb(0 0 0 / 30%),
+      inset 0 1px 0 rgb(255 255 255 / 10%);
+
+    border-color: rgb(255 255 255 / 15%);
+
+    background: rgb(255 255 255 / 5%);
+
+    color: var(--text-primary);
+  }
+
+  .back-button:active {
+    transform: translateX(-3px) scale(0.98);
+  }
+
+  .back-button .icon {
+    transition: transform 0.3s ease;
+    font-size: 18px;
+  }
+
+  .back-button:hover .icon {
+    transform: translateX(-3px);
+  }
+
+  /* Login Container */
+  .login-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-6);
+
+    min-height: 85vh;
+  }
+
+  .login-card-logo {
+    display: flex;
+    justify-content: center;
+  }
+
+  .login-logo {
+    display: block;
+
+    transition: transform 0.3s ease;
+    cursor: pointer;
+
+    width: 120px;
+    height: auto;
+  }
+
+  .login-logo:hover {
+    transform: scale(1.05);
+  }
+
+  .login-card {
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border-radius: var(--radius-xl);
+
+    background: rgb(255 255 255 / 2%);
+    padding: var(--spacing-8);
+    width: 100%;
+    max-width: 450px;
+  }
+
+  .login-company {
+    margin-top: var(--spacing-8);
+    text-align: center;
+  }
+
+  .login-footer {
+    margin-top: var(--spacing-6);
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--spacing-6);
+    text-align: center;
+  }
+
+  .login-footer a {
+    transition: color 0.3s ease;
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+
+  .login-footer a + a {
+    margin-left: 20px;
+  }
+
+  .login-footer a:hover {
+    color: var(--primary-light);
+    text-decoration: underline;
+  }
+
+  /* Help Button */
+  .help-button {
+    display: flex;
+
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    box-shadow:
+      0 4px 12px rgb(0 0 0 / 20%),
+      inset 0 1px 0 rgb(255 255 255 / 10%);
+    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border-radius: 50%;
+
+    background: rgb(255 255 255 / 8%);
+
+    width: 36px;
+    height: 36px;
+    color: var(--text-secondary);
+
+    font-size: 19px;
+  }
+
+  .help-button:hover {
+    transform: scale(1.1);
+    box-shadow:
+      0 6px 16px rgb(33 150 243 / 30%),
+      inset 0 1px 0 rgb(255 255 255 / 10%);
+
+    border-color: var(--primary-color);
+
+    background: rgb(33 150 243 / 15%);
+
+    color: var(--primary-color);
+  }
+
+  @media (width < 768px) {
+    .login-card {
+      padding: var(--spacing-6);
+    }
+
+    .login-logo {
+      width: 60px;
+      height: 60px;
+    }
+  }
+</style>

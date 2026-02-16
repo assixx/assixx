@@ -196,6 +196,7 @@ describe('MachinesService – DB-mocked methods', () => {
       // All optional fields must be null (NOT undefined) to avoid new Date(undefined)
       mockDb.queryOne.mockResolvedValueOnce({
         id: 1,
+        uuid: '01953d6a-0000-7000-8000-000000000001',
         name: 'Machine 1',
         tenant_id: 1,
         model: null,

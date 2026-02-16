@@ -37,7 +37,7 @@ export class FeatureCheckService {
          WHERE tf.tenant_id = $1
          AND f.code = $2
          AND tf.is_active = 1
-         AND (tf.valid_until IS NULL OR tf.valid_until > NOW())`,
+         AND (tf.expires_at IS NULL OR tf.expires_at > NOW())`,
         [tenantId, featureCode],
       );
       return rows.length > 0;

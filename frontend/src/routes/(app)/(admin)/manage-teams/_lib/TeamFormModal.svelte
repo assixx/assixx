@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import { MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
@@ -170,48 +172,20 @@
     });
   }
 
-  /** Close dropdown if click is outside its container */
-  function closeDropdownIfOutside(
-    target: HTMLElement,
-    isOpen: boolean,
-    selector: string,
-  ): boolean {
-    return isOpen && !target.closest(selector) ? false : isOpen;
-  }
-
-  function handleOutsideClick(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    departmentDropdownOpen = closeDropdownIfOutside(
-      target,
-      departmentDropdownOpen,
-      '#department-dropdown',
-    );
-    leaderDropdownOpen = closeDropdownIfOutside(
-      target,
-      leaderDropdownOpen,
-      '#team-lead-dropdown',
-    );
-    membersDropdownOpen = closeDropdownIfOutside(
-      target,
-      membersDropdownOpen,
-      '#team-members-dropdown',
-    );
-    machinesDropdownOpen = closeDropdownIfOutside(
-      target,
-      machinesDropdownOpen,
-      '#team-machines-dropdown',
-    );
-    statusDropdownOpen = closeDropdownIfOutside(
-      target,
-      statusDropdownOpen,
-      '#status-dropdown',
-    );
-  }
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      departmentDropdownOpen = false;
+      leaderDropdownOpen = false;
+      membersDropdownOpen = false;
+      machinesDropdownOpen = false;
+      statusDropdownOpen = false;
+    });
+  });
 </script>
 
-<svelte:document onclick={handleOutsideClick} />
-
 <div
+  id="team-modal"
   class="modal-overlay modal-overlay--active"
   role="dialog"
   aria-modal="true"
@@ -557,7 +531,7 @@
       >
       <button
         type="submit"
-        class="btn btn-modal"
+        class="btn btn-primary"
         disabled={submitting}
       >
         {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"

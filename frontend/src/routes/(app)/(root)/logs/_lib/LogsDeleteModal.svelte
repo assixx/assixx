@@ -56,6 +56,7 @@
 </script>
 
 <div
+  id="logs-delete-modal"
   class="modal-overlay modal-overlay--active"
   role="dialog"
   aria-modal="true"

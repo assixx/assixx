@@ -6,20 +6,14 @@
    * Level 3 SSR: $derived for SSR data.
    * User data comes from parent layout (single /users/me call).
    */
-  import { onMount } from 'svelte';
-
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
 
-  // Page-specific CSS
-  import '../../../../styles/employee-dashboard.css';
-
   // Local modules
   import {
-    FLOATING_DOTS_COUNT,
     MESSAGES,
     PLACEHOLDER_TEXT,
     QUICK_ACCESS_ROUTES,
@@ -40,6 +34,7 @@
     parseContent,
     truncateContent,
   } from './_lib/utils';
+  import WelcomeHero from './_lib/WelcomeHero.svelte';
 
   import type { PageData } from './$types';
   import type { LayoutUser } from './_lib/types';
@@ -94,22 +89,6 @@
   const employeePosition = $derived(
     getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee),
   );
-
-  // =============================================================================
-  // FLOATING DOTS - Generated client-side for animation
-  // =============================================================================
-
-  let floatingDotsCount = $state(0);
-
-  onMount(() => {
-    // Generate floating dots after mount
-    floatingDotsCount = FLOATING_DOTS_COUNT;
-
-    // Add loaded class for CSS animations
-    setTimeout(() => {
-      document.body.classList.add('loaded');
-    }, 100);
-  });
 </script>
 
 <svelte:head>
@@ -119,31 +98,7 @@
 <!-- Page Content -->
 <div class="container">
   <!-- Welcome Hero Section -->
-  <div
-    class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
-      justify-between overflow-hidden rounded-xl border border-white/10 px-4 py-4
-      text-white shadow-sm backdrop-blur-[20px] backdrop-saturate-[180%]
-      md:px-6 md:py-5 lg:px-8 lg:py-6"
-  >
-    <!-- Floating sakura petals (generated via floatingDotsCount) -->
-    <div class="floating-elements">
-      {#each Array(floatingDotsCount) as _, i (i)}
-        <div class="floating-dot"></div>
-      {/each}
-    </div>
-
-    <!-- Welcome content -->
-    <div class="relative z-10">
-      <h1 class="mb-1 text-xl font-bold md:text-2xl lg:text-3xl">
-        {MESSAGES.welcomeBack}
-      </h1>
-      <p class="text-base text-white/90 md:text-lg">
-        {MESSAGES.niceToSeeYou}&nbsp;
-        <span class="employee-name-hero text-2xl font-bold">{employeeName}</span
-        >
-      </p>
-    </div>
-  </div>
+  <WelcomeHero {employeeName} />
 
   <!-- Employee Info Grid - 4 Stat Cards -->
   <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -328,7 +283,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage mb-4 w-4/5"
+            class="btn btn-primary mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.documents);
             }}
@@ -371,7 +326,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage mb-4 w-4/5"
+            class="btn btn-primary mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.calendar);
             }}
@@ -474,7 +429,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage mb-4 w-4/5"
+            class="btn btn-primary mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.kvp);
             }}
@@ -503,7 +458,7 @@
         <div class="card-accent__content">
           <button
             type="button"
-            class="btn btn-manage mb-4 w-4/5"
+            class="btn btn-primary mb-4 w-4/5"
             onclick={() => {
               navigateTo(QUICK_ACCESS_ROUTES.profile);
             }}
@@ -518,3 +473,133 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Calendar Event Styles */
+  .event-item {
+    display: flex;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+  }
+
+  .event-item:last-child {
+    border-bottom: none;
+  }
+
+  .event-item:hover {
+    background-color: rgb(var(--primary-rgb), 0.05);
+  }
+
+  .event-date {
+    display: flex;
+    flex: 0 0 90px;
+    flex-direction: column;
+    justify-content: center;
+    margin-right: 15px;
+    border-radius: var(--radius-xl);
+    background-color: var(--background-dark);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .event-day {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .event-month {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+  }
+
+  .event-time {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .event-details {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .event-title {
+    margin-bottom: 2px;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .event-location {
+    margin-top: 2px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .event-location i {
+    margin-right: 4px;
+    color: var(--text-muted);
+  }
+
+  .event-level {
+    display: inline-block;
+    width: fit-content;
+    margin-top: 5px;
+    border-radius: var(--radius-xl);
+    padding: 2px 8px;
+    color: #fff;
+    font-size: 0.7rem;
+  }
+
+  .event-level-company {
+    background-color: #3498db;
+  }
+
+  .event-level-department {
+    background-color: #e67e22;
+  }
+
+  .event-level-team {
+    background-color: #2ecc71;
+  }
+
+  .event-level-area {
+    background-color: #e53935;
+  }
+
+  .event-level-personal {
+    background-color: #9b59b6;
+  }
+
+  .event-badges {
+    display: grid;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  .event-badges .event-level {
+    margin-top: 0;
+  }
+
+  /* Mobile responsive for events */
+  @media (width < 768px) {
+    .event-date {
+      flex: 0 0 70px;
+    }
+
+    .event-day {
+      font-size: 1.2rem;
+    }
+
+    .event-month {
+      font-size: 0.8rem;
+    }
+  }
+</style>

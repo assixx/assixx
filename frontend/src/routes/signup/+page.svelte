@@ -4,41 +4,30 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import {
     isDark,
     forceDark,
     restoreUserTheme,
   } from '$lib/stores/theme.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showInfoAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import {
     analyzePassword,
     type PasswordStrengthResult,
   } from '$lib/utils/password-strength';
 
-  // Page-specific CSS
-  import '../../styles/signup.css';
-  import '../../styles/password-strength.css';
-
   // Local modules
   import { registerUser, createRegisterPayload } from './_lib/api';
   import {
-    COUNTRIES,
-    PLANS,
     DEFAULT_COUNTRY,
     DEFAULT_PLAN,
     SUCCESS_REDIRECT_DELAY,
     ERROR_MESSAGES,
-    HELP_MESSAGE,
   } from './_lib/constants';
+  import CountryPhoneInput from './_lib/CountryPhoneInput.svelte';
+  import PlanSelect from './_lib/PlanSelect.svelte';
+  import SignupNav from './_lib/SignupNav.svelte';
+  import SubdomainInput from './_lib/SubdomainInput.svelte';
   import {
     isSubdomainValid,
     isEmailValid,
@@ -48,7 +37,10 @@
     isPasswordValid,
   } from './_lib/validators';
 
-  import type { Country, Plan } from './_lib/types';
+  /** Resolve path with base prefix (for dynamic runtime paths) */
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // =============================================================================
   // SVELTE 5 RUNES - Form State
@@ -67,7 +59,6 @@
   let lastName = $state('');
   let phone = $state('');
   let countryCode = $state(DEFAULT_COUNTRY.code);
-  let selectedFlag = $state(DEFAULT_COUNTRY.flag);
 
   // Password
   let password = $state('');
@@ -81,19 +72,14 @@
 
   // Plan
   let selectedPlan = $state(DEFAULT_PLAN.value);
-  let selectedPlanName = $state(DEFAULT_PLAN.name);
 
   // UI State
   let termsAccepted = $state(false);
   let loading = $state(false);
   let showSuccess = $state(false);
-  let countryDropdownOpen = $state(false);
-  let planDropdownOpen = $state(false);
 
   // Error messages
-  let subdomainError: string | null = $state(null);
   let emailMatchError: string | null = $state(null);
-  let phoneError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
 
   // =============================================================================
@@ -143,23 +129,9 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  function handleSubdomainInput(e: Event): void {
-    const target = e.target as HTMLInputElement;
-    subdomain = target.value.toLowerCase();
-    subdomainError =
-      subdomain !== '' && !subdomainValid ?
-        ERROR_MESSAGES.subdomainInvalid
-      : null;
-  }
-
   function handleEmailConfirmInput(): void {
     emailMatchError =
       emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
-  }
-
-  function handlePhoneInput(): void {
-    phoneError =
-      phone !== '' && !phoneValid ? ERROR_MESSAGES.phoneInvalid : null;
   }
 
   /** Minimum characters before running zxcvbn analysis */
@@ -200,28 +172,6 @@
     if (field === 'confirm') showPasswordConfirm = !showPasswordConfirm;
   }
 
-  function selectCountry(country: Country): void {
-    selectedFlag = country.flag;
-    countryCode = country.code;
-    countryDropdownOpen = false;
-  }
-
-  function selectPlanOption(plan: Plan): void {
-    selectedPlan = plan.value;
-    selectedPlanName = plan.name;
-    planDropdownOpen = false;
-  }
-
-  function toggleCountryDropdown(): void {
-    countryDropdownOpen = !countryDropdownOpen;
-    planDropdownOpen = false;
-  }
-
-  function togglePlanDropdown(): void {
-    planDropdownOpen = !planDropdownOpen;
-    countryDropdownOpen = false;
-  }
-
   async function handleSubmit(e: Event): Promise<void> {
     e.preventDefault();
 
@@ -260,46 +210,13 @@
       loading = false;
     }
   }
-
-  function showHelp(): void {
-    showInfoAlert(HELP_MESSAGE, 10000);
-  }
-
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.custom-country-select')) {
-      countryDropdownOpen = false;
-    }
-    if (!target.closest('.custom-plan-select')) {
-      planDropdownOpen = false;
-    }
-  }
 </script>
 
 <svelte:head>
   <title>Registrieren - Assixx</title>
 </svelte:head>
 
-<svelte:window onclick={handleClickOutside} />
-
-<!-- Back to Homepage Button -->
-<a
-  href={resolvePath('/')}
-  class="back-button"
->
-  <span class="icon">←</span>
-  <span>Zurück zur Hauptseite</span>
-</a>
-
-<!-- Help Button -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="help-button"
-  onclick={showHelp}
->
-  ?
-</div>
+<SignupNav />
 
 <div class="page-container page-container--centered">
   <!-- Header -->
@@ -364,30 +281,10 @@
         />
       </div>
 
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="subdomain">Subdomain</label
-        >
-        <div class="subdomain-input-group">
-          <input
-            type="text"
-            id="subdomain"
-            name="subdomain"
-            class="subdomain-input"
-            required
-            pattern="[a-z0-9\-]+"
-            placeholder="ihre-firma"
-            value={subdomain}
-            oninput={handleSubdomainInput}
-            disabled={loading}
-          />
-          <span class="subdomain-suffix">.assixx.com</span>
-        </div>
-        {#if subdomainError}
-          <p class="form-field__message">{subdomainError}</p>
-        {/if}
-      </div>
+      <SubdomainInput
+        bind:subdomain
+        disabled={loading}
+      />
 
       <div class="form-field">
         <label
@@ -469,74 +366,11 @@
         />
       </div>
 
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="phone">Telefon</label
-        >
-        <div class="phone-input-group">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="custom-country-select">
-            <div
-              class="country-display"
-              class:active={countryDropdownOpen}
-              onclick={toggleCountryDropdown}
-            >
-              <span id="selectedFlag">{selectedFlag}</span>
-              <span id="selectedCode">{countryCode}</span>
-              <svg
-                width="10"
-                height="6"
-                viewBox="0 0 10 6"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M1 1L5 5L9 1"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </div>
-            <div
-              class="country-dropdown"
-              class:active={countryDropdownOpen}
-            >
-              {#each COUNTRIES as country (country.code)}
-                <div
-                  class="country-option"
-                  onclick={() => {
-                    selectCountry(country);
-                  }}
-                >
-                  {country.flag}
-                  {country.code}
-                </div>
-              {/each}
-            </div>
-          </div>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            class="form-field__control phone-number"
-            class:is-error={phoneError}
-            placeholder="123 456789"
-            autocomplete="tel-national"
-            required
-            bind:value={phone}
-            oninput={handlePhoneInput}
-            disabled={loading}
-          />
-        </div>
-        {#if phoneError}
-          <p class="form-field__message form-field__message--error">
-            {phoneError}
-          </p>
-        {/if}
-      </div>
+      <CountryPhoneInput
+        bind:phone
+        bind:countryCode
+        disabled={loading}
+      />
 
       <!-- Dritte Zeile -->
       <div class="form-field">
@@ -586,46 +420,13 @@
 
       <!-- Password Strength Indicator -->
       {#if passwordStrength !== null || strengthLoading}
-        <div
-          class="password-strength-container"
-          class:is-loading={strengthLoading}
-        >
-          <div class="password-strength-meter">
-            <div
-              class="password-strength-bar"
-              data-score={passwordStrength?.score ?? -1}
-            ></div>
-          </div>
-          {#if passwordStrength !== null}
-            <div class="password-strength-info">
-              <span class="password-strength-label"
-                >{passwordStrength.label}</span
-              >
-              <span class="password-strength-time"
-                >{passwordStrength.crackTime}</span
-              >
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      {#if passwordStrength !== null}
-        {@const warningText = passwordStrength.feedback.warning}
-        {@const suggestions = passwordStrength.feedback.suggestions}
-        {#if warningText !== '' || suggestions.length > 0}
-          <div class="password-feedback">
-            {#if warningText !== ''}
-              <span class="password-feedback-warning">{warningText}</span>
-            {/if}
-            {#if suggestions.length > 0}
-              <ul class="password-feedback-suggestions">
-                {#each suggestions as suggestion, i (i)}
-                  <li>{suggestion}</li>
-                {/each}
-              </ul>
-            {/if}
-          </div>
-        {/if}
+        <PasswordStrengthIndicator
+          score={passwordStrength?.score ?? -1}
+          label={passwordStrength?.label ?? ''}
+          crackTime={passwordStrength?.crackTime ?? ''}
+          loading={strengthLoading}
+          feedback={passwordStrength?.feedback ?? null}
+        />
       {/if}
 
       <div
@@ -675,53 +476,7 @@
         {/if}
       </div>
 
-      <div class="form-field">
-        <label
-          class="form-field__label"
-          for="planValue">Plan</label
-        >
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="custom-plan-select">
-          <div
-            class="plan-display"
-            class:active={planDropdownOpen}
-            onclick={togglePlanDropdown}
-          >
-            <span id="selectedPlan">{selectedPlanName}</span>
-            <svg
-              width="10"
-              height="6"
-              viewBox="0 0 10 6"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M1 1L5 5L9 1"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </div>
-          <div
-            class="plan-dropdown"
-            class:active={planDropdownOpen}
-          >
-            {#each PLANS as plan (plan.value)}
-              <div
-                class="plan-option"
-                onclick={() => {
-                  selectPlanOption(plan);
-                }}
-              >
-                <span>{plan.name}</span>
-                <span class="plan-price">{plan.price}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
+      <PlanSelect bind:selectedPlan />
 
       <!-- Terms und Submit -->
       <div class="bottom-section">
@@ -746,7 +501,7 @@
         </label>
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-index"
           disabled={loading || !isFormValid}
         >
           {buttonText}
@@ -759,3 +514,114 @@
     </div>
   </form>
 </div>
+
+<style>
+  /* Scoped to signup page only */
+  :global(body:has(#signupForm)) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+  }
+
+  /* Header */
+  .signup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgb(255 255 255 / 10%);
+    padding-bottom: 20px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .signup-logo {
+    height: 48px;
+  }
+
+  /* Form Grid - 3 columns */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  /* Bottom Section */
+  .bottom-section {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-top: 20px;
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    padding-top: 20px;
+  }
+
+  .terms-checkbox {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .terms-checkbox input[type='checkbox'] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--primary-color);
+  }
+
+  .terms-link {
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+
+  .terms-link:hover {
+    text-decoration: underline;
+  }
+
+  .login-link {
+    color: var(--primary-color);
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .login-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Responsive */
+  @media (width >= 768px) and (width < 1024px) {
+    .form-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (width < 768px) {
+    .signup-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .bottom-section {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+  }
+</style>

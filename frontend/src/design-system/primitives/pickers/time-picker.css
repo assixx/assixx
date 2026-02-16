@@ -236,7 +236,7 @@
    ============================================================ */
 
 /* High contrast mode */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
   .time-picker__input {
     border-width: 2px;
   }

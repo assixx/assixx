@@ -67,6 +67,8 @@ export interface KvpSuggestion {
   categoryName: string;
   categoryIcon: string;
   categoryColor: string;
+  /** True when the custom category was soft-deleted (shown with strikethrough) */
+  categoryIsDeleted?: boolean;
   expectedBenefit?: string | null;
   estimatedCost?: number;
   actualSavings?: number;

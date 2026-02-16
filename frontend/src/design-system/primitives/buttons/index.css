@@ -32,8 +32,9 @@
 @import './button.dark.css';
 @import './button.manage.css';
 @import './button.link.css';
-@import './button.modal.css';
+@import './button.index.css';
 @import './button.upload.css';
+@import './button.modal.css';
 
 /* Modifiers - Sizes and layouts */
 @import './button.sizes.css';
@@ -82,13 +83,13 @@
  *   <button class="btn btn-dark">Dark</button>
  *
  * Manage (Dashboard Actions):
- *   <button class="btn btn-manage">Manage Items</button>
+ *   <button class="btn btn-primary">Manage Items</button>
  *
  * Link:
  *   <button class="btn btn-link">Learn More</button>
  *
- * Modal Submit (Glassmorphism):
- *   <button class="btn btn-modal">Save Changes</button>
+ * Index Page (Gradient background):
+ *   <button class="btn btn-index">Enterprise</button>
  *
  * Sizes:
  *   <button class="btn btn-primary btn-sm">Small</button>

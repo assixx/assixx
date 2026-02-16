@@ -15,6 +15,7 @@ export interface MachineTeamInfo {
  */
 export interface Machine {
   id: number;
+  uuid: string;
   name: string;
   model?: string;
   manufacturer?: string;
@@ -43,6 +44,11 @@ export interface Machine {
   updatedAt: string;
   // Teams assigned to this machine (for list display with badges)
   teams?: MachineTeamInfo[];
+  // Availability info (next relevant entry from machine_availability table)
+  availabilityStatus?: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityNotes?: string;
 }
 
 /**
@@ -109,7 +115,10 @@ export type MachineStatusFilter =
   | 'all'
   | 'operational'
   | 'maintenance'
-  | 'repair';
+  | 'repair'
+  | 'standby'
+  | 'cleaning'
+  | 'other';
 
 /**
  * Generic API response wrapper

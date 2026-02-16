@@ -5,11 +5,7 @@
  * Focus: Access control (root/admin-full-access), overlay pattern
  *        (defaults + custom), category limit, conflict checks.
  */
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -216,19 +212,8 @@ describe('KvpCategoriesService', () => {
   // =============================================================
 
   describe('deleteCustom', () => {
-    it('should throw ConflictException when suggestions reference category', async () => {
-      // assertNoSuggestionsReference → count > 0
-      mockDb.query.mockResolvedValueOnce([{ cnt: 3 }]);
-
-      await expect(service.deleteCustom(10, 100, 1, 'root')).rejects.toThrow(
-        ConflictException,
-      );
-    });
-
     it('should throw NotFoundException when custom category not found', async () => {
-      // assertNoSuggestionsReference → 0
-      mockDb.query.mockResolvedValueOnce([{ cnt: 0 }]);
-      // DELETE → no rows returned
+      // UPDATE SET is_active = 4 → no rows returned (not found or already deleted)
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.deleteCustom(10, 999, 1, 'root')).rejects.toThrow(
@@ -236,15 +221,31 @@ describe('KvpCategoriesService', () => {
       );
     });
 
-    it('should delete custom category', async () => {
-      // assertNoSuggestionsReference → 0
-      mockDb.query.mockResolvedValueOnce([{ cnt: 0 }]);
-      // DELETE RETURNING id
+    it('should soft-delete custom category and return affected count', async () => {
+      // UPDATE SET is_active = 4 → returns soft-deleted row
       mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      // COUNT affected suggestions
+      mockDb.query.mockResolvedValueOnce([{ cnt: 3 }]);
 
-      await service.deleteCustom(10, 100, 1, 'root');
+      const result = await service.deleteCustom(10, 100, 1, 'root');
 
+      expect(result.affectedSuggestions).toBe(3);
       expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('SET is_active = 4'),
+        [100, 10],
+      );
+    });
+
+    it('should soft-delete category with zero affected suggestions', async () => {
+      // UPDATE SET is_active = 4 → returns soft-deleted row
+      mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      // COUNT affected suggestions → 0
+      mockDb.query.mockResolvedValueOnce([{ cnt: 0 }]);
+
+      const result = await service.deleteCustom(10, 100, 1, 'root');
+
+      expect(result.affectedSuggestions).toBe(0);
     });
   });
 });

@@ -10,7 +10,7 @@
  * @see docs/plans/KVP-CATEGORIES-CUSTOM-PLAN.md
  */
 import {
-  ConflictException,
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -40,6 +40,7 @@ interface CustomCategory {
   description: string | null;
   color: string;
   icon: string;
+  suggestionCount: number;
 }
 
 /** Full admin-view response */
@@ -68,6 +69,7 @@ interface DbCustomRow {
   description: string | null;
   color: string;
   icon: string;
+  suggestion_count: number;
 }
 
 @Injectable()
@@ -97,9 +99,14 @@ export class KvpCategoriesService {
     `;
 
     const customQuery = `
-      SELECT kcc.id, kcc.custom_name, kcc.description, kcc.color, kcc.icon
+      SELECT kcc.id, kcc.custom_name, kcc.description, kcc.color, kcc.icon,
+             COALESCE(
+               (SELECT COUNT(*)::integer FROM kvp_suggestions ks
+                WHERE ks.custom_category_id = kcc.id),
+               0
+             ) AS suggestion_count
       FROM kvp_categories_custom kcc
-      WHERE kcc.tenant_id = $1 AND kcc.category_id IS NULL
+      WHERE kcc.tenant_id = $1 AND kcc.category_id IS NULL AND kcc.is_active = 1
       ORDER BY kcc.custom_name ASC
     `;
 
@@ -126,6 +133,7 @@ export class KvpCategoriesService {
       description: row.description,
       color: row.color,
       icon: row.icon,
+      suggestionCount: row.suggestion_count,
     }));
 
     const totalCount = defaults.length + custom.length;
@@ -241,23 +249,88 @@ export class KvpCategoriesService {
   }
 
   /**
-   * Delete a tenant-specific custom category
-   * Fails if suggestions reference it (ConflictException)
+   * Update a tenant-specific custom category (name, color, icon, description)
+   */
+  async updateCustom(
+    tenantId: number,
+    id: number,
+    userId: number,
+    userRole: string,
+    updates: {
+      name?: string | undefined;
+      color?: string | undefined;
+      icon?: string | undefined;
+      description?: string | undefined;
+    },
+  ): Promise<{ id: number }> {
+    await this.assertHasFullAccess(userId, userRole, tenantId);
+    this.logger.log(`Updating custom category ${id} for tenant ${tenantId}`);
+
+    // Build SET clause dynamically from provided fields
+    const setClauses: string[] = ['updated_at = NOW()'];
+    const values: unknown[] = [];
+    let paramIndex = 1;
+
+    if (updates.name !== undefined) {
+      setClauses.push(`custom_name = $${paramIndex++}`);
+      values.push(updates.name);
+    }
+    if (updates.color !== undefined) {
+      setClauses.push(`color = $${paramIndex++}`);
+      values.push(updates.color);
+    }
+    if (updates.icon !== undefined) {
+      setClauses.push(`icon = $${paramIndex++}`);
+      values.push(updates.icon);
+    }
+    if (updates.description !== undefined) {
+      setClauses.push(`description = $${paramIndex++}`);
+      values.push(updates.description);
+    }
+
+    if (values.length === 0) {
+      throw new BadRequestException('No fields to update');
+    }
+
+    // id and tenantId as last params
+    values.push(id, tenantId);
+
+    const query = `
+      UPDATE kvp_categories_custom
+      SET ${setClauses.join(', ')}
+      WHERE id = $${paramIndex++} AND tenant_id = $${paramIndex} AND category_id IS NULL
+      RETURNING id
+    `;
+
+    const rows = await this.db.query<{ id: number }>(query, values);
+
+    if (rows[0] === undefined) {
+      throw new NotFoundException('Custom category not found');
+    }
+
+    return { id: rows[0].id };
+  }
+
+  /**
+   * Soft-delete a tenant-specific custom category (is_active = 4).
+   * Preserves category data (name, color, icon) so existing KVPs can
+   * still display it with a strikethrough indicator.
    */
   async deleteCustom(
     tenantId: number,
     id: number,
     userId: number,
     userRole: string,
-  ): Promise<void> {
+  ): Promise<{ affectedSuggestions: number }> {
     await this.assertHasFullAccess(userId, userRole, tenantId);
-    this.logger.log(`Deleting custom category ${id} for tenant ${tenantId}`);
-
-    await this.assertNoSuggestionsReference(id);
+    this.logger.log(
+      `Soft-deleting custom category ${id} for tenant ${tenantId}`,
+    );
 
     const query = `
-      DELETE FROM kvp_categories_custom
-      WHERE id = $1 AND tenant_id = $2 AND category_id IS NULL
+      UPDATE kvp_categories_custom
+      SET is_active = 4, updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2 AND category_id IS NULL AND is_active = 1
       RETURNING id
     `;
 
@@ -266,6 +339,23 @@ export class KvpCategoriesService {
     if (rows.length === 0) {
       throw new NotFoundException('Custom category not found');
     }
+
+    // Count affected suggestions for user feedback
+    const countResult = await this.db.query<{ cnt: number }>(
+      `SELECT COUNT(*)::integer AS cnt
+       FROM kvp_suggestions
+       WHERE custom_category_id = $1`,
+      [id],
+    );
+    const affectedSuggestions = countResult[0]?.cnt ?? 0;
+
+    if (affectedSuggestions > 0) {
+      this.logger.log(
+        `Soft-deleted category ${id} — ${affectedSuggestions} suggestion(s) will show strikethrough`,
+      );
+    }
+
+    return { affectedSuggestions };
   }
 
   // ==========================================================================
@@ -286,12 +376,12 @@ export class KvpCategoriesService {
     }
   }
 
-  /** Verify tenant hasn't exceeded max category limit */
+  /** Verify tenant hasn't exceeded max category limit (only count active) */
   private async assertCategoryLimitNotReached(tenantId: number): Promise<void> {
     const rows = await this.db.query<{ cnt: number }>(
       `SELECT
         (SELECT COUNT(*) FROM kvp_categories) +
-        (SELECT COUNT(*) FROM kvp_categories_custom WHERE tenant_id = $1 AND category_id IS NULL)
+        (SELECT COUNT(*) FROM kvp_categories_custom WHERE tenant_id = $1 AND category_id IS NULL AND is_active = 1)
        AS cnt`,
       [tenantId],
     );
@@ -301,24 +391,6 @@ export class KvpCategoriesService {
     if (count >= MAX_CATEGORIES_PER_TENANT) {
       throw new ForbiddenException(
         `Maximum ${MAX_CATEGORIES_PER_TENANT} categories reached`,
-      );
-    }
-  }
-
-  /** Verify no suggestions reference this custom category */
-  private async assertNoSuggestionsReference(
-    customCategoryId: number,
-  ): Promise<void> {
-    const rows = await this.db.query<{ cnt: number }>(
-      'SELECT COUNT(*)::integer AS cnt FROM kvp_suggestions WHERE custom_category_id = $1',
-      [customCategoryId],
-    );
-
-    const count = rows[0]?.cnt ?? 0;
-
-    if (count > 0) {
-      throw new ConflictException(
-        `Category is referenced by ${count} existing suggestion(s). Remove references first.`,
       );
     }
   }

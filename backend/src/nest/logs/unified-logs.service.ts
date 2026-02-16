@@ -41,13 +41,13 @@ interface AuditTrailRow {
   created_at: Date;
 }
 
-/** Raw row from root_logs table (with user JOIN) */
+/** Raw row from root_logs table (denormalized columns, no JOIN) */
 interface RootLogsRow {
   id: number;
   tenant_id: number;
   user_id: number;
-  user_name: string | null; // From users JOIN
-  user_role: string | null; // From users JOIN
+  user_name: string | null; // Denormalized column
+  user_role: string | null; // Denormalized column
   action: string;
   entity_type: string | null;
   entity_id: number | null;
@@ -261,7 +261,8 @@ export class UnifiedLogsService {
 
   /**
    * Stream logs from root_logs table using cursor.
-   * JOIN with users table to get user_name and role.
+   * No JOINs — user_name and user_role are denormalized columns.
+   * COALESCE preserves the "First Last" format from before denormalization.
    *
    * Note: pg-cursor has incomplete TypeScript types, requiring type casts.
    */
@@ -274,13 +275,12 @@ export class UnifiedLogsService {
     const query = `
       SELECT
         r.id, r.tenant_id, r.user_id,
-        COALESCE(u.first_name || ' ' || u.last_name, u.username, 'Unknown') as user_name,
-        u.role as user_role,
+        COALESCE(r.first_name || ' ' || r.last_name, r.user_name, 'Unknown') as user_name,
+        r.user_role,
         r.action, r.entity_type, r.entity_id,
         r.details, r.old_values, r.new_values, r.ip_address, r.user_agent,
         r.was_role_switched, r.is_active, r.created_at
       FROM root_logs r
-      LEFT JOIN users u ON r.user_id = u.id
       ${whereClause}
       ORDER BY r.created_at DESC
     `;
@@ -413,7 +413,7 @@ export class UnifiedLogsService {
 
   /**
    * Map root_logs row to UnifiedLogEntry.
-   * user_name and user_role come from LEFT JOIN with users table.
+   * user_name comes from COALESCE(first_name||last_name, user_name) — denormalized columns.
    */
   private mapRootLogsRow(row: RootLogsRow): UnifiedLogEntry {
     return {

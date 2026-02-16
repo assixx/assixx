@@ -10,6 +10,8 @@
    *
    * Pattern: Controlled component with local dropdown state
    */
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import { SORT_OPTIONS } from './constants';
 
   interface Props {
@@ -92,6 +94,13 @@
       handleSortSelect(value);
     }
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      sortDropdownOpen = false;
+    });
+  });
 
   // Level filter options
   const levelOptions = [
@@ -228,14 +237,3 @@
     </div>
   {/if}
 </div>
-
-<svelte:window
-  onclick={(e: MouseEvent) => {
-    if (
-      e.target instanceof HTMLElement &&
-      !e.target.closest('#sort-dropdown')
-    ) {
-      sortDropdownOpen = false;
-    }
-  }}
-/>

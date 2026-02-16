@@ -9,13 +9,10 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
-
-  // Page-specific CSS
-  import '../../../../styles/admin-profile.css';
-  import '../../../../styles/password-strength.css';
 
   // Local modules
   import {
@@ -368,14 +365,14 @@
           />
           <button
             type="button"
-            class="btn btn-modal"
+            class="btn btn-primary"
             onclick={() => {
               triggerFileInput('profile-picture-input');
             }}
             disabled={pictureUploading}
           >
-            {#if pictureUploading}<i class="fas fa-spinner fa-spin"
-              ></i>{:else}<i class="fas fa-camera"></i>{/if}
+            {#if pictureUploading}<span class="spinner-ring spinner-ring--sm"
+              ></span>{:else}<i class="fas fa-camera"></i>{/if}
             Bild ändern
           </button>
           {#if hasProfilePicture}
@@ -571,52 +568,19 @@
           </div>
 
           {#if passwordStrength !== null || strengthLoading}
-            <div
-              class="password-strength-container"
-              class:is-loading={strengthLoading}
-            >
-              <div class="password-strength-meter">
-                <div
-                  class="password-strength-bar"
-                  data-score={passwordStrength?.score ?? -1}
-                ></div>
-              </div>
-              {#if passwordStrength !== null}
-                <div class="password-strength-info">
-                  <span class="password-strength-label"
-                    >{passwordStrength.label}</span
-                  >
-                  <span class="password-strength-time"
-                    >{passwordStrength.crackTime}</span
-                  >
-                </div>
-              {/if}
-            </div>
+            <PasswordStrengthIndicator
+              score={passwordStrength?.score ?? -1}
+              label={passwordStrength?.label ?? ''}
+              crackTime={passwordStrength?.crackTime ?? ''}
+              loading={strengthLoading}
+              feedback={passwordStrength?.feedback ?? null}
+            />
           {/if}
 
           {#if newPasswordError}
             <span class="form-field__message form-field__message--error">
               {MESSAGES.passwordRequirements}
             </span>
-          {/if}
-
-          {#if passwordStrength !== null}
-            {@const warningText = passwordStrength.feedback.warning}
-            {@const suggestions = passwordStrength.feedback.suggestions}
-            {#if warningText !== '' || suggestions.length > 0}
-              <div class="password-feedback">
-                {#if warningText !== ''}
-                  <span class="password-feedback-warning">{warningText}</span>
-                {/if}
-                {#if suggestions.length > 0}
-                  <ul class="password-feedback-suggestions">
-                    {#each suggestions as suggestion, i (i)}
-                      <li>{suggestion}</li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/if}
           {/if}
         </div>
 
@@ -661,12 +625,11 @@
 
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={passwordSaving}
         >
-          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-              class="fas fa-key"
-            ></i>{/if}
+          {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"
+            ></span>{:else}<i class="fas fa-key"></i>{/if}
           Passwort ändern
         </button>
       </form>
@@ -681,3 +644,82 @@
   onclose={handleCropClose}
   onsave={handleCropSave}
 />
+
+<style>
+  /* ===== CONTAINER WIDTH ===== */
+  .profile-card {
+    margin-right: auto;
+    margin-left: auto;
+    max-width: 800px;
+  }
+
+  /* ===== PROFILE PICTURE LAYOUT ===== */
+  .profile-picture-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+  }
+
+  /* Blue border ring around avatar (page-specific decoration) */
+  .profile-picture-container {
+    border: 3px solid rgb(0 142 255 / 30%);
+    border-radius: 50%;
+    background: transparent;
+    padding: 3px;
+  }
+
+  /* Button stack (vertical layout) */
+  .profile-picture-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* ===== FORM LAYOUT ===== */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+  }
+
+  /* ===== INFO BOX (Admin-specific: readonly fields info) ===== */
+  .info-box {
+    margin-bottom: var(--spacing-6);
+    border: 1px solid rgb(33 150 243 / 20%);
+    border-radius: var(--radius-xl);
+    background: rgb(33 150 243 / 5%);
+    padding: var(--spacing-3);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .info-box i {
+    margin-right: var(--spacing-1);
+    color: #2196f3;
+  }
+
+  /* Non-editable fields styling */
+  .non-editable {
+    cursor: default;
+    background: rgb(255 255 255 / 1%);
+  }
+
+  .non-editable:focus {
+    box-shadow: none;
+    border-color: rgb(255 255 255 / 10%);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (width < 768px) {
+    .profile-picture-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

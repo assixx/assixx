@@ -30,8 +30,8 @@
  * - 60fps smooth animation
  */
 
-/* Add shine to primary buttons */
-.btn-primary::before,
+/* Add shine to index + primary-first buttons */
+.btn-index::before,
 .btn-primary-first::before {
   position: absolute;
   top: 0;
@@ -48,7 +48,7 @@
 }
 
 /* Trigger shine on hover */
-.btn-primary:hover::before,
+.btn-index:hover::before,
 .btn-primary-first:hover::before {
   left: 100%; /* Slide to off-screen right */
 }
@@ -182,7 +182,7 @@
  */
 
 @media (prefers-reduced-motion: reduce) {
-  .btn-primary::before,
+  .btn-index::before,
   .btn-primary-first::before,
   .btn-pulse,
   .btn-glow,

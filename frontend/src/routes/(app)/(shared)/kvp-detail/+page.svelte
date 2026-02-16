@@ -4,18 +4,17 @@
    * SSR: Data loaded in +page.server.ts
    * Level 3: $derived from SSR data + invalidateAll() after mutations
    */
-  import { onDestroy, onMount, untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
 
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
 
   import { filterState } from '../kvp/_lib/state-filters.svelte';
   import { isFaIcon } from '../kvp/_lib/utils';
-
-  import '../../../../styles/kvp-detail.css';
 
   import {
     addComment,
@@ -24,7 +23,6 @@
     unshareSuggestion,
     archiveSuggestion,
     unarchiveSuggestion,
-    getAttachmentPreviewUrl,
     getShareLevelText,
     confirmSuggestion,
     unconfirmSuggestion,
@@ -33,6 +31,7 @@
   import CommentsSection from './_lib/CommentsSection.svelte';
   import { STATUS_OPTIONS } from './_lib/constants';
   import DetailSidebar from './_lib/DetailSidebar.svelte';
+  import PhotoGallery from './_lib/PhotoGallery.svelte';
   import RejectionModal from './_lib/RejectionModal.svelte';
   import ShareModal from './_lib/ShareModal.svelte';
   import { kvpDetailState } from './_lib/state.svelte';
@@ -131,23 +130,6 @@
   let commentsSectionRef: CommentsSectionExports | undefined = $state();
   let pendingStatus = $state<KvpStatus | null>(null);
   let rejectionReason = $state('');
-
-  // Lightbox state (index-based for prev/next navigation)
-  let lightboxIndex = $state<number | null>(null);
-  const lightboxUrl = $derived(
-    lightboxIndex !== null && lightboxIndex < photoAttachments.length ?
-      getAttachmentPreviewUrl(photoAttachments[lightboxIndex].fileUuid)
-    : null,
-  );
-
-  // Auth token ready state - triggers re-render after hydration
-  // Required because getAttachmentPreviewUrl() returns "" during SSR
-  let authReady = $state(false);
-
-  onMount(() => {
-    // After hydration, auth token is available - trigger re-render of images
-    authReady = true;
-  });
 
   // Loading states managed by kvpDetailState for child components
 
@@ -398,47 +380,20 @@
   }
 
   // ==========================================================================
-  // LIGHTBOX HANDLERS
-  // ==========================================================================
-
-  function handleOpenLightbox(fileUuid: string) {
-    const idx = photoAttachments.findIndex((p) => p.fileUuid === fileUuid);
-    lightboxIndex = idx >= 0 ? idx : null;
-  }
-
-  function handleCloseLightbox() {
-    lightboxIndex = null;
-  }
-
-  function handleLightboxPrev() {
-    if (lightboxIndex === null || photoAttachments.length <= 1) return;
-    lightboxIndex =
-      lightboxIndex === 0 ? photoAttachments.length - 1 : lightboxIndex - 1;
-  }
-
-  function handleLightboxNext() {
-    if (lightboxIndex === null || photoAttachments.length <= 1) return;
-    lightboxIndex =
-      lightboxIndex === photoAttachments.length - 1 ? 0 : lightboxIndex + 1;
-  }
-
-  // ==========================================================================
   // DROPDOWN HANDLERS
   // ==========================================================================
 
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.dropdown')) {
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
       kvpDetailState.closeAllDropdowns();
-    }
-  }
+    });
+  });
 </script>
 
 <svelte:head>
   <title>KVP Vorschlag - Assixx</title>
 </svelte:head>
-
-<svelte:document onclick={handleDocumentClick} />
 
 <div class="container">
   <!-- Back Button -->
@@ -507,6 +462,8 @@
             <span class="data-list__value">
               <div
                 class="category-tag"
+                class:category-tag--deleted={suggestion.categoryIsDeleted ===
+                  true}
                 style:background="{suggestion.categoryColor}20"
                 style:color={suggestion.categoryColor}
                 style:border="1px solid {suggestion.categoryColor}"
@@ -619,33 +576,7 @@
             <i class="fas fa-images"></i>
             Fotos
           </h3>
-          <div class="photo-gallery">
-            {#each photoAttachments as photo (photo.fileUuid)}
-              <div
-                class="photo-thumbnail"
-                role="button"
-                tabindex="0"
-                onclick={() => {
-                  handleOpenLightbox(photo.fileUuid);
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') handleOpenLightbox(photo.fileUuid);
-                }}
-              >
-                <!-- authReady dependency forces re-render after hydration when token is available -->
-                {#if authReady}
-                  <img
-                    src={getAttachmentPreviewUrl(photo.fileUuid)}
-                    alt={photo.fileName}
-                  />
-                {:else}
-                  <div class="photo-placeholder">
-                    <i class="fas fa-image"></i>
-                  </div>
-                {/if}
-              </div>
-            {/each}
-          </div>
+          <PhotoGallery photos={photoAttachments} />
         </div>
       {/if}
 
@@ -697,66 +628,6 @@
   </div>
 </div>
 
-<!-- Lightbox -->
-{#if lightboxUrl !== null}
-  <div
-    class="lightbox active"
-    role="dialog"
-    aria-label="Bildvorschau"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) handleCloseLightbox();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') handleCloseLightbox();
-      if (e.key === 'ArrowLeft') handleLightboxPrev();
-      if (e.key === 'ArrowRight') handleLightboxNext();
-    }}
-  >
-    {#if photoAttachments.length > 1}
-      <button
-        type="button"
-        class="lightbox-nav lightbox-nav--prev"
-        aria-label="Vorheriges Bild"
-        onclick={handleLightboxPrev}
-      >
-        <i class="fas fa-chevron-left"></i>
-      </button>
-    {/if}
-
-    <img
-      src={lightboxUrl}
-      alt="Vorschau"
-    />
-
-    {#if photoAttachments.length > 1}
-      <button
-        type="button"
-        class="lightbox-nav lightbox-nav--next"
-        aria-label="Nächstes Bild"
-        onclick={handleLightboxNext}
-      >
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    {/if}
-
-    {#if photoAttachments.length > 1}
-      <span class="lightbox-counter">
-        {(lightboxIndex ?? 0) + 1} / {photoAttachments.length}
-      </span>
-    {/if}
-
-    <button
-      type="button"
-      class="lightbox-close"
-      aria-label="Schliessen"
-      onclick={handleCloseLightbox}
-    >
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-{/if}
-
 <!-- Modal Components -->
 <ShareModal onconfirm={handleConfirmShare} />
 <RejectionModal
@@ -765,3 +636,144 @@
   oncancel={handleCancelRejection}
 />
 <AttachmentPreviewModal />
+
+<style>
+  /* ─── Layout ──────── */
+
+  .detail-container {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 475px;
+    gap: var(--spacing-6);
+  }
+
+  .detail-main {
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-8);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ─── Header ──────── */
+
+  .detail-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-8);
+  }
+
+  .detail-title {
+    margin-bottom: var(--spacing-2);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: var(--spacing-6);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .detail-meta span {
+    display: inline-flex;
+    gap: var(--spacing-2);
+    align-items: center;
+  }
+
+  .detail-meta i {
+    color: var(--primary-color);
+  }
+
+  .category-tag {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: var(--radius-xl);
+    font-size: 0.8rem;
+  }
+
+  /* Soft-deleted category: strikethrough + dimmed opacity */
+  .category-tag--deleted {
+    text-decoration: line-through;
+    opacity: 55%;
+  }
+
+  .status-priority {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: var(--spacing-3);
+    align-items: center;
+  }
+
+  .share-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .share-info > :global(i.fa-share-alt) {
+    font-size: 0.875rem;
+    color: #666 !important;
+  }
+
+  /* ─── Content Sections ──────── */
+
+  .content-section {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .section-title {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .section-content {
+    padding: var(--spacing-4);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    box-shadow: var(--glass-card-shadow);
+  }
+
+  /* ─── Status Dropdown Override ──────── */
+
+  :global([data-dropdown='status'] .dropdown__trigger) {
+    width: auto;
+    min-width: 180px;
+  }
+
+  :global([data-dropdown='status'] .dropdown__menu) {
+    min-width: 180px;
+    left: auto;
+    right: auto;
+  }
+
+  /* ─── Responsive ──────── */
+
+  @media (width < 768px) {
+    .detail-container {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -10,7 +10,10 @@
 
 {#if kvpDetailState.showPreviewModal && kvpDetailState.previewAttachment !== null}
   {@const attachment = kvpDetailState.previewAttachment}
-  <div class="modal-overlay modal-overlay--active">
+  <div
+    id="kvp-attachment-preview-modal"
+    class="modal-overlay modal-overlay--active"
+  >
     <div
       class="ds-modal ds-modal--lg"
       style="max-height: 95vh;"
@@ -23,7 +26,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={() => {
             kvpDetailState.closePreviewModal();
           }}
@@ -85,11 +88,11 @@
           }}
         >
           <i class="fas fa-times mr-2"></i>
-          Schliessen
+          Schließen
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={() => {
             handleDownload(attachment.fileUuid);
           }}

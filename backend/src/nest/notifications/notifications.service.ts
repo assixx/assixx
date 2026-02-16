@@ -394,7 +394,7 @@ export class NotificationsService {
 
   /** Create feature notification (delegates to feature sub-service) */
   async createFeatureNotification(
-    type: 'survey' | 'document' | 'kvp',
+    type: 'survey' | 'document' | 'kvp' | 'vacation',
     featureId: number,
     title: string,
     message: string,
@@ -417,7 +417,7 @@ export class NotificationsService {
 
   /** Mark feature type as read (delegates to feature sub-service) */
   async markFeatureTypeAsRead(
-    type: 'survey' | 'document' | 'kvp',
+    type: 'survey' | 'document' | 'kvp' | 'vacation',
     userId: number,
     tenantId: number,
   ): Promise<number> {

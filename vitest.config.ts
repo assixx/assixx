@@ -162,6 +162,7 @@ export default defineConfig({
           environment: 'node',
           globals: true,
           include: ['backend/test/**/*.api.test.ts'],
+          globalSetup: ['backend/test/global-teardown.ts'],
           testTimeout: 30_000,
           hookTimeout: 30_000,
           // Sequential execution: tests depend on shared state (auth tokens, resource IDs)

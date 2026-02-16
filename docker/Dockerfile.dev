@@ -10,7 +10,7 @@
 
 # Node version is configurable via docker-compose.yml build args
 # Default: LTS version for stability
-ARG NODE_VERSION=24.13.0-alpine3.22
+ARG NODE_VERSION=24.13.1-alpine3.22
 FROM node:${NODE_VERSION}
 LABEL org.opencontainers.image.authors="Assixx"
 

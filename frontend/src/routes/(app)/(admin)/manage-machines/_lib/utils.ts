@@ -78,13 +78,14 @@ export function getTeamsBadgeData(teams?: MachineTeamInfo[]): BadgeData {
 }
 
 /**
- * Generate Area badge data for table display
+ * Generate Area badge data for table display.
+ * A machine always belongs to exactly 0 or 1 area — show the name directly.
  */
 export function getAreaBadgeData(areaName?: string): BadgeData {
   if (areaName !== undefined && areaName !== '') {
     return {
       class: 'badge--info',
-      text: '1 Bereich',
+      text: areaName,
       tooltip: areaName,
     };
   }
@@ -96,13 +97,14 @@ export function getAreaBadgeData(areaName?: string): BadgeData {
 }
 
 /**
- * Generate Department badge data for table display
+ * Generate Department badge data for table display.
+ * A machine always belongs to exactly 0 or 1 department — show the name directly.
  */
 export function getDepartmentBadgeData(departmentName?: string): BadgeData {
   if (departmentName !== undefined && departmentName !== '') {
     return {
       class: 'badge--info',
-      text: '1 Abteilung',
+      text: departmentName,
       tooltip: departmentName,
     };
   }
@@ -191,6 +193,12 @@ export function getEmptyStateTitle(statusFilter: MachineStatusFilter): string {
       return MESSAGES.EMPTY_MAINTENANCE;
     case 'repair':
       return MESSAGES.EMPTY_REPAIR;
+    case 'standby':
+      return MESSAGES.EMPTY_STANDBY;
+    case 'cleaning':
+      return MESSAGES.EMPTY_CLEANING;
+    case 'other':
+      return MESSAGES.EMPTY_OTHER;
     default:
       return MESSAGES.EMPTY_TITLE;
   }

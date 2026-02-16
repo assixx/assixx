@@ -124,7 +124,7 @@
 
 <div
   id="admin-filter-controls"
-  class="shift-info-row mt-6"
+  class="card shift-info-row mt-6"
 >
   <!-- Area Dropdown -->
   <div class="info-item">
@@ -195,9 +195,6 @@
         }}
         role="button"
         tabindex={selectedContext.areaId === null ? -1 : 0}
-        style={selectedContext.areaId === null ?
-          'pointer-events: none; opacity: 0.5;'
-        : ''}
       >
         <span>{getSelectedDepartmentName()}</span>
         <i class="fas fa-chevron-down"></i>
@@ -251,9 +248,6 @@
         }}
         role="button"
         tabindex={selectedContext.departmentId === null ? -1 : 0}
-        style={selectedContext.departmentId === null ?
-          'pointer-events: none; opacity: 0.5;'
-        : ''}
       >
         <span>{getSelectedMachineName()}</span>
         <i class="fas fa-chevron-down"></i>
@@ -307,9 +301,6 @@
         }}
         role="button"
         tabindex={selectedContext.machineId === null ? -1 : 0}
-        style={selectedContext.machineId === null ?
-          'pointer-events: none; opacity: 0.5;'
-        : ''}
       >
         <span>{getSelectedTeamName()}</span>
         <i class="fas fa-chevron-down"></i>
@@ -412,3 +403,240 @@
     <span>Zu Favoriten</span>
   </button>
 {/if}
+
+<style>
+  .shift-info-row {
+    display: grid;
+    position: relative;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-6);
+    z-index: 1;
+  }
+
+  .info-item {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+
+    text-align: center;
+  }
+
+  .info-label {
+    margin-bottom: var(--spacing-1);
+    color: var(--text-secondary);
+    font-weight: 500;
+
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .dropdown--disabled {
+    opacity: 50%;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+
+  .dropdown--disabled .dropdown__trigger {
+    cursor: not-allowed;
+  }
+
+  .info-item :global(.dropdown) {
+    transition: opacity 300ms ease;
+  }
+
+  #admin-filter-controls .dropdown {
+    min-width: 200px;
+    width: 100%;
+  }
+
+  #admin-filter-controls .dropdown__trigger {
+    min-width: 200px;
+  }
+
+  #admin-filter-controls .dropdown__option {
+    white-space: nowrap;
+  }
+
+  .favorites-container {
+    backdrop-filter: var(--glass-backdrop);
+    margin-bottom: var(--spacing-6);
+    box-shadow: var(--shadow-sm);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg);
+    padding: var(--spacing-4);
+  }
+
+  .favorites-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-4);
+  }
+
+  .favorites-label {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .favorites-list {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+  }
+
+  .favorite-btn {
+    display: flex;
+
+    position: relative;
+    align-items: center;
+    gap: 8px;
+
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid rgb(76 175 80 / 40%);
+    border-radius: var(--radius-xl);
+
+    background: linear-gradient(
+      135deg,
+      rgb(76 175 80 / 20%),
+      rgb(76 175 80 / 10%)
+    );
+
+    padding: 8px 16px;
+    color: #4caf50;
+    font-weight: 600;
+
+    font-size: 13px;
+  }
+
+  .favorite-btn:hover {
+    box-shadow: 0 4px 12px rgb(76 175 80 / 20%);
+    border-color: rgb(76 175 80 / 60%);
+    background: linear-gradient(
+      135deg,
+      rgb(76 175 80 / 30%),
+      rgb(76 175 80 / 20%)
+    );
+  }
+
+  .favorite-btn:active {
+    transform: translateY(0);
+  }
+
+  .favorite-btn-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .remove-favorite {
+    display: flex;
+
+    position: absolute;
+    top: -10px;
+    right: -3px;
+    justify-content: center;
+    align-items: center;
+
+    visibility: hidden;
+    opacity: 0%;
+
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 2px solid rgb(244 67 54);
+    border-radius: 50%;
+    background: rgb(244 67 54 / 10%);
+
+    width: 20px;
+    height: 20px;
+    color: rgb(244 67 54);
+
+    font-size: 11px;
+  }
+
+  .favorite-btn:hover .remove-favorite {
+    visibility: visible;
+    opacity: 100%;
+  }
+
+  .remove-favorite:hover {
+    transform: scale(1.2);
+    border-color: rgb(244 67 54);
+    background: rgb(244 67 54 / 37%);
+  }
+
+  .favorites-empty {
+    color: var(--text-tertiary);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  .add-favorite-btn {
+    display: inline-block;
+
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    margin-top: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgb(76 175 80 / 40%);
+    border-radius: var(--radius-xl);
+
+    background: linear-gradient(
+      135deg,
+      rgb(76 175 80 / 20%),
+      rgb(76 175 80 / 10%)
+    );
+    padding: 10px 20px;
+    color: #4caf50;
+    font-weight: 700;
+
+    font-size: 14px;
+  }
+
+  .add-favorite-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
+    border-color: rgb(76 175 80 / 60%);
+    background: linear-gradient(
+      135deg,
+      rgb(76 175 80 / 30%),
+      rgb(76 175 80 / 20%)
+    );
+  }
+
+  .add-favorite-btn:active {
+    transform: translateY(0);
+  }
+
+  @media (width < 1024px) {
+    .shift-info-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (width < 768px) {
+    .shift-info-row {
+      grid-template-columns: 1fr;
+    }
+
+    .dropdown {
+      min-width: 100%;
+    }
+  }
+</style>

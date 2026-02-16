@@ -4,6 +4,8 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
+  import { resolve } from '$app/paths';
+
   import {
     AVAILABILITY_ICONS,
     AVAILABILITY_LABELS,
@@ -28,6 +30,7 @@
     isEditMode: boolean;
     currentPlanId: number | null;
     hasRotationHistory: boolean;
+    minStaffCount: number | null;
 
     // Event handlers
     ondragstart: (event: DragEvent, employeeId: number) => void;
@@ -41,6 +44,7 @@
     isEditMode,
     currentPlanId,
     hasRotationHistory,
+    minStaffCount,
     ondragstart,
     ondragend,
   }: Props = $props();
@@ -62,6 +66,24 @@
 
 <div class="employee-sidebar">
   <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
+  {#if minStaffCount !== null}
+    <div class="mt-2 mb-2 flex items-center gap-2">
+      <span
+        class="badge badge--warning"
+        title="Mindestbesetzung für diese Maschine"
+      >
+        <i class="fas fa-hard-hat"></i>
+        Mindestbesetzung: {minStaffCount}
+      </span>
+      <a
+        href={`${resolve('/vacation/rules', {})}?tab=staffing-rules`}
+        class="action-icon action-icon--edit"
+        title="Besetzungsregeln bearbeiten"
+      >
+        <i class="fas fa-edit"></i>
+      </a>
+    </div>
+  {/if}
   <div class="employee-list">
     {#each employees as employee (employee.id)}
       {@const isFullyUnavailable =
@@ -107,3 +129,246 @@
     {/each}
   </div>
 </div>
+
+<style>
+  .employee-sidebar {
+    backdrop-filter: var(--glass-backdrop);
+    box-shadow: var(--shadow-sm);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg);
+    padding: var(--spacing-6);
+  }
+
+  .shift-sidebar-title {
+    margin-bottom: var(--spacing-6);
+    color: var(--color-text-primary);
+    font-weight: 500;
+
+    font-size: 17px;
+    text-align: center;
+  }
+
+  .employee-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .employee-item {
+    cursor: grab;
+
+    margin: 5px 0;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg-active);
+    padding: 8px 12px;
+    user-select: none;
+  }
+
+  .employee-item:hover {
+    transform: translateX(2px);
+    background: var(--glass-bg-active);
+  }
+
+  .employee-item.dragging {
+    opacity: 50%;
+    cursor: grabbing;
+  }
+
+  .employee-item.unavailable {
+    opacity: 70%;
+    cursor: not-allowed;
+  }
+
+  .employee-item.status-vacation {
+    border-left: 3px solid #ffc107;
+    background: rgb(255 193 7 / 10%);
+  }
+
+  .employee-item.status-sick {
+    border-left: 3px solid #dc3545;
+    background: rgb(220 53 69 / 10%);
+  }
+
+  .employee-item.status-unavailable {
+    border-left: 3px solid #6c757d;
+    background: rgb(108 117 125 / 10%);
+  }
+
+  .employee-item[draggable='false'] {
+    user-select: none;
+
+    -webkit-user-drag: none;
+  }
+
+  .employee-item[draggable='false']:hover {
+    cursor: not-allowed;
+  }
+
+  .employee-item.locked {
+    opacity: 75%;
+    cursor: not-allowed;
+
+    -webkit-user-drag: none;
+  }
+
+  .employee-item.locked:hover {
+    transform: none;
+    cursor: not-allowed;
+    box-shadow: none;
+    background: inherit;
+  }
+
+  .employee-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .employee-info .employee-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .employee-info .badge {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 2px;
+    border-radius: 4px;
+    padding: 2px 6px;
+
+    width: fit-content;
+    font-weight: 600;
+
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .employee-info .badge-success {
+    border: 1px solid rgb(76 175 80 / 30%);
+    background: rgb(76 175 80 / 15%);
+    color: rgb(76 175 80 / 95%);
+  }
+
+  .employee-info .badge-warning {
+    border: 1px solid rgb(255 193 7 / 30%);
+    background: rgb(255 193 7 / 15%);
+    color: rgb(255 193 7 / 95%);
+  }
+
+  .employee-info .badge-danger {
+    border: 1px solid rgb(220 53 69 / 30%);
+    background: rgb(220 53 69 / 15%);
+    color: rgb(220 53 69 / 95%);
+  }
+
+  .employee-info .badge-secondary {
+    border: 1px solid rgb(108 117 125 / 30%);
+    background: rgb(108 117 125 / 15%);
+    color: rgb(108 117 125 / 95%);
+  }
+
+  .status-icon {
+    margin-left: 8px;
+    font-size: 14px;
+  }
+
+  .employee-info .status-icon {
+    margin-left: 8px;
+    font-size: 12px;
+  }
+
+  .status-icon.vacation {
+    color: #ffc107;
+  }
+
+  .status-icon.sick {
+    color: #dc3545;
+  }
+
+  .status-icon.unavailable {
+    color: #6c757d;
+  }
+
+  .availability-badge {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: fit-content;
+  }
+
+  .availability-badge.badge--warning {
+    background: rgb(255 193 7 / 20%);
+    color: #ffc107;
+  }
+
+  .availability-badge.badge--danger {
+    background: rgb(231 76 60 / 20%);
+    color: #e74c3c;
+  }
+
+  .availability-badge.badge--error {
+    background: rgb(192 57 43 / 20%);
+    color: #c0392b;
+  }
+
+  .availability-badge.badge--info {
+    background: rgb(52 152 219 / 20%);
+    color: #3498db;
+  }
+
+  .availability-badge.badge--dark {
+    background: rgb(149 165 166 / 20%);
+    color: #95a5a6;
+  }
+
+  .availability-period {
+    font-size: 0.65rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    margin-left: 0.25rem;
+  }
+
+  :global(html:not(.dark)) .availability-badge.badge--warning {
+    color: #ab8000;
+  }
+
+  :global(html:not(.dark)) .availability-badge.badge--danger {
+    color: #c62828;
+  }
+
+  :global(html:not(.dark)) .availability-badge.badge--error {
+    color: #962018;
+  }
+
+  :global(html:not(.dark)) .availability-badge.badge--info {
+    color: #1565c0;
+  }
+
+  :global(html:not(.dark)) .availability-badge.badge--dark {
+    color: #546e7a;
+  }
+
+  @media (width < 1024px) {
+    .employee-sidebar {
+      max-height: 200px;
+    }
+
+    .employee-list {
+      flex-flow: row wrap;
+    }
+
+    .employee-item {
+      flex: 0 0 auto;
+    }
+  }
+</style>

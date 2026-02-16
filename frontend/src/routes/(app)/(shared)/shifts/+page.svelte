@@ -1,7 +1,5 @@
 <script lang="ts">
   // SHIFTS PAGE - Svelte 5 + SSR
-  import '../../../../styles/shifts.css';
-
   import { onMount } from 'svelte';
 
   import AdminActions from './_lib/AdminActions.svelte';
@@ -68,6 +66,7 @@
   const ssrTeamMembers = $derived(data.teamMembers);
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
+  const ssrStaffingRules = $derived(data.staffingRules);
   const ssrIsEmployee = $derived(data.isEmployee);
   let ssrInitialized = $state(false);
 
@@ -107,7 +106,7 @@
   }
 
   onMount(() => {
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('click', handleClickOutside, true);
     if (
       ssrIsEmployee &&
       ssrEmployeeTeamInfo !== null &&
@@ -116,7 +115,7 @@
       void loadShiftPlan();
     }
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
     };
   });
 
@@ -153,6 +152,17 @@
     shiftsState.setMachines(machs);
     shiftsState.setTeams(tms);
   }
+
+  /** Min staff count derived from SSR staffing rules + selected machine */
+  const minStaffCount = $derived.by(() => {
+    const machineId = shiftsState.selectedContext.machineId;
+    if (machineId === null) return null;
+    const rule = ssrStaffingRules.find(
+      (r: { machineId: number; minStaffCount: number }) =>
+        r.machineId === machineId,
+    );
+    return rule?.minStaffCount ?? null;
+  });
 
   function handleMachineChange(machineId: number): void {
     shiftsState.setSelectedContext({ machineId });
@@ -344,6 +354,7 @@
             canEditShifts={shiftsState.canEditShifts}
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
+            machineAvailabilityMap={shiftsState.machineAvailabilityMap}
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
@@ -368,6 +379,7 @@
               isEditMode={shiftsState.isEditMode}
               currentPlanId={shiftsState.currentPlanId}
               hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
+              {minStaffCount}
               ondragstart={handleDragStart}
               ondragend={handleDragEnd}
             />
@@ -433,3 +445,45 @@
     ongenerate={handleCustomRotationGenerate}
   />
 {/if}
+
+<style>
+  /* Parent-owned styles (used directly in this template) */
+  .main-planning-area {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: var(--spacing-8);
+  }
+
+  .department-notice {
+    backdrop-filter: var(--glass-backdrop);
+    margin: var(--spacing-8) auto;
+    box-shadow: var(--shadow-sm);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+
+    background: var(--glass-bg);
+    padding: var(--spacing-8) var(--spacing-6);
+    max-width: 600px;
+
+    text-align: center;
+  }
+
+  .department-notice .notice-icon {
+    opacity: 80%;
+    margin-bottom: var(--spacing-6);
+    color: var(--primary-color);
+    font-size: 48px;
+  }
+
+  .department-notice h3 {
+    margin-bottom: var(--spacing-4);
+    color: var(--text-primary);
+    font-size: 24px;
+  }
+
+  .department-notice p {
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+</style>

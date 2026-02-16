@@ -164,7 +164,7 @@ doppler run -- docker-compose down
 doppler run -- docker-compose restart backend
 ```
 
-## MANDATORY CHECKLIST (TodoWrite with 10+ items) read
+## MANDATORY CHECKLIST (TodoWrite with 10+ items) read (use Agent for reading)
 
 1. Docker Check (with "skip": WITHOUT dev-status.sh) (read whole file)
 2. Read(~/projects/Assixx/CLAUDE-KAIZEN-MANIFEST.md)
@@ -177,12 +177,12 @@ doppler run -- docker-compose restart backend
 9. Read(~/projects/Assixx/frontend/src/styles/tailwind.css) for UI context (read whole File)
 10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
 11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
-12. Read(~/projects/Assixx/docs/context.md) for context (read whole File)
-13. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-VITEST.md) for context (read whole File)
-14. Read(~/projects/Assixx/docs/CODE-OF-CONDUCT-SVELTE.md) for context (read whole File)
-15. Read(~/projects/Assixx/docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) - Docker/Nginx/SvelteKit Setup!
-16. Read all ADR in (~/projects/Assixx/docs/infrastructure/adr/ADR-0\*\*.md.) and docs/infrastructure/adr/README.md
-17. Always fetch original docs: like fetch this: https://svelte.dev/docs/svelte/overview and https://svelte.dev/docs/svelte/what-are-runes and https://svelte.dev/docs/kit/$app-paths#resolve
+12. Read(~/projects/Assixx/docs/HOW-TO-TEST-WITH-VITEST.md) for context (read whole File)
+13. Read(~/projects/Assixx/docs/CODE-OF-CONDUCT-SVELTE.md) for context (read whole File)
+14. Read(~/projects/Assixx/docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) - Docker/Nginx/SvelteKit Setup!
+15. Read all ADR in (~/projects/Assixx/docs/infrastructure/adr/ADR-0\*\*.md.) and docs/infrastructure/adr/README.md
+16. Always fetch original docs: like fetch this: https://svelte.dev/docs/svelte/overview and https://svelte.dev/docs/svelte/what-are-runes and https://svelte.dev/docs/kit/$app-paths#resolve
+17. Read(~/projects/Assixx/docs/COMMON-COMMANDS.md) - Alle häufig genutzten Befehle (Docker, pnpm, ESLint, DB, etc.)
 18. Dont do more than this and than recap fast and than ask user that youre ready.
 19. change directory to root Bash(cd /home/scs/projects/Assixx && pwd)
 

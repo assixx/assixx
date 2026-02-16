@@ -6,9 +6,6 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
 
-  // Page-specific CSS
-  import '../../../../styles/admin-dashboard.css';
-
   // Local modules
   import { MESSAGES } from './_lib/constants';
   import {
@@ -275,7 +272,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage mb-4 w-4/5"
+              class="btn btn-primary mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/manage-employees');
               }}
@@ -314,7 +311,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage mb-4 w-4/5"
+              class="btn btn-primary mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/documents-explorer');
               }}
@@ -354,7 +351,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage mb-4 w-4/5"
+              class="btn btn-primary mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/manage-departments');
               }}
@@ -391,7 +388,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage mb-4 w-4/5"
+              class="btn btn-primary mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/manage-teams');
               }}
@@ -428,7 +425,7 @@
           <div class="card-accent__content">
             <button
               type="button"
-              class="btn btn-manage mb-4 w-4/5"
+              class="btn btn-primary mb-4 w-4/5"
               onclick={() => {
                 navigateTo('/calendar');
               }}
@@ -520,3 +517,194 @@
     </div>
   </section>
 </div>
+
+<style>
+  /* Prevent FOUC during page load — body is outside component scope */
+  :global(body:not(.loaded)) * {
+    transition: none;
+  }
+
+  /* Compact Item - List items in accent cards */
+  .compact-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    transition: all 0.2s ease;
+    cursor: default;
+
+    margin-bottom: 6px;
+    border: var(--glass-border);
+    border-radius: 8px;
+
+    background: var(--glass-bg);
+    padding: 3px 12px;
+  }
+
+  .compact-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .compact-item:hover {
+    transform: translateX(4px);
+    border-color: var(--color-glass-border);
+    background: var(--glass-bg-hover);
+  }
+
+  .compact-item-name {
+    flex: 1;
+
+    margin-right: 12px;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-weight: 500;
+
+    font-size: 0.95rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Calendar Event Styles */
+  .event-item {
+    display: flex;
+
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+
+    padding: 10px;
+  }
+
+  .event-item:last-child {
+    border-bottom: none;
+  }
+
+  .event-item:hover {
+    background-color: rgb(var(--primary-rgb), 0.05);
+  }
+
+  .event-date {
+    display: flex;
+    flex: 0 0 90px;
+    flex-direction: column;
+    justify-content: center;
+
+    margin-right: 15px;
+    border-radius: var(--radius-xl);
+
+    background-color: var(--background-dark);
+    padding: 10px;
+
+    text-align: center;
+  }
+
+  .event-day {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .event-month {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+  }
+
+  .event-time {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .event-details {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .event-title {
+    margin-bottom: 2px;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .event-location {
+    margin-top: 2px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .event-location i {
+    margin-right: 4px;
+    color: var(--text-muted);
+  }
+
+  .event-level {
+    display: inline-block;
+    width: fit-content;
+
+    margin-top: 5px;
+    border-radius: var(--radius-xl);
+    padding: 2px 8px;
+    color: #fff;
+
+    font-size: 0.7rem;
+  }
+
+  .event-level-company {
+    background-color: #3498db;
+  }
+
+  .event-level-department {
+    background-color: #e67e22;
+  }
+
+  .event-level-team {
+    background-color: #2ecc71;
+  }
+
+  .event-level-area {
+    background-color: #e53935;
+  }
+
+  .event-level-personal {
+    background-color: #9b59b6;
+  }
+
+  .event-badges {
+    display: grid;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  .event-badges .event-level {
+    margin-top: 0;
+  }
+
+  @media (width < 768px) {
+    .compact-item {
+      padding: 8px 10px;
+    }
+
+    .compact-item-name {
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (width < 768px) {
+    .event-date {
+      flex: 0 0 70px;
+    }
+
+    .event-day {
+      font-size: 1.2rem;
+    }
+
+    .event-month {
+      font-size: 0.8rem;
+    }
+  }
+</style>

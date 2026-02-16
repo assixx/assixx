@@ -10,6 +10,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -55,12 +56,21 @@ interface TeamMemberApiResponse {
   availabilityEnd?: string;
 }
 
+/** Raw staffing rule from API */
+interface StaffingRuleRaw {
+  id: string;
+  machineId: number;
+  machineName: string;
+  minStaffCount: number;
+}
+
 /** Processed fetch results */
 interface FetchResults {
   areas: Area[];
   teams: Team[];
   teamMembers: TeamMember[];
   favorites: ShiftFavorite[];
+  staffingRules: StaffingRuleRaw[];
   teamLeaderId: number | null;
 }
 
@@ -182,9 +192,12 @@ function processFetchResults(
   const teams = asArray<Team>(resultByLabel.get('teams'));
   const teamMembers = processRawTeamMembers(resultByLabel.get('teamMembers'));
   const favorites = asArray<ShiftFavorite>(resultByLabel.get('favorites'));
+  const staffingRules = asArray<StaffingRuleRaw>(
+    resultByLabel.get('staffingRules'),
+  );
   const teamLeaderId = extractTeamLeaderId(teams, hasTeam, primaryTeamId);
 
-  return { areas, teams, teamMembers, favorites, teamLeaderId };
+  return { areas, teams, teamMembers, favorites, staffingRules, teamLeaderId };
 }
 
 /**
@@ -286,6 +299,11 @@ function prepareFetchPromises(
       apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn),
     );
     labels.push('favorites');
+
+    promises.push(
+      apiFetch<StaffingRuleRaw[]>('/vacation/staffing-rules', token, fetchFn),
+    );
+    labels.push('staffingRules');
   }
 
   return { promises, labels };
@@ -299,6 +317,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   const parentData = await parent();
+  requireFeature(parentData.activeFeatures, 'shift_planning');
   if (!parentData.user) {
     redirect(302, '/login');
   }
@@ -328,7 +347,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const results = await Promise.all(promises);
 
   // Process results
-  const { areas, teams, teamMembers, favorites, teamLeaderId } =
+  const { areas, teams, teamMembers, favorites, staffingRules, teamLeaderId } =
     processFetchResults(results, labels, hasTeam, primaryTeamId);
 
   const employeeTeamInfo = buildEmployeeTeamInfo(
@@ -344,6 +363,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     teams,
     teamMembers,
     favorites,
+    staffingRules,
     employeeTeamInfo,
     isEmployee,
     isAdminOrRoot,

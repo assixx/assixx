@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { MESSAGES, MACHINE_TYPE_OPTIONS, STATUS_OPTIONS } from './constants';
-  import { machineState } from './state.svelte';
-  import { getStatusBadgeClass, getStatusLabel } from './utils';
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
 
-  import type { MachineStatus } from './types';
+  import { MESSAGES, MACHINE_TYPE_OPTIONS } from './constants';
+  import { machineState } from './state.svelte';
 
   interface Props {
     onsubmit: (e: Event) => void;
@@ -55,18 +54,6 @@
     machineState.setTypeDropdownOpen(false);
   }
 
-  function toggleStatusDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    const wasOpen = machineState.statusDropdownOpen;
-    machineState.closeAllDropdowns();
-    machineState.setStatusDropdownOpen(!wasOpen);
-  }
-
-  function selectStatus(status: MachineStatus) {
-    machineState.setFormStatus(status);
-    machineState.setStatusDropdownOpen(false);
-  }
-
   function toggleTeamsDropdown(e: MouseEvent) {
     e.stopPropagation();
     if (machineState.formDepartmentId === null) return;
@@ -87,6 +74,13 @@
   function handleOverlayClick(e: MouseEvent) {
     if (e.target === e.currentTarget) onclose();
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      machineState.closeAllDropdowns();
+    });
+  });
 </script>
 
 {#if machineState.showMachineModal}
@@ -439,101 +433,6 @@
             </div>
           </div>
         </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="machine-status">{MESSAGES.LABEL_STATUS}</label
-          >
-          <input
-            type="hidden"
-            id="machine-status"
-            name="status"
-            value={machineState.formStatus}
-          />
-          <div
-            class="dropdown"
-            id="status-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={machineState.statusDropdownOpen}
-              onclick={toggleStatusDropdown}
-            >
-              <span
-                class="badge {getStatusBadgeClass(machineState.formStatus)}"
-              >
-                {getStatusLabel(machineState.formStatus)}
-              </span>
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={machineState.statusDropdownOpen}
-            >
-              {#each STATUS_OPTIONS as option (option.value)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectStatus(option.value);
-                  }}
-                >
-                  <span class="badge {option.class}">{option.label}</span>
-                </div>
-              {/each}
-            </div>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="machine-hours">{MESSAGES.LABEL_HOURS}</label
-          >
-          <input
-            type="number"
-            id="machine-hours"
-            name="operatingHours"
-            class="form-field__control"
-            min="0"
-            step="1"
-            value={machineState.formOperatingHours ?? ''}
-            oninput={(e) => {
-              const val = (e.target as HTMLInputElement).value;
-              machineState.setFormOperatingHours(
-                val !== '' ? Math.round(Number(val)) : null,
-              );
-            }}
-          />
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="machine-next-maintenance"
-          >
-            {MESSAGES.LABEL_NEXT_MAINTENANCE}
-          </label>
-          <div class="date-picker">
-            <i class="date-picker__icon fas fa-calendar"></i>
-            <input
-              type="date"
-              id="machine-next-maintenance"
-              name="nextMaintenance"
-              class="date-picker__input"
-              value={machineState.formNextMaintenance}
-              oninput={(e) => {
-                machineState.setFormNextMaintenance(
-                  (e.target as HTMLInputElement).value,
-                );
-              }}
-            />
-          </div>
-        </div>
       </div>
 
       <div class="ds-modal__footer">
@@ -546,7 +445,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={machineState.submitting}
         >
           {#if machineState.submitting}<span
@@ -558,3 +457,45 @@
     </form>
   </div>
 {/if}
+
+<style>
+  /* Cascading Dropdowns — Disabled State */
+  .dropdown.disabled :global(.dropdown__trigger),
+  :global(.dropdown__trigger.disabled) {
+    opacity: 50%;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: var(--color-glass-light);
+  }
+
+  /* Teams Multi-Select Dropdown */
+  .dropdown__menu--multi {
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .dropdown__option--checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+
+  .dropdown__option--checkbox:hover {
+    background-color: var(--color-glass-light);
+  }
+
+  .dropdown__checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .dropdown__option--disabled {
+    opacity: 50%;
+    cursor: not-allowed;
+    font-style: italic;
+  }
+</style>

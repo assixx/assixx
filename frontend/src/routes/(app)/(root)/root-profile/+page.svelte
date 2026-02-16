@@ -8,13 +8,10 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
+  import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
-
-  // Page-specific CSS
-  import '../../../../styles/root-profile.css';
-  import '../../../../styles/password-strength.css';
 
   // Local modules
   import {
@@ -23,13 +20,11 @@
     uploadProfilePicture,
     removeProfilePicture,
     changePassword as apiChangePassword,
-    approveRequest as apiApproveRequest,
-    rejectRequest as apiRejectRequest,
     logoutAllSessions,
   } from './_lib/api';
+  import ApprovalSection from './_lib/ApprovalSection.svelte';
   import { MESSAGES, PASSWORD_TOOLTIP, PASSWORD_RULES } from './_lib/constants';
   import {
-    formatDate,
     showToast,
     triggerFileInput,
     isCurrentPasswordError,
@@ -355,30 +350,6 @@
   }
 
   // =============================================================================
-  // APPROVAL ACTIONS - Level 3: invalidateAll() after mutations
-  // =============================================================================
-
-  async function approveRequest(id: number): Promise<void> {
-    try {
-      await apiApproveRequest(id);
-      showToast(MESSAGES.approvalApproved, 'success');
-      await invalidateAll();
-    } catch {
-      showToast(MESSAGES.approvalError, 'error');
-    }
-  }
-
-  async function rejectRequest(id: number): Promise<void> {
-    try {
-      await apiRejectRequest(id);
-      showToast(MESSAGES.approvalRejected, 'info');
-      await invalidateAll();
-    } catch {
-      showToast(MESSAGES.rejectError, 'error');
-    }
-  }
-
-  // =============================================================================
   // UI HELPERS
   // =============================================================================
 
@@ -395,59 +366,7 @@
   <div class="profile-container">
     <!-- Pending Approvals Section -->
     {#if hasPendingApprovals}
-      <div class="approval-section">
-        <div class="approval-header">
-          <i class="fas fa-hourglass-half"></i>
-          <div>
-            <h3>Ausstehende Löschgenehmigungen</h3>
-            <p>Diese Löschanfragen warten auf Ihre Genehmigung</p>
-          </div>
-        </div>
-        <div class="approval-list">
-          {#each pendingApprovals as approval (approval.id)}
-            <div class="approval-item">
-              <div class="approval-item-header">
-                <div class="approval-item-info">
-                  <strong>{approval.tenantName}</strong>
-                  <span class="approval-status pending"
-                    >{MESSAGES.pendingStatus}</span
-                  >
-                  <p>Angefragt von: {approval.requestedBy}</p>
-                  <p>Datum: {formatDate(approval.requestedAt)}</p>
-                </div>
-                <div class="approval-item-actions">
-                  {#if approval.coolingOffComplete}
-                    <button
-                      type="button"
-                      class="btn btn-success btn-sm"
-                      onclick={() => approveRequest(approval.id)}
-                    >
-                      <i class="fas fa-check"></i> Genehmigen
-                    </button>
-                  {/if}
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-sm"
-                    onclick={() => rejectRequest(approval.id)}
-                  >
-                    <i class="fas fa-times"></i> Ablehnen
-                  </button>
-                </div>
-              </div>
-              {#if !approval.coolingOffComplete && approval.coolingOffEndsAt}
-                <div class="cooling-off-warning">
-                  <i class="fas fa-clock"></i>
-                  <span
-                    >Wartezeit endet am: {formatDate(
-                      approval.coolingOffEndsAt,
-                    )}</span
-                  >
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </div>
-      </div>
+      <ApprovalSection approvals={pendingApprovals} />
     {/if}
 
     <!-- Profile Picture Card -->
@@ -478,14 +397,14 @@
           />
           <button
             type="button"
-            class="btn btn-modal"
+            class="btn btn-primary"
             onclick={() => {
               triggerFileInput('profile-picture-input');
             }}
             disabled={pictureUploading}
           >
-            {#if pictureUploading}<i class="fas fa-spinner fa-spin"
-              ></i>{:else}<i class="fas fa-camera"></i>{/if}
+            {#if pictureUploading}<span class="spinner-ring spinner-ring--sm"
+              ></span>{:else}<i class="fas fa-camera"></i>{/if}
             Bild ändern
           </button>
           {#if hasProfilePicture}
@@ -561,12 +480,11 @@
         </div>
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={profileSaving}
         >
-          {#if profileSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-              class="fas fa-save"
-            ></i>{/if}
+          {#if profileSaving}<span class="spinner-ring spinner-ring--sm"
+            ></span>{:else}<i class="fas fa-save"></i>{/if}
           Änderungen speichern
         </button>
       </form>
@@ -658,50 +576,19 @@
           </div>
 
           {#if passwordStrength !== null || strengthLoading}
-            <div
-              class="password-strength-container"
-              class:is-loading={strengthLoading}
-            >
-              <div class="password-strength-meter">
-                <div
-                  class="password-strength-bar"
-                  data-score={passwordStrength?.score ?? -1}
-                ></div>
-              </div>
-              {#if passwordStrength}
-                <div class="password-strength-info">
-                  <span class="password-strength-label"
-                    >{passwordStrength.label}</span
-                  >
-                  <span class="password-strength-time"
-                    >{passwordStrength.crackTime}</span
-                  >
-                </div>
-              {/if}
-            </div>
+            <PasswordStrengthIndicator
+              score={passwordStrength?.score ?? -1}
+              label={passwordStrength?.label ?? ''}
+              crackTime={passwordStrength?.crackTime ?? ''}
+              loading={strengthLoading}
+              feedback={passwordStrength?.feedback ?? null}
+            />
           {/if}
 
           {#if newPasswordError}
             <span class="form-field__message form-field__message--error"
               >{MESSAGES.passwordRequirements}</span
             >
-          {/if}
-
-          {#if (passwordStrength?.feedback.warning !== undefined && passwordStrength.feedback.warning !== '') || (passwordStrength?.feedback.suggestions !== undefined && passwordStrength.feedback.suggestions.length > 0)}
-            <div class="password-feedback">
-              {#if passwordStrength.feedback.warning !== ''}
-                <span class="password-feedback-warning"
-                  >{passwordStrength.feedback.warning}</span
-                >
-              {/if}
-              {#if passwordStrength.feedback.suggestions.length > 0}
-                <ul class="password-feedback-suggestions">
-                  {#each passwordStrength.feedback.suggestions as suggestion, i (i)}
-                    <li>{suggestion}</li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
           {/if}
         </div>
 
@@ -746,12 +633,11 @@
 
         <button
           type="submit"
-          class="btn btn-modal"
+          class="btn btn-primary"
           disabled={passwordSaving}
         >
-          {#if passwordSaving}<i class="fas fa-spinner fa-spin"></i>{:else}<i
-              class="fas fa-key"
-            ></i>{/if}
+          {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"
+            ></span>{:else}<i class="fas fa-key"></i>{/if}
           Passwort ändern
         </button>
       </form>
@@ -766,3 +652,51 @@
   onclose={handleCropClose}
   onsave={handleCropSave}
 />
+
+<style>
+  /* Root Profile - Page-Specific Styles */
+  /* Design System provides: Cards, Avatar, Forms, Buttons */
+  /* This file only contains page-specific layout */
+
+  /* ===== CONTAINER WIDTH ===== */
+  .profile-card {
+    margin-right: auto;
+    margin-left: auto;
+    max-width: 800px;
+  }
+
+  /* ===== PROFILE PICTURE LAYOUT ===== */
+  .profile-picture-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+  }
+
+  /* Button stack (vertical layout) */
+  .profile-picture-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  /* ===== FORM LAYOUT ===== */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (width < 768px) {
+    .profile-picture-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

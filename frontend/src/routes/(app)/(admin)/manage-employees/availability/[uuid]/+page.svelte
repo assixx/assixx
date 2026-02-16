@@ -11,6 +11,9 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import DeleteConfirmationModal from '$lib/availability/DeleteConfirmationModal.svelte';
+  import EditAvailabilityModal from '$lib/availability/EditAvailabilityModal.svelte';
   import {
     formatDate,
     formatDateTime,
@@ -18,9 +21,7 @@
     getStatusIcon,
     getStatusText,
     truncateText,
-  } from '../_lib/availability-helpers';
-  import DeleteConfirmationModal from '../_lib/DeleteConfirmationModal.svelte';
-  import EditAvailabilityModal from '../_lib/EditAvailabilityModal.svelte';
+  } from '$lib/availability/helpers';
 
   import type { PageData } from './$types';
 
@@ -30,7 +31,7 @@
 
   interface AvailabilityEntry {
     id: number;
-    employeeId: number;
+    userId: number;
     status: string;
     startDate: string;
     endDate: string;
@@ -200,12 +201,6 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#year-dropdown')) yearDropdownOpen = false;
-    if (!target.closest('#month-dropdown')) monthDropdownOpen = false;
-  }
-
   function handleKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       yearDropdownOpen = false;
@@ -214,6 +209,14 @@
       if (showDeleteModal) closeDeleteModal();
     }
   }
+
+  // Capture-phase click-outside: consistent with all other dropdown pages
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      yearDropdownOpen = false;
+      monthDropdownOpen = false;
+    });
+  });
 </script>
 
 <svelte:head>
@@ -223,10 +226,7 @@
   >
 </svelte:head>
 
-<svelte:window
-  onclick={handleClickOutside}
-  onkeydown={handleKeyDown}
-/>
+<svelte:window onkeydown={handleKeyDown} />
 
 <div class="container">
   <!-- Back Button -->

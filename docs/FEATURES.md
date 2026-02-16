@@ -1,8 +1,8 @@
 # Assixx Features & Overview
 
-> **Last Updated:** 2025-05-26
-> **Version:** 1.0.0
-> **Status:** Production Ready (8 of 11 main features live)
+> **Last Updated:** 2026-02-15
+> **Version:** 1.2.0
+> **Status:** Production Ready (10 of 11 main features live)
 
 ## Table of Contents
 
@@ -85,9 +85,38 @@
 - Manual Quick Backups
 - Backup Rotation (Daily/Weekly/Monthly)
 
+#### 9. **Vacation Management** (NEW)
+
+- Vacation Request Workflow (create, edit, respond, withdraw, cancel)
+- Pre-Approval Capacity Analysis (team headcount, machine staffing, blackout conflicts, entitlement check)
+- Multi-Level Approver Chain (team lead → deputy → area lead → admin)
+- Half-Day Support (morning/afternoon at start/end of range)
+- 7 Vacation Types (regular, doctor, bereavement, birth, wedding, move, unpaid)
+- Entitlement Management (per-employee, per-year, carry-over, additional days)
+- Blackout Periods (global, department, team, area scoped)
+- Machine Staffing Rules (minimum headcount per machine)
+- Holiday Management (recurring + one-time, per-tenant)
+- Team Calendar Overview (approved vacations per member per day)
+- Tenant-Wide Settings (default days, carry-over limits, notice period)
+- Real-Time Notifications via SSE
+- Status Audit Trail (append-only log with notes)
+- 5 Admin Pages: Anträge, Regeln, Urlaubsansprüche, Feiertage, Übersicht
+
+#### 10. **Feature-Gating System** (NEW — System Feature)
+
+- Per-Tenant Feature Activation/Deactivation
+- Backend: `TenantFeatureGuard` (APP_GUARD) on all Feature-Controllers
+- Frontend: Sidebar-Filterung (SSR, kein Flash), Page-Level Guards, api-client 403-Handling
+- Admin-Seite `/features` für Feature-Verwaltung (modernisiert mit Design System)
+- Separate `/feature-unavailable` Fehlerseite (vs. `/permission-denied` für Rollen)
+- Rekursive Submenu-Filterung (leere Container werden entfernt)
+- 57 Unit Tests (navigation-config 31 + feature-guard 26)
+- Core-Features (Dashboard, Profil, Settings) werden NIE gefiltert
+- Architektur: ADR-024
+
 ### In Development
 
-#### 9. **Survey Tool** (80% complete)
+#### 10. **Survey Tool** (80% complete)
 
 - Admin can Create Surveys
 - Multiple Choice and Free Text
@@ -107,8 +136,9 @@
 | Shift Planning      | No       | Yes       | Yes          | Live            |
 | Chat System         | Basic    | Extended  | Full Version | Live            |
 | Backup System       | Yes      | Yes       | Yes          | Live            |
+| Vacation Management | No       | Yes       | Yes          | Live            |
+| Feature-Gating      | Yes      | Yes       | Yes          | Live            |
 | Survey Tool         | No       | Yes       | Yes          | In Development  |
-| Leave Management    | No       | Yes       | Yes          | Planned Q2/2025 |
 | Mobile App          | No       | No        | Yes          | Planned Q2/2025 |
 
 ## Pricing Plans
@@ -196,7 +226,7 @@
 
 ### Q2 2025
 
-- [ ] Leave Management
+- [x] Leave Management → **Live als "Vacation Management" (2026-02-13, ADR-023)**
 - [ ] Mobile PWA
 - [ ] Stripe Payment Integration
 - [ ] Multi-Language Support (EN, TR, PL)

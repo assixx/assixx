@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -161,26 +163,25 @@
     onfileschange(filtered.length > 0 ? filtered : null);
   }
 
-  function handleClickOutside(e: MouseEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('#entry-priority-dropdown'))
-      priorityDropdownOpen = false;
-  }
-
   function handleKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       priorityDropdownOpen = false;
       onclose();
     }
   }
+
+  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      priorityDropdownOpen = false;
+    });
+  });
 </script>
 
-<svelte:window
-  onclick={handleClickOutside}
-  onkeydown={handleKeyDown}
-/>
+<svelte:window onkeydown={handleKeyDown} />
 
 <div
+  id="blackboard-entry-modal"
   class="modal-overlay modal-overlay--active"
   onclick={onclose}
   onkeydown={(e) => {
@@ -325,7 +326,7 @@
           for="entry-department-select"
           class="form-field__label"
         >
-          <i class="fas fa-sitemap mr-1"></i>Zusaetzliche Abteilungen
+          <i class="fas fa-sitemap mr-1"></i>Zusätzliche Abteilungen
         </label>
         <select
           id="entry-department-select"
@@ -438,13 +439,10 @@
           for="entryExpiresAt"
           class="form-field__label">Gültig bis (optional)</label
         >
-        <input
-          type="date"
-          class="form-field__control"
-          id="entryExpiresAt"
+        <AppDatePicker
           value={expiresAt}
-          oninput={(e) => {
-            onexpireschange((e.target as HTMLInputElement).value);
+          onchange={(v: string) => {
+            onexpireschange(v);
           }}
         />
       </div>
@@ -537,7 +535,7 @@
       >
       <button
         type="submit"
-        class="btn btn-modal">Speichern</button
+        class="btn btn-primary">Speichern</button
       >
     </div>
   </form>
@@ -556,5 +554,111 @@
 
   .form-field__control--multiselect {
     min-height: 120px;
+  }
+
+  /* ─── Color Picker ──────── */
+
+  .color-picker {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--spacing-3);
+  }
+
+  .color-option {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-primary);
+    padding: var(--spacing-3);
+    min-height: 80px;
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 13px;
+    user-select: none;
+  }
+
+  .color-option:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-hover);
+  }
+
+  .color-option:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .color-option.active {
+    box-shadow:
+      var(--shadow-md),
+      0 0 0 4px rgb(var(--color-primary-rgb) / 10%);
+    border-color: var(--color-primary);
+  }
+
+  .color-option.active::after {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+    border-radius: 50%;
+    background: var(--color-primary);
+    width: 18px;
+    height: 18px;
+    content: '';
+  }
+
+  .color-option.active::before {
+    position: absolute;
+    top: 7px;
+    right: 10px;
+    z-index: 1;
+    content: '\2713';
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .color-option__swatch {
+    display: block;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+    border: 2px solid rgb(255 255 255 / 30%);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+  }
+
+  .color-option__label {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* Color Swatch Variants */
+
+  .color-option[data-color='yellow'] .color-option__swatch {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  }
+
+  .color-option[data-color='pink'] .color-option__swatch {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  }
+
+  .color-option[data-color='blue'] .color-option__swatch {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  }
+
+  .color-option[data-color='green'] .color-option__swatch {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+
+  .color-option[data-color='orange'] .color-option__swatch {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   }
 </style>

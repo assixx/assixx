@@ -150,6 +150,7 @@ export class KvpService {
       FROM kvp_categories_custom kcc
       WHERE kcc.tenant_id = $1
         AND kcc.category_id IS NULL
+        AND kcc.is_active = 1
 
       ORDER BY name ASC
     `;

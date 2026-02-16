@@ -6,6 +6,15 @@ import type { FormIsActiveStatus } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
+// Re-export shared availability constants
+export {
+  AVAILABILITY_BADGE_CLASSES,
+  AVAILABILITY_ICONS,
+  AVAILABILITY_LABELS,
+  AVAILABILITY_STATUS_LABELS,
+  AVAILABILITY_STATUS_OPTIONS,
+} from '$lib/availability/constants';
+
 /**
  * Position options for root users
  */
@@ -82,6 +91,11 @@ export const MESSAGES = {
   SUCCESS_CREATED: 'Root-Benutzer erfolgreich erstellt',
   SUCCESS_UPDATED: 'Root-Benutzer erfolgreich aktualisiert',
   SUCCESS_DELETED: 'Root-Benutzer erfolgreich gelöscht',
+
+  // Table headers - Availability
+  TH_AVAILABILITY: 'Verfügbarkeit',
+  TH_PLANNED: 'Geplant',
+  TH_NOTES: 'Notizen',
 
   // API errors
   ERROR_LOADING: 'Ein Fehler ist aufgetreten',

@@ -49,6 +49,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    id="chat-image-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={handleOverlayClick}
   >
@@ -70,7 +71,7 @@
         <button
           type="button"
           class="ds-modal__close"
-          aria-label="Schliessen"
+          aria-label="Schließen"
           onclick={onclose}
         >
           <i class="fas fa-times"></i>
@@ -114,11 +115,11 @@
           onclick={onclose}
         >
           <i class="fas fa-times mr-2"></i>
-          Schliessen
+          Schließen
         </button>
         <button
           type="button"
-          class="btn btn-modal"
+          class="btn btn-primary"
           onclick={handleDownload}
         >
           <i class="fas fa-download mr-2"></i>

@@ -4,6 +4,9 @@
  * Business logic for area/location management.
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  * NOTE: Areas are flat (non-hierarchical) since 2025-11-29
+ *
+ * Side-effect: When area_lead_id changes, pending vacation requests
+ * whose approver was the old area_lead get cascaded to the new lead.
  */
 import {
   BadRequestException,
@@ -383,6 +386,13 @@ export class AreasService {
       );
     }
 
+    // Cascade: re-assign pending vacation requests when area_lead changes
+    const oldLeadId = existingArea.areaLeadId ?? null;
+    const newLeadId = dto.areaLeadId ?? null;
+    if (dto.areaLeadId !== undefined && oldLeadId !== newLeadId) {
+      await this.cascadeVacationApprover(tenantId, id, oldLeadId, newLeadId);
+    }
+
     const result = await this.getAreaById(id, tenantId);
     const newValues = {
       name: dto.name,
@@ -583,5 +593,50 @@ export class AreasService {
     }
 
     return { message: 'Departments assigned successfully' };
+  }
+
+  /**
+   * Cascade vacation approver when area_lead changes.
+   *
+   * Updates all PENDING vacation requests where:
+   * - approver_id = old area_lead
+   * - requester is in a department belonging to this area
+   *
+   * If newLeadId is null, sets approver_id to NULL (auto-approved).
+   */
+  private async cascadeVacationApprover(
+    tenantId: number,
+    areaId: number,
+    oldLeadId: number | null,
+    newLeadId: number | null,
+  ): Promise<void> {
+    if (oldLeadId === null) return;
+
+    const result = await this.db.query<{ count: string }>(
+      `WITH affected AS (
+         UPDATE vacation_requests vr
+         SET approver_id = $1,
+             updated_at = NOW()
+         WHERE vr.tenant_id = $2
+           AND vr.status = 'pending'
+           AND vr.approver_id = $3
+           AND vr.requester_id IN (
+             SELECT ud.user_id
+             FROM user_departments ud
+             JOIN departments d ON d.id = ud.department_id
+             WHERE d.area_id = $4 AND d.tenant_id = $2
+           )
+         RETURNING vr.id
+       )
+       SELECT COUNT(*)::text AS count FROM affected`,
+      [newLeadId, tenantId, oldLeadId, areaId],
+    );
+
+    const updatedCount = Number.parseInt(result[0]?.count ?? '0', 10);
+    if (updatedCount > 0) {
+      this.logger.log(
+        `Cascaded ${updatedCount} pending vacation request(s): approver ${oldLeadId} → ${String(newLeadId ?? 'auto-approve')} (area ${areaId})`,
+      );
+    }
   }
 }

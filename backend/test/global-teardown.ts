@@ -1,0 +1,87 @@
+/**
+ * Global teardown for API integration tests.
+ *
+ * Cleans transient test data for the apitest tenant AFTER tests run.
+ * Prevents stale data accumulation across repeated test runs
+ * (e.g. chat messages, E2E keys, conversations piling up).
+ *
+ * WHITELIST approach: Only cleans tables that actually accumulate
+ * across test runs. Seed/config data (tenant_features, vacation_settings,
+ * vacation_entitlements, etc.) is deliberately preserved.
+ *
+ * Runs via `docker exec` against the real PostgreSQL container.
+ */
+import { execSync } from 'node:child_process';
+
+/**
+ * Tables that accumulate transient data across test runs.
+ * Order: children first, parents last (FK dependency safe).
+ *
+ * Add new tables here when tests start failing due to stale data.
+ */
+const TRANSIENT_TABLES = [
+  // Chat: messages pile up in reused 1:1 conversations
+  'chat_messages',
+  'chat_scheduled_messages',
+  'chat_conversation_participants',
+  'chat_conversations',
+
+  // E2E encryption: key versions increment on every test run
+  'e2e_key_escrow',
+  'e2e_user_keys',
+
+  // Notifications: accumulate from feature tests
+  'notification_read_status',
+  'notifications',
+
+  // Audit/Logs: grow on every run
+  'admin_logs',
+  'admin_permission_logs',
+
+  // Refresh tokens: created on every login
+  'refresh_tokens',
+] as const;
+
+const CLEANUP_SQL = `
+DO $$
+DECLARE
+  _tenant_id integer;
+  _tbl text;
+  _tables text[] := ARRAY[${TRANSIENT_TABLES.map((t) => `'${t}'`).join(', ')}];
+  _deleted bigint;
+  _total bigint := 0;
+BEGIN
+  SELECT id INTO _tenant_id FROM tenants WHERE subdomain = 'apitest';
+  IF _tenant_id IS NULL THEN
+    RAISE NOTICE 'apitest tenant not found — skipping cleanup';
+    RETURN;
+  END IF;
+
+  FOREACH _tbl IN ARRAY _tables LOOP
+    EXECUTE format('DELETE FROM %I WHERE tenant_id = $1', _tbl) USING _tenant_id;
+    GET DIAGNOSTICS _deleted = ROW_COUNT;
+    _total := _total + _deleted;
+  END LOOP;
+
+  RAISE NOTICE 'apitest tenant (id=%): cleaned % rows from % tables',
+    _tenant_id, _total, array_length(_tables, 1);
+END $$;
+`;
+
+/**
+ * Vitest globalTeardown hook — runs once after all API tests.
+ * Cleans transient test data so the DB stays lean between runs.
+ */
+export function teardown(): void {
+  try {
+    execSync('docker exec -i assixx-postgres psql -U assixx_user -d assixx', {
+      input: CLEANUP_SQL,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 30_000,
+    });
+  } catch {
+    console.warn(
+      '[global-teardown] Tenant cleanup failed — data will be cleaned on next run',
+    );
+  }
+}

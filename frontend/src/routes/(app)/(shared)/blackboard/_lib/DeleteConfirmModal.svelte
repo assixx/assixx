@@ -48,6 +48,7 @@
 <!-- Delete Modal Step 1: Initial Confirmation -->
 {#if showStep1}
   <div
+    id="blackboard-delete-modal"
     class="modal-overlay modal-overlay--active"
     onclick={() => {
       handleOverlayClick(1);
@@ -109,6 +110,7 @@
 <!-- Delete Modal Step 2: Final Warning -->
 {#if showStep2}
   <div
+    id="blackboard-delete-confirm-modal"
     class="modal-overlay modal-overlay--active"
     onclick={() => {
       handleOverlayClick(2);

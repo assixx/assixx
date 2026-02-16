@@ -158,7 +158,7 @@
 }
 
 /* High contrast mode - make separator more visible */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
   .date-range__separator {
     font-weight: 700;
   }
