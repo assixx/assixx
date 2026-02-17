@@ -76,17 +76,11 @@
 
   /* Main Background - Light theme */
   --main-bg: var(--color-gray-50);
-  --main-bg-gradient: linear-gradient(
-    180deg,
-    var(--color-white) 0%,
-    rgb(171 207 255 / 6.8%) 30%,
-    rgb(37 157 255 / 2.7%) 60%,
-    var(--color-gray-100) 100%
-  );
+  --main-bg-gradient: #f6f8fc;
 
   /* Backgrounds */
   --color-surface: var(--color-white);
-  --header-bg: var(--color-white);
+  --header-bg: #f6f8fc;
 
   /* Text */
   --color-text-primary: var(--color-gray-900);

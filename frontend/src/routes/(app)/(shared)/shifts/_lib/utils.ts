@@ -9,7 +9,12 @@ import {
   SHIFT_TYPE_FROM_API,
 } from './constants';
 
-import type { Employee, AvailabilityStatus, ShiftType } from './types';
+import type {
+  AvailabilityEntry,
+  Employee,
+  AvailabilityStatus,
+  ShiftType,
+} from './types';
 
 // =============================================================================
 // DATE UTILITIES
@@ -234,39 +239,45 @@ export function getEmployeeDisplayName(employee: Employee): string {
 }
 
 /**
- * Get effective availability status for an employee on a specific date
+ * Check if a single availability entry covers a given date
  */
-export function getEffectiveAvailability(
-  employee: Employee,
+function isDateInAvailabilityEntry(
+  entry: AvailabilityEntry,
   date: Date,
-): AvailabilityStatus {
-  if (
-    employee.availabilityStatus === undefined ||
-    employee.availabilityStatus === 'available'
-  ) {
-    return 'available';
-  }
-
-  // Check if absence period is defined
-  if (
-    employee.availabilityStart === undefined ||
-    employee.availabilityEnd === undefined
-  ) {
-    return employee.availabilityStatus;
+): boolean {
+  if (entry.startDate === undefined || entry.endDate === undefined) {
+    return true; // No dates = status applies indefinitely
   }
 
   const checkDate = new Date(date);
   checkDate.setHours(0, 0, 0, 0);
 
-  const startDate = new Date(employee.availabilityStart);
+  const startDate = new Date(entry.startDate);
   startDate.setHours(0, 0, 0, 0);
 
-  const endDate = new Date(employee.availabilityEnd);
+  const endDate = new Date(entry.endDate);
   endDate.setHours(23, 59, 59, 999);
 
-  // Check if date is within absence period
-  if (checkDate >= startDate && checkDate <= endDate) {
-    return employee.availabilityStatus;
+  return checkDate >= startDate && checkDate <= endDate;
+}
+
+/**
+ * Get effective availability status for an employee on a specific date.
+ * Checks ALL availability entries — returns the first matching non-available status.
+ */
+export function getEffectiveAvailability(
+  employee: Employee,
+  date: Date,
+): AvailabilityStatus {
+  const entries = employee.availabilities;
+  if (entries === undefined || entries.length === 0) {
+    return 'available';
+  }
+
+  for (const entry of entries) {
+    if (isDateInAvailabilityEntry(entry, date)) {
+      return entry.status;
+    }
   }
 
   return 'available';
@@ -292,7 +303,7 @@ export function formatAvailabilityPeriod(
 }
 
 /**
- * Get effective availability for the current week (for CSS class - draggability)
+ * Get effective availability for the current week (for CSS class - draggability).
  * Returns unavailable status ONLY if ALL days in the week are unavailable.
  * If at least one day is available, returns 'available' (employee can be scheduled).
  */
@@ -300,68 +311,49 @@ export function getEffectiveAvailabilityForWeek(
   employee: Employee,
   weekDates: Date[],
 ): AvailabilityStatus {
-  // If no availability status or explicitly available, return available
-  if (
-    employee.availabilityStatus === undefined ||
-    employee.availabilityStatus === 'available'
-  ) {
+  const entries = employee.availabilities;
+  if (entries === undefined || entries.length === 0) {
     return 'available';
-  }
-
-  // Check if absence period is defined
-  if (
-    employee.availabilityStart === undefined ||
-    employee.availabilityEnd === undefined
-  ) {
-    return employee.availabilityStatus;
   }
 
   // Check if ALL days in the week are unavailable
   // If at least one day is available, employee should be draggable
+  let lastUnavailableStatus: AvailabilityStatus = 'available';
   for (const date of weekDates) {
     const status = getEffectiveAvailability(employee, date);
     if (status === 'available') {
-      return 'available'; // At least one day available → employee is available for this week
+      return 'available';
     }
+    lastUnavailableStatus = status;
   }
 
-  // All days are unavailable
-  return employee.availabilityStatus;
+  return lastUnavailableStatus;
 }
 
 /**
- * Check if employee has ANY unavailability overlapping with the week (for badge display)
- * Returns the unavailability status if ANY day overlaps, otherwise 'available'.
+ * Get ALL overlapping unavailability entries for the week (for badge display).
+ * Returns array of entries that overlap with any day in the week.
  */
-export function getOverlappingUnavailability(
+export function getOverlappingUnavailabilities(
   employee: Employee,
   weekDates: Date[],
-): AvailabilityStatus {
-  // If no availability status or explicitly available, return available
-  if (
-    employee.availabilityStatus === undefined ||
-    employee.availabilityStatus === 'available'
-  ) {
-    return 'available';
+): AvailabilityEntry[] {
+  const entries = employee.availabilities;
+  if (entries === undefined || entries.length === 0) {
+    return [];
   }
 
-  // Check if absence period is defined
-  if (
-    employee.availabilityStart === undefined ||
-    employee.availabilityEnd === undefined
-  ) {
-    return employee.availabilityStatus;
-  }
-
-  // Check if ANY day in the week overlaps with absence (for showing badge)
-  for (const date of weekDates) {
-    const status = getEffectiveAvailability(employee, date);
-    if (status !== 'available') {
-      return status; // At least one day unavailable → show badge
+  const overlapping: AvailabilityEntry[] = [];
+  for (const entry of entries) {
+    for (const date of weekDates) {
+      if (isDateInAvailabilityEntry(entry, date)) {
+        overlapping.push(entry);
+        break; // Entry overlaps — no need to check more days for this entry
+      }
     }
   }
 
-  return 'available';
+  return overlapping;
 }
 
 // =============================================================================

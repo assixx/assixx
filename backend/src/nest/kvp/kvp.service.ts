@@ -173,6 +173,7 @@ export class KvpService {
         COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
       FROM kvp_suggestions
       WHERE tenant_id = $1
+        AND status != 'archived'
     `;
 
     const rows = await this.db.query<DbDashboardStats & { approved: number }>(
@@ -192,13 +193,14 @@ export class KvpService {
       };
     }
 
+    // pg returns COUNT(*) bigint as string — coerce to number
     return {
-      totalSuggestions: stats.total_suggestions,
-      newSuggestions: stats.new_suggestions,
-      inReviewSuggestions: stats.in_progress_count,
-      approvedSuggestions: stats.approved,
-      implementedSuggestions: stats.implemented,
-      rejectedSuggestions: stats.rejected,
+      totalSuggestions: Number(stats.total_suggestions),
+      newSuggestions: Number(stats.new_suggestions),
+      inReviewSuggestions: Number(stats.in_progress_count),
+      approvedSuggestions: Number(stats.approved),
+      implementedSuggestions: Number(stats.implemented),
+      rejectedSuggestions: Number(stats.rejected),
     };
   }
 

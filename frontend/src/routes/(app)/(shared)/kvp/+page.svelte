@@ -282,7 +282,7 @@
           <i class="fas fa-hourglass-half"></i>
         </div>
         <div class="card-stat__content">
-          <div class="card-stat__value">{kvpState.formattedStats.open}</div>
+          <div class="card-stat__value">{kvpState.formattedStats.inReview}</div>
           <div class="card-stat__label">In Bearbeitung</div>
         </div>
       </div>
@@ -299,11 +299,11 @@
       </div>
       <div class="card-stat card-stat--success">
         <div class="card-stat__icon">
-          <i class="fas fa-euro-sign"></i>
+          <i class="fas fa-thumbs-up"></i>
         </div>
         <div class="card-stat__content">
-          <div class="card-stat__value">{kvpState.formattedStats.savings}</div>
-          <div class="card-stat__label">Einsparungen</div>
+          <div class="card-stat__value">{kvpState.formattedStats.approved}</div>
+          <div class="card-stat__label">Genehmigt</div>
         </div>
       </div>
     </div>

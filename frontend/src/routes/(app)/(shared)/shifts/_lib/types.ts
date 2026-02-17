@@ -11,6 +11,16 @@ import type {
 export type { UserRole, AvailabilityStatus };
 
 /**
+ * Single availability entry (one period of unavailability)
+ * A user can have multiple entries per week (e.g. vacation Mon-Tue + sick Fri)
+ */
+export interface AvailabilityEntry {
+  status: AvailabilityStatus;
+  startDate?: string;
+  endDate?: string;
+}
+
+/**
  * Shift types (frontend format)
  */
 export type ShiftType = 'early' | 'late' | 'night';
@@ -43,6 +53,8 @@ export interface User {
   availabilityStatus?: AvailabilityStatus;
   availabilityStart?: string;
   availabilityEnd?: string;
+  /** All availability entries for the displayed week (multiple periods possible) */
+  availabilities?: AvailabilityEntry[];
   // Team fields - API v2 uses arrays (teamIds, teamNames)
   teamId?: number | null; // deprecated - use teamIds[0]
   teamIds?: number[]; // array of team IDs (new API)

@@ -132,30 +132,15 @@ export interface Team {
 }
 
 /**
- * Statistics response (v2 API format)
+ * Dashboard statistics (flat structure matching backend DashboardStats)
  */
 export interface KvpStats {
-  company?: {
-    total: number;
-    byStatus: StatusCounts;
-    totalSavings: number;
-  };
-  total?: number;
-  byStatus?: StatusCounts;
-  totalSavings?: number;
-}
-
-/**
- * Status counts
- */
-export interface StatusCounts {
-  new?: number;
-  inReview?: number;
-  approved?: number;
-  implemented?: number;
-  rejected?: number;
-  archived?: number;
-  restored?: number;
+  totalSuggestions: number;
+  newSuggestions: number;
+  inReviewSuggestions: number;
+  approvedSuggestions: number;
+  implementedSuggestions: number;
+  rejectedSuggestions: number;
 }
 
 /**

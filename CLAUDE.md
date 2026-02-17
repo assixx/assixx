@@ -96,23 +96,22 @@ Use agents for reading. Read whole files.
 
 1. Docker Check
 2. [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
-3. Follow [docs/BEFORE-STARTING-DEV.md](./docs/BEFORE-STARTING-DEV.md)
-4. [docs/TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md) (mandatory for backend)
-5. [README.md](./README.md)
-6. [docs/DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
-7. [eslint.config.mjs](./eslint.config.mjs) and [frontend/eslint.config.mjs](./frontend/eslint.config.mjs)
-8. [docs/CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md)
-9. [frontend/src/styles/tailwind.css](./frontend/src/styles/tailwind.css) (UI context)
-10. [frontend/src/design-system/README.md](./frontend/src/design-system/README.md) (UI context)
-11. [backend/docs/ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)
-12. [docs/HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md)
-13. [docs/CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)
-14. [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) (Docker/Nginx/SvelteKit setup)
-15. All ADRs in [docs/infrastructure/adr/](./docs/infrastructure/adr/)
-16. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
-17. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
-18. Recap fast, then ask user that you're ready
-19. `cd /home/scs/projects/Assixx && pwd`
+3. [docs/TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md) (mandatory for backend)
+4. [README.md](./README.md)
+5. [docs/DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
+6. [eslint.config.mjs](./eslint.config.mjs) and [frontend/eslint.config.mjs](./frontend/eslint.config.mjs)
+7. [docs/CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md)
+8. [frontend/src/styles/tailwind.css](./frontend/src/styles/tailwind.css) (UI context)
+9. [frontend/src/design-system/README.md](./frontend/src/design-system/README.md) (UI context)
+10. [backend/docs/ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)
+11. [docs/HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md)
+12. [docs/CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)
+13. [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) (Docker/Nginx/SvelteKit setup)
+14. All ADRs in [docs/infrastructure/adr/](./docs/infrastructure/adr/)
+15. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
+16. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
+17. Recap fast, then ask user that you're ready
+18. `cd /home/scs/projects/Assixx && pwd`
 
 ---
 

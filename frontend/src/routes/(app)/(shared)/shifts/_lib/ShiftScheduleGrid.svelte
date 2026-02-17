@@ -417,17 +417,6 @@ Beispiele:
 
   .shift-cell.locked:hover {
     cursor: not-allowed;
-    box-shadow: none;
-    border-color: var(--color-glass-border);
-    background:
-      repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        var(--glass-bg-hover) 10px,
-        var(--glass-bg-hover) 20px
-      ),
-      var(--glass-bg);
   }
 
   .shift-cell.locked .remove-btn {

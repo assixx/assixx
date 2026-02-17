@@ -31,7 +31,7 @@
   background: var(--glass-bg-hover);
 
   /* Size */
-  padding: var(--spacing-4) var(--spacing-5);
+  padding: var(--spacing-3) var(--spacing-5);
   color: var(--color-text-primary);
 
   /* Typography */

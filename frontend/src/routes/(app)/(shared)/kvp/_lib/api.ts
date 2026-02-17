@@ -314,21 +314,7 @@ export async function unshareSuggestion(
  */
 export async function fetchStatistics(): Promise<KvpStats | null> {
   try {
-    const rawData = await apiClient.get<KvpStats>(API_ENDPOINTS.KVP_STATS);
-
-    // Normalize response format
-    const stats: KvpStats =
-      rawData.company ? rawData : (
-        {
-          company: {
-            total: rawData.total ?? 0,
-            byStatus: rawData.byStatus ?? {},
-            totalSavings: rawData.totalSavings ?? 0,
-          },
-        }
-      );
-
-    return stats;
+    return await apiClient.get<KvpStats>(API_ENDPOINTS.KVP_STATS);
   } catch (err) {
     log.error({ err }, 'Error fetching statistics');
     checkSessionExpired(err);
