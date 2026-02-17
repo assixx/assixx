@@ -2,7 +2,7 @@
 // KVP-DETAIL - COMPOSED STATE (Svelte 5 Runes)
 // =============================================================================
 
-import { createDataState } from './state-data.svelte';
+import { createDataState, createOrgState } from './state-data.svelte';
 import { createUIState } from './state-ui.svelte';
 import { createUserState } from './state-user.svelte';
 
@@ -16,6 +16,7 @@ import type { Attachment, OrgLevel } from './types';
 function createKvpDetailState() {
   const user = createUserState();
   const data = createDataState();
+  const org = createOrgState();
   const ui = createUIState();
 
   // Modal action methods
@@ -69,9 +70,9 @@ function createKvpDetailState() {
     data.setSuggestion(null);
     data.setComments([]);
     data.setAttachments([]);
-    data.setDepartments([]);
-    data.setTeams([]);
-    data.setAreas([]);
+    org.setDepartments([]);
+    org.setTeams([]);
+    org.setAreas([]);
     ui.setLoading(true);
     ui.setUpdatingStatus(false);
     ui.setAddingComment(false);
@@ -106,17 +107,23 @@ function createKvpDetailState() {
     get comments() {
       return data.comments;
     },
+    get commentTotal() {
+      return data.commentTotal;
+    },
+    get commentsHasMore() {
+      return data.commentsHasMore;
+    },
     get attachments() {
       return data.attachments;
     },
     get departments() {
-      return data.departments;
+      return org.departments;
     },
     get teams() {
-      return data.teams;
+      return org.teams;
     },
     get areas() {
-      return data.areas;
+      return org.areas;
     },
     get photoAttachments() {
       return data.photoAttachments;
@@ -126,10 +133,11 @@ function createKvpDetailState() {
     },
     setSuggestion: data.setSuggestion,
     setComments: data.setComments,
+    appendComments: data.appendComments,
     setAttachments: data.setAttachments,
-    setDepartments: data.setDepartments,
-    setTeams: data.setTeams,
-    setAreas: data.setAreas,
+    setDepartments: org.setDepartments,
+    setTeams: org.setTeams,
+    setAreas: org.setAreas,
 
     // UI state - Loading
     get isLoading() {

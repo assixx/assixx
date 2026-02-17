@@ -127,7 +127,7 @@
       filename: att.filename,
       mimeType: att.mimeType,
       fileSize: att.fileSize,
-      uploadedByName: att.uploadedByName,
+      uploaderName: att.uploaderName,
       downloadUrl: att.downloadUrl,
       previewUrl: att.previewUrl,
     };
@@ -296,7 +296,7 @@
 
   <div class="detail-container">
     <!-- Main Content -->
-    <div class="detail-main">
+    <div class="detail-main card">
       <!-- Header -->
       <div class="detail-header">
         <div>
@@ -402,7 +402,9 @@
 
       <!-- Comments Section -->
       <CommentSection
-        {comments}
+        comments={comments.comments}
+        total={comments.total}
+        hasMore={comments.hasMore}
         {isArchived}
         {uuid}
       />
@@ -412,7 +414,7 @@
     <div class="detail-sidebar">
       <!-- Confirmation Status - Hidden for archived entries -->
       {#if !isArchived}
-        <div class="sidebar-card">
+        <div class="sidebar-card card">
           <h3 class="section-title">
             <i class="fas fa-check-circle"></i> Lesebestätigung
           </h3>
@@ -426,7 +428,7 @@
             </div>
             <button
               type="button"
-              class="btn btn-light w-full text-sm"
+              class="btn btn-light text-sm"
               onclick={unconfirmEntry}
               disabled={confirming}
             >
@@ -437,7 +439,7 @@
           {:else}
             <button
               type="button"
-              class="btn btn-upload w-full"
+              class="btn btn-upload"
               onclick={confirmEntry}
               disabled={confirming}
             >
@@ -451,7 +453,7 @@
 
       <!-- Attachments (non-photo files) -->
       {#if otherFiles.length > 0}
-        <div class="sidebar-card">
+        <div class="sidebar-card card">
           <h3 class="section-title">
             <i class="fas fa-paperclip"></i> Anhänge
           </h3>
@@ -472,7 +474,7 @@
                 <div class="attachment-info">
                   <div class="attachment-name">{file.filename}</div>
                   <div class="attachment-meta">
-                    {formatFileSize(file.fileSize)} &bull; {file.uploadedByName}
+                    {formatFileSize(file.fileSize)} &bull; {file.uploaderName}
                   </div>
                 </div>
               </div>
@@ -483,19 +485,19 @@
 
       <!-- Actions - Hidden for archived entries -->
       {#if !isArchived && (canEditOrDelete || isAdmin)}
-        <div class="sidebar-card">
+        <div class="sidebar-card card">
           <h3 class="section-title"><i class="fas fa-cog"></i> Aktionen</h3>
           <div class="action-buttons">
             {#if canEditOrDelete}
               <button
                 type="button"
-                class="btn btn-light mb-2 w-full"
+                class="btn btn-light"
                 onclick={openEditModal}
                 ><i class="fas fa-edit mr-2"></i>Bearbeiten</button
               >
               <button
                 type="button"
-                class="btn btn-danger mb-2 w-full"
+                class="btn btn-danger"
                 onclick={() => (showDeleteStep1 = true)}
                 ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
               >
@@ -503,7 +505,7 @@
             {#if isAdmin}
               <button
                 type="button"
-                class="btn btn-light w-full"
+                class="btn btn-light"
                 onclick={archiveEntry}
                 ><i class="fas fa-archive mr-2"></i>Archivieren</button
               >
@@ -511,7 +513,7 @@
           </div>
         </div>
       {:else if isArchived}
-        <div class="sidebar-card">
+        <div class="sidebar-card card">
           <div class="p-4 text-center">
             <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"></i>
             <p class="mb-4 text-(--color-text-secondary)">
@@ -519,7 +521,7 @@
             </p>
             <button
               type="button"
-              class="btn btn-light w-full"
+              class="btn btn-light"
               onclick={restoreEntry}
             >
               <i class="fas fa-undo mr-2"></i>Wiederherstellen
@@ -573,14 +575,9 @@
   }
 
   .detail-main {
-    position: relative;
     z-index: 1;
     padding: var(--spacing-8);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
+    margin-bottom: 0;
   }
 
   .detail-sidebar {
@@ -592,14 +589,8 @@
   }
 
   .sidebar-card {
-    position: relative;
     z-index: 1;
-    overflow: visible;
-    padding: var(--spacing-6);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
+    margin-bottom: 0;
   }
 
   /* ─── Header ──────── */
@@ -745,9 +736,9 @@
   }
 
   .action-buttons {
-    display: inline-grid;
-    gap: var(--spacing-4);
-    margin-top: var(--spacing-6);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
   }
 
   /* ─── Photo Gallery ──────── */

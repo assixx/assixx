@@ -97,11 +97,19 @@ export interface Comment {
   suggestionId: number;
   comment: string;
   isInternal: boolean;
+  parentId: number | null;
+  replyCount: number;
   createdBy: number;
   createdByName: string;
   createdByLastname: string;
   profilePicture?: string | null;
   createdAt: string;
+}
+
+export interface PaginatedComments {
+  comments: Comment[];
+  total: number;
+  hasMore: boolean;
 }
 
 /**

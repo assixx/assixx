@@ -17,18 +17,9 @@ export const VacationRequestStatusSchema = z.enum(
 );
 
 /** Vacation type enum */
-export const VacationTypeSchema = z.enum(
-  [
-    'regular',
-    'special_doctor',
-    'special_bereavement',
-    'special_birth',
-    'special_wedding',
-    'special_move',
-    'unpaid',
-  ],
-  { message: 'Invalid vacation type' },
-);
+export const VacationTypeSchema = z.enum(['regular', 'unpaid'], {
+  message: 'Invalid vacation type',
+});
 
 /** Half day enum */
 export const VacationHalfDaySchema = z.enum(['none', 'morning', 'afternoon'], {

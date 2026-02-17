@@ -462,7 +462,7 @@
   .favorites-container {
     backdrop-filter: var(--glass-backdrop);
     margin-bottom: var(--spacing-6);
-    box-shadow: var(--shadow-sm);
+
     border: var(--glass-border);
     border-radius: var(--radius-xl);
 
@@ -593,7 +593,7 @@
 
     margin-top: var(--spacing-4);
     margin-bottom: var(--spacing-4);
-    box-shadow: var(--shadow-sm);
+
     border: 1px solid rgb(76 175 80 / 40%);
     border-radius: var(--radius-xl);
 

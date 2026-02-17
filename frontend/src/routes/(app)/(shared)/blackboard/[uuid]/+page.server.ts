@@ -10,7 +10,7 @@ import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { FullEntryResponse } from './_lib/types';
+import type { FullEntryResponse, PaginatedComments } from './_lib/types';
 
 const log = createLogger('BlackboardDetail');
 
@@ -82,9 +82,15 @@ export const load: PageServerLoad = async ({
   const parentData = await parent();
   requireFeature(parentData.activeFeatures, 'blackboard');
 
+  const defaultComments: PaginatedComments = {
+    comments: [],
+    total: 0,
+    hasMore: false,
+  };
+
   return {
     entry: result.data.entry,
-    comments: result.data.comments ?? [],
+    comments: result.data.comments ?? defaultComments,
     attachments: result.data.attachments ?? [],
     currentUser: mapCurrentUser(
       parentData.user as ParentUser | null | undefined,

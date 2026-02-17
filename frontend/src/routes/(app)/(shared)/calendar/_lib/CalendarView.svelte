@@ -117,7 +117,7 @@
 
     .ec-button {
       border-radius: 12px !important;
-      box-shadow: var(--shadow-sm);
+
       transition: all 0.2s ease;
     }
 
@@ -219,7 +219,7 @@
       cursor: pointer;
       border: none !important;
       border-radius: 4px;
-      box-shadow: var(--shadow-sm);
+
       margin-inline: auto;
     }
 

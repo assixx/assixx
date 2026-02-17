@@ -133,8 +133,7 @@
     visibility: hidden;
     opacity: 0%;
     z-index: 1000;
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
+
     border: 1px solid hsl(0deg 0% 100% / 10%);
     border-radius: var(--radius-xl);
     background: rgb(18 18 18 / 100%);

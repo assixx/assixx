@@ -55,31 +55,41 @@ describe('KvpCommentsService', () => {
 
   describe('getComments', () => {
     it('should return all comments for admin', async () => {
+      // count query
+      mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
+      // comments query
       mockDb.query.mockResolvedValueOnce([makeDbComment()]);
 
       const result = await service.getComments(42, 10, 'admin');
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.comment).toBe('Good idea');
-      expect(result[0]?.createdByName).toBe('Max');
+      expect(result.comments).toHaveLength(1);
+      expect(result.comments[0]?.comment).toBe('Good idea');
+      expect(result.comments[0]?.createdByName).toBe('Max');
     });
 
     it('should filter internal comments for employee', async () => {
+      // count query
+      mockDb.query.mockResolvedValueOnce([{ total: 0 }]);
+      // comments query
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.getComments(42, 10, 'employee');
 
-      const queryCall = mockDb.query.mock.calls[0];
-      expect(queryCall?.[0]).toContain('is_internal = FALSE');
+      // Both count and comments queries should have the filter
+      const countCall = mockDb.query.mock.calls[0];
+      expect(countCall?.[0]).toContain('is_internal = FALSE');
     });
 
     it('should not filter internal comments for root', async () => {
+      // count query
+      mockDb.query.mockResolvedValueOnce([{ total: 0 }]);
+      // comments query
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.getComments(42, 10, 'root');
 
-      const queryCall = mockDb.query.mock.calls[0];
-      expect(queryCall?.[0]).not.toContain('is_internal = FALSE');
+      const countCall = mockDb.query.mock.calls[0];
+      expect(countCall?.[0]).not.toContain('is_internal = FALSE');
     });
   });
 

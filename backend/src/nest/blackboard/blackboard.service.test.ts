@@ -151,12 +151,18 @@ describe('BlackboardService – delegation', () => {
 
   describe('comment operations', () => {
     it('getComments delegates to comments service', async () => {
-      mockComments.getComments.mockResolvedValueOnce([]);
+      const paginated = { comments: [], total: 0, hasMore: false };
+      mockComments.getComments.mockResolvedValueOnce(paginated);
 
       const result = await service.getComments(1, 1);
 
-      expect(mockComments.getComments).toHaveBeenCalledWith(1, 1);
-      expect(result).toEqual([]);
+      expect(mockComments.getComments).toHaveBeenCalledWith(
+        1,
+        1,
+        undefined,
+        undefined,
+      );
+      expect(result).toEqual(paginated);
     });
 
     it('deleteComment delegates to comments service', async () => {

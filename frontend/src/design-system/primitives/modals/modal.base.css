@@ -61,7 +61,6 @@
   /* Layout */
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(20px) saturate(180%);
 
   transition: transform 0.3s ease;
   box-shadow: var(--shadow-modal);

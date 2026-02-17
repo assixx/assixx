@@ -969,12 +969,20 @@ describe('KvpService', () => {
 
   describe('getComments', () => {
     it('resolves suggestion then delegates to commentsService', async () => {
+      const paginated = { comments: [], total: 0, hasMore: false };
+      mockComments.getComments.mockResolvedValueOnce(paginated);
       mockGetSuggestionByIdChain(mockDb);
 
       const result = await service.getComments(1, 42, 3, 'admin');
 
-      expect(result).toEqual([]);
-      expect(mockComments.getComments).toHaveBeenCalledWith(1, 42, 'admin');
+      expect(result).toEqual(paginated);
+      expect(mockComments.getComments).toHaveBeenCalledWith(
+        1,
+        42,
+        'admin',
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -991,6 +999,7 @@ describe('KvpService', () => {
         'Good idea',
         false,
         'admin',
+        undefined,
       );
     });
   });

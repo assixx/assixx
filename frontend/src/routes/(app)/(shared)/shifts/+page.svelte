@@ -457,7 +457,7 @@
   .department-notice {
     backdrop-filter: var(--glass-backdrop);
     margin: var(--spacing-8) auto;
-    box-shadow: var(--shadow-sm);
+
     border: var(--glass-border);
     border-radius: var(--radius-xl);
 

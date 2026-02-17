@@ -21,6 +21,7 @@ import type {
   Area,
   OrgLevel,
   KvpStatus,
+  PaginatedComments,
 } from './types';
 
 const log = createLogger('KvpDetailApi');
@@ -191,11 +192,26 @@ export function getShareLevelText(orgLevel: OrgLevel): string {
 // COMMENTS
 // =============================================================================
 
-export async function fetchComments(idOrUuid: string): Promise<Comment[]> {
+export async function fetchComments(
+  idOrUuid: string,
+  limit: number = 20,
+  offset: number = 0,
+): Promise<PaginatedComments> {
   try {
-    return await apiClient.get<Comment[]>(API_ENDPOINTS.kvpComments(idOrUuid));
+    return await apiClient.get<PaginatedComments>(
+      `${API_ENDPOINTS.kvpComments(idOrUuid)}?limit=${limit}&offset=${offset}`,
+    );
   } catch (err) {
     log.error({ err }, 'Error fetching comments');
+    return { comments: [], total: 0, hasMore: false };
+  }
+}
+
+export async function fetchReplies(commentId: number): Promise<Comment[]> {
+  try {
+    return await apiClient.get<Comment[]>(`/kvp/comments/${commentId}/replies`);
+  } catch (err) {
+    log.error({ err }, 'Error fetching replies');
     return [];
   }
 }
@@ -203,9 +219,13 @@ export async function fetchComments(idOrUuid: string): Promise<Comment[]> {
 export async function addComment(
   idOrUuid: string,
   comment: string,
+  parentId?: number,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await apiClient.post(API_ENDPOINTS.kvpComments(idOrUuid), { comment });
+    await apiClient.post(API_ENDPOINTS.kvpComments(idOrUuid), {
+      comment,
+      ...(parentId !== undefined ? { parentId } : {}),
+    });
     return { success: true };
   } catch (err) {
     log.error({ err }, 'Error adding comment');
@@ -213,7 +233,7 @@ export async function addComment(
     const message =
       err instanceof Error ?
         err.message
-      : 'Fehler beim hinzufügen des Kommentars';
+      : 'Fehler beim Hinzufügen des Kommentars';
     return { success: false, error: message };
   }
 }

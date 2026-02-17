@@ -19,6 +19,23 @@ export const MONTH_NAMES: Record<number, string> = {
   12: 'Dezember',
 };
 
+// ─── Short month names (year overview column headers) ────────────
+
+export const MONTH_SHORT: Record<number, string> = {
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mär',
+  4: 'Apr',
+  5: 'Mai',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sep',
+  10: 'Okt',
+  11: 'Nov',
+  12: 'Dez',
+};
+
 // ─── Short weekday names ─────────────────────────────────────────
 
 export const WEEKDAY_SHORT: Record<number, string> = {
@@ -35,21 +52,11 @@ export const WEEKDAY_SHORT: Record<number, string> = {
 
 export const TYPE_LABELS: Record<string, string> = {
   regular: 'Urlaub',
-  special_doctor: 'Arztbesuch',
-  special_bereavement: 'Trauerfall',
-  special_birth: 'Geburt',
-  special_wedding: 'Hochzeit',
-  special_move: 'Umzug',
   unpaid: 'Unbezahlt',
 };
 
 export const TYPE_COLORS: Record<string, string> = {
   regular: 'var(--color-primary)',
-  special_doctor: '#00acc1',
-  special_bereavement: 'var(--color-gray-500)',
-  special_birth: 'var(--color-success)',
-  special_wedding: 'var(--color-warning)',
-  special_move: '#8e24aa',
   unpaid: 'var(--color-danger)',
 };
 

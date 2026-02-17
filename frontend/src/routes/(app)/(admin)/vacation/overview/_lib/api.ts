@@ -60,6 +60,19 @@ export async function getMachineAvailability(
   return Array.isArray(raw) ? raw : [];
 }
 
+// ─── Year Overview (all 12 months) ───────────────────────────────
+
+/** Fetch all 12 months of team calendar data for a given year. */
+export async function getTeamCalendarYear(
+  teamId: number,
+  year: number,
+): Promise<TeamCalendarData[]> {
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  return await Promise.all(
+    months.map((month) => getTeamCalendar(teamId, month, year)),
+  );
+}
+
 // ─── Own Balance (overview) ──────────────────────────────────────
 
 /** Fetch own vacation balance for a given year. */

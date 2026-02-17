@@ -133,7 +133,7 @@
 <style>
   .employee-sidebar {
     backdrop-filter: var(--glass-backdrop);
-    box-shadow: var(--shadow-sm);
+
     border: var(--glass-border);
     border-radius: var(--radius-xl);
 

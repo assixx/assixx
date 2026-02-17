@@ -15,6 +15,9 @@ import type {
   TeamListItem,
   VacationBalance,
   VacationHalfDay,
+  YearMonthCell,
+  YearMonthVacationSummary,
+  YearUserRow,
 } from './types';
 
 // ─── Data ───────────────────────────────────────────────────────────
@@ -33,6 +36,10 @@ let selectedTeamId = $state<number | null>(null);
 let selectedYear = $state<number | null>(null);
 let selectedMonth = $state<number | null>(null);
 
+// ─── Year overview ───────────────────────────────────────────────
+
+let yearCalendarData = $state<TeamCalendarData[] | null>(null);
+
 // ─── Machine availability ───────────────────────────────────────────
 
 let machineAvailEntries = $state<MachineAvailabilityEntry[]>([]);
@@ -43,6 +50,7 @@ let isLoading = $state(false);
 let isLoadingTeams = $state(false);
 let isLoadingCalendar = $state(false);
 let isLoadingBalance = $state(false);
+let isLoadingYearCalendar = $state(false);
 
 // ─── Derived ────────────────────────────────────────────────────────
 
@@ -161,6 +169,174 @@ const calendarGrid = $derived.by((): CalendarUserRow[] => {
   return rows;
 });
 
+// ─── Year overview derived ───────────────────────────────────────
+
+/** Whether the year overview is active (year selected, no month) */
+const showYearOverview = $derived(
+  selectedYear !== null && selectedMonth === null,
+);
+
+/** Transform 12 months of calendar data into a year grid for rendering */
+const yearGrid = $derived.by((): YearUserRow[] => {
+  if (yearCalendarData === null || yearCalendarData.length === 0) return [];
+
+  const userMap = buildYearUserMap(yearCalendarData);
+  return buildYearRows(userMap);
+});
+
+/** Map of month numbers (1-12) that contain at least one blackout day. */
+const yearBlackoutMonths = $derived.by((): Map<number, string> => {
+  if (blackouts.length === 0 || selectedYear === null) return new Map();
+  return buildYearBlackoutMap(blackouts, selectedYear);
+});
+
+// ─── Year overview helpers (extracted to reduce cognitive complexity) ─
+
+interface YearUserMapEntry {
+  userName: string;
+  months: Map<number, YearMonthCell>;
+}
+
+/** Build a user map from 12 months of calendar data. */
+function buildYearUserMap(
+  data: TeamCalendarData[],
+): Map<number, YearUserMapEntry> {
+  const userMap = new Map<number, YearUserMapEntry>();
+
+  for (const monthData of data) {
+    processMonthEntries(userMap, monthData);
+  }
+
+  return userMap;
+}
+
+/** Process entries for a single month into the user map. */
+function processMonthEntries(
+  userMap: Map<number, YearUserMapEntry>,
+  monthData: TeamCalendarData,
+): void {
+  for (const entry of monthData.entries) {
+    let user = userMap.get(entry.userId);
+    if (user === undefined) {
+      user = { userName: entry.userName, months: new Map() };
+      userMap.set(entry.userId, user);
+    }
+
+    const dayCount = countEntryDaysInMonth(
+      entry,
+      monthData.year,
+      monthData.month,
+    );
+    if (dayCount === 0) continue;
+
+    addToYearMonthCell(user.months, monthData.month, {
+      vacationType: entry.vacationType,
+      days: dayCount,
+    });
+  }
+}
+
+/** Convert user map to sorted YearUserRow array. */
+function buildYearRows(userMap: Map<number, YearUserMapEntry>): YearUserRow[] {
+  const rows: YearUserRow[] = [];
+
+  for (const [userId, { userName, months }] of userMap) {
+    let totalDays = 0;
+    for (const cell of months.values()) {
+      totalDays += cell.totalDays;
+    }
+    rows.push({ userId, userName, months, totalDays });
+  }
+
+  rows.sort((a, b) => a.userName.localeCompare(b.userName, 'de'));
+  return rows;
+}
+
+/** Build a map of months (1-12) → blackout name for a given year. */
+function buildYearBlackoutMap(
+  periods: BlackoutPeriod[],
+  year: number,
+): Map<number, string> {
+  const result = new Map<number, string>();
+
+  for (const bo of periods) {
+    const boStart = new Date(bo.startDate + 'T00:00:00');
+    const boEnd = new Date(bo.endDate + 'T00:00:00');
+    fillBlackoutMonths(result, boStart, boEnd, year);
+  }
+
+  return result;
+}
+
+/** Mark months that overlap with a blackout period. */
+function fillBlackoutMonths(
+  result: Map<number, string>,
+  boStart: Date,
+  boEnd: Date,
+  year: number,
+): void {
+  for (let m = 1; m <= 12; m++) {
+    if (result.has(m)) continue;
+    const monthStart = new Date(year, m - 1, 1);
+    const monthEnd = new Date(year, m, 0);
+    if (boEnd >= monthStart && boStart <= monthEnd) {
+      result.set(m, '');
+    }
+  }
+}
+
+// ─── Year overview helpers (entry-level) ────────────────────────
+
+/** Count how many days an entry occupies within a specific month. */
+function countEntryDaysInMonth(
+  entry: TeamCalendarEntry,
+  year: number,
+  month: number,
+): number {
+  const entryStart = new Date(entry.startDate + 'T00:00:00');
+  const entryEnd = new Date(entry.endDate + 'T00:00:00');
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0);
+
+  const rangeStart = entryStart > monthStart ? entryStart : monthStart;
+  const rangeEnd = entryEnd < monthEnd ? entryEnd : monthEnd;
+
+  if (rangeStart > rangeEnd) return 0;
+
+  let count = 0;
+  const cursor = new Date(rangeStart);
+  while (cursor <= rangeEnd) {
+    count++;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return count;
+}
+
+/** Add a vacation summary to a month cell, merging same types. */
+function addToYearMonthCell(
+  months: Map<number, YearMonthCell>,
+  month: number,
+  summary: YearMonthVacationSummary,
+): void {
+  const existing = months.get(month);
+  if (existing !== undefined) {
+    const sameType = existing.entries.find(
+      (e) => e.vacationType === summary.vacationType,
+    );
+    if (sameType !== undefined) {
+      sameType.days += summary.days;
+    } else {
+      existing.entries.push({ ...summary });
+    }
+    existing.totalDays += summary.days;
+  } else {
+    months.set(month, {
+      totalDays: summary.days,
+      entries: [{ ...summary }],
+    });
+  }
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /** Fill day numbers from a single availability entry, clipped to month bounds. */
@@ -270,16 +446,25 @@ function selectTeam(teamId: number) {
   calendarData = null;
 }
 
-/** Select year → reset downstream (month, calendar) */
+/** Select year → reset downstream (month, calendar) + clear year data */
 function setYear(year: number) {
   selectedYear = year;
   selectedMonth = null;
   calendarData = null;
+  yearCalendarData = null;
+  machineAvailEntries = [];
 }
 
 /** Select month → reset calendar (will be loaded after) */
 function setMonth(month: number) {
   selectedMonth = month;
+  calendarData = null;
+  machineAvailEntries = [];
+}
+
+/** Clear month selection → back to year overview */
+function clearMonth() {
+  selectedMonth = null;
   calendarData = null;
   machineAvailEntries = [];
 }
@@ -292,6 +477,7 @@ function reset() {
   selectedMachineId = null;
   selectedTeamId = null;
   calendarData = null;
+  yearCalendarData = null;
   balance = null;
   selectedYear = null;
   selectedMonth = null;
@@ -299,6 +485,7 @@ function reset() {
   isLoading = false;
   isLoadingTeams = false;
   isLoadingCalendar = false;
+  isLoadingYearCalendar = false;
   isLoadingBalance = false;
 }
 
@@ -352,6 +539,20 @@ export const overviewState = {
     return machineAvailDays;
   },
 
+  // Year overview
+  get yearGrid() {
+    return yearGrid;
+  },
+  get yearBlackoutMonths() {
+    return yearBlackoutMonths;
+  },
+  get showYearOverview() {
+    return showYearOverview;
+  },
+  get isLoadingYearCalendar() {
+    return isLoadingYearCalendar;
+  },
+
   // Cascade flags
   get canSelectTeam() {
     return canSelectTeam;
@@ -384,6 +585,12 @@ export const overviewState = {
   },
   setMachineAvailEntries: (data: MachineAvailabilityEntry[]) => {
     machineAvailEntries = data;
+  },
+  setYearCalendarData: (data: TeamCalendarData[] | null) => {
+    yearCalendarData = data;
+  },
+  setLoadingYearCalendar: (val: boolean) => {
+    isLoadingYearCalendar = val;
   },
 
   // UI getters
@@ -419,6 +626,7 @@ export const overviewState = {
   selectTeam,
   setMonth,
   setYear,
+  clearMonth,
 
   // Global
   reset,

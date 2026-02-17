@@ -72,7 +72,7 @@
     align-items: center;
     gap: 10px;
     z-index: 1001;
-    backdrop-filter: blur(20px) saturate(180%);
+
     box-shadow:
       0 4px 16px rgb(0 0 0 / 20%),
       inset 0 1px 0 rgb(255 255 255 / 5%);
