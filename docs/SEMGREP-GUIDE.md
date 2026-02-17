@@ -54,12 +54,16 @@ Frontend-Änderungen triggern keinen Scan (Semgrep hat keinen Svelte-Support).
 
 ## Rulesets
 
-| Ruleset           | ~Rules | Was es findet                                                           |
-| ----------------- | ------ | ----------------------------------------------------------------------- |
-| `p/typescript`    | 32     | `pg-sqli` (SQL Injection in pg), JWT Secrets, XSS, SSRF, Path Traversal |
-| `p/nestjs`        | 3      | CORS Misconfiguration, XSS Header disabled, Open Redirect               |
-| `p/owasp-top-ten` | 45     | OWASP Top 10 inkl. Nginx Rules, Crypto Failures                         |
-| `p/dockerfile`    | 44     | Root User, Package Manager, Dockerfile Best Practices                   |
+| Ruleset            | ~Rules | Was es findet                                                            |
+| ------------------ | ------ | ------------------------------------------------------------------------ |
+| `p/typescript`     | 74     | SQL Injection (pg, knex, sequelize), JWT Secrets, XSS, SSRF, eval       |
+| `p/nestjs`         | 3      | CORS Misconfiguration, XSS Header disabled, Open Redirect               |
+| `p/owasp-top-ten`  | 45     | OWASP Top 10 inkl. Nginx Rules, Crypto Failures                         |
+| `p/security-audit` | ~200   | Breiter Security-Audit: child_process, crypto, TLS, deserialization      |
+| `p/nodejs`         | ~50    | Node.js-spezifisch: eval, child_process, fs, http patterns              |
+| `p/dockerfile`     | 44     | Root User, Package Manager, Dockerfile Best Practices                   |
+
+> **Hinweis:** `p/javascript` ist **identisch** mit `p/typescript` (gleiche 74 Rules). Wird daher nicht gebraucht.
 
 ### Relevanteste Rules für unseren Stack
 
@@ -86,8 +90,13 @@ docker run --rm -v "$(pwd):/src" semgrep/semgrep \
     --config p/typescript \
     --config p/nestjs \
     --config p/owasp-top-ten \
+    --config p/security-audit \
+    --config p/nodejs \
     --config p/dockerfile \
+    --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
+    --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
     --metrics=off \
+    --error \
     backend/ shared/ docker/
 ```
 
@@ -99,8 +108,13 @@ semgrep scan \
   --config p/typescript \
   --config p/nestjs \
   --config p/owasp-top-ten \
+  --config p/security-audit \
+  --config p/nodejs \
   --config p/dockerfile \
+  --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
+  --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
   --metrics=off \
+  --error \
   backend/ shared/ docker/
 ```
 
@@ -159,29 +173,32 @@ const result = await this.db.query(`SELECT * FROM messages WHERE id = $1`, [id])
 backend/src/legacy/old-controller.ts
 ```
 
+### `--exclude-rule` für Nginx False Positives
+
+Zwei Nginx-Rules sind False Positives **mit Mitigations in place** und werden per CLI ausgeschlossen:
+
+```bash
+--exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling
+--exclude-rule=generic.nginx.security.request-host-used.request-host-used
+```
+
+**Warum FP:**
+- **H2C Smuggling:** Mitigiert durch `map` Block der `$allowed_upgrade` auf `"websocket"` beschränkt
+- **$host Usage:** Mitigiert durch `default_server` Block der unbekannte Host Headers mit `return 444` ablehnt
+
+> **Wichtig:** `nosemgrep` Inline-Kommentare funktionieren **NICHT** für `generic` Language Rules (Nginx, YAML). Deshalb `--exclude-rule` statt Inline-Ignore.
+
 ### Regel: Kein blindes Ignorieren
 
 Gleiche Policy wie bei ESLint-Disables: **Nur mit Kommentar der erklärt WARUM.**
 
 ---
 
-## Blocking Mode (Zukunft)
+## Blocking Mode
 
-Aktuell ist der Scan **informational** — er blockiert keine PRs. Sobald die False-Positive-Rate bekannt ist:
+Der Scan ist **blocking** — `--error` ist aktiviert. Exit Code 1 bei Findings → PR wird blockiert.
 
-```yaml
-# In .github/workflows/semgrep.yml hinzufügen:
-semgrep scan \
-  --config p/typescript \
-  --config p/nestjs \
-  --config p/owasp-top-ten \
-  --config p/dockerfile \
-  --metrics=off \
-  --error \                          # ← Diese Zeile macht den Scan blocking
-  backend/ shared/ docker/
-```
-
-`--error` → Exit Code 1 bei Findings → PR wird blockiert.
+Findings müssen vor dem Merge gefixt oder dokumentiert ausgeschlossen werden.
 
 ---
 
@@ -201,7 +218,8 @@ semgrep scan \
 - **Kein Cloud-Login** — `semgrep scan` statt `semgrep ci`, kein Vendor Lock-in
 - **`--metrics=off`** — Zero Telemetrie
 - **Nur backend/ + shared/ + docker/** — Frontend hat keinen Svelte-Support
-- **Informational zuerst** — Baseline verstehen bevor PRs blockiert werden
+- **Blocking (`--error`)** — Baseline ist clean, PRs mit Findings werden blockiert
+- **Kuratierte Rulesets** — `p/default` (1064 Rules) war zu noisy (Alert Fatigue). 6 gezielte Rulesets decken unseren Stack ab ohne FP-Flut
 
 ### Risiko-Bewusstsein
 
@@ -232,6 +250,8 @@ semgrep scan --config p/typescript --metrics=off -j 4 backend/
 # → https://semgrep.dev/p/typescript
 # → https://semgrep.dev/p/nestjs
 # → https://semgrep.dev/p/owasp-top-ten
+# → https://semgrep.dev/p/security-audit
+# → https://semgrep.dev/p/nodejs
 # → https://semgrep.dev/p/dockerfile
 ```
 
@@ -240,11 +260,16 @@ semgrep scan --config p/typescript --metrics=off -j 4 backend/
 ## Quick Reference
 
 ```bash
-# Lokal: Ganzer Scan (Docker)
+# Lokal: Ganzer Scan (Docker) — identisch mit CI
 docker run --rm -v "$(pwd):/src" semgrep/semgrep \
-  semgrep scan --config p/typescript --config p/nestjs \
-  --config p/owasp-top-ten --config p/dockerfile \
-  --metrics=off backend/ shared/ docker/
+  semgrep scan \
+    --config p/typescript --config p/nestjs \
+    --config p/owasp-top-ten --config p/security-audit \
+    --config p/nodejs --config p/dockerfile \
+    --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
+    --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
+    --metrics=off --error \
+    backend/ shared/ docker/
 
 # Lokal: Einzelne Datei
 docker run --rm -v "$(pwd):/src" semgrep/semgrep \

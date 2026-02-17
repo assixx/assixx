@@ -38,11 +38,19 @@ jobs:
             --config p/typescript \
             --config p/nestjs \
             --config p/owasp-top-ten \
+            --config p/security-audit \
+            --config p/nodejs \
             --config p/dockerfile \
+            --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
+            --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
             --metrics=off \
+            --error \
             --sarif-output=semgrep-results.sarif \
             --json-output=semgrep-results.json \
             backend/ shared/ docker/
+          # Excluded rules (false positives with mitigations in place):
+          # - H2C smuggling: mitigated by map block restricting $allowed_upgrade to "websocket" only
+          # - $host usage: mitigated by default_server block rejecting unknown Host headers (return 444)
 
       - name: Upload SARIF results
         if: always()
