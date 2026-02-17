@@ -3,10 +3,6 @@ name: Semgrep Security Scan
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "backend/**"
-      - "shared/**"
-      - "docker/**"
   push:
     branches: [main]
     paths:
