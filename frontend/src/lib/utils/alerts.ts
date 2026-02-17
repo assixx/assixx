@@ -145,10 +145,7 @@ function createConfirmDialog(message: string): HTMLDivElement {
   });
 }
 
-/**
- * Show a confirmation dialog
- * @returns Promise that resolves to true if user clicked Ja, false otherwise
- */
+/** Show a confirmation dialog. Resolves to true if user clicked Ja. */
 export async function showConfirm(message: string): Promise<boolean> {
   if (!browser) return false;
 

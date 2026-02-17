@@ -77,10 +77,6 @@ export class DashboardService {
    * Permission-aware (ADR-020): Counts are only fetched for features
    * the user has read permission for. No permission = count 0.
    * Root and admin with fullAccess bypass this check.
-   *
-   * @param user - Current authenticated user
-   * @param tenantId - Current tenant ID
-   * @returns Combined counts from all services
    */
   async getCounts(
     user: NestAuthUser,

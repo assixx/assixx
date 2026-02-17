@@ -4,9 +4,6 @@
  * Example: SCSRT10120620251752
  */
 
-/**
- * Get role abbreviation
- */
 function getRoleAbbreviation(role: string): string {
   const roleMap: Record<string, string> = {
     root: 'RT',
@@ -32,9 +29,8 @@ function getDateTimeString(): string {
 
 /**
  * Generates a unique employee ID
- * @param subdomain - The tenant subdomain (e.g., 'scs')
- * @param role - User role (root, admin, employee)
- * @param userId - The database user ID
+ * @param subdomain - Tenant subdomain (e.g., 'scs'), truncated to 10 chars
+ * @param role - User role ('root' | 'admin' | 'employee')
  * @returns Formatted employee ID (e.g., SCSRT10120620251752)
  */
 export function generateEmployeeId(

@@ -284,13 +284,10 @@ const pinoLogger = pino(buildLoggerOptions());
 export const logger = pinoLogger;
 
 /**
- * Create a child logger with component/service context
+ * Create a child logger with component/service context.
  *
  * Each child logger includes the context in every log entry,
  * making it easy to filter logs by component.
- *
- * @param context - Component or service name
- * @returns Child logger with context bound
  *
  * @example
  * const log = createLogger('TokenManager');

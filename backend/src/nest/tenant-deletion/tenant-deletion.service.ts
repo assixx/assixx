@@ -346,9 +346,6 @@ export class TenantDeletionService implements OnModuleDestroy {
     await this.processQueue();
   }
 
-  /**
-   * Reject a deletion request
-   */
   async rejectDeletion(
     queueId: number,
     rejectedBy: number,
@@ -385,9 +382,6 @@ export class TenantDeletionService implements OnModuleDestroy {
     await this.emergencyStop(tenantId, stoppedBy);
   }
 
-  /**
-   * Get deletion status for a tenant
-   */
   async getDeletionStatus(tenantId: number): Promise<{
     status: string;
     queueId?: number;
@@ -430,9 +424,6 @@ export class TenantDeletionService implements OnModuleDestroy {
     return result;
   }
 
-  /**
-   * Retry a failed deletion
-   */
   async retryDeletion(queueId: number): Promise<void> {
     await this.db.query(
       `UPDATE tenant_deletion_queue
@@ -479,9 +470,6 @@ export class TenantDeletionService implements OnModuleDestroy {
     return this.redisClient;
   }
 
-  /**
-   * Clear Redis cache for tenant
-   */
   private async clearRedisCache(tenantId: number): Promise<void> {
     const redis = this.getRedis();
     const pattern = `tenant:${tenantId}:*`;
@@ -493,9 +481,6 @@ export class TenantDeletionService implements OnModuleDestroy {
     }
   }
 
-  /**
-   * Log deletion completion and return result
-   */
   private logAndReturnResult(
     tenantId: number,
     deletionLog: DeletionLog[],

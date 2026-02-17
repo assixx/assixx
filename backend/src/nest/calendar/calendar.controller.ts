@@ -60,10 +60,7 @@ const CAL_EVENTS = 'calendar-events';
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
-  /**
-   * GET /calendar/events
-   * List events with filters and pagination
-   */
+  /** GET /calendar/events */
   @Get('events')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
   async listEvents(
@@ -90,10 +87,7 @@ export class CalendarController {
     );
   }
 
-  /**
-   * GET /calendar/dashboard
-   * Get upcoming events for current month
-   */
+  /** GET /calendar/dashboard */
   @Get('dashboard')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
   async getDashboardEvents(
@@ -108,10 +102,7 @@ export class CalendarController {
     );
   }
 
-  /**
-   * GET /calendar/recently-added
-   * Get recently added events (last 3 by created_at)
-   */
+  /** GET /calendar/recently-added */
   @Get('recently-added')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
   async getRecentlyAddedEvents(
@@ -126,10 +117,7 @@ export class CalendarController {
     );
   }
 
-  /**
-   * GET /calendar/upcoming-count
-   * Get count of upcoming events for notification badge
-   */
+  /** GET /calendar/upcoming-count */
   @Get('upcoming-count')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
   async getUpcomingCount(
@@ -144,10 +132,7 @@ export class CalendarController {
     );
   }
 
-  /**
-   * GET /calendar/export
-   * Export events as ICS or CSV
-   */
+  /** GET /calendar/export */
   @Get('export')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
   async exportEvents(
@@ -172,10 +157,7 @@ export class CalendarController {
       .send(data);
   }
 
-  /**
-   * GET /calendar/events/uuid/:uuid
-   * Get event by UUID (preferred)
-   */
+  /** GET /calendar/events/uuid/:uuid */
   @Get('events/uuid/:uuid')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
   async getEventByUuid(
@@ -188,7 +170,6 @@ export class CalendarController {
 
   /**
    * GET /calendar/events/:id
-   * Get event by ID (deprecated - use /events/uuid/:uuid)
    * @deprecated Use GET /calendar/events/uuid/:uuid instead
    */
   @Get('events/:id')
@@ -201,10 +182,7 @@ export class CalendarController {
     return await this.calendarService.getEventById(id, tenantId, user.id);
   }
 
-  /**
-   * POST /calendar/events
-   * Create a new event
-   */
+  /** POST /calendar/events */
   @Post('events')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
@@ -216,10 +194,7 @@ export class CalendarController {
     return await this.calendarService.createEvent(dto, tenantId, user.id);
   }
 
-  /**
-   * PUT /calendar/events/uuid/:uuid
-   * Update event by UUID (preferred)
-   */
+  /** PUT /calendar/events/uuid/:uuid */
   @Put('events/uuid/:uuid')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canWrite')
   async updateEventByUuid(
@@ -239,7 +214,6 @@ export class CalendarController {
 
   /**
    * PUT /calendar/events/:id
-   * Update an event (deprecated - use /events/uuid/:uuid)
    * @deprecated Use PUT /calendar/events/uuid/:uuid instead
    */
   @Put('events/:id')
@@ -259,10 +233,7 @@ export class CalendarController {
     );
   }
 
-  /**
-   * DELETE /calendar/events/uuid/:uuid
-   * Delete event by UUID (preferred)
-   */
+  /** DELETE /calendar/events/uuid/:uuid */
   @Delete('events/uuid/:uuid')
   @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canDelete')
   async deleteEventByUuid(
@@ -280,7 +251,6 @@ export class CalendarController {
 
   /**
    * DELETE /calendar/events/:id
-   * Delete an event (deprecated - use /events/uuid/:uuid)
    * @deprecated Use DELETE /calendar/events/uuid/:uuid instead
    */
   @Delete('events/:id')

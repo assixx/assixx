@@ -174,9 +174,6 @@ export class AdminPermissionsService {
     };
   }
 
-  /**
-   * Set department permissions for an admin
-   */
   async setDepartmentPermissions(
     adminId: number,
     departmentIds: number[],
@@ -232,9 +229,6 @@ export class AdminPermissionsService {
     // No-op for backwards compatibility
   }
 
-  /**
-   * Remove department permission
-   */
   async removeDepartmentPermission(
     adminId: number,
     departmentId: number,
@@ -282,10 +276,7 @@ export class AdminPermissionsService {
     );
   }
 
-  /**
-   * Process permission update for a single admin
-   * @returns null on success, error message on failure
-   */
+  /** Process permission update for a single admin */
   private async processAdminPermission(
     adminId: number,
     operation: 'assign' | 'remove',
@@ -521,9 +512,6 @@ export class AdminPermissionsService {
     );
   }
 
-  /**
-   * Remove area permission
-   */
   async removeAreaPermission(
     userId: number,
     areaId: number,
@@ -553,9 +541,6 @@ export class AdminPermissionsService {
     );
   }
 
-  /**
-   * Set has_full_access flag for a user
-   */
   async setHasFullAccess(
     userId: number,
     hasFullAccess: boolean,
@@ -628,9 +613,6 @@ export class AdminPermissionsService {
     };
   }
 
-  /**
-   * Get area permissions for a user
-   */
   private async getAreaPermissions(
     userId: number,
     tenantId: number,
@@ -669,9 +651,6 @@ export class AdminPermissionsService {
     });
   }
 
-  /**
-   * Get department permissions for an admin
-   */
   private async getDepartmentPermissions(
     adminId: number,
     tenantId: number,
@@ -716,9 +695,6 @@ export class AdminPermissionsService {
     return [];
   }
 
-  /**
-   * Get total areas count
-   */
   private async getTotalAreas(tenantId: number): Promise<number> {
     const rows = await this.db.query<DbCountResult>(
       'SELECT COUNT(*) as total FROM areas WHERE tenant_id = $1',
@@ -727,9 +703,6 @@ export class AdminPermissionsService {
     return Number(rows[0]?.total ?? 0);
   }
 
-  /**
-   * Get total departments count
-   */
   private async getTotalDepartments(tenantId: number): Promise<number> {
     const rows = await this.db.query<DbCountResult>(
       'SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1 AND is_active = 1',
@@ -738,9 +711,6 @@ export class AdminPermissionsService {
     return Number(rows[0]?.total ?? 0);
   }
 
-  /**
-   * Insert department permissions into database
-   */
   private async insertDepartmentPermissions(
     adminId: number,
     departmentIds: number[],
@@ -795,9 +765,6 @@ export class AdminPermissionsService {
     }
   }
 
-  /**
-   * Create audit log entry
-   */
   private async createAuditLog(
     action: string,
     userId: number,

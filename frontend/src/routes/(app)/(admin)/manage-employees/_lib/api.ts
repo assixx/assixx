@@ -92,10 +92,7 @@ export function checkAuth(): boolean {
 // API FUNCTIONS
 // =============================================================================
 
-/**
- * Load employees from API
- * @returns Promise with employees array or throws error
- */
+/** Load employees from API */
 export async function loadEmployees(): Promise<Employee[]> {
   if (!checkAuth()) return [];
 
@@ -114,10 +111,7 @@ export async function loadEmployees(): Promise<Employee[]> {
   }
 }
 
-/**
- * Load teams for multi-select
- * @returns Promise with teams array
- */
+/** Load teams for multi-select */
 export async function loadTeams(): Promise<Team[]> {
   try {
     const result = await apiClient.get<Team[]>(API_ENDPOINTS.TEAMS);
@@ -128,23 +122,14 @@ export async function loadTeams(): Promise<Team[]> {
   }
 }
 
-/**
- * Generate username from email
- * @param email - Email address
- * @returns Generated username
- */
+/** Generate username from email */
 export function generateUsernameFromEmail(email: string): string {
   const normalized = email.toLowerCase().trim();
   const localPart = normalized.split('@')[0] ?? normalized;
   return localPart.replace(/[^\w-]/g, '_');
 }
 
-/**
- * Save employee (create or update)
- * @param payload - Employee data
- * @param editId - Employee ID for update, null for create
- * @returns Promise with created/updated employee ID
- */
+/** Save employee (create or update) */
 export async function saveEmployee(
   payload: EmployeePayload,
   editId: number | null,
@@ -163,11 +148,7 @@ export async function saveEmployee(
   return extractCreatedId(result);
 }
 
-/**
- * Assign employee to team
- * @param userId - Employee user ID
- * @param teamId - Team ID
- */
+/** Assign employee to team */
 export async function assignTeamMember(
   userId: number,
   teamId: number,
@@ -183,11 +164,7 @@ export async function assignTeamMember(
   }
 }
 
-/**
- * Remove employee from team
- * @param userId - Employee user ID
- * @param teamId - Team ID
- */
+/** Remove employee from team */
 export async function removeTeamMember(
   userId: number,
   teamId: number,
@@ -203,20 +180,13 @@ export async function removeTeamMember(
   }
 }
 
-/**
- * Delete employee
- * @param employeeId - Employee ID to delete
- */
+/** Delete employee */
 export async function deleteEmployee(employeeId: number): Promise<void> {
   if (!checkAuth()) throw new Error('Not authenticated');
   await apiClient.delete(API_ENDPOINTS.user(employeeId));
 }
 
-/**
- * Update employee availability (quick update via users table)
- * @param employeeId - Employee ID
- * @param availability - Availability data
- */
+/** Update employee availability (quick update via users table) */
 export async function updateEmployeeAvailability(
   employeeId: number,
   availability: {
@@ -231,14 +201,7 @@ export async function updateEmployeeAvailability(
   await apiClient.put(API_ENDPOINTS.user(employeeId), availability);
 }
 
-/**
- * Sync team memberships for an employee
- * Calculates diff between original and new team IDs, then adds/removes as needed
- * @param userId - Employee user ID
- * @param newTeamIds - New team IDs to assign
- * @param originalTeamIds - Original team IDs (before edit)
- * @param isEditMode - Whether editing existing employee
- */
+/** Sync team memberships - calculates diff between original and new team IDs, then adds/removes as needed */
 export async function syncTeamMemberships(
   userId: number,
   newTeamIds: number[],
@@ -266,10 +229,7 @@ export async function syncTeamMemberships(
   }
 }
 
-/**
- * Upgrade employee role to admin
- * @param userId - Employee ID to upgrade
- */
+/** Upgrade employee role to admin */
 export async function upgradeToAdmin(userId: number): Promise<void> {
   if (!checkAuth()) throw new Error('Not authenticated');
   await apiClient.put(API_ENDPOINTS.user(userId), { role: 'admin' });

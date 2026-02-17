@@ -59,9 +59,8 @@ function extractArrayFromResponse<T>(result: unknown, key?: string): T[] {
 // =============================================================================
 
 /**
- * Load user profile data
- * DELEGATES to shared user service (prevents duplicate /users/me calls)
- * @returns User profile or null on error
+ * Load user profile data.
+ * Delegates to shared user service (prevents duplicate /users/me calls)
  */
 export async function loadProfile(): Promise<{
   user: UserProfile | null;
@@ -80,11 +79,7 @@ export async function loadProfile(): Promise<{
   }
 }
 
-/**
- * Load profile picture from user data (SSR source of truth)
- * @param userPicture - Profile picture URL from user data
- * @returns Absolute URL path or null
- */
+/** Load profile picture from user data (SSR source of truth) */
 export function loadProfilePicture(userPicture?: string): string | null {
   // Use user's profile picture directly from SSR data - no caching
   // Caching was removed because it caused profile pictures to be shared
@@ -96,10 +91,7 @@ export function loadProfilePicture(userPicture?: string): string | null {
   return null;
 }
 
-/**
- * Load pending tenant deletion approvals
- * @returns Array of approval items
- */
+/** Load pending tenant deletion approvals */
 export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
   try {
     const result: unknown = await apiClient.get(
@@ -112,21 +104,14 @@ export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
   }
 }
 
-/**
- * Save profile changes
- * @param payload - Profile update data
- */
+/** Save profile changes */
 export async function saveProfile(
   payload: ProfileUpdatePayload,
 ): Promise<void> {
   await apiClient.put('/users/me', payload);
 }
 
-/**
- * Upload profile picture
- * @param file - Image file to upload
- * @returns New profile picture URL or null
- */
+/** Upload profile picture */
 export async function uploadProfilePicture(file: File): Promise<string | null> {
   // Validate file type
   if (!file.type.startsWith('image/')) {
@@ -162,17 +147,12 @@ export async function uploadProfilePicture(file: File): Promise<string | null> {
   return newUrl;
 }
 
-/**
- * Remove profile picture
- */
+/** Remove profile picture */
 export async function removeProfilePicture(): Promise<void> {
   await apiClient.delete('/users/me/profile-picture');
 }
 
-/**
- * Change user password
- * @param payload - Password change data
- */
+/** Change user password */
 export async function changePassword(
   payload: PasswordChangePayload,
 ): Promise<void> {
@@ -187,26 +167,17 @@ export async function logoutAllSessions(): Promise<void> {
   await apiClient.post('/auth/logout');
 }
 
-/**
- * Approve tenant deletion request
- * @param id - Approval queue ID
- */
+/** Approve tenant deletion request */
 export async function approveRequest(id: number): Promise<void> {
   await apiClient.post(`/root/deletion-approvals/${id}/approve`);
 }
 
-/**
- * Reject tenant deletion request
- * @param id - Approval queue ID
- */
+/** Reject tenant deletion request */
 export async function rejectRequest(id: number): Promise<void> {
   await apiClient.post(`/root/deletion-approvals/${id}/reject`);
 }
 
-/**
- * Parse JWT token to get user role
- * @param token - JWT token string
- */
+/** Parse JWT token to get user role */
 export function parseJwtRole(token: string): string | null {
   try {
     const payload: unknown = JSON.parse(atob(token.split('.')[1]));

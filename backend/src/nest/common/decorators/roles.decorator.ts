@@ -13,8 +13,6 @@ export const ROLES_KEY = 'roles';
 /**
  * Require specific roles for route access
  *
- * @param roles - Array of allowed roles
- *
  * @example
  * ```typescript
  * \@Roles('admin', 'root')

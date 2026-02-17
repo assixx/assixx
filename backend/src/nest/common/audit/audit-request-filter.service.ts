@@ -99,9 +99,6 @@ export class AuditRequestFilterService {
     return false;
   }
 
-  /**
-   * Check if a list/view action should be throttled.
-   */
   shouldThrottleListOrView(
     action: AuditAction,
     user: NestAuthUser | undefined,

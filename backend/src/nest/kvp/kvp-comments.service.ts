@@ -15,12 +15,7 @@ export class KvpCommentsService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  /**
-   * Get comments for a suggestion
-   * @param numericId - Resolved numeric suggestion ID (facade handles UUID resolution)
-   * @param tenantId - Tenant ID for isolation
-   * @param userRole - User role for internal comment filtering
-   */
+  /** Get comments for a suggestion */
   async getComments(
     numericId: number,
     tenantId: number,
@@ -62,11 +57,7 @@ export class KvpCommentsService {
     });
   }
 
-  /**
-   * Add a comment to a suggestion
-   * Only admin and root users can add comments (Defense in Depth)
-   * @param numericId - Resolved numeric suggestion ID (facade handles UUID resolution)
-   */
+  /** Add a comment to a suggestion (only admin and root, Defense in Depth) */
   async addComment(
     numericId: number,
     userId: number,

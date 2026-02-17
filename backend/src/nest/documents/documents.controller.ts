@@ -205,10 +205,7 @@ const DOC_ARCHIVE = 'documents-archive';
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  /**
-   * GET /documents
-   * List documents with filters and pagination
-   */
+  /** GET /documents */
   @Get()
   @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async listDocuments(
@@ -219,10 +216,7 @@ export class DocumentsController {
     return await this.documentsService.listDocuments(tenantId, user.id, query);
   }
 
-  /**
-   * GET /documents/stats
-   * Get document statistics
-   */
+  /** GET /documents/stats */
   @Get('stats')
   @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getDocumentStats(
@@ -232,10 +226,7 @@ export class DocumentsController {
     return await this.documentsService.getDocumentStats(tenantId, user.id);
   }
 
-  /**
-   * GET /documents/unread-count
-   * Get count of unread documents for notification badge
-   */
+  /** GET /documents/unread-count */
   @Get('unread-count')
   @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getUnreadCount(
@@ -249,10 +240,7 @@ export class DocumentsController {
     );
   }
 
-  /**
-   * GET /documents/chat-folders
-   * Get chat folders for document explorer
-   */
+  /** GET /documents/chat-folders */
   @Get('chat-folders')
   @RequirePermission(DOC_FEATURE, DOC_FILES, 'canRead')
   async getChatFolders(

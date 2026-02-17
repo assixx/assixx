@@ -161,10 +161,6 @@ let pendingConversationIdCounter: number = -1;
  * LAZY CREATION: If no existing conversation exists, returns a PENDING conversation
  * that is NOT persisted to the database. The conversation is only created when
  * the first message is sent.
- *
- * @param user - User to start conversation with
- * @param conversations - Existing conversations list
- * @returns Conversation object (existing or pending) and isNew flag
  */
 export function startConversationWith(
   user: ChatUser,
@@ -205,9 +201,6 @@ export function startConversationWith(
 /**
  * Create a pending conversation in the database.
  * Called when the first message is sent to a pending conversation.
- *
- * @param pendingConversation - The pending conversation to persist
- * @returns The persisted conversation with real DB ID
  */
 export async function persistPendingConversation(
   pendingConversation: Conversation,
@@ -240,9 +233,7 @@ export async function deleteConversation(
 // Message Handlers
 // ==========================================================================
 
-/**
- * Uploaded attachment info for scheduled messages
- */
+/** Uploaded attachment info for scheduled messages */
 export interface UploadedAttachmentInfo {
   id: number;
   path: string;
@@ -296,9 +287,7 @@ export async function cancelScheduledMessage(messageId: string): Promise<void> {
 // File Handlers
 // ==========================================================================
 
-/**
- * Upload files and return full attachment info
- */
+/** Upload files and return full attachment info */
 export async function uploadFiles(
   conversationId: number,
   files: File[],
@@ -445,7 +434,7 @@ function handleRawMessage(
 }
 
 /**
- * Connect to WebSocket using connection ticket
+ * Connect to WebSocket using connection ticket.
  * SECURITY: Fetches short-lived ticket instead of using JWT to prevent token leakage in logs
  * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
  */

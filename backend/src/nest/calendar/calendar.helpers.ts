@@ -31,10 +31,7 @@ export const SORT_BY_MAP: Record<string, string> = {
   createdAt: 'created_at',
 };
 
-/**
- * SQL query for permission-based event visibility
- * Params: $1=tenantId, $2=startOfDay, $3=endOfWeek, $4=lastVisited, $5=userId
- */
+/** SQL query for permission-based event visibility ($1=tenantId, $2=startOfDay, $3=endOfWeek, $4=lastVisited, $5=userId) */
 export const PERMISSION_BASED_COUNT_QUERY = `
   SELECT COUNT(DISTINCT e.id) as count
   FROM calendar_events e
@@ -91,10 +88,10 @@ export const PERMISSION_BASED_COUNT_QUERY = `
 // ============================================
 
 /**
- * Build SQL visibility clause for permission-based event access
- * Checks: admin permissions, lead positions, department/team memberships, personal, attendees
- * @param userIdx - Parameter index for userId
- * @param tenantIdx - Parameter index for tenantId
+ * Build SQL visibility clause for permission-based event access.
+ * Checks: admin permissions, lead positions, department/team memberships, personal, attendees.
+ * @param userIdx - SQL parameter index ($N) for userId
+ * @param tenantIdx - SQL parameter index ($N) for tenantId
  */
 export function buildVisibilityClause(
   userIdx: number,
@@ -144,9 +141,7 @@ export function buildVisibilityClause(
 // Mappers & Transforms
 // ============================================
 
-/**
- * Convert DB event to API format
- */
+/** Convert DB event row to API response format */
 export function dbToApiEvent(event: DbCalendarEvent): CalendarEventResponse {
   return {
     id: event.id,
@@ -176,9 +171,7 @@ export function dbToApiEvent(event: DbCalendarEvent): CalendarEventResponse {
   };
 }
 
-/**
- * Normalize pagination parameters
- */
+/** Clamp and normalize pagination parameters */
 export function normalizePagination(filters: EventFilters): {
   page: number;
   limit: number;
@@ -189,9 +182,7 @@ export function normalizePagination(filters: EventFilters): {
   return { page, limit, offset: (page - 1) * limit };
 }
 
-/**
- * Validate sort column against allowed list
- */
+/** Validate sort column against ALLOWED_SORT_COLUMNS, defaulting to 'start_date' */
 export function validateSortColumn(sortBy: string): string {
   return ALLOWED_SORT_COLUMNS.has(sortBy) ? sortBy : 'start_date';
 }
@@ -200,10 +191,7 @@ export function validateSortColumn(sortBy: string): string {
 // Recurrence Calculation
 // ============================================
 
-/**
- * Calculate all recurrence dates based on recurrence settings
- * Returns array of start dates for each occurrence
- */
+/** Calculate all recurrence dates based on recurrence settings */
 export function calculateRecurrenceDates(
   startDate: Date,
   recurrence: string | undefined,
@@ -248,9 +236,7 @@ export function calculateRecurrenceDates(
   return dates;
 }
 
-/**
- * Add interval to date based on recurrence type
- */
+/** Add one recurrence interval (daily/weekly/monthly/yearly) to date */
 export function addRecurrenceInterval(date: Date, recurrence: string): Date {
   const newDate = new Date(date);
 
@@ -278,9 +264,7 @@ export function addRecurrenceInterval(date: Date, recurrence: string): Date {
 // Query Helpers
 // ============================================
 
-/**
- * Append date and search filters to query
- */
+/** Append date range and search ILIKE filters to an SQL WHERE clause */
 export function appendDateSearchFilters(
   filters: EventFilters,
   params: unknown[],

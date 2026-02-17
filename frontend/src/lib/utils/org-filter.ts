@@ -40,11 +40,6 @@ export interface FilterableTeam {
  * Filter available departments based on selected areas.
  * Hides departments that are already covered by selected areas (inheritance).
  *
- * @param allDepartments - All available departments
- * @param selectedAreaIds - Currently selected area IDs
- * @param isDisabled - Whether selection is disabled (e.g., companyWide mode)
- * @returns Departments not covered by selected areas
- *
  * @example
  * // Area "Production" (id: 1) has departments "Assembly" (areaId: 1) and "QA" (areaId: 1)
  * // When area 1 is selected, both departments are hidden
@@ -68,11 +63,6 @@ export function filterAvailableDepartments<T extends FilterableDepartment>(
  * Filter department IDs to remove those covered by selected areas.
  * Call this when areas change to clean up already-selected departments.
  *
- * @param departmentIds - Currently selected department IDs
- * @param allDepartments - All available departments
- * @param selectedAreaIds - Currently selected area IDs
- * @returns Department IDs not covered by areas
- *
  * @example
  * // User had department 5 selected, then selects area 1 which contains dept 5
  * filterDepartmentIdsByAreas([5, 6], allDepts, [1])
@@ -93,11 +83,6 @@ export function filterDepartmentIdsByAreas(
 /**
  * Filter available teams based on selected departments.
  * Hides teams that are already covered by selected departments (inheritance).
- *
- * @param allTeams - All available teams
- * @param selectedDepartmentIds - Currently selected department IDs
- * @param isDisabled - Whether selection is disabled
- * @returns Teams not covered by selected departments
  */
 export function filterAvailableTeams<T extends FilterableTeam>(
   allTeams: T[],
@@ -112,14 +97,7 @@ export function filterAvailableTeams<T extends FilterableTeam>(
   });
 }
 
-/**
- * Filter team IDs to remove those covered by selected departments.
- *
- * @param teamIds - Currently selected team IDs
- * @param allTeams - All available teams
- * @param selectedDepartmentIds - Currently selected department IDs
- * @returns Team IDs not covered by departments
- */
+/** Filter team IDs to remove those covered by selected departments. */
 export function filterTeamIdsByDepartments(
   teamIds: number[],
   allTeams: FilterableTeam[],

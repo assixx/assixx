@@ -26,20 +26,12 @@ import type {
 // STATUS BADGE HELPERS
 // =============================================================================
 
-/**
- * Get status badge class based on isActive value
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns CSS class for badge
- */
+/** Get status badge class based on isActive value */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
   return STATUS_BADGE_CLASSES[isActive];
 }
 
-/**
- * Get status label for display
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns Human-readable status label
- */
+/** Get status label for display */
 export function getStatusLabel(isActive: IsActiveStatus): string {
   return STATUS_LABELS[isActive];
 }
@@ -56,9 +48,6 @@ const BADGE_CLASS_SECONDARY = 'badge--secondary';
  * Get department badge info for team table
  * Shows department name with tooltip showing area hierarchy
  * BADGE-INHERITANCE-DISPLAY: Departments are linked to areas
- * @param team - Team object with departmentId and departmentName
- * @param allDepartments - All available departments with area info
- * @returns Badge info with class, text, and title
  */
 export function getDepartmentBadge(
   team: Team,
@@ -96,12 +85,7 @@ export function getDepartmentBadge(
   };
 }
 
-/**
- * Get members badge info for team table
- * Shows member count with tooltip listing member names
- * @param team - Team object with memberCount and memberNames
- * @returns Badge info with class, text, and title
- */
+/** Get members badge info for team table (count with tooltip listing names) */
 export function getMembersBadge(team: Team): BadgeInfo {
   const count = team.memberCount ?? 0;
   const names = team.memberNames ?? '';
@@ -122,12 +106,7 @@ export function getMembersBadge(team: Team): BadgeInfo {
   };
 }
 
-/**
- * Get machines badge info for team table
- * Shows machine count with tooltip listing machine names
- * @param team - Team object with machineCount and machineNames
- * @returns Badge info with class, text, and title
- */
+/** Get machines badge info for team table (count with tooltip listing names) */
 export function getMachinesBadge(team: Team): BadgeInfo {
   const count = team.machineCount ?? 0;
   const names = team.machineNames ?? '';
@@ -164,11 +143,7 @@ export function getMachinesBadge(team: Team): BadgeInfo {
 // DATE HELPERS
 // =============================================================================
 
-/**
- * Format date for display
- * @param dateStr - ISO date string
- * @returns Formatted date string (de-DE locale)
- */
+/** Format date for display (de-DE locale) */
 export function formatDate(dateStr: string): string {
   if (!dateStr) return '-';
   try {
@@ -182,12 +157,7 @@ export function formatDate(dateStr: string): string {
 // DISPLAY TEXT HELPERS
 // =============================================================================
 
-/**
- * Get selected members display text for dropdown
- * @param memberIds - Array of selected member IDs
- * @param allEmployees - All available employees
- * @returns Display text for the dropdown trigger
- */
+/** Get selected members display text for dropdown */
 export function getMembersDisplayText(
   memberIds: number[],
   allEmployees: TeamMember[],
@@ -205,12 +175,7 @@ export function getMembersDisplayText(
   return `${names.length} Mitglieder ausgewählt`;
 }
 
-/**
- * Get selected machines display text for dropdown
- * @param machineIds - Array of selected machine IDs
- * @param allMachines - All available machines
- * @returns Display text for the dropdown trigger
- */
+/** Get selected machines display text for dropdown */
 export function getMachinesDisplayText(
   machineIds: number[],
   allMachines: Machine[],
@@ -228,12 +193,7 @@ export function getMachinesDisplayText(
   return `${names.length} Maschinen ausgewählt`;
 }
 
-/**
- * Get department display text
- * @param departmentId - Selected department ID or null
- * @param allDepartments - All available departments
- * @returns Department name or default text
- */
+/** Get department display text */
 export function getDepartmentDisplayText(
   departmentId: number | null,
   allDepartments: Department[],
@@ -243,12 +203,7 @@ export function getDepartmentDisplayText(
   return dept?.name ?? MESSAGES.NO_DEPARTMENT;
 }
 
-/**
- * Get leader display text
- * @param leaderId - Selected leader ID or null
- * @param allAdmins - All available admins
- * @returns Leader name or default text
- */
+/** Get leader display text */
 export function getLeaderDisplayText(
   leaderId: number | null,
   allAdmins: Admin[],
@@ -262,11 +217,7 @@ export function getLeaderDisplayText(
 // FORM HELPERS
 // =============================================================================
 
-/**
- * Populate form from team data (for edit mode)
- * @param team - Team to edit
- * @returns Form data object
- */
+/** Populate form from team data (for edit mode) */
 export function populateFormFromTeam(team: Team): {
   name: string;
   description: string;
@@ -287,10 +238,7 @@ export function populateFormFromTeam(team: Team): {
   };
 }
 
-/**
- * Get default form values for new team
- * @returns Default form data object
- */
+/** Get default form values for new team */
 export function getDefaultFormValues(): {
   name: string;
   description: string;
@@ -307,12 +255,7 @@ export function getDefaultFormValues(): {
 // TOGGLE HELPERS
 // =============================================================================
 
-/**
- * Toggle an ID in an array (add if not present, remove if present)
- * @param ids - Current array of IDs
- * @param id - ID to toggle
- * @returns New array with ID toggled
- */
+/** Toggle an ID in an array (add if not present, remove if present) */
 export function toggleIdInArray(ids: number[], id: number): number[] {
   if (ids.includes(id)) {
     return ids.filter((i) => i !== id);

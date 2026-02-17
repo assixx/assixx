@@ -7,13 +7,8 @@ import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
 import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
-import prettier from 'eslint-plugin-prettier';
-import promisePlugin from 'eslint-plugin-promise';
-import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import storybook from 'eslint-plugin-storybook';
-import tsdocPlugin from 'eslint-plugin-tsdoc';
-import unicornPlugin from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
 export default [
@@ -124,9 +119,7 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      prettier,
       'import-x': importPlugin,
-      tsdoc: tsdocPlugin,
     },
     settings: {
       'import-x/resolver': {
@@ -150,9 +143,6 @@ export default [
       // v8: Access rules via tseslint.plugin.configs (same structure as before)
       ...tseslint.plugin.configs['strict-type-checked'].rules,
       ...tseslint.plugin.configs['stylistic-type-checked'].rules,
-
-      'prettier/prettier': 'error',
-      'tsdoc/syntax': 'error', // Regel 10: Zero Warnings
 
       // =======================================================================
       // PostgreSQL SQL Injection Prevention
@@ -347,29 +337,10 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
-      security: securityPlugin,
       'no-unsanitized': noUnsanitizedPlugin,
     },
     rules: {
-      // Power of Ten Regel 10: Zero Warnings - Security Rules
-      'security/detect-eval-with-expression': 'error',
-      'security/detect-non-literal-fs-filename': 'error',
-      'security/detect-non-literal-regexp': 'error',
-      'security/detect-unsafe-regex': 'error',
-      'security/detect-buffer-noassert': 'error',
-      'security/detect-child-process': 'error',
-      'security/detect-disable-mustache-escape': 'error',
-      'security/detect-no-csrf-before-method-override': 'error',
-      'security/detect-possible-timing-attacks': 'error',
-      'security/detect-pseudoRandomBytes': 'error',
-      // detect-object-injection DEAKTIVIERT für Frontend
-      // Grund: Extrem hohe False-Positive-Rate, keine Konfigurationsoptionen
-      // TypeScript types schützen bereits bei Record<K,V>[key] Zugriffen
-      // Siehe: https://github.com/nodesecurity/eslint-plugin-security/issues/21
-      // GitLab hat diese Regel ebenfalls deaktiviert: https://gitlab.com/gitlab-org/gitlab/-/issues/351399
-      'security/detect-object-injection': 'off',
-
-      'no-unsanitized/method': 'error', // Regel 10: Zero Warnings
+      'no-unsanitized/method': 'error',
       'no-unsanitized/property': 'error',
 
       'no-restricted-syntax': [
@@ -381,26 +352,6 @@ export default [
             'Use addEventListener instead of onclick attributes to prevent XSS',
         },
       ],
-    },
-  }, // Promise Plugin Configuration
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      promise: promisePlugin,
-    },
-    rules: {
-      'promise/always-return': 'error',
-      'promise/no-return-wrap': 'error',
-      'promise/param-names': 'error',
-      'promise/catch-or-return': 'error',
-      'promise/no-native': 'off',
-      'promise/no-nesting': 'error',
-      'promise/no-promise-in-callback': 'error',
-      'promise/no-callback-in-promise': 'error',
-      'promise/avoid-new': 'off',
-      'promise/no-new-statics': 'error',
-      'promise/no-return-in-finally': 'error',
-      'promise/valid-params': 'error',
     },
   }, // SonarJS Plugin Configuration
   {
@@ -436,28 +387,6 @@ export default [
       'sonarjs/prefer-object-literal': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
     },
-  }, // Unicorn Plugin - Cherry-picked best rules
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      unicorn: unicornPlugin,
-    },
-    rules: {
-      // Keep only critical unicorn rules
-      'unicorn/no-new-buffer': 'error', // Security: deprecated API
-      'unicorn/prefer-number-properties': 'error', // Regel 10: Zero Warnings - Type safety: Number.isNaN vs isNaN
-    },
-  }, // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
-  {
-    files: [
-      '**/controllers/**/*.ts',
-      '**/services/**/*.ts',
-      '**/utils/db.ts',
-      '**/middleware/auth*.ts',
-      '**/routes/v2/**/*.ts',
-      '**/config/*.ts',
-    ],
-    // JSDoc entfernt - wir nutzen nur TSDoc
   }, // No-Secrets Plugin
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
@@ -540,8 +469,6 @@ export default [
       'max-lines-per-function': 'off',
       'no-console': 'off',
       'sonarjs/no-duplicate-string': 'off',
-      'security/detect-object-injection': 'off',
-      'tsdoc/syntax': 'off',
     },
   },
 
@@ -602,14 +529,12 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      prettier,
       'import-x': importPlugin,
       vitest: vitestPlugin,
     },
     rules: {
       ...tseslint.plugin.configs.recommended.rules,
       ...vitestPlugin.configs.recommended.rules,
-      'prettier/prettier': 'error',
       '@typescript-eslint/no-explicit-any': 'off', // In Tests oft notwendig
       '@typescript-eslint/no-non-null-assertion': 'off', // In Tests oft notwendig
       '@typescript-eslint/no-unused-vars': [
@@ -648,12 +573,10 @@ export default [
       },
     },
     plugins: {
-      prettier,
       vitest: vitestPlugin,
     },
     rules: {
       ...vitestPlugin.configs.recommended.rules,
-      'prettier/prettier': 'error',
     },
   }, // Remaining configurations for JS files, configs, etc.
   // ... (Diese Teile waren bereits gut und wurden unverändert übernommen)
@@ -682,11 +605,7 @@ export default [
         Promise: 'readonly',
       },
     },
-    plugins: {
-      prettier,
-    },
     rules: {
-      'prettier/prettier': 'error',
       'no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },

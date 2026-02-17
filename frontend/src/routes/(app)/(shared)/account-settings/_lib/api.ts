@@ -20,11 +20,7 @@ const log = createLogger('AccountSettingsApi');
 
 const apiClient = getApiClient();
 
-/**
- * Parse JWT token to extract payload
- * @param token - JWT token string
- * @returns Parsed payload or null
- */
+/** Parse JWT token to extract payload */
 export function parseJwtPayload(token: string): JwtPayload | null {
   try {
     const parts = token.split('.');
@@ -41,19 +37,13 @@ export function parseJwtPayload(token: string): JwtPayload | null {
   }
 }
 
-/**
- * Get access token from localStorage
- * @returns Token or null
- */
+/** Get access token from localStorage */
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(STORAGE_KEYS.accessToken);
 }
 
-/**
- * Check if user is authenticated and has root role
- * @returns Object with auth status and role
- */
+/** Check if user is authenticated and has root role */
 export function checkAuthRole(): {
   isAuthenticated: boolean;
   role: string | null;
@@ -71,10 +61,7 @@ export function checkAuthRole(): {
   return { isAuthenticated: true, role: payload.role };
 }
 
-/**
- * Load pending deletion status
- * @returns Deletion status data or null
- */
+/** Load pending deletion status */
 export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
   try {
     const result = await apiClient.get<
@@ -101,10 +88,7 @@ export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
   }
 }
 
-/**
- * Get count of root users in tenant
- * @returns Number of root users
- */
+/** Get count of root users in tenant */
 export async function getRootUserCount(): Promise<number> {
   try {
     const result = await apiClient.get<RootUsersResponse | { id: number }[]>(
@@ -126,11 +110,7 @@ export async function getRootUserCount(): Promise<number> {
   }
 }
 
-/**
- * Delete tenant (initiates deletion request)
- * @param reason - Deletion reason
- * @returns Deletion queue response
- */
+/** Delete tenant (initiates deletion request) */
 export async function deleteTenant(
   reason: string,
 ): Promise<DeletionQueueResponse> {

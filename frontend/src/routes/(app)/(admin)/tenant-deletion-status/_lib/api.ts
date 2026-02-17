@@ -16,9 +16,7 @@ const apiClient = getApiClient();
 // HELPER FUNCTIONS (reduce cognitive complexity)
 // =============================================================================
 
-/**
- * Check if error is a "not found" error (404)
- */
+/** Check if error is a "not found" error (404) */
 function isNotFoundError(err: unknown): boolean {
   const errorObj = err as ApiError;
   return (
@@ -27,9 +25,7 @@ function isNotFoundError(err: unknown): boolean {
   );
 }
 
-/**
- * Extract deletion status items from API response
- */
+/** Extract deletion status items from API response */
 function parseApiResponse(result: unknown): DeletionStatusItem[] {
   if (result === null) {
     return [];
@@ -54,9 +50,7 @@ function parseApiResponse(result: unknown): DeletionStatusItem[] {
   return [];
 }
 
-/**
- * Format error message for display
- */
+/** Format error message for display */
 function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Fehler beim Laden des Status';
 }
@@ -65,10 +59,7 @@ function getErrorMessage(err: unknown): string {
 // API FUNCTIONS
 // =============================================================================
 
-/**
- * Load deletion status from API
- * @returns Array of deletion status items
- */
+/** Load deletion status from API */
 export async function loadDeletionStatus(): Promise<{
   data: DeletionStatusItem[];
   error: string | null;
@@ -86,11 +77,7 @@ export async function loadDeletionStatus(): Promise<{
   }
 }
 
-/**
- * Reject a deletion request
- * @param queueId - Queue ID to reject
- * @param reason - Rejection reason
- */
+/** Reject a deletion request */
 export async function rejectDeletion(
   queueId: number,
   reason: string,
@@ -100,18 +87,12 @@ export async function rejectDeletion(
   });
 }
 
-/**
- * Cancel the current user's deletion request
- */
+/** Cancel the current user's deletion request */
 export async function cancelDeletion(): Promise<void> {
   await apiClient.post('/root/tenant/cancel-deletion', {});
 }
 
-/**
- * Emergency stop a deletion process
- * @param queueId - Queue ID to stop
- * @param reason - Optional reason (defaults to standard message)
- */
+/** Emergency stop a deletion process */
 export async function emergencyStop(
   queueId: number,
   reason?: string,
@@ -127,11 +108,7 @@ interface JwtPayload {
   role: string;
 }
 
-/**
- * Parse JWT token to extract user info
- * @param token - JWT token string
- * @returns User ID and role, or null if invalid
- */
+/** Parse JWT token to extract user info */
 export function parseJwtToken(
   token: string,
 ): { id: number; role: string } | null {

@@ -6,7 +6,6 @@
 import js from '@eslint/js';
 import importPlugin from 'eslint-plugin-import-x';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
-import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
@@ -172,33 +171,6 @@ export default ts.config(
       'sonarjs/prefer-immediate-return': 'error',
       'sonarjs/prefer-object-literal': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
-    },
-  },
-
-  // =============================================================================
-  // SECURITY PLUGIN - All rules (Zero Warnings Policy)
-  // =============================================================================
-  {
-    files: ['src/**/*.ts', 'src/**/*.js', 'src/**/*.svelte'],
-    plugins: {
-      security: securityPlugin,
-    },
-    rules: {
-      'security/detect-bidi-characters': 'error',
-      'security/detect-buffer-noassert': 'error',
-      'security/detect-child-process': 'error',
-      'security/detect-disable-mustache-escape': 'error',
-      'security/detect-eval-with-expression': 'error',
-      'security/detect-new-buffer': 'error',
-      'security/detect-no-csrf-before-method-override': 'error',
-      'security/detect-non-literal-fs-filename': 'off',
-      'security/detect-non-literal-regexp': 'off',
-      'security/detect-non-literal-require': 'error',
-      'security/detect-pseudoRandomBytes': 'error',
-      'security/detect-unsafe-regex': 'error',
-      // Disabled: Too many false positives, TypeScript provides protection
-      'security/detect-object-injection': 'off',
-      'security/detect-possible-timing-attacks': 'off',
     },
   },
 

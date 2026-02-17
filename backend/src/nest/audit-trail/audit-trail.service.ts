@@ -603,6 +603,7 @@ export class AuditTrailService {
       params.push(dateFrom);
     }
     if (dateTo !== undefined && dateTo !== '') {
+      // eslint-disable-next-line no-useless-assignment -- paramIndex++ kept for consistency so adding a new filter won't reuse the same index
       conditions.push(`created_at <= $${paramIndex++}`);
       params.push(dateTo);
     }

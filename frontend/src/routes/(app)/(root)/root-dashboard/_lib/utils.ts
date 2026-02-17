@@ -13,36 +13,24 @@ import {
 
 import type { ActivityLog } from './types';
 
-/**
- * Get readable action label
- * @param action - Action type
- */
+/** Get readable action label */
 export function getActionLabel(action: string): string {
   return Object.hasOwn(ACTION_LABELS, action) ? ACTION_LABELS[action] : action;
 }
 
-/**
- * Get badge CSS class for action
- * @param action - Action type
- */
+/** Get badge CSS class for action */
 export function getActionBadgeClass(action: string): string {
   return Object.hasOwn(ACTION_BADGE_CLASSES, action) ?
       ACTION_BADGE_CLASSES[action]
     : 'info';
 }
 
-/**
- * Get readable role label
- * @param role - User role
- */
+/** Get readable role label */
 export function getRoleLabel(role: string): string {
   return Object.hasOwn(ROLE_LABELS, role) ? ROLE_LABELS[role] : role;
 }
 
-/**
- * Get badge CSS class for role
- * @param role - User role
- */
+/** Get badge CSS class for role */
 export function getRoleBadgeClass(role: string | null | undefined): string {
   if (role === null || role === undefined || role === '') return 'info';
   const normalizedRole = role.toLowerCase();
@@ -51,10 +39,7 @@ export function getRoleBadgeClass(role: string | null | undefined): string {
     : 'info';
 }
 
-/**
- * Get display name from log entry
- * @param log - Activity log entry
- */
+/** Get display name from log entry */
 export function getDisplayName(
   log: Pick<ActivityLog, 'userFirstName' | 'userLastName' | 'userName'>,
 ): string {
@@ -64,10 +49,7 @@ export function getDisplayName(
   return fullName !== '' ? fullName : (log.userName ?? '-');
 }
 
-/**
- * Check if employee number is temporary
- * @param employeeNumber - Employee number to check
- */
+/** Check if employee number is temporary */
 export function isTemporaryEmployeeNumber(employeeNumber: string): boolean {
   if (employeeNumber === '') return true;
 
@@ -76,19 +58,12 @@ export function isTemporaryEmployeeNumber(employeeNumber: string): boolean {
   );
 }
 
-/**
- * Filter invalid characters from employee number input
- * @param value - Input value
- * @returns Filtered value
- */
+/** Filter invalid characters from employee number input */
 export function filterEmployeeNumberInput(value: string): string {
   return value.replace(EMPLOYEE_NUMBER.validCharsRegex, '');
 }
 
-/**
- * Validate employee number
- * @param value - Employee number to validate
- */
+/** Validate employee number */
 export function isValidEmployeeNumber(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed === '') return false;

@@ -23,10 +23,7 @@
 
 /**
  * Register a capture-phase click handler that fires `callback` when a click
- * occurs outside any `.dropdown` element.
- *
- * @param callback - Called on every outside click (typically `closeAllDropdowns`)
- * @returns Cleanup function — call it in `$effect` return or `onDestroy`
+ * occurs outside any `.dropdown` element. Returns cleanup function.
  */
 export function onClickOutsideDropdown(callback: () => void): () => void {
   function handler(event: MouseEvent): void {

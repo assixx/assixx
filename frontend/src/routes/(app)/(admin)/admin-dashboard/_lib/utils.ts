@@ -22,10 +22,7 @@ import type {
   FormattedEventDate,
 } from './types';
 
-/**
- * Get display name for employee
- * @param user - User object
- */
+/** Get display name for employee */
 export function getEmployeeName(user: User): string {
   const firstName = user.firstName ?? '';
   const lastName = user.lastName ?? '';
@@ -33,10 +30,7 @@ export function getEmployeeName(user: User): string {
   return fullName !== '' ? fullName : user.email;
 }
 
-/**
- * Get org level text in German
- * @param orgLevel - Organization level
- */
+/** Get org level text in German */
 export function getOrgLevelText(orgLevel: string): string {
   if (orgLevel in ORG_LEVEL_LABELS) {
     return ORG_LEVEL_LABELS[orgLevel as OrgLevel];
@@ -44,34 +38,22 @@ export function getOrgLevelText(orgLevel: string): string {
   return 'Persönlich';
 }
 
-/**
- * Get org level CSS class
- * @param orgLevel - Organization level
- */
+/** Get org level CSS class */
 export function getOrgLevelClass(orgLevel: string): string {
   return `event-level-${orgLevel}`;
 }
 
-/**
- * Get priority label in German
- * @param priority - Priority level
- */
+/** Get priority label in German */
 export function getPriorityLabel(priority: Priority): string {
   return PRIORITY_LABELS[priority];
 }
 
-/**
- * Get blackboard org level label
- * @param orgLevel - Blackboard organization level
- */
+/** Get blackboard org level label */
 export function getBlackboardOrgLabel(orgLevel: BlackboardOrgLevel): string {
   return BLACKBOARD_ORG_LABELS[orgLevel];
 }
 
-/**
- * Format blackboard date (German locale, date only - no time)
- * @param dateStr - ISO date string
- */
+/** Format blackboard date (German locale, date only - no time) */
 export function formatBlackboardDate(
   dateStr: string | null | undefined,
 ): string {
@@ -85,10 +67,7 @@ export function formatBlackboardDate(
   });
 }
 
-/**
- * Check if a date is expired (in the past)
- * @param dateStr - ISO date string
- */
+/** Check if a date is expired (in the past) */
 export function isExpired(dateStr: string | null | undefined): boolean {
   if (dateStr === null || dateStr === undefined || dateStr === '') return false;
   const date = new Date(dateStr);
@@ -102,9 +81,7 @@ interface BufferObject {
   data: number[];
 }
 
-/**
- * Type guard to check if value is a Buffer-like object from API
- */
+/** Type guard to check if value is a Buffer-like object from API */
 function isBufferObject(value: object): value is BufferObject {
   return (
     'type' in value &&
@@ -114,10 +91,7 @@ function isBufferObject(value: object): value is BufferObject {
   );
 }
 
-/**
- * Parse content text (handles Buffer objects from API)
- * @param contentText - Content which may be string or Buffer object
- */
+/** Parse content text (handles Buffer objects from API) */
 export function parseContent(contentText: unknown): string {
   if (contentText === null || contentText === undefined) {
     return '';
@@ -138,20 +112,13 @@ export function parseContent(contentText: unknown): string {
   return JSON.stringify(contentText);
 }
 
-/**
- * Truncate content text
- * @param text - Text to truncate
- * @param maxLength - Maximum length (default 150)
- */
+/** Truncate content text */
 export function truncateContent(text: string, maxLength = 150): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 }
 
-/**
- * Format event date for display
- * @param dateStr - ISO date string
- */
+/** Format event date for display */
 export function formatEventDate(dateStr: string): FormattedEventDate {
   const date = new Date(dateStr);
   return {
@@ -164,35 +131,22 @@ export function formatEventDate(dateStr: string): FormattedEventDate {
   };
 }
 
-/**
- * Check if event is all day
- * @param allDay - All day flag (boolean or number)
- */
+/** Check if event is all day */
 export function isAllDay(allDay: boolean | number): boolean {
   return allDay === true || allDay === 1;
 }
 
-/**
- * Navigate to blackboard entry detail
- * Uses SvelteKit's goto() for client-side navigation (no full page reload)
- * @param uuid - Entry UUID
- */
+/** Navigate to blackboard entry detail via SvelteKit client-side routing */
 export function openBlackboardEntry(uuid: string): void {
   void goto(`/blackboard/${uuid}`);
 }
 
-/**
- * Navigate to URL using SvelteKit client-side routing
- * @param url - Target URL (internal routes only)
- */
+/** Navigate to URL using SvelteKit client-side routing */
 export function navigateTo(url: string): void {
   void goto(url);
 }
 
-/**
- * Navigate to calendar page
- * Uses SvelteKit's goto() for client-side navigation
- */
+/** Navigate to calendar page via SvelteKit client-side routing */
 export function goToCalendar(): void {
   void goto('/calendar');
 }

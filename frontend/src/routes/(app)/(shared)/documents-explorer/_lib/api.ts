@@ -264,11 +264,7 @@ function buildUploadFormData(formData: UploadFormData): FormData {
   return data;
 }
 
-/**
- * Upload a document
- * @param formData - Upload form data
- * @param onProgress - Optional progress callback
- */
+/** Upload a document */
 export async function uploadDocument(
   formData: UploadFormData,
   onProgress?: (progress: number) => void,

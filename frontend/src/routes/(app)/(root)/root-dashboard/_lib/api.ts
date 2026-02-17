@@ -21,10 +21,7 @@ const log = createLogger('RootDashboardApi');
 
 const apiClient = getApiClient();
 
-/**
- * Load dashboard data from API
- * @returns Dashboard data or error
- */
+/** Load dashboard data from API */
 export async function loadDashboardData(): Promise<{
   data: DashboardData | null;
   error: string | null;
@@ -49,10 +46,7 @@ export async function loadDashboardData(): Promise<{
   }
 }
 
-/**
- * Load activity logs from API
- * @returns Array of activity logs
- */
+/** Load activity logs from API */
 export async function loadActivityLogs(): Promise<ActivityLog[]> {
   try {
     const result = await apiClient.get<LogsApiResponse>(API_ENDPOINTS.logs);
@@ -64,9 +58,8 @@ export async function loadActivityLogs(): Promise<ActivityLog[]> {
 }
 
 /**
- * Check if user has temporary employee number
- * DELEGATES to shared user service (prevents duplicate /users/me calls)
- * @returns Object with user data and whether modal should be shown
+ * Check if user has temporary employee number.
+ * Delegates to shared user service (prevents duplicate /users/me calls)
  */
 export async function checkEmployeeNumber(): Promise<{
   userData: UserData | null;
@@ -90,11 +83,7 @@ export async function checkEmployeeNumber(): Promise<{
   }
 }
 
-/**
- * Save employee number
- * @param employeeNumber - New employee number
- * @returns Success status
- */
+/** Save employee number */
 export async function saveEmployeeNumber(employeeNumber: string): Promise<{
   success: boolean;
   error: string | null;

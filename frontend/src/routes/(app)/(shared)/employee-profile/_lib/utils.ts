@@ -22,39 +22,24 @@ const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
   info: showInfoAlert,
 };
 
-/**
- * Show toast notification via toast store
- * @param message - Toast message
- * @param type - Toast type
- */
+/** Show toast notification via toast store */
 export function showToast(message: string, type: ToastType = 'info'): void {
   TOAST_FN_MAP[type](message);
 }
 
-/**
- * Trigger file input click programmatically
- * @param inputId - Input element ID
- */
+/** Trigger file input click programmatically */
 export function triggerFileInput(inputId: string): void {
   const input = document.getElementById(inputId);
   if (input) input.click();
 }
 
-/**
- * Check if password error is related to current password
- * @param errorMsg - Error message
- */
+/** Check if password error is related to current password */
 export function isCurrentPasswordError(errorMsg: string): boolean {
   const lower = errorMsg.toLowerCase();
   return lower.includes('current') || lower.includes('aktuell');
 }
 
-/**
- * Validate password length
- * @param password - Password to validate
- * @param minLength - Minimum length (default 12)
- * @param maxLength - Maximum length (default 72)
- */
+/** Validate password length */
 export function isPasswordLengthValid(
   password: string,
   minLength = 12,
@@ -63,11 +48,7 @@ export function isPasswordLengthValid(
   return password.length >= minLength && password.length <= maxLength;
 }
 
-/**
- * Check if passwords match
- * @param password - New password
- * @param confirmPassword - Confirmation password
- */
+/** Check if passwords match */
 export function doPasswordsMatch(
   password: string,
   confirmPassword: string,
@@ -75,11 +56,7 @@ export function doPasswordsMatch(
   return password === confirmPassword;
 }
 
-/**
- * Get display position from position key
- * @param position - Position key from API
- * @returns German display name or original value
- */
+/** Get display position from position key */
 export function getDisplayPosition(position?: string): string {
   if (position === undefined || position === '') {
     return '-';
@@ -87,23 +64,14 @@ export function getDisplayPosition(position?: string): string {
   return POSITION_MAP[position.toLowerCase()] ?? position;
 }
 
-/**
- * Get display department name
- * @param departmentName - Department name from API
- * @returns Department name or placeholder
- */
+/** Get display department name */
 export function getDisplayDepartment(departmentName?: string): string {
   return departmentName !== undefined && departmentName !== '' ?
       departmentName
     : '-';
 }
 
-/**
- * Get user initials from name
- * @param firstName - First name
- * @param lastName - Last name
- * @returns Initials or fallback
- */
+/** Get user initials from name */
 export function getInitials(firstName?: string, lastName?: string): string {
   const firstInitial = firstName?.charAt(0).toUpperCase() ?? '';
   const lastInitial = lastName?.charAt(0).toUpperCase() ?? '';
@@ -115,11 +83,7 @@ export function getInitials(firstName?: string, lastName?: string): string {
   return 'U';
 }
 
-/**
- * Count character categories in password
- * @param password - Password to check
- * @returns Number of categories present (0-4)
- */
+/** Count character categories in password (0-4: upper, lower, digits, special) */
 export function countPasswordCategories(password: string): number {
   let count = 0;
   if (/[A-Z]/.test(password)) count++; // Uppercase
@@ -129,11 +93,7 @@ export function countPasswordCategories(password: string): number {
   return count;
 }
 
-/**
- * Validate password meets basic requirements
- * @param password - Password to validate
- * @returns Validation result with error message
- */
+/** Validate password meets basic requirements */
 export function validatePassword(password: string): {
   isValid: boolean;
   errorMessage: string;

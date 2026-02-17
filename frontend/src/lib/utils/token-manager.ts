@@ -47,9 +47,7 @@ export function registerCacheClearCallback(callback: () => void): void {
   onCacheClearCallback = callback;
 }
 
-/**
- * Check if we're in browser
- */
+/** Check if we're in browser */
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
@@ -154,9 +152,7 @@ export class TokenManager {
   /**
    * Set tokens after login or refresh.
    *
-   * @param access - The new access token (stored in localStorage)
-   * @param _refresh - DEPRECATED: Refresh token is now stored in HttpOnly cookie by backend.
-   *                   Parameter kept for backward compatibility but is ignored.
+   * @deprecated _refresh parameter is ignored. Refresh token is now stored in HttpOnly cookie by backend.
    */
   public setTokens(access: string, _refresh?: string): void {
     if (!isBrowser()) return;

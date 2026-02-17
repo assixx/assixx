@@ -18,13 +18,7 @@ export class FeatureCheckService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  /**
-   * Check if a tenant has access to a specific feature
-   *
-   * @param tenantId - Tenant ID to check
-   * @param featureCode - Feature code (e.g., 'email_notifications')
-   * @returns true if tenant has active access to the feature
-   */
+  /** Check if a tenant has access to a specific feature. */
   async checkTenantAccess(
     tenantId: number,
     featureCode: string,
@@ -49,15 +43,7 @@ export class FeatureCheckService {
     }
   }
 
-  /**
-   * Log usage of a feature for a tenant
-   *
-   * @param tenantId - Tenant ID
-   * @param featureCode - Feature code
-   * @param userId - User ID (optional)
-   * @param metadata - Additional metadata to log
-   * @returns true if logged successfully
-   */
+  /** Log usage of a feature for a tenant. */
   async logUsage(
     tenantId: number,
     featureCode: string,

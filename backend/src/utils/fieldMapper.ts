@@ -49,9 +49,6 @@ function transformDbValue(key: string, value: unknown): unknown {
  * Recursively converts nested objects and arrays.
  * Converts is_* / has_* fields to boolean (except is_active).
  * Converts Date values to ISO strings.
- *
- * @param dbObject - Object with snake_case keys from database
- * @returns Object with camelCase keys for API
  */
 export function dbToApi(
   dbObject: Record<string, unknown>,
@@ -69,9 +66,6 @@ export function dbToApi(
  * Convert API object (camelCase) to database object (snake_case)
  *
  * Recursively converts nested objects and arrays.
- *
- * @param apiObject - Object with camelCase keys from API
- * @returns Object with snake_case keys for database
  */
 export function apiToDb(
   apiObject: Record<string, unknown>,

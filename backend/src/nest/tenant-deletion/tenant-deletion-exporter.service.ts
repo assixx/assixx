@@ -38,7 +38,6 @@ export class TenantDeletionExporter {
       tenantId,
     );
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: sanitizedName removes special chars
     await fs.mkdir(dataDir, { recursive: true });
     this.logger.log(`Creating tenant backup in ${backupDir}`);
 
@@ -152,7 +151,6 @@ export class TenantDeletionExporter {
       }
     }
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by caller
     await fs.writeFile(sqlBackupPath, sqlContent);
     this.logger.log(`SQL backup created: ${sqlBackupPath}`);
   }
@@ -178,7 +176,6 @@ export class TenantDeletionExporter {
         const data = result.rows;
         if (data.length > 0) {
           const jsonPath = path.join(dataDir, `${tableName}.json`);
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated, tableName from DB schema
           await fs.writeFile(jsonPath, JSON.stringify(data, null, 2));
           totalRecords += data.length;
           this.logger.log(`Exported ${data.length} records from ${tableName}`);
@@ -216,7 +213,6 @@ export class TenantDeletionExporter {
       backupType: 'pre_deletion',
       version: '1.0',
     };
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
     await fs.writeFile(
       `${backupDir}/metadata.json`,
       JSON.stringify(metadata, null, 2),
@@ -239,7 +235,6 @@ export class TenantDeletionExporter {
       `tar -czf "${archivePath}" -C /backups/tenant_deletions "${backupDirName}"`,
     );
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safe: constructed from sanitized values
     const archiveStats = await fs.stat(archivePath);
     await client.query(
       `INSERT INTO tenant_deletion_backups (tenant_id, backup_file, backup_size, backup_type) VALUES ($1, $2, $3, 'final')`,

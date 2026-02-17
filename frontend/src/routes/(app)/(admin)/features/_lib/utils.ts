@@ -7,11 +7,7 @@ import { PLAN_ORDER, ADDON_PRICING } from './constants';
 
 import type { Feature, JwtPayload, Plan, TenantAddons } from './types';
 
-/**
- * Parse JWT token to extract payload
- * @param token - JWT token string
- * @returns Decoded payload or null if invalid
- */
+/** Parse JWT token to extract payload */
 export function parseJwt(token: string): JwtPayload | null {
   try {
     const tokenPart = token.split('.')[1];
@@ -22,11 +18,7 @@ export function parseJwt(token: string): JwtPayload | null {
   }
 }
 
-/**
- * Check if feature can be activated based on current plan
- * @param currentPlan - Current subscription plan code
- * @param minPlan - Minimum required plan for the feature
- */
+/** Check if feature can be activated based on current plan */
 export function canActivateFeature(
   currentPlan: string,
   minPlan: string,
@@ -37,12 +29,7 @@ export function canActivateFeature(
   );
 }
 
-/**
- * Check if feature is included in current plan
- * @param featureCode - Feature code to check
- * @param currentPlan - Current subscription plan code
- * @param plans - Available plans dictionary
- */
+/** Check if feature is included in current plan */
 export function isFeatureIncludedInPlan(
   featureCode: string,
   currentPlan: string,
@@ -54,10 +41,7 @@ export function isFeatureIncludedInPlan(
   return planData.features.some((f) => f.featureCode === featureCode);
 }
 
-/**
- * Get plan badge text for display
- * @param minPlan - Minimum required plan
- */
+/** Get plan badge text for display */
 export function getPlanBadge(minPlan: string): string {
   if (minPlan === 'basic') return 'Ab Basic';
   if (minPlan === 'professional') return 'Ab Professional';
@@ -65,11 +49,7 @@ export function getPlanBadge(minPlan: string): string {
   return minPlan;
 }
 
-/**
- * Get feature status text
- * @param isActive - Whether feature is active
- * @param canActivate - Whether feature can be activated
- */
+/** Get feature status text */
 export function getFeatureStatusText(
   isActive: boolean,
   canActivate: boolean,
@@ -79,11 +59,7 @@ export function getFeatureStatusText(
   return 'Inaktiv';
 }
 
-/**
- * Get feature status CSS class
- * @param isActive - Whether feature is active
- * @param canActivate - Whether feature can be activated
- */
+/** Get feature status CSS class */
 export function getFeatureStatusClass(
   isActive: boolean,
   canActivate: boolean,
@@ -93,11 +69,7 @@ export function getFeatureStatusClass(
   return 'status-inactive';
 }
 
-/**
- * Get feature card CSS classes
- * @param feature - Feature object
- * @param currentPlan - Current subscription plan
- */
+/** Get feature card CSS classes */
 export function getFeatureCardClasses(
   feature: Feature,
   currentPlan: string,
@@ -110,11 +82,7 @@ export function getFeatureCardClasses(
   return classes;
 }
 
-/**
- * Calculate total monthly cost
- * @param planData - Current plan data
- * @param addons - Tenant addons
- */
+/** Calculate total monthly cost */
 export function calculateTotalCost(
   planData: Plan | undefined,
   addons: TenantAddons,
@@ -127,11 +95,7 @@ export function calculateTotalCost(
   return baseCost + employeeCost + adminCost + storageCost;
 }
 
-/**
- * Count active features
- * @param featureCategories - Feature categories dictionary
- * @param currentPlan - Current subscription plan
- */
+/** Count active features */
 export function countActiveFeatures(
   featureCategories: Record<string, { features: Feature[] }>,
   currentPlan: string,
@@ -151,10 +115,7 @@ export function countActiveFeatures(
   return { active, total };
 }
 
-/**
- * Create a deep copy of feature categories for state management
- * @param categories - Original feature categories
- */
+/** Create a deep copy of feature categories for state management */
 export function cloneFeatureCategories<T>(categories: T): T {
   return JSON.parse(JSON.stringify(categories)) as T;
 }

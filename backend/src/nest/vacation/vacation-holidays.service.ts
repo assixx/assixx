@@ -276,9 +276,6 @@ export class VacationHolidaysService {
    *
    * THIS IS THE CORE ALGORITHM — every other vacation service depends on it.
    *
-   * @param tenantId - Tenant for holiday lookup
-   * @param startDate - First day of range (inclusive)
-   * @param endDate - Last day of range (inclusive)
    * @param halfDayStart - 'morning' or 'afternoon' = 0.5 day, 'none' = full day
    * @param halfDayEnd - 'morning' or 'afternoon' = 0.5 day, 'none' = full day
    * @returns Number of workdays (can be 0.5 increments)
@@ -459,9 +456,7 @@ export class VacationHolidaysService {
     }
   }
 
-  /**
-   * Get a single holiday by ID (internal helper).
-   */
+  /** Get a single holiday by ID (internal helper). */
   private async getHolidayById(
     client: PoolClient,
     tenantId: number,

@@ -68,14 +68,7 @@ async function initPasswordStrength(): Promise<void> {
   await loadPromise;
 }
 
-/**
- * Check password strength with user context
- * Automatically initializes on first use
- *
- * @param password - Password to analyze
- * @param userInputs - User-specific context (name, email, etc.)
- * @returns Password strength result or null if not loaded
- */
+/** Check password strength with user context. Automatically initializes on first use. */
 async function checkPasswordStrength(
   password: string,
   userInputs: string[] = [],
@@ -116,12 +109,7 @@ async function checkPasswordStrength(
   }
 }
 
-/**
- * Get strength label in German
- *
- * @param score - zxcvbn score (0-4)
- * @returns German strength label
- */
+/** Get strength label in German */
 export function getStrengthLabel(score: number): string {
   switch (score) {
     case 0:
@@ -139,12 +127,7 @@ export function getStrengthLabel(score: number): string {
   }
 }
 
-/**
- * Get strength color for UI (CSS variable names)
- *
- * @param score - zxcvbn score (0-4)
- * @returns CSS color value
- */
+/** Get strength color for UI (CSS variable names) */
 export function getStrengthColor(score: number): string {
   switch (score) {
     case 0:
@@ -162,12 +145,7 @@ export function getStrengthColor(score: number): string {
   }
 }
 
-/**
- * Get strength CSS class for styling
- *
- * @param score - zxcvbn score (0-4)
- * @returns CSS class name
- */
+/** Get strength CSS class for styling */
 export function getStrengthClass(score: number): string {
   switch (score) {
     case 0:
@@ -185,12 +163,7 @@ export function getStrengthClass(score: number): string {
   }
 }
 
-/**
- * Format crack time for display in German
- *
- * @param crackTimeDisplay - Crack time from zxcvbn
- * @returns Formatted string for UI
- */
+/** Format crack time for display in German */
 export function formatCrackTime(crackTimeDisplay: string): string {
   if (crackTimeDisplay === '') {
     return '';
@@ -213,14 +186,7 @@ export interface PasswordStrengthResult {
   };
 }
 
-/**
- * Analyze password and return formatted result for UI
- * Convenience function that combines all helpers
- *
- * @param password - Password to analyze
- * @param userInputs - User context (name, email, etc.)
- * @returns Formatted result or null
- */
+/** Analyze password and return formatted result for UI. Convenience function that combines all helpers. */
 export async function analyzePassword(
   password: string,
   userInputs: string[] = [],

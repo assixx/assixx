@@ -44,11 +44,7 @@ function isBrowser(): boolean {
 // TOKEN MANAGEMENT
 // =============================================================================
 
-/**
- * Get the auth token from localStorage
- * Matches Vite: getAuthToken() in auth/index.ts
- * @returns The token or null if not found
- */
+/** Get the auth token from localStorage. Matches Vite: getAuthToken() in auth/index.ts. */
 export function getAuthToken(): string | null {
   if (!isBrowser()) return null;
   return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -77,8 +73,7 @@ export function getRefreshToken(): string | null {
  * NOTE: Only stores accessToken. The refreshToken is now stored as an HttpOnly cookie
  * by the backend - it cannot and should not be stored via JavaScript.
  *
- * @param token The access token to store
- * @param _refreshToken DEPRECATED: Ignored. Refresh token is set as HttpOnly cookie by backend.
+ * @deprecated _refreshToken parameter is ignored. Refresh token is set as HttpOnly cookie by backend.
  */
 export function setAuthToken(token: string, _refreshToken?: string): void {
   if (!isBrowser()) return;
@@ -119,9 +114,7 @@ export function removeAuthToken(): void {
   // NOTE: HttpOnly cookies (refreshToken) are cleared by backend on /auth/logout
 }
 
-/**
- * Build Authorization header
- */
+/** Build Authorization header */
 export function getAuthHeader(): Record<string, string> {
   const token = getAuthToken();
   if (token === null) return {};

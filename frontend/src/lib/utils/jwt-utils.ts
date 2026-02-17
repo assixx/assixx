@@ -18,11 +18,7 @@ export interface JWTPayload {
   exp: number;
 }
 
-/**
- * Parse JWT token and extract payload
- * @param token - JWT token string
- * @returns Parsed JWT payload or null if invalid
- */
+/** Parse JWT token and extract payload */
 export function parseJwt(token: string): JWTPayload | null {
   try {
     const base64Url = token.split('.').at(1);
@@ -42,9 +38,7 @@ export function parseJwt(token: string): JWTPayload | null {
   }
 }
 
-/**
- * Check if token is expired
- */
+/** Check if token is expired */
 export function isTokenExpired(token: string): boolean {
   const payload = parseJwt(token);
   if (payload?.exp === undefined) return true;
@@ -53,9 +47,7 @@ export function isTokenExpired(token: string): boolean {
   return payload.exp < now;
 }
 
-/**
- * Get time until token expires (in seconds)
- */
+/** Get time until token expires (in seconds) */
 export function getTokenExpiryTime(token: string): number {
   const payload = parseJwt(token);
   if (payload?.exp === undefined) return 0;

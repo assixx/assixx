@@ -7,11 +7,8 @@
  */
 
 /**
- * Get avatar color index (0-9) based on identifier
- * Simple modulo ensures consistent color per user
- *
- * @param identifier - User ID (number) or string (email, username)
- * @returns Color index 0-9
+ * Get avatar color index (0-9) based on identifier.
+ * Simple modulo ensures consistent color per user.
  *
  * @example
  * getAvatarColor(5) // returns 5
@@ -38,10 +35,7 @@ export function getAvatarColor(
 }
 
 /**
- * Get full avatar color class for Design System
- *
- * @param identifier - User ID or string identifier
- * @returns CSS class like 'avatar--color-5'
+ * Get full avatar color class for Design System.
  *
  * @example
  * <div class="avatar avatar--sm {getAvatarColorClass(user.id)}">
@@ -53,11 +47,7 @@ export function getAvatarColorClass(
 }
 
 /**
- * Generate initials from first and last name
- *
- * @param firstName - First name (optional)
- * @param lastName - Last name (optional)
- * @returns 1-2 character initials, uppercase
+ * Generate initials from first and last name.
  *
  * @example
  * getInitials('John', 'Doe') // returns 'JD'
@@ -74,11 +64,8 @@ export function getInitials(
 }
 
 /**
- * Get absolute URL for profile picture
- * Ensures path starts with / to prevent relative path issues on nested routes
- *
- * @param path - Profile picture path from API (e.g., 'uploads/profile_pictures/...')
- * @returns Absolute path starting with / or null if no path
+ * Get absolute URL for profile picture.
+ * Ensures path starts with / to prevent relative path issues on nested routes.
  *
  * @example
  * getProfilePictureUrl('uploads/profile_pictures/abc.jpg') // returns '/uploads/profile_pictures/abc.jpg'

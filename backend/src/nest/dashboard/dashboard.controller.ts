@@ -27,10 +27,6 @@ export class DashboardController {
    * Cache-Control: private, max-age=30
    * - private: Response is user-specific, don't cache in CDN
    * - max-age=30: Browser can reuse for 30 seconds
-   *
-   * @param user - Current authenticated user
-   * @param tenantId - Current tenant ID from JWT
-   * @returns Combined counts from chat, notifications, blackboard, calendar, documents
    */
   @Get('counts')
   @Header('Cache-Control', 'private, max-age=30')

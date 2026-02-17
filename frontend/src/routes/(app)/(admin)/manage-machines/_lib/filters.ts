@@ -4,12 +4,7 @@
 
 import type { Machine, MachineStatusFilter } from './types';
 
-/**
- * Filter machines by status
- * @param machines - All machines to filter
- * @param status - Status filter to apply
- * @returns Filtered machine list
- */
+/** Filter machines by status */
 export function filterByStatus(
   machines: Machine[],
   status: MachineStatusFilter,
@@ -21,11 +16,8 @@ export function filterByStatus(
 }
 
 /**
- * Filter machines by search query
+ * Filter machines by search query.
  * Searches in: name, model, manufacturer, department, serialNumber
- * @param machines - Machines to search through
- * @param query - Search query string
- * @returns Filtered machine list
  */
 export function filterBySearch(machines: Machine[], query: string): Machine[] {
   const term = query.toLowerCase().trim();
@@ -48,13 +40,7 @@ export function filterBySearch(machines: Machine[], query: string): Machine[] {
   });
 }
 
-/**
- * Apply all filters in sequence
- * @param machines - All machines
- * @param status - Status filter
- * @param searchQuery - Search query
- * @returns Fully filtered machine list
- */
+/** Apply all filters in sequence */
 export function applyAllFilters(
   machines: Machine[],
   status: MachineStatusFilter,

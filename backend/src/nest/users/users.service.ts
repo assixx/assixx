@@ -46,9 +46,7 @@ import type {
   UserTeamRow,
 } from './users.types.js';
 
-/**
- * Error message constants to avoid duplication
- */
+/** Error message constants to avoid duplication */
 const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
   EMAIL_EXISTS: 'Email already exists',
@@ -72,9 +70,7 @@ export class UsersService {
   // Public Methods
   // ============================================
 
-  /**
-   * List users with pagination and filters
-   */
+  /** List users with pagination and filters */
   async listUsers(
     tenantId: number,
     query: ListUsersQueryDto,
@@ -145,9 +141,7 @@ export class UsersService {
     };
   }
 
-  /**
-   * Get user by ID
-   */
+  /** Get user by ID */
   async getUserById(
     userId: number,
     tenantId: number,
@@ -181,9 +175,7 @@ export class UsersService {
     return response;
   }
 
-  /**
-   * Create new user
-   */
+  /** Create new user */
   async createUser(
     dto: CreateUserDto,
     actingUserId: number,
@@ -245,10 +237,7 @@ export class UsersService {
     return response;
   }
 
-  /**
-   * Insert user record into database
-   * NOTE: Availability fields removed - now managed via user_availability table
-   */
+  /** Insert user record into database (availability now via user_availability table) */
   private async insertUserRecord(
     userData: Omit<
       CreateUserDto,
@@ -306,9 +295,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * Update user
-   */
+  /** Update user */
   async updateUser(
     userId: number,
     dto: UpdateUserDto,
@@ -364,9 +351,7 @@ export class UsersService {
     return result;
   }
 
-  /**
-   * Validate email uniqueness when changing email
-   */
+  /** Validate email uniqueness when changing email */
   private async validateEmailUniqueness(
     newEmail: string | undefined,
     currentEmail: string,
@@ -380,9 +365,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * Log user update activity with old/new values
-   */
+  /** Log user update activity with old/new values */
   private async logUserUpdate(
     tenantId: number,
     actingUserId: number,
@@ -411,9 +394,7 @@ export class UsersService {
     );
   }
 
-  /**
-   * Execute user record update with dynamic fields
-   */
+  /** Execute user record update with dynamic fields */
   private async executeUserUpdate(
     userId: number,
     tenantId: number,
@@ -454,9 +435,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * Update department assignments if provided
-   */
+  /** Update department assignments if provided */
   private async updateDepartmentAssignments(
     userId: number,
     tenantId: number,
@@ -470,9 +449,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * Fetch user with department info
-   */
+  /** Fetch user with department info */
   private async fetchUserWithDepartments(
     userId: number,
     tenantId: number,
@@ -489,9 +466,7 @@ export class UsersService {
     return response;
   }
 
-  /**
-   * Delete user (soft delete - sets is_active = 4)
-   */
+  /** Delete user (soft delete - sets is_active = 4) */
   async deleteUser(
     userId: number,
     currentUserId: number,
@@ -530,9 +505,7 @@ export class UsersService {
     return { message: 'User deleted successfully' };
   }
 
-  /**
-   * Archive user (is_active = 3)
-   */
+  /** Archive user (is_active = 3) */
   async archiveUser(
     userId: number,
     tenantId: number,
@@ -550,9 +523,7 @@ export class UsersService {
     return { message: 'User archived successfully' };
   }
 
-  /**
-   * Unarchive user (is_active = 1)
-   */
+  /** Unarchive user (is_active = 1) */
   async unarchiveUser(
     userId: number,
     tenantId: number,
@@ -614,9 +585,8 @@ export class UsersService {
   }
 
   /**
-   * Find user by ID
-   * SECURITY: Only returns ACTIVE users (is_active = 1)
-   * NOTE: Availability fields removed - now from user_availability table
+   * Find user by ID.
+   * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
   private async findUserById(
     userId: number,
@@ -637,8 +607,8 @@ export class UsersService {
   }
 
   /**
-   * Find user by email
-   * SECURITY: Only returns ACTIVE users (is_active = 1)
+   * Find user by email.
+   * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
   private async findUserByEmail(
     email: string,
@@ -652,9 +622,7 @@ export class UsersService {
     return rows[0] ?? null;
   }
 
-  /**
-   * Get user department assignments
-   */
+  /** Get user department assignments */
   private async getUserDepartments(
     userId: number,
     tenantId: number,
@@ -668,10 +636,7 @@ export class UsersService {
     );
   }
 
-  /**
-   * Get user team assignments
-   * INHERITANCE-FIX: Includes department and area info from team chain
-   */
+  /** Get user team assignments (includes department and area info from team chain) */
   private async getUserTeams(
     userId: number,
     tenantId: number,
@@ -694,10 +659,7 @@ export class UsersService {
     );
   }
 
-  /**
-   * Get team assignments for multiple users (batch query for efficiency)
-   * INHERITANCE-FIX: Includes department and area info from team chain
-   */
+  /** Get team assignments for multiple users (batch query, includes inheritance chain) */
   private async getUserTeamsBatch(
     userIds: number[],
     tenantId: number,
@@ -739,9 +701,7 @@ export class UsersService {
     return teamsByUser;
   }
 
-  /**
-   * Get tenant info by ID
-   */
+  /** Get tenant info by ID */
   private async getTenantInfo(tenantId: number): Promise<TenantInfo | null> {
     const rows = await this.databaseService.query<{
       company_name: string;
@@ -759,9 +719,7 @@ export class UsersService {
     };
   }
 
-  /**
-   * Assign user to departments
-   */
+  /** Assign user to departments */
   private async assignUserDepartments(
     userId: number,
     departmentIds: number[],
@@ -779,9 +737,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * Remove all user department assignments
-   */
+  /** Remove all user department assignments */
   private async removeUserDepartments(
     userId: number,
     tenantId: number,
@@ -812,9 +768,7 @@ export class UsersService {
     return userId;
   }
 
-  /**
-   * Get user by UUID (wrapper for UUID-based API)
-   */
+  /** Get user by UUID (wrapper for UUID-based API) */
   async getUserByUuid(
     uuid: string,
     tenantId: number,
@@ -823,9 +777,7 @@ export class UsersService {
     return await this.getUserById(userId, tenantId);
   }
 
-  /**
-   * Update user by UUID (wrapper for UUID-based API)
-   */
+  /** Update user by UUID (wrapper for UUID-based API) */
   async updateUserByUuid(
     uuid: string,
     dto: UpdateUserDto,
@@ -843,9 +795,7 @@ export class UsersService {
     );
   }
 
-  /**
-   * Delete user by UUID (wrapper for UUID-based API)
-   */
+  /** Delete user by UUID (wrapper for UUID-based API) */
   async deleteUserByUuid(
     uuid: string,
     currentUserId: number,
@@ -855,9 +805,7 @@ export class UsersService {
     return await this.deleteUser(userId, currentUserId, tenantId);
   }
 
-  /**
-   * Archive user by UUID (wrapper for UUID-based API)
-   */
+  /** Archive user by UUID (wrapper for UUID-based API) */
   async archiveUserByUuid(
     uuid: string,
     tenantId: number,
@@ -866,9 +814,7 @@ export class UsersService {
     return await this.archiveUser(userId, tenantId);
   }
 
-  /**
-   * Unarchive user by UUID (wrapper for UUID-based API)
-   */
+  /** Unarchive user by UUID (wrapper for UUID-based API) */
   async unarchiveUserByUuid(
     uuid: string,
     tenantId: number,

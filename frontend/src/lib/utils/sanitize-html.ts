@@ -180,13 +180,9 @@ const DOMPURIFY_CONFIG = {
 } satisfies Config;
 
 /**
- * Sanitize HTML content to prevent XSS attacks
- * Use this for any user-generated content rendered via {@html}
- *
- * SSR-SAFE: Uses basic escaping on server, DOMPurify in browser
- *
- * @param html - Untrusted HTML content
- * @returns Sanitized HTML safe for rendering
+ * Sanitize HTML content to prevent XSS attacks.
+ * Use this for any user-generated content rendered via {@html}.
+ * SSR-SAFE: Uses basic escaping on server, DOMPurify in browser.
  *
  * @example
  * // In Svelte component:
@@ -206,13 +202,9 @@ export function sanitizeHtml(html: string | null | undefined): string {
 }
 
 /**
- * Sanitize HTML with newline-to-br conversion
- * Useful for plain text content that should preserve line breaks
- *
- * SSR-SAFE: Uses basic escaping on server, DOMPurify in browser
- *
- * @param text - Text content (may contain newlines)
- * @returns Sanitized HTML with <br> tags
+ * Sanitize HTML with newline-to-br conversion.
+ * Useful for plain text content that should preserve line breaks.
+ * SSR-SAFE: Uses basic escaping on server, DOMPurify in browser.
  *
  * @example
  * {@html sanitizeWithLineBreaks(entry.content)}
@@ -235,11 +227,8 @@ export function sanitizeWithLineBreaks(
 }
 
 /**
- * Escape HTML special characters (for plain text display)
- * Use this when you want to display HTML as text, not render it
- *
- * @param text - Text to escape
- * @returns Escaped text safe for insertion
+ * Escape HTML special characters (for plain text display).
+ * Use this when you want to display HTML as text, not render it.
  *
  * @example
  * // Shows "<script>" as text, not executed

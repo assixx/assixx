@@ -1,0 +1,34 @@
+# Semgrep Ignore File
+# Syntax: .gitignore compatible
+
+# Pull in existing .gitignore patterns
+:include .gitignore
+
+# Database migrations — raw SQL, would trigger false positives
+database/migrations/
+database/seeds/
+
+# Test files — separate security concern, too much noise initially
+backend/test/
+**/*.test.ts
+**/*.spec.ts
+**/*.api.test.ts
+
+# Build artifacts
+dist/
+build/
+.svelte-kit/
+coverage/
+
+# Frontend — Semgrep has no Svelte support
+frontend/
+
+# Config files
+*.config.ts
+*.config.mjs
+*.config.js
+vitest.workspace.ts
+
+# Generated / vendored
+node_modules/
+pnpm-lock.yaml

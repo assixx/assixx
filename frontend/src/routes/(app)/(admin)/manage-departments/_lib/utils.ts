@@ -20,20 +20,12 @@ import type {
 // STATUS HELPERS
 // =============================================================================
 
-/**
- * Get status badge class based on isActive value
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns CSS class for badge
- */
+/** Get status badge class based on isActive value */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
   return STATUS_BADGE_CLASSES[isActive];
 }
 
-/**
- * Get status label for display
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns Human-readable status label
- */
+/** Get status label for display */
 export function getStatusLabel(isActive: IsActiveStatus): string {
   return STATUS_LABELS[isActive];
 }
@@ -42,29 +34,17 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 // DISPLAY HELPERS
 // =============================================================================
 
-/**
- * Get area display name
- * @param areaName - Area name from department
- * @returns Display string
- */
+/** Get area display name */
 export function getAreaDisplay(areaName: string | null | undefined): string {
   return areaName ?? 'Kein Bereich';
 }
 
-/**
- * Get department lead display name
- * @param leadName - Lead name from department
- * @returns Display string
- */
+/** Get department lead display name */
 export function getLeadDisplay(leadName: string | null | undefined): string {
   return leadName ?? '-';
 }
 
-/**
- * Get team count display text
- * @param count - Number of teams
- * @returns Display text
- */
+/** Get team count display text */
 export function getTeamCountText(count: number): string {
   return count === 1 ? '1 Team' : `${count} Teams`;
 }
@@ -73,12 +53,7 @@ export function getTeamCountText(count: number): string {
 // DROPDOWN HELPERS
 // =============================================================================
 
-/**
- * Get selected area name for dropdown trigger
- * @param areaId - Selected area ID
- * @param areas - Available areas
- * @returns Display name string
- */
+/** Get selected area name for dropdown trigger */
 export function getSelectedAreaName(
   areaId: number | null,
   areas: Area[],
@@ -88,12 +63,7 @@ export function getSelectedAreaName(
   return area?.name ?? 'Kein Bereich';
 }
 
-/**
- * Get selected lead name for dropdown trigger
- * @param leadId - Selected lead ID
- * @param leads - Available leads
- * @returns Display name string
- */
+/** Get selected lead name for dropdown trigger */
 export function getSelectedLeadName(
   leadId: number | null,
   leads: AdminUser[],
@@ -109,11 +79,7 @@ export function getSelectedLeadName(
 // FORM HELPERS
 // =============================================================================
 
-/**
- * Populate form from department data (for edit mode)
- * @param department - Department to edit
- * @returns Form data object
- */
+/** Populate form from department data (for edit mode) */
 export function populateFormFromDepartment(department: Department): {
   name: string;
   description: string;
@@ -132,10 +98,7 @@ export function populateFormFromDepartment(department: Department): {
   };
 }
 
-/**
- * Get default form values for new department
- * @returns Default form data object
- */
+/** Get default form values for new department */
 export function getDefaultFormValues(): typeof FORM_DEFAULTS {
   return { ...FORM_DEFAULTS };
 }

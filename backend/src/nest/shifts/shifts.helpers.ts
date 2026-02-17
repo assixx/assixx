@@ -45,8 +45,7 @@ export function parseDateToString(
  * Builds a full timestamp from date and time strings for PostgreSQL
  * @param dateStr - Date in YYYY-MM-DD format (or ISO string)
  * @param timeStr - Time in HH:MM format
- * @param defaultTime - Optional default time if timeStr is invalid
- * @returns Full timestamp string or null if inputs are invalid
+ * @param defaultTime - Fallback time used when timeStr is empty/invalid
  */
 export function buildTimestamp(
   dateStr: unknown,
