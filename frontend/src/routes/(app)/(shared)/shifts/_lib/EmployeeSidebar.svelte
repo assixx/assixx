@@ -14,7 +14,7 @@
   import {
     getEmployeeDisplayName,
     getEffectiveAvailabilityForWeek,
-    getOverlappingUnavailability,
+    getOverlappingUnavailabilities,
     formatAvailabilityPeriod,
   } from './utils';
 
@@ -88,7 +88,7 @@
     {#each employees as employee (employee.id)}
       {@const isFullyUnavailable =
         getEffectiveAvailabilityForWeek(employee, weekDates) !== 'available'}
-      {@const overlappingStatus = getOverlappingUnavailability(
+      {@const overlappingEntries = getOverlappingUnavailabilities(
         employee,
         weekDates,
       )}
@@ -107,23 +107,21 @@
       >
         <div class="employee-info">
           <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
-          {#if overlappingStatus !== 'available'}
+          {#each overlappingEntries as entry, idx (idx)}
             {@const period = formatAvailabilityPeriod(
-              employee.availabilityStart,
-              employee.availabilityEnd,
+              entry.startDate,
+              entry.endDate,
             )}
             <span
-              class="availability-badge {AVAILABILITY_COLORS[
-                overlappingStatus
-              ]}"
+              class="availability-badge {AVAILABILITY_COLORS[entry.status]}"
             >
-              <i class="fas {AVAILABILITY_ICONS[overlappingStatus]}"></i>
-              {AVAILABILITY_LABELS[overlappingStatus]}
+              <i class="fas {AVAILABILITY_ICONS[entry.status]}"></i>
+              {AVAILABILITY_LABELS[entry.status]}
             </span>
             {#if period}
               <span class="availability-period">{period}</span>
             {/if}
-          {/if}
+          {/each}
         </div>
       </div>
     {/each}

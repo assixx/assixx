@@ -223,10 +223,6 @@
       margin-inline: auto;
     }
 
-    .ec-event:hover {
-      box-shadow: var(--shadow-md);
-    }
-
     .ec-event-title {
       padding: 1px 2px;
       font-size: 0.85em !important;

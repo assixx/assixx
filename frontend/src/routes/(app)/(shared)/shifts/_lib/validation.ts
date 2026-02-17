@@ -66,50 +66,49 @@ function isDateInRange(
 // =============================================================================
 
 /**
- * Check if employee is available on a specific date
- * Returns true if available, false if unavailable
- *
- * IMPORTANT: Uses date-only comparison to avoid timezone issues
+ * Find the availability status that blocks an employee on a given date
  */
-function isEmployeeAvailableOnDate(
+function findBlockingStatus(
   employee: Employee,
   dateString: string,
-): boolean {
-  const rawStatus = employee.availabilityStatus ?? 'available';
-
-  // If status is available, no need to check dates
-  if (rawStatus === 'available') {
-    return true;
+): string | null {
+  const entries = employee.availabilities;
+  if (entries === undefined || entries.length === 0) {
+    return null;
   }
 
-  // Parse availability period boundaries
-  const start = parseOptionalDate(employee.availabilityStart);
-  const end = parseOptionalDate(employee.availabilityEnd);
-
-  // No dates = status applies indefinitely (employee is unavailable)
-  if (start === null && end === null) {
-    return false;
-  }
-
-  // Check if the date falls within the unavailability period
   const checkDate = parseDateOnly(dateString);
-  const isUnavailable = isDateInRange(checkDate, start, end);
 
-  return !isUnavailable;
+  for (const entry of entries) {
+    const start = parseOptionalDate(entry.startDate);
+    const end = parseOptionalDate(entry.endDate);
+
+    if (start === null && end === null) {
+      return entry.status;
+    }
+
+    if (isDateInRange(checkDate, start, end)) {
+      return entry.status;
+    }
+  }
+
+  return null;
 }
 
 /**
- * Validate employee availability for shift assignment
+ * Validate employee availability for shift assignment.
+ * Checks ALL availability entries for the given date.
  */
 export function validateEmployeeAvailability(
   employee: Employee,
   date: string,
 ): ValidationResult {
-  if (!isEmployeeAvailableOnDate(employee, date)) {
+  const blockingStatus = findBlockingStatus(employee, date);
+
+  if (blockingStatus !== null) {
     const fullName =
       `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const employeeName = fullName !== '' ? fullName : employee.username;
-    const status = employee.availabilityStatus ?? 'nicht verfügbar';
 
     const statusMessages = new Map<string, string>([
       ['vacation', 'im Urlaub'],
@@ -119,7 +118,7 @@ export function validateEmployeeAvailability(
       ['other', 'anderweitig abwesend'],
     ]);
 
-    const statusText = statusMessages.get(status) ?? status;
+    const statusText = statusMessages.get(blockingStatus) ?? blockingStatus;
     return {
       valid: false,
       message: `${employeeName} ist an diesem Tag ${statusText}`,

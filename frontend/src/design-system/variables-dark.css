@@ -21,7 +21,7 @@ html.dark {
 
   /* Backgrounds */
   --color-surface: var(--color-gray-900);
-  --header-bg: #02070d;
+  --header-bg: linear-gradient(90deg, #00050c 55%, #051022);
 
   /* Text */
   --color-text-primary: var(--color-white);

@@ -186,7 +186,6 @@
     align-items: center;
     z-index: 1000;
 
-    box-shadow: 0 0 0 2px #00000017;
     background: var(--header-bg);
     padding: 0.5rem 1rem;
     height: 65px;
