@@ -225,7 +225,7 @@ describe('Get Entry Comments', () => {
     expect(body.success).toBe(true);
   });
 
-  it('should return comments array', async () => {
+  it('should return paginated comments', async () => {
     const res = await fetch(
       `${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`,
       {
@@ -234,7 +234,10 @@ describe('Get Entry Comments', () => {
     );
     const body = (await res.json()) as JsonBody;
 
-    expect(body.data).toBeInstanceOf(Array);
+    expect(body.data).toHaveProperty('comments');
+    expect(Array.isArray(body.data.comments)).toBe(true);
+    expect(body.data).toHaveProperty('total');
+    expect(body.data).toHaveProperty('hasMore');
   });
 });
 

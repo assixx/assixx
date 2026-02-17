@@ -61,32 +61,37 @@ describe('BlackboardCommentsService', () => {
 
       const result = await service.getComments('uuid-missing', 10);
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({ comments: [], total: 0, hasMore: false });
     });
 
     it('should skip UUID resolution for numeric id', async () => {
+      // count query
+      mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
+      // comments query
       mockDb.query.mockResolvedValueOnce([
         { id: 1, comment: 'Hello', user_id: 5 },
       ]);
 
       const result = await service.getComments(1, 10);
 
-      expect(result).toHaveLength(1);
-      // Only 1 query (no UUID resolution needed)
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(result.comments).toHaveLength(1);
+      // 2 queries (count + comments), no UUID resolution
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
 
     it('should resolve UUID and return comments', async () => {
       // resolveEntryId
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      // getComments
+      // count query
+      mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
+      // comments query
       mockDb.query.mockResolvedValueOnce([
         { id: 1, comment: 'Nice', user_id: 5 },
       ]);
 
       const result = await service.getComments('uuid-123', 10);
 
-      expect(result).toHaveLength(1);
+      expect(result.comments).toHaveLength(1);
     });
   });
 
