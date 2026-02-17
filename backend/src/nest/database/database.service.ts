@@ -14,9 +14,6 @@ import { Pool } from 'pg';
 
 import { PG_POOL } from './database.constants.js';
 
-/**
- * Options for database transactions
- */
 interface TransactionOptions {
   /** Tenant ID for RLS context */
   tenantId?: number | undefined;
@@ -34,12 +31,8 @@ export class DatabaseService {
   ) {}
 
   /**
-   * Execute a simple query without transaction
+   * Execute a simple query without transaction.
    * WARNING: Does NOT set RLS context - use transaction() for tenant-isolated queries
-   *
-   * @param sql - SQL query with $1, $2, $3 placeholders
-   * @param params - Query parameters
-   * @returns Query result rows
    */
   async query<T extends QueryResultRow>(
     sql: string,
@@ -49,13 +42,6 @@ export class DatabaseService {
     return result.rows as T[];
   }
 
-  /**
-   * Execute a query and return the first row
-   *
-   * @param sql - SQL query with $1, $2, $3 placeholders
-   * @param params - Query parameters
-   * @returns First row or null
-   */
   async queryOne<T extends QueryResultRow>(
     sql: string,
     params?: unknown[],
@@ -64,13 +50,7 @@ export class DatabaseService {
     return rows[0] ?? null;
   }
 
-  /**
-   * Execute a database transaction with RLS context
-   *
-   * @param callback - Function to execute within transaction
-   * @param options - Transaction options (tenantId, userId)
-   * @returns Result from callback
-   */
+  /** Execute a database transaction with RLS context */
   async transaction<T>(
     callback: (client: PoolClient) => Promise<T>,
     options?: TransactionOptions,
@@ -116,11 +96,8 @@ export class DatabaseService {
   }
 
   /**
-   * Execute a transaction using tenant context from CLS
+   * Execute a transaction using tenant context from CLS.
    * Automatically reads tenantId and userId from request context
-   *
-   * @param callback - Function to execute within transaction
-   * @returns Result from callback
    */
   async tenantTransaction<T>(
     callback: (client: PoolClient) => Promise<T>,
@@ -138,11 +115,8 @@ export class DatabaseService {
   }
 
   /**
-   * Set tenant context for RLS policies
+   * Set tenant context for RLS policies.
    * Sets the app.tenant_id GUC variable for the current transaction
-   *
-   * @param client - Database client
-   * @param tenantId - Tenant ID
    */
   async setTenantContext(client: PoolClient, tenantId: number): Promise<void> {
     await client.query(`SELECT set_config('app.tenant_id', $1::text, true)`, [
@@ -151,11 +125,8 @@ export class DatabaseService {
   }
 
   /**
-   * Set user context for RLS policies
+   * Set user context for RLS policies.
    * Sets the app.user_id GUC variable for the current transaction
-   *
-   * @param client - Database client
-   * @param userId - User ID
    */
   async setUserContext(client: PoolClient, userId: number): Promise<void> {
     await client.query(`SELECT set_config('app.user_id', $1::text, true)`, [
@@ -163,32 +134,16 @@ export class DatabaseService {
     ]);
   }
 
-  /**
-   * Get current tenant ID from CLS context
-   *
-   * @returns Tenant ID or undefined if not set
-   */
   getTenantId(): number | undefined {
     return this.cls.get<number | undefined>('tenantId');
   }
 
-  /**
-   * Get current user ID from CLS context
-   *
-   * @returns User ID or undefined if not set
-   */
   getUserId(): number | undefined {
     return this.cls.get<number | undefined>('userId');
   }
 
   /**
    * Generate bulk INSERT placeholders
-   *
-   * @param rowCount - Number of rows
-   * @param columnsPerRow - Columns per row
-   * @param startIndex - Starting placeholder index (default 1)
-   * @returns Object with placeholders string and next index
-   *
    * @example
    * generateBulkPlaceholders(3, 2, 1)
    * // Returns placeholders: '($1, $2), ($3, $4), ($5, $6)', nextIndex: 7
@@ -218,11 +173,6 @@ export class DatabaseService {
 
   /**
    * Generate IN clause placeholders
-   *
-   * @param count - Number of values
-   * @param startIndex - Starting placeholder index (default 1)
-   * @returns Object with placeholders string and next index
-   *
    * @example
    * generateInPlaceholders(3, 1)
    * // Returns placeholders: '$1, $2, $3', nextIndex: 4
@@ -250,11 +200,6 @@ export class DatabaseService {
     await this.pool.end();
   }
 
-  /**
-   * Health check for database connection
-   *
-   * @returns True if database is reachable
-   */
   async isHealthy(): Promise<boolean> {
     try {
       await this.pool.query('SELECT 1');

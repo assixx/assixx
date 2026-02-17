@@ -230,11 +230,7 @@ function initializeListeners(): void {
 // ==========================================================================
 
 export const tooltip = {
-  /**
-   * Show tooltip for an element
-   * @param element - The trigger element
-   * @param options - Tooltip configuration
-   */
+  /** Show tooltip for an element */
   show(element: HTMLElement, options: TooltipOptions): void {
     if (!browser) return;
 
@@ -278,10 +274,7 @@ export const tooltip = {
     el._tooltip = tooltipEl;
   },
 
-  /**
-   * Hide tooltip for specific element
-   * @param element - The trigger element
-   */
+  /** Hide tooltip for specific element */
   hide(element: HTMLElement): void {
     if (!browser) return;
     removeTooltip(element as TooltipElement);

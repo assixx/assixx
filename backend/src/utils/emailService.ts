@@ -34,16 +34,13 @@ function removeDangerousTags(html: string): string {
   let sanitized = html;
   for (let i = 0; i < 3; i++) {
     dangerousTags.forEach((tag: string) => {
-      // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const fullTagRegex = new RegExp(
         `<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`,
         'gi',
       );
       sanitized = sanitized.replace(fullTagRegex, '');
-      // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(singleTagRegex, '');
-      // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const closeTagRegex = new RegExp(`</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(closeTagRegex, '');
     });
@@ -145,9 +142,6 @@ function sanitizeStyles(html: string): string {
  * - Removes event handlers (onclick, onerror, etc.)
  * - Sanitizes URLs (blocks javascript:, vbscript:, dangerous data: URIs)
  * - Sanitizes styles (blocks expression(), behavior:, etc.)
- *
- * @param html - Der zu bereinigende HTML-Inhalt
- * @returns Bereinigter HTML-Inhalt
  */
 function sanitizeHtml(html: string): string {
   // SECURITY: Multiple passes to catch nested/encoded attacks
@@ -240,10 +234,6 @@ const MAX_EMAILS_PER_BATCH = 50; // Maximale Anzahl von E-Mails pro Batch
 // Konfiguration des Transport-Objekts (wird später aus .env geladen)
 let transporter: Transporter | null = null;
 
-/**
- * Initialisiert den E-Mail-Transporter
- * @param config - Konfigurationsobjekt
- */
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
   // Default-Konfiguration für Entwicklung
   const defaultConfig: EmailConfig = {
@@ -272,11 +262,6 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   return transporter;
 }
 
-/**
- * Helper function to escape HTML special characters
- * @param str - String to escape
- * @returns Escaped string
- */
 function escapeHtmlTemplate(str: string): string {
   const htmlEscapes: Record<string, string> = {
     '&': '&amp;',
@@ -295,8 +280,6 @@ function escapeHtmlTemplate(str: string): string {
 /**
  * Lädt ein E-Mail-Template und ersetzt Platzhalter
  * @param templateName - Name des Templates ohne .html-Erweiterung
- * @param replacements - Objekt mit Platzhaltern und Ersetzungen
- * @returns HTML-Inhalt des Templates
  */
 async function loadTemplate(
   templateName: string,
@@ -308,12 +291,10 @@ async function loadTemplate(
       'templates/email',
       `${templateName}.html`,
     );
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- templateName is validated and controlled internally
     let templateContent = await fs.promises.readFile(templatePath, 'utf8');
 
     // Platzhalter ersetzen (Format: {{variable}})
     Object.keys(replacements).forEach((key: string): void => {
-      // eslint-disable-next-line security/detect-non-literal-regexp -- Key is from controlled object keys
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       // Escape replacement values to prevent XSS
 
@@ -343,11 +324,6 @@ async function loadTemplate(
   }
 }
 
-/**
- * Sendet eine einzelne E-Mail
- * @param options - E-Mail-Optionen
- * @returns Ergebnis des Versands
- */
 async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   if (!transporter) {
     initializeTransporter();
@@ -432,10 +408,6 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   }
 }
 
-/**
- * Fügt eine E-Mail zur Queue hinzu
- * @param emailOptions - E-Mail-Optionen
- */
 function addToQueue(emailOptions: EmailOptions): void {
   emailQueue.push(emailOptions);
   logger.info(
@@ -448,9 +420,6 @@ function addToQueue(emailOptions: EmailOptions): void {
   }
 }
 
-/**
- * Verarbeitet die E-Mail-Queue
- */
 async function processQueue(): Promise<void> {
   if (isProcessingQueue || emailQueue.length === 0) {
     return;
@@ -498,12 +467,6 @@ async function processQueue(): Promise<void> {
   }
 }
 
-/**
- * Sendet eine Benachrichtigung über ein neues Dokument
- * @param user - Benutzer-Objekt
- * @param document - Dokument-Objekt
- * @returns Ergebnis des Versands
- */
 async function sendNewDocumentNotification(
   user: User,
   document: Document,
@@ -549,11 +512,6 @@ async function sendNewDocumentNotification(
   }
 }
 
-/**
- * Sendet eine Willkommensnachricht an einen neuen Benutzer
- * @param user - Benutzer-Objekt
- * @returns Ergebnis des Versands
- */
 async function sendWelcomeEmail(user: User): Promise<EmailResult> {
   try {
     if (user.email === '') {
@@ -586,9 +544,6 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
   }
 }
 
-/**
- * Check feature access for bulk emails and log usage
- */
 async function checkBulkEmailFeature(
   options: BulkMessageOptions,
   userCount: number,
@@ -618,9 +573,6 @@ async function checkBulkEmailFeature(
   return null;
 }
 
-/**
- * Queue a single user email for bulk send
- */
 function queueUserEmail(
   user: User,
   html: string,
@@ -645,9 +597,6 @@ function queueUserEmail(
   addToQueue(emailOptions);
 }
 
-/**
- * Sendet eine Massenbenachrichtigung an mehrere Benutzer
- */
 async function sendBulkNotification(
   users: User[],
   messageOptions: BulkMessageOptions,
@@ -694,12 +643,6 @@ async function sendBulkNotification(
   }
 }
 
-/**
- * Generiert einen Unsubscribe-Link
- * @param email - E-Mail-Adresse
- * @param type - Typ der Benachrichtigung
- * @returns Unsubscribe-Link
- */
 function generateUnsubscribeLink(email: string, type?: string): string {
   const resolvedType = type ?? 'all';
 

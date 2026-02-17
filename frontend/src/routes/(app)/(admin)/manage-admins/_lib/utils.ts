@@ -248,11 +248,7 @@ export interface PasswordStrengthResult {
   crackTime: string;
 }
 
-/**
- * Calculate password strength
- * @param password - Password to evaluate
- * @returns Score (0-4), label, and crack time estimate
- */
+/** Calculate password strength */
 export function calculatePasswordStrength(
   password: string,
 ): PasswordStrengthResult {

@@ -637,6 +637,7 @@ export class ReportsService {
     }
 
     if (filters.teamId !== undefined) {
+      // eslint-disable-next-line no-useless-assignment -- paramIndex++ kept for consistency so adding a new filter won't reuse the same index
       conditions.push(`s.team_id = $${paramIndex++}`);
       params.push(filters.teamId);
     }
@@ -786,6 +787,7 @@ export class ReportsService {
     params.push(from, to);
 
     if (categoryId !== undefined && categoryId > 0) {
+      // eslint-disable-next-line no-useless-assignment -- paramIndex++ kept for consistency so adding a new filter won't reuse the same index
       conditions.push(`k.category_id = $${paramIndex++}`);
       params.push(categoryId);
     }

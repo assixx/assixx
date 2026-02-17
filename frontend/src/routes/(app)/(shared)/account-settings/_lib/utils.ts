@@ -18,10 +18,7 @@ import {
 
 import type { ToastType, DeletionStatus } from './types';
 
-/**
- * Format date for display (German locale)
- * @param isoString - ISO date string
- */
+/** Format date for display (German locale) */
 export function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleDateString('de-DE', {
     year: 'numeric',
@@ -32,10 +29,7 @@ export function formatDate(isoString: string): string {
   });
 }
 
-/**
- * Get status label for display
- * @param status - Deletion status (known or unknown)
- */
+/** Get status label for display */
 export function getStatusLabel(status: string): string {
   if (status in STATUS_LABELS) {
     return STATUS_LABELS[status as DeletionStatus];
@@ -51,36 +45,22 @@ const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
   info: showInfoAlert,
 };
 
-/**
- * Show toast notification via toast store
- * @param message - Toast message
- * @param type - Toast type
- */
+/** Show toast notification via toast store */
 export function showToast(message: string, type: ToastType = 'info'): void {
   TOAST_FN_MAP[type](message);
 }
 
-/**
- * Check if delete confirmation input is valid
- * @param input - User input
- */
+/** Check if delete confirmation input is valid */
 export function isDeleteConfirmationValid(input: string): boolean {
   return input === DELETE_CONFIRMATION_TEXT;
 }
 
-/**
- * Check if deletion reason is valid
- * @param reason - Deletion reason
- */
+/** Check if deletion reason is valid */
 export function isReasonValid(reason: string): boolean {
   return reason.length >= MIN_REASON_LENGTH;
 }
 
-/**
- * Check if deletion can proceed
- * @param confirmation - Confirmation input
- * @param reason - Deletion reason
- */
+/** Check if deletion can proceed */
 export function canDelete(confirmation: string, reason: string): boolean {
   return isDeleteConfirmationValid(confirmation) && isReasonValid(reason);
 }

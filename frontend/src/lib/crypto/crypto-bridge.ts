@@ -348,7 +348,10 @@ class CryptoBridge {
           userId: this.lastUserId,
         });
         if (initResponse.type !== 'ready') {
-          throw new Error('Worker recovery failed — init did not return ready');
+          throw new Error(
+            'Worker recovery failed — init did not return ready',
+            { cause: err },
+          );
         }
         return await this.sendOnce(message, true);
       }

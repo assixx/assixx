@@ -49,9 +49,7 @@ const PLAN_ID_TO_CODE: Record<number, string> = {
   3: 'enterprise',
 };
 
-/**
- * Resolve plan code from plan info, handling trial status
- */
+/** Resolve plan code from plan info, handling trial status */
 function resolvePlanCode(planInfo: CurrentPlanInfo | undefined): string {
   if (planInfo?.planCode === undefined || planInfo.planCode === '') {
     return 'basic';
@@ -72,9 +70,7 @@ function resolvePlanCode(planInfo: CurrentPlanInfo | undefined): string {
   return PLAN_ID_TO_CODE[planInfo.planId] ?? 'basic';
 }
 
-/**
- * Parse addon info array into TenantAddons object
- */
+/** Parse addon info array into TenantAddons object */
 function parseAddons(addonsInfo: AddonInfo[]): TenantAddons {
   const addons: TenantAddons = {};
 
@@ -96,10 +92,7 @@ function parseAddons(addonsInfo: AddonInfo[]): TenantAddons {
   return addons;
 }
 
-/**
- * Load all available plans
- * @returns Dictionary of plans by code
- */
+/** Load all available plans */
 export async function loadPlans(): Promise<Record<string, Plan>> {
   const result = await apiClient.get<PlansApiResponse | Plan[]>('/plans');
 
@@ -116,10 +109,7 @@ export async function loadPlans(): Promise<Record<string, Plan>> {
   return loadedPlans;
 }
 
-/**
- * Load current tenant's plan info
- * @returns Object with current plan code and addons
- */
+/** Load current tenant's plan info */
 export async function loadCurrentPlan(): Promise<{
   planCode: string;
   addons: TenantAddons;
@@ -136,10 +126,7 @@ export async function loadCurrentPlan(): Promise<{
   };
 }
 
-/**
- * Load tenant features and return active feature codes
- * @returns Array of feature codes with their availability
- */
+/** Load tenant features and return active feature codes */
 export async function loadTenantFeatures(): Promise<TenantFeature[]> {
   const result = await apiClient.get<
     TenantFeaturesApiResponse | TenantFeature[]
@@ -151,11 +138,7 @@ export async function loadTenantFeatures(): Promise<TenantFeature[]> {
   );
 }
 
-/**
- * Update feature categories with active state from API
- * @param categories - Feature categories to update
- * @param tenantFeatures - Tenant features from API
- */
+/** Update feature categories with active state from API */
 export function applyTenantFeaturesToCategories(
   categories: Record<string, FeatureCategory>,
   tenantFeatures: TenantFeature[],
@@ -175,11 +158,7 @@ export function applyTenantFeaturesToCategories(
   return updated;
 }
 
-/**
- * Change tenant plan
- * @param tenantId - Tenant ID
- * @param newPlanCode - New plan code to switch to
- */
+/** Change tenant plan */
 export async function changePlan(
   tenantId: number | null,
   newPlanCode: string,
@@ -187,12 +166,7 @@ export async function changePlan(
   await apiClient.post('/plans/change', { tenantId, newPlanCode });
 }
 
-/**
- * Toggle feature activation
- * @param tenantId - Tenant ID
- * @param featureCode - Feature code
- * @param activate - Whether to activate or deactivate
- */
+/** Toggle feature activation */
 export async function toggleFeature(
   tenantId: number | null,
   featureCode: string,
@@ -202,10 +176,7 @@ export async function toggleFeature(
   await apiClient.post(endpoint, { tenantId, featureCode });
 }
 
-/**
- * Save addons configuration
- * @param addons - Addons to save
- */
+/** Save addons configuration */
 export async function saveAddons(addons: TenantAddons): Promise<void> {
   await apiClient.put('/plans/addons', {
     employees: addons.employees,

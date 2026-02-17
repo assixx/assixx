@@ -20,9 +20,6 @@ export class RotationHistoryService {
 
   constructor(private readonly databaseService: DatabaseService) {}
 
-  /**
-   * Get rotation history
-   */
   async getRotationHistory(
     tenantId: number,
     filters: RotationHistoryFilters,
@@ -91,9 +88,6 @@ export class RotationHistoryService {
     );
   }
 
-  /**
-   * Execute DELETE query and return count
-   */
   private async executeDeleteWithCount(
     query: string,
     params: unknown[],
@@ -105,9 +99,6 @@ export class RotationHistoryService {
     return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 
-  /**
-   * Build shifts delete query based on pattern filter
-   */
   private buildShiftsDeleteQuery(hasPatternId: boolean): string {
     const patternFilter = hasPatternId ? 'AND h.pattern_id = $3' : '';
     return `WITH to_delete AS (
@@ -120,10 +111,7 @@ export class RotationHistoryService {
     ) SELECT COUNT(*) as count FROM deleted`;
   }
 
-  /**
-   * Delete rotation history for a team
-   * @param patternId - Optional: if provided, only delete this specific pattern
-   */
+  /** @param patternId - If provided, only deletes this specific pattern instead of all */
   async deleteRotationHistory(
     tenantId: number,
     teamId: number,
@@ -180,9 +168,6 @@ export class RotationHistoryService {
     }
   }
 
-  /**
-   * Delete rotation history by date range
-   */
   async deleteRotationHistoryByDateRange(
     tenantId: number,
     teamId: number,
@@ -211,9 +196,6 @@ export class RotationHistoryService {
     };
   }
 
-  /**
-   * Delete single rotation history entry
-   */
   async deleteRotationHistoryEntry(
     historyId: number,
     tenantId: number,

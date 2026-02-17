@@ -6,12 +6,7 @@ import { getPositionDisplay } from './utils';
 
 import type { Admin, StatusFilter, Department } from './types';
 
-/**
- * Filter admins by status
- * @param admins - All admins to filter
- * @param status - Status filter to apply
- * @returns Filtered admin list
- */
+/** Filter admins by status */
 export function filterByStatus(admins: Admin[], status: StatusFilter): Admin[] {
   switch (status) {
     case 'active':
@@ -28,11 +23,8 @@ export function filterByStatus(admins: Admin[], status: StatusFilter): Admin[] {
 }
 
 /**
- * Filter admins by search query
+ * Filter admins by search query.
  * Searches in: full name, email, position, employee number
- * @param admins - Admins to search through
- * @param query - Search query string
- * @returns Filtered admin list
  */
 export function filterBySearch(admins: Admin[], query: string): Admin[] {
   const term = query.toLowerCase().trim();
@@ -53,13 +45,7 @@ export function filterBySearch(admins: Admin[], query: string): Admin[] {
   });
 }
 
-/**
- * Apply all filters in sequence
- * @param admins - All admins
- * @param status - Status filter
- * @param searchQuery - Search query
- * @returns Fully filtered admin list
- */
+/** Apply all filters in sequence */
 export function applyAllFilters(
   admins: Admin[],
   status: StatusFilter,
@@ -71,12 +57,8 @@ export function applyAllFilters(
 }
 
 /**
- * Filter available departments based on selected areas
+ * Filter available departments based on selected areas.
  * Hides departments that are already covered by selected areas
- * @param allDepartments - All departments
- * @param selectedAreaIds - Currently selected area IDs
- * @param hasFullAccess - Whether full access is enabled
- * @returns Departments not covered by selected areas
  */
 export function filterAvailableDepartments(
   allDepartments: Department[],
@@ -91,13 +73,7 @@ export function filterAvailableDepartments(
   });
 }
 
-/**
- * Filter department IDs to remove those covered by selected areas
- * @param departmentIds - Currently selected department IDs
- * @param allDepartments - All departments
- * @param selectedAreaIds - Currently selected area IDs
- * @returns Department IDs not covered by areas
- */
+/** Filter department IDs to remove those covered by selected areas */
 export function filterDepartmentIdsByAreas(
   departmentIds: number[],
   allDepartments: Department[],

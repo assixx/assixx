@@ -116,14 +116,7 @@ export function sortDocuments(
   return sorted;
 }
 
-/**
- * Apply all filters in sequence
- * @param documents - All documents
- * @param category - Category filter
- * @param searchQuery - Search query
- * @param sortOption - Sort option
- * @returns Fully filtered and sorted document list
- */
+/** Apply all filters in sequence */
 export function applyAllFilters(
   documents: Document[],
   category: DocumentCategory,

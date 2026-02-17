@@ -551,7 +551,7 @@ function handleGetFingerprint(requestId: string): void {
  * Uses Argon2id for KDF + XChaCha20-Poly1305 for wrapping.
  * Password is used only for derivation, then discarded.
  *
- * @see ADR-022 (E2E Key Escrow)
+ * @see ADR-022
  */
 async function handleWrapPrivateKey(
   requestId: string,
@@ -606,7 +606,7 @@ async function handleWrapPrivateKey(
  * Unwrap a private key from an escrow blob using the user's password.
  * On success, loads the key into Worker memory + IndexedDB.
  *
- * @see ADR-022 (E2E Key Escrow)
+ * @see ADR-022
  */
 async function handleUnwrapPrivateKey(
   requestId: string,

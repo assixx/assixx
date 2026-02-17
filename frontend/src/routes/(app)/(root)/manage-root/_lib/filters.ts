@@ -4,12 +4,7 @@
 
 import type { RootUser, StatusFilter } from './types';
 
-/**
- * Filter users by status
- * @param users - All users array
- * @param status - Status filter value
- * @returns Filtered users array
- */
+/** Filter users by status */
 export function filterByStatus(
   users: RootUser[],
   status: StatusFilter,
@@ -28,13 +23,7 @@ export function filterByStatus(
   }
 }
 
-/**
- * Filter users by search query
- * Searches in: firstName, lastName, email, position, employeeNumber
- * @param users - Users to filter
- * @param query - Search query string
- * @returns Filtered users array
- */
+/** Filter users by search query (searches firstName, lastName, email, position, employeeNumber) */
 export function filterBySearch(users: RootUser[], query: string): RootUser[] {
   const term = query.toLowerCase().trim();
   if (!term) return users;
@@ -54,13 +43,7 @@ export function filterBySearch(users: RootUser[], query: string): RootUser[] {
   });
 }
 
-/**
- * Apply all filters to users
- * @param users - All users array
- * @param status - Status filter
- * @param searchQuery - Search query string
- * @returns Filtered users array
- */
+/** Apply all filters to users */
 export function applyAllFilters(
   users: RootUser[],
   status: StatusFilter,

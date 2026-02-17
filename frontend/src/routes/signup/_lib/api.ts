@@ -11,10 +11,8 @@ import type { RegisterPayload, RegisterResponse } from './types';
 const apiClient = getApiClient();
 
 /**
- * Registers a new user/tenant
+ * Registers a new user/tenant.
  *
- * @param payload - Registration data
- * @returns Promise with registration result
  * @throws Error if registration fails
  */
 export async function registerUser(
@@ -32,16 +30,11 @@ export async function registerUser(
       err instanceof Error && err.message !== '' ?
         err.message
       : ERROR_MESSAGES.registrationFailed;
-    throw new Error(message);
+    throw new Error(message, { cause: err });
   }
 }
 
-/**
- * Creates the API payload from form data
- *
- * @param formData - Form data from the signup form
- * @returns API payload ready to send (matches backend SignupSchema)
- */
+/** Creates the API payload from form data (matches backend SignupSchema) */
 export function createRegisterPayload(formData: {
   companyName: string;
   subdomain: string;

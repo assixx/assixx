@@ -193,9 +193,6 @@ export class UserPermissionsService {
    * Get all feature codes where the user has at least one module with can_read = true.
    * Used by DashboardService and NotificationsController to filter counts/events
    * based on user permissions — no permission = no notification.
-   *
-   * @param userId - Numeric user ID (already resolved)
-   * @returns Set of feature_code strings the user can read
    */
   async getReadableFeatureCodes(userId: number): Promise<Set<string>> {
     return await this.db.tenantTransaction(
@@ -218,12 +215,6 @@ export class UserPermissionsService {
    * Check if a user has a specific permission for a feature module.
    * Used by PermissionGuard for endpoint enforcement.
    * Fail-closed: no row in DB = denied.
-   *
-   * @param userId - Numeric user ID (already resolved)
-   * @param featureCode - Feature category code (e.g. 'blackboard')
-   * @param moduleCode - Module code (e.g. 'blackboard-posts')
-   * @param action - Permission type to check ('canRead' | 'canWrite' | 'canDelete')
-   * @returns true if permission granted, false otherwise
    */
   async hasPermission(
     userId: number,
@@ -281,12 +272,7 @@ export class UserPermissionsService {
     return result.id;
   }
 
-  /**
-   * Get active feature codes for the current tenant.
-   * Uses client within transaction (RLS filters by tenant).
-   *
-   * @returns Set of feature codes for O(1) lookup
-   */
+  /** Get active feature codes for the current tenant (RLS filters by tenant). */
   private async getActiveFeaturesForTenant(
     client: PoolClient,
   ): Promise<Set<string>> {

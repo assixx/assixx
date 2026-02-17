@@ -19,10 +19,7 @@
 
   const { text, query }: Props = $props();
 
-  /**
-   * Split text into segments with match indicators
-   * @returns Array of { text: string, isMatch: boolean }
-   */
+  /** Split text into segments with match indicators */
   const segments = $derived.by(() => {
     if (query.trim() === '') {
       return [{ text, isMatch: false }];

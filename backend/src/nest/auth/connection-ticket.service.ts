@@ -17,9 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 
-/**
- * Data stored with each connection ticket
- */
+/** Data stored with each connection ticket */
 export interface ConnectionTicketData {
   userId: number;
   tenantId: number;
@@ -29,9 +27,7 @@ export interface ConnectionTicketData {
   createdAt: number;
 }
 
-/**
- * Ticket creation response
- */
+/** Ticket creation response */
 export interface CreateTicketResponse {
   ticket: string;
   expiresIn: number;
@@ -85,20 +81,12 @@ export class ConnectionTicketService implements OnModuleDestroy {
     });
   }
 
-  /**
-   * Cleanup Redis connection on module destroy
-   */
   async onModuleDestroy(): Promise<void> {
     await this.redis.quit();
     this.logger.log('Redis connection closed');
   }
 
-  /**
-   * Create a new connection ticket
-   *
-   * @param data - User data to associate with ticket
-   * @returns Ticket ID and expiration time
-   */
+  /** Create a new connection ticket */
   async createTicket(
     data: ConnectionTicketData,
   ): Promise<CreateTicketResponse> {
@@ -128,9 +116,6 @@ export class ConnectionTicketService implements OnModuleDestroy {
    * - GET returns the value
    * - DEL removes it immediately
    * - Both happen in single atomic operation
-   *
-   * @param ticketId - The ticket ID to validate
-   * @returns Ticket data or null if invalid/expired/already used
    */
   async consumeTicket(ticketId: string): Promise<ConnectionTicketData | null> {
     // Validate ticketId format (must be UUID)
@@ -166,10 +151,7 @@ export class ConnectionTicketService implements OnModuleDestroy {
     }
   }
 
-  /**
-   * Check if a ticket exists (without consuming it)
-   * Useful for debugging/monitoring
-   */
+  /** Check if a ticket exists without consuming it (for debugging/monitoring) */
   async ticketExists(ticketId: string): Promise<boolean> {
     if (!this.isValidUuid(ticketId)) {
       return false;
@@ -180,9 +162,6 @@ export class ConnectionTicketService implements OnModuleDestroy {
     return exists === 1;
   }
 
-  /**
-   * Validate UUID format
-   */
   private isValidUuid(id: string): boolean {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

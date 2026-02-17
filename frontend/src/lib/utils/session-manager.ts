@@ -12,9 +12,7 @@ import { getTokenManager } from './token-manager';
 
 const log = createLogger('SessionManager');
 
-/**
- * Check if we're in browser
- */
+/** Check if we're in browser */
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
@@ -351,10 +349,7 @@ export class SessionManager {
     }
   }
 
-  /**
-   * Check if session has timed out
-   * @returns true if timed out, false otherwise
-   */
+  /** Check if session has timed out */
   private checkForTimeout(timeSinceActivity: number): boolean {
     if (timeSinceActivity >= this.INACTIVITY_TIMEOUT) {
       if (this.DEBUG_MODE) {
@@ -366,10 +361,7 @@ export class SessionManager {
     return false;
   }
 
-  /**
-   * Check if warning should be shown
-   * @returns true if in warning zone, false otherwise
-   */
+  /** Check if warning should be shown */
   private checkForWarning(timeSinceActivity: number): boolean {
     if (timeSinceActivity >= this.INACTIVITY_TIMEOUT - this.WARNING_TIME) {
       if (!this.warningShown) {
@@ -400,10 +392,7 @@ export class SessionManager {
     }
   }
 
-  /**
-   * Get stored activity time from localStorage
-   * @returns stored time or null if not available
-   */
+  /** Get stored activity time from localStorage */
   private getStoredActivityTime(): number | null {
     if (!isBrowser()) return null;
 
@@ -576,10 +565,7 @@ export class SessionManager {
     }, 1000); // ALWAYS 1 second for modal, regardless of progressive timer mode!
   }
 
-  /**
-   * Update modal countdown timer display
-   * @param remainingSeconds - Seconds until token expiry
-   */
+  /** Update modal countdown timer display */
   private updateModalTimer(remainingSeconds: number): void {
     if (!isBrowser()) return;
 
@@ -591,11 +577,7 @@ export class SessionManager {
     // Silent fail if element not found - modal might be closing
   }
 
-  /**
-   * Format seconds as MM:SS
-   * @param seconds - Remaining seconds
-   * @returns Formatted time string (e.g., "04:32")
-   */
+  /** Format seconds as MM:SS */
   private formatTime(seconds: number): string {
     if (seconds <= 0) {
       return '00:00';

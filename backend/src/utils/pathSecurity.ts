@@ -6,12 +6,7 @@ import path from 'path';
 
 import { logger } from './logger.js';
 
-/**
- * Validates and sanitizes a file path to prevent directory traversal attacks
- * @param filePath - The file path to validate
- * @param baseDir - The base directory that the path must be within
- * @returns The normalized absolute path if valid, null if invalid
- */
+/** Validates and sanitizes a file path to prevent directory traversal attacks. */
 export function validatePath(filePath: string, baseDir: string): string | null {
   try {
     // Normalize and resolve the paths
@@ -47,11 +42,7 @@ export function validatePath(filePath: string, baseDir: string): string | null {
   }
 }
 
-/**
- * Sanitizes a filename to prevent path injection
- * @param filename - The filename to sanitize
- * @returns The sanitized filename
- */
+/** Sanitizes a filename to prevent path injection. */
 export function sanitizeFilename(filename: string): string {
   // Remove any path separators and dangerous characters
   let sanitized = filename
@@ -76,11 +67,7 @@ export function sanitizeFilename(filename: string): string {
   return sanitized;
 }
 
-/**
- * Gets the upload directory for a specific type
- * @param type - The upload type (e.g., 'documents', 'profile_pictures')
- * @returns The absolute path to the upload directory
- */
+/** Gets the upload directory for a specific type (e.g., 'documents', 'profile_pictures'). */
 export function getUploadDirectory(type: string): string {
   const baseUploadDir = path.resolve(process.cwd(), 'uploads');
 

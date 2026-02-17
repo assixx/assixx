@@ -20,11 +20,7 @@ const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
   FILE_TOO_LARGE: MESSAGES.fileTooLarge,
 };
 
-/**
- * Get error message for picture upload errors
- * @param error - Caught error
- * @returns Appropriate error message
- */
+/** Get error message for picture upload errors */
 export function getPictureUploadErrorMessage(error: unknown): string {
   const code = error instanceof Error ? error.message : '';
   return PICTURE_UPLOAD_ERROR_MAP[code] ?? MESSAGES.pictureUploadError;
@@ -38,39 +34,24 @@ const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {
   info: showInfoAlert,
 };
 
-/**
- * Show toast notification via toast store
- * @param message - Toast message
- * @param type - Toast type
- */
+/** Show toast notification via toast store */
 export function showToast(message: string, type: ToastType = 'info'): void {
   TOAST_FN_MAP[type](message);
 }
 
-/**
- * Trigger file input click programmatically
- * @param inputId - Input element ID
- */
+/** Trigger file input click programmatically */
 export function triggerFileInput(inputId: string): void {
   const input = document.getElementById(inputId);
   if (input) input.click();
 }
 
-/**
- * Check if password error is related to current password
- * @param errorMsg - Error message
- */
+/** Check if password error is related to current password */
 export function isCurrentPasswordError(errorMsg: string): boolean {
   const lower = errorMsg.toLowerCase();
   return lower.includes('current') || lower.includes('aktuell');
 }
 
-/**
- * Validate password length
- * @param password - Password to validate
- * @param minLength - Minimum length (default 12)
- * @param maxLength - Maximum length (default 72)
- */
+/** Validate password length */
 export function isPasswordLengthValid(
   password: string,
   minLength = 12,
@@ -79,11 +60,7 @@ export function isPasswordLengthValid(
   return password.length >= minLength && password.length <= maxLength;
 }
 
-/**
- * Check if passwords match
- * @param password - New password
- * @param confirmPassword - Confirmation password
- */
+/** Check if passwords match */
 export function doPasswordsMatch(
   password: string,
   confirmPassword: string,
@@ -91,11 +68,7 @@ export function doPasswordsMatch(
   return password === confirmPassword;
 }
 
-/**
- * Get display position from position key
- * @param position - Position key from API
- * @returns German display name or original value
- */
+/** Get display position from position key */
 export function getDisplayPosition(position?: string): string {
   if (position === undefined || position === '') {
     return '-';
@@ -103,11 +76,7 @@ export function getDisplayPosition(position?: string): string {
   return POSITION_MAP[position.toLowerCase()] ?? position;
 }
 
-/**
- * Get display company name
- * @param companyName - Company name from API
- * @returns Company name or placeholder
- */
+/** Get display company name */
 export function getDisplayCompany(companyName?: string): string {
   return companyName !== undefined && companyName !== '' ? companyName : '-';
 }

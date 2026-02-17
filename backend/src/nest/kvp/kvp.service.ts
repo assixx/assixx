@@ -90,7 +90,6 @@ export class KvpService {
 
   /**
    * Get extended user organization info for KVP visibility checks.
-   * Collects memberships, lead positions, and inheritance chains.
    * @see /docs/kvp-share-doc.md
    */
   private async getExtendedUserOrgInfo(

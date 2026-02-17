@@ -147,10 +147,7 @@
   // VALIDATION HELPERS
   // =============================================================================
 
-  /**
-   * Validates admin form fields
-   * @returns Error message if invalid, null if valid
-   */
+  /** Validates admin form fields */
   function validateAdminForm(): string | null {
     if (formEmail !== formEmailConfirm) {
       return MESSAGES.ERROR_EMAIL_MISMATCH;

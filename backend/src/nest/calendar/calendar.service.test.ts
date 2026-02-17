@@ -238,6 +238,9 @@ describe('CalendarService – DB-mocked methods', () => {
     });
 
     it('throws ForbiddenException for non-owner non-admin', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
@@ -245,7 +248,7 @@ describe('CalendarService – DB-mocked methods', () => {
           user_id: 99,
           tenant_id: 1,
           start_date: new Date(),
-          end_date: new Date(),
+          end_date: tomorrow,
         },
       ]);
 
@@ -254,16 +257,39 @@ describe('CalendarService – DB-mocked methods', () => {
       );
     });
 
-    it('deletes event and attendees for admin', async () => {
+    it('throws ForbiddenException when deleting past event', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          title: 'Past Event',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: yesterday,
+          end_date: yesterday,
+        },
+      ]);
+
+      await expect(service.deleteEvent(1, 1, 5, 'admin')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('deletes future event and attendees for admin', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
       mockDb.query
         .mockResolvedValueOnce([
           {
             id: 1,
-            title: 'Event',
+            title: 'Future Event',
             user_id: 5,
             tenant_id: 1,
             start_date: new Date(),
-            end_date: new Date(),
+            end_date: tomorrow,
           },
         ]) // SELECT
         .mockResolvedValueOnce([]) // DELETE attendees

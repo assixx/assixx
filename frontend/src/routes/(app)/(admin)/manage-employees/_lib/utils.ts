@@ -31,20 +31,12 @@ import type {
 // STATUS BADGE HELPERS
 // =============================================================================
 
-/**
- * Get status badge class based on isActive value
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns CSS class for badge
- */
+/** Get status badge class based on isActive value */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
   return STATUS_BADGE_CLASSES[isActive];
 }
 
-/**
- * Get status label for display
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns Human-readable status label
- */
+/** Get status label for display */
 export function getStatusLabel(isActive: IsActiveStatus): string {
   return STATUS_LABELS[isActive];
 }
@@ -56,19 +48,12 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 /**
  * Get avatar color index based on user ID
  * Used for consistent color assignment per user
- * @param id - User ID
- * @returns Color index (0-9)
  */
 export function getAvatarColor(id: number): number {
   return id % 10;
 }
 
-/**
- * Get initials from first and last name
- * @param firstName - First name
- * @param lastName - Last name
- * @returns Two-letter initials
- */
+/** Get initials from first and last name */
 export function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
@@ -127,11 +112,7 @@ function extractFromTeamName(employee: Employee): TeamData | null {
   };
 }
 
-/**
- * Extract team data from employee object (handles different API formats)
- * @param employee - Employee object
- * @returns Team data or null if no teams
- */
+/** Extract team data from employee object (handles different API formats) */
 function extractTeamData(employee: Employee): TeamData | null {
   return (
     extractFromApiFormat(employee) ??
@@ -144,8 +125,6 @@ function extractTeamData(employee: Employee): TeamData | null {
  * Get teams badge info for display
  * Uses teamIds/teamNames from API response (flat arrays)
  * Falls back to legacy teams array if available
- * @param employee - Employee object
- * @returns Badge info with class, text, and title
  */
 export function getTeamsBadge(employee: Employee): BadgeInfo {
   const teamData = extractTeamData(employee);
@@ -174,12 +153,7 @@ function isValidDateString(date: string | undefined): date is string {
   return date !== undefined && date !== '';
 }
 
-/**
- * Check if today's date falls within a date range
- * @param startDate - Start date string (ISO format)
- * @param endDate - End date string (ISO format)
- * @returns true if today is within the range (inclusive), false otherwise
- */
+/** Check if today's date falls within a date range (inclusive, ISO format) */
 function isDateRangeActive(startDate?: string, endDate?: string): boolean {
   // No dates specified → considered always active (indefinite status)
   if (!isValidDateString(startDate) && !isValidDateString(endDate)) {
@@ -214,8 +188,6 @@ function isDateRangeActive(startDate?: string, endDate?: string): boolean {
  *   - If today is BEFORE availabilityStart → show "Verfügbar"
  *   - If today is WITHIN availabilityStart-availabilityEnd → show actual status
  *   - If today is AFTER availabilityEnd → show "Verfügbar"
- * @param employee - Employee object
- * @returns Badge info with class, text, and icon
  */
 export function getAvailabilityBadge(employee: Employee): BadgeInfo {
   const status = employee.availabilityStatus ?? 'available';
@@ -252,11 +224,7 @@ export function getAvailabilityBadge(employee: Employee): BadgeInfo {
   };
 }
 
-/**
- * Get availability label from status value
- * @param status - Availability status
- * @returns Human-readable label
- */
+/** Get availability label from status value */
 export function getAvailabilityLabel(status: AvailabilityStatus): string {
   return AVAILABILITY_LABELS[status];
 }
@@ -265,12 +233,7 @@ export function getAvailabilityLabel(status: AvailabilityStatus): string {
 // PASSWORD HELPERS
 // =============================================================================
 
-/**
- * Calculate password strength
- * Returns score (0-4), label, and estimated crack time
- * @param password - Password to evaluate
- * @returns PasswordStrengthResult object
- */
+/** Calculate password strength with score (0-4), label, and estimated crack time */
 export function calculatePasswordStrength(
   password: string,
 ): PasswordStrengthResult {
@@ -335,11 +298,7 @@ interface EmployeeFormData {
   availabilityNotes: string;
 }
 
-/**
- * Populate form from employee data (for edit mode)
- * @param employee - Employee to edit
- * @returns Form data object
- */
+/** Populate form from employee data (for edit mode) */
 export function populateFormFromEmployee(employee: Employee): EmployeeFormData {
   return {
     firstName: employee.firstName,
@@ -361,10 +320,7 @@ export function populateFormFromEmployee(employee: Employee): EmployeeFormData {
   };
 }
 
-/**
- * Get default form values for new employee
- * @returns Default form data object
- */
+/** Get default form values for new employee */
 export function getDefaultFormValues(): {
   firstName: string;
   lastName: string;
@@ -407,12 +363,7 @@ export function getDefaultFormValues(): {
 // VALIDATION HELPERS
 // =============================================================================
 
-/**
- * Validate email match
- * @param email - Primary email
- * @param emailConfirm - Confirmation email
- * @returns True if emails match or confirmation is empty
- */
+/** Validate email match (true if emails match or confirmation is empty) */
 export function validateEmailMatch(
   email: string,
   emailConfirm: string,
@@ -421,12 +372,7 @@ export function validateEmailMatch(
   return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
-/**
- * Validate password match
- * @param password - Primary password
- * @param passwordConfirm - Confirmation password
- * @returns True if passwords match or confirmation is empty
- */
+/** Validate password match (true if passwords match or confirmation is empty) */
 export function validatePasswordMatch(
   password: string,
   passwordConfirm: string,
@@ -440,16 +386,7 @@ export function validatePasswordMatch(
  */
 export type SaveEmployeeValidationError = 'email' | 'password' | null;
 
-/**
- * Validate save employee form
- * Combines email and password validation into a single check
- * @param email - Email address
- * @param emailConfirm - Email confirmation
- * @param password - Password (required for new, optional for edit)
- * @param passwordConfirm - Password confirmation
- * @param isEditMode - Whether editing existing employee
- * @returns Validation error type or null if valid
- */
+/** Validate save employee form - combines email and password validation */
 export function validateSaveEmployeeForm(
   email: string,
   emailConfirm: string,
@@ -759,11 +696,7 @@ export type AvailabilityValidationError =
   | 'end_before_start'
   | null;
 
-/**
- * Validate availability form data
- * @param data - Form data to validate
- * @returns Validation error type or null if valid
- */
+/** Validate availability form data */
 export function validateAvailabilityForm(
   data: AvailabilityFormData,
 ): AvailabilityValidationError {
@@ -789,12 +722,7 @@ export interface AvailabilityPayload {
   availabilityNotes?: string;
 }
 
-/**
- * Build availability API payload from form data
- * Converts empty strings to undefined
- * @param data - Form data
- * @returns API payload
- */
+/** Build availability API payload from form data (converts empty strings to undefined) */
 export function buildAvailabilityPayload(
   data: AvailabilityFormData,
 ): AvailabilityPayload {

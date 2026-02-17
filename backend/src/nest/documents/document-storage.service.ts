@@ -71,9 +71,7 @@ export class DocumentStorageService {
     }
 
     const directory = path.dirname(absolutePath);
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
     await fs.mkdir(directory, { recursive: true });
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
     await fs.writeFile(absolutePath, content);
   }
 
@@ -88,7 +86,6 @@ export class DocumentStorageService {
     }
 
     try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated above
       return await fs.readFile(absolutePath);
     } catch {
       throw new NotFoundException('Document file not found');

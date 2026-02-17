@@ -13,12 +13,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-/**
- * Require a tenant feature to be active. Redirects to /feature-unavailable if not.
- *
- * @param activeFeatures - Array of active feature codes from parent layout data
- * @param featureCode - Required feature code (e.g., 'vacation', 'blackboard')
- */
+/** Require a tenant feature to be active. Redirects to /feature-unavailable if not. */
 export function requireFeature(
   activeFeatures: string[],
   featureCode: string,

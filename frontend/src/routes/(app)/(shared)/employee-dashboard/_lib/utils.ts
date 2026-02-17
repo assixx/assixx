@@ -12,12 +12,7 @@ import {
 
 import type { CalendarEvent, FormattedEventDate } from './types';
 
-/**
- * Get display name from user data
- * @param firstName - First name
- * @param lastName - Last name
- * @param fallback - Fallback text
- */
+/** Get display name from user data */
 export function getDisplayName(
   firstName?: string,
   lastName?: string,
@@ -27,11 +22,7 @@ export function getDisplayName(
   return fullName !== '' ? fullName : fallback;
 }
 
-/**
- * Get display value with fallback
- * @param value - Value to display
- * @param fallback - Fallback text
- */
+/** Get display value with fallback */
 export function getDisplayValue(
   value?: string,
   fallback: string = PLACEHOLDER_TEXT.notAssigned,
@@ -39,10 +30,7 @@ export function getDisplayValue(
   return value !== undefined && value !== '' ? value : fallback;
 }
 
-/**
- * Format event date for display
- * @param event - Calendar event
- */
+/** Format event date for display */
 export function formatEventDate(event: CalendarEvent): FormattedEventDate {
   const startDate = new Date(event.startTime);
   const day = startDate.getDate().toString();
@@ -59,60 +47,40 @@ export function formatEventDate(event: CalendarEvent): FormattedEventDate {
   return { day, month, time };
 }
 
-/**
- * Get org level display text (German)
- * @param orgLevel - Organization level key
- */
+/** Get org level display text (German) */
 export function getOrgLevelText(orgLevel?: string): string {
   if (orgLevel === undefined || orgLevel === '') return ORG_LEVEL_TEXT.personal;
   return ORG_LEVEL_TEXT[orgLevel] ?? ORG_LEVEL_TEXT.personal;
 }
 
-/**
- * Get org level CSS class
- * @param orgLevel - Organization level key
- */
+/** Get org level CSS class */
 export function getOrgLevelClass(orgLevel?: string): string {
   return `event-level-${orgLevel ?? 'personal'}`;
 }
 
-/**
- * Navigate to URL
- * @param url - Destination URL
- */
+/** Navigate to URL */
 export function navigateTo(url: string): void {
   if (typeof window !== 'undefined') {
     window.location.href = url;
   }
 }
 
-/**
- * Navigate to calendar
- */
+/** Navigate to calendar */
 export function goToCalendar(): void {
   navigateTo('/calendar');
 }
 
-/**
- * Open blackboard entry by UUID
- * @param uuid - Entry UUID
- */
+/** Open blackboard entry by UUID */
 export function openBlackboardEntry(uuid: string): void {
   navigateTo(`/blackboard/${uuid}`);
 }
 
-/**
- * Get priority label (German)
- * @param priority - Priority key
- */
+/** Get priority label (German) */
 export function getPriorityLabel(priority: string): string {
   return PRIORITY_LABELS[priority] ?? PRIORITY_LABELS.medium;
 }
 
-/**
- * Get blackboard org level label (German)
- * @param orgLevel - Org level key
- */
+/** Get blackboard org level label (German) */
 export function getBlackboardOrgLabel(orgLevel: string): string {
   return BLACKBOARD_ORG_LABELS[orgLevel] ?? BLACKBOARD_ORG_LABELS.company;
 }
@@ -122,9 +90,7 @@ interface QuillDelta {
   ops?: { insert?: string }[];
 }
 
-/**
- * Extract text from Quill Delta ops array
- */
+/** Extract text from Quill Delta ops array */
 function extractTextFromOps(delta: QuillDelta): string | null {
   if (delta.ops === undefined || !Array.isArray(delta.ops)) return null;
   return delta.ops
@@ -133,10 +99,7 @@ function extractTextFromOps(delta: QuillDelta): string | null {
     .trim();
 }
 
-/**
- * Try parsing content string as JSON Quill Delta
- * Returns extracted text or original content if not JSON Delta
- */
+/** Try parsing content string as JSON Quill Delta, returns extracted text or original content */
 function parseStringContent(content: string): string {
   try {
     const parsed = JSON.parse(content) as QuillDelta;
@@ -146,17 +109,12 @@ function parseStringContent(content: string): string {
   }
 }
 
-/**
- * Check if value is a stringifiable primitive
- */
+/** Check if value is a stringifiable primitive */
 function isStringifiablePrimitive(value: unknown): value is number | boolean {
   return typeof value === 'number' || typeof value === 'boolean';
 }
 
-/**
- * Parse blackboard content from JSON or string
- * @param content - Raw content (JSON, string, or unknown)
- */
+/** Parse blackboard content from JSON or string */
 export function parseContent(content: unknown): string {
   if (content === null || content === undefined) return '';
 
@@ -178,20 +136,13 @@ export function parseContent(content: unknown): string {
   return '';
 }
 
-/**
- * Truncate content for preview
- * @param content - Content string
- * @param maxLength - Maximum length (default 150)
- */
+/** Truncate content for preview */
 export function truncateContent(content: string, maxLength = 150): string {
   if (content.length <= maxLength) return content;
   return content.substring(0, maxLength).trim() + '...';
 }
 
-/**
- * Format blackboard date for display
- * @param dateStr - ISO date string
- */
+/** Format blackboard date for display */
 export function formatBlackboardDate(
   dateStr: string | null | undefined,
 ): string {
@@ -205,10 +156,7 @@ export function formatBlackboardDate(
   });
 }
 
-/**
- * Check if a date is expired (in the past)
- * @param dateStr - ISO date string
- */
+/** Check if a date is expired (in the past) */
 export function isExpired(dateStr: string | null | undefined): boolean {
   if (dateStr === null || dateStr === undefined || dateStr === '') return false;
   const date = new Date(dateStr);
@@ -216,10 +164,7 @@ export function isExpired(dateStr: string | null | undefined): boolean {
   return date.getTime() < Date.now();
 }
 
-/**
- * Check if event is all-day
- * @param allDay - All-day flag (boolean or number)
- */
+/** Check if event is all-day */
 export function isAllDay(allDay: boolean | number): boolean {
   return allDay === true || allDay === 1;
 }

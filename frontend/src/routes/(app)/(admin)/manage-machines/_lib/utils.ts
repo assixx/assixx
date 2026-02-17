@@ -130,10 +130,7 @@ export function getMachineTypeLabel(type: string): string {
 // MAINTENANCE HELPERS
 // =============================================================================
 
-/**
- * Get maintenance warning status
- * @returns 'overdue' | 'soon' | 'ok' | null
- */
+/** Get maintenance warning status */
 export function getMaintenanceWarningStatus(
   nextMaintenance?: string,
 ): 'overdue' | 'soon' | 'ok' | null {

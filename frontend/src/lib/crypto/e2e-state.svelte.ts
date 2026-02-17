@@ -353,7 +353,9 @@ async function registerKeyOnServer(publicKey: string): Promise<ServerKeyData> {
     // 409 = another tab registered first — fetch the existing key
     const existing = await apiClient.get<ServerKeyData | null>('/e2e/keys/me');
     if (existing === null) {
-      throw new Error('E2E key conflict but no key found on server');
+      throw new Error('E2E key conflict but no key found on server', {
+        cause: err,
+      });
     }
     return existing;
   }

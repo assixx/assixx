@@ -21,7 +21,6 @@ export class KvpConfirmationsService {
   /**
    * Get count of unconfirmed KVP suggestions for notification badge.
    * Counts suggestions visible to user that haven't been marked as read.
-   * @param orgInfo - Pre-resolved org info (facade handles the DB lookup)
    */
   async getUnconfirmedCount(
     userId: number,

@@ -23,18 +23,13 @@ import { UserRepository } from '../database/repositories/user.repository.js';
 import type { UpdateAvailabilityEntryDto } from './dto/update-availability-entry.dto.js';
 import type { UpdateAvailabilityDto } from './dto/update-availability.dto.js';
 
-/**
- * Error message constants
- */
+/** Error message constants */
 const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
   ENTRY_NOT_FOUND: 'Availability entry not found',
 } as const;
 
-/**
- * User availability row from user_availability table
- * Used for current/planned availability display
- */
+/** User availability row from user_availability table */
 export interface UserAvailabilityRow {
   user_id: number;
   status: string;
@@ -43,9 +38,7 @@ export interface UserAvailabilityRow {
   notes: string | null;
 }
 
-/**
- * Availability history row from database
- */
+/** Availability history row from database */
 export interface AvailabilityRow {
   id: number;
   user_id: number;
@@ -60,9 +53,7 @@ export interface AvailabilityRow {
   updated_at: Date | null;
 }
 
-/**
- * Availability history entry - API format (camelCase)
- */
+/** Availability history entry - API format (camelCase) */
 export interface AvailabilityHistoryEntry {
   id: number;
   userId: number;
@@ -77,9 +68,7 @@ export interface AvailabilityHistoryEntry {
   updatedAt: string;
 }
 
-/**
- * Availability history response
- */
+/** Availability history response */
 export interface AvailabilityHistoryResult {
   employee: {
     id: number;
@@ -92,10 +81,7 @@ export interface AvailabilityHistoryResult {
   meta: { total: number; year: number | null; month: number | null };
 }
 
-/**
- * Safe user response type (partial - only availability fields)
- * Used for adding availability info to user responses
- */
+/** Safe user response type (partial - only availability fields) */
 export interface AvailabilityFields {
   availabilityStatus: string | null;
   availabilityStart: string | null;
@@ -193,10 +179,7 @@ export class UserAvailabilityService {
     return availabilityByUser;
   }
 
-  /**
-   * Add availability info to a response object
-   * Sets availabilityStatus, availabilityStart, availabilityEnd, availabilityNotes
-   */
+  /** Add availability info to a response object */
   addAvailabilityInfo(
     response: AvailabilityFields,
     availability: UserAvailabilityRow | undefined,
@@ -222,10 +205,7 @@ export class UserAvailabilityService {
   // Public Methods - Update Availability
   // ============================================
 
-  /**
-   * Update availability
-   * NOTE: Now ONLY writes to user_availability table (users table columns deprecated)
-   */
+  /** Update availability (writes to user_availability table only) */
   async updateAvailability(
     userId: number,
     dto: UpdateAvailabilityDto,
@@ -310,10 +290,7 @@ export class UserAvailabilityService {
     );
   }
 
-  /**
-   * Insert into availability history if availability fields were updated via updateUser
-   * This ensures history is tracked even when using the general user update endpoint
-   */
+  /** Insert into availability history if availability fields were updated via updateUser */
   async insertAvailabilityHistoryIfNeeded(
     userId: number,
     tenantId: number,
@@ -379,9 +356,7 @@ export class UserAvailabilityService {
   // UUID-based Methods (for API consistency)
   // ============================================
 
-  /**
-   * Update user availability by UUID (wrapper for UUID-based API)
-   */
+  /** Update user availability by UUID (wrapper for UUID-based API) */
   async updateAvailabilityByUuid(
     uuid: string,
     dto: UpdateAvailabilityDto,
@@ -392,10 +367,7 @@ export class UserAvailabilityService {
     return await this.updateAvailability(userId, dto, tenantId, createdBy);
   }
 
-  /**
-   * Get availability history for a user by UUID
-   * Queries the user_availability table for all records
-   */
+  /** Get availability history for a user by UUID */
   async getAvailabilityHistoryByUuid(
     uuid: string,
     tenantId: number,
@@ -439,10 +411,7 @@ export class UserAvailabilityService {
   // Availability Entry CRUD (for history table)
   // ============================================
 
-  /**
-   * Update an availability history entry
-   * Business rule: Only entries with endDate on or after today can be edited
-   */
+  /** Update an availability history entry (only entries with endDate >= today) */
   async updateAvailabilityEntry(
     entryId: number,
     dto: UpdateAvailabilityEntryDto,
@@ -512,9 +481,7 @@ export class UserAvailabilityService {
     return { message: 'Availability entry updated successfully' };
   }
 
-  /**
-   * Delete an availability history entry
-   */
+  /** Delete an availability history entry */
   async deleteAvailabilityEntry(
     entryId: number,
     tenantId: number,
@@ -559,9 +526,7 @@ export class UserAvailabilityService {
   // Private Helper Methods
   // ============================================
 
-  /**
-   * Check if user exists and is active
-   */
+  /** Check if user exists and is active */
   private async userExists(userId: number, tenantId: number): Promise<boolean> {
     const rows = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
@@ -587,8 +552,8 @@ export class UserAvailabilityService {
   }
 
   /**
-   * Find user basic info by UUID
-   * SECURITY: Only returns ACTIVE users (is_active = 1)
+   * Find user basic info by UUID.
+   * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
   private async findUserBasicInfoByUuid(
     uuid: string,
@@ -618,9 +583,7 @@ export class UserAvailabilityService {
     return userRow;
   }
 
-  /**
-   * Build availability history query with optional year/month filters
-   */
+  /** Build availability history query with optional year/month filters */
   private buildAvailabilityHistoryQuery(
     employeeId: number,
     tenantId: number,
@@ -657,9 +620,7 @@ export class UserAvailabilityService {
     return { query, params };
   }
 
-  /**
-   * Map availability row to API format entry
-   */
+  /** Map availability row to API format entry */
   private mapAvailabilityRowToEntry(
     row: AvailabilityRow,
   ): AvailabilityHistoryEntry {
@@ -678,9 +639,7 @@ export class UserAvailabilityService {
     };
   }
 
-  /**
-   * Find availability entry by ID and tenant
-   */
+  /** Find availability entry by ID and tenant */
   private async findAvailabilityEntryById(
     entryId: number,
     tenantId: number,

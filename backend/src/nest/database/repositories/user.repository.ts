@@ -71,9 +71,6 @@ export interface UserWithPassword extends UserBase {
   last_login: Date | null;
 }
 
-/**
- * Options for findMany query
- */
 export interface FindManyOptions {
   /** Filter by role */
   role?: string;
@@ -87,26 +84,18 @@ export interface FindManyOptions {
   orderDir?: 'ASC' | 'DESC';
 }
 
-/**
- * Base SELECT columns for user queries (no password)
- */
 const USER_BASE_COLUMNS = `
   id, uuid, tenant_id, email, username, first_name, last_name,
   role, is_active, position, profile_picture, created_at, updated_at
 `;
 
-/**
- * SELECT columns including password (for auth only)
- */
+/** Includes password - for auth only */
 const USER_AUTH_COLUMNS = `
   id, uuid, tenant_id, email, username, first_name, last_name,
   role, is_active, position, profile_picture, password, last_login,
   created_at, updated_at
 `;
 
-/**
- * Minimal columns for display
- */
 const USER_MINIMAL_COLUMNS = `id, uuid, first_name, last_name, email`;
 
 @Injectable()
@@ -119,13 +108,7 @@ export class UserRepository {
   // SAFE METHODS - Always filter by is_active = 1
   // =========================================================================
 
-  /**
-   * Find active user by numeric ID
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID for isolation
-   * @returns User or null if not found/deleted
-   */
+  /** Find active user by numeric ID */
   async findById(id: number, tenantId: number): Promise<UserBase | null> {
     return await this.db.queryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
@@ -137,13 +120,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Find active user by UUID
-   *
-   * @param uuid - User UUID (UUIDv7)
-   * @param tenantId - Tenant ID for isolation
-   * @returns User or null if not found/deleted
-   */
+  /** Find active user by UUID */
   async findByUuid(uuid: string, tenantId: number): Promise<UserBase | null> {
     return await this.db.queryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
@@ -155,13 +132,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Find active user by email
-   *
-   * @param email - User email address
-   * @param tenantId - Tenant ID for isolation
-   * @returns User or null if not found/deleted
-   */
+  /** Find active user by email */
   async findByEmail(email: string, tenantId: number): Promise<UserBase | null> {
     return await this.db.queryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
@@ -173,13 +144,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Get minimal user info by UUID (for display purposes)
-   *
-   * @param uuid - User UUID
-   * @param tenantId - Tenant ID
-   * @returns Minimal user info or null
-   */
+  /** Get minimal user info by UUID (for display purposes) */
   async findMinimalByUuid(
     uuid: string,
     tenantId: number,
@@ -194,13 +159,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Get minimal user info by ID (for display purposes)
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns Minimal user info or null
-   */
+  /** Get minimal user info by ID (for display purposes) */
   async findMinimalById(
     id: number,
     tenantId: number,
@@ -215,13 +174,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Count active users by role
-   *
-   * @param role - User role (admin, employee, root)
-   * @param tenantId - Tenant ID
-   * @returns Count of active users with role
-   */
+  /** Count active users by role */
   async countByRole(role: string, tenantId: number): Promise<number> {
     const result = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count
@@ -234,12 +187,7 @@ export class UserRepository {
     return Number.parseInt(result?.count ?? '0', 10);
   }
 
-  /**
-   * Count all active users for tenant
-   *
-   * @param tenantId - Tenant ID
-   * @returns Total count of active users
-   */
+  /** Count all active users for tenant */
   async countAll(tenantId: number): Promise<number> {
     const result = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count
@@ -251,13 +199,7 @@ export class UserRepository {
     return Number.parseInt(result?.count ?? '0', 10);
   }
 
-  /**
-   * List active users with pagination and filtering
-   *
-   * @param tenantId - Tenant ID
-   * @param options - Query options (role, limit, offset, orderBy)
-   * @returns Array of active users
-   */
+  /** List active users with pagination and filtering */
   async findMany(
     tenantId: number,
     options: FindManyOptions = {},
@@ -305,13 +247,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Check if active user exists
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns True if active user exists
-   */
+  /** Check if active user exists */
   async exists(id: number, tenantId: number): Promise<boolean> {
     const result = await this.db.queryOne<{ exists: boolean }>(
       `SELECT EXISTS(
@@ -323,13 +259,7 @@ export class UserRepository {
     return result?.exists ?? false;
   }
 
-  /**
-   * Check if active user exists by UUID
-   *
-   * @param uuid - User UUID
-   * @param tenantId - Tenant ID
-   * @returns True if active user exists
-   */
+  /** Check if active user exists by UUID */
   async existsByUuid(uuid: string, tenantId: number): Promise<boolean> {
     const result = await this.db.queryOne<{ exists: boolean }>(
       `SELECT EXISTS(
@@ -342,12 +272,8 @@ export class UserRepository {
   }
 
   /**
-   * Filter array of IDs to only include active users
+   * Filter array of IDs to only include active users.
    * Useful for validating user lists (e.g., chat participants)
-   *
-   * @param ids - Array of user IDs to check
-   * @param tenantId - Tenant ID
-   * @returns Array of IDs that belong to active users
    */
   async filterActiveIds(ids: number[], tenantId: number): Promise<number[]> {
     if (ids.length === 0) {
@@ -365,13 +291,7 @@ export class UserRepository {
     return result.map((row: { id: number }) => row.id);
   }
 
-  /**
-   * Get user role by ID (for permission checks)
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns User role or null if not found/deleted
-   */
+  /** Get user role by ID (for permission checks) */
   async getRole(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ role: string }>(
       `SELECT role FROM users
@@ -386,14 +306,11 @@ export class UserRepository {
   // =========================================================================
 
   /**
-   * Find user for authentication by email (across all tenants)
+   * Find user for authentication by email (across all tenants).
    * Returns user regardless of status - caller MUST check is_active
    *
-   * IMPORTANT: This is the ONLY method that returns password hash
-   * IMPORTANT: Caller must validate is_active === 1 before allowing login
-   *
-   * @param email - User email
-   * @returns User with password or null
+   * IMPORTANT: This is the ONLY method that returns password hash.
+   * IMPORTANT: Caller must validate is_active === 1 before allowing login.
    */
   async findForAuth(email: string): Promise<UserWithPassword | null> {
     return await this.db.queryOne<UserWithPassword>(
@@ -405,12 +322,8 @@ export class UserRepository {
   }
 
   /**
-   * Find user for authentication by ID (token refresh)
+   * Find user for authentication by ID (token refresh).
    * Returns user regardless of status - caller MUST check is_active
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns User with password or null
    */
   async findForAuthById(
     id: number,
@@ -425,12 +338,8 @@ export class UserRepository {
   }
 
   /**
-   * Get password hash for ACTIVE user only
+   * Get password hash for ACTIVE user only.
    * Used for password validation (change password, etc.)
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns Password hash or null if user not found/deleted
    */
   async getPasswordHash(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ password: string }>(
@@ -441,11 +350,6 @@ export class UserRepository {
     return result?.password ?? null;
   }
 
-  /**
-   * Update last login timestamp
-   *
-   * @param id - User ID
-   */
   async updateLastLogin(id: number): Promise<void> {
     await this.db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [
       id,
@@ -457,12 +361,8 @@ export class UserRepository {
   // =========================================================================
 
   /**
-   * Find user including deleted (for admin audit purposes)
+   * Find user including deleted (for admin audit purposes).
    * WARNING: Only use for audit logs, admin dashboards
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns User or null (including deleted users)
    */
   async findByIdIncludeDeleted(
     id: number,
@@ -479,13 +379,7 @@ export class UserRepository {
     );
   }
 
-  /**
-   * Count users by status (for admin dashboard)
-   *
-   * @param status - User status to count
-   * @param tenantId - Tenant ID
-   * @returns Count of users with status
-   */
+  /** Count users by status (for admin dashboard) */
   async countByStatus(status: UserStatus, tenantId: number): Promise<number> {
     const result = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count
@@ -496,12 +390,7 @@ export class UserRepository {
     return Number.parseInt(result?.count ?? '0', 10);
   }
 
-  /**
-   * Get all user statuses with counts (for admin dashboard)
-   *
-   * @param tenantId - Tenant ID
-   * @returns Map of status to count
-   */
+  /** Get all user statuses with counts (for admin dashboard) */
   async getStatusCounts(tenantId: number): Promise<Map<UserStatus, number>> {
     const result = await this.db.query<{ is_active: number; count: string }>(
       `SELECT is_active, COUNT(*) as count
@@ -522,13 +411,7 @@ export class UserRepository {
   // UTILITY METHODS
   // =========================================================================
 
-  /**
-   * Resolve UUID to numeric ID (for active users only)
-   *
-   * @param uuid - User UUID
-   * @param tenantId - Tenant ID
-   * @returns Numeric ID or null
-   */
+  /** Resolve UUID to numeric ID (for active users only) */
   async resolveUuidToId(
     uuid: string,
     tenantId: number,
@@ -541,13 +424,7 @@ export class UserRepository {
     return result?.id ?? null;
   }
 
-  /**
-   * Resolve numeric ID to UUID (for active users only)
-   *
-   * @param id - User ID
-   * @param tenantId - Tenant ID
-   * @returns UUID or null
-   */
+  /** Resolve numeric ID to UUID (for active users only) */
   async resolveIdToUuid(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ uuid: string }>(
       `SELECT uuid FROM users
@@ -559,11 +436,7 @@ export class UserRepository {
 
   /**
    * Check if email is already taken by another ACTIVE user
-   *
-   * @param email - Email to check
-   * @param tenantId - Tenant ID
-   * @param excludeId - User ID to exclude (for updates)
-   * @returns True if email is taken
+   * @param excludeId - User ID to exclude (for self-updates)
    */
   async isEmailTaken(
     email: string,

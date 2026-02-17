@@ -43,13 +43,13 @@ READ FIRST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
 
 ## URLs
 
-| URL | Mode | What | Command |
-| --- | --- | --- | --- |
-| `http://localhost:5173/login` | **Development** | Vite Dev Server + HMR | `pnpm run dev:svelte` |
-| `http://localhost/login` | **Production** | Nginx to SvelteKit | `doppler run -- docker-compose --profile production up -d` |
-| `http://localhost:3001/login` | Production | SvelteKit direct | (bypasses Nginx) |
-| `http://localhost:3000/api/v2/` | Both | Backend API | `doppler run -- docker-compose up -d` |
-| `http://localhost/health` | Production | Health Check | via Nginx |
+| URL                             | Mode            | What                  | Command                                                    |
+| ------------------------------- | --------------- | --------------------- | ---------------------------------------------------------- |
+| `http://localhost:5173/login`   | **Development** | Vite Dev Server + HMR | `pnpm run dev:svelte`                                      |
+| `http://localhost/login`        | **Production**  | Nginx to SvelteKit    | `doppler run -- docker-compose --profile production up -d` |
+| `http://localhost:3001/login`   | Production      | SvelteKit direct      | (bypasses Nginx)                                           |
+| `http://localhost:3000/api/v2/` | Both            | Backend API           | `doppler run -- docker-compose up -d`                      |
+| `http://localhost/health`       | Production      | Health Check          | via Nginx                                                  |
 
 See [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md) for all commands.
 
@@ -160,7 +160,7 @@ See [docs/DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
 ## Code Standards
 
 - Comment WHY, not WHAT — self-explanatory code needs no comments
-- JSDoc for public APIs and non-obvious logic (not every helper function)
+- Doc comments (`/** */`) for public APIs and non-obvious logic — no `@param`/`@returns` when TypeScript types are sufficient
 - No `any` — see [docs/TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md) for all TypeScript rules
 - KISS
 

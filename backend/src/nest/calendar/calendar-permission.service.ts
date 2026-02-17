@@ -116,6 +116,7 @@ export class CalendarPermissionService {
     startIndex: number,
   ): { clause: string; newParams: unknown[]; newIndex: number } {
     const params: unknown[] = [];
+    // eslint-disable-next-line no-useless-assignment -- init required, TypeScript needs definite assignment before switch
     let clause = '';
     let index = startIndex;
 

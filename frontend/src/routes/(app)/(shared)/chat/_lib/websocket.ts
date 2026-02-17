@@ -22,8 +22,6 @@ import type {
 /**
  * Build WebSocket URL with connection ticket
  * SECURITY: Uses short-lived ticket instead of JWT to prevent token leakage in logs
- * @param ticket - Connection ticket from /api/v2/auth/connection-ticket
- * @returns WebSocket URL string
  * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
  */
 export function buildWebSocketUrl(ticket: string): string {
@@ -61,9 +59,7 @@ function extractBaseMessageFields(raw: RawWebSocketMessage) {
   };
 }
 
-/**
- * Extract sender object from raw message
- */
+/** Extract sender object from raw message */
 function extractSender(raw: RawWebSocketMessage) {
   return {
     id: raw.senderId ?? 0,
@@ -73,11 +69,7 @@ function extractSender(raw: RawWebSocketMessage) {
   };
 }
 
-/**
- * Transform raw WebSocket message (snake_case) to camelCase Message
- * @param raw - Raw message from WebSocket
- * @returns Normalized Message object
- */
+/** Transform raw WebSocket message (snake_case) to camelCase Message */
 export function transformRawMessage(raw: RawWebSocketMessage): Message {
   return {
     ...extractBaseMessageFields(raw),
@@ -88,11 +80,7 @@ export function transformRawMessage(raw: RawWebSocketMessage): Message {
   };
 }
 
-/**
- * Extract typing data from raw WebSocket message
- * @param raw - Raw message data
- * @returns Normalized TypingData
- */
+/** Extract typing data from raw WebSocket message */
 export function extractTypingData(raw: RawWebSocketMessage): TypingData {
   return {
     userId: raw.userId ?? 0,
@@ -100,11 +88,7 @@ export function extractTypingData(raw: RawWebSocketMessage): TypingData {
   };
 }
 
-/**
- * Extract status change data from raw WebSocket message
- * @param raw - Raw message data
- * @returns Normalized StatusChangeData
- */
+/** Extract status change data from raw WebSocket message */
 export function extractStatusData(raw: RawWebSocketMessage): StatusChangeData {
   return {
     userId: raw.userId ?? 0,
@@ -112,11 +96,7 @@ export function extractStatusData(raw: RawWebSocketMessage): StatusChangeData {
   };
 }
 
-/**
- * Extract message read data from raw WebSocket message
- * @param raw - Raw message data
- * @returns Normalized MessageReadData
- */
+/** Extract message read data from raw WebSocket message */
 export function extractReadData(raw: RawWebSocketMessage): MessageReadData {
   return {
     messageId: raw.messageId ?? 0,
@@ -128,12 +108,7 @@ export function extractReadData(raw: RawWebSocketMessage): MessageReadData {
 // STATE UPDATE HELPERS
 // =============================================================================
 
-/**
- * Add typing user to list if not already present
- * @param typingUsers - Current typing users array
- * @param userId - User ID to add
- * @returns New typing users array
- */
+/** Add typing user to list if not already present */
 export function addTypingUser(typingUsers: number[], userId: number): number[] {
   if (typingUsers.includes(userId)) {
     return typingUsers;
@@ -141,12 +116,7 @@ export function addTypingUser(typingUsers: number[], userId: number): number[] {
   return [...typingUsers, userId];
 }
 
-/**
- * Remove typing user from list
- * @param typingUsers - Current typing users array
- * @param userId - User ID to remove
- * @returns New typing users array
- */
+/** Remove typing user from list */
 export function removeTypingUser(
   typingUsers: number[],
   userId: number,
@@ -154,13 +124,7 @@ export function removeTypingUser(
   return typingUsers.filter((id) => id !== userId);
 }
 
-/**
- * Update user status in conversations
- * @param conversations - Current conversations array
- * @param userId - User ID to update
- * @param status - New status
- * @returns New conversations array with updated status
- */
+/** Update user status in conversations */
 export function updateConversationsUserStatus(
   conversations: Conversation[],
   userId: number,
@@ -174,12 +138,7 @@ export function updateConversationsUserStatus(
   }));
 }
 
-/**
- * Mark message as read in messages array
- * @param messages - Current messages array
- * @param messageId - Message ID to mark as read
- * @returns New messages array with updated message
- */
+/** Mark message as read in messages array */
 export function markMessageAsRead(
   messages: Message[],
   messageId: number,
@@ -191,15 +150,7 @@ export function markMessageAsRead(
   );
 }
 
-/**
- * Update conversation with new message
- * @param conversations - Current conversations array
- * @param conversationId - Conversation ID
- * @param newMessage - New message
- * @param isActiveConversation - Whether this is the active conversation
- * @param currentUserId - Current user's ID
- * @returns New conversations array with updated conversation at top
- */
+/** Update conversation with new message and move it to the top */
 export function updateConversationWithMessage(
   conversations: Conversation[],
   conversationId: number,
@@ -246,11 +197,6 @@ export interface E2eSendFields {
 /**
  * Build send message payload.
  * For E2E messages, pass e2eFields instead of content.
- * @param conversationId - Conversation ID
- * @param content - Plaintext content (null for E2E)
- * @param attachments - Attachment IDs
- * @param e2eFields - Optional E2E encryption fields
- * @returns WebSocket message object
  */
 export function buildSendMessage(
   conversationId: number,
@@ -277,11 +223,7 @@ export function buildSendMessage(
   };
 }
 
-/**
- * Build typing start message
- * @param conversationId - Conversation ID
- * @returns WebSocket message object
- */
+/** Build typing start message */
 export function buildTypingStartMessage(
   conversationId: number,
 ): WebSocketMessage {
@@ -291,11 +233,7 @@ export function buildTypingStartMessage(
   };
 }
 
-/**
- * Build typing stop message
- * @param conversationId - Conversation ID
- * @returns WebSocket message object
- */
+/** Build typing stop message */
 export function buildTypingStopMessage(
   conversationId: number,
 ): WebSocketMessage {
@@ -305,10 +243,7 @@ export function buildTypingStopMessage(
   };
 }
 
-/**
- * Build ping message
- * @returns WebSocket message object
- */
+/** Build ping message */
 export function buildPingMessage(): WebSocketMessage {
   return {
     type: WS_MESSAGE_TYPES.PING,
@@ -316,10 +251,7 @@ export function buildPingMessage(): WebSocketMessage {
   };
 }
 
-/**
- * Build request_presence message — asks backend for current online partners
- * @returns WebSocket message object
- */
+/** Build request_presence message -- asks backend for current online partners */
 export function buildRequestPresenceMessage(): WebSocketMessage {
   return {
     type: WS_MESSAGE_TYPES.REQUEST_PRESENCE,
@@ -331,20 +263,12 @@ export function buildRequestPresenceMessage(): WebSocketMessage {
 // RECONNECTION LOGIC
 // =============================================================================
 
-/**
- * Calculate reconnection delay with exponential backoff
- * @param attempt - Current attempt number (1-based)
- * @returns Delay in milliseconds
- */
+/** Calculate reconnection delay with exponential backoff */
 export function calculateReconnectDelay(attempt: number): number {
   return WEBSOCKET_CONFIG.reconnectDelay * attempt;
 }
 
-/**
- * Check if should attempt reconnection
- * @param attempts - Current attempt count
- * @returns true if should retry
- */
+/** Check if should attempt reconnection */
 export function shouldReconnect(attempts: number): boolean {
   return attempts < WEBSOCKET_CONFIG.maxReconnectAttempts;
 }
@@ -353,11 +277,7 @@ export function shouldReconnect(attempts: number): boolean {
 // WEBSOCKET MESSAGE TYPE CHECKS
 // =============================================================================
 
-/**
- * Check if message type is a typing indicator
- * @param type - Message type string
- * @returns true if typing-related
- */
+/** Check if message type is a typing indicator */
 export function isTypingMessage(type: string): boolean {
   return (
     type === WS_MESSAGE_TYPES.TYPING_START ||
@@ -367,11 +287,7 @@ export function isTypingMessage(type: string): boolean {
   );
 }
 
-/**
- * Check if message type indicates typing started
- * @param type - Message type string
- * @returns true if typing started
- */
+/** Check if message type indicates typing started */
 export function isTypingStartMessage(type: string): boolean {
   return (
     type === WS_MESSAGE_TYPES.TYPING_START ||
@@ -379,11 +295,7 @@ export function isTypingStartMessage(type: string): boolean {
   );
 }
 
-/**
- * Check if message type is a status change
- * @param type - Message type string
- * @returns true if status-related
- */
+/** Check if message type is a status change */
 export function isStatusMessage(type: string): boolean {
   return (
     type === WS_MESSAGE_TYPES.USER_STATUS ||
@@ -391,11 +303,7 @@ export function isStatusMessage(type: string): boolean {
   );
 }
 
-/**
- * Check if message type is ignorable (pong, confirmations)
- * @param type - Message type string
- * @returns true if can be ignored
- */
+/** Check if message type is ignorable (pong, confirmations) */
 export function isIgnorableMessage(type: string): boolean {
   return (
     type === WS_MESSAGE_TYPES.PONG || type === WS_MESSAGE_TYPES.MESSAGE_SENT

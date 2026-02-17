@@ -107,7 +107,6 @@ export class AuditTrailInterceptor implements NestInterceptor {
     );
   }
 
-  /** Check if request should skip audit logging */
   private shouldSkipLogging(
     method: string,
     path: string,

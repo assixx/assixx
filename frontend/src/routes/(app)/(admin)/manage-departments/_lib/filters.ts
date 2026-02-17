@@ -4,12 +4,7 @@
 
 import type { Department, StatusFilter } from './types';
 
-/**
- * Filter departments by status
- * @param departments - All departments array
- * @param status - Status filter value
- * @returns Filtered departments array
- */
+/** Filter departments by status */
 export function filterByStatus(
   departments: Department[],
   status: StatusFilter,
@@ -29,11 +24,8 @@ export function filterByStatus(
 }
 
 /**
- * Filter departments by search query
+ * Filter departments by search query.
  * Searches in: name, description, areaName
- * @param departments - Departments to filter
- * @param query - Search query string
- * @returns Filtered departments array
  */
 export function filterBySearch(
   departments: Department[],
@@ -55,13 +47,7 @@ export function filterBySearch(
   });
 }
 
-/**
- * Apply all filters to departments
- * @param departments - All departments array
- * @param status - Status filter
- * @param searchQuery - Search query string
- * @returns Filtered departments array
- */
+/** Apply all filters to departments */
 export function applyAllFilters(
   departments: Department[],
   status: StatusFilter,

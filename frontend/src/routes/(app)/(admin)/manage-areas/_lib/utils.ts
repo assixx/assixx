@@ -22,20 +22,12 @@ import type {
 // STATUS HELPERS
 // =============================================================================
 
-/**
- * Get status badge class based on is_active value
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns CSS class for badge
- */
+/** Get status badge class based on is_active value */
 export function getStatusBadgeClass(isActive: IsActiveStatus): string {
   return STATUS_BADGE_CLASSES[isActive];
 }
 
-/**
- * Get status label for display
- * @param isActive - Status value (0, 1, 3, 4)
- * @returns Human-readable status label
- */
+/** Get status label for display */
 export function getStatusLabel(isActive: IsActiveStatus): string {
   return STATUS_LABELS[isActive];
 }
@@ -44,11 +36,7 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 // TYPE HELPERS
 // =============================================================================
 
-/**
- * Get type label for display
- * @param type - Area type
- * @returns Human-readable type label
- */
+/** Get type label for display */
 export function getTypeLabel(type: string): string {
   if (type in TYPE_LABELS) {
     return TYPE_LABELS[type as AreaType];
@@ -60,12 +48,7 @@ export function getTypeLabel(type: string): string {
 // AREA LEAD HELPERS
 // =============================================================================
 
-/**
- * Get area lead display name for dropdown
- * @param areaLeadId - Selected area lead ID
- * @param areaLeads - Available area leads
- * @returns Display name string
- */
+/** Get area lead display name for dropdown */
 export function getAreaLeadDisplayName(
   areaLeadId: number | null,
   areaLeads: AdminUser[],
@@ -81,12 +64,7 @@ export function getAreaLeadDisplayName(
 // DEPARTMENT HELPERS
 // =============================================================================
 
-/**
- * Get department IDs assigned to an area
- * @param areaId - Area ID
- * @param departments - All departments
- * @returns Array of department IDs
- */
+/** Get department IDs assigned to an area */
 export function getDepartmentIdsForArea(
   areaId: number,
   departments: Department[],
@@ -94,11 +72,7 @@ export function getDepartmentIdsForArea(
   return departments.filter((d) => d.areaId === areaId).map((d) => d.id);
 }
 
-/**
- * Get department count display text
- * @param count - Number of departments
- * @returns Display text
- */
+/** Get department count display text */
 export function getDepartmentCountText(count: number): string {
   if (count === 0) return 'Keine';
   if (count === 1) return '1 Abteilung';
@@ -109,12 +83,7 @@ export function getDepartmentCountText(count: number): string {
 // FORM HELPERS
 // =============================================================================
 
-/**
- * Populate form from area data (for edit mode)
- * @param area - Area to edit
- * @param departments - All departments
- * @returns Form data object
- */
+/** Populate form from area data (for edit mode) */
 export function populateFormFromArea(
   area: Area,
   departments: Department[],
@@ -140,10 +109,7 @@ export function populateFormFromArea(
   };
 }
 
-/**
- * Get default form values for new area
- * @returns Default form data object
- */
+/** Get default form values for new area */
 export function getDefaultFormValues(): typeof FORM_DEFAULTS {
   return { ...FORM_DEFAULTS };
 }

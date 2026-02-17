@@ -93,16 +93,11 @@ function getSentResponse(host: ReturnType<typeof createMockHost>): {
   return { statusCode, body };
 }
 
-/**
- * Wrapper to invoke ExceptionFilter.catch() without triggering
- * eslint-plugin-promise's `promise/valid-params` false positive.
- */
 function catchException(
   f: AllExceptionsFilter,
   exception: unknown,
   host: ReturnType<typeof createMockHost>,
 ): void {
-  // eslint-disable-next-line promise/valid-params -- ExceptionFilter.catch(), not Promise.catch()
   f.catch(exception, host as never);
 }
 

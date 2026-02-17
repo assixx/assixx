@@ -420,10 +420,6 @@ export function canSeeActions(role: string | null): boolean {
  * - admin with hasFullAccess=true: can edit all documents
  * - admin with hasFullAccess=false: can only edit own documents
  * - employee: can only edit own documents
- *
- * @param doc - The document to check
- * @param user - Current user (null if not loaded)
- * @returns true if user can edit
  */
 export function canEditDocument(
   doc: Document,
@@ -451,10 +447,6 @@ export function canEditDocument(
  * - admin with hasFullAccess=true: can delete all documents
  * - admin with hasFullAccess=false: can only delete own documents
  * - employee: can only delete own documents
- *
- * @param doc - The document to check
- * @param user - Current user (null if not loaded)
- * @returns true if user can delete
  */
 export function canDeleteDocument(
   doc: Document,
@@ -471,10 +463,6 @@ export function canDeleteDocument(
 /**
  * Validate upload data before submission
  * Checks: file selected, category selected, user loaded, user has required fields, payroll period
- *
- * @param data - Raw upload form data
- * @param user - Current user (null if not loaded)
- * @returns Discriminated union: { valid: true, data } or { valid: false, error, type }
  */
 export function validateUploadData(
   data: UploadData,
@@ -533,8 +521,6 @@ export function validateUploadData(
  * Trigger document download via DOM link creation
  * Cookie-based auth: accessToken cookie sent automatically on same-origin request
  * No token in URL = no token in logs/history
- *
- * @param doc - Document to download
  */
 export function downloadDocument(doc: Document): void {
   const link = document.createElement('a');
