@@ -176,10 +176,7 @@ export class KvpService {
         AND status != 'archived'
     `;
 
-    const rows = await this.db.query<DbDashboardStats & { approved: number }>(
-      query,
-      [tenantId],
-    );
+    const rows = await this.db.query<DbDashboardStats>(query, [tenantId]);
     const stats = rows[0];
 
     if (stats === undefined) {
