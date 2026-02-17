@@ -1,52 +1,23 @@
 # Before Starting Development
 
-> **Time Required:** ~3 minutes (including TypeScript check)
-> **Primary Method:** A single command runs all checks!
+> **Time Required:** ~1 minute
+> **Ziel:** Sicherstellen, dass Docker läuft und Code Quality stimmt.
 
-## MANDATORY: Always run this one command
-
-```bash
-# Runs ALL checks (including TypeScript check!)
-/home/scs/projects/Assixx/scripts/dev-status.sh
-```
-
-**The script automatically checks:**
-
-- Docker Container Status
-- API Health Check
-- Git Status
-- **TypeScript Check** (NEW — now runs automatically!)
-- Current Phase Info
-
-# - Unit Tests (Commented out — no longer run automatically)
-
-**If there are problems:**
-
-```bash
-# Fix TypeScript errors
-docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
-
-# Restart Docker
-cd /home/scs/projects/Assixx/docker && docker-compose down && docker-compose up -d
-```
-
-## Docker Development (Standard)
-
-### Essential Checks
+## Essential Checks
 
 ```bash
 # Working Directory
 cd /home/scs/projects/Assixx/docker
 
 # Container Status & Health
-docker-compose ps
+doppler run -- docker-compose ps
 curl -s http://localhost:3000/health | jq '.'
 
-# Code Quality Check — DON'T FORGET! This command is CRITICAL!
+# Code Quality Check
 docker exec assixx-backend pnpm run type-check
 
 # If TypeScript errors occur:
-docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix"
+docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
 ```
 
 ### Expected Output
@@ -118,4 +89,4 @@ git branch --show-current
 
 ---
 
-**Last updated:** 2025-07-18 — dev-status.sh now runs TypeScript check automatically!
+**Last updated:** 2026-02-17
