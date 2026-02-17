@@ -1,42 +1,42 @@
-# The Power of Ten - Regeln für Safety-Critical Code
+# The Power of Ten -- Rules for Safety-Critical Code
 
-> **Quelle:** Gerard J. Holzmann, NASA/JPL Laboratory for Reliable Software
-> **Original Paper:** [P10.pdf](./P10.pdf)
-> **Adaptiert für:** TypeScript/JavaScript (Assixx Project)
-> **Version:** 1.0.0
-> **Erstellt:** 25.11.2025
+> **Source:** Gerard J. Holzmann, NASA/JPL Laboratory for Reliable Software
+> **Original Paper:** "The Power of 10: Rules for Developing Safety-Critical Code" (IEEE Computer, June 2006)
+> **Adapted for:** TypeScript/JavaScript (Assixx Project)
+> **Version:** 2.1.0
+> **Updated:** 2026-02-17
 
 ---
 
-## Warum diese Regeln?
+## Why These Rules?
 
-Die meisten Coding-Guidelines enthalten über 100 Regeln - und werden deshalb ignoriert. Holzmann argumentiert: **10 strikte, verifizierbare Regeln** sind effektiver als 100 vage Empfehlungen.
+Most coding guidelines contain 100+ rules -- and get ignored. Holzmann argues: **10 strict, verifiable rules** are more effective than 100 vague recommendations.
 
-Diese Regeln wurden bei NASA/JPL für **mission-critical Software** entwickelt - Code, der Raumschiffe, Flugzeuge und Atomkraftwerke steuert. Ein Bug kann töten.
+These rules were developed at NASA/JPL for **mission-critical software** -- code that controls spacecraft, aircraft, and nuclear power plants. A bug can kill.
 
 > _"The rules act like the seat-belt in your car: initially they are perhaps a little uncomfortable, but after a while their use becomes second-nature and not using them becomes unimaginable."_
-> — Gerard J. Holzmann
+> -- Gerard J. Holzmann
 
 ---
 
-## Die 10 Regeln
+## The 10 Rules
 
-### Regel 1: Einfache Kontrollfluss-Strukturen
+### Rule 1: Simple Control Flow
 
 **Original (C):**
 
-> Restrict all code to very simple control flow constructs – do not use `goto` statements, `setjmp` or `longjmp` constructs, and direct or indirect recursion.
+> Restrict all code to very simple control flow constructs -- do not use `goto` statements, `setjmp` or `longjmp` constructs, and direct or indirect recursion.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```typescript
-// ❌ VERBOTEN - Rekursion
+// FORBIDDEN -- unbounded recursion
 function factorial(n: number): number {
   if (n <= 1) return 1;
-  return n * factorial(n - 1); // Rekursiver Aufruf
+  return n * factorial(n - 1); // no depth limit, stack overflow risk
 }
 
-// ✅ RICHTIG - Iterativ
+// CORRECT -- iterative
 function factorial(n: number): number {
   let result = 1;
   for (let i = 2; i <= n; i++) {
@@ -45,18 +45,15 @@ function factorial(n: number): number {
   return result;
 }
 
-// ❌ VERBOTEN - Indirekte Rekursion
+// FORBIDDEN -- indirect recursion (cycle)
 function processA(data: Data): void {
-  // ... logic
-  processB(data); // ruft processA auf
+  processB(data); // calls processA
 }
-
 function processB(data: Data): void {
-  // ... logic
-  processA(data); // Zyklus!
+  processA(data); // cycle!
 }
 
-// ✅ RICHTIG - Lineare Verarbeitung
+// CORRECT -- linear processing
 function processData(data: Data): void {
   const stepA = transformA(data);
   const stepB = transformB(stepA);
@@ -66,53 +63,77 @@ function processData(data: Data): void {
 
 **Rationale:**
 
-- Einfacher Kontrollfluss = bessere Verifizierbarkeit
-- Ohne Rekursion: Azyklischer Call-Graph, beweisbar terminierend
-- Statische Analyse kann Stack-Nutzung berechnen
+- Simple control flow = better verifiability
+- Without recursion: acyclic call graph, provably terminating
+- Static analysis can compute stack usage
 
-**Ausnahme:** Tail-Call-Optimierung ist in JS/TS nicht garantiert - daher KEINE Rekursion, auch keine "tail-recursive" Funktionen.
+**Exception -- Bounded Tree Traversal:**
+
+Tree structures (menus, file systems, org charts) are naturally recursive. Recursion is allowed when **both** conditions are met:
+
+1. A `MAX_DEPTH` constant limits recursion depth
+2. The data structure has a known, finite depth
+
+```typescript
+// ALLOWED -- bounded recursion for tree traversal
+const MAX_DEPTH = 10;
+
+function filterMenuItems(items: MenuItem[], depth = 0): MenuItem[] {
+  if (depth >= MAX_DEPTH) {
+    return items; // safety limit reached
+  }
+
+  return items
+    .filter((item) => item.isVisible)
+    .map((item) => ({
+      ...item,
+      children: item.children !== undefined ? filterMenuItems(item.children, depth + 1) : undefined,
+    }));
+}
+```
+
+Unbounded recursion and indirect recursion remain forbidden. Tail-call optimization is not guaranteed in JS/TS.
 
 ---
 
-### Regel 2: Alle Loops mit fester Obergrenze
+### Rule 2: Fixed Upper Bounds on All Loops
 
 **Original (C):**
 
 > All loops must have a fixed upper-bound. It must be trivially possible for a checking tool to prove statically that a preset upper-bound on the number of iterations of a loop cannot be exceeded.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```typescript
-// ❌ VERBOTEN - Unbekannte Obergrenze
+// FORBIDDEN -- unknown upper bound
 while (condition) {
-  // Kann ewig laufen
+  // can run forever
 }
 
-// ❌ VERBOTEN - Externe Abhängigkeit ohne Limit
+// FORBIDDEN -- external dependency without limit
 while (await fetchNextPage()) {
   processPage();
 }
 
-// ✅ RICHTIG - Explizite Obergrenze
+// CORRECT -- explicit upper bound
 const MAX_ITERATIONS = 10000;
 let iterations = 0;
 
 while (condition && iterations < MAX_ITERATIONS) {
   iterations++;
-  // Logic
+  // logic
 }
 
 if (iterations >= MAX_ITERATIONS) {
   throw new Error(`Loop exceeded maximum iterations: ${MAX_ITERATIONS}`);
 }
 
-// ✅ RICHTIG - for...of mit bekanntem Array
+// CORRECT -- for...of with known array
 for (const item of items) {
-  // items.length ist bekannt
-  process(item);
+  process(item); // items.length is known
 }
 
-// ✅ RICHTIG - for mit explizitem Limit
+// CORRECT -- for with explicit limit
 const MAX_PAGES = 100;
 for (let page = 0; page < MAX_PAGES; page++) {
   const data = await fetchPage(page);
@@ -123,175 +144,167 @@ for (let page = 0; page < MAX_PAGES; page++) {
 
 **Rationale:**
 
-- Verhindert Runaway-Code und Endlosschleifen
-- Statisch beweisbar, dass Code terminiert
-- Bei Überschreitung: Expliziter Fehler statt stilles Hängen
+- Prevents runaway code and infinite loops
+- Statically provable that code terminates
+- On exceeding limit: explicit error instead of silent hang
 
 ---
 
-### Regel 3: Keine dynamische Speicherallokation nach Initialisierung
+### Rule 3: No Dynamic Memory Allocation After Initialization
 
 **Original (C):**
 
 > Do not use dynamic memory allocation after initialization.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
-Da JavaScript/TypeScript Garbage Collection verwendet, ist diese Regel adaptiert:
+JavaScript/TypeScript uses garbage collection, so the original C rule does not apply directly. In a Node.js web backend, the real danger is **memory leaks**, not allocation itself.
+
+**Adapted rule: Prevent memory leaks. Clean up all resources.**
 
 ```typescript
-// ❌ VERMEIDEN - Dynamische Objekt-Erstellung in Hot Paths
-function processRequest(req: Request): Response {
-  const temp = { ...req.data }; // Neues Objekt bei jedem Aufruf
-  const result = { status: 'ok', data: temp }; // Noch ein Objekt
-  return result;
-}
-
-// ✅ BESSER - Object Pools oder pre-allokierte Strukturen
-class ResponsePool {
-  private pool: Response[] = [];
-  private readonly MAX_POOL_SIZE = 100;
-
-  acquire(): Response {
-    return this.pool.pop() ?? this.createNew();
-  }
-
-  release(response: Response): void {
-    if (this.pool.length < this.MAX_POOL_SIZE) {
-      this.reset(response);
-      this.pool.push(response);
-    }
-  }
-
-  private createNew(): Response {
-    /* ... */
-  }
-  private reset(response: Response): void {
-    /* ... */
+// WRONG -- event listener never removed (memory leak)
+class ChatService {
+  constructor(private readonly emitter: EventEmitter) {
+    emitter.on('message', this.handleMessage.bind(this));
+    // never cleaned up -- accumulates listeners on each instantiation
   }
 }
 
-// ✅ RICHTIG - Strukturen bei Init erstellen
-const RESPONSE_TEMPLATES = {
-  success: { success: true, data: null as unknown },
-  error: { success: false, error: null as unknown },
-} as const;
+// CORRECT -- cleanup on destroy
+class ChatService implements OnModuleDestroy {
+  private readonly handler = this.handleMessage.bind(this);
 
-// ✅ RICHTIG - Arrays mit bekannter Größe
-const buffer = new Array<number>(BUFFER_SIZE).fill(0);
+  constructor(private readonly emitter: EventEmitter) {
+    emitter.on('message', this.handler);
+  }
+
+  onModuleDestroy(): void {
+    this.emitter.off('message', this.handler);
+  }
+}
+
+// WRONG -- interval never cleared
+function startPolling(): void {
+  setInterval(async () => {
+    await checkForUpdates();
+  }, 5000);
+  // no way to stop this
+}
+
+// CORRECT -- clearable interval
+function startPolling(): { stop: () => void } {
+  const id = setInterval(async () => {
+    await checkForUpdates();
+  }, 5000);
+
+  return { stop: () => clearInterval(id) };
+}
+
+// WRONG -- subscription leak in Svelte
+let unsubscribe: (() => void) | undefined;
+$effect(() => {
+  unsubscribe = store.subscribe(handler);
+  // never unsubscribed on cleanup
+});
+
+// CORRECT -- cleanup in effect return
+$effect(() => {
+  const unsubscribe = store.subscribe(handler);
+  return () => unsubscribe();
+});
 ```
 
 **Rationale:**
 
-- Vorhersagbares Speicherverhalten
-- Vermeidung von GC-Pauses in kritischen Pfaden
-- Einfachere Analyse des Speicherverbrauchs
+- Leaked event listeners, intervals, and subscriptions accumulate over time
+- Node.js processes run for weeks/months -- even small leaks compound
+- GC cannot collect objects still referenced by forgotten listeners
 
-**Pragmatische Anwendung:** In TypeScript ist diese Regel weniger strikt. Fokus auf:
+**Checklist:**
 
-- Keine Speicher-Lecks (Event Listeners entfernen, Subscriptions beenden)
-- Große Datenstrukturen wiederverwenden
-- In Performance-kritischem Code: Object Pools nutzen
+- Every `addEventListener` / `.on()` has a matching `removeEventListener` / `.off()`
+- Every `setInterval` / `setTimeout` has a matching `clearInterval` / `clearTimeout`
+- Every subscription (SSE, WebSocket, Observable) is unsubscribed on destroy
+- Svelte `$effect` returns cleanup functions when needed
 
 ---
 
-### Regel 4: Maximale Funktionslänge ~60 Zeilen
+### Rule 4: Maximum Function Length ~60 Lines
 
 **Original (C):**
 
 > No function should be longer than what can be printed on a single sheet of paper in a standard reference format with one line per statement and one line per declaration. Typically, this means no more than about 60 lines of code per function.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```typescript
-// ❌ VERBOTEN - Funktion über 60 Zeilen
+// FORBIDDEN -- function over 60 lines
 async function handleUserRegistration(data: RegistrationData): Promise<User> {
-  // 150 Zeilen Code...
-  // Validation
-  // Database queries
-  // Email sending
-  // Logging
-  // Error handling
-  // ...mehr Code...
+  // 150 lines of code...
+  // Validation, DB queries, email, logging, error handling...
 }
 
-// ✅ RICHTIG - Aufgeteilt in logische Einheiten
+// CORRECT -- split into logical units
 async function handleUserRegistration(data: RegistrationData): Promise<User> {
-  const validated = validateRegistrationData(data); // ~15 Zeilen
-  const user = await createUserInDatabase(validated); // ~20 Zeilen
-  await sendWelcomeEmail(user); // ~10 Zeilen
-  logRegistration(user); // ~5 Zeilen
+  const validated = validateRegistrationData(data); // ~15 lines
+  const user = await createUserInDatabase(validated); // ~20 lines
+  await sendWelcomeEmail(user); // ~10 lines
+  logRegistration(user); // ~5 lines
   return user;
-}
-
-function validateRegistrationData(data: RegistrationData): ValidatedData {
-  // Max 60 Zeilen - eine logische Einheit
-}
-
-async function createUserInDatabase(data: ValidatedData): Promise<User> {
-  // Max 60 Zeilen - eine logische Einheit
 }
 ```
 
 **Rationale:**
 
-- Jede Funktion = eine verständliche, testbare Einheit
-- Passt auf einen Bildschirm/eine Seite
-- Lange Funktionen = Zeichen schlechter Struktur
+- Each function = one understandable, testable unit
+- Fits on one screen/page
+- Long functions = sign of bad structure
 
-**Messung:** ESLint Rule `max-lines-per-function` auf 60 setzen.
+**Enforcement:** ESLint rule `max-lines-per-function` set to 60.
 
 ---
 
-### Regel 5: Mindestens 2 Assertions pro Funktion
+### Rule 5: Minimum 2 Assertions Per Function
 
 **Original (C):**
 
 > The assertion density of the code should average to a minimum of two assertions per function. Assertions are used to check for anomalous conditions that should never happen in real-life executions.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```typescript
-// ✅ RICHTIG - Mit Zod-Validierung
-import { z } from 'zod';
-
-// ❌ UNZUREICHEND - Keine Validierung
+// INSUFFICIENT -- no validation
 function divideNumbers(a: number, b: number): number {
-  return a / b; // Was wenn b === 0?
+  return a / b; // what if b === 0?
 }
 
-// ✅ RICHTIG - Mit Assertions/Validierungen
+// CORRECT -- with assertions/validations
 function divideNumbers(a: number, b: number): number {
-  // Assertion 1: Parameter-Validierung
+  // Assertion 1: parameter validation
   if (!Number.isFinite(a) || !Number.isFinite(b)) {
     throw new Error(`Invalid input: a=${a}, b=${b} must be finite numbers`);
   }
 
-  // Assertion 2: Geschäftslogik-Validierung
+  // Assertion 2: business logic validation
   if (b === 0) {
     throw new Error('Division by zero is not allowed');
   }
 
-  const result = a / b;
-
-  // Assertion 3 (optional): Post-Condition
-  if (!Number.isFinite(result)) {
-    throw new Error(`Unexpected result: ${result}`);
-  }
-
-  return result;
+  return a / b;
 }
 
+// CORRECT -- with Zod validation
 const UserInputSchema = z.object({
   email: z.string().email(),
   age: z.number().int().min(0).max(150),
 });
 
 function processUser(input: unknown): ProcessedUser {
-  // Assertion 1: Input-Validierung via Zod
+  // Assertion 1: input validation via Zod
   const validated = UserInputSchema.parse(input);
 
-  // Assertion 2: Business Rule
+  // Assertion 2: business rule
   if (validated.age < 18) {
     throw new Error('User must be at least 18 years old');
   }
@@ -300,68 +313,65 @@ function processUser(input: unknown): ProcessedUser {
 }
 ```
 
-**Was zählt als Assertion in TypeScript:**
+**What counts as an assertion in TypeScript:**
 
-1. Zod/Joi Schema-Validierung
-2. Type Guards mit throw
-3. Explizite if-checks mit Error
-4. `console.assert()` (nur Development)
-5. Early Returns nach Validierung
+1. Zod schema validation
+2. Type guards with throw
+3. Explicit if-checks with Error
+4. `console.assert()` (development only)
+5. Early returns after validation
 
 **Rationale:**
 
-- Statistisch: 1 Defekt pro 10-100 Zeilen Code
-- Mehr Assertions = mehr abgefangene Fehler
-- Defensive Programming: Fehler früh erkennen
+- Statistically: 1 defect per 10-100 lines of code
+- More assertions = more caught errors
+- Defensive programming: catch errors early
 
 ---
 
-### Regel 6: Kleinster möglicher Scope für Variablen
+### Rule 6: Smallest Possible Scope for Variables
 
 **Original (C):**
 
 > Data objects must be declared at the smallest possible level of scope.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```typescript
-// ❌ FALSCH - Variable zu weit oben deklariert
+// WRONG -- variable declared too high
 function processOrders(orders: Order[]): void {
-  let total = 0; // Weit oben, aber nur unten gebraucht
-  let tempOrder: Order | null = null; // Nie gebraucht
+  let total = 0; // declared at top, only used below
+  let tempOrder: Order | null = null; // never used
 
   for (const order of orders) {
-    // 50 Zeilen Code die total nicht nutzen
+    // 50 lines that don't use total
   }
 
-  // Erst hier wird total gebraucht
   for (const order of orders) {
-    total += order.amount;
+    total += order.amount; // first use here
   }
 }
 
-// ✅ RICHTIG - Variablen im kleinsten Scope
+// CORRECT -- variables in smallest scope
 function processOrders(orders: Order[]): void {
   for (const order of orders) {
-    // Verarbeitung
+    // processing
   }
 
-  // total nur wo es gebraucht wird
+  // total only where needed
   const total = orders.reduce((sum, order) => sum + order.amount, 0);
 }
 
-// ✅ RICHTIG - Block-Scope nutzen
+// CORRECT -- block scope
 function processData(data: Data): Result {
-  // Validation-Block
   {
     const validationResult = validate(data);
     if (!validationResult.success) {
       throw new Error(validationResult.error);
     }
   }
-  // validationResult ist hier nicht mehr zugänglich
+  // validationResult is no longer accessible here
 
-  // Processing-Block
   {
     const intermediate = transform(data);
     return finalize(intermediate);
@@ -371,39 +381,35 @@ function processData(data: Data): Result {
 
 **Rationale:**
 
-- Data-Hiding: Was nicht sichtbar ist, kann nicht korrumpiert werden
-- Einfacheres Debugging: Weniger Stellen wo Variable geändert werden kann
-- Verhindert Wiederverwendung für inkompatible Zwecke
+- Data hiding: what is not visible cannot be corrupted
+- Easier debugging: fewer places where a variable can change
+- Prevents reuse for incompatible purposes
 
-**TypeScript-Spezifisch:**
-
-- IMMER `const` wenn möglich
-- `let` nur wenn Reassignment nötig
-- NIEMALS `var`
+**TypeScript-specific:** ALWAYS `const` when possible. `let` only when reassignment is needed. NEVER `var`.
 
 ---
 
-### Regel 7: Return-Values prüfen, Parameter validieren
+### Rule 7: Check Return Values, Validate Parameters
 
 **Original (C):**
 
 > The return value of non-void functions must be checked by each calling function, and the validity of parameters must be checked inside each function.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```typescript
-// ❌ FALSCH - Return-Value ignoriert
+// WRONG -- return value ignored
 async function processUser(id: number): Promise<void> {
-  fetchUser(id); // Promise ignoriert!
-  updateUser(id, data); // Fehler wird verschluckt
+  fetchUser(id); // promise ignored!
+  updateUser(id, data); // error swallowed
 }
 
-// ❌ FALSCH - Parameter nicht validiert
+// WRONG -- parameters not validated
 function setUserAge(user: User, age: number): void {
-  user.age = age; // Was wenn age = -5 oder 999?
+  user.age = age; // what if age = -5 or 999?
 }
 
-// ✅ RICHTIG - Return-Values prüfen
+// CORRECT -- check return values
 async function processUser(id: number): Promise<void> {
   const user = await fetchUser(id);
   if (user === null) {
@@ -416,7 +422,7 @@ async function processUser(id: number): Promise<void> {
   }
 }
 
-// ✅ RICHTIG - Parameter validieren
+// CORRECT -- validate parameters
 function setUserAge(user: User, age: number): void {
   if (age < 0 || age > 150) {
     throw new Error(`Invalid age: ${age}. Must be between 0 and 150.`);
@@ -427,108 +433,118 @@ function setUserAge(user: User, age: number): void {
   user.age = age;
 }
 
-// ✅ RICHTIG - Explizit ignorieren wenn beabsichtigt
-void analytics.trackEvent('user_action'); // void = bewusst ignoriert
+// CORRECT -- explicitly ignore when intentional
+void analytics.trackEvent('user_action'); // void = deliberately ignored
 ```
 
-**TypeScript-Spezifisch:**
+**TypeScript-specific:**
 
-- `@typescript-eslint/no-floating-promises` erzwingen
-- Alle `Promise`-Returns awaiten oder mit `void` markieren
-- Zod für Runtime-Validierung an Systemgrenzen
+- `@typescript-eslint/no-floating-promises` enforced
+- All `Promise` returns must be awaited or marked with `void`
+- Zod for runtime validation at system boundaries
 
 **Rationale:**
 
-- Standard-Libraries wie `strlen(0)` crashen still bei falschen Inputs
-- Fehler müssen die Call-Chain hochpropagiert werden
-- Mechanische Checker können Violations erkennen
+- Standard library functions crash silently on wrong inputs
+- Errors must propagate up the call chain
+- Mechanical checkers can detect violations
 
 ---
 
-### Regel 8: Preprocessor-Nutzung einschränken
+### Rule 8: Restrict Preprocessor Usage
 
 **Original (C):**
 
 > The use of the preprocessor must be limited to the inclusion of header files and simple macro definitions. Token pasting, variable argument lists (ellipses), and recursive macro calls are not allowed.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
-TypeScript hat keinen Preprocessor, aber äquivalente Konzepte:
+TypeScript has no preprocessor, but equivalent concepts apply: **type-level metaprogramming** and **build-time conditionals**.
+
+Standard utility types (`Partial`, `Pick`, `Omit`, `Record`, `ReturnType`) and single-level generics are fine. The problem is multi-level recursive conditional types that nobody can read.
 
 ```typescript
-// ❌ VERMEIDEN - Komplexe Type-Level-Programmierung
-type DeepPartial<T> = T extends object
-  ? { [P in keyof T]?: DeepPartial<T[P]> }
-  : T;
+// FINE -- standard utility types
+type PartialUser = Partial<User>;
+type UserKeys = Pick<User, 'id' | 'email'>;
 
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
-) => void
-  ? I
+// FINE -- single-level generic
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// AVOID -- recursive conditional type gymnastics
+type DeepReadonly<T> = T extends object ? { readonly [P in keyof T]: DeepReadonly<T[P]> } : T;
+
+// FORBIDDEN -- incomprehensible type-level programming
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+
+type DeepMerge<A, B> = {
+  [K in keyof A | keyof B]: K extends keyof B ?
+    K extends keyof A ?
+      A[K] extends object ?
+        B[K] extends object ?
+          DeepMerge<A[K], B[K]>
+        : B[K]
+      : B[K]
+    : B[K]
+  : K extends keyof A ? A[K]
   : never;
+};
+```
 
-// ❌ VERMEIDEN - Zu viele Build-Time Conditionals
-// In vite.config.js
+**Rule of thumb:** If a type definition needs more than 2 levels of nesting or a comment to explain what it does, it is too complex. Extract it into a named interface or simplify the data model.
+
+**Build-time conditionals** -- max 2-3 environment flags:
+
+```typescript
+// AVOID -- too many build-time conditionals (2^10 = 1024 versions)
 const config = {
   define: {
     __DEV__: mode === 'development',
     __PROD__: mode === 'production',
     __TEST__: mode === 'test',
-    __VERSION__: JSON.stringify(version),
     __FEATURE_X__: process.env.ENABLE_FEATURE_X,
-    __FEATURE_Y__: process.env.ENABLE_FEATURE_Y,
-    // 10+ weitere Flags...
+    // 10+ more flags...
   }
 };
 
-// ✅ RICHTIG - Einfache, verständliche Types
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-type PartialUser = Partial<User>; // Standard-Utility, verständlich
-
-// ✅ RICHTIG - Minimale Build-Konfiguration
-// Maximal 2-3 Environment-Flags
+// CORRECT -- minimal build flags, runtime configuration for features
 const config = {
   define: {
     __DEV__: mode === 'development',
   }
 };
 
-// ✅ RICHTIG - Runtime-Konfiguration statt Build-Time
-const featureFlags = {
-  enableNewUI: config.features.newUI,
-  enableBetaFeatures: config.features.beta,
-};
+// Features controlled at runtime via database (tenant_features table)
+const features = await this.featuresService.getActiveFeatures(tenantId);
 ```
 
 **Rationale:**
 
-- 10 Conditional-Compilation-Direktiven = 2^10 = 1024 mögliche Code-Versionen
-- Komplexe Type-Level-Programmierung ist schwer zu verstehen und zu debuggen
-- Build-Konfiguration sollte minimal und nachvollziehbar sein
+- 10 conditional directives = 2^10 = 1024 possible code versions
+- Recursive conditional types are unreadable and produce cryptic error messages
+- Build configuration should be minimal; feature flags belong in the database
 
 ---
 
-### Regel 9: Referenz-Tiefe einschränken
+### Rule 9: Restrict Reference Depth
 
 **Original (C):**
 
 > The use of pointers should be restricted. Specifically, no more than one level of dereferencing is allowed. Pointer dereference operations may not be hidden in macro definitions or inside typedef declarations. Function pointers are not permitted.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
+
+The problem is **deeply nested data structures**, not the operators used to access them. Optional chaining (`?.`) is a safety feature -- it prevents crashes. The issue is when you need 6 levels of it.
 
 ```typescript
-// ❌ VERBOTEN - Zu tiefe Verschachtelung
+// PROBLEM -- the data structure is too deep (6 levels)
 const value = data.users[0].profile.settings.notifications.email.frequency;
-
-// ❌ VERBOTEN - Optionale Chaining-Ketten
 const freq = data?.users?.[0]?.profile?.settings?.notifications?.email?.frequency;
 
-// ✅ RICHTIG - Flache Strukturen
+// CORRECT -- flatten the data model
 interface UserNotificationSettings {
   emailFrequency: 'daily' | 'weekly' | 'never';
   pushEnabled: boolean;
@@ -537,25 +553,27 @@ interface UserNotificationSettings {
 const settings = getUserNotificationSettings(userId);
 const frequency = settings.emailFrequency;
 
-// ✅ RICHTIG - Destructuring für Klarheit
+// CORRECT -- destructuring when traversal is unavoidable
 function processUser(data: UserData): void {
   const { profile } = data;
-  const { settings } = profile;
-  const { emailFrequency } = settings.notifications;
-
-  // Jetzt ist klar, was emailFrequency ist
+  const { notifications } = profile.settings;
+  const { emailFrequency } = notifications;
 }
 
-// ❌ VERMEIDEN - Callbacks in Callbacks
+// FINE -- 2-3 levels of optional chaining for safe access
+const userName = user?.profile?.displayName ?? 'Anonymous';
+const firstOrder = orders?.[0]?.id;
+
+// AVOID -- callback hell (deep nesting)
 fetchUser(id, (user) => {
   fetchOrders(user.id, (orders) => {
     fetchPayments(orders[0].id, (payments) => {
-      // Callback Hell
+      // 3 levels deep
     });
   });
 });
 
-// ✅ RICHTIG - Flache async/await
+// CORRECT -- flat async/await
 async function processUserData(id: number): Promise<void> {
   const user = await fetchUser(id);
   const orders = await fetchOrders(user.id);
@@ -563,26 +581,26 @@ async function processUserData(id: number): Promise<void> {
 }
 ```
 
-**Maximal erlaubte Tiefe:** 2-3 Levels
+**Maximum property access depth:** 3 levels. If you need more, flatten the data model or use destructuring.
 
 **Rationale:**
 
-- Tiefe Verschachtelung erschwert statische Analyse
-- Datenfluss wird schwer nachvollziehbar
-- Fehler in tiefen Strukturen sind schwer zu debuggen
+- Deep nesting makes data flow hard to trace
+- Errors in deep structures are hard to debug
+- If your data needs 6 levels of access, the structure itself is the problem
 
 ---
 
-### Regel 10: Zero Warnings - Höchste Compiler-Strenge
+### Rule 10: Zero Warnings -- Maximum Compiler Strictness
 
 **Original (C):**
 
 > All code must be compiled, from the first day of development, with all compiler warnings enabled at the compiler's most pedantic setting. All code must compile with these setting without any warnings. All code must be checked daily with at least one, but preferably more than one, state-of-the-art static source code analyzer and should pass the analyses with zero warnings.
 
-**TypeScript-Adaptation:**
+**TypeScript Adaptation:**
 
 ```jsonc
-// tsconfig.json - MAXIMALE STRENGE
+// tsconfig.json -- MAXIMUM STRICTNESS
 {
   "compilerOptions": {
     "strict": true,
@@ -607,16 +625,58 @@ async function processUserData(id: number): Promise<void> {
 ```
 
 ```javascript
-// eslint.config.js - Keine Warnings erlaubt
+// eslint.config.js -- no warnings allowed
 export default [
   {
     rules: {
-      // Alle Rules auf "error", nicht "warn"
+      // all rules set to "error", not "warn"
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/strict-boolean-expressions': 'error',
-      // ... weitere strikte Rules
+      // ... more strict rules
     },
   },
 ];
 ```
+
+**Rationale:**
+
+- Zero tolerance for warnings prevents "warning blindness"
+- Warnings that accumulate eventually hide real problems
+- Static analyzers catch entire classes of bugs automatically
+
+---
+
+## Summary
+
+| Rule | Principle                 | TypeScript Enforcement                                                  |
+| ---- | ------------------------- | ----------------------------------------------------------------------- |
+| 1    | Simple control flow       | no unbounded recursion; bounded tree traversal with `MAX_DEPTH` allowed |
+| 2    | Bounded loops             | `MAX_ITERATIONS` constant on while loops                                |
+| 3    | Prevent memory leaks      | cleanup listeners, intervals, subscriptions on destroy                  |
+| 4    | Max 60 lines/function     | `max-lines-per-function: 60`                                            |
+| 5    | Min 2 assertions/function | Zod validation + business rule checks                                   |
+| 6    | Smallest scope            | `const` > `let` > never `var`                                           |
+| 7    | Check all returns         | `no-floating-promises`, validate params                                 |
+| 8    | Minimal metaprogramming   | standard utility types OK; no recursive conditional types               |
+| 9    | Max 3 levels deep         | flatten data models; `?.` is fine, deep structures are not              |
+| 10   | Zero warnings             | `strict: true`, all ESLint rules as `error`                             |
+
+---
+
+## References
+
+- Gerard J. Holzmann, "The Power of 10: Rules for Developing Safety-Critical Code", IEEE Computer, vol. 39, no. 6, pp. 95-97, June 2006
+- [Original Paper (PDF)](https://web.eecs.umich.edu/~imarkov/10rules.pdf) -- NASA/JPL
+- [Assixx TypeScript Standards](./TYPESCRIPT-STANDARDS.md) -- project-specific implementation of these rules
+- [Assixx Code of Conduct](./CODE-OF-CONDUCT.md) -- hard limits derived from Power of Ten
+
+---
+
+## Changelog
+
+| Version | Date       | Changes                                                                                                                                       |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.1.0   | 2026-02-17 | Reworked Rules 1, 3, 8, 9 for TypeScript/SaaS context: bounded recursion exception, memory leak focus, utility types OK, optional chaining OK |
+| 2.0.0   | 2026-02-17 | Translated to English, clean formatting, added summary table, references, changelog                                                           |
+| 1.0.0   | 2025-11-25 | Initial adaptation of Power of Ten for TypeScript/Assixx                                                                                      |

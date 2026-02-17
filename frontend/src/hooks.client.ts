@@ -36,22 +36,25 @@ Sentry.init({
   environment: dev ? 'development' : 'production',
 
   // Performance Monitoring
-  // Capture 100% in dev, 10% in production
-  tracesSampleRate: dev ? 1.0 : 0.1,
+  // Dev: disabled (noisy, data is useless locally)
+  // Prod: 10% sample rate
+  tracesSampleRate: dev ? 0 : 0.1,
 
-  // Session Replay - helps debug UI issues
-  // Capture 10% of sessions, 100% on error
-  replaysSessionSampleRate: 0.1,
+  // Session Replay
+  // Dev: buffer-only mode (records locally, uploads ONLY on error)
+  //      → no /sentry-tunnel spam, but error context is preserved
+  // Prod: 10% full session recording, 100% error-triggered replays
+  // @see https://docs.sentry.io/platforms/javascript/guides/sveltekit/session-replay/
+  replaysSessionSampleRate: dev ? 0 : 0.1,
   replaysOnErrorSampleRate: 1.0,
 
   // Integrations
   integrations: [
-    // Session Replay for debugging
     Sentry.replayIntegration({
-      // Mask all text for privacy
-      maskAllText: false,
-      // Block all media (images, videos)
-      blockAllMedia: false,
+      // Privacy: mask text and block media in production
+      // Dev: relaxed for easier debugging
+      maskAllText: !dev,
+      blockAllMedia: !dev,
     }),
   ],
 });

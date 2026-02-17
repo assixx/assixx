@@ -75,15 +75,9 @@ See [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md) for all commands.
 
 ## Start Trigger
 
-### "continue with Assixx" (Normal Mode)
+### "continue with Assixx"
 
-Complete mandatory checklist WITH [dev-status.sh](./scripts/dev-status.sh)
-
-### "continue with Assixx and skip" (Skip Mode)
-
-Complete mandatory checklist WITHOUT dev-status.sh
-
-**Only difference:** "skip" skips dev-status.sh.
+Complete mandatory checklist.
 
 ### Workflow After Trigger
 
@@ -98,7 +92,7 @@ Complete mandatory checklist WITHOUT dev-status.sh
 
 Use agents for reading. Read whole files.
 
-1. Docker Check (skip mode: without dev-status.sh)
+1. Docker Check
 2. [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
 3. Follow [docs/BEFORE-STARTING-DEV.md](./docs/BEFORE-STARTING-DEV.md)
 4. [docs/TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md) (mandatory for backend)
@@ -122,12 +116,11 @@ Use agents for reading. Read whole files.
 
 ## Development
 
-### Quick Status Check (Normal Mode only)
+### Quick Status Check
 
 ```bash
 cd /home/scs/projects/Assixx/docker
 doppler run -- docker-compose ps && curl -s http://localhost:3000/health | jq '.'
-# Or: /home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
 ### Frontend (SvelteKit)
