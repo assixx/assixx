@@ -89,13 +89,14 @@ export interface DbAttachment {
   uploaded_at: Date | null;
 }
 
+/** pg returns COUNT(*) bigint as string — types reflect actual runtime values */
 export interface DbDashboardStats {
-  total_suggestions: number;
-  new_suggestions: number;
-  in_progress_count: number;
-  implemented: number;
-  rejected: number;
-  avg_savings: number | null;
+  total_suggestions: string;
+  new_suggestions: string;
+  in_progress_count: string;
+  implemented: string;
+  rejected: string;
+  approved: string;
 }
 
 /**

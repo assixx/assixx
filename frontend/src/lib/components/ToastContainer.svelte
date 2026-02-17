@@ -50,7 +50,7 @@
 <style>
   .notification-container {
     position: fixed;
-    top: 87px;
+    top: 76px;
     right: 20px;
     z-index: 10000;
     pointer-events: none;
@@ -61,36 +61,38 @@
     width: max-content;
     max-width: 500px;
     margin-bottom: 10px;
-    animation: slideInRight 0.3s ease-out;
+    animation: slide-in-right 0.3s ease-out;
   }
 
   .notification.dismissing {
-    animation: slideOutRight 0.3s ease-in;
+    animation: slide-out-right 0.3s ease-in;
   }
 
-  @keyframes slideInRight {
+  @keyframes slide-in-right {
     from {
       transform: translateX(100%);
-      opacity: 0;
+      opacity: 0%;
     }
+
     to {
       transform: translateX(0);
-      opacity: 1;
+      opacity: 100%;
     }
   }
 
-  @keyframes slideOutRight {
+  @keyframes slide-out-right {
     from {
       transform: translateX(0);
-      opacity: 1;
+      opacity: 100%;
     }
+
     to {
       transform: translateX(100%);
-      opacity: 0;
+      opacity: 0%;
     }
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .notification-container {
       left: 20px;
       right: 20px;

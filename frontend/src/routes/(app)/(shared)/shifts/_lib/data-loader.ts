@@ -6,6 +6,7 @@
 import { convertShiftTypeFromDB, getWeekStart, formatDate } from './utils';
 
 import type {
+  AvailabilityEntry,
   Employee,
   ShiftDetailData,
   TeamMember,
@@ -18,14 +19,52 @@ import type {
 // =============================================================================
 
 /**
- * Convert team members to employees format (filters to employees only)
+ * Build an AvailabilityEntry from a TeamMember row (if non-available)
+ */
+function buildAvailabilityEntry(member: TeamMember): AvailabilityEntry | null {
+  if (
+    member.availabilityStatus === undefined ||
+    member.availabilityStatus === 'available'
+  ) {
+    return null;
+  }
+  return {
+    status: member.availabilityStatus,
+    startDate: member.availabilityStart,
+    endDate: member.availabilityEnd,
+  };
+}
+
+/**
+ * Convert team members to employees format (filters to employees only).
+ * Groups by user ID — multiple API rows per user (from availability JOIN)
+ * are merged into a single Employee with an availabilities[] array.
  */
 export function convertTeamMembersToEmployees(
   members: TeamMember[],
 ): Employee[] {
-  return members
-    .filter((member) => member.userRole === 'employee')
-    .map((member) => ({
+  const employeeMap = new Map<number, Employee>();
+
+  for (const member of members) {
+    if (member.userRole !== 'employee') continue;
+
+    const existing = employeeMap.get(member.id);
+    if (existing !== undefined) {
+      const entry = buildAvailabilityEntry(member);
+      if (entry !== null) {
+        existing.availabilities ??= [];
+        existing.availabilities.push(entry);
+      }
+      continue;
+    }
+
+    const availabilities: AvailabilityEntry[] = [];
+    const entry = buildAvailabilityEntry(member);
+    if (entry !== null) {
+      availabilities.push(entry);
+    }
+
+    employeeMap.set(member.id, {
       id: member.id,
       username: member.username,
       firstName: member.firstName,
@@ -36,10 +75,11 @@ export function convertTeamMembersToEmployees(
       isActive: 1 as const,
       createdAt: '',
       updatedAt: '',
-      availabilityStatus: member.availabilityStatus,
-      availabilityStart: member.availabilityStart,
-      availabilityEnd: member.availabilityEnd,
-    }));
+      availabilities,
+    });
+  }
+
+  return [...employeeMap.values()];
 }
 
 /** SSR team member structure (from +page.server.ts) */
@@ -74,29 +114,66 @@ function isValidAvailabilityStatus(
 }
 
 /**
- * Convert SSR team members to employees format (no role filtering - SSR already filtered)
+ * Build an AvailabilityEntry from raw SSR fields (if non-available)
+ */
+function buildSSRAvailabilityEntry(
+  status: string | undefined,
+  startDate?: string,
+  endDate?: string,
+): AvailabilityEntry | null {
+  const validated = isValidAvailabilityStatus(status) ? status : undefined;
+  if (validated === undefined || validated === 'available') {
+    return null;
+  }
+  return { status: validated, startDate, endDate };
+}
+
+/**
+ * Convert SSR team members to employees format (no role filtering - SSR already filtered).
+ * Groups by user ID to handle potential duplicate rows from availability JOIN.
  */
 export function convertSSRTeamMembersToEmployees(
   members: SSRTeamMember[],
 ): Employee[] {
-  return members.map((m) => ({
-    id: m.id,
-    username: m.username,
-    firstName: m.firstName,
-    lastName: m.lastName,
-    email: '',
-    role: 'employee' as const,
-    tenantId: 0,
-    isActive: 1 as const,
-    createdAt: '',
-    updatedAt: '',
-    availabilityStatus:
-      isValidAvailabilityStatus(m.availabilityStatus) ?
-        m.availabilityStatus
-      : undefined,
-    availabilityStart: m.availabilityStart,
-    availabilityEnd: m.availabilityEnd,
-  }));
+  const employeeMap = new Map<number, Employee>();
+
+  for (const m of members) {
+    const entry = buildSSRAvailabilityEntry(
+      m.availabilityStatus,
+      m.availabilityStart,
+      m.availabilityEnd,
+    );
+
+    const existing = employeeMap.get(m.id);
+    if (existing !== undefined) {
+      if (entry !== null) {
+        existing.availabilities ??= [];
+        existing.availabilities.push(entry);
+      }
+      continue;
+    }
+
+    const availabilities: AvailabilityEntry[] = [];
+    if (entry !== null) {
+      availabilities.push(entry);
+    }
+
+    employeeMap.set(m.id, {
+      id: m.id,
+      username: m.username,
+      firstName: m.firstName,
+      lastName: m.lastName,
+      email: '',
+      role: 'employee' as const,
+      tenantId: 0,
+      isActive: 1 as const,
+      createdAt: '',
+      updatedAt: '',
+      availabilities,
+    });
+  }
+
+  return [...employeeMap.values()];
 }
 
 // =============================================================================

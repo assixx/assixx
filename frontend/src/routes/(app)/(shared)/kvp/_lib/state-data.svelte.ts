@@ -2,43 +2,15 @@
 // KVP - DATA STATE (Svelte 5 Runes)
 // =============================================================================
 
-import type {
-  KvpSuggestion,
-  KvpCategory,
-  Department,
-  KvpStats,
-  StatusCounts,
-} from './types';
-
-/** Currency formatter for EUR */
-const eurFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-});
-
-/** Extract company stats with safe defaults */
-function getCompanyStats(stats: KvpStats | null) {
-  const company = stats?.company;
-  return {
-    total: company?.total ?? 0,
-    totalSavings: company?.totalSavings ?? 0,
-    byStatus: company?.byStatus,
-  };
-}
-
-/** Calculate open suggestions count (new + in review) */
-function getOpenCount(byStatus: StatusCounts | undefined): number {
-  return (byStatus?.new ?? 0) + (byStatus?.inReview ?? 0);
-}
+import type { KvpSuggestion, KvpCategory, Department, KvpStats } from './types';
 
 /** Format KVP statistics for display */
 function formatKvpStats(stats: KvpStats | null) {
-  const { total, totalSavings, byStatus } = getCompanyStats(stats);
   return {
-    total,
-    open: getOpenCount(byStatus),
-    implemented: byStatus?.implemented ?? 0,
-    savings: eurFormatter.format(totalSavings),
+    total: stats?.totalSuggestions ?? 0,
+    inReview: stats?.inReviewSuggestions ?? 0,
+    implemented: stats?.implementedSuggestions ?? 0,
+    approved: stats?.approvedSuggestions ?? 0,
   };
 }
 

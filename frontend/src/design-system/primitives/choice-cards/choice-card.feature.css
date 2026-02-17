@@ -33,7 +33,6 @@
   gap: var(--spacing-3);
 
   padding: var(--spacing-5);
-  box-shadow: var(--shadow-md);
   border: var(--glass-border);
   border-radius: var(--radius-xl);
 
