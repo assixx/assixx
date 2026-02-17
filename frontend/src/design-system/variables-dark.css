@@ -20,7 +20,7 @@ html.dark {
   );
 
   /* Backgrounds */
-  --color-surface: var(--color-gray-800);
+  --color-surface: var(--color-gray-900);
 
   /* Text */
   --color-text-primary: var(--color-white);

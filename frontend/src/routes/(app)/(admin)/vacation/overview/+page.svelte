@@ -15,6 +15,7 @@
   import CalendarGrid from './_lib/CalendarGrid.svelte';
   import { DROPDOWN_PLACEHOLDERS, MONTH_NAMES } from './_lib/constants';
   import { overviewState } from './_lib/state.svelte';
+  import YearOverviewGrid from './_lib/YearOverviewGrid.svelte';
 
   import type { PageData } from './$types';
   import type { MachineListItem, TeamListItem } from './_lib/types';
@@ -70,15 +71,47 @@
     overviewState.selectTeam(team.id);
   }
 
-  /** Year selected */
-  function handleYearSelect(year: number): void {
+  /** Year selected → load year overview */
+  async function handleYearSelect(year: number): Promise<void> {
     yearDropdownOpen = false;
     overviewState.setYear(year);
+    await loadYearOverview();
   }
 
-  /** Month selected → load calendar */
+  /** Month selected → load monthly calendar */
   async function handleMonthSelect(month: number): Promise<void> {
     monthDropdownOpen = false;
+    overviewState.setMonth(month);
+    await loadCalendar();
+  }
+
+  /** Clear month → back to year overview */
+  function handleClearMonth(): void {
+    monthDropdownOpen = false;
+    overviewState.clearMonth();
+  }
+
+  /** Load year overview data (all 12 months in parallel) */
+  async function loadYearOverview(): Promise<void> {
+    const teamId = overviewState.selectedTeamId;
+    const year = overviewState.selectedYear;
+    if (teamId === null || year === null) return;
+
+    overviewState.setLoadingYearCalendar(true);
+    try {
+      const data = await api.getTeamCalendarYear(teamId, year);
+      overviewState.setYearCalendarData(data);
+    } catch (err) {
+      log.error({ err }, 'Year calendar load failed');
+      showErrorAlert('Fehler beim Laden der Jahresübersicht');
+      overviewState.setYearCalendarData(null);
+    } finally {
+      overviewState.setLoadingYearCalendar(false);
+    }
+  }
+
+  /** Drill into a month from the year overview grid */
+  async function handleMonthFromYearGrid(month: number): Promise<void> {
     overviewState.setMonth(month);
     await loadCalendar();
   }
@@ -152,8 +185,7 @@
   function getMonthDisplayText(): string {
     if (overviewState.selectedYear === null)
       return DROPDOWN_PLACEHOLDERS.AWAIT_YEAR;
-    if (overviewState.selectedMonth === null)
-      return DROPDOWN_PLACEHOLDERS.MONTH;
+    if (overviewState.selectedMonth === null) return 'Jahresübersicht';
     return MONTH_NAMES[overviewState.selectedMonth] ?? '';
   }
 
@@ -356,10 +388,10 @@
               class="dropdown__option"
               class:selected={overviewState.selectedYear === year}
               onclick={() => {
-                handleYearSelect(year);
+                void handleYearSelect(year);
               }}
               onkeydown={(e) => {
-                if (e.key === 'Enter') handleYearSelect(year);
+                if (e.key === 'Enter') void handleYearSelect(year);
               }}
               role="option"
               aria-selected={overviewState.selectedYear === year}
@@ -401,6 +433,21 @@
           class="dropdown__menu"
           class:active={monthDropdownOpen}
         >
+          <div
+            class="dropdown__option"
+            class:selected={overviewState.selectedMonth === null}
+            onclick={() => {
+              handleClearMonth();
+            }}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') handleClearMonth();
+            }}
+            role="option"
+            aria-selected={overviewState.selectedMonth === null}
+            tabindex="0"
+          >
+            <i class="fas fa-calendar mr-1"></i> Jahresübersicht
+          </div>
           {#each Array.from({ length: 12 }, (_, i) => i + 1) as m (m)}
             <div
               class="dropdown__option"
@@ -424,9 +471,13 @@
   </div>
 
   <!-- ================================================================
-       TEAM CALENDAR
+       TEAM CALENDAR (year overview OR monthly detail)
        ================================================================ -->
-  <CalendarGrid />
+  {#if overviewState.showYearOverview}
+    <YearOverviewGrid onSelectMonth={handleMonthFromYearGrid} />
+  {:else}
+    <CalendarGrid />
+  {/if}
 </div>
 
 <style>

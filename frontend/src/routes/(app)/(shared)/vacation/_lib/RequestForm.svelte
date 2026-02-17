@@ -393,7 +393,7 @@
     id="request-note"
     class="form-field__control form-field__control--textarea"
     bind:value={requestNote}
-    placeholder="z.B. Grund fuer Sonderurlaub..."
+    placeholder="Optionale Bemerkung zum Antrag..."
   ></textarea>
 </div>
 

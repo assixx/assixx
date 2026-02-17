@@ -463,6 +463,10 @@
     border-top: 1px dashed var(--color-glass-border);
   }
 
+  .calendar-legend--machine-avail .calendar-legend__dot {
+    border-radius: 50%;
+  }
+
   .calendar-legend__section-title {
     font-size: 0.7rem;
     font-weight: 600;

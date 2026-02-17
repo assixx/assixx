@@ -23,14 +23,7 @@ export interface TeamCalendarData {
   entries: TeamCalendarEntry[];
 }
 
-export type VacationType =
-  | 'regular'
-  | 'special_doctor'
-  | 'special_bereavement'
-  | 'special_birth'
-  | 'special_wedding'
-  | 'special_move'
-  | 'unpaid';
+export type VacationType = 'regular' | 'unpaid';
 
 export type VacationHalfDay = 'none' | 'morning' | 'afternoon';
 
@@ -108,6 +101,29 @@ export interface MachineAvailabilityEntry {
   status: string;
   startDate: string;
   endDate: string;
+}
+
+// ─── Year overview types ────────────────────────────────────────
+
+/** Summary of one vacation type in a specific month */
+export interface YearMonthVacationSummary {
+  vacationType: VacationType;
+  days: number;
+}
+
+/** Single cell in the year overview grid (one employee × one month) */
+export interface YearMonthCell {
+  totalDays: number;
+  entries: YearMonthVacationSummary[];
+}
+
+/** Per-user row in the year overview grid */
+export interface YearUserRow {
+  userId: number;
+  userName: string;
+  /** Month (1-12) → cell data */
+  months: Map<number, YearMonthCell>;
+  totalDays: number;
 }
 
 // ─── SSR page data ───────────────────────────────────────────────

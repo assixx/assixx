@@ -29,12 +29,7 @@ export const STATUS_BADGE_CLASS: Record<VacationRequestStatus, string> = {
 // ─── Vacation type labels ────────────────────────────────────────────
 
 export const TYPE_LABELS: Record<VacationType, string> = {
-  regular: 'Erholungsurlaub',
-  special_doctor: 'Arztbesuch',
-  special_bereavement: 'Trauerfall',
-  special_birth: 'Geburt',
-  special_wedding: 'Hochzeit',
-  special_move: 'Umzug',
+  regular: 'Urlaub',
   unpaid: 'Unbezahlter Urlaub',
 };
 
