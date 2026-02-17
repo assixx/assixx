@@ -54,14 +54,14 @@ Frontend-Änderungen triggern keinen Scan (Semgrep hat keinen Svelte-Support).
 
 ## Rulesets
 
-| Ruleset            | ~Rules | Was es findet                                                            |
-| ------------------ | ------ | ------------------------------------------------------------------------ |
-| `p/typescript`     | 74     | SQL Injection (pg, knex, sequelize), JWT Secrets, XSS, SSRF, eval       |
-| `p/nestjs`         | 3      | CORS Misconfiguration, XSS Header disabled, Open Redirect               |
-| `p/owasp-top-ten`  | 45     | OWASP Top 10 inkl. Nginx Rules, Crypto Failures                         |
-| `p/security-audit` | ~200   | Breiter Security-Audit: child_process, crypto, TLS, deserialization      |
-| `p/nodejs`         | ~50    | Node.js-spezifisch: eval, child_process, fs, http patterns              |
-| `p/dockerfile`     | 44     | Root User, Package Manager, Dockerfile Best Practices                   |
+| Ruleset            | ~Rules | Was es findet                                                       |
+| ------------------ | ------ | ------------------------------------------------------------------- |
+| `p/typescript`     | 74     | SQL Injection (pg, knex, sequelize), JWT Secrets, XSS, SSRF, eval   |
+| `p/nestjs`         | 3      | CORS Misconfiguration, XSS Header disabled, Open Redirect           |
+| `p/owasp-top-ten`  | 45     | OWASP Top 10 inkl. Nginx Rules, Crypto Failures                     |
+| `p/security-audit` | ~200   | Breiter Security-Audit: child_process, crypto, TLS, deserialization |
+| `p/nodejs`         | ~50    | Node.js-spezifisch: eval, child_process, fs, http patterns          |
+| `p/dockerfile`     | 44     | Root User, Package Manager, Dockerfile Best Practices               |
 
 > **Hinweis:** `p/javascript` ist **identisch** mit `p/typescript` (gleiche 74 Rules). Wird daher nicht gebraucht.
 
@@ -95,6 +95,8 @@ docker run --rm -v "$(pwd):/src" semgrep/semgrep \
     --config p/dockerfile \
     --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
     --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
+    --exclude-rule=generic.nginx.security.header-redefinition.header-redefinition \
+    --exclude-rule=generic.html-templates.security.var-in-href.var-in-href \
     --metrics=off \
     --error \
     backend/ shared/ docker/
@@ -113,6 +115,8 @@ semgrep scan \
   --config p/dockerfile \
   --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
   --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
+  --exclude-rule=generic.nginx.security.header-redefinition.header-redefinition \
+  --exclude-rule=generic.html-templates.security.var-in-href.var-in-href \
   --metrics=off \
   --error \
   backend/ shared/ docker/
@@ -173,20 +177,27 @@ const result = await this.db.query(`SELECT * FROM messages WHERE id = $1`, [id])
 backend/src/legacy/old-controller.ts
 ```
 
-### `--exclude-rule` für Nginx False Positives
+### `--exclude-rule` für False Positives mit Mitigations
 
-Zwei Nginx-Rules sind False Positives **mit Mitigations in place** und werden per CLI ausgeschlossen:
+4 Rules sind False Positives **mit Mitigations in place** und werden per CLI ausgeschlossen:
 
 ```bash
 --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling
 --exclude-rule=generic.nginx.security.request-host-used.request-host-used
+--exclude-rule=generic.nginx.security.header-redefinition.header-redefinition
+--exclude-rule=generic.html-templates.security.var-in-href.var-in-href
 ```
 
 **Warum FP:**
-- **H2C Smuggling:** Mitigiert durch `map` Block der `$allowed_upgrade` auf `"websocket"` beschränkt
-- **$host Usage:** Mitigiert durch `default_server` Block der unbekannte Host Headers mit `return 444` ablehnt
 
-> **Wichtig:** `nosemgrep` Inline-Kommentare funktionieren **NICHT** für `generic` Language Rules (Nginx, YAML). Deshalb `--exclude-rule` statt Inline-Ignore.
+| Rule                    | Warum False Positive                                      | Mitigation                                                                                       |
+| ----------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **H2C Smuggling**       | Nginx erlaubt nur WebSocket Upgrades                      | `map` Block: `$allowed_upgrade` auf `"websocket"` beschränkt                                     |
+| **$host Usage**         | Host Header Injection unmöglich                           | `default_server` Block: unbekannte Hosts → `return 444`                                          |
+| **Header Redefinition** | Location-Block wiederholt Server-Headers absichtlich      | Nginx-Verhalten: `add_header` in Location überschreibt Parent — Headers MÜSSEN wiederholt werden |
+| **var-in-href**         | Template-URLs sind server-seitig generiert oder validiert | `dashboardUrl`/`loginUrl`/`unsubscribeUrl`: hardcoded. `actionUrl`: Protokoll-Whitelist im DTO   |
+
+> **Wichtig:** `nosemgrep` Inline-Kommentare funktionieren **NICHT** für `generic` Language Rules (Nginx, YAML, HTML). Deshalb `--exclude-rule` statt Inline-Ignore.
 
 ### Regel: Kein blindes Ignorieren
 
@@ -224,6 +235,88 @@ Findings müssen vor dem Merge gefixt oder dokumentiert ausgeschlossen werden.
 ### Risiko-Bewusstsein
 
 Semgrep hat im Dezember 2024 Community-Rules unter eine restriktive Lizenz gestellt. Für uns als End-User kein Problem (wir redistribuieren keine Rules). Falls sich das ändert: **Opengrep** (LGPL Fork) beobachten als Exit-Strategy.
+
+---
+
+## Canary-Tests: Semgrep-Erkennung verifizieren
+
+Beim Setup oder nach Ruleset-Änderungen sollte man prüfen, dass lokal und CI die gleichen Findings liefern. Dafür erstellt man eine absichtlich verwundbare Test-Datei (Canary).
+
+### Wie ein guter Canary aussieht
+
+```typescript
+// backend/src/semgrep-test-canary.ts
+// ⚠️ DELIBERATE VULNERABILITY — Semgrep Canary Test
+// DELETE after verification.
+import jwt from 'jsonwebtoken';
+
+// Hardcoded JWT secret — triggers: hardcoded-jwt-secret
+const token = jwt.sign({ user: 'admin' }, 'my-super-secret-key-12345');
+const decoded = jwt.verify(token, 'my-super-secret-key-12345');
+```
+
+### Worauf es ankommt
+
+**1. Semgrep ist semantisch, nicht regex-basiert**
+
+Semgrep versteht Code-Struktur. Es sucht nicht nach dem String `eval` — es sucht nach dem Pattern `jwt.sign(PAYLOAD, "HARDCODED_STRING")`. Das bedeutet:
+
+| Pattern                        | Erkannt? | Warum                                                        |
+| ------------------------------ | -------- | ------------------------------------------------------------ |
+| `jwt.sign(payload, 'secret')`  | Ja       | Exakt das Pattern das die Rule sucht                         |
+| `jwt.verify(token, 'secret')`  | Ja       | Gleiche Library, hardcoded Secret                            |
+| `eval(userInput)`              | Nein     | Community-Rule nur im AWS Lambda Kontext                     |
+| `exec(\`ls ${input}\`)`        | Nein     | `detect-child-process` matcht nur `require('child_process')` |
+| SQL Template Literals mit `pg` | Nein     | `pg-sqli` nur im AWS Lambda Kontext                          |
+
+**2. Nicht jede "offensichtliche" Vulnerability wird erkannt**
+
+Semgrep Community-Rules haben Einschränkungen:
+
+- Manche Rules sind kontext-spezifisch (z.B. nur AWS Lambda, nur Express)
+- Wir nutzen NestJS + Fastify, nicht Express → Express-Rules greifen nicht
+- `eval()` und `child_process` werden nur von bestimmten Rulesets erkannt und nur in bestimmten Kontexten
+- **Verlässlich erkannt** werden: Hardcoded Secrets (JWT, Passport), CORS Misconfiguration, Crypto-Fehler, Dockerfile-Probleme
+
+**3. Lokaler Scan MUSS identisch mit CI sein**
+
+Die Canary-Datei mit exakt der gleichen Config wie im Workflow scannen:
+
+```bash
+# EXAKT die gleichen Flags wie in .github/workflows/semgrep.yml
+docker run --rm -v "$(pwd):/src" semgrep/semgrep \
+  semgrep scan \
+    --config p/typescript \
+    --config p/nestjs \
+    --config p/owasp-top-ten \
+    --config p/security-audit \
+    --config p/nodejs \
+    --config p/dockerfile \
+    --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
+    --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
+    --exclude-rule=generic.nginx.security.header-redefinition.header-redefinition \
+    --exclude-rule=generic.html-templates.security.var-in-href.var-in-href \
+    --metrics=off \
+    --error \
+    backend/src/semgrep-test-canary.ts
+```
+
+Erwartetes Ergebnis: **2 Findings** (`hardcoded-jwt-secret` auf Zeile 8 und 11), **Exit Code 1**.
+
+**4. Canary-Workflow**
+
+1. Test-Datei erstellen mit bekanntem Pattern (JWT hardcoded secret ist am zuverlässigsten)
+2. Lokal scannen → Findings notieren (Rule-ID, Zeile, Anzahl)
+3. Committen + Pushen → GitHub Workflow abwarten
+4. CI-Ergebnis mit lokalem Ergebnis vergleichen — muss identisch sein
+5. **Canary-Datei sofort wieder löschen** — niemals auf `main` mergen
+
+**5. Wenn der Canary keine Findings liefert**
+
+- Prüfen ob `.semgrepignore` die Datei ausschließt (z.B. `*.test.ts` Pattern)
+- Prüfen ob das Pattern zur Rule passt → Rule-Details auf `https://semgrep.dev/r/RULE_ID` nachschlagen
+- `--verbose` Flag hinzufügen um zu sehen welche Rules tatsächlich laufen
+- Von 678 geladenen Rules laufen nur ~94 auf `.ts` Dateien — der Rest ist für andere Sprachen
 
 ---
 
@@ -268,6 +361,8 @@ docker run --rm -v "$(pwd):/src" semgrep/semgrep \
     --config p/nodejs --config p/dockerfile \
     --exclude-rule=generic.nginx.security.possible-h2c-smuggling.possible-nginx-h2c-smuggling \
     --exclude-rule=generic.nginx.security.request-host-used.request-host-used \
+    --exclude-rule=generic.nginx.security.header-redefinition.header-redefinition \
+    --exclude-rule=generic.html-templates.security.var-in-href.var-in-href \
     --metrics=off --error \
     backend/ shared/ docker/
 

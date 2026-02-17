@@ -50,6 +50,21 @@ export const CreateNotificationSchema = z
     actionUrl: z
       .string()
       .max(500, 'Action URL cannot exceed 500 characters')
+      .refine(
+        (url: string): boolean => {
+          if (url.startsWith('/')) return true;
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+          } catch {
+            return false;
+          }
+        },
+        {
+          message:
+            'Action URL must be a relative path (/) or a valid HTTP(S) URL',
+        },
+      )
       .optional(),
     actionLabel: z
       .string()
