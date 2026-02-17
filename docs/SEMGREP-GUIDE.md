@@ -12,10 +12,10 @@ Statischer Security-Scanner (SAST) der Code auf Sicherheitslücken analysiert �
 
 **Semgrep ersetzt ESLint NICHT.** Die Tools sind komplementär:
 
-| Tool | Aufgabe |
-|---|---|
-| ESLint | Code-Qualität, Style, Type-Safety, Svelte-Regeln |
-| Semgrep | Security-Scanning, Taint-Tracking, OWASP Top 10 |
+| Tool    | Aufgabe                                          |
+| ------- | ------------------------------------------------ |
+| ESLint  | Code-Qualität, Style, Type-Safety, Svelte-Regeln |
+| Semgrep | Security-Scanning, Taint-Tracking, OWASP Top 10  |
 
 ---
 
@@ -40,12 +40,12 @@ Statischer Security-Scanner (SAST) der Code auf Sicherheitslücken analysiert �
 
 ## Wann läuft Semgrep?
 
-| Trigger | Wann |
-|---|---|
-| **Pull Request** auf `main` | Bei jedem PR-Open/Update |
-| **Push** auf `main` | Nach Merge |
-| **Schedule** | Jeden Montag 06:00 UTC (Weekly Full Scan) |
-| **Manuell** | GitHub Actions → "Run workflow" |
+| Trigger                     | Wann                                      |
+| --------------------------- | ----------------------------------------- |
+| **Pull Request** auf `main` | Bei jedem PR-Open/Update                  |
+| **Push** auf `main`         | Nach Merge                                |
+| **Schedule**                | Jeden Montag 06:00 UTC (Weekly Full Scan) |
+| **Manuell**                 | GitHub Actions → "Run workflow"           |
 
 **Path-Filter:** Nur bei Änderungen in `backend/`, `shared/`, `docker/`.
 Frontend-Änderungen triggern keinen Scan (Semgrep hat keinen Svelte-Support).
@@ -54,22 +54,22 @@ Frontend-Änderungen triggern keinen Scan (Semgrep hat keinen Svelte-Support).
 
 ## Rulesets
 
-| Ruleset | ~Rules | Was es findet |
-|---|---|---|
-| `p/typescript` | 32 | `pg-sqli` (SQL Injection in pg), JWT Secrets, XSS, SSRF, Path Traversal |
-| `p/nestjs` | 3 | CORS Misconfiguration, XSS Header disabled, Open Redirect |
-| `p/owasp-top-ten` | 45 | OWASP Top 10 inkl. Nginx Rules, Crypto Failures |
-| `p/dockerfile` | 44 | Root User, Package Manager, Dockerfile Best Practices |
+| Ruleset           | ~Rules | Was es findet                                                           |
+| ----------------- | ------ | ----------------------------------------------------------------------- |
+| `p/typescript`    | 32     | `pg-sqli` (SQL Injection in pg), JWT Secrets, XSS, SSRF, Path Traversal |
+| `p/nestjs`        | 3      | CORS Misconfiguration, XSS Header disabled, Open Redirect               |
+| `p/owasp-top-ten` | 45     | OWASP Top 10 inkl. Nginx Rules, Crypto Failures                         |
+| `p/dockerfile`    | 44     | Root User, Package Manager, Dockerfile Best Practices                   |
 
 ### Relevanteste Rules für unseren Stack
 
-| Rule | Was | Warum relevant |
-|---|---|---|
-| `pg-sqli` | SQL Injection in `pg` Library | Wir nutzen raw `pg` Queries |
-| `nestjs-header-cors-any` | Permissive CORS `*` | NestJS CORS Config |
-| `hardcoded-jwt-secret` | JWT Secret im Code | JWT Auth System |
-| `detect-child-process` | Command Injection | Node.js child_process |
-| `express-path-join-resolve-traversal` | Path Traversal | File Upload/Download |
+| Rule                                  | Was                           | Warum relevant              |
+| ------------------------------------- | ----------------------------- | --------------------------- |
+| `pg-sqli`                             | SQL Injection in `pg` Library | Wir nutzen raw `pg` Queries |
+| `nestjs-header-cors-any`              | Permissive CORS `*`           | NestJS CORS Config          |
+| `hardcoded-jwt-secret`                | JWT Secret im Code            | JWT Auth System             |
+| `detect-child-process`                | Command Injection             | Node.js child_process       |
+| `express-path-join-resolve-traversal` | Path Traversal                | File Upload/Download        |
 
 ---
 
@@ -135,11 +135,11 @@ backend/src/nest/chat/chat.service.ts
 
 ### Output-Formate
 
-| Format | Datei | Verwendung |
-|---|---|---|
-| SARIF | `semgrep-results.sarif` | Standard Security Format, IDE-kompatibel |
-| JSON | `semgrep-results.json` | Maschinenlesbar, für Scripting |
-| Terminal | stdout | Menschenlesbar |
+| Format   | Datei                   | Verwendung                               |
+| -------- | ----------------------- | ---------------------------------------- |
+| SARIF    | `semgrep-results.sarif` | Standard Security Format, IDE-kompatibel |
+| JSON     | `semgrep-results.json`  | Maschinenlesbar, für Scripting           |
+| Terminal | stdout                  | Menschenlesbar                           |
 
 ---
 
@@ -189,12 +189,12 @@ semgrep scan \
 
 ### Warum Semgrep und nicht...
 
-| Alternative | Warum nicht |
-|---|---|
-| **CodeQL** (GitHub) | Kein NestJS-Support, kostet $30/Committer/Monat für Private Repos |
-| **SonarQube** | 94.6% False Positive Rate in Benchmarks, wir haben ESLint für Code Quality |
-| **Snyk** | SAST mittelmäßig, SCA gut aber Dependabot reicht |
-| **GHAS** | $49/Committer/Monat — überteuert für kleines Team |
+| Alternative         | Warum nicht                                                                |
+| ------------------- | -------------------------------------------------------------------------- |
+| **CodeQL** (GitHub) | Kein NestJS-Support, kostet $30/Committer/Monat für Private Repos          |
+| **SonarQube**       | 94.6% False Positive Rate in Benchmarks, wir haben ESLint für Code Quality |
+| **Snyk**            | SAST mittelmäßig, SCA gut aber Dependabot reicht                           |
+| **GHAS**            | $49/Committer/Monat — überteuert für kleines Team                          |
 
 ### Warum diese Konfiguration
 
