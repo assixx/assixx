@@ -200,14 +200,17 @@ describe('KVP: Get Comments', () => {
     expect(body.success).toBe(true);
   });
 
-  it('should return comments array', async () => {
+  it('should return paginated comments', async () => {
     if (!kvpId) return; // Skip if create failed (API bug)
     const res = await fetch(`${BASE_URL}/kvp/${kvpId}/comments`, {
       headers: authOnly(auth.authToken),
     });
     const body = (await res.json()) as JsonBody;
 
-    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data).toHaveProperty('comments');
+    expect(Array.isArray(body.data.comments)).toBe(true);
+    expect(body.data).toHaveProperty('total');
+    expect(body.data).toHaveProperty('hasMore');
   });
 });
 

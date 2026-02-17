@@ -464,7 +464,6 @@
     align-items: center;
     gap: 10px;
     z-index: 1001;
-    backdrop-filter: blur(20px) saturate(180%);
 
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
@@ -540,8 +539,6 @@
   }
 
   .login-card {
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
     border: 1px solid hsl(0deg 0% 100% / 10%);
     border-radius: var(--radius-xl);
 

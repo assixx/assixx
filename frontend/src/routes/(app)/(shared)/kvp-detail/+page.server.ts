@@ -11,11 +11,11 @@ import { createLogger } from '$lib/utils/logger';
 import type { PageServerLoad } from './$types';
 import type {
   KvpSuggestion,
-  Comment,
   Attachment,
   Department,
   Team,
   Area,
+  PaginatedComments,
 } from './_lib/types';
 
 const log = createLogger('KvpDetail');
@@ -96,18 +96,27 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     error(404, 'Vorschlag nicht gefunden');
   }
 
-  // Parallel fetch: comments, attachments, and org data (for share modal)
+  const defaultComments: PaginatedComments = {
+    comments: [],
+    total: 0,
+    hasMore: false,
+  };
+
+  // Parallel fetch: comments (paginated), attachments, and org data (for share modal)
   const [commentsData, attachmentsData, departmentsData, teamsData, areasData] =
     await Promise.all([
-      apiFetch<Comment[]>(`/kvp/${idOrUuid}/comments`, token, fetch),
+      apiFetch<PaginatedComments>(
+        `/kvp/${idOrUuid}/comments?limit=20&offset=0`,
+        token,
+        fetch,
+      ),
       apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetch),
       apiFetch<Department[]>('/departments', token, fetch),
       apiFetch<Team[]>('/teams', token, fetch),
       apiFetch<Area[]>('/areas', token, fetch),
     ]);
 
-  // Safe fallbacks for array responses
-  const comments = ensureArray(commentsData);
+  const comments = commentsData ?? defaultComments;
   const attachments = ensureArray(attachmentsData);
   const departments = ensureArray(departmentsData);
   const teams = ensureArray(teamsData);

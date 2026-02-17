@@ -13,35 +13,13 @@ import type {
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
-/** Creates data-related state (suggestion, comments, attachments, org data) */
-export function createDataState() {
-  let suggestion = $state<KvpSuggestion | null>(null);
-  let comments = $state<Comment[]>([]);
-  let attachments = $state<Attachment[]>([]);
+/** Creates org lookup state (departments, teams, areas) */
+export function createOrgState() {
   let departments = $state<Department[]>([]);
   let teams = $state<Team[]>([]);
   let areas = $state<Area[]>([]);
 
-  // Derived: Photo attachments
-  const photoAttachments = $derived(
-    attachments.filter((att) => IMAGE_TYPES.includes(att.fileType)),
-  );
-
-  // Derived: Other attachments
-  const otherAttachments = $derived(
-    attachments.filter((att) => !IMAGE_TYPES.includes(att.fileType)),
-  );
-
   return {
-    get suggestion() {
-      return suggestion;
-    },
-    get comments() {
-      return comments;
-    },
-    get attachments() {
-      return attachments;
-    },
     get departments() {
       return departments;
     },
@@ -50,21 +28,6 @@ export function createDataState() {
     },
     get areas() {
       return areas;
-    },
-    get photoAttachments() {
-      return photoAttachments;
-    },
-    get otherAttachments() {
-      return otherAttachments;
-    },
-    setSuggestion: (data: KvpSuggestion | null) => {
-      suggestion = data;
-    },
-    setComments: (data: Comment[]) => {
-      comments = data;
-    },
-    setAttachments: (data: Attachment[]) => {
-      attachments = data;
     },
     setDepartments: (data: Department[]) => {
       departments = data;
@@ -78,4 +41,57 @@ export function createDataState() {
   };
 }
 
-export type DataState = ReturnType<typeof createDataState>;
+/** Creates content state (suggestion, comments, attachments) */
+export function createDataState() {
+  let suggestion = $state<KvpSuggestion | null>(null);
+  let comments = $state<Comment[]>([]);
+  let commentTotal = $state(0);
+  let commentsHasMore = $state(false);
+  let attachments = $state<Attachment[]>([]);
+
+  const photoAttachments = $derived(
+    attachments.filter((att) => IMAGE_TYPES.includes(att.fileType)),
+  );
+  const otherAttachments = $derived(
+    attachments.filter((att) => !IMAGE_TYPES.includes(att.fileType)),
+  );
+
+  return {
+    get suggestion() {
+      return suggestion;
+    },
+    get comments() {
+      return comments;
+    },
+    get commentTotal() {
+      return commentTotal;
+    },
+    get commentsHasMore() {
+      return commentsHasMore;
+    },
+    get attachments() {
+      return attachments;
+    },
+    get photoAttachments() {
+      return photoAttachments;
+    },
+    get otherAttachments() {
+      return otherAttachments;
+    },
+    setSuggestion: (data: KvpSuggestion | null) => {
+      suggestion = data;
+    },
+    setComments: (data: Comment[], total?: number, hasMore?: boolean) => {
+      comments = data;
+      if (total !== undefined) commentTotal = total;
+      if (hasMore !== undefined) commentsHasMore = hasMore;
+    },
+    appendComments: (data: Comment[], hasMore: boolean) => {
+      comments = [...comments, ...data];
+      commentsHasMore = hasMore;
+    },
+    setAttachments: (data: Attachment[]) => {
+      attachments = data;
+    },
+  };
+}

@@ -130,7 +130,7 @@
             >
             <span class="flex items-center gap-2"
               ><i class="fas fa-user"></i>
-              {attachment.uploadedByName}</span
+              {attachment.uploaderName}</span
             >
           </div>
         </div>

@@ -249,9 +249,13 @@ doppler run -- ./scripts/run-migrations.sh down
 
 **Irreversible Migrations:**
 
-- Adding ENUM value (`ALTER TYPE ... ADD VALUE`)
-- Data migrations (data was transformed)
+- Data migrations (data was transformed, no way to reconstruct)
 - Baseline (dropping the complete schema is not an option)
+
+**Note on ENUMs:** `ALTER TYPE ... ADD VALUE` cannot be rolled back in the same
+transaction. Removing ENUM values requires the detach-drop-recreate pattern
+(see migration 038 for example). Both directions are possible if data is
+truncated or converted first.
 
 ---
 
@@ -507,8 +511,9 @@ SELECT enumlabel FROM pg_enum WHERE enumtypid = 'user_role'::regtype;
 -- Extend ENUM (add value)
 ALTER TYPE user_role ADD VALUE 'manager' AFTER 'admin';
 
--- WARNING: ENUM values CANNOT be removed in PostgreSQL!
--- down() migrations must throw an error.
+-- NOTE: There is no ALTER TYPE ... REMOVE VALUE in PostgreSQL.
+-- Workaround: detach column → TEXT, DROP old type, CREATE new type, cast back.
+-- See migration 038 (simplify-vacation-types) for a working example.
 ```
 
 ### Existing ENUMs

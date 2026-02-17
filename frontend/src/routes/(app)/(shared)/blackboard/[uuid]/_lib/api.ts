@@ -12,6 +12,7 @@ import type {
   CurrentUser,
   FullEntryResponse,
   MeResponse,
+  PaginatedComments,
 } from './types';
 
 const apiClient = getApiClient();
@@ -33,11 +34,11 @@ function isNotFoundError(err: unknown): boolean {
 // ============================================================================
 
 /**
- * Fetch full entry with comments and attachments
+ * Fetch full entry with initial comments (paginated) and attachments
  */
 export async function fetchFullEntry(uuid: string): Promise<{
   entry: DetailEntry;
-  comments: Comment[];
+  comments: PaginatedComments;
   attachments: Attachment[];
 } | null> {
   try {
@@ -51,7 +52,11 @@ export async function fetchFullEntry(uuid: string): Promise<{
 
     return {
       entry: result.data.entry,
-      comments: result.data.comments ?? [],
+      comments: result.data.comments ?? {
+        comments: [],
+        total: 0,
+        hasMore: false,
+      },
       attachments: result.data.attachments ?? [],
     };
   } catch (err) {
@@ -107,15 +112,47 @@ export async function unconfirmEntry(uuid: string): Promise<boolean> {
 // ============================================================================
 
 /**
- * Add comment to entry
+ * Fetch top-level comments with pagination (for lazy loading)
+ */
+export async function fetchComments(
+  uuid: string,
+  limit: number = 20,
+  offset: number = 0,
+): Promise<PaginatedComments> {
+  try {
+    return await apiClient.get<PaginatedComments>(
+      `/blackboard/entries/${uuid}/comments?limit=${limit}&offset=${offset}`,
+    );
+  } catch {
+    return { comments: [], total: 0, hasMore: false };
+  }
+}
+
+/**
+ * Fetch replies for a specific comment
+ */
+export async function fetchReplies(commentId: number): Promise<Comment[]> {
+  try {
+    return await apiClient.get<Comment[]>(
+      `/blackboard/comments/${commentId}/replies`,
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Add comment or reply to entry
  */
 export async function addComment(
   uuid: string,
   comment: string,
+  parentId?: number,
 ): Promise<boolean> {
   try {
     await apiClient.post(`/blackboard/entries/${uuid}/comments`, {
       comment: comment.trim(),
+      ...(parentId !== undefined ? { parentId } : {}),
     });
     return true;
   } catch {

@@ -83,7 +83,7 @@
   .user-info-card {
     position: relative;
     align-items: center;
-    backdrop-filter: blur(20px) saturate(180%);
+
     margin: 20px 15px;
     border-radius: var(--radius-xl);
     background: var(--glass-bg);

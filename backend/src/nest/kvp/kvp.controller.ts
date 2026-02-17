@@ -78,6 +78,7 @@ import type {
   KVPAttachment,
   KVPComment,
   KVPSuggestionResponse,
+  PaginatedKVPComments,
   PaginatedSuggestionsResult,
 } from './kvp.service.js';
 import { KvpService } from './kvp.service.js';
@@ -528,27 +529,50 @@ export class KvpController {
 
   /**
    * GET /kvp/:id/comments
-   * Get comments for a suggestion
+   * Get top-level comments for a suggestion with pagination
    */
   @Get(':id/comments')
   @RequirePermission(KVP_FEATURE, KVP_COMMENTS, 'canRead')
   async getComments(
     @Param('id') id: string,
+    @Query('limit') limit: string | undefined,
+    @Query('offset') offset: string | undefined,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-  ): Promise<KVPComment[]> {
+  ): Promise<PaginatedKVPComments> {
     const suggestionId = this.parseIdParam(id);
+    const parsedLimit =
+      limit !== undefined ? Number.parseInt(limit, 10) : undefined;
+    const parsedOffset =
+      offset !== undefined ? Number.parseInt(offset, 10) : undefined;
     return await this.kvpService.getComments(
       suggestionId,
       tenantId,
       user.id,
       user.role,
+      parsedLimit,
+      parsedOffset,
     );
   }
 
   /**
+   * GET /kvp/comments/:commentId/replies
+   * Get all replies for a specific comment
+   */
+  @Get('comments/:commentId/replies')
+  @RequirePermission(KVP_FEATURE, KVP_COMMENTS, 'canRead')
+  async getReplies(
+    @Param('commentId') commentId: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<KVPComment[]> {
+    const id = Number.parseInt(commentId, 10);
+    return await this.kvpService.getReplies(id, tenantId, user.role);
+  }
+
+  /**
    * POST /kvp/:id/comments
-   * Add a comment to a suggestion
+   * Add a comment or reply to a suggestion
    * Only admin and root users can add comments
    */
   @Post(':id/comments')
@@ -570,6 +594,7 @@ export class KvpController {
       dto.comment,
       dto.isInternal,
       user.role,
+      dto.parentId,
     );
   }
 

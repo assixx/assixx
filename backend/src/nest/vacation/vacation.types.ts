@@ -16,14 +16,7 @@ export type VacationRequestStatus =
   | 'withdrawn'
   | 'cancelled';
 
-export type VacationType =
-  | 'regular'
-  | 'special_doctor'
-  | 'special_bereavement'
-  | 'special_birth'
-  | 'special_wedding'
-  | 'special_move'
-  | 'unpaid';
+export type VacationType = 'regular' | 'unpaid';
 
 export type VacationHalfDay = 'none' | 'morning' | 'afternoon';
 

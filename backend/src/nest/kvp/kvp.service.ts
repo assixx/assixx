@@ -56,6 +56,7 @@ import type {
   KVPAttachment,
   KVPComment,
   KVPSuggestionResponse,
+  PaginatedKVPComments,
   PaginatedSuggestionsResult,
   SuggestionFilters,
 } from './kvp.types.js';
@@ -68,6 +69,7 @@ export type {
   KVPAttachment,
   KVPComment,
   KVPSuggestionResponse,
+  PaginatedKVPComments,
   PaginatedSuggestionsResult,
 } from './kvp.types.js';
 
@@ -741,13 +743,15 @@ export class KvpService {
   // DELEGATION: COMMENTS
   // ==========================================================================
 
-  /** Get comments for a suggestion (delegates to KvpCommentsService) */
+  /** Get top-level comments for a suggestion with pagination */
   async getComments(
     id: number | string,
     tenantId: number,
     userId: number,
     userRole: string,
-  ): Promise<KVPComment[]> {
+    limit?: number,
+    offset?: number,
+  ): Promise<PaginatedKVPComments> {
     const suggestion = await this.getSuggestionById(
       id,
       tenantId,
@@ -758,10 +762,21 @@ export class KvpService {
       suggestion.id,
       tenantId,
       userRole,
+      limit,
+      offset,
     );
   }
 
-  /** Add a comment (delegates to KvpCommentsService) */
+  /** Get replies for a specific comment */
+  async getReplies(
+    commentId: number,
+    tenantId: number,
+    userRole: string,
+  ): Promise<KVPComment[]> {
+    return await this.commentsService.getReplies(commentId, tenantId, userRole);
+  }
+
+  /** Add a comment or reply (delegates to KvpCommentsService) */
   async addComment(
     id: number | string,
     userId: number,
@@ -769,6 +784,7 @@ export class KvpService {
     comment: string,
     isInternal: boolean,
     userRole: string,
+    parentId?: number,
   ): Promise<KVPComment> {
     const suggestion = await this.getSuggestionById(
       id,
@@ -783,6 +799,7 @@ export class KvpService {
       comment,
       isInternal,
       userRole,
+      parentId,
     );
   }
 

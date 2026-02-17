@@ -68,11 +68,13 @@ export interface DbComment {
   user_id: number;
   comment: string;
   is_internal: boolean;
+  parent_id: number | null;
   created_at: Date;
   first_name?: string;
   last_name?: string;
   role?: string;
   profile_picture?: string | null;
+  reply_count?: number;
 }
 
 export interface DbAttachment {
@@ -209,11 +211,19 @@ export interface KVPComment {
   suggestionId: number;
   comment: string;
   isInternal: boolean;
+  parentId: number | null;
+  replyCount: number;
   createdBy: number;
   createdByName?: string;
   createdByLastname?: string;
   profilePicture?: string | null;
   createdAt: string;
+}
+
+export interface PaginatedKVPComments {
+  comments: KVPComment[];
+  total: number;
+  hasMore: boolean;
 }
 
 export interface KVPAttachment {

@@ -31,7 +31,7 @@
   const { request, action, onclose, onsubmit }: Props = $props();
 
   let responseNote = $state('');
-  let isSpecialLeave = $state(false);
+  let isSpecialLeave = $state(true);
   let respondCapacity = $state<VacationCapacityAnalysis | null>(null);
   let isLoadingCapacity = $state(false);
 
@@ -131,14 +131,12 @@
           isLoading={isLoadingCapacity}
         />
 
-        {#if request.vacationType.startsWith('special_')}
-          <SpecialLeaveCheckbox
-            checked={isSpecialLeave}
-            onchange={(val: boolean) => {
-              isSpecialLeave = val;
-            }}
-          />
-        {/if}
+        <SpecialLeaveCheckbox
+          checked={isSpecialLeave}
+          onchange={(val: boolean) => {
+            isSpecialLeave = val;
+          }}
+        />
       {/if}
 
       <div class="form-field">

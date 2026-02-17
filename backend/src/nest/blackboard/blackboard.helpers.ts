@@ -127,6 +127,8 @@ export function transformComment(
     userId: comment.user_id,
     comment: comment.comment,
     isInternal: Boolean(comment.is_internal),
+    parentId: comment.parent_id,
+    replyCount: comment.reply_count ?? 0,
     createdAt: comment.created_at.toISOString(),
   };
 

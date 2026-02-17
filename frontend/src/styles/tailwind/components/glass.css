@@ -6,7 +6,6 @@
 @layer components {
   /* Glass Card */
   .glass-card {
-    backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
@@ -93,7 +92,6 @@
   }
 
   .modal-content-glass {
-    backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
@@ -112,7 +110,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    backdrop-filter: blur(20px) saturate(180%);
+
     border-bottom: 1px solid var(--glass-border);
 
     background: var(--glass-bg);
@@ -170,7 +168,6 @@
 
   /* Glass Alert */
   .alert-glass {
-    backdrop-filter: blur(20px) saturate(180%);
     margin-bottom: 1rem;
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;

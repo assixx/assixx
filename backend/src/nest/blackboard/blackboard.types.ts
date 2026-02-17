@@ -43,6 +43,7 @@ export interface DbBlackboardComment {
   user_id: number;
   comment: string;
   is_internal: number;
+  parent_id: number | null;
   created_at: Date;
   user_name?: string;
   user_first_name?: string;
@@ -50,6 +51,7 @@ export interface DbBlackboardComment {
   user_full_name?: string;
   user_role?: string;
   user_profile_picture?: string | null;
+  reply_count?: number;
 }
 
 export interface DbConfirmationUser {
@@ -120,11 +122,19 @@ export interface BlackboardComment {
   userId: number;
   comment: string;
   isInternal: boolean;
+  parentId: number | null;
+  replyCount: number;
   createdAt: string;
   firstName?: string;
   lastName?: string;
   role?: string;
   profilePicture?: string | null;
+}
+
+export interface PaginatedBlackboardComments {
+  comments: BlackboardComment[];
+  total: number;
+  hasMore: boolean;
 }
 
 // ============================================================================

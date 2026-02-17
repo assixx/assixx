@@ -425,8 +425,6 @@
     text-align: center;
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
   }
 
   .storage-plan-card:hover {
@@ -497,8 +495,6 @@
     border-radius: var(--radius-xl);
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
   }
 
   .usage-header {
@@ -577,7 +573,7 @@
     border-radius: var(--radius-xl);
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
+
     box-shadow:
       0 4px 16px rgb(0 0 0 / 30%),
       inset 0 1px 0 var(--color-glass-border);

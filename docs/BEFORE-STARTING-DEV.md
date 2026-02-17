@@ -73,13 +73,7 @@ docker exec assixx-backend pnpm run lint:fix     # ESLint
 docker exec assixx-backend pnpm run type-check   # TypeScript
 ```
 
-### Git Workflow
 
-```bash
-git status
-git log --oneline -5
-git branch --show-current
-```
 
 ## Important Notes
 

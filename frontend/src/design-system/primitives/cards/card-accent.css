@@ -13,7 +13,7 @@
 
   transition: all 0.2s ease;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
+
   border: var(--glass-border);
   border-radius: var(--radius-xl); /* 12px */
 

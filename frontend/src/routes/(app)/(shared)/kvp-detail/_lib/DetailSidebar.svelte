@@ -50,7 +50,7 @@
 
 <div class="detail-sidebar">
   <!-- Read Confirmation (ALL Users - Pattern 2: Individual tracking) -->
-  <div class="sidebar-card">
+  <div class="sidebar-card card">
     <h3 class="section-title">
       <i class="fas fa-check-circle"></i>
       Lesebestätigung
@@ -67,7 +67,7 @@
       </div>
       <button
         type="button"
-        class="btn btn-light w-full text-sm"
+        class="btn btn-light text-sm"
         onclick={handleUnconfirm}
         disabled={confirming}
       >
@@ -81,7 +81,7 @@
     {:else}
       <button
         type="button"
-        class="btn btn-upload w-full"
+        class="btn btn-upload"
         onclick={handleConfirm}
         disabled={confirming}
       >
@@ -97,7 +97,7 @@
 
   <!-- Other Attachments -->
   {#if kvpDetailState.otherAttachments.length > 0}
-    <div class="sidebar-card">
+    <div class="sidebar-card card">
       <h3 class="section-title">
         <i class="fas fa-paperclip"></i>
         Anhaenge
@@ -131,7 +131,7 @@
 
   <!-- Actions (Admin Only) -->
   {#if kvpDetailState.isAdmin}
-    <div class="sidebar-card">
+    <div class="sidebar-card card">
       <h3 class="section-title">
         <i class="fas fa-cog"></i>
         Aktionen
@@ -192,14 +192,8 @@
   }
 
   .sidebar-card {
-    position: relative;
     z-index: 1;
-    overflow: visible;
-    padding: var(--spacing-6);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
+    margin-bottom: 0;
   }
 
   .confirmation-done {
@@ -238,9 +232,9 @@
   }
 
   .action-buttons {
-    display: inline-grid;
-    gap: var(--spacing-4);
-    margin-top: var(--spacing-6);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
   }
 
   .section-title {

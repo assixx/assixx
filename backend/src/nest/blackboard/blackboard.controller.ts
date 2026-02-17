@@ -59,6 +59,7 @@ import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import type {
   BlackboardComment,
   BlackboardEntryResponse,
+  PaginatedBlackboardComments,
   PaginatedEntriesResult,
 } from './blackboard.service.js';
 import { BlackboardService } from './blackboard.service.js';
@@ -110,7 +111,7 @@ interface EntryWithMessageResponse {
  */
 interface FullEntryResponse {
   entry: BlackboardEntryResponse;
-  comments: BlackboardComment[];
+  comments: PaginatedBlackboardComments;
   attachments: Record<string, unknown>[];
 }
 
@@ -376,21 +377,45 @@ export class BlackboardController {
 
   /**
    * GET /blackboard/entries/:id/comments
-   * Get comments for an entry
+   * Get top-level comments for an entry with pagination
    */
   @Get('entries/:id/comments')
   @RequirePermission(BB_FEATURE, BB_COMMENTS, 'canRead')
   async getComments(
     @Param('id') id: string,
+    @Query('limit') limit: string | undefined,
+    @Query('offset') offset: string | undefined,
+    @TenantId() tenantId: number,
+  ): Promise<PaginatedBlackboardComments> {
+    const entryId = this.parseIdParam(id);
+    const parsedLimit =
+      limit !== undefined ? Number.parseInt(limit, 10) : undefined;
+    const parsedOffset =
+      offset !== undefined ? Number.parseInt(offset, 10) : undefined;
+    return await this.blackboardService.getComments(
+      entryId,
+      tenantId,
+      parsedLimit,
+      parsedOffset,
+    );
+  }
+
+  /**
+   * GET /blackboard/comments/:commentId/replies
+   * Get all replies for a specific comment
+   */
+  @Get('comments/:commentId/replies')
+  @RequirePermission(BB_FEATURE, BB_COMMENTS, 'canRead')
+  async getReplies(
+    @Param('commentId', ParseIntPipe) commentId: number,
     @TenantId() tenantId: number,
   ): Promise<BlackboardComment[]> {
-    const entryId = this.parseIdParam(id);
-    return await this.blackboardService.getComments(entryId, tenantId);
+    return await this.blackboardService.getReplies(commentId, tenantId);
   }
 
   /**
    * POST /blackboard/entries/:id/comments
-   * Add a comment to an entry
+   * Add a comment or reply to an entry
    */
   @Post('entries/:id/comments')
   @RequirePermission(BB_FEATURE, BB_COMMENTS, 'canWrite')
@@ -402,7 +427,6 @@ export class BlackboardController {
     @TenantId() tenantId: number,
   ): Promise<CommentCreatedResponse> {
     const entryId = this.parseIdParam(id);
-    // Only admins/root can create internal comments
     const isInternal =
       dto.isInternal && (user.role === 'admin' || user.role === 'root');
     return await this.blackboardService.addComment(
@@ -411,12 +435,13 @@ export class BlackboardController {
       tenantId,
       dto.comment,
       isInternal,
+      dto.parentId,
     );
   }
 
   /**
    * DELETE /blackboard/comments/:commentId
-   * Delete a comment (admin/root only)
+   * Delete a comment (admin/root only). Replies cascade-delete.
    */
   @Delete('comments/:commentId')
   @UseGuards(RolesGuard)
