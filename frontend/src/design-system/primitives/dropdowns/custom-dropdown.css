@@ -77,7 +77,6 @@
     z-index: 1000;
 
     transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
 
     border: var(--glass-border);
     border-radius: var(--radius-xl);

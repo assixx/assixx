@@ -158,7 +158,11 @@
         tenantId: 0,
       });
       kvpDetailState.setSuggestion(suggestion);
-      kvpDetailState.setComments(comments);
+      kvpDetailState.setComments(
+        comments.comments,
+        comments.total,
+        comments.hasMore,
+      );
       kvpDetailState.setAttachments(attachments);
       kvpDetailState.setDepartments(departments);
       kvpDetailState.setTeams(teams);
@@ -412,7 +416,7 @@
 
   <div class="detail-container">
     <!-- Main Content -->
-    <div class="detail-main">
+    <div class="detail-main card">
       <!-- Header -->
       <div class="detail-header">
         <div>
@@ -649,14 +653,9 @@
   }
 
   .detail-main {
-    position: relative;
     z-index: 1;
     padding: var(--spacing-8);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
+    margin-bottom: 0;
   }
 
   /* ─── Header ──────── */

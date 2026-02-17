@@ -29,7 +29,7 @@
   text-align: center;
 
   background: #ffffff05;
-  backdrop-filter: blur(20px) saturate(180%);
+
   box-shadow: var(--shadow-md);
 
 

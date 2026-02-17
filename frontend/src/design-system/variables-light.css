@@ -13,7 +13,7 @@
 
 :root {
   /* Layout Constants */
-  --header-height: 80px;
+  --header-height: 65px;
   --header-height-mobile: 60px;
   --sidebar-width-expanded: 270px;
   --sidebar-width-collapsed: 72px;
@@ -86,6 +86,7 @@
 
   /* Backgrounds */
   --color-surface: var(--color-white);
+  --header-bg: var(--color-white);
 
   /* Text */
   --color-text-primary: var(--color-gray-900);
@@ -101,7 +102,7 @@
   --glass-bg: rgb(0 0 0 / 1%);
   --glass-bg-hover: rgb(0 0 0 / 3%);
   --glass-bg-active: rgb(0 0 0 / 5%);
-  --glass-border: 1px solid rgb(0 0 0 / 30%);
+  --glass-border: 1px solid rgb(0 0 0 / 20%);
 
   /* Glass Form (light mode) */
   --glass-form-bg: rgb(255 255 255 / 1%);

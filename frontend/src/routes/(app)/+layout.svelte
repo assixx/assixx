@@ -564,7 +564,6 @@
   /* Cross-component: logo size when sidebar is collapsed */
   :global(body:has(.sidebar.collapsed)) :global(.header .logo) {
     margin-bottom: 8px;
-    margin-left: -4px;
     width: 57px;
   }
 

@@ -161,7 +161,6 @@ body::after {
 /* Standard Glass-Effekt für alle Container */
 .glass-container,
 .card {
-  backdrop-filter: blur(20px) saturate(180%);
   animation: fadeInUp 0.6s ease-out;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -253,7 +252,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   left: 0;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(20px) saturate(180%);
+
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -385,7 +384,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   opacity: 0;
 
   z-index: 1001;
-  backdrop-filter: blur(20px) saturate(180%);
+
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -1434,7 +1433,6 @@ document.addEventListener('click', function (e) {
 ```css
 /* Chat Container - Glassmorphismus */
 .chat-container {
-  backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   background: rgba(255, 255, 255, 0.02);
 }
@@ -1550,7 +1548,6 @@ document.addEventListener('click', function (e) {
 
 ```css
 .glass-card {
-  backdrop-filter: blur(20px) saturate(180%);
   animation: fadeInUp 0.6s ease-out;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -1614,7 +1611,6 @@ document.addEventListener('click', function (e) {
 
 ```css
 .glass-form {
-  backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);

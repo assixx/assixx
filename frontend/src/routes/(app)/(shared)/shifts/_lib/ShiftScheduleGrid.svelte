@@ -283,7 +283,6 @@ Beispiele:
 
 <style>
   .week-schedule {
-    box-shadow: var(--shadow-sm);
     border: var(--glass-border);
     border-radius: var(--radius-xl);
 
@@ -387,7 +386,6 @@ Beispiele:
   }
 
   .shift-cell:hover {
-    box-shadow: var(--shadow-sm);
     border-color: var(--primary-color);
     background: rgb(33 150 243 / 10%);
   }

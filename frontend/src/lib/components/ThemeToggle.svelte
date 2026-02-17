@@ -73,13 +73,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 76px;
-    height: 33px;
-    padding: 0 12px;
-    border-radius: 17px;
+    width: 65px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 14px;
     border: none;
-    background: rgb(0 3 8 / 50%);
-    box-shadow: inset 0 -1px rgba(255, 255, 255, 0.203);
+    background: rgb(0 0 0);
+    box-shadow:
+      inset 0 1px 0 rgb(145 145 145 / 26%),
+      inset 0 1px 1px rgb(79 79 79 / 53%),
+      0 1px 0 rgb(0 0 0 / 8%);
     transition:
       background 400ms ease,
       box-shadow 400ms ease;
@@ -101,10 +104,7 @@
       26px 15px 0 0.5px rgb(200 225 255),
       10px 19px 0 0.6px rgb(185 215 255),
       45px 25px 0 0.7px rgb(195 220 255),
-      38px 14px 0 0.5px rgb(175 205 255),
-      67px 7px 0 0.6px rgb(180 210 255),
-      69px 24px 0 0.7px rgb(190 215 255),
-      64px 17px 0 0.5px rgb(200 220 255);
+      38px 14px 0 0.5px rgb(175 205 255);
     opacity: 1;
     transition: opacity 400ms ease;
     pointer-events: none;
@@ -122,7 +122,7 @@
     background: radial-gradient(
       circle,
       rgb(80 140 255 / 47%) 0%,
-      transparent 70%
+      transparent 30%
     );
     z-index: 0;
     pointer-events: none;
@@ -132,8 +132,8 @@
   .theme-toggle__icon {
     position: relative;
     z-index: 1;
-    width: 19px;
-    height: 19px;
+    width: 16px;
+    height: 16px;
     transition: opacity 400ms ease;
   }
 
@@ -152,8 +152,8 @@
     top: 50%;
     left: 4px;
     translate: 0 -50%;
-    width: 23px;
-    height: 23px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: linear-gradient(145deg, #f0f0f0 0%, #a0a0a0 100%);
     box-shadow:
@@ -182,7 +182,7 @@
   }
 
   .theme-toggle.is-light .theme-toggle__sun {
-    color: #c9a900;
+    color: #000;
     opacity: 1;
   }
 
@@ -191,7 +191,7 @@
   }
 
   .theme-toggle.is-light .theme-toggle__knob {
-    transform: translateX(45px);
+    transform: translateX(38px);
   }
 
   .theme-toggle:focus-visible .theme-toggle__track {

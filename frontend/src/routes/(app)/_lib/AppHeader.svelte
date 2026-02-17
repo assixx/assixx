@@ -185,11 +185,11 @@
     justify-content: space-between;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(20px) saturate(180%);
+
     box-shadow: 0 0 0 2px #00000017;
-    background: var(--glass-bg);
+    background: var(--header-bg);
     padding: 0.5rem 1rem;
-    height: 80px;
+    height: 65px;
     min-height: 3.5rem;
   }
 
@@ -210,7 +210,7 @@
   .logo {
     margin-bottom: 3px;
     margin-left: -13px;
-    width: 150px;
+    width: 135px;
   }
 
   /* Logo theme switching */
@@ -303,8 +303,10 @@
   /* Role Switch Dropdown — child component styling */
   :global(.role-switch-dropdown) {
     margin-right: 12px;
-    min-width: 200px;
-    font-size: 14px;
+    min-width: 220px;
+    font-size: 12px;
+    scale: 0.85;
+    transform-origin: center;
   }
 
   :global(.role-switch-dropdown .dropdown__option i) {

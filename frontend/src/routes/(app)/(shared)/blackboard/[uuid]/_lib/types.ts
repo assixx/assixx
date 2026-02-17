@@ -45,11 +45,19 @@ export interface Comment {
   userId: number;
   comment: string;
   isInternal: boolean;
+  parentId: number | null;
+  replyCount: number;
   createdAt: string;
   firstName?: string;
   lastName?: string;
   role?: string;
   profilePicture?: string | null;
+}
+
+export interface PaginatedComments {
+  comments: Comment[];
+  total: number;
+  hasMore: boolean;
 }
 
 // ============================================================================
@@ -64,7 +72,7 @@ export interface Attachment {
   mimeType: string;
   fileSize: number;
   uploadedBy: number;
-  uploadedByName: string;
+  uploaderName: string;
   uploadedAt: string;
   /** Download URL (from documents service) */
   downloadUrl: string;
@@ -81,7 +89,7 @@ export interface PreviewAttachment {
   filename: string;
   mimeType: string;
   fileSize: number;
-  uploadedByName: string;
+  uploaderName: string;
   downloadUrl: string;
   previewUrl?: string;
 }
@@ -105,7 +113,7 @@ export interface FullEntryResponse {
   success: boolean;
   data: {
     entry: DetailEntry;
-    comments?: Comment[];
+    comments?: PaginatedComments;
     attachments?: Attachment[];
   };
   error?: {

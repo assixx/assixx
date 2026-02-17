@@ -16,6 +16,7 @@ export const AddCommentSchema = z.object({
     .min(1, 'Comment is required')
     .max(2000, 'Comment must not exceed 2000 characters'),
   isInternal: z.boolean().optional().default(false),
+  parentId: z.number().int().positive().optional(),
 });
 
 /**

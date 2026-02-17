@@ -306,8 +306,7 @@
     display: flex;
     position: relative;
     flex-direction: column;
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
+
     border: 1px solid hsl(0deg 0% 100% / 10%);
     border-radius: var(--radius-xl);
     background: rgb(255 255 255 / 2%);
@@ -327,7 +326,6 @@
   }
 
   .pricing-card.featured {
-    box-shadow: var(--shadow-sm);
     border-color: rgb(33 150 243 / 30%);
     background: rgb(33 150 243 / 5%);
     overflow: visible;
@@ -425,9 +423,8 @@
   }
 
   .comparison-table-wrapper {
-    backdrop-filter: blur(20px) saturate(180%);
     margin-top: 2rem;
-    box-shadow: var(--shadow-sm);
+
     border: 1px solid hsl(0deg 0% 100% / 10%);
     border-radius: var(--radius-xl);
     background: rgb(255 255 255 / 2%);

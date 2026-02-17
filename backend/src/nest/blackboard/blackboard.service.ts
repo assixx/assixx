@@ -21,6 +21,7 @@ import type {
   BlackboardComment,
   BlackboardEntryResponse,
   EntryFilters,
+  PaginatedBlackboardComments,
   PaginatedEntriesResult,
 } from './blackboard.types.js';
 import type { CreateEntryDto } from './dto/create-entry.dto.js';
@@ -30,6 +31,7 @@ import type { UpdateEntryDto } from './dto/update-entry.dto.js';
 export type {
   BlackboardEntryResponse,
   PaginatedEntriesResult,
+  PaginatedBlackboardComments,
   BlackboardComment,
   EntryFilters,
 };
@@ -71,7 +73,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<{
     entry: BlackboardEntryResponse;
-    comments: BlackboardComment[];
+    comments: PaginatedBlackboardComments;
     attachments: Record<string, unknown>[];
   }> {
     this.logger.debug(
@@ -198,8 +200,17 @@ export class BlackboardService {
   async getComments(
     id: number | string,
     tenantId: number,
+    limit?: number,
+    offset?: number,
+  ): Promise<PaginatedBlackboardComments> {
+    return await this.commentsService.getComments(id, tenantId, limit, offset);
+  }
+
+  async getReplies(
+    commentId: number,
+    tenantId: number,
   ): Promise<BlackboardComment[]> {
-    return await this.commentsService.getComments(id, tenantId);
+    return await this.commentsService.getReplies(commentId, tenantId);
   }
 
   async addComment(
@@ -208,6 +219,7 @@ export class BlackboardService {
     tenantId: number,
     comment: string,
     isInternal: boolean,
+    parentId?: number,
   ): Promise<{ id: number; message: string }> {
     return await this.commentsService.addComment(
       id,
@@ -215,6 +227,7 @@ export class BlackboardService {
       tenantId,
       comment,
       isInternal,
+      parentId,
     );
   }
 

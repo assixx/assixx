@@ -538,8 +538,6 @@
 
   /* Status Card (Glassmorphism) */
   .status-card {
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--shadow-sm);
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
     background: var(--glass-bg);
