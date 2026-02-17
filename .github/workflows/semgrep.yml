@@ -1,0 +1,55 @@
+name: Semgrep Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "shared/**"
+      - "docker/**"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "shared/**"
+      - "docker/**"
+  schedule:
+    # Weekly full scan — Monday 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep SAST (Backend)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    if: github.actor != 'dependabot[bot]'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep scan
+        run: |
+          semgrep scan \
+            --config p/typescript \
+            --config p/nestjs \
+            --config p/owasp-top-ten \
+            --config p/dockerfile \
+            --metrics=off \
+            --sarif-output=semgrep-results.sarif \
+            --json-output=semgrep-results.json \
+            backend/ shared/ docker/
+
+      - name: Upload SARIF results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: |
+            semgrep-results.sarif
+            semgrep-results.json
+          retention-days: 30

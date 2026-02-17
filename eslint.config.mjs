@@ -7,11 +7,8 @@ import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
 import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
-import prettier from 'eslint-plugin-prettier';
-import promisePlugin from 'eslint-plugin-promise';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import storybook from 'eslint-plugin-storybook';
-import unicornPlugin from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
 export default [
@@ -122,7 +119,6 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      prettier,
       'import-x': importPlugin,
     },
     settings: {
@@ -147,8 +143,6 @@ export default [
       // v8: Access rules via tseslint.plugin.configs (same structure as before)
       ...tseslint.plugin.configs['strict-type-checked'].rules,
       ...tseslint.plugin.configs['stylistic-type-checked'].rules,
-
-      'prettier/prettier': 'error',
 
       // =======================================================================
       // PostgreSQL SQL Injection Prevention
@@ -359,26 +353,6 @@ export default [
         },
       ],
     },
-  }, // Promise Plugin Configuration
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      promise: promisePlugin,
-    },
-    rules: {
-      'promise/always-return': 'error',
-      'promise/no-return-wrap': 'error',
-      'promise/param-names': 'error',
-      'promise/catch-or-return': 'error',
-      'promise/no-native': 'off',
-      'promise/no-nesting': 'error',
-      'promise/no-promise-in-callback': 'error',
-      'promise/no-callback-in-promise': 'error',
-      'promise/avoid-new': 'off',
-      'promise/no-new-statics': 'error',
-      'promise/no-return-in-finally': 'error',
-      'promise/valid-params': 'error',
-    },
   }, // SonarJS Plugin Configuration
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
@@ -412,17 +386,6 @@ export default [
       'sonarjs/prefer-immediate-return': 'error',
       'sonarjs/prefer-object-literal': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
-    },
-  }, // Unicorn Plugin - Cherry-picked best rules
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      unicorn: unicornPlugin,
-    },
-    rules: {
-      // Keep only critical unicorn rules
-      'unicorn/no-new-buffer': 'error', // Security: deprecated API
-      'unicorn/prefer-number-properties': 'error', // Regel 10: Zero Warnings - Type safety: Number.isNaN vs isNaN
     },
   }, // No-Secrets Plugin
   {
@@ -566,14 +529,12 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      prettier,
       'import-x': importPlugin,
       vitest: vitestPlugin,
     },
     rules: {
       ...tseslint.plugin.configs.recommended.rules,
       ...vitestPlugin.configs.recommended.rules,
-      'prettier/prettier': 'error',
       '@typescript-eslint/no-explicit-any': 'off', // In Tests oft notwendig
       '@typescript-eslint/no-non-null-assertion': 'off', // In Tests oft notwendig
       '@typescript-eslint/no-unused-vars': [
@@ -612,12 +573,10 @@ export default [
       },
     },
     plugins: {
-      prettier,
       vitest: vitestPlugin,
     },
     rules: {
       ...vitestPlugin.configs.recommended.rules,
-      'prettier/prettier': 'error',
     },
   }, // Remaining configurations for JS files, configs, etc.
   // ... (Diese Teile waren bereits gut und wurden unverändert übernommen)
@@ -646,11 +605,7 @@ export default [
         Promise: 'readonly',
       },
     },
-    plugins: {
-      prettier,
-    },
     rules: {
-      'prettier/prettier': 'error',
       'no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
