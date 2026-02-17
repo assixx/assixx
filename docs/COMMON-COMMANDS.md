@@ -310,10 +310,9 @@ doppler run -- pnpm run db:seed                              # Seeds mit Credent
 
 ---
 
-## 15. Dev-Status & Skripte
+## 15. Skripte
 
 ```bash
-/home/scs/projects/Assixx/scripts/dev-status.sh              # Kompletter Dev-Status (Container, Health, Git, TypeScript)
 /home/scs/projects/Assixx/scripts/check-production.sh        # Production Health-Check
 /home/scs/projects/Assixx/scripts/sync-customer-migrations.sh # Customer Fresh-Install synchronisieren
 ```
