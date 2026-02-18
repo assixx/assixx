@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.0.0 (Phase 1 Complete)
-> **Status:** IN PROGRESS — Phase 1 abgeschlossen, Phase 2 nächste
+> **Version:** 1.4.0 (Phase 2 — Steps 2.1-2.4 Complete)
+> **Status:** IN PROGRESS — Phase 2 läuft, nächster Step: 2.5 (Cards Service)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 3 / 29
+> **Actual Sessions:** 7 / 29
 
 ---
 
@@ -48,6 +48,10 @@ pnpm test                # unit + api tests
 | 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant                                                               |
 | 0.2.0   | 2026-02-18 | Validation Review: 7 Fehler + 5 Inkonsistenzen gefixt, E17 Shift-Grid Toggle ergänzt → 29 Sessions, 4 ENUMs |
 | 1.0.0   | 2026-02-18 | Phase 1 COMPLETE: 4 Migrationen (041-044), 8 Tabellen, 4 ENUMs, RLS 8/8, GRANTs 32, Feature Flag, 4400 Tests bestanden |
+| 1.1.0   | 2026-02-19 | Step 2.1 DONE: Module Skeleton — tpm.types.ts (381 Zeilen), tpm.permissions.ts, tpm-permission.registrar.ts, tpm.module.ts, app.module.ts Import |
+| 1.2.0   | 2026-02-19 | Step 2.2 DONE: DTOs — 11+2 Dateien in dto/ (common, create/update plan, create/update card, complete-card, respond-execution, create-time-estimate, update-escalation-config, update-color-config, create/update-template, index) |
+| 1.3.0   | 2026-02-19 | Step 2.3 DONE: Plans Service — tpm-plans.service.ts (235 Z.), tpm-plans-interval.service.ts (178 Z.), tpm-plans.helpers.ts (74 Z.) |
+| 1.4.0   | 2026-02-19 | Step 2.4 DONE: Config Services — tpm-time-estimates.service.ts (179 Z.), tpm-templates.service.ts (195 Z.), tpm-color-config.service.ts (128 Z.) |
 
 > **Versionierungsregel:**
 >
@@ -93,14 +97,14 @@ pnpm test                # unit + api tests
 | `EventBus`                      | 5 neue typed Emit-Methoden für TPM-Events         | 2     |                |
 | `NotificationsController` (SSE) | TPM Event-Handler registrieren                    | 2     |                |
 | `NotificationFeatureService`    | Persistent Notifications für TPM                  | 2     |                |
-| `PermissionRegistryService`     | TPM-Permission-Registrierung (ADR-020)            | 2     |                |
+| `PermissionRegistryService`     | TPM-Permission-Registrierung (ADR-020)            | 2     | 2026-02-19 ✅  |
 | `TenantFeatureGuard`            | `@TenantFeature('tpm')` auf allen Controllern     | 2     |                |
 | `navigation-config.ts`          | Lean Management → TPM Sidebar-Eintrag             | 5     |                |
 | `Breadcrumb.svelte`             | TPM URL-Mappings + Intermediate + Dynamic Routes  | 5     |                |
 | `notification.store.svelte.ts`  | `tpm: number` Counter + SSE Mapping               | 5     |                |
 | `DashboardService`              | `fetchTpmCount()` in `fetchAllCounts()`           | 2     |                |
 | `machine_maintenance_history`   | Bridge: TPM-Abschluss → History-Eintrag           | 2     |                |
-| `ActivityLoggerService`         | Audit Trail für alle TPM-Mutationen               | 2     |                |
+| `ActivityLoggerService`         | Audit Trail für alle TPM-Mutationen               | 2     | 2026-02-19 ✅  |
 
 ---
 
@@ -496,128 +500,122 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM feat
 
 ---
 
-### Step 2.1: Session 4 — Module Skeleton + Types + Permissions [PENDING]
+### Step 2.1: Session 4 — Module Skeleton + Types + Permissions [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 5 Dateien erstellt, 1 modifiziert. Type-Check 0, ESLint 0, 3530 Tests bestanden.
 
-1. `backend/src/nest/tpm/tpm.types.ts` (~200 Zeilen)
-   - Alle DB Row Interfaces (TpmMaintenancePlanRow, TpmCardRow, TpmCardExecutionRow, etc.)
-   - Alle API Response Interfaces (TpmPlan, TpmCard, TpmCardExecution, etc.)
-   - Interval-Order Mapping
-   - Card-Code Generation Utility Types
+1. `backend/src/nest/tpm/tpm.types.ts` (381 Zeilen — größer als Budget weil alle 8 Row-Typen + 8 API-Typen + 7 Constants)
+   - 4 Enums: TpmIntervalType, TpmCardStatus, TpmCardRole, TpmApprovalStatus
+   - 8 DB Row Interfaces (1:1 Migration-Mapping)
+   - 8 API Response Interfaces (camelCase)
+   - Constants: INTERVAL_ORDER_MAP, INTERVAL_LABELS, STATUS_LABELS, ROLE_LABELS, CARD_CODE_PREFIX, DEFAULT_COLORS, MAX_PHOTOS_PER_EXECUTION, MAX_PHOTO_FILE_SIZE
 
-2. `backend/src/nest/tpm/tpm.permissions.ts` (~40 Zeilen)
-   - `TPM_PERMISSIONS: PermissionCategoryDef` mit 4 Modulen:
-     - `tpm-plans` (canRead, canWrite, canDelete)
-     - `tpm-cards` (canRead, canWrite, canDelete)
-     - `tpm-executions` (canRead, canWrite)
-     - `tpm-reports` (canRead)
+2. `backend/src/nest/tpm/tpm.permissions.ts` (39 Zeilen)
+   - 4 Module: tpm-plans (RWD), tpm-cards (RWD), tpm-executions (RW), tpm-reports (R)
 
-3. `backend/src/nest/tpm/tpm-permission.registrar.ts` (~15 Zeilen)
-   - `VacationPermissionRegistrar` Pattern: OnModuleInit → register()
+3. `backend/src/nest/tpm/tpm-permission.registrar.ts` (19 Zeilen)
+   - OnModuleInit → registry.register(TPM_PERMISSIONS)
 
-4. `backend/src/nest/tpm/tpm.module.ts` (~80 Zeilen)
+4. `backend/src/nest/tpm/tpm.module.ts` (inkrementell erweitert)
    - Imports: FeatureCheckModule
-   - Providers: Registrar + alle Services (zunächst leer, wird Session für Session gefüllt)
-   - Controllers: (zunächst leer)
 
-5. Registrierung in `backend/src/nest/app.module.ts`
-
-**Verifikation:**
-
-```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
-```
+5. `backend/src/nest/app.module.ts` — TpmModule registriert
 
 ---
 
-### Step 2.2: Session 5 — DTOs [PENDING]
+### Step 2.2: Session 5 — DTOs [DONE]
 
-**Neue Dateien:** 11 DTO-Dateien in `backend/src/nest/tpm/dto/`
+**Ergebnis:** 11 Dateien erstellt (+ 2 Template-DTOs nachgereicht in Session 7). Type-Check 0, ESLint 0, 3530 Tests bestanden.
 
-Alle DTOs nutzen Zod + `createZodDto()` Pattern.
+Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-single-boolean-return` in update-card.dto.ts).
 
-| DTO                               | Felder                                                                                                          | Validierung                                |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `common.dto.ts`                   | UuidParam, PaginationQuery, IntervalTypeParam                                                                   | Shared Schemas                             |
-| `create-maintenance-plan.dto.ts`  | machineUuid, name, baseWeekday(0-6), baseRepeatEvery(1-4), baseTime, shiftPlanRequired, notes                   | Weekday range, time format                 |
-| `update-maintenance-plan.dto.ts`  | Partial of create                                                                                               | .partial()                                 |
-| `create-card.dto.ts`              | planUuid, cardRole, intervalType, title, description, locationDescription, requiresApproval, customIntervalDays | intervalType+customIntervalDays Validation |
-| `update-card.dto.ts`              | Partial of create                                                                                               | .partial()                                 |
-| `complete-card.dto.ts`            | documentation?, photos? (multipart)                                                                             | Required if card.requires_approval         |
-| `respond-execution.dto.ts`        | action('approved'\|'rejected'), responseNote?                                                                   | Note required if rejected                  |
-| `create-time-estimate.dto.ts`     | planUuid, intervalType, staffCount, prepMinutes, execMinutes, followupMinutes                                   | All >= 0                                   |
-| `update-escalation-config.dto.ts` | escalationAfterHours(1-720), notifyTeamLead, notifyDepartmentLead                                               | Hours range                                |
-| `update-color-config.dto.ts`      | statusKey, colorHex, label                                                                                      | Hex regex `/^#[0-9a-f]{6}$/i`              |
-| `index.ts`                        | Barrel export                                                                                                   | —                                          |
-
-**Verifikation:**
-
-```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
-```
+| DTO                               | Zeilen | Felder                                                                      | Validierung                                |
+| --------------------------------- | ------ | --------------------------------------------------------------------------- | ------------------------------------------ |
+| `common.dto.ts`                   | 85     | UuidParam, Enums, Page/Limit, HexColor, Time, Weekday, Minutes, StaffCount | Shared Schemas                             |
+| `create-maintenance-plan.dto.ts`  | 35     | machineUuid, name, baseWeekday(0-6), baseRepeatEvery(1-52), baseTime, shiftPlanRequired, notes | Weekday range, time HH:MM          |
+| `update-maintenance-plan.dto.ts`  | 35     | Alle Felder optional                                                        | Gleiche Constraints                        |
+| `create-card.dto.ts`              | 67     | planUuid, cardRole, intervalType, title, description, locationDescription, requiresApproval, customIntervalDays | Cross-Field: customIntervalDays ↔ intervalType |
+| `update-card.dto.ts`              | 70     | Alle Felder optional                                                        | Cross-Field: customIntervalDays ↔ intervalType |
+| `complete-card.dto.ts`            | 24     | documentation?, customData                                                  | Service enforces mandatory docs            |
+| `respond-execution.dto.ts`        | 39     | action('approved'\|'rejected'), approvalNote?                               | Note required if rejected                  |
+| `create-time-estimate.dto.ts`     | 28     | planUuid, intervalType, staffCount, preparationMinutes, executionMinutes, followupMinutes | All >= 0, staffCount >= 1       |
+| `update-escalation-config.dto.ts` | 19     | escalationAfterHours(1-720), notifyTeamLead, notifyDepartmentLead           | Hours range                                |
+| `update-color-config.dto.ts`      | 20     | statusKey, colorHex, label                                                  | Hex regex `/^#[\da-f]{6}$/i`               |
+| `create-template.dto.ts`          | 25     | name, description, defaultFields, isDefault                                 | (nachgereicht in Session 7)                |
+| `update-template.dto.ts`          | 26     | Alle Felder optional                                                        | (nachgereicht in Session 7)                |
+| `index.ts`                        | 66     | Barrel export aller DTOs + Schemas                                          | —                                          |
 
 ---
 
-### Step 2.3: Session 6 — Plans Service + Interval Service [PENDING]
+### Step 2.3: Session 6 — Plans Service + Interval Service [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 3 Dateien erstellt (+ Helpers extrahiert). Type-Check 0, ESLint 0, 3530 Tests bestanden.
 
-1. `tpm-plans.service.ts` (~250 Zeilen)
-   - `createPlan(tenantId, dto, createdBy)` → INSERT + UNIQUE check
-   - `updatePlan(tenantId, planUuid, dto)` → UPDATE
-   - `getPlan(tenantId, planUuid)` → SELECT mit Machine-Info JOIN
-   - `listPlans(tenantId, pagination, filters)` → Paginiert, mit Machine-Name + nächste Wartung
-   - `deletePlan(tenantId, planUuid)` → Soft-Delete (is_active=4)
-   - `getPlanByMachineId(tenantId, machineId)` → Für Slot-Assistant
-   - Abhängigkeit: `DatabaseService`
+**Architektur-Entscheidungen:**
+- Helpers-Datei extrahiert (`tpm-plans.helpers.ts`) — machines.helpers.ts Pattern
+- `tenantTransaction()` für Mutationen, `db.query()` für Reads
+- `FOR UPDATE` Lock bei update/delete (Race-Condition-Schutz)
+- Activity Logging nach Transaction (fire-and-forget `void`)
+- `exactOptionalPropertyTypes`-konform: optionale Properties nur bei vorhandenen JOIN-Daten gesetzt
 
-2. `tpm-plans-interval.service.ts` (~200 Zeilen)
-   - `calculateNextDueDates(plan, fromDate)` → Berechnet alle Intervall-Termine aus Basis-Wochentag
-   - `getNextOccurrence(weekday, repeatEvery, fromDate)` → Nächster passender Wochentag
-   - `calculateIntervalDate(baseDate, intervalType)` → Monthly, Quarterly, etc.
-   - Reine Logik, keine DB-Abhängigkeit
+1. `tpm-plans.service.ts` (235 Zeilen)
+   - `createPlan(tenantId, userId, dto)` → INSERT + resolveMachineId + ensureNoPlanForMachine
+   - `updatePlan(tenantId, userId, planUuid, dto)` → lockPlanByUuid + dynamic SET
+   - `getPlan(tenantId, planUuid)` → SELECT mit Machine+User JOINs
+   - `listPlans(tenantId, page, pageSize)` → Paginiert mit COUNT + JOINs
+   - `deletePlan(tenantId, userId, planUuid)` → Soft-Delete (is_active=4)
+   - `getPlanByMachineId(tenantId, machineId)` → Für Slot-Assistant (returns null)
 
-**Verifikation:**
+2. `tpm-plans-interval.service.ts` (178 Zeilen)
+   - `getNextOccurrence(weekday, repeatEvery, fromDate)` → Nächster passender Wochentag (TPM weekday → JS weekday Konvertierung)
+   - `calculateIntervalDate(baseDate, intervalType, customDays?)` → daily/weekly/monthly/.../custom
+   - `calculateNextDueDates(baseWeekday, baseRepeatEvery, fromDate, intervalTypes?, customDays?)` → Batch für alle Intervalle, sortiert nach Datum
+   - Reine Logik, keine DB-Abhängigkeit, `@Injectable()` für DI
 
-```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
-```
+3. `tpm-plans.helpers.ts` (74 Zeilen — Bonus, nicht im Plan)
+   - `TpmPlanJoinRow` Interface (erweitert Row um JOIN-Spalten)
+   - `mapPlanRowToApi()` — snake_case → camelCase
+   - `buildPlanUpdateFields()` — dynamischer SET-Clause Builder
 
 ---
 
-### Step 2.4: Session 7 — Config Services (Time Estimates + Templates + Colors) [PENDING]
+### Step 2.4: Session 7 — Config Services (Time Estimates + Templates + Colors) [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 3 Services + 2 nachgereichte Template-DTOs erstellt. Type-Check 0, ESLint 0, 3530 Tests bestanden.
 
-1. `tpm-time-estimates.service.ts` (~150 Zeilen)
-   - `setEstimate(tenantId, dto)` → UPSERT (ON CONFLICT UPDATE)
-   - `getEstimatesForPlan(tenantId, planId)` → Alle Intervalle eines Plans
-   - `getEstimateForInterval(tenantId, planId, intervalType)` → Einzeln
-   - `deleteEstimate(tenantId, estimateUuid)` → DELETE
+**Architektur-Entscheidungen:**
+- UPSERT Pattern (`INSERT ... ON CONFLICT DO UPDATE`) für Time Estimates + Color Config
+- Default-Merge Pattern für Colors: DB-Overrides → Map, dann `DEFAULT_COLORS` als Fallback
+- Soft-Delete (is_active=4) für Templates + Time Estimates
+- Hard-DELETE für Color Config (resetToDefaults löscht echte Rows, getColors liefert dann Defaults)
+- Computed `totalMinutes` = preparation + execution + followup (nicht in DB gespeichert)
+- `FOR UPDATE` Lock bei Template-Updates (Race-Condition-Schutz)
+- Template-DTOs nachgereicht (fehlten im Step 2.2 Plan)
 
-2. `tpm-templates.service.ts` (~150 Zeilen)
-   - `createTemplate(tenantId, dto, createdBy)` → INSERT
-   - `updateTemplate(tenantId, uuid, dto)` → UPDATE
-   - `listTemplates(tenantId)` → Alle (inkl. Defaults)
-   - `getTemplate(tenantId, uuid)` → Einzeln
-   - `deleteTemplate(tenantId, uuid)` → Soft-Delete
+1. `tpm-time-estimates.service.ts` (179 Zeilen)
+   - `setEstimate(tenantId, dto)` → UPSERT mit `ON CONFLICT (plan_id, interval_type) WHERE is_active = 1`
+   - `getEstimatesForPlan(tenantId, planUuid)` → JOIN auf plans für UUID-Auflösung
+   - `getEstimateForInterval(tenantId, planUuid, intervalType)` → Einzeln (returns null)
+   - `deleteEstimate(tenantId, estimateUuid)` → Soft-Delete (is_active=4)
+   - Private: `resolvePlanId(client, tenantId, planUuid)` → UUID → ID
 
-3. `tpm-color-config.service.ts` (~120 Zeilen)
-   - `getColors(tenantId)` → Alle Status-Farben (mit Defaults als Fallback)
-   - `updateColor(tenantId, dto)` → UPSERT
-   - `resetToDefaults(tenantId)` → DELETE alle Custom-Farben
-   - Default: green=#22c55e, red=#ef4444, yellow=#eab308, overdue=#dc2626
+2. `tpm-templates.service.ts` (195 Zeilen)
+   - `createTemplate(tenantId, dto)` → INSERT mit `JSON.stringify(dto.defaultFields)` für JSONB
+   - `updateTemplate(tenantId, templateUuid, dto)` → Dynamic SET mit idx-Counter + FOR UPDATE Lock
+   - `listTemplates(tenantId)` → WHERE is_active=1, ORDER BY is_default DESC, name ASC
+   - `getTemplate(tenantId, templateUuid)` → NotFoundException wenn nicht gefunden
+   - `deleteTemplate(tenantId, templateUuid)` → Soft-Delete (is_active=4)
 
-**Verifikation:**
+3. `tpm-color-config.service.ts` (128 Zeilen)
+   - `getColors(tenantId)` → Merge: DB-Rows als Map + DEFAULT_COLORS Fallback für ['green','red','yellow','overdue']
+   - `updateColor(tenantId, dto)` → UPSERT: `ON CONFLICT (tenant_id, status_key) DO UPDATE`
+   - `resetToDefaults(tenantId)` → `DELETE FROM tpm_color_config WHERE tenant_id = $1` + Return Defaults
 
-```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
-```
+4. `dto/create-template.dto.ts` (25 Zeilen — nachgereicht)
+   - name, description?, defaultFields (Record<string, unknown>), isDefault
+
+5. `dto/update-template.dto.ts` (26 Zeilen — nachgereicht)
+   - Alle Felder optional
 
 ---
 
@@ -866,23 +864,23 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 ### Phase 2 — Definition of Done
 
-- [ ] `TpmModule` registriert in `app.module.ts`
-- [ ] 15 Services implementiert und injiziert
-- [ ] 4 Controller mit ~25 Endpoints total
-- [ ] Permission Registrar registriert bei Module Init
+- [x] `TpmModule` registriert in `app.module.ts` ✅ (Session 4)
+- [ ] 15 Services implementiert und injiziert (6/15 — Plans, PlanInterval, TimeEstimates, Templates, ColorConfig, PermissionRegistrar)
+- [ ] 4 Controller mit ~25 Endpoints total (0/4)
+- [x] Permission Registrar registriert bei Module Init ✅ (Session 4)
 - [ ] `@TenantFeature('tpm')` auf allen Controllern
-- [ ] `db.tenantTransaction()` für alle tenant-scoped Queries
-- [ ] KEIN Double-Wrapping (ADR-007)
+- [x] `db.tenantTransaction()` für alle tenant-scoped Mutations ✅ (Session 6-7)
+- [x] KEIN Double-Wrapping (ADR-007) ✅
 - [ ] EventBus: 5 neue TPM Emit-Methoden
 - [ ] SSE-Handler für TPM registriert
 - [ ] Dashboard: TPM Count integriert
 - [ ] Machine Availability: `createFromTpmPlan()` funktioniert
 - [ ] Machine Maintenance History: Bridge funktioniert
-- [ ] Alle DTOs nutzen Zod + `createZodDto()`
-- [ ] ESLint 0 Errors
-- [ ] Type-Check 0 Errors
-- [ ] `pnpm run validate:all` ✅
-- [ ] `pnpm test` ✅
+- [x] Alle DTOs nutzen Zod + `createZodDto()` ✅ (Session 5+7, 13 Dateien)
+- [x] ESLint 0 Errors ✅ (durchgehend)
+- [x] Type-Check 0 Errors ✅ (durchgehend)
+- [ ] `pnpm run validate:all` ✅ (ESLint container ajv Issue — lokal OK)
+- [x] `pnpm test` ✅ (164 Dateien, 3530 Tests — durchgehend)
 
 ---
 
@@ -1234,16 +1232,16 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                                       | Status  | Datum |
-| ------- | ----- | ------------------------------------------------------------------ | ------- | ----- |
-| 1       | 1     | Migration: ENUMs + Plans + Time Estimates                          | PENDING |       |
-| 2       | 1     | Migration: Card Templates + Cards                                  | PENDING |       |
-| 3       | 1     | Migration: Executions + Photos + Config + Feature Flag             | PENDING |       |
-| 4       | 2     | Module Skeleton + Types + Permissions                              | PENDING |       |
-| 5       | 2     | DTOs (11 Dateien)                                                  | PENDING |       |
-| 6       | 2     | Plans Service + Interval Service                                   | PENDING |       |
-| 7       | 2     | Config Services (Time Estimates + Templates + Colors)              | PENDING |       |
-| 8       | 2     | Cards Service + Card Status Service                                | PENDING |       |
+| Session | Phase | Beschreibung                                                       | Status | Datum      |
+| ------- | ----- | ------------------------------------------------------------------ | ------ | ---------- |
+| 1       | 1     | Migration: ENUMs + Plans + Time Estimates                          | DONE   | 2026-02-18 |
+| 2       | 1     | Migration: Card Templates + Cards                                  | DONE   | 2026-02-18 |
+| 3       | 1     | Migration: Executions + Photos + Config + Feature Flag             | DONE   | 2026-02-18 |
+| 4       | 2     | Module Skeleton + Types + Permissions                              | DONE   | 2026-02-19 |
+| 5       | 2     | DTOs (13 Dateien inkl. Template-DTOs)                              | DONE   | 2026-02-19 |
+| 6       | 2     | Plans Service + Interval Service + Helpers                         | DONE   | 2026-02-19 |
+| 7       | 2     | Config Services (Time Estimates + Templates + Colors)              | DONE   | 2026-02-19 |
+| 8       | 2     | Cards Service + Card Status Service                                | PENDING |            |
 | 9       | 2     | Card Cascade + Duplicate Detection                                 | PENDING |       |
 | 10      | 2     | Slot Availability Assistant                                        | PENDING |       |
 | 11      | 2     | Executions + Approval Services                                     | PENDING |       |
@@ -1282,9 +1280,15 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ## Spec Deviations
 
-| #   | Spec sagt | Tatsächlicher Code | Entscheidung                           |
-| --- | --------- | ------------------ | -------------------------------------- |
-| —   | —         | —                  | (wird während Implementierung gefüllt) |
+| #   | Spec sagt                                             | Tatsächlicher Code                                       | Entscheidung                                                                 |
+| --- | ----------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| D1  | `tpm.types.ts` ~200 Zeilen                            | 381 Zeilen                                               | Alle 8 Row + 8 API Typen + 7 Constants → Überschreitung gerechtfertigt      |
+| D2  | `dto/index.ts` ~25 Zeilen                             | 66 Zeilen                                                | 13 DTOs + Schemas → Barrel Export wächst proportional                        |
+| D3  | Kein `tpm-plans.helpers.ts` im Plan                   | 74 Zeilen erstellt                                       | Extracted nach `machines.helpers.ts` Pattern — SRP                           |
+| D4  | `tpm-templates.service.ts` ~150 Zeilen                | 195 Zeilen                                               | CRUD + Dynamic SET + FOR UPDATE → leicht über Budget                         |
+| D5  | `tpm-time-estimates.service.ts` ~150 Zeilen           | 179 Zeilen                                               | UPSERT + resolvePlanId Helper → leicht über Budget                           |
+| D6  | ActivityEntityType 'tpm_plan' erwartet                | Reuse 'machine' Entity-Type                              | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen              |
+| D7  | Template-DTOs in Step 2.2 geplant                     | Nachgereicht in Step 2.4                                 | Im Plan vergessen, bei Bedarf erstellt                                       |
 
 ---
 
@@ -1300,17 +1304,17 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ### Metriken
 
-| Metrik                    | Geplant | Tatsächlich |
-| ------------------------- | ------- | ----------- |
-| Sessions                  | 29      |             |
-| Migrationsdateien         | 4       |             |
-| Neue Backend-Dateien      | ~30     |             |
-| Neue Frontend-Dateien     | ~35     |             |
-| Geänderte Dateien         | ~10     |             |
-| Unit Tests                | 220+    |             |
-| API Tests                 | 40+     |             |
-| ESLint Errors bei Release | 0       |             |
-| Spec Deviations           | 0       |             |
+| Metrik                    | Geplant | Tatsächlich (Stand Session 7) |
+| ------------------------- | ------- | ----------------------------- |
+| Sessions                  | 29      | 7 / 29 (24%)                 |
+| Migrationsdateien         | 4       | 4 ✅                          |
+| Neue Backend-Dateien      | ~30     | 19 / ~30 (63%)               |
+| Neue Frontend-Dateien     | ~35     | 0 / ~35                      |
+| Geänderte Dateien         | ~10     | 2 (app.module.ts, tpm.module.ts) |
+| Unit Tests                | 220+    | 0 (Phase 3)                  |
+| API Tests                 | 40+     | 0 (Phase 4)                  |
+| ESLint Errors bei Release | 0       | 0 ✅ (durchgehend)            |
+| Spec Deviations           | 0       | 7 (alle akzeptabel)          |
 
 ---
 

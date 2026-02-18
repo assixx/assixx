@@ -59,6 +59,7 @@ import { SignupModule } from './signup/signup.module.js';
 import { SurveysModule } from './surveys/surveys.module.js';
 import { TeamsModule } from './teams/teams.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
+import { TpmModule } from './tpm/tpm.module.js';
 import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VacationModule } from './vacation/vacation.module.js';
@@ -172,6 +173,7 @@ import { VacationModule } from './vacation/vacation.module.js';
     ShiftsModule,
     SignupModule,
     VacationModule,
+    TpmModule,
     ChatModule,
     UserPermissionsModule,
   ],

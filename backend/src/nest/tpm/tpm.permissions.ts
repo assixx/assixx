@@ -1,0 +1,39 @@
+/**
+ * TPM Permission Definition (ADR-020)
+ *
+ * Defines the permission category and modules for the TPM feature.
+ * Registered automatically via TpmPermissionRegistrar on module init.
+ */
+import type { PermissionCategoryDef } from '../common/permission-registry/permission.types.js';
+
+export const TPM_PERMISSIONS: PermissionCategoryDef = {
+  code: 'tpm',
+  label: 'TPM / Wartung',
+  icon: 'fa-tools',
+  modules: [
+    {
+      code: 'tpm-plans',
+      label: 'Wartungspläne',
+      icon: 'fa-clipboard-list',
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+    },
+    {
+      code: 'tpm-cards',
+      label: 'Wartungskarten',
+      icon: 'fa-th',
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+    },
+    {
+      code: 'tpm-executions',
+      label: 'Durchführungen',
+      icon: 'fa-check-circle',
+      allowedPermissions: ['canRead', 'canWrite'],
+    },
+    {
+      code: 'tpm-reports',
+      label: 'Berichte',
+      icon: 'fa-chart-bar',
+      allowedPermissions: ['canRead'],
+    },
+  ],
+};

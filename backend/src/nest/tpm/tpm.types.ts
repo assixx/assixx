@@ -1,0 +1,380 @@
+/**
+ * TPM Module Types
+ *
+ * All interfaces and DB row types for the Total Productive Maintenance system.
+ * Maps directly to the 8 tpm_* tables created in Migrations 041-044.
+ *
+ * Structure:
+ *   1. Enums (mirror PostgreSQL ENUMs)
+ *   2. DB Row Types (1:1 mapping to table columns, snake_case)
+ *   3. Application Types (API responses, camelCase)
+ *   4. Interval Utilities
+ */
+
+// ============================================================================
+// Enums (mirror PostgreSQL ENUMs from migration 041)
+// ============================================================================
+
+export type TpmIntervalType =
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'semi_annual'
+  | 'annual'
+  | 'long_runner'
+  | 'custom';
+
+export type TpmCardStatus = 'green' | 'red' | 'yellow' | 'overdue';
+
+export type TpmCardRole = 'operator' | 'maintenance';
+
+export type TpmApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+// ============================================================================
+// DB Row Types (1:1 mapping to table columns)
+// ============================================================================
+
+/** Row type for `tpm_maintenance_plans` table (migration 041) */
+export interface TpmMaintenancePlanRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  machine_id: number;
+  name: string;
+  base_weekday: number;
+  base_repeat_every: number;
+  base_time: string | null;
+  shift_plan_required: boolean;
+  notes: string | null;
+  created_by: number;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row type for `tpm_time_estimates` table (migration 041) */
+export interface TpmTimeEstimateRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  plan_id: number;
+  interval_type: TpmIntervalType;
+  staff_count: number;
+  preparation_minutes: number;
+  execution_minutes: number;
+  followup_minutes: number;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row type for `tpm_card_templates` table (migration 042) */
+export interface TpmCardTemplateRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  name: string;
+  description: string | null;
+  default_fields: Record<string, unknown>;
+  is_default: boolean;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row type for `tpm_cards` table (migration 042) */
+export interface TpmCardRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  plan_id: number;
+  machine_id: number;
+  template_id: number | null;
+  card_code: string;
+  card_role: TpmCardRole;
+  interval_type: TpmIntervalType;
+  interval_order: number;
+  title: string;
+  description: string | null;
+  location_description: string | null;
+  location_photo_url: string | null;
+  requires_approval: boolean;
+  status: TpmCardStatus;
+  current_due_date: string | null;
+  last_completed_at: string | null;
+  last_completed_by: number | null;
+  sort_order: number;
+  custom_fields: Record<string, unknown>;
+  custom_interval_days: number | null;
+  is_active: number;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row type for `tpm_card_executions` table (migration 043) */
+export interface TpmCardExecutionRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  card_id: number;
+  executed_by: number;
+  execution_date: string;
+  documentation: string | null;
+  approval_status: TpmApprovalStatus;
+  approved_by: number | null;
+  approved_at: string | null;
+  approval_note: string | null;
+  custom_data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row type for `tpm_card_execution_photos` table (migration 043) — immutable, no updated_at */
+export interface TpmCardExecutionPhotoRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  execution_id: number;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  sort_order: number;
+  created_at: string;
+}
+
+/** Row type for `tpm_escalation_config` table (migration 044) — 1 row per tenant, no uuid */
+export interface TpmEscalationConfigRow {
+  id: number;
+  tenant_id: number;
+  escalation_after_hours: number;
+  notify_team_lead: boolean;
+  notify_department_lead: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row type for `tpm_color_config` table (migration 044) — per status per tenant, no uuid */
+export interface TpmColorConfigRow {
+  id: number;
+  tenant_id: number;
+  status_key: string;
+  color_hex: string;
+  label: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// Application Types (used in service layer and API responses)
+// ============================================================================
+
+/** Maintenance plan as returned by the API */
+export interface TpmPlan {
+  uuid: string;
+  machineId: number;
+  machineName?: string;
+  name: string;
+  baseWeekday: number;
+  baseRepeatEvery: number;
+  baseTime: string | null;
+  shiftPlanRequired: boolean;
+  notes: string | null;
+  createdBy: number;
+  createdByName?: string;
+  isActive: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Time estimate as returned by the API */
+export interface TpmTimeEstimate {
+  uuid: string;
+  planId: number;
+  intervalType: TpmIntervalType;
+  staffCount: number;
+  preparationMinutes: number;
+  executionMinutes: number;
+  followupMinutes: number;
+  totalMinutes: number;
+  isActive: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Card template as returned by the API */
+export interface TpmCardTemplate {
+  uuid: string;
+  name: string;
+  description: string | null;
+  defaultFields: Record<string, unknown>;
+  isDefault: boolean;
+  isActive: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Card as returned by the API */
+export interface TpmCard {
+  uuid: string;
+  planUuid?: string;
+  machineId: number;
+  machineName?: string;
+  templateUuid?: string | null;
+  cardCode: string;
+  cardRole: TpmCardRole;
+  intervalType: TpmIntervalType;
+  intervalOrder: number;
+  title: string;
+  description: string | null;
+  locationDescription: string | null;
+  locationPhotoUrl: string | null;
+  requiresApproval: boolean;
+  status: TpmCardStatus;
+  currentDueDate: string | null;
+  lastCompletedAt: string | null;
+  lastCompletedBy: number | null;
+  lastCompletedByName?: string;
+  sortOrder: number;
+  customFields: Record<string, unknown>;
+  customIntervalDays: number | null;
+  isActive: number;
+  createdBy: number;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Execution record as returned by the API */
+export interface TpmCardExecution {
+  uuid: string;
+  cardUuid?: string;
+  executedBy: number;
+  executedByName?: string;
+  executionDate: string;
+  documentation: string | null;
+  approvalStatus: TpmApprovalStatus;
+  approvedBy: number | null;
+  approvedByName?: string;
+  approvedAt: string | null;
+  approvalNote: string | null;
+  customData: Record<string, unknown>;
+  photos?: TpmExecutionPhoto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Execution photo as returned by the API */
+export interface TpmExecutionPhoto {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+/** Escalation config as returned by the API */
+export interface TpmEscalationConfig {
+  escalationAfterHours: number;
+  notifyTeamLead: boolean;
+  notifyDepartmentLead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Color config entry as returned by the API */
+export interface TpmColorConfigEntry {
+  statusKey: string;
+  colorHex: string;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// Interval Utilities
+// ============================================================================
+
+/**
+ * Maps interval types to their cascade order.
+ * Lower number = shorter interval = cascaded first.
+ * Used by tpm-card-cascade.service.ts for batch updates.
+ */
+export const INTERVAL_ORDER_MAP: Record<TpmIntervalType, number> = {
+  daily: 1,
+  weekly: 2,
+  monthly: 3,
+  quarterly: 4,
+  semi_annual: 5,
+  annual: 6,
+  long_runner: 7,
+  custom: 8,
+} as const;
+
+/**
+ * All interval types in cascade order (ascending).
+ * Useful for iteration and display.
+ */
+export const INTERVAL_TYPES_ORDERED: readonly TpmIntervalType[] = [
+  'daily',
+  'weekly',
+  'monthly',
+  'quarterly',
+  'semi_annual',
+  'annual',
+  'long_runner',
+  'custom',
+] as const;
+
+/** German labels for interval types (used in API responses and frontend) */
+export const INTERVAL_LABELS: Record<TpmIntervalType, string> = {
+  daily: 'Täglich',
+  weekly: 'Wöchentlich',
+  monthly: 'Monatlich',
+  quarterly: 'Vierteljährlich',
+  semi_annual: 'Halbjährlich',
+  annual: 'Jährlich',
+  long_runner: 'Langläufer',
+  custom: 'Benutzerdefiniert',
+} as const;
+
+/** German labels for card status (used in API responses and frontend) */
+export const STATUS_LABELS: Record<TpmCardStatus, string> = {
+  green: 'Erledigt',
+  red: 'Fällig',
+  yellow: 'Freigabe ausstehend',
+  overdue: 'Überfällig',
+} as const;
+
+/** German labels for card roles */
+export const ROLE_LABELS: Record<TpmCardRole, string> = {
+  operator: 'Bediener',
+  maintenance: 'Instandhaltung',
+} as const;
+
+/** Card code prefixes per role */
+export const CARD_CODE_PREFIX: Record<TpmCardRole, string> = {
+  operator: 'BT',
+  maintenance: 'IV',
+} as const;
+
+/** Default color configuration per status */
+export const DEFAULT_COLORS: Record<
+  TpmCardStatus,
+  { hex: string; label: string }
+> = {
+  green: { hex: '#22c55e', label: 'Erledigt' },
+  red: { hex: '#ef4444', label: 'Fällig' },
+  yellow: { hex: '#eab308', label: 'Freigabe ausstehend' },
+  overdue: { hex: '#dc2626', label: 'Überfällig' },
+} as const;
+
+/** Max photos per execution (enforced in service layer) */
+export const MAX_PHOTOS_PER_EXECUTION = 5;
+
+/** Max photo file size in bytes (5MB, enforced in DB + service) */
+export const MAX_PHOTO_FILE_SIZE = 5_242_880;
