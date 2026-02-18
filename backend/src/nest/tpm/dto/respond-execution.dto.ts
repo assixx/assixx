@@ -37,6 +37,4 @@ export const RespondExecutionSchema = BaseSchema.refine(
   },
 );
 
-export class RespondExecutionDto extends createZodDto(
-  RespondExecutionSchema,
-) {}
+export class RespondExecutionDto extends createZodDto(RespondExecutionSchema) {}

@@ -3,18 +3,16 @@
  *
  * Re-exports all TPM DTOs and their Zod schemas.
  */
-export {
-  CompleteCardDto,
-  CompleteCardSchema,
-} from './complete-card.dto.js';
-export {
-  CreateCardDto,
-  CreateCardSchema,
-} from './create-card.dto.js';
+export { CompleteCardDto, CompleteCardSchema } from './complete-card.dto.js';
+export { CreateCardDto, CreateCardSchema } from './create-card.dto.js';
 export {
   CreateMaintenancePlanDto,
   CreateMaintenancePlanSchema,
 } from './create-maintenance-plan.dto.js';
+export {
+  CreateTemplateDto,
+  CreateTemplateSchema,
+} from './create-template.dto.js';
 export {
   CreateTimeEstimateDto,
   CreateTimeEstimateSchema,
@@ -23,10 +21,7 @@ export {
   RespondExecutionDto,
   RespondExecutionSchema,
 } from './respond-execution.dto.js';
-export {
-  UpdateCardDto,
-  UpdateCardSchema,
-} from './update-card.dto.js';
+export { UpdateCardDto, UpdateCardSchema } from './update-card.dto.js';
 export {
   UpdateColorConfigDto,
   UpdateColorConfigSchema,
@@ -39,6 +34,10 @@ export {
   UpdateMaintenancePlanDto,
   UpdateMaintenancePlanSchema,
 } from './update-maintenance-plan.dto.js';
+export {
+  UpdateTemplateDto,
+  UpdateTemplateSchema,
+} from './update-template.dto.js';
 
 // Common schemas (for reuse in services/controllers/tests)
 export {

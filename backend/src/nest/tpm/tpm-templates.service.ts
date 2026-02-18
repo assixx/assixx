@@ -4,11 +4,7 @@
  * Manages card templates that define default fields for card creation.
  * Templates can be tenant-specific or global defaults.
  */
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -27,13 +23,13 @@ function mapTemplateRowToApi(row: TpmCardTemplateRow): TpmCardTemplate {
     isDefault: row.is_default,
     isActive: row.is_active,
     createdAt:
-      typeof row.created_at === 'string'
-        ? row.created_at
-        : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ?
+        row.created_at
+      : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string'
-        ? row.updated_at
-        : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ?
+        row.updated_at
+      : new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -174,10 +170,7 @@ export class TpmTemplatesService {
   }
 
   /** Soft-delete a template (is_active = 4) */
-  async deleteTemplate(
-    tenantId: number,
-    templateUuid: string,
-  ): Promise<void> {
+  async deleteTemplate(tenantId: number, templateUuid: string): Promise<void> {
     const result = await this.db.query<{ id: number }>(
       `UPDATE tpm_card_templates
        SET is_active = 4, updated_at = NOW()

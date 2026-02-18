@@ -23,13 +23,13 @@ function mapColorRowToApi(row: TpmColorConfigRow): TpmColorConfigEntry {
     colorHex: row.color_hex,
     label: row.label,
     createdAt:
-      typeof row.created_at === 'string'
-        ? row.created_at
-        : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ?
+        row.created_at
+      : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string'
-        ? row.updated_at
-        : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ?
+        row.updated_at
+      : new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -116,10 +116,9 @@ export class TpmColorConfigService {
   async resetToDefaults(tenantId: number): Promise<TpmColorConfigEntry[]> {
     this.logger.debug(`Resetting colors to defaults for tenant ${tenantId}`);
 
-    await this.db.query(
-      `DELETE FROM tpm_color_config WHERE tenant_id = $1`,
-      [tenantId],
-    );
+    await this.db.query(`DELETE FROM tpm_color_config WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
 
     // Return the defaults
     const statusKeys: TpmCardStatus[] = ['green', 'red', 'yellow', 'overdue'];

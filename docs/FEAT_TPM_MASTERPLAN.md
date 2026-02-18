@@ -43,15 +43,15 @@ pnpm test                # unit + api tests
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                                    |
-| ------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant                                                               |
-| 0.2.0   | 2026-02-18 | Validation Review: 7 Fehler + 5 Inkonsistenzen gefixt, E17 Shift-Grid Toggle ergänzt → 29 Sessions, 4 ENUMs |
-| 1.0.0   | 2026-02-18 | Phase 1 COMPLETE: 4 Migrationen (041-044), 8 Tabellen, 4 ENUMs, RLS 8/8, GRANTs 32, Feature Flag, 4400 Tests bestanden |
-| 1.1.0   | 2026-02-19 | Step 2.1 DONE: Module Skeleton — tpm.types.ts (381 Zeilen), tpm.permissions.ts, tpm-permission.registrar.ts, tpm.module.ts, app.module.ts Import |
+| Version | Datum      | Änderung                                                                                                                                                                                                                          |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant                                                                                                                                                                                     |
+| 0.2.0   | 2026-02-18 | Validation Review: 7 Fehler + 5 Inkonsistenzen gefixt, E17 Shift-Grid Toggle ergänzt → 29 Sessions, 4 ENUMs                                                                                                                       |
+| 1.0.0   | 2026-02-18 | Phase 1 COMPLETE: 4 Migrationen (041-044), 8 Tabellen, 4 ENUMs, RLS 8/8, GRANTs 32, Feature Flag, 4400 Tests bestanden                                                                                                            |
+| 1.1.0   | 2026-02-19 | Step 2.1 DONE: Module Skeleton — tpm.types.ts (381 Zeilen), tpm.permissions.ts, tpm-permission.registrar.ts, tpm.module.ts, app.module.ts Import                                                                                  |
 | 1.2.0   | 2026-02-19 | Step 2.2 DONE: DTOs — 11+2 Dateien in dto/ (common, create/update plan, create/update card, complete-card, respond-execution, create-time-estimate, update-escalation-config, update-color-config, create/update-template, index) |
-| 1.3.0   | 2026-02-19 | Step 2.3 DONE: Plans Service — tpm-plans.service.ts (235 Z.), tpm-plans-interval.service.ts (178 Z.), tpm-plans.helpers.ts (74 Z.) |
-| 1.4.0   | 2026-02-19 | Step 2.4 DONE: Config Services — tpm-time-estimates.service.ts (179 Z.), tpm-templates.service.ts (195 Z.), tpm-color-config.service.ts (128 Z.) |
+| 1.3.0   | 2026-02-19 | Step 2.3 DONE: Plans Service — tpm-plans.service.ts (235 Z.), tpm-plans-interval.service.ts (178 Z.), tpm-plans.helpers.ts (74 Z.)                                                                                                |
+| 1.4.0   | 2026-02-19 | Step 2.4 DONE: Config Services — tpm-time-estimates.service.ts (179 Z.), tpm-templates.service.ts (195 Z.), tpm-color-config.service.ts (128 Z.)                                                                                  |
 
 > **Versionierungsregel:**
 >
@@ -529,21 +529,21 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM feat
 
 Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-single-boolean-return` in update-card.dto.ts).
 
-| DTO                               | Zeilen | Felder                                                                      | Validierung                                |
-| --------------------------------- | ------ | --------------------------------------------------------------------------- | ------------------------------------------ |
-| `common.dto.ts`                   | 85     | UuidParam, Enums, Page/Limit, HexColor, Time, Weekday, Minutes, StaffCount | Shared Schemas                             |
-| `create-maintenance-plan.dto.ts`  | 35     | machineUuid, name, baseWeekday(0-6), baseRepeatEvery(1-52), baseTime, shiftPlanRequired, notes | Weekday range, time HH:MM          |
-| `update-maintenance-plan.dto.ts`  | 35     | Alle Felder optional                                                        | Gleiche Constraints                        |
+| DTO                               | Zeilen | Felder                                                                                                          | Validierung                                    |
+| --------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `common.dto.ts`                   | 85     | UuidParam, Enums, Page/Limit, HexColor, Time, Weekday, Minutes, StaffCount                                      | Shared Schemas                                 |
+| `create-maintenance-plan.dto.ts`  | 35     | machineUuid, name, baseWeekday(0-6), baseRepeatEvery(1-52), baseTime, shiftPlanRequired, notes                  | Weekday range, time HH:MM                      |
+| `update-maintenance-plan.dto.ts`  | 35     | Alle Felder optional                                                                                            | Gleiche Constraints                            |
 | `create-card.dto.ts`              | 67     | planUuid, cardRole, intervalType, title, description, locationDescription, requiresApproval, customIntervalDays | Cross-Field: customIntervalDays ↔ intervalType |
-| `update-card.dto.ts`              | 70     | Alle Felder optional                                                        | Cross-Field: customIntervalDays ↔ intervalType |
-| `complete-card.dto.ts`            | 24     | documentation?, customData                                                  | Service enforces mandatory docs            |
-| `respond-execution.dto.ts`        | 39     | action('approved'\|'rejected'), approvalNote?                               | Note required if rejected                  |
-| `create-time-estimate.dto.ts`     | 28     | planUuid, intervalType, staffCount, preparationMinutes, executionMinutes, followupMinutes | All >= 0, staffCount >= 1       |
-| `update-escalation-config.dto.ts` | 19     | escalationAfterHours(1-720), notifyTeamLead, notifyDepartmentLead           | Hours range                                |
-| `update-color-config.dto.ts`      | 20     | statusKey, colorHex, label                                                  | Hex regex `/^#[\da-f]{6}$/i`               |
-| `create-template.dto.ts`          | 25     | name, description, defaultFields, isDefault                                 | (nachgereicht in Session 7)                |
-| `update-template.dto.ts`          | 26     | Alle Felder optional                                                        | (nachgereicht in Session 7)                |
-| `index.ts`                        | 66     | Barrel export aller DTOs + Schemas                                          | —                                          |
+| `update-card.dto.ts`              | 70     | Alle Felder optional                                                                                            | Cross-Field: customIntervalDays ↔ intervalType |
+| `complete-card.dto.ts`            | 24     | documentation?, customData                                                                                      | Service enforces mandatory docs                |
+| `respond-execution.dto.ts`        | 39     | action('approved'\|'rejected'), approvalNote?                                                                   | Note required if rejected                      |
+| `create-time-estimate.dto.ts`     | 28     | planUuid, intervalType, staffCount, preparationMinutes, executionMinutes, followupMinutes                       | All >= 0, staffCount >= 1                      |
+| `update-escalation-config.dto.ts` | 19     | escalationAfterHours(1-720), notifyTeamLead, notifyDepartmentLead                                               | Hours range                                    |
+| `update-color-config.dto.ts`      | 20     | statusKey, colorHex, label                                                                                      | Hex regex `/^#[\da-f]{6}$/i`                   |
+| `create-template.dto.ts`          | 25     | name, description, defaultFields, isDefault                                                                     | (nachgereicht in Session 7)                    |
+| `update-template.dto.ts`          | 26     | Alle Felder optional                                                                                            | (nachgereicht in Session 7)                    |
+| `index.ts`                        | 66     | Barrel export aller DTOs + Schemas                                                                              | —                                              |
 
 ---
 
@@ -552,6 +552,7 @@ Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-s
 **Ergebnis:** 3 Dateien erstellt (+ Helpers extrahiert). Type-Check 0, ESLint 0, 3530 Tests bestanden.
 
 **Architektur-Entscheidungen:**
+
 - Helpers-Datei extrahiert (`tpm-plans.helpers.ts`) — machines.helpers.ts Pattern
 - `tenantTransaction()` für Mutationen, `db.query()` für Reads
 - `FOR UPDATE` Lock bei update/delete (Race-Condition-Schutz)
@@ -584,6 +585,7 @@ Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-s
 **Ergebnis:** 3 Services + 2 nachgereichte Template-DTOs erstellt. Type-Check 0, ESLint 0, 3530 Tests bestanden.
 
 **Architektur-Entscheidungen:**
+
 - UPSERT Pattern (`INSERT ... ON CONFLICT DO UPDATE`) für Time Estimates + Color Config
 - Default-Merge Pattern für Colors: DB-Overrides → Map, dann `DEFAULT_COLORS` als Fallback
 - Soft-Delete (is_active=4) für Templates + Time Estimates
@@ -1232,37 +1234,37 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                                       | Status | Datum      |
-| ------- | ----- | ------------------------------------------------------------------ | ------ | ---------- |
-| 1       | 1     | Migration: ENUMs + Plans + Time Estimates                          | DONE   | 2026-02-18 |
-| 2       | 1     | Migration: Card Templates + Cards                                  | DONE   | 2026-02-18 |
-| 3       | 1     | Migration: Executions + Photos + Config + Feature Flag             | DONE   | 2026-02-18 |
-| 4       | 2     | Module Skeleton + Types + Permissions                              | DONE   | 2026-02-19 |
-| 5       | 2     | DTOs (13 Dateien inkl. Template-DTOs)                              | DONE   | 2026-02-19 |
-| 6       | 2     | Plans Service + Interval Service + Helpers                         | DONE   | 2026-02-19 |
-| 7       | 2     | Config Services (Time Estimates + Templates + Colors)              | DONE   | 2026-02-19 |
+| Session | Phase | Beschreibung                                                       | Status  | Datum      |
+| ------- | ----- | ------------------------------------------------------------------ | ------- | ---------- |
+| 1       | 1     | Migration: ENUMs + Plans + Time Estimates                          | DONE    | 2026-02-18 |
+| 2       | 1     | Migration: Card Templates + Cards                                  | DONE    | 2026-02-18 |
+| 3       | 1     | Migration: Executions + Photos + Config + Feature Flag             | DONE    | 2026-02-18 |
+| 4       | 2     | Module Skeleton + Types + Permissions                              | DONE    | 2026-02-19 |
+| 5       | 2     | DTOs (13 Dateien inkl. Template-DTOs)                              | DONE    | 2026-02-19 |
+| 6       | 2     | Plans Service + Interval Service + Helpers                         | DONE    | 2026-02-19 |
+| 7       | 2     | Config Services (Time Estimates + Templates + Colors)              | DONE    | 2026-02-19 |
 | 8       | 2     | Cards Service + Card Status Service                                | PENDING |            |
-| 9       | 2     | Card Cascade + Duplicate Detection                                 | PENDING |       |
-| 10      | 2     | Slot Availability Assistant                                        | PENDING |       |
-| 11      | 2     | Executions + Approval Services                                     | PENDING |       |
-| 12      | 2     | Notification + Escalation Services + EventBus                      | PENDING |       |
-| 13      | 2     | Controllers (Plans + Cards)                                        | PENDING |       |
-| 14      | 2     | Controllers (Executions + Config) + Module Assembly + Integrations | PENDING |       |
-| 15      | 3     | Unit Tests — Plans + Config Services (~68 Tests)                   | PENDING |       |
-| 16      | 3     | Unit Tests — Cards + Cascade + Duplicate (~70 Tests)               | PENDING |       |
-| 17      | 3     | Unit Tests — Slot Assistant + Executions + Approval (~55 Tests)    | PENDING |       |
-| 18      | 3     | Unit Tests — Notification + Escalation (~27 Tests)                 | PENDING |       |
-| 19      | 4     | API Tests — Plans + Cards (~20 Tests)                              | PENDING |       |
-| 20      | 4     | API Tests — Executions + Config (~20 Tests)                        | PENDING |       |
-| 21      | 5     | Frontend: Admin Dashboard + Foundation                             | PENDING |       |
-| 22      | 5     | Frontend: Admin Plan Creation                                      | PENDING |       |
-| 23      | 5     | Frontend: Admin Card Management                                    | PENDING |       |
-| 24      | 5     | Frontend: Shared Employee Overview                                 | PENDING |       |
-| 25      | 5     | Frontend: Kamishibai Board                                         | PENDING |       |
-| 26      | 5     | Frontend: Card Detail + Execution + Approval UI                    | PENDING |       |
-| 27      | 5     | Frontend: Config UI + Final Integration                            | PENDING |       |
-| 28      | 5     | Frontend: Shift-Grid TPM Wartungstermine Toggle (E17)              | PENDING |       |
-| 29      | 6     | E2E Verification + Polish + ADR                                    | PENDING |       |
+| 9       | 2     | Card Cascade + Duplicate Detection                                 | PENDING |            |
+| 10      | 2     | Slot Availability Assistant                                        | PENDING |            |
+| 11      | 2     | Executions + Approval Services                                     | PENDING |            |
+| 12      | 2     | Notification + Escalation Services + EventBus                      | PENDING |            |
+| 13      | 2     | Controllers (Plans + Cards)                                        | PENDING |            |
+| 14      | 2     | Controllers (Executions + Config) + Module Assembly + Integrations | PENDING |            |
+| 15      | 3     | Unit Tests — Plans + Config Services (~68 Tests)                   | PENDING |            |
+| 16      | 3     | Unit Tests — Cards + Cascade + Duplicate (~70 Tests)               | PENDING |            |
+| 17      | 3     | Unit Tests — Slot Assistant + Executions + Approval (~55 Tests)    | PENDING |            |
+| 18      | 3     | Unit Tests — Notification + Escalation (~27 Tests)                 | PENDING |            |
+| 19      | 4     | API Tests — Plans + Cards (~20 Tests)                              | PENDING |            |
+| 20      | 4     | API Tests — Executions + Config (~20 Tests)                        | PENDING |            |
+| 21      | 5     | Frontend: Admin Dashboard + Foundation                             | PENDING |            |
+| 22      | 5     | Frontend: Admin Plan Creation                                      | PENDING |            |
+| 23      | 5     | Frontend: Admin Card Management                                    | PENDING |            |
+| 24      | 5     | Frontend: Shared Employee Overview                                 | PENDING |            |
+| 25      | 5     | Frontend: Kamishibai Board                                         | PENDING |            |
+| 26      | 5     | Frontend: Card Detail + Execution + Approval UI                    | PENDING |            |
+| 27      | 5     | Frontend: Config UI + Final Integration                            | PENDING |            |
+| 28      | 5     | Frontend: Shift-Grid TPM Wartungstermine Toggle (E17)              | PENDING |            |
+| 29      | 6     | E2E Verification + Polish + ADR                                    | PENDING |            |
 
 ---
 
@@ -1280,15 +1282,15 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ## Spec Deviations
 
-| #   | Spec sagt                                             | Tatsächlicher Code                                       | Entscheidung                                                                 |
-| --- | ----------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| D1  | `tpm.types.ts` ~200 Zeilen                            | 381 Zeilen                                               | Alle 8 Row + 8 API Typen + 7 Constants → Überschreitung gerechtfertigt      |
-| D2  | `dto/index.ts` ~25 Zeilen                             | 66 Zeilen                                                | 13 DTOs + Schemas → Barrel Export wächst proportional                        |
-| D3  | Kein `tpm-plans.helpers.ts` im Plan                   | 74 Zeilen erstellt                                       | Extracted nach `machines.helpers.ts` Pattern — SRP                           |
-| D4  | `tpm-templates.service.ts` ~150 Zeilen                | 195 Zeilen                                               | CRUD + Dynamic SET + FOR UPDATE → leicht über Budget                         |
-| D5  | `tpm-time-estimates.service.ts` ~150 Zeilen           | 179 Zeilen                                               | UPSERT + resolvePlanId Helper → leicht über Budget                           |
-| D6  | ActivityEntityType 'tpm_plan' erwartet                | Reuse 'machine' Entity-Type                              | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen              |
-| D7  | Template-DTOs in Step 2.2 geplant                     | Nachgereicht in Step 2.4                                 | Im Plan vergessen, bei Bedarf erstellt                                       |
+| #   | Spec sagt                                   | Tatsächlicher Code          | Entscheidung                                                           |
+| --- | ------------------------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| D1  | `tpm.types.ts` ~200 Zeilen                  | 381 Zeilen                  | Alle 8 Row + 8 API Typen + 7 Constants → Überschreitung gerechtfertigt |
+| D2  | `dto/index.ts` ~25 Zeilen                   | 66 Zeilen                   | 13 DTOs + Schemas → Barrel Export wächst proportional                  |
+| D3  | Kein `tpm-plans.helpers.ts` im Plan         | 74 Zeilen erstellt          | Extracted nach `machines.helpers.ts` Pattern — SRP                     |
+| D4  | `tpm-templates.service.ts` ~150 Zeilen      | 195 Zeilen                  | CRUD + Dynamic SET + FOR UPDATE → leicht über Budget                   |
+| D5  | `tpm-time-estimates.service.ts` ~150 Zeilen | 179 Zeilen                  | UPSERT + resolvePlanId Helper → leicht über Budget                     |
+| D6  | ActivityEntityType 'tpm_plan' erwartet      | Reuse 'machine' Entity-Type | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen        |
+| D7  | Template-DTOs in Step 2.2 geplant           | Nachgereicht in Step 2.4    | Im Plan vergessen, bei Bedarf erstellt                                 |
 
 ---
 
@@ -1304,17 +1306,17 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ### Metriken
 
-| Metrik                    | Geplant | Tatsächlich (Stand Session 7) |
-| ------------------------- | ------- | ----------------------------- |
-| Sessions                  | 29      | 7 / 29 (24%)                 |
-| Migrationsdateien         | 4       | 4 ✅                          |
-| Neue Backend-Dateien      | ~30     | 19 / ~30 (63%)               |
-| Neue Frontend-Dateien     | ~35     | 0 / ~35                      |
+| Metrik                    | Geplant | Tatsächlich (Stand Session 7)    |
+| ------------------------- | ------- | -------------------------------- |
+| Sessions                  | 29      | 7 / 29 (24%)                     |
+| Migrationsdateien         | 4       | 4 ✅                             |
+| Neue Backend-Dateien      | ~30     | 19 / ~30 (63%)                   |
+| Neue Frontend-Dateien     | ~35     | 0 / ~35                          |
 | Geänderte Dateien         | ~10     | 2 (app.module.ts, tpm.module.ts) |
-| Unit Tests                | 220+    | 0 (Phase 3)                  |
-| API Tests                 | 40+     | 0 (Phase 4)                  |
-| ESLint Errors bei Release | 0       | 0 ✅ (durchgehend)            |
-| Spec Deviations           | 0       | 7 (alle akzeptabel)          |
+| Unit Tests                | 220+    | 0 (Phase 3)                      |
+| API Tests                 | 40+     | 0 (Phase 4)                      |
+| ESLint Errors bei Release | 0       | 0 ✅ (durchgehend)               |
+| Spec Deviations           | 0       | 7 (alle akzeptabel)              |
 
 ---
 

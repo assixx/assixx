@@ -6,7 +6,7 @@
 
 # npx Befehle könnne unter umständen genau so gut sein ( eventuell kein Unterschied)
 
-> **Projekt:** Assixx | **Stand:** 2026-02-16
+> **Projekt:** Assixx | **Stand:** 2026-02-18
 > Alle Befehle, die wir regelmäßig nutzen — kategorisch sortiert.
 
 ---
@@ -310,7 +310,30 @@ doppler run -- pnpm run db:seed                              # Seeds mit Credent
 
 ---
 
-## 15. Skripte
+## 15. Changesets (Versionierung & Changelog)
+
+```bash
+# Changeset erstellen (nach relevanter Änderung, vor PR)
+pnpm changeset                                              # Interaktiver Prompt: Bump-Typ + Beschreibung
+
+# Status prüfen (welche Changesets liegen bereit?)
+pnpm changeset:status                                       # Zeigt ausstehende Changesets
+
+# Version bumpen (vor Release — bumpt alle package.json + generiert CHANGELOG.md)
+pnpm changeset:version                                      # Konsumiert Changesets, bumpt Versionen
+
+# Git-Tags erstellen (nach Version-Bump)
+pnpm changeset:tag                                          # Erstellt v0.x.x Tags basierend auf Versionen
+
+# Leeres Changeset (wenn CI eins verlangt, aber nichts versionswürdiges geändert wurde)
+pnpm changeset --empty                                      # Erstellt Changeset ohne Package-Zuordnung
+```
+
+**Workflow:** `pnpm changeset` → PR mergen → `pnpm changeset:version` → committen → `pnpm changeset:tag` → pushen mit Tags
+
+---
+
+## 16. Skripte
 
 ```bash
 /home/scs/projects/Assixx/scripts/check-production.sh        # Production Health-Check

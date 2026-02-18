@@ -31,13 +31,13 @@ function mapEstimateRowToApi(row: TpmTimeEstimateRow): TpmTimeEstimate {
       row.preparation_minutes + row.execution_minutes + row.followup_minutes,
     isActive: row.is_active,
     createdAt:
-      typeof row.created_at === 'string'
-        ? row.created_at
-        : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ?
+        row.created_at
+      : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string'
-        ? row.updated_at
-        : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ?
+        row.updated_at
+      : new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -61,11 +61,7 @@ export class TpmTimeEstimatesService {
 
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<TpmTimeEstimate> => {
-        const planId = await this.resolvePlanId(
-          client,
-          tenantId,
-          dto.planUuid,
-        );
+        const planId = await this.resolvePlanId(client, tenantId, dto.planUuid);
 
         const result = await client.query<TpmTimeEstimateRow>(
           `INSERT INTO tpm_time_estimates
@@ -140,10 +136,7 @@ export class TpmTimeEstimatesService {
   }
 
   /** Delete a time estimate (soft-delete: is_active = 4) */
-  async deleteEstimate(
-    tenantId: number,
-    estimateUuid: string,
-  ): Promise<void> {
+  async deleteEstimate(tenantId: number, estimateUuid: string): Promise<void> {
     const result = await this.db.query<{ id: number }>(
       `UPDATE tpm_time_estimates
        SET is_active = 4, updated_at = NOW()

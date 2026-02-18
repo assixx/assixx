@@ -18,7 +18,11 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
 import type { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
-import { type TpmPlanJoinRow, buildPlanUpdateFields, mapPlanRowToApi } from './tpm-plans.helpers.js';
+import {
+  type TpmPlanJoinRow,
+  buildPlanUpdateFields,
+  mapPlanRowToApi,
+} from './tpm-plans.helpers.js';
 import type { TpmPlan } from './tpm.types.js';
 
 /** Paginated plan list response */
@@ -124,7 +128,9 @@ export class TpmPlansService {
     userId: number,
     dto: CreateMaintenancePlanDto,
   ): Promise<TpmPlan> {
-    this.logger.debug(`Creating plan "${dto.name}" for machine ${dto.machineUuid}`);
+    this.logger.debug(
+      `Creating plan "${dto.name}" for machine ${dto.machineUuid}`,
+    );
 
     const plan = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<TpmPlan> => {
@@ -279,9 +285,7 @@ export class TpmPlansService {
     );
     const row = result.rows[0];
     if (row === undefined) {
-      throw new NotFoundException(
-        `Maschine ${machineUuid} nicht gefunden`,
-      );
+      throw new NotFoundException(`Maschine ${machineUuid} nicht gefunden`);
     }
     return row.id;
   }

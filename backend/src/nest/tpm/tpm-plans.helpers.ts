@@ -25,13 +25,13 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
     createdBy: row.created_by,
     isActive: row.is_active,
     createdAt:
-      typeof row.created_at === 'string'
-        ? row.created_at
-        : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ?
+        row.created_at
+      : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string'
-        ? row.updated_at
-        : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ?
+        row.updated_at
+      : new Date(row.updated_at).toISOString(),
   };
 
   // Optional properties: only set when JOIN data is present
