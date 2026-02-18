@@ -223,11 +223,12 @@ jobs:
         id: trivy-tag
         run: |
           # For PRs: github.ref_name is "111/merge" (invalid tag), use "pr-<number>" instead
-          # For branches: github.ref_name is the branch name (valid)
+          # For branches: sanitize the same way docker/metadata-action does (/ → -)
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           else
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            SANITIZED=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+            echo "tag=$SANITIZED" >> $GITHUB_OUTPUT
           fi
 
       - name: Check for critical vulnerabilities (blocks PR)
