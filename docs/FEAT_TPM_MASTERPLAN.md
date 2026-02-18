@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 0.1.0 (Draft)
-> **Status:** DRAFT — Phase 0 (Planung)
+> **Version:** 1.0.0 (Phase 1 Complete)
+> **Status:** IN PROGRESS — Phase 1 abgeschlossen, Phase 2 nächste
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
-> **Estimated Sessions:** 25
-> **Actual Sessions:** 0 / 25
+> **Estimated Sessions:** 29
+> **Actual Sessions:** 3 / 29
 
 ---
 
@@ -43,9 +43,11 @@ pnpm test                # unit + api tests
 
 ## Changelog
 
-| Version | Datum      | Änderung                                      |
-| ------- | ---------- | --------------------------------------------- |
-| 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant |
+| Version | Datum      | Änderung                                                                                                    |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant                                                               |
+| 0.2.0   | 2026-02-18 | Validation Review: 7 Fehler + 5 Inkonsistenzen gefixt, E17 Shift-Grid Toggle ergänzt → 29 Sessions, 4 ENUMs |
+| 1.0.0   | 2026-02-18 | Phase 1 COMPLETE: 4 Migrationen (041-044), 8 Tabellen, 4 ENUMs, RLS 8/8, GRANTs 32, Feature Flag, 4400 Tests bestanden |
 
 > **Versionierungsregel:**
 >
@@ -60,13 +62,13 @@ pnpm test                # unit + api tests
 
 ### 0.1 Must Be True Before Starting
 
-- [ ] Docker Stack running (alle Container healthy)
-- [ ] DB Backup erstellt
-- [ ] Branch `feature/TPM` checked out
-- [ ] Keine pending Migrations (aktueller Stand: Migration 040 `kvp-multi-team-machine`)
-- [ ] DATABASE-MIGRATION-GUIDE.md gelesen
-- [ ] brainstorming-TPM-Verification.md gelesen
-- [ ] Abhängige Features fertig: Machines ✅, Shifts ✅, Vacation ✅, Notifications ✅, Permission Registry ✅
+- [x] Docker Stack running (alle Container healthy)
+- [x] DB Backup erstellt (`full_backup_pre_tpm_20260218_222747.dump`)
+- [x] Branch `feature/TPM` checked out
+- [x] Keine pending Migrations (aktueller Stand: Migration 044 `tpm-config-and-feature`)
+- [x] DATABASE-MIGRATION-GUIDE.md gelesen
+- [x] brainstorming-TPM-Verification.md gelesen
+- [x] Abhängige Features fertig: Machines ✅, Shifts ✅, Vacation ✅, Notifications ✅, Permission Registry ✅
 
 ### 0.2 Risk Register
 
@@ -222,11 +224,14 @@ frontend/src/routes/(app)/
 
 ### Frontend — Geänderte Dateien
 
-| Datei                                                  | Änderung                                                       | Phase |
-| ------------------------------------------------------ | -------------------------------------------------------------- | ----- |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts`  | `badgeType` Union + `'tpm'`, TPM NavItems in alle 3 Menüs      | 5     |
-| `frontend/src/lib/components/Breadcrumb.svelte`        | `urlMappings` + `intermediateBreadcrumbs` + `dynamicRoutes` für TPM | 5     |
-| `frontend/src/lib/stores/notification.store.svelte.ts` | `tpm: number` + SSE Mapping                                    | 5     |
+| Datei                                                              | Änderung                                                            | Phase |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------- | ----- |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts`              | `badgeType` Union + `'tpm'`, TPM NavItems in alle 3 Menüs           | 5     |
+| `frontend/src/lib/components/Breadcrumb.svelte`                    | `urlMappings` + `intermediateBreadcrumbs` + `dynamicRoutes` für TPM | 5     |
+| `frontend/src/lib/stores/notification.store.svelte.ts`             | `tpm: number` + SSE Mapping                                         | 5     |
+| `frontend/src/routes/(app)/(admin)/shifts/_lib/WeekGrid.svelte`    | Toggle + TPM ⚙️-Blöcke in Grid-Cells (E17)                          | 5     |
+| `frontend/src/routes/(app)/(admin)/shifts/_lib/api.ts`             | `fetchTpmMaintenanceDates()` API-Call                               | 5     |
+| `frontend/src/routes/(app)/(admin)/shifts/_lib/state-ui.svelte.ts` | `showTpmEvents: boolean` Toggle-State                               | 5     |
 
 ### Database — Neue Dateien (4-5 Migrations)
 
@@ -249,20 +254,49 @@ frontend/src/routes/(app)/
 
 - [ ] `id SERIAL PRIMARY KEY` (SERIAL weil Audit-/Tracking-Tabellen, NICHT UUID PK)
 - [ ] `tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE`
-- [ ] `uuid CHAR(36)` mit UUIDv7 (für API-Routen)
+- [ ] `uuid CHAR(36)` mit UUIDv7 (für API-Routen) — **Ausnahme:** Config-Tabellen ohne individuelle API-Routen (siehe Hinweis unten)
 - [ ] `ENABLE ROW LEVEL SECURITY` + `FORCE ROW LEVEL SECURITY`
 - [ ] RLS Policy mit `NULLIF(current_setting('app.tenant_id', true), '')` Pattern
 - [ ] `GRANT SELECT, INSERT, UPDATE, DELETE ON table TO app_user`
 - [ ] `GRANT USAGE, SELECT ON SEQUENCE table_id_seq TO app_user`
-- [ ] `is_active INTEGER NOT NULL DEFAULT 1`
+- [ ] `is_active INTEGER NOT NULL DEFAULT 1` — **Ausnahme:** Config-/Photo-Tabellen mit CASCADE-Delete (siehe Hinweis unten)
 - [ ] `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
-- [ ] `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` + Trigger
+- [ ] `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` + Trigger (siehe unten)
 - [ ] `up()` UND `down()` implementiert
 - [ ] Passende Indexes
 
+### updated_at Trigger (EINMAL erstellen, auf alle Tabellen anwenden)
+
+```sql
+-- In der ERSTEN Migration erstellen (falls noch nicht vorhanden):
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Pro Tabelle mit updated_at anwenden:
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON <table_name>
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+```
+
+Trigger muss auf JEDE Tabelle mit `updated_at` angewendet werden:
+`tpm_maintenance_plans`, `tpm_time_estimates`, `tpm_card_templates`, `tpm_cards`, `tpm_card_executions`, `tpm_escalation_config`, `tpm_color_config` (7 von 8 Tabellen — `tpm_card_execution_photos` hat nur `created_at`).
+
+### Checklist-Ausnahmen (bewusste Abweichungen)
+
+| Tabelle                     | Kein `uuid` | Kein `is_active` | Begründung                                                                                  |
+| --------------------------- | ----------- | ---------------- | ------------------------------------------------------------------------------------------- |
+| `tpm_escalation_config`     | ✅          | ✅               | 1 Row pro Tenant, Zugriff via Tenant-Context, UPSERT statt Soft-Delete                      |
+| `tpm_color_config`          | ✅          | ✅               | Zugriff via `(tenant_id, status_key)`, UPSERT/DELETE statt Soft-Delete, `resetToDefaults()` |
+| `tpm_card_execution_photos` | —           | ✅               | CASCADE-Delete mit Execution, Fotos sind immutabel (nur `created_at`, kein `updated_at`)    |
+
 ---
 
-### Step 1.1: Session 1 — TPM Core Tables [PENDING]
+### Step 1.1: Session 1 — TPM Core Tables [DONE]
 
 **Migration:** `XXXXXXXX_tpm-core-tables.ts`
 
@@ -282,6 +316,10 @@ frontend/src/routes/(app)/
 
    CREATE TYPE tpm_card_role AS ENUM (
      'operator', 'maintenance'
+   );
+
+   CREATE TYPE tpm_approval_status AS ENUM (
+     'none', 'pending', 'approved', 'rejected'
    );
    ```
 
@@ -319,7 +357,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM pg_p
 
 ---
 
-### Step 1.2: Session 2 — TPM Card Tables [PENDING]
+### Step 1.2: Session 2 — TPM Card Tables [DONE]
 
 **Migration:** `XXXXXXXX_tpm-card-tables.ts`
 
@@ -336,7 +374,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM pg_p
 2. Tabelle `tpm_cards`:
    - `id SERIAL PK`, `uuid CHAR(36)`, `tenant_id FK`
    - `plan_id FK → tpm_maintenance_plans(id) ON DELETE CASCADE`
-   - `machine_id FK → machines(id)` — Denormalisiert für Performance
+   - `machine_id FK → machines(id)` — **Denormalisiert für Performance** (siehe ⚠️ unten)
    - `template_id FK → tpm_card_templates(id)` — Nullable
    - `card_code VARCHAR(10) NOT NULL` — z.B. "BT1", "IV13"
    - `card_role tpm_card_role NOT NULL` — operator | maintenance
@@ -356,6 +394,9 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM pg_p
    - `custom_interval_days INTEGER` — Nur bei interval_type='custom'
    - `is_active`, `created_by FK → users(id)`, `created_at`, `updated_at`
    - Indexes: (tenant_id, plan_id), (tenant_id, machine_id, status), (interval_order), (current_due_date)
+   - CHECK: `(interval_type = 'custom' OR custom_interval_days IS NULL)` — Verhindert Daten-Müll (z.B. weekly-Karte mit custom_interval_days=45)
+
+   **⚠️ Denormalisierung `machine_id`:** `tpm_cards.machine_id` ist eine bewusste Denormalisierung von `tpm_maintenance_plans.machine_id` für schnelle Board-Queries (`WHERE machine_id = X AND status = 'red'`). **Konsistenz wird im Service-Layer erzwungen:** `tpm-cards.service.ts:createCard()` setzt `machine_id` automatisch aus `plan.machine_id` — kein manuelles Setzen erlaubt. Der Wert wird NIEMALS direkt via API aktualisiert.
 
 **Verifikation:**
 
@@ -366,7 +407,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d tpm_card_templa
 
 ---
 
-### Step 1.3: Session 3 — TPM Execution + Config Tables + Feature Flag [PENDING]
+### Step 1.3: Session 3 — TPM Execution + Config Tables + Feature Flag [DONE]
 
 **Migration A:** `XXXXXXXX_tpm-execution-tables.ts`
 
@@ -376,7 +417,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d tpm_card_templa
    - `executed_by FK → users(id)` — Wer hat erledigt?
    - `execution_date DATE NOT NULL`
    - `documentation TEXT` — Pflicht bei Freigabe-Karten
-   - `approval_status VARCHAR(20) DEFAULT 'none'` — none | pending | approved | rejected
+   - `approval_status tpm_approval_status NOT NULL DEFAULT 'none'`
    - `approved_by FK → users(id)` — Wer hat freigegeben?
    - `approved_at TIMESTAMPTZ`
    - `approval_note TEXT` — Kommentar bei Ablehnung
@@ -392,8 +433,10 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d tpm_card_templa
    - `file_size INTEGER NOT NULL`
    - `mime_type VARCHAR(100) NOT NULL`
    - `sort_order INTEGER DEFAULT 0`
-   - `created_at`
+   - `created_at` (kein `updated_at` — Fotos sind immutabel)
+   - kein `is_active` — CASCADE-Delete mit Execution (siehe Checklist-Ausnahmen)
    - CHECK: `file_size <= 5242880` (5MB)
+   - **Max 5 Fotos pro Execution:** Service-Level Enforcement in `tpm-executions.service.ts:addPhoto()` — `SELECT COUNT(*) ... >= 5 → BadRequestException`. Kein DB-Trigger nötig, da nur über Service-Layer zugänglich.
 
 **Migration B:** `XXXXXXXX_tpm-config-and-feature.ts`
 
@@ -416,7 +459,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d tpm_card_templa
 5. Feature Flag:
    ```sql
    INSERT INTO features (code, name, description, category, base_price, is_active)
-   VALUES ('tpm', 'TPM / Wartung', 'Total Productive Maintenance — Kamishibai Board, Wartungspläne, Intervall-Karten', 'lean_management', 0, 1)
+   VALUES ('tpm', 'TPM / Wartung', 'Total Productive Maintenance — Kamishibai Board, Wartungspläne, Intervall-Karten', 'enterprise', 0, 1)
    ON CONFLICT (code) DO NOTHING;
    ```
 
@@ -430,19 +473,19 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM feat
 
 ### Phase 1 — Definition of Done
 
-- [ ] 4 Migrationsdateien mit `up()` AND `down()`
-- [ ] Dry-Run bestanden: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
-- [ ] Alle Migrationen erfolgreich angewendet
-- [ ] 8 neue Tabellen + 3 ENUMs existieren
-- [ ] RLS Policies auf allen 8 Tabellen (8/8 verifiziert)
-- [ ] GRANTs für `app_user` auf allen Tabellen
-- [ ] Feature 'tpm' in `features` Tabelle
-- [ ] Backend kompiliert fehlerfrei
-- [ ] Bestehende Tests laufen weiterhin durch
-- [ ] Backup vorhanden vor Migrationen
-- [ ] `./scripts/sync-customer-migrations.sh` ausgeführt
-- [ ] `pnpm run validate:all` ✅
-- [ ] `pnpm test` ✅
+- [x] 4 Migrationsdateien mit `up()` AND `down()` — 041, 042, 043, 044
+- [x] Dry-Run bestanden: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
+- [x] Alle Migrationen erfolgreich angewendet
+- [x] 8 neue Tabellen + 4 ENUMs existieren
+- [x] RLS Policies auf allen 8 Tabellen (8/8 verifiziert)
+- [x] GRANTs für `app_user` auf allen Tabellen (32 GRANTs)
+- [x] Feature 'tpm' in `features` Tabelle (id=14, enterprise)
+- [x] Backend kompiliert fehlerfrei (type-check OK)
+- [x] Bestehende Tests laufen weiterhin durch (4400/4400)
+- [x] Backup vorhanden vor Migrationen (`full_backup_pre_tpm_20260218_222747.dump`)
+- [x] `./scripts/sync-customer-migrations.sh` ausgeführt (45 Migrationen)
+- [x] `pnpm run validate:all` ✅ (0 errors)
+- [x] `pnpm test` ✅ (215 files, 4400 tests)
 
 ---
 
@@ -733,18 +776,19 @@ pnpm run validate:all
 
 **Neue Dateien:**
 
-1. `tpm-plans.controller.ts` (~200 Zeilen)
+1. `tpm-plans.controller.ts` (~220 Zeilen)
 
-| Method | Route                              | Guard                | Beschreibung           |
-| ------ | ---------------------------------- | -------------------- | ---------------------- |
-| POST   | `/tpm/plans`                       | canWrite(tpm-plans)  | Plan erstellen         |
-| GET    | `/tpm/plans`                       | canRead(tpm-plans)   | Alle Pläne (paginiert) |
-| GET    | `/tpm/plans/:uuid`                 | canRead(tpm-plans)   | Einzelner Plan         |
-| PATCH  | `/tpm/plans/:uuid`                 | canWrite(tpm-plans)  | Plan aktualisieren     |
-| DELETE | `/tpm/plans/:uuid`                 | canDelete(tpm-plans) | Plan soft-deleten      |
-| GET    | `/tpm/plans/:uuid/time-estimates`  | canRead(tpm-plans)   | Zeitschätzungen        |
-| POST   | `/tpm/plans/:uuid/time-estimates`  | canWrite(tpm-plans)  | Zeitschätzung setzen   |
-| GET    | `/tpm/plans/:uuid/available-slots` | canRead(tpm-plans)   | Slot-Assistant         |
+| Method | Route                              | Guard                | Beschreibung                                           |
+| ------ | ---------------------------------- | -------------------- | ------------------------------------------------------ |
+| POST   | `/tpm/plans`                       | canWrite(tpm-plans)  | Plan erstellen                                         |
+| GET    | `/tpm/plans`                       | canRead(tpm-plans)   | Alle Pläne (paginiert)                                 |
+| GET    | `/tpm/plans/:uuid`                 | canRead(tpm-plans)   | Einzelner Plan                                         |
+| PATCH  | `/tpm/plans/:uuid`                 | canWrite(tpm-plans)  | Plan aktualisieren                                     |
+| DELETE | `/tpm/plans/:uuid`                 | canDelete(tpm-plans) | Plan soft-deleten                                      |
+| GET    | `/tpm/plans/:uuid/time-estimates`  | canRead(tpm-plans)   | Zeitschätzungen                                        |
+| POST   | `/tpm/plans/:uuid/time-estimates`  | canWrite(tpm-plans)  | Zeitschätzung setzen                                   |
+| GET    | `/tpm/plans/:uuid/available-slots` | canRead(tpm-plans)   | Slot-Assistant                                         |
+| GET    | `/tpm/plans/:uuid/board`           | canRead(tpm-plans)   | Board-Daten (alle Karten einer Maschine via Plan-UUID) |
 
 2. `tpm-cards.controller.ts` (~250 Zeilen)
 
@@ -755,7 +799,6 @@ pnpm run validate:all
 | GET    | `/tpm/cards/:uuid`                 | canRead(tpm-cards)   | Einzelne Karte                                          |
 | PATCH  | `/tpm/cards/:uuid`                 | canWrite(tpm-cards)  | Karte aktualisieren                                     |
 | DELETE | `/tpm/cards/:uuid`                 | canDelete(tpm-cards) | Karte soft-deleten                                      |
-| GET    | `/tpm/cards/:uuid/board`           | canRead(tpm-cards)   | Board-Daten für eine Maschine                           |
 | POST   | `/tpm/cards/:uuid/check-duplicate` | canRead(tpm-cards)   | Duplikat-Prüfung                                        |
 
 Alle Controller: `@TenantFeature('tpm')` + `@UseGuards(JwtAuthGuard, RolesGuard, TenantFeatureGuard)`
@@ -868,10 +911,12 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 - `backend/src/nest/tpm/__tests__/tpm-cards.service.test.ts` (~25 Tests)
 - `backend/src/nest/tpm/__tests__/tpm-card-status.service.test.ts` (~20 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-card-cascade.service.test.ts` (~15 Tests)
+- `backend/src/nest/tpm/__tests__/tpm-card-cascade.service.test.ts` (~15 Tests + Performance)
 - `backend/src/nest/tpm/__tests__/tpm-card-duplicate.service.test.ts` (~10 Tests)
 
 **Szenarien:** CardCode-Generierung, Status-Transitionen (alle Flows), Kaskade (jährlich → alle ROT), Duplikat-Erkennung (ILIKE), Ungültige Transitionen → Error
+
+**⚠️ Performance-Test (R1-Mitigation):** Kaskade-Test mit 2400 Karten (20 Maschinen × 8 Intervalle × 15 Karten). Batch-SQL `UPDATE WHERE interval_order <= X` muss < 500ms sein. In `tpm-card-cascade.service.test.ts` als separater `describe('Performance')` Block.
 
 ---
 
@@ -956,6 +1001,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 ## Phase 5: Frontend
 
 > **Abhängigkeit:** Phase 2 complete (Backend-Endpoints verfügbar)
+> **Parallelisierbar:** Phase 5 kann ab Session 21 parallel zu Phase 3+4 (Unit/API Tests) laufen, da Frontend nur Backend-Endpoints braucht, nicht deren Tests.
 > **Referenz:** `frontend/src/routes/(app)/(shared)/vacation/`
 
 ### Step 5.1: Session 21 — Admin Dashboard + Foundation [PENDING]
@@ -1063,6 +1109,70 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - `config/_lib/EscalationConfig.svelte` — Eskalations-Stunden + Notify-Toggles
 - `config/_lib/TemplateManager.svelte` — Vorlagen CRUD
 
+### Step 5.8: Session 28 — Shift-Grid TPM Wartungstermine Toggle [PENDING]
+
+> **Entscheidung E17:** Shift-Modul bekommt Toggle für TPM-Wartungstermine im Wochen-Grid.
+> **Abhängigkeit:** Phase 2 (Backend-Endpoints für TPM-Pläne verfügbar)
+> **Pattern:** Machine Availability wird bereits als farbige Zellen im Shift-Grid angezeigt — TPM nutzt identisches Pattern.
+
+**User Story:** Als Schichtplaner will ich beim Erstellen des Schichtplans sehen, wann TPM-Wartungen geplant sind, damit ich die Instandhaltungsschichten um die Wartungstermine herum planen kann.
+
+**Visuelle Darstellung im Shift-Grid:**
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Schichtplan KW 08 / 2026                          │
+├──────────┬──────────┬──────────┬──────────┬──────────┬──────────────┤
+│ Montag   │ Dienstag │ Mittwoch │Donnerstag│ Freitag  │   Samstag    │
+├──────────┼──────────┼──────────┼──────────┼──────────┼──────────────┤
+│ FS 06-14 │ FS 06-14 │ FS 06-14 │ FS 06-14 │ FS 06-14 │              │
+│          │┌────────┐│          │          │          │              │
+│          ││⚙️ TPM   ││          │          │          │              │
+│          ││Monatl. ││          │          │          │              │
+│          ││P17     ││          │          │          │              │
+│          ││09:15   ││          │          │          │              │
+│          │└────────┘│          │          │          │              │
+│ SS 14-22 │ SS 14-22 │ SS 14-22 │ SS 14-22 │ SS 14-22 │              │
+│          │          │          │┌────────┐│          │              │
+│          │          │          ││⚙️ TPM   ││          │              │
+│          │          │          ││Viertlj.││          │              │
+│          │          │          ││SP08    ││          │              │
+│          │          │          ││07:00   ││          │              │
+│          │          │          │└────────┘│          │              │
+└──────────┴──────────┴──────────┴──────────┴──────────┴──────────────┘
+  [✓] Wartungstermine anzeigen    [✓] Machine Availability anzeigen
+```
+
+**TPM-Block im Grid-Cell zeigt:**
+
+- ⚙️ Icon + "TPM" Label
+- Intervall-Typ (Täglich, Wöchentlich, Monatlich, Vierteljährlich, ...)
+- Maschinen-Name (z.B. "P17", "SP08")
+- Geplante Uhrzeit
+- Farbcodierung: gleiche Farben wie im Kamishibai Board (tenant-konfigurierbar via `tpm_color_config`)
+
+**Geänderte Dateien:**
+
+| Datei                                                              | Änderung                                                   | Zeilen |
+| ------------------------------------------------------------------ | ---------------------------------------------------------- | ------ |
+| `frontend/src/routes/(app)/(admin)/shifts/_lib/WeekGrid.svelte`    | Toggle-Checkbox + TPM-Blöcke in Grid-Cells rendern         | ~40    |
+| `frontend/src/routes/(app)/(admin)/shifts/_lib/api.ts`             | `fetchTpmMaintenanceDates(machineIds, startDate, endDate)` | ~20    |
+| `frontend/src/routes/(app)/(admin)/shifts/_lib/state-ui.svelte.ts` | `showTpmEvents: boolean` Toggle-State ($state)             | ~5     |
+
+**Backend-Endpoint (bereits vorhanden nach Phase 2):**
+
+- `GET /tpm/plans` mit Filter `?startDate=&endDate=` — liefert alle Pläne mit berechneten Terminen
+- Kein neuer Backend-Code nötig — Frontend ruft bestehende Endpoints ab
+
+**Verifikation:**
+
+```bash
+# Frontend lint + type check
+cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
+```
+
+---
+
 ### Phase 5 — Definition of Done
 
 - [ ] Admin Dashboard rendert mit Wartungsplanübersicht
@@ -1082,6 +1192,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - [ ] Notification Badge funktioniert
 - [ ] Responsive Design (Mobile + Desktop)
 - [ ] Deutsche Labels überall
+- [ ] Shift-Grid: TPM Toggle funktioniert (⚙️-Blöcke mit Intervall, Maschine, Uhrzeit)
 - [ ] `pnpm run validate:all` ✅
 - [ ] `pnpm test` ✅
 
@@ -1091,12 +1202,12 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 > **Abhängigkeit:** Phase 5 complete
 
-### Step 6.1: Session 28 — E2E + Polish + ADR [PENDING]
+### Step 6.1: Session 29 — E2E + Polish + ADR [PENDING]
 
 **Integrationen verifizieren:**
 
 - [ ] Machine Availability: Auto-Status 'maintenance' bei aktivem Plan
-- [ ] Shift-Grid: TPM-Termine als farbige Blöcke (wenn Toggle aktiv)
+- [ ] Shift-Grid: TPM ⚙️-Blöcke sichtbar wenn Toggle aktiv (implementiert in Session 28)
 - [ ] Notification Badge: TPM-Counter im Sidebar
 - [ ] SSE: Live-Updates bei Kartenänderungen
 - [ ] Dashboard: TPM-Count in `/dashboard/counts`
@@ -1152,7 +1263,8 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 | 25      | 5     | Frontend: Kamishibai Board                                         | PENDING |       |
 | 26      | 5     | Frontend: Card Detail + Execution + Approval UI                    | PENDING |       |
 | 27      | 5     | Frontend: Config UI + Final Integration                            | PENDING |       |
-| 28      | 6     | E2E Verification + Polish + ADR                                    | PENDING |       |
+| 28      | 5     | Frontend: Shift-Grid TPM Wartungstermine Toggle (E17)              | PENDING |       |
+| 29      | 6     | E2E Verification + Polish + ADR                                    | PENDING |       |
 
 ---
 
@@ -1190,7 +1302,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 | Metrik                    | Geplant | Tatsächlich |
 | ------------------------- | ------- | ----------- |
-| Sessions                  | 28      |             |
+| Sessions                  | 29      |             |
 | Migrationsdateien         | 4       |             |
 | Neue Backend-Dateien      | ~30     |             |
 | Neue Frontend-Dateien     | ~35     |             |
