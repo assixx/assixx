@@ -453,11 +453,13 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
       // Q2: INSERT → [{id: 1}]
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
-      // Q3: getSuggestionById → org info
+      // Q3: insertOrgAssignments → INSERT into junction table
+      mockDb.query.mockResolvedValueOnce([]);
+      // Q4: getSuggestionById → org info
       mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q4: getSuggestionById → detail
+      // Q5: getSuggestionById → detail
       mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
-      // Q5: getSuggestionById → getOrgAssignments
+      // Q6: getSuggestionById → getOrgAssignments
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.createSuggestion(
@@ -466,6 +468,8 @@ describe('KvpService', () => {
           description: 'Improvement idea',
           orgLevel: 'team',
           orgId: 5,
+          teamIds: [5],
+          machineIds: [],
         },
         42,
         3,
@@ -481,11 +485,13 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([TEAM_LEAD_ORG_ROW]);
       // Q2: INSERT → [{id: 1}]
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
-      // Q3: getSuggestionById → org info
+      // Q3: insertOrgAssignments → INSERT into junction table
+      mockDb.query.mockResolvedValueOnce([]);
+      // Q4: getSuggestionById → org info
       mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q4: getSuggestionById → detail
+      // Q5: getSuggestionById → detail
       mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
-      // Q5: getSuggestionById → getOrgAssignments
+      // Q6: getSuggestionById → getOrgAssignments
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.createSuggestion(
@@ -494,6 +500,8 @@ describe('KvpService', () => {
           description: 'Team lead idea',
           orgLevel: 'team',
           orgId: 5,
+          teamIds: [5],
+          machineIds: [],
         },
         42,
         2,
@@ -506,7 +514,7 @@ describe('KvpService', () => {
     it('throws Error when INSERT returns no rows', async () => {
       // Q1: assertDailyLimitNotReached → count=0
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
-      // Q2: INSERT → [] (empty)
+      // Q2: INSERT → [] (empty) — fails before insertOrgAssignments
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(
@@ -516,6 +524,8 @@ describe('KvpService', () => {
             description: 'Will fail',
             orgLevel: 'team',
             orgId: 5,
+            teamIds: [5],
+            machineIds: [],
           },
           42,
           3,
