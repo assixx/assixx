@@ -137,19 +137,23 @@ export class TpmTimeEstimatesService {
 
   /** Delete a time estimate (soft-delete: is_active = 4) */
   async deleteEstimate(tenantId: number, estimateUuid: string): Promise<void> {
-    const result = await this.db.query<{ id: number }>(
-      `UPDATE tpm_time_estimates
-       SET is_active = 4, updated_at = NOW()
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
-       RETURNING id`,
-      [estimateUuid, tenantId],
-    );
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        const result = await client.query<{ id: number }>(
+          `UPDATE tpm_time_estimates
+         SET is_active = 4, updated_at = NOW()
+         WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+         RETURNING id`,
+          [estimateUuid, tenantId],
+        );
 
-    if (result[0] === undefined) {
-      throw new NotFoundException(
-        `Zeitschätzung ${estimateUuid} nicht gefunden`,
-      );
-    }
+        if (result.rows[0] === undefined) {
+          throw new NotFoundException(
+            `Zeitschätzung ${estimateUuid} nicht gefunden`,
+          );
+        }
+      },
+    );
   }
 
   /** Resolve plan UUID → internal ID */

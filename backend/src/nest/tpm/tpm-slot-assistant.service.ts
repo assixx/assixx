@@ -153,7 +153,13 @@ export class TpmSlotAssistantService {
     );
 
     const dayResults = days.map((date: string) =>
-      buildDayConflicts(date, shiftPlanExists, downtimeSet, tpmDueDates, tpmDateSet),
+      buildDayConflicts(
+        date,
+        shiftPlanExists,
+        downtimeSet,
+        tpmDueDates,
+        tpmDateSet,
+      ),
     );
     const availableDays = dayResults.filter(
       (d: DayAvailability) => d.isAvailable,
@@ -369,10 +375,7 @@ export class TpmSlotAssistantService {
   ): Promise<Map<number, UserAvailabilityRow>> {
     if (userIds.length === 0) return new Map();
 
-    const { placeholders } = this.db.generateInPlaceholders(
-      userIds.length,
-      3,
-    );
+    const { placeholders } = this.db.generateInPlaceholders(userIds.length, 3);
 
     const rows = await this.db.query<UserAvailabilityRow>(
       `SELECT user_id, status, start_date::text, end_date::text

@@ -171,18 +171,22 @@ export class TpmTemplatesService {
 
   /** Soft-delete a template (is_active = 4) */
   async deleteTemplate(tenantId: number, templateUuid: string): Promise<void> {
-    const result = await this.db.query<{ id: number }>(
-      `UPDATE tpm_card_templates
-       SET is_active = 4, updated_at = NOW()
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
-       RETURNING id`,
-      [templateUuid, tenantId],
-    );
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        const result = await client.query<{ id: number }>(
+          `UPDATE tpm_card_templates
+         SET is_active = 4, updated_at = NOW()
+         WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+         RETURNING id`,
+          [templateUuid, tenantId],
+        );
 
-    if (result[0] === undefined) {
-      throw new NotFoundException(
-        `Kartenvorlage ${templateUuid} nicht gefunden`,
-      );
-    }
+        if (result.rows[0] === undefined) {
+          throw new NotFoundException(
+            `Kartenvorlage ${templateUuid} nicht gefunden`,
+          );
+        }
+      },
+    );
   }
 }

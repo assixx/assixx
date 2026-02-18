@@ -1,7 +1,7 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.7.0 (Phase 2 — Steps 2.1-2.7 Complete)
+> **Version:** 1.7.1 (Phase 2 — Steps 2.1-2.7 Complete, RLS-Audit-Fix)
 > **Status:** IN PROGRESS — Phase 2 läuft, nächster Step: 2.8 (Executions + Approval Services)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
@@ -55,6 +55,7 @@ pnpm test                # unit + api tests
 | 1.5.0   | 2026-02-19 | Step 2.5 DONE: Cards + Status — tpm-cards.helpers.ts (87 Z.), tpm-cards.service.ts (468 Z.), tpm-card-status.service.ts (176 Z.)                                                                                                  |
 | 1.6.0   | 2026-02-19 | Step 2.6 DONE: Cascade + Duplicate — tpm-card-cascade.service.ts (121 Z.), tpm-card-duplicate.service.ts (114 Z.)                                                                                                                 |
 | 1.7.0   | 2026-02-19 | Step 2.7 DONE: Slot Assistant — tpm-slot-assistant.service.ts (486 Z.), 4 Datenquellen, E15-Validierung                                                                                                                           |
+| 1.7.1   | 2026-02-19 | RLS-Audit (ADR-019): 4 Mutations nutzten `db.query()` statt `tenantTransaction()` — gefixt in tpm-templates.service.ts, tpm-time-estimates.service.ts, tpm-color-config.service.ts (2×). DB-Layer 8/8 sauber, Service-Layer jetzt 100% ADR-019-konform |
 
 > **Versionierungsregel:**
 >
@@ -885,7 +886,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - [ ] 4 Controller mit ~25 Endpoints total (0/4)
 - [x] Permission Registrar registriert bei Module Init ✅ (Session 4)
 - [ ] `@TenantFeature('tpm')` auf allen Controllern
-- [x] `db.tenantTransaction()` für alle tenant-scoped Mutations ✅ (Session 6-7)
+- [x] `db.tenantTransaction()` für alle tenant-scoped Mutations ✅ (Session 6-7, RLS-Audit-Fix in 1.7.1: 4 Methoden korrigiert)
 - [x] KEIN Double-Wrapping (ADR-007) ✅
 - [ ] EventBus: 5 neue TPM Emit-Methoden
 - [ ] SSE-Handler für TPM registriert
@@ -1296,19 +1297,19 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ## Spec Deviations
 
-| #   | Spec sagt                                   | Tatsächlicher Code          | Entscheidung                                                           |
-| --- | ------------------------------------------- | --------------------------- | ---------------------------------------------------------------------- |
-| D1  | `tpm.types.ts` ~200 Zeilen                  | 381 Zeilen                  | Alle 8 Row + 8 API Typen + 7 Constants → Überschreitung gerechtfertigt |
-| D2  | `dto/index.ts` ~25 Zeilen                   | 66 Zeilen                   | 13 DTOs + Schemas → Barrel Export wächst proportional                  |
-| D3  | Kein `tpm-plans.helpers.ts` im Plan         | 74 Zeilen erstellt          | Extracted nach `machines.helpers.ts` Pattern — SRP                     |
-| D4  | `tpm-templates.service.ts` ~150 Zeilen      | 195 Zeilen                  | CRUD + Dynamic SET + FOR UPDATE → leicht über Budget                   |
-| D5  | `tpm-time-estimates.service.ts` ~150 Zeilen | 179 Zeilen                  | UPSERT + resolvePlanId Helper → leicht über Budget                     |
-| D6  | ActivityEntityType 'tpm_plan' erwartet      | Reuse 'machine' Entity-Type | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen        |
-| D7  | Template-DTOs in Step 2.2 geplant           | Nachgereicht in Step 2.4    | Im Plan vergessen, bei Bedarf erstellt                                 |
-| D8  | `tpm-cards.service.ts` ~280 Zeilen          | 468 Zeilen                  | 8 CRUD-Methoden + Pagination-Infrastruktur + 6 Private Helpers → Über Budget, aber alle SRP |
-| D9  | `resetCardAfterApproval/Rejection` Naming   | `approveCard`/`rejectCard`  | Intent-basiert statt Implementierung-basiert — klarer, kürzer          |
+| #   | Spec sagt                                   | Tatsächlicher Code          | Entscheidung                                                                                  |
+| --- | ------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| D1  | `tpm.types.ts` ~200 Zeilen                  | 381 Zeilen                  | Alle 8 Row + 8 API Typen + 7 Constants → Überschreitung gerechtfertigt                        |
+| D2  | `dto/index.ts` ~25 Zeilen                   | 66 Zeilen                   | 13 DTOs + Schemas → Barrel Export wächst proportional                                         |
+| D3  | Kein `tpm-plans.helpers.ts` im Plan         | 74 Zeilen erstellt          | Extracted nach `machines.helpers.ts` Pattern — SRP                                            |
+| D4  | `tpm-templates.service.ts` ~150 Zeilen      | 195 Zeilen                  | CRUD + Dynamic SET + FOR UPDATE → leicht über Budget                                          |
+| D5  | `tpm-time-estimates.service.ts` ~150 Zeilen | 179 Zeilen                  | UPSERT + resolvePlanId Helper → leicht über Budget                                            |
+| D6  | ActivityEntityType 'tpm_plan' erwartet      | Reuse 'machine' Entity-Type | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen                               |
+| D7  | Template-DTOs in Step 2.2 geplant           | Nachgereicht in Step 2.4    | Im Plan vergessen, bei Bedarf erstellt                                                        |
+| D8  | `tpm-cards.service.ts` ~280 Zeilen          | 468 Zeilen                  | 8 CRUD-Methoden + Pagination-Infrastruktur + 6 Private Helpers → Über Budget, aber alle SRP   |
+| D9  | `resetCardAfterApproval/Rejection` Naming   | `approveCard`/`rejectCard`  | Intent-basiert statt Implementierung-basiert — klarer, kürzer                                 |
 | D10 | `tpm-slot-assistant.service.ts` ~250 Zeilen | 486 Zeilen                  | 4 Datenquellen × je 1 Query + 3 Pure Helpers + 7 Interface-Types → Komplexität gerechtfertigt |
-| D11 | Slot Assistant nutzt bestehende Services    | Direkte DB-Queries          | Vermeidet cross-module Imports (Machines/Users/Shifts) → TpmModule bleibt self-contained       |
+| D11 | Slot Assistant nutzt bestehende Services    | Direkte DB-Queries          | Vermeidet cross-module Imports (Machines/Users/Shifts) → TpmModule bleibt self-contained      |
 
 ---
 

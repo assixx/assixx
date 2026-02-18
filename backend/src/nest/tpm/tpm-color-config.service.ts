@@ -6,6 +6,7 @@
  * Uses UPSERT pattern for updateColor and DELETE for resetToDefaults.
  */
 import { Injectable, Logger } from '@nestjs/common';
+import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
 import type { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
@@ -88,24 +89,28 @@ export class TpmColorConfigService {
   ): Promise<TpmColorConfigEntry> {
     this.logger.debug(`Updating color for status "${dto.statusKey}"`);
 
-    const rows = await this.db.query<TpmColorConfigRow>(
-      `INSERT INTO tpm_color_config (tenant_id, status_key, color_hex, label)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (tenant_id, status_key)
-       DO UPDATE SET
-         color_hex = EXCLUDED.color_hex,
-         label = EXCLUDED.label,
-         updated_at = NOW()
-       RETURNING *`,
-      [tenantId, dto.statusKey, dto.colorHex, dto.label],
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<TpmColorConfigEntry> => {
+        const result = await client.query<TpmColorConfigRow>(
+          `INSERT INTO tpm_color_config (tenant_id, status_key, color_hex, label)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (tenant_id, status_key)
+           DO UPDATE SET
+             color_hex = EXCLUDED.color_hex,
+             label = EXCLUDED.label,
+             updated_at = NOW()
+           RETURNING *`,
+          [tenantId, dto.statusKey, dto.colorHex, dto.label],
+        );
+
+        const row = result.rows[0];
+        if (row === undefined) {
+          throw new Error('UPSERT tpm_color_config returned no rows');
+        }
+
+        return mapColorRowToApi(row);
+      },
     );
-
-    const row = rows[0];
-    if (row === undefined) {
-      throw new Error('UPSERT tpm_color_config returned no rows');
-    }
-
-    return mapColorRowToApi(row);
   }
 
   /**
@@ -116,9 +121,14 @@ export class TpmColorConfigService {
   async resetToDefaults(tenantId: number): Promise<TpmColorConfigEntry[]> {
     this.logger.debug(`Resetting colors to defaults for tenant ${tenantId}`);
 
-    await this.db.query(`DELETE FROM tpm_color_config WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        await client.query(
+          `DELETE FROM tpm_color_config WHERE tenant_id = $1`,
+          [tenantId],
+        );
+      },
+    );
 
     // Return the defaults
     const statusKeys: TpmCardStatus[] = ['green', 'red', 'yellow', 'overdue'];

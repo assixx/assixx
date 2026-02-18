@@ -15,13 +15,13 @@ Changesets erfasst **was sich geändert hat** und **welcher Semver-Bump nötig i
 
 ## Dateien
 
-| Datei/Verzeichnis | Zweck |
-| --- | --- |
-| `.changeset/config.json` | Konfiguration (Fixed Versioning, baseBranch, etc.) |
-| `.changeset/README.md` | Erklärung für Contributors |
-| `.changeset/*.md` | Ausstehende Changesets (temporär, werden bei Version-Bump konsumiert) |
-| `scripts/sync-root-version.mjs` | Synct Root-Version nach `changeset version` |
-| `CHANGELOG.md` | Wird automatisch generiert/aktualisiert |
+| Datei/Verzeichnis               | Zweck                                                                 |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `.changeset/config.json`        | Konfiguration (Fixed Versioning, baseBranch, etc.)                    |
+| `.changeset/README.md`          | Erklärung für Contributors                                            |
+| `.changeset/*.md`               | Ausstehende Changesets (temporär, werden bei Version-Bump konsumiert) |
+| `scripts/sync-root-version.mjs` | Synct Root-Version nach `changeset version`                           |
+| `CHANGELOG.md`                  | Wird automatisch generiert/aktualisiert                               |
 
 ---
 
@@ -63,7 +63,7 @@ Das erzeugt eine Datei wie `.changeset/brave-lions-roar.md`:
 
 ```markdown
 ---
-"assixx-backend": minor
+'assixx-backend': minor
 ---
 
 TPM-Modul: Wartungspläne und Kamishibai-Board implementiert
@@ -108,11 +108,11 @@ Der `v*`-Tag triggert den Docker-Build in `.github/workflows/docker-build.yml`.
 
 ## Semver-Regeln
 
-| Bump | Wann | Beispiel |
-| --- | --- | --- |
+| Bump    | Wann                                            | Beispiel          |
+| ------- | ----------------------------------------------- | ----------------- |
 | `patch` | Bugfix, kleine Verbesserung, keine API-Änderung | `0.3.2` → `0.3.3` |
-| `minor` | Neues Feature, rückwärtskompatibel | `0.3.2` → `0.4.0` |
-| `major` | Breaking Change, Migrationsbedarf | `0.3.2` → `1.0.0` |
+| `minor` | Neues Feature, rückwärtskompatibel              | `0.3.2` → `0.4.0` |
+| `major` | Breaking Change, Migrationsbedarf               | `0.3.2` → `1.0.0` |
 
 **Bei Unsicherheit:** `minor` für Features, `patch` für alles andere.
 
@@ -134,12 +134,12 @@ Datei: `.changeset/config.json`
 }
 ```
 
-| Option | Wert | Bedeutung |
-| --- | --- | --- |
-| `fixed` | Alle 3 Workspace-Packages | Lockstep — immer gleiche Version |
-| `commit` | `false` | Changesets committed nicht automatisch |
-| `access` | `restricted` | Kein npm-Publish (privates Projekt) |
-| `baseBranch` | `main` | Basis-Branch für Vergleiche |
+| Option            | Wert                       | Bedeutung                                                |
+| ----------------- | -------------------------- | -------------------------------------------------------- |
+| `fixed`           | Alle 3 Workspace-Packages  | Lockstep — immer gleiche Version                         |
+| `commit`          | `false`                    | Changesets committed nicht automatisch                   |
+| `access`          | `restricted`               | Kein npm-Publish (privates Projekt)                      |
+| `baseBranch`      | `main`                     | Basis-Branch für Vergleiche                              |
 | `privatePackages` | `version: true, tag: true` | Private Packages werden trotzdem versioniert und getaggt |
 
 ---
@@ -290,11 +290,11 @@ Dieser Override darf **nicht** auf `"js-yaml@<4.1.1"` erweitert werden — das b
 
 ## Architektur-Entscheidung
 
-| Aspekt | Entscheidung | Begründung |
-| --- | --- | --- |
-| Tool | Changesets (nicht semantic-release, nicht lerna) | KISS, Markdown-basiert, pnpm-nativ |
-| Versioning-Strategie | Fixed Group | Ein Produkt = eine Version |
-| npm Publish | Nein (`access: restricted`) | Privates SaaS, kein öffentliches Package |
-| Auto-Commit | Nein (`commit: false`) | Manuelle Kontrolle über Commits |
-| CHANGELOG-Format | Default (`@changesets/cli/changelog`) | Einfach, funktional, erweiterbar |
-| Root-Sync | `scripts/sync-root-version.mjs` | Changesets managed nur Workspace-Packages |
+| Aspekt               | Entscheidung                                     | Begründung                                |
+| -------------------- | ------------------------------------------------ | ----------------------------------------- |
+| Tool                 | Changesets (nicht semantic-release, nicht lerna) | KISS, Markdown-basiert, pnpm-nativ        |
+| Versioning-Strategie | Fixed Group                                      | Ein Produkt = eine Version                |
+| npm Publish          | Nein (`access: restricted`)                      | Privates SaaS, kein öffentliches Package  |
+| Auto-Commit          | Nein (`commit: false`)                           | Manuelle Kontrolle über Commits           |
+| CHANGELOG-Format     | Default (`@changesets/cli/changelog`)            | Einfach, funktional, erweiterbar          |
+| Root-Sync            | `scripts/sync-root-version.mjs`                  | Changesets managed nur Workspace-Packages |

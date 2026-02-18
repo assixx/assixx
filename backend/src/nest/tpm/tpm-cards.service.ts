@@ -162,15 +162,25 @@ export class TpmCardsService {
     const card = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<TpmCard> => {
         const { planId, machineId } = await this.resolvePlanIds(
-          client, tenantId, dto.planUuid,
+          client,
+          tenantId,
+          dto.planUuid,
         );
         const cardCode = await this.generateCardCode(
-          client, tenantId, planId, dto.cardRole,
+          client,
+          tenantId,
+          planId,
+          dto.cardRole,
         );
         const sortOrder = await this.getNextSortOrder(client, tenantId, planId);
 
         return await this.executeCardInsert(client, {
-          tenantId, planId, machineId, cardCode, sortOrder, createdBy,
+          tenantId,
+          planId,
+          machineId,
+          cardCode,
+          sortOrder,
+          createdBy,
           cardRole: dto.cardRole,
           intervalType: dto.intervalType,
           intervalOrder: INTERVAL_ORDER_MAP[dto.intervalType],
@@ -184,7 +194,10 @@ export class TpmCardsService {
     );
 
     void this.activityLogger.logCreate(
-      tenantId, createdBy, 'machine', card.machineId,
+      tenantId,
+      createdBy,
+      'machine',
+      card.machineId,
       `TPM-Karte erstellt: ${card.cardCode} — ${card.title}`,
       { cardUuid: card.uuid, cardCode: card.cardCode },
     );
@@ -325,12 +338,20 @@ export class TpmCardsService {
   private async executeCardInsert(
     client: PoolClient,
     data: {
-      tenantId: number; planId: number; machineId: number;
-      cardCode: string; sortOrder: number; createdBy: number;
-      cardRole: TpmCardRole; intervalType: TpmIntervalType;
-      intervalOrder: number; title: string;
-      description: string | null; locationDescription: string | null;
-      requiresApproval: boolean; customIntervalDays: number | null;
+      tenantId: number;
+      planId: number;
+      machineId: number;
+      cardCode: string;
+      sortOrder: number;
+      createdBy: number;
+      cardRole: TpmCardRole;
+      intervalType: TpmIntervalType;
+      intervalOrder: number;
+      title: string;
+      description: string | null;
+      locationDescription: string | null;
+      requiresApproval: boolean;
+      customIntervalDays: number | null;
     },
   ): Promise<TpmCard> {
     const uuid = uuidv7();
@@ -343,10 +364,21 @@ export class TpmCardsService {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,1)
        RETURNING *`,
       [
-        uuid, data.tenantId, data.planId, data.machineId, data.cardCode,
-        data.cardRole, data.intervalType, data.intervalOrder, data.title,
-        data.description, data.locationDescription, data.requiresApproval,
-        data.sortOrder, data.customIntervalDays, data.createdBy,
+        uuid,
+        data.tenantId,
+        data.planId,
+        data.machineId,
+        data.cardCode,
+        data.cardRole,
+        data.intervalType,
+        data.intervalOrder,
+        data.title,
+        data.description,
+        data.locationDescription,
+        data.requiresApproval,
+        data.sortOrder,
+        data.customIntervalDays,
+        data.createdBy,
       ],
     );
 
@@ -448,7 +480,8 @@ function buildFilterClauses(
   if (filters.intervalType !== undefined) {
     addFilter('c.interval_type', filters.intervalType);
   }
-  if (filters.cardRole !== undefined) addFilter('c.card_role', filters.cardRole);
+  if (filters.cardRole !== undefined)
+    addFilter('c.card_role', filters.cardRole);
 
   return { whereClauses, params };
 }

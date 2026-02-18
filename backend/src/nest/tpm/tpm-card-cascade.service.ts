@@ -71,10 +71,7 @@ export class TpmCardCascadeService {
       [machineId, tenantId, triggerIntervalOrder, dueDateStr],
     );
 
-    const affectedCount = Number.parseInt(
-      result.rows[0]?.count ?? '0',
-      10,
-    );
+    const affectedCount = Number.parseInt(result.rows[0]?.count ?? '0', 10);
 
     this.logger.debug(
       `Cascade triggered: machine ${machineId}, order <= ${triggerIntervalOrder}, ` +
