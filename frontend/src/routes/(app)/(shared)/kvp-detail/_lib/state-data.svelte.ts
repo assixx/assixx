@@ -9,6 +9,7 @@ import type {
   Department,
   Team,
   Area,
+  Machine,
 } from './types';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -18,6 +19,7 @@ export function createOrgState() {
   let departments = $state<Department[]>([]);
   let teams = $state<Team[]>([]);
   let areas = $state<Area[]>([]);
+  let machines = $state<Machine[]>([]);
 
   return {
     get departments() {
@@ -29,6 +31,9 @@ export function createOrgState() {
     get areas() {
       return areas;
     },
+    get machines() {
+      return machines;
+    },
     setDepartments: (data: Department[]) => {
       departments = data;
     },
@@ -37,6 +42,9 @@ export function createOrgState() {
     },
     setAreas: (data: Area[]) => {
       areas = data;
+    },
+    setMachines: (data: Machine[]) => {
+      machines = data;
     },
   };
 }

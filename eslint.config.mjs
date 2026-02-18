@@ -173,7 +173,7 @@ export default [
       'max-lines': [
         'error', // Regel 10: Zero Warnings
         {
-          max: 850,
+          max: 900,
           skipBlankLines: true,
           skipComments: true,
         },

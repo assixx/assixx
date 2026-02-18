@@ -9,6 +9,7 @@ import type { KvpStatus, KvpPriority, OrgLevel, KvpFilter } from './types';
  */
 export const API_ENDPOINTS = {
   KVP: '/kvp',
+  KVP_MY_ORGANIZATIONS: '/kvp/my-organizations',
   kvpById: (id: number) => `/kvp/${id}`,
   kvpShare: (id: number) => `/kvp/${id}/share`,
   kvpUnshare: (id: number) => `/kvp/${id}/unshare`,
@@ -51,6 +52,7 @@ export const STATUS_TEXT: Record<KvpStatus, string> = {
  */
 export const VISIBILITY_BADGE_CLASSES: Record<OrgLevel, string> = {
   team: 'badge--visibility-team',
+  machine: 'badge--visibility-team',
   department: 'badge--visibility-department',
   area: 'badge--visibility-area',
   company: 'badge--visibility-company',
@@ -105,6 +107,13 @@ export const FILTER_OPTIONS: {
     label: 'Team',
     icon: 'fa-users',
     title: 'Team Vorschläge',
+    showBadge: true,
+  },
+  {
+    value: 'machine',
+    label: 'Maschine',
+    icon: 'fa-cog',
+    title: 'Maschinen-Vorschläge',
     showBadge: true,
   },
   {
@@ -169,6 +178,7 @@ export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
     department: { icon: 'fa-building', text: 'Abteilung' },
     area: { icon: 'fa-sitemap', text: 'Bereich' },
     team: { icon: 'fa-users', text: 'Team' },
+    machine: { icon: 'fa-cog', text: 'Maschine' },
   } as const;
 
 /**

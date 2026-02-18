@@ -25,7 +25,7 @@ export interface DbSuggestion {
   description: string;
   category_id: number;
   custom_category_id: number | null;
-  org_level: 'company' | 'department' | 'area' | 'team';
+  org_level: 'company' | 'department' | 'area' | 'team' | 'machine';
   org_id: number;
   department_id: number | null;
   team_id: number | null;
@@ -166,6 +166,15 @@ export interface CategoryOption {
   icon?: string;
 }
 
+/** Single org assignment from kvp_suggestion_organizations junction table */
+export interface KvpOrgAssignment {
+  orgType: 'team' | 'machine';
+  orgId: number;
+  orgName?: string | undefined;
+  /** For machines: team IDs that own this machine (from machine_teams) */
+  relatedTeamIds?: number[];
+}
+
 export interface KVPSuggestionResponse {
   id: number;
   uuid: string;
@@ -193,6 +202,8 @@ export interface KVPSuggestionResponse {
   confirmedAt?: string;
   /** When the user FIRST saw this suggestion (never reset, for "Neu" badge) */
   firstSeenAt?: string;
+  /** Organization assignments from junction table (teams and/or machines) */
+  organizations?: KvpOrgAssignment[];
   category?: {
     id: number;
     name: string;
@@ -205,6 +216,13 @@ export interface KVPSuggestionResponse {
     firstName: string;
     lastName: string;
   };
+}
+
+/** User's team with its assigned machines — used for KVP create modal */
+export interface UserTeamWithMachines {
+  teamId: number;
+  teamName: string;
+  machines: { id: number; name: string }[];
 }
 
 export interface KVPComment {
@@ -264,6 +282,8 @@ export interface SuggestionFilters {
   customCategoryId: number | undefined;
   priority: string | undefined;
   orgLevel: string | undefined;
+  teamId: number | undefined;
+  machineId: number | undefined;
   search: string | undefined;
   page: number | undefined;
   limit: number | undefined;

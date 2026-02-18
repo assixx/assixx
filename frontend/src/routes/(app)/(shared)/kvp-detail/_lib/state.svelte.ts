@@ -73,6 +73,7 @@ function createKvpDetailState() {
     org.setDepartments([]);
     org.setTeams([]);
     org.setAreas([]);
+    org.setMachines([]);
     ui.setLoading(true);
     ui.setUpdatingStatus(false);
     ui.setAddingComment(false);
@@ -125,6 +126,9 @@ function createKvpDetailState() {
     get areas() {
       return org.areas;
     },
+    get machines() {
+      return org.machines;
+    },
     get photoAttachments() {
       return data.photoAttachments;
     },
@@ -138,6 +142,7 @@ function createKvpDetailState() {
     setDepartments: org.setDepartments,
     setTeams: org.setTeams,
     setAreas: org.setAreas,
+    setMachines: org.setMachines,
 
     // UI state - Loading
     get isLoading() {

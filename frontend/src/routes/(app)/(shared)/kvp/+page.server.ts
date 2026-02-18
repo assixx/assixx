@@ -16,6 +16,7 @@ import type {
   KvpSuggestion,
   KvpStats,
   SuggestionsResponse,
+  UserTeamWithMachines,
 } from './_lib/types';
 
 const log = createLogger('Kvp');
@@ -116,11 +117,17 @@ async function fetchKvpData(
   isAdmin: boolean,
 ) {
   const fetchPromises: Promise<
-    KvpCategory[] | Department[] | SuggestionsApiResponse | KvpStats | null
+    | KvpCategory[]
+    | Department[]
+    | SuggestionsApiResponse
+    | KvpStats
+    | UserTeamWithMachines[]
+    | null
   >[] = [
     apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
     apiFetch<Department[]>('/departments', token, fetchFn),
     apiFetch<SuggestionsApiResponse>('/kvp', token, fetchFn),
+    apiFetch<UserTeamWithMachines[]>('/kvp/my-organizations', token, fetchFn),
   ];
 
   if (isAdmin) {
@@ -134,12 +141,14 @@ async function fetchKvpData(
   const categoriesData = results[0] as KvpCategory[] | null;
   const departmentsData = results[1] as Department[] | null;
   const suggestionsData = results[2] as SuggestionsApiResponse | null;
-  const statsData = isAdmin ? (results[3] as KvpStats | null) : null;
+  const orgsData = results[3] as UserTeamWithMachines[] | null;
+  const statsData = isAdmin ? (results[4] as KvpStats | null) : null;
 
   return {
     categories: Array.isArray(categoriesData) ? categoriesData : [],
     departments: Array.isArray(departmentsData) ? departmentsData : [],
     suggestions: parseSuggestionsResponse(suggestionsData),
+    userOrganizations: Array.isArray(orgsData) ? orgsData : [],
     statistics: statsData,
   };
 }

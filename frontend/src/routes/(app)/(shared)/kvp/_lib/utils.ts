@@ -51,22 +51,62 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
 
 /**
  * Get visibility info (icon + text) for suggestion
- * Shows "Privat" for non-shared, org-level name for shared
+ * Shows org names from junction table when available, falls back to orgLevel
  */
 export function getVisibilityInfo(suggestion: KvpSuggestion): {
   icon: string;
   text: string;
 } {
-  // If not shared (private)
+  // Junction table organizations take priority (new multi-team/machine flow)
+  if (
+    suggestion.organizations !== undefined &&
+    suggestion.organizations.length > 0
+  ) {
+    return getOrganizationsVisibility(suggestion);
+  }
+
+  // Legacy fallback: single orgLevel/orgId
+  return getLegacyVisibility(suggestion);
+}
+
+/** Visibility from junction table organizations */
+function getOrganizationsVisibility(suggestion: KvpSuggestion): {
+  icon: string;
+  text: string;
+} {
+  const orgs = suggestion.organizations ?? [];
+  const teams = orgs.filter((o) => o.orgType === 'team');
+  const machines = orgs.filter((o) => o.orgType === 'machine');
+
+  const parts: string[] = [];
+  for (const t of teams) {
+    parts.push(t.orgName ?? `Team ${t.orgId}`);
+  }
+  for (const m of machines) {
+    parts.push(m.orgName ?? `Maschine ${m.orgId}`);
+  }
+
+  if (parts.length > 0) {
+    const icon =
+      machines.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
+    return { icon, text: parts.join(', ') };
+  }
+
+  return { icon: 'fa-lock', text: 'Keine Zuordnung' };
+}
+
+/** Legacy visibility from single orgLevel field */
+function getLegacyVisibility(suggestion: KvpSuggestion): {
+  icon: string;
+  text: string;
+} {
   if (!suggestion.isShared) {
     return { icon: 'fa-lock', text: 'Nur Team' };
   }
 
-  // If shared, show org level info (Record guarantees all OrgLevel keys exist)
   const info = VISIBILITY_INFO[suggestion.orgLevel];
-
-  // Use specific name if available (check for empty string)
   let text = info.text;
+
   if (
     suggestion.orgLevel === 'department' &&
     suggestion.departmentName !== ''

@@ -28,7 +28,7 @@ export type KvpPriority = 'low' | 'normal' | 'high' | 'urgent';
 /**
  * Organization level
  */
-export type OrgLevel = 'company' | 'department' | 'area' | 'team';
+export type OrgLevel = 'company' | 'department' | 'area' | 'team' | 'machine';
 
 /**
  * Current user
@@ -86,6 +86,17 @@ export interface KvpSuggestion {
   isConfirmed?: boolean;
   /** When the user confirmed (read) this suggestion */
   confirmedAt?: string;
+  /** Organization assignments from junction table (teams and/or machines) */
+  organizations?: KvpOrgAssignment[];
+}
+
+/** Organization assignment on a KVP suggestion */
+export interface KvpOrgAssignment {
+  orgType: 'team' | 'machine';
+  orgId: number;
+  orgName?: string;
+  /** For machines: team IDs that own this machine (from machine_teams) */
+  relatedTeamIds?: number[];
 }
 
 /**
@@ -146,6 +157,14 @@ export interface Team {
  * Area
  */
 export interface Area {
+  id: number;
+  name: string;
+}
+
+/**
+ * Machine
+ */
+export interface Machine {
   id: number;
   name: string;
 }

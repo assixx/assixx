@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
+
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
     showWarningAlert,
@@ -14,15 +16,15 @@
   import { kvpState } from './state.svelte';
   import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
-  import type { KvpFormData, KvpPriority } from './types';
+  import type { KvpFormData, KvpPriority, UserTeamWithMachines } from './types';
 
   interface Props {
-    currentTeamId: number | null;
+    userOrganizations: UserTeamWithMachines[];
     onclose: () => void;
     onsuccess: () => void;
   }
 
-  const { currentTeamId, onclose, onsuccess }: Props = $props();
+  const { userOrganizations, onclose, onsuccess }: Props = $props();
 
   // Photo state
   let photoPreviews = $state<string[]>([]);
@@ -36,6 +38,35 @@
   let formCategoryValue = $state('');
   let formPriorityDisplay = $state('Normal');
   let formPriorityValue = $state<KvpPriority>('normal');
+
+  // Team/Machine selection state
+  let selectedTeamIds = $state<number[]>([]);
+  let selectedMachineIds = $state<number[]>([]);
+
+  /** All machines from all user teams (deduplicated) */
+  const allMachines = $derived.by(() => {
+    const seen = new SvelteSet<number>();
+    const machines: { id: number; name: string }[] = [];
+    for (const team of userOrganizations) {
+      for (const machine of team.machines) {
+        if (!seen.has(machine.id)) {
+          seen.add(machine.id);
+          machines.push(machine);
+        }
+      }
+    }
+    return machines;
+  });
+
+  /** Show machine select only when no team is selected */
+  const showMachineSelect = $derived(
+    selectedTeamIds.length === 0 && allMachines.length > 0,
+  );
+
+  /** Validation: at least 1 team or 1 machine */
+  const hasOrgSelection = $derived(
+    selectedTeamIds.length > 0 || selectedMachineIds.length > 0,
+  );
 
   // Form refs
   let formElement: HTMLFormElement | undefined = $state();
@@ -67,6 +98,24 @@
     formPriorityValue = value as KvpPriority;
     formPriorityDisplay = label;
     closeAllDropdowns();
+  }
+
+  function handleTeamChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    selectedTeamIds = Array.from(select.selectedOptions).map((o) =>
+      Number(o.value),
+    );
+    // Clear machines when teams are selected
+    if (selectedTeamIds.length > 0) {
+      selectedMachineIds = [];
+    }
+  }
+
+  function handleMachineChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    selectedMachineIds = Array.from(select.selectedOptions).map((o) =>
+      Number(o.value),
+    );
   }
 
   // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
@@ -117,6 +166,8 @@
   function handleClose() {
     photoPreviews = [];
     selectedPhotos = [];
+    selectedTeamIds = [];
+    selectedMachineIds = [];
     formCategoryDisplay = 'Bitte wählen';
     formCategoryIcon = undefined;
     formCategoryColor = undefined;
@@ -127,35 +178,11 @@
     onclose();
   }
 
-  interface OrgInfo {
-    orgLevel: 'team' | 'company';
-    orgId: number;
-  }
-
-  function determineOrgInfo(): OrgInfo {
-    const isEmployee = kvpState.effectiveRole === 'employee';
-    const isAdminOrRoot =
-      kvpState.effectiveRole === 'admin' || kvpState.effectiveRole === 'root';
-
-    if (isEmployee && currentTeamId !== null) {
-      return { orgLevel: 'team', orgId: currentTeamId };
-    }
-    if (isAdminOrRoot) {
-      return {
-        orgLevel: 'company',
-        orgId: kvpState.currentUser?.tenantId ?? 0,
-      };
-    }
-    return { orgLevel: 'team', orgId: 0 };
-  }
-
   function buildFormPayload(
     title: string,
     description: string,
     expectedBenefit: string,
   ): KvpFormData {
-    const { orgLevel, orgId } = determineOrgInfo();
-
     let categoryId: number | null = null;
     let customCategoryId: number | null = null;
 
@@ -176,8 +203,8 @@
       customCategoryId,
       priority: formPriorityValue,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
-      orgLevel,
-      orgId,
+      teamIds: selectedTeamIds,
+      machineIds: selectedMachineIds,
       departmentId: kvpState.currentUser?.departmentId ?? null,
     };
   }
@@ -205,7 +232,14 @@
     const expectedBenefit = formData.get('expected_benefit') as string;
 
     if (title === '' || description === '') {
-      showWarningAlert('Bitte fuellen Sie Titel und Beschreibung aus');
+      showWarningAlert('Bitte füllen Sie Titel und Beschreibung aus');
+      return;
+    }
+
+    if (!hasOrgSelection) {
+      showWarningAlert(
+        'Bitte wählen Sie mindestens ein Team oder eine Maschine aus',
+      );
       return;
     }
 
@@ -266,8 +300,9 @@
           <strong class="alert__title">Wichtiger Hinweis:</strong>
           <p class="alert__message">
             Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten
-            oder Löschen. Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie
-            den Vorschlag absenden.
+            oder löschen. Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie
+            den Vorschlag absenden. KVP-Vorschläge können vom Vorgesetzten
+            firmenweit oder abteilungsübergreifend geteilt werden..
           </p>
         </div>
       </div>
@@ -461,6 +496,75 @@
           </div>
         </div>
 
+        <!-- Team Selection -->
+        <div
+          class="form-field"
+          class:md:col-span-2={!showMachineSelect}
+        >
+          <label
+            class="form-field__label"
+            for="kvpTeamSelect"
+          >
+            Team(s) zuweisen
+            <span class="text-red-500">*</span>
+            <span class="form-field__hint"
+              >(Max. 3, Strg+Klick für Mehrfachauswahl)</span
+            >
+          </label>
+          <select
+            id="kvpTeamSelect"
+            multiple
+            class="form-field__control form-field__control--multiselect"
+            value={selectedTeamIds}
+            onchange={handleTeamChange}
+          >
+            {#each userOrganizations as team (team.teamId)}
+              <option value={team.teamId}>
+                {team.teamName}
+              </option>
+            {/each}
+          </select>
+        </div>
+
+        <!-- Machine Selection (only when no team selected) -->
+        {#if showMachineSelect}
+          <div class="form-field">
+            <label
+              class="form-field__label"
+              for="kvpMachineSelect"
+            >
+              Maschine(n) zuweisen
+              <span class="text-red-500">*</span>
+              <span class="form-field__hint"
+                >(Strg+Klick für Mehrfachauswahl)</span
+              >
+            </label>
+            <select
+              id="kvpMachineSelect"
+              multiple
+              class="form-field__control form-field__control--multiselect"
+              value={selectedMachineIds}
+              onchange={handleMachineChange}
+            >
+              {#each allMachines as machine (machine.id)}
+                <option value={machine.id}>
+                  {machine.name}
+                </option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+
+        <!-- Validation hint -->
+        {#if !hasOrgSelection}
+          <div class="form-field md:col-span-2">
+            <p class="text-sm text-amber-400">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              Bitte wählen Sie mindestens ein Team oder eine Maschine aus.
+            </p>
+          </div>
+        {/if}
+
         <div class="form-field md:col-span-2">
           <label
             class="form-field__label"
@@ -620,5 +724,10 @@
   .photo-preview-item .remove-photo:hover {
     transform: scale(1.1);
     background: #f44336;
+  }
+
+  /* Multiselect */
+  :global(.form-field__control--multiselect) {
+    min-height: 120px;
   }
 </style>

@@ -80,6 +80,7 @@ import type {
   KVPSuggestionResponse,
   PaginatedKVPComments,
   PaginatedSuggestionsResult,
+  UserTeamWithMachines,
 } from './kvp.service.js';
 import { KvpService } from './kvp.service.js';
 
@@ -302,6 +303,19 @@ export class KvpController {
   }
 
   /**
+   * GET /kvp/my-organizations
+   * Returns user's assigned teams with their machines — for KVP create modal
+   */
+  @Get('my-organizations')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getMyOrganizations(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<UserTeamWithMachines[]> {
+    return await this.kvpService.getMyOrganizations(user.id, tenantId);
+  }
+
+  /**
    * POST /kvp/:uuid/confirm
    * Mark a suggestion as read (confirmed) by current user
    */
@@ -347,6 +361,8 @@ export class KvpController {
       customCategoryId: query.customCategoryId,
       priority: query.priority,
       orgLevel: query.orgLevel,
+      teamId: query.teamId,
+      machineId: query.machineId,
       search: query.search,
       page: query.page,
       limit: query.limit,

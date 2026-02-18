@@ -15,6 +15,7 @@ import type { NotificationsService } from '../notifications/notifications.servic
 import type { KvpAttachmentsService } from './kvp-attachments.service.js';
 import type { KvpCommentsService } from './kvp-comments.service.js';
 import type { KvpConfirmationsService } from './kvp-confirmations.service.js';
+import type { KvpLifecycleService } from './kvp-lifecycle.service.js';
 import { KvpService } from './kvp.service.js';
 
 // Mock uuid to avoid real UUID generation
@@ -69,6 +70,23 @@ function createMockConfirmations() {
     getUnconfirmedCount: vi.fn().mockResolvedValue({ count: 0 }),
     confirmSuggestion: vi.fn().mockResolvedValue({ success: true }),
     unconfirmSuggestion: vi.fn().mockResolvedValue({ success: true }),
+  };
+}
+
+function createMockLifecycle() {
+  return {
+    shareSuggestion: vi
+      .fn()
+      .mockResolvedValue({ message: 'Suggestion shared successfully' }),
+    unshareSuggestion: vi
+      .fn()
+      .mockResolvedValue({ message: 'Suggestion unshared successfully' }),
+    archiveSuggestion: vi
+      .fn()
+      .mockResolvedValue({ message: 'Suggestion archived successfully' }),
+    unarchiveSuggestion: vi
+      .fn()
+      .mockResolvedValue({ message: 'Suggestion restored successfully' }),
   };
 }
 
@@ -147,6 +165,7 @@ interface ServiceMocks {
   mockComments: ReturnType<typeof createMockComments>;
   mockAttachments: ReturnType<typeof createMockAttachments>;
   mockConfirmations: ReturnType<typeof createMockConfirmations>;
+  mockLifecycle: ReturnType<typeof createMockLifecycle>;
 }
 
 function createService(): ServiceMocks {
@@ -156,6 +175,7 @@ function createService(): ServiceMocks {
   const mockComments = createMockComments();
   const mockAttachments = createMockAttachments();
   const mockConfirmations = createMockConfirmations();
+  const mockLifecycle = createMockLifecycle();
 
   const service = new KvpService(
     mockDb as unknown as DatabaseService,
@@ -164,6 +184,7 @@ function createService(): ServiceMocks {
     mockComments as unknown as KvpCommentsService,
     mockAttachments as unknown as KvpAttachmentsService,
     mockConfirmations as unknown as KvpConfirmationsService,
+    mockLifecycle as unknown as KvpLifecycleService,
   );
 
   return {
@@ -174,11 +195,12 @@ function createService(): ServiceMocks {
     mockComments,
     mockAttachments,
     mockConfirmations,
+    mockLifecycle,
   };
 }
 
 /**
- * Helper: mock the getSuggestionById chain (org info + detail query).
+ * Helper: mock the getSuggestionById chain (org info + detail + org assignments).
  * Many facade methods call getSuggestionById internally.
  */
 function mockGetSuggestionByIdChain(
@@ -189,6 +211,8 @@ function mockGetSuggestionByIdChain(
   mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
   // Q2: detail query
   mockDb.query.mockResolvedValueOnce([createMockDbSuggestion(dbSuggestion)]);
+  // Q3: getOrgAssignments (junction table)
+  mockDb.query.mockResolvedValueOnce([]);
 }
 
 // =============================================================
@@ -202,6 +226,7 @@ describe('KvpService', () => {
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
   let mockComments: ReturnType<typeof createMockComments>;
   let mockConfirmations: ReturnType<typeof createMockConfirmations>;
+  let mockLifecycle: ReturnType<typeof createMockLifecycle>;
 
   beforeEach(() => {
     const mocks = createService();
@@ -211,6 +236,7 @@ describe('KvpService', () => {
     mockActivityLogger = mocks.mockActivityLogger;
     mockComments = mocks.mockComments;
     mockConfirmations = mocks.mockConfirmations;
+    mockLifecycle = mocks.mockLifecycle;
   });
 
   // =============================================================
@@ -358,6 +384,8 @@ describe('KvpService', () => {
           uuid: '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
         }),
       ]);
+      // Q3: getOrgAssignments
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.getSuggestionById(
         '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
@@ -429,6 +457,8 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
       // Q4: getSuggestionById → detail
       mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
+      // Q5: getSuggestionById → getOrgAssignments
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.createSuggestion(
         {
@@ -455,6 +485,8 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
       // Q4: getSuggestionById → detail
       mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
+      // Q5: getSuggestionById → getOrgAssignments
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.createSuggestion(
         {
@@ -602,13 +634,13 @@ describe('KvpService', () => {
     });
 
     it('checks status update permissions for admin', async () => {
-      // getSuggestionById chain
+      // getSuggestionById chain (Q1 org, Q2 detail, Q3 orgAssignments)
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
-      // assertCanUpdateStatus → org info (admin with full access)
+      // Q4: assertCanUpdateStatus → org info (admin with full access)
       mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // UPDATE
+      // Q5: UPDATE
       mockDb.query.mockResolvedValueOnce([]);
-      // getSuggestionById chain (updated)
+      // getSuggestionById chain (Q6 org, Q7 detail, Q8 orgAssignments)
       mockGetSuggestionByIdChain(mockDb, {
         submitted_by: 99,
         status: 'approved',
@@ -667,8 +699,6 @@ describe('KvpService', () => {
 
   describe('shareSuggestion', () => {
     it('shares suggestion by numeric id', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
       const result = await service.shareSuggestion(
         1,
         { orgLevel: 'department', orgId: 10 } as never,
@@ -678,13 +708,15 @@ describe('KvpService', () => {
       );
 
       expect(result.message).toBe('Suggestion shared successfully');
-      const [query] = mockDb.query.mock.calls[0] as [string, unknown[]];
-      expect(query).toContain('id =');
+      expect(mockLifecycle.shareSuggestion).toHaveBeenCalledWith(
+        1,
+        { orgLevel: 'department', orgId: 10 },
+        42,
+        3,
+      );
     });
 
     it('shares suggestion by UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
       const result = await service.shareSuggestion(
         '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
         { orgLevel: 'company', orgId: 0 } as never,
@@ -694,8 +726,12 @@ describe('KvpService', () => {
       );
 
       expect(result.message).toBe('Suggestion shared successfully');
-      const [query] = mockDb.query.mock.calls[0] as [string, unknown[]];
-      expect(query).toContain('uuid =');
+      expect(mockLifecycle.shareSuggestion).toHaveBeenCalledWith(
+        '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
+        { orgLevel: 'company', orgId: 0 },
+        42,
+        3,
+      );
     });
   });
 
@@ -705,27 +741,21 @@ describe('KvpService', () => {
 
   describe('unshareSuggestion', () => {
     it('unshares suggestion and resets to team level', async () => {
-      // getExtendedUserOrgInfo → user with team
+      // Q1: getExtendedUserOrgInfo → user with team
       mockDb.query.mockResolvedValueOnce([{ ...EMPTY_ORG_ROW, team_ids: [5] }]);
-      // UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.unshareSuggestion(1, 42, 3, 'admin');
 
       expect(result.message).toBe('Suggestion unshared successfully');
-      const [, params] = mockDb.query.mock.calls[1] as [string, unknown[]];
-      // teamId should be 5 (from orgInfo.teamIds[0])
-      expect(params?.[0]).toBe(5);
+      expect(mockLifecycle.unshareSuggestion).toHaveBeenCalledWith(1, 42, 5);
     });
 
     it('uses 0 as team id when user has no teams', async () => {
       mockDb.query.mockResolvedValueOnce([EMPTY_ORG_ROW]);
-      mockDb.query.mockResolvedValueOnce([]);
 
       await service.unshareSuggestion(1, 42, 3, 'admin');
 
-      const [, params] = mockDb.query.mock.calls[1] as [string, unknown[]];
-      expect(params?.[0]).toBe(0);
+      expect(mockLifecycle.unshareSuggestion).toHaveBeenCalledWith(1, 42, 0);
     });
   });
 
@@ -741,6 +771,8 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([{ total: 5 }]);
       // Q3: list query
       mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
+      // Q4: attachOrgAssignmentsBatch
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.listSuggestions(42, 3, 'admin', {
         page: 1,
@@ -750,6 +782,8 @@ describe('KvpService', () => {
         customCategoryId: undefined,
         priority: undefined,
         orgLevel: undefined,
+        teamId: undefined,
+        machineId: undefined,
         search: undefined,
         mineOnly: undefined,
       });
@@ -769,6 +803,8 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([
         createMockDbSuggestion({ submitted_by: 3 }),
       ]);
+      // Q4: attachOrgAssignmentsBatch
+      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.listSuggestions(42, 3, 'employee', {
         page: 1,
@@ -798,6 +834,8 @@ describe('KvpService', () => {
         customCategoryId: undefined,
         priority: undefined,
         orgLevel: undefined,
+        teamId: undefined,
+        machineId: undefined,
         search: undefined,
         mineOnly: undefined,
       });
@@ -812,32 +850,14 @@ describe('KvpService', () => {
   // =============================================================
 
   describe('archiveSuggestion', () => {
-    it('should throw NotFoundException when suggestion not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await expect(service.archiveSuggestion(999, 42, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should archive and log activity', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, title: 'Test KVP', status: 'approved' },
-      ]);
-      mockDb.query.mockResolvedValueOnce([]);
-
+    it('delegates to lifecycle service', async () => {
       const result = await service.archiveSuggestion(1, 42, 1);
 
       expect(result.message).toBe('Suggestion archived successfully');
-      expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
+      expect(mockLifecycle.archiveSuggestion).toHaveBeenCalledWith(1, 42, 1);
     });
 
     it('archives by UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, title: 'UUID KVP', status: 'new' },
-      ]);
-      mockDb.query.mockResolvedValueOnce([]);
-
       const result = await service.archiveSuggestion(
         '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
         42,
@@ -845,8 +865,11 @@ describe('KvpService', () => {
       );
 
       expect(result.message).toBe('Suggestion archived successfully');
-      const [query] = mockDb.query.mock.calls[0] as [string, unknown[]];
-      expect(query).toContain('uuid');
+      expect(mockLifecycle.archiveSuggestion).toHaveBeenCalledWith(
+        '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
+        42,
+        1,
+      );
     });
   });
 
@@ -855,24 +878,11 @@ describe('KvpService', () => {
   // =============================================================
 
   describe('unarchiveSuggestion', () => {
-    it('should throw NotFoundException when suggestion not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await expect(service.unarchiveSuggestion(999, 42, 1)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should restore and log activity', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, title: 'Test KVP', status: 'archived' },
-      ]);
-      mockDb.query.mockResolvedValueOnce([]);
-
+    it('delegates to lifecycle service', async () => {
       const result = await service.unarchiveSuggestion(1, 42, 1);
 
       expect(result.message).toBe('Suggestion restored successfully');
-      expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
+      expect(mockLifecycle.unarchiveSuggestion).toHaveBeenCalledWith(1, 42, 1);
     });
   });
 

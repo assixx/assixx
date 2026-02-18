@@ -22,6 +22,7 @@ import type {
   SuggestionsResponse,
   PaginatedResponse,
   KvpFilter,
+  UserTeamWithMachines,
 } from './types';
 
 const log = createLogger('KvpApi');
@@ -158,12 +159,14 @@ function buildSuggestionParams(
   statusFilter: string,
   categoryFilter: string,
   departmentFilter: string,
+  teamFilter: string,
+  machineFilter: string,
   searchQuery: string,
 ): URLSearchParams {
   const params = new URLSearchParams();
 
   // Map filter to backend orgLevel parameter
-  const orgLevelFilters = ['team', 'department', 'area', 'company'];
+  const orgLevelFilters = ['team', 'machine', 'department', 'area', 'company'];
   if (orgLevelFilters.includes(filter)) {
     params.append('orgLevel', filter);
   }
@@ -180,6 +183,8 @@ function buildSuggestionParams(
 
   appendCategoryParam(params, categoryFilter);
   if (departmentFilter !== '') params.append('departmentId', departmentFilter);
+  if (teamFilter !== '') params.append('teamId', teamFilter);
+  if (machineFilter !== '') params.append('machineId', machineFilter);
   if (searchQuery !== '') params.append('search', searchQuery);
 
   return params;
@@ -193,6 +198,8 @@ export async function fetchSuggestions(
   statusFilter: string,
   categoryFilter: string,
   departmentFilter: string,
+  teamFilter: string,
+  machineFilter: string,
   searchQuery: string,
 ): Promise<KvpSuggestion[]> {
   try {
@@ -201,6 +208,8 @@ export async function fetchSuggestions(
       statusFilter,
       categoryFilter,
       departmentFilter,
+      teamFilter,
+      machineFilter,
       searchQuery,
     );
 
@@ -319,6 +328,25 @@ export async function fetchStatistics(): Promise<KvpStats | null> {
     log.error({ err }, 'Error fetching statistics');
     checkSessionExpired(err);
     return null;
+  }
+}
+
+// =============================================================================
+// USER ORGANIZATIONS (teams + machines)
+// =============================================================================
+
+/**
+ * Load user's teams with their assigned machines
+ */
+export async function loadMyOrganizations(): Promise<UserTeamWithMachines[]> {
+  try {
+    return await apiClient.get<UserTeamWithMachines[]>(
+      API_ENDPOINTS.KVP_MY_ORGANIZATIONS,
+    );
+  } catch (err) {
+    log.error({ err }, 'Error loading user organizations');
+    checkSessionExpired(err);
+    return [];
   }
 }
 

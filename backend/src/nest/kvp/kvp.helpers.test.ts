@@ -181,16 +181,28 @@ describe('buildFilterConditions', () => {
 // =============================================================
 
 describe('mapOrgLevelToRecipient', () => {
-  it('should map team level to team recipient', () => {
-    const dto = { orgLevel: 'team', orgId: 5 } as Parameters<
-      typeof mapOrgLevelToRecipient
-    >[0];
+  it('should map team level to team recipient via teamIds', () => {
+    const dto = {
+      teamIds: [5],
+      machineIds: [],
+    } as Parameters<typeof mapOrgLevelToRecipient>[0];
 
     expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'team', id: 5 });
   });
 
-  it('should map department level using departmentId', () => {
+  it('should map machine level to all', () => {
     const dto = {
+      teamIds: [],
+      machineIds: [10],
+    } as Parameters<typeof mapOrgLevelToRecipient>[0];
+
+    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'all', id: null });
+  });
+
+  it('should map department level using departmentId (legacy fallback)', () => {
+    const dto = {
+      teamIds: [],
+      machineIds: [],
       orgLevel: 'department',
       orgId: 10,
       departmentId: 7,
@@ -199,8 +211,10 @@ describe('mapOrgLevelToRecipient', () => {
     expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'department', id: 7 });
   });
 
-  it('should map area level to department when departmentId exists', () => {
+  it('should map area level to department when departmentId exists (legacy fallback)', () => {
     const dto = {
+      teamIds: [],
+      machineIds: [],
       orgLevel: 'area',
       departmentId: 3,
     } as Parameters<typeof mapOrgLevelToRecipient>[0];
@@ -208,18 +222,22 @@ describe('mapOrgLevelToRecipient', () => {
     expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'department', id: 3 });
   });
 
-  it('should map area level to all when no departmentId', () => {
-    const dto = { orgLevel: 'area' } as Parameters<
-      typeof mapOrgLevelToRecipient
-    >[0];
+  it('should map area level to all when no departmentId (legacy fallback)', () => {
+    const dto = {
+      teamIds: [],
+      machineIds: [],
+      orgLevel: 'area',
+    } as Parameters<typeof mapOrgLevelToRecipient>[0];
 
     expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'all', id: null });
   });
 
-  it('should map company level to all', () => {
-    const dto = { orgLevel: 'company' } as Parameters<
-      typeof mapOrgLevelToRecipient
-    >[0];
+  it('should map company level to all (legacy fallback)', () => {
+    const dto = {
+      teamIds: [],
+      machineIds: [],
+      orgLevel: 'company',
+    } as Parameters<typeof mapOrgLevelToRecipient>[0];
 
     expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'all', id: null });
   });
