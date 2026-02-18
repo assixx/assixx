@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.4.0 (Phase 2 — Steps 2.1-2.4 Complete)
-> **Status:** IN PROGRESS — Phase 2 läuft, nächster Step: 2.5 (Cards Service)
+> **Version:** 1.7.0 (Phase 2 — Steps 2.1-2.7 Complete)
+> **Status:** IN PROGRESS — Phase 2 läuft, nächster Step: 2.8 (Executions + Approval Services)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 7 / 29
+> **Actual Sessions:** 10 / 29
 
 ---
 
@@ -52,6 +52,9 @@ pnpm test                # unit + api tests
 | 1.2.0   | 2026-02-19 | Step 2.2 DONE: DTOs — 11+2 Dateien in dto/ (common, create/update plan, create/update card, complete-card, respond-execution, create-time-estimate, update-escalation-config, update-color-config, create/update-template, index) |
 | 1.3.0   | 2026-02-19 | Step 2.3 DONE: Plans Service — tpm-plans.service.ts (235 Z.), tpm-plans-interval.service.ts (178 Z.), tpm-plans.helpers.ts (74 Z.)                                                                                                |
 | 1.4.0   | 2026-02-19 | Step 2.4 DONE: Config Services — tpm-time-estimates.service.ts (179 Z.), tpm-templates.service.ts (195 Z.), tpm-color-config.service.ts (128 Z.)                                                                                  |
+| 1.5.0   | 2026-02-19 | Step 2.5 DONE: Cards + Status — tpm-cards.helpers.ts (87 Z.), tpm-cards.service.ts (468 Z.), tpm-card-status.service.ts (176 Z.)                                                                                                  |
+| 1.6.0   | 2026-02-19 | Step 2.6 DONE: Cascade + Duplicate — tpm-card-cascade.service.ts (121 Z.), tpm-card-duplicate.service.ts (114 Z.)                                                                                                                 |
+| 1.7.0   | 2026-02-19 | Step 2.7 DONE: Slot Assistant — tpm-slot-assistant.service.ts (486 Z.), 4 Datenquellen, E15-Validierung                                                                                                                           |
 
 > **Versionierungsregel:**
 >
@@ -621,38 +624,49 @@ Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-s
 
 ---
 
-### Step 2.5: Session 8 — Cards Service + Card Status Service [PENDING]
+### Step 2.5: Session 8 — Cards Service + Card Status Service [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 3 Dateien erstellt (+ Helpers extrahiert). Type-Check 0, ESLint 0, 4137 Tests bestanden.
 
-1. `tpm-cards.service.ts` (~280 Zeilen)
-   - `createCard(tenantId, dto, createdBy)` → INSERT + Auto-CardCode
-   - `updateCard(tenantId, cardUuid, dto)` → UPDATE
-   - `getCard(tenantId, cardUuid)` → SELECT mit Plan+Machine JOINs
-   - `listCardsForMachine(tenantId, machineUuid, filters)` → Alle Karten einer Maschine
-   - `listCardsForPlan(tenantId, planUuid, filters)` → Alle Karten eines Plans
-   - `deleteCard(tenantId, cardUuid)` → Soft-Delete
-   - `generateCardCode(tenantId, planId, cardRole, intervalType)` → "BT1", "IV13" etc.
+**Architektur-Entscheidungen:**
+
+- Helpers-Datei extrahiert (`tpm-cards.helpers.ts`) — `tpm-plans.helpers.ts` Pattern
+- `machine_id` wird automatisch aus `plan.machine_id` gesetzt (Denormalisierung im Service erzwungen)
+- `interval_order` wird automatisch aus `INTERVAL_ORDER_MAP` gesetzt
+- `card_code` wird auto-generiert: Prefix (BT/IV) + Sequenznummer pro Plan+Rolle
+- `sort_order` wird auto-inkrementiert pro Plan
+- Card-Status-Service: Alle Methoden akzeptieren `PoolClient` für Transaction-Composability
+- Status-State-Machine mit `VALID_TRANSITIONS` Map und `assertTransition()` Guard
+- Methoden `approveCard`/`rejectCard` statt `resetCardAfterApproval`/`resetCardAfterRejection` (Intent > Implementierung)
+- `executeCardInsert` als Private Helper extrahiert (ESLint max-lines-per-function: 60)
+- `buildFilterClauses` als Module-Level Pure Function mit `addFilter` Closure (no-useless-assignment)
+
+1. `tpm-cards.helpers.ts` (87 Zeilen)
+   - `TpmCardJoinRow` Interface (erweitert TpmCardRow um JOIN-Spalten)
+   - `mapCardRowToApi()` — snake_case → camelCase
+   - `buildCardUpdateFields()` — dynamischer SET-Clause Builder
+
+2. `tpm-cards.service.ts` (468 Zeilen — über Budget wegen Pagination-Infrastruktur + 8 Methoden)
+   - `createCard(tenantId, dto, createdBy)` → INSERT + Auto-CardCode + Auto-MachineId
+   - `updateCard(tenantId, userId, cardUuid, dto)` → FOR UPDATE + interval_order Rekalkulation
+   - `getCard(tenantId, cardUuid)` → SELECT mit 5 JOINs (Plan, Machine, Template, 2× Users)
+   - `listCardsForMachine(tenantId, machineUuid, filters)` → Paginiert + Filter (status, intervalType, cardRole)
+   - `listCardsForPlan(tenantId, planUuid, filters)` → Paginiert + Filter
+   - `deleteCard(tenantId, userId, cardUuid)` → Soft-Delete (is_active=4)
    - `getCardsByStatus(tenantId, status, pagination)` → Für Dashboard
+   - Private: resolvePlanIds, generateCardCode, getNextSortOrder, lockCardByUuid, executeCardInsert, executePaginatedQuery
 
-2. `tpm-card-status.service.ts` (~220 Zeilen)
-   - `setCardDue(tenantId, cardId, dueDate)` → green → red
-   - `markCardCompleted(tenantId, cardUuid, userId, dto)` → red → green (Flow A) ODER red → yellow (Flow B)
-   - `markCardOverdue(cardId)` → red → overdue (Cron)
-   - `resetCardAfterRejection(tenantId, cardUuid)` → yellow → red
-   - `resetCardAfterApproval(tenantId, cardUuid)` → yellow → green
-   - Alle Transitionen mit Timestamp + User in `tpm_card_executions`
-
-**Verifikation:**
-
-```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
-```
+3. `tpm-card-status.service.ts` (176 Zeilen)
+   - `setCardDue(client, tenantId, cardId, dueDate)` → green → red
+   - `markCardCompleted(client, tenantId, cardId, userId)` → red/overdue → green (Flow A) ODER yellow (Flow B)
+   - `markCardOverdue(client, tenantId, cardId)` → red → overdue
+   - `approveCard(client, tenantId, cardId, executedBy)` → yellow → green
+   - `rejectCard(client, tenantId, cardId)` → yellow → red
+   - Private: lockCardById, assertTransition
 
 ---
 
-### Step 2.6: Session 9 — Card Cascade + Duplicate Detection [PENDING]
+### Step 2.6: Session 9 — Card Cascade + Duplicate Detection [DONE]
 
 **Neue Dateien:**
 
@@ -676,7 +690,7 @@ pnpm run validate:all
 
 ---
 
-### Step 2.7: Session 10 — Slot Availability Assistant [PENDING]
+### Step 2.7: Session 10 — Slot Availability Assistant [DONE]
 
 **Neue Datei:**
 
@@ -867,7 +881,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 ### Phase 2 — Definition of Done
 
 - [x] `TpmModule` registriert in `app.module.ts` ✅ (Session 4)
-- [ ] 15 Services implementiert und injiziert (6/15 — Plans, PlanInterval, TimeEstimates, Templates, ColorConfig, PermissionRegistrar)
+- [ ] 15 Services implementiert und injiziert (11/15 — Plans, PlanInterval, TimeEstimates, Templates, ColorConfig, PermissionRegistrar, Cards, CardStatus, CardCascade, CardDuplicate, SlotAssistant)
 - [ ] 4 Controller mit ~25 Endpoints total (0/4)
 - [x] Permission Registrar registriert bei Module Init ✅ (Session 4)
 - [ ] `@TenantFeature('tpm')` auf allen Controllern
@@ -1243,9 +1257,9 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | 5       | 2     | DTOs (13 Dateien inkl. Template-DTOs)                              | DONE    | 2026-02-19 |
 | 6       | 2     | Plans Service + Interval Service + Helpers                         | DONE    | 2026-02-19 |
 | 7       | 2     | Config Services (Time Estimates + Templates + Colors)              | DONE    | 2026-02-19 |
-| 8       | 2     | Cards Service + Card Status Service                                | PENDING |            |
-| 9       | 2     | Card Cascade + Duplicate Detection                                 | PENDING |            |
-| 10      | 2     | Slot Availability Assistant                                        | PENDING |            |
+| 8       | 2     | Cards Service + Card Status Service                                | DONE    | 2026-02-19 |
+| 9       | 2     | Card Cascade + Duplicate Detection                                 | DONE    | 2026-02-19 |
+| 10      | 2     | Slot Availability Assistant                                        | DONE    | 2026-02-19 |
 | 11      | 2     | Executions + Approval Services                                     | PENDING |            |
 | 12      | 2     | Notification + Escalation Services + EventBus                      | PENDING |            |
 | 13      | 2     | Controllers (Plans + Cards)                                        | PENDING |            |
@@ -1291,6 +1305,10 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | D5  | `tpm-time-estimates.service.ts` ~150 Zeilen | 179 Zeilen                  | UPSERT + resolvePlanId Helper → leicht über Budget                     |
 | D6  | ActivityEntityType 'tpm_plan' erwartet      | Reuse 'machine' Entity-Type | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen        |
 | D7  | Template-DTOs in Step 2.2 geplant           | Nachgereicht in Step 2.4    | Im Plan vergessen, bei Bedarf erstellt                                 |
+| D8  | `tpm-cards.service.ts` ~280 Zeilen          | 468 Zeilen                  | 8 CRUD-Methoden + Pagination-Infrastruktur + 6 Private Helpers → Über Budget, aber alle SRP |
+| D9  | `resetCardAfterApproval/Rejection` Naming   | `approveCard`/`rejectCard`  | Intent-basiert statt Implementierung-basiert — klarer, kürzer          |
+| D10 | `tpm-slot-assistant.service.ts` ~250 Zeilen | 486 Zeilen                  | 4 Datenquellen × je 1 Query + 3 Pure Helpers + 7 Interface-Types → Komplexität gerechtfertigt |
+| D11 | Slot Assistant nutzt bestehende Services    | Direkte DB-Queries          | Vermeidet cross-module Imports (Machines/Users/Shifts) → TpmModule bleibt self-contained       |
 
 ---
 
@@ -1306,17 +1324,17 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 ### Metriken
 
-| Metrik                    | Geplant | Tatsächlich (Stand Session 7)    |
+| Metrik                    | Geplant | Tatsächlich (Stand Session 10)   |
 | ------------------------- | ------- | -------------------------------- |
-| Sessions                  | 29      | 7 / 29 (24%)                     |
+| Sessions                  | 29      | 10 / 29 (34%)                    |
 | Migrationsdateien         | 4       | 4 ✅                             |
-| Neue Backend-Dateien      | ~30     | 19 / ~30 (63%)                   |
+| Neue Backend-Dateien      | ~30     | 25 / ~30 (83%)                   |
 | Neue Frontend-Dateien     | ~35     | 0 / ~35                          |
 | Geänderte Dateien         | ~10     | 2 (app.module.ts, tpm.module.ts) |
 | Unit Tests                | 220+    | 0 (Phase 3)                      |
 | API Tests                 | 40+     | 0 (Phase 4)                      |
 | ESLint Errors bei Release | 0       | 0 ✅ (durchgehend)               |
-| Spec Deviations           | 0       | 7 (alle akzeptabel)              |
+| Spec Deviations           | 0       | 11 (alle akzeptabel)             |
 
 ---
 

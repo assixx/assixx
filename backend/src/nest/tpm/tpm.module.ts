@@ -10,10 +10,15 @@
 import { Module } from '@nestjs/common';
 
 import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
+import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
+import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
+import { TpmCardStatusService } from './tpm-card-status.service.js';
+import { TpmCardsService } from './tpm-cards.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
+import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTemplatesService } from './tpm-templates.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 
@@ -32,6 +37,17 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmTimeEstimatesService,
     TpmTemplatesService,
     TpmColorConfigService,
+
+    // Card services (Session 8)
+    TpmCardsService,
+    TpmCardStatusService,
+
+    // Cascade + Duplicate detection (Session 9)
+    TpmCardCascadeService,
+    TpmCardDuplicateService,
+
+    // Slot availability (Session 10)
+    TpmSlotAssistantService,
   ],
   exports: [
     TpmPlansService,
@@ -39,6 +55,11 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmTimeEstimatesService,
     TpmTemplatesService,
     TpmColorConfigService,
+    TpmCardsService,
+    TpmCardStatusService,
+    TpmCardCascadeService,
+    TpmCardDuplicateService,
+    TpmSlotAssistantService,
   ],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured, empty class body is standard pattern
