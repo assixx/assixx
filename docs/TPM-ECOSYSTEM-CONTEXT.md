@@ -46,11 +46,11 @@
 | #   | Verlust                      | Kategorie     | Beispiel                          |
 | --- | ---------------------------- | ------------- | --------------------------------- |
 | 1   | Ungeplante Stillstände       | Verfügbarkeit | Maschinenausfall, Störung         |
-| 2   | Rüsten & Einstellen          | Verfügbarkeit | Werkzeugwechsel, Umrüstung       |
+| 2   | Rüsten & Einstellen          | Verfügbarkeit | Werkzeugwechsel, Umrüstung        |
 | 3   | Kurzstillstände              | Leistung      | Sensorfehler, kurze Blockierungen |
-| 4   | Geschwindigkeitsverluste     | Leistung      | Verschleiß → langsamerer Betrieb |
-| 5   | Anlaufverluste               | Qualität      | Ausschuss beim Hochfahren        |
-| 6   | Qualitätsverluste/Nacharbeit | Qualität      | Fehlerhafte Teile, Nacharbeit    |
+| 4   | Geschwindigkeitsverluste     | Leistung      | Verschleiß → langsamerer Betrieb  |
+| 5   | Anlaufverluste               | Qualität      | Ausschuss beim Hochfahren         |
+| 6   | Qualitätsverluste/Nacharbeit | Qualität      | Fehlerhafte Teile, Nacharbeit     |
 
 ---
 
@@ -73,7 +73,7 @@ Durchschnitt Industrie: 60%
 
 | Phase | Beschreibung                                                        |
 | ----- | ------------------------------------------------------------------- |
-| 1     | TPM-Programm entwickeln (Ziele, Maßnahmen, Meilensteine)           |
+| 1     | TPM-Programm entwickeln (Ziele, Maßnahmen, Meilensteine)            |
 | 2     | Anlagen erfassen, Zustände und Defekte dokumentieren                |
 | 3     | Pilotbereich etablieren, Schulung, schrittweise Aufgabenübertragung |
 | 4     | Piloterfahrungen auswerten, Mitarbeiterkompetenz erweitern          |
@@ -93,12 +93,13 @@ Durchschnitt Industrie: 60%
 | Sortieren       | Seiri     | Unnötiges entfernen                         |
 | Systematisieren | Seiton    | Ordnung schaffen, feste Plätze              |
 | Säubern         | Seiso     | Reinigen = Inspizieren                      |
-| Standardisieren | Seiketsu  | Standards definieren und dokumentieren       |
-| Selbstdisziplin | Shitsuke  | Standards einhalten, kontinuierlich pflegen  |
+| Standardisieren | Seiketsu  | Standards definieren und dokumentieren      |
+| Selbstdisziplin | Shitsuke  | Standards einhalten, kontinuierlich pflegen |
 
 ### 5-Warum-Analyse (5 Why)
 
 Ursachenforschung durch wiederholtes "Warum?" fragen bis zur Grundursache:
+
 ```
 Problem: Maschine steht still
 → Warum? Motor überhitzt
@@ -126,6 +127,7 @@ Ein visuelles Management-System aus dem Lean Manufacturing, das wiederkehrende A
 ### Funktionsweise
 
 **Zweifarbige Karten:**
+
 - **Rot** = Aufgabe offen / nicht erledigt
 - **Grün** = Aufgabe erledigt / abgearbeitet
 
@@ -154,6 +156,7 @@ Auf einen Blick sieht jeder: Was ist gemacht, was fehlt noch?
 ### Karten-Inhalt (typisch)
 
 Jede Karte enthält:
+
 - **Was:** Aufgabenbeschreibung (z.B. "Ölstand prüfen")
 - **Wer:** Verantwortlicher (Bediener, Schichtleiter, Instandhalter)
 - **Wann:** Intervall (täglich, wöchentlich, ...)
@@ -163,12 +166,14 @@ Jede Karte enthält:
 ### Anwendungsgebiete
 
 **Produktion / Shopfloor:**
+
 - Wartung, Inspektion und Reinigung (autonome Instandhaltung)
 - Qualitätssicherung und Stichprobenkontrollen
 - Audits und Standardprüfungen
 - Sicherheitschecks
 
 **Administration:**
+
 - KPI-Berichte und Kennzahlen
 - Buchhaltung und Kostenstellenprüfung
 - Datensicherung und Systemwartung
@@ -197,6 +202,7 @@ Jede Karte enthält:
 ### Problem: Interdisziplinäre Teams
 
 Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen vor einem Konflikt:
+
 - Projekt-Deadlines vs. fällige Wartung
 - Support-Tickets vs. geplante Inspektionen
 - Stress und Konflikte wenn alles gleichzeitig brennt
@@ -220,6 +226,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 ```
 
 **Ablauf im Daily Standup:**
+
 1. Kamishibai-Board checken: Welche Routineaufgaben sind fällig?
 2. Fällige Karten ins Kanban-Board ziehen (→ Backlog)
 3. WIP-Limits beachten — nicht alles gleichzeitig
@@ -234,6 +241,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 ### Szenario 1: Papier-basierte Wartung (IST-Zustand bei Kunden)
 
 **Typisch in KMU-Produktion:**
+
 - Wartungsplan als laminiertes A3-Blatt an der Maschine
 - Maschinenbediener hakt ab mit Edding (Reinigung, Ölstand, Sichtprüfung)
 - Wartungstechniker sammelt Zettel ein
@@ -242,6 +250,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 - Keine Auswertung, kein Überblick, keine Trends
 
 **Probleme:**
+
 - Keiner weiß, ob die tägliche Wartung wirklich gemacht wurde
 - Wartungsintervalle werden vergessen
 - Störungen werden zu spät gemeldet
@@ -254,6 +263,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 **Beobachtet bei echtem Kunden (Screenshots vorhanden):**
 
 **Board-Aufbau an der Maschine:**
+
 - Physisches Wandboard mit T-Karten-Haltern
 - Sektionen nach Intervall UND Verantwortlichem getrennt:
   - "Wöchentlich Bediener 05:00 Uhr" (7 Karten: BW1-BW7)
@@ -264,6 +274,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 - Handschriftliche Datumsstempel (z.B. "14.10" / "-.1.22")
 
 **Karten-Format (LPS Standard):**
+
 ```
 ┌─────────────────────────────────────┐
 │ IV13                    [LPS Logo]  │
@@ -280,6 +291,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 ```
 
 **Typische Aufgaben auf Karten:**
+
 - BW1: "TPM Board reinigen Putzlappen"
 - BW2: "Einzug- und Richtrollen auf Verschleiß prüfen"
 - BW3: "Handschmierung Zahnräder fetten (2 Hub) und Sichtkontrolle"
@@ -291,6 +303,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 - IV13: "Drehbare Luftzuführung abschmieren"
 
 **Probleme (identisch mit allgemeinem Szenario + zusätzlich):**
+
 - Board ist nur VOR ORT sichtbar — kein Überblick über alle Maschinen
 - Keine Historie — Karten werden einfach zurückgedreht
 - Kein digitaler Nachweis für Audits/Zertifizierung
@@ -300,6 +313,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 - Kein Tracking: Wer hat wann welche Karte erledigt?
 
 **Excel-Wartungsplanung parallel zum Board:**
+
 - Separate Excel "Bestimmung TPM Maßnahmedauer Instandhaltung"
 - Zeilen = Maschinen (SP08, P07, SAG20, BRM11, RE09, STM, RE05, P03, RE04, DEM, SR05, SAG28, P17, RE06, P02, ST08)
 - Spalten = Monate (12 pro Intervall)
@@ -312,6 +326,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 ### Szenario 3: Digitales TPM (SOLL-Zustand — Assixx)
 
 **Was wir bieten wollen:**
+
 - Digitales Kamishibai pro Maschine — von überall sichtbar
 - Automatische Intervall-Erinnerungen (SSE + Notification Badge)
 - Automatisches Umdrehen: Grün→Rot bei Termin, Rot→Grün bei "Done"
@@ -341,6 +356,7 @@ Hierarchie (höher = inkludiert alle darunter):
 ```
 
 **Konsequenz für Software:**
+
 - Wenn "Jährlich" fällig → alle Karten aller Intervalle werden ROT
 - Duplikat-Erkennung nötig: Aufgaben die in kürzeren Intervallen schon existieren, müssen nicht nochmal in längeren angelegt werden
 - Jährliche Karten sollen nur ECHTE Jahresaufgaben enthalten (Kalibrierung, TÜV, Verschleißteile)
@@ -362,52 +378,52 @@ Hierarchie (höher = inkludiert alle darunter):
                     Zeit/Zyklen      Trends/KI
 ```
 
-| Art        | Wann                 | Kosten  | Ausfallrisiko | Assixx-Relevanz |
-| ---------- | -------------------- | ------- | ------------- | --------------- |
-| Reaktiv    | Nach Ausfall         | Hoch    | Hoch          | Störmeldungen   |
-| Präventiv  | Nach Intervall/Plan  | Mittel  | Niedrig       | Kernfunktion    |
-| Prädiktiv  | Nach Zustandsdaten   | Niedrig | Sehr niedrig  | Zukunft (V2+)   |
+| Art       | Wann                | Kosten  | Ausfallrisiko | Assixx-Relevanz |
+| --------- | ------------------- | ------- | ------------- | --------------- |
+| Reaktiv   | Nach Ausfall        | Hoch    | Hoch          | Störmeldungen   |
+| Präventiv | Nach Intervall/Plan | Mittel  | Niedrig       | Kernfunktion    |
+| Prädiktiv | Nach Zustandsdaten  | Niedrig | Sehr niedrig  | Zukunft (V2+)   |
 
 ---
 
 ## Herausforderungen bei TPM-Digitalisierung
 
-| Herausforderung                        | Konsequenz für Assixx                                 |
-| -------------------------------------- | ----------------------------------------------------- |
-| Widerstand gegen Veränderung           | UI muss EXTREM einfach sein — Bediener sind keine IT-Profis |
-| Fehlende Fehlerkultur                  | Anonyme Störmeldungen? Keine Schuldzuweisung?         |
-| Hoher Schulungsbedarf                  | Onboarding muss selbsterklärend sein                  |
-| 3-5 Jahre Implementierung              | Feature muss schrittweise einführbar sein             |
-| Verschiedene Rollen (Bediener vs. Instandhalter) | Rollenbasierte Views sind critical path      |
-| Shopfloor-Bedingungen (Handschuhe, Lärm, Schmutz) | Mobile-First, große Buttons, wenig Text    |
+| Herausforderung                                   | Konsequenz für Assixx                                       |
+| ------------------------------------------------- | ----------------------------------------------------------- |
+| Widerstand gegen Veränderung                      | UI muss EXTREM einfach sein — Bediener sind keine IT-Profis |
+| Fehlende Fehlerkultur                             | Anonyme Störmeldungen? Keine Schuldzuweisung?               |
+| Hoher Schulungsbedarf                             | Onboarding muss selbsterklärend sein                        |
+| 3-5 Jahre Implementierung                         | Feature muss schrittweise einführbar sein                   |
+| Verschiedene Rollen (Bediener vs. Instandhalter)  | Rollenbasierte Views sind critical path                     |
+| Shopfloor-Bedingungen (Handschuhe, Lärm, Schmutz) | Mobile-First, große Buttons, wenig Text                     |
 
 ---
 
 ## Glossar
 
-| Begriff                | Deutsch                    | Erklärung                                                                 |
-| ---------------------- | -------------------------- | ------------------------------------------------------------------------- |
-| TPM                    | Total Productive Maintenance | Ganzheitliche Instandhaltungsstrategie                                 |
-| OEE / GAE              | Gesamtanlageneffektivität  | Kennzahl: Verfügbarkeit × Leistung × Qualität                           |
-| MTBF                   | Mittlere Betriebsdauer     | Mean Time Between Failures — durchschnittliche Zeit zwischen Ausfällen   |
-| MTTR                   | Mittlere Reparaturzeit     | Mean Time To Repair — durchschnittliche Reparaturdauer                   |
-| CMMS                   | Instandhaltungssoftware    | Computerized Maintenance Management System                               |
-| Autonomous Maintenance | Autonome Instandhaltung    | Bediener übernimmt einfache Wartungsaufgaben                             |
-| Planned Maintenance    | Geplante Instandhaltung    | Systematische Wartung nach Plan/Zustand                                  |
-| Corrective Maintenance | Korrektive Instandhaltung  | Reparatur nach Ausfall (reaktiv)                                         |
-| Predictive Maintenance | Vorausschauende Instandh.  | Zustandsbasiert, Sensorik, Trends                                        |
-| Work Order             | Arbeitsauftrag             | Formaler Auftrag für Wartungs-/Reparaturarbeit                           |
-| Checklist              | Prüfliste                  | Abzuarbeitende Punkte bei Wartung/Inspektion                             |
-| Downtime               | Stillstandszeit            | Zeit in der die Maschine nicht produziert                                |
-| Spare Parts            | Ersatzteile                | Lagerbestand für Wartung/Reparatur                                       |
-| Kamishibai             | Kartensystem               | Visuelles Board mit Rot/Grün-Karten für wiederkehrende Aufgaben          |
-| Kanban                 | Pull-System                | Arbeit wird "gezogen" statt "geschoben" — WIP-Limits begrenzen Paralleles |
-| WIP Limit              | Work-in-Progress-Limit     | Max. Anzahl gleichzeitiger Aufgaben — verhindert Überlastung             |
-| 5S                     | Ordnung & Sauberkeit       | Sortieren, Systematisieren, Säubern, Standardisieren, Selbstdisziplin   |
-| 5 Why                  | 5-Warum-Analyse            | Ursachenforschung durch wiederholtes "Warum?" fragen                     |
-| SMED                   | Schnellrüsten              | Single-Minute Exchange of Die — Rüstzeit unter 10 Minuten               |
-| Gemba Walk             | Vor-Ort-Begehung           | Management geht an den Ort des Geschehens (Shopfloor)                    |
-| Shopfloor              | Produktionshalle           | Der Ort wo die Wertschöpfung stattfindet                                 |
+| Begriff                | Deutsch                      | Erklärung                                                                 |
+| ---------------------- | ---------------------------- | ------------------------------------------------------------------------- |
+| TPM                    | Total Productive Maintenance | Ganzheitliche Instandhaltungsstrategie                                    |
+| OEE / GAE              | Gesamtanlageneffektivität    | Kennzahl: Verfügbarkeit × Leistung × Qualität                             |
+| MTBF                   | Mittlere Betriebsdauer       | Mean Time Between Failures — durchschnittliche Zeit zwischen Ausfällen    |
+| MTTR                   | Mittlere Reparaturzeit       | Mean Time To Repair — durchschnittliche Reparaturdauer                    |
+| CMMS                   | Instandhaltungssoftware      | Computerized Maintenance Management System                                |
+| Autonomous Maintenance | Autonome Instandhaltung      | Bediener übernimmt einfache Wartungsaufgaben                              |
+| Planned Maintenance    | Geplante Instandhaltung      | Systematische Wartung nach Plan/Zustand                                   |
+| Corrective Maintenance | Korrektive Instandhaltung    | Reparatur nach Ausfall (reaktiv)                                          |
+| Predictive Maintenance | Vorausschauende Instandh.    | Zustandsbasiert, Sensorik, Trends                                         |
+| Work Order             | Arbeitsauftrag               | Formaler Auftrag für Wartungs-/Reparaturarbeit                            |
+| Checklist              | Prüfliste                    | Abzuarbeitende Punkte bei Wartung/Inspektion                              |
+| Downtime               | Stillstandszeit              | Zeit in der die Maschine nicht produziert                                 |
+| Spare Parts            | Ersatzteile                  | Lagerbestand für Wartung/Reparatur                                        |
+| Kamishibai             | Kartensystem                 | Visuelles Board mit Rot/Grün-Karten für wiederkehrende Aufgaben           |
+| Kanban                 | Pull-System                  | Arbeit wird "gezogen" statt "geschoben" — WIP-Limits begrenzen Paralleles |
+| WIP Limit              | Work-in-Progress-Limit       | Max. Anzahl gleichzeitiger Aufgaben — verhindert Überlastung              |
+| 5S                     | Ordnung & Sauberkeit         | Sortieren, Systematisieren, Säubern, Standardisieren, Selbstdisziplin     |
+| 5 Why                  | 5-Warum-Analyse              | Ursachenforschung durch wiederholtes "Warum?" fragen                      |
+| SMED                   | Schnellrüsten                | Single-Minute Exchange of Die — Rüstzeit unter 10 Minuten                 |
+| Gemba Walk             | Vor-Ort-Begehung             | Management geht an den Ort des Geschehens (Shopfloor)                     |
+| Shopfloor              | Produktionshalle             | Der Ort wo die Wertschöpfung stattfindet                                  |
 
 ---
 
@@ -423,9 +439,9 @@ Hierarchie (höher = inkludiert alle darunter):
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                |
-| ------- | ---------- | ----------------------------------------------------------------------- |
-| 0.1.0   | 2026-02-18 | Initial Draft erstellt                                                  |
-| 0.2.0   | 2026-02-18 | Kamishibai + Kanban, Wartungsarten, Herausforderungen, Quellen ergänzt  |
+| Version | Datum      | Änderung                                                                 |
+| ------- | ---------- | ------------------------------------------------------------------------ |
+| 0.1.0   | 2026-02-18 | Initial Draft erstellt                                                   |
+| 0.2.0   | 2026-02-18 | Kamishibai + Kanban, Wartungsarten, Herausforderungen, Quellen ergänzt   |
 | 0.3.0   | 2026-02-18 | Real-World LPS-Beispiel aus Screenshots, Kartenformat, typische Aufgaben |
 | 0.4.0   | 2026-02-18 | Intervall-Kaskade als fundamentale Business-Regel dokumentiert           |

@@ -8,20 +8,13 @@
  */
 
 html.dark {
-  /* Main Background - ORIGINAL dark theme values (do NOT change!) */
+  /* Main Background - ORIGINAL dark theme values (do NOT change!) #030303 */
   --main-bg: #000;
-  --main-bg-gradient: linear-gradient(
-    360deg,
-    transparent,
-    rgb(0 36 82 / 15.8%) 100%,
-    rgb(1 0 4 / 51%) 0,
-    rgb(0 0 4 / 60%) 100%,
-    #000
-  );
+  --main-bg-gradient: #030303;
 
   /* Backgrounds */
   --color-surface: var(--color-gray-900);
-  --header-bg: linear-gradient(90deg, #00050c 55%, #051022);
+  --header-bg: #030303;
 
   /* Text */
   --color-text-primary: var(--color-white);

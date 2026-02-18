@@ -44,6 +44,7 @@ Lean Management          [1]  ← Notification Badge
 ### 2. TPM Hauptseite (Dashboard)
 
 Admin sieht beim Öffnen:
+
 - **Info-Box:** Nächste anstehende Wartung (Datum, Maschine, was)
 - **Wartungsplanübersicht** (= digitale Version von Screenshot 4):
 
@@ -78,6 +79,7 @@ Pro Wartungsereignis wird die **GEPLANTE** Zeit erfasst (nicht tatsächlich):
 ### 4. Wartungsplan-Erstellung (pro Maschine)
 
 **Basis-Intervall:**
+
 - Wochentag + Wiederholung wählen: z.B. "Jeden Donnerstag" oder "Jeden 2. Donnerstag" oder "Jeden 3. Donnerstag"
 - Daraus werden ALLE Intervalle dynamisch berechnet:
   - Monatlich → der gewählte Donnerstag im Monat
@@ -87,6 +89,7 @@ Pro Wartungsereignis wird die **GEPLANTE** Zeit erfasst (nicht tatsächlich):
   - Langläufer → custom (z.B. alle 255 Betriebsstunden → Ölwechsel)
 
 **CRITICAL: Slot-Verfügbarkeits-Assistent!**
+
 - Problem: Bei 20 Maschinen weiß man ab Maschine #15 nicht mehr, welche Slots frei sind
 - Lösung: System zeigt an: "Jeder 2. Dienstag um 10:00 ist noch frei!"
 - Visualisierung: Belegte vs. freie Zeitslots beim Erstellen
@@ -102,6 +105,7 @@ Pro Wartungsereignis wird die **GEPLANTE** Zeit erfasst (nicht tatsächlich):
 **Zugang:** Vom Wartungsplan → Klick auf Maschine → Kamishibai Board öffnen
 
 **Board-Struktur:**
+
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                        KAMISHIBAI BOARD — Maschine P17                           │
@@ -127,6 +131,7 @@ Pro Wartungsereignis wird die **GEPLANTE** Zeit erfasst (nicht tatsächlich):
 **Ansicht-Filter:** Gesamt / nur ein Intervall / nur offene (rote) / nur Bediener / nur Instandhaltung
 
 **Sichtbarkeit für Employee:**
+
 - Sieht ALLE Karten (Bediener UND Instandhaltung) seiner zugewiesenen Maschinen
 - Maschinen-Zuweisung läuft über Team-Assignment (machine → team → user)
 - Filter möglich: nur Bediener-Karten / nur Instandhaltungs-Karten
@@ -136,9 +141,11 @@ Pro Wartungsereignis wird die **GEPLANTE** Zeit erfasst (nicht tatsächlich):
 **Karten-Verhalten (2 Flows je nach Karten-Konfiguration):**
 
 **Flow A — Karte OHNE Freigabe-Pflicht:**
+
 ```
 GRÜN (nicht fällig) → ROT (Termin!) → Mitarbeiter klickt "Done" → GRÜN
 ```
+
 1. Karte ist **GRÜN** wenn Aufgabe nicht fällig
 2. Bei Termin dreht sich Karte automatisch auf **ROT**
 3. Mitarbeiter klickt auf rote Karte → sieht Details
@@ -146,9 +153,11 @@ GRÜN (nicht fällig) → ROT (Termin!) → Mitarbeiter klickt "Done" → GRÜN
 5. Klickt "Done" → Karte wird direkt wieder **GRÜN**
 
 **Flow B — Karte MIT Freigabe-Pflicht (Checkbox "Erfordert Freigabe/Prüfung" bei Erstellung):**
+
 ```
 GRÜN → ROT (Termin!) → Mitarbeiter: Doku + Fotos + "Done" → GELB (wartet auf Prüfung) → Admin/Schichtleiter prüft → GRÜN
 ```
+
 1. Karte ist **GRÜN** wenn Aufgabe nicht fällig
 2. Bei Termin dreht sich Karte automatisch auf **ROT**
 3. Mitarbeiter klickt auf rote Karte → sieht Details
@@ -163,13 +172,13 @@ GRÜN → ROT (Termin!) → Mitarbeiter: Doku + Fotos + "Done" → GELB (wartet 
 
 ### Farben
 
-| Status                  | Default-Farbe | Bedeutung                          |
-| ----------------------- | ------------- | ---------------------------------- |
-| Nicht fällig / Erledigt | **GRÜN**      | Alles ok                           |
-| Fällig / Offen          | **ROT**       | Muss gemacht werden                |
-| Wartet auf Freigabe     | **GELB**      | Erledigt, Admin muss prüfen        |
-| Abgelehnt               | **ROT**       | Zurück, nochmal machen             |
-| Überfällig              | **ROT** + ⚠️  | Fällig + Frist überschritten       |
+| Status                  | Default-Farbe | Bedeutung                    |
+| ----------------------- | ------------- | ---------------------------- |
+| Nicht fällig / Erledigt | **GRÜN**      | Alles ok                     |
+| Fällig / Offen          | **ROT**       | Muss gemacht werden          |
+| Wartet auf Freigabe     | **GELB**      | Erledigt, Admin muss prüfen  |
+| Abgelehnt               | **ROT**       | Zurück, nochmal machen       |
+| Überfällig              | **ROT** + ⚠️  | Fällig + Frist überschritten |
 
 **Custom Farben:** Wie beim KVP-Modul (Color Picker bei Definitions) — jede Firma kann eigene Farben definieren. Default bleibt Grün/Rot/Gelb.
 
@@ -250,6 +259,7 @@ Monatlich fällig → diese Karten ROT:
 **Problem:** Eine Aufgabe wie "Schraube 7 nachziehen" existiert vielleicht schon als monatliche Karte. Wenn der Admin jetzt eine jährliche Karte mit derselben Aufgabe erstellt → Redundanz.
 
 **Lösung:**
+
 1. Admin erstellt neue Karte (z.B. für Intervall "Jährlich")
 2. System prüft: Existiert diese Aufgabe (oder ähnlich) bereits in einem kürzeren Intervall?
 3. **Warnung:** "Diese Aufgabe existiert bereits als monatliche Karte BM4 'Schraube 7 nachziehen'. Trotzdem erstellen?"
@@ -258,6 +268,7 @@ Monatlich fällig → diese Karten ROT:
    - **Trotzdem erstellen** (bewusste Doppelung)
 
 **Ergebnis:** Jährliche Karten fokussieren sich auf echte Jahres-Aufgaben:
+
 - Kalibrierung
 - Verschleißteile wechseln
 - TÜV / Generalüberholung
@@ -266,10 +277,12 @@ Monatlich fällig → diese Karten ROT:
 ### Machine Availability Integration
 
 **Bestehendes System:**
+
 - `/manage-machines` — Maschinenübersicht mit Status
 - `/manage-machines/availability/{uuid}` — Maschinenausfallzeiten (primär für manuelle Abwesenheiten)
 
 **TPM-Integration:**
+
 - Wenn Wartungsplan aktiv ist → Machine Availability automatisch auf "Wartung" setzen
 - Analog zu Vacation → `user_availability`: Hier TPM → `machine_availability`
 - `/manage-machines` soll dynamisch den Status updaten wenn Wartung läuft
@@ -279,6 +292,7 @@ Monatlich fällig → diese Karten ROT:
 ### CRITICAL: Schichtplan ↔ Wartungsplan Abhängigkeit
 
 **Bestehende Systeme die wir nutzen:**
+
 - Shift Planning (Schichtplanung) — fertig ✅
 - Employee Availability — fertig ✅
 - Vacation Planning — fertig ✅
@@ -299,6 +313,7 @@ Monatlich fällig → diese Karten ROT:
 ```
 
 **Warum diese Reihenfolge?**
+
 - Edge Case: MA wird im Wartungsplan eingetragen, DANACH wird Schichtplan erstellt
 - Schichtplan zeigt was anderes → MA ist zur Wartungszeit gar nicht da!
 - Lösung: Wartungsplan-Assignment geht NUR wenn Schichtplan schon existiert
@@ -306,12 +321,12 @@ Monatlich fällig → diese Karten ROT:
 
 **Edge Cases die wir abfangen müssen:**
 
-| Edge Case | Problem | Lösung |
-| --------- | ------- | ------ |
-| Schichtplan noch nicht erstellt | MA-Verfügbarkeit unbekannt | Wartungsplan-Erstellung blockieren ODER Warnung |
+| Edge Case                                     | Problem                           | Lösung                                                              |
+| --------------------------------------------- | --------------------------------- | ------------------------------------------------------------------- |
+| Schichtplan noch nicht erstellt               | MA-Verfügbarkeit unbekannt        | Wartungsplan-Erstellung blockieren ODER Warnung                     |
 | MA im Wartungsplan, dann Schichtplan-Änderung | MA plötzlich nicht mehr verfügbar | Notification: "MA X ist nicht mehr verfügbar für Wartung am DD.MM." |
-| MA hat Urlaub an dem Wartungstag | Konflikt Vacation ↔ Wartung | System prüft Employee Availability (Urlaub/Krank) |
-| MA krank gemeldet (kurzfristig) | Wartung kann nicht stattfinden | Notification + Umplanung nötig |
+| MA hat Urlaub an dem Wartungstag              | Konflikt Vacation ↔ Wartung       | System prüft Employee Availability (Urlaub/Krank)                   |
+| MA krank gemeldet (kurzfristig)               | Wartung kann nicht stattfinden    | Notification + Umplanung nötig                                      |
 
 ### Instandhaltungsteam = Sonderstatus ("Joker")
 
@@ -330,6 +345,7 @@ Instandhaltungsteam:
 ```
 
 **Konsequenz für Wartungsplan:**
+
 - Beim Slot-Vorschlag: System schaut welche Instandhaltungs-MA laut Schichtplan verfügbar sind
 - Diese können dann JEDER Maschine zugewiesen werden (nicht nur "ihren")
 - Bediener hingegen werden nur ihren zugewiesenen Maschinen zugeordnet
@@ -337,6 +353,7 @@ Instandhaltungsteam:
 ### Shift-Modul Erweiterung (für TPM)
 
 **Neues Feature im bestehenden Shift-Modul:**
+
 - Toggle/Filter im Wochen-Grid: "Wartungstermine anzeigen"
 - Wenn aktiv: Wartungstermine als farbige Blöcke im Schichtplan sichtbar
 - Zweck: Beim Erstellen des Schichtplans für das Instandhaltungsteam kann man Schichten um Wartungstermine herum planen
@@ -363,26 +380,26 @@ Instandhaltungsteam:
 
 **Karten-Namenskonvention (aus physischen Boards abgeleitet):**
 
-| Kürzel | Bedeutung                                  |
-| ------ | ------------------------------------------ |
-| BT     | **B**ediener **T**äglich + Laufnummer      |
-| BW     | **B**ediener **W**öchentlich + Laufnummer  |
-| BM     | **B**ediener **M**onatlich + Laufnummer    |
+| Kürzel | Bedeutung                                   |
+| ------ | ------------------------------------------- |
+| BT     | **B**ediener **T**äglich + Laufnummer       |
+| BW     | **B**ediener **W**öchentlich + Laufnummer   |
+| BM     | **B**ediener **M**onatlich + Laufnummer     |
 | IV     | **I**nstandhaltung **V**ierteljährlich + Nr |
-| IH     | **I**nstandhaltung **H**albjährlich + Nr   |
-| IJ     | **I**nstandhaltung **J**ährlich + Nr       |
-| IL     | **I**nstandhaltung **L**angläufer + Nr     |
-| IC     | **I**nstandhaltung **C**ustom + Nr         |
-| BC     | **B**ediener **C**ustom + Nr               |
+| IH     | **I**nstandhaltung **H**albjährlich + Nr    |
+| IJ     | **I**nstandhaltung **J**ährlich + Nr        |
+| IL     | **I**nstandhaltung **L**angläufer + Nr      |
+| IC     | **I**nstandhaltung **C**ustom + Nr          |
+| BC     | **B**ediener **C**ustom + Nr                |
 
 Beispiel: **BM3** = Bediener Monatlich, dritte Karte. **IV13** = Instandhaltung Vierteljährlich, Karte 13.
 
 **KRITISCHE UNTERSCHEIDUNG: Bediener vs. Instandhaltung**
 
-| Rolle            | Kürzel | Wer ist das                                      | Aufgaben                                      |
-| ---------------- | ------ | ------------------------------------------------ | --------------------------------------------- |
-| **Bediener (B)** | B      | Employee/Operator der an der Maschine arbeitet   | Einfache Wartung: Reinigung, Sichtprüfung, Schmierung |
-| **Instandhaltung (I)** | I | Eigenes Wartungs-TEAM, nur Reparatur & Wartung  | Komplexe Wartung: Pneumatik, Hydraulik, Revision, TÜV |
+| Rolle                  | Kürzel | Wer ist das                                    | Aufgaben                                              |
+| ---------------------- | ------ | ---------------------------------------------- | ----------------------------------------------------- |
+| **Bediener (B)**       | B      | Employee/Operator der an der Maschine arbeitet | Einfache Wartung: Reinigung, Sichtprüfung, Schmierung |
+| **Instandhaltung (I)** | I      | Eigenes Wartungs-TEAM, nur Reparatur & Wartung | Komplexe Wartung: Pneumatik, Hydraulik, Revision, TÜV |
 
 - Der **Bediener** hat mit Instandhaltungs-Karten NICHTS zu tun
 - Das **Instandhaltungsteam** hat eigene Aufgaben, eigene Karten, eigene Intervalle
@@ -390,11 +407,13 @@ Beispiel: **BM3** = Bediener Monatlich, dritte Karte. **IV13** = Instandhaltung 
 - Dies muss im Permission-System und in der Karten-Zuordnung abgebildet werden!
 
 **"Örtlichkeit" → Foto-Referenz:**
+
 - Physisch: Sticker-Nummer an der Maschine zeigt wo die Aufgabe ist
 - Digital: Klickbarer Link → zeigt Foto + Text der genauen Stelle an der Maschine
 - Wird in der Karten-Doku hinterlegt (Foto-Upload mit Beschreibung)
 
 **WICHTIG: Custom Kartenvorlagen!**
+
 - Admins können Karten nach Standard-Vorlage erstellen (wie oben)
 - ABER auch eigene Vorlagen erstellen → jede Firma hat andere Standards
 - Custom Felder möglich (z.B. zusätzliche Felder, anderes Layout)
@@ -408,16 +427,16 @@ Beispiel: **BM3** = Bediener Monatlich, dritte Karte. **IV13** = Instandhaltung 
 
 ### 9. Intervall-Typen
 
-| Intervall        | Kürzel | Beispiel                        | Wer              |
-| ---------------- | ------ | ------------------------------- | ---------------- |
-| Täglich          | T      | Sichtprüfung, Reinigung        | Bediener         |
-| Wöchentlich      | W      | Schmierung, Ölstand             | Bediener         |
-| Monatlich        | M      | Filterprüfung, Dichtungen      | Bediener/Instandh.|
-| Vierteljährlich  | VJ     | Pneumatik, Kalibrierung        | Instandhaltung   |
-| Halbjährlich     | HJ     | Revision, große Inspektion     | Instandhaltung   |
-| Jährlich         | J      | TÜV, Generalüberholung         | Instandhaltung   |
-| Langläufer       | LL     | Ölwechsel Typ 255, große Revision | Instandhaltung   |
-| Custom           | C      | Frei definierbar: z.B. alle 100 Tage, alle 45 Tage | Konfigurierbar   |
+| Intervall       | Kürzel | Beispiel                                           | Wer                |
+| --------------- | ------ | -------------------------------------------------- | ------------------ |
+| Täglich         | T      | Sichtprüfung, Reinigung                            | Bediener           |
+| Wöchentlich     | W      | Schmierung, Ölstand                                | Bediener           |
+| Monatlich       | M      | Filterprüfung, Dichtungen                          | Bediener/Instandh. |
+| Vierteljährlich | VJ     | Pneumatik, Kalibrierung                            | Instandhaltung     |
+| Halbjährlich    | HJ     | Revision, große Inspektion                         | Instandhaltung     |
+| Jährlich        | J      | TÜV, Generalüberholung                             | Instandhaltung     |
+| Langläufer      | LL     | Ölwechsel Typ 255, große Revision                  | Instandhaltung     |
+| Custom          | C      | Frei definierbar: z.B. alle 100 Tage, alle 45 Tage | Konfigurierbar     |
 
 **Hinweis:** Langläufer = im Prinzip Custom mit langem Intervall. "255" in der Excel ist der Öltyp, NICHT Betriebsstunden. Kein Maschinenzähler nötig — reine Kalenderberechnung für alle Intervalle.
 
@@ -430,12 +449,14 @@ Beispiel: **BM3** = Bediener Monatlich, dritte Karte. **IV13** = Instandhaltung 
 ### Recherche abgeschlossen
 
 **Quellen gelesen:**
+
 1. REFA Lexikon — TPM (6 Implementierungsphasen)
 2. Remberg Blog — TPM (8 Säulen, Digitalisierung, CMMS-Kontext)
 3. Simplefactory — Kamishibai Board (14 Schritte, Board-Layout, Kartensystem)
 4. t2informatik — Kamishibai + Kanban (Interdisziplinäre Teams, zweiter Backlog)
 
 **Screenshots analysiert:**
+
 1. `screenshot1.png` — Excel Wartungsplan: monatliche Termine pro Maschine, Uhrzeiten, Farbcodierung
 2. `screnshot 2.png` — Unterer Teil: Maschinen-Grid + Mitarbeiter-Zeitsummen (alle 0 = Template)
 3. `screenshot3.png` — Mitarbeiter-Auswahl Dialog: Multi-Select, Tabs pro Maschine
@@ -464,26 +485,26 @@ Beispiel: **BM3** = Bediener Monatlich, dritte Karte. **IV13** = Instandhaltung 
 
 ## Entscheidungen
 
-| #   | Entscheidung                                         | Begründung                                           | Datum      |
-| --- | ---------------------------------------------------- | ---------------------------------------------------- | ---------- |
-| E1  | Örtlichkeit → Foto-Referenz statt Sticker-Nummer    | Digital keine Sticker möglich, Foto+Text ist besser  | 2026-02-18 |
-| E2  | Zeiterfassung = nur SOLL (geplante Zeit)             | Für Puffer-Berechnung und Ressourcenplanung          | 2026-02-18 |
-| E3  | Bediener (B) und Instandhaltung (I) strikt getrennt | Unterschiedliche Rollen, unterschiedliche Karten     | 2026-02-18 |
-| E4  | Langläufer = Custom mit langem Intervall, kein Stundenzähler | "255" = Öltyp, reine Kalenderberechnung reicht | 2026-02-18 |
-| E5  | Employee sieht ALLE Karten (B+I) seiner zugewiesenen Maschinen | Transparenz, aber filterbar nach B/I              | 2026-02-18 |
-| E6  | Intervall-Kaskade: Jährlich = ALLE kürzeren Intervalle gleichzeitig fällig | Maschine steht eh still, alles auf einmal machen | 2026-02-18 |
-| E7  | Duplikat-Warnung bei Karten-Erstellung wenn Aufgabe in kürzerem Intervall existiert | Vermeidet Redundanz, fokussiert auf echte Jahres-Aufgaben | 2026-02-18 |
-| E8  | Machine Availability automatisch auf "Wartung" wenn Wartungsplan aktiv | Wie Vacation→user_availability, hier TPM→machine_availability | 2026-02-18 |
-| E9  | Freigabe pro Karte konfigurierbar (Checkbox bei Erstellung)          | Manche Karten brauchen Prüfung, manche nicht. Bei Freigabe-Karten: Doku + optionale Fotos Pflicht | 2026-02-18 |
-| E10 | Überfällige Karten: Bleibt ROT + Eskalations-Notification nach konfigurierbarer Frist | Kein Umdrehen ohne Done/Prüfung. Intern wird's geklärt, System warnt zusätzlich | 2026-02-18 |
-| E11 | Kartenfarben: Custom möglich (wie KVP Color Picker bei Definitions) | Jede Firma hat eigene Farbstandards, Default bleibt Grün/Rot/Gelb | 2026-02-18 |
-| E12 | Card-Flip Animation: Svelte `rotateY(180deg)` + `transition: transform 0.4s` | Physisches Umdrehen digital nachempfunden, `backface-visibility: hidden` | 2026-02-18 |
-| E13 | Kein Kosten-/Ersatzteil-Tracking in V1                                | Scope bewusst klein halten, ggf. V2. Lagerbestand/Drittanbieter vielleicht später | 2026-02-18 |
-| E14 | Slot-Vorschlag prüft Maschinen-Belegung UND Schichtplan              | Employee Availability, Shift, Vacation sind schon fertig — nutzen!       | 2026-02-18 |
-| E15 | REGEL: Schichtplan MUSS VOR Wartungsplan existieren                   | Wartungsplan liest Schichtplan um verfügbare MA zu erkennen              | 2026-02-18 |
-| E16 | Instandhaltungsteam = Joker, nicht fest an Maschine gebunden          | Geht dahin wo Wartung/Reparatur ist. Machine-Assignment optional (schon so gebaut) | 2026-02-18 |
-| E17 | Shift-Modul braucht Toggle/Filter für Wartungstermine im Week-Grid    | Instandhaltung kann bei Schichtplanung Wartung sehen und Schicht planen  | 2026-02-18 |
-| E18 | Permission-Hierarchie: root/admin(full_access)=RWX, employee=R(own), teamlead=RWX(team), dept_lead=RWX(dept), area_lead=RWX(area) | Analog zu bestehendem RBAC-System | 2026-02-18 |
+| #   | Entscheidung                                                                                                                      | Begründung                                                                                        | Datum      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------- |
+| E1  | Örtlichkeit → Foto-Referenz statt Sticker-Nummer                                                                                  | Digital keine Sticker möglich, Foto+Text ist besser                                               | 2026-02-18 |
+| E2  | Zeiterfassung = nur SOLL (geplante Zeit)                                                                                          | Für Puffer-Berechnung und Ressourcenplanung                                                       | 2026-02-18 |
+| E3  | Bediener (B) und Instandhaltung (I) strikt getrennt                                                                               | Unterschiedliche Rollen, unterschiedliche Karten                                                  | 2026-02-18 |
+| E4  | Langläufer = Custom mit langem Intervall, kein Stundenzähler                                                                      | "255" = Öltyp, reine Kalenderberechnung reicht                                                    | 2026-02-18 |
+| E5  | Employee sieht ALLE Karten (B+I) seiner zugewiesenen Maschinen                                                                    | Transparenz, aber filterbar nach B/I                                                              | 2026-02-18 |
+| E6  | Intervall-Kaskade: Jährlich = ALLE kürzeren Intervalle gleichzeitig fällig                                                        | Maschine steht eh still, alles auf einmal machen                                                  | 2026-02-18 |
+| E7  | Duplikat-Warnung bei Karten-Erstellung wenn Aufgabe in kürzerem Intervall existiert                                               | Vermeidet Redundanz, fokussiert auf echte Jahres-Aufgaben                                         | 2026-02-18 |
+| E8  | Machine Availability automatisch auf "Wartung" wenn Wartungsplan aktiv                                                            | Wie Vacation→user_availability, hier TPM→machine_availability                                     | 2026-02-18 |
+| E9  | Freigabe pro Karte konfigurierbar (Checkbox bei Erstellung)                                                                       | Manche Karten brauchen Prüfung, manche nicht. Bei Freigabe-Karten: Doku + optionale Fotos Pflicht | 2026-02-18 |
+| E10 | Überfällige Karten: Bleibt ROT + Eskalations-Notification nach konfigurierbarer Frist                                             | Kein Umdrehen ohne Done/Prüfung. Intern wird's geklärt, System warnt zusätzlich                   | 2026-02-18 |
+| E11 | Kartenfarben: Custom möglich (wie KVP Color Picker bei Definitions)                                                               | Jede Firma hat eigene Farbstandards, Default bleibt Grün/Rot/Gelb                                 | 2026-02-18 |
+| E12 | Card-Flip Animation: Svelte `rotateY(180deg)` + `transition: transform 0.4s`                                                      | Physisches Umdrehen digital nachempfunden, `backface-visibility: hidden`                          | 2026-02-18 |
+| E13 | Kein Kosten-/Ersatzteil-Tracking in V1                                                                                            | Scope bewusst klein halten, ggf. V2. Lagerbestand/Drittanbieter vielleicht später                 | 2026-02-18 |
+| E14 | Slot-Vorschlag prüft Maschinen-Belegung UND Schichtplan                                                                           | Employee Availability, Shift, Vacation sind schon fertig — nutzen!                                | 2026-02-18 |
+| E15 | REGEL: Schichtplan MUSS VOR Wartungsplan existieren                                                                               | Wartungsplan liest Schichtplan um verfügbare MA zu erkennen                                       | 2026-02-18 |
+| E16 | Instandhaltungsteam = Joker, nicht fest an Maschine gebunden                                                                      | Geht dahin wo Wartung/Reparatur ist. Machine-Assignment optional (schon so gebaut)                | 2026-02-18 |
+| E17 | Shift-Modul braucht Toggle/Filter für Wartungstermine im Week-Grid                                                                | Instandhaltung kann bei Schichtplanung Wartung sehen und Schicht planen                           | 2026-02-18 |
+| E18 | Permission-Hierarchie: root/admin(full_access)=RWX, employee=R(own), teamlead=RWX(team), dept_lead=RWX(dept), area_lead=RWX(area) | Analog zu bestehendem RBAC-System                                                                 | 2026-02-18 |
 
 ---
 
@@ -498,12 +519,12 @@ Beispiel: **BM3** = Bediener Monatlich, dritte Karte. **IV13** = Instandhaltung 
 
 ### Rollen im System
 
-| Rolle | DB-Feld | `has_full_access` | TPM-Zugriff |
-| ----- | ------- | ----------------- | ----------- |
-| **root** | `users.role = 'root'` | Immer `true` (DB-Constraint) | RWX alles |
-| **admin** (full) | `users.role = 'admin'`, `has_full_access = true` | Ja | RWX alles |
-| **admin** (eingeschränkt) | `users.role = 'admin'`, `has_full_access = false` | Nein | Über `admin_area_permissions` / `admin_department_permissions` |
-| **employee** | `users.role = 'employee'` | Immer `false` (DB-Constraint) | Read only, nur eigene Maschinen |
+| Rolle                     | DB-Feld                                           | `has_full_access`             | TPM-Zugriff                                                    |
+| ------------------------- | ------------------------------------------------- | ----------------------------- | -------------------------------------------------------------- |
+| **root**                  | `users.role = 'root'`                             | Immer `true` (DB-Constraint)  | RWX alles                                                      |
+| **admin** (full)          | `users.role = 'admin'`, `has_full_access = true`  | Ja                            | RWX alles                                                      |
+| **admin** (eingeschränkt) | `users.role = 'admin'`, `has_full_access = false` | Nein                          | Über `admin_area_permissions` / `admin_department_permissions` |
+| **employee**              | `users.role = 'employee'`                         | Immer `false` (DB-Constraint) | Read only, nur eigene Maschinen                                |
 
 ### Zugriffskette: Employee → Maschine
 
@@ -621,6 +642,7 @@ routes/(app)/
 
 - [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md) — Feature-Integration-Checkliste
 - [HOW-TO-PLAN-SAMPLE.md](./HOW-TO-PLAN-SAMPLE.md) — Masterplan-Template
+- [FEAT_TPM_MASTERPLAN.md](./FEAT_TPM_MASTERPLAN.md) — **TPM Execution Masterplan (28 Sessions, 6 Phasen)**
 - [FEAT_VACCATION_MASTERPLAN.md](./FEAT_VACCATION_MASTERPLAN.md) — Referenz-Implementation (24 Sessions)
 - [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md) — Domänenwissen TPM, Kamishibai, Kanban
 - [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md) — Codebase-Verifizierung aller Annahmen
