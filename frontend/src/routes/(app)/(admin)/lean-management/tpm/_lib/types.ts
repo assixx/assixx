@@ -289,6 +289,40 @@ export interface DuplicateCheckResult {
 }
 
 // =============================================================================
+// CONFIG PAYLOADS
+// =============================================================================
+
+/** Payload for updating a single color config entry */
+export interface UpdateColorPayload {
+  statusKey: CardStatus;
+  colorHex: string;
+  label: string;
+}
+
+/** Payload for updating escalation config */
+export interface UpdateEscalationPayload {
+  escalationAfterHours: number;
+  notifyTeamLead?: boolean;
+  notifyDepartmentLead?: boolean;
+}
+
+/** Payload for creating a card template */
+export interface CreateTemplatePayload {
+  name: string;
+  description?: string | null;
+  defaultFields?: Record<string, unknown>;
+  isDefault?: boolean;
+}
+
+/** Payload for updating a card template */
+export interface UpdateTemplatePayload {
+  name?: string;
+  description?: string | null;
+  defaultFields?: Record<string, unknown>;
+  isDefault?: boolean;
+}
+
+// =============================================================================
 // API RESPONSE TYPES
 // =============================================================================
 

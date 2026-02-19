@@ -166,6 +166,14 @@
     white-space: nowrap;
   }
 
+  .user-email {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .user-position {
     margin-top: 2px;
     font-size: 13px;

@@ -115,15 +115,13 @@
   /* Glassmorphism background gradient overlay
      absolute statt fixed: fixed erzeugt eigenen Stacking Context,
      der Fullscreen-Overlays (z.B. Blackboard) verdeckt.
-     height: 100vh statt inset: 0 → Gradient bleibt stabil,
-     egal wie hoch der Content ist (kein Stretching bei Tab-Wechsel). */
+     inset: 0 spannt über gesamten Body, min-height verhindert Kollaps
+     auf kurzen Seiten. */
   body::after {
     position: absolute;
     z-index: -100;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100vh;
+    inset: 0;
+    min-height: 100vh;
 
     background: var(--main-bg-gradient);
     pointer-events: none;

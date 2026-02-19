@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.23.0 (Step 5.6 DONE — Card Detail + Execution + Approval UI)
-> **Status:** IN PROGRESS — Phase 5, nächster Step: 5.7 (Config UI + Integration)
+> **Version:** 1.24.0 (Step 5.7 DONE — Config UI + Integration)
+> **Status:** IN PROGRESS — Phase 5, nächster Step: 5.8 (Shift-Grid TPM Toggle)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 25 / 29
+> **Actual Sessions:** 27 / 29
 
 ---
 
@@ -73,6 +73,7 @@ pnpm test                # unit + api tests
 | 1.22.0  | 2026-02-19 | Step 5.5 DONE: Kamishibai Board (Employee View) — 7 neue Dateien. board/[uuid]/+page.server.ts (SSR: Plan+Cards+Colors parallel), board/[uuid]/+page.svelte (Page Orchestration: Header + Filter + KamishibaiBoard), \_lib/CardFlip.svelte (CSS 3D perspective, will-change GPU, reduced-motion), \_lib/KamishibaiCard.svelte (Status-Color Front, Description/Location/Due-Date Back, pulse animation für urgent), \_lib/KamishibaiSection.svelte (Interval-Group: Operator + Instandhaltung Rows, open-badge), \_lib/KamishibaiBoard.svelte (SvelteMap grouping, INTERVAL_ORDER sort, empty-state), \_lib/BoardFilter.svelte (4 Filter: Alle/Bediener/Instandhaltung/Nur Offene, $bindable). svelte-check 0 Errors 0 Warnings, ESLint 0, 3808 Unit-Tests ✅                                                                                                                                                              |
 | 1.21.0  | 2026-02-19 | Step 5.4 DONE: Shared Employee Overview — 7 neue Dateien, 2 modifiziert. Route-Conflict gelöst: Employee-Page unter `overview/` Subdirectory (URL: `/lean-management/tpm/overview`). overview/+page.server.ts (SSR: Plans+Colors parallel, Board-Data per Plan, countStatuses), overview/+page.svelte (4 Stat-Cards + MachineList), \_lib/types.ts (TpmPlan, TpmCard, TpmColorConfigEntry, StatusCounts, MachineWithTpmStatus), \_lib/constants.ts (INTERVAL_LABELS, CARD_STATUS_LABELS, DEFAULT_COLORS, WEEKDAY_LABELS, MESSAGES), \_lib/api.ts (Employee API Client), \_lib/MachineList.svelte (Sortierte Maschinenliste mit Urgency-Indicator, Schedule, Status-Badges, Board-Link), \_lib/MaintenanceStatus.svelte (Color-coded Status-Badges mit Tenant-Config). navigation-config.ts (Employee TPM URL aktualisiert), Breadcrumb.svelte (overview + board URL-Mappings). svelte-check 0, ESLint 0                    |
 | 1.23.0  | 2026-02-19 | Step 5.6 DONE: Card Detail + Execution + Approval UI — 5 neue Dateien, 4 modifiziert. CardDetail.svelte (Slide-Over Panel: Info-Grid, Beschreibung, Location, TimeEstimate, ExecutionForm/ApprovalPanel je nach Status), ExecutionForm.svelte (Durchführung melden: Dokumentation Textarea, Post-Submit PhotoUpload), ApprovalPanel.svelte (Freigabe/Ablehnung: Pending-Execution laden, Note-Pflicht bei Reject), PhotoUpload.svelte (Max 5×5MB, JPG/PNG/WebP, Thumbnail-Grid), TimeEstimateForm.svelte (Read-Only SOLL-Zeit Anzeige). KamishibaiCard.svelte (+onCardSelect Prop, Details-Button auf Rückseite), KamishibaiSection.svelte (+onCardSelect Durchreichung), KamishibaiBoard.svelte (+onCardSelect Durchreichung), +page.svelte (+selectedCard State, CardDetail Overlay, invalidateAll nach Aktion). api.ts (+7 Funktionen), types.ts (+6 Interfaces), constants.ts (+50 Messages). svelte-check 0, ESLint 0 |
+| 1.24.0  | 2026-02-19 | Step 5.7 DONE: Config UI + Integration — 5 neue Dateien, 3 modifiziert. config/+page.server.ts (SSR: Escalation+Colors+Templates parallel, requireFeature), config/+page.svelte (Tab-Layout: 3 Tabs Farben/Eskalation/Vorlagen), config/\_lib/ColorConfig.svelte (SvelteMap $derived, Hex-Picker+Text-Input, per-Color Save, Reset-All mit Confirmation), config/\_lib/EscalationConfig.svelte (Hours 1-720, TeamLead/DeptLead Toggles, Form mit Validation), config/\_lib/TemplateManager.svelte (CRUD: Inline Create/Edit, Delete-Confirmation, isDefault Badge, Empty-State). api.ts (+7 Mutation-Funktionen: updateColor, resetColors, updateEscalation, createTemplate, updateTemplate, deleteTemplate), types.ts (+5 Payload-Interfaces), constants.ts (+60 Messages). Breadcrumb.svelte (config URL-Mapping). svelte-check 0 Errors 0 Warnings, ESLint 0, 4764 Tests ✅ |
 
 > **Versionierungsregel:**
 >
@@ -1214,7 +1215,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 ---
 
-### Step 5.7: Session 27 — Config UI + Integration [PENDING]
+### Step 5.7: Session 27 — Config UI + Integration [DONE]
 
 **Neue Dateien:**
 
@@ -1297,7 +1298,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 - [ ] Kamishibai Board rendert mit allen Sektionen
 - [ ] Card-Flip Animation funktioniert (ROT ↔ GRÜN)
 - [ ] Freigabe-Flow funktioniert (ROT → GELB → GRÜN/ROT)
-- [ ] Config-Seite funktioniert (Farben, Eskalation, Vorlagen)
+- [x] Config-Seite funktioniert (Farben, Eskalation, Vorlagen)
 - [ ] Svelte 5 Runes ($state, $derived, $effect) verwendet
 - [ ] apiClient generic = DATA Shape (nicht Wrapper)
 - [ ] svelte-check 0 Errors, 0 Warnings
@@ -1377,7 +1378,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | 24      | 5     | Frontend: Shared Employee Overview                                 | DONE    | 2026-02-19 |
 | 25      | 5     | Frontend: Kamishibai Board                                         | DONE    | 2026-02-19 |
 | 26      | 5     | Frontend: Card Detail + Execution + Approval UI                    | DONE    | 2026-02-19 |
-| 27      | 5     | Frontend: Config UI + Final Integration                            | PENDING |            |
+| 27      | 5     | Frontend: Config UI + Final Integration                            | DONE    | 2026-02-19 |
 | 28      | 5     | Frontend: Shift-Grid TPM Wartungstermine Toggle (E17)              | PENDING |            |
 | 29      | 6     | E2E Verification + Polish + ADR                                    | PENDING |            |
 

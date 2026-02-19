@@ -103,6 +103,10 @@
       },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/lean-management/tpm': { label: 'TPM Wartung', icon: 'fa-tools' },
+      '/lean-management/tpm/config': {
+        label: 'TPM Konfiguration',
+        icon: 'fa-cog',
+      },
       '/lean-management/tpm/overview': {
         label: 'TPM Übersicht',
         icon: 'fa-tools',

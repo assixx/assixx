@@ -266,4 +266,77 @@ export const MESSAGES = {
   FILTER_ALL_ROLES: 'Alle Typen',
   FILTER_ALL_INTERVALS: 'Alle Intervalle',
   FILTER_ALL_STATUS: 'Alle Status',
+
+  // Config page
+  CONFIG_PAGE_TITLE: 'TPM Konfiguration - Assixx',
+  CONFIG_PAGE_HEADING: 'TPM Konfiguration',
+  CONFIG_PAGE_DESCRIPTION: 'Farben, Eskalation und Vorlagen konfigurieren',
+
+  // Config tabs
+  CONFIG_TAB_COLORS: 'Farben',
+  CONFIG_TAB_ESCALATION: 'Eskalation',
+  CONFIG_TAB_TEMPLATES: 'Vorlagen',
+
+  // Color config
+  COLOR_TITLE: 'Status-Farben',
+  COLOR_DESCRIPTION:
+    'Farben für die Kamishibai-Board Status-Anzeige anpassen',
+  COLOR_STATUS: 'Status',
+  COLOR_HEX: 'Hex-Farbe',
+  COLOR_LABEL: 'Bezeichnung',
+  COLOR_PREVIEW: 'Vorschau',
+  COLOR_RESET: 'Standardfarben wiederherstellen',
+  COLOR_RESET_CONFIRM:
+    'Alle Farben auf die Standardwerte zurücksetzen?',
+  COLOR_SAVE: 'Farbe speichern',
+  COLOR_HEX_INVALID: 'Ungültiges Hex-Format (z.B. #10b981)',
+  COLOR_LABEL_REQUIRED: 'Bezeichnung ist erforderlich',
+  SUCCESS_COLOR_UPDATED: 'Farbe aktualisiert',
+  SUCCESS_COLORS_RESET: 'Farben auf Standard zurückgesetzt',
+  ERROR_COLOR_UPDATE: 'Fehler beim Aktualisieren der Farbe',
+  ERROR_COLOR_RESET: 'Fehler beim Zurücksetzen der Farben',
+
+  // Escalation config
+  ESCALATION_TITLE: 'Eskalation',
+  ESCALATION_DESCRIPTION:
+    'Nach wie vielen Stunden werden überfällige Wartungen eskaliert?',
+  ESCALATION_HOURS: 'Eskalation nach (Stunden)',
+  ESCALATION_HOURS_HELP: 'Wert zwischen 1 und 720 (30 Tage)',
+  ESCALATION_NOTIFY_TEAM: 'Teamleiter benachrichtigen',
+  ESCALATION_NOTIFY_DEPT: 'Abteilungsleiter benachrichtigen',
+  ESCALATION_SAVE: 'Eskalation speichern',
+  SUCCESS_ESCALATION_UPDATED: 'Eskalations-Konfiguration aktualisiert',
+  ERROR_ESCALATION_UPDATE:
+    'Fehler beim Aktualisieren der Eskalations-Konfiguration',
+  ERROR_ESCALATION_HOURS_RANGE:
+    'Stunden müssen zwischen 1 und 720 liegen',
+
+  // Template manager
+  TEMPLATE_TITLE: 'Kartenvorlagen',
+  TEMPLATE_DESCRIPTION:
+    'Vorlagen für die schnelle Erstellung von Wartungskarten',
+  TEMPLATE_NAME: 'Name',
+  TEMPLATE_DESC: 'Beschreibung',
+  TEMPLATE_IS_DEFAULT: 'Standard-Vorlage',
+  TEMPLATE_EMPTY: 'Keine Vorlagen vorhanden',
+  TEMPLATE_EMPTY_DESC:
+    'Erstellen Sie eine Vorlage, um die Kartenerstellung zu beschleunigen.',
+  BTN_NEW_TEMPLATE: 'Neue Vorlage',
+  BTN_CREATE_TEMPLATE: 'Vorlage erstellen',
+  BTN_UPDATE_TEMPLATE: 'Vorlage aktualisieren',
+  TEMPLATE_CREATE_TITLE: 'Neue Vorlage erstellen',
+  TEMPLATE_EDIT_TITLE: 'Vorlage bearbeiten',
+  TEMPLATE_DELETE_TITLE: 'Vorlage löschen',
+  TEMPLATE_DELETE_MESSAGE: 'Möchten Sie diese Vorlage wirklich löschen?',
+  SUCCESS_TEMPLATE_CREATED: 'Vorlage erstellt',
+  SUCCESS_TEMPLATE_UPDATED: 'Vorlage aktualisiert',
+  SUCCESS_TEMPLATE_DELETED: 'Vorlage gelöscht',
+  ERROR_TEMPLATE_CREATE: 'Fehler beim Erstellen der Vorlage',
+  ERROR_TEMPLATE_UPDATE: 'Fehler beim Aktualisieren der Vorlage',
+  ERROR_TEMPLATE_DELETE: 'Fehler beim Löschen der Vorlage',
+  ERROR_TEMPLATE_NAME_REQUIRED: 'Name ist erforderlich',
+
+  // Placeholders
+  PH_TEMPLATE_NAME: 'z.B. Hydraulik-Prüfung',
+  PH_TEMPLATE_DESC: 'Optionale Beschreibung der Vorlage...',
 } as const;

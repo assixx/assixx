@@ -23,6 +23,10 @@ import type {
   UpdateCardPayload,
   CheckDuplicatePayload,
   DuplicateCheckResult,
+  UpdateColorPayload,
+  UpdateEscalationPayload,
+  CreateTemplatePayload,
+  UpdateTemplatePayload,
 } from './types';
 
 const log = createLogger('TpmApi');
@@ -281,6 +285,62 @@ export async function fetchEscalationConfig(): Promise<TpmEscalationConfig> {
 export async function fetchTemplates(): Promise<TpmCardTemplate[]> {
   const result: unknown = await apiClient.get('/tpm/config/templates');
   return extractArray<TpmCardTemplate>(result);
+}
+
+/** Update a single color config entry */
+export async function updateColor(
+  payload: UpdateColorPayload,
+): Promise<TpmColorConfigEntry> {
+  return await apiClient.patch<TpmColorConfigEntry>(
+    '/tpm/config/colors',
+    payload,
+  );
+}
+
+/** Reset all colors to defaults */
+export async function resetColors(): Promise<TpmColorConfigEntry[]> {
+  const result: unknown = await apiClient.post('/tpm/config/colors/reset', {});
+  return extractArray<TpmColorConfigEntry>(result);
+}
+
+/** Update escalation configuration */
+export async function updateEscalation(
+  payload: UpdateEscalationPayload,
+): Promise<TpmEscalationConfig> {
+  return await apiClient.patch<TpmEscalationConfig>(
+    '/tpm/config/escalation',
+    payload,
+  );
+}
+
+/** Create a card template */
+export async function createTemplate(
+  payload: CreateTemplatePayload,
+): Promise<TpmCardTemplate> {
+  return await apiClient.post<TpmCardTemplate>(
+    '/tpm/config/templates',
+    payload,
+  );
+}
+
+/** Update a card template */
+export async function updateTemplate(
+  templateUuid: string,
+  payload: UpdateTemplatePayload,
+): Promise<TpmCardTemplate> {
+  return await apiClient.patch<TpmCardTemplate>(
+    `/tpm/config/templates/${templateUuid}`,
+    payload,
+  );
+}
+
+/** Delete a card template (soft-delete) */
+export async function deleteTemplate(
+  templateUuid: string,
+): Promise<{ message: string }> {
+  return await apiClient.delete<{ message: string }>(
+    `/tpm/config/templates/${templateUuid}`,
+  );
 }
 
 // =============================================================================
