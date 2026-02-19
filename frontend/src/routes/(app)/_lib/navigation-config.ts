@@ -28,7 +28,8 @@ export interface NavItem {
     | 'chat'
     | 'blackboard'
     | 'calendar'
-    | 'vacation';
+    | 'vacation'
+    | 'tpm';
   /** Tenant feature code — items with this field are hidden when feature is not active */
   featureCode?: string;
 }
@@ -106,6 +107,13 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
     url: '/survey-admin',
     badgeType: 'surveys',
     featureCode: 'surveys',
+  },
+  {
+    id: 'tpm',
+    label: 'TPM Wartung',
+    url: '/lean-management/tpm',
+    badgeType: 'tpm',
+    featureCode: 'tpm',
   },
 ];
 
@@ -406,6 +414,13 @@ export const employeeMenuItems: NavItem[] = [
         url: '/survey-employee',
         badgeType: 'surveys',
         featureCode: 'surveys',
+      },
+      {
+        id: 'tpm',
+        label: 'TPM Wartung',
+        url: '/lean-management/tpm',
+        badgeType: 'tpm',
+        featureCode: 'tpm',
       },
     ],
   },

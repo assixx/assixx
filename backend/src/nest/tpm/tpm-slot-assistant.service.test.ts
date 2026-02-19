@@ -43,9 +43,7 @@ describe('TpmSlotAssistantService', () => {
     vi.clearAllMocks();
     mockDb = createMockDb();
 
-    service = new TpmSlotAssistantService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new TpmSlotAssistantService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================

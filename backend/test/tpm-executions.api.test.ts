@@ -247,9 +247,9 @@ describe('TPM Config: Reset Colors', () => {
   });
 
   it('should restore green default hex', () => {
-    const green = (body.data as Array<{ statusKey: string; colorHex: string }>).find(
-      (c: { statusKey: string }) => c.statusKey === 'green',
-    );
+    const green = (
+      body.data as Array<{ statusKey: string; colorHex: string }>
+    ).find((c: { statusKey: string }) => c.statusKey === 'green');
     expect(green).toBeDefined();
     expect(green?.colorHex).toBe('#22c55e');
   });

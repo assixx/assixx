@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.17.0 (Step 4.2 DONE — API Tests Executions + Config / PHASE 4 COMPLETE)
-> **Status:** IN PROGRESS — Phase 5, nächster Step: 5.1 (Frontend Admin Dashboard + Foundation)
+> **Version:** 1.18.0 (Step 5.1 DONE — Frontend Admin Dashboard + Foundation)
+> **Status:** IN PROGRESS — Phase 5, nächster Step: 5.2 (Admin Plan Creation)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 20 / 29
+> **Actual Sessions:** 21 / 29
 
 ---
 
@@ -62,11 +62,12 @@ pnpm test                # unit + api tests
 | 1.11.0  | 2026-02-19 | Step 2.11 DONE / PHASE 2 COMPLETE: tpm-executions.controller.ts (190 Z., 6 Endpoints), tpm-config.controller.ts (160 Z., 9 Endpoints), tpm-dashboard.service.ts (40 Z.), 2 neue DTOs (CreateExecution, ListExecutionsQuery). Integrations: notifications.controller.ts (5 TPM SSE Events + registerTpmHandlers()), dashboard.service.ts (fetchTpmCount), dashboard-counts.dto.ts (tpm: CountItemSchema), machine-availability.service.ts (createFromTpmPlan), machine-maintenance.service.ts (createFromTpmExecution), tpm-escalation.service.ts (getConfig + updateConfig + UPSERT). tpm.module.ts: 4/4 Controller, 16 Services. 4400 Tests, 0 ESLint/TS Errors |
 | 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'machine'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 1.12.0  | 2026-02-19 | Step 3.1 DONE: Unit Tests Plans + Config — 5 Testdateien, 81 Tests (tpm-plans.service 26, tpm-plans-interval.service 21, tpm-time-estimates.service 11, tpm-templates.service 13, tpm-color-config.service 10). ESLint 0, Type-Check 0, 4481 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 1.13.0  | 2026-02-19 | Step 3.2 DONE: Unit Tests Cards + Cascade + Duplicate — 4 Testdateien, 88 Tests (tpm-cards.service 31, tpm-card-status.service 22, tpm-card-cascade.service 22, tpm-card-duplicate.service 13). State Machine komplett getestet, R1-Performance-Test (Batch-SQL für 2400 Karten), ILIKE-Escaping, Intervall-Order alle 8 Typen. ESLint 0, Type-Check 0, 4569 Tests gesamt |
-| 1.14.0  | 2026-02-19 | Step 3.3 DONE: Unit Tests Slot Assistant + Executions + Approval — 3 Testdateien, 63 Tests (tpm-slot-assistant.service 20, tpm-executions.service 19, tpm-approval.service 24). Slot-Konflikte (4 Datenquellen), Execution-Lifecycle (Flow A/B, Foto-Limit), Approval-Chain (ConflictException, ForbiddenException, FOR UPDATE Lock, Activity Logger). ESLint 0, Type-Check 0, 4632 Tests gesamt |
-| 1.15.0  | 2026-02-19 | Step 3.4 DONE / PHASE 3 COMPLETE: Unit Tests Notification + Escalation — 2 Testdateien, 46 Tests (tpm-notification.service 22, tpm-escalation.service 24). Dual-Pattern (EventBus + DB persistent notifications), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery, Team Lead Resolution), Config CRUD (getConfig defaults, updateConfig UPSERT), machineName-Fallback, Silent Error Catch. ESLint 0, Type-Check 0, 4678 Tests gesamt |
-| 1.16.0  | 2026-02-19 | Step 4.1 DONE: API Tests Plans + Cards — 1 Testdatei `backend/test/tpm-plans.api.test.ts`, 50 Tests. Unauthenticated (401), Plan CRUD (POST 201, GET 200, PATCH 200, DELETE 200), Plan Duplicate (409), List Plans (200 + Pagination), Time Estimates (POST 201, GET 200 + totalMinutes), Card CRUD (POST 201, GET 200, PATCH 200, DELETE 200), Card Board Data (200), Duplicate Check (200), List Cards without filter (400), Not Found (404), Maintenance Card (IV prefix, requiresApproval), Verify Delete (404). ESLint 0, Type-Check 0, 4728 Tests gesamt |
-| 1.17.0  | 2026-02-19 | Step 4.2 DONE / PHASE 4 COMPLETE: API Tests Executions + Config — 1 Testdatei `backend/test/tpm-executions.api.test.ts`, 36 Tests. Config: Escalation (GET defaults, PATCH 24h, verify persistence), Colors (GET 4 entries, PATCH update hex, POST reset defaults), Templates (POST 201 + JSONB, GET list, PATCH update + preserve JSONB, DELETE). Execution: green card → 400 (invalid state), Pending Approvals (200 + paginated), Not Found (404), Reject without note → 400 (Zod validation), Photos empty (200 + []). Slot Assistant: 200 structure, invalid dates → 400. ESLint 0, Type-Check 0, 4764 Tests gesamt |
+| 1.13.0  | 2026-02-19 | Step 3.2 DONE: Unit Tests Cards + Cascade + Duplicate — 4 Testdateien, 88 Tests (tpm-cards.service 31, tpm-card-status.service 22, tpm-card-cascade.service 22, tpm-card-duplicate.service 13). State Machine komplett getestet, R1-Performance-Test (Batch-SQL für 2400 Karten), ILIKE-Escaping, Intervall-Order alle 8 Typen. ESLint 0, Type-Check 0, 4569 Tests gesamt                                                                                                                                                                                                                                                                                        |
+| 1.14.0  | 2026-02-19 | Step 3.3 DONE: Unit Tests Slot Assistant + Executions + Approval — 3 Testdateien, 63 Tests (tpm-slot-assistant.service 20, tpm-executions.service 19, tpm-approval.service 24). Slot-Konflikte (4 Datenquellen), Execution-Lifecycle (Flow A/B, Foto-Limit), Approval-Chain (ConflictException, ForbiddenException, FOR UPDATE Lock, Activity Logger). ESLint 0, Type-Check 0, 4632 Tests gesamt                                                                                                                                                                                                                                                                 |
+| 1.15.0  | 2026-02-19 | Step 3.4 DONE / PHASE 3 COMPLETE: Unit Tests Notification + Escalation — 2 Testdateien, 46 Tests (tpm-notification.service 22, tpm-escalation.service 24). Dual-Pattern (EventBus + DB persistent notifications), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery, Team Lead Resolution), Config CRUD (getConfig defaults, updateConfig UPSERT), machineName-Fallback, Silent Error Catch. ESLint 0, Type-Check 0, 4678 Tests gesamt                                                                                                                                                    |
+| 1.16.0  | 2026-02-19 | Step 4.1 DONE: API Tests Plans + Cards — 1 Testdatei `backend/test/tpm-plans.api.test.ts`, 50 Tests. Unauthenticated (401), Plan CRUD (POST 201, GET 200, PATCH 200, DELETE 200), Plan Duplicate (409), List Plans (200 + Pagination), Time Estimates (POST 201, GET 200 + totalMinutes), Card CRUD (POST 201, GET 200, PATCH 200, DELETE 200), Card Board Data (200), Duplicate Check (200), List Cards without filter (400), Not Found (404), Maintenance Card (IV prefix, requiresApproval), Verify Delete (404). ESLint 0, Type-Check 0, 4728 Tests gesamt                                                                                                   |
+| 1.17.0  | 2026-02-19 | Step 4.2 DONE / PHASE 4 COMPLETE: API Tests Executions + Config — 1 Testdatei `backend/test/tpm-executions.api.test.ts`, 36 Tests. Config: Escalation (GET defaults, PATCH 24h, verify persistence), Colors (GET 4 entries, PATCH update hex, POST reset defaults), Templates (POST 201 + JSONB, GET list, PATCH update + preserve JSONB, DELETE). Execution: green card → 400 (invalid state), Pending Approvals (200 + paginated), Not Found (404), Reject without note → 400 (Zod validation), Photos empty (200 + []). Slot Assistant: 200 structure, invalid dates → 400. ESLint 0, Type-Check 0, 4764 Tests gesamt                                         |
+| 1.18.0  | 2026-02-19 | Step 5.1 DONE: Frontend Admin Dashboard + Foundation — 10 neue Dateien, 3 modifiziert. Dashboard (+page.svelte + +page.server.ts), Foundation (\_lib/: types.ts, constants.ts, api.ts, state-data.svelte.ts, state-ui.svelte.ts, state.svelte.ts), Components (PlanOverview.svelte, NextMaintenanceInfo.svelte). Config: navigation-config.ts (badgeType 'tpm' + LEAN_ADMIN_SUBMENU + employee menu), Breadcrumb.svelte (URL mappings + dynamic routes), notification.store.svelte.ts (tpm counter + 4 SSE events). svelte-check 0, ESLint 0, Type-Check 0                                                                                                       |
 
 > **Versionierungsregel:**
 >
@@ -976,7 +977,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - `backend/src/nest/tpm/tpm-cards.service.test.ts` (31 Tests — getCard, listCardsForMachine/ForPlan/ByStatus, createCard auto-machineId/cardCode/intervalOrder/sortOrder, updateCard intervalOrder-recalc, deleteCard)
 - `backend/src/nest/tpm/tpm-card-status.service.test.ts` (22 Tests — setCardDue green→red, markCardCompleted Flow A/B red+overdue, markCardOverdue, approveCard yellow→green, rejectCard yellow→red, alle ungültigen Transitionen, NotFoundException)
 - `backend/src/nest/tpm/tpm-card-cascade.service.test.ts` (22 Tests — triggerCascade Batch-SQL/affectedCount/dueDateFormat, getCascadePreview, getIntervalOrder alle 8 Typen, Performance 2400 Karten < 500ms)
-- `backend/src/nest/tpm/tpm-card-duplicate.service.test.ts` (13 Tests — checkDuplicate ILIKE/intervalOrder/escaping, findSimilarCards title+description, escapeLikePattern %, _, \)
+- `backend/src/nest/tpm/tpm-card-duplicate.service.test.ts` (13 Tests — checkDuplicate ILIKE/intervalOrder/escaping, findSimilarCards title+description, escapeLikePattern %, \_, \)
 
 **Szenarien abgedeckt:** State Machine (8 gültige + 6 ungültige Transitionen), CardCode-Generierung (BT/IV Prefix + Sequenznummer), Intervall-Kaskade (Batch-SQL, CTE mit RETURNING), Duplikat-Erkennung (ILIKE, Interval-Order-Filter, Special-Char-Escaping), Denormalisierung (machine_id auto-set), FOR UPDATE Lock, Soft-Delete, Activity Logger, Pagination, Performance R1-Mitigation
 
@@ -1082,7 +1083,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 > **Parallelisierbar:** Phase 5 kann ab Session 21 parallel zu Phase 3+4 (Unit/API Tests) laufen, da Frontend nur Backend-Endpoints braucht, nicht deren Tests.
 > **Referenz:** `frontend/src/routes/(app)/(shared)/vacation/`
 
-### Step 5.1: Session 21 — Admin Dashboard + Foundation [PENDING]
+### Step 5.1: Session 21 — Admin Dashboard + Foundation [DONE]
 
 **Neue Dateien:**
 
@@ -1334,7 +1335,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | 18      | 3     | Unit Tests — Notification + Escalation (46 Tests)                  | DONE    | 2026-02-19 |
 | 19      | 4     | API Tests — Plans + Cards (50 Tests)                               | DONE    | 2026-02-19 |
 | 20      | 4     | API Tests — Executions + Config (36 Tests)                         | DONE    | 2026-02-19 |
-| 21      | 5     | Frontend: Admin Dashboard + Foundation                             | PENDING |            |
+| 21      | 5     | Frontend: Admin Dashboard + Foundation                             | DONE    | 2026-02-19 |
 | 22      | 5     | Frontend: Admin Plan Creation                                      | PENDING |            |
 | 23      | 5     | Frontend: Admin Card Management                                    | PENDING |            |
 | 24      | 5     | Frontend: Shared Employee Overview                                 | PENDING |            |

@@ -17,8 +17,8 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { TpmCardRow } from './tpm.types.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
+import type { TpmCardRow } from './tpm.types.js';
 
 // =============================================================
 // Mock factories
@@ -263,9 +263,9 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'green' })],
       });
 
-      await expect(
-        service.markCardOverdue(mockClient, 10, 1),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.markCardOverdue(mockClient, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for yellow → overdue', async () => {
@@ -273,9 +273,9 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'yellow' })],
       });
 
-      await expect(
-        service.markCardOverdue(mockClient, 10, 1),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.markCardOverdue(mockClient, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -305,17 +305,17 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'green' })],
       });
 
-      await expect(
-        service.approveCard(mockClient, 10, 1, 7),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.approveCard(mockClient, 10, 1, 7)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw NotFoundException when card not found during approve', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.approveCard(mockClient, 10, 999, 7),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.approveCard(mockClient, 10, 999, 7)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

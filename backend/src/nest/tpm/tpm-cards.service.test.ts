@@ -165,10 +165,7 @@ describe('TpmCardsService', () => {
         createCardRow({ id: 2, uuid: 'card-uuid-002', card_code: 'BT2' }),
       ]);
 
-      const result = await service.listCardsForMachine(
-        10,
-        'machine-uuid-001',
-      );
+      const result = await service.listCardsForMachine(10, 'machine-uuid-001');
 
       expect(result.total).toBe(5);
       expect(result.data).toHaveLength(2);
@@ -180,10 +177,7 @@ describe('TpmCardsService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.listCardsForMachine(
-        10,
-        'machine-uuid-001',
-      );
+      const result = await service.listCardsForMachine(10, 'machine-uuid-001');
 
       expect(result.total).toBe(0);
       expect(result.data).toHaveLength(0);
@@ -402,7 +396,9 @@ describe('TpmCardsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
-        rows: [createCardRow({ interval_type: 'quarterly', interval_order: 4 })],
+        rows: [
+          createCardRow({ interval_type: 'quarterly', interval_order: 4 }),
+        ],
       });
 
       await service.createCard(
@@ -594,9 +590,7 @@ describe('TpmCardsService', () => {
         rows: [createCardRow({ interval_type: 'weekly' })],
       });
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createCardRow({ interval_type: 'monthly', interval_order: 3 }),
-        ],
+        rows: [createCardRow({ interval_type: 'monthly', interval_order: 3 })],
       });
 
       await service.updateCard(10, 5, 'card-uuid-001', {

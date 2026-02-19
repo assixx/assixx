@@ -10,10 +10,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -300,9 +297,9 @@ describe('TpmExecutionsService', () => {
     it('should throw NotFoundException when not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        service.getExecution(10, 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getExecution(10, 'nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

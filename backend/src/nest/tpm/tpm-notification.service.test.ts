@@ -78,9 +78,7 @@ describe('TpmNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new TpmNotificationService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new TpmNotificationService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================

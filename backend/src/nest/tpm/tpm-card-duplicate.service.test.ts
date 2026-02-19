@@ -11,8 +11,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
+import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
 
 // =============================================================
 // Mock factories
@@ -72,9 +72,7 @@ describe('TpmCardDuplicateService', () => {
     vi.clearAllMocks();
     mockDb = createMockDb();
 
-    service = new TpmCardDuplicateService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new TpmCardDuplicateService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -149,8 +147,16 @@ describe('TpmCardDuplicateService', () => {
 
     it('should return multiple duplicates when found', async () => {
       mockDb.query.mockResolvedValueOnce([
-        createCardRow({ id: 1, interval_order: 1, title: 'Sichtprüfung täglich' }),
-        createCardRow({ id: 2, interval_order: 2, title: 'Sichtprüfung wöchentlich' }),
+        createCardRow({
+          id: 1,
+          interval_order: 1,
+          title: 'Sichtprüfung täglich',
+        }),
+        createCardRow({
+          id: 2,
+          interval_order: 2,
+          title: 'Sichtprüfung wöchentlich',
+        }),
       ]);
 
       const result = await service.checkDuplicate(
@@ -192,7 +198,11 @@ describe('TpmCardDuplicateService', () => {
     it('should return similar cards matching title or description', async () => {
       mockDb.query.mockResolvedValueOnce([
         createCardRow({ title: 'Ölstand prüfen' }),
-        createCardRow({ id: 2, title: 'Ölwechsel', description: 'Ölstand kontrollieren' }),
+        createCardRow({
+          id: 2,
+          title: 'Ölwechsel',
+          description: 'Ölstand kontrollieren',
+        }),
       ]);
 
       const result = await service.findSimilarCards(10, 42, 'Öl');

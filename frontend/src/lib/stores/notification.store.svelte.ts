@@ -28,6 +28,7 @@ export interface NotificationCounts {
   blackboard: number;
   calendar: number;
   vacation: number;
+  tpm: number;
 }
 
 interface NotificationState {
@@ -53,6 +54,7 @@ function createInitialCounts(): NotificationCounts {
     blackboard: 0,
     calendar: 0,
     vacation: 0,
+    tpm: 0,
   };
 }
 
@@ -79,6 +81,10 @@ const SSE_EVENT_TO_COUNT = new Map<string, CountType>([
   ['VACATION_REQUEST_RESPONDED', 'vacation'],
   ['VACATION_REQUEST_WITHDRAWN', 'vacation'],
   ['VACATION_REQUEST_CANCELLED', 'vacation'],
+  ['TPM_CARD_STATUS_RED', 'tpm'],
+  ['TPM_CARD_STATUS_YELLOW', 'tpm'],
+  ['TPM_CARD_OVERDUE', 'tpm'],
+  ['TPM_EXECUTION_PENDING', 'tpm'],
 ]);
 
 function handleSSEEvent(
@@ -125,11 +131,12 @@ function setCountsMut(
     blackboard: counts.blackboard ?? 0,
     calendar: counts.calendar ?? 0,
     vacation: counts.vacation ?? 0,
+    tpm: counts.tpm ?? 0,
   };
   state.lastUpdate = new Date();
 }
 
-export type FeatureType = 'survey' | 'document' | 'kvp' | 'vacation';
+export type FeatureType = 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm';
 
 /** Map feature type to store count key */
 const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
@@ -137,6 +144,7 @@ const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
   document: 'documents',
   kvp: 'kvp',
   vacation: 'vacation',
+  tpm: 'tpm',
 };
 
 /** Rollback count after failed API call */
@@ -202,6 +210,8 @@ interface DashboardCountsResponse {
     surveys?: { count: number };
     /** Unread vacation notifications */
     vacation?: { count: number };
+    /** Unread TPM notifications */
+    tpm?: { count: number };
     fetchedAt?: string;
   };
 }
@@ -281,6 +291,8 @@ interface SSRCounts {
   surveys?: { count: number };
   /** Unread vacation notifications */
   vacation?: { count: number };
+  /** Unread TPM notifications */
+  tpm?: { count: number };
 }
 
 /** Safely extract count from an optional API field (defensive against missing data) */
@@ -297,9 +309,11 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const calendar = safeCount(counts.calendar);
   const documents = safeCount(counts.documents);
   const vacation = safeCount(counts.vacation);
+  const tpm = safeCount(counts.tpm);
 
   state.counts = {
-    total: chat + surveys + documents + kvp + blackboard + calendar + vacation,
+    total:
+      chat + surveys + documents + kvp + blackboard + calendar + vacation + tpm,
     chat,
     surveys,
     documents,
@@ -307,6 +321,7 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
     blackboard,
     calendar,
     vacation,
+    tpm,
   };
   state.lastUpdate = new Date();
 

@@ -100,9 +100,7 @@ describe('TpmEscalationService', () => {
   let mockDb: MockDb;
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockCardStatusService: ReturnType<typeof createMockCardStatusService>;
-  let mockNotificationService: ReturnType<
-    typeof createMockNotificationService
-  >;
+  let mockNotificationService: ReturnType<typeof createMockNotificationService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -380,9 +378,8 @@ describe('TpmEscalationService', () => {
       await service.handleEscalation();
 
       // isProcessing should be false after error
-      const isProcessing = (
-        service as unknown as { isProcessing: boolean }
-      ).isProcessing;
+      const isProcessing = (service as unknown as { isProcessing: boolean })
+        .isProcessing;
       expect(isProcessing).toBe(false);
     });
 
@@ -397,9 +394,7 @@ describe('TpmEscalationService', () => {
       mockDb.transaction.mockRejectedValueOnce(new Error('Lock failed'));
       // Restore normal transaction for second card
       mockDb.transaction.mockImplementationOnce(
-        async (
-          callback: (client: typeof mockClient) => Promise<unknown>,
-        ) => {
+        async (callback: (client: typeof mockClient) => Promise<unknown>) => {
           return await callback(mockClient);
         },
       );
@@ -425,11 +420,8 @@ describe('TpmEscalationService', () => {
 
       await service.handleEscalation();
 
-      const notificationCard = mockNotificationService
-        .notifyMaintenanceOverdue.mock.calls[0]?.[1] as Record<
-        string,
-        unknown
-      >;
+      const notificationCard = mockNotificationService.notifyMaintenanceOverdue
+        .mock.calls[0]?.[1] as Record<string, unknown>;
       expect(notificationCard.machineName).toBe('Fräse F9');
     });
 
@@ -442,11 +434,8 @@ describe('TpmEscalationService', () => {
 
       await service.handleEscalation();
 
-      const notificationCard = mockNotificationService
-        .notifyMaintenanceOverdue.mock.calls[0]?.[1] as Record<
-        string,
-        unknown
-      >;
+      const notificationCard = mockNotificationService.notifyMaintenanceOverdue
+        .mock.calls[0]?.[1] as Record<string, unknown>;
       expect(notificationCard).not.toHaveProperty('machineName');
     });
   });

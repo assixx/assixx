@@ -11,8 +11,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
+import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
 import type { TpmCardRow } from './tpm.types.js';
 
 // =============================================================
@@ -79,9 +79,7 @@ describe('TpmCardCascadeService', () => {
     mockDb = createMockDb();
     mockClient = createMockClient();
 
-    service = new TpmCardCascadeService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new TpmCardCascadeService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -154,9 +152,9 @@ describe('TpmCardCascadeService', () => {
       );
 
       const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[0]).toBe(42);  // machineId
-      expect(params?.[1]).toBe(10);  // tenantId
-      expect(params?.[2]).toBe(4);   // triggerIntervalOrder
+      expect(params?.[0]).toBe(42); // machineId
+      expect(params?.[1]).toBe(10); // tenantId
+      expect(params?.[2]).toBe(4); // triggerIntervalOrder
       expect(params?.[3]).toBe('2026-06-01'); // dueDateStr
     });
 
@@ -269,9 +267,9 @@ describe('TpmCardCascadeService', () => {
       await service.getCascadePreview(10, 42, 4);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[0]).toBe(42);  // machineId
-      expect(params?.[1]).toBe(10);  // tenantId
-      expect(params?.[2]).toBe(4);   // triggerIntervalOrder
+      expect(params?.[0]).toBe(42); // machineId
+      expect(params?.[1]).toBe(10); // tenantId
+      expect(params?.[2]).toBe(4); // triggerIntervalOrder
     });
   });
 

@@ -102,6 +102,7 @@
         icon: ICON_CALENDAR,
       },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
+      '/lean-management/tpm': { label: 'TPM Wartung', icon: 'fa-tools' },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',
         icon: 'fa-trash-alt',
@@ -148,6 +149,11 @@
       pattern: /^\/manage-admins\/permission\/[^/]+$/,
       label: 'Employee Name Placeholder',
       icon: 'fa-shield-alt',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
+      label: 'Wartungsplan',
+      icon: 'fa-clipboard-list',
     },
   ];
 
@@ -227,6 +233,12 @@
       label: 'Maschinen verwalten',
       href: '/manage-machines',
       icon: 'fa-cogs',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
+      label: 'TPM Wartung',
+      href: '/lean-management/tpm',
+      icon: 'fa-tools',
     },
   ];
 
