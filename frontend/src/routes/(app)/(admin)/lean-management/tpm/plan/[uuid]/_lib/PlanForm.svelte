@@ -6,10 +6,9 @@
    * Handles both create and edit mode for maintenance plans.
    * Fields: Machine, Name, Weekday, RepeatEvery, Time, ShiftPlanRequired, Notes.
    */
-  import {
-    WEEKDAY_LABELS,
-    MESSAGES,
-  } from '../../../_lib/constants';
+  import { untrack } from 'svelte';
+
+  import { WEEKDAY_LABELS, MESSAGES } from '../../../_lib/constants';
 
   import type {
     TpmPlan,
@@ -42,13 +41,17 @@
   // FORM STATE
   // =========================================================================
 
-  let machineUuid = $state(plan?.machineName !== undefined ? findMachineUuid() : '');
-  let name = $state(plan?.name ?? '');
-  let baseWeekday = $state(plan?.baseWeekday ?? 0);
-  let baseRepeatEvery = $state(plan?.baseRepeatEvery ?? 1);
-  let baseTime = $state(plan?.baseTime ?? '');
-  let shiftPlanRequired = $state(plan?.shiftPlanRequired ?? true);
-  let notes = $state(plan?.notes ?? '');
+  let machineUuid = $state(
+    untrack(() => (plan?.machineName !== undefined ? findMachineUuid() : '')),
+  );
+  let name = $state(untrack(() => plan?.name ?? ''));
+  let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
+  let baseRepeatEvery = $state(untrack(() => plan?.baseRepeatEvery ?? 1));
+  let baseTime = $state(untrack(() => plan?.baseTime ?? ''));
+  let shiftPlanRequired = $state(
+    untrack(() => plan?.shiftPlanRequired ?? true),
+  );
+  let notes = $state(untrack(() => plan?.notes ?? ''));
 
   function findMachineUuid(): string {
     if (plan === null) return '';
@@ -106,11 +109,17 @@
   }
 </script>
 
-<form class="plan-form" onsubmit={handleSubmit}>
+<form
+  class="plan-form"
+  onsubmit={handleSubmit}
+>
   <!-- Machine (create only) -->
   {#if isCreateMode}
     <div class="form-group">
-      <label class="form-label" for="machine">{MESSAGES.LABEL_MACHINE}</label>
+      <label
+        class="form-label"
+        for="machine">{MESSAGES.LABEL_MACHINE}</label
+      >
       <select
         id="machine"
         class="form-select"
@@ -131,7 +140,7 @@
     </div>
   {:else if plan !== null}
     <div class="form-group">
-      <label class="form-label">{MESSAGES.LABEL_MACHINE}</label>
+      <span class="form-label">{MESSAGES.LABEL_MACHINE}</span>
       <div class="form-static">
         <i class="fas fa-cog"></i>
         {plan.machineName ?? '—'}
@@ -141,7 +150,10 @@
 
   <!-- Name -->
   <div class="form-group">
-    <label class="form-label" for="name">{MESSAGES.LABEL_PLAN_NAME}</label>
+    <label
+      class="form-label"
+      for="name">{MESSAGES.LABEL_PLAN_NAME}</label
+    >
     <input
       id="name"
       type="text"
@@ -157,7 +169,10 @@
   <!-- Weekday + Repeat (side by side) -->
   <div class="form-row">
     <div class="form-group form-group--half">
-      <label class="form-label" for="weekday">{MESSAGES.LABEL_WEEKDAY}</label>
+      <label
+        class="form-label"
+        for="weekday">{MESSAGES.LABEL_WEEKDAY}</label
+      >
       <select
         id="weekday"
         class="form-select"
@@ -172,7 +187,10 @@
     </div>
 
     <div class="form-group form-group--half">
-      <label class="form-label" for="repeat">{MESSAGES.LABEL_REPEAT_EVERY}</label>
+      <label
+        class="form-label"
+        for="repeat">{MESSAGES.LABEL_REPEAT_EVERY}</label
+      >
       <div class="form-input-group">
         <span class="form-input-group__prefix">{MESSAGES.PH_REPEAT}</span>
         <input
@@ -192,7 +210,10 @@
 
   <!-- Time -->
   <div class="form-group">
-    <label class="form-label" for="time">{MESSAGES.LABEL_TIME}</label>
+    <label
+      class="form-label"
+      for="time">{MESSAGES.LABEL_TIME}</label
+    >
     <input
       id="time"
       type="time"
@@ -220,7 +241,10 @@
 
   <!-- Notes -->
   <div class="form-group">
-    <label class="form-label" for="notes">{MESSAGES.LABEL_NOTES}</label>
+    <label
+      class="form-label"
+      for="notes">{MESSAGES.LABEL_NOTES}</label
+    >
     <textarea
       id="notes"
       class="form-textarea"
@@ -366,7 +390,7 @@
 
   .form-toggle__input {
     position: absolute;
-    opacity: 0;
+    opacity: 0%;
     width: 0;
     height: 0;
   }
@@ -388,7 +412,7 @@
     left: 2px;
     width: 20px;
     height: 20px;
-    background: white;
+    background: #fff;
     border-radius: 50%;
     transition: transform 0.2s;
   }
@@ -402,7 +426,7 @@
   }
 
   .form-toggle__input:disabled + .form-toggle__slider {
-    opacity: 0.5;
+    opacity: 50%;
     cursor: not-allowed;
   }
 

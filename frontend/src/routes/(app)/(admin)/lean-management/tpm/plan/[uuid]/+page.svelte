@@ -23,10 +23,7 @@
   import SlotAssistant from './_lib/SlotAssistant.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    CreatePlanPayload,
-    UpdatePlanPayload,
-  } from '../../_lib/types';
+  import type { CreatePlanPayload, UpdatePlanPayload } from '../../_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -36,7 +33,9 @@
 
   const isCreateMode = $derived(data.isCreateMode);
   const pageTitle = $derived(
-    isCreateMode ? MESSAGES.PLAN_CREATE_PAGE_TITLE : MESSAGES.PLAN_EDIT_PAGE_TITLE,
+    isCreateMode ?
+      MESSAGES.PLAN_CREATE_PAGE_TITLE
+    : MESSAGES.PLAN_EDIT_PAGE_TITLE,
   );
   const heading = $derived(
     isCreateMode ? MESSAGES.PLAN_CREATE_TITLE : MESSAGES.PLAN_EDIT_TITLE,

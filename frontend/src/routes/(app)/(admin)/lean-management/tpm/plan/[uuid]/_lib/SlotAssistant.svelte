@@ -11,7 +11,10 @@
   import { MESSAGES } from '../../../_lib/constants';
   import { timestampToISO, FOUR_WEEKS_MS } from '../../../_lib/date-helpers';
 
-  import type { SlotAvailabilityResult, DayAvailability } from '../../../_lib/types';
+  import type {
+    SlotAvailabilityResult,
+    DayAvailability,
+  } from '../../../_lib/types';
 
   interface Props {
     planUuid: string;
@@ -78,9 +81,7 @@
 
   function buildDayTooltip(day: DayAvailability): string {
     if (day.isAvailable) return 'Verfügbar';
-    return day.conflicts
-      .map((c) => c.description)
-      .join(', ');
+    return day.conflicts.map((c) => c.description).join(', ');
   }
 </script>
 
@@ -96,7 +97,10 @@
   <!-- Date range controls -->
   <div class="slot-assistant__controls">
     <div class="slot-assistant__date-group">
-      <label class="slot-assistant__label" for="slot-start">Von</label>
+      <label
+        class="slot-assistant__label"
+        for="slot-start">Von</label
+      >
       <input
         id="slot-start"
         type="date"
@@ -106,7 +110,10 @@
       />
     </div>
     <div class="slot-assistant__date-group">
-      <label class="slot-assistant__label" for="slot-end">Bis</label>
+      <label
+        class="slot-assistant__label"
+        for="slot-end">Bis</label
+      >
       <input
         id="slot-end"
         type="date"
@@ -130,7 +137,8 @@
         {slotData.availableDays}
       </span>
       <span class="slot-assistant__stat-label">
-        {MESSAGES.SLOT_STATS} {slotData.totalDays}
+        {MESSAGES.SLOT_STATS}
+        {slotData.totalDays}
       </span>
     </div>
 
@@ -184,7 +192,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9375rem;
+    font-size: 0.938rem;
     font-weight: 600;
     color: var(--color-gray-800);
   }
@@ -219,7 +227,7 @@
     padding: 0.375rem 0.5rem;
     border: 1px solid var(--color-gray-300);
     border-radius: var(--radius-md, 8px);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--color-gray-700);
   }
 
@@ -236,7 +244,7 @@
     padding: 1.5rem;
     justify-content: center;
     color: var(--color-gray-500);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   /* Stats */
@@ -258,7 +266,7 @@
   }
 
   .slot-assistant__stat-label {
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--color-gray-500);
   }
 
@@ -312,7 +320,7 @@
   }
 
   .slot-day:hover {
-    opacity: 0.85;
+    opacity: 85%;
   }
 
   .slot-day--available {
@@ -326,13 +334,13 @@
   }
 
   .slot-day__date {
-    font-size: 0.6875rem;
+    font-size: 0.688rem;
     font-weight: 500;
     color: var(--color-gray-700);
   }
 
   .slot-day__conflict {
-    font-size: 0.5625rem;
+    font-size: 0.563rem;
     color: var(--color-red-500, #ef4444);
     text-align: center;
     margin-top: 2px;

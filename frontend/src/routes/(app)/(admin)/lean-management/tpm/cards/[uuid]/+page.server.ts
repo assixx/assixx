@@ -1,18 +1,23 @@
 /**
- * TPM Plan Detail - Server-Side Data Loading
- * @module lean-management/tpm/plan/[uuid]/+page.server
+ * TPM Card Management - Server-Side Data Loading
+ * @module lean-management/tpm/cards/[uuid]/+page.server
  *
- * SSR: Handles both create (uuid='new') and edit modes.
- * Edit mode loads plan data, machines, and time estimates in parallel.
+ * SSR: The [uuid] param is the plan UUID.
+ * Loads plan context, cards for that plan, and available templates.
  */
 import { redirect } from '@sveltejs/kit';
 
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { TpmPlan, TpmTimeEstimate, Machine } from '../../_lib/types';
+import type {
+  TpmPlan,
+  TpmCard,
+  TpmCardTemplate,
+  PaginatedResponse,
+} from '../../_lib/types';
 
-const log = createLogger('TpmPlanDetail');
+const log = createLogger('TpmCardManagement');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
@@ -59,41 +64,40 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  const isCreateMode = params.uuid === 'new';
+  const planUuid = params.uuid;
 
-  // Always load machines for the dropdown
-  const machinesData = await apiFetch<Machine[]>('/machines', token, fetch);
-  const machines = Array.isArray(machinesData) ? machinesData : [];
-
-  if (isCreateMode) {
-    return {
-      isCreateMode: true,
-      plan: null,
-      timeEstimates: [],
-      machines,
-    };
-  }
-
-  // Edit mode: load plan + time estimates in parallel
-  const [planData, estimatesData] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${params.uuid}`, token, fetch),
-    apiFetch<TpmTimeEstimate[]>(
-      `/tpm/plans/${params.uuid}/time-estimates`,
+  // Load plan + cards + templates in parallel
+  const [planData, cardsData, templatesData] = await Promise.all([
+    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+    apiFetch<PaginatedResponse<TpmCard>>(
+      `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
       token,
       fetch,
     ),
+    apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
   ]);
 
   if (planData === null) {
     redirect(302, '/lean-management/tpm');
   }
 
-  const timeEstimates = Array.isArray(estimatesData) ? estimatesData : [];
+  // Extract cards from paginated response
+  const cardsResult = cardsData as unknown as Record<string, unknown> | null;
+  let cards: TpmCard[] = [];
+  let totalCards = 0;
+  if (cardsResult !== null && typeof cardsResult === 'object') {
+    const items = cardsResult.data ?? cardsResult.items;
+    cards = Array.isArray(items) ? (items as TpmCard[]) : [];
+    totalCards = typeof cardsResult.total === 'number' ? cardsResult.total : 0;
+  }
+
+  const templates = Array.isArray(templatesData) ? templatesData : [];
 
   return {
-    isCreateMode: false,
     plan: planData,
-    timeEstimates,
-    machines,
+    cards,
+    totalCards,
+    templates,
+    planUuid,
   };
 };

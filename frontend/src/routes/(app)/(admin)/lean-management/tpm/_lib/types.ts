@@ -252,6 +252,42 @@ export interface CreateTimeEstimatePayload {
   followupMinutes: number;
 }
 
+/** Payload for creating a card */
+export interface CreateCardPayload {
+  planUuid: string;
+  cardRole: CardRole;
+  intervalType: IntervalType;
+  title: string;
+  description: string | null;
+  locationDescription: string | null;
+  requiresApproval: boolean;
+  customIntervalDays: number | null;
+}
+
+/** Payload for updating a card */
+export interface UpdateCardPayload {
+  cardRole?: CardRole;
+  intervalType?: IntervalType;
+  title?: string;
+  description?: string | null;
+  locationDescription?: string | null;
+  requiresApproval?: boolean;
+  customIntervalDays?: number | null;
+}
+
+/** Payload for checking card duplicates */
+export interface CheckDuplicatePayload {
+  planUuid: string;
+  title: string;
+  intervalType: IntervalType;
+}
+
+/** Result of duplicate check */
+export interface DuplicateCheckResult {
+  hasDuplicate: boolean;
+  existingCards: TpmCard[];
+}
+
 // =============================================================================
 // API RESPONSE TYPES
 // =============================================================================

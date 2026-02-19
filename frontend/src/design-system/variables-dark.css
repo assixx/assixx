@@ -12,14 +12,13 @@ html.dark {
   --main-bg: #000;
   --main-bg-gradient: radial-gradient(
     circle,
-    rgb(150 200 255 / 10%) 0%,
-    rgb(150 200 255 / 1%) 70%,
-    transparent 100%
+    rgb(0 67 130 / 18%) 0%,
+    transparent 70%
   );
 
   /* Backgrounds */
   --color-surface: var(--color-gray-900);
-  --header-bg: linear-gradient(90deg, #010408 0%, #070707 50%, #050710 100%);
+  --header-bg: linear-gradient(90deg, #00060b 0%, #070707 90%, #050710 100%);
 
   /* Text */
   --color-text-primary: var(--color-white);

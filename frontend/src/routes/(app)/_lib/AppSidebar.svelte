@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable max-lines -- 706/700: 60% is flat CSS (badges, responsive breakpoints). Logic+template clean. Splitting would force :global() hacks due to .sidebar.collapsed cascade. */
   /**
    * App Sidebar Navigation
    * Extracted from +layout.svelte for modularity (max-lines)
@@ -179,94 +180,100 @@
                 </svg>
               </span>
             </button>
-            <div class="submenu-wrapper" class:open={openSubmenu === item.id}>
+            <div
+              class="submenu-wrapper"
+              class:open={openSubmenu === item.id}
+            >
               <ul class="submenu">
-              {#each item.submenu as subItem (subItem.id)}
-                {#if subItem.submenu !== undefined}
-                  <li
-                    class="submenu-item has-submenu"
-                    class:active={isActive(subItem)}
-                    class:open={openSubSubmenu === subItem.id}
-                  >
-                    <button
-                      type="button"
-                      class="submenu-link submenu-link--toggle"
+                {#each item.submenu as subItem (subItem.id)}
+                  {#if subItem.submenu !== undefined}
+                    <li
+                      class="submenu-item has-submenu"
                       class:active={isActive(subItem)}
-                      onclick={() => {
-                        toggleSubSubmenu(subItem.id);
-                      }}
+                      class:open={openSubSubmenu === subItem.id}
                     >
-                      <span>{subItem.label}</span>
-                      {#if openSubSubmenu !== subItem.id}
-                        <NotificationBadge
-                          count={getSubmenuBadgeCount(subItem.submenu)}
-                          size="sm"
-                          position="inline"
-                        />
-                      {/if}
-                      <span class="submenu-arrow">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M7 10l5 5 5-5z" />
-                        </svg>
-                      </span>
-                    </button>
-                    <div class="submenu-wrapper" class:open={openSubSubmenu === subItem.id}>
-                      <ul class="submenu submenu--nested">
-                        {#each subItem.submenu as nestedItem (nestedItem.id)}
-                          <li
-                            class="submenu-item"
-                            class:active={isActive(nestedItem)}
+                      <button
+                        type="button"
+                        class="submenu-link submenu-link--toggle"
+                        class:active={isActive(subItem)}
+                        onclick={() => {
+                          toggleSubSubmenu(subItem.id);
+                        }}
+                      >
+                        <span>{subItem.label}</span>
+                        {#if openSubSubmenu !== subItem.id}
+                          <NotificationBadge
+                            count={getSubmenuBadgeCount(subItem.submenu)}
+                            size="sm"
+                            position="inline"
+                          />
+                        {/if}
+                        <span class="submenu-arrow">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
                           >
-                            <a
-                              href={resolveDynamicPath(nestedItem.url ?? '')}
-                              class="submenu-link"
+                            <path d="M7 10l5 5 5-5z" />
+                          </svg>
+                        </span>
+                      </button>
+                      <div
+                        class="submenu-wrapper"
+                        class:open={openSubSubmenu === subItem.id}
+                      >
+                        <ul class="submenu submenu--nested">
+                          {#each subItem.submenu as nestedItem (nestedItem.id)}
+                            <li
+                              class="submenu-item"
                               class:active={isActive(nestedItem)}
-                              onclick={handleLinkClick}
                             >
-                              <span>{nestedItem.label}</span>
-                              {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
-                                <NotificationBadge
-                                  count={notificationStore.counts[
-                                    nestedItem.badgeType
-                                  ]}
-                                  size="sm"
-                                  position="inline"
-                                />
-                              {/if}
-                            </a>
-                          </li>
-                        {/each}
-                      </ul>
-                    </div>
-                  </li>
-                {:else}
-                  <li
-                    class="submenu-item"
-                    class:active={isActive(subItem)}
-                  >
-                    <a
-                      href={resolveDynamicPath(subItem.url ?? '')}
-                      class="submenu-link"
+                              <a
+                                href={resolveDynamicPath(nestedItem.url ?? '')}
+                                class="submenu-link"
+                                class:active={isActive(nestedItem)}
+                                onclick={handleLinkClick}
+                              >
+                                <span>{nestedItem.label}</span>
+                                {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
+                                  <NotificationBadge
+                                    count={notificationStore.counts[
+                                      nestedItem.badgeType
+                                    ]}
+                                    size="sm"
+                                    position="inline"
+                                  />
+                                {/if}
+                              </a>
+                            </li>
+                          {/each}
+                        </ul>
+                      </div>
+                    </li>
+                  {:else}
+                    <li
+                      class="submenu-item"
                       class:active={isActive(subItem)}
-                      onclick={handleLinkClick}
                     >
-                      <span>{subItem.label}</span>
-                      {#if subItem.badgeType && openSubmenu === item.id}
-                        <NotificationBadge
-                          count={notificationStore.counts[subItem.badgeType]}
-                          size="sm"
-                          position="inline"
-                        />
-                      {/if}
-                    </a>
-                  </li>
-                {/if}
-              {/each}
+                      <a
+                        href={resolveDynamicPath(subItem.url ?? '')}
+                        class="submenu-link"
+                        class:active={isActive(subItem)}
+                        onclick={handleLinkClick}
+                      >
+                        <span>{subItem.label}</span>
+                        {#if subItem.badgeType && openSubmenu === item.id}
+                          <NotificationBadge
+                            count={notificationStore.counts[subItem.badgeType]}
+                            size="sm"
+                            position="inline"
+                          />
+                        {/if}
+                      </a>
+                    </li>
+                  {/if}
+                {/each}
               </ul>
             </div>
           </li>

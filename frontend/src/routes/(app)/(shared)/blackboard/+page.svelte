@@ -661,32 +661,34 @@
     overflow: visible;
   }
 
+  /* Dot pattern — dark mode: white dots, thick center → thin edges */
   .blackboard-container::after {
     position: absolute;
     z-index: 0;
     inset: 0;
     border-radius: 12px;
-    background:
-      linear-gradient(45deg, #ffffff57 3%, #9a070700 0),
-      linear-gradient(-45deg, #fff0 3% 0),
-      linear-gradient(45deg, #ffffffb2 3%, #fff0 0),
-      linear-gradient(-45deg, #ffffff3d 3%, #84848400 0);
-    background-position:
-      0 0,
-      -2px 4px,
-      0 0,
-      -17px -12px;
-    background-size: 30px 30px;
+    background-image: radial-gradient(
+      circle,
+      rgb(255 255 255 / 25%) 1.5px,
+      transparent 1.5px
+    );
+    background-size: 20px 20px;
+    mask-image: radial-gradient(
+      ellipse 80% 80% at 50% 50%,
+      rgb(0 0 0) 10%,
+      transparent 75%
+    );
     pointer-events: none;
     content: '';
   }
 
+  /* Dot pattern — light mode: dark dots, thick center → thin edges */
   :global(html:not(.dark)) .blackboard-container::after {
-    background-image:
-      linear-gradient(45deg, #00000057 3%, #9a070700 0),
-      linear-gradient(-45deg, #0000 3% 0),
-      linear-gradient(45deg, #000000b2 3%, #0000 0),
-      linear-gradient(-45deg, #0000003d 3%, #84848400 0);
+    background-image: radial-gradient(
+      circle,
+      rgb(0 0 0 / 40%) 1.5px,
+      transparent 1.5px
+    );
   }
 
   /* ─── Pinboard Grid ──────── */

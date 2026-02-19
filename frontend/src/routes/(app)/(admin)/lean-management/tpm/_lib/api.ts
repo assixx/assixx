@@ -19,6 +19,10 @@ import type {
   CreatePlanPayload,
   UpdatePlanPayload,
   CreateTimeEstimatePayload,
+  CreateCardPayload,
+  UpdateCardPayload,
+  CheckDuplicatePayload,
+  DuplicateCheckResult,
 } from './types';
 
 const log = createLogger('TpmApi');
@@ -44,11 +48,10 @@ function numberOr(val: unknown, fallback: number): number {
 function extractPaginated<T>(result: unknown): PaginatedResponse<T> {
   if (result === null || typeof result !== 'object') return EMPTY_PAGE;
   const obj = result as Record<string, unknown>;
-  const items = Array.isArray(obj.data)
-    ? (obj.data as T[])
-    : Array.isArray(obj.items)
-      ? (obj.items as T[])
-      : [];
+  const items =
+    Array.isArray(obj.data) ? (obj.data as T[])
+    : Array.isArray(obj.items) ? (obj.items as T[])
+    : [];
   return {
     items,
     total: numberOr(obj.total, 0),
@@ -88,9 +91,7 @@ export async function fetchPlan(planUuid: string): Promise<TpmPlan> {
 }
 
 /** Create a new maintenance plan */
-export async function createPlan(
-  payload: CreatePlanPayload,
-): Promise<TpmPlan> {
+export async function createPlan(payload: CreatePlanPayload): Promise<TpmPlan> {
   return await apiClient.post<TpmPlan>('/tpm/plans', payload);
 }
 
@@ -209,6 +210,41 @@ export async function fetchBoardData(
     `/tpm/plans/${planUuid}/board?page=${page}&limit=${limit}`,
   );
   return extractPaginated<TpmCard>(result);
+}
+
+/** Fetch single card by UUID */
+export async function fetchCard(cardUuid: string): Promise<TpmCard> {
+  return await apiClient.get<TpmCard>(`/tpm/cards/${cardUuid}`);
+}
+
+/** Create a new card */
+export async function createCard(payload: CreateCardPayload): Promise<TpmCard> {
+  return await apiClient.post<TpmCard>('/tpm/cards', payload);
+}
+
+/** Update an existing card */
+export async function updateCard(
+  cardUuid: string,
+  payload: UpdateCardPayload,
+): Promise<TpmCard> {
+  return await apiClient.patch<TpmCard>(`/tpm/cards/${cardUuid}`, payload);
+}
+
+/** Soft-delete a card */
+export async function deleteCard(
+  cardUuid: string,
+): Promise<{ message: string }> {
+  return await apiClient.delete<{ message: string }>(`/tpm/cards/${cardUuid}`);
+}
+
+/** Check for potential duplicate cards */
+export async function checkDuplicate(
+  payload: CheckDuplicatePayload,
+): Promise<DuplicateCheckResult> {
+  return await apiClient.post<DuplicateCheckResult>(
+    '/tpm/cards/check-duplicate',
+    payload,
+  );
 }
 
 // =============================================================================

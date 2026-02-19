@@ -137,7 +137,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9375rem;
+    font-size: 0.938rem;
     font-weight: 600;
     color: var(--color-gray-800);
   }
@@ -155,14 +155,14 @@
     padding: 1.5rem;
     justify-content: center;
     color: var(--color-gray-500);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   .employee-assignment__empty {
     text-align: center;
     padding: 1.5rem;
     color: var(--color-gray-400);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   .employee-assignment__empty i {
@@ -184,7 +184,7 @@
   }
 
   .employee-assignment__count-label {
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--color-gray-500);
   }
 
@@ -201,7 +201,7 @@
     align-items: center;
     padding: 0.5rem 0.625rem;
     border-radius: var(--radius-sm, 4px);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   .employee-item--available {
@@ -239,7 +239,7 @@
   }
 
   .employee-item__reason {
-    font-size: 0.6875rem;
+    font-size: 0.688rem;
     color: var(--color-gray-500);
     font-style: italic;
   }

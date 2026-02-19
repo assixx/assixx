@@ -74,15 +74,15 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   // Extract plans from paginated response (backend returns .data not .items)
   const rawPlans = plansData as Record<string, unknown> | null;
   const plans =
-    rawPlans !== null && Array.isArray(rawPlans.data)
-      ? (rawPlans.data as TpmPlan[])
-      : rawPlans !== null && Array.isArray(rawPlans.items)
-        ? (rawPlans.items as TpmPlan[])
-        : [];
+    rawPlans !== null && Array.isArray(rawPlans.data) ?
+      (rawPlans.data as TpmPlan[])
+    : rawPlans !== null && Array.isArray(rawPlans.items) ?
+      (rawPlans.items as TpmPlan[])
+    : [];
   const totalPlans =
-    rawPlans !== null && typeof rawPlans.total === 'number'
-      ? rawPlans.total
-      : 0;
+    rawPlans !== null && typeof rawPlans.total === 'number' ?
+      rawPlans.total
+    : 0;
   const colors = Array.isArray(colorsData) ? colorsData : [];
 
   return {

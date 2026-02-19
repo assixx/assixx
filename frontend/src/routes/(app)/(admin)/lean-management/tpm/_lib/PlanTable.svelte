@@ -8,10 +8,7 @@
    */
   import { resolve } from '$app/paths';
 
-  import {
-    INTERVAL_LABELS,
-    MESSAGES,
-  } from './constants';
+  import { INTERVAL_LABELS, MESSAGES } from './constants';
 
   import type { TpmPlan, IntervalType } from './types';
 
@@ -26,9 +23,7 @@
   const { plans }: Props = $props();
 
   /** Active plans only */
-  const activePlans = $derived(
-    plans.filter((p: TpmPlan) => p.isActive === 1),
-  );
+  const activePlans = $derived(plans.filter((p: TpmPlan) => p.isActive === 1));
 
   /** Interval columns to display */
   const intervalColumns: IntervalType[] = [
@@ -147,7 +142,7 @@
   .matrix-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
   }
 
   .matrix-table th,

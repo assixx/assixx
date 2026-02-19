@@ -199,4 +199,71 @@ export const MESSAGES = {
   PLAN_TABLE_TITLE: 'Maschinen & Intervalle',
   PLAN_TABLE_EMPTY: 'Keine aktiven Wartungspläne vorhanden',
   PLAN_TABLE_MACHINE_COL: 'Maschine',
+
+  // Card management
+  CARD_PAGE_TITLE: 'TPM Karten - Assixx',
+  CARD_PAGE_HEADING: 'Karten verwalten',
+  CARD_CREATE_TITLE: 'Neue Karte erstellen',
+  CARD_EDIT_TITLE: 'Karte bearbeiten',
+  CARD_LIST_EMPTY: 'Keine Karten für diesen Plan vorhanden',
+  CARD_LIST_EMPTY_FILTER: 'Keine Karten für die gewählten Filter',
+
+  // Card form labels
+  LABEL_CARD_ROLE: 'Kartentyp',
+  LABEL_INTERVAL_TYPE: 'Intervall',
+  LABEL_TITLE: 'Titel',
+  LABEL_DESCRIPTION: 'Beschreibung',
+  LABEL_LOCATION: 'Standort / Örtlichkeit',
+  LABEL_REQUIRES_APPROVAL: 'Freigabe erforderlich',
+  LABEL_CUSTOM_INTERVAL_DAYS: 'Intervall (Tage)',
+
+  // Card form placeholders
+  PH_TITLE: 'z.B. Sichtprüfung Hydraulik',
+  PH_DESCRIPTION: 'Detaillierte Anleitung für die Wartungsaufgabe...',
+  PH_LOCATION: 'z.B. Maschinenrückseite, Schaltschrank rechts',
+  PH_CUSTOM_DAYS: 'Tage',
+
+  // Card form help text
+  HELP_CARD_ROLE:
+    'Bediener = tägliche Prüfungen, Instandhaltung = technische Wartung',
+  HELP_REQUIRES_APPROVAL:
+    'Karte muss nach Erledigung von einem Vorgesetzten freigegeben werden',
+  HELP_CUSTOM_INTERVAL:
+    'Nur bei benutzerdefiniertem Intervall: Anzahl Tage zwischen Wartungen',
+
+  // Card table headers
+  TH_CARD_CODE: 'Code',
+  TH_CARD_TITLE: 'Titel',
+  TH_CARD_ROLE: 'Typ',
+  TH_CARD_DUE: 'Fällig',
+  TH_CARD_APPROVAL: 'Freigabe',
+
+  // Card form buttons
+  BTN_CREATE_CARD: 'Karte erstellen',
+  BTN_NEW_CARD: 'Neue Karte',
+  BTN_CANCEL_FORM: 'Abbrechen',
+
+  // Card form success/error
+  SUCCESS_CARD_CREATED: 'Karte erfolgreich erstellt',
+  SUCCESS_CARD_UPDATED: 'Karte erfolgreich aktualisiert',
+  SUCCESS_CARD_DELETED: 'Karte gelöscht',
+  ERROR_CARD_CREATE: 'Fehler beim Erstellen der Karte',
+  ERROR_CARD_UPDATE: 'Fehler beim Aktualisieren der Karte',
+  ERROR_CARD_DELETE: 'Fehler beim Löschen der Karte',
+  ERROR_CARDS_LOAD: 'Fehler beim Laden der Karten',
+
+  // Card delete confirmation
+  CARD_DELETE_TITLE: 'Karte löschen',
+  CARD_DELETE_MESSAGE: 'Möchten Sie diese Karte wirklich löschen?',
+
+  // Duplicate warning
+  DUPLICATE_TITLE: 'Mögliche Duplikate gefunden',
+  DUPLICATE_MESSAGE: 'Es wurden ähnliche Karten für diese Maschine gefunden:',
+  DUPLICATE_CONTINUE: 'Trotzdem erstellen',
+  DUPLICATE_CANCEL: 'Abbrechen',
+
+  // Card filters
+  FILTER_ALL_ROLES: 'Alle Typen',
+  FILTER_ALL_INTERVALS: 'Alle Intervalle',
+  FILTER_ALL_STATUS: 'Alle Status',
 } as const;
