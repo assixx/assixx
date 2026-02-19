@@ -111,7 +111,7 @@ Use agents for reading. Read whole files.
 15. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
 16. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
 17. Recap fast, then ask user that you're ready
-18. `cd /home/scs/projects/Assixx && pwd`
+18. `cd /home/scs/projects/Assixx && pwd` then quick recap and do nothin until user is telling you what to do.
 
 ---
 

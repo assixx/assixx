@@ -70,6 +70,25 @@
     }
   });
 
+  // Auto-open submenu for the currently active page
+  $effect(() => {
+    if (collapsed) return;
+
+    const activeParent = menuItems.find(
+      (item: NavItem) => item.submenu !== undefined && isActive(item),
+    );
+    if (activeParent === undefined) return;
+
+    openSubmenu = activeParent.id;
+
+    const activeSubParent = activeParent.submenu?.find(
+      (sub: NavItem) => sub.submenu !== undefined && isActive(sub),
+    );
+    if (activeSubParent !== undefined) {
+      openSubSubmenu = activeSubParent.id;
+    }
+  });
+
   // --- DERIVED ---
 
   const roleBadgeClass: string = $derived(
@@ -539,17 +558,20 @@
     overflow: hidden;
     transition: grid-template-rows 0.25s ease;
     pointer-events: none;
+    visibility: hidden;
   }
 
   .submenu-wrapper.open {
     grid-template-rows: 1fr;
+    transition: grid-template-rows 0.25s ease, visibility 0s 0s;
     pointer-events: auto;
+    visibility: visible;
   }
 
   .submenu {
     min-height: 0; /* required for grid-template-rows: 0fr to work */
-    margin: 0.25rem 0 0.313rem 1.5rem;
-    padding-left: 1rem;
+    margin: 0 0 0 1.5rem;
+    padding: 0.25rem 0 0.313rem 1rem;
     border-left: 1px solid var(--color-glass-border-hover);
     list-style: none;
   }

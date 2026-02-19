@@ -1,8 +1,8 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.21.0 (Step 5.4 DONE — Shared Employee Overview)
-> **Status:** IN PROGRESS — Phase 5, nächster Step: 5.5 (Kamishibai Board)
+> **Version:** 1.22.0 (Step 5.5 DONE — Kamishibai Board)
+> **Status:** IN PROGRESS — Phase 5, nächster Step: 5.6 (Card Detail + Execution + Approval UI)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
@@ -70,6 +70,7 @@ pnpm test                # unit + api tests
 | 1.18.0  | 2026-02-19 | Step 5.1 DONE: Frontend Admin Dashboard + Foundation — 10 neue Dateien, 3 modifiziert. Dashboard (+page.svelte + +page.server.ts), Foundation (\_lib/: types.ts, constants.ts, api.ts, state-data.svelte.ts, state-ui.svelte.ts, state.svelte.ts), Components (PlanOverview.svelte, NextMaintenanceInfo.svelte). Config: navigation-config.ts (badgeType 'tpm' + LEAN_ADMIN_SUBMENU + employee menu), Breadcrumb.svelte (URL mappings + dynamic routes), notification.store.svelte.ts (tpm counter + 4 SSE events). svelte-check 0, ESLint 0, Type-Check 0                                                                                                                                                                                                                                                                                                                                              |
 | 1.19.0  | 2026-02-19 | Step 5.2 DONE: Admin Plan Creation — 8 neue/modifizierte Dateien. plan/[uuid]/+page.server.ts (SSR create/edit), plan/[uuid]/+page.svelte (Page Orchestration), PlanForm.svelte (Machine, Name, Weekday, RepeatEvery, Time, ShiftPlan Toggle, Notes), SlotAssistant.svelte (Kalender-Grid verfügbar/belegt), EmployeeAssignment.svelte (Team-Verfügbarkeit), PlanTable.svelte (Maschine×Intervall Matrix). Fixes: extractPaginated (API gibt .data statt .items, .pageSize statt .limit), SSR plansData Extraction, machineNumber-Null-Check. date-helpers.ts für ESLint svelte/prefer-svelte-reactivity. API-Endpunkte verifiziert (6/6). svelte-check 0, ESLint 0                                                                                                                                                                                                                                     |
 | 1.20.0  | 2026-02-19 | Step 5.3 DONE: Admin Card Management — 5 neue Dateien, 3 modifiziert. cards/[uuid]/+page.server.ts (SSR: Plan+Cards+Templates parallel), cards/[uuid]/+page.svelte (Page Orchestration: CRUD + Delete-Modal + Duplicate-Warning), CardForm.svelte (CardRole, IntervalType, Title, Description, Location, RequiresApproval, CustomIntervalDays), CardList.svelte (Filterable Table: Status/Intervall/Rolle, Edit/Delete Actions), DuplicateWarning.svelte (Modal mit existierenden Karten). api.ts erweitert (+6 Funktionen: fetchCard, createCard, updateCard, deleteCard, checkDuplicate), types.ts (+4 Interfaces: CreateCardPayload, UpdateCardPayload, CheckDuplicatePayload, DuplicateCheckResult), constants.ts (+40 Messages). svelte-check 0, ESLint 0, Type-Check 0, 4764 Tests                                                                                                                |
+| 1.22.0  | 2026-02-19 | Step 5.5 DONE: Kamishibai Board (Employee View) — 7 neue Dateien. board/[uuid]/+page.server.ts (SSR: Plan+Cards+Colors parallel), board/[uuid]/+page.svelte (Page Orchestration: Header + Filter + KamishibaiBoard), _lib/CardFlip.svelte (CSS 3D perspective, will-change GPU, reduced-motion), _lib/KamishibaiCard.svelte (Status-Color Front, Description/Location/Due-Date Back, pulse animation für urgent), _lib/KamishibaiSection.svelte (Interval-Group: Operator + Instandhaltung Rows, open-badge), _lib/KamishibaiBoard.svelte (SvelteMap grouping, INTERVAL_ORDER sort, empty-state), _lib/BoardFilter.svelte (4 Filter: Alle/Bediener/Instandhaltung/Nur Offene, $bindable). svelte-check 0 Errors 0 Warnings, ESLint 0, 3808 Unit-Tests ✅
 | 1.21.0  | 2026-02-19 | Step 5.4 DONE: Shared Employee Overview — 7 neue Dateien, 2 modifiziert. Route-Conflict gelöst: Employee-Page unter `overview/` Subdirectory (URL: `/lean-management/tpm/overview`). overview/+page.server.ts (SSR: Plans+Colors parallel, Board-Data per Plan, countStatuses), overview/+page.svelte (4 Stat-Cards + MachineList), \_lib/types.ts (TpmPlan, TpmCard, TpmColorConfigEntry, StatusCounts, MachineWithTpmStatus), \_lib/constants.ts (INTERVAL_LABELS, CARD_STATUS_LABELS, DEFAULT_COLORS, WEEKDAY_LABELS, MESSAGES), \_lib/api.ts (Employee API Client), \_lib/MachineList.svelte (Sortierte Maschinenliste mit Urgency-Indicator, Schedule, Status-Badges, Board-Link), \_lib/MaintenanceStatus.svelte (Color-coded Status-Badges mit Tenant-Config). navigation-config.ts (Employee TPM URL aktualisiert), Breadcrumb.svelte (overview + board URL-Mappings). svelte-check 0, ESLint 0 |
 
 > **Versionierungsregel:**
@@ -1179,17 +1180,17 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 ---
 
-### Step 5.5: Session 25 — Kamishibai Board [PENDING]
+### Step 5.5: Session 25 — Kamishibai Board [DONE]
 
-**Neue Dateien:**
+**Neue Dateien (7 erstellt, Session 25):**
 
-- `(shared)/lean-management/tpm/board/[uuid]/+page.server.ts`
-- `(shared)/lean-management/tpm/board/[uuid]/+page.svelte`
-- `board/[uuid]/_lib/KamishibaiBoard.svelte` — Board-Container mit Sektionen
-- `board/[uuid]/_lib/KamishibaiSection.svelte` — Eine Intervall-Sektion (z.B. "Wöchentlich Bediener")
-- `board/[uuid]/_lib/KamishibaiCard.svelte` — Einzelne Karte mit Card-Flip
-- `board/[uuid]/_lib/CardFlip.svelte` — CSS 3D Transform Component
-- `board/[uuid]/_lib/BoardFilter.svelte` — Filter: Alle/Bediener/Instandhaltung/Nur Offene
+- `(shared)/lean-management/tpm/board/[uuid]/+page.server.ts` ✅ SSR: Plan+Cards+Colors parallel
+- `(shared)/lean-management/tpm/board/[uuid]/+page.svelte` ✅ Page: Header + Filter + Board + Empty States
+- `board/[uuid]/_lib/CardFlip.svelte` ✅ CSS 3D perspective, will-change, reduced-motion WCAG
+- `board/[uuid]/_lib/KamishibaiCard.svelte` ✅ Status-Color Front, Back mit Description/Location/Due, pulse für urgent
+- `board/[uuid]/_lib/KamishibaiSection.svelte` ✅ Interval-Group mit Operator+Instandhaltung Rows
+- `board/[uuid]/_lib/KamishibaiBoard.svelte` ✅ SvelteMap grouping, INTERVAL_ORDER sort, empty-state
+- `board/[uuid]/_lib/BoardFilter.svelte` ✅ 4 Filter-Buttons (Alle/Bediener/Instandhaltung/Nur Offene), $bindable
 
 ---
 
