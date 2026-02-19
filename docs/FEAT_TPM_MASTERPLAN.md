@@ -1,7 +1,7 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.11.0 (Phase 2 COMPLETE — Steps 2.1-2.11 Done)
+> **Version:** 1.11.1 (Phase 2 COMPLETE — Steps 2.1-2.11 Done, ActivityEntityType-Fix)
 > **Status:** IN PROGRESS — Phase 2 abgeschlossen, nächster Step: 3.1 (Unit Tests Plans + Config)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
@@ -60,6 +60,7 @@ pnpm test                # unit + api tests
 | 1.9.0   | 2026-02-19 | Step 2.9 DONE: Notification + Escalation — eventBus.ts TpmEvent + 5 Emitter, tpm-notification.service.ts (222 Z., Dual-Pattern ADR-004), tpm-escalation.service.ts (230 Z., @Cron 5min + FOR UPDATE SKIP LOCKED), tpm.module.ts (15/15 Services)                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 1.10.0  | 2026-02-19 | Step 2.10 DONE: Controllers Plans + Cards — tpm-plans.controller.ts (220 Z., 9 Endpoints), tpm-cards.controller.ts (186 Z., 6 Endpoints), 5 Query-DTOs (1 Klasse/Datei), tpm.module.ts (2/4 Controller). D12: check-duplicate Route geändert zu POST /cards/check-duplicate (body: planUuid) statt /cards/:uuid/check-duplicate                                                                                                                                                                                                                                                                                                                                  |
 | 1.11.0  | 2026-02-19 | Step 2.11 DONE / PHASE 2 COMPLETE: tpm-executions.controller.ts (190 Z., 6 Endpoints), tpm-config.controller.ts (160 Z., 9 Endpoints), tpm-dashboard.service.ts (40 Z.), 2 neue DTOs (CreateExecution, ListExecutionsQuery). Integrations: notifications.controller.ts (5 TPM SSE Events + registerTpmHandlers()), dashboard.service.ts (fetchTpmCount), dashboard-counts.dto.ts (tpm: CountItemSchema), machine-availability.service.ts (createFromTpmPlan), machine-maintenance.service.ts (createFromTpmExecution), tpm-escalation.service.ts (getConfig + updateConfig + UPSERT). tpm.module.ts: 4/4 Controller, 16 Services. 4400 Tests, 0 ESLint/TS Errors |
+| 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'machine'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7 |
 
 > **Versionierungsregel:**
 >

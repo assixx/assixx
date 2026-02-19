@@ -196,7 +196,7 @@ export class TpmCardsService {
     void this.activityLogger.logCreate(
       tenantId,
       createdBy,
-      'machine',
+      'tpm_card',
       card.machineId,
       `TPM-Karte erstellt: ${card.cardCode} — ${card.title}`,
       { cardUuid: card.uuid, cardCode: card.cardCode },
@@ -254,7 +254,7 @@ export class TpmCardsService {
     void this.activityLogger.logUpdate(
       tenantId,
       userId,
-      'machine',
+      'tpm_card',
       card.machineId,
       `TPM-Karte aktualisiert: ${card.cardCode} — ${card.title}`,
       { cardUuid },
@@ -288,7 +288,7 @@ export class TpmCardsService {
     void this.activityLogger.logDelete(
       tenantId,
       userId,
-      'machine',
+      'tpm_card',
       card.machineId,
       `TPM-Karte gelöscht: ${card.cardCode} — ${card.title}`,
       { cardUuid, cardCode: card.cardCode },

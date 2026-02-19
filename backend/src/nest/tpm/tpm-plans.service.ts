@@ -178,7 +178,7 @@ export class TpmPlansService {
     void this.activityLogger.logCreate(
       tenantId,
       userId,
-      'machine',
+      'tpm_plan',
       plan.machineId,
       `TPM-Wartungsplan erstellt: ${plan.name}`,
       { planUuid: plan.uuid, machineName: plan.machineName },
@@ -228,7 +228,7 @@ export class TpmPlansService {
     void this.activityLogger.logUpdate(
       tenantId,
       userId,
-      'machine',
+      'tpm_plan',
       plan.machineId,
       `TPM-Wartungsplan aktualisiert: ${plan.name}`,
       { planUuid },
@@ -262,7 +262,7 @@ export class TpmPlansService {
     void this.activityLogger.logDelete(
       tenantId,
       userId,
-      'machine',
+      'tpm_plan',
       plan.machineId,
       `TPM-Wartungsplan gelöscht: ${plan.name}`,
       { planUuid, machineName: plan.machineName },

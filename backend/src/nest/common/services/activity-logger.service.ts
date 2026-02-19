@@ -52,7 +52,10 @@ export type ActivityEntityType =
   | 'vacation_holiday'
   | 'vacation_staffing_rule'
   | 'vacation_entitlement'
-  | 'vacation_settings';
+  | 'vacation_settings'
+  | 'tpm_plan'
+  | 'tpm_card'
+  | 'tpm_execution';
 
 /**
  * Parameters for logging an activity

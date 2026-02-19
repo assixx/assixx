@@ -109,7 +109,7 @@ export class TpmApprovalService {
     void this.activityLogger.logUpdate(
       tenantId,
       approverId,
-      'machine',
+      'tpm_execution',
       machineId,
       `TPM-Durchführung freigegeben: ${executionUuid}`,
       { approvalStatus: 'pending' },
@@ -185,7 +185,7 @@ export class TpmApprovalService {
     void this.activityLogger.logUpdate(
       tenantId,
       approverId,
-      'machine',
+      'tpm_execution',
       machineId,
       `TPM-Durchführung abgelehnt: ${executionUuid} — ${dto.approvalNote ?? ''}`,
       { approvalStatus: 'pending' },

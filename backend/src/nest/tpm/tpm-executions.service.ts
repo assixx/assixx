@@ -120,7 +120,7 @@ export class TpmExecutionsService {
     void this.activityLogger.logCreate(
       tenantId,
       userId,
-      'machine',
+      'tpm_execution',
       machineId,
       `TPM-Durchführung erstellt: Karte ${cardUuid}`,
       { executionUuid: execution.uuid, cardUuid },
