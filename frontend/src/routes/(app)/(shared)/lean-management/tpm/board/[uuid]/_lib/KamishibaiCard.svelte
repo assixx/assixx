@@ -9,19 +9,26 @@
 
   import CardFlip from './CardFlip.svelte';
 
-  import type { TpmCard, TpmColorConfigEntry, CardStatus } from '../../../_lib/types';
+  import type {
+    TpmCard,
+    TpmColorConfigEntry,
+    CardStatus,
+  } from '../../../_lib/types';
 
   interface Props {
     card: TpmCard;
     colors: TpmColorConfigEntry[];
+    onCardSelect?: (card: TpmCard) => void;
   }
 
-  const { card, colors }: Props = $props();
+  const { card, colors, onCardSelect }: Props = $props();
 
   let isFlipped = $state(false);
 
   function getColor(status: CardStatus): string {
-    const found = colors.find((c: TpmColorConfigEntry) => c.statusKey === status);
+    const found = colors.find(
+      (c: TpmColorConfigEntry) => c.statusKey === status,
+    );
     return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
   }
 
@@ -66,7 +73,10 @@
         style="background-color: {statusColor}"
       >
         {#if isUrgent}
-          <span class="kamishibai-card__pulse" style="background-color: {statusColor}"></span>
+          <span
+            class="kamishibai-card__pulse"
+            style="background-color: {statusColor}"
+          ></span>
         {/if}
         <div class="kamishibai-card__code">{card.cardCode}</div>
         <div class="kamishibai-card__title">{card.title}</div>
@@ -74,7 +84,10 @@
           {CARD_STATUS_LABELS[card.status]}
         </div>
         {#if card.requiresApproval}
-          <span class="kamishibai-card__approval" title="Freigabe erforderlich">
+          <span
+            class="kamishibai-card__approval"
+            title="Freigabe erforderlich"
+          >
             <i class="fas fa-lock"></i>
           </span>
         {/if}
@@ -87,7 +100,9 @@
         {#if card.description !== null}
           <p class="kamishibai-card__desc">{card.description}</p>
         {:else}
-          <p class="kamishibai-card__desc kamishibai-card__desc--empty">Keine Beschreibung</p>
+          <p class="kamishibai-card__desc kamishibai-card__desc--empty">
+            Keine Beschreibung
+          </p>
         {/if}
         {#if card.locationDescription !== null}
           <div class="kamishibai-card__location">
@@ -104,6 +119,19 @@
             <i class="fas fa-check-circle"></i>
             Erledigt: {formatDate(card.lastCompletedAt)}
           </div>
+        {/if}
+        {#if onCardSelect !== undefined}
+          <button
+            type="button"
+            class="kamishibai-card__detail-btn"
+            onclick={(e: MouseEvent) => {
+              e.stopPropagation();
+              onCardSelect(card);
+            }}
+          >
+            <i class="fas fa-expand-alt"></i>
+            Details
+          </button>
         {/if}
         <div class="kamishibai-card__flip-hint">
           <i class="fas fa-sync-alt"></i> Zurückdrehen
@@ -133,16 +161,27 @@
     position: absolute;
     inset: -4px;
     border-radius: inherit;
-    opacity: 0.35;
+    opacity: 35%;
     animation: pulse-ring 1.8s ease-out infinite;
     z-index: 0;
     pointer-events: none;
   }
 
   @keyframes pulse-ring {
-    0% { transform: scale(1); opacity: 0.35; }
-    70% { transform: scale(1.06); opacity: 0; }
-    100% { transform: scale(1.06); opacity: 0; }
+    0% {
+      transform: scale(1);
+      opacity: 35%;
+    }
+
+    70% {
+      transform: scale(1.06);
+      opacity: 0%;
+    }
+
+    100% {
+      transform: scale(1.06);
+      opacity: 0%;
+    }
   }
 
   /* Front face */
@@ -161,7 +200,7 @@
   .kamishibai-card__code {
     font-size: 0.75rem;
     font-weight: 700;
-    opacity: 0.85;
+    opacity: 85%;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     margin-bottom: 0.375rem;
@@ -181,8 +220,8 @@
 
   .kamishibai-card__status-label {
     font-size: 0.7rem;
-    opacity: 0.8;
-    border: 1px solid rgba(255 255 255 / 40%);
+    opacity: 80%;
+    border: 1px solid rgb(255 255 255 / 40%);
     border-radius: var(--radius-full, 9999px);
     padding: 0.125rem 0.5rem;
     margin-top: auto;
@@ -193,7 +232,7 @@
     top: 0.5rem;
     right: 0.5rem;
     font-size: 0.75rem;
-    opacity: 0.85;
+    opacity: 85%;
   }
 
   /* Back face */
@@ -247,8 +286,37 @@
     white-space: nowrap;
   }
 
-  .kamishibai-card__flip-hint {
+  .kamishibai-card__detail-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--color-gray-500, #6b7280);
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--color-gray-200, #e5e7eb);
+    font-size: 0.688rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
     margin-top: auto;
+  }
+
+  .kamishibai-card__detail-btn:hover {
+    background: var(--color-gray-700, #374151);
+    color: #fff;
+  }
+
+  .kamishibai-card__detail-btn:focus-visible {
+    outline: 2px solid var(--color-primary-400, #60a5fa);
+    outline-offset: 2px;
+  }
+
+  .kamishibai-card__flip-hint {
     font-size: 0.625rem;
     color: var(--color-gray-500, #6b7280);
     text-align: center;

@@ -15,7 +15,10 @@
   const { isFlipped, front, back }: Props = $props();
 </script>
 
-<div class="card-flip" class:card-flip--flipped={isFlipped}>
+<div
+  class="card-flip"
+  class:card-flip--flipped={isFlipped}
+>
   <div class="card-flip__inner">
     <div class="card-flip__front">
       {@render front()}
@@ -51,7 +54,7 @@
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
     border-radius: inherit;
     overflow: hidden;
   }

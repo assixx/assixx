@@ -9,6 +9,11 @@ import type {
   TpmPlan,
   TpmCard,
   TpmColorConfigEntry,
+  TpmExecution,
+  TpmExecutionPhoto,
+  TpmTimeEstimate,
+  CreateExecutionPayload,
+  RespondExecutionPayload,
   PaginatedResponse,
 } from './types';
 
@@ -95,6 +100,89 @@ export async function fetchBoardData(
 export async function fetchColors(): Promise<TpmColorConfigEntry[]> {
   const result: unknown = await apiClient.get('/tpm/config/colors');
   return extractArray<TpmColorConfigEntry>(result);
+}
+
+// =============================================================================
+// EXECUTIONS
+// =============================================================================
+
+/** Create an execution (mark card as done) */
+export async function createExecution(
+  payload: CreateExecutionPayload,
+): Promise<TpmExecution> {
+  return (await apiClient.post('/tpm/executions', payload));
+}
+
+/** Get a single execution */
+export async function fetchExecution(
+  executionUuid: string,
+): Promise<TpmExecution> {
+  return (await apiClient.get(
+    `/tpm/executions/${executionUuid}`,
+  ));
+}
+
+/** Fetch pending approvals */
+export async function fetchPendingApprovals(
+  page = 1,
+  limit = 20,
+): Promise<PaginatedResponse<TpmExecution>> {
+  const result: unknown = await apiClient.get(
+    `/tpm/executions/pending-approvals?page=${page}&limit=${limit}`,
+  );
+  return extractPaginated<TpmExecution>(result);
+}
+
+/** Respond to execution (approve/reject) */
+export async function respondToExecution(
+  executionUuid: string,
+  payload: RespondExecutionPayload,
+): Promise<TpmExecution> {
+  return (await apiClient.post(
+    `/tpm/executions/${executionUuid}/respond`,
+    payload,
+  ));
+}
+
+// =============================================================================
+// PHOTOS
+// =============================================================================
+
+/** Upload a photo to an execution */
+export async function uploadPhoto(
+  executionUuid: string,
+  file: File,
+): Promise<TpmExecutionPhoto> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return (await apiClient.post(
+    `/tpm/executions/${executionUuid}/photos`,
+    formData,
+  ));
+}
+
+/** Fetch photos for an execution */
+export async function fetchPhotos(
+  executionUuid: string,
+): Promise<TpmExecutionPhoto[]> {
+  const result: unknown = await apiClient.get(
+    `/tpm/executions/${executionUuid}/photos`,
+  );
+  return extractArray<TpmExecutionPhoto>(result);
+}
+
+// =============================================================================
+// TIME ESTIMATES
+// =============================================================================
+
+/** Fetch time estimates for a plan */
+export async function fetchTimeEstimates(
+  planUuid: string,
+): Promise<TpmTimeEstimate[]> {
+  const result: unknown = await apiClient.get(
+    `/tpm/plans/${planUuid}/time-estimates`,
+  );
+  return extractArray<TpmTimeEstimate>(result);
 }
 
 // =============================================================================

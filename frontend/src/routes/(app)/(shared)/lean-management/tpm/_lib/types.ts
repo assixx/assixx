@@ -82,6 +82,71 @@ export interface TpmColorConfigEntry {
 }
 
 // =============================================================================
+// EXECUTION & APPROVAL TYPES (Kamishibai Board)
+// =============================================================================
+
+/** Approval status for card executions */
+export type ApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+/** Execution record for a card */
+export interface TpmExecution {
+  uuid: string;
+  cardUuid?: string;
+  executedBy: number;
+  executedByName?: string;
+  executionDate: string;
+  documentation: string | null;
+  approvalStatus: ApprovalStatus;
+  approvedBy: number | null;
+  approvedByName?: string;
+  approvedAt: string | null;
+  approvalNote: string | null;
+  customData: Record<string, unknown>;
+  photos?: TpmExecutionPhoto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Photo attached to an execution */
+export interface TpmExecutionPhoto {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+/** Time estimate for an interval */
+export interface TpmTimeEstimate {
+  uuid: string;
+  planId: number;
+  intervalType: IntervalType;
+  staffCount: number;
+  preparationMinutes: number;
+  executionMinutes: number;
+  followupMinutes: number;
+  totalMinutes: number;
+  isActive: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Payload for creating an execution */
+export interface CreateExecutionPayload {
+  cardUuid: string;
+  documentation?: string | null;
+  customData?: Record<string, unknown>;
+}
+
+/** Payload for responding to an execution (approve/reject) */
+export interface RespondExecutionPayload {
+  action: 'approved' | 'rejected';
+  approvalNote?: string | null;
+}
+
+// =============================================================================
 // AGGREGATED TYPES (Employee Overview)
 // =============================================================================
 

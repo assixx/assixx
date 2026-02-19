@@ -95,4 +95,67 @@ export const MESSAGES = {
 
   // Errors
   ERROR_LOAD_FAILED: 'Fehler beim Laden der Wartungsdaten',
+
+  // Card Detail Panel
+  DETAIL_HEADING: 'Kartendetails',
+  DETAIL_CODE: 'Code',
+  DETAIL_ROLE: 'Typ',
+  DETAIL_INTERVAL: 'Intervall',
+  DETAIL_STATUS: 'Status',
+  DETAIL_DUE_DATE: 'Fällig am',
+  DETAIL_LOCATION: 'Standort',
+  DETAIL_DESCRIPTION: 'Beschreibung',
+  DETAIL_NO_DESCRIPTION: 'Keine Beschreibung vorhanden',
+  DETAIL_LAST_COMPLETED: 'Zuletzt erledigt',
+  DETAIL_APPROVAL_REQUIRED: 'Freigabe erforderlich',
+  DETAIL_CLOSE: 'Schließen',
+
+  // Execution Form
+  EXEC_HEADING: 'Wartung durchführen',
+  EXEC_DOCUMENTATION: 'Dokumentation',
+  EXEC_DOCUMENTATION_PH: 'Beschreiben Sie die durchgeführte Wartung...',
+  EXEC_DOCUMENTATION_HINT:
+    'Bei Karten mit Freigabepflicht ist die Dokumentation erforderlich.',
+  EXEC_SUBMIT: 'Als erledigt melden',
+  EXEC_SUBMITTING: 'Wird gemeldet...',
+  EXEC_SUCCESS: 'Wartung erfolgreich gemeldet',
+  EXEC_ERROR: 'Fehler beim Melden der Wartung',
+  EXEC_CARD_NOT_DUE:
+    'Diese Karte ist nicht fällig und kann nicht erledigt werden.',
+
+  // Approval Panel
+  APPROVAL_HEADING: 'Freigabe',
+  APPROVAL_EXECUTED_BY: 'Durchgeführt von',
+  APPROVAL_EXECUTED_ON: 'Durchgeführt am',
+  APPROVAL_DOCUMENTATION: 'Dokumentation',
+  APPROVAL_NOTE: 'Kommentar',
+  APPROVAL_NOTE_PH: 'Begründung bei Ablehnung...',
+  APPROVAL_NOTE_REQUIRED: 'Begründung ist bei Ablehnung erforderlich',
+  APPROVAL_APPROVE: 'Freigeben',
+  APPROVAL_REJECT: 'Ablehnen',
+  APPROVAL_APPROVING: 'Wird freigegeben...',
+  APPROVAL_REJECTING: 'Wird abgelehnt...',
+  APPROVAL_SUCCESS_APPROVED: 'Freigabe erteilt',
+  APPROVAL_SUCCESS_REJECTED: 'Freigabe abgelehnt',
+  APPROVAL_ERROR: 'Fehler bei der Freigabeaktion',
+
+  // Photo Upload
+  PHOTO_HEADING: 'Fotos',
+  PHOTO_ADD: 'Foto hinzufügen',
+  PHOTO_MAX_REACHED: 'Maximum von 5 Fotos erreicht',
+  PHOTO_MAX_SIZE: 'Max. 5 MB pro Foto',
+  PHOTO_UPLOADING: 'Wird hochgeladen...',
+  PHOTO_ERROR: 'Fehler beim Hochladen',
+  PHOTO_TOO_LARGE: 'Datei ist größer als 5 MB',
+  PHOTO_INVALID_TYPE: 'Nur Bilder (JPG, PNG, WebP) erlaubt',
+
+  // Time Estimates
+  TIME_HEADING: 'Zeitschätzung',
+  TIME_STAFF: 'Mitarbeiter',
+  TIME_PREP: 'Vorbereitung',
+  TIME_EXEC: 'Durchführung',
+  TIME_FOLLOW: 'Nachbereitung',
+  TIME_TOTAL: 'Gesamt',
+  TIME_MINUTES: 'Min.',
+  TIME_NO_ESTIMATE: 'Keine Zeitschätzung hinterlegt',
 } as const;

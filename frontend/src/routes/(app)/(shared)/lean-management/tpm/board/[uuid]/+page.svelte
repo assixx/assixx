@@ -45,7 +45,8 @@
   );
 
   const openCount = $derived(
-    cards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue').length,
+    cards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue')
+      .length,
   );
 </script>
 
@@ -107,7 +108,10 @@
       <p>Für diesen Wartungsplan sind noch keine Karten erstellt.</p>
     </div>
   {:else}
-    <KamishibaiBoard cards={filteredCards} {colors} />
+    <KamishibaiBoard
+      cards={filteredCards}
+      {colors}
+    />
   {/if}
 </div>
 
@@ -169,12 +173,20 @@
   }
 
   .board-page__open-badge {
-    background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--color-danger, #ef4444) 12%,
+      transparent
+    );
     color: var(--color-danger, #ef4444);
   }
 
   .board-page__ok-badge {
-    background: color-mix(in srgb, var(--color-success, #10b981) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--color-success, #10b981) 12%,
+      transparent
+    );
     color: var(--color-success, #10b981);
   }
 
@@ -188,7 +200,7 @@
   }
 
   .board-page__card-count {
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--color-gray-500);
     white-space: nowrap;
   }

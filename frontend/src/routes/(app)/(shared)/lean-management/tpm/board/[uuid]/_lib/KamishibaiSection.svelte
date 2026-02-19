@@ -16,10 +16,17 @@
     maintenanceCards: TpmCard[];
     totalOpen: number;
     colors: TpmColorConfigEntry[];
+    onCardSelect?: (card: TpmCard) => void;
   }
 
-  const { label, operatorCards, maintenanceCards, totalOpen, colors }: Props =
-    $props();
+  const {
+    label,
+    operatorCards,
+    maintenanceCards,
+    totalOpen,
+    colors,
+    onCardSelect,
+  }: Props = $props();
 
   const hasOperator = $derived(operatorCards.length > 0);
   const hasMaintenance = $derived(maintenanceCards.length > 0);
@@ -51,7 +58,11 @@
       </div>
       <div class="kamishibai-section__cards">
         {#each operatorCards as card (card.uuid)}
-          <KamishibaiCard {card} {colors} />
+          <KamishibaiCard
+            {card}
+            {colors}
+            {onCardSelect}
+          />
         {/each}
       </div>
     </div>
@@ -66,7 +77,11 @@
       </div>
       <div class="kamishibai-section__cards">
         {#each maintenanceCards as card (card.uuid)}
-          <KamishibaiCard {card} {colors} />
+          <KamishibaiCard
+            {card}
+            {colors}
+            {onCardSelect}
+          />
         {/each}
       </div>
     </div>
@@ -95,7 +110,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9375rem;
+    font-size: 0.938rem;
     font-weight: 600;
     color: var(--color-gray-800);
     margin: 0;
@@ -112,14 +127,22 @@
     gap: 0.25rem;
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-full, 9999px);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     font-weight: 500;
-    background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--color-danger, #ef4444) 12%,
+      transparent
+    );
     color: var(--color-danger, #ef4444);
   }
 
   .kamishibai-section__badge--ok {
-    background: color-mix(in srgb, var(--color-success, #10b981) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--color-success, #10b981) 12%,
+      transparent
+    );
     color: var(--color-success, #10b981);
   }
 
@@ -137,7 +160,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     font-weight: 500;
     color: var(--color-gray-500);
     margin-bottom: 0.75rem;

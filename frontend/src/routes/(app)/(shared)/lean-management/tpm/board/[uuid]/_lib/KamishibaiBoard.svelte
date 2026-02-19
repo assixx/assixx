@@ -10,7 +10,11 @@
 
   import KamishibaiSection from './KamishibaiSection.svelte';
 
-  import type { TpmCard, TpmColorConfigEntry, IntervalType } from '../../../_lib/types';
+  import type {
+    TpmCard,
+    TpmColorConfigEntry,
+    IntervalType,
+  } from '../../../_lib/types';
 
   /** Canonical interval order — daily first, custom last */
   const INTERVAL_ORDER: IntervalType[] = [
@@ -35,9 +39,10 @@
   interface Props {
     cards: TpmCard[];
     colors: TpmColorConfigEntry[];
+    onCardSelect?: (card: TpmCard) => void;
   }
 
-  const { cards, colors }: Props = $props();
+  const { cards, colors, onCardSelect }: Props = $props();
 
   function countOpen(sectionCards: TpmCard[]): number {
     return sectionCards.filter(
@@ -53,9 +58,8 @@
       grouped.set(card.intervalType, existing);
     }
 
-    return INTERVAL_ORDER
-      .filter((it: IntervalType) => grouped.has(it))
-      .map((it: IntervalType) => {
+    return INTERVAL_ORDER.filter((it: IntervalType) => grouped.has(it)).map(
+      (it: IntervalType) => {
         const sectionCards = grouped.get(it) ?? [];
         const operatorCards = sectionCards.filter(
           (c: TpmCard) => c.cardRole === 'operator',
@@ -70,7 +74,8 @@
           maintenanceCards,
           totalOpen: countOpen(sectionCards),
         };
-      });
+      },
+    );
   }
 
   const sections = $derived(buildSections(cards));
@@ -80,7 +85,9 @@
   <div class="board-empty">
     <i class="fas fa-filter board-empty__icon"></i>
     <h3 class="board-empty__title">Keine Karten gefunden</h3>
-    <p class="board-empty__desc">Keine Karten entsprechen dem gewählten Filter.</p>
+    <p class="board-empty__desc">
+      Keine Karten entsprechen dem gewählten Filter.
+    </p>
   </div>
 {:else}
   <div class="kamishibai-board">
@@ -91,6 +98,7 @@
         maintenanceCards={section.maintenanceCards}
         totalOpen={section.totalOpen}
         {colors}
+        {onCardSelect}
       />
     {/each}
   </div>

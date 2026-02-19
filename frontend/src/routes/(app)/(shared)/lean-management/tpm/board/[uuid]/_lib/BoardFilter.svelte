@@ -31,13 +31,19 @@
   }
 </script>
 
-<div class="board-filter" role="toolbar" aria-label="Board-Filter">
+<div
+  class="board-filter"
+  role="toolbar"
+  aria-label="Board-Filter"
+>
   {#each OPTIONS as opt (opt.value)}
     <button
       class="board-filter__btn"
       class:board-filter__btn--active={filter === opt.value}
       type="button"
-      onclick={() => { select(opt.value); }}
+      onclick={() => {
+        select(opt.value);
+      }}
       aria-pressed={filter === opt.value}
     >
       <i class="fas {opt.icon}"></i>

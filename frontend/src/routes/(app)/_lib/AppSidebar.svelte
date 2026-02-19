@@ -563,7 +563,9 @@
 
   .submenu-wrapper.open {
     grid-template-rows: 1fr;
-    transition: grid-template-rows 0.25s ease, visibility 0s 0s;
+    transition:
+      grid-template-rows 0.25s ease,
+      visibility 0s 0s;
     pointer-events: auto;
     visibility: visible;
   }
