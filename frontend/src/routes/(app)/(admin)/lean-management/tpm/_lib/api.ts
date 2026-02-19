@@ -13,6 +13,12 @@ import type {
   TpmEscalationConfig,
   TpmCardTemplate,
   TpmCardExecution,
+  TpmTimeEstimate,
+  Machine,
+  SlotAvailabilityResult,
+  CreatePlanPayload,
+  UpdatePlanPayload,
+  CreateTimeEstimatePayload,
 } from './types';
 
 const log = createLogger('TpmApi');
@@ -22,18 +28,33 @@ const apiClient = getApiClient();
 // HELPER FUNCTIONS
 // =============================================================================
 
-/** Type-safe extraction of paginated data from API response */
+const EMPTY_PAGE: PaginatedResponse<never> = {
+  items: [],
+  total: 0,
+  page: 1,
+  limit: 20,
+};
+
+function numberOr(val: unknown, fallback: number): number {
+  return typeof val === 'number' ? val : fallback;
+}
+
+/** Type-safe extraction of paginated data from API response.
+ *  Backend returns { data: T[], total, page, pageSize } after unwrap. */
 function extractPaginated<T>(result: unknown): PaginatedResponse<T> {
-  if (result !== null && typeof result === 'object') {
-    const obj = result as Record<string, unknown>;
-    return {
-      items: Array.isArray(obj.items) ? (obj.items as T[]) : [],
-      total: typeof obj.total === 'number' ? obj.total : 0,
-      page: typeof obj.page === 'number' ? obj.page : 1,
-      limit: typeof obj.limit === 'number' ? obj.limit : 20,
-    };
-  }
-  return { items: [], total: 0, page: 1, limit: 20 };
+  if (result === null || typeof result !== 'object') return EMPTY_PAGE;
+  const obj = result as Record<string, unknown>;
+  const items = Array.isArray(obj.data)
+    ? (obj.data as T[])
+    : Array.isArray(obj.items)
+      ? (obj.items as T[])
+      : [];
+  return {
+    items,
+    total: numberOr(obj.total, 0),
+    page: numberOr(obj.page, 1),
+    limit: numberOr(obj.pageSize ?? obj.limit, 20),
+  };
 }
 
 /** Type-safe extraction of array data from API response */
@@ -66,11 +87,86 @@ export async function fetchPlan(planUuid: string): Promise<TpmPlan> {
   return await apiClient.get<TpmPlan>(`/tpm/plans/${planUuid}`);
 }
 
+/** Create a new maintenance plan */
+export async function createPlan(
+  payload: CreatePlanPayload,
+): Promise<TpmPlan> {
+  return await apiClient.post<TpmPlan>('/tpm/plans', payload);
+}
+
+/** Update an existing maintenance plan */
+export async function updatePlan(
+  planUuid: string,
+  payload: UpdatePlanPayload,
+): Promise<TpmPlan> {
+  return await apiClient.patch<TpmPlan>(`/tpm/plans/${planUuid}`, payload);
+}
+
 /** Soft-delete a maintenance plan */
 export async function deletePlan(
   planUuid: string,
 ): Promise<{ message: string }> {
   return await apiClient.delete<{ message: string }>(`/tpm/plans/${planUuid}`);
+}
+
+// =============================================================================
+// MACHINES
+// =============================================================================
+
+/** Fetch list of machines (for plan creation dropdown) */
+export async function fetchMachines(): Promise<Machine[]> {
+  const result: unknown = await apiClient.get('/machines');
+  if (Array.isArray(result)) return result as Machine[];
+  if (result !== null && typeof result === 'object') {
+    const obj = result as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data as Machine[];
+  }
+  return [];
+}
+
+// =============================================================================
+// TIME ESTIMATES
+// =============================================================================
+
+/** Fetch time estimates for a plan */
+export async function fetchTimeEstimates(
+  planUuid: string,
+): Promise<TpmTimeEstimate[]> {
+  const result: unknown = await apiClient.get(
+    `/tpm/plans/${planUuid}/time-estimates`,
+  );
+  return extractArray<TpmTimeEstimate>(result);
+}
+
+/** Set (UPSERT) a time estimate for a plan */
+export async function setTimeEstimate(
+  planUuid: string,
+  payload: CreateTimeEstimatePayload,
+): Promise<TpmTimeEstimate> {
+  return await apiClient.post<TpmTimeEstimate>(
+    `/tpm/plans/${planUuid}/time-estimates`,
+    payload,
+  );
+}
+
+// =============================================================================
+// SLOT ASSISTANT
+// =============================================================================
+
+/** Fetch available slots for a plan's machine */
+export async function fetchAvailableSlots(
+  planUuid: string,
+  startDate: string,
+  endDate: string,
+): Promise<SlotAvailabilityResult | null> {
+  try {
+    return await apiClient.get<SlotAvailabilityResult>(
+      `/tpm/plans/${planUuid}/available-slots?startDate=${startDate}&endDate=${endDate}`,
+    );
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading available slots');
+    return null;
+  }
 }
 
 // =============================================================================

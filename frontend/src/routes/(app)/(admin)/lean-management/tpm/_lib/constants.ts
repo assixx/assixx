@@ -122,4 +122,81 @@ export const MESSAGES = {
   DELETE_CONFIRM_TITLE: 'Wartungsplan löschen',
   DELETE_CONFIRM_MESSAGE:
     'Möchten Sie diesen Wartungsplan wirklich löschen? Alle zugehörigen Karten werden ebenfalls archiviert.',
+
+  // Plan form
+  PLAN_CREATE_TITLE: 'Neuen Wartungsplan erstellen',
+  PLAN_EDIT_TITLE: 'Wartungsplan bearbeiten',
+  PLAN_CREATE_PAGE_TITLE: 'Neuer Wartungsplan - Assixx',
+  PLAN_EDIT_PAGE_TITLE: 'Wartungsplan bearbeiten - Assixx',
+
+  // Plan form labels
+  LABEL_MACHINE: 'Maschine',
+  LABEL_PLAN_NAME: 'Planname',
+  LABEL_WEEKDAY: 'Basis-Wochentag',
+  LABEL_REPEAT_EVERY: 'Wiederholung',
+  LABEL_TIME: 'Uhrzeit',
+  LABEL_SHIFT_REQUIRED: 'Schichtplan erforderlich',
+  LABEL_NOTES: 'Notizen',
+
+  // Plan form placeholders
+  PH_MACHINE: 'Maschine auswählen...',
+  PH_PLAN_NAME: 'z.B. Wartungsplan Presse P17',
+  PH_REPEAT: 'Jede(n)',
+  PH_TIME: 'HH:MM',
+  PH_NOTES: 'Optionale Bemerkungen zum Wartungsplan...',
+
+  // Plan form help text
+  HELP_WEEKDAY: 'An welchem Wochentag soll die Wartung stattfinden?',
+  HELP_REPEAT:
+    'Alle X Wochen wiederholen (1 = jede Woche, 2 = alle 2 Wochen, etc.)',
+  HELP_SHIFT_REQUIRED:
+    'Prüft ob ein Schichtplan für den Wartungszeitraum existiert',
+
+  // Plan form buttons
+  BTN_SAVE: 'Speichern',
+  BTN_CREATE_PLAN: 'Plan erstellen',
+  BTN_CANCEL: 'Abbrechen',
+  BTN_BACK_TO_OVERVIEW: 'Zurück zur Übersicht',
+
+  // Plan form success/error
+  SUCCESS_PLAN_CREATED: 'Wartungsplan erfolgreich erstellt',
+  SUCCESS_PLAN_UPDATED: 'Wartungsplan erfolgreich aktualisiert',
+  ERROR_PLAN_CREATE: 'Fehler beim Erstellen des Wartungsplans',
+  ERROR_PLAN_UPDATE: 'Fehler beim Aktualisieren des Wartungsplans',
+  ERROR_MACHINE_HAS_PLAN:
+    'Diese Maschine hat bereits einen aktiven Wartungsplan',
+  ERROR_MACHINES_LOAD: 'Fehler beim Laden der Maschinen',
+
+  // Slot assistant
+  SLOT_TITLE: 'Verfügbare Zeitfenster',
+  SLOT_DESCRIPTION: 'Zeigt freie und belegte Tage für die Maschine',
+  SLOT_AVAILABLE: 'Verfügbar',
+  SLOT_UNAVAILABLE: 'Belegt',
+  SLOT_NO_SHIFT: 'Kein Schichtplan',
+  SLOT_DOWNTIME: 'Maschinenstillstand',
+  SLOT_TPM_EXISTING: 'Bestehende Wartung',
+  SLOT_LOADING: 'Verfügbarkeit wird geprüft...',
+  SLOT_STATS: 'verfügbare Tage von',
+
+  // Employee assignment
+  EMPLOYEE_TITLE: 'Team-Verfügbarkeit',
+  EMPLOYEE_DESCRIPTION: 'Mitarbeiter im Maschinen-Team und ihre Verfügbarkeit',
+  EMPLOYEE_AVAILABLE: 'Verfügbar',
+  EMPLOYEE_UNAVAILABLE: 'Nicht verfügbar',
+  EMPLOYEE_EMPTY: 'Kein Team zugewiesen',
+  EMPLOYEE_LOADING: 'Team wird geladen...',
+
+  // Time estimates
+  TIME_EST_TITLE: 'Zeitschätzungen',
+  TIME_EST_STAFF: 'Mitarbeiter',
+  TIME_EST_PREP: 'Vorbereitung',
+  TIME_EST_EXEC: 'Durchführung',
+  TIME_EST_FOLLOW: 'Nachbereitung',
+  TIME_EST_TOTAL: 'Gesamt',
+  TIME_EST_MINUTES: 'Min.',
+
+  // Plan table (machine × interval matrix)
+  PLAN_TABLE_TITLE: 'Maschinen & Intervalle',
+  PLAN_TABLE_EMPTY: 'Keine aktiven Wartungspläne vorhanden',
+  PLAN_TABLE_MACHINE_COL: 'Maschine',
 } as const;

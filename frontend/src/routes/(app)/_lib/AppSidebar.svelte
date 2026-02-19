@@ -179,10 +179,8 @@
                 </svg>
               </span>
             </button>
-            <ul
-              class="submenu"
-              class:u-hidden={openSubmenu !== item.id}
-            >
+            <div class="submenu-wrapper" class:open={openSubmenu === item.id}>
+              <ul class="submenu">
               {#each item.submenu as subItem (subItem.id)}
                 {#if subItem.submenu !== undefined}
                   <li
@@ -217,35 +215,34 @@
                         </svg>
                       </span>
                     </button>
-                    <ul
-                      class="submenu submenu--nested"
-                      class:u-hidden={openSubSubmenu !== subItem.id}
-                    >
-                      {#each subItem.submenu as nestedItem (nestedItem.id)}
-                        <li
-                          class="submenu-item"
-                          class:active={isActive(nestedItem)}
-                        >
-                          <a
-                            href={resolveDynamicPath(nestedItem.url ?? '')}
-                            class="submenu-link"
+                    <div class="submenu-wrapper" class:open={openSubSubmenu === subItem.id}>
+                      <ul class="submenu submenu--nested">
+                        {#each subItem.submenu as nestedItem (nestedItem.id)}
+                          <li
+                            class="submenu-item"
                             class:active={isActive(nestedItem)}
-                            onclick={handleLinkClick}
                           >
-                            <span>{nestedItem.label}</span>
-                            {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
-                              <NotificationBadge
-                                count={notificationStore.counts[
-                                  nestedItem.badgeType
-                                ]}
-                                size="sm"
-                                position="inline"
-                              />
-                            {/if}
-                          </a>
-                        </li>
-                      {/each}
-                    </ul>
+                            <a
+                              href={resolveDynamicPath(nestedItem.url ?? '')}
+                              class="submenu-link"
+                              class:active={isActive(nestedItem)}
+                              onclick={handleLinkClick}
+                            >
+                              <span>{nestedItem.label}</span>
+                              {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
+                                <NotificationBadge
+                                  count={notificationStore.counts[
+                                    nestedItem.badgeType
+                                  ]}
+                                  size="sm"
+                                  position="inline"
+                                />
+                              {/if}
+                            </a>
+                          </li>
+                        {/each}
+                      </ul>
+                    </div>
                   </li>
                 {:else}
                   <li
@@ -270,7 +267,8 @@
                   </li>
                 {/if}
               {/each}
-            </ul>
+              </ul>
+            </div>
           </li>
         {:else}
           <li
@@ -512,6 +510,7 @@
   .submenu-arrow {
     opacity: 60%;
     margin-left: auto;
+    transition: transform 0.25s ease;
   }
 
   .sidebar.collapsed .submenu-arrow {
@@ -526,17 +525,28 @@
     transform: rotate(180deg);
   }
 
-  .submenu {
-    margin-top: 0.25rem;
-    margin-bottom: 0.313rem;
-    margin-left: 3rem;
-    padding: 0;
+  /* Smooth expand/collapse via CSS grid trick */
+  .submenu-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
     overflow: hidden;
+    transition: grid-template-rows 0.25s ease;
+  }
+
+  .submenu-wrapper.open {
+    grid-template-rows: 1fr;
+  }
+
+  .submenu {
+    min-height: 0; /* required for grid-template-rows: 0fr to work */
+    margin: 0.25rem 0 0.313rem 1.5rem;
+    padding-left: 1rem;
+    border-left: 1px solid var(--color-glass-border-hover);
     list-style: none;
   }
 
   .submenu--nested {
-    margin-left: 0.75rem;
+    margin-left: 0.5rem;
   }
 
   .submenu-link--toggle {
@@ -548,12 +558,23 @@
     font-family: inherit;
   }
 
-  .sidebar.collapsed .submenu {
+  .sidebar.collapsed .submenu-wrapper {
     display: none !important;
   }
 
   .submenu-item {
+    position: relative;
     margin-bottom: 0.125rem;
+  }
+
+  .submenu-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -1rem;
+    width: 0.625rem;
+    height: 1px;
+    background: var(--color-glass-border-hover);
   }
 
   .submenu-link {
@@ -698,10 +719,6 @@
       display: flex;
     }
 
-    .sidebar.mobile-open .submenu {
-      display: block;
-    }
-
     .sidebar :global(.storage-widget) {
       position: relative;
       right: auto;
@@ -726,7 +743,7 @@
       display: none;
     }
 
-    .sidebar .submenu {
+    .sidebar .submenu-wrapper {
       display: none !important;
     }
 

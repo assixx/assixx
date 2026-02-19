@@ -168,7 +168,7 @@
   }
 
   .next-maintenance__plan-name {
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     color: var(--color-gray-600);
     margin-bottom: 0.375rem;
   }

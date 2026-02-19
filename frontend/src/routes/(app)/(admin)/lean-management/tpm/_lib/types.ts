@@ -154,6 +154,105 @@ export interface TpmEscalationConfig {
 }
 
 // =============================================================================
+// MACHINE (from /machines endpoint)
+// =============================================================================
+
+/** Machine entity (simplified for TPM dropdowns) */
+export interface Machine {
+  uuid: string;
+  name: string;
+  machineNumber: string | null;
+  status: string;
+  machineType: string | null;
+  departmentName?: string;
+}
+
+// =============================================================================
+// SLOT ASSISTANT
+// =============================================================================
+
+/** Conflict type from slot assistant */
+export type SlotConflictType =
+  | 'no_shift_plan'
+  | 'machine_downtime'
+  | 'existing_tpm';
+
+/** Single conflict description */
+export interface SlotConflict {
+  type: SlotConflictType;
+  description: string;
+}
+
+/** Availability for a single day */
+export interface DayAvailability {
+  date: string;
+  isAvailable: boolean;
+  conflicts: SlotConflict[];
+}
+
+/** Full slot availability result */
+export interface SlotAvailabilityResult {
+  machineId: number;
+  startDate: string;
+  endDate: string;
+  days: DayAvailability[];
+  availableDays: number;
+  totalDays: number;
+}
+
+/** Team member availability status */
+export interface TeamMemberStatus {
+  userId: number;
+  userName: string;
+  isAvailable: boolean;
+  unavailabilityReason: string | null;
+}
+
+/** Team availability result */
+export interface TeamAvailabilityResult {
+  teamId: number;
+  date: string;
+  members: TeamMemberStatus[];
+  availableCount: number;
+  totalCount: number;
+}
+
+// =============================================================================
+// PAYLOADS (for create/update)
+// =============================================================================
+
+/** Payload for creating a maintenance plan */
+export interface CreatePlanPayload {
+  machineUuid: string;
+  name: string;
+  baseWeekday: number;
+  baseRepeatEvery: number;
+  baseTime: string | null;
+  shiftPlanRequired: boolean;
+  notes: string | null;
+}
+
+/** Payload for updating a maintenance plan */
+export interface UpdatePlanPayload {
+  name?: string;
+  baseWeekday?: number;
+  baseRepeatEvery?: number;
+  baseTime?: string | null;
+  shiftPlanRequired?: boolean;
+  notes?: string | null;
+}
+
+/** Payload for setting a time estimate */
+export interface CreateTimeEstimatePayload {
+  planUuid: string;
+  intervalType: IntervalType;
+  staffCount: number;
+  preparationMinutes: number;
+  executionMinutes: number;
+  followupMinutes: number;
+}
+
+// =============================================================================
 // API RESPONSE TYPES
 // =============================================================================
 

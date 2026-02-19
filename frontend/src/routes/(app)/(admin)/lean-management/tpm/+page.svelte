@@ -6,6 +6,7 @@
    * Level 3 SSR: $derived from props, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
+  import { resolve } from '$app/paths';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
@@ -13,7 +14,12 @@
   import { MESSAGES } from './_lib/constants';
   import NextMaintenanceInfo from './_lib/NextMaintenanceInfo.svelte';
   import PlanOverview from './_lib/PlanOverview.svelte';
+  import PlanTable from './_lib/PlanTable.svelte';
   import { tpmState } from './_lib/state.svelte';
+
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   import type { PageData } from './$types';
   import type { TpmPlan, PlanStatusFilter } from './_lib/types';
@@ -110,6 +116,13 @@
       </h1>
       <p class="tpm-dashboard__description">{MESSAGES.PAGE_DESCRIPTION}</p>
     </div>
+    <a
+      href={resolvePath('/lean-management/tpm/plan/new')}
+      class="btn btn--primary"
+    >
+      <i class="fas fa-plus"></i>
+      {MESSAGES.BTN_NEW_PLAN}
+    </a>
   </div>
 
   <!-- Stats Cards -->
@@ -168,6 +181,13 @@
       />
     </div>
   </div>
+
+  <!-- Plan Table (Machine × Interval Matrix) -->
+  {#if allPlans.length > 0}
+    <div class="tpm-dashboard__matrix">
+      <PlanTable plans={allPlans} />
+    </div>
+  {/if}
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -406,6 +426,11 @@
     gap: 0.75rem;
     padding: 1rem 1.5rem;
     border-top: 1px solid var(--color-gray-200);
+  }
+
+  /* Matrix section */
+  .tpm-dashboard__matrix {
+    margin-top: 1.5rem;
   }
 
   /* Responsive */
