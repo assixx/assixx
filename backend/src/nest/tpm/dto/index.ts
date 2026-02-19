@@ -39,6 +39,25 @@ export {
   UpdateTemplateSchema,
 } from './update-template.dto.js';
 
+// Query DTOs (controller-specific, 1 class per file)
+export {
+  AvailableSlotsQueryDto,
+  AvailableSlotsQuerySchema,
+} from './available-slots-query.dto.js';
+export { BoardQueryDto, BoardQuerySchema } from './board-query.dto.js';
+export {
+  CheckDuplicateDto,
+  CheckDuplicateSchema,
+} from './check-duplicate.dto.js';
+export {
+  ListCardsQueryDto,
+  ListCardsQuerySchema,
+} from './list-cards-query.dto.js';
+export {
+  ListPlansQueryDto,
+  ListPlansQuerySchema,
+} from './list-plans-query.dto.js';
+
 // Common schemas (for reuse in services/controllers/tests)
 export {
   HexColorSchema,

@@ -123,9 +123,14 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 200vh;
+    height: 100vh;
 
-    background: var(--main-bg-gradient);
+    background: radial-gradient(
+      circle,
+      rgb(100 180 255 / 5%) 0%,
+      rgb(100 180 255 / 0%) 70%,
+      transparent 100%
+    );
     pointer-events: none;
     content: '';
   }

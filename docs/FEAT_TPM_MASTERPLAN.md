@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.7.1 (Phase 2 — Steps 2.1-2.7 Complete, RLS-Audit-Fix)
-> **Status:** IN PROGRESS — Phase 2 läuft, nächster Step: 2.8 (Executions + Approval Services)
+> **Version:** 1.10.0 (Phase 2 — Steps 2.1-2.10 Complete)
+> **Status:** IN PROGRESS — Phase 2 läuft, nächster Step: 2.11 (Controllers Executions + Config + Integrations)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 10 / 29
+> **Actual Sessions:** 13 / 29
 
 ---
 
@@ -43,19 +43,22 @@ pnpm test                # unit + api tests
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                                                                                                                                                          |
-| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant                                                                                                                                                                                     |
-| 0.2.0   | 2026-02-18 | Validation Review: 7 Fehler + 5 Inkonsistenzen gefixt, E17 Shift-Grid Toggle ergänzt → 29 Sessions, 4 ENUMs                                                                                                                       |
-| 1.0.0   | 2026-02-18 | Phase 1 COMPLETE: 4 Migrationen (041-044), 8 Tabellen, 4 ENUMs, RLS 8/8, GRANTs 32, Feature Flag, 4400 Tests bestanden                                                                                                            |
-| 1.1.0   | 2026-02-19 | Step 2.1 DONE: Module Skeleton — tpm.types.ts (381 Zeilen), tpm.permissions.ts, tpm-permission.registrar.ts, tpm.module.ts, app.module.ts Import                                                                                  |
-| 1.2.0   | 2026-02-19 | Step 2.2 DONE: DTOs — 11+2 Dateien in dto/ (common, create/update plan, create/update card, complete-card, respond-execution, create-time-estimate, update-escalation-config, update-color-config, create/update-template, index) |
-| 1.3.0   | 2026-02-19 | Step 2.3 DONE: Plans Service — tpm-plans.service.ts (235 Z.), tpm-plans-interval.service.ts (178 Z.), tpm-plans.helpers.ts (74 Z.)                                                                                                |
-| 1.4.0   | 2026-02-19 | Step 2.4 DONE: Config Services — tpm-time-estimates.service.ts (179 Z.), tpm-templates.service.ts (195 Z.), tpm-color-config.service.ts (128 Z.)                                                                                  |
-| 1.5.0   | 2026-02-19 | Step 2.5 DONE: Cards + Status — tpm-cards.helpers.ts (87 Z.), tpm-cards.service.ts (468 Z.), tpm-card-status.service.ts (176 Z.)                                                                                                  |
-| 1.6.0   | 2026-02-19 | Step 2.6 DONE: Cascade + Duplicate — tpm-card-cascade.service.ts (121 Z.), tpm-card-duplicate.service.ts (114 Z.)                                                                                                                 |
-| 1.7.0   | 2026-02-19 | Step 2.7 DONE: Slot Assistant — tpm-slot-assistant.service.ts (486 Z.), 4 Datenquellen, E15-Validierung                                                                                                                           |
-| 1.7.1   | 2026-02-19 | RLS-Audit (ADR-019): 4 Mutations nutzten `db.query()` statt `tenantTransaction()` — gefixt in tpm-templates.service.ts, tpm-time-estimates.service.ts, tpm-color-config.service.ts (2×). DB-Layer 8/8 sauber, Service-Layer jetzt 100% ADR-019-konform |
+| Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                        |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-02-18 | Initial Draft — 6 Phasen, 25 Sessions geplant                                                                                                                                                                                                                                                                                   |
+| 0.2.0   | 2026-02-18 | Validation Review: 7 Fehler + 5 Inkonsistenzen gefixt, E17 Shift-Grid Toggle ergänzt → 29 Sessions, 4 ENUMs                                                                                                                                                                                                                     |
+| 1.0.0   | 2026-02-18 | Phase 1 COMPLETE: 4 Migrationen (041-044), 8 Tabellen, 4 ENUMs, RLS 8/8, GRANTs 32, Feature Flag, 4400 Tests bestanden                                                                                                                                                                                                          |
+| 1.1.0   | 2026-02-19 | Step 2.1 DONE: Module Skeleton — tpm.types.ts (381 Zeilen), tpm.permissions.ts, tpm-permission.registrar.ts, tpm.module.ts, app.module.ts Import                                                                                                                                                                                |
+| 1.2.0   | 2026-02-19 | Step 2.2 DONE: DTOs — 11+2 Dateien in dto/ (common, create/update plan, create/update card, complete-card, respond-execution, create-time-estimate, update-escalation-config, update-color-config, create/update-template, index)                                                                                               |
+| 1.3.0   | 2026-02-19 | Step 2.3 DONE: Plans Service — tpm-plans.service.ts (235 Z.), tpm-plans-interval.service.ts (178 Z.), tpm-plans.helpers.ts (74 Z.)                                                                                                                                                                                              |
+| 1.4.0   | 2026-02-19 | Step 2.4 DONE: Config Services — tpm-time-estimates.service.ts (179 Z.), tpm-templates.service.ts (195 Z.), tpm-color-config.service.ts (128 Z.)                                                                                                                                                                                |
+| 1.5.0   | 2026-02-19 | Step 2.5 DONE: Cards + Status — tpm-cards.helpers.ts (87 Z.), tpm-cards.service.ts (468 Z.), tpm-card-status.service.ts (176 Z.)                                                                                                                                                                                                |
+| 1.6.0   | 2026-02-19 | Step 2.6 DONE: Cascade + Duplicate — tpm-card-cascade.service.ts (121 Z.), tpm-card-duplicate.service.ts (114 Z.)                                                                                                                                                                                                               |
+| 1.7.0   | 2026-02-19 | Step 2.7 DONE: Slot Assistant — tpm-slot-assistant.service.ts (486 Z.), 4 Datenquellen, E15-Validierung                                                                                                                                                                                                                         |
+| 1.7.1   | 2026-02-19 | RLS-Audit (ADR-019): 4 Mutations nutzten `db.query()` statt `tenantTransaction()` — gefixt in tpm-templates.service.ts, tpm-time-estimates.service.ts, tpm-color-config.service.ts (2×). DB-Layer 8/8 sauber, Service-Layer jetzt 100% ADR-019-konform                                                                          |
+| 1.8.0   | 2026-02-19 | Step 2.8 DONE: Executions + Approval — tpm-executions.helpers.ts (78 Z.), tpm-executions.service.ts (405 Z.), tpm-approval.service.ts (346 Z.), tpm.module.ts updated (13/15 Services)                                                                                                                                          |
+| 1.9.0   | 2026-02-19 | Step 2.9 DONE: Notification + Escalation — eventBus.ts TpmEvent + 5 Emitter, tpm-notification.service.ts (222 Z., Dual-Pattern ADR-004), tpm-escalation.service.ts (230 Z., @Cron 5min + FOR UPDATE SKIP LOCKED), tpm.module.ts (15/15 Services)                                                                                |
+| 1.10.0  | 2026-02-19 | Step 2.10 DONE: Controllers Plans + Cards — tpm-plans.controller.ts (220 Z., 9 Endpoints), tpm-cards.controller.ts (186 Z., 6 Endpoints), 5 Query-DTOs (1 Klasse/Datei), tpm.module.ts (2/4 Controller). D12: check-duplicate Route geändert zu POST /cards/check-duplicate (body: planUuid) statt /cards/:uuid/check-duplicate |
 
 > **Versionierungsregel:**
 >
@@ -723,37 +726,55 @@ pnpm run validate:all
 
 ---
 
-### Step 2.8: Session 11 — Executions + Approval Services [PENDING]
+### Step 2.8: Session 11 — Executions + Approval Services [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 3 Dateien erstellt (+ Helpers extrahiert), 1 modifiziert. Type-Check 0, ESLint 0, 4400 Tests bestanden.
 
-1. `tpm-executions.service.ts` (~220 Zeilen)
-   - `createExecution(tenantId, cardUuid, userId, dto)` → INSERT + Status-Update
+**Architektur-Entscheidungen:**
+
+- Helpers-Datei extrahiert (`tpm-executions.helpers.ts`) — tpm-plans.helpers.ts / tpm-cards.helpers.ts Pattern
+- `tenantTransaction()` für Mutationen, `db.query()` für Reads
+- `FOR UPDATE` Lock bei Execution-Mutations (Race-Condition-Schutz bei parallelem Approve/Reject)
+- `lockPendingExecution()` validiert `approval_status = 'pending'` → `ConflictException` bei Doppelbearbeitung
+- Approval-Berechtigung: Team-Lead des Maschinen-Teams ODER Admin (`has_full_access = 1`)
+- Activity Logging nach Transaction (fire-and-forget `void`) — `logCreate`/`logUpdate` mit entity `'machine'`
+- Documentation-Pflicht bei `requires_approval=true` im Service-Layer validiert
+- Photo-Limit (max 5) im Service-Layer enforced via `getPhotoCount()`
+- `insertExecution` als Private Helper extrahiert (ESLint max-lines-per-function: 60)
+
+1. `tpm-executions.helpers.ts` (78 Zeilen)
+   - `TpmExecutionJoinRow` Interface (erweitert TpmCardExecutionRow um JOIN-Spalten)
+   - `mapExecutionRowToApi()` — snake_case → camelCase
+   - `mapPhotoRowToApi()` — Photo-Mapping
+
+2. `tpm-executions.service.ts` (405 Zeilen — über Budget wegen 6 Public + 5 Private Methoden + Pagination)
+   - `createExecution(tenantId, cardUuid, userId, dto)` → INSERT + Status-Update via CardStatusService
    - `getExecution(tenantId, executionUuid)` → SELECT mit Card+User JOINs
-   - `listExecutionsForCard(tenantId, cardUuid, pagination)` → Historie
-   - `listPendingApprovals(tenantId, userId)` → Alle GELB-Karten die der User freigeben kann
-   - `addPhoto(tenantId, executionUuid, fileData)` → Photo INSERT (max 5)
-   - `getPhotos(tenantId, executionUuid)` → Photo LIST
-   - Abhängigkeit: TpmCardStatusService, DatabaseService
+   - `listExecutionsForCard(tenantId, cardUuid, page, pageSize)` → Paginierte Historie
+   - `listPendingApprovals(tenantId, page, pageSize)` → Alle pending Executions
+   - `addPhoto(tenantId, executionUuid, fileData)` → Photo INSERT (max 5, enforced)
+   - `getPhotos(tenantId, executionUuid)` → Photo LIST sorted by sort_order
+   - Private: lockCardByUuid, lockExecutionByUuid, getPhotoCount, validateDocumentation, insertExecution
 
-2. `tpm-approval.service.ts` (~180 Zeilen)
-   - `approveExecution(tenantId, executionUuid, approverId, dto)` → Transaction + FOR UPDATE Lock
-   - `rejectExecution(tenantId, executionUuid, approverId, dto)` → Transaction + FOR UPDATE Lock
-   - `canUserApprove(tenantId, userId, cardId)` → Prüft: Team-Lead, Deputy-Lead, oder Admin?
+3. `tpm-approval.service.ts` (346 Zeilen — über Budget wegen Approval-Chain-Queries + resolveCardMachineId)
+   - `approveExecution(tenantId, executionUuid, approverId, dto)` → Transaction + FOR UPDATE + yellow→green
+   - `rejectExecution(tenantId, executionUuid, approverId, dto)` → Transaction + FOR UPDATE + yellow→red
+   - `canUserApprove(tenantId, userId, cardId)` → Boolean: Team-Lead oder Admin?
+   - Private: lockPendingExecution, validateApprover, fetchExecution, resolveCardMachineId
    - Pattern: 1:1 aus `vacation.service.ts:respondToRequest()`
-   - Post-Transaction: `tpmNotificationService.notifyApprovalResult()`
-   - Bridge: Bei Approval → Eintrag in `machine_maintenance_history`
+   - Notification + History Bridge: wird in Step 2.9/2.11 angebunden
 
 **Verifikation:**
 
 ```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
+docker exec assixx-backend pnpm run type-check  # 0 Errors ✅
+pnpm exec eslint backend/src/nest/tpm/           # 0 Errors ✅
+pnpm test                                         # 215 files, 4400 tests ✅
 ```
 
 ---
 
-### Step 2.9: Session 12 — Notification + Escalation Services [PENDING]
+### Step 2.9: Session 12 — Notification + Escalation Services [DONE]
 
 **Neue Dateien:**
 
@@ -787,7 +808,7 @@ pnpm run validate:all
 
 ---
 
-### Step 2.10: Session 13 — Controllers (Plans + Cards) [PENDING]
+### Step 2.10: Session 13 — Controllers (Plans + Cards) [DONE]
 
 **Neue Dateien:**
 
@@ -807,22 +828,36 @@ pnpm run validate:all
 
 2. `tpm-cards.controller.ts` (~250 Zeilen)
 
-| Method | Route                              | Guard                | Beschreibung                                            |
-| ------ | ---------------------------------- | -------------------- | ------------------------------------------------------- |
-| POST   | `/tpm/cards`                       | canWrite(tpm-cards)  | Karte erstellen                                         |
-| GET    | `/tpm/cards`                       | canRead(tpm-cards)   | Alle Karten (Filter: machineUuid, status, intervalType) |
-| GET    | `/tpm/cards/:uuid`                 | canRead(tpm-cards)   | Einzelne Karte                                          |
-| PATCH  | `/tpm/cards/:uuid`                 | canWrite(tpm-cards)  | Karte aktualisieren                                     |
-| DELETE | `/tpm/cards/:uuid`                 | canDelete(tpm-cards) | Karte soft-deleten                                      |
-| POST   | `/tpm/cards/:uuid/check-duplicate` | canRead(tpm-cards)   | Duplikat-Prüfung                                        |
+| Method | Route                        | Guard                | Beschreibung                                            |
+| ------ | ---------------------------- | -------------------- | ------------------------------------------------------- |
+| POST   | `/tpm/cards`                 | canWrite(tpm-cards)  | Karte erstellen                                         |
+| GET    | `/tpm/cards`                 | canRead(tpm-cards)   | Alle Karten (Filter: machineUuid, status, intervalType) |
+| GET    | `/tpm/cards/:uuid`           | canRead(tpm-cards)   | Einzelne Karte                                          |
+| PATCH  | `/tpm/cards/:uuid`           | canWrite(tpm-cards)  | Karte aktualisieren                                     |
+| DELETE | `/tpm/cards/:uuid`           | canDelete(tpm-cards) | Karte soft-deleten                                      |
+| POST   | `/tpm/cards/check-duplicate` | canRead(tpm-cards)   | Duplikat-Prüfung (D12: body statt :uuid)                |
 
-Alle Controller: `@TenantFeature('tpm')` + `@UseGuards(JwtAuthGuard, RolesGuard, TenantFeatureGuard)`
+Alle Controller: `@TenantFeature('tpm')` + `@RequirePermission(FEAT, MOD, ACTION)` pro Endpoint
+
+**Ergebnis:** 4 Dateien erstellt (2 Controller + 5 Query-DTOs á 1 Klasse/Datei), 2 modifiziert (tpm.module.ts, dto/index.ts). Type-Check 0, ESLint 0, 4400 Tests bestanden.
+
+**Architektur-Entscheidungen:**
+
+- Separate Controller-Klassen `TpmPlansController` + `TpmCardsController` (je ein Base-Path: `tpm/plans`, `tpm/cards`)
+- `@TenantFeature('tpm')` auf Klasse, `@RequirePermission()` pro Endpoint (KVP-Pattern, kein class-level UseGuards)
+- 5 Query-DTOs in Einzeldateien (max-classes-per-file: 1 ESLint-Regel)
+- D12: `check-duplicate` Route auf `POST /tpm/cards/check-duplicate` (body: `{ planUuid, title, intervalType }`) statt `POST /tpm/cards/:uuid/check-duplicate` — vermeidet UUID-Ambiguität, Plan-UUID im Body statt Path
+- `buildFilters()` als Module-Level Pure Function — `exactOptionalPropertyTypes`-konform via `| undefined` in Parameter-Typ
+- Slot-Assistant: Plan-UUID → `getPlan()` → `machineId` → `getAvailableSlots()` (kein direkter DB-Zugriff im Controller)
+- Board-Endpoint nutzt `listCardsForPlan()` (nicht `listCardsForMachine()`) — Plan-UUID ist der natürliche Entry Point
+- Cards-Liste: Fallthrough-Logik `machineUuid > planUuid > status`, sonst BadRequestException
 
 **Verifikation:**
 
 ```bash
-docker exec assixx-backend pnpm run type-check
-pnpm run validate:all
+docker exec assixx-backend pnpm run type-check  # 0 Errors ✅
+pnpm exec eslint backend/src/nest/tpm/           # 0 Errors ✅
+pnpm test                                         # 215 files, 4400 tests ✅
 ```
 
 ---
@@ -882,8 +917,8 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 ### Phase 2 — Definition of Done
 
 - [x] `TpmModule` registriert in `app.module.ts` ✅ (Session 4)
-- [ ] 15 Services implementiert und injiziert (11/15 — Plans, PlanInterval, TimeEstimates, Templates, ColorConfig, PermissionRegistrar, Cards, CardStatus, CardCascade, CardDuplicate, SlotAssistant)
-- [ ] 4 Controller mit ~25 Endpoints total (0/4)
+- [x] 15 Services implementiert und injiziert (15/15 — Plans, PlanInterval, TimeEstimates, Templates, ColorConfig, PermissionRegistrar, Cards, CardStatus, CardCascade, CardDuplicate, SlotAssistant, Executions, Approval, Notification, Escalation)
+- [ ] 4 Controller mit ~25 Endpoints total (2/4 — Plans 9 Endpoints, Cards 6 Endpoints)
 - [x] Permission Registrar registriert bei Module Init ✅ (Session 4)
 - [ ] `@TenantFeature('tpm')` auf allen Controllern
 - [x] `db.tenantTransaction()` für alle tenant-scoped Mutations ✅ (Session 6-7, RLS-Audit-Fix in 1.7.1: 4 Methoden korrigiert)
@@ -1261,9 +1296,9 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | 8       | 2     | Cards Service + Card Status Service                                | DONE    | 2026-02-19 |
 | 9       | 2     | Card Cascade + Duplicate Detection                                 | DONE    | 2026-02-19 |
 | 10      | 2     | Slot Availability Assistant                                        | DONE    | 2026-02-19 |
-| 11      | 2     | Executions + Approval Services                                     | PENDING |            |
-| 12      | 2     | Notification + Escalation Services + EventBus                      | PENDING |            |
-| 13      | 2     | Controllers (Plans + Cards)                                        | PENDING |            |
+| 11      | 2     | Executions + Approval Services                                     | DONE    | 2026-02-19 |
+| 12      | 2     | Notification + Escalation Services + EventBus                      | DONE    | 2026-02-19 |
+| 13      | 2     | Controllers (Plans + Cards)                                        | DONE    | 2026-02-19 |
 | 14      | 2     | Controllers (Executions + Config) + Module Assembly + Integrations | PENDING |            |
 | 15      | 3     | Unit Tests — Plans + Config Services (~68 Tests)                   | PENDING |            |
 | 16      | 3     | Unit Tests — Cards + Cascade + Duplicate (~70 Tests)               | PENDING |            |

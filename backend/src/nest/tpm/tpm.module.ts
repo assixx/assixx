@@ -10,13 +10,19 @@
 import { Module } from '@nestjs/common';
 
 import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
+import { TpmApprovalService } from './tpm-approval.service.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
+import { TpmCardsController } from './tpm-cards.controller.js';
 import { TpmCardsService } from './tpm-cards.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
+import { TpmEscalationService } from './tpm-escalation.service.js';
+import { TpmExecutionsService } from './tpm-executions.service.js';
+import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
+import { TpmPlansController } from './tpm-plans.controller.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTemplatesService } from './tpm-templates.service.js';
@@ -24,7 +30,7 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 
 @Module({
   imports: [FeatureCheckModule],
-  controllers: [],
+  controllers: [TpmPlansController, TpmCardsController],
   providers: [
     // Permission registration (ADR-020)
     TpmPermissionRegistrar,
@@ -48,6 +54,14 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 
     // Slot availability (Session 10)
     TpmSlotAssistantService,
+
+    // Executions + Approval (Session 11)
+    TpmExecutionsService,
+    TpmApprovalService,
+
+    // Notification + Escalation (Session 12)
+    TpmNotificationService,
+    TpmEscalationService,
   ],
   exports: [
     TpmPlansService,
@@ -60,6 +74,10 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmCardCascadeService,
     TpmCardDuplicateService,
     TpmSlotAssistantService,
+    TpmExecutionsService,
+    TpmApprovalService,
+    TpmNotificationService,
+    TpmEscalationService,
   ],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured, empty class body is standard pattern
