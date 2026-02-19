@@ -39,7 +39,7 @@
       {label}
     </h3>
     {#if totalOpen > 0}
-      <span class="kamishibai-section__badge">
+      <span class="kamishibai-section__badge kamishibai-section__badge--open">
         {totalOpen} offen
       </span>
     {:else}
@@ -90,20 +90,19 @@
 
 <style>
   .kamishibai-section {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
+    background: var(--glass-bg);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
   }
 
-  /* Section header */
   .kamishibai-section__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.875rem 1.25rem;
-    border-bottom: 1px solid var(--color-gray-200);
-    background: var(--color-gray-50, #f9fafb);
+    border-bottom: 1px solid var(--color-glass-border);
+    background: var(--glass-bg-hover);
   }
 
   .kamishibai-section__label {
@@ -112,12 +111,12 @@
     gap: 0.5rem;
     font-size: 0.938rem;
     font-weight: 600;
-    color: var(--color-gray-800);
+    color: var(--color-text-primary);
     margin: 0;
   }
 
   .kamishibai-section__label i {
-    color: var(--color-gray-400);
+    color: var(--color-text-muted);
     font-size: 0.875rem;
   }
 
@@ -129,27 +128,21 @@
     border-radius: var(--radius-full, 9999px);
     font-size: 0.813rem;
     font-weight: 500;
-    background: color-mix(
-      in srgb,
-      var(--color-danger, #ef4444) 12%,
-      transparent
-    );
-    color: var(--color-danger, #ef4444);
+  }
+
+  .kamishibai-section__badge--open {
+    background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+    color: var(--color-danger);
   }
 
   .kamishibai-section__badge--ok {
-    background: color-mix(
-      in srgb,
-      var(--color-success, #10b981) 12%,
-      transparent
-    );
-    color: var(--color-success, #10b981);
+    background: color-mix(in srgb, var(--color-success) 12%, transparent);
+    color: var(--color-success);
   }
 
-  /* Role group */
   .kamishibai-section__role-group {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-glass-border);
   }
 
   .kamishibai-section__role-group:last-child {
@@ -162,21 +155,20 @@
     gap: 0.5rem;
     font-size: 0.813rem;
     font-weight: 500;
-    color: var(--color-gray-500);
+    color: var(--color-text-muted);
     margin-bottom: 0.75rem;
   }
 
   .kamishibai-section__count {
     margin-left: auto;
-    background: var(--color-gray-200, #e5e7eb);
-    color: var(--color-gray-600);
+    background: var(--glass-bg-active);
+    color: var(--color-text-secondary);
     border-radius: var(--radius-full, 9999px);
     padding: 0.125rem 0.5rem;
     font-size: 0.75rem;
     font-weight: 600;
   }
 
-  /* Cards horizontal scroll */
   .kamishibai-section__cards {
     display: flex;
     flex-wrap: wrap;

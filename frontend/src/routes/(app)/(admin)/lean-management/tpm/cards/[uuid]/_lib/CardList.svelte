@@ -100,9 +100,9 @@
 </script>
 
 <!-- Filters -->
-<div class="card-list__filters">
+<div class="mb-4 flex flex-wrap items-center gap-3">
   <select
-    class="filter-select"
+    class="form-select"
     bind:value={statusFilter}
     aria-label="Status-Filter"
   >
@@ -113,7 +113,7 @@
   </select>
 
   <select
-    class="filter-select"
+    class="form-select"
     bind:value={intervalFilter}
     aria-label="Intervall-Filter"
   >
@@ -124,7 +124,7 @@
   </select>
 
   <select
-    class="filter-select"
+    class="form-select"
     bind:value={roleFilter}
     aria-label="Typ-Filter"
   >
@@ -137,7 +137,7 @@
   {#if hasActiveFilters}
     <button
       type="button"
-      class="btn btn--ghost btn--sm"
+      class="btn btn-primary btn-sm"
       onclick={clearFilters}
     >
       <i class="fas fa-times"></i>
@@ -145,64 +145,78 @@
     </button>
   {/if}
 
-  <span class="card-list__count">
+  <span class="ml-auto text-sm text-(--color-text-muted)">
     {filteredCards.length} / {totalCards} Karten
   </span>
 </div>
 
 <!-- Table -->
 {#if loading}
-  <div class="card-list__loading">
+  <div
+    class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)"
+  >
     <i class="fas fa-spinner fa-spin"></i>
     {MESSAGES.LOADING}
   </div>
 {:else if filteredCards.length === 0}
-  <div class="card-list__empty">
-    <i class="fas fa-clipboard"></i>
-    <p>
+  <div class="empty-state">
+    <div class="empty-state__icon">
+      <i class="fas fa-clipboard"></i>
+    </div>
+    <h3 class="empty-state__title">
       {hasActiveFilters ?
         MESSAGES.CARD_LIST_EMPTY_FILTER
       : MESSAGES.CARD_LIST_EMPTY}
-    </p>
+    </h3>
   </div>
 {:else}
-  <div class="card-list__table-wrap">
-    <table class="card-list__table">
+  <div class="table-responsive">
+    <table class="data-table data-table--hover data-table--striped">
       <thead>
         <tr>
-          <th>{MESSAGES.TH_CARD_CODE}</th>
-          <th>{MESSAGES.TH_CARD_TITLE}</th>
-          <th>{MESSAGES.TH_CARD_ROLE}</th>
-          <th>{MESSAGES.TH_INTERVAL}</th>
-          <th>{MESSAGES.TH_STATUS}</th>
-          <th>{MESSAGES.TH_CARD_DUE}</th>
-          <th>{MESSAGES.TH_CARD_APPROVAL}</th>
-          <th>{MESSAGES.TH_ACTIONS}</th>
+          <th scope="col">{MESSAGES.TH_CARD_CODE}</th>
+          <th scope="col">{MESSAGES.TH_CARD_TITLE}</th>
+          <th scope="col">{MESSAGES.TH_CARD_ROLE}</th>
+          <th scope="col">{MESSAGES.TH_INTERVAL}</th>
+          <th scope="col">{MESSAGES.TH_STATUS}</th>
+          <th scope="col">{MESSAGES.TH_CARD_DUE}</th>
+          <th scope="col">{MESSAGES.TH_CARD_APPROVAL}</th>
+          <th scope="col">{MESSAGES.TH_ACTIONS}</th>
         </tr>
       </thead>
       <tbody>
         {#each filteredCards as card (card.uuid)}
           <tr>
-            <td class="cell-code">
-              <span class="card-code">{card.cardCode}</span>
+            <td>
+              <code class="text-sm font-semibold text-(--color-text-secondary)">
+                {card.cardCode}
+              </code>
             </td>
-            <td class="cell-title">
-              <span class="card-title-text">{card.title}</span>
+            <td>
+              <span class="font-medium text-(--color-text-primary)"
+                >{card.title}</span
+              >
               {#if card.locationDescription !== null}
-                <span class="card-location">
-                  <i class="fas fa-map-marker-alt"></i>
+                <span class="mt-0.5 block text-xs text-(--color-text-muted)">
+                  <i class="fas fa-map-marker-alt mr-1"></i>
                   {card.locationDescription}
                 </span>
               {/if}
             </td>
             <td>
-              <span class="role-badge role-badge--{card.cardRole}">
+              <span
+                class="badge badge--sm {card.cardRole === 'operator' ?
+                  'badge--info'
+                : 'badge--danger'}"
+              >
                 {CARD_ROLE_LABELS[card.cardRole]}
               </span>
             </td>
             <td>{INTERVAL_LABELS[card.intervalType]}</td>
             <td>
-              <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
+              <span
+                class="badge badge--sm {CARD_STATUS_BADGE_CLASSES[card.status]}"
+              >
                 {CARD_STATUS_LABELS[card.status]}
               </span>
             </td>
@@ -210,34 +224,36 @@
             <td>
               {#if card.requiresApproval}
                 <i
-                  class="fas fa-check-circle approval-icon"
+                  class="fas fa-check-circle text-(--color-primary)"
                   title="Freigabe erforderlich"
                 ></i>
               {:else}
-                <span class="text-muted">—</span>
+                <span class="text-(--color-text-muted)">—</span>
               {/if}
             </td>
-            <td class="cell-actions">
-              <button
-                type="button"
-                class="btn-icon"
-                title={MESSAGES.BTN_EDIT}
-                onclick={() => {
-                  onedit(card);
-                }}
-              >
-                <i class="fas fa-pen"></i>
-              </button>
-              <button
-                type="button"
-                class="btn-icon btn-icon--danger"
-                title={MESSAGES.BTN_DELETE}
-                onclick={() => {
-                  ondelete(card);
-                }}
-              >
-                <i class="fas fa-trash"></i>
-              </button>
+            <td>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm btn-icon"
+                  title={MESSAGES.BTN_EDIT}
+                  onclick={() => {
+                    onedit(card);
+                  }}
+                >
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm btn-icon"
+                  title={MESSAGES.BTN_DELETE}
+                  onclick={() => {
+                    ondelete(card);
+                  }}
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         {/each}
@@ -245,222 +261,3 @@
     </table>
   </div>
 {/if}
-
-<style>
-  /* Filters */
-  .card-list__filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-
-  .filter-select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.813rem;
-    color: var(--color-gray-700);
-    background: var(--color-white, #fff);
-  }
-
-  .filter-select:focus {
-    outline: none;
-    border-color: var(--color-blue-500);
-  }
-
-  .card-list__count {
-    margin-left: auto;
-    font-size: 0.813rem;
-    color: var(--color-gray-500);
-  }
-
-  /* Loading & Empty */
-  .card-list__loading,
-  .card-list__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 3rem 1.5rem;
-    color: var(--color-gray-400);
-    font-size: 0.875rem;
-  }
-
-  .card-list__empty i {
-    font-size: 2rem;
-  }
-
-  /* Table */
-  .card-list__table-wrap {
-    overflow-x: auto;
-  }
-
-  .card-list__table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .card-list__table th {
-    padding: 0.75rem;
-    text-align: left;
-    font-weight: 600;
-    color: var(--color-gray-600);
-    border-bottom: 2px solid var(--color-gray-200);
-    white-space: nowrap;
-    font-size: 0.813rem;
-  }
-
-  .card-list__table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--color-gray-100);
-    vertical-align: middle;
-  }
-
-  .card-list__table tr:hover td {
-    background: var(--color-gray-50);
-  }
-
-  /* Cell styles */
-  .cell-code {
-    width: 80px;
-  }
-
-  .card-code {
-    display: inline-block;
-    padding: 0.125rem 0.5rem;
-    background: var(--color-gray-100);
-    border-radius: var(--radius-sm, 4px);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.813rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-  }
-
-  .cell-title {
-    max-width: 280px;
-  }
-
-  .card-title-text {
-    display: block;
-    font-weight: 500;
-    color: var(--color-gray-900);
-  }
-
-  .card-location {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-    margin-top: 0.125rem;
-  }
-
-  .card-location i {
-    margin-right: 0.25rem;
-    font-size: 0.625rem;
-  }
-
-  /* Role badge */
-  .role-badge {
-    display: inline-block;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-sm, 4px);
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .role-badge--operator {
-    background: rgb(219 234 254);
-    color: rgb(29 78 216);
-  }
-
-  .role-badge--maintenance {
-    background: rgb(254 226 226);
-    color: rgb(185 28 28);
-  }
-
-  /* Status badge */
-  .badge {
-    display: inline-block;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-sm, 4px);
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .badge--success {
-    background: rgb(209 250 229);
-    color: rgb(6 95 70);
-  }
-
-  .badge--danger {
-    background: rgb(254 226 226);
-    color: rgb(153 27 27);
-  }
-
-  .badge--warning {
-    background: rgb(254 243 199);
-    color: rgb(146 64 14);
-  }
-
-  .badge--error {
-    background: rgb(237 233 254);
-    color: rgb(91 33 182);
-  }
-
-  /* Approval icon */
-  .approval-icon {
-    color: var(--color-blue-500);
-  }
-
-  .text-muted {
-    color: var(--color-gray-400);
-  }
-
-  /* Action buttons */
-  .cell-actions {
-    display: flex;
-    gap: 0.375rem;
-    white-space: nowrap;
-  }
-
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: var(--radius-md, 8px);
-    background: transparent;
-    color: var(--color-gray-500);
-    cursor: pointer;
-    transition:
-      background 0.15s,
-      color 0.15s;
-  }
-
-  .btn-icon:hover {
-    background: var(--color-gray-100);
-    color: var(--color-gray-700);
-  }
-
-  .btn-icon--danger:hover {
-    background: rgb(254 226 226);
-    color: rgb(185 28 28);
-  }
-
-  /* Responsive */
-  @media (width <= 768px) {
-    .card-list__filters {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .card-list__count {
-      margin-left: 0;
-    }
-  }
-</style>

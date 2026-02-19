@@ -82,17 +82,21 @@
   });
 </script>
 
-<div class="esc-config">
-  <div class="esc-config__header">
-    <h3 class="esc-config__title">
+<div>
+  <div class="mb-6">
+    <h3
+      class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
+    >
       <i class="fas fa-exclamation-triangle"></i>
       {MESSAGES.ESCALATION_TITLE}
     </h3>
-    <p class="esc-config__desc">{MESSAGES.ESCALATION_DESCRIPTION}</p>
+    <p class="mt-1 text-sm text-(--color-text-secondary)">
+      {MESSAGES.ESCALATION_DESCRIPTION}
+    </p>
   </div>
 
   <form
-    class="esc-config__form"
+    class="flex flex-col gap-5"
     onsubmit={(e: SubmitEvent) => {
       e.preventDefault();
       void handleSave();
@@ -109,8 +113,8 @@
       <input
         id="esc-hours"
         type="number"
-        class="input"
-        class:input--error={!isValidHours}
+        class="form-input"
+        class:input-error={!isValidHours}
         min={1}
         max={720}
         bind:value={hours}
@@ -119,42 +123,46 @@
     </div>
 
     <!-- Notify Team Lead -->
-    <div class="form-group form-group--toggle">
+    <div class="form-group">
       <label
-        class="toggle-label"
+        class="form-toggle"
         for="esc-team"
       >
         <input
           id="esc-team"
           type="checkbox"
-          class="toggle-input"
+          class="form-toggle__input"
           bind:checked={notifyTeam}
         />
-        <span class="toggle-text">{MESSAGES.ESCALATION_NOTIFY_TEAM}</span>
+        <span class="form-toggle__slider"></span>
+        <span class="form-toggle__label">{MESSAGES.ESCALATION_NOTIFY_TEAM}</span
+        >
       </label>
     </div>
 
     <!-- Notify Department Lead -->
-    <div class="form-group form-group--toggle">
+    <div class="form-group">
       <label
-        class="toggle-label"
+        class="form-toggle"
         for="esc-dept"
       >
         <input
           id="esc-dept"
           type="checkbox"
-          class="toggle-input"
+          class="form-toggle__input"
           bind:checked={notifyDept}
         />
-        <span class="toggle-text">{MESSAGES.ESCALATION_NOTIFY_DEPT}</span>
+        <span class="form-toggle__slider"></span>
+        <span class="form-toggle__label">{MESSAGES.ESCALATION_NOTIFY_DEPT}</span
+        >
       </label>
     </div>
 
     <!-- Save -->
-    <div class="esc-config__actions">
+    <div class="pt-2">
       <button
         type="submit"
-        class="btn btn--primary"
+        class="btn btn-primary"
         disabled={saving || !hasChanges || !isValidHours}
       >
         {#if saving}
@@ -167,74 +175,7 @@
 </div>
 
 <style>
-  .esc-config__header {
-    margin-bottom: 1.5rem;
-  }
-
-  .esc-config__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .esc-config__desc {
-    color: var(--color-gray-500);
-    font-size: 0.8125rem;
-    margin-top: 0.25rem;
-  }
-
-  .esc-config__form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  .form-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-  }
-
-  .form-help {
-    font-size: 0.75rem;
-    color: var(--color-gray-400);
-  }
-
-  .form-group--toggle {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle-input {
-    width: 1.125rem;
-    height: 1.125rem;
-    accent-color: var(--color-blue-600, #2563eb);
-    cursor: pointer;
-  }
-
-  .toggle-text {
-    font-size: 0.875rem;
-    color: var(--color-gray-700);
-  }
-
-  .esc-config__actions {
-    padding-top: 0.5rem;
+  .input-error {
+    border-color: var(--color-danger);
   }
 </style>

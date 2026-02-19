@@ -259,7 +259,7 @@
   <div class="form-actions">
     <button
       type="button"
-      class="btn btn--ghost"
+      class="btn btn-cancel"
       onclick={oncancel}
       disabled={submitting}
     >
@@ -267,7 +267,7 @@
     </button>
     <button
       type="submit"
-      class="btn btn--primary"
+      class="btn btn-primary"
       disabled={!canSubmit}
     >
       {#if submitting}
@@ -285,10 +285,9 @@
     gap: 1.25rem;
   }
 
-  .form-group {
+  .form-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
+    gap: 1rem;
   }
 
   .form-group--half {
@@ -296,59 +295,10 @@
     min-width: 0;
   }
 
-  .form-row {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .form-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-  }
-
-  .form-input,
-  .form-select,
-  .form-textarea {
-    padding: 0.625rem 0.75rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.875rem;
-    color: var(--color-gray-900);
-    background: var(--color-white, #fff);
-    transition: border-color 0.15s;
-  }
-
-  .form-input:focus,
-  .form-select:focus,
-  .form-textarea:focus {
-    outline: none;
-    border-color: var(--color-blue-500);
-    box-shadow: 0 0 0 3px rgb(59 130 246 / 10%);
-  }
-
-  .form-input:disabled,
-  .form-select:disabled,
-  .form-textarea:disabled {
-    background: var(--color-gray-50);
-    cursor: not-allowed;
-  }
-
   .form-input--narrow {
     max-width: 120px;
   }
 
-  .form-help {
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-  }
-
-  .form-textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-
-  /* Input group (input + suffix) */
   .form-input-group {
     display: flex;
     align-items: center;
@@ -357,76 +307,18 @@
 
   .form-input-group__suffix {
     font-size: 0.875rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-muted);
     white-space: nowrap;
   }
 
-  /* Toggle */
-  .form-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-  }
-
-  .form-toggle__input {
-    position: absolute;
-    opacity: 0%;
-    width: 0;
-    height: 0;
-  }
-
-  .form-toggle__slider {
-    position: relative;
-    width: 44px;
-    height: 24px;
-    background: var(--color-gray-300);
-    border-radius: 12px;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .form-toggle__slider::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.2s;
-  }
-
-  .form-toggle__input:checked + .form-toggle__slider {
-    background: var(--color-blue-500);
-  }
-
-  .form-toggle__input:checked + .form-toggle__slider::after {
-    transform: translateX(20px);
-  }
-
-  .form-toggle__input:disabled + .form-toggle__slider {
-    opacity: 50%;
-    cursor: not-allowed;
-  }
-
-  .form-toggle__label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-gray-700);
-  }
-
-  /* Actions */
   .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--color-gray-200);
+    border-top: 1px solid var(--color-glass-border);
   }
 
-  /* Responsive */
   @media (width <= 640px) {
     .form-row {
       flex-direction: column;

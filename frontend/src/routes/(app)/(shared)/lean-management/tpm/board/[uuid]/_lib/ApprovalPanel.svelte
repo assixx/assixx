@@ -110,12 +110,14 @@
   </h4>
 
   {#if loading}
-    <div class="approval-panel__loading">
+    <div class="flex items-center gap-1.5 text-sm text-(--color-text-muted)">
       <i class="fas fa-spinner fa-spin"></i>
       Wird geladen...
     </div>
   {:else if pendingExecution === null}
-    <p class="approval-panel__empty">Keine ausstehende Freigabe gefunden.</p>
+    <p class="m-0 text-sm text-(--color-text-muted) italic">
+      Keine ausstehende Freigabe gefunden.
+    </p>
   {:else}
     <!-- Execution info -->
     <div class="approval-panel__info">
@@ -136,11 +138,13 @@
         </span>
       </div>
       {#if pendingExecution.documentation !== null}
-        <div class="approval-panel__docs">
+        <div class="mt-1 flex flex-col gap-1">
           <span class="approval-panel__label"
             >{MESSAGES.APPROVAL_DOCUMENTATION}</span
           >
-          <p class="approval-panel__docs-text">
+          <p
+            class="m-0 text-sm leading-relaxed whitespace-pre-wrap text-(--color-text-secondary)"
+          >
             {pendingExecution.documentation}
           </p>
         </div>
@@ -148,16 +152,16 @@
     </div>
 
     <!-- Note input -->
-    <div class="approval-panel__field">
+    <div class="form-group">
       <label
         for="approval-note"
-        class="approval-panel__label"
+        class="form-label"
       >
         {MESSAGES.APPROVAL_NOTE}
       </label>
       <textarea
         id="approval-note"
-        class="approval-panel__textarea"
+        class="form-textarea"
         placeholder={MESSAGES.APPROVAL_NOTE_PH}
         bind:value={approvalNote}
         rows="3"
@@ -167,17 +171,17 @@
     </div>
 
     {#if error !== null}
-      <span class="approval-panel__error">
+      <span class="flex items-center gap-1.5 text-sm text-(--color-danger)">
         <i class="fas fa-exclamation-circle"></i>
         {error}
       </span>
     {/if}
 
     <!-- Action buttons -->
-    <div class="approval-panel__actions">
+    <div class="flex gap-2">
       <button
         type="button"
-        class="btn btn--success btn--sm"
+        class="btn btn-primary btn-sm"
         onclick={handleApprove}
         disabled={submitting}
       >
@@ -190,7 +194,7 @@
       </button>
       <button
         type="button"
-        class="btn btn--danger btn--sm"
+        class="btn btn-danger btn-sm"
         onclick={handleReject}
         disabled={submitting || !canReject}
         title={!canReject ? MESSAGES.APPROVAL_NOTE_REQUIRED : ''}
@@ -200,7 +204,7 @@
       </button>
     </div>
     {#if !canReject}
-      <span class="approval-panel__hint">
+      <span class="text-xs text-(--color-text-muted) italic">
         {MESSAGES.APPROVAL_NOTE_REQUIRED}
       </span>
     {/if}
@@ -220,22 +224,7 @@
     gap: 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--color-gray-800);
-    margin: 0;
-  }
-
-  .approval-panel__loading {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.813rem;
-    color: var(--color-gray-500);
-  }
-
-  .approval-panel__empty {
-    font-size: 0.813rem;
-    color: var(--color-gray-400);
-    font-style: italic;
+    color: var(--color-text-primary);
     margin: 0;
   }
 
@@ -243,8 +232,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
-    background: var(--color-gray-50, #f9fafb);
-    border-radius: var(--radius-md, 8px);
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
     padding: 0.625rem 0.75rem;
   }
 
@@ -257,76 +246,12 @@
   .approval-panel__label {
     font-size: 0.75rem;
     font-weight: 500;
-    color: var(--color-gray-500);
+    color: var(--color-text-muted);
   }
 
   .approval-panel__value {
     font-size: 0.75rem;
-    color: var(--color-gray-800);
+    color: var(--color-text-primary);
     font-weight: 500;
-  }
-
-  .approval-panel__docs {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
-  }
-
-  .approval-panel__docs-text {
-    font-size: 0.813rem;
-    color: var(--color-gray-700);
-    line-height: 1.5;
-    margin: 0;
-    white-space: pre-wrap;
-  }
-
-  .approval-panel__field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .approval-panel__textarea {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.813rem;
-    font-family: inherit;
-    resize: vertical;
-    min-height: 60px;
-    transition: border-color 0.15s ease;
-  }
-
-  .approval-panel__textarea:focus {
-    outline: none;
-    border-color: var(--color-primary-400);
-    box-shadow: 0 0 0 2px
-      color-mix(in srgb, var(--color-primary-400) 25%, transparent);
-  }
-
-  .approval-panel__textarea:disabled {
-    opacity: 50%;
-    cursor: not-allowed;
-  }
-
-  .approval-panel__actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .approval-panel__error {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.813rem;
-    color: var(--color-danger, #ef4444);
-  }
-
-  .approval-panel__hint {
-    font-size: 0.688rem;
-    color: var(--color-gray-400);
-    font-style: italic;
   }
 </style>

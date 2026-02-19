@@ -81,7 +81,27 @@ const DOCUMENTS_SUBMENU: NavItem[] = [
   },
 ];
 
-/** KVP + Surveys submenu for root/admin (includes category management) */
+/** TPM submenu for root/admin */
+const TPM_ADMIN_SUBMENU: NavItem[] = [
+  {
+    id: 'tpm-overview',
+    label: 'Übersicht',
+    url: '/lean-management/tpm',
+    badgeType: 'tpm',
+  },
+  {
+    id: 'tpm-boards',
+    label: 'Boards',
+    url: '/lean-management/tpm/overview',
+  },
+  {
+    id: 'tpm-config',
+    label: 'Konfiguration',
+    url: '/lean-management/tpm/config',
+  },
+];
+
+/** KVP + Surveys + TPM submenu for root/admin (includes category management) */
 const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'kvp',
@@ -111,9 +131,8 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'tpm',
     label: 'TPM Wartung',
-    url: '/lean-management/tpm',
-    badgeType: 'tpm',
     featureCode: 'tpm',
+    submenu: TPM_ADMIN_SUBMENU,
   },
 ];
 

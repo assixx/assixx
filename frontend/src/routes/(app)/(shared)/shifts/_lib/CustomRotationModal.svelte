@@ -192,8 +192,8 @@
       </p>
 
       <!-- Section 1: Zeitraum festlegen -->
-      <div class="glass-card mb-4 border border-blue-500/30 bg-blue-500/5 p-4">
-        <h4 class="mb-4 font-medium text-blue-400">
+      <div class="card card--compact card--no-margin">
+        <h4 class="card__title">
           <i class="fas fa-calendar-alt mr-2"></i>
           Zeitraum festlegen
         </h4>
@@ -234,10 +234,8 @@
       </div>
 
       <!-- Section 2: Schichtblock-Konfiguration -->
-      <div
-        class="glass-card mb-4 border border-emerald-500/30 bg-emerald-500/5 p-4"
-      >
-        <h4 class="mb-4 font-medium text-emerald-400">
+      <div class="card card--compact card--no-margin">
+        <h4 class="card__title">
           <i class="fas fa-cogs mr-2"></i>
           Schichtblock-Konfiguration
         </h4>
@@ -405,10 +403,8 @@
       </div>
 
       <!-- Section 3: Sonderregeln -->
-      <div
-        class="glass-card mb-4 border border-amber-500/30 bg-amber-500/5 p-4"
-      >
-        <h4 class="mb-4 font-medium text-amber-400">
+      <div class="card card--compact card--no-margin">
+        <h4 class="card__title">
           <i class="fas fa-star mr-2"></i>
           Sonderregeln (optional)
         </h4>
@@ -498,10 +494,8 @@
         <h4 class="form-field__label mb-4">Mitarbeiter Schichtzuweisung</h4>
 
         <!-- Available Employees -->
-        <div class="glass-card mb-4 p-4">
-          <h4 class="mb-2 font-medium text-(--color-text-secondary)">
-            Verfügbare Mitarbeiter
-          </h4>
+        <div class="card card--compact card--no-margin">
+          <h4 class="card__title">Verfügbare Mitarbeiter</h4>
           <div class="employee-list min-h-15">
             {#if employees.length === 0}
               <div class="py-2 text-sm text-(--color-text-tertiary) italic">
@@ -533,24 +527,19 @@
         </div>
 
         <!-- Drop Zones for Shift Assignment -->
-        <div class="glass-card p-4">
-          <h4 class="mb-2 font-medium text-(--color-text-secondary)">
-            Schichtzuweisung (Startschicht)
-          </h4>
+        <div class="card card--compact card--no-margin">
+          <h4 class="card__title">Schichtzuweisung (Startschicht)</h4>
           {#snippet shiftDropColumn(
             label: string,
             shiftType: 'F' | 'S' | 'N',
             assignedIds: number[],
-            colorClass: string,
           )}
             <div class="shift-column">
-              <div
-                class="column-header mb-2 text-center font-medium {colorClass}"
-              >
+              <div class="column-header column-header-{shiftType}">
                 {label}
               </div>
               <div
-                class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
+                class="drop-zone"
                 ondragover={handleDragOver}
                 ondrop={() => {
                   handleDrop(shiftType);
@@ -584,24 +573,9 @@
 
           <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
           <div class="shift-assignment-table grid grid-cols-3 gap-4">
-            {@render shiftDropColumn(
-              'F (Früh)',
-              'F',
-              assignedEarly,
-              'text-blue-700 dark:text-blue-400',
-            )}
-            {@render shiftDropColumn(
-              'S (Spät)',
-              'S',
-              assignedLate,
-              'text-yellow-700 dark:text-yellow-400',
-            )}
-            {@render shiftDropColumn(
-              'N (Nacht)',
-              'N',
-              assignedNight,
-              'text-purple-700 dark:text-purple-400',
-            )}
+            {@render shiftDropColumn('F (Früh)', 'F', assignedEarly)}
+            {@render shiftDropColumn('S (Spät)', 'S', assignedLate)}
+            {@render shiftDropColumn('N (Nacht)', 'N', assignedNight)}
           </div>
           <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
           <small class="form-field__hint mt-2 block">
@@ -676,12 +650,23 @@
   .column-header {
     border-radius: 4px 4px 0 0;
 
-    background: var(--primary);
+    background: var(--glass-form-bg-focus);
     padding: 10px;
-    color: #fff;
 
     font-weight: 500;
     text-align: center;
+  }
+
+  .column-header-F {
+    color: rgb(255 193 7);
+  }
+
+  .column-header-S {
+    color: rgb(33 150 243);
+  }
+
+  .column-header-N {
+    color: rgb(156 39 176);
   }
 
   .drop-zone {
@@ -689,7 +674,7 @@
     border-top: none;
     border-radius: 0 0 4px 4px;
 
-    background: rgb(0 0 0 / 30%);
+    background: var(--glass-bg);
     padding: 10px;
 
     min-height: 150px;

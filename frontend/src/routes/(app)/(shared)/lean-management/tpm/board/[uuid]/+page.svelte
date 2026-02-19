@@ -54,201 +54,79 @@
   <title>{pageTitle} — Assixx</title>
 </svelte:head>
 
-<div class="board-page">
+<div class="container">
   <!-- Page Header -->
-  <div class="board-page__header">
-    <div class="board-page__title-wrap">
-      <h1 class="board-page__heading">
-        <i class="fas fa-columns"></i>
-        Kamishibai Board
-      </h1>
-      {#if plan !== null}
-        <div class="board-page__meta">
-          <span class="board-page__machine">
-            <i class="fas fa-cog"></i>
-            {plan.machineName ?? '—'}
-          </span>
-          <span class="board-page__plan-name">{plan.name}</span>
+  <div class="card">
+    <div class="card__header">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 class="card__title">
+            <i class="fas fa-columns mr-2"></i>
+            Kamishibai Board
+          </h2>
+          {#if plan !== null}
+            <p
+              class="mt-2 flex items-center gap-3 text-sm text-(--color-text-secondary)"
+            >
+              <span class="inline-flex items-center gap-1 font-medium">
+                <i class="fas fa-cog"></i>
+                {plan.machineName ?? '—'}
+              </span>
+              <span>{plan.name}</span>
+            </p>
+          {/if}
         </div>
-      {/if}
-    </div>
 
-    {#if openCount > 0}
-      <div class="board-page__open-badge">
-        <i class="fas fa-exclamation-circle"></i>
-        {openCount} offen
+        {#if openCount > 0}
+          <span class="badge badge--danger">
+            <i class="fas fa-exclamation-circle"></i>
+            {openCount} offen
+          </span>
+        {:else if cards.length > 0}
+          <span class="badge badge--success">
+            <i class="fas fa-check-circle"></i>
+            Alles erledigt
+          </span>
+        {/if}
       </div>
-    {:else if cards.length > 0}
-      <div class="board-page__ok-badge">
-        <i class="fas fa-check-circle"></i>
-        Alles erledigt
-      </div>
-    {/if}
+    </div>
   </div>
 
   <!-- Filter Bar -->
-  <div class="board-page__filters">
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
     <BoardFilter bind:filter={activeFilter} />
-    <span class="board-page__card-count">
+    <span class="text-sm whitespace-nowrap text-(--color-text-muted)">
       {filteredCards.length} / {cards.length} Karten
     </span>
   </div>
 
   <!-- Board Content -->
-  {#if plan === null}
-    <div class="board-page__error">
-      <i class="fas fa-exclamation-triangle"></i>
-      <h3>Wartungsplan nicht gefunden</h3>
-      <p>Der angeforderte Wartungsplan existiert nicht oder wurde gelöscht.</p>
-    </div>
-  {:else if cards.length === 0}
-    <div class="board-page__empty">
-      <i class="fas fa-th board-page__empty-icon"></i>
-      <h3>Keine Karten vorhanden</h3>
-      <p>Für diesen Wartungsplan sind noch keine Karten erstellt.</p>
-    </div>
-  {:else}
-    <KamishibaiBoard
-      cards={filteredCards}
-      {colors}
-    />
-  {/if}
+  <div class="mt-4">
+    {#if plan === null}
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="empty-state__title">Wartungsplan nicht gefunden</h3>
+        <p class="empty-state__description">
+          Der angeforderte Wartungsplan existiert nicht oder wurde gelöscht.
+        </p>
+      </div>
+    {:else if cards.length === 0}
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <i class="fas fa-th"></i>
+        </div>
+        <h3 class="empty-state__title">Keine Karten vorhanden</h3>
+        <p class="empty-state__description">
+          Für diesen Wartungsplan sind noch keine Karten erstellt.
+        </p>
+      </div>
+    {:else}
+      <KamishibaiBoard
+        cards={filteredCards}
+        {colors}
+      />
+    {/if}
+  </div>
 </div>
-
-<style>
-  .board-page {
-    padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  /* Header */
-  .board-page__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .board-page__heading {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-gray-900);
-    margin: 0 0 0.375rem;
-  }
-
-  .board-page__meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.875rem;
-    color: var(--color-gray-500);
-  }
-
-  .board-page__machine {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-weight: 500;
-  }
-
-  .board-page__open-badge,
-  .board-page__ok-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.875rem;
-    font-weight: 600;
-    flex-shrink: 0;
-    align-self: flex-start;
-  }
-
-  .board-page__open-badge {
-    background: color-mix(
-      in srgb,
-      var(--color-danger, #ef4444) 12%,
-      transparent
-    );
-    color: var(--color-danger, #ef4444);
-  }
-
-  .board-page__ok-badge {
-    background: color-mix(
-      in srgb,
-      var(--color-success, #10b981) 12%,
-      transparent
-    );
-    color: var(--color-success, #10b981);
-  }
-
-  /* Filter bar */
-  .board-page__filters {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .board-page__card-count {
-    font-size: 0.813rem;
-    color: var(--color-gray-500);
-    white-space: nowrap;
-  }
-
-  /* Error / Empty states */
-  .board-page__error,
-  .board-page__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 4rem 2rem;
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-sm);
-    color: var(--color-gray-600);
-  }
-
-  .board-page__error i,
-  .board-page__empty-icon {
-    font-size: 2.5rem;
-    color: var(--color-gray-300);
-    margin-bottom: 1rem;
-  }
-
-  .board-page__error h3,
-  .board-page__empty h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin: 0 0 0.5rem;
-  }
-
-  .board-page__error p,
-  .board-page__empty p {
-    font-size: 0.875rem;
-    color: var(--color-gray-500);
-    margin: 0;
-  }
-
-  /* Responsive */
-  @media (width <= 640px) {
-    .board-page {
-      padding: 1rem;
-    }
-
-    .board-page__heading {
-      font-size: 1.25rem;
-    }
-  }
-</style>

@@ -82,15 +82,17 @@
 </script>
 
 {#if sections.length === 0}
-  <div class="board-empty">
-    <i class="fas fa-filter board-empty__icon"></i>
-    <h3 class="board-empty__title">Keine Karten gefunden</h3>
-    <p class="board-empty__desc">
+  <div class="empty-state">
+    <div class="empty-state__icon">
+      <i class="fas fa-filter"></i>
+    </div>
+    <h3 class="empty-state__title">Keine Karten gefunden</h3>
+    <p class="empty-state__description">
       Keine Karten entsprechen dem gewählten Filter.
     </p>
   </div>
 {:else}
-  <div class="kamishibai-board">
+  <div class="flex flex-col gap-5">
     {#each sections as section (section.intervalType)}
       <KamishibaiSection
         label={section.label}
@@ -103,42 +105,3 @@
     {/each}
   </div>
 {/if}
-
-<style>
-  .kamishibai-board {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .board-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .board-empty__icon {
-    font-size: 2.5rem;
-    color: var(--color-gray-300);
-    margin-bottom: 1rem;
-  }
-
-  .board-empty__title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-    margin: 0 0 0.5rem;
-  }
-
-  .board-empty__desc {
-    font-size: 0.875rem;
-    color: var(--color-gray-500);
-    margin: 0;
-  }
-</style>

@@ -85,206 +85,107 @@
   }
 </script>
 
-<div class="slot-assistant">
-  <div class="slot-assistant__header">
-    <h3 class="slot-assistant__title">
-      <i class="fas fa-calendar-check"></i>
+<div class="card">
+  <div class="card__header">
+    <h3 class="card__title">
+      <i class="fas fa-calendar-check mr-2"></i>
       {MESSAGES.SLOT_TITLE}
     </h3>
-    <p class="slot-assistant__desc">{MESSAGES.SLOT_DESCRIPTION}</p>
+    <p class="mt-1 text-xs text-(--color-text-muted)">
+      {MESSAGES.SLOT_DESCRIPTION}
+    </p>
   </div>
-
-  <!-- Date range controls -->
-  <div class="slot-assistant__controls">
-    <div class="slot-assistant__date-group">
-      <label
-        class="slot-assistant__label"
-        for="slot-start">Von</label
-      >
-      <input
-        id="slot-start"
-        type="date"
-        class="slot-assistant__date"
-        bind:value={startDate}
-        onchange={handleDateChange}
-      />
-    </div>
-    <div class="slot-assistant__date-group">
-      <label
-        class="slot-assistant__label"
-        for="slot-end">Bis</label
-      >
-      <input
-        id="slot-end"
-        type="date"
-        class="slot-assistant__date"
-        bind:value={endDate}
-        onchange={handleDateChange}
-      />
-    </div>
-  </div>
-
-  <!-- Content -->
-  {#if loading}
-    <div class="slot-assistant__loading">
-      <i class="fas fa-spinner fa-spin"></i>
-      {MESSAGES.SLOT_LOADING}
-    </div>
-  {:else if slotData !== null}
-    <!-- Stats -->
-    <div class="slot-assistant__stats">
-      <span class="slot-assistant__stat slot-assistant__stat--available">
-        {slotData.availableDays}
-      </span>
-      <span class="slot-assistant__stat-label">
-        {MESSAGES.SLOT_STATS}
-        {slotData.totalDays}
-      </span>
-    </div>
-
-    <!-- Legend -->
-    <div class="slot-assistant__legend">
-      <span class="slot-assistant__legend-item">
-        <span class="slot-dot slot-dot--available"></span>
-        {MESSAGES.SLOT_AVAILABLE}
-      </span>
-      <span class="slot-assistant__legend-item">
-        <span class="slot-dot slot-dot--unavailable"></span>
-        {MESSAGES.SLOT_UNAVAILABLE}
-      </span>
-    </div>
-
-    <!-- Day grid -->
-    <div class="slot-grid">
-      {#each slotData.days as day (day.date)}
-        {@const available = day.isAvailable}
-        <div
-          class="slot-day"
-          class:slot-day--available={available}
-          class:slot-day--unavailable={!available}
-          title={buildDayTooltip(day)}
+  <div class="card__body">
+    <!-- Date range controls -->
+    <div class="mb-4 flex gap-3">
+      <div class="flex flex-1 flex-col gap-1">
+        <label
+          class="form-label"
+          for="slot-start">Von</label
         >
-          <span class="slot-day__date">{formatDateShort(day.date)}</span>
-          {#if !available && day.conflicts.length > 0}
-            <span class="slot-day__conflict">
-              {getConflictLabel(day.conflicts[0]?.type ?? '')}
-            </span>
-          {/if}
-        </div>
-      {/each}
+        <input
+          id="slot-start"
+          type="date"
+          class="form-input"
+          bind:value={startDate}
+          onchange={handleDateChange}
+        />
+      </div>
+      <div class="flex flex-1 flex-col gap-1">
+        <label
+          class="form-label"
+          for="slot-end">Bis</label
+        >
+        <input
+          id="slot-end"
+          type="date"
+          class="form-input"
+          bind:value={endDate}
+          onchange={handleDateChange}
+        />
+      </div>
     </div>
-  {/if}
+
+    <!-- Content -->
+    {#if loading}
+      <div
+        class="flex items-center justify-center gap-2 p-6 text-sm text-(--color-text-muted)"
+      >
+        <i class="fas fa-spinner fa-spin"></i>
+        {MESSAGES.SLOT_LOADING}
+      </div>
+    {:else if slotData !== null}
+      <!-- Stats -->
+      <div class="mb-3 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-(--color-success)">
+          {slotData.availableDays}
+        </span>
+        <span class="text-sm text-(--color-text-muted)">
+          {MESSAGES.SLOT_STATS}
+          {slotData.totalDays}
+        </span>
+      </div>
+
+      <!-- Legend -->
+      <div class="mb-3 flex gap-4">
+        <span
+          class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+        >
+          <span class="slot-dot slot-dot--available"></span>
+          {MESSAGES.SLOT_AVAILABLE}
+        </span>
+        <span
+          class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+        >
+          <span class="slot-dot slot-dot--unavailable"></span>
+          {MESSAGES.SLOT_UNAVAILABLE}
+        </span>
+      </div>
+
+      <!-- Day grid -->
+      <div class="slot-grid">
+        {#each slotData.days as day (day.date)}
+          {@const available = day.isAvailable}
+          <div
+            class="slot-day"
+            class:slot-day--available={available}
+            class:slot-day--unavailable={!available}
+            title={buildDayTooltip(day)}
+          >
+            <span class="slot-day__date">{formatDateShort(day.date)}</span>
+            {#if !available && day.conflicts.length > 0}
+              <span class="slot-day__conflict">
+                {getConflictLabel(day.conflicts[0]?.type ?? '')}
+              </span>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .slot-assistant {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-sm);
-    padding: 1.25rem;
-  }
-
-  .slot-assistant__header {
-    margin-bottom: 1rem;
-  }
-
-  .slot-assistant__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.938rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .slot-assistant__desc {
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-    margin-top: 0.25rem;
-  }
-
-  /* Date controls */
-  .slot-assistant__controls {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-
-  .slot-assistant__date-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex: 1;
-  }
-
-  .slot-assistant__label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--color-gray-600);
-  }
-
-  .slot-assistant__date {
-    padding: 0.375rem 0.5rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.813rem;
-    color: var(--color-gray-700);
-  }
-
-  .slot-assistant__date:focus {
-    outline: none;
-    border-color: var(--color-blue-500);
-  }
-
-  /* Loading */
-  .slot-assistant__loading {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.5rem;
-    justify-content: center;
-    color: var(--color-gray-500);
-    font-size: 0.813rem;
-  }
-
-  /* Stats */
-  .slot-assistant__stats {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .slot-assistant__stat {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  .slot-assistant__stat--available {
-    color: var(--color-green-600, #059669);
-  }
-
-  .slot-assistant__stat-label {
-    font-size: 0.813rem;
-    color: var(--color-gray-500);
-  }
-
-  /* Legend */
-  .slot-assistant__legend {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .slot-assistant__legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.75rem;
-    color: var(--color-gray-600);
-  }
-
   .slot-dot {
     width: 10px;
     height: 10px;
@@ -293,14 +194,13 @@
   }
 
   .slot-dot--available {
-    background: var(--color-green-500, #10b981);
+    background: var(--color-success);
   }
 
   .slot-dot--unavailable {
-    background: var(--color-red-400, #f87171);
+    background: var(--color-danger);
   }
 
-  /* Day grid */
   .slot-grid {
     display: flex;
     flex-wrap: wrap;
@@ -312,7 +212,7 @@
     flex-direction: column;
     align-items: center;
     padding: 0.375rem 0.25rem;
-    border-radius: var(--radius-sm, 4px);
+    border-radius: var(--radius-sm);
     min-width: 64px;
     flex: 1 0 64px;
     cursor: default;
@@ -324,24 +224,24 @@
   }
 
   .slot-day--available {
-    background: var(--color-green-50, #ecfdf5);
-    border: 1px solid var(--color-green-200, #a7f3d0);
+    background: color-mix(in srgb, var(--color-success) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
   }
 
   .slot-day--unavailable {
-    background: var(--color-red-50, #fef2f2);
-    border: 1px solid var(--color-red-200, #fecaca);
+    background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
   }
 
   .slot-day__date {
     font-size: 0.688rem;
     font-weight: 500;
-    color: var(--color-gray-700);
+    color: var(--color-text-secondary);
   }
 
   .slot-day__conflict {
     font-size: 0.563rem;
-    color: var(--color-red-500, #ef4444);
+    color: var(--color-danger);
     text-align: center;
     margin-top: 2px;
   }

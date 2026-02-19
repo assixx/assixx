@@ -106,16 +106,16 @@
 
   .maintenance-status__count {
     font-weight: 600;
-    color: var(--color-gray-800);
+    color: var(--color-text-primary);
   }
 
   .maintenance-status__label {
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
   }
 
   .maintenance-status__empty {
     font-size: 0.813rem;
-    color: var(--color-gray-400);
+    color: var(--color-text-muted);
     font-style: italic;
   }
 </style>

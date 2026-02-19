@@ -68,179 +68,98 @@
   });
 </script>
 
-<div class="employee-assignment">
-  <div class="employee-assignment__header">
-    <h3 class="employee-assignment__title">
-      <i class="fas fa-users"></i>
+<div class="card">
+  <div class="card__header">
+    <h3 class="card__title">
+      <i class="fas fa-users mr-2"></i>
       {MESSAGES.EMPLOYEE_TITLE}
     </h3>
-    <p class="employee-assignment__desc">{MESSAGES.EMPLOYEE_DESCRIPTION}</p>
+    <p class="mt-1 text-xs text-(--color-text-muted)">
+      {MESSAGES.EMPLOYEE_DESCRIPTION}
+    </p>
   </div>
-
-  {#if loading}
-    <div class="employee-assignment__loading">
-      <i class="fas fa-spinner fa-spin"></i>
-      {MESSAGES.EMPLOYEE_LOADING}
-    </div>
-  {:else if members.length === 0}
-    <div class="employee-assignment__empty">
-      <i class="fas fa-user-slash"></i>
-      <p>{MESSAGES.EMPLOYEE_EMPTY}</p>
-    </div>
-  {:else}
-    <!-- Summary -->
-    <div class="employee-assignment__summary">
-      <span class="employee-assignment__count">
-        {availableCount}/{members.length}
-      </span>
-      <span class="employee-assignment__count-label">
-        {MESSAGES.EMPLOYEE_AVAILABLE}
-      </span>
-    </div>
-
-    <!-- Member list -->
-    <div class="employee-list">
-      {#each members as member (member.userId)}
-        <div
-          class="employee-item"
-          class:employee-item--available={member.isAvailable}
-          class:employee-item--unavailable={!member.isAvailable}
-        >
-          <div class="employee-item__info">
-            <span class="employee-item__dot"></span>
-            <span class="employee-item__name">{member.userName}</span>
-          </div>
-          {#if !member.isAvailable && member.unavailabilityReason !== null}
-            <span class="employee-item__reason">
-              {member.unavailabilityReason}
-            </span>
-          {/if}
+  <div class="card__body">
+    {#if loading}
+      <div
+        class="flex items-center justify-center gap-2 p-6 text-sm text-(--color-text-muted)"
+      >
+        <i class="fas fa-spinner fa-spin"></i>
+        {MESSAGES.EMPLOYEE_LOADING}
+      </div>
+    {:else if members.length === 0}
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <i class="fas fa-user-slash"></i>
         </div>
-      {/each}
-    </div>
-  {/if}
+        <h3 class="empty-state__title">{MESSAGES.EMPLOYEE_EMPTY}</h3>
+      </div>
+    {:else}
+      <!-- Summary -->
+      <div class="mb-3 flex items-baseline gap-2">
+        <span class="text-xl font-bold text-(--color-success)">
+          {availableCount}/{members.length}
+        </span>
+        <span class="text-sm text-(--color-text-muted)">
+          {MESSAGES.EMPLOYEE_AVAILABLE}
+        </span>
+      </div>
+
+      <!-- Member list -->
+      <div class="flex flex-col gap-1.5">
+        {#each members as member (member.userId)}
+          <div
+            class="employee-item"
+            class:employee-item--available={member.isAvailable}
+            class:employee-item--unavailable={!member.isAvailable}
+          >
+            <div class="flex items-center gap-2">
+              <span class="employee-dot"></span>
+              <span class="text-sm font-medium text-(--color-text-secondary)"
+                >{member.userName}</span
+              >
+            </div>
+            {#if !member.isAvailable && member.unavailabilityReason !== null}
+              <span class="text-xs text-(--color-text-muted) italic">
+                {member.unavailabilityReason}
+              </span>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .employee-assignment {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-sm);
-    padding: 1.25rem;
-  }
-
-  .employee-assignment__header {
-    margin-bottom: 1rem;
-  }
-
-  .employee-assignment__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.938rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .employee-assignment__desc {
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-    margin-top: 0.25rem;
-  }
-
-  .employee-assignment__loading {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.5rem;
-    justify-content: center;
-    color: var(--color-gray-500);
-    font-size: 0.813rem;
-  }
-
-  .employee-assignment__empty {
-    text-align: center;
-    padding: 1.5rem;
-    color: var(--color-gray-400);
-    font-size: 0.813rem;
-  }
-
-  .employee-assignment__empty i {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .employee-assignment__summary {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .employee-assignment__count {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-green-600, #059669);
-  }
-
-  .employee-assignment__count-label {
-    font-size: 0.813rem;
-    color: var(--color-gray-500);
-  }
-
-  /* Employee list */
-  .employee-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
   .employee-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0.625rem;
-    border-radius: var(--radius-sm, 4px);
+    border-radius: var(--radius-sm);
     font-size: 0.813rem;
   }
 
   .employee-item--available {
-    background: var(--color-green-50, #ecfdf5);
+    background: color-mix(in srgb, var(--color-success) 8%, transparent);
   }
 
   .employee-item--unavailable {
-    background: var(--color-gray-50, #f9fafb);
+    background: var(--glass-bg-hover);
   }
 
-  .employee-item__info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .employee-item__dot {
+  .employee-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
   }
 
-  .employee-item--available .employee-item__dot {
-    background: var(--color-green-500, #10b981);
+  .employee-item--available .employee-dot {
+    background: var(--color-success);
   }
 
-  .employee-item--unavailable .employee-item__dot {
-    background: var(--color-gray-400, #9ca3af);
-  }
-
-  .employee-item__name {
-    font-weight: 500;
-    color: var(--color-gray-700);
-  }
-
-  .employee-item__reason {
-    font-size: 0.688rem;
-    color: var(--color-gray-500);
-    font-style: italic;
+  .employee-item--unavailable .employee-dot {
+    background: var(--color-text-muted);
   }
 </style>

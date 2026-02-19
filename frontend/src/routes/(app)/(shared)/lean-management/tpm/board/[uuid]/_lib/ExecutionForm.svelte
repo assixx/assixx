@@ -69,7 +69,9 @@
   </h4>
 
   {#if !canExecute}
-    <p class="execution-form__not-due">{MESSAGES.EXEC_CARD_NOT_DUE}</p>
+    <p class="m-0 text-sm text-(--color-text-muted) italic">
+      {MESSAGES.EXEC_CARD_NOT_DUE}
+    </p>
   {:else if createdExecution !== null}
     <!-- Post-submit: show success and photo upload -->
     <div class="execution-form__success">
@@ -83,19 +85,19 @@
     />
   {:else}
     <!-- Pre-submit: documentation form -->
-    <div class="execution-form__field">
+    <div class="form-group">
       <label
         for="exec-docs"
-        class="execution-form__label"
+        class="form-label"
       >
         {MESSAGES.EXEC_DOCUMENTATION}
         {#if requiresDocs}
-          <span class="execution-form__required">*</span>
+          <span class="text-(--color-danger)">*</span>
         {/if}
       </label>
       <textarea
         id="exec-docs"
-        class="execution-form__textarea"
+        class="form-textarea"
         placeholder={MESSAGES.EXEC_DOCUMENTATION_PH}
         bind:value={documentation}
         rows="4"
@@ -103,14 +105,14 @@
         disabled={submitting}
       ></textarea>
       {#if requiresDocs}
-        <span class="execution-form__hint">
+        <span class="form-help">
           {MESSAGES.EXEC_DOCUMENTATION_HINT}
         </span>
       {/if}
     </div>
 
     {#if error !== null}
-      <span class="execution-form__error">
+      <span class="flex items-center gap-1.5 text-sm text-(--color-danger)">
         <i class="fas fa-exclamation-circle"></i>
         {error}
       </span>
@@ -118,7 +120,7 @@
 
     <button
       type="button"
-      class="btn btn--primary btn--sm"
+      class="btn btn-primary btn-sm"
       onclick={handleSubmit}
       disabled={submitting || !isValid}
     >
@@ -146,68 +148,8 @@
     gap: 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--color-gray-800);
+    color: var(--color-text-primary);
     margin: 0;
-  }
-
-  .execution-form__not-due {
-    font-size: 0.813rem;
-    color: var(--color-gray-400);
-    font-style: italic;
-    margin: 0;
-  }
-
-  .execution-form__field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .execution-form__label {
-    font-size: 0.813rem;
-    font-weight: 500;
-    color: var(--color-gray-600);
-  }
-
-  .execution-form__required {
-    color: var(--color-danger, #ef4444);
-  }
-
-  .execution-form__textarea {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.813rem;
-    font-family: inherit;
-    resize: vertical;
-    min-height: 80px;
-    transition: border-color 0.15s ease;
-  }
-
-  .execution-form__textarea:focus {
-    outline: none;
-    border-color: var(--color-primary-400);
-    box-shadow: 0 0 0 2px
-      color-mix(in srgb, var(--color-primary-400) 25%, transparent);
-  }
-
-  .execution-form__textarea:disabled {
-    opacity: 50%;
-    cursor: not-allowed;
-  }
-
-  .execution-form__hint {
-    font-size: 0.688rem;
-    color: var(--color-gray-400);
-  }
-
-  .execution-form__error {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.813rem;
-    color: var(--color-danger, #ef4444);
   }
 
   .execution-form__success {
@@ -216,13 +158,9 @@
     gap: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-success, #10b981);
+    color: var(--color-success);
     padding: 0.5rem 0.75rem;
-    background: color-mix(
-      in srgb,
-      var(--color-success, #10b981) 8%,
-      transparent
-    );
-    border-radius: var(--radius-md, 8px);
+    background: color-mix(in srgb, var(--color-success) 8%, transparent);
+    border-radius: var(--radius-md);
   }
 </style>

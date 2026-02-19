@@ -54,7 +54,6 @@
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    backface-visibility: hidden;
     border-radius: inherit;
     overflow: hidden;
   }

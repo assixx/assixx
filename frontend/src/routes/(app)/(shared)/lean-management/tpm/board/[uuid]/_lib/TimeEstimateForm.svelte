@@ -25,7 +25,7 @@
   <h4 class="time-estimate__title">
     <i class="fas fa-clock"></i>
     {MESSAGES.TIME_HEADING}
-    <span class="time-estimate__interval">
+    <span class="text-xs font-normal text-(--color-text-muted)">
       {INTERVAL_LABELS[intervalType]}
     </span>
   </h4>
@@ -66,7 +66,9 @@
       </div>
     </div>
   {:else}
-    <p class="time-estimate__empty">{MESSAGES.TIME_NO_ESTIMATE}</p>
+    <p class="m-0 text-xs text-(--color-text-muted) italic">
+      {MESSAGES.TIME_NO_ESTIMATE}
+    </p>
   {/if}
 </div>
 
@@ -83,22 +85,16 @@
     gap: 0.5rem;
     font-size: 0.813rem;
     font-weight: 600;
-    color: var(--color-gray-700);
+    color: var(--color-text-secondary);
     margin: 0;
-  }
-
-  .time-estimate__interval {
-    font-size: 0.75rem;
-    font-weight: 400;
-    color: var(--color-gray-400);
   }
 
   .time-estimate__grid {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    background: var(--color-gray-50, #f9fafb);
-    border-radius: var(--radius-md, 8px);
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
     padding: 0.625rem 0.75rem;
   }
 
@@ -110,7 +106,7 @@
   }
 
   .time-estimate__row--total {
-    border-top: 1px solid var(--color-gray-200);
+    border-top: 1px solid var(--color-glass-border);
     margin-top: 0.25rem;
     padding-top: 0.375rem;
     font-weight: 600;
@@ -118,20 +114,13 @@
 
   .time-estimate__label {
     font-size: 0.75rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-muted);
   }
 
   .time-estimate__value {
     font-size: 0.75rem;
-    color: var(--color-gray-800);
+    color: var(--color-text-primary);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-  }
-
-  .time-estimate__empty {
-    font-size: 0.75rem;
-    color: var(--color-gray-400);
-    font-style: italic;
-    margin: 0;
   }
 </style>

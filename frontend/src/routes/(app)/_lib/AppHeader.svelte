@@ -193,7 +193,7 @@
   }
 
   :global(html:not(.dark)) .header {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
   }
 
   .header-content {

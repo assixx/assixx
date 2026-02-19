@@ -52,12 +52,12 @@
     return custom !== undefined ? custom.colorHex : DEFAULT_COLORS[status];
   }
 
-  /** Get urgency indicator class */
-  function getUrgencyClass(machine: MachineWithTpmStatus): string {
-    if (machine.statusCounts.overdue > 0) return 'machine-row--overdue';
-    if (machine.statusCounts.red > 0) return 'machine-row--open';
-    if (machine.statusCounts.yellow > 0) return 'machine-row--pending';
-    return 'machine-row--ok';
+  /** Get urgency indicator color */
+  function getIndicatorColor(machine: MachineWithTpmStatus): string {
+    if (machine.statusCounts.overdue > 0) return getColor('overdue');
+    if (machine.statusCounts.red > 0) return getColor('red');
+    if (machine.statusCounts.yellow > 0) return getColor('yellow');
+    return getColor('green');
   }
 
   /** Get next due card info */
@@ -124,36 +124,40 @@
 </script>
 
 {#if sortedMachines.length === 0}
-  <div class="machine-list__empty">
-    <i class="fas fa-tools machine-list__empty-icon"></i>
-    <h3>{MESSAGES.EMPTY_TITLE}</h3>
-    <p>{MESSAGES.EMPTY_DESCRIPTION}</p>
+  <div class="empty-state">
+    <div class="empty-state__icon">
+      <i class="fas fa-tools"></i>
+    </div>
+    <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
+    <p class="empty-state__description">{MESSAGES.EMPTY_DESCRIPTION}</p>
   </div>
 {:else}
   <div class="machine-list">
     {#each sortedMachines as machine (machine.plan.uuid)}
-      <div class="machine-row {getUrgencyClass(machine)}">
+      <div class="machine-row">
         <!-- Urgency indicator bar -->
         <div
           class="machine-row__indicator"
-          style="background-color: {machine.statusCounts.overdue > 0 ?
-            getColor('overdue')
-          : machine.statusCounts.red > 0 ? getColor('red')
-          : machine.statusCounts.yellow > 0 ? getColor('yellow')
-          : getColor('green')}"
+          style="background-color: {getIndicatorColor(machine)}"
         ></div>
 
         <div class="machine-row__content">
           <!-- Machine info -->
           <div class="machine-row__info">
-            <div class="machine-row__name">
-              <i class="fas fa-cog machine-row__icon"></i>
-              <span class="machine-row__machine-name">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-cog text-sm text-(--color-text-muted)"></i>
+              <span
+                class="truncate text-base font-semibold text-(--color-text-primary)"
+              >
                 {machine.plan.machineName ?? '—'}
               </span>
             </div>
-            <div class="machine-row__plan-name">{machine.plan.name}</div>
-            <div class="machine-row__schedule">
+            <div class="mt-0.5 truncate text-sm text-(--color-text-muted)">
+              {machine.plan.name}
+            </div>
+            <div
+              class="mt-1 flex items-center gap-1.5 text-xs text-(--color-text-muted)"
+            >
               <i class="fas fa-calendar-alt"></i>
               {formatSchedule(machine)}
             </div>
@@ -166,12 +170,12 @@
               {colors}
               compact
             />
-            <div class="machine-row__meta">
-              <span class="machine-row__interval">
+            <div class="flex gap-3 text-xs text-(--color-text-muted)">
+              <span>
                 {getDominantInterval(machine)}
               </span>
               {#if getNextDueInfo(machine) !== null}
-                <span class="machine-row__due">
+                <span class="font-medium">
                   Nächste: {getNextDueInfo(machine)}
                 </span>
               {/if}
@@ -184,7 +188,7 @@
               href={resolvePath(
                 `/lean-management/tpm/board/${machine.plan.uuid}`,
               )}
-              class="btn btn--primary btn--sm"
+              class="btn btn-primary btn-sm"
             >
               <i class="fas fa-columns"></i>
               {MESSAGES.BTN_VIEW_BOARD}
@@ -203,34 +207,10 @@
     gap: 0.75rem;
   }
 
-  .machine-list__empty {
-    text-align: center;
-    padding: 3rem 1.5rem;
-  }
-
-  .machine-list__empty-icon {
-    font-size: 2.5rem;
-    color: var(--color-gray-300);
-    margin-bottom: 1rem;
-  }
-
-  .machine-list__empty h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-    margin-bottom: 0.5rem;
-  }
-
-  .machine-list__empty p {
-    color: var(--color-gray-500);
-    font-size: 0.875rem;
-  }
-
-  /* Machine row */
   .machine-row {
     display: flex;
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
+    background: var(--glass-bg);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
     transition: box-shadow 0.15s ease;
@@ -254,51 +234,11 @@
     min-width: 0;
   }
 
-  /* Machine info */
   .machine-row__info {
     flex: 1;
     min-width: 0;
   }
 
-  .machine-row__name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .machine-row__icon {
-    color: var(--color-gray-400);
-    font-size: 0.875rem;
-  }
-
-  .machine-row__machine-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-900);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .machine-row__plan-name {
-    font-size: 0.813rem;
-    color: var(--color-gray-500);
-    margin-top: 0.125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .machine-row__schedule {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.75rem;
-    color: var(--color-gray-400);
-    margin-top: 0.375rem;
-  }
-
-  /* Status */
   .machine-row__status {
     display: flex;
     flex-direction: column;
@@ -307,23 +247,10 @@
     flex-shrink: 0;
   }
 
-  .machine-row__meta {
-    display: flex;
-    gap: 0.75rem;
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-  }
-
-  .machine-row__due {
-    font-weight: 500;
-  }
-
-  /* Actions */
   .machine-row__actions {
     flex-shrink: 0;
   }
 
-  /* Responsive */
   @media (width <= 768px) {
     .machine-row__content {
       flex-direction: column;
@@ -339,7 +266,7 @@
       width: 100%;
     }
 
-    .machine-row__actions .btn {
+    .machine-row__actions :global(.btn) {
       width: 100%;
       justify-content: center;
     }

@@ -97,31 +97,40 @@
   <title>{pageTitle}</title>
 </svelte:head>
 
-<div class="plan-detail">
+<div class="container">
   <!-- Header -->
-  <div class="plan-detail__header">
+  <div class="mb-6">
     <a
       href={resolvePath('/lean-management/tpm')}
-      class="plan-detail__back"
+      class="mb-3 inline-flex items-center gap-2 text-sm text-(--color-text-muted) no-underline hover:text-(--color-primary)"
     >
       <i class="fas fa-arrow-left"></i>
       {MESSAGES.BTN_BACK_TO_OVERVIEW}
     </a>
-    <h1 class="plan-detail__heading">
+    <h1
+      class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
+    >
       <i class="fas fa-clipboard-list"></i>
       {heading}
     </h1>
     {#if !isCreateMode && data.plan !== null}
-      <p class="plan-detail__subtitle">
+      <p class="mt-1 text-sm text-(--color-text-secondary)">
         {data.plan.machineName ?? '—'} — {data.plan.name}
       </p>
+      <a
+        href={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
+        class="btn btn-primary btn-sm mt-3"
+      >
+        <i class="fas fa-th"></i>
+        Karten verwalten
+      </a>
     {/if}
   </div>
 
   <!-- Content grid -->
-  <div class="plan-detail__grid">
+  <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px]">
     <!-- Main: Plan form -->
-    <div class="plan-detail__main">
+    <div class="min-w-0">
       <div class="card">
         <div class="card__header">
           <h2 class="card__title">
@@ -144,105 +153,10 @@
 
     <!-- Sidebar: Slot Assistant + Employee Assignment (edit mode only) -->
     {#if !isCreateMode && data.plan !== null}
-      <div class="plan-detail__sidebar">
+      <div class="flex flex-col gap-6">
         <SlotAssistant planUuid={data.plan.uuid} />
         <EmployeeAssignment planUuid={data.plan.uuid} />
       </div>
     {/if}
   </div>
 </div>
-
-<style>
-  .plan-detail {
-    padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-
-  .plan-detail__header {
-    margin-bottom: 1.5rem;
-  }
-
-  .plan-detail__back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--color-gray-500);
-    text-decoration: none;
-    font-size: 0.875rem;
-    margin-bottom: 0.75rem;
-    transition: color 0.15s;
-  }
-
-  .plan-detail__back:hover {
-    color: var(--color-blue-600);
-  }
-
-  .plan-detail__heading {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-gray-900);
-  }
-
-  .plan-detail__subtitle {
-    color: var(--color-gray-500);
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-  }
-
-  .plan-detail__grid {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 1.5rem;
-    align-items: start;
-  }
-
-  .plan-detail__main {
-    min-width: 0;
-  }
-
-  .plan-detail__sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  /* Card (reusable) */
-  .card {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-  }
-
-  .card__header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--color-gray-200);
-  }
-
-  .card__title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .card__body {
-    padding: 1.5rem;
-  }
-
-  /* Responsive: stack on narrow screens */
-  @media (width <= 1024px) {
-    .plan-detail__grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (width <= 640px) {
-    .plan-detail {
-      padding: 1rem;
-    }
-  }
-</style>

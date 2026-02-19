@@ -141,122 +141,124 @@
   }
 </script>
 
-<div class="color-config">
-  <div class="color-config__header">
-    <div>
-      <h3 class="color-config__title">
-        <i class="fas fa-palette"></i>
-        {MESSAGES.COLOR_TITLE}
-      </h3>
-      <p class="color-config__desc">{MESSAGES.COLOR_DESCRIPTION}</p>
-    </div>
-    <button
-      type="button"
-      class="btn btn--ghost btn--sm"
-      disabled={resetting}
-      onclick={() => {
-        showResetConfirm = true;
-      }}
+<div class="mb-6 flex items-start justify-between gap-4">
+  <div>
+    <h3
+      class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
     >
-      <i class="fas fa-undo"></i>
-      {MESSAGES.COLOR_RESET}
-    </button>
+      <i class="fas fa-palette"></i>
+      {MESSAGES.COLOR_TITLE}
+    </h3>
+    <p class="mt-1 text-sm text-(--color-text-secondary)">
+      {MESSAGES.COLOR_DESCRIPTION}
+    </p>
   </div>
+  <button
+    type="button"
+    class="btn btn-primary btn-sm"
+    disabled={resetting}
+    onclick={() => {
+      showResetConfirm = true;
+    }}
+  >
+    <i class="fas fa-undo"></i>
+    {MESSAGES.COLOR_RESET}
+  </button>
+</div>
 
-  <div class="color-config__grid">
-    {#each STATUS_ORDER as statusKey (statusKey)}
-      {@const edit = getEdit(statusKey)}
-      {@const saving = savingKey === statusKey}
-      {@const changed = hasChanges(statusKey)}
-      {@const validHex = isValidHex(edit.colorHex)}
-      <div class="color-row">
-        <div
-          class="color-row__preview"
-          style="background-color: {edit.colorHex}"
-        ></div>
-        <div class="color-row__status">
-          {CARD_STATUS_LABELS[statusKey]}
-        </div>
-        <div class="color-row__inputs">
-          <div class="color-row__field">
-            <label
-              class="color-row__label"
-              for="hex-{statusKey}"
-            >
-              {MESSAGES.COLOR_HEX}
-            </label>
-            <div class="color-row__hex-group">
-              <input
-                type="color"
-                class="color-row__picker"
-                value={edit.colorHex}
-                oninput={(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const entry = editState.get(statusKey);
-                  if (entry !== undefined) entry.colorHex = target.value;
-                }}
-              />
-              <input
-                id="hex-{statusKey}"
-                type="text"
-                class="input input--sm color-row__hex-input"
-                class:input--error={!validHex}
-                value={edit.colorHex}
-                maxlength={7}
-                placeholder="#10b981"
-                oninput={(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const entry = editState.get(statusKey);
-                  if (entry !== undefined) entry.colorHex = target.value;
-                }}
-              />
-            </div>
-          </div>
-          <div class="color-row__field color-row__field--label">
-            <label
-              class="color-row__label"
-              for="label-{statusKey}"
-            >
-              {MESSAGES.COLOR_LABEL}
-            </label>
+<div class="color-grid">
+  {#each STATUS_ORDER as statusKey (statusKey)}
+    {@const edit = getEdit(statusKey)}
+    {@const saving = savingKey === statusKey}
+    {@const changed = hasChanges(statusKey)}
+    {@const validHex = isValidHex(edit.colorHex)}
+    <div class="color-row">
+      <div
+        class="color-preview"
+        style="background-color: {edit.colorHex}"
+      ></div>
+      <div class="color-status">
+        {CARD_STATUS_LABELS[statusKey]}
+      </div>
+      <div class="color-inputs">
+        <div class="color-field">
+          <label
+            class="form-label"
+            for="hex-{statusKey}"
+          >
+            {MESSAGES.COLOR_HEX}
+          </label>
+          <div class="color-hex-group">
             <input
-              id="label-{statusKey}"
-              type="text"
-              class="input input--sm"
-              value={edit.label}
-              maxlength={50}
+              type="color"
+              class="color-picker"
+              value={edit.colorHex}
               oninput={(e: Event) => {
                 const target = e.target as HTMLInputElement;
                 const entry = editState.get(statusKey);
-                if (entry !== undefined) entry.label = target.value;
+                if (entry !== undefined) entry.colorHex = target.value;
+              }}
+            />
+            <input
+              id="hex-{statusKey}"
+              type="text"
+              class="form-input color-hex-input"
+              class:input-error={!validHex}
+              value={edit.colorHex}
+              maxlength={7}
+              placeholder="#10b981"
+              oninput={(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                const entry = editState.get(statusKey);
+                if (entry !== undefined) entry.colorHex = target.value;
               }}
             />
           </div>
         </div>
-        <button
-          type="button"
-          class="btn btn--primary btn--sm"
-          disabled={saving || !changed || !validHex}
-          onclick={() => {
-            void handleSaveColor(statusKey);
-          }}
-        >
-          {#if saving}
-            <i class="fas fa-spinner fa-spin"></i>
-          {:else}
-            <i class="fas fa-check"></i>
-          {/if}
-        </button>
+        <div class="color-field color-field--grow">
+          <label
+            class="form-label"
+            for="label-{statusKey}"
+          >
+            {MESSAGES.COLOR_LABEL}
+          </label>
+          <input
+            id="label-{statusKey}"
+            type="text"
+            class="form-input"
+            value={edit.label}
+            maxlength={50}
+            oninput={(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              const entry = editState.get(statusKey);
+              if (entry !== undefined) entry.label = target.value;
+            }}
+          />
+        </div>
       </div>
-    {/each}
-  </div>
+      <button
+        type="button"
+        class="btn btn-primary btn-sm btn-icon"
+        disabled={saving || !changed || !validHex}
+        onclick={() => {
+          void handleSaveColor(statusKey);
+        }}
+      >
+        {#if saving}
+          <i class="fas fa-spinner fa-spin"></i>
+        {:else}
+          <i class="fas fa-check"></i>
+        {/if}
+      </button>
+    </div>
+  {/each}
 </div>
 
 <!-- Reset Confirmation -->
 {#if showResetConfirm}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="modal-backdrop"
+    class="modal-overlay modal-overlay--active"
     onclick={() => {
       showResetConfirm = false;
     }}
@@ -266,7 +268,7 @@
   >
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
-      class="modal"
+      class="confirm-modal"
       role="alertdialog"
       aria-modal="true"
       tabindex="-1"
@@ -274,17 +276,15 @@
         e.stopPropagation();
       }}
     >
-      <div class="modal__header">
-        <i class="fas fa-undo modal__icon"></i>
-        <h3 class="modal__title">{MESSAGES.COLOR_RESET}</h3>
+      <div class="confirm-modal__icon">
+        <i class="fas fa-undo"></i>
       </div>
-      <div class="modal__body">
-        <p>{MESSAGES.COLOR_RESET_CONFIRM}</p>
-      </div>
-      <div class="modal__actions">
+      <h3 class="confirm-modal__title">{MESSAGES.COLOR_RESET}</h3>
+      <p class="confirm-modal__message">{MESSAGES.COLOR_RESET_CONFIRM}</p>
+      <div class="confirm-modal__actions">
         <button
           type="button"
-          class="btn btn--ghost"
+          class="confirm-modal__btn--cancel"
           onclick={() => {
             showResetConfirm = false;
           }}
@@ -293,7 +293,7 @@
         </button>
         <button
           type="button"
-          class="btn btn--primary"
+          class="btn btn-primary"
           disabled={resetting}
           onclick={() => {
             void handleResetColors();
@@ -310,30 +310,7 @@
 {/if}
 
 <style>
-  .color-config__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .color-config__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .color-config__desc {
-    color: var(--color-gray-500);
-    font-size: 0.8125rem;
-    margin-top: 0.25rem;
-  }
-
-  .color-config__grid {
+  .color-grid {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -344,123 +321,66 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: var(--color-gray-50);
-    border-radius: var(--radius-md, 8px);
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
   }
 
-  .color-row__preview {
+  .color-preview {
     width: 2rem;
     height: 2rem;
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     flex-shrink: 0;
-    border: 2px solid var(--color-gray-200);
+    border: 2px solid var(--color-glass-border);
   }
 
-  .color-row__status {
+  .color-status {
     font-weight: 600;
     font-size: 0.875rem;
-    color: var(--color-gray-700);
+    color: var(--color-text-primary);
     min-width: 6rem;
   }
 
-  .color-row__inputs {
+  .color-inputs {
     display: flex;
     gap: 0.75rem;
     flex: 1;
     min-width: 0;
   }
 
-  .color-row__field {
+  .color-field {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .color-row__field--label {
+  .color-field--grow {
     flex: 1;
     min-width: 0;
   }
 
-  .color-row__label {
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-    font-weight: 500;
-  }
-
-  .color-row__hex-group {
+  .color-hex-group {
     display: flex;
     align-items: center;
     gap: 0.375rem;
   }
 
-  .color-row__picker {
+  .color-picker {
     width: 2rem;
     height: 2rem;
     padding: 0;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-sm, 4px);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     flex-shrink: 0;
   }
 
-  .color-row__hex-input {
+  .color-hex-input {
     width: 6rem;
     font-family: monospace;
   }
 
-  /* Modal */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgb(0 0 0 / 50%);
-    padding: 1rem;
-  }
-
-  .modal {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 10%));
-    max-width: 420px;
-    width: 100%;
-    overflow: hidden;
-  }
-
-  .modal__header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--color-gray-200);
-  }
-
-  .modal__icon {
-    font-size: 1.25rem;
-    color: var(--color-blue-500, #3b82f6);
-  }
-
-  .modal__title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--color-gray-900);
-  }
-
-  .modal__body {
-    padding: 1.25rem 1.5rem;
-    font-size: 0.875rem;
-    color: var(--color-gray-600);
-  }
-
-  .modal__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--color-gray-200);
-    background: var(--color-gray-50);
+  .input-error {
+    border-color: var(--color-danger);
   }
 
   @media (width <= 768px) {
@@ -468,7 +388,7 @@
       flex-wrap: wrap;
     }
 
-    .color-row__inputs {
+    .color-inputs {
       flex-direction: column;
       width: 100%;
     }

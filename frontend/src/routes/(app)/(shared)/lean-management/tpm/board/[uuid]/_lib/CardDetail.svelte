@@ -107,13 +107,17 @@
   >
     <!-- Header -->
     <div class="card-detail__header">
-      <div class="card-detail__header-info">
+      <div class="flex items-center gap-2">
         <span
           class="card-detail__status-dot"
           style="background-color: {statusColor}"
         ></span>
-        <span class="card-detail__code">{card.cardCode}</span>
-        <span class="card-detail__status-label">
+        <span
+          class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
+        >
+          {card.cardCode}
+        </span>
+        <span class="text-xs text-(--color-text-muted)">
           {CARD_STATUS_LABELS[card.status]}
         </span>
       </div>
@@ -173,7 +177,7 @@
             <span class="card-detail__value">
               <i
                 class="fas fa-lock"
-                style="color: var(--color-warning, #f59e0b)"
+                style="color: var(--color-warning)"
               ></i>
               Ja
             </span>
@@ -266,8 +270,8 @@
     width: 100%;
     max-width: 420px;
     height: 100%;
-    background: var(--color-white, #fff);
-    box-shadow: var(--shadow-xl, -4px 0 20px rgb(0 0 0 / 15%));
+    background: var(--glass-bg);
+    box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
     animation: panel-slide-in 0.25s ease;
@@ -289,14 +293,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--color-gray-200);
+    border-bottom: 1px solid var(--color-glass-border);
     flex-shrink: 0;
-  }
-
-  .card-detail__header-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 
   .card-detail__status-dot {
@@ -304,20 +302,6 @@
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
-  }
-
-  .card-detail__code {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--color-gray-500);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .card-detail__status-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--color-gray-500);
   }
 
   .card-detail__close {
@@ -328,19 +312,19 @@
     height: 32px;
     border: none;
     background: none;
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     cursor: pointer;
-    color: var(--color-gray-400);
+    color: var(--color-text-muted);
     transition: background 0.15s ease;
   }
 
   .card-detail__close:hover {
-    background: var(--color-gray-100);
-    color: var(--color-gray-600);
+    background: var(--glass-bg-active);
+    color: var(--color-text-secondary);
   }
 
   .card-detail__close:focus-visible {
-    outline: 2px solid var(--color-primary-400);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 
@@ -348,7 +332,7 @@
   .card-detail__title {
     font-size: 1.125rem;
     font-weight: 700;
-    color: var(--color-gray-900);
+    color: var(--color-text-primary);
     padding: 0.75rem 1.25rem 0;
     margin: 0;
     flex-shrink: 0;
@@ -369,8 +353,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
-    background: var(--color-gray-50, #f9fafb);
-    border-radius: var(--radius-md, 8px);
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
     padding: 0.75rem;
   }
 
@@ -382,13 +366,13 @@
 
   .card-detail__label {
     font-size: 0.75rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-muted);
   }
 
   .card-detail__value {
     font-size: 0.75rem;
     font-weight: 500;
-    color: var(--color-gray-800);
+    color: var(--color-text-primary);
     text-align: right;
   }
 
@@ -400,7 +384,7 @@
   }
 
   .card-detail__section--action {
-    border-top: 1px solid var(--color-gray-200);
+    border-top: 1px solid var(--color-glass-border);
     padding-top: 1rem;
   }
 
@@ -410,30 +394,29 @@
     gap: 0.375rem;
     font-size: 0.813rem;
     font-weight: 600;
-    color: var(--color-gray-700);
+    color: var(--color-text-secondary);
     margin: 0;
   }
 
   .card-detail__description {
     font-size: 0.813rem;
-    color: var(--color-gray-700);
+    color: var(--color-text-secondary);
     line-height: 1.5;
     margin: 0;
     white-space: pre-wrap;
   }
 
   .card-detail__description--empty {
-    color: var(--color-gray-400);
+    color: var(--color-text-muted);
     font-style: italic;
   }
 
   .card-detail__location {
     font-size: 0.813rem;
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary);
     margin: 0;
   }
 
-  /* Responsive: full width on mobile */
   @media (width <= 640px) {
     .card-detail {
       max-width: 100%;

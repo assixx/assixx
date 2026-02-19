@@ -67,11 +67,13 @@
 </script>
 
 <div class="photo-upload">
-  <div class="photo-upload__header">
+  <div class="flex items-center justify-between">
     <h4 class="photo-upload__title">
       <i class="fas fa-camera"></i>
       {MESSAGES.PHOTO_HEADING}
-      <span class="photo-upload__count">{photos.length} / {MAX_PHOTOS}</span>
+      <span class="text-xs font-normal text-(--color-text-muted)"
+        >{photos.length} / {MAX_PHOTOS}</span
+      >
     </h4>
   </div>
 
@@ -103,24 +105,28 @@
         type="file"
         accept="image/jpeg,image/png,image/webp"
         onchange={handleFileSelect}
-        class="photo-upload__input"
+        class="hidden"
         disabled={uploading}
       />
     </label>
-    <span class="photo-upload__hint">{MESSAGES.PHOTO_MAX_SIZE}</span>
+    <span class="text-xs text-(--color-text-muted)"
+      >{MESSAGES.PHOTO_MAX_SIZE}</span
+    >
   {:else if photos.length >= MAX_PHOTOS}
-    <span class="photo-upload__limit">{MESSAGES.PHOTO_MAX_REACHED}</span>
+    <span class="text-xs text-(--color-text-muted) italic"
+      >{MESSAGES.PHOTO_MAX_REACHED}</span
+    >
   {/if}
 
   {#if uploading}
-    <span class="photo-upload__uploading">
+    <span class="flex items-center gap-1.5 text-sm text-(--color-primary)">
       <i class="fas fa-spinner fa-spin"></i>
       {MESSAGES.PHOTO_UPLOADING}
     </span>
   {/if}
 
   {#if error !== null}
-    <span class="photo-upload__error">
+    <span class="flex items-center gap-1.5 text-sm text-(--color-danger)">
       <i class="fas fa-exclamation-circle"></i>
       {error}
     </span>
@@ -134,29 +140,16 @@
     gap: 0.5rem;
   }
 
-  .photo-upload__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
   .photo-upload__title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 0.813rem;
     font-weight: 600;
-    color: var(--color-gray-700);
+    color: var(--color-text-secondary);
     margin: 0;
   }
 
-  .photo-upload__count {
-    font-size: 0.75rem;
-    font-weight: 400;
-    color: var(--color-gray-400);
-  }
-
-  /* Thumbnail grid */
   .photo-upload__grid {
     display: flex;
     flex-wrap: wrap;
@@ -167,9 +160,9 @@
     position: relative;
     width: 72px;
     height: 72px;
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     overflow: hidden;
-    border: 1px solid var(--color-gray-200);
+    border: 1px solid var(--color-glass-border);
   }
 
   .photo-upload__img {
@@ -190,54 +183,22 @@
     color: #fff;
   }
 
-  /* Add button (styled label) */
   .photo-upload__add {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     padding: 0.375rem 0.75rem;
-    border: 1px dashed var(--color-gray-300);
-    border-radius: var(--radius-md, 8px);
+    border: 1px dashed var(--color-glass-border);
+    border-radius: var(--radius-md);
     font-size: 0.813rem;
-    color: var(--color-gray-500);
+    color: var(--color-text-muted);
     cursor: pointer;
     transition: border-color 0.15s ease;
     align-self: flex-start;
   }
 
   .photo-upload__add:hover {
-    border-color: var(--color-primary-400);
-    color: var(--color-primary-600);
-  }
-
-  .photo-upload__input {
-    display: none;
-  }
-
-  .photo-upload__hint {
-    font-size: 0.688rem;
-    color: var(--color-gray-400);
-  }
-
-  .photo-upload__limit {
-    font-size: 0.75rem;
-    color: var(--color-gray-400);
-    font-style: italic;
-  }
-
-  .photo-upload__uploading {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.813rem;
-    color: var(--color-primary-600);
-  }
-
-  .photo-upload__error {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.813rem;
-    color: var(--color-danger, #ef4444);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * TPM Plan Table - Machine × Interval Matrix
+   * TPM Plan Table - Machine x Interval Matrix
    * @module lean-management/tpm/_lib/PlanTable
    *
    * Shows a visual matrix of machines and which intervals
@@ -46,161 +46,83 @@
   };
 </script>
 
-<div class="plan-table">
-  <div class="plan-table__header">
-    <h3 class="plan-table__title">
-      <i class="fas fa-th"></i>
+<div class="card">
+  <div class="card__header">
+    <h2 class="card__title">
+      <i class="fas fa-th mr-2"></i>
       {MESSAGES.PLAN_TABLE_TITLE}
-    </h3>
+    </h2>
   </div>
-
-  {#if activePlans.length === 0}
-    <div class="plan-table__empty">
-      <p>{MESSAGES.PLAN_TABLE_EMPTY}</p>
-    </div>
-  {:else}
-    <div class="table-responsive">
-      <table class="matrix-table">
-        <thead>
-          <tr>
-            <th class="matrix-table__machine-col">
-              {MESSAGES.PLAN_TABLE_MACHINE_COL}
-            </th>
-            {#each intervalColumns as col (col)}
-              <th
-                class="matrix-table__interval-col"
-                title={INTERVAL_LABELS[col]}
-              >
-                {shortLabels[col] ?? col}
-              </th>
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each activePlans as plan (plan.uuid)}
+  <div class="card__body">
+    {#if activePlans.length === 0}
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <i class="fas fa-th"></i>
+        </div>
+        <h3 class="empty-state__title">{MESSAGES.PLAN_TABLE_EMPTY}</h3>
+      </div>
+    {:else}
+      <div class="table-responsive">
+        <table class="data-table data-table--hover">
+          <thead>
             <tr>
-              <td class="matrix-table__machine-cell">
-                <a
-                  href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
-                  class="matrix-table__link"
-                >
-                  <i class="fas fa-cog"></i>
-                  {plan.machineName ?? '—'}
-                </a>
-              </td>
+              <th
+                scope="col"
+                class="text-left"
+              >
+                {MESSAGES.PLAN_TABLE_MACHINE_COL}
+              </th>
               {#each intervalColumns as col (col)}
-                <td class="matrix-table__cell">
-                  <span
-                    class="matrix-dot"
-                    class:matrix-dot--active={true}
-                    title="{INTERVAL_LABELS[col]}: aktiv"
-                  ></span>
-                </td>
+                <th
+                  scope="col"
+                  class="text-center"
+                  title={INTERVAL_LABELS[col]}
+                  style="width: 48px"
+                >
+                  {shortLabels[col] ?? col}
+                </th>
               {/each}
             </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
+          </thead>
+          <tbody>
+            {#each activePlans as plan (plan.uuid)}
+              <tr>
+                <td>
+                  <a
+                    href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
+                    class="inline-flex items-center gap-2 font-medium text-(--color-text-primary) no-underline hover:text-(--color-primary)"
+                  >
+                    <i class="fas fa-cog"></i>
+                    {plan.machineName ?? '—'}
+                  </a>
+                </td>
+                {#each intervalColumns as col (col)}
+                  <td class="text-center align-middle">
+                    <span
+                      class="matrix-dot matrix-dot--active"
+                      title="{INTERVAL_LABELS[col]}: aktiv"
+                    ></span>
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .plan-table {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-  }
-
-  .plan-table__header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--color-gray-200);
-  }
-
-  .plan-table__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .plan-table__empty {
-    padding: 2rem;
-    text-align: center;
-    color: var(--color-gray-500);
-    font-size: 0.875rem;
-  }
-
-  .table-responsive {
-    overflow-x: auto;
-  }
-
-  /* Matrix table */
-  .matrix-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.813rem;
-  }
-
-  .matrix-table th,
-  .matrix-table td {
-    padding: 0.75rem 0.5rem;
-    text-align: center;
-    border-bottom: 1px solid var(--color-gray-100);
-  }
-
-  .matrix-table thead th {
-    font-weight: 600;
-    color: var(--color-gray-600);
-    background: var(--color-gray-50);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-  }
-
-  .matrix-table__machine-col {
-    text-align: left;
-    min-width: 160px;
-  }
-
-  .matrix-table__interval-col {
-    width: 48px;
-  }
-
-  .matrix-table__machine-cell {
-    text-align: left;
-  }
-
-  .matrix-table__link {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--color-gray-700);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.15s;
-  }
-
-  .matrix-table__link:hover {
-    color: var(--color-blue-600);
-  }
-
-  .matrix-table__cell {
-    vertical-align: middle;
-  }
-
-  /* Matrix dot */
   .matrix-dot {
     display: inline-block;
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: var(--color-gray-200);
+    background: var(--glass-bg-active);
   }
 
   .matrix-dot--active {
-    background: var(--color-green-500, #10b981);
+    background: var(--color-success);
   }
 </style>

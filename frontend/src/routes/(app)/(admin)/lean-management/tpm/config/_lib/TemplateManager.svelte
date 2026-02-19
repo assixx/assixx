@@ -183,19 +183,23 @@
   }
 </script>
 
-<div class="tpl-mgr">
-  <div class="tpl-mgr__header">
+<div>
+  <div class="mb-6 flex items-start justify-between gap-4">
     <div>
-      <h3 class="tpl-mgr__title">
+      <h3
+        class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
+      >
         <i class="fas fa-copy"></i>
         {MESSAGES.TEMPLATE_TITLE}
       </h3>
-      <p class="tpl-mgr__desc">{MESSAGES.TEMPLATE_DESCRIPTION}</p>
+      <p class="mt-1 text-sm text-(--color-text-secondary)">
+        {MESSAGES.TEMPLATE_DESCRIPTION}
+      </p>
     </div>
     {#if !showForm}
       <button
         type="button"
-        class="btn btn--primary btn--sm"
+        class="btn btn-primary btn-sm"
         onclick={openCreateForm}
       >
         <i class="fas fa-plus"></i>
@@ -206,10 +210,12 @@
 
   <!-- Inline Form -->
   {#if showForm}
-    <div class="tpl-mgr__form-panel">
-      <h4 class="tpl-mgr__form-title">{formHeading}</h4>
+    <div class="tpl-form-panel">
+      <h4 class="mb-4 text-sm font-semibold text-(--color-text-secondary)">
+        {formHeading}
+      </h4>
       <form
-        class="tpl-form"
+        class="flex flex-col gap-4"
         onsubmit={(e: SubmitEvent) => {
           e.preventDefault();
           void handleSubmit();
@@ -225,8 +231,8 @@
           <input
             id="tpl-name"
             type="text"
-            class="input"
-            class:input--error={formName.length > 0 &&
+            class="form-input"
+            class:input-error={formName.length > 0 &&
               formName.trim().length === 0}
             maxlength={255}
             placeholder={MESSAGES.PH_TEMPLATE_NAME}
@@ -243,7 +249,7 @@
           </label>
           <textarea
             id="tpl-desc"
-            class="input textarea"
+            class="form-textarea"
             rows={3}
             maxlength={2000}
             placeholder={MESSAGES.PH_TEMPLATE_DESC}
@@ -251,25 +257,28 @@
           ></textarea>
         </div>
 
-        <div class="form-group form-group--toggle">
+        <div class="form-group">
           <label
-            class="toggle-label"
+            class="form-toggle"
             for="tpl-default"
           >
             <input
               id="tpl-default"
               type="checkbox"
-              class="toggle-input"
+              class="form-toggle__input"
               bind:checked={formIsDefault}
             />
-            <span class="toggle-text">{MESSAGES.TEMPLATE_IS_DEFAULT}</span>
+            <span class="form-toggle__slider"></span>
+            <span class="form-toggle__label"
+              >{MESSAGES.TEMPLATE_IS_DEFAULT}</span
+            >
           </label>
         </div>
 
-        <div class="tpl-form__actions">
+        <div class="flex justify-end gap-3 pt-2">
           <button
             type="button"
-            class="btn btn--ghost"
+            class="btn btn-cancel"
             onclick={closeForm}
             disabled={submitting}
           >
@@ -277,7 +286,7 @@
           </button>
           <button
             type="submit"
-            class="btn btn--primary"
+            class="btn btn-primary"
             disabled={submitting || !formValid}
           >
             {#if submitting}
@@ -294,30 +303,36 @@
 
   <!-- Template List -->
   {#if templates.length === 0 && !showForm}
-    <div class="tpl-mgr__empty">
-      <i class="fas fa-copy tpl-mgr__empty-icon"></i>
-      <p class="tpl-mgr__empty-title">{MESSAGES.TEMPLATE_EMPTY}</p>
-      <p class="tpl-mgr__empty-desc">{MESSAGES.TEMPLATE_EMPTY_DESC}</p>
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <i class="fas fa-copy"></i>
+      </div>
+      <h3 class="empty-state__title">{MESSAGES.TEMPLATE_EMPTY}</h3>
+      <p class="empty-state__description">{MESSAGES.TEMPLATE_EMPTY_DESC}</p>
     </div>
   {:else if templates.length > 0}
-    <div class="tpl-list">
+    <div class="flex flex-col gap-2">
       {#each templates as template (template.uuid)}
         <div class="tpl-item">
-          <div class="tpl-item__info">
-            <div class="tpl-item__name">
+          <div class="min-w-0 flex-1">
+            <div
+              class="flex items-center gap-2 text-sm font-semibold text-(--color-text-primary)"
+            >
               {template.name}
               {#if template.isDefault}
-                <span class="tpl-item__badge">Standard</span>
+                <span class="badge badge--info badge--sm">Standard</span>
               {/if}
             </div>
             {#if template.description}
-              <p class="tpl-item__desc">{template.description}</p>
+              <p class="mt-0.5 truncate text-xs text-(--color-text-muted)">
+                {template.description}
+              </p>
             {/if}
           </div>
-          <div class="tpl-item__actions">
+          <div class="flex shrink-0 gap-1">
             <button
               type="button"
-              class="btn btn--ghost btn--sm"
+              class="btn btn-primary btn-sm btn-icon"
               title={MESSAGES.BTN_EDIT}
               onclick={() => {
                 openEditForm(template);
@@ -327,7 +342,7 @@
             </button>
             <button
               type="button"
-              class="btn btn--ghost btn--sm btn--danger-text"
+              class="btn btn-danger btn-sm btn-icon"
               title={MESSAGES.BTN_DELETE}
               onclick={() => {
                 requestDelete(template);
@@ -346,7 +361,7 @@
 {#if showDeleteModal && deleteTarget !== null}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="modal-backdrop"
+    class="modal-overlay modal-overlay--active"
     onclick={cancelDelete}
     onkeydown={(e: KeyboardEvent) => {
       if (e.key === 'Escape') cancelDelete();
@@ -354,7 +369,7 @@
   >
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
-      class="modal"
+      class="confirm-modal confirm-modal--danger"
       role="alertdialog"
       aria-modal="true"
       tabindex="-1"
@@ -362,21 +377,22 @@
         e.stopPropagation();
       }}
     >
-      <div class="modal__header">
-        <i class="fas fa-exclamation-triangle modal__icon modal__icon--danger"
-        ></i>
-        <h3 class="modal__title">{MESSAGES.TEMPLATE_DELETE_TITLE}</h3>
+      <div class="confirm-modal__icon">
+        <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <div class="modal__body">
-        <p>{MESSAGES.TEMPLATE_DELETE_MESSAGE}</p>
-        <p class="modal__detail">
-          <strong>{deleteTarget.name}</strong>
-        </p>
-      </div>
-      <div class="modal__actions">
+      <h3 class="confirm-modal__title">{MESSAGES.TEMPLATE_DELETE_TITLE}</h3>
+      <p class="confirm-modal__message">
+        {MESSAGES.TEMPLATE_DELETE_MESSAGE}
+      </p>
+      <p
+        class="mx-6 mt-2 rounded-md bg-(--glass-bg-active) px-6 py-2 text-sm font-semibold text-(--color-text-primary)"
+      >
+        {deleteTarget.name}
+      </p>
+      <div class="confirm-modal__actions">
         <button
           type="button"
-          class="btn btn--ghost"
+          class="confirm-modal__btn--cancel"
           onclick={cancelDelete}
           disabled={submitting}
         >
@@ -384,7 +400,7 @@
         </button>
         <button
           type="button"
-          class="btn btn--danger"
+          class="confirm-modal__btn--danger"
           onclick={() => {
             void confirmDelete();
           }}
@@ -401,105 +417,12 @@
 {/if}
 
 <style>
-  .tpl-mgr__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .tpl-mgr__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-
-  .tpl-mgr__desc {
-    color: var(--color-gray-500);
-    font-size: 0.8125rem;
-    margin-top: 0.25rem;
-  }
-
-  /* Form panel */
-  .tpl-mgr__form-panel {
-    background: var(--color-gray-50);
-    border-radius: var(--radius-md, 8px);
+  .tpl-form-panel {
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
     padding: 1.25rem;
     margin-bottom: 1.25rem;
-    border: 1px solid var(--color-gray-200);
-  }
-
-  .tpl-mgr__form-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-    margin-bottom: 1rem;
-  }
-
-  .tpl-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .tpl-form__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding-top: 0.5rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  .form-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-  }
-
-  .form-group--toggle {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .toggle-input {
-    width: 1.125rem;
-    height: 1.125rem;
-    accent-color: var(--color-blue-600, #2563eb);
-    cursor: pointer;
-  }
-
-  .toggle-text {
-    font-size: 0.875rem;
-    color: var(--color-gray-700);
-  }
-
-  .textarea {
-    resize: vertical;
-    min-height: 4rem;
-  }
-
-  /* Template list */
-  .tpl-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    border: 1px solid var(--color-glass-border);
   }
 
   .tpl-item {
@@ -508,149 +431,16 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.75rem 1rem;
-    background: var(--color-gray-50);
-    border-radius: var(--radius-md, 8px);
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
     transition: background-color 0.15s;
   }
 
   .tpl-item:hover {
-    background: var(--color-gray-100);
+    background: var(--glass-bg-active);
   }
 
-  .tpl-item__info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .tpl-item__name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: var(--color-gray-800);
-  }
-
-  .tpl-item__badge {
-    display: inline-block;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-full, 9999px);
-    background: var(--color-blue-100, #dbeafe);
-    color: var(--color-blue-700, #1d4ed8);
-  }
-
-  .tpl-item__desc {
-    font-size: 0.8125rem;
-    color: var(--color-gray-500);
-    margin-top: 0.125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .tpl-item__actions {
-    display: flex;
-    gap: 0.25rem;
-    flex-shrink: 0;
-  }
-
-  /* Empty state */
-  .tpl-mgr__empty {
-    text-align: center;
-    padding: 2rem;
-    color: var(--color-gray-400);
-  }
-
-  .tpl-mgr__empty-icon {
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .tpl-mgr__empty-title {
-    font-weight: 600;
-    color: var(--color-gray-500);
-  }
-
-  .tpl-mgr__empty-desc {
-    font-size: 0.8125rem;
-    margin-top: 0.25rem;
-  }
-
-  /* Danger text variant */
-  :global(.btn--danger-text) {
-    color: var(--color-red-500, #ef4444);
-  }
-
-  :global(.btn--danger-text:hover) {
-    color: var(--color-red-700, #b91c1c);
-    background: var(--color-red-50, #fef2f2);
-  }
-
-  /* Modal */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgb(0 0 0 / 50%);
-    padding: 1rem;
-  }
-
-  .modal {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    box-shadow: var(--shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 10%));
-    max-width: 420px;
-    width: 100%;
-    overflow: hidden;
-  }
-
-  .modal__header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--color-gray-200);
-  }
-
-  .modal__icon {
-    font-size: 1.25rem;
-  }
-
-  .modal__icon--danger {
-    color: var(--color-red-500, #ef4444);
-  }
-
-  .modal__title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--color-gray-900);
-  }
-
-  .modal__body {
-    padding: 1.25rem 1.5rem;
-    font-size: 0.875rem;
-    color: var(--color-gray-600);
-  }
-
-  .modal__detail {
-    margin-top: 0.75rem;
-    padding: 0.625rem 0.75rem;
-    background: var(--color-gray-50);
-    border-radius: var(--radius-md, 8px);
-    color: var(--color-gray-800);
-  }
-
-  .modal__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--color-gray-200);
-    background: var(--color-gray-50);
+  .input-error {
+    border-color: var(--color-danger);
   }
 </style>

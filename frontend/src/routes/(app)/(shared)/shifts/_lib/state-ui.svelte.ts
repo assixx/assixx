@@ -3,15 +3,26 @@
 // Loading, dragging, edit mode, planning UI flags
 // =============================================================================
 
-function createUiState() {
-  let isLoading = $state(true); // true to prevent FOUC
-  let isDragging = $state(false);
-  let isEditMode = $state(false);
-  let isPlanLocked = $state(false);
-  let showPlanningUI = $state(false);
-  let showTpmEvents = $state(false);
-  let currentWeek = $state<Date>(new Date());
+let isLoading = $state(true); // true to prevent FOUC
+let isDragging = $state(false);
+let isEditMode = $state(false);
+let isPlanLocked = $state(false);
+let showPlanningUI = $state(false);
+let showTpmEvents = $state(false);
+let currentWeek = $state<Date>(new Date());
 
+/** Reset all UI flags to their default values */
+function resetUiDefaults(): void {
+  isLoading = false;
+  isDragging = false;
+  isEditMode = false;
+  isPlanLocked = false;
+  showPlanningUI = false;
+  showTpmEvents = false;
+  currentWeek = new Date();
+}
+
+function createUiState() {
   return {
     get isLoading() {
       return isLoading;
@@ -55,15 +66,7 @@ function createUiState() {
     setCurrentWeek: (v: Date) => {
       currentWeek = v;
     },
-    reset: (): void => {
-      isLoading = false;
-      isDragging = false;
-      isEditMode = false;
-      isPlanLocked = false;
-      showPlanningUI = false;
-      showTpmEvents = false;
-      currentWeek = new Date();
-    },
+    reset: resetUiDefaults,
   };
 }
 

@@ -55,135 +55,71 @@
   }
 </script>
 
-<div class="next-maintenance">
-  <h3 class="next-maintenance__title">
-    <i class="fas fa-clock"></i>
-    {MESSAGES.NEXT_MAINTENANCE_TITLE}
-  </h3>
-
-  {#if upcomingList.length === 0}
-    <div class="next-maintenance__empty">
-      <i class="fas fa-check-circle"></i>
-      <p>{MESSAGES.NEXT_MAINTENANCE_EMPTY}</p>
-    </div>
-  {:else}
-    <div class="next-maintenance__list">
-      {#each upcomingList as item (item.planUuid)}
-        <div
-          class="next-maintenance__card"
-          style="border-left: 4px solid {getColor('green')}"
-        >
-          <div class="next-maintenance__card-header">
-            <span class="next-maintenance__machine">
+<div class="card">
+  <div class="card__header">
+    <h2 class="card__title">
+      <i class="fas fa-clock mr-2"></i>
+      {MESSAGES.NEXT_MAINTENANCE_TITLE}
+    </h2>
+  </div>
+  <div class="card__body">
+    {#if upcomingList.length === 0}
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3 class="empty-state__title">{MESSAGES.NEXT_MAINTENANCE_EMPTY}</h3>
+      </div>
+    {:else}
+      <div class="flex flex-col gap-3">
+        {#each upcomingList as item (item.planUuid)}
+          <div
+            class="maint-card"
+            style="border-left: 4px solid {getColor('green')}"
+          >
+            <span
+              class="inline-flex items-center gap-1 text-sm font-semibold text-(--color-text-primary)"
+            >
               <i class="fas fa-cog"></i>
               {item.machineName}
             </span>
-          </div>
-          <div class="next-maintenance__card-body">
-            <p class="next-maintenance__plan-name">{item.planName}</p>
-            <div class="next-maintenance__details">
-              <span>
+            <p class="mt-1 text-xs text-(--color-text-secondary)">
+              {item.planName}
+            </p>
+            <div
+              class="mt-1 flex flex-wrap gap-3 text-xs text-(--color-text-muted)"
+            >
+              <span class="inline-flex items-center gap-1">
                 <i class="fas fa-calendar-day"></i>
                 {item.weekday}
               </span>
-              <span>
+              <span class="inline-flex items-center gap-1">
                 <i class="fas fa-redo"></i>
                 {formatInterval(item.repeatEvery)}
               </span>
               {#if item.time !== null}
-                <span>
+                <span class="inline-flex items-center gap-1">
                   <i class="fas fa-clock"></i>
                   {formatTime(item.time)}
                 </span>
               {/if}
             </div>
           </div>
-        </div>
-      {/each}
-    </div>
-  {/if}
+        {/each}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .next-maintenance {
-    background: var(--color-white, #fff);
-    border-radius: var(--radius-lg, 12px);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .next-maintenance__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-    margin-bottom: 1rem;
-  }
-
-  .next-maintenance__empty {
-    text-align: center;
-    padding: 2rem 1rem;
-    color: var(--color-gray-500);
-  }
-
-  .next-maintenance__empty i {
-    font-size: 1.5rem;
-    color: var(--color-green-500, #10b981);
-    margin-bottom: 0.5rem;
-  }
-
-  .next-maintenance__list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .next-maintenance__card {
-    background: var(--color-gray-50, #f9fafb);
-    border-radius: var(--radius-md, 8px);
+  .maint-card {
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
     padding: 0.75rem 1rem;
     transition: box-shadow 0.15s ease;
   }
 
-  .next-maintenance__card:hover {
+  .maint-card:hover {
     box-shadow: var(--shadow-sm);
-  }
-
-  .next-maintenance__card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.25rem;
-  }
-
-  .next-maintenance__machine {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: var(--color-gray-700);
-  }
-
-  .next-maintenance__plan-name {
-    font-size: 0.813rem;
-    color: var(--color-gray-600);
-    margin-bottom: 0.375rem;
-  }
-
-  .next-maintenance__details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-  }
-
-  .next-maintenance__details span {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
   }
 </style>

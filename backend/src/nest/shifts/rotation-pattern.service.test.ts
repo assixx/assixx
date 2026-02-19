@@ -240,6 +240,59 @@ describe('RotationPatternService', () => {
       const insertParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
       expect(insertParams?.[9]).toBe(0);
     });
+
+    it('should allow creating pattern when same name exists but is soft-deleted', async () => {
+      // Conflict check returns empty (is_active=1 filter excludes soft-deleted)
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 20 }]);
+      // getRotationPattern (re-fetch)
+      mockDb.query.mockResolvedValueOnce([createPatternRow({ id: 20 })]);
+
+      await expect(
+        service.createRotationPattern(
+          {
+            name: 'Previously Deleted',
+            patternType: 'alternate_fs',
+            patternConfig: {},
+            cycleLengthWeeks: 2,
+            startsAt: '2026-03-01',
+            isActive: true,
+          },
+          42,
+          1,
+        ),
+      ).resolves.toBeDefined();
+
+      // Verify the conflict check query filters by is_active = 1
+      const conflictSql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(conflictSql).toContain('is_active = 1');
+    });
+
+    it('should only check active patterns for name conflict', async () => {
+      // Simulate: no active pattern with same name found
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([{ id: 30 }]);
+      mockDb.query.mockResolvedValueOnce([createPatternRow({ id: 30 })]);
+
+      await service.createRotationPattern(
+        {
+          name: 'Team-Rotation 3',
+          patternType: 'alternate_fs',
+          patternConfig: {},
+          cycleLengthWeeks: 1,
+          startsAt: '2026-04-01',
+          isActive: true,
+        },
+        42,
+        1,
+      );
+
+      // Conflict check must pass tenant_id and filter is_active
+      const conflictParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(conflictParams?.[0]).toBe('Team-Rotation 3');
+      expect(conflictParams?.[1]).toBe(42);
+    });
   });
 
   // =============================================================

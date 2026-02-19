@@ -384,7 +384,7 @@
     display: flex;
     position: relative;
     flex-direction: column;
-    padding: var(--spacing-4);
+    padding-left: var(--spacing-4);
     overflow: visible;
   }
 
@@ -556,7 +556,10 @@
     display: grid;
     grid-template-rows: 0fr;
     overflow: hidden;
-    transition: grid-template-rows 0.25s ease;
+    transition:
+      grid-template-rows 0.25s ease,
+      max-height 0s 0.25s;
+    max-height: 0;
     pointer-events: none;
     visibility: hidden;
   }
@@ -565,13 +568,16 @@
     grid-template-rows: 1fr;
     transition:
       grid-template-rows 0.25s ease,
-      visibility 0s 0s;
+      visibility 0s 0s,
+      max-height 0s 0s;
+    max-height: none;
     pointer-events: auto;
     visibility: visible;
   }
 
   .submenu {
     min-height: 0; /* required for grid-template-rows: 0fr to work */
+    overflow: hidden; /* required for grid item to fully collapse below its padding */
     margin: 0 0 0 1.5rem;
     padding: 0.25rem 0 0.313rem 1rem;
     list-style: none;

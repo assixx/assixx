@@ -153,7 +153,7 @@
   }
 
   .kamishibai-card:focus-visible {
-    box-shadow: 0 0 0 3px var(--color-primary-400, #60a5fa);
+    box-shadow: 0 0 0 3px var(--color-primary);
   }
 
   /* Urgency pulse ring */
@@ -312,7 +312,7 @@
   }
 
   .kamishibai-card__detail-btn:focus-visible {
-    outline: 2px solid var(--color-primary-400, #60a5fa);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 

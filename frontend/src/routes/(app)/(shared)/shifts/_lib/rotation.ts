@@ -64,35 +64,35 @@ export interface ShiftGroups {
 // =============================================================================
 
 /**
- * Check if rotation pattern exists for a team
+ * Check if an active rotation pattern exists for a team.
+ * Backend GET /patterns does not support team_id filter,
+ * so we delegate to loadExistingPattern which filters client-side.
  */
 export async function checkRotationPatternExists(
   teamId: number | null,
 ): Promise<boolean> {
   if (teamId === null || teamId === 0) return false;
 
-  try {
-    const response = await apiClient.get<{ patterns?: RotationPattern[] }>(
-      `/shifts/rotation/patterns?team_id=${teamId}&active=true`,
-    );
-    return (response.patterns?.length ?? 0) > 0;
-  } catch (err) {
-    log.error({ err, teamId }, 'Error checking rotation pattern');
-    return false;
-  }
+  const existing = await loadExistingPattern(teamId);
+  return existing !== null;
 }
 
 /**
- * Load existing pattern for a team
+ * Load existing active pattern for a team.
+ * Backend GET /patterns does not support team_id filter,
+ * so we fetch all active patterns and filter client-side.
  */
 export async function loadExistingPattern(
   teamId: number,
 ): Promise<RotationPattern | null> {
   try {
     const response = await apiClient.get<{ patterns?: RotationPattern[] }>(
-      `/shifts/rotation/patterns?team_id=${teamId}&active=true`,
+      '/shifts/rotation/patterns',
     );
-    return response.patterns?.[0] ?? null;
+    return (
+      response.patterns?.find((p: RotationPattern) => p.teamId === teamId) ??
+      null
+    );
   } catch (err) {
     log.error({ err, teamId }, 'Error loading existing pattern');
     return null;

@@ -93,13 +93,12 @@
 </script>
 
 <!-- Filter bar -->
-<div class="plan-overview__controls">
-  <div class="plan-overview__filters">
+<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+  <div class="toggle-group">
     <button
       type="button"
-      class="btn btn--sm {statusFilter === 'all' ? 'btn--primary' : (
-        'btn--ghost'
-      )}"
+      class="toggle-group__btn"
+      class:active={statusFilter === 'all'}
       onclick={() => {
         onfilterchange('all');
       }}
@@ -108,9 +107,8 @@
     </button>
     <button
       type="button"
-      class="btn btn--sm {statusFilter === 'active' ? 'btn--primary' : (
-        'btn--ghost'
-      )}"
+      class="toggle-group__btn"
+      class:active={statusFilter === 'active'}
       onclick={() => {
         onfilterchange('active');
       }}
@@ -119,9 +117,8 @@
     </button>
     <button
       type="button"
-      class="btn btn--sm {statusFilter === 'archived' ? 'btn--primary' : (
-        'btn--ghost'
-      )}"
+      class="toggle-group__btn"
+      class:active={statusFilter === 'archived'}
       onclick={() => {
         onfilterchange('archived');
       }}
@@ -130,10 +127,10 @@
     </button>
   </div>
 
-  <div class="plan-overview__search">
+  <div class="min-w-50">
     <input
       type="text"
-      class="input input--sm"
+      class="form-input"
       placeholder={MESSAGES.SEARCH_PLACEHOLDER}
       value={searchQuery}
       oninput={handleSearchInput}
@@ -143,15 +140,19 @@
 
 <!-- Plan table -->
 {#if loading}
-  <div class="plan-overview__loading">
+  <div
+    class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)"
+  >
     <i class="fas fa-spinner fa-spin"></i>
     {MESSAGES.LOADING}
   </div>
 {:else if filteredPlans.length === 0}
-  <div class="plan-overview__empty">
-    <i class="fas fa-clipboard-list fa-3x"></i>
-    <h3>{MESSAGES.EMPTY_TITLE}</h3>
-    <p>
+  <div class="empty-state">
+    <div class="empty-state__icon">
+      <i class="fas fa-clipboard-list"></i>
+    </div>
+    <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
+    <p class="empty-state__description">
       {statusFilter === 'all' ?
         MESSAGES.EMPTY_DESCRIPTION
       : MESSAGES.EMPTY_FILTER_DESC}
@@ -159,25 +160,27 @@
   </div>
 {:else}
   <div class="table-responsive">
-    <table class="table">
+    <table class="data-table data-table--hover data-table--striped">
       <thead>
         <tr>
-          <th>{MESSAGES.TH_MACHINE}</th>
-          <th>{MESSAGES.TH_PLAN_NAME}</th>
-          <th>{MESSAGES.TH_INTERVAL}</th>
-          <th>{MESSAGES.TH_WEEKDAY}</th>
-          <th>{MESSAGES.TH_STATUS}</th>
-          <th>{MESSAGES.TH_CREATED}</th>
-          <th>{MESSAGES.TH_ACTIONS}</th>
+          <th scope="col">{MESSAGES.TH_MACHINE}</th>
+          <th scope="col">{MESSAGES.TH_PLAN_NAME}</th>
+          <th scope="col">{MESSAGES.TH_INTERVAL}</th>
+          <th scope="col">{MESSAGES.TH_WEEKDAY}</th>
+          <th scope="col">{MESSAGES.TH_STATUS}</th>
+          <th scope="col">{MESSAGES.TH_CREATED}</th>
+          <th scope="col">{MESSAGES.TH_ACTIONS}</th>
         </tr>
       </thead>
       <tbody>
         {#each filteredPlans as plan (plan.uuid)}
           {@const badge = getStatusBadge(plan.isActive)}
           <tr>
-            <td class="plan-overview__cell--machine">
-              <i class="fas fa-cog"></i>
-              {plan.machineName ?? '—'}
+            <td>
+              <span class="inline-flex items-center gap-2 font-medium">
+                <i class="fas fa-cog"></i>
+                {plan.machineName ?? '—'}
+              </span>
             </td>
             <td>{plan.name}</td>
             <td>
@@ -193,24 +196,33 @@
               <span class="badge {badge.cls} badge--sm">{badge.label}</span>
             </td>
             <td>{formatDate(plan.createdAt)}</td>
-            <td class="plan-overview__actions">
-              <a
-                href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
-                class="btn btn--ghost btn--sm"
-                title={MESSAGES.BTN_EDIT}
-              >
-                <i class="fas fa-edit"></i>
-              </a>
-              <button
-                type="button"
-                class="btn btn--ghost btn--sm btn--danger"
-                title={MESSAGES.BTN_DELETE}
-                onclick={() => {
-                  ondelete(plan);
-                }}
-              >
-                <i class="fas fa-trash"></i>
-              </button>
+            <td>
+              <div class="flex gap-1">
+                <a
+                  href={resolvePath(`/lean-management/tpm/cards/${plan.uuid}`)}
+                  class="btn btn-primary btn-sm btn-icon"
+                  title="Karten verwalten"
+                >
+                  <i class="fas fa-th"></i>
+                </a>
+                <a
+                  href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
+                  class="btn btn-primary btn-sm btn-icon"
+                  title={MESSAGES.BTN_EDIT}
+                >
+                  <i class="fas fa-edit"></i>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm btn-icon"
+                  title={MESSAGES.BTN_DELETE}
+                  onclick={() => {
+                    ondelete(plan);
+                  }}
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         {/each}
@@ -220,10 +232,12 @@
 
   <!-- Pagination -->
   {#if totalPages > 1}
-    <div class="plan-overview__pagination">
+    <div
+      class="mt-4 flex items-center justify-center gap-4 border-t border-(--color-glass-border) pt-4"
+    >
       <button
         type="button"
-        class="btn btn--ghost btn--sm"
+        class="btn btn-primary btn-sm btn-icon"
         disabled={currentPage <= 1}
         onclick={() => {
           onpagechange(currentPage - 1);
@@ -232,12 +246,12 @@
       >
         <i class="fas fa-chevron-left"></i>
       </button>
-      <span class="plan-overview__page-info">
+      <span class="text-sm text-(--color-text-secondary)">
         Seite {currentPage} von {totalPages}
       </span>
       <button
         type="button"
-        class="btn btn--ghost btn--sm"
+        class="btn btn-primary btn-sm btn-icon"
         disabled={currentPage >= totalPages}
         onclick={() => {
           onpagechange(currentPage + 1);
@@ -249,74 +263,3 @@
     </div>
   {/if}
 {/if}
-
-<style>
-  .plan-overview__controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .plan-overview__filters {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .plan-overview__search {
-    min-width: 200px;
-  }
-
-  .plan-overview__loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 3rem;
-    color: var(--color-gray-500);
-  }
-
-  .plan-overview__empty {
-    text-align: center;
-    padding: 3rem;
-    color: var(--color-gray-500);
-  }
-
-  .plan-overview__empty h3 {
-    margin-top: 1rem;
-    color: var(--color-gray-700);
-  }
-
-  .plan-overview__empty p {
-    margin-top: 0.5rem;
-  }
-
-  .plan-overview__cell--machine {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-  }
-
-  .plan-overview__actions {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .plan-overview__pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-gray-200);
-  }
-
-  .plan-overview__page-info {
-    font-size: 0.875rem;
-    color: var(--color-gray-600);
-  }
-</style>
