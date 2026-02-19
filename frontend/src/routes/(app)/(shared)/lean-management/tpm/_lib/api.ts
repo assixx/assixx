@@ -110,16 +110,14 @@ export async function fetchColors(): Promise<TpmColorConfigEntry[]> {
 export async function createExecution(
   payload: CreateExecutionPayload,
 ): Promise<TpmExecution> {
-  return (await apiClient.post('/tpm/executions', payload));
+  return await apiClient.post('/tpm/executions', payload);
 }
 
 /** Get a single execution */
 export async function fetchExecution(
   executionUuid: string,
 ): Promise<TpmExecution> {
-  return (await apiClient.get(
-    `/tpm/executions/${executionUuid}`,
-  ));
+  return await apiClient.get(`/tpm/executions/${executionUuid}`);
 }
 
 /** Fetch pending approvals */
@@ -138,10 +136,10 @@ export async function respondToExecution(
   executionUuid: string,
   payload: RespondExecutionPayload,
 ): Promise<TpmExecution> {
-  return (await apiClient.post(
+  return await apiClient.post(
     `/tpm/executions/${executionUuid}/respond`,
     payload,
-  ));
+  );
 }
 
 // =============================================================================
@@ -155,10 +153,10 @@ export async function uploadPhoto(
 ): Promise<TpmExecutionPhoto> {
   const formData = new FormData();
   formData.append('file', file);
-  return (await apiClient.post(
+  return await apiClient.post(
     `/tpm/executions/${executionUuid}/photos`,
     formData,
-  ));
+  );
 }
 
 /** Fetch photos for an execution */

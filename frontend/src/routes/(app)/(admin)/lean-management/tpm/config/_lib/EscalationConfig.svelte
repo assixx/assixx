@@ -67,9 +67,7 @@
     } catch (err: unknown) {
       logApiError('updateEscalation', err);
       const msg =
-        err instanceof Error
-          ? err.message
-          : MESSAGES.ERROR_ESCALATION_UPDATE;
+        err instanceof Error ? err.message : MESSAGES.ERROR_ESCALATION_UPDATE;
       showErrorAlert(msg);
     } finally {
       saving = false;
@@ -102,7 +100,10 @@
   >
     <!-- Hours -->
     <div class="form-group">
-      <label class="form-label" for="esc-hours">
+      <label
+        class="form-label"
+        for="esc-hours"
+      >
         {MESSAGES.ESCALATION_HOURS}
       </label>
       <input
@@ -119,7 +120,10 @@
 
     <!-- Notify Team Lead -->
     <div class="form-group form-group--toggle">
-      <label class="toggle-label" for="esc-team">
+      <label
+        class="toggle-label"
+        for="esc-team"
+      >
         <input
           id="esc-team"
           type="checkbox"
@@ -132,7 +136,10 @@
 
     <!-- Notify Department Lead -->
     <div class="form-group form-group--toggle">
-      <label class="toggle-label" for="esc-dept">
+      <label
+        class="toggle-label"
+        for="esc-dept"
+      >
         <input
           id="esc-dept"
           type="checkbox"

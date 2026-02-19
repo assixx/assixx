@@ -1,8 +1,8 @@
 # Assixx Features & Overview
 
-> **Last Updated:** 2026-02-15
-> **Version:** 1.2.0
-> **Status:** Production Ready (10 of 11 main features live)
+> **Last Updated:** 2026-02-19
+> **Version:** 1.3.0
+> **Status:** Production Ready (11 of 12 main features live)
 
 ## Table of Contents
 
@@ -114,9 +114,29 @@
 - Core-Features (Dashboard, Profil, Settings) werden NIE gefiltert
 - Architektur: ADR-024
 
+#### 11. **TPM — Total Productive Maintenance** (NEW)
+
+- Kamishibai Board (visual card management per machine per interval)
+- Plan Management (create/edit/delete maintenance plans with intervals)
+- 8 Interval Types (daily, weekly, monthly, quarterly, semi-annual, annual, long-runner, custom)
+- 4-State Card Status Machine (green → red → yellow → overdue)
+- Execution Workflow (employee marks card as done, optional photo upload)
+- Approval Workflow (team lead approves/rejects, card transitions accordingly)
+- Escalation System (cron-based overdue detection with configurable threshold)
+- Slot Availability Assistant (optimal maintenance time slot suggestions)
+- Real-Time Notifications via SSE (due, overdue, approval required/result)
+- Shift Grid Integration (TPM maintenance dates as overlay toggle)
+- Machine History Bridge (approved executions → maintenance history)
+- Configuration UI (escalation settings, card colors, card templates)
+- Per-Tenant Color Customization (green/yellow/red/overdue colors)
+- Card Templates with JSONB Custom Fields
+- Time Estimates per Interval Type
+- 364 Tests (278 unit + 86 API)
+- Architecture: ADR-026
+
 ### In Development
 
-#### 10. **Survey Tool** (80% complete)
+#### 12. **Survey Tool** (80% complete)
 
 - Admin can Create Surveys
 - Multiple Choice and Free Text
@@ -138,6 +158,7 @@
 | Backup System       | Yes      | Yes       | Yes          | Live            |
 | Vacation Management | No       | Yes       | Yes          | Live            |
 | Feature-Gating      | Yes      | Yes       | Yes          | Live            |
+| TPM Wartung         | No       | Yes       | Yes          | Live            |
 | Survey Tool         | No       | Yes       | Yes          | In Development  |
 | Mobile App          | No       | No        | Yes          | Planned Q2/2025 |
 
@@ -233,7 +254,7 @@
 
 ### Q3 2025
 
-- [ ] TPM Calendar
+- [x] TPM Calendar → **Live als "TPM Wartung" (2026-02-19, ADR-026)**
 - [ ] QA Checklists
 - [ ] Extended Analytics
 - [ ] API v2

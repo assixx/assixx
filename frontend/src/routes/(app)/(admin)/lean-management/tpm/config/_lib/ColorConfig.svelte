@@ -84,9 +84,7 @@
     );
     const edit = editState.get(key);
     if (original === undefined || edit === undefined) return true;
-    return (
-      original.colorHex !== edit.colorHex || original.label !== edit.label
-    );
+    return original.colorHex !== edit.colorHex || original.label !== edit.label;
   }
 
   // ===========================================================================

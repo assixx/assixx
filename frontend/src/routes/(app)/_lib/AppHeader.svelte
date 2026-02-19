@@ -192,6 +192,10 @@
     min-height: 3.5rem;
   }
 
+  :global(html:not(.dark)) .header {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  }
+
   .header-content {
     display: flex;
     flex: 1;

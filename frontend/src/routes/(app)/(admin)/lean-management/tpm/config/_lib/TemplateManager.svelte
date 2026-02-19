@@ -51,9 +51,9 @@
 
   const isCreateMode = $derived(editingTemplate === null);
   const formHeading = $derived(
-    isCreateMode
-      ? MESSAGES.TEMPLATE_CREATE_TITLE
-      : MESSAGES.TEMPLATE_EDIT_TITLE,
+    isCreateMode ?
+      MESSAGES.TEMPLATE_CREATE_TITLE
+    : MESSAGES.TEMPLATE_EDIT_TITLE,
   );
   const formValid = $derived(formName.trim().length > 0);
 
@@ -216,7 +216,10 @@
         }}
       >
         <div class="form-group">
-          <label class="form-label" for="tpl-name">
+          <label
+            class="form-label"
+            for="tpl-name"
+          >
             {MESSAGES.TEMPLATE_NAME} *
           </label>
           <input
@@ -232,7 +235,10 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="tpl-desc">
+          <label
+            class="form-label"
+            for="tpl-desc"
+          >
             {MESSAGES.TEMPLATE_DESC}
           </label>
           <textarea
@@ -246,7 +252,10 @@
         </div>
 
         <div class="form-group form-group--toggle">
-          <label class="toggle-label" for="tpl-default">
+          <label
+            class="toggle-label"
+            for="tpl-default"
+          >
             <input
               id="tpl-default"
               type="checkbox"
@@ -274,9 +283,9 @@
             {#if submitting}
               <i class="fas fa-spinner fa-spin"></i>
             {/if}
-            {isCreateMode
-              ? MESSAGES.BTN_CREATE_TEMPLATE
-              : MESSAGES.BTN_UPDATE_TEMPLATE}
+            {isCreateMode ?
+              MESSAGES.BTN_CREATE_TEMPLATE
+            : MESSAGES.BTN_UPDATE_TEMPLATE}
           </button>
         </div>
       </form>

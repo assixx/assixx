@@ -7,6 +7,7 @@ import { tick } from 'svelte';
 
 import {
   fetchMachineAvailability,
+  fetchTpmMaintenanceDates,
   fetchShiftPlan,
   fetchRotationHistory,
   fetchRotationPatternById,
@@ -23,7 +24,7 @@ import {
 } from './data-loader';
 import { shiftsState } from './state.svelte';
 
-import type { RotationPatternType } from './types';
+import type { RotationPatternType, TpmMaintenanceEvent } from './types';
 
 // =============================================================================
 // NAVIGATION HELPER
@@ -143,16 +144,20 @@ export async function loadShiftPlan(): Promise<void> {
     // Update employees with fresh availability data for this week
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
 
-    // Load machine availability for the displayed week (if a machine is selected)
+    // Load machine availability + TPM events for the displayed week (if a machine is selected)
     if (machineId !== null && machineId !== 0) {
-      const availEntries = await fetchMachineAvailability(
-        machineId,
-        startDate,
-        endDate,
-      );
+      const emptyTpmMap = new Map<string, TpmMaintenanceEvent[]>();
+      const [availEntries, tpmEvents] = await Promise.all([
+        fetchMachineAvailability(machineId, startDate, endDate),
+        shiftsState.showTpmEvents ?
+          fetchTpmMaintenanceDates(machineId, startDate, endDate)
+        : Promise.resolve(emptyTpmMap),
+      ]);
       shiftsState.setMachineAvailability(availEntries);
+      shiftsState.setTpmEvents(tpmEvents);
     } else {
       shiftsState.clearMachineAvailability();
+      shiftsState.clearTpmEvents();
     }
 
     // Load pattern type from rotation history

@@ -355,6 +355,12 @@
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
             machineAvailabilityMap={shiftsState.machineAvailabilityMap}
+            tpmEventsMap={shiftsState.tpmEventsMap}
+            showTpmEvents={shiftsState.showTpmEvents}
+            ontoggleTpmEvents={(show: boolean) => {
+              shiftsState.setShowTpmEvents(show);
+              if (show) void loadShiftPlan();
+            }}
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}

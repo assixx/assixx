@@ -48,6 +48,7 @@ ADRs document important architectural decisions:
 | [ADR-023](./ADR-023-vacation-request-architecture.md)       | Vacation Request System Architecture | Accepted | 2026-02-13 |
 | [ADR-024](./ADR-024-frontend-feature-guards.md)             | Frontend Feature Guards              | Accepted | 2026-02-15 |
 | [ADR-025](./ADR-025-pg-stat-statements-query-monitoring.md) | pg_stat_statements Query Monitoring  | Accepted | 2026-02-16 |
+| [ADR-026](./ADR-026-tpm-architecture.md)                    | TPM Architecture                     | Accepted | 2026-02-19 |
 
 ## Template
 

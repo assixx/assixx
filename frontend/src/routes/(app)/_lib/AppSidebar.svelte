@@ -574,7 +574,6 @@
     min-height: 0; /* required for grid-template-rows: 0fr to work */
     margin: 0 0 0 1.5rem;
     padding: 0.25rem 0 0.313rem 1rem;
-    border-left: 1px solid var(--color-glass-border-hover);
     list-style: none;
   }
 
@@ -603,11 +602,26 @@
   .submenu-item::before {
     content: '';
     position: absolute;
-    top: 50%;
+    top: 0;
     left: -1rem;
     width: 0.625rem;
-    height: 1px;
-    background: var(--color-glass-border-hover);
+    height: 50%;
+    border-left: 1px solid var(--color-glass-border-hover);
+    border-bottom: 1px solid var(--color-glass-border-hover);
+    border-bottom-left-radius: 6px;
+  }
+
+  .submenu-item::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -1rem;
+    height: calc(50% + 0.125rem);
+    border-left: 1px solid var(--color-glass-border-hover);
+  }
+
+  .submenu-item:last-child::after {
+    display: none;
   }
 
   .submenu-link {

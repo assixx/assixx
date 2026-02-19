@@ -16,6 +16,7 @@ import type {
   Department,
   Machine,
   MachineAvailabilityEntry,
+  TpmMaintenanceEvent,
   Team,
   TeamMember,
   Employee,
@@ -316,6 +317,112 @@ export async function fetchMachineAvailability(
     log.error({ err }, 'Error loading machine availability');
     return [];
   }
+}
+
+// =============================================================================
+// TPM MAINTENANCE EVENTS (for shift cell visual overlay)
+// =============================================================================
+
+/** API response shape for a TPM plan (subset of fields needed) */
+interface TpmPlanApiResponse {
+  uuid: string;
+  machineId: number;
+  machineName?: string;
+  name: string;
+  baseWeekday: number;
+  baseRepeatEvery: number;
+  baseTime: string | null;
+  createdAt: string;
+}
+
+/**
+ * Convert TPM weekday (0=Mon...6=Sun) to JS Date weekday (0=Sun...6=Sat).
+ */
+function tpmWeekdayToJs(tpmWeekday: number): number {
+  return tpmWeekday === 6 ? 0 : tpmWeekday + 1;
+}
+
+/**
+ * Check whether a given date falls on a plan's maintenance cycle.
+ * Uses plan.createdAt as the cycle reference point.
+ */
+function isMaintenanceDate(date: Date, plan: TpmPlanApiResponse): boolean {
+  const jsWeekday = tpmWeekdayToJs(plan.baseWeekday);
+  if (date.getDay() !== jsWeekday) return false;
+  if (plan.baseRepeatEvery <= 1) return true;
+
+  const refDate = new Date(plan.createdAt);
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeksDiff = Math.round(
+    (date.getTime() - refDate.getTime()) / msPerWeek,
+  );
+  return weeksDiff >= 0 && weeksDiff % plan.baseRepeatEvery === 0;
+}
+
+/** Build a TpmMaintenanceEvent from a plan API response */
+function planToEvent(plan: TpmPlanApiResponse): TpmMaintenanceEvent {
+  return {
+    planUuid: plan.uuid,
+    planName: plan.name,
+    machineName: plan.machineName ?? `Maschine #${plan.machineId}`,
+    baseTime: plan.baseTime,
+  };
+}
+
+/** Add a TPM event to the date→events map */
+function addEventToMap(
+  eventsMap: Map<string, TpmMaintenanceEvent[]>,
+  dateKey: string,
+  event: TpmMaintenanceEvent,
+): void {
+  const existing = eventsMap.get(dateKey);
+  if (existing !== undefined) {
+    existing.push(event);
+  } else {
+    eventsMap.set(dateKey, [event]);
+  }
+}
+
+/**
+ * Fetch TPM plans and build a date→events map for a given week.
+ * Filters plans by machineId and calculates which dates have maintenance.
+ */
+export async function fetchTpmMaintenanceDates(
+  machineId: number,
+  startDate: string,
+  endDate: string,
+): Promise<Map<string, TpmMaintenanceEvent[]>> {
+  const eventsMap = new Map<string, TpmMaintenanceEvent[]>();
+
+  try {
+    const response = await apiClient.get<{
+      data: TpmPlanApiResponse[];
+      total: number;
+    }>('/tpm/plans?page=1&limit=100');
+
+    const plans = response.data.filter(
+      (p: TpmPlanApiResponse) => p.machineId === machineId,
+    );
+
+    if (plans.length === 0) return eventsMap;
+
+    const end = new Date(endDate);
+    const cursor = new Date(startDate);
+
+    while (cursor <= end) {
+      const dateKey = cursor.toISOString().split('T')[0] ?? '';
+      for (const plan of plans) {
+        if (isMaintenanceDate(cursor, plan)) {
+          addEventToMap(eventsMap, dateKey, planToEvent(plan));
+        }
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  } catch (err) {
+    log.error({ err }, 'Error loading TPM maintenance dates');
+  }
+
+  return eventsMap;
 }
 
 // =============================================================================

@@ -18,6 +18,7 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { TpmCardStatusService } from './tpm-card-status.service.js';
 import type { TpmExecutionJoinRow } from './tpm-executions.helpers.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
+import type { TpmNotificationService } from './tpm-notification.service.js';
 import type { TpmCardExecutionPhotoRow, TpmCardRow } from './tpm.types.js';
 
 // =============================================================
@@ -43,6 +44,13 @@ function createMockActivityLogger() {
   return {
     logCreate: vi.fn().mockResolvedValue(undefined),
     logUpdate: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function createMockNotificationService() {
+  return {
+    notifyMaintenanceCompleted: vi.fn(),
+    notifyApprovalRequired: vi.fn(),
   };
 }
 
@@ -130,6 +138,7 @@ describe('TpmExecutionsService', () => {
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockCardStatusService: ReturnType<typeof createMockCardStatusService>;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+  let mockNotificationService: ReturnType<typeof createMockNotificationService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -137,6 +146,7 @@ describe('TpmExecutionsService', () => {
     mockClient = { query: vi.fn() };
     mockCardStatusService = createMockCardStatusService();
     mockActivityLogger = createMockActivityLogger();
+    mockNotificationService = createMockNotificationService();
 
     mockDb.tenantTransaction.mockImplementation(
       async (callback: (client: typeof mockClient) => Promise<unknown>) => {
@@ -148,6 +158,7 @@ describe('TpmExecutionsService', () => {
       mockDb as unknown as DatabaseService,
       mockCardStatusService as unknown as TpmCardStatusService,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockNotificationService as unknown as TpmNotificationService,
     );
   });
 

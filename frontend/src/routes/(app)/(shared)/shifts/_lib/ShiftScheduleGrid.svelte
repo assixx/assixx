@@ -12,7 +12,7 @@
   import { FULL_DAY_NAMES, SHIFT_TYPES, SHIFT_TIMES } from './constants';
   import { formatDate, getEmployeeDisplayName } from './utils';
 
-  import type { Employee, ShiftDetailData } from './types';
+  import type { Employee, ShiftDetailData, TpmMaintenanceEvent } from './types';
 
   /** Machine availability statuses that should be shown in the legend */
   const LEGEND_STATUSES: MachineAvailabilityStatus[] = [
@@ -35,6 +35,15 @@
 
     /** Machine availability: date (YYYY-MM-DD) → status string */
     machineAvailabilityMap: Map<string, string>;
+
+    /** TPM maintenance events: date (YYYY-MM-DD) → events for that day */
+    tpmEventsMap: Map<string, TpmMaintenanceEvent[]>;
+
+    /** Whether TPM events toggle is active */
+    showTpmEvents: boolean;
+
+    /** Toggle TPM events on/off */
+    ontoggleTpmEvents: (show: boolean) => void;
 
     // Data access callbacks
     getShiftEmployees: (dateKey: string, shiftType: string) => number[];
@@ -62,6 +71,9 @@
     isEditMode,
     currentPlanId,
     machineAvailabilityMap,
+    tpmEventsMap,
+    showTpmEvents,
+    ontoggleTpmEvents,
     getShiftEmployees,
     getEmployeeById,
     getShiftDetail,
@@ -135,6 +147,19 @@
           >
         </div>
       {/each}
+
+      <!-- TPM Toggle -->
+      <label class="tpm-toggle">
+        <input
+          type="checkbox"
+          checked={showTpmEvents}
+          onchange={(e) => {
+            ontoggleTpmEvents((e.target as HTMLInputElement).checked);
+          }}
+        />
+        <span class="tpm-toggle-icon">&#9881;</span>
+        <span class="machine-avail-legend-label">Wartungstermine</span>
+      </label>
     </div>
   </div>
 
@@ -187,6 +212,26 @@
               class="machine-avail-dot avail-{availStatus}"
               title={MACHINE_AVAILABILITY_LABELS[statusKey]}
             ></span>
+          {/if}
+
+          <!-- TPM maintenance blocks -->
+          {#if showTpmEvents}
+            {@const tpmEvents = tpmEventsMap.get(dateKey)}
+            {#if tpmEvents !== undefined}
+              {#each tpmEvents as event (event.planUuid)}
+                <div
+                  class="tpm-block"
+                  title="{event.planName} — {event.machineName}"
+                >
+                  <span class="tpm-block-icon">&#9881;</span>
+                  <span class="tpm-block-label">TPM</span>
+                  <span class="tpm-block-machine">{event.machineName}</span>
+                  {#if event.baseTime !== null}
+                    <span class="tpm-block-time">{event.baseTime}</span>
+                  {/if}
+                </div>
+              {/each}
+            {/if}
           {/if}
 
           <div class="employee-assignment">
@@ -533,6 +578,74 @@ Beispiele:
   .machine-avail-legend-label {
     color: var(--text-secondary);
     font-weight: 500;
+  }
+
+  /* TPM Toggle in legend */
+  .tpm-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    cursor: pointer;
+    margin-left: var(--spacing-4);
+    padding-left: var(--spacing-4);
+    border-left: 1px solid var(--color-glass-border);
+
+    font-size: 14px;
+  }
+
+  .tpm-toggle input[type='checkbox'] {
+    cursor: pointer;
+    accent-color: var(--primary-color);
+    width: 16px;
+    height: 16px;
+  }
+
+  .tpm-toggle-icon {
+    color: var(--primary-color);
+    font-size: 16px;
+  }
+
+  /* TPM Block inside shift cell */
+  .tpm-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+
+    margin: 2px 4px;
+    border: 1px solid rgb(99 102 241 / 40%);
+    border-radius: var(--radius-md);
+
+    background: rgb(99 102 241 / 12%);
+    padding: 3px 6px;
+
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .tpm-block-icon {
+    color: rgb(99 102 241);
+    font-size: 12px;
+  }
+
+  .tpm-block-label {
+    color: rgb(99 102 241);
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .tpm-block-machine {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 11px;
+  }
+
+  .tpm-block-time {
+    color: var(--text-secondary);
+    font-size: 10px;
   }
 
   .shift-cell.week-2-cell {

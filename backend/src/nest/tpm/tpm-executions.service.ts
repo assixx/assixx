@@ -26,6 +26,8 @@ import {
   mapExecutionRowToApi,
   mapPhotoRowToApi,
 } from './tpm-executions.helpers.js';
+import type { TpmNotificationCard } from './tpm-notification.service.js';
+import { TpmNotificationService } from './tpm-notification.service.js';
 import type {
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
@@ -69,6 +71,7 @@ export class TpmExecutionsService {
     private readonly db: DatabaseService,
     private readonly cardStatusService: TpmCardStatusService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly notificationService: TpmNotificationService,
   ) {}
 
   /**
@@ -88,16 +91,20 @@ export class TpmExecutionsService {
     userId: number,
     dto: CompleteCardDto,
   ): Promise<TpmCardExecution> {
-    const { execution, machineId } = await this.db.tenantTransaction(
+    const { execution, card } = await this.db.tenantTransaction(
       async (client: PoolClient) => {
-        const card = await this.lockCardByUuid(client, tenantId, cardUuid);
+        const lockedCard = await this.lockCardByUuid(
+          client,
+          tenantId,
+          cardUuid,
+        );
 
-        this.validateDocumentation(card, dto.documentation);
+        this.validateDocumentation(lockedCard, dto.documentation);
 
         const completionResult = await this.cardStatusService.markCardCompleted(
           client,
           tenantId,
-          card.id,
+          lockedCard.id,
           userId,
         );
 
@@ -107,13 +114,13 @@ export class TpmExecutionsService {
         const result = await this.insertExecution(
           client,
           tenantId,
-          card.id,
+          lockedCard.id,
           userId,
           dto,
           approvalStatus,
         );
 
-        return { execution: result, machineId: card.machine_id };
+        return { execution: result, card: lockedCard };
       },
     );
 
@@ -121,10 +128,12 @@ export class TpmExecutionsService {
       tenantId,
       userId,
       'tpm_execution',
-      machineId,
+      card.machine_id,
       `TPM-Durchführung erstellt: Karte ${cardUuid}`,
       { executionUuid: execution.uuid, cardUuid },
     );
+
+    void this.notifyAfterExecution(tenantId, userId, card, execution);
 
     return execution;
   }
@@ -401,4 +410,71 @@ export class TpmExecutionsService {
     }
     return mapExecutionRowToApi(row);
   }
+
+  /**
+   * Fire-and-forget notification after execution creation.
+   * If approval required → notify approvers. Otherwise → notify completion.
+   */
+  private async notifyAfterExecution(
+    tenantId: number,
+    userId: number,
+    card: TpmCardRow,
+    execution: TpmCardExecution,
+  ): Promise<void> {
+    try {
+      const notificationCard = cardRowToNotification(card);
+
+      if (execution.approvalStatus === 'pending') {
+        const approverIds = await this.resolveApproverIds(
+          tenantId,
+          card.machine_id,
+        );
+        this.notificationService.notifyApprovalRequired(
+          tenantId,
+          notificationCard,
+          execution.uuid,
+          approverIds,
+        );
+      } else {
+        this.notificationService.notifyMaintenanceCompleted(
+          tenantId,
+          notificationCard,
+          userId,
+        );
+      }
+    } catch {
+      // Non-critical — notification failure should not affect execution creation
+    }
+  }
+
+  /** Resolve team leads + admins who can approve for a machine */
+  private async resolveApproverIds(
+    tenantId: number,
+    machineId: number,
+  ): Promise<number[]> {
+    const rows = await this.db.query<{ user_id: number }>(
+      `SELECT DISTINCT t.team_lead_id AS user_id
+       FROM teams t
+       JOIN machine_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
+       WHERE mt.machine_id = $1 AND mt.tenant_id = $2
+         AND t.team_lead_id IS NOT NULL AND t.is_active = 1
+       UNION
+       SELECT id AS user_id FROM users
+       WHERE tenant_id = $2 AND has_full_access = 1 AND is_active = 1`,
+      [machineId, tenantId],
+    );
+    return rows.map((r: { user_id: number }) => r.user_id);
+  }
+}
+
+/** Convert a TpmCardRow to TpmNotificationCard (module-level helper) */
+function cardRowToNotification(card: TpmCardRow): TpmNotificationCard {
+  return {
+    uuid: card.uuid,
+    cardCode: card.card_code,
+    title: card.title,
+    machineId: card.machine_id,
+    intervalType: card.interval_type,
+    status: card.status,
+  };
 }

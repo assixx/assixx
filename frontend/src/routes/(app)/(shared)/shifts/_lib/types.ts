@@ -377,3 +377,14 @@ export interface MachineAvailabilityEntry {
   endDate: string;
   notes: string | null;
 }
+
+/**
+ * TPM maintenance event for shift grid overlay.
+ * One entry per plan×date (a plan's baseWeekday matches a day in the week).
+ */
+export interface TpmMaintenanceEvent {
+  planUuid: string;
+  planName: string;
+  machineName: string;
+  baseTime: string | null;
+}

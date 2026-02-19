@@ -23,6 +23,7 @@ import type { DatabaseService } from '../database/database.service.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import type { TpmCardStatusService } from './tpm-card-status.service.js';
 import type { TpmExecutionJoinRow } from './tpm-executions.helpers.js';
+import type { TpmNotificationService } from './tpm-notification.service.js';
 import type { TpmCardExecutionRow } from './tpm.types.js';
 
 // =============================================================
@@ -32,10 +33,17 @@ import type { TpmCardExecutionRow } from './tpm.types.js';
 function createMockDb() {
   return {
     queryOne: vi.fn(),
+    query: vi.fn().mockResolvedValue(undefined),
     tenantTransaction: vi.fn(),
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
+
+function createMockNotificationService() {
+  return {
+    notifyApprovalResult: vi.fn(),
+  };
+}
 
 function createMockCardStatusService() {
   return {
@@ -107,6 +115,7 @@ describe('TpmApprovalService', () => {
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockCardStatusService: ReturnType<typeof createMockCardStatusService>;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+  let mockNotificationService: ReturnType<typeof createMockNotificationService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,6 +123,7 @@ describe('TpmApprovalService', () => {
     mockClient = { query: vi.fn() };
     mockCardStatusService = createMockCardStatusService();
     mockActivityLogger = createMockActivityLogger();
+    mockNotificationService = createMockNotificationService();
 
     mockDb.tenantTransaction.mockImplementation(
       async (callback: (client: typeof mockClient) => Promise<unknown>) => {
@@ -125,6 +135,7 @@ describe('TpmApprovalService', () => {
       mockDb as unknown as DatabaseService,
       mockCardStatusService as unknown as TpmCardStatusService,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockNotificationService as unknown as TpmNotificationService,
     );
   });
 
@@ -142,11 +153,20 @@ describe('TpmApprovalService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ can_approve: true }],
       });
-      // 3. resolveCardMachineId
+      // 3. resolveCardInfo (replaces resolveCardMachineId)
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ machine_id: 42 }],
+        rows: [
+          {
+            uuid: 'card-uuid-001',
+            card_code: 'TPM-C-001',
+            title: 'Ölstand prüfen',
+            machine_id: 42,
+            interval_type: 'weekly',
+            status: 'yellow',
+          },
+        ],
       });
-      // 4. UPDATE approval_status
+      // 4. updateApprovalStatus
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // 5. cardStatusService.approveCard → already mocked
       // 6. fetchExecution
@@ -205,8 +225,9 @@ describe('TpmApprovalService', () => {
       });
 
       const updateParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
-      expect(updateParams?.[0]).toBe(9);
-      expect(updateParams?.[1]).toBe('Sieht gut aus');
+      expect(updateParams?.[0]).toBe('approved');
+      expect(updateParams?.[1]).toBe(9);
+      expect(updateParams?.[2]).toBe('Sieht gut aus');
     });
 
     it('should throw NotFoundException when execution not found', async () => {
@@ -278,7 +299,7 @@ describe('TpmApprovalService', () => {
       });
 
       const updateParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
-      expect(updateParams?.[1]).toBeNull();
+      expect(updateParams?.[2]).toBeNull();
     });
   });
 
@@ -296,11 +317,20 @@ describe('TpmApprovalService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ can_approve: true }],
       });
-      // 3. resolveCardMachineId
+      // 3. resolveCardInfo (replaces resolveCardMachineId)
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ machine_id: 42 }],
+        rows: [
+          {
+            uuid: 'card-uuid-001',
+            card_code: 'TPM-C-001',
+            title: 'Ölstand prüfen',
+            machine_id: 42,
+            interval_type: 'weekly',
+            status: 'yellow',
+          },
+        ],
       });
-      // 4. UPDATE approval_status
+      // 4. updateApprovalStatus
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // 5. cardStatusService.rejectCard → already mocked
       // 6. fetchExecution
@@ -497,7 +527,16 @@ describe('TpmApprovalService', () => {
         rows: [{ can_approve: true }],
       });
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ machine_id: 42 }],
+        rows: [
+          {
+            uuid: 'card-uuid-001',
+            card_code: 'TPM-C-001',
+            title: 'Test',
+            machine_id: 42,
+            interval_type: 'weekly',
+            status: 'yellow',
+          },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({
@@ -510,7 +549,7 @@ describe('TpmApprovalService', () => {
       });
 
       const updateSql = mockClient.query.mock.calls[3]?.[0] as string;
-      expect(updateSql).toContain("approval_status = 'approved'");
+      expect(updateSql).toContain('approval_status');
       expect(updateSql).toContain('approved_by');
       expect(updateSql).toContain('approved_at');
       expect(updateSql).toContain('approval_note');
@@ -524,7 +563,16 @@ describe('TpmApprovalService', () => {
         rows: [{ can_approve: true }],
       });
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ machine_id: 42 }],
+        rows: [
+          {
+            uuid: 'card-uuid-001',
+            card_code: 'TPM-C-001',
+            title: 'Test',
+            machine_id: 42,
+            interval_type: 'weekly',
+            status: 'yellow',
+          },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({
@@ -542,7 +590,9 @@ describe('TpmApprovalService', () => {
       });
 
       const updateSql = mockClient.query.mock.calls[3]?.[0] as string;
-      expect(updateSql).toContain("approval_status = 'rejected'");
+      expect(updateSql).toContain('approval_status = $1');
+      const updateParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      expect(updateParams?.[0]).toBe('rejected');
     });
   });
 });

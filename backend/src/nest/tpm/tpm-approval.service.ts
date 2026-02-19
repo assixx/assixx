@@ -10,12 +10,14 @@
  *
  * Post-transaction side effects:
  *   - Activity logging (fire-and-forget)
+ *   - SSE notification to executor (fire-and-forget)
  *   - Bridge: approved execution → machine_maintenance_history (Step 2.11)
  */
 import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import type { PoolClient } from 'pg';
@@ -28,68 +30,65 @@ import {
   type TpmExecutionJoinRow,
   mapExecutionRowToApi,
 } from './tpm-executions.helpers.js';
+import type { TpmNotificationCard } from './tpm-notification.service.js';
+import { TpmNotificationService } from './tpm-notification.service.js';
 import type {
   TpmApprovalStatus,
   TpmCardExecution,
   TpmCardExecutionRow,
 } from './tpm.types.js';
 
+/** Card info resolved within the transaction for side effects */
+interface CardInfo {
+  machineId: number;
+  notification: TpmNotificationCard;
+}
+
 @Injectable()
 export class TpmApprovalService {
+  private readonly logger = new Logger(TpmApprovalService.name);
+
   constructor(
     private readonly db: DatabaseService,
     private readonly cardStatusService: TpmCardStatusService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly notificationService: TpmNotificationService,
   ) {}
 
-  /**
-   * Approve an execution (yellow → green).
-   *
-   * Transaction flow:
-   *   1. Lock execution row (FOR UPDATE)
-   *   2. Validate execution is pending
-   *   3. Validate user can approve (team lead or admin)
-   *   4. Update execution: approval_status → approved
-   *   5. Transition card: yellow → green (via cardStatusService)
-   */
+  /** Approve an execution (yellow → green) */
   async approveExecution(
     tenantId: number,
     executionUuid: string,
     approverId: number,
     dto: RespondExecutionDto,
   ): Promise<TpmCardExecution> {
-    const { result, machineId } = await this.db.tenantTransaction(
+    const { result, cardInfo } = await this.db.tenantTransaction(
       async (client: PoolClient) => {
         const execution = await this.lockPendingExecution(
           client,
           tenantId,
           executionUuid,
         );
-
         await this.validateApprover(
           client,
           tenantId,
           approverId,
           execution.card_id,
         );
-
-        const cardMachineId = await this.resolveCardMachineId(
+        const info = await this.resolveCardInfo(
           client,
           tenantId,
           execution.card_id,
         );
 
-        await client.query(
-          `UPDATE tpm_card_executions
-           SET approval_status = 'approved',
-               approved_by = $1,
-               approved_at = NOW(),
-               approval_note = $2,
-               updated_at = NOW()
-           WHERE id = $3 AND tenant_id = $4`,
-          [approverId, dto.approvalNote ?? null, execution.id, tenantId],
+        await this.updateApprovalStatus(
+          client,
+          tenantId,
+          execution.id,
+          approverId,
+          'approved',
+          dto,
         );
-
         await this.cardStatusService.approveCard(
           client,
           tenantId,
@@ -102,71 +101,55 @@ export class TpmApprovalService {
           tenantId,
           execution.id,
         );
-        return { result: fetched, machineId: cardMachineId };
+        return { result: fetched, cardInfo: info };
       },
     );
 
-    void this.activityLogger.logUpdate(
+    void this.fireApprovalEffects(
       tenantId,
       approverId,
-      'tpm_execution',
-      machineId,
-      `TPM-Durchführung freigegeben: ${executionUuid}`,
-      { approvalStatus: 'pending' },
-      { approvalStatus: 'approved' },
+      cardInfo,
+      executionUuid,
+      result,
     );
 
     return result;
   }
 
-  /**
-   * Reject an execution (yellow → red).
-   *
-   * Transaction flow:
-   *   1. Lock execution row (FOR UPDATE)
-   *   2. Validate execution is pending
-   *   3. Validate user can approve (team lead or admin)
-   *   4. Update execution: approval_status → rejected
-   *   5. Transition card: yellow → red (via cardStatusService)
-   */
+  /** Reject an execution (yellow → red) */
   async rejectExecution(
     tenantId: number,
     executionUuid: string,
     approverId: number,
     dto: RespondExecutionDto,
   ): Promise<TpmCardExecution> {
-    const { result, machineId } = await this.db.tenantTransaction(
+    const { result, cardInfo } = await this.db.tenantTransaction(
       async (client: PoolClient) => {
         const execution = await this.lockPendingExecution(
           client,
           tenantId,
           executionUuid,
         );
-
         await this.validateApprover(
           client,
           tenantId,
           approverId,
           execution.card_id,
         );
-
-        const cardMachineId = await this.resolveCardMachineId(
+        const info = await this.resolveCardInfo(
           client,
           tenantId,
           execution.card_id,
         );
 
-        await client.query(
-          `UPDATE tpm_card_executions
-           SET approval_status = 'rejected',
-               approved_by = $1,
-               approved_at = NOW(),
-               approval_note = $2,
-               updated_at = NOW()
-           WHERE id = $3 AND tenant_id = $4`,
-          [approverId, dto.approvalNote ?? null, execution.id, tenantId],
+        await this.updateApprovalStatus(
+          client,
+          tenantId,
+          execution.id,
+          approverId,
+          'rejected',
+          dto,
         );
-
         await this.cardStatusService.rejectCard(
           client,
           tenantId,
@@ -178,30 +161,23 @@ export class TpmApprovalService {
           tenantId,
           execution.id,
         );
-        return { result: fetched, machineId: cardMachineId };
+        return { result: fetched, cardInfo: info };
       },
     );
 
-    void this.activityLogger.logUpdate(
+    this.fireRejectionEffects(
       tenantId,
       approverId,
-      'tpm_execution',
-      machineId,
-      `TPM-Durchführung abgelehnt: ${executionUuid} — ${dto.approvalNote ?? ''}`,
-      { approvalStatus: 'pending' },
-      { approvalStatus: 'rejected' },
+      cardInfo,
+      executionUuid,
+      result,
+      dto,
     );
 
     return result;
   }
 
-  /**
-   * Check if a user can approve executions for a given card.
-   *
-   * Authorization chain:
-   *   1. User is team_lead_id of a team assigned to the card's machine
-   *   2. OR: User has has_full_access = 1 (admin)
-   */
+  /** Check if a user can approve executions for a given card */
   async canUserApprove(
     tenantId: number,
     userId: number,
@@ -228,13 +204,99 @@ export class TpmApprovalService {
   }
 
   // ============================================================================
-  // PRIVATE HELPERS
+  // SIDE EFFECTS (fire-and-forget)
   // ============================================================================
 
+  /** Log + notify + bridge after approval */
+  private async fireApprovalEffects(
+    tenantId: number,
+    approverId: number,
+    cardInfo: CardInfo,
+    executionUuid: string,
+    result: TpmCardExecution,
+  ): Promise<void> {
+    void this.activityLogger.logUpdate(
+      tenantId,
+      approverId,
+      'tpm_execution',
+      cardInfo.machineId,
+      `TPM-Durchführung freigegeben: ${executionUuid}`,
+      { approvalStatus: 'pending' },
+      { approvalStatus: 'approved' },
+    );
+
+    this.notificationService.notifyApprovalResult(
+      tenantId,
+      cardInfo.notification,
+      executionUuid,
+      result.executedBy,
+      true,
+    );
+
+    await this.bridgeToMaintenanceHistory(
+      tenantId,
+      cardInfo.machineId,
+      result.executedBy,
+      executionUuid,
+    );
+  }
+
+  /** Log + notify after rejection */
+  private fireRejectionEffects(
+    tenantId: number,
+    approverId: number,
+    cardInfo: CardInfo,
+    executionUuid: string,
+    result: TpmCardExecution,
+    dto: RespondExecutionDto,
+  ): void {
+    void this.activityLogger.logUpdate(
+      tenantId,
+      approverId,
+      'tpm_execution',
+      cardInfo.machineId,
+      `TPM-Durchführung abgelehnt: ${executionUuid} — ${dto.approvalNote ?? ''}`,
+      { approvalStatus: 'pending' },
+      { approvalStatus: 'rejected' },
+    );
+
+    this.notificationService.notifyApprovalResult(
+      tenantId,
+      cardInfo.notification,
+      executionUuid,
+      result.executedBy,
+      false,
+    );
+  }
+
   /**
-   * Lock an execution row and validate it is still pending.
-   * Prevents race conditions on parallel approve/reject.
+   * Bridge: approved execution → machine_maintenance_history entry.
+   * Direct DB query (D11 pattern — TpmModule stays self-contained).
    */
+  private async bridgeToMaintenanceHistory(
+    tenantId: number,
+    machineId: number,
+    performedBy: number,
+    executionUuid: string,
+  ): Promise<void> {
+    try {
+      await this.db.query(
+        `INSERT INTO machine_maintenance_history
+           (tenant_id, machine_id, maintenance_type, performed_date,
+            performed_by, description, status_after, created_by)
+         VALUES ($1, $2, 'preventive', CURRENT_DATE, $3, $4, 'operational', $3)`,
+        [tenantId, machineId, performedBy, `TPM-Durchführung ${executionUuid}`],
+      );
+    } catch (error: unknown) {
+      this.logger.error(`Machine history bridge failed: ${String(error)}`);
+    }
+  }
+
+  // ============================================================================
+  // TRANSACTION HELPERS
+  // ============================================================================
+
+  /** Lock an execution row and validate it is still pending */
   private async lockPendingExecution(
     client: PoolClient,
     tenantId: number,
@@ -263,10 +325,7 @@ export class TpmApprovalService {
     return row;
   }
 
-  /**
-   * Validate that a user is authorized to approve/reject.
-   * Team lead of a machine-owning team OR admin (has_full_access).
-   */
+  /** Validate that a user is authorized to approve/reject */
   private async validateApprover(
     client: PoolClient,
     tenantId: number,
@@ -297,6 +356,27 @@ export class TpmApprovalService {
     }
   }
 
+  /** Update the execution's approval status */
+  private async updateApprovalStatus(
+    client: PoolClient,
+    tenantId: number,
+    executionId: number,
+    approverId: number,
+    status: 'approved' | 'rejected',
+    dto: RespondExecutionDto,
+  ): Promise<void> {
+    await client.query(
+      `UPDATE tpm_card_executions
+       SET approval_status = $1,
+           approved_by = $2,
+           approved_at = NOW(),
+           approval_note = $3,
+           updated_at = NOW()
+       WHERE id = $4 AND tenant_id = $5`,
+      [status, approverId, dto.approvalNote ?? null, executionId, tenantId],
+    );
+  }
+
   /** Fetch a full execution with JOINs (within transaction) */
   private async fetchExecution(
     client: PoolClient,
@@ -324,21 +404,38 @@ export class TpmApprovalService {
     return mapExecutionRowToApi(row);
   }
 
-  /** Resolve machine_id from a card (for activity logging) */
-  private async resolveCardMachineId(
+  /** Resolve card info for notification + side effects */
+  private async resolveCardInfo(
     client: PoolClient,
     tenantId: number,
     cardId: number,
-  ): Promise<number> {
-    const result = await client.query<{ machine_id: number }>(
-      `SELECT machine_id FROM tpm_cards
-       WHERE id = $1 AND tenant_id = $2`,
+  ): Promise<CardInfo> {
+    const result = await client.query<{
+      uuid: string;
+      card_code: string;
+      title: string;
+      machine_id: number;
+      interval_type: string;
+      status: string;
+    }>(
+      `SELECT uuid, card_code, title, machine_id, interval_type, status
+       FROM tpm_cards WHERE id = $1 AND tenant_id = $2`,
       [cardId, tenantId],
     );
     const row = result.rows[0];
     if (row === undefined) {
       throw new NotFoundException(`TPM-Karte ${cardId} nicht gefunden`);
     }
-    return row.machine_id;
+    return {
+      machineId: row.machine_id,
+      notification: {
+        uuid: row.uuid,
+        cardCode: row.card_code,
+        title: row.title,
+        machineId: row.machine_id,
+        intervalType: row.interval_type,
+        status: row.status,
+      },
+    };
   }
 }

@@ -57,11 +57,7 @@ async function apiFetch<T>(
   }
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  parent,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -71,11 +67,7 @@ export const load: PageServerLoad = async ({
   requireFeature(activeFeatures, 'tpm');
 
   const [escalationData, colorsData, templatesData] = await Promise.all([
-    apiFetch<TpmEscalationConfig>(
-      '/tpm/config/escalation',
-      token,
-      fetch,
-    ),
+    apiFetch<TpmEscalationConfig>('/tpm/config/escalation', token, fetch),
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
     apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
   ]);

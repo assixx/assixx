@@ -5,6 +5,7 @@
 
 import type {
   MachineAvailabilityEntry,
+  TpmMaintenanceEvent,
   SelectedContext,
   RotationPatternType,
 } from './types';
@@ -66,6 +67,26 @@ function createMachineAvailabilityState() {
   };
 }
 
+/** TPM events sub-state (date→events map for shift cell overlay) */
+function createTpmEventsState() {
+  let tpmEventsMap = $state<Map<string, TpmMaintenanceEvent[]>>(new Map());
+
+  return {
+    get tpmEventsMap() {
+      return tpmEventsMap;
+    },
+    setTpmEvents: (events: Map<string, TpmMaintenanceEvent[]>) => {
+      tpmEventsMap = events;
+    },
+    clearTpmEvents: () => {
+      tpmEventsMap = new Map();
+    },
+    reset: () => {
+      tpmEventsMap = new Map();
+    },
+  };
+}
+
 /** Plan data sub-state (planId, patternId, patternType) */
 function createPlanState() {
   let currentPlanId = $state<number | null>(null);
@@ -103,6 +124,7 @@ function createContextState() {
   let selectedContext = $state<SelectedContext>({ ...DEFAULT_CONTEXT });
   const plan = createPlanState();
   const machineAvail = createMachineAvailabilityState();
+  const tpmEvents = createTpmEventsState();
 
   const setSelectedContext = (context: Partial<SelectedContext>) => {
     selectedContext = { ...selectedContext, ...context };
@@ -135,6 +157,9 @@ function createContextState() {
     get machineAvailabilityMap() {
       return machineAvail.machineAvailabilityMap;
     },
+    get tpmEventsMap() {
+      return tpmEvents.tpmEventsMap;
+    },
     setSelectedContext,
     resetSelectedContext: () => {
       selectedContext = { ...DEFAULT_CONTEXT };
@@ -144,12 +169,15 @@ function createContextState() {
     setCurrentPatternType: plan.setCurrentPatternType,
     setMachineAvailability: machineAvail.setMachineAvailability,
     clearMachineAvailability: machineAvail.clearMachineAvailability,
+    setTpmEvents: tpmEvents.setTpmEvents,
+    clearTpmEvents: tpmEvents.clearTpmEvents,
     isHierarchyValid,
     clearPlanData: plan.clear,
     reset: () => {
       selectedContext = { ...DEFAULT_CONTEXT };
       plan.clear();
       machineAvail.reset();
+      tpmEvents.reset();
     },
   };
 }

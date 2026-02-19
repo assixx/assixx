@@ -73,7 +73,10 @@
   </div>
 
   <!-- Tabs -->
-  <div class="tpm-config__tabs" role="tablist">
+  <div
+    class="tpm-config__tabs"
+    role="tablist"
+  >
     {#each TABS as tab (tab.key)}
       <button
         type="button"

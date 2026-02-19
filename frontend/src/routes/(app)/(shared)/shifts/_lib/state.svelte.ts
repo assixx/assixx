@@ -221,6 +221,12 @@ export const shiftsState = {
   get machineAvailabilityMap() {
     return contextState.machineAvailabilityMap;
   },
+  get tpmEventsMap() {
+    return contextState.tpmEventsMap;
+  },
+  get showTpmEvents() {
+    return uiState.showTpmEvents;
+  },
   setSelectedContext: contextState.setSelectedContext,
   resetSelectedContext: contextState.resetSelectedContext,
   setCurrentPlanId: contextState.setCurrentPlanId,
@@ -229,6 +235,9 @@ export const shiftsState = {
   isHierarchyValid: contextState.isHierarchyValid,
   setMachineAvailability: contextState.setMachineAvailability,
   clearMachineAvailability: contextState.clearMachineAvailability,
+  setTpmEvents: contextState.setTpmEvents,
+  clearTpmEvents: contextState.clearTpmEvents,
+  setShowTpmEvents: uiState.setShowTpmEvents,
 
   // Rotation state
   get autofillConfig() {

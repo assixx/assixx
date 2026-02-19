@@ -279,15 +279,13 @@ export const MESSAGES = {
 
   // Color config
   COLOR_TITLE: 'Status-Farben',
-  COLOR_DESCRIPTION:
-    'Farben für die Kamishibai-Board Status-Anzeige anpassen',
+  COLOR_DESCRIPTION: 'Farben für die Kamishibai-Board Status-Anzeige anpassen',
   COLOR_STATUS: 'Status',
   COLOR_HEX: 'Hex-Farbe',
   COLOR_LABEL: 'Bezeichnung',
   COLOR_PREVIEW: 'Vorschau',
   COLOR_RESET: 'Standardfarben wiederherstellen',
-  COLOR_RESET_CONFIRM:
-    'Alle Farben auf die Standardwerte zurücksetzen?',
+  COLOR_RESET_CONFIRM: 'Alle Farben auf die Standardwerte zurücksetzen?',
   COLOR_SAVE: 'Farbe speichern',
   COLOR_HEX_INVALID: 'Ungültiges Hex-Format (z.B. #10b981)',
   COLOR_LABEL_REQUIRED: 'Bezeichnung ist erforderlich',
@@ -308,8 +306,7 @@ export const MESSAGES = {
   SUCCESS_ESCALATION_UPDATED: 'Eskalations-Konfiguration aktualisiert',
   ERROR_ESCALATION_UPDATE:
     'Fehler beim Aktualisieren der Eskalations-Konfiguration',
-  ERROR_ESCALATION_HOURS_RANGE:
-    'Stunden müssen zwischen 1 und 720 liegen',
+  ERROR_ESCALATION_HOURS_RANGE: 'Stunden müssen zwischen 1 und 720 liegen',
 
   // Template manager
   TEMPLATE_TITLE: 'Kartenvorlagen',
