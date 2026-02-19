@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.11.1 (Phase 2 COMPLETE — Steps 2.1-2.11 Done, ActivityEntityType-Fix)
-> **Status:** IN PROGRESS — Phase 2 abgeschlossen, nächster Step: 3.1 (Unit Tests Plans + Config)
+> **Version:** 1.12.0 (Step 3.1 DONE — Unit Tests Plans + Config Services)
+> **Status:** IN PROGRESS — Phase 3 begonnen, nächster Step: 3.2 (Unit Tests Cards + Cascade + Duplicate)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 14 / 29
+> **Actual Sessions:** 15 / 29
 
 ---
 
@@ -60,7 +60,8 @@ pnpm test                # unit + api tests
 | 1.9.0   | 2026-02-19 | Step 2.9 DONE: Notification + Escalation — eventBus.ts TpmEvent + 5 Emitter, tpm-notification.service.ts (222 Z., Dual-Pattern ADR-004), tpm-escalation.service.ts (230 Z., @Cron 5min + FOR UPDATE SKIP LOCKED), tpm.module.ts (15/15 Services)                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 1.10.0  | 2026-02-19 | Step 2.10 DONE: Controllers Plans + Cards — tpm-plans.controller.ts (220 Z., 9 Endpoints), tpm-cards.controller.ts (186 Z., 6 Endpoints), 5 Query-DTOs (1 Klasse/Datei), tpm.module.ts (2/4 Controller). D12: check-duplicate Route geändert zu POST /cards/check-duplicate (body: planUuid) statt /cards/:uuid/check-duplicate                                                                                                                                                                                                                                                                                                                                  |
 | 1.11.0  | 2026-02-19 | Step 2.11 DONE / PHASE 2 COMPLETE: tpm-executions.controller.ts (190 Z., 6 Endpoints), tpm-config.controller.ts (160 Z., 9 Endpoints), tpm-dashboard.service.ts (40 Z.), 2 neue DTOs (CreateExecution, ListExecutionsQuery). Integrations: notifications.controller.ts (5 TPM SSE Events + registerTpmHandlers()), dashboard.service.ts (fetchTpmCount), dashboard-counts.dto.ts (tpm: CountItemSchema), machine-availability.service.ts (createFromTpmPlan), machine-maintenance.service.ts (createFromTpmExecution), tpm-escalation.service.ts (getConfig + updateConfig + UPSERT). tpm.module.ts: 4/4 Controller, 16 Services. 4400 Tests, 0 ESLint/TS Errors |
-| 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'machine'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7 |
+| 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'machine'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 1.12.0  | 2026-02-19 | Step 3.1 DONE: Unit Tests Plans + Config — 5 Testdateien, 81 Tests (tpm-plans.service 26, tpm-plans-interval.service 21, tpm-time-estimates.service 11, tpm-templates.service 13, tpm-color-config.service 10). ESLint 0, Type-Check 0, 4481 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 > **Versionierungsregel:**
 >
@@ -943,17 +944,21 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 > **Abhängigkeit:** Phase 2 complete
 > **Pattern:** `backend/src/nest/vacation/vacation.service.test.ts`
 
-### Step 3.1: Session 15 — Tests Plans + Config Services [PENDING]
+### Step 3.1: Session 15 — Tests Plans + Config Services [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 5 Testdateien erstellt, 81 Tests. ESLint 0, Type-Check 0, 4481 Tests gesamt.
 
-- `backend/src/nest/tpm/__tests__/tpm-plans.service.test.ts` (~25 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-plans-interval.service.test.ts` (~15 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-time-estimates.service.test.ts` (~10 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-templates.service.test.ts` (~10 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-color-config.service.test.ts` (~8 Tests)
+**Dateien (co-located, Projekt-Konvention):**
 
-**Szenarien:** CRUD Happy Path, Validierungsfehler, Duplikate, Soft-Delete, Tenant-Isolation
+- `backend/src/nest/tpm/tpm-plans.service.test.ts` (26 Tests — getPlan, listPlans, getPlanByMachineId, createPlan, updatePlan, deletePlan)
+- `backend/src/nest/tpm/tpm-plans-interval.service.test.ts` (21 Tests — getNextOccurrence, calculateIntervalDate alle 8 Typen, calculateNextDueDates)
+- `backend/src/nest/tpm/tpm-time-estimates.service.test.ts` (11 Tests — setEstimate UPSERT, getEstimatesForPlan, getEstimateForInterval, deleteEstimate)
+- `backend/src/nest/tpm/tpm-templates.service.test.ts` (13 Tests — listTemplates, getTemplate, createTemplate JSONB, updateTemplate FOR UPDATE, deleteTemplate)
+- `backend/src/nest/tpm/tpm-color-config.service.test.ts` (10 Tests — getColors default-merge, updateColor UPSERT, resetToDefaults DELETE)
+
+**Szenarien abgedeckt:** CRUD Happy Path, NotFoundException, ConflictException, FOR UPDATE Lock, Soft-Delete (is_active=4), UPSERT ON CONFLICT, UUIDv7-Generierung, Activity Logger Calls, Dynamic SET Clause, Default-Merge Pattern, UUID Trimming, Pagination Offset, Null-Handling
+
+**Abweichung vom Plan:** Masterplan sagt `__tests__/` Verzeichnis — Projekt-Konvention ist co-located (90+ bestehende Tests). Co-located gewählt.
 
 ---
 
@@ -1302,7 +1307,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | 12      | 2     | Notification + Escalation Services + EventBus                      | DONE    | 2026-02-19 |
 | 13      | 2     | Controllers (Plans + Cards)                                        | DONE    | 2026-02-19 |
 | 14      | 2     | Controllers (Executions + Config) + Module Assembly + Integrations | DONE    | 2026-02-19 |
-| 15      | 3     | Unit Tests — Plans + Config Services (~68 Tests)                   | PENDING |            |
+| 15      | 3     | Unit Tests — Plans + Config Services (81 Tests)                    | DONE    | 2026-02-19 |
 | 16      | 3     | Unit Tests — Cards + Cascade + Duplicate (~70 Tests)               | PENDING |            |
 | 17      | 3     | Unit Tests — Slot Assistant + Executions + Approval (~55 Tests)    | PENDING |            |
 | 18      | 3     | Unit Tests — Notification + Escalation (~27 Tests)                 | PENDING |            |
@@ -1366,12 +1371,12 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 
 | Metrik                    | Geplant | Tatsächlich (Stand Session 14)                                           |
 | ------------------------- | ------- | ------------------------------------------------------------------------ |
-| Sessions                  | 29      | 14 / 29 (48%) — Phase 2 COMPLETE                                         |
+| Sessions                  | 29      | 15 / 29 (52%) — Phase 3 begonnen                                         |
 | Migrationsdateien         | 4       | 4 ✅                                                                     |
 | Neue Backend-Dateien      | ~30     | 30 / ~30 (100%) — Phase 2 Backend fertig                                 |
 | Neue Frontend-Dateien     | ~35     | 0 / ~35                                                                  |
 | Geänderte Dateien         | ~10     | 10 (app.module, notifications, dashboard, machines, tpm-escalation etc.) |
-| Unit Tests                | 220+    | 0 (Phase 3)                                                              |
+| Unit Tests                | 220+    | 81 / 220+ (37%) — Step 3.1 done                                          |
 | API Tests                 | 40+     | 0 (Phase 4)                                                              |
 | ESLint Errors bei Release | 0       | 0 ✅ (durchgehend)                                                       |
 | Spec Deviations           | 0       | 13 (alle akzeptabel)                                                     |
