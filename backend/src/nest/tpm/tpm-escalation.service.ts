@@ -16,9 +16,14 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
+import type { UpdateEscalationConfigDto } from './dto/update-escalation-config.dto.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
+import type {
+  TpmEscalationConfig,
+  TpmEscalationConfigRow,
+} from './tpm.types.js';
 
 /** Row shape returned by the overdue candidates query */
 interface OverdueCandidate {
@@ -51,6 +56,59 @@ export class TpmEscalationService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     this.logger.log('Startup recovery: checking for overdue TPM cards...');
     await this.processOverdueCards();
+  }
+
+  // ============================================================================
+  // CONFIG READ / WRITE
+  // ============================================================================
+
+  /** Get escalation config for a tenant (returns defaults if no row exists) */
+  async getConfig(tenantId: number): Promise<TpmEscalationConfig> {
+    const row = await this.db.queryOne<TpmEscalationConfigRow>(
+      `SELECT * FROM tpm_escalation_config WHERE tenant_id = $1`,
+      [tenantId],
+    );
+
+    if (row === null) {
+      return buildDefaultConfig();
+    }
+
+    return mapConfigRowToApi(row);
+  }
+
+  /** Update (upsert) escalation config for a tenant */
+  async updateConfig(
+    tenantId: number,
+    dto: UpdateEscalationConfigDto,
+  ): Promise<TpmEscalationConfig> {
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<TpmEscalationConfig> => {
+        const result = await client.query<TpmEscalationConfigRow>(
+          `INSERT INTO tpm_escalation_config
+             (tenant_id, escalation_after_hours, notify_team_lead, notify_department_lead)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (tenant_id)
+           DO UPDATE SET
+             escalation_after_hours = EXCLUDED.escalation_after_hours,
+             notify_team_lead = EXCLUDED.notify_team_lead,
+             notify_department_lead = EXCLUDED.notify_department_lead,
+             updated_at = NOW()
+           RETURNING *`,
+          [
+            tenantId,
+            dto.escalationAfterHours,
+            dto.notifyTeamLead ?? true,
+            dto.notifyDepartmentLead ?? false,
+          ],
+        );
+
+        const row = result.rows[0];
+        if (row === undefined) {
+          throw new Error('UPSERT tpm_escalation_config returned no rows');
+        }
+        return mapConfigRowToApi(row);
+      },
+    );
   }
 
   /** Cron: check every 5 minutes for cards past escalation threshold */
@@ -221,4 +279,37 @@ export class TpmEscalationService implements OnModuleInit {
       status: 'overdue',
     };
   }
+}
+
+// ============================================================================
+// Module-level helpers
+// ============================================================================
+
+/** Map DB row to API response */
+function mapConfigRowToApi(row: TpmEscalationConfigRow): TpmEscalationConfig {
+  return {
+    escalationAfterHours: row.escalation_after_hours,
+    notifyTeamLead: row.notify_team_lead,
+    notifyDepartmentLead: row.notify_department_lead,
+    createdAt:
+      typeof row.created_at === 'string' ?
+        row.created_at
+      : new Date(row.created_at).toISOString(),
+    updatedAt:
+      typeof row.updated_at === 'string' ?
+        row.updated_at
+      : new Date(row.updated_at).toISOString(),
+  };
+}
+
+/** Build default config when no row exists for a tenant */
+function buildDefaultConfig(): TpmEscalationConfig {
+  const now = new Date().toISOString();
+  return {
+    escalationAfterHours: DEFAULT_ESCALATION_HOURS,
+    notifyTeamLead: true,
+    notifyDepartmentLead: false,
+    createdAt: now,
+    updatedAt: now,
+  };
 }

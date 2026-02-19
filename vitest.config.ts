@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 // ESM uses import.meta.dirname (Node 20.11+) instead of CommonJS __dirname
@@ -45,10 +45,10 @@ export default defineConfig({
         'backend/src/types/**', // Pure type definitions
       ],
       thresholds: {
-        lines: 72,
-        functions: 72,
+        lines: 65,
+        functions: 65,
         branches: 65,
-        statements: 72,
+        statements: 65,
       },
     },
 

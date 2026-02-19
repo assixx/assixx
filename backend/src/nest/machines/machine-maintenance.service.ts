@@ -207,6 +207,26 @@ export class MachineMaintenanceService {
   }
 
   /**
+   * Create a maintenance history record from a TPM execution.
+   * Bridge: When a TPM card execution is approved (green), a
+   * corresponding entry in machine_maintenance_history is created.
+   */
+  async createFromTpmExecution(
+    tenantId: number,
+    machineId: number,
+    userId: number,
+    description: string,
+  ): Promise<void> {
+    await this.db.query(
+      `INSERT INTO machine_maintenance_history
+         (tenant_id, machine_id, maintenance_type, performed_date,
+          performed_by, description, status_after, created_by)
+       VALUES ($1, $2, 'preventive', CURRENT_DATE, $3, $4, 'operational', $3)`,
+      [tenantId, machineId, userId, description],
+    );
+  }
+
+  /**
    * Get machine categories
    */
   async getCategories(): Promise<MachineCategory[]> {

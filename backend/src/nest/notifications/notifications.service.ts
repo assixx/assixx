@@ -417,7 +417,7 @@ export class NotificationsService {
 
   /** Mark feature type as read (delegates to feature sub-service) */
   async markFeatureTypeAsRead(
-    type: 'survey' | 'document' | 'kvp' | 'vacation',
+    type: 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm',
     userId: number,
     tenantId: number,
   ): Promise<number> {

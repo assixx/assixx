@@ -608,6 +608,27 @@ export class MachineAvailabilityService {
     };
   }
 
+  /**
+   * Create a maintenance availability entry from a TPM plan.
+   * Called when a TPM maintenance event is scheduled — sets machine
+   * status to 'maintenance' for the planned time window.
+   */
+  async createFromTpmPlan(
+    tenantId: number,
+    machineId: number,
+    startDate: string,
+    endDate: string,
+    reason: string,
+    userId: number,
+  ): Promise<void> {
+    await this.databaseService.query(
+      `INSERT INTO machine_availability
+         (tenant_id, machine_id, status, start_date, end_date, reason, created_by)
+       VALUES ($1, $2, 'maintenance', $3, $4, $5, $6)`,
+      [tenantId, machineId, startDate, endDate, reason, userId],
+    );
+  }
+
   /** Find availability entry by ID and tenant */
   private async findAvailabilityEntryById(
     entryId: number,

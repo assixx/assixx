@@ -127,6 +127,11 @@ const SSE_EVENTS = {
   VACATION_REQUEST_RESPONDED: 'vacation.request.responded',
   VACATION_REQUEST_WITHDRAWN: 'vacation.request.withdrawn',
   VACATION_REQUEST_CANCELLED: 'vacation.request.cancelled',
+  TPM_MAINTENANCE_DUE: 'tpm.maintenance.due',
+  TPM_MAINTENANCE_OVERDUE: 'tpm.maintenance.overdue',
+  TPM_MAINTENANCE_COMPLETED: 'tpm.maintenance.completed',
+  TPM_APPROVAL_REQUIRED: 'tpm.approval.required',
+  TPM_APPROVAL_RESULT: 'tpm.approval.result',
 } as const;
 
 /**
@@ -281,6 +286,38 @@ function registerVacationHandlers(
   }
 }
 
+/** Register TPM-related SSE event handlers — broadcast to all users in tenant */
+function registerTpmHandlers(
+  handlers: EventHandler[],
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): void {
+  const tpmEvents = [
+    { event: SSE_EVENTS.TPM_MAINTENANCE_DUE, type: 'TPM_MAINTENANCE_DUE' },
+    {
+      event: SSE_EVENTS.TPM_MAINTENANCE_OVERDUE,
+      type: 'TPM_MAINTENANCE_OVERDUE',
+    },
+    {
+      event: SSE_EVENTS.TPM_MAINTENANCE_COMPLETED,
+      type: 'TPM_MAINTENANCE_COMPLETED',
+    },
+    {
+      event: SSE_EVENTS.TPM_APPROVAL_REQUIRED,
+      type: 'TPM_APPROVAL_REQUIRED',
+    },
+    { event: SSE_EVENTS.TPM_APPROVAL_RESULT, type: 'TPM_APPROVAL_RESULT' },
+  ] as const;
+
+  for (const { event, type } of tpmEvents) {
+    registerHandler(
+      handlers,
+      event,
+      createSSEHandler(type, 'card', tenantId, eventSubject),
+    );
+  }
+}
+
 /**
  * Register SSE handlers based on user role AND feature permissions (ADR-020).
  * Only registers handlers for features the user has read access to.
@@ -340,6 +377,10 @@ function registerSSEHandlers(
       SSE_EVENTS.SURVEY_CREATED,
       make('NEW_SURVEY_CREATED', 'survey'),
     );
+  }
+
+  if (canAccess('tpm')) {
+    registerTpmHandlers(handlers, tenantId, eventSubject);
   }
 
   return handlers;
@@ -480,7 +521,7 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<{ marked: number; message: string }> {
     // Validate type
-    const validTypes = ['survey', 'document', 'kvp', 'vacation'];
+    const validTypes = ['survey', 'document', 'kvp', 'vacation', 'tpm'];
     if (!validTypes.includes(type)) {
       throw new BadRequestException(
         `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
@@ -488,7 +529,7 @@ export class NotificationsController {
     }
 
     const marked = await this.notificationsService.markFeatureTypeAsRead(
-      type as 'survey' | 'document' | 'kvp' | 'vacation',
+      type as 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm',
       user.id,
       tenantId,
     );
@@ -715,6 +756,21 @@ export class NotificationsController {
         ),
         [SSE_EVENTS.VACATION_REQUEST_CANCELLED]: eventBus.getListenerCount(
           SSE_EVENTS.VACATION_REQUEST_CANCELLED,
+        ),
+        [SSE_EVENTS.TPM_MAINTENANCE_DUE]: eventBus.getListenerCount(
+          SSE_EVENTS.TPM_MAINTENANCE_DUE,
+        ),
+        [SSE_EVENTS.TPM_MAINTENANCE_OVERDUE]: eventBus.getListenerCount(
+          SSE_EVENTS.TPM_MAINTENANCE_OVERDUE,
+        ),
+        [SSE_EVENTS.TPM_MAINTENANCE_COMPLETED]: eventBus.getListenerCount(
+          SSE_EVENTS.TPM_MAINTENANCE_COMPLETED,
+        ),
+        [SSE_EVENTS.TPM_APPROVAL_REQUIRED]: eventBus.getListenerCount(
+          SSE_EVENTS.TPM_APPROVAL_REQUIRED,
+        ),
+        [SSE_EVENTS.TPM_APPROVAL_RESULT]: eventBus.getListenerCount(
+          SSE_EVENTS.TPM_APPROVAL_RESULT,
         ),
       },
       timestamp: new Date().toISOString(),

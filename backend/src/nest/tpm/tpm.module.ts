@@ -17,7 +17,10 @@ import { TpmCardStatusService } from './tpm-card-status.service.js';
 import { TpmCardsController } from './tpm-cards.controller.js';
 import { TpmCardsService } from './tpm-cards.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
+import { TpmConfigController } from './tpm-config.controller.js';
+import { TpmDashboardService } from './tpm-dashboard.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
+import { TpmExecutionsController } from './tpm-executions.controller.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
@@ -30,7 +33,12 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 
 @Module({
   imports: [FeatureCheckModule],
-  controllers: [TpmPlansController, TpmCardsController],
+  controllers: [
+    TpmPlansController,
+    TpmCardsController,
+    TpmExecutionsController,
+    TpmConfigController,
+  ],
   providers: [
     // Permission registration (ADR-020)
     TpmPermissionRegistrar,
@@ -62,6 +70,9 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     // Notification + Escalation (Session 12)
     TpmNotificationService,
     TpmEscalationService,
+
+    // Dashboard count (Session 14)
+    TpmDashboardService,
   ],
   exports: [
     TpmPlansService,
@@ -78,6 +89,7 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmApprovalService,
     TpmNotificationService,
     TpmEscalationService,
+    TpmDashboardService,
   ],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured, empty class body is standard pattern
