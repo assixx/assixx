@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.14.0 (Step 3.3 DONE — Unit Tests Slot Assistant + Executions + Approval)
-> **Status:** IN PROGRESS — Phase 3, nächster Step: 3.4 (Unit Tests Notification + Escalation)
+> **Version:** 1.15.0 (Step 3.4 DONE — Unit Tests Notification + Escalation / PHASE 3 COMPLETE)
+> **Status:** IN PROGRESS — Phase 4, nächster Step: 4.1 (API Tests Plans + Cards)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 17 / 29
+> **Actual Sessions:** 18 / 29
 
 ---
 
@@ -64,6 +64,7 @@ pnpm test                # unit + api tests
 | 1.12.0  | 2026-02-19 | Step 3.1 DONE: Unit Tests Plans + Config — 5 Testdateien, 81 Tests (tpm-plans.service 26, tpm-plans-interval.service 21, tpm-time-estimates.service 11, tpm-templates.service 13, tpm-color-config.service 10). ESLint 0, Type-Check 0, 4481 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 1.13.0  | 2026-02-19 | Step 3.2 DONE: Unit Tests Cards + Cascade + Duplicate — 4 Testdateien, 88 Tests (tpm-cards.service 31, tpm-card-status.service 22, tpm-card-cascade.service 22, tpm-card-duplicate.service 13). State Machine komplett getestet, R1-Performance-Test (Batch-SQL für 2400 Karten), ILIKE-Escaping, Intervall-Order alle 8 Typen. ESLint 0, Type-Check 0, 4569 Tests gesamt |
 | 1.14.0  | 2026-02-19 | Step 3.3 DONE: Unit Tests Slot Assistant + Executions + Approval — 3 Testdateien, 63 Tests (tpm-slot-assistant.service 20, tpm-executions.service 19, tpm-approval.service 24). Slot-Konflikte (4 Datenquellen), Execution-Lifecycle (Flow A/B, Foto-Limit), Approval-Chain (ConflictException, ForbiddenException, FOR UPDATE Lock, Activity Logger). ESLint 0, Type-Check 0, 4632 Tests gesamt |
+| 1.15.0  | 2026-02-19 | Step 3.4 DONE / PHASE 3 COMPLETE: Unit Tests Notification + Escalation — 2 Testdateien, 46 Tests (tpm-notification.service 22, tpm-escalation.service 24). Dual-Pattern (EventBus + DB persistent notifications), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery, Team Lead Resolution), Config CRUD (getConfig defaults, updateConfig UPSERT), machineName-Fallback, Silent Error Catch. ESLint 0, Type-Check 0, 4678 Tests gesamt |
 
 > **Versionierungsregel:**
 >
@@ -993,26 +994,30 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 ---
 
-### Step 3.4: Session 18 — Tests Notification + Escalation [PENDING]
+### Step 3.4: Session 18 — Tests Notification + Escalation [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 2 Testdateien erstellt, 46 Tests. ESLint 0, Type-Check 0, 4678 Tests gesamt.
 
-- `backend/src/nest/tpm/__tests__/tpm-notification.service.test.ts` (~15 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-escalation.service.test.ts` (~12 Tests)
+**Dateien (co-located, Projekt-Konvention):**
 
-**Szenarien:** Dual-Notification (EventBus + DB), Eskalation nach Frist, Kein Duplikat bei erneutem Cron-Run, isProcessing Guard, Startup-Recovery
+- `backend/src/nest/tpm/tpm-notification.service.test.ts` (22 Tests — notifyMaintenanceDue EventBus+DB per user, notifyMaintenanceOverdue escalation, notifyMaintenanceCompleted SSE-only, notifyApprovalRequired per approver, notifyApprovalResult approved/rejected, machineName fallback, silent error catch, UUIDv7, metadata JSON)
+- `backend/src/nest/tpm/tpm-escalation.service.test.ts` (24 Tests — getConfig DB+defaults, updateConfig UPSERT/ON CONFLICT/tenantTransaction, handleEscalation candidates/FOR UPDATE SKIP LOCKED/markCardOverdue/notifyTeamLead/no team lead skip/isProcessing guard/error recovery/concurrent lock skip/continue on failure, onModuleInit startup recovery, resolveTeamLead SQL verification)
+
+**Szenarien abgedeckt:** Dual-Notification (EventBus + DB persistent), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery via onModuleInit), Config CRUD (getConfig default fallback, updateConfig UPSERT), Team Lead Resolution (teams + machine_teams JOIN), machineName conditional spread, Silent Error Catch (fire-and-forget), Error Recovery (isProcessing reset in finally), Concurrent Instance Safety (SKIP LOCKED returns empty → skip card)
+
+**Abweichung vom Plan:** Masterplan sagt `__tests__/` Verzeichnis — Projekt-Konvention ist co-located (Step 3.1-3.3 Pattern beibehalten). Test-Counts höher als geplant: 46 statt ~27.
 
 ### Phase 3 — Definition of Done
 
-- [ ] > = 220 Unit Tests total
-- [ ] Alle Tests grün: `docker exec assixx-backend pnpm exec vitest run backend/src/nest/tpm/`
-- [ ] Jeder ConflictException / BadRequestException Pfad abgedeckt
-- [ ] Intervall-Kaskade getestet (alle Levels)
-- [ ] Race Condition getestet (paralleler Approve)
-- [ ] Tenant-Isolation getestet
-- [ ] Coverage: Alle public Methoden haben mindestens 1 Test
-- [ ] `pnpm run validate:all` ✅
-- [ ] `pnpm test` ✅
+- [x] > = 220 Unit Tests total (278 actual: 81+88+63+46)
+- [x] Alle Tests grün: `docker exec assixx-backend pnpm exec vitest run backend/src/nest/tpm/`
+- [x] Jeder ConflictException / BadRequestException Pfad abgedeckt
+- [x] Intervall-Kaskade getestet (alle Levels)
+- [x] Race Condition getestet (paralleler Approve, FOR UPDATE SKIP LOCKED)
+- [x] Tenant-Isolation getestet
+- [x] Coverage: Alle public Methoden haben mindestens 1 Test
+- [x] `pnpm run validate:all` ✅
+- [x] `pnpm test` ✅ (229 Dateien, 4678 Tests)
 
 ---
 
