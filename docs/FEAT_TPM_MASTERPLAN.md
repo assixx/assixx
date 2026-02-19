@@ -1,15 +1,15 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 1.12.0 (Step 3.1 DONE — Unit Tests Plans + Config Services)
-> **Status:** IN PROGRESS — Phase 3 begonnen, nächster Step: 3.2 (Unit Tests Cards + Cascade + Duplicate)
+> **Version:** 1.14.0 (Step 3.3 DONE — Unit Tests Slot Assistant + Executions + Approval)
+> **Status:** IN PROGRESS — Phase 3, nächster Step: 3.4 (Unit Tests Notification + Escalation)
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
 > **Context:** [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md)
 > **Verification:** [brainstorming-TPM-Verification.md](./brainstorming-TPM-Verification.md)
 > **Author:** SCS + Claude (Senior Engineer)
 > **Estimated Sessions:** 29
-> **Actual Sessions:** 15 / 29
+> **Actual Sessions:** 17 / 29
 
 ---
 
@@ -62,6 +62,8 @@ pnpm test                # unit + api tests
 | 1.11.0  | 2026-02-19 | Step 2.11 DONE / PHASE 2 COMPLETE: tpm-executions.controller.ts (190 Z., 6 Endpoints), tpm-config.controller.ts (160 Z., 9 Endpoints), tpm-dashboard.service.ts (40 Z.), 2 neue DTOs (CreateExecution, ListExecutionsQuery). Integrations: notifications.controller.ts (5 TPM SSE Events + registerTpmHandlers()), dashboard.service.ts (fetchTpmCount), dashboard-counts.dto.ts (tpm: CountItemSchema), machine-availability.service.ts (createFromTpmPlan), machine-maintenance.service.ts (createFromTpmExecution), tpm-escalation.service.ts (getConfig + updateConfig + UPSERT). tpm.module.ts: 4/4 Controller, 16 Services. 4400 Tests, 0 ESLint/TS Errors |
 | 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'machine'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 1.12.0  | 2026-02-19 | Step 3.1 DONE: Unit Tests Plans + Config — 5 Testdateien, 81 Tests (tpm-plans.service 26, tpm-plans-interval.service 21, tpm-time-estimates.service 11, tpm-templates.service 13, tpm-color-config.service 10). ESLint 0, Type-Check 0, 4481 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 1.13.0  | 2026-02-19 | Step 3.2 DONE: Unit Tests Cards + Cascade + Duplicate — 4 Testdateien, 88 Tests (tpm-cards.service 31, tpm-card-status.service 22, tpm-card-cascade.service 22, tpm-card-duplicate.service 13). State Machine komplett getestet, R1-Performance-Test (Batch-SQL für 2400 Karten), ILIKE-Escaping, Intervall-Order alle 8 Typen. ESLint 0, Type-Check 0, 4569 Tests gesamt |
+| 1.14.0  | 2026-02-19 | Step 3.3 DONE: Unit Tests Slot Assistant + Executions + Approval — 3 Testdateien, 63 Tests (tpm-slot-assistant.service 20, tpm-executions.service 19, tpm-approval.service 24). Slot-Konflikte (4 Datenquellen), Execution-Lifecycle (Flow A/B, Foto-Limit), Approval-Chain (ConflictException, ForbiddenException, FOR UPDATE Lock, Activity Logger). ESLint 0, Type-Check 0, 4632 Tests gesamt |
 
 > **Versionierungsregel:**
 >
@@ -962,30 +964,32 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 ---
 
-### Step 3.2: Session 16 — Tests Cards + Cascade + Duplicate [PENDING]
+### Step 3.2: Session 16 — Tests Cards + Cascade + Duplicate [DONE]
 
-**Neue Dateien:**
+**Ergebnis:** 4 Testdateien erstellt, 88 Tests. ESLint 0, Type-Check 0, 4569 Tests gesamt.
 
-- `backend/src/nest/tpm/__tests__/tpm-cards.service.test.ts` (~25 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-card-status.service.test.ts` (~20 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-card-cascade.service.test.ts` (~15 Tests + Performance)
-- `backend/src/nest/tpm/__tests__/tpm-card-duplicate.service.test.ts` (~10 Tests)
+**Dateien (co-located, Projekt-Konvention):**
 
-**Szenarien:** CardCode-Generierung, Status-Transitionen (alle Flows), Kaskade (jährlich → alle ROT), Duplikat-Erkennung (ILIKE), Ungültige Transitionen → Error
+- `backend/src/nest/tpm/tpm-cards.service.test.ts` (31 Tests — getCard, listCardsForMachine/ForPlan/ByStatus, createCard auto-machineId/cardCode/intervalOrder/sortOrder, updateCard intervalOrder-recalc, deleteCard)
+- `backend/src/nest/tpm/tpm-card-status.service.test.ts` (22 Tests — setCardDue green→red, markCardCompleted Flow A/B red+overdue, markCardOverdue, approveCard yellow→green, rejectCard yellow→red, alle ungültigen Transitionen, NotFoundException)
+- `backend/src/nest/tpm/tpm-card-cascade.service.test.ts` (22 Tests — triggerCascade Batch-SQL/affectedCount/dueDateFormat, getCascadePreview, getIntervalOrder alle 8 Typen, Performance 2400 Karten < 500ms)
+- `backend/src/nest/tpm/tpm-card-duplicate.service.test.ts` (13 Tests — checkDuplicate ILIKE/intervalOrder/escaping, findSimilarCards title+description, escapeLikePattern %, _, \)
 
-**⚠️ Performance-Test (R1-Mitigation):** Kaskade-Test mit 2400 Karten (20 Maschinen × 8 Intervalle × 15 Karten). Batch-SQL `UPDATE WHERE interval_order <= X` muss < 500ms sein. In `tpm-card-cascade.service.test.ts` als separater `describe('Performance')` Block.
+**Szenarien abgedeckt:** State Machine (8 gültige + 6 ungültige Transitionen), CardCode-Generierung (BT/IV Prefix + Sequenznummer), Intervall-Kaskade (Batch-SQL, CTE mit RETURNING), Duplikat-Erkennung (ILIKE, Interval-Order-Filter, Special-Char-Escaping), Denormalisierung (machine_id auto-set), FOR UPDATE Lock, Soft-Delete, Activity Logger, Pagination, Performance R1-Mitigation
+
+**Abweichung vom Plan:** Masterplan sagt `__tests__/` Verzeichnis — Projekt-Konvention ist co-located (Step 3.1 Pattern beibehalten). Test-Counts höher als geplant: 88 statt ~70.
 
 ---
 
-### Step 3.3: Session 17 — Tests Slot Assistant + Executions + Approval [PENDING]
+### Step 3.3: Session 17 — Tests Slot Assistant + Executions + Approval [DONE]
 
 **Neue Dateien:**
 
-- `backend/src/nest/tpm/__tests__/tpm-slot-assistant.service.test.ts` (~20 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-executions.service.test.ts` (~15 Tests)
-- `backend/src/nest/tpm/__tests__/tpm-approval.service.test.ts` (~20 Tests)
+- `backend/src/nest/tpm/tpm-slot-assistant.service.test.ts` (20 Tests)
+- `backend/src/nest/tpm/tpm-executions.service.test.ts` (19 Tests)
+- `backend/src/nest/tpm/tpm-approval.service.test.ts` (24 Tests)
 
-**Szenarien:** Slot-Konflikte (MA im Urlaub, Maschine belegt, kein Schichtplan), Approval Happy Path, Rejection mit Note, Paralleler Approve → ConflictException, Deputy-Lead darf freigeben, Foto-Limit (max 5)
+**Ergebnis:** 63 Tests, ESLint 0, Type-Check 0, 4632 Tests gesamt. Slot-Konflikte (4 Datenquellen, MAX_RANGE_DAYS=90, combined conflicts), Execution-Lifecycle (Flow A/B, documentation validation, Foto-Limit max 5, sort_order), Approval-Chain (ConflictException bei Doppel-Bearbeitung, ForbiddenException bei fehlender Berechtigung, FOR UPDATE Lock, Activity Logger, approve+reject full flow)
 
 ---
 

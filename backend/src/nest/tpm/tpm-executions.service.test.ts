@@ -1,0 +1,488 @@
+/**
+ * Unit tests for TpmExecutionsService
+ *
+ * Mocked dependencies: DatabaseService (query, queryOne, tenantTransaction),
+ * TpmCardStatusService (markCardCompleted), ActivityLoggerService.
+ * Tests: createExecution (Flow A no-approval, Flow B approval, documentation
+ * validation, activity logger), getExecution (found/not found),
+ * listExecutionsForCard, listPendingApprovals, addPhoto (max 5 limit),
+ * getPhotos.
+ *
+ * Pattern: tenantTransaction callback receives mockClient with query() mock.
+ */
+import {
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import type { DatabaseService } from '../database/database.service.js';
+import type { TpmCardStatusService } from './tpm-card-status.service.js';
+import type { TpmExecutionJoinRow } from './tpm-executions.helpers.js';
+import { TpmExecutionsService } from './tpm-executions.service.js';
+import type { TpmCardExecutionPhotoRow, TpmCardRow } from './tpm.types.js';
+
+// =============================================================
+// Mock factories
+// =============================================================
+
+function createMockDb() {
+  return {
+    query: vi.fn(),
+    queryOne: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+}
+type MockDb = ReturnType<typeof createMockDb>;
+
+function createMockCardStatusService() {
+  return {
+    markCardCompleted: vi.fn(),
+  };
+}
+
+function createMockActivityLogger() {
+  return {
+    logCreate: vi.fn().mockResolvedValue(undefined),
+    logUpdate: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
+  return {
+    id: 1,
+    uuid: 'card-uuid-001                            ',
+    tenant_id: 10,
+    plan_id: 100,
+    machine_id: 42,
+    template_id: null,
+    card_code: 'BT1',
+    card_role: 'operator',
+    interval_type: 'weekly',
+    interval_order: 2,
+    title: 'Sichtprüfung',
+    description: null,
+    location_description: null,
+    location_photo_url: null,
+    requires_approval: false,
+    status: 'red',
+    current_due_date: '2026-03-01',
+    last_completed_at: null,
+    last_completed_by: null,
+    sort_order: 1,
+    custom_fields: {},
+    custom_interval_days: null,
+    is_active: 1,
+    created_by: 5,
+    created_at: '2026-02-18T00:00:00.000Z',
+    updated_at: '2026-02-18T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function createExecutionRow(
+  overrides?: Partial<TpmExecutionJoinRow>,
+): TpmExecutionJoinRow {
+  return {
+    id: 1,
+    uuid: 'exec-uuid-001                            ',
+    tenant_id: 10,
+    card_id: 1,
+    executed_by: 7,
+    execution_date: '2026-03-01',
+    documentation: 'Alles geprüft, keine Auffälligkeiten',
+    approval_status: 'none',
+    approved_by: null,
+    approved_at: null,
+    approval_note: null,
+    custom_data: {},
+    created_at: '2026-03-01T08:30:00.000Z',
+    updated_at: '2026-03-01T08:30:00.000Z',
+    card_uuid: 'card-uuid-001                            ',
+    executed_by_name: 'employee',
+    ...overrides,
+  };
+}
+
+function createPhotoRow(
+  overrides?: Partial<TpmCardExecutionPhotoRow>,
+): TpmCardExecutionPhotoRow {
+  return {
+    id: 1,
+    uuid: 'photo-uuid-001                           ',
+    tenant_id: 10,
+    execution_id: 1,
+    file_path: '/uploads/tpm/photo1.jpg',
+    file_name: 'photo1.jpg',
+    file_size: 2_000_000,
+    mime_type: 'image/jpeg',
+    sort_order: 0,
+    created_at: '2026-03-01T08:31:00.000Z',
+    ...overrides,
+  };
+}
+
+// =============================================================
+// TpmExecutionsService
+// =============================================================
+
+describe('TpmExecutionsService', () => {
+  let service: TpmExecutionsService;
+  let mockDb: MockDb;
+  let mockClient: { query: ReturnType<typeof vi.fn> };
+  let mockCardStatusService: ReturnType<typeof createMockCardStatusService>;
+  let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb = createMockDb();
+    mockClient = { query: vi.fn() };
+    mockCardStatusService = createMockCardStatusService();
+    mockActivityLogger = createMockActivityLogger();
+
+    mockDb.tenantTransaction.mockImplementation(
+      async (callback: (client: typeof mockClient) => Promise<unknown>) => {
+        return await callback(mockClient);
+      },
+    );
+
+    service = new TpmExecutionsService(
+      mockDb as unknown as DatabaseService,
+      mockCardStatusService as unknown as TpmCardStatusService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
+  });
+
+  // =============================================================
+  // createExecution
+  // =============================================================
+
+  describe('createExecution()', () => {
+    it('should create execution with Flow A (no approval)', async () => {
+      // lockCardByUuid
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: false })],
+      });
+      // markCardCompleted → Flow A
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      // insertExecution
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow({ approval_status: 'none' })],
+      });
+
+      const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        customData: {},
+      });
+
+      expect(result.uuid).toBe('exec-uuid-001');
+      expect(result.approvalStatus).toBe('none');
+    });
+
+    it('should create execution with Flow B (approval required)', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: true })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'yellow',
+        requiresApproval: true,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow({ approval_status: 'pending' })],
+      });
+
+      const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        documentation: 'Durchführungsbericht',
+        customData: {},
+      });
+
+      expect(result.approvalStatus).toBe('pending');
+    });
+
+    it('should throw BadRequestException when approval card lacks documentation', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: true })],
+      });
+
+      await expect(
+        service.createExecution(10, 'card-uuid-001', 7, {
+          customData: {},
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for empty documentation string', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: true })],
+      });
+
+      await expect(
+        service.createExecution(10, 'card-uuid-001', 7, {
+          documentation: '   ',
+          customData: {},
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when card not found', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(
+        service.createExecution(10, 'nonexistent', 7, { customData: {} }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should call activity logger after successful creation', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red' })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow()],
+      });
+
+      await service.createExecution(10, 'card-uuid-001', 7, {
+        customData: {},
+      });
+
+      expect(mockActivityLogger.logCreate).toHaveBeenCalledWith(
+        10,
+        7,
+        'tpm_execution',
+        42,
+        expect.stringContaining('card-uuid-001'),
+        expect.objectContaining({ executionUuid: 'exec-uuid-001' }),
+      );
+    });
+
+    it('should use FOR UPDATE lock on card', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red' })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow()],
+      });
+
+      await service.createExecution(10, 'card-uuid-001', 7, {
+        customData: {},
+      });
+
+      const lockSql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(lockSql).toContain('FOR UPDATE');
+    });
+  });
+
+  // =============================================================
+  // getExecution
+  // =============================================================
+
+  describe('getExecution()', () => {
+    it('should return a mapped execution', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(createExecutionRow());
+
+      const result = await service.getExecution(10, 'exec-uuid-001');
+
+      expect(result.uuid).toBe('exec-uuid-001');
+      expect(result.executedBy).toBe(7);
+      expect(result.cardUuid).toBe('card-uuid-001');
+    });
+
+    it('should throw NotFoundException when not found', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.getExecution(10, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // listExecutionsForCard
+  // =============================================================
+
+  describe('listExecutionsForCard()', () => {
+    it('should return paginated executions', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '5' });
+      mockDb.query.mockResolvedValueOnce([
+        createExecutionRow(),
+        createExecutionRow({ id: 2, uuid: 'exec-uuid-002' }),
+      ]);
+
+      const result = await service.listExecutionsForCard(
+        10,
+        'card-uuid-001',
+        1,
+        20,
+      );
+
+      expect(result.total).toBe(5);
+      expect(result.data).toHaveLength(2);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(20);
+    });
+
+    it('should handle empty result', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.listExecutionsForCard(
+        10,
+        'card-uuid-001',
+        1,
+        20,
+      );
+
+      expect(result.total).toBe(0);
+      expect(result.data).toHaveLength(0);
+    });
+  });
+
+  // =============================================================
+  // listPendingApprovals
+  // =============================================================
+
+  describe('listPendingApprovals()', () => {
+    it('should return pending executions paginated', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
+      mockDb.query.mockResolvedValueOnce([
+        createExecutionRow({ approval_status: 'pending' }),
+      ]);
+
+      const result = await service.listPendingApprovals(10, 1, 20);
+
+      expect(result.total).toBe(3);
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should handle null count result', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.listPendingApprovals(10, 1, 20);
+
+      expect(result.total).toBe(0);
+    });
+  });
+
+  // =============================================================
+  // addPhoto
+  // =============================================================
+
+  describe('addPhoto()', () => {
+    it('should add a photo to an execution', async () => {
+      // lockExecutionByUuid
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow()],
+      });
+      // getPhotoCount → 2
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '2' }],
+      });
+      // INSERT photo
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createPhotoRow()],
+      });
+
+      const result = await service.addPhoto(10, 'exec-uuid-001', {
+        filePath: '/uploads/tpm/photo1.jpg',
+        fileName: 'photo1.jpg',
+        fileSize: 2_000_000,
+        mimeType: 'image/jpeg',
+      });
+
+      expect(result.uuid).toBe('photo-uuid-001');
+      expect(result.fileName).toBe('photo1.jpg');
+    });
+
+    it('should throw BadRequestException when photo limit exceeded (max 5)', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow()],
+      });
+      // Already 5 photos
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '5' }],
+      });
+
+      await expect(
+        service.addPhoto(10, 'exec-uuid-001', {
+          filePath: '/uploads/tpm/photo6.jpg',
+          fileName: 'photo6.jpg',
+          fileSize: 1_000_000,
+          mimeType: 'image/jpeg',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when execution not found', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(
+        service.addPhoto(10, 'nonexistent', {
+          filePath: '/uploads/tpm/photo.jpg',
+          fileName: 'photo.jpg',
+          fileSize: 1_000_000,
+          mimeType: 'image/jpeg',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should use sort_order based on current photo count', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow()],
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '3' }],
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createPhotoRow({ sort_order: 3 })],
+      });
+
+      await service.addPhoto(10, 'exec-uuid-001', {
+        filePath: '/uploads/tpm/photo4.jpg',
+        fileName: 'photo4.jpg',
+        fileSize: 1_000_000,
+        mimeType: 'image/jpeg',
+      });
+
+      // INSERT params: sort_order is at index 7 (0-based)
+      const insertParams = mockClient.query.mock.calls[2]?.[1] as unknown[];
+      expect(insertParams?.[7]).toBe(3);
+    });
+  });
+
+  // =============================================================
+  // getPhotos
+  // =============================================================
+
+  describe('getPhotos()', () => {
+    it('should return photos sorted by sort_order', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        createPhotoRow({ sort_order: 0 }),
+        createPhotoRow({ id: 2, sort_order: 1 }),
+      ]);
+
+      const result = await service.getPhotos(10, 'exec-uuid-001');
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.sortOrder).toBe(0);
+    });
+
+    it('should return empty array when no photos', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getPhotos(10, 'exec-uuid-001');
+
+      expect(result).toHaveLength(0);
+    });
+  });
+});
