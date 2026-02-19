@@ -103,6 +103,10 @@
       },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
       '/lean-management/tpm': { label: 'TPM Wartung', icon: 'fa-tools' },
+      '/lean-management/tpm/overview': {
+        label: 'TPM Übersicht',
+        icon: 'fa-tools',
+      },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',
         icon: 'fa-trash-alt',
@@ -154,6 +158,16 @@
       pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
       label: 'Wartungsplan',
       icon: 'fa-clipboard-list',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/cards\/[^/]+$/,
+      label: 'Karten',
+      icon: 'fa-th',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/board\/[^/]+$/,
+      label: 'Kamishibai Board',
+      icon: 'fa-columns',
     },
   ];
 
@@ -238,6 +252,18 @@
       pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
       label: 'TPM Wartung',
       href: '/lean-management/tpm',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/cards\/[^/]+$/,
+      label: 'TPM Wartung',
+      href: '/lean-management/tpm',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/board\/[^/]+$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
       icon: 'fa-tools',
     },
   ];

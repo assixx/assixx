@@ -418,7 +418,7 @@ export const employeeMenuItems: NavItem[] = [
       {
         id: 'tpm',
         label: 'TPM Wartung',
-        url: '/lean-management/tpm',
+        url: '/lean-management/tpm/overview',
         badgeType: 'tpm',
         featureCode: 'tpm',
       },

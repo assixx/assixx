@@ -538,10 +538,12 @@
     grid-template-rows: 0fr;
     overflow: hidden;
     transition: grid-template-rows 0.25s ease;
+    pointer-events: none;
   }
 
   .submenu-wrapper.open {
     grid-template-rows: 1fr;
+    pointer-events: auto;
   }
 
   .submenu {

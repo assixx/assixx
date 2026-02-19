@@ -78,7 +78,6 @@
     );
     background-size: 300% 300%;
     background-clip: text;
-    background-clip: text;
     color: transparent;
     font-size: 2rem;
     animation: aurora 10s ease infinite;
