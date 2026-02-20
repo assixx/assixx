@@ -221,9 +221,9 @@
           void handleSubmit();
         }}
       >
-        <div class="form-group">
+        <div class="form-field">
           <label
-            class="form-label"
+            class="form-field__label"
             for="tpl-name"
           >
             {MESSAGES.TEMPLATE_NAME} *
@@ -231,25 +231,24 @@
           <input
             id="tpl-name"
             type="text"
-            class="form-input"
-            class:input-error={formName.length > 0 &&
-              formName.trim().length === 0}
+            class="form-field__control"
+            class:is-error={formName.length > 0 && formName.trim().length === 0}
             maxlength={255}
             placeholder={MESSAGES.PH_TEMPLATE_NAME}
             bind:value={formName}
           />
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label
-            class="form-label"
+            class="form-field__label"
             for="tpl-desc"
           >
             {MESSAGES.TEMPLATE_DESC}
           </label>
           <textarea
             id="tpl-desc"
-            class="form-textarea"
+            class="form-field__control form-field__control--textarea"
             rows={3}
             maxlength={2000}
             placeholder={MESSAGES.PH_TEMPLATE_DESC}
@@ -257,19 +256,19 @@
           ></textarea>
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label
-            class="form-toggle"
+            class="toggle-switch"
             for="tpl-default"
           >
             <input
               id="tpl-default"
               type="checkbox"
-              class="form-toggle__input"
+              class="toggle-switch__input"
               bind:checked={formIsDefault}
             />
-            <span class="form-toggle__slider"></span>
-            <span class="form-toggle__label"
+            <span class="toggle-switch__slider"></span>
+            <span class="toggle-switch__label"
               >{MESSAGES.TEMPLATE_IS_DEFAULT}</span
             >
           </label>
@@ -440,7 +439,5 @@
     background: var(--glass-bg-active);
   }
 
-  .input-error {
-    border-color: var(--color-danger);
-  }
+  /* .is-error is provided by the design system form-field component */
 </style>

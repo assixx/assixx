@@ -130,7 +130,7 @@
   <div class="min-w-50">
     <input
       type="text"
-      class="form-input"
+      class="form-field__control"
       placeholder={MESSAGES.SEARCH_PLACEHOLDER}
       value={searchQuery}
       oninput={handleSearchInput}

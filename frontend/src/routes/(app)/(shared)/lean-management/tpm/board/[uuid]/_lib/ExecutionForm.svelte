@@ -85,10 +85,10 @@
     />
   {:else}
     <!-- Pre-submit: documentation form -->
-    <div class="form-group">
+    <div class="form-field">
       <label
         for="exec-docs"
-        class="form-label"
+        class="form-field__label"
       >
         {MESSAGES.EXEC_DOCUMENTATION}
         {#if requiresDocs}
@@ -97,7 +97,7 @@
       </label>
       <textarea
         id="exec-docs"
-        class="form-textarea"
+        class="form-field__control form-field__control--textarea"
         placeholder={MESSAGES.EXEC_DOCUMENTATION_PH}
         bind:value={documentation}
         rows="4"
@@ -105,7 +105,7 @@
         disabled={submitting}
       ></textarea>
       {#if requiresDocs}
-        <span class="form-help">
+        <span class="form-field__message">
           {MESSAGES.EXEC_DOCUMENTATION_HINT}
         </span>
       {/if}

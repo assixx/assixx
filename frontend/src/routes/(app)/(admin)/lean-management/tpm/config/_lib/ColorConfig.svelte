@@ -183,7 +183,7 @@
       <div class="color-inputs">
         <div class="color-field">
           <label
-            class="form-label"
+            class="form-field__label"
             for="hex-{statusKey}"
           >
             {MESSAGES.COLOR_HEX}
@@ -202,8 +202,8 @@
             <input
               id="hex-{statusKey}"
               type="text"
-              class="form-input color-hex-input"
-              class:input-error={!validHex}
+              class="form-field__control color-hex-input"
+              class:is-error={!validHex}
               value={edit.colorHex}
               maxlength={7}
               placeholder="#10b981"
@@ -217,7 +217,7 @@
         </div>
         <div class="color-field color-field--grow">
           <label
-            class="form-label"
+            class="form-field__label"
             for="label-{statusKey}"
           >
             {MESSAGES.COLOR_LABEL}
@@ -225,7 +225,7 @@
           <input
             id="label-{statusKey}"
             type="text"
-            class="form-input"
+            class="form-field__control"
             value={edit.label}
             maxlength={50}
             oninput={(e: Event) => {
@@ -379,9 +379,7 @@
     font-family: monospace;
   }
 
-  .input-error {
-    border-color: var(--color-danger);
-  }
+  /* .is-error is provided by the design system form-field component */
 
   @media (width <= 768px) {
     .color-row {

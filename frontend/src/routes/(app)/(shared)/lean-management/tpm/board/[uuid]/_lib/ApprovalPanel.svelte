@@ -152,16 +152,16 @@
     </div>
 
     <!-- Note input -->
-    <div class="form-group">
+    <div class="form-field">
       <label
         for="approval-note"
-        class="form-label"
+        class="form-field__label"
       >
         {MESSAGES.APPROVAL_NOTE}
       </label>
       <textarea
         id="approval-note"
-        class="form-textarea"
+        class="form-field__control form-field__control--textarea"
         placeholder={MESSAGES.APPROVAL_NOTE_PH}
         bind:value={approvalNote}
         rows="3"

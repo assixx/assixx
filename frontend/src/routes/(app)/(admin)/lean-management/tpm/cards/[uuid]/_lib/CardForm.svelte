@@ -68,6 +68,42 @@
   const canSubmit = $derived(!submitting && title.trim().length > 0);
 
   // =========================================================================
+  // DROPDOWN STATE
+  // =========================================================================
+
+  let roleDropdownOpen = $state(false);
+  let intervalDropdownOpen = $state(false);
+
+  function closeAllDropdowns(): void {
+    roleDropdownOpen = false;
+    intervalDropdownOpen = false;
+  }
+
+  $effect(() => {
+    const anyOpen = roleDropdownOpen || intervalDropdownOpen;
+    if (!anyOpen) return;
+
+    function handleClickOutside(event: MouseEvent): void {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown')) {
+        closeAllDropdowns();
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+    };
+  });
+
+  // =========================================================================
+  // DERIVED DISPLAY TEXT
+  // =========================================================================
+
+  const selectedRoleText = $derived(CARD_ROLE_LABELS[cardRole]);
+  const selectedIntervalText = $derived(INTERVAL_LABELS[intervalType]);
+
+  // =========================================================================
   // CONSTANTS
   // =========================================================================
 
@@ -128,54 +164,96 @@
 >
   <!-- Card Role + Interval Type (side by side) -->
   <div class="form-row">
-    <div class="form-group form-group--half">
-      <label
-        class="form-label"
-        for="cardRole">{MESSAGES.LABEL_CARD_ROLE}</label
-      >
-      <select
-        id="cardRole"
-        class="form-select"
-        bind:value={cardRole}
-        disabled={submitting}
-      >
-        {#each ROLE_OPTIONS as role (role)}
-          <option value={role}>{CARD_ROLE_LABELS[role]}</option>
-        {/each}
-      </select>
-      <span class="form-help">{MESSAGES.HELP_CARD_ROLE}</span>
+    <div class="form-field card-form__half">
+      <span class="form-field__label">{MESSAGES.LABEL_CARD_ROLE}</span>
+      <div class="dropdown">
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={roleDropdownOpen}
+          disabled={submitting}
+          onclick={() => {
+            const wasOpen = roleDropdownOpen;
+            closeAllDropdowns();
+            roleDropdownOpen = !wasOpen;
+          }}
+        >
+          <span>{selectedRoleText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={roleDropdownOpen}
+        >
+          {#each ROLE_OPTIONS as role (role)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:dropdown__option--selected={cardRole === role}
+              onclick={() => {
+                cardRole = role;
+                roleDropdownOpen = false;
+              }}
+            >
+              {CARD_ROLE_LABELS[role]}
+            </button>
+          {/each}
+        </div>
+      </div>
+      <span class="form-field__message">{MESSAGES.HELP_CARD_ROLE}</span>
     </div>
 
-    <div class="form-group form-group--half">
-      <label
-        class="form-label"
-        for="intervalType">{MESSAGES.LABEL_INTERVAL_TYPE}</label
-      >
-      <select
-        id="intervalType"
-        class="form-select"
-        bind:value={intervalType}
-        disabled={submitting}
-      >
-        {#each INTERVAL_OPTIONS as intv (intv)}
-          <option value={intv}>{INTERVAL_LABELS[intv]}</option>
-        {/each}
-      </select>
+    <div class="form-field card-form__half">
+      <span class="form-field__label">{MESSAGES.LABEL_INTERVAL_TYPE}</span>
+      <div class="dropdown">
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={intervalDropdownOpen}
+          disabled={submitting}
+          onclick={() => {
+            const wasOpen = intervalDropdownOpen;
+            closeAllDropdowns();
+            intervalDropdownOpen = !wasOpen;
+          }}
+        >
+          <span>{selectedIntervalText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu dropdown__menu--scrollable"
+          class:active={intervalDropdownOpen}
+        >
+          {#each INTERVAL_OPTIONS as intv (intv)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:dropdown__option--selected={intervalType === intv}
+              onclick={() => {
+                intervalType = intv;
+                intervalDropdownOpen = false;
+              }}
+            >
+              {INTERVAL_LABELS[intv]}
+            </button>
+          {/each}
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Custom interval days (only for custom) -->
   {#if isCustomInterval}
-    <div class="form-group">
+    <div class="form-field">
       <label
-        class="form-label"
+        class="form-field__label"
         for="customDays">{MESSAGES.LABEL_CUSTOM_INTERVAL_DAYS}</label
       >
       <div class="form-input-group">
         <input
           id="customDays"
           type="number"
-          class="form-input form-input--narrow"
+          class="form-field__control card-form__narrow"
           bind:value={customIntervalDays}
           disabled={submitting}
           min={1}
@@ -184,20 +262,20 @@
         />
         <span class="form-input-group__suffix">{MESSAGES.PH_CUSTOM_DAYS}</span>
       </div>
-      <span class="form-help">{MESSAGES.HELP_CUSTOM_INTERVAL}</span>
+      <span class="form-field__message">{MESSAGES.HELP_CUSTOM_INTERVAL}</span>
     </div>
   {/if}
 
   <!-- Title -->
-  <div class="form-group">
+  <div class="form-field">
     <label
-      class="form-label"
+      class="form-field__label"
       for="title">{MESSAGES.LABEL_TITLE}</label
     >
     <input
       id="title"
       type="text"
-      class="form-input"
+      class="form-field__control"
       placeholder={MESSAGES.PH_TITLE}
       bind:value={title}
       disabled={submitting}
@@ -207,14 +285,14 @@
   </div>
 
   <!-- Description -->
-  <div class="form-group">
+  <div class="form-field">
     <label
-      class="form-label"
+      class="form-field__label"
       for="description">{MESSAGES.LABEL_DESCRIPTION}</label
     >
     <textarea
       id="description"
-      class="form-textarea"
+      class="form-field__control form-field__control--textarea"
       placeholder={MESSAGES.PH_DESCRIPTION}
       bind:value={description}
       disabled={submitting}
@@ -224,15 +302,15 @@
   </div>
 
   <!-- Location -->
-  <div class="form-group">
+  <div class="form-field">
     <label
-      class="form-label"
+      class="form-field__label"
       for="location">{MESSAGES.LABEL_LOCATION}</label
     >
     <input
       id="location"
       type="text"
-      class="form-input"
+      class="form-field__control"
       placeholder={MESSAGES.PH_LOCATION}
       bind:value={locationDescription}
       disabled={submitting}
@@ -241,18 +319,20 @@
   </div>
 
   <!-- Requires Approval toggle -->
-  <div class="form-group">
-    <label class="form-toggle">
+  <div class="form-field">
+    <label class="toggle-switch">
       <input
         type="checkbox"
-        class="form-toggle__input"
+        class="toggle-switch__input"
         bind:checked={requiresApproval}
         disabled={submitting}
       />
-      <span class="form-toggle__slider"></span>
-      <span class="form-toggle__label">{MESSAGES.LABEL_REQUIRES_APPROVAL}</span>
+      <span class="toggle-switch__slider"></span>
+      <span class="toggle-switch__label"
+        >{MESSAGES.LABEL_REQUIRES_APPROVAL}</span
+      >
     </label>
-    <span class="form-help">{MESSAGES.HELP_REQUIRES_APPROVAL}</span>
+    <span class="form-field__message">{MESSAGES.HELP_REQUIRES_APPROVAL}</span>
   </div>
 
   <!-- Actions -->
@@ -290,12 +370,12 @@
     gap: 1rem;
   }
 
-  .form-group--half {
+  .card-form__half {
     flex: 1;
     min-width: 0;
   }
 
-  .form-input--narrow {
+  .card-form__narrow {
     max-width: 120px;
   }
 

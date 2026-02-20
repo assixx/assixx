@@ -59,6 +59,58 @@
   );
 
   // =========================================================================
+  // DROPDOWN STATE
+  // =========================================================================
+
+  let statusDropdownOpen = $state(false);
+  let intervalDropdownOpen = $state(false);
+  let roleDropdownOpen = $state(false);
+
+  function closeAllDropdowns(): void {
+    statusDropdownOpen = false;
+    intervalDropdownOpen = false;
+    roleDropdownOpen = false;
+  }
+
+  $effect(() => {
+    const anyOpen =
+      statusDropdownOpen || intervalDropdownOpen || roleDropdownOpen;
+    if (!anyOpen) return;
+
+    function handleClickOutside(event: MouseEvent): void {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown')) {
+        closeAllDropdowns();
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+    };
+  });
+
+  // =========================================================================
+  // DERIVED DISPLAY TEXT
+  // =========================================================================
+
+  const selectedStatusText = $derived(
+    statusFilter === '' ?
+      MESSAGES.FILTER_ALL_STATUS
+    : CARD_STATUS_LABELS[statusFilter],
+  );
+  const selectedIntervalText = $derived(
+    intervalFilter === '' ?
+      MESSAGES.FILTER_ALL_INTERVALS
+    : INTERVAL_LABELS[intervalFilter],
+  );
+  const selectedRoleText = $derived(
+    roleFilter === '' ?
+      MESSAGES.FILTER_ALL_ROLES
+    : CARD_ROLE_LABELS[roleFilter],
+  );
+
+  // =========================================================================
   // CONSTANTS
   // =========================================================================
 
@@ -83,6 +135,7 @@
     statusFilter = '';
     intervalFilter = '';
     roleFilter = '';
+    closeAllDropdowns();
   }
 
   function formatDate(dateStr: string | null): string {
@@ -101,38 +154,149 @@
 
 <!-- Filters -->
 <div class="mb-4 flex flex-wrap items-center gap-3">
-  <select
-    class="form-select"
-    bind:value={statusFilter}
-    aria-label="Status-Filter"
+  <div
+    class="dropdown"
+    style="min-width: 12rem"
   >
-    <option value="">{MESSAGES.FILTER_ALL_STATUS}</option>
-    {#each STATUS_OPTIONS as status (status)}
-      <option value={status}>{CARD_STATUS_LABELS[status]}</option>
-    {/each}
-  </select>
+    <button
+      type="button"
+      class="dropdown__trigger"
+      class:active={statusDropdownOpen}
+      onclick={() => {
+        const wasOpen = statusDropdownOpen;
+        closeAllDropdowns();
+        statusDropdownOpen = !wasOpen;
+      }}
+    >
+      <span>{selectedStatusText}</span>
+      <i class="fas fa-chevron-down"></i>
+    </button>
+    <div
+      class="dropdown__menu"
+      class:active={statusDropdownOpen}
+    >
+      <button
+        type="button"
+        class="dropdown__option"
+        class:dropdown__option--selected={statusFilter === ''}
+        onclick={() => {
+          statusFilter = '';
+          statusDropdownOpen = false;
+        }}
+      >
+        {MESSAGES.FILTER_ALL_STATUS}
+      </button>
+      {#each STATUS_OPTIONS as status (status)}
+        <button
+          type="button"
+          class="dropdown__option"
+          class:dropdown__option--selected={statusFilter === status}
+          onclick={() => {
+            statusFilter = status;
+            statusDropdownOpen = false;
+          }}
+        >
+          {CARD_STATUS_LABELS[status]}
+        </button>
+      {/each}
+    </div>
+  </div>
 
-  <select
-    class="form-select"
-    bind:value={intervalFilter}
-    aria-label="Intervall-Filter"
+  <div
+    class="dropdown"
+    style="min-width: 12rem"
   >
-    <option value="">{MESSAGES.FILTER_ALL_INTERVALS}</option>
-    {#each INTERVAL_OPTIONS as intv (intv)}
-      <option value={intv}>{INTERVAL_LABELS[intv]}</option>
-    {/each}
-  </select>
+    <button
+      type="button"
+      class="dropdown__trigger"
+      class:active={intervalDropdownOpen}
+      onclick={() => {
+        const wasOpen = intervalDropdownOpen;
+        closeAllDropdowns();
+        intervalDropdownOpen = !wasOpen;
+      }}
+    >
+      <span>{selectedIntervalText}</span>
+      <i class="fas fa-chevron-down"></i>
+    </button>
+    <div
+      class="dropdown__menu dropdown__menu--scrollable"
+      class:active={intervalDropdownOpen}
+    >
+      <button
+        type="button"
+        class="dropdown__option"
+        class:dropdown__option--selected={intervalFilter === ''}
+        onclick={() => {
+          intervalFilter = '';
+          intervalDropdownOpen = false;
+        }}
+      >
+        {MESSAGES.FILTER_ALL_INTERVALS}
+      </button>
+      {#each INTERVAL_OPTIONS as intv (intv)}
+        <button
+          type="button"
+          class="dropdown__option"
+          class:dropdown__option--selected={intervalFilter === intv}
+          onclick={() => {
+            intervalFilter = intv;
+            intervalDropdownOpen = false;
+          }}
+        >
+          {INTERVAL_LABELS[intv]}
+        </button>
+      {/each}
+    </div>
+  </div>
 
-  <select
-    class="form-select"
-    bind:value={roleFilter}
-    aria-label="Typ-Filter"
+  <div
+    class="dropdown"
+    style="min-width: 12rem"
   >
-    <option value="">{MESSAGES.FILTER_ALL_ROLES}</option>
-    {#each ROLE_OPTIONS as role (role)}
-      <option value={role}>{CARD_ROLE_LABELS[role]}</option>
-    {/each}
-  </select>
+    <button
+      type="button"
+      class="dropdown__trigger"
+      class:active={roleDropdownOpen}
+      onclick={() => {
+        const wasOpen = roleDropdownOpen;
+        closeAllDropdowns();
+        roleDropdownOpen = !wasOpen;
+      }}
+    >
+      <span>{selectedRoleText}</span>
+      <i class="fas fa-chevron-down"></i>
+    </button>
+    <div
+      class="dropdown__menu"
+      class:active={roleDropdownOpen}
+    >
+      <button
+        type="button"
+        class="dropdown__option"
+        class:dropdown__option--selected={roleFilter === ''}
+        onclick={() => {
+          roleFilter = '';
+          roleDropdownOpen = false;
+        }}
+      >
+        {MESSAGES.FILTER_ALL_ROLES}
+      </button>
+      {#each ROLE_OPTIONS as role (role)}
+        <button
+          type="button"
+          class="dropdown__option"
+          class:dropdown__option--selected={roleFilter === role}
+          onclick={() => {
+            roleFilter = role;
+            roleDropdownOpen = false;
+          }}
+        >
+          {CARD_ROLE_LABELS[role]}
+        </button>
+      {/each}
+    </div>
+  </div>
 
   {#if hasActiveFilters}
     <button

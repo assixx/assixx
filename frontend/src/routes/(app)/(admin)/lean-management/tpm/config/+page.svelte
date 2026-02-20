@@ -8,6 +8,7 @@
    * 2. EscalationConfig — escalation thresholds
    * 3. TemplateManager — card template CRUD
    */
+  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import { MESSAGES } from '../_lib/constants';
@@ -58,13 +59,17 @@
 <div class="container">
   <!-- Header -->
   <div class="mb-6">
-    <a
-      href={resolvePath('/lean-management/tpm')}
-      class="mb-3 inline-flex items-center gap-2 text-sm text-(--color-text-muted) no-underline hover:text-(--color-primary)"
-    >
-      <i class="fas fa-arrow-left"></i>
-      {MESSAGES.BTN_BACK_TO_OVERVIEW}
-    </a>
+    <div class="mb-4">
+      <button
+        type="button"
+        class="btn btn-light"
+        onclick={() => {
+          void goto(resolvePath('/lean-management/tpm'));
+        }}
+      >
+        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.BTN_BACK_TO_OVERVIEW}
+      </button>
+    </div>
     <h1
       class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
     >

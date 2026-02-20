@@ -7,6 +7,8 @@
    * Uses GET /tpm/plans/:uuid/available-slots endpoint.
    * Only rendered in edit mode (requires existing plan UUID).
    */
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { fetchAvailableSlots, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
   import { timestampToISO, FOUR_WEEKS_MS } from '../../../_lib/date-helpers';
@@ -75,10 +77,6 @@
     void loadSlots();
   });
 
-  function handleDateChange(): void {
-    void loadSlots();
-  }
-
   function buildDayTooltip(day: DayAvailability): string {
     if (day.isAvailable) return 'Verfügbar';
     return day.conflicts.map((c) => c.description).join(', ');
@@ -97,31 +95,29 @@
   </div>
   <div class="card__body">
     <!-- Date range controls -->
-    <div class="mb-4 flex gap-3">
-      <div class="flex flex-1 flex-col gap-1">
-        <label
-          class="form-label"
-          for="slot-start">Von</label
-        >
-        <input
-          id="slot-start"
-          type="date"
-          class="form-input"
+    <div class="mb-4 flex gap-4">
+      <div class="min-w-0 flex-1">
+        <AppDatePicker
           bind:value={startDate}
-          onchange={handleDateChange}
+          label="Von"
+          size="sm"
+          onchange={(newStart: string) => {
+            endDate = timestampToISO(
+              new Date(newStart).getTime() + FOUR_WEEKS_MS,
+            );
+            void loadSlots();
+          }}
         />
       </div>
-      <div class="flex flex-1 flex-col gap-1">
-        <label
-          class="form-label"
-          for="slot-end">Bis</label
-        >
-        <input
-          id="slot-end"
-          type="date"
-          class="form-input"
+      <div class="min-w-0 flex-1">
+        <AppDatePicker
           bind:value={endDate}
-          onchange={handleDateChange}
+          label="Bis"
+          min={startDate}
+          size="sm"
+          onchange={(_v: string) => {
+            void loadSlots();
+          }}
         />
       </div>
     </div>

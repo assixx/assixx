@@ -103,9 +103,9 @@
     }}
   >
     <!-- Hours -->
-    <div class="form-group">
+    <div class="form-field">
       <label
-        class="form-label"
+        class="form-field__label"
         for="esc-hours"
       >
         {MESSAGES.ESCALATION_HOURS}
@@ -113,47 +113,49 @@
       <input
         id="esc-hours"
         type="number"
-        class="form-input"
-        class:input-error={!isValidHours}
+        class="form-field__control"
+        class:is-error={!isValidHours}
         min={1}
         max={720}
         bind:value={hours}
       />
-      <p class="form-help">{MESSAGES.ESCALATION_HOURS_HELP}</p>
+      <p class="form-field__message">{MESSAGES.ESCALATION_HOURS_HELP}</p>
     </div>
 
     <!-- Notify Team Lead -->
-    <div class="form-group">
+    <div class="form-field">
       <label
-        class="form-toggle"
+        class="toggle-switch"
         for="esc-team"
       >
         <input
           id="esc-team"
           type="checkbox"
-          class="form-toggle__input"
+          class="toggle-switch__input"
           bind:checked={notifyTeam}
         />
-        <span class="form-toggle__slider"></span>
-        <span class="form-toggle__label">{MESSAGES.ESCALATION_NOTIFY_TEAM}</span
+        <span class="toggle-switch__slider"></span>
+        <span class="toggle-switch__label"
+          >{MESSAGES.ESCALATION_NOTIFY_TEAM}</span
         >
       </label>
     </div>
 
     <!-- Notify Department Lead -->
-    <div class="form-group">
+    <div class="form-field">
       <label
-        class="form-toggle"
+        class="toggle-switch"
         for="esc-dept"
       >
         <input
           id="esc-dept"
           type="checkbox"
-          class="form-toggle__input"
+          class="toggle-switch__input"
           bind:checked={notifyDept}
         />
-        <span class="form-toggle__slider"></span>
-        <span class="form-toggle__label">{MESSAGES.ESCALATION_NOTIFY_DEPT}</span
+        <span class="toggle-switch__slider"></span>
+        <span class="toggle-switch__label"
+          >{MESSAGES.ESCALATION_NOTIFY_DEPT}</span
         >
       </label>
     </div>
@@ -175,7 +177,5 @@
 </div>
 
 <style>
-  .input-error {
-    border-color: var(--color-danger);
-  }
+  /* .is-error is provided by the design system form-field component */
 </style>

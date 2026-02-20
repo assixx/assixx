@@ -7,7 +7,7 @@
    * Shows card list for the plan with inline create/edit form.
    * Handles: CRUD, duplicate check, delete confirmation.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
@@ -211,13 +211,17 @@
 <div class="container">
   <!-- Header -->
   <div class="mb-6">
-    <a
-      href={resolvePath('/lean-management/tpm')}
-      class="mb-3 inline-flex items-center gap-2 text-sm text-(--color-text-muted) no-underline hover:text-(--color-primary)"
-    >
-      <i class="fas fa-arrow-left"></i>
-      {MESSAGES.BTN_BACK_TO_OVERVIEW}
-    </a>
+    <div class="mb-4">
+      <button
+        type="button"
+        class="btn btn-light"
+        onclick={() => {
+          void goto(resolvePath('/lean-management/tpm'));
+        }}
+      >
+        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.BTN_BACK_TO_OVERVIEW}
+      </button>
+    </div>
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h1

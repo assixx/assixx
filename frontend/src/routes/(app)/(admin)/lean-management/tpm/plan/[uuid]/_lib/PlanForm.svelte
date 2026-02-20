@@ -8,6 +8,8 @@
    */
   import { untrack } from 'svelte';
 
+  import AppTimePicker from '$lib/components/AppTimePicker.svelte';
+
   import { WEEKDAY_LABELS, MESSAGES } from '../../../_lib/constants';
 
   import type {
@@ -60,6 +62,35 @@
   }
 
   // =========================================================================
+  // DROPDOWN STATE
+  // =========================================================================
+
+  let machineDropdownOpen = $state(false);
+  let weekdayDropdownOpen = $state(false);
+
+  function closeAllDropdowns(): void {
+    machineDropdownOpen = false;
+    weekdayDropdownOpen = false;
+  }
+
+  $effect(() => {
+    const anyOpen = machineDropdownOpen || weekdayDropdownOpen;
+    if (!anyOpen) return;
+
+    function handleClickOutside(event: MouseEvent): void {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown')) {
+        closeAllDropdowns();
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+    };
+  });
+
+  // =========================================================================
   // VALIDATION
   // =========================================================================
 
@@ -74,6 +105,23 @@
   const availableMachines = $derived(
     machines.filter((m: Machine) => m.status !== 'decommissioned'),
   );
+
+  // =========================================================================
+  // DERIVED DISPLAY TEXT
+  // =========================================================================
+
+  const selectedMachineText = $derived.by(() => {
+    if (machineUuid === '') return MESSAGES.PH_MACHINE;
+    const match = availableMachines.find(
+      (m: Machine) => m.uuid === machineUuid,
+    );
+    if (match === undefined) return MESSAGES.PH_MACHINE;
+    return match.machineNumber !== null ?
+        `${match.name} (${match.machineNumber})`
+      : match.name;
+  });
+
+  const selectedWeekdayText = $derived(WEEKDAY_LABELS[baseWeekday] ?? '—');
 
   // =========================================================================
   // HANDLERS
@@ -115,32 +163,49 @@
 >
   <!-- Machine (create only) -->
   {#if isCreateMode}
-    <div class="form-group">
-      <label
-        class="form-label"
-        for="machine">{MESSAGES.LABEL_MACHINE}</label
-      >
-      <select
-        id="machine"
-        class="form-select"
-        bind:value={machineUuid}
-        disabled={submitting}
-        required
-      >
-        <option value="">{MESSAGES.PH_MACHINE}</option>
-        {#each availableMachines as machine (machine.uuid)}
-          <option value={machine.uuid}>
-            {machine.name}
-            {#if machine.machineNumber}
-              ({machine.machineNumber})
-            {/if}
-          </option>
-        {/each}
-      </select>
+    <div class="form-field">
+      <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
+      <div class="dropdown">
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={machineDropdownOpen}
+          disabled={submitting}
+          onclick={() => {
+            const wasOpen = machineDropdownOpen;
+            closeAllDropdowns();
+            machineDropdownOpen = !wasOpen;
+          }}
+        >
+          <span>{selectedMachineText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu dropdown__menu--scrollable"
+          class:active={machineDropdownOpen}
+        >
+          {#each availableMachines as machine (machine.uuid)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:dropdown__option--selected={machineUuid === machine.uuid}
+              onclick={() => {
+                machineUuid = machine.uuid;
+                machineDropdownOpen = false;
+              }}
+            >
+              {machine.name}
+              {#if machine.machineNumber}
+                ({machine.machineNumber})
+              {/if}
+            </button>
+          {/each}
+        </div>
+      </div>
     </div>
   {:else if plan !== null}
-    <div class="form-group">
-      <span class="form-label">{MESSAGES.LABEL_MACHINE}</span>
+    <div class="form-field">
+      <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
       <div class="form-static">
         <i class="fas fa-cog"></i>
         {plan.machineName ?? '—'}
@@ -149,15 +214,15 @@
   {/if}
 
   <!-- Name -->
-  <div class="form-group">
+  <div class="form-field">
     <label
-      class="form-label"
+      class="form-field__label"
       for="name">{MESSAGES.LABEL_PLAN_NAME}</label
     >
     <input
       id="name"
       type="text"
-      class="form-input"
+      class="form-field__control"
       placeholder={MESSAGES.PH_PLAN_NAME}
       bind:value={name}
       disabled={submitting}
@@ -168,27 +233,48 @@
 
   <!-- Weekday + Repeat (side by side) -->
   <div class="form-row">
-    <div class="form-group form-group--half">
-      <label
-        class="form-label"
-        for="weekday">{MESSAGES.LABEL_WEEKDAY}</label
-      >
-      <select
-        id="weekday"
-        class="form-select"
-        bind:value={baseWeekday}
-        disabled={submitting}
-      >
-        {#each WEEKDAY_LABELS as day, i (i)}
-          <option value={i}>{day}</option>
-        {/each}
-      </select>
-      <span class="form-help">{MESSAGES.HELP_WEEKDAY}</span>
+    <div class="form-field plan-form__half">
+      <span class="form-field__label">{MESSAGES.LABEL_WEEKDAY}</span>
+      <div class="dropdown">
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={weekdayDropdownOpen}
+          disabled={submitting}
+          onclick={() => {
+            const wasOpen = weekdayDropdownOpen;
+            closeAllDropdowns();
+            weekdayDropdownOpen = !wasOpen;
+          }}
+        >
+          <span>{selectedWeekdayText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:active={weekdayDropdownOpen}
+        >
+          {#each WEEKDAY_LABELS as day, i (i)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:dropdown__option--selected={baseWeekday === i}
+              onclick={() => {
+                baseWeekday = i;
+                weekdayDropdownOpen = false;
+              }}
+            >
+              {day}
+            </button>
+          {/each}
+        </div>
+      </div>
+      <span class="form-field__message">{MESSAGES.HELP_WEEKDAY}</span>
     </div>
 
-    <div class="form-group form-group--half">
+    <div class="form-field plan-form__half">
       <label
-        class="form-label"
+        class="form-field__label"
         for="repeat">{MESSAGES.LABEL_REPEAT_EVERY}</label
       >
       <div class="form-input-group">
@@ -196,7 +282,7 @@
         <input
           id="repeat"
           type="number"
-          class="form-input form-input--narrow"
+          class="form-field__control plan-form__narrow"
           bind:value={baseRepeatEvery}
           disabled={submitting}
           min={1}
@@ -204,50 +290,43 @@
         />
         <span class="form-input-group__suffix">Woche(n)</span>
       </div>
-      <span class="form-help">{MESSAGES.HELP_REPEAT}</span>
+      <span class="form-field__message">{MESSAGES.HELP_REPEAT}</span>
     </div>
   </div>
 
   <!-- Time -->
-  <div class="form-group">
-    <label
-      class="form-label"
-      for="time">{MESSAGES.LABEL_TIME}</label
-    >
-    <input
-      id="time"
-      type="time"
-      class="form-input form-input--narrow"
-      placeholder={MESSAGES.PH_TIME}
+  <div class="form-field">
+    <span class="form-field__label">{MESSAGES.LABEL_TIME}</span>
+    <AppTimePicker
       bind:value={baseTime}
       disabled={submitting}
     />
   </div>
 
   <!-- Shift plan required toggle -->
-  <div class="form-group">
-    <label class="form-toggle">
+  <div class="form-field">
+    <label class="toggle-switch">
       <input
         type="checkbox"
-        class="form-toggle__input"
+        class="toggle-switch__input"
         bind:checked={shiftPlanRequired}
         disabled={submitting}
       />
-      <span class="form-toggle__slider"></span>
-      <span class="form-toggle__label">{MESSAGES.LABEL_SHIFT_REQUIRED}</span>
+      <span class="toggle-switch__slider"></span>
+      <span class="toggle-switch__label">{MESSAGES.LABEL_SHIFT_REQUIRED}</span>
     </label>
-    <span class="form-help">{MESSAGES.HELP_SHIFT_REQUIRED}</span>
+    <span class="form-field__message">{MESSAGES.HELP_SHIFT_REQUIRED}</span>
   </div>
 
   <!-- Notes -->
-  <div class="form-group">
+  <div class="form-field">
     <label
-      class="form-label"
+      class="form-field__label"
       for="notes">{MESSAGES.LABEL_NOTES}</label
     >
     <textarea
       id="notes"
-      class="form-textarea"
+      class="form-field__control form-field__control--textarea"
       placeholder={MESSAGES.PH_NOTES}
       bind:value={notes}
       disabled={submitting}
@@ -291,12 +370,12 @@
     gap: 1rem;
   }
 
-  .form-group--half {
+  .plan-form__half {
     flex: 1;
     min-width: 0;
   }
 
-  .form-input--narrow {
+  .plan-form__narrow {
     max-width: 160px;
   }
 
@@ -325,7 +404,7 @@
     white-space: nowrap;
   }
 
-  .form-input-group :global(.form-input) {
+  .form-input-group .plan-form__narrow {
     width: 80px;
     text-align: center;
   }
