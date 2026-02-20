@@ -561,12 +561,6 @@
     display: block;
   }
 
-  /* Cross-component: logo size when sidebar is collapsed */
-  :global(body:has(.sidebar.collapsed)) :global(.header .logo) {
-    margin-bottom: 8px;
-    width: 57px;
-  }
-
   @media (width < 768px) {
     .layout-container {
       flex-direction: column;

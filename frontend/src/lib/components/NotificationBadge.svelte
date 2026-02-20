@@ -58,9 +58,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #fff;
     border-radius: 9999px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
     z-index: 10;
   }
 
@@ -68,7 +68,7 @@
   .notification-badge--absolute {
     position: absolute;
     top: -7px;
-    right: -14px;
+    right: -16px;
   }
 
   /* Absolute positioning for submenu items - right aligned within parent */
@@ -83,9 +83,11 @@
     0% {
       transform: scale(0);
     }
+
     50% {
       transform: scale(1.2);
     }
+
     100% {
       transform: scale(1);
     }
@@ -94,12 +96,13 @@
   @keyframes badge-pulse {
     0%,
     100% {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
     }
+
     50% {
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.3),
-        0 0 0 3px rgba(239, 68, 68, 0.2);
+        0 2px 8px rgb(0 0 0 / 30%),
+        0 0 0 3px rgb(239 68 68 / 20%);
     }
   }
 </style>

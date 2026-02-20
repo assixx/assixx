@@ -5,6 +5,8 @@
    * Extracted from +layout.svelte for modularity (max-lines)
    * @module (app)/_lib/AppSidebar
    */
+  import { SvelteSet } from 'svelte/reactivity';
+
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
 
@@ -59,13 +61,13 @@
   }: Props = $props();
 
   // --- INTERNAL STATE ---
-  let openSubmenu = $state<string | null>(null);
+  const openSubmenus = new SvelteSet<string>();
   let openSubSubmenu = $state<string | null>(null);
 
   // Close all submenus when sidebar collapses
   $effect(() => {
     if (collapsed) {
-      openSubmenu = null;
+      openSubmenus.clear();
       openSubSubmenu = null;
     }
   });
@@ -79,7 +81,7 @@
     );
     if (activeParent === undefined) return;
 
-    openSubmenu = activeParent.id;
+    openSubmenus.add(activeParent.id);
 
     const activeSubParent = activeParent.submenu?.find(
       (sub: NavItem) => sub.submenu !== undefined && isActive(sub),
@@ -127,8 +129,11 @@
   /** Toggle submenu */
   function toggleSubmenu(itemId: string): void {
     if (collapsed) return;
-    openSubmenu = openSubmenu === itemId ? null : itemId;
-    openSubSubmenu = null;
+    if (openSubmenus.has(itemId)) {
+      openSubmenus.delete(itemId);
+    } else {
+      openSubmenus.add(itemId);
+    }
   }
 
   /** Toggle nested sub-submenu */
@@ -165,7 +170,7 @@
           <li
             class="sidebar-item has-submenu"
             class:active={isActive(item)}
-            class:open={openSubmenu === item.id}
+            class:open={openSubmenus.has(item.id)}
           >
             <button
               type="button"
@@ -180,7 +185,7 @@
               >
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded ICONS object, safe -->
                 {@html item.icon}
-                {#if openSubmenu !== item.id}
+                {#if !openSubmenus.has(item.id)}
                   <NotificationBadge
                     count={getSubmenuBadgeCount(item.submenu)}
                     size="sm"
@@ -201,7 +206,7 @@
             </button>
             <div
               class="submenu-wrapper"
-              class:open={openSubmenu === item.id}
+              class:open={openSubmenus.has(item.id)}
             >
               <ul class="submenu">
                 {#each item.submenu as subItem (subItem.id)}
@@ -282,7 +287,7 @@
                         onclick={handleLinkClick}
                       >
                         <span>{subItem.label}</span>
-                        {#if subItem.badgeType && openSubmenu === item.id}
+                        {#if subItem.badgeType && openSubmenus.has(item.id)}
                           <NotificationBadge
                             count={notificationStore.counts[subItem.badgeType]}
                             size="sm"
@@ -363,21 +368,13 @@
     overflow: hidden auto;
   }
 
-  .sidebar::-webkit-scrollbar {
-    width: 6px;
+  .sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(0 0 0 / 25%) transparent;
   }
 
-  .sidebar::-webkit-scrollbar-track {
-    background: var(--glass-bg-hover);
-  }
-
-  .sidebar::-webkit-scrollbar-thumb {
-    border-radius: 3px;
-    background: var(--color-glass-border-hover);
-  }
-
-  .sidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
+  :global(html.dark) .sidebar {
+    scrollbar-color: var(--glass-border) transparent;
   }
 
   .sidebar-nav {
@@ -511,6 +508,7 @@
   .sidebar-item {
     margin: 0;
     padding: 0;
+    margin-right: 10px;
   }
 
   .sidebar-item.has-submenu .sidebar-link {

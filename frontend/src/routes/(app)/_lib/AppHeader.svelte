@@ -105,12 +105,12 @@
       <img
         src="/images/logo_collapsed_darkmode.png"
         alt="Assixx Logo"
-        class="logo logo-dark"
+        class="logo-collapsed logo-dark"
       />
       <img
         src="/images/logo_collapsed_lightmode.png"
         alt="Assixx Logo"
-        class="logo logo-light"
+        class="logo-collapsed logo-light"
       />
     {:else}
       <img
@@ -212,8 +212,13 @@
 
   .logo {
     margin-bottom: 3px;
-    margin-left: -13px;
+    margin-left: -10px;
     width: 135px;
+  }
+
+  .logo-collapsed {
+    margin-bottom: 8px;
+    width: 47px;
   }
 
   /* Logo theme switching */
@@ -285,7 +290,7 @@
     align-items: center;
     cursor: pointer;
     margin-right: 15px;
-    margin-left: 8px;
+    margin-left: 7px;
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
