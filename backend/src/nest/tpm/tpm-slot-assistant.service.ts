@@ -142,12 +142,14 @@ export class TpmSlotAssistantService {
   /**
    * Get per-day availability for a machine over a date range.
    * Combines shift plan (E15), machine downtime, and existing TPM slots.
+   * When shiftPlanRequired=false, missing shift plans are not flagged as conflicts.
    */
   async getAvailableSlots(
     tenantId: number,
     machineId: number,
     startDate: string,
     endDate: string,
+    shiftPlanRequired: boolean = true,
   ): Promise<SlotAvailabilityResult> {
     const days = generateDateRange(startDate, endDate);
     if (days.length > MAX_RANGE_DAYS) {
@@ -176,7 +178,7 @@ export class TpmSlotAssistantService {
     const dayResults = days.map((date: string) =>
       buildDayConflicts(
         date,
-        shiftPlanExists,
+        shiftPlanRequired && !shiftPlanExists,
         downtimeSet,
         tpmDueDates,
         tpmDateSet,
@@ -199,11 +201,13 @@ export class TpmSlotAssistantService {
   /**
    * Check availability for a single date.
    * Returns boolean + list of conflicts.
+   * When shiftPlanRequired=false, missing shift plans are not flagged.
    */
   async checkSlotAvailability(
     tenantId: number,
     machineId: number,
     date: string,
+    shiftPlanRequired: boolean = true,
   ): Promise<SlotCheckResult> {
     const [hasShiftPlan, downtimes, tpmDueDates] = await Promise.all([
       this.hasShiftPlan(tenantId, machineId, date, date),
@@ -213,7 +217,7 @@ export class TpmSlotAssistantService {
 
     const conflicts: SlotConflict[] = [];
 
-    if (!hasShiftPlan) {
+    if (shiftPlanRequired && !hasShiftPlan) {
       conflicts.push({
         type: 'no_shift_plan',
         description: 'Kein Schichtplan für dieses Datum (E15)',
@@ -223,7 +227,9 @@ export class TpmSlotAssistantService {
     for (const dt of downtimes) {
       conflicts.push({
         type: 'machine_downtime',
-        description: `Maschine ${dt.status}${dt.reason !== null ? `: ${dt.reason}` : ''}`,
+        description: dt.reason === null
+          ? `Maschine ${dt.status}`
+          : `Maschine ${dt.status}: ${dt.reason}`,
       });
     }
 
@@ -578,14 +584,14 @@ function dedupeTeamMembers(
 /** Build conflicts for a single day from pre-fetched data sources */
 function buildDayConflicts(
   date: string,
-  shiftPlanExists: boolean,
+  missingShiftPlan: boolean,
   downtimeSet: Map<string, MachineDowntimeRow>,
   tpmDueDates: TpmDueDateRow[],
   tpmDateSet: Set<string>,
 ): DayAvailability {
   const conflicts: SlotConflict[] = [];
 
-  if (!shiftPlanExists) {
+  if (missingShiftPlan) {
     conflicts.push({
       type: 'no_shift_plan',
       description: 'Kein Schichtplan für diesen Zeitraum (E15)',
@@ -596,7 +602,9 @@ function buildDayConflicts(
   if (downtime !== undefined) {
     conflicts.push({
       type: 'machine_downtime',
-      description: `Maschine ${downtime.status}${downtime.reason !== null ? `: ${downtime.reason}` : ''}`,
+      description: downtime.reason === null
+        ? `Maschine ${downtime.status}`
+        : `Maschine ${downtime.status}: ${downtime.reason}`,
     });
   }
 

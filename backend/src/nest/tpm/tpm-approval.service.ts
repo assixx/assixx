@@ -32,6 +32,7 @@ import {
 } from './tpm-executions.helpers.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
+import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type {
   TpmApprovalStatus,
   TpmCardExecution,
@@ -53,6 +54,7 @@ export class TpmApprovalService {
     private readonly cardStatusService: TpmCardStatusService,
     private readonly activityLogger: ActivityLoggerService,
     private readonly notificationService: TpmNotificationService,
+    private readonly schedulingService: TpmSchedulingService,
   ) {}
 
   /** Approve an execution (yellow → green) */
@@ -94,6 +96,13 @@ export class TpmApprovalService {
           tenantId,
           execution.card_id,
           execution.executed_by,
+        );
+
+        // Card is now green → advance to next scheduled date
+        await this.schedulingService.advanceSchedule(
+          client,
+          tenantId,
+          execution.card_id,
         );
 
         const fetched = await this.fetchExecution(

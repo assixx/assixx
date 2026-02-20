@@ -136,12 +136,16 @@
               {slotData.availableDays}
             </span>
             <span class="text-sm text-(--color-text-muted)">
-              {MESSAGES.SLOT_STATS} {slotData.totalDays}
+              {MESSAGES.SLOT_STATS}
+              {slotData.totalDays}
             </span>
           </div>
         {/if}
         {#if cardsHref !== undefined}
-          <a href={cardsHref} class="btn btn-primary">
+          <a
+            href={cardsHref}
+            class="btn btn-primary"
+          >
             <i class="fas fa-th"></i>
             Karten verwalten
           </a>
@@ -153,7 +157,10 @@
     <!-- Date range controls + legend -->
     <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
       <div class="flex gap-4">
-        <div class="min-w-0" style="width: 160px">
+        <div
+          class="min-w-0"
+          style="width: 160px"
+        >
           <AppDatePicker
             bind:value={startDate}
             label="Von"
@@ -167,7 +174,10 @@
             }}
           />
         </div>
-        <div class="min-w-0" style="width: 160px">
+        <div
+          class="min-w-0"
+          style="width: 160px"
+        >
           <AppDatePicker
             bind:value={endDate}
             label="Bis"
@@ -212,7 +222,10 @@
       <div class="slot-calendar">
         <!-- Weekday headers -->
         {#each WEEKDAY_HEADERS as header, i (i)}
-          <div class="slot-header" class:slot-header--weekend={i >= 5}>
+          <div
+            class="slot-header"
+            class:slot-header--weekend={i >= 5}
+          >
             {header}
           </div>
         {/each}
@@ -238,7 +251,9 @@
               <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
             {:else if day.conflicts.length > 0}
               <i
-                class="fas {getConflictIcon(day.conflicts[0]?.type ?? '')} slot-day__icon slot-day__icon--conflict"
+                class="fas {getConflictIcon(
+                  day.conflicts[0]?.type ?? '',
+                )} slot-day__icon slot-day__icon--conflict"
               ></i>
               <span class="slot-day__conflict">
                 {getConflictLabel(day.conflicts[0]?.type ?? '')}
@@ -322,11 +337,7 @@
 
   .slot-day--weekend.slot-day--available {
     background: color-mix(in srgb, var(--color-success) 5%, transparent);
-    border-color: color-mix(
-      in srgb,
-      var(--color-success) 15%,
-      transparent
-    );
+    border-color: color-mix(in srgb, var(--color-success) 15%, transparent);
   }
 
   .slot-day__date {

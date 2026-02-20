@@ -19,6 +19,7 @@ import type { TpmCardStatusService } from './tpm-card-status.service.js';
 import type { TpmExecutionJoinRow } from './tpm-executions.helpers.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
 import type { TpmNotificationService } from './tpm-notification.service.js';
+import type { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type { TpmCardExecutionPhotoRow, TpmCardRow } from './tpm.types.js';
 
 // =============================================================
@@ -139,6 +140,9 @@ describe('TpmExecutionsService', () => {
   let mockCardStatusService: ReturnType<typeof createMockCardStatusService>;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
   let mockNotificationService: ReturnType<typeof createMockNotificationService>;
+  const mockSchedulingService = {
+    advanceSchedule: vi.fn().mockResolvedValue('2026-04-01'),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -159,6 +163,7 @@ describe('TpmExecutionsService', () => {
       mockCardStatusService as unknown as TpmCardStatusService,
       mockActivityLogger as unknown as ActivityLoggerService,
       mockNotificationService as unknown as TpmNotificationService,
+      mockSchedulingService as unknown as TpmSchedulingService,
     );
   });
 

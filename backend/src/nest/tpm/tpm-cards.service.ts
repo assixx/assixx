@@ -23,6 +23,7 @@ import {
   buildCardUpdateFields,
   mapCardRowToApi,
 } from './tpm-cards.helpers.js';
+import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type {
   TpmCard,
   TpmCardRole,
@@ -69,6 +70,7 @@ export class TpmCardsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly schedulingService: TpmSchedulingService,
   ) {}
 
   // ============================================================================
@@ -160,37 +162,8 @@ export class TpmCardsService {
     this.logger.debug(`Creating card "${dto.title}" for plan ${dto.planUuid}`);
 
     const card = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmCard> => {
-        const { planId, machineId } = await this.resolvePlanIds(
-          client,
-          tenantId,
-          dto.planUuid,
-        );
-        const cardCode = await this.generateCardCode(
-          client,
-          tenantId,
-          planId,
-          dto.cardRole,
-        );
-        const sortOrder = await this.getNextSortOrder(client, tenantId, planId);
-
-        return await this.executeCardInsert(client, {
-          tenantId,
-          planId,
-          machineId,
-          cardCode,
-          sortOrder,
-          createdBy,
-          cardRole: dto.cardRole,
-          intervalType: dto.intervalType,
-          intervalOrder: INTERVAL_ORDER_MAP[dto.intervalType],
-          title: dto.title,
-          description: dto.description ?? null,
-          locationDescription: dto.locationDescription ?? null,
-          requiresApproval: dto.requiresApproval,
-          customIntervalDays: dto.customIntervalDays ?? null,
-        });
-      },
+      (client: PoolClient): Promise<TpmCard> =>
+        this.runCreateTransaction(client, tenantId, dto, createdBy),
     );
 
     void this.activityLogger.logCreate(
@@ -299,14 +272,81 @@ export class TpmCardsService {
   // PRIVATE HELPERS
   // ============================================================================
 
-  /** Resolve plan UUID → plan ID + machine ID */
-  private async resolvePlanIds(
+  /** Transactional body for card creation (context, code, insert, schedule) */
+  private async runCreateTransaction(
+    client: PoolClient,
+    tenantId: number,
+    dto: CreateCardDto,
+    createdBy: number,
+  ): Promise<TpmCard> {
+    const planCtx = await this.resolvePlanContext(
+      client,
+      tenantId,
+      dto.planUuid,
+    );
+    const cardCode = await this.generateCardCode(
+      client,
+      tenantId,
+      planCtx.planId,
+      dto.cardRole,
+    );
+    const sortOrder = await this.getNextSortOrder(
+      client,
+      tenantId,
+      planCtx.planId,
+    );
+
+    const { id: cardId, card } = await this.executeCardInsert(client, {
+      tenantId,
+      planId: planCtx.planId,
+      machineId: planCtx.machineId,
+      cardCode,
+      sortOrder,
+      createdBy,
+      cardRole: dto.cardRole,
+      intervalType: dto.intervalType,
+      intervalOrder: INTERVAL_ORDER_MAP[dto.intervalType],
+      title: dto.title,
+      description: dto.description ?? null,
+      locationDescription: dto.locationDescription ?? null,
+      requiresApproval: dto.requiresApproval,
+      customIntervalDays: dto.customIntervalDays ?? null,
+    });
+
+    await this.schedulingService.initializeCardSchedule(
+      client,
+      tenantId,
+      cardId,
+      dto.intervalType,
+      {
+        baseWeekday: planCtx.baseWeekday,
+        baseRepeatEvery: planCtx.baseRepeatEvery,
+      },
+      dto.customIntervalDays ?? null,
+    );
+
+    return card;
+  }
+
+  /** Resolve plan UUID → plan ID + machine ID + scheduling config */
+  private async resolvePlanContext(
     client: PoolClient,
     tenantId: number,
     planUuid: string,
-  ): Promise<{ planId: number; machineId: number }> {
-    const result = await client.query<{ id: number; machine_id: number }>(
-      `SELECT id, machine_id FROM tpm_maintenance_plans
+  ): Promise<{
+    planId: number;
+    machineId: number;
+    baseWeekday: number;
+    baseRepeatEvery: number;
+  }> {
+    const result = await client.query<{
+      id: number;
+      machine_id: number;
+      base_weekday: number;
+      base_repeat_every: number;
+    }>(
+      `SELECT id, machine_id, base_weekday, base_repeat_every
+       FROM tpm_maintenance_plans
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
       [planUuid, tenantId],
     );
@@ -314,7 +354,12 @@ export class TpmCardsService {
     if (row === undefined) {
       throw new NotFoundException(`Wartungsplan ${planUuid} nicht gefunden`);
     }
-    return { planId: row.id, machineId: row.machine_id };
+    return {
+      planId: row.id,
+      machineId: row.machine_id,
+      baseWeekday: row.base_weekday,
+      baseRepeatEvery: row.base_repeat_every,
+    };
   }
 
   /** Generate the next card code (e.g., "BT3", "IV7") — counts ALL cards including deleted */
@@ -334,7 +379,7 @@ export class TpmCardsService {
     return `${prefix}${count + 1}`;
   }
 
-  /** Execute the INSERT query for a new card */
+  /** Execute the INSERT query for a new card — returns internal id + mapped API card */
   private async executeCardInsert(
     client: PoolClient,
     data: {
@@ -353,7 +398,7 @@ export class TpmCardsService {
       requiresApproval: boolean;
       customIntervalDays: number | null;
     },
-  ): Promise<TpmCard> {
+  ): Promise<{ id: number; card: TpmCard }> {
     const uuid = uuidv7();
     const result = await client.query<TpmCardJoinRow>(
       `INSERT INTO tpm_cards
@@ -387,7 +432,7 @@ export class TpmCardsService {
       throw new Error('INSERT into tpm_cards returned no rows');
     }
 
-    return mapCardRowToApi(row);
+    return { id: row.id, card: mapCardRowToApi(row) };
   }
 
   /** Get next sort_order for a plan's active cards */

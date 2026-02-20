@@ -28,6 +28,7 @@ import {
 } from './tpm-executions.helpers.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
+import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type {
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
@@ -72,6 +73,7 @@ export class TpmExecutionsService {
     private readonly cardStatusService: TpmCardStatusService,
     private readonly activityLogger: ActivityLoggerService,
     private readonly notificationService: TpmNotificationService,
+    private readonly schedulingService: TpmSchedulingService,
   ) {}
 
   /**
@@ -107,6 +109,15 @@ export class TpmExecutionsService {
           lockedCard.id,
           userId,
         );
+
+        // Flow A (no approval): card is green → advance to next scheduled date
+        if (!completionResult.requiresApproval) {
+          await this.schedulingService.advanceSchedule(
+            client,
+            tenantId,
+            lockedCard.id,
+          );
+        }
 
         const approvalStatus =
           completionResult.requiresApproval ? 'pending' : 'none';

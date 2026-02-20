@@ -19,6 +19,7 @@ import { TpmCardsService } from './tpm-cards.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import { TpmConfigController } from './tpm-config.controller.js';
 import { TpmDashboardService } from './tpm-dashboard.service.js';
+import { TpmDueDateCronService } from './tpm-due-date-cron.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
 import { TpmExecutionsController } from './tpm-executions.controller.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
@@ -27,6 +28,7 @@ import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmPlansController } from './tpm-plans.controller.js';
 import { TpmPlansService } from './tpm-plans.service.js';
+import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTemplatesService } from './tpm-templates.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
@@ -71,6 +73,10 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmNotificationService,
     TpmEscalationService,
 
+    // Scheduling + Cron (scheduling wiring)
+    TpmSchedulingService,
+    TpmDueDateCronService,
+
     // Dashboard count (Session 14)
     TpmDashboardService,
   ],
@@ -89,6 +95,8 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmApprovalService,
     TpmNotificationService,
     TpmEscalationService,
+    TpmSchedulingService,
+    TpmDueDateCronService,
     TpmDashboardService,
   ],
 })

@@ -18,6 +18,7 @@ import type { ActivityLoggerService } from '../common/services/activity-logger.s
 import type { DatabaseService } from '../database/database.service.js';
 import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
 import { TpmCardsService } from './tpm-cards.service.js';
+import type { TpmSchedulingService } from './tpm-scheduling.service.js';
 
 // =============================================================
 // Mock factories
@@ -84,6 +85,9 @@ describe('TpmCardsService', () => {
   let mockDb: MockDb;
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+  const mockSchedulingService = {
+    initializeCardSchedule: vi.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -100,6 +104,7 @@ describe('TpmCardsService', () => {
     service = new TpmCardsService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockSchedulingService as unknown as TpmSchedulingService,
     );
   });
 
@@ -276,7 +281,9 @@ describe('TpmCardsService', () => {
     it('should resolve plan IDs, generate card code, and INSERT', async () => {
       // resolvePlanIds
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       // generateCardCode (COUNT)
       mockClient.query.mockResolvedValueOnce({
@@ -338,7 +345,9 @@ describe('TpmCardsService', () => {
 
     it('should generate BT prefix for operator role', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '4' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '3' }] });
@@ -365,7 +374,9 @@ describe('TpmCardsService', () => {
 
     it('should generate IV prefix for maintenance role', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '2' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
@@ -391,7 +402,9 @@ describe('TpmCardsService', () => {
 
     it('should auto-set interval_order from INTERVAL_ORDER_MAP', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
@@ -420,7 +433,9 @@ describe('TpmCardsService', () => {
 
     it('should auto-increment sort_order per plan', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '7' }] });
@@ -465,7 +480,9 @@ describe('TpmCardsService', () => {
 
     it('should throw when INSERT returns no rows', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
@@ -488,7 +505,9 @@ describe('TpmCardsService', () => {
 
     it('should pass null for optional fields when not provided', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
@@ -523,7 +542,9 @@ describe('TpmCardsService', () => {
 
     it('should call activity logger after successful creation', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 42 }],
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });

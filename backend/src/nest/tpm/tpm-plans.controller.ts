@@ -175,6 +175,7 @@ export class TpmPlansController {
       plan.machineId,
       query.startDate,
       query.endDate,
+      plan.shiftPlanRequired,
     );
   }
 

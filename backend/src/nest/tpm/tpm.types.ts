@@ -145,6 +145,17 @@ export interface TpmCardExecutionPhotoRow {
   created_at: string;
 }
 
+/** Row type for `tpm_scheduled_dates` table (migration 046) — year-ahead dates per card */
+export interface TpmScheduledDateRow {
+  id: number;
+  tenant_id: number;
+  card_id: number;
+  scheduled_date: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
 /** Row type for `tpm_escalation_config` table (migration 044) — 1 row per tenant, no uuid */
 export interface TpmEscalationConfigRow {
   id: number;

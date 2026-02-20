@@ -92,6 +92,25 @@ describe('TpmSlotAssistantService', () => {
       expect(result.days[0]?.conflicts[0]?.type).toBe('no_shift_plan');
     });
 
+    it('should skip shift plan check when shiftPlanRequired=false', async () => {
+      // hasShiftPlan → false, but plan says it's not required
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAvailableSlots(
+        10,
+        42,
+        '2026-03-01',
+        '2026-03-01',
+        false,
+      );
+
+      expect(result.availableDays).toBe(1);
+      expect(result.days[0]?.isAvailable).toBe(true);
+      expect(result.days[0]?.conflicts).toHaveLength(0);
+    });
+
     it('should detect machine downtime conflicts', async () => {
       // hasShiftPlan → true
       mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
@@ -237,6 +256,23 @@ describe('TpmSlotAssistantService', () => {
       expect(result.isAvailable).toBe(false);
       expect(result.hasShiftPlan).toBe(false);
       expect(result.conflicts[0]?.type).toBe('no_shift_plan');
+    });
+
+    it('should skip shift plan check when shiftPlanRequired=false', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.checkSlotAvailability(
+        10,
+        42,
+        '2026-03-01',
+        false,
+      );
+
+      expect(result.isAvailable).toBe(true);
+      expect(result.hasShiftPlan).toBe(false);
+      expect(result.conflicts).toHaveLength(0);
     });
 
     it('should detect machine downtime with reason', async () => {
