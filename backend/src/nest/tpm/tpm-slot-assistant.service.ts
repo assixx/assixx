@@ -72,6 +72,22 @@ export interface TeamAvailabilityResult {
   totalCount: number;
 }
 
+/** Team info for machine_teams lookup */
+export interface MachineTeamInfo {
+  teamId: number;
+  teamName: string;
+}
+
+/** Result of getMachineTeamAvailability() — all teams for a machine */
+export interface MachineTeamAvailabilityResult {
+  machineId: number;
+  date: string;
+  teams: MachineTeamInfo[];
+  members: TeamMemberStatus[];
+  availableCount: number;
+  totalCount: number;
+}
+
 // ============================================================================
 // Internal DB Row Types
 // ============================================================================
@@ -103,6 +119,11 @@ interface UserAvailabilityRow {
   status: string;
   start_date: string;
   end_date: string;
+}
+
+interface MachineTeamRow {
+  team_id: number;
+  team_name: string;
 }
 
 /** Max days allowed in a single range query */
@@ -286,11 +307,66 @@ export class TpmSlotAssistantService {
     return await this.hasShiftPlan(tenantId, machineId, startDate, endDate);
   }
 
+  /**
+   * Get combined team member availability for all teams assigned to a machine.
+   * Resolves machine → machine_teams → team members → individual availability.
+   */
+  async getMachineTeamAvailability(
+    tenantId: number,
+    machineId: number,
+    date: string,
+  ): Promise<MachineTeamAvailabilityResult> {
+    const machineTeams = await this.fetchMachineTeams(tenantId, machineId);
+
+    if (machineTeams.length === 0) {
+      return {
+        machineId,
+        date,
+        teams: [],
+        members: [],
+        availableCount: 0,
+        totalCount: 0,
+      };
+    }
+
+    const teams = machineTeams.map((t: MachineTeamRow) => ({
+      teamId: t.team_id,
+      teamName: t.team_name,
+    }));
+
+    const teamResults = await Promise.all(
+      machineTeams.map((t: MachineTeamRow) =>
+        this.getTeamAvailability(tenantId, t.team_id, date),
+      ),
+    );
+
+    // Merge members across teams, dedupe by userId
+    const members = dedupeTeamMembers(teamResults);
+    const availableCount = members.filter(
+      (m: TeamMemberStatus) => m.isAvailable,
+    ).length;
+
+    return {
+      machineId,
+      date,
+      teams,
+      members,
+      availableCount,
+      totalCount: members.length,
+    };
+  }
+
   // ============================================================================
   // PRIVATE DATA SOURCE QUERIES
   // ============================================================================
 
-  /** Data source 1: Check if a published/locked shift plan covers the range */
+  /**
+   * Data source 1: Check if ANY shift coverage exists for machine + date range.
+   * Checks all 3 sources (see ADR-011):
+   *   1. shift_plans — manual plans (direct machine_id OR via team_id)
+   *   2. shift_rotation_patterns — rotation-based (via team_id → machine_teams)
+   *   3. shifts — individual shifts without plan (direct machine_id OR via team_id)
+   */
   private async hasShiftPlan(
     tenantId: number,
     machineId: number,
@@ -298,13 +374,30 @@ export class TpmSlotAssistantService {
     endDate: string,
   ): Promise<boolean> {
     const row = await this.db.queryOne<ShiftPlanCountRow>(
-      `SELECT COUNT(*) AS count
-       FROM shift_plans
-       WHERE machine_id = $1
-         AND tenant_id = $2
-         AND start_date <= $4::date
-         AND end_date >= $3::date
-         AND status IN ('published', 'locked')`,
+      `WITH mt AS (
+         SELECT team_id FROM machine_teams
+         WHERE machine_id = $1 AND tenant_id = $2
+       )
+       SELECT CASE WHEN (
+         EXISTS (
+           SELECT 1 FROM shift_plans
+           WHERE tenant_id = $2
+             AND (machine_id = $1 OR team_id IN (SELECT team_id FROM mt))
+             AND start_date <= $4::date AND end_date >= $3::date
+             AND status IN ('published', 'locked')
+         ) OR EXISTS (
+           SELECT 1 FROM shift_rotation_patterns
+           WHERE tenant_id = $2
+             AND team_id IN (SELECT team_id FROM mt)
+             AND starts_at <= $4::date AND ends_at >= $3::date
+             AND is_active = 1
+         ) OR EXISTS (
+           SELECT 1 FROM shifts
+           WHERE tenant_id = $2
+             AND (machine_id = $1 OR team_id IN (SELECT team_id FROM mt))
+             AND date BETWEEN $3::date AND $4::date
+         )
+       ) THEN 1 ELSE 0 END AS count`,
       [machineId, tenantId, startDate, endDate],
     );
     return Number.parseInt(row?.count ?? '0', 10) > 0;
@@ -397,6 +490,22 @@ export class TpmSlotAssistantService {
     }
     return result;
   }
+
+  /** Data source 5: Fetch teams assigned to a machine via machine_teams */
+  private async fetchMachineTeams(
+    tenantId: number,
+    machineId: number,
+  ): Promise<MachineTeamRow[]> {
+    return await this.db.query<MachineTeamRow>(
+      `SELECT mt.team_id, t.name AS team_name
+       FROM machine_teams mt
+       JOIN teams t ON mt.team_id = t.id AND t.tenant_id = mt.tenant_id
+       WHERE mt.machine_id = $1
+         AND mt.tenant_id = $2
+       ORDER BY mt.is_primary DESC, t.name ASC`,
+      [machineId, tenantId],
+    );
+  }
 }
 
 // ============================================================================
@@ -447,6 +556,23 @@ function buildDateOverlapSet(
   }
 
   return result;
+}
+
+/** Merge team members across multiple teams, deduplicate by userId */
+function dedupeTeamMembers(
+  teamResults: TeamAvailabilityResult[],
+): TeamMemberStatus[] {
+  const seen = new Set<number>();
+  const members: TeamMemberStatus[] = [];
+  for (const result of teamResults) {
+    for (const member of result.members) {
+      if (!seen.has(member.userId)) {
+        seen.add(member.userId);
+        members.push(member);
+      }
+    }
+  }
+  return members;
 }
 
 /** Build conflicts for a single day from pre-fetched data sources */

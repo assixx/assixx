@@ -9,8 +9,9 @@
  * - DELETE /tpm/plans/:uuid                 — Soft-delete plan
  * - GET    /tpm/plans/:uuid/time-estimates  — Time estimates for plan
  * - POST   /tpm/plans/:uuid/time-estimates  — Set time estimate
- * - GET    /tpm/plans/:uuid/available-slots — Slot availability assistant
- * - GET    /tpm/plans/:uuid/board           — Board data (cards for plan)
+ * - GET    /tpm/plans/:uuid/available-slots     — Slot availability assistant
+ * - GET    /tpm/plans/:uuid/team-availability  — Machine team member availability
+ * - GET    /tpm/plans/:uuid/board               — Board data (cards for plan)
  */
 import {
   Body,
@@ -40,7 +41,10 @@ import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
 import type { PaginatedPlans } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
-import type { SlotAvailabilityResult } from './tpm-slot-assistant.service.js';
+import type {
+  MachineTeamAvailabilityResult,
+  SlotAvailabilityResult,
+} from './tpm-slot-assistant.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 import type {
@@ -171,6 +175,26 @@ export class TpmPlansController {
       plan.machineId,
       query.startDate,
       query.endDate,
+    );
+  }
+
+  // ============================================================================
+  // TEAM AVAILABILITY
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/team-availability — Machine team member availability */
+  @Get(':uuid/team-availability')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getTeamAvailability(
+    @Param('uuid') planUuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<MachineTeamAvailabilityResult> {
+    const plan = await this.plansService.getPlan(tenantId, planUuid);
+    const today = new Date().toISOString().slice(0, 10);
+    return await this.slotAssistantService.getMachineTeamAvailability(
+      tenantId,
+      plan.machineId,
+      today,
     );
   }
 

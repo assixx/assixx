@@ -197,25 +197,28 @@
             </td>
             <td>{formatDate(plan.createdAt)}</td>
             <td>
-              <div class="flex gap-1">
+              <div class="flex gap-2">
                 <a
                   href={resolvePath(`/lean-management/tpm/cards/${plan.uuid}`)}
-                  class="btn btn-primary btn-sm btn-icon"
+                  class="action-icon action-icon--info"
                   title="Karten verwalten"
+                  aria-label="Karten verwalten"
                 >
                   <i class="fas fa-th"></i>
                 </a>
                 <a
                   href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
-                  class="btn btn-primary btn-sm btn-icon"
+                  class="action-icon action-icon--edit"
                   title={MESSAGES.BTN_EDIT}
+                  aria-label="Plan bearbeiten"
                 >
                   <i class="fas fa-edit"></i>
                 </a>
                 <button
                   type="button"
-                  class="btn btn-danger btn-sm btn-icon"
+                  class="action-icon action-icon--delete"
                   title={MESSAGES.BTN_DELETE}
+                  aria-label="Plan löschen"
                   onclick={() => {
                     ondelete(plan);
                   }}

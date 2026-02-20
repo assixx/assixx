@@ -87,7 +87,7 @@ export function getDepartmentBadge(
 
 /** Get members badge info for team table (count with tooltip listing names) */
 export function getMembersBadge(team: Team): BadgeInfo {
-  const count = team.memberCount ?? 0;
+  const count = Number(team.memberCount ?? 0);
   const names = team.memberNames ?? '';
 
   if (count === 0) {
@@ -108,7 +108,7 @@ export function getMembersBadge(team: Team): BadgeInfo {
 
 /** Get machines badge info for team table (count with tooltip listing names) */
 export function getMachinesBadge(team: Team): BadgeInfo {
-  const count = team.machineCount ?? 0;
+  const count = Number(team.machineCount ?? 0);
   const names = team.machineNames ?? '';
 
   if (count === 0) {

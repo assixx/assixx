@@ -16,6 +16,7 @@ import type {
   TpmTimeEstimate,
   Machine,
   SlotAvailabilityResult,
+  MachineTeamAvailabilityResult,
   CreatePlanPayload,
   UpdatePlanPayload,
   CreateTimeEstimatePayload,
@@ -170,6 +171,24 @@ export async function fetchAvailableSlots(
     );
   } catch (err: unknown) {
     log.error({ err }, 'Error loading available slots');
+    return null;
+  }
+}
+
+// =============================================================================
+// TEAM AVAILABILITY
+// =============================================================================
+
+/** Fetch team member availability for a plan's machine */
+export async function fetchTeamAvailability(
+  planUuid: string,
+): Promise<MachineTeamAvailabilityResult | null> {
+  try {
+    return await apiClient.get<MachineTeamAvailabilityResult>(
+      `/tpm/plans/${planUuid}/team-availability`,
+    );
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading team availability');
     return null;
   }
 }

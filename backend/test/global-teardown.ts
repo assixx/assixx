@@ -40,6 +40,15 @@ const TRANSIENT_TABLES = [
 
   // Refresh tokens: created on every login
   'refresh_tokens',
+
+  // TPM: plans, cards, executions accumulate across test runs
+  // Order: deepest children first (execution_photos → executions → cards → rest)
+  'tpm_card_execution_photos',
+  'tpm_card_executions',
+  'tpm_time_estimates',
+  'tpm_cards',
+  'tpm_card_templates',
+  'tpm_maintenance_plans',
 ] as const;
 
 const CLEANUP_SQL = `

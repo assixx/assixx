@@ -76,9 +76,9 @@ export interface Team {
   leaderName?: string;
   departmentId?: number;
   departmentName?: string;
-  memberCount?: number;
+  memberCount?: number | string;
   memberNames?: string;
-  machineCount?: number;
+  machineCount?: number | string;
   machineNames?: string;
   isActive: IsActiveStatus;
   createdAt: string;

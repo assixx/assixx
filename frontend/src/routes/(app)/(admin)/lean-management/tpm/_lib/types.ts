@@ -217,6 +217,22 @@ export interface TeamAvailabilityResult {
   totalCount: number;
 }
 
+/** Team info from machine_teams */
+export interface MachineTeamInfo {
+  teamId: number;
+  teamName: string;
+}
+
+/** Combined team availability for a machine (all assigned teams) */
+export interface MachineTeamAvailabilityResult {
+  machineId: number;
+  date: string;
+  teams: MachineTeamInfo[];
+  members: TeamMemberStatus[];
+  availableCount: number;
+  totalCount: number;
+}
+
 // =============================================================================
 // PAYLOADS (for create/update)
 // =============================================================================

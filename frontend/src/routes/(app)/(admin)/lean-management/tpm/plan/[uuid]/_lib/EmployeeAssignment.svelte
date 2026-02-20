@@ -3,16 +3,17 @@
    * TPM Employee Assignment Component
    * @module plan/[uuid]/_lib/EmployeeAssignment
    *
-   * Shows team members assigned to the machine's team
+   * Shows team members assigned to the machine's team(s)
    * with their availability status. Informational only.
-   * Uses the slot assistant's team availability data.
+   * Uses GET /tpm/plans/:uuid/team-availability endpoint.
    */
-  import { getApiClient } from '$lib/utils/api-client';
-  import { createLogger } from '$lib/utils/logger';
-
+  import { fetchTeamAvailability, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
-  import type { TeamMemberStatus } from '../../../_lib/types';
+  import type {
+    MachineTeamAvailabilityResult,
+    TeamMemberStatus,
+  } from '../../../_lib/types';
 
   interface Props {
     planUuid: string;
@@ -20,16 +21,15 @@
 
   const { planUuid }: Props = $props();
 
-  const log = createLogger('EmployeeAssignment');
-  const apiClient = getApiClient();
-
   // =========================================================================
   // STATE
   // =========================================================================
 
   let loading = $state(true);
-  let members = $state<TeamMemberStatus[]>([]);
+  let teamData = $state<MachineTeamAvailabilityResult | null>(null);
 
+  const teams = $derived(teamData?.teams ?? []);
+  const members = $derived(teamData?.members ?? []);
   const availableCount = $derived(
     members.filter((m: TeamMemberStatus) => m.isAvailable).length,
   );
@@ -41,23 +41,10 @@
   async function loadTeam(): Promise<void> {
     loading = true;
     try {
-      // Use slot assistant endpoint with today's date for team snapshot
-      const today = new Date().toISOString().split('T')[0] ?? '';
-      const result: unknown = await apiClient.get(
-        `/tpm/plans/${planUuid}/available-slots?startDate=${today}&endDate=${today}`,
-      );
-
-      // The slot assistant returns DayAvailability, but we can also
-      // derive team info from the response structure. For now, show
-      // a simplified view based on available slot data.
-      if (result !== null && typeof result === 'object') {
-        const obj = result as Record<string, unknown>;
-        if (Array.isArray(obj.teamMembers)) {
-          members = obj.teamMembers as TeamMemberStatus[];
-        }
-      }
+      teamData = await fetchTeamAvailability(planUuid);
     } catch (err: unknown) {
-      log.error({ err }, 'Error loading team availability');
+      logApiError('loadTeam', err);
+      teamData = null;
     } finally {
       loading = false;
     }
@@ -94,6 +81,18 @@
         <h3 class="empty-state__title">{MESSAGES.EMPLOYEE_EMPTY}</h3>
       </div>
     {:else}
+      <!-- Team badge(s) -->
+      {#if teams.length > 0}
+        <div class="mb-3 flex flex-wrap gap-1.5">
+          {#each teams as team (team.teamId)}
+            <span class="team-badge">
+              <i class="fas fa-users-cog"></i>
+              {team.teamName}
+            </span>
+          {/each}
+        </div>
+      {/if}
+
       <!-- Summary -->
       <div class="mb-3 flex items-baseline gap-2">
         <span class="text-xl font-bold text-(--color-success)">
@@ -131,6 +130,19 @@
 </div>
 
 <style>
+  .team-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-primary);
+  }
+
   .employee-item {
     display: flex;
     justify-content: space-between;
