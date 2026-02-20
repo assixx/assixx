@@ -227,8 +227,9 @@ export class TpmSlotAssistantService {
     for (const dt of downtimes) {
       conflicts.push({
         type: 'machine_downtime',
-        description: dt.reason === null
-          ? `Maschine ${dt.status}`
+        description:
+          dt.reason === null ?
+            `Maschine ${dt.status}`
           : `Maschine ${dt.status}: ${dt.reason}`,
       });
     }
@@ -602,8 +603,9 @@ function buildDayConflicts(
   if (downtime !== undefined) {
     conflicts.push({
       type: 'machine_downtime',
-      description: downtime.reason === null
-        ? `Maschine ${downtime.status}`
+      description:
+        downtime.reason === null ?
+          `Maschine ${downtime.status}`
         : `Maschine ${downtime.status}: ${downtime.reason}`,
     });
   }

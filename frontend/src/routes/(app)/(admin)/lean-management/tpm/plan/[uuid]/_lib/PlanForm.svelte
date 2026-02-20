@@ -116,8 +116,8 @@
       (m: Machine) => m.uuid === machineUuid,
     );
     if (match === undefined) return MESSAGES.PH_MACHINE;
-    return match.machineNumber !== null && match.machineNumber !== ''
-      ? `${match.name} (${match.machineNumber})`
+    return match.machineNumber !== null && match.machineNumber !== '' ?
+        `${match.name} (${match.machineNumber})`
       : match.name;
   });
 
