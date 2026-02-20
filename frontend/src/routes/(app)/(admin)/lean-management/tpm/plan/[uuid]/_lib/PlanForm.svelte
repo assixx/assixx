@@ -116,7 +116,7 @@
       (m: Machine) => m.uuid === machineUuid,
     );
     if (match === undefined) return MESSAGES.PH_MACHINE;
-    return match.machineNumber !== null && match.machineNumber !== '' ?
+    return match.machineNumber ?
         `${match.name} (${match.machineNumber})`
       : match.name;
   });
@@ -286,9 +286,11 @@
           bind:value={baseRepeatEvery}
           disabled={submitting}
           min={1}
-          max={52}
+          max={5}
         />
-        <span class="form-input-group__suffix">Woche(n)</span>
+        <span class="form-input-group__suffix"
+          >. {WEEKDAY_LABELS[baseWeekday] ?? '—'} im Monat</span
+        >
       </div>
       <span class="form-field__message">{MESSAGES.HELP_REPEAT}</span>
     </div>

@@ -141,14 +141,14 @@ export const MESSAGES = {
   // Plan form placeholders
   PH_MACHINE: 'Maschine auswählen...',
   PH_PLAN_NAME: 'z.B. Wartungsplan Presse P17',
-  PH_REPEAT: 'Jede(n)',
+  PH_REPEAT: 'Jeder',
   PH_TIME: 'HH:MM',
   PH_NOTES: 'Optionale Bemerkungen zum Wartungsplan...',
 
   // Plan form help text
   HELP_WEEKDAY: 'An welchem Wochentag soll die Wartung stattfinden?',
   HELP_REPEAT:
-    'Alle X Wochen wiederholen (1 = jede Woche, 2 = alle 2 Wochen, etc.)',
+    'Der wievielte Wochentag im Monat (1 = erster, 2 = zweiter, 3 = dritter)',
   HELP_SHIFT_REQUIRED:
     'Prüft ob ein Schichtplan für den Wartungszeitraum existiert',
 

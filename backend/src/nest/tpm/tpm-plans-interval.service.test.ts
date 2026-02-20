@@ -80,7 +80,49 @@ describe('TpmPlansIntervalService', () => {
   });
 
   // =============================================================
-  // calculateIntervalDate
+  // getNthWeekdayOfMonth
+  // =============================================================
+
+  describe('getNthWeekdayOfMonth()', () => {
+    it('should find 1st Monday of March 2026', () => {
+      // March 1, 2026 = Sunday. 1st Monday = March 2.
+      const result = service.getNthWeekdayOfMonth(2026, 2, 0, 1);
+      expect(result).toEqual(new Date(2026, 2, 2));
+    });
+
+    it('should find 2nd Wednesday of March 2026', () => {
+      // March 1 = Sunday. 1st Wed = March 4. 2nd Wed = March 11.
+      const result = service.getNthWeekdayOfMonth(2026, 2, 2, 2);
+      expect(result).toEqual(new Date(2026, 2, 11));
+    });
+
+    it('should find 4th Friday of February 2026', () => {
+      // Feb 1, 2026 = Sunday. 1st Fri = Feb 6. 4th Fri = Feb 27.
+      const result = service.getNthWeekdayOfMonth(2026, 1, 4, 4);
+      expect(result).toEqual(new Date(2026, 1, 27));
+    });
+
+    it('should find 1st Sunday when month starts on Sunday', () => {
+      // Feb 1, 2026 = Sunday. TPM 6 = Sunday.
+      const result = service.getNthWeekdayOfMonth(2026, 1, 6, 1);
+      expect(result).toEqual(new Date(2026, 1, 1));
+    });
+
+    it('should fall back to last occurrence when Nth overflows', () => {
+      // Feb 2026: Mondays are 2, 9, 16, 23. No 5th Monday.
+      const result = service.getNthWeekdayOfMonth(2026, 1, 0, 5);
+      expect(result).toEqual(new Date(2026, 1, 23)); // 4th Monday
+    });
+
+    it('should find 3rd Thursday of January 2026', () => {
+      // Jan 1, 2026 = Thursday. 1st Thu = Jan 1. 3rd Thu = Jan 15.
+      const result = service.getNthWeekdayOfMonth(2026, 0, 3, 3);
+      expect(result).toEqual(new Date(2026, 0, 15));
+    });
+  });
+
+  // =============================================================
+  // calculateIntervalDate (without anchor — simple path)
   // =============================================================
 
   describe('calculateIntervalDate()', () => {
@@ -134,6 +176,91 @@ describe('TpmPlansIntervalService', () => {
     it('custom: defaults to 30 days when customDays is undefined', () => {
       const result = service.calculateIntervalDate(base, 'custom');
       expect(result).toEqual(new Date('2026-03-20'));
+    });
+  });
+
+  // =============================================================
+  // calculateIntervalDate (with weekday anchor — monthly+ path)
+  // =============================================================
+
+  describe('calculateIntervalDate() with weekday anchor', () => {
+    it('monthly: should return 2nd Wednesday of next month', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 2, nth: 2 };
+      const result = service.calculateIntervalDate(
+        base,
+        'monthly',
+        null,
+        anchor,
+      );
+      // March: 1st Wed = March 4, 2nd Wed = March 11
+      expect(result).toEqual(new Date(2026, 2, 11));
+    });
+
+    it('quarterly: should return 2nd Wednesday 3 months ahead', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 2, nth: 2 };
+      const result = service.calculateIntervalDate(
+        base,
+        'quarterly',
+        null,
+        anchor,
+      );
+      // May: 1st Wed = May 6, 2nd Wed = May 13
+      expect(result).toEqual(new Date(2026, 4, 13));
+    });
+
+    it('semi_annual: should return 1st Monday 6 months ahead', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 0, nth: 1 };
+      const result = service.calculateIntervalDate(
+        base,
+        'semi_annual',
+        null,
+        anchor,
+      );
+      // Aug: 1st Mon = Aug 3
+      expect(result).toEqual(new Date(2026, 7, 3));
+    });
+
+    it('annual: should return 2nd Wednesday of same month next year', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 2, nth: 2 };
+      const result = service.calculateIntervalDate(
+        base,
+        'annual',
+        null,
+        anchor,
+      );
+      // Feb 2027: 1st Wed = Feb 3, 2nd Wed = Feb 10
+      expect(result).toEqual(new Date(2027, 1, 10));
+    });
+
+    it('long_runner: should return 3rd Friday 2 years ahead', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 4, nth: 3 };
+      const result = service.calculateIntervalDate(
+        base,
+        'long_runner',
+        null,
+        anchor,
+      );
+      // Feb 2028: 1st Fri = Feb 4, 3rd Fri = Feb 18
+      expect(result).toEqual(new Date(2028, 1, 18));
+    });
+
+    it('daily: should ignore anchor and add 1 day', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 2, nth: 2 };
+      const result = service.calculateIntervalDate(base, 'daily', null, anchor);
+      expect(result).toEqual(new Date('2026-02-19'));
+    });
+
+    it('custom: should ignore anchor and use customDays', () => {
+      const base = new Date('2026-02-18');
+      const anchor = { weekday: 2, nth: 2 };
+      const result = service.calculateIntervalDate(base, 'custom', 45, anchor);
+      expect(result).toEqual(new Date('2026-04-04'));
     });
   });
 
@@ -195,6 +322,26 @@ describe('TpmPlansIntervalService', () => {
       const results = service.calculateNextDueDates(0, 1, from, []);
 
       expect(results).toHaveLength(0);
+    });
+
+    it('should anchor monthly intervals to Nth weekday of target month', () => {
+      const from = new Date('2026-02-18');
+      // baseWeekday=2 (Wed), baseRepeatEvery=2 (2nd Wed)
+      const results = service.calculateNextDueDates(2, 2, from, ['monthly']);
+
+      expect(results).toHaveLength(1);
+      // 2nd Wednesday of March 2026 = March 11
+      expect(results[0]?.dueDate).toEqual(new Date(2026, 2, 11));
+    });
+
+    it('should anchor quarterly intervals to Nth weekday of target month', () => {
+      const from = new Date('2026-02-18');
+      // baseWeekday=0 (Mon), baseRepeatEvery=3 (3rd Mon)
+      const results = service.calculateNextDueDates(0, 3, from, ['quarterly']);
+
+      expect(results).toHaveLength(1);
+      // 3rd Monday of May 2026: 1st Mon = May 4, 3rd Mon = May 18
+      expect(results[0]?.dueDate).toEqual(new Date(2026, 4, 18));
     });
   });
 });

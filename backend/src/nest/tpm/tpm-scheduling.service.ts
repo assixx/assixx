@@ -54,10 +54,12 @@ export class TpmSchedulingService {
       );
     }
 
+    // Monthly+ intervals: anchor to Nth weekday of target month
     return this.intervalService.calculateIntervalDate(
       today,
       intervalType,
       customDays,
+      { weekday: config.baseWeekday, nth: config.baseRepeatEvery },
     );
   }
 
@@ -167,10 +169,12 @@ export class TpmSchedulingService {
         from,
       );
     }
+    // Monthly+ intervals: anchor to Nth weekday of target month
     return this.intervalService.calculateIntervalDate(
       from,
       intervalType,
       customDays,
+      { weekday: config.baseWeekday, nth: config.baseRepeatEvery },
     );
   }
 

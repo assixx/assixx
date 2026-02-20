@@ -73,21 +73,27 @@ describe('TpmSchedulingService', () => {
       expect(result > new Date()).toBe(true);
     });
 
-    it('should return 1 month from today for monthly interval', () => {
+    it('should return 1st Monday of next month for monthly interval', () => {
       const result = service.calculateInitialDueDate(
         'monthly',
-        defaultConfig,
+        defaultConfig, // baseWeekday: 0 (Mon), baseRepeatEvery: 1 (1st)
         null,
       );
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const expected = new Date(today);
-      expected.setMonth(expected.getMonth() + 1);
-      expect(result.getTime()).toBe(expected.getTime());
+      const targetMonth = new Date(today);
+      targetMonth.setMonth(targetMonth.getMonth() + 1);
+
+      // Result must be a Monday (JS day 1) in the target month
+      expect(result.getDay()).toBe(1);
+      expect(result.getMonth()).toBe(targetMonth.getMonth());
+      // 1st Monday: between 1st and 7th of the month
+      expect(result.getDate()).toBeGreaterThanOrEqual(1);
+      expect(result.getDate()).toBeLessThanOrEqual(7);
     });
 
-    it('should return 3 months from today for quarterly interval', () => {
+    it('should return 1st Monday 3 months ahead for quarterly interval', () => {
       const result = service.calculateInitialDueDate(
         'quarterly',
         defaultConfig,
@@ -96,9 +102,13 @@ describe('TpmSchedulingService', () => {
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const expected = new Date(today);
-      expected.setMonth(expected.getMonth() + 3);
-      expect(result.getTime()).toBe(expected.getTime());
+      const targetMonth = new Date(today);
+      targetMonth.setMonth(targetMonth.getMonth() + 3);
+
+      expect(result.getDay()).toBe(1); // Monday
+      expect(result.getMonth()).toBe(targetMonth.getMonth());
+      expect(result.getDate()).toBeGreaterThanOrEqual(1);
+      expect(result.getDate()).toBeLessThanOrEqual(7);
     });
 
     it('should use custom days for custom interval', () => {
