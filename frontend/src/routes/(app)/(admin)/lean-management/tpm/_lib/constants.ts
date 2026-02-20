@@ -129,6 +129,14 @@ export const MESSAGES = {
   PLAN_CREATE_PAGE_TITLE: 'Neuer Wartungsplan - Assixx',
   PLAN_EDIT_PAGE_TITLE: 'Wartungsplan bearbeiten - Assixx',
 
+  // Plan form labels (cascade)
+  LABEL_AREA: 'Bereich',
+  LABEL_DEPARTMENT: 'Abteilung',
+  PH_AREA: 'Bereich auswählen...',
+  PH_DEPARTMENT: 'Abteilung auswählen...',
+  PH_SELECT_AREA_FIRST: 'Bitte zuerst Bereich wählen',
+  PH_SELECT_DEPT_FIRST: 'Bitte zuerst Abteilung wählen',
+
   // Plan form labels
   LABEL_MACHINE: 'Maschine',
   LABEL_PLAN_NAME: 'Planname',

@@ -148,6 +148,8 @@
           <PlanForm
             plan={data.plan}
             machines={data.machines}
+            areas={data.areas}
+            departments={data.departments}
             {isCreateMode}
             {submitting}
             oncreate={handleCreate}

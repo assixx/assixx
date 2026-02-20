@@ -164,7 +164,22 @@ export interface Machine {
   machineNumber: string | null;
   status: string;
   machineType: string | null;
+  areaId?: number | null;
+  departmentId?: number | null;
   departmentName?: string;
+}
+
+/** Area (Bereich) for cascade dropdown */
+export interface TpmArea {
+  id: number;
+  name: string;
+}
+
+/** Department (Abteilung) for cascade dropdown */
+export interface TpmDepartment {
+  id: number;
+  name: string;
+  areaId?: number;
 }
 
 // =============================================================================

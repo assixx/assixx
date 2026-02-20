@@ -10,7 +10,13 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { TpmPlan, TpmTimeEstimate, Machine } from '../../_lib/types';
+import type {
+  TpmPlan,
+  TpmTimeEstimate,
+  Machine,
+  TpmArea,
+  TpmDepartment,
+} from '../../_lib/types';
 
 const log = createLogger('TpmPlanDetail');
 
@@ -61,9 +67,15 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const isCreateMode = params.uuid === 'new';
 
-  // Always load machines for the dropdown
-  const machinesData = await apiFetch<Machine[]>('/machines', token, fetch);
+  // Load machines + areas + departments in parallel for cascade dropdown
+  const [machinesData, areasData, departmentsData] = await Promise.all([
+    apiFetch<Machine[]>('/machines', token, fetch),
+    apiFetch<TpmArea[]>('/areas', token, fetch),
+    apiFetch<TpmDepartment[]>('/departments', token, fetch),
+  ]);
   const machines = Array.isArray(machinesData) ? machinesData : [];
+  const areas = Array.isArray(areasData) ? areasData : [];
+  const departments = Array.isArray(departmentsData) ? departmentsData : [];
 
   if (isCreateMode) {
     return {
@@ -71,6 +83,8 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
       plan: null,
       timeEstimates: [],
       machines,
+      areas,
+      departments,
     };
   }
 
@@ -95,5 +109,7 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
     plan: planData,
     timeEstimates,
     machines,
+    areas,
+    departments,
   };
 };

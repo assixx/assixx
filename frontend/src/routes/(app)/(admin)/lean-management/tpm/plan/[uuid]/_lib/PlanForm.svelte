@@ -15,6 +15,8 @@
   import type {
     TpmPlan,
     Machine,
+    TpmArea,
+    TpmDepartment,
     CreatePlanPayload,
     UpdatePlanPayload,
   } from '../../../_lib/types';
@@ -22,6 +24,8 @@
   interface Props {
     plan: TpmPlan | null;
     machines: Machine[];
+    areas: TpmArea[];
+    departments: TpmDepartment[];
     isCreateMode: boolean;
     submitting: boolean;
     oncreate: (payload: CreatePlanPayload) => void;
@@ -32,6 +36,8 @@
   const {
     plan,
     machines,
+    areas,
+    departments,
     isCreateMode,
     submitting,
     oncreate,
@@ -43,9 +49,13 @@
   // FORM STATE
   // =========================================================================
 
+  // Cascade state (Area → Department → Machine)
+  let formAreaId = $state<number | null>(null);
+  let formDepartmentId = $state<number | null>(null);
   let machineUuid = $state(
     untrack(() => (plan?.machineName !== undefined ? findMachineUuid() : '')),
   );
+
   let name = $state(untrack(() => plan?.name ?? ''));
   let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
   let baseRepeatEvery = $state(untrack(() => plan?.baseRepeatEvery ?? 1));
@@ -61,20 +71,42 @@
     return match?.uuid ?? '';
   }
 
+  // Cascade: reset children when parent changes
+  function selectArea(areaId: number): void {
+    formAreaId = areaId;
+    formDepartmentId = null;
+    machineUuid = '';
+    areaDropdownOpen = false;
+  }
+
+  function selectDepartment(deptId: number): void {
+    formDepartmentId = deptId;
+    machineUuid = '';
+    departmentDropdownOpen = false;
+  }
+
   // =========================================================================
   // DROPDOWN STATE
   // =========================================================================
 
+  let areaDropdownOpen = $state(false);
+  let departmentDropdownOpen = $state(false);
   let machineDropdownOpen = $state(false);
   let weekdayDropdownOpen = $state(false);
 
   function closeAllDropdowns(): void {
+    areaDropdownOpen = false;
+    departmentDropdownOpen = false;
     machineDropdownOpen = false;
     weekdayDropdownOpen = false;
   }
 
   $effect(() => {
-    const anyOpen = machineDropdownOpen || weekdayDropdownOpen;
+    const anyOpen =
+      areaDropdownOpen ||
+      departmentDropdownOpen ||
+      machineDropdownOpen ||
+      weekdayDropdownOpen;
     if (!anyOpen) return;
 
     function handleClickOutside(event: MouseEvent): void {
@@ -100,23 +132,51 @@
       (isCreateMode ? machineUuid.length > 0 : true),
   );
 
-  // Machines without existing plan (create mode) — no server-side filter needed,
-  // the backend will return 409 if machine already has a plan.
-  const availableMachines = $derived(
-    machines.filter((m: Machine) => m.status !== 'decommissioned'),
-  );
+  // =========================================================================
+  // CASCADE DERIVED STATE (Area → Department → Machine)
+  // =========================================================================
+
+  const filteredDepartments = $derived.by(() => {
+    if (formAreaId === null) return [];
+    return departments.filter((d: TpmDepartment) => d.areaId === formAreaId);
+  });
+
+  const filteredMachines = $derived.by(() => {
+    if (formDepartmentId === null) return [];
+    return machines.filter(
+      (m: Machine) =>
+        m.status !== 'decommissioned' && m.departmentId === formDepartmentId,
+    );
+  });
+
+  const isDepartmentDisabled = $derived(formAreaId === null);
+  const isMachineDisabled = $derived(formDepartmentId === null);
 
   // =========================================================================
   // DERIVED DISPLAY TEXT
   // =========================================================================
 
-  const selectedMachineText = $derived.by(() => {
-    if (machineUuid === '') return MESSAGES.PH_MACHINE;
-    const match = availableMachines.find(
-      (m: Machine) => m.uuid === machineUuid,
+  const selectedAreaText = $derived.by(() => {
+    if (formAreaId === null) return MESSAGES.PH_AREA;
+    const match = areas.find((a: TpmArea) => a.id === formAreaId);
+    return match?.name ?? MESSAGES.PH_AREA;
+  });
+
+  const selectedDepartmentText = $derived.by(() => {
+    if (isDepartmentDisabled) return MESSAGES.PH_SELECT_AREA_FIRST;
+    if (formDepartmentId === null) return MESSAGES.PH_DEPARTMENT;
+    const match = filteredDepartments.find(
+      (d: TpmDepartment) => d.id === formDepartmentId,
     );
+    return match?.name ?? MESSAGES.PH_DEPARTMENT;
+  });
+
+  const selectedMachineText = $derived.by(() => {
+    if (isMachineDisabled) return MESSAGES.PH_SELECT_DEPT_FIRST;
+    if (machineUuid === '') return MESSAGES.PH_MACHINE;
+    const match = filteredMachines.find((m: Machine) => m.uuid === machineUuid);
     if (match === undefined) return MESSAGES.PH_MACHINE;
-    return match.machineNumber ?
+    return match.machineNumber !== null && match.machineNumber !== '' ?
         `${match.name} (${match.machineNumber})`
       : match.name;
   });
@@ -161,17 +221,104 @@
   class="plan-form"
   onsubmit={handleSubmit}
 >
-  <!-- Machine (create only) -->
+  <!-- Cascade: Area → Department → Machine (create only) -->
   {#if isCreateMode}
+    <!-- Area -->
     <div class="form-field">
-      <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
+      <span class="form-field__label">{MESSAGES.LABEL_AREA}</span>
       <div class="dropdown">
         <button
           type="button"
           class="dropdown__trigger"
-          class:active={machineDropdownOpen}
+          class:active={areaDropdownOpen}
           disabled={submitting}
           onclick={() => {
+            const wasOpen = areaDropdownOpen;
+            closeAllDropdowns();
+            areaDropdownOpen = !wasOpen;
+          }}
+        >
+          <span>{selectedAreaText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu dropdown__menu--scrollable"
+          class:active={areaDropdownOpen}
+        >
+          {#each areas as area (area.id)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:dropdown__option--selected={formAreaId === area.id}
+              onclick={() => {
+                selectArea(area.id);
+              }}
+            >
+              {area.name}
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+
+    <!-- Department (disabled until area selected) -->
+    <div class="form-field">
+      <span class="form-field__label">{MESSAGES.LABEL_DEPARTMENT}</span>
+      <div
+        class="dropdown"
+        class:disabled={isDepartmentDisabled}
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={departmentDropdownOpen}
+          disabled={submitting || isDepartmentDisabled}
+          onclick={() => {
+            if (isDepartmentDisabled) return;
+            const wasOpen = departmentDropdownOpen;
+            closeAllDropdowns();
+            departmentDropdownOpen = !wasOpen;
+          }}
+        >
+          <span>{selectedDepartmentText}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        {#if !isDepartmentDisabled}
+          <div
+            class="dropdown__menu dropdown__menu--scrollable"
+            class:active={departmentDropdownOpen}
+          >
+            {#each filteredDepartments as dept (dept.id)}
+              <button
+                type="button"
+                class="dropdown__option"
+                class:dropdown__option--selected={formDepartmentId === dept.id}
+                onclick={() => {
+                  selectDepartment(dept.id);
+                }}
+              >
+                {dept.name}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Machine (disabled until department selected) -->
+    <div class="form-field">
+      <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
+      <div
+        class="dropdown"
+        class:disabled={isMachineDisabled}
+      >
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={machineDropdownOpen}
+          disabled={submitting || isMachineDisabled}
+          onclick={() => {
+            if (isMachineDisabled) return;
             const wasOpen = machineDropdownOpen;
             closeAllDropdowns();
             machineDropdownOpen = !wasOpen;
@@ -180,27 +327,29 @@
           <span>{selectedMachineText}</span>
           <i class="fas fa-chevron-down"></i>
         </button>
-        <div
-          class="dropdown__menu dropdown__menu--scrollable"
-          class:active={machineDropdownOpen}
-        >
-          {#each availableMachines as machine (machine.uuid)}
-            <button
-              type="button"
-              class="dropdown__option"
-              class:dropdown__option--selected={machineUuid === machine.uuid}
-              onclick={() => {
-                machineUuid = machine.uuid;
-                machineDropdownOpen = false;
-              }}
-            >
-              {machine.name}
-              {#if machine.machineNumber}
-                ({machine.machineNumber})
-              {/if}
-            </button>
-          {/each}
-        </div>
+        {#if !isMachineDisabled}
+          <div
+            class="dropdown__menu dropdown__menu--scrollable"
+            class:active={machineDropdownOpen}
+          >
+            {#each filteredMachines as machine (machine.uuid)}
+              <button
+                type="button"
+                class="dropdown__option"
+                class:dropdown__option--selected={machineUuid === machine.uuid}
+                onclick={() => {
+                  machineUuid = machine.uuid;
+                  machineDropdownOpen = false;
+                }}
+              >
+                {machine.name}
+                {#if machine.machineNumber}
+                  ({machine.machineNumber})
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   {:else if plan !== null}
@@ -417,6 +566,14 @@
     gap: 0.75rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-glass-border);
+  }
+
+  /* Cascade dropdown — disabled state */
+  .dropdown.disabled :global(.dropdown__trigger) {
+    opacity: 50%;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: var(--color-glass-light);
   }
 
   @media (width <= 640px) {
