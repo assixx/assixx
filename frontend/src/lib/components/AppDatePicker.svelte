@@ -479,7 +479,7 @@
      ============================================================ */
 
   .app-date-picker--sm .app-date-picker__field {
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-2);
     padding-left: calc(var(--spacing-3) * 2 + 14px);
     font-size: 13px;
   }

@@ -4,7 +4,7 @@
    * @module lean-management/tpm/plan/[uuid]/+page
    *
    * Handles both create (uuid='new') and edit mode.
-   * Main content: PlanForm. Sidebar: SlotAssistant + EmployeeAssignment (edit only).
+   * Layout: SlotAssistant (full width top) + PlanForm (main) + EmployeeAssignment (sidebar). Edit only for assistant components.
    */
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -121,15 +121,18 @@
       <p class="mt-1 text-sm text-(--color-text-secondary)">
         {data.plan.machineName ?? '—'} — {data.plan.name}
       </p>
-      <a
-        href={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
-        class="btn btn-primary btn-sm mt-3"
-      >
-        <i class="fas fa-th"></i>
-        Karten verwalten
-      </a>
     {/if}
   </div>
+
+  <!-- Slot Assistant: full width above form (edit mode only) -->
+  {#if !isCreateMode && data.plan !== null}
+    <div class="mb-6">
+      <SlotAssistant
+        planUuid={data.plan.uuid}
+        cardsHref={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
+      />
+    </div>
+  {/if}
 
   <!-- Content grid -->
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px]">
@@ -155,12 +158,9 @@
       </div>
     </div>
 
-    <!-- Sidebar: Slot Assistant + Employee Assignment (edit mode only) -->
+    <!-- Sidebar: Employee Assignment (edit mode only) -->
     {#if !isCreateMode && data.plan !== null}
-      <div class="flex flex-col gap-6">
-        <SlotAssistant planUuid={data.plan.uuid} />
-        <EmployeeAssignment planUuid={data.plan.uuid} />
-      </div>
+      <EmployeeAssignment planUuid={data.plan.uuid} />
     {/if}
   </div>
 </div>
