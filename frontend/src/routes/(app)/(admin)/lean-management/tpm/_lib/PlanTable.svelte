@@ -6,11 +6,13 @@
    * Shows a visual matrix of machines and which intervals
    * are covered by their maintenance plans and cards.
    */
+  import { SvelteMap } from 'svelte/reactivity';
+
   import { resolve } from '$app/paths';
 
   import { INTERVAL_LABELS, MESSAGES } from './constants';
 
-  import type { TpmPlan, IntervalType } from './types';
+  import type { TpmPlan, IntervalType, IntervalMatrixEntry } from './types';
 
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
@@ -18,12 +20,32 @@
 
   interface Props {
     plans: TpmPlan[];
+    intervalMatrix: IntervalMatrixEntry[];
   }
 
-  const { plans }: Props = $props();
+  const { plans, intervalMatrix }: Props = $props();
 
   /** Active plans only */
   const activePlans = $derived(plans.filter((p: TpmPlan) => p.isActive === 1));
+
+  /** Lookup: planUuid → intervalType → cardCount */
+  const matrixLookup = $derived.by(() => {
+    const map = new SvelteMap<string, SvelteMap<IntervalType, number>>();
+    for (const entry of intervalMatrix) {
+      let planMap = map.get(entry.planUuid);
+      if (planMap === undefined) {
+        planMap = new SvelteMap<IntervalType, number>();
+        map.set(entry.planUuid, planMap);
+      }
+      planMap.set(entry.intervalType, entry.cardCount);
+    }
+    return map;
+  });
+
+  /** Get card count for a plan × interval. Returns 0 if no cards. */
+  function getCardCount(planUuid: string, interval: IntervalType): number {
+    return matrixLookup.get(planUuid)?.get(interval) ?? 0;
+  }
 
   /** Interval columns to display */
   const intervalColumns: IntervalType[] = [
@@ -97,11 +119,21 @@
                   </a>
                 </td>
                 {#each intervalColumns as col (col)}
+                  {@const count = getCardCount(plan.uuid, col)}
                   <td class="text-center align-middle">
-                    <span
-                      class="matrix-dot matrix-dot--active"
-                      title="{INTERVAL_LABELS[col]}: aktiv"
-                    ></span>
+                    {#if count > 0}
+                      <span
+                        class="matrix-dot matrix-dot--active"
+                        title="{INTERVAL_LABELS[col]}: {count} {count === 1 ?
+                          'Karte'
+                        : 'Karten'}"
+                      ></span>
+                    {:else}
+                      <span
+                        class="matrix-dot"
+                        title="{INTERVAL_LABELS[col]}: keine Karten"
+                      ></span>
+                    {/if}
                   </td>
                 {/each}
               </tr>

@@ -239,8 +239,7 @@ export const MESSAGES = {
   HELP_CUSTOM_INTERVAL:
     'Nur bei benutzerdefiniertem Intervall: Anzahl Tage zwischen Wartungen',
   LABEL_WEEKDAY_OVERRIDE: 'Wochentag (optional)',
-  HELP_WEEKDAY_DEFAULT:
-    'Der Wartungsplan beginnt standardmäßig am',
+  HELP_WEEKDAY_DEFAULT: 'Der Wartungsplan beginnt standardmäßig am',
   HELP_WEEKDAY_OVERRIDE:
     'Optional: Wählen Sie einen anderen Tag für diese wöchentliche Aufgabe.',
 

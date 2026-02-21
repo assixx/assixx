@@ -234,16 +234,29 @@
           {data.plan.machineName ?? '—'} — {data.plan.name}
         </p>
       </div>
-      {#if !showForm}
+      <div class="flex gap-2">
         <button
           type="button"
-          class="btn btn-primary"
-          onclick={openCreateForm}
+          class="btn btn-secondary"
+          onclick={() => {
+            void goto(
+              resolvePath(`/lean-management/tpm/board/${data.planUuid}`),
+            );
+          }}
         >
-          <i class="fas fa-plus"></i>
-          {MESSAGES.BTN_NEW_CARD}
+          <i class="fas fa-th-large mr-2"></i>{MESSAGES.BTN_VIEW_BOARD}
         </button>
-      {/if}
+        {#if !showForm}
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openCreateForm}
+          >
+            <i class="fas fa-plus"></i>
+            {MESSAGES.BTN_NEW_CARD}
+          </button>
+        {/if}
+      </div>
     </div>
   </div>
 

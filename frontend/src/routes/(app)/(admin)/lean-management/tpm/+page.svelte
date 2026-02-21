@@ -191,7 +191,10 @@
   <!-- Plan Table (Machine x Interval Matrix) -->
   {#if allPlans.length > 0}
     <div class="mt-6">
-      <PlanTable plans={allPlans} />
+      <PlanTable
+        plans={allPlans}
+        intervalMatrix={data.intervalMatrix}
+      />
     </div>
   {/if}
 </div>

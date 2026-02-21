@@ -357,6 +357,17 @@ export interface UpdateTemplatePayload {
 }
 
 // =============================================================================
+// INTERVAL MATRIX
+// =============================================================================
+
+/** Single entry in the interval matrix: one plan × one interval type */
+export interface IntervalMatrixEntry {
+  planUuid: string;
+  intervalType: IntervalType;
+  cardCount: number;
+}
+
+// =============================================================================
 // API RESPONSE TYPES
 // =============================================================================
 

@@ -396,11 +396,12 @@
               {/if}
             </td>
             <td>
-              <div class="flex gap-1">
+              <div class="flex gap-2">
                 <button
                   type="button"
-                  class="btn btn-primary btn-sm btn-icon"
+                  class="action-icon action-icon--edit"
                   title={MESSAGES.BTN_EDIT}
+                  aria-label={MESSAGES.BTN_EDIT}
                   onclick={() => {
                     onedit(card);
                   }}
@@ -409,8 +410,9 @@
                 </button>
                 <button
                   type="button"
-                  class="btn btn-danger btn-sm btn-icon"
+                  class="action-icon action-icon--delete"
                   title={MESSAGES.BTN_DELETE}
+                  aria-label={MESSAGES.BTN_DELETE}
                   onclick={() => {
                     ondelete(card);
                   }}

@@ -4,6 +4,7 @@
  * REST endpoints for maintenance plan management:
  * - POST   /tpm/plans                       — Create plan
  * - GET    /tpm/plans                       — List plans (paginated)
+ * - GET    /tpm/plans/interval-matrix       — Card counts per plan × interval
  * - GET    /tpm/plans/:uuid                 — Get single plan
  * - PATCH  /tpm/plans/:uuid                 — Update plan
  * - DELETE /tpm/plans/:uuid                 — Soft-delete plan
@@ -39,7 +40,10 @@ import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
-import type { PaginatedPlans } from './tpm-plans.service.js';
+import type {
+  IntervalMatrixEntry,
+  PaginatedPlans,
+} from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import type {
   MachineTeamAvailabilityResult,
@@ -93,6 +97,15 @@ export class TpmPlansController {
     @TenantId() tenantId: number,
   ): Promise<PaginatedPlans> {
     return await this.plansService.listPlans(tenantId, query.page, query.limit);
+  }
+
+  /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type */
+  @Get('interval-matrix')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getIntervalMatrix(
+    @TenantId() tenantId: number,
+  ): Promise<IntervalMatrixEntry[]> {
+    return await this.plansService.getIntervalMatrix(tenantId);
   }
 
   /** GET /tpm/plans/:uuid — Get single plan by UUID */

@@ -199,12 +199,20 @@
             <td>
               <div class="flex gap-2">
                 <a
+                  href={resolvePath(`/lean-management/tpm/board/${plan.uuid}`)}
+                  class="action-icon action-icon--primary"
+                  title={MESSAGES.BTN_VIEW_BOARD}
+                  aria-label={MESSAGES.BTN_VIEW_BOARD}
+                >
+                  <i class="fas fa-th-large"></i>
+                </a>
+                <a
                   href={resolvePath(`/lean-management/tpm/cards/${plan.uuid}`)}
                   class="action-icon action-icon--info"
                   title="Karten verwalten"
                   aria-label="Karten verwalten"
                 >
-                  <i class="fas fa-th"></i>
+                  <i class="fas fa-clone"></i>
                 </a>
                 <a
                   href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}

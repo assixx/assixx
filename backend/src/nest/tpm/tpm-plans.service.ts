@@ -23,7 +23,14 @@ import {
   buildPlanUpdateFields,
   mapPlanRowToApi,
 } from './tpm-plans.helpers.js';
-import type { TpmPlan } from './tpm.types.js';
+import type { TpmIntervalType, TpmPlan } from './tpm.types.js';
+
+/** Single entry in the interval matrix: one plan × one interval */
+export interface IntervalMatrixEntry {
+  planUuid: string;
+  intervalType: TpmIntervalType;
+  cardCount: number;
+}
 
 /** Paginated plan list response */
 export interface PaginatedPlans {
@@ -97,6 +104,31 @@ export class TpmPlansService {
       page,
       pageSize,
     };
+  }
+
+  /** Get interval matrix: which plans have cards for which interval types */
+  async getIntervalMatrix(tenantId: number): Promise<IntervalMatrixEntry[]> {
+    interface MatrixRow {
+      plan_uuid: string;
+      interval_type: TpmIntervalType;
+      card_count: string;
+    }
+
+    const rows = await this.db.query<MatrixRow>(
+      `SELECT p.uuid AS plan_uuid, c.interval_type, COUNT(*)::text AS card_count
+       FROM tpm_cards c
+       JOIN tpm_maintenance_plans p ON c.plan_id = p.id
+       WHERE c.tenant_id = $1 AND c.is_active = 1 AND p.is_active = 1
+       GROUP BY p.uuid, c.interval_type
+       ORDER BY p.uuid, c.interval_type`,
+      [tenantId],
+    );
+
+    return rows.map((r: MatrixRow) => ({
+      planUuid: r.plan_uuid,
+      intervalType: r.interval_type,
+      cardCount: Number.parseInt(r.card_count, 10),
+    }));
   }
 
   /** Get plan by machine ID (for slot assistant and inter-service lookups) */

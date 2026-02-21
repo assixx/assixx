@@ -315,9 +315,9 @@ export class TpmCardsService {
     });
 
     const effectiveWeekday =
-      dto.intervalType === 'weekly' && dto.weekdayOverride != null
-        ? dto.weekdayOverride
-        : planCtx.baseWeekday;
+      dto.intervalType === 'weekly' && dto.weekdayOverride != null ?
+        dto.weekdayOverride
+      : planCtx.baseWeekday;
 
     await this.schedulingService.initializeCardSchedule(
       client,

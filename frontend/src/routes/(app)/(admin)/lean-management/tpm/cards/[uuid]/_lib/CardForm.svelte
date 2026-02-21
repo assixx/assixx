@@ -63,7 +63,10 @@
     untrack(() => card?.customIntervalDays ?? 30),
   );
   let weekdayOverrideEnabled = $state(
-    untrack(() => card?.weekdayOverride != null),
+    untrack(
+      () =>
+        card?.weekdayOverride !== null && card?.weekdayOverride !== undefined,
+    ),
   );
   let weekdayOverride = $state(
     untrack(() => card?.weekdayOverride ?? planBaseWeekday),
@@ -92,7 +95,8 @@
   }
 
   $effect(() => {
-    const anyOpen = roleDropdownOpen || intervalDropdownOpen || weekdayDropdownOpen;
+    const anyOpen =
+      roleDropdownOpen || intervalDropdownOpen || weekdayDropdownOpen;
     if (!anyOpen) return;
 
     function handleClickOutside(event: MouseEvent): void {
@@ -114,8 +118,12 @@
 
   const selectedRoleText = $derived(CARD_ROLE_LABELS[cardRole]);
   const selectedIntervalText = $derived(INTERVAL_LABELS[intervalType]);
-  const planWeekdayLabel = $derived(WEEKDAY_LABELS[planBaseWeekday] ?? 'Montag');
-  const selectedWeekdayText = $derived(WEEKDAY_LABELS[weekdayOverride] ?? 'Montag');
+  const planWeekdayLabel = $derived(
+    WEEKDAY_LABELS[planBaseWeekday] ?? 'Montag',
+  );
+  const selectedWeekdayText = $derived(
+    WEEKDAY_LABELS[weekdayOverride] ?? 'Montag',
+  );
 
   // =========================================================================
   // CONSTANTS
@@ -308,7 +316,9 @@
           disabled={submitting}
         />
         <span class="toggle-switch__slider"></span>
-        <span class="toggle-switch__label">{MESSAGES.LABEL_WEEKDAY_OVERRIDE}</span>
+        <span class="toggle-switch__label"
+          >{MESSAGES.LABEL_WEEKDAY_OVERRIDE}</span
+        >
       </label>
     </div>
 
@@ -482,8 +492,8 @@
     display: flex;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
-    background: var(--color-glass-bg, rgba(59, 130, 246, 0.08));
-    border: 1px solid var(--color-info-border, rgba(59, 130, 246, 0.25));
+    background: var(--color-glass-bg, rgb(59 130 246 / 8%));
+    border: 1px solid var(--color-info-border, rgb(59 130 246 / 25%));
     border-radius: 0.5rem;
   }
 

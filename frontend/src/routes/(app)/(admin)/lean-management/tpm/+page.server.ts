@@ -12,6 +12,7 @@ import type { PageServerLoad } from './$types';
 import type {
   TpmPlan,
   TpmColorConfigEntry,
+  IntervalMatrixEntry,
   PaginatedResponse,
 } from './_lib/types';
 
@@ -56,38 +57,45 @@ async function apiFetch<T>(
   }
 }
 
+/** Extract plans array from the paginated API response */
+function extractPlans(
+  raw: Record<string, unknown> | null,
+): { plans: TpmPlan[]; total: number } {
+  if (raw === null) return { plans: [], total: 0 };
+
+  const items = Array.isArray(raw.data) ? raw.data : raw.items;
+  const plans = Array.isArray(items) ? (items as TpmPlan[]) : [];
+  const total = typeof raw.total === 'number' ? raw.total : 0;
+
+  return { plans, total };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  const [plansData, colorsData] = await Promise.all([
+  const [plansData, colorsData, matrixData] = await Promise.all([
     apiFetch<PaginatedResponse<TpmPlan>>(
       '/tpm/plans?page=1&limit=20',
       token,
       fetch,
     ),
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
+    apiFetch<IntervalMatrixEntry[]>('/tpm/plans/interval-matrix', token, fetch),
   ]);
 
-  // Extract plans from paginated response (backend returns .data not .items)
-  const rawPlans = plansData as Record<string, unknown> | null;
-  const plans =
-    rawPlans !== null && Array.isArray(rawPlans.data) ?
-      (rawPlans.data as TpmPlan[])
-    : rawPlans !== null && Array.isArray(rawPlans.items) ?
-      (rawPlans.items as TpmPlan[])
-    : [];
-  const totalPlans =
-    rawPlans !== null && typeof rawPlans.total === 'number' ?
-      rawPlans.total
-    : 0;
+  const { plans, total: totalPlans } = extractPlans(
+    plansData as Record<string, unknown> | null,
+  );
   const colors = Array.isArray(colorsData) ? colorsData : [];
+  const intervalMatrix = Array.isArray(matrixData) ? matrixData : [];
 
   return {
     plans,
     totalPlans,
     colors,
+    intervalMatrix,
   };
 };

@@ -27,7 +27,7 @@ const STORAGE_KEYS = {
   ACTIVE_ROLE: 'activeRole',
 } as const;
 
-export type { UserRole };
+export type { UserRole } from '@assixx/shared';
 
 // =============================================================================
 // SSR SAFETY HELPER

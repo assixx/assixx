@@ -61,30 +61,32 @@ export const CreateCardSchema = BaseSchema.refine(
       'customIntervalDays ist erforderlich wenn intervalType "custom" ist',
     path: ['customIntervalDays'],
   },
-).refine(
-  (data: BaseInput) => {
-    if (data.intervalType !== 'custom') {
-      return data.customIntervalDays == null;
-    }
-    return true;
-  },
-  {
-    message:
-      'customIntervalDays darf nur bei intervalType "custom" gesetzt werden',
-    path: ['customIntervalDays'],
-  },
-).refine(
-  (data: BaseInput) => {
-    if (data.intervalType !== 'weekly') {
-      return data.weekdayOverride == null;
-    }
-    return true;
-  },
-  {
-    message:
-      'weekdayOverride darf nur bei intervalType "weekly" gesetzt werden',
-    path: ['weekdayOverride'],
-  },
-);
+)
+  .refine(
+    (data: BaseInput) => {
+      if (data.intervalType !== 'custom') {
+        return data.customIntervalDays == null;
+      }
+      return true;
+    },
+    {
+      message:
+        'customIntervalDays darf nur bei intervalType "custom" gesetzt werden',
+      path: ['customIntervalDays'],
+    },
+  )
+  .refine(
+    (data: BaseInput) => {
+      if (data.intervalType !== 'weekly') {
+        return data.weekdayOverride == null;
+      }
+      return true;
+    },
+    {
+      message:
+        'weekdayOverride darf nur bei intervalType "weekly" gesetzt werden',
+      path: ['weekdayOverride'],
+    },
+  );
 
 export class CreateCardDto extends createZodDto(CreateCardSchema) {}
