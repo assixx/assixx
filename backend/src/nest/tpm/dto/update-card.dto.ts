@@ -7,11 +7,16 @@
  * Cross-field validation:
  *   - If intervalType is changed to 'custom', customIntervalDays must be provided
  *   - If intervalType is changed away from 'custom', customIntervalDays must be null/omitted
+ *   - weekdayOverride only allowed when intervalType='weekly'
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { TpmCardRoleSchema, TpmIntervalTypeSchema } from './common.dto.js';
+import {
+  TpmCardRoleSchema,
+  TpmIntervalTypeSchema,
+  WeekdaySchema,
+} from './common.dto.js';
 
 const BaseSchema = z.object({
   cardRole: TpmCardRoleSchema.optional(),
@@ -39,6 +44,7 @@ const BaseSchema = z.object({
     .min(1, 'Benutzerdefiniertes Intervall muss mindestens 1 Tag sein')
     .max(3650, 'Benutzerdefiniertes Intervall darf maximal 3650 Tage sein')
     .nullish(),
+  weekdayOverride: WeekdaySchema.nullish(),
 });
 
 type BaseInput = z.infer<typeof BaseSchema>;
@@ -66,6 +72,18 @@ export const UpdateCardSchema = BaseSchema.refine(
     message:
       'customIntervalDays darf nur bei intervalType "custom" gesetzt werden',
     path: ['customIntervalDays'],
+  },
+).refine(
+  (data: BaseInput) =>
+    !(
+      data.intervalType !== undefined &&
+      data.intervalType !== 'weekly' &&
+      data.weekdayOverride != null
+    ),
+  {
+    message:
+      'weekdayOverride darf nur bei intervalType "weekly" gesetzt werden',
+    path: ['weekdayOverride'],
   },
 );
 

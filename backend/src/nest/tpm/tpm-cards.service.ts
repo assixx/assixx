@@ -311,7 +311,13 @@ export class TpmCardsService {
       locationDescription: dto.locationDescription ?? null,
       requiresApproval: dto.requiresApproval,
       customIntervalDays: dto.customIntervalDays ?? null,
+      weekdayOverride: dto.weekdayOverride ?? null,
     });
+
+    const effectiveWeekday =
+      dto.intervalType === 'weekly' && dto.weekdayOverride != null
+        ? dto.weekdayOverride
+        : planCtx.baseWeekday;
 
     await this.schedulingService.initializeCardSchedule(
       client,
@@ -319,7 +325,7 @@ export class TpmCardsService {
       cardId,
       dto.intervalType,
       {
-        baseWeekday: planCtx.baseWeekday,
+        baseWeekday: effectiveWeekday,
         baseRepeatEvery: planCtx.baseRepeatEvery,
       },
       dto.customIntervalDays ?? null,
@@ -397,6 +403,7 @@ export class TpmCardsService {
       locationDescription: string | null;
       requiresApproval: boolean;
       customIntervalDays: number | null;
+      weekdayOverride: number | null;
     },
   ): Promise<{ id: number; card: TpmCard }> {
     const uuid = uuidv7();
@@ -405,8 +412,8 @@ export class TpmCardsService {
          (uuid, tenant_id, plan_id, machine_id, card_code, card_role,
           interval_type, interval_order, title, description,
           location_description, requires_approval, sort_order,
-          custom_interval_days, created_by, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,1)
+          custom_interval_days, weekday_override, created_by, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,1)
        RETURNING *`,
       [
         uuid,
@@ -423,6 +430,7 @@ export class TpmCardsService {
         data.requiresApproval,
         data.sortOrder,
         data.customIntervalDays,
+        data.weekdayOverride,
         data.createdBy,
       ],
     );

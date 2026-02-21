@@ -71,6 +71,7 @@ export interface TpmCard {
   sortOrder: number;
   customFields: Record<string, unknown>;
   customIntervalDays: number | null;
+  weekdayOverride: number | null;
   isActive: number;
   createdBy: number;
   createdByName?: string;
@@ -293,6 +294,7 @@ export interface CreateCardPayload {
   locationDescription: string | null;
   requiresApproval: boolean;
   customIntervalDays: number | null;
+  weekdayOverride: number | null;
 }
 
 /** Payload for updating a card */
@@ -304,6 +306,7 @@ export interface UpdateCardPayload {
   locationDescription?: string | null;
   requiresApproval?: boolean;
   customIntervalDays?: number | null;
+  weekdayOverride?: number | null;
 }
 
 /** Payload for checking card duplicates */

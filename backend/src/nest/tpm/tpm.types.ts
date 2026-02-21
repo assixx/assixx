@@ -107,6 +107,7 @@ export interface TpmCardRow {
   sort_order: number;
   custom_fields: Record<string, unknown>;
   custom_interval_days: number | null;
+  weekday_override: number | null;
   is_active: number;
   created_by: number;
   created_at: string;
@@ -251,6 +252,7 @@ export interface TpmCard {
   sortOrder: number;
   customFields: Record<string, unknown>;
   customIntervalDays: number | null;
+  weekdayOverride: number | null;
   isActive: number;
   createdBy: number;
   createdByName?: string;

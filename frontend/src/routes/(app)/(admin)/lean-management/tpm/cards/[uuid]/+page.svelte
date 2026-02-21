@@ -259,6 +259,7 @@
           <CardForm
             card={editingCard}
             planUuid={data.planUuid}
+            planBaseWeekday={data.plan.baseWeekday}
             {isCreateMode}
             {submitting}
             oncreate={handleCreate}
