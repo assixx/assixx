@@ -203,11 +203,6 @@ export const MESSAGES = {
   TIME_EST_TOTAL: 'Gesamt',
   TIME_EST_MINUTES: 'Min.',
 
-  // Plan table (machine × interval matrix)
-  PLAN_TABLE_TITLE: 'Maschinen & Intervalle',
-  PLAN_TABLE_EMPTY: 'Keine aktiven Wartungspläne vorhanden',
-  PLAN_TABLE_MACHINE_COL: 'Maschine',
-
   // Card management
   CARD_PAGE_TITLE: 'TPM Karten - Assixx',
   CARD_PAGE_HEADING: 'Karten verwalten',

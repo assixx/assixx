@@ -58,9 +58,10 @@ async function apiFetch<T>(
 }
 
 /** Extract plans array from the paginated API response */
-function extractPlans(
-  raw: Record<string, unknown> | null,
-): { plans: TpmPlan[]; total: number } {
+function extractPlans(raw: Record<string, unknown> | null): {
+  plans: TpmPlan[];
+  total: number;
+} {
   if (raw === null) return { plans: [], total: 0 };
 
   const items = Array.isArray(raw.data) ? raw.data : raw.items;

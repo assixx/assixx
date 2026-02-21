@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { SvelteMap } from 'svelte/reactivity';
+
   import { resolve } from '$app/paths';
 
   import {
@@ -8,9 +10,13 @@
     DEFAULT_PAGE_SIZE,
   } from './constants';
 
-  import type { TpmPlan, PlanStatusFilter } from './types';
+  import type {
+    TpmPlan,
+    PlanStatusFilter,
+    IntervalType,
+    IntervalMatrixEntry,
+  } from './types';
 
-  /** Resolve a path with base prefix (cast for dynamic runtime paths) */
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
   }
@@ -22,6 +28,7 @@
     statusFilter: PlanStatusFilter;
     searchQuery: string;
     loading: boolean;
+    intervalMatrix: IntervalMatrixEntry[];
     ondelete: (plan: TpmPlan) => void;
     onpagechange: (page: number) => void;
     onfilterchange: (filter: PlanStatusFilter) => void;
@@ -35,6 +42,7 @@
     statusFilter,
     searchQuery,
     loading,
+    intervalMatrix,
     ondelete,
     onpagechange,
     onfilterchange,
@@ -46,6 +54,40 @@
   );
 
   const filteredPlans = $derived(filterPlans(plans, statusFilter, searchQuery));
+
+  /** Lookup: planUuid → intervalType → cardCount */
+  const matrixLookup = $derived.by(() => {
+    const map = new SvelteMap<string, SvelteMap<IntervalType, number>>();
+    for (const entry of intervalMatrix) {
+      let planMap = map.get(entry.planUuid);
+      if (planMap === undefined) {
+        planMap = new SvelteMap<IntervalType, number>();
+        map.set(entry.planUuid, planMap);
+      }
+      planMap.set(entry.intervalType, entry.cardCount);
+    }
+    return map;
+  });
+
+  /** Interval columns to display */
+  const intervalColumns: IntervalType[] = [
+    'daily',
+    'weekly',
+    'monthly',
+    'quarterly',
+    'semi_annual',
+    'annual',
+  ];
+
+  /** Single-letter short labels for compact columns */
+  const shortLabels: Record<string, string> = {
+    daily: 'T',
+    weekly: 'W',
+    monthly: 'M',
+    quarterly: 'Q',
+    semi_annual: 'H',
+    annual: 'J',
+  };
 
   function filterPlans(
     items: TpmPlan[],
@@ -72,17 +114,13 @@
     return result;
   }
 
+  function getCardCount(planUuid: string, interval: IntervalType): number {
+    return matrixLookup.get(planUuid)?.get(interval) ?? 0;
+  }
+
   function handleSearchInput(e: Event): void {
     const input = e.target as HTMLInputElement;
     onsearch(input.value);
-  }
-
-  function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
   }
 
   function getStatusBadge(isActive: number): { label: string; cls: string } {
@@ -165,10 +203,18 @@
         <tr>
           <th scope="col">{MESSAGES.TH_MACHINE}</th>
           <th scope="col">{MESSAGES.TH_PLAN_NAME}</th>
-          <th scope="col">{MESSAGES.TH_INTERVAL}</th>
           <th scope="col">{MESSAGES.TH_WEEKDAY}</th>
           <th scope="col">{MESSAGES.TH_STATUS}</th>
-          <th scope="col">{MESSAGES.TH_CREATED}</th>
+          {#each intervalColumns as col (col)}
+            <th
+              scope="col"
+              class="text-center"
+              style="width: 48px"
+              title={INTERVAL_LABELS[col]}
+            >
+              {shortLabels[col] ?? col}
+            </th>
+          {/each}
           <th scope="col">{MESSAGES.TH_ACTIONS}</th>
         </tr>
       </thead>
@@ -177,25 +223,39 @@
           {@const badge = getStatusBadge(plan.isActive)}
           <tr>
             <td>
-              <span class="inline-flex items-center gap-2 font-medium">
+              <a
+                href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
+                class="inline-flex items-center gap-2 font-medium text-(--color-text-primary) no-underline hover:text-(--color-primary)"
+              >
                 <i class="fas fa-cog"></i>
                 {plan.machineName ?? '—'}
-              </span>
+              </a>
             </td>
             <td>{plan.name}</td>
-            <td>
-              <span class="badge badge--info badge--sm">
-                {INTERVAL_LABELS.weekly}
-                {plan.baseRepeatEvery > 1 ?
-                  `(alle ${plan.baseRepeatEvery})`
-                : ''}
-              </span>
-            </td>
             <td>{WEEKDAY_LABELS[plan.baseWeekday] ?? '—'}</td>
             <td>
               <span class="badge {badge.cls} badge--sm">{badge.label}</span>
             </td>
-            <td>{formatDate(plan.createdAt)}</td>
+            {#each intervalColumns as col (col)}
+              {@const count = getCardCount(plan.uuid, col)}
+              <td class="text-center align-middle">
+                {#if count > 0}
+                  <span
+                    class="badge badge--success badge--sm"
+                    title="{INTERVAL_LABELS[col]}: {count} {count === 1 ?
+                      'Karte'
+                    : 'Karten'}"
+                  >
+                    {count}
+                  </span>
+                {:else}
+                  <span
+                    class="text-(--color-text-muted)"
+                    title="{INTERVAL_LABELS[col]}: keine Karten">—</span
+                  >
+                {/if}
+              </td>
+            {/each}
             <td>
               <div class="flex gap-2">
                 <a
@@ -241,6 +301,18 @@
     </table>
   </div>
 
+  <!-- Legend -->
+  <div class="matrix-legend">
+    <span class="matrix-legend__item">
+      <span class="badge badge--success badge--sm">3</span>
+      Anzahl Karten
+    </span>
+    <span class="matrix-legend__item">
+      <span class="text-(--color-text-muted)">—</span>
+      Keine Karten
+    </span>
+  </div>
+
   <!-- Pagination -->
   {#if totalPages > 1}
     <div
@@ -274,3 +346,21 @@
     </div>
   {/if}
 {/if}
+
+<style>
+  .matrix-legend {
+    display: flex;
+    gap: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-glass-border);
+    margin-top: 0.75rem;
+  }
+
+  .matrix-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+</style>

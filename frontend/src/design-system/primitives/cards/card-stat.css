@@ -49,6 +49,21 @@
   font-size: 2rem; /* 40px */
 }
 
+/* Size Variant — Compact */
+.card-stat--sm {
+  padding: 0.75rem 1rem;
+}
+
+.card-stat--sm .card-stat__icon {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.card-stat--sm .card-stat__value {
+  font-size: 1.125rem;
+  margin-bottom: 0;
+}
+
 /* Color Variants - Only for values, icons stay consistent */
 .card-stat--success .card-stat__value {
   color: var(--color-success);

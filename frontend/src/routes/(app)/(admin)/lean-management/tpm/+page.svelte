@@ -12,9 +12,7 @@
 
   import { deletePlan as apiDeletePlan, logApiError } from './_lib/api';
   import { MESSAGES } from './_lib/constants';
-  import NextMaintenanceInfo from './_lib/NextMaintenanceInfo.svelte';
   import PlanOverview from './_lib/PlanOverview.svelte';
-  import PlanTable from './_lib/PlanTable.svelte';
   import { tpmState } from './_lib/state.svelte';
 
   function resolvePath(path: string): string {
@@ -107,33 +105,9 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
-  <!-- Header Card -->
-  <div class="card">
-    <div class="card__header">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 class="card__title">
-            <i class="fas fa-tools mr-2"></i>
-            {MESSAGES.PAGE_HEADING}
-          </h2>
-          <p class="mt-2 text-(--color-text-secondary)">
-            {MESSAGES.PAGE_DESCRIPTION}
-          </p>
-        </div>
-        <a
-          href={resolvePath('/lean-management/tpm/plan/new')}
-          class="btn btn-primary"
-        >
-          <i class="fas fa-plus"></i>
-          {MESSAGES.BTN_NEW_PLAN}
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-    <div class="card-stat">
+  <!-- Stats (2 cards side by side) -->
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start">
+    <div class="card-stat card-stat--sm">
       <div class="card-stat__icon">
         <i class="fas fa-clipboard-list"></i>
       </div>
@@ -143,7 +117,7 @@
       </div>
     </div>
 
-    <div class="card-stat card-stat--success">
+    <div class="card-stat card-stat--success card-stat--sm">
       <div class="card-stat__icon">
         <i class="fas fa-check-circle"></i>
       </div>
@@ -154,49 +128,38 @@
     </div>
   </div>
 
-  <!-- Main content grid -->
-  <div class="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_320px]">
-    <!-- Plan table (main area) -->
-    <div class="min-w-0">
-      <div class="card">
-        <div class="card__header">
+  <!-- Plan table (full width) -->
+  <div class="mt-6">
+    <div class="card">
+      <div class="card__header">
+        <div class="flex items-center justify-between gap-4">
           <h2 class="card__title">{MESSAGES.STAT_TOTAL_PLANS}</h2>
-        </div>
-        <div class="card__body">
-          <PlanOverview
-            plans={allPlans}
-            {totalPlans}
-            currentPage={tpmState.currentPage}
-            statusFilter={tpmState.statusFilter}
-            searchQuery={tpmState.searchQuery}
-            loading={tpmState.loading}
-            ondelete={handleDeleteRequest}
-            onpagechange={handlePageChange}
-            onfilterchange={handleFilterChange}
-            onsearch={handleSearch}
-          />
+          <a
+            href={resolvePath('/lean-management/tpm/plan/new')}
+            class="btn btn-primary"
+          >
+            <i class="fas fa-plus"></i>
+            {MESSAGES.BTN_NEW_PLAN}
+          </a>
         </div>
       </div>
-    </div>
-
-    <!-- Sidebar -->
-    <div>
-      <NextMaintenanceInfo
-        plans={allPlans}
-        colors={data.colors}
-      />
+      <div class="card__body">
+        <PlanOverview
+          plans={allPlans}
+          {totalPlans}
+          currentPage={tpmState.currentPage}
+          statusFilter={tpmState.statusFilter}
+          searchQuery={tpmState.searchQuery}
+          loading={tpmState.loading}
+          intervalMatrix={data.intervalMatrix}
+          ondelete={handleDeleteRequest}
+          onpagechange={handlePageChange}
+          onfilterchange={handleFilterChange}
+          onsearch={handleSearch}
+        />
+      </div>
     </div>
   </div>
-
-  <!-- Plan Table (Machine x Interval Matrix) -->
-  {#if allPlans.length > 0}
-    <div class="mt-6">
-      <PlanTable
-        plans={allPlans}
-        intervalMatrix={data.intervalMatrix}
-      />
-    </div>
-  {/if}
 </div>
 
 <!-- Delete Confirmation Modal -->

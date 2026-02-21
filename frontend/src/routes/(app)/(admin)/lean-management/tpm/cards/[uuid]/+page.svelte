@@ -286,8 +286,59 @@
     <!-- Card List -->
     <div class="card">
       <div class="card__header">
-        <h2 class="card__title">
+        <h2
+          class="card__title"
+          style="display: flex; align-items: center; gap: 0.625rem;"
+        >
           Karten ({data.totalCards})
+          <svg
+            width="22"
+            height="30"
+            viewBox="0 0 32 42"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+            style="flex-shrink: 0; align-self: center; margin-top: 2px; color: #22c55e;"
+          >
+            <rect
+              x="1"
+              y="1"
+              width="30"
+              height="40"
+              rx="5"
+              fill="currentColor"
+              opacity="0.15"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <rect
+              x="3"
+              y="3"
+              width="26"
+              height="13"
+              rx="4"
+              fill="currentColor"
+              opacity="0.7"
+            />
+            <rect
+              x="6"
+              y="22"
+              width="18"
+              height="2.5"
+              rx="1.25"
+              fill="currentColor"
+              opacity="0.45"
+            />
+            <rect
+              x="6"
+              y="28"
+              width="13"
+              height="2.5"
+              rx="1.25"
+              fill="currentColor"
+              opacity="0.3"
+            />
+          </svg>
         </h2>
       </div>
       <div class="card__body">

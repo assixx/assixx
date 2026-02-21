@@ -193,11 +193,11 @@ export class ApiClient {
 
     // Retry with new token
     const newToken = authProvider.getAccessToken();
-    if (newToken !== null) {
-      headers.Authorization = `Bearer ${newToken}`;
-    } else {
+    if (newToken === null) {
       // Don't send invalid "Bearer " header - remove it entirely
       delete headers.Authorization;
+    } else {
+      headers.Authorization = `Bearer ${newToken}`;
     }
 
     const retryResponse = await fetch(url, {

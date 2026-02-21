@@ -66,18 +66,18 @@
   aria-label="{card.cardCode}: {card.title}"
   aria-pressed={isFlipped}
 >
+  {#if isUrgent}
+    <span
+      class="kamishibai-card__pulse"
+      style="background-color: {statusColor}"
+    ></span>
+  {/if}
   <CardFlip {isFlipped}>
     {#snippet front()}
       <div
         class="kamishibai-card__front"
         style="background-color: {statusColor}"
       >
-        {#if isUrgent}
-          <span
-            class="kamishibai-card__pulse"
-            style="background-color: {statusColor}"
-          ></span>
-        {/if}
         <div class="kamishibai-card__code">{card.cardCode}</div>
         <div class="kamishibai-card__title">{card.title}</div>
         <div class="kamishibai-card__status-label">
@@ -95,7 +95,10 @@
     {/snippet}
 
     {#snippet back()}
-      <div class="kamishibai-card__back">
+      <div
+        class="kamishibai-card__back"
+        style="background: var(--color-gray-800, #424242)"
+      >
         <div class="kamishibai-card__back-code">{card.cardCode}</div>
         {#if card.description !== null}
           <p class="kamishibai-card__desc">{card.description}</p>
@@ -143,10 +146,13 @@
 
 <style>
   .kamishibai-card {
+    --card-radius: var(--radius-md);
+
     position: relative;
+    isolation: isolate;
     width: 140px;
     height: 180px;
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--card-radius);
     cursor: pointer;
     flex-shrink: 0;
     outline: none;
@@ -156,14 +162,15 @@
     box-shadow: 0 0 0 3px var(--color-primary);
   }
 
-  /* Urgency pulse ring */
+  /* Urgency pulse ring — direct child of .kamishibai-card (no overflow:hidden parent)
+     z-index: -1 puts it behind CardFlip content within the isolate stacking context */
   .kamishibai-card__pulse {
     position: absolute;
     inset: -4px;
     border-radius: inherit;
     opacity: 35%;
-    animation: pulse-ring 1.8s ease-out infinite;
-    z-index: 0;
+    animation: pulse-ring 3s ease-out infinite;
+    z-index: -1;
     pointer-events: none;
   }
 
@@ -195,6 +202,7 @@
     color: #fff;
     text-align: center;
     position: relative;
+    border-radius: var(--card-radius);
   }
 
   .kamishibai-card__code {

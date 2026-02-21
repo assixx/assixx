@@ -42,7 +42,6 @@
     height: 100%;
     transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
-    will-change: transform;
   }
 
   .card-flip--flipped .card-flip__inner {
