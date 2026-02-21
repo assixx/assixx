@@ -62,13 +62,13 @@
 
   // --- INTERNAL STATE ---
   const openSubmenus = new SvelteSet<string>();
-  let openSubSubmenu = $state<string | null>(null);
+  const openSubSubmenus = new SvelteSet<string>();
 
   // Close all submenus when sidebar collapses
   $effect(() => {
     if (collapsed) {
       openSubmenus.clear();
-      openSubSubmenu = null;
+      openSubSubmenus.clear();
     }
   });
 
@@ -87,7 +87,7 @@
       (sub: NavItem) => sub.submenu !== undefined && isActive(sub),
     );
     if (activeSubParent !== undefined) {
-      openSubSubmenu = activeSubParent.id;
+      openSubSubmenus.add(activeSubParent.id);
     }
   });
 
@@ -139,7 +139,11 @@
   /** Toggle nested sub-submenu */
   function toggleSubSubmenu(itemId: string): void {
     if (collapsed) return;
-    openSubSubmenu = openSubSubmenu === itemId ? null : itemId;
+    if (openSubSubmenus.has(itemId)) {
+      openSubSubmenus.delete(itemId);
+    } else {
+      openSubSubmenus.add(itemId);
+    }
   }
 
   /** Calculate aggregated badge count for all submenu items (recursive) */
@@ -214,7 +218,7 @@
                     <li
                       class="submenu-item has-submenu"
                       class:active={isActive(subItem)}
-                      class:open={openSubSubmenu === subItem.id}
+                      class:open={openSubSubmenus.has(subItem.id)}
                     >
                       <button
                         type="button"
@@ -225,7 +229,7 @@
                         }}
                       >
                         <span>{subItem.label}</span>
-                        {#if openSubSubmenu !== subItem.id}
+                        {#if !openSubSubmenus.has(subItem.id)}
                           <NotificationBadge
                             count={getSubmenuBadgeCount(subItem.submenu)}
                             size="sm"
@@ -245,7 +249,7 @@
                       </button>
                       <div
                         class="submenu-wrapper"
-                        class:open={openSubSubmenu === subItem.id}
+                        class:open={openSubSubmenus.has(subItem.id)}
                       >
                         <ul class="submenu submenu--nested">
                           {#each subItem.submenu as nestedItem (nestedItem.id)}
@@ -260,7 +264,7 @@
                                 onclick={handleLinkClick}
                               >
                                 <span>{nestedItem.label}</span>
-                                {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
+                                {#if nestedItem.badgeType && openSubSubmenus.has(subItem.id)}
                                   <NotificationBadge
                                     count={notificationStore.counts[
                                       nestedItem.badgeType

@@ -342,4 +342,63 @@ pnpm changeset --empty                                      # Erstellt Changeset
 
 ---
 
+## 17. Claude Code Headless Mode (`claude -p`)
+
+> **Was ist das?** Claude Code ohne interaktive Session — du gibst einen Befehl, Claude arbeitet ihn ab, fertig.
+> Kein Chat, kein Bestätigen, kein Warten. Ideal für mechanische, repetitive Aufgaben.
+>
+> **Wann sinnvoll:** Lint-Fixes, Type-Error-Fixes, Import-Sortierung, Formatting — alles wo keine kreative Entscheidung nötig ist.
+> **Wann NICHT:** Feature-Entwicklung, Architektur-Entscheidungen, Debugging mit Kontext.
+
+```bash
+# ═══════════════════════════════════════════════════════════════
+# Alle Lint-Errors fixen (Backend + Frontend)
+# ═══════════════════════════════════════════════════════════════
+claude -p "Fix all ESLint errors in the project.
+1. Run 'docker exec assixx-backend pnpm run lint' to identify backend errors
+2. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run lint' to identify frontend errors
+3. Fix all errors
+4. Verify: 'docker exec assixx-backend pnpm run lint' must pass with 0 errors
+5. Verify: 'cd /home/scs/projects/Assixx/frontend && pnpm run lint' must pass with 0 errors" \
+  --allowedTools "Edit" "Read" "Bash(docker exec *)" "Bash(cd /home/scs/projects/Assixx/frontend && pnpm run lint*)" "Grep" "Glob"
+
+# ═══════════════════════════════════════════════════════════════
+# TypeScript-Errors fixen (Backend + Frontend)
+# ═══════════════════════════════════════════════════════════════
+claude -p "Fix all TypeScript errors in the project.
+1. Run 'docker exec assixx-backend pnpm run type-check' to find backend TS errors
+2. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run check' to find frontend errors
+3. Fix all errors
+4. Verify both commands pass with 0 errors" \
+  --allowedTools "Edit" "Read" "Bash(docker exec *)" "Bash(cd /home/scs/projects/Assixx/frontend && pnpm run check*)" "Grep" "Glob"
+
+# ═══════════════════════════════════════════════════════════════
+# Alles auf einmal: Format + Lint + Type-Check
+# ═══════════════════════════════════════════════════════════════
+claude -p "Fix all code quality issues in the Assixx project.
+1. Run 'docker exec assixx-backend pnpm run format' to auto-format backend
+2. Run 'docker exec assixx-backend pnpm run lint:fix' to auto-fix backend lint
+3. Run 'docker exec assixx-backend pnpm run type-check' to check backend types
+4. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run lint:fix' to auto-fix frontend lint
+5. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run check' to check frontend types
+6. Fix any remaining errors manually
+7. Re-run all checks — all must pass with 0 errors" \
+  --allowedTools "Edit" "Read" "Bash(docker exec *)" "Bash(cd /home/scs/projects/Assixx/frontend && pnpm run *)" "Grep" "Glob"
+
+# ═══════════════════════════════════════════════════════════════
+# Nützliche Flags
+# ═══════════════════════════════════════════════════════════════
+# --output-format json          # Maschinenlesbare Ausgabe (für Skripte)
+# --output-format stream-json   # Streaming JSON (für Live-Monitoring)
+# --max-turns 20                # Maximale Anzahl Durchläufe begrenzen
+# --max-budget-usd 2.00         # Budget-Limit setzen (Kostenkontrolle)
+# --model sonnet                # Günstigeres Modell für einfache Aufgaben
+# --verbose                     # Detaillierte Ausgabe zum Debuggen
+# -c -p "query"                 # Letzte Session fortsetzen (headless)
+```
+
+**Workflow:** Befehl starten → Kaffee holen → Ergebnis prüfen. Kein Babysitten nötig.
+
+---
+
 **Hinweis:** Alle Docker-Befehle von `/home/scs/projects/Assixx/docker` ausführen. Alle pnpm-Befehle von `/home/scs/projects/Assixx` (Root) oder `/home/scs/projects/Assixx/frontend`.

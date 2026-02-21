@@ -178,10 +178,7 @@
       // Direct localStorage writes don't update the TokenManager singleton's in-memory state
       if (result.data !== undefined) {
         // Use TokenManager to properly set tokens (updates singleton memory + localStorage)
-        getTokenManager().setTokens(
-          result.data.accessToken,
-          result.data.refreshToken,
-        );
+        getTokenManager().setTokens(result.data.accessToken);
         // Legacy: token (backward compatibility for old code)
         localStorage.setItem('token', result.data.accessToken);
 
@@ -355,10 +352,10 @@
           loading = false;
 
           if (result.type === 'success' && isSuccessResultData(result.data)) {
-            const { accessToken, refreshToken, user, redirectTo } = result.data;
+            const { accessToken, user, redirectTo } = result.data;
 
             // Store tokens for client-side API calls
-            getTokenManager().setTokens(accessToken, refreshToken);
+            getTokenManager().setTokens(accessToken);
             localStorage.setItem('token', accessToken); // Legacy compatibility
 
             // Store user data

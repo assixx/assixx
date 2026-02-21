@@ -111,9 +111,9 @@ export class ApiClient {
    * Set tokens (delegates to TokenManager)
    * @deprecated Use getTokenManager().setTokens() directly
    */
-  setTokens(accessToken: string, refreshToken: string): void {
+  setTokens(accessToken: string): void {
     if (!browser) return;
-    getTokenManager().setTokens(accessToken, refreshToken);
+    getTokenManager().setTokens(accessToken);
   }
 
   // =============================================================================
