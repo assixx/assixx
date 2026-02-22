@@ -472,7 +472,7 @@ export class TpmExecutionsService {
          AND t.team_lead_id IS NOT NULL AND t.is_active = 1
        UNION
        SELECT id AS user_id FROM users
-       WHERE tenant_id = $2 AND has_full_access = 1 AND is_active = 1`,
+       WHERE tenant_id = $2 AND has_full_access = true AND is_active = 1`,
       [machineId, tenantId],
     );
     return rows.map((r: { user_id: number }) => r.user_id);

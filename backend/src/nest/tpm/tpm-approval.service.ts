@@ -6,7 +6,7 @@
  *
  * Authorization chain:
  *   Card → machine_id → machine_teams → teams → team_lead_id
- *   OR: user.has_full_access = 1 (admin override)
+ *   OR: user.has_full_access = true (admin override)
  *
  * Post-transaction side effects:
  *   - Activity logging (fire-and-forget)
@@ -204,7 +204,7 @@ export class TpmApprovalService {
       ) OR EXISTS (
         SELECT 1 FROM users
         WHERE id = $3 AND tenant_id = $2
-          AND has_full_access = 1 AND is_active = 1
+          AND has_full_access = true AND is_active = 1
       ) AS can_approve`,
       [cardId, tenantId, userId],
     );
@@ -353,7 +353,7 @@ export class TpmApprovalService {
       ) OR EXISTS (
         SELECT 1 FROM users
         WHERE id = $3 AND tenant_id = $2
-          AND has_full_access = 1 AND is_active = 1
+          AND has_full_access = true AND is_active = 1
       ) AS can_approve`,
       [cardId, tenantId, approverId],
     );
