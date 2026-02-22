@@ -320,7 +320,7 @@
     >
       <button
         type="button"
-        class="btn btn-primary btn-sm btn-icon"
+        class="btn btn-primary btn-icon"
         disabled={currentPage <= 1}
         onclick={() => {
           onpagechange(currentPage - 1);
@@ -334,7 +334,7 @@
       </span>
       <button
         type="button"
-        class="btn btn-primary btn-sm btn-icon"
+        class="btn btn-primary btn-icon"
         disabled={currentPage >= totalPages}
         onclick={() => {
           onpagechange(currentPage + 1);

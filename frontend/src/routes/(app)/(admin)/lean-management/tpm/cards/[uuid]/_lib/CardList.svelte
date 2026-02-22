@@ -301,7 +301,7 @@
   {#if hasActiveFilters}
     <button
       type="button"
-      class="btn btn-primary btn-sm"
+      class="btn btn-primary"
       onclick={clearFilters}
     >
       <i class="fas fa-times"></i>

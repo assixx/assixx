@@ -255,7 +255,7 @@
     <!-- Step 3: Submit -->
     <button
       type="button"
-      class="btn btn-primary btn-sm"
+      class="btn btn-primary"
       onclick={handleSubmit}
       disabled={submitting || !isValid}
     >

@@ -70,8 +70,8 @@
   .employee-name-hero {
     background: linear-gradient(
       135deg,
-      #ff0080 0%,
-      #7928ca 33%,
+      #000 0%,
+      #000 33%,
       #0070f3 66%,
       #38bdf8 83%,
       #ff0080 100%

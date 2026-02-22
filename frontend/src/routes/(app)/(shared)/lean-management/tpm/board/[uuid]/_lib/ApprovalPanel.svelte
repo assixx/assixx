@@ -181,7 +181,7 @@
     <div class="flex gap-2">
       <button
         type="button"
-        class="btn btn-primary btn-sm"
+        class="btn btn-primary"
         onclick={handleApprove}
         disabled={submitting}
       >

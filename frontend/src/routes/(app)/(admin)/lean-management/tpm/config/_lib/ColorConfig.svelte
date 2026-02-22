@@ -155,7 +155,7 @@
   </div>
   <button
     type="button"
-    class="btn btn-primary btn-sm"
+    class="btn btn-primary"
     disabled={resetting}
     onclick={() => {
       showResetConfirm = true;
@@ -238,7 +238,7 @@
       </div>
       <button
         type="button"
-        class="btn btn-primary btn-sm btn-icon"
+        class="btn btn-primary btn-icon"
         disabled={saving || !changed || !validHex}
         onclick={() => {
           void handleSaveColor(statusKey);

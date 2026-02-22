@@ -188,7 +188,7 @@
               href={resolvePath(
                 `/lean-management/tpm/board/${machine.plan.uuid}`,
               )}
-              class="btn btn-primary btn-sm"
+              class="btn btn-primary"
             >
               <i class="fas fa-columns"></i>
               {MESSAGES.BTN_VIEW_BOARD}

@@ -199,7 +199,7 @@
     {#if !showForm}
       <button
         type="button"
-        class="btn btn-primary btn-sm"
+        class="btn btn-primary"
         onclick={openCreateForm}
       >
         <i class="fas fa-plus"></i>
@@ -331,7 +331,7 @@
           <div class="flex shrink-0 gap-1">
             <button
               type="button"
-              class="btn btn-primary btn-sm btn-icon"
+              class="btn btn-primary btn-icon"
               title={MESSAGES.BTN_EDIT}
               onclick={() => {
                 openEditForm(template);
