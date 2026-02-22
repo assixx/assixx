@@ -17,6 +17,7 @@
     updateCard as apiUpdateCard,
     deleteCard as apiDeleteCard,
     checkDuplicate as apiCheckDuplicate,
+    setTimeEstimate as apiSetTimeEstimate,
     logApiError,
   } from '../../_lib/api';
   import { MESSAGES } from '../../_lib/constants';
@@ -30,6 +31,7 @@
     TpmCard,
     CreateCardPayload,
     UpdateCardPayload,
+    TimeEstimateInput,
   } from '../../_lib/types';
 
   // ===========================================================================
@@ -91,7 +93,15 @@
   // CARD CRUD
   // ===========================================================================
 
-  async function handleCreate(payload: CreateCardPayload): Promise<void> {
+  /** Pending time estimate to save after card creation (survives duplicate check) */
+  let pendingTimeEstimate = $state<TimeEstimateInput | undefined>(undefined);
+
+  async function handleCreate(
+    payload: CreateCardPayload,
+    timeEstimate?: TimeEstimateInput,
+  ): Promise<void> {
+    pendingTimeEstimate = timeEstimate;
+
     // Run duplicate check first
     try {
       const result = await apiCheckDuplicate({
@@ -116,8 +126,26 @@
 
   async function executeCreate(payload: CreateCardPayload): Promise<void> {
     submitting = true;
+    // Capture before await to avoid race condition (ESLint require-atomic-updates)
+    const timeEstimate = pendingTimeEstimate;
+    pendingTimeEstimate = undefined;
+
     try {
       await apiCreateCard(payload);
+
+      // Set time estimate if provided (non-blocking — card already created)
+      if (timeEstimate !== undefined) {
+        try {
+          await apiSetTimeEstimate(payload.planUuid, {
+            planUuid: payload.planUuid,
+            intervalType: payload.intervalType,
+            ...timeEstimate,
+          });
+        } catch (err: unknown) {
+          logApiError('setTimeEstimate', err);
+        }
+      }
+
       showSuccessAlert(MESSAGES.SUCCESS_CARD_CREATED);
       closeForm();
       await invalidateAll();
@@ -131,11 +159,29 @@
     }
   }
 
-  async function handleUpdate(payload: UpdateCardPayload): Promise<void> {
+  async function handleUpdate(
+    payload: UpdateCardPayload,
+    timeEstimate?: TimeEstimateInput,
+  ): Promise<void> {
     if (editingCard === null) return;
     submitting = true;
     try {
       await apiUpdateCard(editingCard.uuid, payload);
+
+      // Set time estimate if provided (non-blocking)
+      if (timeEstimate !== undefined) {
+        const itv = payload.intervalType ?? editingCard.intervalType;
+        try {
+          await apiSetTimeEstimate(data.planUuid, {
+            planUuid: data.planUuid,
+            intervalType: itv,
+            ...timeEstimate,
+          });
+        } catch (err: unknown) {
+          logApiError('setTimeEstimate', err);
+        }
+      }
+
       showSuccessAlert(MESSAGES.SUCCESS_CARD_UPDATED);
       closeForm();
       await invalidateAll();
@@ -199,6 +245,7 @@
 
   function handleDuplicateCancel(): void {
     showDuplicateWarning = false;
+    pendingTimeEstimate = undefined;
     pendingPayload = null;
     duplicateCards = [];
   }
@@ -275,6 +322,7 @@
             planBaseWeekday={data.plan.baseWeekday}
             {isCreateMode}
             {submitting}
+            existingEstimates={data.timeEstimates}
             oncreate={handleCreate}
             onupdate={handleUpdate}
             oncancel={closeForm}

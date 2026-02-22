@@ -284,6 +284,14 @@ export interface CreateTimeEstimatePayload {
   followupMinutes: number;
 }
 
+/** Optional time estimate fields for card creation/edit */
+export interface TimeEstimateInput {
+  staffCount: number;
+  preparationMinutes: number;
+  executionMinutes: number;
+  followupMinutes: number;
+}
+
 /** Payload for creating a card */
 export interface CreateCardPayload {
   planUuid: string;

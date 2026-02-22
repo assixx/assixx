@@ -238,6 +238,16 @@ export const MESSAGES = {
   HELP_WEEKDAY_OVERRIDE:
     'Optional: Wählen Sie einen anderen Tag für diese wöchentliche Aufgabe.',
 
+  // Time estimate in card form
+  LABEL_TIME_ESTIMATE: 'Zeitschätzung',
+  HELP_TIME_ESTIMATE: 'Optional: Geschätzte Dauer für diese Wartungsaufgabe',
+  LABEL_TE_STAFF: 'Mitarbeiter',
+  LABEL_TE_PREP: 'Vorbereitung',
+  LABEL_TE_EXEC: 'Durchführung',
+  LABEL_TE_FOLLOW: 'Nachbereitung',
+  TE_SUFFIX_MIN: 'Min.',
+  TE_SUFFIX_PERSONS: 'Pers.',
+
   // Card table headers
   TH_CARD_CODE: 'Code',
   TH_CARD_TITLE: 'Titel',

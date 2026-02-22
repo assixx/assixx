@@ -14,6 +14,7 @@ import type {
   TpmPlan,
   TpmCard,
   TpmCardTemplate,
+  TpmTimeEstimate,
   PaginatedResponse,
 } from '../../_lib/types';
 
@@ -58,6 +59,19 @@ async function apiFetch<T>(
   }
 }
 
+/** Extract cards + total from paginated API response */
+function extractCards(raw: unknown): { cards: TpmCard[]; totalCards: number } {
+  const result = raw as Record<string, unknown> | null;
+  if (result === null || typeof result !== 'object') {
+    return { cards: [], totalCards: 0 };
+  }
+  const items = result.data ?? result.items;
+  return {
+    cards: Array.isArray(items) ? (items as TpmCard[]) : [],
+    totalCards: typeof result.total === 'number' ? result.total : 0,
+  };
+}
+
 export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -66,38 +80,38 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const planUuid = params.uuid;
 
-  // Load plan + cards + templates in parallel
-  const [planData, cardsData, templatesData] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
-    apiFetch<PaginatedResponse<TpmCard>>(
-      `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
-      token,
-      fetch,
-    ),
-    apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
-  ]);
+  // Load plan + cards + templates + time estimates in parallel
+  const [planData, cardsData, templatesData, estimatesData] = await Promise.all(
+    [
+      apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+      apiFetch<PaginatedResponse<TpmCard>>(
+        `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
+        token,
+        fetch,
+      ),
+      apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
+      apiFetch<TpmTimeEstimate[]>(
+        `/tpm/plans/${planUuid}/time-estimates`,
+        token,
+        fetch,
+      ),
+    ],
+  );
 
   if (planData === null) {
     redirect(302, '/lean-management/tpm');
   }
 
-  // Extract cards from paginated response
-  const cardsResult = cardsData as unknown as Record<string, unknown> | null;
-  let cards: TpmCard[] = [];
-  let totalCards = 0;
-  if (cardsResult !== null && typeof cardsResult === 'object') {
-    const items = cardsResult.data ?? cardsResult.items;
-    cards = Array.isArray(items) ? (items as TpmCard[]) : [];
-    totalCards = typeof cardsResult.total === 'number' ? cardsResult.total : 0;
-  }
-
+  const { cards, totalCards } = extractCards(cardsData);
   const templates = Array.isArray(templatesData) ? templatesData : [];
+  const timeEstimates = Array.isArray(estimatesData) ? estimatesData : [];
 
   return {
     plan: planData,
     cards,
     totalCards,
     templates,
+    timeEstimates,
     planUuid,
   };
 };

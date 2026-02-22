@@ -17,10 +17,12 @@
 
   import type {
     TpmCard,
+    TpmTimeEstimate,
     CardRole,
     IntervalType,
     CreateCardPayload,
     UpdateCardPayload,
+    TimeEstimateInput,
   } from '../../../_lib/types';
 
   interface Props {
@@ -29,8 +31,15 @@
     planBaseWeekday: number;
     isCreateMode: boolean;
     submitting: boolean;
-    oncreate: (payload: CreateCardPayload) => void;
-    onupdate: (payload: UpdateCardPayload) => void;
+    existingEstimates: TpmTimeEstimate[];
+    oncreate: (
+      payload: CreateCardPayload,
+      timeEstimate?: TimeEstimateInput,
+    ) => void;
+    onupdate: (
+      payload: UpdateCardPayload,
+      timeEstimate?: TimeEstimateInput,
+    ) => void;
     oncancel: () => void;
   }
 
@@ -40,6 +49,7 @@
     planBaseWeekday,
     isCreateMode,
     submitting,
+    existingEstimates,
     oncreate,
     onupdate,
     oncancel,
@@ -71,6 +81,54 @@
   let weekdayOverride = $state(
     untrack(() => card?.weekdayOverride ?? planBaseWeekday),
   );
+
+  // =========================================================================
+  // TIME ESTIMATE STATE (optional, collapsible)
+  // =========================================================================
+
+  /** Find existing estimate for the currently selected interval type */
+  const matchingEstimate = $derived(
+    existingEstimates.find(
+      (e: TpmTimeEstimate) => e.intervalType === intervalType,
+    ) ?? null,
+  );
+
+  let showTimeEstimate = $state(false);
+  let teStaffCount = $state(1);
+  let tePrepMinutes = $state(0);
+  let teExecMinutes = $state(0);
+  let teFollowMinutes = $state(0);
+
+  /** Sync form fields when interval type changes and a matching estimate exists */
+  $effect(() => {
+    const est = matchingEstimate;
+    if (est !== null) {
+      teStaffCount = est.staffCount;
+      tePrepMinutes = est.preparationMinutes;
+      teExecMinutes = est.executionMinutes;
+      teFollowMinutes = est.followupMinutes;
+      showTimeEstimate = true;
+    } else {
+      teStaffCount = 1;
+      tePrepMinutes = 0;
+      teExecMinutes = 0;
+      teFollowMinutes = 0;
+    }
+  });
+
+  const hasTimeEstimateValues = $derived(
+    tePrepMinutes > 0 || teExecMinutes > 0 || teFollowMinutes > 0,
+  );
+
+  function buildTimeEstimate(): TimeEstimateInput | undefined {
+    if (!showTimeEstimate || !hasTimeEstimateValues) return undefined;
+    return {
+      staffCount: teStaffCount,
+      preparationMinutes: tePrepMinutes,
+      executionMinutes: teExecMinutes,
+      followupMinutes: teFollowMinutes,
+    };
+  }
 
   // =========================================================================
   // VALIDATION
@@ -160,29 +218,37 @@
     const weekdayOvr =
       isWeeklyInterval && weekdayOverrideEnabled ? weekdayOverride : null;
 
+    const timeEstimate = buildTimeEstimate();
+
     if (isCreateMode) {
-      oncreate({
-        planUuid,
-        cardRole,
-        intervalType,
-        title: title.trim(),
-        description: descValue,
-        locationDescription: locValue,
-        requiresApproval,
-        customIntervalDays: customDays,
-        weekdayOverride: weekdayOvr,
-      });
+      oncreate(
+        {
+          planUuid,
+          cardRole,
+          intervalType,
+          title: title.trim(),
+          description: descValue,
+          locationDescription: locValue,
+          requiresApproval,
+          customIntervalDays: customDays,
+          weekdayOverride: weekdayOvr,
+        },
+        timeEstimate,
+      );
     } else {
-      onupdate({
-        cardRole,
-        intervalType,
-        title: title.trim(),
-        description: descValue,
-        locationDescription: locValue,
-        requiresApproval,
-        customIntervalDays: customDays,
-        weekdayOverride: weekdayOvr,
-      });
+      onupdate(
+        {
+          cardRole,
+          intervalType,
+          title: title.trim(),
+          description: descValue,
+          locationDescription: locValue,
+          requiresApproval,
+          customIntervalDays: customDays,
+          weekdayOverride: weekdayOvr,
+        },
+        timeEstimate,
+      );
     }
   }
 </script>
@@ -432,6 +498,97 @@
     <span class="form-field__message">{MESSAGES.HELP_REQUIRES_APPROVAL}</span>
   </div>
 
+  <!-- Time Estimate (optional, collapsible) -->
+  <div class="form-field">
+    <label class="toggle-switch">
+      <input
+        type="checkbox"
+        class="toggle-switch__input"
+        bind:checked={showTimeEstimate}
+        disabled={submitting}
+      />
+      <span class="toggle-switch__slider"></span>
+      <span class="toggle-switch__label">{MESSAGES.LABEL_TIME_ESTIMATE}</span>
+    </label>
+    <span class="form-field__message">{MESSAGES.HELP_TIME_ESTIMATE}</span>
+  </div>
+
+  {#if showTimeEstimate}
+    <div class="card-form__time-grid">
+      <div class="form-field card-form__time-field">
+        <label class="form-field__label" for="teStaff"
+          >{MESSAGES.LABEL_TE_STAFF}</label
+        >
+        <div class="form-input-group">
+          <input
+            id="teStaff"
+            type="number"
+            class="form-field__control card-form__narrow"
+            bind:value={teStaffCount}
+            disabled={submitting}
+            min={1}
+            max={50}
+          />
+          <span class="form-input-group__suffix">{MESSAGES.TE_SUFFIX_PERSONS}</span>
+        </div>
+      </div>
+
+      <div class="form-field card-form__time-field">
+        <label class="form-field__label" for="tePrep"
+          >{MESSAGES.LABEL_TE_PREP}</label
+        >
+        <div class="form-input-group">
+          <input
+            id="tePrep"
+            type="number"
+            class="form-field__control card-form__narrow"
+            bind:value={tePrepMinutes}
+            disabled={submitting}
+            min={0}
+            max={480}
+          />
+          <span class="form-input-group__suffix">{MESSAGES.TE_SUFFIX_MIN}</span>
+        </div>
+      </div>
+
+      <div class="form-field card-form__time-field">
+        <label class="form-field__label" for="teExec"
+          >{MESSAGES.LABEL_TE_EXEC}</label
+        >
+        <div class="form-input-group">
+          <input
+            id="teExec"
+            type="number"
+            class="form-field__control card-form__narrow"
+            bind:value={teExecMinutes}
+            disabled={submitting}
+            min={0}
+            max={480}
+          />
+          <span class="form-input-group__suffix">{MESSAGES.TE_SUFFIX_MIN}</span>
+        </div>
+      </div>
+
+      <div class="form-field card-form__time-field">
+        <label class="form-field__label" for="teFollow"
+          >{MESSAGES.LABEL_TE_FOLLOW}</label
+        >
+        <div class="form-input-group">
+          <input
+            id="teFollow"
+            type="number"
+            class="form-field__control card-form__narrow"
+            bind:value={teFollowMinutes}
+            disabled={submitting}
+            min={0}
+            max={480}
+          />
+          <span class="form-input-group__suffix">{MESSAGES.TE_SUFFIX_MIN}</span>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Actions -->
   <div class="form-actions">
     <button
@@ -511,6 +668,16 @@
     margin: 0;
   }
 
+  .card-form__time-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .card-form__time-field {
+    min-width: 0;
+  }
+
   .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -522,6 +689,10 @@
   @media (width <= 640px) {
     .form-row {
       flex-direction: column;
+    }
+
+    .card-form__time-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>
