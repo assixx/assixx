@@ -9,7 +9,6 @@
 
   import {
     MESSAGES,
-    WEEKDAY_LABELS,
     INTERVAL_LABELS,
     DEFAULT_COLORS,
   } from './constants';
@@ -86,18 +85,6 @@
     });
   }
 
-  /** Format weekday + time for plan schedule */
-  function formatSchedule(machine: MachineWithTpmStatus): string {
-    const weekday = WEEKDAY_LABELS[machine.plan.baseWeekday] ?? '—';
-    const time =
-      machine.plan.baseTime !== null ? `, ${machine.plan.baseTime}` : '';
-    const repeat =
-      machine.plan.baseRepeatEvery > 1 ?
-        ` (alle ${String(machine.plan.baseRepeatEvery)} Wo.)`
-      : '';
-    return `${weekday}${time}${repeat}`;
-  }
-
   /** Get most common interval from cards */
   function getDominantInterval(machine: MachineWithTpmStatus): string {
     if (machine.cards.length === 0) return '—';
@@ -154,12 +141,6 @@
             </div>
             <div class="mt-0.5 truncate text-sm text-(--color-text-muted)">
               {machine.plan.name}
-            </div>
-            <div
-              class="mt-1 flex items-center gap-1.5 text-xs text-(--color-text-muted)"
-            >
-              <i class="fas fa-calendar-alt"></i>
-              {formatSchedule(machine)}
             </div>
           </div>
 

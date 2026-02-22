@@ -31,7 +31,7 @@
   const { request, action, onclose, onsubmit }: Props = $props();
 
   let responseNote = $state('');
-  let isSpecialLeave = $state(true);
+  let isSpecialLeave = $state(false);
   let respondCapacity = $state<VacationCapacityAnalysis | null>(null);
   let isLoadingCapacity = $state(false);
 
