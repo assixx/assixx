@@ -516,8 +516,9 @@
   {#if showTimeEstimate}
     <div class="card-form__time-grid">
       <div class="form-field card-form__time-field">
-        <label class="form-field__label" for="teStaff"
-          >{MESSAGES.LABEL_TE_STAFF}</label
+        <label
+          class="form-field__label"
+          for="teStaff">{MESSAGES.LABEL_TE_STAFF}</label
         >
         <div class="form-input-group">
           <input
@@ -529,13 +530,16 @@
             min={1}
             max={50}
           />
-          <span class="form-input-group__suffix">{MESSAGES.TE_SUFFIX_PERSONS}</span>
+          <span class="form-input-group__suffix"
+            >{MESSAGES.TE_SUFFIX_PERSONS}</span
+          >
         </div>
       </div>
 
       <div class="form-field card-form__time-field">
-        <label class="form-field__label" for="tePrep"
-          >{MESSAGES.LABEL_TE_PREP}</label
+        <label
+          class="form-field__label"
+          for="tePrep">{MESSAGES.LABEL_TE_PREP}</label
         >
         <div class="form-input-group">
           <input
@@ -552,8 +556,9 @@
       </div>
 
       <div class="form-field card-form__time-field">
-        <label class="form-field__label" for="teExec"
-          >{MESSAGES.LABEL_TE_EXEC}</label
+        <label
+          class="form-field__label"
+          for="teExec">{MESSAGES.LABEL_TE_EXEC}</label
         >
         <div class="form-input-group">
           <input
@@ -570,8 +575,9 @@
       </div>
 
       <div class="form-field card-form__time-field">
-        <label class="form-field__label" for="teFollow"
-          >{MESSAGES.LABEL_TE_FOLLOW}</label
+        <label
+          class="form-field__label"
+          for="teFollow">{MESSAGES.LABEL_TE_FOLLOW}</label
         >
         <div class="form-input-group">
           <input

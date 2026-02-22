@@ -81,5 +81,5 @@ export const load: PageServerLoad = async ({
   const cards = extractCards(boardRaw);
   const colors = Array.isArray(colorsData) ? colorsData : [];
 
-  return { plan, cards, colors };
+  return { planUuid, plan, cards, colors };
 };

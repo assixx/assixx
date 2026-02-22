@@ -284,7 +284,7 @@
       <div class="flex gap-2">
         <button
           type="button"
-          class="btn btn-secondary"
+          class="btn btn-primary"
           onclick={() => {
             void goto(
               resolvePath(`/lean-management/tpm/board/${data.planUuid}`),

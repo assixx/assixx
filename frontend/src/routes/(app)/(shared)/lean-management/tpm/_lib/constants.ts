@@ -71,6 +71,7 @@ export const MESSAGES = {
 
   // Buttons
   BTN_VIEW_BOARD: 'Board öffnen',
+  BTN_MANAGE_CARDS: 'Karten verwalten',
   BTN_VIEW_DETAILS: 'Details anzeigen',
 
   // Machine list

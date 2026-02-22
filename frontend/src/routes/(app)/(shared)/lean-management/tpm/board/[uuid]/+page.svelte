@@ -4,7 +4,10 @@
    * Renders the visual maintenance board for one machine's plan.
    * SSR data: plan + cards + colors. Filter is client-state only.
    */
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
+  import { resolve } from '$app/paths';
+
+  import { MESSAGES } from '../../_lib/constants';
 
   import BoardFilter from './_lib/BoardFilter.svelte';
   import CardDetail from './_lib/CardDetail.svelte';
@@ -12,6 +15,10 @@
 
   import type { PageData } from './$types';
   import type { TpmCard } from '../../_lib/types';
+
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   type FilterType = 'all' | 'operator' | 'maintenance' | 'open_only';
 
@@ -104,17 +111,30 @@
           {/if}
         </div>
 
-        {#if openCount > 0}
-          <span class="badge badge--danger">
-            <i class="fas fa-exclamation-circle"></i>
-            {openCount} offen
-          </span>
-        {:else if cards.length > 0}
-          <span class="badge badge--success">
-            <i class="fas fa-check-circle"></i>
-            Alles erledigt
-          </span>
-        {/if}
+        <div class="flex items-center gap-3">
+          {#if openCount > 0}
+            <span class="badge badge--danger">
+              <i class="fas fa-exclamation-circle"></i>
+              {openCount} offen
+            </span>
+          {:else if cards.length > 0}
+            <span class="badge badge--success">
+              <i class="fas fa-check-circle"></i>
+              Alles erledigt
+            </span>
+          {/if}
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={() => {
+              void goto(
+                resolvePath(`/lean-management/tpm/cards/${data.planUuid}`),
+              );
+            }}
+          >
+            <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
+          </button>
+        </div>
       </div>
     </div>
   </div>
