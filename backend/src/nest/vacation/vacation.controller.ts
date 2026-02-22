@@ -229,10 +229,10 @@ export class VacationController {
     await this.vacationService.withdrawRequest(user.id, user.tenantId, id);
   }
 
-  /** PATCH /vacation/requests/:id/cancel — Cancel approved request (admin/root). */
+  /** PATCH /vacation/requests/:id/cancel — Cancel approved request (admin/root/approver). */
   @Patch('requests/:id/cancel')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles('admin', 'root')
+  @Roles('admin', 'root', 'employee')
   @RequirePermission(FEAT, MOD_REQUESTS, 'canWrite')
   async cancelRequest(
     @CurrentUser() user: JwtPayload,

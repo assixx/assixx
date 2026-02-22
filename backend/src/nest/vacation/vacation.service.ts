@@ -269,9 +269,9 @@ export class VacationService {
     );
   }
 
-  /** Cancel an approved vacation request (admin/root only). */
+  /** Cancel an approved vacation request (admin/root/approver). */
   async cancelRequest(
-    adminId: number,
+    userId: number,
     tenantId: number,
     requestId: string,
     reason: string,
@@ -280,18 +280,33 @@ export class VacationService {
 
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
-        const user = await this.getUserRole(client, tenantId, adminId);
-        if (user.role !== 'admin' && user.role !== 'root') {
+        const user = await this.getUserRole(client, tenantId, userId);
+        const row = await this.lockRequestById(client, tenantId, requestId);
+
+        const isAdminOrRoot =
+          user.role === 'admin' || user.role === 'root';
+        const isApprover = row.approver_id === userId;
+
+        if (!isAdminOrRoot && !isApprover) {
           throw new ForbiddenException(
-            'Only admins or root users can cancel approved requests',
+            'Nur Admins oder der genehmigende Vorgesetzte dürfen Anträge widerrufen',
           );
         }
-        const row = await this.lockRequestById(client, tenantId, requestId);
+
         if (row.status !== 'approved') {
           throw new ConflictException(
-            `Can only cancel approved requests. Current: '${row.status}'`,
+            `Nur genehmigte Anträge können widerrufen werden. Aktuell: '${row.status}'`,
           );
         }
+
+        const requestYear = new Date(row.start_date).getFullYear();
+        const currentYear = new Date().getFullYear();
+        if (requestYear !== currentYear) {
+          throw new ConflictException(
+            `Widerruf nur für das aktuelle Jahr (${String(currentYear)}) möglich`,
+          );
+        }
+
         requesterId = row.requester_id;
         await this.transitionStatus(
           client,
@@ -299,8 +314,14 @@ export class VacationService {
           requestId,
           'approved',
           'cancelled',
-          adminId,
+          userId,
           reason,
+        );
+        await client.query(
+          `UPDATE vacation_requests
+           SET response_note = $1, responded_by = $2, responded_at = NOW()
+           WHERE id = $3 AND tenant_id = $4`,
+          [reason, userId, requestId, tenantId],
         );
         await this.deactivateAvailability(
           client,
@@ -310,7 +331,7 @@ export class VacationService {
           row.end_date,
         );
         this.logger.log(
-          `Request ${requestId} cancelled by admin ${String(adminId)}`,
+          `Request ${requestId} cancelled by user ${String(userId)} (role: ${user.role})`,
         );
       },
     );
@@ -318,16 +339,16 @@ export class VacationService {
       tenantId,
       requestId,
       requesterId,
-      adminId,
+      userId,
       reason,
     );
 
     void this.activityLogger.log({
       tenantId,
-      userId: adminId,
+      userId,
       action: 'update',
       entityType: 'vacation',
-      details: `Urlaubsantrag storniert: ${requestId} (Grund: ${reason})`,
+      details: `Urlaubsantrag widerrufen: ${requestId} (Grund: ${reason})`,
       oldValues: { status: 'approved' },
       newValues: { requestId, status: 'cancelled', reason },
     });
