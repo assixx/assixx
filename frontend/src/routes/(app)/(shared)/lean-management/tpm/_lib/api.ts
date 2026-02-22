@@ -113,6 +113,18 @@ export async function createExecution(
   return await apiClient.post('/tpm/executions', payload);
 }
 
+/** Fetch execution history for a card (paginated) */
+export async function fetchCardExecutions(
+  cardUuid: string,
+  page = 1,
+  limit = 50,
+): Promise<PaginatedResponse<TpmExecution>> {
+  const result: unknown = await apiClient.get(
+    `/tpm/cards/${cardUuid}/executions?page=${page}&limit=${limit}`,
+  );
+  return extractPaginated<TpmExecution>(result);
+}
+
 /** Get a single execution */
 export async function fetchExecution(
   executionUuid: string,

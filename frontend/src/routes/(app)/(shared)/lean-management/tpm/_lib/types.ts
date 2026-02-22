@@ -103,6 +103,7 @@ export interface TpmExecution {
   approvalNote: string | null;
   customData: Record<string, unknown>;
   photos?: TpmExecutionPhoto[];
+  photoCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -42,8 +42,9 @@ import { MAX_PHOTOS_PER_EXECUTION } from './tpm.types.js';
 const EXECUTION_SELECT = `
   SELECT e.*,
     c.uuid AS card_uuid,
-    u_exec.username AS executed_by_name,
-    u_appr.username AS approved_by_name
+    COALESCE(NULLIF(CONCAT(u_exec.first_name, ' ', u_exec.last_name), ' '), u_exec.username) AS executed_by_name,
+    COALESCE(NULLIF(CONCAT(u_appr.first_name, ' ', u_appr.last_name), ' '), u_appr.username) AS approved_by_name,
+    (SELECT COUNT(*)::int FROM tpm_card_execution_photos p WHERE p.execution_id = e.id) AS photo_count
   FROM tpm_card_executions e
   LEFT JOIN tpm_cards c ON e.card_id = c.id
   LEFT JOIN users u_exec ON e.executed_by = u_exec.id

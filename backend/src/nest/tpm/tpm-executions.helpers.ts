@@ -16,6 +16,7 @@ export interface TpmExecutionJoinRow extends TpmCardExecutionRow {
   card_uuid?: string;
   executed_by_name?: string;
   approved_by_name?: string;
+  photo_count?: number;
 }
 
 /** Map execution DB row to API response */
@@ -53,6 +54,7 @@ export function mapExecutionRowToApi(
     execution.executedByName = row.executed_by_name;
   if (row.approved_by_name !== undefined)
     execution.approvedByName = row.approved_by_name;
+  if (row.photo_count !== undefined) execution.photoCount = row.photo_count;
 
   return execution;
 }

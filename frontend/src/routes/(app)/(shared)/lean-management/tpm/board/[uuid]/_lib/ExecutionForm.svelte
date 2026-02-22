@@ -1,19 +1,25 @@
 <script lang="ts">
   /**
    * ExecutionForm — Form for marking a card as done.
-   * Includes documentation text area and photo upload.
+   * Flow: documentation (optional) → photo staging (optional) → submit.
+   * Photos are collected client-side first, then uploaded after execution creation.
    * Only shown when card status is 'red' or 'overdue'.
    */
-  import { createExecution, logApiError } from '../../../_lib/api';
+  import { onDestroy } from 'svelte';
+
+  import { createExecution, uploadPhoto, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
-  import PhotoUpload from './PhotoUpload.svelte';
+  import type { TpmCard, TpmExecution } from '../../../_lib/types';
 
-  import type {
-    TpmCard,
-    TpmExecution,
-    TpmExecutionPhoto,
-  } from '../../../_lib/types';
+  const MAX_PHOTOS = 5;
+  const MAX_FILE_SIZE = 5_242_880;
+  const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+  interface StagedPhoto {
+    file: File;
+    previewUrl: string;
+  }
 
   interface Props {
     card: TpmCard;
@@ -25,29 +31,94 @@
   let documentation = $state('');
   let submitting = $state(false);
   let error = $state<string | null>(null);
-  let createdExecution = $state<TpmExecution | null>(null);
-  let photos = $state<TpmExecutionPhoto[]>([]);
+  let completed = $state(false);
+  let stagedPhotos = $state<StagedPhoto[]>([]);
+  let photoError = $state<string | null>(null);
+  let photoUploadWarning = $state<string | null>(null);
 
   const canExecute = $derived(
     card.status === 'red' || card.status === 'overdue',
   );
   const requiresDocs = $derived(card.requiresApproval);
   const isValid = $derived(!requiresDocs || documentation.trim().length > 0);
+  const canAddPhoto = $derived(stagedPhotos.length < MAX_PHOTOS && !submitting);
+
+  function validateFile(file: File): string | null {
+    if (!ACCEPTED_TYPES.includes(file.type)) return MESSAGES.PHOTO_INVALID_TYPE;
+    if (file.size > MAX_FILE_SIZE) return MESSAGES.PHOTO_TOO_LARGE;
+    return null;
+  }
+
+  function handleFileSelect(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file === undefined) return;
+
+    const validationError = validateFile(file);
+    if (validationError !== null) {
+      photoError = validationError;
+      input.value = '';
+      return;
+    }
+
+    photoError = null;
+    stagedPhotos = [
+      ...stagedPhotos,
+      { file, previewUrl: URL.createObjectURL(file) },
+    ];
+    input.value = '';
+  }
+
+  function removePhoto(index: number): void {
+    URL.revokeObjectURL(stagedPhotos[index].previewUrl);
+    stagedPhotos = stagedPhotos.filter(
+      (_: StagedPhoto, i: number) => i !== index,
+    );
+  }
+
+  function cleanupPreviews(): void {
+    for (const staged of stagedPhotos) {
+      URL.revokeObjectURL(staged.previewUrl);
+    }
+  }
 
   async function handleSubmit(): Promise<void> {
     if (!canExecute || !isValid || submitting) return;
 
     submitting = true;
     error = null;
+    photoUploadWarning = null;
+
     try {
+      // Step 1: Create execution
       const execution = await createExecution({
         cardUuid: card.uuid,
         documentation:
           documentation.trim().length > 0 ? documentation.trim() : null,
       });
+
+      // Step 2: Upload staged photos (sequential to avoid server overload)
+      let failedUploads = 0;
+      for (const staged of stagedPhotos) {
+        try {
+          await uploadPhoto(execution.uuid, staged.file);
+        } catch (uploadErr: unknown) {
+          failedUploads++;
+          logApiError('uploadPhoto', uploadErr);
+        }
+      }
+
+      // Step 3: Clean up blob URLs
+      cleanupPreviews();
+
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
       submitting = false;
-      createdExecution = execution;
+      completed = true;
+
+      if (failedUploads > 0) {
+        photoUploadWarning = `${String(failedUploads)} Foto(s) konnten nicht hochgeladen werden.`;
+      }
+
       onExecutionCreated(execution);
     } catch (err: unknown) {
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
@@ -57,9 +128,7 @@
     }
   }
 
-  function handlePhotoAdded(photo: TpmExecutionPhoto): void {
-    photos = [...photos, photo];
-  }
+  onDestroy(cleanupPreviews);
 </script>
 
 <div class="execution-form">
@@ -72,19 +141,19 @@
     <p class="m-0 text-sm text-(--color-text-muted) italic">
       {MESSAGES.EXEC_CARD_NOT_DUE}
     </p>
-  {:else if createdExecution !== null}
-    <!-- Post-submit: show success and photo upload -->
+  {:else if completed}
     <div class="execution-form__success">
       <i class="fas fa-check-circle"></i>
       {MESSAGES.EXEC_SUCCESS}
     </div>
-    <PhotoUpload
-      executionUuid={createdExecution.uuid}
-      {photos}
-      onPhotoAdded={handlePhotoAdded}
-    />
+    {#if photoUploadWarning !== null}
+      <span class="flex items-center gap-1.5 text-sm text-(--color-warning)">
+        <i class="fas fa-exclamation-triangle"></i>
+        {photoUploadWarning}
+      </span>
+    {/if}
   {:else}
-    <!-- Pre-submit: documentation form -->
+    <!-- Step 1: Documentation -->
     <div class="form-field">
       <label
         for="exec-docs"
@@ -111,6 +180,71 @@
       {/if}
     </div>
 
+    <!-- Step 2: Photo staging -->
+    <div class="execution-form__photos">
+      <div class="execution-form__photos-header">
+        <i class="fas fa-camera"></i>
+        {MESSAGES.PHOTO_HEADING}
+        <span class="execution-form__photos-count">
+          {stagedPhotos.length} / {MAX_PHOTOS}
+        </span>
+      </div>
+
+      {#if stagedPhotos.length > 0}
+        <div class="execution-form__photo-grid">
+          {#each stagedPhotos as staged, index (staged.previewUrl)}
+            <div class="execution-form__photo-thumb">
+              <img
+                src={staged.previewUrl}
+                alt={staged.file.name}
+                class="execution-form__photo-img"
+              />
+              <button
+                type="button"
+                class="execution-form__photo-remove"
+                onclick={() => {
+                  removePhoto(index);
+                }}
+                disabled={submitting}
+                aria-label="Foto entfernen"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if canAddPhoto}
+        <label class="execution-form__photo-add">
+          <i class="fas fa-plus"></i>
+          {MESSAGES.PHOTO_ADD}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onchange={handleFileSelect}
+            class="hidden"
+            disabled={submitting}
+          />
+        </label>
+        <span class="text-xs text-(--color-text-muted)">
+          {MESSAGES.PHOTO_MAX_SIZE}
+        </span>
+      {:else if stagedPhotos.length >= MAX_PHOTOS}
+        <span class="text-xs text-(--color-text-muted) italic">
+          {MESSAGES.PHOTO_MAX_REACHED}
+        </span>
+      {/if}
+
+      {#if photoError !== null}
+        <span class="flex items-center gap-1.5 text-sm text-(--color-danger)">
+          <i class="fas fa-exclamation-circle"></i>
+          {photoError}
+        </span>
+      {/if}
+    </div>
+
+    <!-- Error -->
     {#if error !== null}
       <span class="flex items-center gap-1.5 text-sm text-(--color-danger)">
         <i class="fas fa-exclamation-circle"></i>
@@ -118,6 +252,7 @@
       </span>
     {/if}
 
+    <!-- Step 3: Submit -->
     <button
       type="button"
       class="btn btn-primary btn-sm"
@@ -162,5 +297,90 @@
     padding: 0.5rem 0.75rem;
     background: color-mix(in srgb, var(--color-success) 8%, transparent);
     border-radius: var(--radius-md);
+  }
+
+  /* Photo staging */
+  .execution-form__photos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .execution-form__photos-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.813rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .execution-form__photos-count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .execution-form__photo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .execution-form__photo-thumb {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--color-glass-border);
+  }
+
+  .execution-form__photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .execution-form__photo-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-full, 9999px);
+    background: rgb(0 0 0 / 60%);
+    color: #fff;
+    font-size: 0.625rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .execution-form__photo-remove:hover {
+    background: var(--color-danger);
+  }
+
+  .execution-form__photo-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px dashed var(--color-glass-border);
+    border-radius: var(--radius-md);
+    font-size: 0.813rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    align-self: flex-start;
+  }
+
+  .execution-form__photo-add:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 </style>

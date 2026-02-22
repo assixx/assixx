@@ -106,7 +106,9 @@ function createExecutionRow(
     created_at: '2026-03-01T08:30:00.000Z',
     updated_at: '2026-03-01T08:30:00.000Z',
     card_uuid: 'card-uuid-001                            ',
-    executed_by_name: 'employee',
+    executed_by_name: 'Max Mustermann',
+    approved_by_name: undefined,
+    photo_count: 0,
     ...overrides,
   };
 }
@@ -308,6 +310,33 @@ describe('TpmExecutionsService', () => {
       expect(result.uuid).toBe('exec-uuid-001');
       expect(result.executedBy).toBe(7);
       expect(result.cardUuid).toBe('card-uuid-001');
+    });
+
+    it('should map photoCount and executedByName from join row', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        createExecutionRow({
+          photo_count: 3,
+          executed_by_name: 'Warren Buffett',
+          approved_by_name: 'Charlie Munger',
+          approval_status: 'approved',
+        }),
+      );
+
+      const result = await service.getExecution(10, 'exec-uuid-001');
+
+      expect(result.photoCount).toBe(3);
+      expect(result.executedByName).toBe('Warren Buffett');
+      expect(result.approvedByName).toBe('Charlie Munger');
+    });
+
+    it('should omit photoCount when not present in row', async () => {
+      const row = createExecutionRow();
+      delete row.photo_count;
+      mockDb.queryOne.mockResolvedValueOnce(row);
+
+      const result = await service.getExecution(10, 'exec-uuid-001');
+
+      expect(result.photoCount).toBeUndefined();
     });
 
     it('should throw NotFoundException when not found', async () => {

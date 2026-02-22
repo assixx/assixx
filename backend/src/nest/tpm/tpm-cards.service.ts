@@ -54,8 +54,8 @@ const CARD_SELECT_SQL = `
     p.uuid AS plan_uuid,
     m.name AS machine_name,
     t.uuid AS template_uuid,
-    u_created.username AS created_by_name,
-    u_completed.username AS last_completed_by_name
+    COALESCE(NULLIF(CONCAT(u_created.first_name, ' ', u_created.last_name), ' '), u_created.username) AS created_by_name,
+    COALESCE(NULLIF(CONCAT(u_completed.first_name, ' ', u_completed.last_name), ' '), u_completed.username) AS last_completed_by_name
   FROM tpm_cards c
   LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
   LEFT JOIN machines m ON c.machine_id = m.id AND m.tenant_id = c.tenant_id

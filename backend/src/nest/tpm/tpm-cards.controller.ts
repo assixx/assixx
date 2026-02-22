@@ -2,12 +2,13 @@
  * TPM Cards Controller
  *
  * REST endpoints for maintenance card (Kamishibai card) management:
- * - POST   /tpm/cards                 — Create card
- * - GET    /tpm/cards                 — List cards (filter by machine/plan/status)
- * - GET    /tpm/cards/:uuid           — Get single card
- * - PATCH  /tpm/cards/:uuid           — Update card
- * - DELETE /tpm/cards/:uuid           — Soft-delete card
- * - POST   /tpm/cards/check-duplicate — Check for potential duplicates
+ * - POST   /tpm/cards                      — Create card
+ * - GET    /tpm/cards                      — List cards (filter by machine/plan/status)
+ * - GET    /tpm/cards/:uuid                — Get single card
+ * - GET    /tpm/cards/:uuid/executions     — Execution history for card
+ * - PATCH  /tpm/cards/:uuid                — Update card
+ * - DELETE /tpm/cards/:uuid                — Soft-delete card
+ * - POST   /tpm/cards/check-duplicate      — Check for potential duplicates
  *
  * Route note: check-duplicate uses planUuid in body (not :uuid path param)
  * because the duplicate check runs against a plan's machine before card creation.
@@ -34,11 +35,14 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { CheckDuplicateDto } from './dto/check-duplicate.dto.js';
 import { CreateCardDto } from './dto/create-card.dto.js';
 import { ListCardsQueryDto } from './dto/list-cards-query.dto.js';
+import { ListExecutionsQueryDto } from './dto/list-executions-query.dto.js';
 import { UpdateCardDto } from './dto/update-card.dto.js';
 import type { DuplicateCheckResult } from './tpm-card-duplicate.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
+import type { PaginatedExecutions } from './tpm-executions.service.js';
+import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import type {
   TpmCard,
@@ -57,6 +61,7 @@ export class TpmCardsController {
   constructor(
     private readonly cardsService: TpmCardsService,
     private readonly duplicateService: TpmCardDuplicateService,
+    private readonly executionsService: TpmExecutionsService,
     private readonly plansService: TpmPlansService,
   ) {}
 
@@ -138,6 +143,22 @@ export class TpmCardsController {
 
     throw new BadRequestException(
       'machineUuid, planUuid oder status muss angegeben werden',
+    );
+  }
+
+  /** GET /tpm/cards/:uuid/executions — Execution history for a card */
+  @Get(':uuid/executions')
+  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  async listCardExecutions(
+    @Param('uuid') cardUuid: string,
+    @Query() query: ListExecutionsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<PaginatedExecutions> {
+    return await this.executionsService.listExecutionsForCard(
+      tenantId,
+      cardUuid,
+      query.page,
+      query.limit,
     );
   }
 

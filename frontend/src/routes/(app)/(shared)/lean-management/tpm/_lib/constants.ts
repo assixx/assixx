@@ -149,6 +149,32 @@ export const MESSAGES = {
   PHOTO_TOO_LARGE: 'Datei ist größer als 5 MB',
   PHOTO_INVALID_TYPE: 'Nur Bilder (JPG, PNG, WebP) erlaubt',
 
+  // Execution History
+  HISTORY_PAGE_TITLE: 'Wartungsverlauf',
+  HISTORY_HEADING: 'Wartungsverlauf',
+  HISTORY_BACK: 'Zurück zum Board',
+  HISTORY_COUNT: 'Durchführungen',
+  HISTORY_COL_DATE: 'Datum',
+  HISTORY_COL_PERSON: 'Durchgeführt von',
+  HISTORY_COL_STATUS: 'Freigabe',
+  HISTORY_COL_PHOTOS: 'Fotos',
+  HISTORY_EMPTY_TITLE: 'Keine Durchführungen',
+  HISTORY_EMPTY_DESC:
+    'Für diese Karte wurden noch keine Wartungen dokumentiert.',
+  HISTORY_ERROR: 'Fehler beim Laden des Wartungsverlaufs',
+  HISTORY_DOCUMENTATION: 'Dokumentation',
+  HISTORY_NO_DOCUMENTATION: 'Keine Bemerkungen',
+  HISTORY_APPROVAL_BY: 'Freigabe von',
+  HISTORY_APPROVAL_NOTE: 'Kommentar',
+  HISTORY_PHOTOS_LOADING: 'Fotos werden geladen...',
+  HISTORY_PHOTOS_ERROR: 'Fehler beim Laden der Fotos',
+
+  // Approval Status Labels
+  APPROVAL_STATUS_NONE: 'Keine',
+  APPROVAL_STATUS_PENDING: 'Ausstehend',
+  APPROVAL_STATUS_APPROVED: 'Freigegeben',
+  APPROVAL_STATUS_REJECTED: 'Abgelehnt',
+
   // Time Estimates
   TIME_HEADING: 'Zeitschätzung',
   TIME_STAFF: 'Mitarbeiter',

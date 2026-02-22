@@ -4,6 +4,8 @@
    * Rendered as a slide-over overlay from the right.
    * Orchestrates: card info, time estimate, execution form, approval panel.
    */
+  import { resolve } from '$app/paths';
+
   import { fetchTimeEstimates, logApiError } from '../../../_lib/api';
   import {
     MESSAGES,
@@ -185,6 +187,17 @@
         {/if}
       </div>
 
+      <!-- History link -->
+      <a
+        href={(resolve as (p: string) => string)(
+          `/lean-management/tpm/card/${card.uuid}/history`,
+        )}
+        class="card-detail__history-link"
+      >
+        <i class="fas fa-history"></i>
+        {MESSAGES.HISTORY_HEADING}
+      </a>
+
       <!-- Description -->
       <div class="card-detail__section">
         <h4 class="card-detail__section-title">
@@ -244,57 +257,53 @@
 </div>
 
 <style>
-  /* Overlay */
+  /* Scroll lock while panel is open */
+  :global(body:has(.card-detail-overlay)) {
+    overflow: hidden;
+  }
+
+  /* Overlay — matches .modal-overlay from design system */
   .card-detail-overlay {
     position: fixed;
     inset: 0;
-    z-index: 1000;
-    background: rgb(0 0 0 / 40%);
+    z-index: 2000;
+    background: rgb(0 0 0 / 60%);
+    backdrop-filter: blur(8px);
     display: flex;
     justify-content: flex-end;
     animation: overlay-fade-in 0.2s ease;
   }
 
-  @keyframes overlay-fade-in {
-    from {
-      opacity: 0%;
-    }
-
-    to {
-      opacity: 100%;
-    }
-  }
-
-  /* Panel */
+  /* Panel — matches .ds-modal from design system */
   .card-detail {
     width: 100%;
     max-width: 420px;
     height: 100%;
-    background: var(--glass-bg);
+    background: rgb(255 255 255 / 95%);
+    border-left: var(--glass-border);
     box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
     animation: panel-slide-in 0.25s ease;
   }
 
-  @keyframes panel-slide-in {
-    from {
-      transform: translateX(100%);
-    }
-
-    to {
-      transform: translateX(0);
-    }
+  :global(html.dark) .card-detail {
+    background: rgb(15 15 15 / 95%);
   }
 
-  /* Header */
+  /* Header — matches .ds-modal__header from design system */
   .card-detail__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem;
+    background: var(--glass-bg);
     border-bottom: 1px solid var(--color-glass-border);
     flex-shrink: 0;
+  }
+
+  :global(html.dark) .card-detail__header {
+    background: rgb(0 0 0 / 20%);
   }
 
   .card-detail__status-dot {
@@ -417,9 +426,56 @@
     margin: 0;
   }
 
+  .card-detail__history-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.813rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    text-decoration: none;
+    padding: 0.375rem 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .card-detail__history-link:hover {
+    opacity: 80%;
+    text-decoration: underline;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-detail-overlay {
+      animation: none;
+    }
+
+    .card-detail {
+      animation: none;
+    }
+  }
+
   @media (width <= 640px) {
     .card-detail {
       max-width: 100%;
+    }
+  }
+
+  @keyframes overlay-fade-in {
+    from {
+      opacity: 0%;
+    }
+
+    to {
+      opacity: 100%;
+    }
+  }
+
+  @keyframes panel-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+
+    to {
+      transform: translateX(0);
     }
   }
 </style>

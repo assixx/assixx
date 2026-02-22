@@ -2,10 +2,10 @@
 
 | Metadata                | Value                                                                                                                           |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                                                        |
+| **Status**              | Accepted (Updated 2026-02-22)                                                                                                   |
 | **Date**                | 2026-02-19                                                                                                                      |
 | **Decision Makers**     | SCS-Technik Team                                                                                                                |
-| **Affected Components** | PostgreSQL (4 migrations, 9 tables), Backend (NestJS TPM module, 30 files), Frontend (SvelteKit, 15+ files)                     |
+| **Affected Components** | PostgreSQL (4 migrations, 9 tables), Backend (NestJS TPM module, 30+ files), Frontend (SvelteKit, 20+ files)                    |
 | **Supersedes**          | ---                                                                                                                             |
 | **Related ADRs**        | ADR-003 (SSE), ADR-004 (Notifications), ADR-009 (Audit Logging), ADR-019 (RLS), ADR-020 (Permissions), ADR-024 (Feature Guards) |
 
@@ -28,6 +28,7 @@ Assixx serves industrial companies where **preventive maintenance** is critical 
 - **Interval Cascade**: Generate recurring maintenance cards from plan definitions (daily to annual + custom)
 - **Kamishibai Board**: Visual card board (green/yellow/red/overdue) per machine per interval
 - **Execution + Approval Workflow**: Employee executes card → optional team lead approval → card resets
+- **Execution History**: Per-card history page showing all past executions (documentation, photos, approval status)
 - **Slot Availability Assistant**: Suggest optimal maintenance time slots based on shift data + machine availability + user availability
 - **Real-time Notifications**: SSE events for due cards, overdue escalation, approval results
 - **Shift Grid Integration**: Show TPM maintenance dates as overlay in the shift planning grid
@@ -115,7 +116,7 @@ SlotAssistant(machineId, startDate, endDate)
 
 ### 4. Module Architecture
 
-The TPM module follows NestJS module boundaries with 30 files:
+The TPM module follows NestJS module boundaries with 30+ files:
 
 ```
 backend/src/nest/tpm/
@@ -125,13 +126,13 @@ backend/src/nest/tpm/
 ├── tpm-permission.registrar.ts      # OnModuleInit registration
 ├── Controllers (4):
 │   ├── tpm-plans.controller.ts      # 11 endpoints
-│   ├── tpm-cards.controller.ts      # 6 endpoints
+│   ├── tpm-cards.controller.ts      # 7 endpoints (incl. execution history)
 │   ├── tpm-executions.controller.ts # 6 endpoints
 │   └── tpm-config.controller.ts     # 9 endpoints
 ├── Core Services (4):
 │   ├── tpm-plans.service.ts         # Plan CRUD + interval management
 │   ├── tpm-cards.service.ts         # Card CRUD + pagination
-│   ├── tpm-executions.service.ts    # Execution lifecycle + photos
+│   ├── tpm-executions.service.ts    # Execution lifecycle + photos + history
 │   └── tpm-approval.service.ts      # Approve/reject + history bridge
 ├── Support Services (6):
 │   ├── tpm-plans-interval.service.ts # Interval calculation
@@ -154,16 +155,18 @@ backend/src/nest/tpm/
 
 ### 5. Integration Points
 
-| Integration                      | Pattern                                  | Status   |
-| -------------------------------- | ---------------------------------------- | -------- |
-| SSE Notifications                | EventBus (ADR-003) + persistent DB       | Active   |
-| Dashboard Badge                  | `/dashboard/counts` includes TPM count   | Active   |
-| Audit Logging                    | ActivityLoggerService on all mutations   | Active   |
-| Machine History Bridge           | Direct DB insert on approved execution   | Active   |
-| Shift Grid TPM Overlay           | Frontend calculates dates from plan data | Active   |
-| Permission System                | ADR-020 per-user feature permissions     | Active   |
-| Feature Gating                   | ADR-024 tenant-level feature flag        | Active   |
-| Machine Availability Auto-Status | Infrastructure ready (V2 wiring)         | Deferred |
+| Integration                      | Pattern                                   | Status   |
+| -------------------------------- | ----------------------------------------- | -------- |
+| SSE Notifications                | EventBus (ADR-003) + persistent DB        | Active   |
+| Dashboard Badge                  | `/dashboard/counts` includes TPM count    | Active   |
+| Audit Logging                    | ActivityLoggerService on all mutations    | Active   |
+| Machine History Bridge           | Direct DB insert on approved execution    | Active   |
+| Shift Grid TPM Overlay           | Frontend calculates dates from plan data  | Active   |
+| Permission System                | ADR-020 per-user feature permissions      | Active   |
+| Feature Gating                   | ADR-024 tenant-level feature flag         | Active   |
+| Execution History                | SSR page per card with lazy photo loading | Active   |
+| Photo Upload (Staged)            | Client-side staging → sequential upload   | Active   |
+| Machine Availability Auto-Status | Infrastructure ready (V2 wiring)          | Deferred |
 
 ### 6. Database Schema
 
@@ -182,6 +185,105 @@ tpm_notification_config    — notification preferences (reserved for V2)
 ```
 
 All tables have: `tenant_id` (RLS), `is_active` (soft delete: 0/1/3/4), `created_at`, `updated_at`.
+
+### 7. Employee Frontend (Kamishibai Board)
+
+The employee-facing TPM UI is a SvelteKit 5 application with SSR data loading:
+
+```
+frontend/src/routes/(app)/(shared)/lean-management/tpm/
+├── overview/+page.svelte            # Machine overview (assigned plans)
+├── overview/+page.server.ts         # SSR: fetch plans + stats
+├── board/[uuid]/                    # Kamishibai board per plan
+│   ├── +page.server.ts              # SSR: cards + colors + plan info
+│   ├── +page.svelte                 # Board layout with filter + card grid
+│   └── _lib/
+│       ├── BoardFilter.svelte       # Status/role/interval filter (client-state)
+│       ├── KamishibaiCard.svelte    # 3D flip card (front: status color, back: info)
+│       ├── CardDetail.svelte        # Slide-over panel (card info + actions)
+│       ├── ExecutionForm.svelte     # Documentation → photos → submit
+│       ├── ApprovalPanel.svelte     # Approve/reject execution
+│       └── TimeEstimateForm.svelte  # Time estimate display
+├── card/[uuid]/history/             # Per-card execution history
+│   ├── +page.server.ts              # SSR: card info + execution list
+│   └── +page.svelte                 # History table with expandable rows
+└── _lib/
+    ├── api.ts                       # API client functions (12 endpoints)
+    ├── types.ts                     # Frontend TypeScript types
+    └── constants.ts                 # UI labels + messages (German)
+```
+
+**Design Patterns:**
+
+- **SSR Data Loading**: `+page.server.ts` fetches data server-side via `apiFetch<T>()` helper, passes to page via `PageData`
+- **Client-State Filtering**: Board filter is purely client-side (no API calls on filter change)
+- **Slide-Over Panel**: CardDetail renders as fixed overlay from right (`z-index: 2000`, `backdrop-filter: blur(8px)`)
+- **3D Flip Cards**: CSS `transform-style: preserve-3d` with `rotateY(180deg)` on hover/tap
+- **Runes**: All state management uses Svelte 5 runes (`$state`, `$derived`, `$props`, `$effect`)
+
+### 8. Execution Workflow + History
+
+**Execution Flow (Employee):**
+
+```
+CardDetail (red/overdue card)
+  └── ExecutionForm
+       1. Documentation textarea (optional, required if requires_approval)
+       2. Photo staging (max 5, client-side preview via URL.createObjectURL)
+       3. Submit button
+          ├── POST /tpm/executions         → creates execution record
+          ├── POST /tpm/executions/:uuid/photos  → uploads each staged photo (sequential)
+          └── onExecutionCreated() → board refreshes via invalidateAll()
+```
+
+**Photo Handling:**
+
+- Photos are collected client-side as `StagedPhoto[]` (File + blob preview URL)
+- On submit: execution is created first, then photos uploaded sequentially (avoids server overload)
+- Failed photo uploads show warning but don't roll back the execution
+- `onDestroy` revokes all blob URLs to prevent memory leaks
+- Max 5 photos per execution, max 5 MB per file, accepted types: JPEG, PNG, WebP
+
+**Execution History Page** (`/lean-management/tpm/card/[uuid]/history`):
+
+```
+┌──────────────────────────────────────────┐
+│ ← Zurück zum Board                       │
+├──────────────────────────────────────────┤
+│ Wartungsverlauf                          │
+│ M-001 — Ölstand prüfen · Täglich        │
+│ [Erledigt] 12 Durchführungen             │
+├──────────────────────────────────────────┤
+│ Datum      │ Person      │ Status │ Fotos│
+│ 21.02.2026 │ W. Buffett  │ Keine  │ 2    │
+│   ↳ expanded: documentation, photos,    │
+│     approval details (lazy-loaded)       │
+│ 14.02.2026 │ M. Muster   │ Freig. │ 0    │
+└──────────────────────────────────────────┘
+```
+
+- **SSR**: Card info + execution list loaded server-side (parallel fetch)
+- **Expandable Rows**: Click row → shows documentation, approval details
+- **Lazy Photo Loading**: `fetchPhotos(executionUuid)` called on-demand when row expands, cached in `Partial<Record<string, TpmExecutionPhoto[]>>`
+- **Photo Count**: Included in execution response via SQL subquery (`photo_count`), avoids extra API call for thumbnail counts
+- **Full Name Display**: SQL uses `COALESCE(NULLIF(CONCAT(first_name, ' ', last_name), ' '), username)` pattern for `executed_by_name` and `approved_by_name`
+- **Navigation**: Link from CardDetail panel → history page; back button returns to board
+
+### 9. API Endpoints (Cards Controller)
+
+The cards controller (`tpm-cards.controller.ts`) includes the execution history endpoint:
+
+| Method | Path                          | Description                                |
+| ------ | ----------------------------- | ------------------------------------------ |
+| POST   | `/tpm/cards`                  | Create card                                |
+| POST   | `/tpm/cards/check-duplicate`  | Duplicate check (before creation)          |
+| GET    | `/tpm/cards`                  | List cards (filter by machine/plan/status) |
+| GET    | `/tpm/cards/:uuid`            | Get single card                            |
+| GET    | `/tpm/cards/:uuid/executions` | Execution history for card (paginated)     |
+| PATCH  | `/tpm/cards/:uuid`            | Update card                                |
+| DELETE | `/tpm/cards/:uuid`            | Soft-delete card                           |
+
+**Route Note:** `check-duplicate` and `:uuid/executions` are defined before `:uuid` to prevent NestJS from matching path segments as UUID parameters. The `/executions` sub-resource endpoint reuses `TpmExecutionsService.listExecutionsForCard()` — the service method existed before the controller endpoint was added.
 
 ---
 
@@ -208,17 +310,20 @@ All tables have: `tenant_id` (RLS), `is_active` (soft delete: 0/1/3/4), `created
 
 ### Positive
 
-- **Self-contained module**: 30 files, 0 cross-module service imports (only DatabaseService + ActivityLoggerService)
-- **Comprehensive testing**: 364 tests (278 unit + 86 API) covering all services
+- **Self-contained module**: 30+ files, 0 cross-module service imports (only DatabaseService + ActivityLoggerService)
+- **Comprehensive testing**: 3845 tests (unit + API) covering all services
 - **Real-time updates**: SSE notifications for all lifecycle events
 - **Configurable**: Per-tenant escalation threshold, colors, templates, time estimates
 - **Shift planning integration**: TPM dates visible in shift grid via frontend calculation
+- **Full audit trail**: Every execution permanently stored with documentation, photos, approval status — accessible via per-card history page
+- **Staged photo upload**: Photos collected client-side before submission, uploaded sequentially after execution creation (resilient: partial upload failures don't roll back execution)
 
 ### Negative
 
 - **Frontend date calculation**: Duplicates backend interval logic (trade-off for no additional API calls)
 - **No machine_availability auto-status in V1**: Infrastructure exists but wiring deferred to V2 (complex trigger timing)
 - **Employee list filtering**: V1 shows all plans/cards to all TPM users within a tenant (no team-scoped filtering)
+- **No client-side pagination on history page**: V1 loads up to 50 executions in SSR; pagination controls deferred to V2 if needed
 
 ---
 
