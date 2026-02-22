@@ -83,7 +83,7 @@
       {#each photos as photo (photo.uuid)}
         <div class="photo-upload__thumb">
           <img
-            src="/api/v2/{photo.filePath}"
+            src="/{photo.filePath}"
             alt={photo.fileName}
             class="photo-upload__img"
             loading="lazy"

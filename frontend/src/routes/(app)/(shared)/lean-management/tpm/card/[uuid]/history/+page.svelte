@@ -320,13 +320,13 @@
                               <div class="history-detail__photos">
                                 {#each loadedPhotos[execution.uuid] as photo (photo.uuid)}
                                   <a
-                                    href="/api/v2/{photo.filePath}"
+                                    href="/{photo.filePath}"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="history-detail__photo-thumb"
                                   >
                                     <img
-                                      src="/api/v2/{photo.filePath}"
+                                      src="/{photo.filePath}"
                                       alt={photo.fileName}
                                       class="history-detail__photo-img"
                                       loading="lazy"
