@@ -182,14 +182,6 @@
 
     <!-- Step 2: Photo staging -->
     <div class="execution-form__photos">
-      <div class="execution-form__photos-header">
-        <i class="fas fa-camera"></i>
-        {MESSAGES.PHOTO_HEADING}
-        <span class="execution-form__photos-count">
-          {stagedPhotos.length} / {MAX_PHOTOS}
-        </span>
-      </div>
-
       {#if stagedPhotos.length > 0}
         <div class="execution-form__photo-grid">
           {#each stagedPhotos as staged, index (staged.previewUrl)}
@@ -216,20 +208,27 @@
       {/if}
 
       {#if canAddPhoto}
-        <label class="execution-form__photo-add">
-          <i class="fas fa-plus"></i>
-          {MESSAGES.PHOTO_ADD}
+        <div class="file-upload-zone file-upload-zone--compact execution-form__upload-zone">
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onchange={handleFileSelect}
-            class="hidden"
+            class="file-upload-zone__input"
+            id="photo-upload"
             disabled={submitting}
           />
-        </label>
-        <span class="text-xs text-(--color-text-muted)">
-          {MESSAGES.PHOTO_MAX_SIZE}
-        </span>
+          <label for="photo-upload" class="file-upload-zone__label">
+            <div class="file-upload-zone__icon">
+              <i class="fas fa-camera"></i>
+            </div>
+            <div class="file-upload-zone__text">
+              <p class="file-upload-zone__title">{MESSAGES.PHOTO_ADD}</p>
+              <p class="file-upload-zone__subtitle">
+                {MESSAGES.PHOTO_MAX_SIZE} · {stagedPhotos.length} / {MAX_PHOTOS}
+              </p>
+            </div>
+          </label>
+        </div>
       {:else if stagedPhotos.length >= MAX_PHOTOS}
         <span class="text-xs text-(--color-text-muted) italic">
           {MESSAGES.PHOTO_MAX_REACHED}
@@ -255,7 +254,7 @@
     <!-- Step 3: Submit -->
     <button
       type="button"
-      class="btn btn-primary"
+      class="btn btn-primary execution-form__submit"
       onclick={handleSubmit}
       disabled={submitting || !isValid}
     >
@@ -303,23 +302,14 @@
   .execution-form__photos {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
-  .execution-form__photos-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.813rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-  }
-
-  .execution-form__photos-count {
-    margin-left: auto;
-    font-size: 0.75rem;
-    font-weight: 400;
-    color: var(--color-text-muted);
+  .execution-form__upload-zone {
+    max-width: 600px;
+    width: 100%;
+    align-self: center;
+    margin-bottom: 0.75rem;
   }
 
   .execution-form__photo-grid {
@@ -365,22 +355,7 @@
     background: var(--color-danger);
   }
 
-  .execution-form__photo-add {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    border: 1px dashed var(--color-glass-border);
-    border-radius: var(--radius-md);
-    font-size: 0.813rem;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    transition: border-color 0.15s ease;
-    align-self: flex-start;
-  }
-
-  .execution-form__photo-add:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+  .execution-form__submit {
+    align-self: center;
   }
 </style>
