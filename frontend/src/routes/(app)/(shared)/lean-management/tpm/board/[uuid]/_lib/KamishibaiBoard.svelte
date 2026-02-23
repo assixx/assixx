@@ -39,10 +39,9 @@
   interface Props {
     cards: TpmCard[];
     colors: TpmColorConfigEntry[];
-    onCardSelect?: (card: TpmCard) => void;
   }
 
-  const { cards, colors, onCardSelect }: Props = $props();
+  const { cards, colors }: Props = $props();
 
   function countOpen(sectionCards: TpmCard[]): number {
     return sectionCards.filter(
@@ -100,7 +99,6 @@
         maintenanceCards={section.maintenanceCards}
         totalOpen={section.totalOpen}
         {colors}
-        {onCardSelect}
       />
     {/each}
   </div>

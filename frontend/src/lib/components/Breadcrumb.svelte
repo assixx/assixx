@@ -173,6 +173,16 @@
       label: 'Kamishibai Board',
       icon: 'fa-columns',
     },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+$/,
+      label: 'Kartendetails',
+      icon: 'fa-id-card',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/history$/,
+      label: 'Wartungsverlauf',
+      icon: 'fa-history',
+    },
   ];
 
   /**
@@ -266,6 +276,18 @@
     },
     {
       pattern: /^\/lean-management\/tpm\/board\/[^/]+$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/history$/,
       label: 'TPM Übersicht',
       href: '/lean-management/tpm/overview',
       icon: 'fa-tools',

@@ -5,6 +5,9 @@
    * Back (on click): description, location, due date.
    * CardDetail (Step 5.6) will be triggered from the back face.
    */
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+
   import { CARD_STATUS_LABELS, DEFAULT_COLORS } from '../../../_lib/constants';
 
   import CardFlip from './CardFlip.svelte';
@@ -15,13 +18,16 @@
     CardStatus,
   } from '../../../_lib/types';
 
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
+
   interface Props {
     card: TpmCard;
     colors: TpmColorConfigEntry[];
-    onCardSelect?: (card: TpmCard) => void;
   }
 
-  const { card, colors, onCardSelect }: Props = $props();
+  const { card, colors }: Props = $props();
 
   let isFlipped = $state(false);
 
@@ -123,19 +129,17 @@
             Erledigt: {formatDate(card.lastCompletedAt)}
           </div>
         {/if}
-        {#if onCardSelect !== undefined}
-          <button
-            type="button"
-            class="kamishibai-card__detail-btn"
-            onclick={(e: MouseEvent) => {
-              e.stopPropagation();
-              onCardSelect(card);
-            }}
-          >
-            <i class="fas fa-expand-alt"></i>
-            Details
-          </button>
-        {/if}
+        <button
+          type="button"
+          class="kamishibai-card__detail-btn"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+            void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}`));
+          }}
+        >
+          <i class="fas fa-expand-alt"></i>
+          Details
+        </button>
         <div class="kamishibai-card__flip-hint">
           <i class="fas fa-sync-alt"></i> Zurückdrehen
         </div>
@@ -146,7 +150,7 @@
 
 <style>
   .kamishibai-card {
-    --card-radius: var(--radius-md);
+    --card-radius: var(--radius-xs);
 
     position: relative;
     isolation: isolate;
@@ -251,6 +255,7 @@
     height: 100%;
     padding: 0.75rem;
     background: var(--color-gray-800, #1f2937);
+    border-radius: var(--card-radius);
     color: var(--color-gray-100, #f3f4f6);
     font-size: 0.75rem;
     overflow: hidden;

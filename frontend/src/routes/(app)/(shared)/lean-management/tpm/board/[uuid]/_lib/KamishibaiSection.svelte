@@ -16,17 +16,10 @@
     maintenanceCards: TpmCard[];
     totalOpen: number;
     colors: TpmColorConfigEntry[];
-    onCardSelect?: (card: TpmCard) => void;
   }
 
-  const {
-    label,
-    operatorCards,
-    maintenanceCards,
-    totalOpen,
-    colors,
-    onCardSelect,
-  }: Props = $props();
+  const { label, operatorCards, maintenanceCards, totalOpen, colors }: Props =
+    $props();
 
   const hasOperator = $derived(operatorCards.length > 0);
   const hasMaintenance = $derived(maintenanceCards.length > 0);
@@ -61,7 +54,6 @@
           <KamishibaiCard
             {card}
             {colors}
-            {onCardSelect}
           />
         {/each}
       </div>
@@ -80,7 +72,6 @@
           <KamishibaiCard
             {card}
             {colors}
-            {onCardSelect}
           />
         {/each}
       </div>

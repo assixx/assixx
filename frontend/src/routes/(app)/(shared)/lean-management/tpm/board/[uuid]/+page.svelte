@@ -4,13 +4,12 @@
    * Renders the visual maintenance board for one machine's plan.
    * SSR data: plan + cards + colors. Filter is client-state only.
    */
-  import { goto, invalidateAll } from '$app/navigation';
+  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import { MESSAGES } from '../../_lib/constants';
 
   import BoardFilter from './_lib/BoardFilter.svelte';
-  import CardDetail from './_lib/CardDetail.svelte';
   import KamishibaiBoard from './_lib/KamishibaiBoard.svelte';
 
   import type { PageData } from './$types';
@@ -30,16 +29,6 @@
 
   /** Active board filter — client-side only */
   let activeFilter = $state<FilterType>('all');
-
-  /** Currently selected card — drives the CardDetail slide-over */
-  let selectedCard = $state<TpmCard | null>(null);
-
-  /**
-   * planUuid for CardDetail's time-estimate fetch.
-   * Empty string fallback is safe: plan === null means no cards exist,
-   * so selectedCard will always be null in that case.
-   */
-  const planUuid = $derived(plan?.uuid ?? '');
 
   function filterCards(allCards: TpmCard[], filterType: FilterType): TpmCard[] {
     switch (filterType) {
@@ -68,20 +57,6 @@
     cards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue')
       .length,
   );
-
-  function handleCardSelect(card: TpmCard): void {
-    selectedCard = card;
-  }
-
-  function handleCardUpdated(): void {
-    // Refresh board so the card flips to the new status.
-    // Panel stays open — ExecutionForm shows its own success state.
-    void invalidateAll();
-  }
-
-  function handleClose(): void {
-    selectedCard = null;
-  }
 </script>
 
 <svelte:head>
@@ -173,19 +148,7 @@
       <KamishibaiBoard
         cards={filteredCards}
         {colors}
-        onCardSelect={handleCardSelect}
       />
     {/if}
   </div>
 </div>
-
-<!-- Card Detail Slide-over — rendered outside .container so position:fixed works correctly -->
-{#if selectedCard !== null}
-  <CardDetail
-    card={selectedCard}
-    {planUuid}
-    {colors}
-    onClose={handleClose}
-    onCardUpdated={handleCardUpdated}
-  />
-{/if}
