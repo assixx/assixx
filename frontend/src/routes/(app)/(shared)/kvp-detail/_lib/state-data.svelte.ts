@@ -2,6 +2,8 @@
 // KVP-DETAIL - DATA STATE MODULE
 // =============================================================================
 
+import { IMAGE_FILE_TYPES } from './constants';
+
 import type {
   KvpSuggestion,
   Comment,
@@ -12,7 +14,7 @@ import type {
   Machine,
 } from './types';
 
-const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+type ImageFileType = (typeof IMAGE_FILE_TYPES)[number];
 
 /** Creates org lookup state (departments, teams, areas) */
 export function createOrgState() {
@@ -58,10 +60,14 @@ export function createDataState() {
   let attachments = $state<Attachment[]>([]);
 
   const photoAttachments = $derived(
-    attachments.filter((att) => IMAGE_TYPES.includes(att.fileType)),
+    attachments.filter((att) =>
+      IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType),
+    ),
   );
   const otherAttachments = $derived(
-    attachments.filter((att) => !IMAGE_TYPES.includes(att.fileType)),
+    attachments.filter(
+      (att) => !IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType),
+    ),
   );
 
   return {

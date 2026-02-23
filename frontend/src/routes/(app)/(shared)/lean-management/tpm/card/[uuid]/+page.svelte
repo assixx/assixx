@@ -94,7 +94,7 @@
   <div class="mb-4">
     <button
       type="button"
-      class="btn btn-link"
+      class="btn btn-light"
       onclick={navigateToBoard}
     >
       <i class="fas fa-arrow-left mr-2"></i>
@@ -156,81 +156,77 @@
       </div>
     </div>
 
-    <!-- Content Grid -->
+    <!-- Info Grid (2 columns on desktop) -->
     <div class="card-detail-grid mt-4">
-      <!-- Left Column: Info -->
-      <div class="card-detail-grid__info">
-        <!-- Info Table -->
-        <div class="card">
-          <div class="card__body">
-            <h3 class="card-detail__section-title mb-3">
-              <i class="fas fa-info-circle"></i>
-              {MESSAGES.DETAIL_HEADING}
-            </h3>
-            <div class="card-detail__info">
-              <div class="card-detail__row">
-                <span class="card-detail__label">{MESSAGES.DETAIL_CODE}</span>
-                <span class="card-detail__value">{card.cardCode}</span>
-              </div>
-              <div class="card-detail__row">
-                <span class="card-detail__label">{MESSAGES.DETAIL_ROLE}</span>
-                <span class="card-detail__value">
-                  {CARD_ROLE_LABELS[card.cardRole] ?? card.cardRole}
-                </span>
-              </div>
-              <div class="card-detail__row">
-                <span class="card-detail__label"
-                  >{MESSAGES.DETAIL_INTERVAL}</span
-                >
-                <span class="card-detail__value">
-                  {INTERVAL_LABELS[card.intervalType]}
-                </span>
-              </div>
-              <div class="card-detail__row">
-                <span class="card-detail__label">{MESSAGES.DETAIL_STATUS}</span>
-                <span class="card-detail__value">
-                  {CARD_STATUS_LABELS[card.status]}
-                </span>
-              </div>
-              <div class="card-detail__row">
-                <span class="card-detail__label"
-                  >{MESSAGES.DETAIL_DUE_DATE}</span
-                >
-                <span class="card-detail__value">
-                  {formatDate(card.currentDueDate)}
-                </span>
-              </div>
-              {#if card.lastCompletedAt !== null}
-                <div class="card-detail__row">
-                  <span class="card-detail__label">
-                    {MESSAGES.DETAIL_LAST_COMPLETED}
-                  </span>
-                  <span class="card-detail__value">
-                    {formatDate(card.lastCompletedAt)}
-                    {#if card.lastCompletedByName !== undefined}
-                      ({card.lastCompletedByName})
-                    {/if}
-                  </span>
-                </div>
-              {/if}
-              {#if card.requiresApproval}
-                <div class="card-detail__row">
-                  <span class="card-detail__label">
-                    {MESSAGES.DETAIL_APPROVAL_REQUIRED}
-                  </span>
-                  <span class="card-detail__value">
-                    <i
-                      class="fas fa-lock"
-                      style="color: var(--color-warning)"
-                    ></i>
-                    Ja
-                  </span>
-                </div>
-              {/if}
+      <!-- Info Table -->
+      <div class="card">
+        <div class="card__body">
+          <h3 class="card-detail__section-title mb-3">
+            <i class="fas fa-info-circle"></i>
+            {MESSAGES.DETAIL_HEADING}
+          </h3>
+          <div class="card-detail__info">
+            <div class="card-detail__row">
+              <span class="card-detail__label">{MESSAGES.DETAIL_CODE}</span>
+              <span class="card-detail__value">{card.cardCode}</span>
             </div>
+            <div class="card-detail__row">
+              <span class="card-detail__label">{MESSAGES.DETAIL_ROLE}</span>
+              <span class="card-detail__value">
+                {CARD_ROLE_LABELS[card.cardRole] ?? card.cardRole}
+              </span>
+            </div>
+            <div class="card-detail__row">
+              <span class="card-detail__label">{MESSAGES.DETAIL_INTERVAL}</span>
+              <span class="card-detail__value">
+                {INTERVAL_LABELS[card.intervalType]}
+              </span>
+            </div>
+            <div class="card-detail__row">
+              <span class="card-detail__label">{MESSAGES.DETAIL_STATUS}</span>
+              <span class="card-detail__value">
+                {CARD_STATUS_LABELS[card.status]}
+              </span>
+            </div>
+            <div class="card-detail__row">
+              <span class="card-detail__label">{MESSAGES.DETAIL_DUE_DATE}</span>
+              <span class="card-detail__value">
+                {formatDate(card.currentDueDate)}
+              </span>
+            </div>
+            {#if card.lastCompletedAt !== null}
+              <div class="card-detail__row">
+                <span class="card-detail__label">
+                  {MESSAGES.DETAIL_LAST_COMPLETED}
+                </span>
+                <span class="card-detail__value">
+                  {formatDate(card.lastCompletedAt)}
+                  {#if card.lastCompletedByName !== undefined}
+                    ({card.lastCompletedByName})
+                  {/if}
+                </span>
+              </div>
+            {/if}
+            {#if card.requiresApproval}
+              <div class="card-detail__row">
+                <span class="card-detail__label">
+                  {MESSAGES.DETAIL_APPROVAL_REQUIRED}
+                </span>
+                <span class="card-detail__value">
+                  <i
+                    class="fas fa-lock"
+                    style="color: var(--color-warning)"
+                  ></i>
+                  Ja
+                </span>
+              </div>
+            {/if}
           </div>
         </div>
+      </div>
 
+      <!-- Description + Location + Time Estimate -->
+      <div class="flex flex-col gap-4">
         <!-- Description -->
         <div class="card">
           <div class="card__body">
@@ -272,47 +268,47 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Right Column: Actions -->
-      <div class="card-detail-grid__actions">
-        {#if canExecute}
-          <div class="card">
-            <div class="card__body">
-              <ExecutionForm
-                {card}
-                onExecutionCreated={handleExecutionCreated}
-              />
+    <!-- Action Section (full width, own row) -->
+    <div class="mt-4">
+      {#if canExecute}
+        <div class="card">
+          <div class="card__body">
+            <ExecutionForm
+              {card}
+              onExecutionCreated={handleExecutionCreated}
+            />
+          </div>
+        </div>
+      {/if}
+
+      {#if isPendingApproval}
+        <div class="card">
+          <div class="card__body">
+            <ApprovalPanel
+              {card}
+              onApprovalDone={handleApprovalDone}
+            />
+          </div>
+        </div>
+      {/if}
+
+      {#if !canExecute && !isPendingApproval}
+        <div class="card">
+          <div class="card__body">
+            <div class="py-4 text-center">
+              <i
+                class="fas fa-check-circle mb-2 text-2xl"
+                style="color: var(--color-success)"
+              ></i>
+              <p class="text-sm text-(--color-text-muted)">
+                Diese Karte ist aktuell erledigt. Keine Aktion erforderlich.
+              </p>
             </div>
           </div>
-        {/if}
-
-        {#if isPendingApproval}
-          <div class="card">
-            <div class="card__body">
-              <ApprovalPanel
-                {card}
-                onApprovalDone={handleApprovalDone}
-              />
-            </div>
-          </div>
-        {/if}
-
-        {#if !canExecute && !isPendingApproval}
-          <div class="card">
-            <div class="card__body">
-              <div class="py-4 text-center">
-                <i
-                  class="fas fa-check-circle mb-2 text-2xl"
-                  style="color: var(--color-success)"
-                ></i>
-                <p class="text-sm text-(--color-text-muted)">
-                  Diese Karte ist aktuell erledigt. Keine Aktion erforderlich.
-                </p>
-              </div>
-            </div>
-          </div>
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -325,16 +321,10 @@
     align-items: start;
   }
 
-  .card-detail-grid__info {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .card-detail-grid__actions {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  @media (width <= 768px) {
+    .card-detail-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .card-detail__status-dot {
@@ -401,11 +391,5 @@
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     margin: 0;
-  }
-
-  @media (width <= 768px) {
-    .card-detail-grid {
-      grid-template-columns: 1fr;
-    }
   }
 </style>

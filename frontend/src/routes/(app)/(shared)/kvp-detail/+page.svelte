@@ -48,6 +48,7 @@
     hasImplementationDate,
     canUpdateStatus,
     getSharedByInfo,
+    isImageAttachment,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -80,11 +81,9 @@
   const machines = $derived(data.machines);
   const currentUser = $derived(data.currentUser);
 
-  // Derived: Photo attachments
+  // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
   const photoAttachments = $derived(
-    attachments.filter((att: Attachment) =>
-      ['image/jpeg', 'image/jpg', 'image/png'].includes(att.fileType),
-    ),
+    attachments.filter((att: Attachment) => isImageAttachment(att)),
   );
 
   // Derived: Visibility info for current suggestion
@@ -132,6 +131,15 @@
   let pendingStatus = $state<KvpStatus | null>(null);
   let rejectionReason = $state('');
 
+  // Preview Modal State (page-level, like blackboard pattern)
+  let showPreviewModal = $state(false);
+  let previewIndex = $state<number | null>(null);
+
+  const previewAttachment = $derived.by((): Attachment | null => {
+    if (previewIndex === null) return null;
+    return attachments[previewIndex] ?? null;
+  });
+
   // Loading states managed by kvpDetailState for child components
 
   // ==========================================================================
@@ -176,6 +184,49 @@
   onDestroy(() => {
     kvpDetailState.reset();
   });
+
+  // ==========================================================================
+  // PREVIEW MODAL HANDLERS (unified for photos + attachments)
+  // ==========================================================================
+
+  function openPreview(att: Attachment): void {
+    const idx = attachments.findIndex(
+      (a: Attachment) => a.fileUuid === att.fileUuid,
+    );
+    if (idx === -1) return;
+    previewIndex = idx;
+    showPreviewModal = true;
+  }
+
+  function closePreview(): void {
+    showPreviewModal = false;
+    previewIndex = null;
+  }
+
+  function handlePreviewPrev(): void {
+    if (previewIndex === null || attachments.length <= 1) return;
+    previewIndex =
+      previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
+  }
+
+  function handlePreviewNext(): void {
+    if (previewIndex === null || attachments.length <= 1) return;
+    previewIndex =
+      previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
+  }
+
+  // ==========================================================================
+  // KEYBOARD HANDLER
+  // ==========================================================================
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      if (showPreviewModal) closePreview();
+    } else if (showPreviewModal) {
+      if (e.key === 'ArrowLeft') handlePreviewPrev();
+      else if (e.key === 'ArrowRight') handlePreviewNext();
+    }
+  }
 
   // ==========================================================================
   // COMMENT HANDLERS
@@ -401,6 +452,8 @@
   <title>KVP Vorschlag - Assixx</title>
 </svelte:head>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="container">
   <!-- Back Button -->
   <div class="mb-4">
@@ -582,7 +635,10 @@
             <i class="fas fa-images"></i>
             Fotos
           </h3>
-          <PhotoGallery photos={photoAttachments} />
+          <PhotoGallery
+            photos={photoAttachments}
+            onphotoclick={openPreview}
+          />
         </div>
       {/if}
 
@@ -630,6 +686,7 @@
       onunarchive={handleUnarchive}
       onconfirm={handleConfirm}
       onunconfirm={handleUnconfirm}
+      onopenpreview={openPreview}
     />
   </div>
 </div>
@@ -641,7 +698,15 @@
   onconfirm={handleConfirmRejection}
   oncancel={handleCancelRejection}
 />
-<AttachmentPreviewModal />
+<AttachmentPreviewModal
+  show={showPreviewModal}
+  attachment={previewAttachment}
+  onclose={closePreview}
+  onprev={handlePreviewPrev}
+  onnext={handlePreviewNext}
+  currentIndex={previewIndex ?? undefined}
+  totalCount={attachments.length}
+/>
 
 <style>
   /* ─── Layout ──────── */

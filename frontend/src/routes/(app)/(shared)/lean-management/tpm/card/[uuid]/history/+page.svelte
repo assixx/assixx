@@ -40,6 +40,16 @@
   let loadingPhotos = $state<Partial<Record<string, boolean>>>({});
   let photoErrors = $state<Partial<Record<string, boolean>>>({});
 
+  // Photo Preview Modal State
+  let showPhotoPreview = $state(false);
+  let previewPhotoIndex = $state<number | null>(null);
+  let previewPhotos = $state<TpmExecutionPhoto[]>([]);
+
+  const previewPhoto = $derived.by((): TpmExecutionPhoto | null => {
+    if (previewPhotoIndex === null) return null;
+    return previewPhotos[previewPhotoIndex] ?? null;
+  });
+
   // ===========================================================================
   // HELPERS
   // ===========================================================================
@@ -86,6 +96,14 @@
     return map[status];
   }
 
+  function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  }
+
   // ===========================================================================
   // EXPAND / PHOTO LOADING
   // ===========================================================================
@@ -123,19 +141,60 @@
   }
 
   // ===========================================================================
+  // PHOTO PREVIEW HANDLERS
+  // ===========================================================================
+
+  function openPhotoPreview(photos: TpmExecutionPhoto[], index: number): void {
+    previewPhotos = photos;
+    previewPhotoIndex = index;
+    showPhotoPreview = true;
+  }
+
+  function closePhotoPreview(): void {
+    showPhotoPreview = false;
+    previewPhotoIndex = null;
+    previewPhotos = [];
+  }
+
+  function handlePreviewPrev(): void {
+    if (previewPhotoIndex === null || previewPhotos.length <= 1) return;
+    previewPhotoIndex =
+      previewPhotoIndex === 0 ?
+        previewPhotos.length - 1
+      : previewPhotoIndex - 1;
+  }
+
+  function handlePreviewNext(): void {
+    if (previewPhotoIndex === null || previewPhotos.length <= 1) return;
+    previewPhotoIndex =
+      previewPhotoIndex === previewPhotos.length - 1 ?
+        0
+      : previewPhotoIndex + 1;
+  }
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (!showPhotoPreview) return;
+    if (e.key === 'Escape') closePhotoPreview();
+    else if (e.key === 'ArrowLeft') handlePreviewPrev();
+    else if (e.key === 'ArrowRight') handlePreviewNext();
+  }
+
+  // ===========================================================================
   // NAVIGATION
   // ===========================================================================
 
   const resolvePath = resolve as (p: string) => string;
 
   function goBack(): void {
-    if (card?.planUuid !== undefined) {
-      void goto(resolvePath(`/lean-management/tpm/board/${card.planUuid}`));
+    if (card !== null) {
+      void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}`));
     } else {
       void goto(resolvePath('/lean-management/tpm/overview'));
     }
   }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
   <title>
@@ -318,12 +377,24 @@
                               </span>
                             {:else if loadedPhotos[execution.uuid] !== undefined}
                               <div class="history-detail__photos">
-                                {#each loadedPhotos[execution.uuid] as photo (photo.uuid)}
-                                  <a
-                                    href="/{photo.filePath}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                {#each loadedPhotos[execution.uuid] as photo, photoIdx (photo.uuid)}
+                                  <div
                                     class="history-detail__photo-thumb"
+                                    role="button"
+                                    tabindex="0"
+                                    onclick={() => {
+                                      openPhotoPreview(
+                                        loadedPhotos[execution.uuid] ?? [],
+                                        photoIdx,
+                                      );
+                                    }}
+                                    onkeydown={(e) => {
+                                      if (e.key === 'Enter')
+                                        openPhotoPreview(
+                                          loadedPhotos[execution.uuid] ?? [],
+                                          photoIdx,
+                                        );
+                                    }}
                                   >
                                     <img
                                       src="/{photo.filePath}"
@@ -331,7 +402,12 @@
                                       class="history-detail__photo-img"
                                       loading="lazy"
                                     />
-                                  </a>
+                                    {#if photoIdx === 0 && (loadedPhotos[execution.uuid]?.length ?? 0) > 1}
+                                      <span class="history-detail__photo-count">
+                                        {loadedPhotos[execution.uuid]?.length} Fotos
+                                      </span>
+                                    {/if}
+                                  </div>
                                 {/each}
                               </div>
                             {/if}
@@ -394,6 +470,118 @@
   </div>
 </div>
 
+<!-- Photo Preview Modal -->
+{#if showPhotoPreview && previewPhoto !== null}
+  <div
+    class="modal-overlay modal-overlay--active"
+    onclick={closePhotoPreview}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closePhotoPreview();
+    }}
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh;"
+      onclick={(e) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e) => {
+        e.stopPropagation();
+      }}
+      role="document"
+    >
+      <div class="ds-modal__header">
+        <h3 class="ds-modal__title">
+          <i class="fas fa-image text-success-500 mr-2"></i>
+          {previewPhoto.fileName}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={closePhotoPreview}
+          aria-label="Schließen"><i class="fas fa-times"></i></button
+        >
+      </div>
+      <div class="ds-modal__body p-0">
+        <div
+          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+        >
+          <img
+            src="/{previewPhoto.filePath}"
+            alt={previewPhoto.fileName}
+            class="max-h-full max-w-full object-contain"
+          />
+        </div>
+        <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
+          <div
+            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
+          >
+            <span class="flex items-center gap-2">
+              <i class="fas fa-file-archive"></i>
+              {formatFileSize(previewPhoto.fileSize)}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closePhotoPreview}
+          ><i class="fas fa-times mr-2"></i>Schließen</button
+        >
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={() => {
+            window.open(`/${previewPhoto.filePath}`, '_blank');
+          }}><i class="fas fa-download mr-2"></i>Herunterladen</button
+        >
+      </div>
+    </div>
+    {#if previewPhotos.length > 1}
+      <button
+        type="button"
+        class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+        onclick={(e) => {
+          e.stopPropagation();
+          handlePreviewPrev();
+        }}
+        aria-label="Vorheriges"
+      >
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button
+        type="button"
+        class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+        onclick={(e) => {
+          e.stopPropagation();
+          handlePreviewNext();
+        }}
+        aria-label="Nächstes"
+      >
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      {#if previewPhotoIndex !== null}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+          onclick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {previewPhotoIndex + 1} / {previewPhotos.length}
+        </div>
+      {/if}
+    {/if}
+  </div>
+{/if}
+
 <style>
   .history-row {
     cursor: pointer;
@@ -451,17 +639,34 @@
   }
 
   .history-detail__photo-thumb {
+    cursor: pointer;
+    position: relative;
     display: block;
     width: 80px;
     height: 80px;
     border-radius: var(--radius-md);
     overflow: hidden;
     border: 1px solid var(--color-glass-border);
-    transition: border-color 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      transform 0.15s ease;
   }
 
   .history-detail__photo-thumb:hover {
     border-color: var(--color-primary);
+    transform: scale(1.05);
+  }
+
+  .history-detail__photo-count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgb(0 0 0 / 70%);
   }
 
   .history-detail__photo-img {

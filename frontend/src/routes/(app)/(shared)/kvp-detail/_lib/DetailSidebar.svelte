@@ -10,7 +10,7 @@
     canUnarchiveSuggestion,
   } from './utils';
 
-  import type { KvpSuggestion } from './types';
+  import type { Attachment, KvpSuggestion } from './types';
 
   interface Props {
     suggestion: KvpSuggestion;
@@ -20,6 +20,7 @@
     onunarchive: () => void;
     onconfirm: () => Promise<void>;
     onunconfirm: () => Promise<void>;
+    onopenpreview: (attachment: Attachment) => void;
   }
 
   const {
@@ -30,6 +31,7 @@
     onunarchive,
     onconfirm,
     onunconfirm,
+    onopenpreview,
   }: Props = $props();
 
   // Loading state for confirm/unconfirm
@@ -109,11 +111,10 @@
             role="button"
             tabindex="0"
             onclick={() => {
-              kvpDetailState.openPreviewModal(attachment);
+              onopenpreview(attachment);
             }}
             onkeydown={(e) => {
-              if (e.key === 'Enter')
-                kvpDetailState.openPreviewModal(attachment);
+              if (e.key === 'Enter') onopenpreview(attachment);
             }}
           >
             <i class="fas {getFileIconClass(attachment.fileType)}"></i>
