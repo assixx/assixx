@@ -103,6 +103,9 @@ function createExecutionRow(
     approved_at: null,
     approval_note: null,
     custom_data: {},
+    no_issues_found: true,
+    actual_duration_minutes: null,
+    actual_staff_count: null,
     created_at: '2026-03-01T08:30:00.000Z',
     updated_at: '2026-03-01T08:30:00.000Z',
     card_uuid: 'card-uuid-001                            ',
@@ -217,29 +220,85 @@ describe('TpmExecutionsService', () => {
       expect(result.approvalStatus).toBe('pending');
     });
 
-    it('should throw BadRequestException when approval card lacks documentation', async () => {
+    it('should throw BadRequestException when approval card has issues but no documentation', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createCardRow({ status: 'red', requires_approval: true })],
       });
 
       await expect(
         service.createExecution(10, 'card-uuid-001', 7, {
+          noIssuesFound: false,
           customData: {},
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException for empty documentation string', async () => {
+    it('should throw BadRequestException for empty documentation string when issues found', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createCardRow({ status: 'red', requires_approval: true })],
       });
 
       await expect(
         service.createExecution(10, 'card-uuid-001', 7, {
+          noIssuesFound: false,
           documentation: '   ',
           customData: {},
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should allow approval card without documentation when noIssuesFound is true', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: true })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'yellow',
+        requiresApproval: true,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow({ approval_status: 'pending' })],
+      });
+
+      const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        noIssuesFound: true,
+        customData: {},
+      });
+
+      expect(result.approvalStatus).toBe('pending');
+    });
+
+    it('should pass enhanced fields through to INSERT', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: false })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          createExecutionRow({
+            no_issues_found: true,
+            actual_duration_minutes: 45,
+            actual_staff_count: 2,
+          }),
+        ],
+      });
+
+      await service.createExecution(10, 'card-uuid-001', 7, {
+        executionDate: '2026-02-20',
+        noIssuesFound: true,
+        actualDurationMinutes: 45,
+        actualStaffCount: 2,
+        customData: {},
+      });
+
+      // INSERT is the 2nd call (index 1): [0]=lockCardByUuid, [1]=INSERT
+      const insertParams = mockClient.query.mock.calls[1]?.[1] as unknown[];
+      expect(insertParams?.[4]).toBe('2026-02-20'); // executionDate
+      expect(insertParams?.[8]).toBe(true); // no_issues_found
+      expect(insertParams?.[9]).toBe(45); // actual_duration_minutes
+      expect(insertParams?.[10]).toBe(2); // actual_staff_count
     });
 
     it('should throw NotFoundException when card not found', async () => {
@@ -327,6 +386,22 @@ describe('TpmExecutionsService', () => {
       expect(result.photoCount).toBe(3);
       expect(result.executedByName).toBe('Warren Buffett');
       expect(result.approvedByName).toBe('Charlie Munger');
+    });
+
+    it('should map enhanced fields (noIssuesFound, duration, staff)', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        createExecutionRow({
+          no_issues_found: false,
+          actual_duration_minutes: 30,
+          actual_staff_count: 3,
+        }),
+      );
+
+      const result = await service.getExecution(10, 'exec-uuid-001');
+
+      expect(result.noIssuesFound).toBe(false);
+      expect(result.actualDurationMinutes).toBe(30);
+      expect(result.actualStaffCount).toBe(3);
     });
 
     it('should omit photoCount when not present in row', async () => {

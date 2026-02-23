@@ -113,10 +113,17 @@ export const MESSAGES = {
 
   // Execution Form
   EXEC_HEADING: 'Wartung durchführen',
-  EXEC_DOCUMENTATION: 'Dokumentation',
-  EXEC_DOCUMENTATION_PH: 'Beschreiben Sie die durchgeführte Wartung...',
+  EXEC_DATE: 'Ausführungsdatum',
+  EXEC_NO_ISSUES: 'Ohne Beanstandung',
+  EXEC_NO_ISSUES_HINT: 'Wartung ohne Probleme/Vorkommnisse durchgeführt',
+  EXEC_DURATION: 'Tatsächliche Dauer',
+  EXEC_DURATION_UNIT: 'Min.',
+  EXEC_STAFF: 'Beteiligte MA',
+  EXEC_SOLL: 'SOLL',
+  EXEC_DOCUMENTATION: 'Bemerkungen / Auffälligkeiten',
+  EXEC_DOCUMENTATION_PH: 'Vorkommnisse, Auffälligkeiten, Anmerkungen...',
   EXEC_DOCUMENTATION_HINT:
-    'Bei Karten mit Freigabepflicht ist die Dokumentation erforderlich.',
+    'Bei Beanstandungen ist die Dokumentation erforderlich.',
   EXEC_SUBMIT: 'Als erledigt melden',
   EXEC_SUBMITTING: 'Wird gemeldet...',
   EXEC_SUCCESS: 'Wartung erfolgreich gemeldet',

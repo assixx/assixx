@@ -6,6 +6,8 @@
  *
  * @see vitest.config.api.ts
  */
+import { execSync } from 'node:child_process';
+
 import {
   type AuthState,
   BASE_URL,
@@ -22,6 +24,15 @@ let machineUuid: string;
 let planUuid: string;
 let cardUuid: string;
 let templateUuid: string;
+let executionUuid: string;
+
+/** Force a card's status via direct DB update (test-only) */
+function forceCardStatus(uuid: string, status: string): void {
+  execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -c "UPDATE tpm_cards SET status = '${status}' WHERE uuid = '${uuid}'"`,
+    { stdio: 'pipe' },
+  );
+}
 
 beforeAll(async () => {
   auth = await loginApitest();
@@ -416,6 +427,174 @@ describe('TPM Exec: Execute Green Card', () => {
 
   it('should return error about invalid status', () => {
     expect(body.success).toBe(false);
+  });
+});
+
+// ---- seq: 11b -- Execute red card with enhanced fields → 201 -------------------
+
+describe('TPM Exec: Execute Red Card With Enhanced Fields', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    // Force card to 'red' so it can be executed
+    forceCardStatus(cardUuid, 'red');
+
+    res = await fetch(`${BASE_URL}/tpm/executions`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        cardUuid,
+        executionDate: '2026-02-20',
+        noIssuesFound: true,
+        actualDurationMinutes: 45,
+        actualStaffCount: 2,
+        documentation: 'Routine-Wartung abgeschlossen',
+      }),
+    });
+    body = (await res.json()) as JsonBody;
+
+    if (res.status === 201) {
+      executionUuid = body.data.uuid as string;
+    }
+  });
+
+  it('should return 201 Created', () => {
+    expect(res.status).toBe(201);
+  });
+
+  it('should return noIssuesFound in response', () => {
+    expect(body.data.noIssuesFound).toBe(true);
+  });
+
+  it('should return actualDurationMinutes in response', () => {
+    expect(body.data.actualDurationMinutes).toBe(45);
+  });
+
+  it('should return actualStaffCount in response', () => {
+    expect(body.data.actualStaffCount).toBe(2);
+  });
+
+  it('should return executionDate matching input', () => {
+    expect(body.data.executionDate).toContain('2026-02-20');
+  });
+});
+
+// ---- seq: 11c -- Get execution and verify enhanced fields persist ---------------
+
+describe('TPM Exec: Verify Enhanced Fields Persist', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/executions/${executionUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should persist noIssuesFound', () => {
+    expect(body.data.noIssuesFound).toBe(true);
+  });
+
+  it('should persist actualDurationMinutes', () => {
+    expect(body.data.actualDurationMinutes).toBe(45);
+  });
+
+  it('should persist actualStaffCount', () => {
+    expect(body.data.actualStaffCount).toBe(2);
+  });
+});
+
+// ---- seq: 11d -- Execute with invalid duration → 400 ----------------------------
+
+describe('TPM Exec: Invalid Enhanced Fields', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    // Force card back to 'red' for another attempt
+    forceCardStatus(cardUuid, 'red');
+
+    res = await fetch(`${BASE_URL}/tpm/executions`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        cardUuid,
+        actualDurationMinutes: 0,
+        actualStaffCount: -1,
+      }),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 400 for invalid field values', () => {
+    expect(res.status).toBe(400);
+  });
+
+  it('should return validation error', () => {
+    expect(body.success).toBe(false);
+  });
+});
+
+// ---- seq: 11e -- Approval card without docs when noIssuesFound=true → 201 -------
+
+describe('TPM Exec: Approval Card No Docs With NoIssuesFound', () => {
+  let approvalCardUuid: string;
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    // Create a card that requires approval
+    const cardRes = await fetch(`${BASE_URL}/tpm/cards`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        planUuid,
+        cardRole: 'operator',
+        intervalType: 'daily',
+        title: `Approval Test Card ${Date.now()}`,
+        requiresApproval: true,
+      }),
+    });
+    const cardBody = (await cardRes.json()) as JsonBody;
+    approvalCardUuid = cardBody.data.uuid as string;
+
+    // Force to red
+    forceCardStatus(approvalCardUuid, 'red');
+
+    // Execute with noIssuesFound=true and NO documentation
+    res = await fetch(`${BASE_URL}/tpm/executions`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        cardUuid: approvalCardUuid,
+        noIssuesFound: true,
+      }),
+    });
+    body = (await res.json()) as JsonBody;
+
+    // Cleanup: delete the approval test card
+    await fetch(`${BASE_URL}/tpm/cards/${approvalCardUuid}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  });
+
+  it('should return 201 Created (docs not required when noIssuesFound)', () => {
+    expect(res.status).toBe(201);
+  });
+
+  it('should have pending approval status', () => {
+    expect(body.data.approvalStatus).toBe('pending');
+  });
+
+  it('should have noIssuesFound=true', () => {
+    expect(body.data.noIssuesFound).toBe(true);
   });
 });
 

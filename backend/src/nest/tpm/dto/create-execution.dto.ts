@@ -3,13 +3,30 @@
  *
  * Zod schema for creating a TPM card execution (marking a card as done).
  * Combines cardUuid with completion data. Documentation is optional
- * at DTO level — the service enforces mandatory docs when requires_approval=true.
+ * when noIssuesFound=true — the service enforces mandatory docs when
+ * requires_approval=true AND noIssuesFound=false.
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const CreateExecutionSchema = z.object({
   cardUuid: z.uuid(),
+  executionDate: z
+    .iso.date({ error: 'Ausführungsdatum muss ein gültiges Datum sein (YYYY-MM-DD)' })
+    .optional(),
+  noIssuesFound: z.boolean().default(false),
+  actualDurationMinutes: z
+    .number()
+    .int('Dauer muss eine ganze Zahl sein')
+    .min(1, 'Dauer muss mindestens 1 Minute sein')
+    .max(1440, 'Dauer darf maximal 1440 Minuten (24h) sein')
+    .nullish(),
+  actualStaffCount: z
+    .number()
+    .int('MA-Anzahl muss eine ganze Zahl sein')
+    .min(1, 'Mindestens 1 Mitarbeiter')
+    .max(50, 'Maximal 50 Mitarbeiter')
+    .nullish(),
   documentation: z
     .string()
     .trim()

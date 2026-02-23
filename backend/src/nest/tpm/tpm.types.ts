@@ -114,7 +114,7 @@ export interface TpmCardRow {
   updated_at: string;
 }
 
-/** Row type for `tpm_card_executions` table (migration 043) */
+/** Row type for `tpm_card_executions` table (migration 043 + 048) */
 export interface TpmCardExecutionRow {
   id: number;
   uuid: string;
@@ -128,6 +128,9 @@ export interface TpmCardExecutionRow {
   approved_at: string | null;
   approval_note: string | null;
   custom_data: Record<string, unknown>;
+  no_issues_found: boolean;
+  actual_duration_minutes: number | null;
+  actual_staff_count: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -268,6 +271,9 @@ export interface TpmCardExecution {
   executedByName?: string;
   executionDate: string;
   documentation: string | null;
+  noIssuesFound: boolean;
+  actualDurationMinutes: number | null;
+  actualStaffCount: number | null;
   approvalStatus: TpmApprovalStatus;
   approvedBy: number | null;
   approvedByName?: string;

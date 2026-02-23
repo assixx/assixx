@@ -102,7 +102,14 @@ export class TpmExecutionsController {
       tenantId,
       dto.cardUuid,
       user.id,
-      { documentation: dto.documentation, customData: dto.customData },
+      {
+        executionDate: dto.executionDate,
+        noIssuesFound: dto.noIssuesFound,
+        actualDurationMinutes: dto.actualDurationMinutes,
+        actualStaffCount: dto.actualStaffCount,
+        documentation: dto.documentation,
+        customData: dto.customData,
+      },
     );
   }
 

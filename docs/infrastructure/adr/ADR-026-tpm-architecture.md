@@ -201,7 +201,7 @@ frontend/src/routes/(app)/(shared)/lean-management/tpm/
 │       ├── BoardFilter.svelte       # Status/role/interval filter (client-state)
 │       ├── KamishibaiCard.svelte    # 3D flip card (front: status color, back: info)
 │       ├── CardDetail.svelte        # Slide-over panel (card info + actions)
-│       ├── ExecutionForm.svelte     # Documentation → photos → submit
+│       ├── ExecutionForm.svelte     # Date → no-issues checkbox → duration/staff → docs → photos → submit
 │       ├── ApprovalPanel.svelte     # Approve/reject execution
 │       └── TimeEstimateForm.svelte  # Time estimate display
 ├── card/[uuid]/history/             # Per-card execution history
@@ -228,9 +228,12 @@ frontend/src/routes/(app)/(shared)/lean-management/tpm/
 ```
 CardDetail (red/overdue card)
   └── ExecutionForm
-       1. Documentation textarea (optional, required if requires_approval)
-       2. Photo staging (max 5, client-side preview via URL.createObjectURL)
-       3. Submit button
+       1. Execution date (default: today, changeable for late documentation)
+       2. "Ohne Beanstandung" checkbox (fast path for routine maintenance)
+       3. Actual duration + staff count (IST vs SOLL comparison from time estimates)
+       4. Documentation textarea (optional; required when issues found on approval cards)
+       5. Photo staging (max 5, client-side preview via URL.createObjectURL)
+       6. Submit button
           ├── POST /tpm/executions         → creates execution record
           ├── POST /tpm/executions/:uuid/photos  → uploads each staged photo (sequential)
           └── onExecutionCreated() → board refreshes via invalidateAll()

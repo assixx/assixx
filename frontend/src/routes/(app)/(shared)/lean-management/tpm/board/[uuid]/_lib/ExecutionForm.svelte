@@ -1,8 +1,14 @@
 <script lang="ts">
   /**
    * ExecutionForm — Form for marking a card as done.
-   * Flow: documentation (optional) → photo staging (optional) → submit.
-   * Photos are collected client-side first, then uploaded after execution creation.
+   *
+   * Fields:
+   *   1. Execution date (default: today, changeable for late documentation)
+   *   2. "Ohne Beanstandung" checkbox (fast path for 80% of routine maintenance)
+   *   3. Actual duration + staff count (IST vs SOLL comparison)
+   *   4. Documentation / remarks (optional when no issues, required when issues found)
+   *   5. Photo staging (optional, max 5)
+   *
    * Only shown when card status is 'red' or 'overdue'.
    */
   import { onDestroy } from 'svelte';
@@ -10,7 +16,11 @@
   import { createExecution, uploadPhoto, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
-  import type { TpmCard, TpmExecution } from '../../../_lib/types';
+  import type {
+    TpmCard,
+    TpmExecution,
+    TpmTimeEstimate,
+  } from '../../../_lib/types';
 
   const MAX_PHOTOS = 5;
   const MAX_FILE_SIZE = 5_242_880;
@@ -23,11 +33,17 @@
 
   interface Props {
     card: TpmCard;
+    timeEstimates?: TpmTimeEstimate[];
     onExecutionCreated: (execution: TpmExecution) => void;
   }
 
-  const { card, onExecutionCreated }: Props = $props();
+  const { card, timeEstimates = [], onExecutionCreated }: Props = $props();
 
+  // Form state
+  let executionDate = $state(new Date().toISOString().slice(0, 10));
+  let noIssuesFound = $state(true);
+  let actualDurationMinutes = $state<string>('');
+  let actualStaffCount = $state<string>('');
   let documentation = $state('');
   let submitting = $state(false);
   let error = $state<string | null>(null);
@@ -36,10 +52,20 @@
   let photoError = $state<string | null>(null);
   let photoUploadWarning = $state<string | null>(null);
 
+  // Derived: SOLL values from time estimates matching this card's interval
+  const matchingEstimate = $derived(
+    timeEstimates.find(
+      (e: TpmTimeEstimate) => e.intervalType === card.intervalType,
+    ),
+  );
+  const sollDuration = $derived(matchingEstimate?.executionMinutes ?? null);
+  const sollStaff = $derived(matchingEstimate?.staffCount ?? null);
+
+  // Derived: validation
   const canExecute = $derived(
     card.status === 'red' || card.status === 'overdue',
   );
-  const requiresDocs = $derived(card.requiresApproval);
+  const requiresDocs = $derived(card.requiresApproval && !noIssuesFound);
   const isValid = $derived(!requiresDocs || documentation.trim().length > 0);
   const canAddPhoto = $derived(stagedPhotos.length < MAX_PHOTOS && !submitting);
 
@@ -82,6 +108,11 @@
     }
   }
 
+  function parseIntOrNull(val: string): number | null {
+    const n = Number.parseInt(val, 10);
+    return Number.isNaN(n) || n <= 0 ? null : n;
+  }
+
   async function handleSubmit(): Promise<void> {
     if (!canExecute || !isValid || submitting) return;
 
@@ -93,6 +124,10 @@
       // Step 1: Create execution
       const execution = await createExecution({
         cardUuid: card.uuid,
+        executionDate,
+        noIssuesFound,
+        actualDurationMinutes: parseIntOrNull(actualDurationMinutes),
+        actualStaffCount: parseIntOrNull(actualStaffCount),
         documentation:
           documentation.trim().length > 0 ? documentation.trim() : null,
       });
@@ -153,7 +188,99 @@
       </span>
     {/if}
   {:else}
-    <!-- Step 1: Documentation -->
+    <!-- Step 1: Execution Date -->
+    <div class="form-field">
+      <label
+        for="exec-date"
+        class="form-field__label"
+      >
+        {MESSAGES.EXEC_DATE}
+      </label>
+      <input
+        id="exec-date"
+        type="date"
+        class="form-field__control"
+        bind:value={executionDate}
+        max={new Date().toISOString().slice(0, 10)}
+        disabled={submitting}
+      />
+    </div>
+
+    <!-- Step 2: No Issues Checkbox -->
+    <label class="execution-form__checkbox">
+      <input
+        type="checkbox"
+        bind:checked={noIssuesFound}
+        disabled={submitting}
+      />
+      <span class="execution-form__checkbox-content">
+        <span class="execution-form__checkbox-label">
+          {MESSAGES.EXEC_NO_ISSUES}
+        </span>
+        <span class="execution-form__checkbox-hint">
+          {MESSAGES.EXEC_NO_ISSUES_HINT}
+        </span>
+      </span>
+    </label>
+
+    <!-- Step 3: Time & Staff (optional) -->
+    <div class="execution-form__row">
+      <div class="form-field execution-form__half">
+        <label
+          for="exec-duration"
+          class="form-field__label"
+        >
+          {MESSAGES.EXEC_DURATION}
+          {#if sollDuration !== null}
+            <span class="execution-form__soll">
+              ({MESSAGES.EXEC_SOLL}: {sollDuration}
+              {MESSAGES.EXEC_DURATION_UNIT})
+            </span>
+          {/if}
+        </label>
+        <div class="execution-form__input-suffix">
+          <input
+            id="exec-duration"
+            type="number"
+            class="form-field__control"
+            bind:value={actualDurationMinutes}
+            min="1"
+            max="1440"
+            placeholder="—"
+            disabled={submitting}
+          />
+          <span class="execution-form__suffix"
+            >{MESSAGES.EXEC_DURATION_UNIT}</span
+          >
+        </div>
+      </div>
+
+      <div class="form-field execution-form__half">
+        <label
+          for="exec-staff"
+          class="form-field__label"
+        >
+          {MESSAGES.EXEC_STAFF}
+          {#if sollStaff !== null}
+            <span class="execution-form__soll">
+              ({MESSAGES.EXEC_SOLL}: {sollStaff})
+            </span>
+          {/if}
+        </label>
+        <input
+          id="exec-staff"
+          type="number"
+          class="form-field__control"
+          bind:value={actualStaffCount}
+          min="1"
+          max="50"
+          placeholder="—"
+          disabled={submitting}
+        />
+      </div>
+    </div>
+
+    <!-- Step 4: Documentation -->
     <div class="form-field">
       <label
         for="exec-docs"
@@ -169,7 +296,7 @@
         class="form-field__control form-field__control--textarea"
         placeholder={MESSAGES.EXEC_DOCUMENTATION_PH}
         bind:value={documentation}
-        rows="4"
+        rows="3"
         maxlength="10000"
         disabled={submitting}
       ></textarea>
@@ -180,7 +307,7 @@
       {/if}
     </div>
 
-    <!-- Step 2: Photo staging -->
+    <!-- Step 5: Photo staging -->
     <div class="execution-form__photos">
       {#if stagedPhotos.length > 0}
         <div class="execution-form__photo-grid">
@@ -208,7 +335,9 @@
       {/if}
 
       {#if canAddPhoto}
-        <div class="file-upload-zone file-upload-zone--compact execution-form__upload-zone">
+        <div
+          class="file-upload-zone file-upload-zone--compact execution-form__upload-zone"
+        >
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -217,7 +346,10 @@
             id="photo-upload"
             disabled={submitting}
           />
-          <label for="photo-upload" class="file-upload-zone__label">
+          <label
+            for="photo-upload"
+            class="file-upload-zone__label"
+          >
             <div class="file-upload-zone__icon">
               <i class="fas fa-camera"></i>
             </div>
@@ -251,7 +383,7 @@
       </span>
     {/if}
 
-    <!-- Step 3: Submit -->
+    <!-- Step 6: Submit -->
     <button
       type="button"
       class="btn btn-primary execution-form__submit"
@@ -296,6 +428,78 @@
     padding: 0.5rem 0.75rem;
     background: color-mix(in srgb, var(--color-success) 8%, transparent);
     border-radius: var(--radius-md);
+  }
+
+  /* Checkbox */
+  .execution-form__checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    background: color-mix(in srgb, var(--color-success) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-success) 20%, transparent);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .execution-form__checkbox:hover {
+    background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  }
+
+  .execution-form__checkbox input[type='checkbox'] {
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .execution-form__checkbox-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .execution-form__checkbox-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .execution-form__checkbox-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Row layout for duration + staff */
+  .execution-form__row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .execution-form__half {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .execution-form__input-suffix {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .execution-form__input-suffix .form-field__control {
+    flex: 1;
+  }
+
+  .execution-form__suffix {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .execution-form__soll {
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
   }
 
   /* Photo staging */

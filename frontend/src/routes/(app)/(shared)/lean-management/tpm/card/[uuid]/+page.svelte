@@ -285,6 +285,7 @@
           <div class="card__body">
             <ExecutionForm
               {card}
+              {timeEstimates}
               onExecutionCreated={handleExecutionCreated}
             />
           </div>

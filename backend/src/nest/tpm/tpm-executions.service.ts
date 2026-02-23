@@ -102,7 +102,11 @@ export class TpmExecutionsService {
           cardUuid,
         );
 
-        this.validateDocumentation(lockedCard, dto.documentation);
+        this.validateDocumentation(
+          lockedCard,
+          dto.documentation,
+          dto.noIssuesFound,
+        );
 
         const completionResult = await this.cardStatusService.markCardCompleted(
           client,
@@ -365,12 +369,18 @@ export class TpmExecutionsService {
     return Number.parseInt(result.rows[0]?.count ?? '0', 10);
   }
 
-  /** Validate documentation requirement for approval cards */
+  /**
+   * Validate documentation requirement.
+   * Documentation is mandatory when:
+   *   - Card requires approval AND noIssuesFound is false
+   *     (something noteworthy happened → must be documented)
+   */
   private validateDocumentation(
     card: TpmCardRow,
     documentation: string | null | undefined,
+    noIssuesFound: boolean,
   ): void {
-    if (card.requires_approval) {
+    if (card.requires_approval && !noIssuesFound) {
       const hasDocumentation =
         documentation !== undefined &&
         documentation !== null &&
@@ -378,7 +388,7 @@ export class TpmExecutionsService {
 
       if (!hasDocumentation) {
         throw new BadRequestException(
-          'Dokumentation ist bei Karten mit Freigabepflicht erforderlich',
+          'Dokumentation ist erforderlich wenn Beanstandungen vorliegen',
         );
       }
     }
@@ -394,13 +404,15 @@ export class TpmExecutionsService {
     approvalStatus: string,
   ): Promise<TpmCardExecution> {
     const executionUuid = uuidv7();
-    const executionDate = new Date().toISOString().slice(0, 10);
+    const executionDate =
+      dto.executionDate ?? new Date().toISOString().slice(0, 10);
 
     const result = await client.query<TpmExecutionJoinRow>(
       `INSERT INTO tpm_card_executions
          (uuid, tenant_id, card_id, executed_by, execution_date,
-          documentation, approval_status, custom_data)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          documentation, approval_status, custom_data,
+          no_issues_found, actual_duration_minutes, actual_staff_count)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *,
          (SELECT uuid FROM tpm_cards WHERE id = $3) AS card_uuid,
          (SELECT username FROM users WHERE id = $4) AS executed_by_name`,
@@ -413,6 +425,9 @@ export class TpmExecutionsService {
         dto.documentation ?? null,
         approvalStatus,
         JSON.stringify(dto.customData),
+        dto.noIssuesFound,
+        dto.actualDurationMinutes ?? null,
+        dto.actualStaffCount ?? null,
       ],
     );
 

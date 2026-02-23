@@ -31,6 +31,9 @@ export function mapExecutionRowToApi(
         row.execution_date
       : new Date(row.execution_date).toISOString(),
     documentation: row.documentation,
+    noIssuesFound: row.no_issues_found,
+    actualDurationMinutes: row.actual_duration_minutes,
+    actualStaffCount: row.actual_staff_count,
     approvalStatus: row.approval_status,
     approvedBy: row.approved_by,
     approvedAt:

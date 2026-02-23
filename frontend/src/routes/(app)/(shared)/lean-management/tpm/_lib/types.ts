@@ -96,6 +96,9 @@ export interface TpmExecution {
   executedByName?: string;
   executionDate: string;
   documentation: string | null;
+  noIssuesFound: boolean;
+  actualDurationMinutes: number | null;
+  actualStaffCount: number | null;
   approvalStatus: ApprovalStatus;
   approvedBy: number | null;
   approvedByName?: string;
@@ -137,6 +140,10 @@ export interface TpmTimeEstimate {
 /** Payload for creating an execution */
 export interface CreateExecutionPayload {
   cardUuid: string;
+  executionDate?: string;
+  noIssuesFound?: boolean;
+  actualDurationMinutes?: number | null;
+  actualStaffCount?: number | null;
   documentation?: string | null;
   customData?: Record<string, unknown>;
 }

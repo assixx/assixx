@@ -238,6 +238,7 @@
         <div class="card-detail__section card-detail__section--action">
           <ExecutionForm
             {card}
+            {timeEstimates}
             onExecutionCreated={handleExecutionCreated}
           />
         </div>
