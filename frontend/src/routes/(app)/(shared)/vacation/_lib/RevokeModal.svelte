@@ -73,13 +73,19 @@
           — {request.computedDays}
           {request.computedDays === 1 ? 'Tag' : 'Tage'}
         </p>
-        <p class="text-muted" style="font-size: 0.813rem; margin-top: 0.25rem;">
+        <p
+          class="text-muted"
+          style="font-size: 0.813rem; margin-top: 0.25rem;"
+        >
           Die Urlaubstage werden dem Mitarbeiter zurückgebucht.
         </p>
       </div>
 
       <div class="form-field">
-        <label class="form-field__label" for="revoke-reason">
+        <label
+          class="form-field__label"
+          for="revoke-reason"
+        >
           Grund (Pflichtfeld)
         </label>
         <textarea
@@ -92,10 +98,17 @@
     </div>
 
     <div class="ds-modal__footer">
-      <button type="button" class="btn btn-cancel" onclick={onclose}>
+      <button
+        type="button"
+        class="btn btn-cancel"
+        onclick={onclose}
+      >
         Abbrechen
       </button>
-      <button type="submit" class="btn btn-warning">
+      <button
+        type="submit"
+        class="btn btn-warning"
+      >
         <i class="fas fa-undo mr-1"></i>
         Widerrufen
       </button>

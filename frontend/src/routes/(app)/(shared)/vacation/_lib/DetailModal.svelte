@@ -132,8 +132,9 @@
         {#if request.responseNote !== null}
           <div class="detail-grid__row">
             <span class="detail-grid__label">
-              {request.status === 'cancelled' ? 'Stornierungsgrund' :
-               request.status === 'denied' ? 'Ablehnungsgrund' : 'Antwort'}
+              {request.status === 'cancelled' ? 'Stornierungsgrund'
+              : request.status === 'denied' ? 'Ablehnungsgrund'
+              : 'Antwort'}
             </span>
             <span>{request.responseNote}</span>
           </div>

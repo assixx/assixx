@@ -7,11 +7,7 @@
 
   import { resolve } from '$app/paths';
 
-  import {
-    MESSAGES,
-    INTERVAL_LABELS,
-    DEFAULT_COLORS,
-  } from './constants';
+  import { MESSAGES, INTERVAL_LABELS, DEFAULT_COLORS } from './constants';
   import MaintenanceStatus from './MaintenanceStatus.svelte';
 
   import type {
