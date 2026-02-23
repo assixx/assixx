@@ -453,8 +453,13 @@ describe('VacationService', () => {
     });
 
     it('should throw ForbiddenException when employee tries to cancel', async () => {
+      // getUserRole → employee
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 5, role: 'employee' }],
+      });
+      // lockRequestById → row with approver_id: 10 (not userId 5)
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createMockRequestRow({ status: 'approved' })],
       });
 
       await expect(
