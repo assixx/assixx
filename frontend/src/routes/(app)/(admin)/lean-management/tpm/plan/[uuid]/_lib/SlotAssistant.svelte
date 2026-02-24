@@ -298,7 +298,7 @@
     try {
       // Fetch slot data (max 90d) + projection (up to 365d) in parallel
       const slotPromise = loadSlotData();
-      const projPromise = fetchScheduleProjection(startDate, endDate, planUuid);
+      const projPromise = fetchScheduleProjection(startDate, endDate);
 
       const [slotResult, projResult] = await Promise.all([
         slotPromise,
@@ -492,7 +492,7 @@
         {#each visibleCalendarDays as day (day.date)}
           {@const available = day.isAvailable}
           {@const isWeekend = isoWeekday(day.date) >= 5}
-          {@const isScheduled = hasTpmScheduleConflict(day)}
+          {@const isScheduled = hasTpmScheduleConflict(day) || getSlotsForDate(day.date).length > 0}
           <div
             class="slot-day"
             class:slot-day--available={available && !isScheduled}
