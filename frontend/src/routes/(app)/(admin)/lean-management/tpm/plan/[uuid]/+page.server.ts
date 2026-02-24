@@ -27,6 +27,27 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+/** Paginated plan list shape (only the data array is needed) */
+interface PlanListData {
+  data: TpmPlan[];
+}
+
+/** Safely coerce nullable API result to array */
+function safeArray<T>(data: T[] | null): T[] {
+  return Array.isArray(data) ? data : [];
+}
+
+/** Extract machine UUIDs from paginated plan list */
+function extractMachineUuids(plansData: PlanListData | null): string[] {
+  return (
+    plansData?.data
+      .map((p: TpmPlan) => p.machineUuid)
+      .filter(
+        (uuid: string | undefined): uuid is string => uuid !== undefined,
+      ) ?? []
+  );
+}
+
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -73,11 +94,19 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
     apiFetch<TpmArea[]>('/areas', token, fetch),
     apiFetch<TpmDepartment[]>('/departments', token, fetch),
   ]);
-  const machines = Array.isArray(machinesData) ? machinesData : [];
-  const areas = Array.isArray(areasData) ? areasData : [];
-  const departments = Array.isArray(departmentsData) ? departmentsData : [];
+  const machines = safeArray(machinesData);
+  const areas = safeArray(areasData);
+  const departments = safeArray(departmentsData);
 
   if (isCreateMode) {
+    // Fetch active plans to determine which machines already have a TPM plan
+    const plansData = await apiFetch<PlanListData>(
+      '/tpm/plans?page=1&limit=500',
+      token,
+      fetch,
+    );
+    const machineUuidsWithPlans = extractMachineUuids(plansData);
+
     return {
       isCreateMode: true,
       plan: null,
@@ -85,6 +114,7 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
       machines,
       areas,
       departments,
+      machineUuidsWithPlans,
     };
   }
 
@@ -102,7 +132,7 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
     redirect(302, '/lean-management/tpm');
   }
 
-  const timeEstimates = Array.isArray(estimatesData) ? estimatesData : [];
+  const timeEstimates = safeArray(estimatesData);
 
   return {
     isCreateMode: false,

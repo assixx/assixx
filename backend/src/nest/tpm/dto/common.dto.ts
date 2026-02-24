@@ -49,7 +49,7 @@ export const TpmApprovalActionSchema = z.enum(['approved', 'rejected'], {
 export const PageSchema = z.coerce.number().int().positive().default(1);
 
 /** Pagination — limit parameter (coerced from query string) */
-export const LimitSchema = z.coerce.number().int().min(1).max(100).default(20);
+export const LimitSchema = z.coerce.number().int().min(1).max(500).default(20);
 
 /** Hex color validation — #RRGGBB format */
 export const HexColorSchema = z

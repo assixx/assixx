@@ -26,6 +26,7 @@
     machines: Machine[];
     areas: TpmArea[];
     departments: TpmDepartment[];
+    machineUuidsWithPlans?: string[];
     isCreateMode: boolean;
     submitting: boolean;
     oncreate: (payload: CreatePlanPayload) => void;
@@ -40,6 +41,7 @@
     machines,
     areas,
     departments,
+    machineUuidsWithPlans = [],
     isCreateMode,
     submitting,
     oncreate,
@@ -48,6 +50,12 @@
     onmachinechange,
     onshiftplanchange,
   }: Props = $props();
+
+  // Machines that already have an active TPM plan (disabled in dropdown)
+  const machineUuidsWithPlanSet = $derived(new Set(machineUuidsWithPlans));
+  function machineHasPlan(uuid: string): boolean {
+    return machineUuidsWithPlanSet.has(uuid);
+  }
 
   // =========================================================================
   // FORM STATE
@@ -363,10 +371,13 @@
             class:active={machineDropdownOpen}
           >
             {#each filteredMachines as machine (machine.uuid)}
+              {@const hasPlan = machineHasPlan(machine.uuid)}
               <button
                 type="button"
                 class="dropdown__option"
                 class:dropdown__option--selected={machineUuid === machine.uuid}
+                class:dropdown__option--disabled={hasPlan}
+                disabled={hasPlan}
                 onclick={() => {
                   machineUuid = machine.uuid;
                   machineDropdownOpen = false;
@@ -376,6 +387,11 @@
                 {machine.name}
                 {#if machine.machineNumber}
                   ({machine.machineNumber})
+                {/if}
+                {#if hasPlan}
+                  <span class="dropdown__option-hint">
+                    ({MESSAGES.MACHINE_HAS_PLAN})
+                  </span>
                 {/if}
               </button>
             {/each}
@@ -637,6 +653,19 @@
     cursor: not-allowed;
     pointer-events: none;
     background-color: var(--color-glass-light);
+  }
+
+  /* Machine dropdown — option with existing TPM plan */
+  .dropdown__option--disabled {
+    opacity: 50%;
+    cursor: not-allowed;
+    color: var(--color-text-muted);
+  }
+
+  .dropdown__option-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-style: italic;
   }
 
   @media (width <= 640px) {

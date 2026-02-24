@@ -191,6 +191,7 @@ export interface TpmColorConfigRow {
 export interface TpmPlan {
   uuid: string;
   machineId: number;
+  machineUuid?: string;
   machineName?: string;
   name: string;
   baseWeekday: number;

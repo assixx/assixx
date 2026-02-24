@@ -33,22 +33,49 @@ export default defineConfig({
       reportsDirectory: './coverage',
       include: ['backend/src/**/*.ts', 'shared/src/**/*.ts'],
       exclude: [
+        // Test files
         'backend/src/**/*.test.ts',
         'backend/src/**/*.spec.ts',
         'shared/src/**/*.test.ts',
         'shared/src/**/*.spec.ts',
-        'backend/src/**/*.module.ts', // NestJS Module definitions (DI wiring only)
-        'backend/src/**/*.controller.ts', // Controllers = HTTP layer (integration tests)
-        'backend/src/**/*.guard.ts', // Guards = HTTP layer (integration tests)
-        'backend/src/**/main.ts', // NestJS bootstrap
-        'backend/src/**/index.ts', // Barrel exports
-        'backend/src/types/**', // Pure type definitions
+
+        // NestJS infrastructure (DI wiring, HTTP layer)
+        'backend/src/**/*.module.ts',
+        'backend/src/**/*.controller.ts',
+        'backend/src/**/*.guard.ts',
+        'backend/src/**/main.ts',
+        'backend/src/**/index.ts',
+
+        // Pure type definitions (zero runtime logic)
+        'backend/src/types/**',
+        'backend/src/**/*.types.ts',
+        'shared/src/types/**',
+
+        // Barrel exports
+        'shared/src/**/index.ts',
+
+        // Permission constants + DI registrars (declarative, no logic)
+        'backend/src/**/*.permissions.ts',
+        'backend/src/**/*-permission.registrar.ts',
+
+        // Pure interfaces (no runtime code)
+        'backend/src/nest/common/interfaces/**',
+
+        // Decorators (SetMetadata / createParamDecorator wrappers)
+        'backend/src/nest/common/decorators/**',
+
+        // Infrastructure (transport/bootstrap, not unit-testable)
+        'backend/src/websocket.ts',
+        'backend/src/nest/instrument.ts',
+        'backend/src/utils/emailService.ts',
+        'backend/src/utils/eventBus.ts',
+        'backend/src/workers/deletionWorker.ts',
       ],
       thresholds: {
-        lines: 65,
-        functions: 65,
-        branches: 65,
-        statements: 65,
+        lines: 77,
+        functions: 77,
+        branches: 70,
+        statements: 77,
       },
     },
 

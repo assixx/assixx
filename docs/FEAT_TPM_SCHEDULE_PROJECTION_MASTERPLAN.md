@@ -24,7 +24,7 @@
 | 1.4.0   | 2026-02-23 | Phase 4 complete: Frontend PlanForm bufferHours input + types        |
 | 1.5.0   | 2026-02-24 | Phase 5a complete: SlotAssistant Kalender-Grid + Schedule Projection |
 | 1.6.0   | 2026-02-24 | Phase 5b complete: TimelineDayView + Day click interaction           |
-| 1.7.0   | 2026-02-24 | Phase 6 Steps 6.1+6.2 complete: 20 Unit + 13 API Integration Tests  |
+| 1.7.0   | 2026-02-24 | Phase 6 Steps 6.1+6.2 complete: 20 Unit + 13 API Integration Tests   |
 | 2.0.0   | 2026-02-24 | FEATURE COMPLETE: ADR-026 updated, Post-Mortem, all 8 sessions done  |
 
 > **Versionierungsregel:**
@@ -117,7 +117,7 @@ Plan erstellen für: Maschine B
 | PlanForm.svelte      | Neues `buffer_hours` Input-Feld                             | 4     | 2026-02-23     |
 | SlotAssistant.svelte | Kalender-Grid: `tpm_schedule` Conflict-Anzeige + Range 365d | 5a    | 2026-02-24     |
 | PlansIntervalService | Wiederverwendung für Termin-Projektion                      | 2     | 2026-02-23     |
-| ADR-026              | Section 3, 4, 5, 6, 10 aktualisiert                        | 6     | 2026-02-24     |
+| ADR-026              | Section 3, 4, 5, 6, 10 aktualisiert                         | 6     | 2026-02-24     |
 
 ---
 
@@ -435,11 +435,11 @@ Berechnetes Zeitfenster: 09:00 – 13:00
 
 ### Backend (neu)
 
-| Datei                                                          | Zweck                   |
-| -------------------------------------------------------------- | ----------------------- |
-| `backend/src/nest/tpm/tpm-schedule-projection.service.ts`      | Core Projection Service |
-| `backend/src/nest/tpm/dto/schedule-projection-query.dto.ts`    | Query DTO (Zod)         |
-| `backend/src/nest/tpm/tpm-schedule-projection.service.test.ts` | Unit Tests (20)         |
+| Datei                                                          | Zweck                      |
+| -------------------------------------------------------------- | -------------------------- |
+| `backend/src/nest/tpm/tpm-schedule-projection.service.ts`      | Core Projection Service    |
+| `backend/src/nest/tpm/dto/schedule-projection-query.dto.ts`    | Query DTO (Zod)            |
+| `backend/src/nest/tpm/tpm-schedule-projection.service.test.ts` | Unit Tests (20)            |
 | `backend/test/tpm-schedule-projection.api.test.ts`             | API Integration Tests (13) |
 
 ### Backend (geändert)

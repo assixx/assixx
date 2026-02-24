@@ -7,6 +7,7 @@ import type { TpmMaintenancePlanRow, TpmPlan } from './tpm.types.js';
 
 /** Extended row type including JOIN columns from related tables */
 export interface TpmPlanJoinRow extends TpmMaintenancePlanRow {
+  machine_uuid?: string;
   machine_name?: string;
   created_by_name?: string;
 }
@@ -36,6 +37,8 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
   };
 
   // Optional properties: only set when JOIN data is present
+  if (row.machine_uuid !== undefined)
+    plan.machineUuid = row.machine_uuid.trim();
   if (row.machine_name !== undefined) plan.machineName = row.machine_name;
   if (row.created_by_name !== undefined)
     plan.createdByName = row.created_by_name;

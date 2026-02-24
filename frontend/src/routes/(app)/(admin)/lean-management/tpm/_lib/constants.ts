@@ -178,6 +178,7 @@ export const MESSAGES = {
   ERROR_PLAN_UPDATE: 'Fehler beim Aktualisieren des Wartungsplans',
   ERROR_MACHINE_HAS_PLAN:
     'Diese Maschine hat bereits einen aktiven Wartungsplan',
+  MACHINE_HAS_PLAN: 'TPM Plan existiert',
   ERROR_MACHINES_LOAD: 'Fehler beim Laden der Maschinen',
 
   // Slot assistant

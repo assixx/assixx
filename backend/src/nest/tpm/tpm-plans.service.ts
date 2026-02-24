@@ -56,7 +56,7 @@ export class TpmPlansService {
   /** Get a single plan by UUID */
   async getPlan(tenantId: number, planUuid: string): Promise<TpmPlan> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.name AS machine_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN users u ON p.created_by = u.id
@@ -88,7 +88,7 @@ export class TpmPlansService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.db.query<TpmPlanJoinRow>(
-      `SELECT p.*, m.name AS machine_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN users u ON p.created_by = u.id
@@ -137,7 +137,7 @@ export class TpmPlansService {
     machineId: number,
   ): Promise<TpmPlan | null> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.name AS machine_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN users u ON p.created_by = u.id

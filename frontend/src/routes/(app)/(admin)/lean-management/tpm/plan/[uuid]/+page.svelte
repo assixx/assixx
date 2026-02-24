@@ -161,6 +161,7 @@
             machines={data.machines}
             areas={data.areas}
             departments={data.departments}
+            machineUuidsWithPlans={data.machineUuidsWithPlans ?? []}
             {isCreateMode}
             {submitting}
             oncreate={handleCreate}

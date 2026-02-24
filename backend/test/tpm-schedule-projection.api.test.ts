@@ -44,10 +44,9 @@ describe('Schedule Projection: Valid request', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?startDate=2026-03-01&endDate=2026-03-07`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?startDate=2026-03-01&endDate=2026-03-07`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -76,10 +75,9 @@ describe('Schedule Projection: Missing startDate', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?endDate=2026-03-07`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?endDate=2026-03-07`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 400 Bad Request', () => {
@@ -93,10 +91,9 @@ describe('Schedule Projection: Missing endDate', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?startDate=2026-03-01`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?startDate=2026-03-01`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 400 Bad Request', () => {
@@ -110,10 +107,9 @@ describe('Schedule Projection: Range > 365 days', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?startDate=2026-01-01&endDate=2027-01-02`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?startDate=2026-01-01&endDate=2027-01-02`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 400 Bad Request', () => {
@@ -127,10 +123,9 @@ describe('Schedule Projection: endDate < startDate', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?startDate=2026-03-10&endDate=2026-03-01`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?startDate=2026-03-10&endDate=2026-03-01`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 400 Bad Request', () => {
@@ -187,10 +182,9 @@ describe('Schedule Projection: Invalid date format', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?startDate=03-01-2026&endDate=03-07-2026`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?startDate=03-01-2026&endDate=03-07-2026`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 400 Bad Request', () => {
@@ -205,10 +199,9 @@ describe('Schedule Projection: Single day range', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${ENDPOINT}?startDate=2026-03-01&endDate=2026-03-01`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${ENDPOINT}?startDate=2026-03-01&endDate=2026-03-01`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 

@@ -206,9 +206,9 @@
   /** Collect conflict descriptions for an unavailable day */
   function collectConflictParts(day: DayAvailability): string[] {
     return day.conflicts.map((c) =>
-      c.type === 'tpm_schedule'
-        ? c.description
-        : `${getConflictLabel(c.type)}: ${c.description}`,
+      c.type === 'tpm_schedule' ?
+        c.description
+      : `${getConflictLabel(c.type)}: ${c.description}`,
     );
   }
 
@@ -456,7 +456,9 @@
             title={buildDayTooltip(day)}
             role="button"
             tabindex="0"
-            onclick={() => { handleDayClick(day); }}
+            onclick={() => {
+              handleDayClick(day);
+            }}
             onkeydown={(e: KeyboardEvent) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
