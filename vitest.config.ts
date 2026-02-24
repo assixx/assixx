@@ -29,7 +29,7 @@ export default defineConfig({
     // Coverage configuration (unit tests only via include patterns)
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: ['backend/src/**/*.ts', 'shared/src/**/*.ts'],
       exclude: [
