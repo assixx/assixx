@@ -482,7 +482,7 @@
           bind:value={baseRepeatEvery}
           disabled={submitting}
           min={1}
-          max={5}
+          max={4}
         />
         <span class="form-input-group__suffix"
           >. {WEEKDAY_LABELS[baseWeekday] ?? '—'} im Monat</span

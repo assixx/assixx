@@ -197,6 +197,7 @@ export const MESSAGES = {
   SLOT_RANGE_FULL: 'Max. 365 Tage',
   SLOT_RANGE_DETAIL_HINT:
     'Details für die ersten 90 Tage, darüber hinaus nur geplante Termine',
+  SLOT_SHOW_WEEKENDS: 'Wochenende anzeigen',
 
   // Timeline day view
   TIMELINE_TITLE: 'Tagesübersicht',

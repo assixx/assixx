@@ -21,7 +21,7 @@ export const UpdateMaintenancePlanSchema = z.object({
     .number()
     .int()
     .min(1, 'Wiederholung muss mindestens 1 sein')
-    .max(52, 'Wiederholung darf maximal 52 sein')
+    .max(4, 'Wiederholung darf maximal 4 sein (4. Wochentag im Monat)')
     .optional(),
   baseTime: TimeSchema.nullable().optional(),
   bufferHours: z

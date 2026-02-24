@@ -68,6 +68,7 @@
   let slotData = $state<SlotAvailabilityResult | null>(null);
   let projectionData = $state<ScheduleProjectionResult | null>(null);
   let selectedDay = $state<string | null>(null);
+  let showWeekends = $state(false);
 
   // Date range: default next 90 days (pure timestamp math, no mutable Date)
   const nowMs = Date.now();
@@ -141,16 +142,26 @@
     return [...slotDays, ...extraDays];
   });
 
-  // Stats from merged days
-  const totalDays = $derived(calendarDays.length);
-  const availableDays = $derived(
-    calendarDays.filter((d: DayAvailability) => d.isAvailable).length,
+  // Visible headers and days (filtered by weekend toggle)
+  const visibleHeaders = $derived(
+    showWeekends ? WEEKDAY_HEADERS : WEEKDAY_HEADERS.slice(0, 5),
+  );
+  const visibleCalendarDays = $derived(
+    showWeekends ?
+      calendarDays
+    : calendarDays.filter((d: DayAvailability) => isoWeekday(d.date) < 5),
   );
 
-  // Number of empty cells before first day (Mon=0, Sun=6)
+  // Stats from visible days only
+  const totalDays = $derived(visibleCalendarDays.length);
+  const availableDays = $derived(
+    visibleCalendarDays.filter((d: DayAvailability) => d.isAvailable).length,
+  );
+
+  // Number of empty cells before first day (Mon=0, Fri=4 or Sun=6)
   const leadingPadding = $derived.by(() => {
-    if (calendarDays.length === 0) return 0;
-    return isoWeekday(calendarDays[0].date);
+    if (visibleCalendarDays.length === 0) return 0;
+    return isoWeekday(visibleCalendarDays[0].date);
   });
 
   // =========================================================================
@@ -393,7 +404,15 @@
           {/if}
         </div>
       </div>
-      <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <label class="flex items-center gap-1.5 text-xs cursor-pointer select-none text-(--color-text-secondary)">
+          <input
+            type="checkbox"
+            bind:checked={showWeekends}
+            class="accent-(--color-primary)"
+          />
+          {MESSAGES.SLOT_SHOW_WEEKENDS}
+        </label>
         <span
           class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
         >
@@ -423,14 +442,17 @@
         <i class="fas fa-spinner fa-spin"></i>
         {MESSAGES.SLOT_LOADING}
       </div>
-    {:else if calendarDays.length > 0}
+    {:else if visibleCalendarDays.length > 0}
       <!-- Calendar grid -->
-      <div class="slot-calendar">
+      <div
+        class="slot-calendar"
+        class:slot-calendar--weekdays-only={!showWeekends}
+      >
         <!-- Weekday headers -->
-        {#each WEEKDAY_HEADERS as header, i (i)}
+        {#each visibleHeaders as header, i (i)}
           <div
             class="slot-header"
-            class:slot-header--weekend={i >= 5}
+            class:slot-header--weekend={showWeekends && i >= 5}
           >
             {header}
           </div>
@@ -442,7 +464,7 @@
         {/each}
 
         <!-- Day cells -->
-        {#each calendarDays as day (day.date)}
+        {#each visibleCalendarDays as day (day.date)}
           {@const available = day.isAvailable}
           {@const isWeekend = isoWeekday(day.date) >= 5}
           {@const isScheduled = hasTpmScheduleConflict(day)}
@@ -529,6 +551,10 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
+  }
+
+  .slot-calendar--weekdays-only {
+    grid-template-columns: repeat(5, 1fr);
   }
 
   .slot-header {
