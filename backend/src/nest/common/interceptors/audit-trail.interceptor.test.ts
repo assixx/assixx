@@ -183,7 +183,14 @@ describe('AuditTrailInterceptor', () => {
       const result = await lastValueFrom(result$);
 
       expect(result).toBe('response-data');
-      expect(mockLogging.logSuccess).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ tenantId: 1 }), expect.objectContaining({ endpoint: '/users' }), expect.any(Number), expect.any(Object), expect.any(Object), null);
+      expect(mockLogging.logSuccess).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ tenantId: 1 }),
+        expect.objectContaining({ endpoint: '/users' }),
+        expect.any(Number),
+        expect.any(Object),
+        expect.any(Object),
+        null,
+      );
     });
 
     it('should log failure and rethrow error on standard request', async () => {
@@ -195,7 +202,15 @@ describe('AuditTrailInterceptor', () => {
       await expect(lastValueFrom(result$)).rejects.toThrow(
         'Something went wrong',
       );
-      expect(mockLogging.logFailure).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ tenantId: 1 }), expect.any(Object), expect.any(Number), expect.any(Object), expect.any(Object), error, null);
+      expect(mockLogging.logFailure).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ tenantId: 1 }),
+        expect.any(Object),
+        expect.any(Number),
+        expect.any(Object),
+        expect.any(Object),
+        error,
+        null,
+      );
     });
 
     it('should use standard logging for POST (no pre-fetch)', async () => {

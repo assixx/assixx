@@ -8,8 +8,8 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import { SignupService } from './signup.service.js';
 import type { SignupDto } from './dto/index.js';
+import { SignupService } from './signup.service.js';
 
 // ============================================================
 // Module mocks
@@ -18,9 +18,7 @@ import type { SignupDto } from './dto/index.js';
 const mockBcryptHash = vi.hoisted(() =>
   vi.fn().mockResolvedValue('hashed-password'),
 );
-const mockUuidV7 = vi.hoisted(() =>
-  vi.fn().mockReturnValue('mock-uuid-v7'),
-);
+const mockUuidV7 = vi.hoisted(() => vi.fn().mockReturnValue('mock-uuid-v7'));
 
 vi.mock('bcryptjs', () => ({ default: { hash: mockBcryptHash } }));
 vi.mock('uuid', () => ({ v7: mockUuidV7 }));
@@ -349,9 +347,7 @@ describe('SignupService – registration', () => {
 
     it('should throw BadRequestException when transaction fails', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockRejectedValueOnce(
-        new Error('DB connection lost'),
-      );
+      mockDb.transaction.mockRejectedValueOnce(new Error('DB connection lost'));
 
       await expect(service.registerTenant(createValidDto())).rejects.toThrow(
         BadRequestException,

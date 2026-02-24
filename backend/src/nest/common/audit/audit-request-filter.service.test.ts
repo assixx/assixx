@@ -218,17 +218,17 @@ describe('AuditRequestFilterService', () => {
       // Create an entry
       service.shouldSkipRequest('GET', '/users/me', false, user);
       // Second call within window → throttled
-      expect(
-        service.shouldSkipRequest('GET', '/users/me', false, user),
-      ).toBe(true);
+      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(
+        true,
+      );
 
       // Advance past the cleanup interval (5 min) + 2× throttle window
       vi.advanceTimersByTime(5 * 60 * 1000 + 1);
 
       // After cleanup, the entry should be gone → not throttled
-      expect(
-        service.shouldSkipRequest('GET', '/users/me', false, user),
-      ).toBe(false);
+      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(
+        false,
+      );
     });
   });
 });

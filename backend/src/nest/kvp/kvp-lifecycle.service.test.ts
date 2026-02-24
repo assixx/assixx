@@ -146,12 +146,7 @@ describe('KvpLifecycleService', () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.shareSuggestion(
-        'abc-uuid-123',
-        createShareDto(),
-        1,
-        100,
-      );
+      await service.shareSuggestion('abc-uuid-123', createShareDto(), 1, 100);
 
       expect(mockDb.query).toHaveBeenNthCalledWith(
         1,
@@ -210,9 +205,9 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.unshareSuggestion(42, 1, 99),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.unshareSuggestion(42, 1, 99)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should delete junction for machine org level', async () => {
@@ -267,9 +262,9 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.archiveSuggestion(42, 1, 100),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.archiveSuggestion(42, 1, 100)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should use uuid column when id is UUID', async () => {
@@ -324,9 +319,9 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.unarchiveSuggestion(42, 1, 100),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.unarchiveSuggestion(42, 1, 100)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

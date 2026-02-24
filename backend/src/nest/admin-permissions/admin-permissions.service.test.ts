@@ -614,9 +614,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     it('should throw NotFoundException when area permission not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.removeAreaPermission(1, 999, 99, 5),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeAreaPermission(1, 999, 99, 5)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

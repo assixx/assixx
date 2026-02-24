@@ -413,7 +413,8 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
     const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
     const minOffset = Math.max(14, Math.floor(daysLeft * 0.15));
     const maxOffset = Math.floor(daysLeft * 0.45);
-    const randomOffset = minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
+    const randomOffset =
+      minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -432,7 +433,11 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
     await fetch(`${VACATION_URL}/entitlements/${auth.userId}`, {
       method: 'PUT',
       headers: authHeaders(auth.authToken),
-      body: JSON.stringify({ userId: auth.userId, year: targetYear, totalDays: 365 }),
+      body: JSON.stringify({
+        userId: auth.userId,
+        year: targetYear,
+        totalDays: 365,
+      }),
     });
 
     res = await fetch(`${VACATION_URL}/requests`, {
@@ -480,7 +485,8 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
     const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
     const minOffset = Math.floor(daysLeft * 0.55);
     const maxOffset = Math.floor(daysLeft * 0.85);
-    const randomOffset = minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
+    const randomOffset =
+      minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -499,7 +505,11 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
     await fetch(`${VACATION_URL}/entitlements/${auth.userId}`, {
       method: 'PUT',
       headers: authHeaders(auth.authToken),
-      body: JSON.stringify({ userId: auth.userId, year: targetYear, totalDays: 365 }),
+      body: JSON.stringify({
+        userId: auth.userId,
+        year: targetYear,
+        totalDays: 365,
+      }),
     });
 
     // Intentionally omit halfDayStart, halfDayEnd, vacationType

@@ -382,12 +382,12 @@ TOTAL: 4110 Unit + 374 Permission (subset) + 238 Frontend + 175 API = 4523 Tests
 
 ### Coverage Thresholds (raised 2026-02-24 after Phase 9)
 
-| Metric     | Current (Phase 9)  | Threshold (Floor)  | Long-term Goal |
-| ---------- | ------------------ | ------------------ | -------------- |
-| Lines      | **84.82%**         | **83%**            | 90%            |
-| Branches   | **78.30%**         | **76%**            | 85%            |
-| Functions  | **85.09%**         | **83%**            | 90%            |
-| Statements | **84.93%**         | **83%**            | 90%            |
+| Metric     | Current (Phase 9) | Threshold (Floor) | Long-term Goal |
+| ---------- | ----------------- | ----------------- | -------------- |
+| Lines      | **84.82%**        | **83%**           | 90%            |
+| Branches   | **78.30%**        | **76%**           | 85%            |
+| Functions  | **85.09%**        | **83%**           | 90%            |
+| Statements | **84.93%**        | **83%**           | 90%            |
 
 > **Phase 9 pushed service coverage from ~47% avg to ~99% avg** across 11 service files (vacation, audit, documents, admin-permissions, signup, teams, kvp-lifecycle, presence.store). Thresholds raised from 77%/70% to 83%/76%.
 

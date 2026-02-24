@@ -363,9 +363,7 @@ describe('TeamsService', () => {
       // INSERT RETURNING id → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.createTeam(createDto, 1, 10)).rejects.toThrow(
-        Error,
-      );
+      await expect(service.createTeam(createDto, 1, 10)).rejects.toThrow(Error);
     });
 
     it('should handle ensureLeaderInTeam error gracefully', async () => {
@@ -383,9 +381,7 @@ describe('TeamsService', () => {
       // INSERT team RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
       // ensureLeaderInTeam: SELECT user_teams → error
-      mockDb.query.mockRejectedValueOnce(
-        new Error('DB error in ensureLeader'),
-      );
+      mockDb.query.mockRejectedValueOnce(new Error('DB error in ensureLeader'));
       // getTeamById
       mockDb.query.mockResolvedValueOnce([
         makeTeamRow({ id: 8, name: 'Team Err' }),
@@ -439,9 +435,7 @@ describe('TeamsService', () => {
       const dto = { leaderId: 5 } as unknown as UpdateTeamDto;
 
       // find existing team (has old leader)
-      mockDb.query.mockResolvedValueOnce([
-        makeTeamRow({ team_lead_id: 3 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 3 })]);
       // validateLeader: SELECT users → found with root role
       mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
       // UPDATE teams (team_lead_id)
@@ -453,9 +447,7 @@ describe('TeamsService', () => {
       // ensureLeaderInTeam: UPDATE user_teams role='lead'
       mockDb.query.mockResolvedValueOnce([]);
       // getTeamById
-      mockDb.query.mockResolvedValueOnce([
-        makeTeamRow({ team_lead_id: 5 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 5 })]);
 
       const result = await service.updateTeam(1, dto, 1, 10);
 

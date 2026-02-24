@@ -147,9 +147,9 @@
     showWeekends ? WEEKDAY_HEADERS : WEEKDAY_HEADERS.slice(0, 5),
   );
   const visibleCalendarDays = $derived(
-    showWeekends ?
-      calendarDays
-    : calendarDays.filter((d: DayAvailability) => isoWeekday(d.date) < 5),
+    showWeekends ? calendarDays : (
+      calendarDays.filter((d: DayAvailability) => isoWeekday(d.date) < 5)
+    ),
   );
 
   // Stats from visible days only
@@ -405,7 +405,9 @@
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-4">
-        <label class="flex items-center gap-1.5 text-xs cursor-pointer select-none text-(--color-text-secondary)">
+        <label
+          class="flex cursor-pointer items-center gap-1.5 text-xs text-(--color-text-secondary) select-none"
+        >
           <input
             type="checkbox"
             bind:checked={showWeekends}

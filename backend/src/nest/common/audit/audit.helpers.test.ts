@@ -349,9 +349,7 @@ describe('determineAction', () => {
   it('should return "list" for GET without ID', () => {
     const req = createMockRequest({ url: '/api/v2/kvp/suggestions' });
 
-    expect(determineAction('GET', '/api/v2/kvp/suggestions', req)).toBe(
-      'list',
-    );
+    expect(determineAction('GET', '/api/v2/kvp/suggestions', req)).toBe('list');
   });
 
   it('should return "view" for HEAD with ID', () => {
