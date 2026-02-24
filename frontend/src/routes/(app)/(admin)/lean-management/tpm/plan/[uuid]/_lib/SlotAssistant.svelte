@@ -90,6 +90,10 @@
   let projectionData = $state<ScheduleProjectionResult | null>(null);
   let selectedDay = $state<string | null>(null);
   let showWeekends = $state(false);
+  let showOnlyScheduled = $state(false);
+  let showCompact = $state(false);
+  /** Saved endDate before switching to scheduled-only mode */
+  let savedEndDate = $state('');
 
   // Date range: default next 90 days (pure timestamp math, no mutable Date)
   const nowMs = Date.now();
@@ -173,6 +177,15 @@
     ),
   );
 
+  // Compact view: only scheduled days (no grid gaps)
+  const scheduledDays = $derived(
+    visibleCalendarDays.filter(
+      (d: DayAvailability) =>
+        hasTpmScheduleConflict(d) ||
+        (projectionByDate.get(d.date)?.length ?? 0) > 0,
+    ),
+  );
+
   // Stats from visible days only
   const totalDays = $derived(visibleCalendarDays.length);
   const availableDays = $derived(
@@ -195,11 +208,13 @@
     return jsDay === 0 ? 6 : jsDay - 1;
   }
 
-  function formatDayMonth(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('de-DE', {
+  function formatDayMonth(dateStr: string, withYear: boolean): string {
+    const opts: Intl.DateTimeFormatOptions = {
       day: '2-digit',
       month: '2-digit',
-    });
+    };
+    if (withYear) opts.year = '2-digit';
+    return new Date(dateStr).toLocaleDateString('de-DE', opts);
   }
 
   function getConflictLabel(type: string): string {
@@ -432,6 +447,38 @@
           />
           <span class="choice-card__text">{MESSAGES.SLOT_SHOW_WEEKENDS}</span>
         </label>
+        <label class="choice-card slot-weekend-toggle">
+          <input
+            type="checkbox"
+            class="choice-card__input"
+            checked={showOnlyScheduled}
+            onchange={() => {
+              showOnlyScheduled = !showOnlyScheduled;
+              if (showOnlyScheduled) {
+                savedEndDate = endDate;
+                endDate = maxEndDate;
+                void loadData();
+              } else {
+                showCompact = false;
+                endDate = savedEndDate;
+                void loadData();
+              }
+            }}
+          />
+          <span class="choice-card__text"
+            >{MESSAGES.SLOT_SHOW_ONLY_SCHEDULED}</span
+          >
+        </label>
+        {#if showOnlyScheduled}
+          <label class="choice-card slot-weekend-toggle">
+            <input
+              type="checkbox"
+              class="choice-card__input"
+              bind:checked={showCompact}
+            />
+            <span class="choice-card__text">{MESSAGES.SLOT_SHOW_COMPACT}</span>
+          </label>
+        {/if}
         <span
           class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
         >
@@ -468,56 +515,30 @@
         {MESSAGES.SLOT_LOADING}
       </div>
     {:else if visibleCalendarDays.length > 0}
-      <!-- Calendar grid -->
-      <div
-        class="slot-calendar"
-        class:slot-calendar--weekdays-only={!showWeekends}
-      >
-        <!-- Weekday headers -->
-        {#each visibleHeaders as header, i (i)}
-          <div
-            class="slot-header"
-            class:slot-header--weekend={showWeekends && i >= 5}
-          >
-            {header}
-          </div>
-        {/each}
-
-        <!-- Leading empty cells -->
-        {#each Array(leadingPadding) as _, i (i)}
-          <div class="slot-empty"></div>
-        {/each}
-
-        <!-- Day cells -->
-        {#each visibleCalendarDays as day (day.date)}
-          {@const available = day.isAvailable}
-          {@const isWeekend = isoWeekday(day.date) >= 5}
-          {@const isScheduled = hasTpmScheduleConflict(day) || getSlotsForDate(day.date).length > 0}
-          <div
-            class="slot-day"
-            class:slot-day--available={available && !isScheduled}
-            class:slot-day--unavailable={!available && !isScheduled}
-            class:slot-day--scheduled={isScheduled}
-            class:slot-day--weekend={isWeekend}
-            class:slot-day--selected={selectedDay === day.date}
-            title={buildDayTooltip(day)}
-            role="button"
-            tabindex="0"
-            onclick={() => {
-              handleDayClick(day);
-            }}
-            onkeydown={(e: KeyboardEvent) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
+      {#if showOnlyScheduled && showCompact}
+        <!-- Compact: only scheduled days, no grid gaps -->
+        <div class="slot-compact">
+          {#each scheduledDays as day (day.date)}
+            {@const projSlots = getSlotsForDate(day.date)}
+            <div
+              class="slot-day slot-day--scheduled"
+              class:slot-day--selected={selectedDay === day.date}
+              title={buildDayTooltip(day)}
+              role="button"
+              tabindex="0"
+              onclick={() => {
                 handleDayClick(day);
-              }
-            }}
-          >
-            <span class="slot-day__date">{formatDayMonth(day.date)}</span>
-            {#if available && !isScheduled}
-              <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
-            {:else if isScheduled}
-              {@const projSlots = getSlotsForDate(day.date)}
+              }}
+              onkeydown={(e: KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleDayClick(day);
+                }
+              }}
+            >
+              <span class="slot-day__date"
+                >{formatDayMonth(day.date, true)}</span
+              >
               {#each projSlots as slot (slot.planUuid)}
                 <span class="slot-day__machine">{slot.machineName}</span>
                 <div class="slot-day__intervals">
@@ -531,19 +552,92 @@
                   {/each}
                 </div>
               {/each}
-            {:else if day.conflicts.length > 0}
-              <i
-                class="fas {getConflictIcon(
-                  day.conflicts[0]?.type ?? '',
-                )} slot-day__icon slot-day__icon--conflict"
-              ></i>
-              <span class="slot-day__conflict">
-                {getConflictLabel(day.conflicts[0]?.type ?? '')}
-              </span>
-            {/if}
-          </div>
-        {/each}
-      </div>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <!-- Calendar grid -->
+        <div
+          class="slot-calendar"
+          class:slot-calendar--weekdays-only={!showWeekends}
+        >
+          <!-- Weekday headers -->
+          {#each visibleHeaders as header, i (i)}
+            <div
+              class="slot-header"
+              class:slot-header--weekend={showWeekends && i >= 5}
+            >
+              {header}
+            </div>
+          {/each}
+
+          <!-- Leading empty cells -->
+          {#each Array(leadingPadding) as _, i (i)}
+            <div class="slot-empty"></div>
+          {/each}
+
+          <!-- Day cells -->
+          {#each visibleCalendarDays as day (day.date)}
+            {@const available = day.isAvailable}
+            {@const isWeekend = isoWeekday(day.date) >= 5}
+            {@const isScheduled =
+              hasTpmScheduleConflict(day) ||
+              getSlotsForDate(day.date).length > 0}
+            <div
+              class="slot-day"
+              class:slot-day--available={available && !isScheduled}
+              class:slot-day--unavailable={!available && !isScheduled}
+              class:slot-day--scheduled={isScheduled}
+              class:slot-day--hidden={showOnlyScheduled && !isScheduled}
+              class:slot-day--weekend={isWeekend}
+              class:slot-day--selected={selectedDay === day.date}
+              title={buildDayTooltip(day)}
+              role="button"
+              tabindex="0"
+              onclick={() => {
+                handleDayClick(day);
+              }}
+              onkeydown={(e: KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleDayClick(day);
+                }
+              }}
+            >
+              <span class="slot-day__date"
+                >{formatDayMonth(day.date, showOnlyScheduled)}</span
+              >
+              {#if available && !isScheduled}
+                <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
+              {:else if isScheduled}
+                {@const projSlots = getSlotsForDate(day.date)}
+                {#each projSlots as slot (slot.planUuid)}
+                  <span class="slot-day__machine">{slot.machineName}</span>
+                  <div class="slot-day__intervals">
+                    {#each slot.intervalTypes as interval (interval)}
+                      <span
+                        class="slot-day__badge"
+                        style="background: {colorMap[interval]}"
+                        title={INTERVAL_LABELS[interval]}
+                        >{INTERVAL_SHORT_LABELS[interval]}</span
+                      >
+                    {/each}
+                  </div>
+                {/each}
+              {:else if day.conflicts.length > 0}
+                <i
+                  class="fas {getConflictIcon(
+                    day.conflicts[0]?.type ?? '',
+                  )} slot-day__icon slot-day__icon--conflict"
+                ></i>
+                <span class="slot-day__conflict">
+                  {getConflictLabel(day.conflicts[0]?.type ?? '')}
+                </span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
 
       <!-- Timeline Day View (desktop only, opens on day click) -->
       {#if selectedDay !== null}
@@ -576,6 +670,18 @@
   }
 
   /* ---- Calendar Grid ---- */
+
+  /* ---- Compact Layout ---- */
+
+  .slot-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+  }
+
+  .slot-compact .slot-day {
+    min-width: 190px;
+  }
 
   .slot-calendar {
     display: grid;
@@ -632,6 +738,10 @@
 
   .slot-day--selected {
     box-shadow: 0 0 0 2px var(--color-info, #3b82f6);
+  }
+
+  .slot-day--hidden {
+    visibility: hidden;
   }
 
   .slot-day--available {

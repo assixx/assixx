@@ -67,6 +67,15 @@ export const DEFAULT_COLORS: Record<CardStatus, string> = {
   overdue: '#8b5cf6',
 };
 
+/** Interval types that support plan-level time estimates */
+export const ESTIMATE_INTERVALS: IntervalType[] = [
+  'monthly',
+  'quarterly',
+  'semi_annual',
+  'annual',
+  'custom',
+];
+
 /** Weekday labels (0=Monday, 6=Sunday — ISO format) */
 export const WEEKDAY_LABELS: string[] = [
   'Montag',
@@ -219,6 +228,8 @@ export const MESSAGES = {
   SLOT_RANGE_DETAIL_HINT:
     'Details für die ersten 90 Tage, darüber hinaus nur geplante Termine',
   SLOT_SHOW_WEEKENDS: 'Wochenende anzeigen',
+  SLOT_SHOW_ONLY_SCHEDULED: 'Nur geplante Termine',
+  SLOT_SHOW_COMPACT: 'Kompakte Ansicht',
 
   // Timeline day view
   TIMELINE_TITLE: 'Tagesübersicht',
@@ -235,7 +246,11 @@ export const MESSAGES = {
   EMPLOYEE_EMPTY: 'Kein Team zugewiesen',
   EMPLOYEE_LOADING: 'Team wird geladen...',
 
-  // Time estimates
+  // Time estimates (Plan Form)
+  LABEL_TIME_ESTIMATES: 'Zeitschätzungen',
+  HELP_TIME_ESTIMATES: 'SOLL-Zeiten pro Wartungsintervall definieren',
+  TIME_EST_CREATE_HINT:
+    'Zeitschätzungen können nach dem Erstellen des Plans definiert werden',
   TIME_EST_TITLE: 'Zeitschätzungen',
   TIME_EST_STAFF: 'Mitarbeiter',
   TIME_EST_PREP: 'Vorbereitung',

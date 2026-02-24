@@ -14,6 +14,7 @@
   import {
     createPlan as apiCreatePlan,
     updatePlan as apiUpdatePlan,
+    setTimeEstimate as apiSetTimeEstimate,
     logApiError,
   } from '../../_lib/api';
   import { MESSAGES } from '../../_lib/constants';
@@ -23,7 +24,11 @@
   import SlotAssistant from './_lib/SlotAssistant.svelte';
 
   import type { PageData } from './$types';
-  import type { CreatePlanPayload, UpdatePlanPayload } from '../../_lib/types';
+  import type {
+    CreatePlanPayload,
+    UpdatePlanPayload,
+    CreateTimeEstimatePayload,
+  } from '../../_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -75,11 +80,24 @@
     }
   }
 
-  async function handleUpdate(payload: UpdatePlanPayload): Promise<void> {
+  async function handleUpdate(
+    payload: UpdatePlanPayload,
+    estimates: CreateTimeEstimatePayload[],
+  ): Promise<void> {
     if (data.plan === null) return;
     submitting = true;
     try {
       await apiUpdatePlan(data.plan.uuid, payload);
+
+      // Save time estimates (non-blocking per estimate)
+      for (const est of estimates) {
+        try {
+          await apiSetTimeEstimate(data.plan.uuid, est);
+        } catch (err: unknown) {
+          logApiError('setTimeEstimate', err);
+        }
+      }
+
       showSuccessAlert(MESSAGES.SUCCESS_PLAN_UPDATED);
       await invalidateAll();
     } catch (err: unknown) {
@@ -164,6 +182,7 @@
             areas={data.areas}
             departments={data.departments}
             machineUuidsWithPlans={data.machineUuidsWithPlans ?? []}
+            timeEstimates={data.timeEstimates}
             {isCreateMode}
             {submitting}
             oncreate={handleCreate}

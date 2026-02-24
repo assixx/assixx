@@ -14,7 +14,6 @@ import type {
   TpmPlan,
   TpmCard,
   TpmCardTemplate,
-  TpmTimeEstimate,
   PaginatedResponse,
 } from '../../_lib/types';
 
@@ -80,23 +79,16 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const planUuid = params.uuid;
 
-  // Load plan + cards + templates + time estimates in parallel
-  const [planData, cardsData, templatesData, estimatesData] = await Promise.all(
-    [
-      apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
-      apiFetch<PaginatedResponse<TpmCard>>(
-        `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
-        token,
-        fetch,
-      ),
-      apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
-      apiFetch<TpmTimeEstimate[]>(
-        `/tpm/plans/${planUuid}/time-estimates`,
-        token,
-        fetch,
-      ),
-    ],
-  );
+  // Load plan + cards + templates in parallel
+  const [planData, cardsData, templatesData] = await Promise.all([
+    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+    apiFetch<PaginatedResponse<TpmCard>>(
+      `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
+      token,
+      fetch,
+    ),
+    apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
+  ]);
 
   if (planData === null) {
     redirect(302, '/lean-management/tpm');
@@ -104,14 +96,12 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const { cards, totalCards } = extractCards(cardsData);
   const templates = Array.isArray(templatesData) ? templatesData : [];
-  const timeEstimates = Array.isArray(estimatesData) ? estimatesData : [];
 
   return {
     plan: planData,
     cards,
     totalCards,
     templates,
-    timeEstimates,
     planUuid,
   };
 };

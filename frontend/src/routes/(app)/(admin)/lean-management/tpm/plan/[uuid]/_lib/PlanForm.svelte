@@ -4,21 +4,30 @@
    * @module plan/[uuid]/_lib/PlanForm
    *
    * Handles both create and edit mode for maintenance plans.
-   * Fields: Machine, Name, Weekday, RepeatEvery, Time, ShiftPlanRequired, Notes.
+   * Fields: Machine, Name, Weekday, RepeatEvery, Time, TimeEstimates,
+   * ShiftPlanRequired, Notes.
    */
   import { untrack } from 'svelte';
 
   import AppTimePicker from '$lib/components/AppTimePicker.svelte';
 
-  import { WEEKDAY_LABELS, MESSAGES } from '../../../_lib/constants';
+  import {
+    ESTIMATE_INTERVALS,
+    WEEKDAY_LABELS,
+    MESSAGES,
+  } from '../../../_lib/constants';
+
+  import TimeEstimateEditor from './TimeEstimateEditor.svelte';
 
   import type {
     TpmPlan,
+    TpmTimeEstimate,
     Machine,
     TpmArea,
     TpmDepartment,
     CreatePlanPayload,
     UpdatePlanPayload,
+    CreateTimeEstimatePayload,
   } from '../../../_lib/types';
 
   interface Props {
@@ -27,10 +36,14 @@
     areas: TpmArea[];
     departments: TpmDepartment[];
     machineUuidsWithPlans?: string[];
+    timeEstimates?: TpmTimeEstimate[];
     isCreateMode: boolean;
     submitting: boolean;
     oncreate: (payload: CreatePlanPayload) => void;
-    onupdate: (payload: UpdatePlanPayload) => void;
+    onupdate: (
+      payload: UpdatePlanPayload,
+      estimates: CreateTimeEstimatePayload[],
+    ) => void;
     oncancel: () => void;
     onmachinechange?: (machineUuid: string) => void;
     onshiftplanchange?: (shiftPlanRequired: boolean) => void;
@@ -42,6 +55,7 @@
     areas,
     departments,
     machineUuidsWithPlans = [],
+    timeEstimates = [],
     isCreateMode,
     submitting,
     oncreate,
@@ -80,6 +94,67 @@
     untrack(() => plan?.shiftPlanRequired ?? false),
   );
   let notes = $state(untrack(() => plan?.notes ?? ''));
+
+  // =========================================================================
+  // TIME ESTIMATE STATE
+  // =========================================================================
+  interface EstimateFields {
+    staffCount: number;
+    preparationMinutes: number;
+    executionMinutes: number;
+    followupMinutes: number;
+  }
+
+  let showTimeEstimates = $state(untrack(() => timeEstimates.length > 0));
+  const estimateMap = $state<Record<string, EstimateFields>>(
+    untrack(() => {
+      const map: Record<string, EstimateFields> = {};
+      for (const intv of ESTIMATE_INTERVALS) {
+        const existing = timeEstimates.find(
+          (e: TpmTimeEstimate) => e.intervalType === intv,
+        );
+        map[intv] =
+          existing !== undefined ?
+            {
+              staffCount: existing.staffCount,
+              preparationMinutes: existing.preparationMinutes,
+              executionMinutes: existing.executionMinutes,
+              followupMinutes: existing.followupMinutes,
+            }
+          : {
+              staffCount: 1,
+              preparationMinutes: 0,
+              executionMinutes: 0,
+              followupMinutes: 0,
+            };
+      }
+      return map;
+    }),
+  );
+
+  /** Build array of changed estimates for API submission */
+  function buildEstimatePayloads(
+    planUuid: string,
+  ): CreateTimeEstimatePayload[] {
+    const payloads: CreateTimeEstimatePayload[] = [];
+    for (const intv of ESTIMATE_INTERVALS) {
+      const fields = estimateMap[intv];
+      const hasValues =
+        fields.preparationMinutes > 0 ||
+        fields.executionMinutes > 0 ||
+        fields.followupMinutes > 0;
+      if (!hasValues) continue;
+      payloads.push({
+        planUuid,
+        intervalType: intv,
+        staffCount: fields.staffCount,
+        preparationMinutes: fields.preparationMinutes,
+        executionMinutes: fields.executionMinutes,
+        followupMinutes: fields.followupMinutes,
+      });
+    }
+    return payloads;
+  }
 
   function findMachineUuid(): string {
     if (plan === null) return '';
@@ -256,15 +331,22 @@
         notes: notesValue,
       });
     } else {
-      onupdate({
-        name: name.trim(),
-        baseWeekday,
-        baseRepeatEvery,
-        baseTime: timeValue,
-        bufferHours,
-        shiftPlanRequired,
-        notes: notesValue,
-      });
+      const estimates =
+        showTimeEstimates && plan !== null ?
+          buildEstimatePayloads(plan.uuid)
+        : [];
+      onupdate(
+        {
+          name: name.trim(),
+          baseWeekday,
+          baseRepeatEvery,
+          baseTime: timeValue,
+          bufferHours,
+          shiftPlanRequired,
+          notes: notesValue,
+        },
+        estimates,
+      );
     }
   }
 </script>
@@ -565,6 +647,13 @@
       {timeWindowPreview}
     </div>
   </div>
+
+  <!-- Time Estimates (per interval type) -->
+  <TimeEstimateEditor
+    {estimateMap} {submitting} {isCreateMode}
+    showEstimates={showTimeEstimates}
+    ontoggle={(val: boolean) => { showTimeEstimates = val; }}
+  />
 
   <!-- Shift plan required toggle -->
   <div class="form-field">
