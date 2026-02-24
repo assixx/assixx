@@ -94,7 +94,7 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
 
 - **ESM-native** — No workarounds, no `--experimental-vm-modules`
 - **Single Tool** — Vitest for unit AND integration (workspace projects)
-- **Fast** — 3182 unit tests in ~8s, 308 permission in ~1s, 19 frontend in <1s, 175 API in ~6s
+- **Fast** — 4110 unit tests in ~8s, 374 permission in ~1s, 238 frontend in <1s, 175 API in ~6s
 - **Workspace Separation** — `--project unit` (fast, isolated) vs. `--project permission` (security-critical subset) vs. `--project api` (sequential, real HTTP)
 - **Pure-Function-First** — No DI container for helpers/schemas/utils
 - **fetch()-based** — API tests use native `fetch()`, no abstraction (Bruno CLI, Supertest)
@@ -134,15 +134,15 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
                                 │
           ┌─────────────────────┴─────────────────────┐
           │           Unit Tests                       │  Tier 1: Pure Functions
-          │  147 files, 3182 tests                     │  No Docker needed
-          │  vitest --project unit                     │  Parallel, <4s
+          │  187 files, 4110 tests                     │  No Docker needed
+          │  vitest --project unit                     │  Parallel, <8s
           ├────────────────────────────────────────────┤
           │  🔴 Permission/Security Tests              │  Tier 1a: CRITICAL subset
-          │  14 files, 308 tests                       │  Access control, auth, RBAC
+          │  17 files, 374 tests                       │  Access control, auth, RBAC
           │  vitest --project permission               │  Badged: SECURITY:
           ├────────────────────────────────────────────┤
           │           Frontend Unit Tests              │  Tier 1b: Frontend Utils
-          │  5 files, 19 tests (Phase 7)               │  No Docker needed
+          │  11 files, 238 tests (Phase 7+)            │  No Docker needed
           │  vitest --project frontend-unit            │  Parallel, <1s
           └────────────────────────────────────────────┘
 ```
@@ -260,7 +260,7 @@ export default defineConfig({
         '**/index.ts',
         '**/types/**',
       ],
-      thresholds: { lines: 10, functions: 8, branches: 10, statements: 10 },
+      thresholds: { lines: 83, functions: 83, branches: 76, statements: 83 },
     },
     projects: [
       // Tier 1: Unit Tests (backend + shared)
@@ -328,14 +328,14 @@ pnpm test                                           # All 4 projects (unit + per
 pnpm test -- --reporter=verbose                     # With details
 
 # ── Backend Unit Tests ────────────────────────────────────────
-pnpm test --project unit                            # 3182 tests (~8s, no Docker)
+pnpm test --project unit                            # 4110 tests (~8s, no Docker)
 pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Single file
 
 # ── 🔴 Permission/Security Tests ─────────────────────────────
-pnpm run test:permission                            # 308 tests (~1s, CRITICAL subset of unit)
+pnpm run test:permission                            # 374 tests (~1s, CRITICAL subset of unit)
 
 # ── Frontend Unit Tests ───────────────────────────────────────
-pnpm test --project frontend-unit                   # 19 tests (<1s, no Docker)
+pnpm test --project frontend-unit                   # 238 tests (<1s, no Docker)
 
 # ── API Integration Tests ────────────────────────────────────
 pnpm test --project api                             # 175 tests (~6s, Docker MUST be running!)
@@ -372,24 +372,24 @@ Phase 3: Zod Schemas               ✅ DONE    63 Tests   (common.schema)
 Phase 4: Backend Helpers            ✅ DONE   107 Tests   (shifts, users, kvp, audit)
 Phase 5: Services (Mocking)         ✅ DONE    86 Tests   (roles, rotation, features, auth)
 Phase 6: Remaining Helpers          ✅ DONE    27 Tests   (blackboard, calendar, chat, etc.)
-Phase 7: Frontend Utils             ✅ DONE    19 Tests   (password-strength, auth, jwt)
+Phase 7: Frontend Utils             ✅ DONE   238 Tests   (password-strength, auth, jwt, utils)
 Phase 8: DTO Validations            ✅ DONE   460 Tests   (13 modules, 13 files)
+Phase 9: Service Coverage Push      ✅ DONE   ~930 Tests  (11 services: 47%→99% avg)
 ──────────────────────────────────────────────────────────────────────
-TOTAL: 3182 Unit + 308 Permission (subset) + 19 Frontend + 175 API = 3376 Tests
+TOTAL: 4110 Unit + 374 Permission (subset) + 238 Frontend + 175 API = 4523 Tests
 ──────────────────────────────────────────────────────────────────────
-Phase 9: Additional Service Tests   PENDING              (Coverage 10% → 30%+)
 ```
 
-### Coverage Thresholds (active since 2026-02-05)
+### Coverage Thresholds (raised 2026-02-24 after Phase 9)
 
-| Metric     | Current (~Phase 8) | Threshold (Floor) | Long-term Goal |
-| ---------- | ------------------ | ----------------- | -------------- |
-| Lines      | ~10%               | **10%**           | 50%            |
-| Branches   | ~11%               | **10%**           | 50%            |
-| Functions  | ~9%                | **8%**            | 50%            |
-| Statements | ~10%               | **10%**           | 50%            |
+| Metric     | Current (Phase 9)  | Threshold (Floor)  | Long-term Goal |
+| ---------- | ------------------ | ------------------ | -------------- |
+| Lines      | **84.82%**         | **83%**            | 90%            |
+| Branches   | **78.30%**         | **76%**            | 85%            |
+| Functions  | **85.09%**         | **83%**            | 90%            |
+| Statements | **84.93%**         | **83%**            | 90%            |
 
-> **Why low despite 824 tests?** The tests cover helpers, schemas, and DTOs well (50-100%), but the 16 service files (the bulk of the code) have 0% coverage.
+> **Phase 9 pushed service coverage from ~47% avg to ~99% avg** across 11 service files (vacation, audit, documents, admin-permissions, signup, teams, kvp-lifecycle, presence.store). Thresholds raised from 77%/70% to 83%/76%.
 
 ### CI/CD Integration (implemented 2026-02-05)
 
@@ -442,13 +442,13 @@ Settings → Branches → main:
 
 - **Single Tool** — Vitest for unit + integration, no tool fragmentation
 - **ESM-native** — No workarounds, no `--experimental-vm-modules` flags
-- **Fast** — 3182 unit tests in ~8s, 308 permission tests in ~1s, 175 API tests in ~6s, 19 frontend tests in <1s
+- **Fast** — 4110 unit tests in ~8s, 374 permission tests in ~1s, 175 API tests in ~6s, 238 frontend tests in <1s
 - **Deterministic** — `vi.useFakeTimers()` for dates, `flushThrottleKeys()` for rate limiting
 - **Workspace Separation** — Unit tests (CI-compatible, no Docker) vs. API tests (Docker required)
 - **Bruno CLI eliminated** — 329 npm packages removed, no state management via `bru.setVar()`
 - **Tests as Documentation** — Edge cases (is_active multi-state, password NIST rules) become visible through tests
 - **Bugs discovered and fixed through tests** — sanitizeData camelCase bug (SENSITIVE_FIELDS lowercase normalization, fixed 2026-02-05), EmailSchema trim order documented
-- **Regression Protection** — 3376 automated tests (3182 unit + 308 permission [subset] + 19 frontend + 175 API)
+- **Regression Protection** — 4523 automated tests (4110 unit + 374 permission [subset] + 238 frontend + 175 API)
 - **CI as Merge Gate** — Unit tests + coverage thresholds block merge on failure
 - **Coverage Floor** — Thresholds prevent coverage from gradually declining
 
@@ -508,4 +508,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-02-09 (v3 - Permission project added, SECURITY badges on 14 test files, 3376 total tests)_
+_Last Updated: 2026-02-24 (v4 - Phase 9 complete, thresholds 83%/76%, 4523 total tests)_

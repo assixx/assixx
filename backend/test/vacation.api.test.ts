@@ -372,6 +372,33 @@ describe('Vacation: Get My Balance', () => {
   });
 });
 
+// ── seq: 13b — Setup: Ensure user is in a team (vacation requires team membership)
+
+describe('Vacation: Setup Team Assignment', () => {
+  it('should ensure the user belongs to a team', async () => {
+    // Find an existing team (created by teams.api.test earlier in the run)
+    const listRes = await fetch(`${BASE_URL}/teams`, {
+      headers: authOnly(auth.authToken),
+    });
+    const listBody = (await listRes.json()) as JsonBody;
+    const teams = listBody.data as Array<{ id: number }>;
+
+    expect(Array.isArray(teams)).toBe(true);
+    expect(teams.length).toBeGreaterThan(0);
+
+    const teamId = teams[0]!.id;
+
+    // Add current user to team (ignore 409 if already a member)
+    const addRes = await fetch(`${BASE_URL}/teams/${teamId}/members`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ userId: auth.userId }),
+    });
+
+    expect([201, 409]).toContain(addRes.status);
+  });
+});
+
 // ── seq: 14 — Requests: POST create (root → auto-approved) ─────────────────
 
 describe('Vacation: Create Request (auto-approved for root)', () => {
@@ -379,8 +406,14 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    // Random offset (30-400 days from now) to avoid overlap with previous runs
-    const randomOffset = 30 + Math.floor(Math.random() * 370);
+    // Stay in CURRENT year (cancel endpoint only allows current-year requests).
+    // Use first third of remaining days to avoid overlap with seq 14b.
+    const now = new Date();
+    const yearEnd = new Date(now.getFullYear(), 11, 31);
+    const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
+    const minOffset = Math.max(14, Math.floor(daysLeft * 0.15));
+    const maxOffset = Math.floor(daysLeft * 0.45);
+    const randomOffset = minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -393,6 +426,14 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
     }
 
     const fmt = (d: Date): string => d.toISOString().slice(0, 10);
+
+    // Ensure sufficient entitlement (prevents balance exhaustion from previous runs)
+    const targetYear = startDate.getFullYear();
+    await fetch(`${VACATION_URL}/entitlements/${auth.userId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ userId: auth.userId, year: targetYear, totalDays: 365 }),
+    });
 
     res = await fetch(`${VACATION_URL}/requests`, {
       method: 'POST',
@@ -432,8 +473,14 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
   let defaultsRequestId: string | undefined;
 
   beforeAll(async () => {
-    // Random offset (450-800 days from now) to avoid overlap with seq 14
-    const randomOffset = 450 + Math.floor(Math.random() * 350);
+    // Stay in CURRENT year (cancel endpoint only allows current-year requests).
+    // Use last third of remaining days to avoid overlap with seq 14.
+    const now = new Date();
+    const yearEnd = new Date(now.getFullYear(), 11, 31);
+    const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
+    const minOffset = Math.floor(daysLeft * 0.55);
+    const maxOffset = Math.floor(daysLeft * 0.85);
+    const randomOffset = minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -446,6 +493,14 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
     }
 
     const fmt = (d: Date): string => d.toISOString().slice(0, 10);
+
+    // Ensure sufficient entitlement (prevents balance exhaustion from previous runs)
+    const targetYear = startDate.getFullYear();
+    await fetch(`${VACATION_URL}/entitlements/${auth.userId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ userId: auth.userId, year: targetYear, totalDays: 365 }),
+    });
 
     // Intentionally omit halfDayStart, halfDayEnd, vacationType
     // Zod schema defines defaults: halfDayStart='none', halfDayEnd='none', vacationType='regular'

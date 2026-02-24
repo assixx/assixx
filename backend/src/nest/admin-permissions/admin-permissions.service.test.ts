@@ -367,5 +367,323 @@ describe('SECURITY: AdminPermissionsService', () => {
         'chk_employee_no_full_access',
       );
     });
+
+    it('should throw NotFoundException when revoking from non-existent user', async () => {
+      // hasFullAccess=false → skips getUserRoleInfo
+      // UPDATE RETURNING → empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.setHasFullAccess(999, false, 99, 10),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // setDepartmentPermissions
+  // =============================================================
+
+  describe('setDepartmentPermissions', () => {
+    const perms = { canRead: true, canWrite: true, canDelete: false };
+
+    it('should delete existing and insert new permissions', async () => {
+      // DELETE existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT new
+      mockDb.query.mockResolvedValueOnce([]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.setDepartmentPermissions(1, [10, 20], perms, 99, 5);
+
+      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.query).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('DELETE FROM admin_department_permissions'),
+        [1, 5],
+      );
+      expect(mockDb.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('INSERT INTO admin_department_permissions'),
+        expect.any(Array),
+      );
+    });
+
+    it('should skip INSERT when departmentIds is empty', async () => {
+      // DELETE existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.setDepartmentPermissions(1, [], perms, 99, 5);
+
+      // Only DELETE + audit (no INSERT)
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // =============================================================
+  // removeDepartmentPermission
+  // =============================================================
+
+  describe('removeDepartmentPermission', () => {
+    it('should delete and log audit on success', async () => {
+      // DELETE RETURNING
+      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.removeDepartmentPermission(1, 10, 99, 5),
+      ).resolves.toBeUndefined();
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException when permission not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.removeDepartmentPermission(1, 999, 99, 5),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // bulkUpdatePermissions
+  // =============================================================
+
+  describe('bulkUpdatePermissions', () => {
+    const perms = { canRead: true, canWrite: false, canDelete: false };
+
+    it('should assign permissions to multiple admins', async () => {
+      // For admin 1: DELETE + INSERT + audit = 3 queries
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // For admin 2: DELETE + INSERT + audit = 3 queries
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.bulkUpdatePermissions(
+        [1, 2],
+        'assign',
+        [10],
+        perms,
+        99,
+        5,
+      );
+
+      expect(result.successCount).toBe(2);
+      expect(result.totalCount).toBe(2);
+      expect(result.errors).toBeUndefined();
+    });
+
+    it('should remove permissions (empty deptIds)', async () => {
+      // For admin 1: DELETE existing + audit = 2 queries
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.bulkUpdatePermissions(
+        [1],
+        'remove',
+        undefined,
+        perms,
+        99,
+        5,
+      );
+
+      expect(result.successCount).toBe(1);
+    });
+
+    it('should collect errors without failing', async () => {
+      // Admin 1: DELETE fails
+      mockDb.query.mockRejectedValueOnce(new Error('DB error'));
+      // Admin 2: DELETE + audit
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.bulkUpdatePermissions(
+        [1, 2],
+        'remove',
+        undefined,
+        perms,
+        99,
+        5,
+      );
+
+      expect(result.successCount).toBe(1);
+      expect(result.totalCount).toBe(2);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors?.[0]).toContain('Admin 1');
+    });
+
+    it('should return success:false for assign without departmentIds', async () => {
+      const result = await service.bulkUpdatePermissions(
+        [1],
+        'assign',
+        undefined,
+        perms,
+        99,
+        5,
+      );
+
+      expect(result.successCount).toBe(0);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+  });
+
+  // =============================================================
+  // setAreaPermissions
+  // =============================================================
+
+  describe('setAreaPermissions', () => {
+    const perms = { canRead: true, canWrite: true, canDelete: false };
+
+    it('should delete existing, insert new, cleanup memberships, and audit', async () => {
+      // DELETE existing area perms
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT new area perms
+      mockDb.query.mockResolvedValueOnce([]);
+      // cleanupEmployeeMemberships: DELETE teams CTE
+      mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
+      // cleanupEmployeeMemberships: DELETE depts CTE
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.setAreaPermissions(1, [10, 20], perms, 99, 5);
+
+      expect(mockDb.query).toHaveBeenCalledTimes(5);
+      expect(mockDb.query).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('DELETE FROM admin_area_permissions'),
+        [1, 5],
+      );
+      expect(mockDb.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('INSERT INTO admin_area_permissions'),
+        expect.any(Array),
+      );
+    });
+
+    it('should remove all memberships when areaIds is empty', async () => {
+      // DELETE existing area perms
+      mockDb.query.mockResolvedValueOnce([]);
+      // cleanupEmployeeMemberships (empty areas):
+      //   DELETE user_teams
+      mockDb.query.mockResolvedValueOnce([]);
+      //   DELETE user_departments
+      mockDb.query.mockResolvedValueOnce([]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.setAreaPermissions(1, [], perms, 99, 5);
+
+      // No INSERT (empty), but cleanup + audit
+      expect(mockDb.query).toHaveBeenCalledTimes(4);
+      expect(mockDb.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('DELETE FROM user_teams'),
+        [1, 5],
+      );
+      expect(mockDb.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('DELETE FROM user_departments'),
+        [1, 5],
+      );
+    });
+  });
+
+  // =============================================================
+  // removeAreaPermission
+  // =============================================================
+
+  describe('removeAreaPermission', () => {
+    it('should delete and log audit on success', async () => {
+      // DELETE RETURNING
+      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      // createAuditLog
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.removeAreaPermission(1, 10, 99, 5),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should throw NotFoundException when area permission not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.removeAreaPermission(1, 999, 99, 5),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // setGroupPermissions — empty groupIds branch
+  // =============================================================
+
+  describe('setGroupPermissions — empty groupIds', () => {
+    it('should be a no-op for empty groupIds without warning', () => {
+      service.setGroupPermissions(
+        1,
+        [],
+        { canRead: true, canWrite: false, canDelete: false },
+        5,
+        1,
+      );
+
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+  });
+
+  // =============================================================
+  // getAdminPermissions — description included
+  // =============================================================
+
+  describe('getAdminPermissions — department with description', () => {
+    it('should include description when not null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'admin', has_full_access: true },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // areas
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 10,
+          name: 'Assembly',
+          description: 'Main assembly line',
+          can_read: true,
+          can_write: false,
+          can_delete: false,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
+
+      const result = await service.getAdminPermissions(1, 10);
+
+      expect(result.departments[0]?.description).toBe('Main assembly line');
+      expect(result.hasFullAccess).toBe(true);
+    });
+  });
+
+  // =============================================================
+  // createAuditLog — error handling
+  // =============================================================
+
+  describe('createAuditLog — error handling', () => {
+    it('should not fail the main operation when audit log insert fails', async () => {
+      const perms = { canRead: true, canWrite: false, canDelete: false };
+      // DELETE existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // createAuditLog → fails
+      mockDb.query.mockRejectedValueOnce(new Error('Audit DB down'));
+
+      // setDepartmentPermissions with empty depts (skips INSERT) → just DELETE + audit
+      await expect(
+        service.setDepartmentPermissions(1, [], perms, 99, 5),
+      ).resolves.toBeUndefined();
+    });
   });
 });

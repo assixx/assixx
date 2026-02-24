@@ -9,6 +9,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { SignupService } from './signup.service.js';
+import type { SignupDto } from './dto/index.js';
+
+// ============================================================
+// Module mocks
+// ============================================================
+
+const mockBcryptHash = vi.hoisted(() =>
+  vi.fn().mockResolvedValue('hashed-password'),
+);
+const mockUuidV7 = vi.hoisted(() =>
+  vi.fn().mockReturnValue('mock-uuid-v7'),
+);
+
+vi.mock('bcryptjs', () => ({ default: { hash: mockBcryptHash } }));
+vi.mock('uuid', () => ({ v7: mockUuidV7 }));
 
 // ============================================================
 // Setup
@@ -208,6 +223,211 @@ describe('SignupService – DB-mocked methods', () => {
       await expect(
         service['ensureSubdomainAvailable']('available'),
       ).resolves.toBeUndefined();
+    });
+  });
+});
+
+// ============================================================
+// Registration (full flow)
+// ============================================================
+
+describe('SignupService – registration', () => {
+  let service: SignupService;
+  let mockDb: {
+    query: ReturnType<typeof vi.fn>;
+    transaction: ReturnType<typeof vi.fn>;
+  };
+  let mockClient: { query: ReturnType<typeof vi.fn> };
+
+  function createValidDto(): SignupDto {
+    return {
+      companyName: 'Test GmbH',
+      subdomain: 'test-gmbh',
+      email: 'info@test-gmbh.de',
+      phone: '+49123456789',
+      adminEmail: 'admin@test-gmbh.de',
+      adminPassword: 'SecurePass123!',
+      adminFirstName: 'Max',
+      adminLastName: 'Mustermann',
+    } as SignupDto;
+  }
+
+  function setupFullHappyPath(): void {
+    // 1. isSubdomainAvailable → available
+    mockDb.query.mockResolvedValueOnce([]);
+    // 2. transaction executes callback
+    mockDb.transaction.mockImplementation(
+      async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+    );
+    // Client queries inside transaction:
+    // createTenant INSERT
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+    // createRootUser INSERT
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+    // createRootUser UPDATE employee_id
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // assignBasicPlan SELECT
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
+    // assignBasicPlan INSERT tenant_plans
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // assignBasicPlan UPDATE tenants
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // activateTrialFeatures SELECT
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+    // activateTrialFeatures INSERT feature 1
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // 3. createAuditLog INSERT
+    mockDb.query.mockResolvedValueOnce([]);
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockBcryptHash.mockResolvedValue('hashed-password');
+    mockUuidV7.mockReturnValue('mock-uuid-v7');
+    const result = createServiceWithMock();
+    service = result.service;
+    mockDb = result.mockDb;
+    mockClient = { query: vi.fn() };
+  });
+
+  describe('registerTenant', () => {
+    it('should register tenant successfully', async () => {
+      setupFullHappyPath();
+
+      const result = await service.registerTenant(
+        createValidDto(),
+        '127.0.0.1',
+        'TestAgent',
+      );
+
+      expect(result.tenantId).toBe(10);
+      expect(result.userId).toBe(1);
+      expect(result.subdomain).toBe('test-gmbh');
+      expect(result.message).toContain('Registration successful');
+      expect(result.trialEndsAt).toBeDefined();
+    });
+
+    it('should pass address and plan to audit log when provided', async () => {
+      setupFullHappyPath();
+      const dto = createValidDto();
+      dto.address = 'Musterstraße 1';
+      dto.plan = 'basic';
+
+      const result = await service.registerTenant(dto, '127.0.0.1', 'Agent');
+
+      expect(result.tenantId).toBe(10);
+
+      // Verify audit log contains address and plan
+      const auditCall = mockDb.query.mock.calls[1] as unknown[];
+      const auditParams = auditCall[1] as unknown[];
+      const newValues = JSON.parse(auditParams[6] as string) as Record<
+        string,
+        unknown
+      >;
+      expect(newValues.address).toBe('Musterstraße 1');
+      expect(newValues.plan).toBe('basic');
+    });
+
+    it('should throw BadRequestException for invalid subdomain', async () => {
+      const dto = createValidDto();
+      dto.subdomain = 'ab';
+
+      await expect(service.registerTenant(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException for taken subdomain', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when transaction fails', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.transaction.mockRejectedValueOnce(
+        new Error('DB connection lost'),
+      );
+
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when tenant creation returns no id', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.transaction.mockImplementation(
+        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when user creation returns no id', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.transaction.mockImplementation(
+        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should handle missing basic plan gracefully', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.transaction.mockImplementation(
+        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // assignBasicPlan SELECT → no plan found
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // activateTrialFeatures SELECT → no features
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.registerTenant(createValidDto());
+
+      expect(result.tenantId).toBe(10);
+      expect(result.userId).toBe(1);
+    });
+
+    it('should succeed even when audit log fails', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.transaction.mockImplementation(
+        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockDb.query.mockRejectedValueOnce(new Error('Audit log failed'));
+
+      const result = await service.registerTenant(createValidDto());
+
+      expect(result.tenantId).toBe(10);
+    });
+  });
+
+  describe('checkSubdomainAvailability – error path', () => {
+    it('should throw BadRequestException on DB error', async () => {
+      mockDb.query.mockRejectedValueOnce(new Error('Connection refused'));
+
+      await expect(
+        service.checkSubdomainAvailability('valid-sub'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });
