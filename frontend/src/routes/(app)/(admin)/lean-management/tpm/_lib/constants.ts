@@ -164,6 +164,7 @@ export const MESSAGES = {
   LABEL_WEEKDAY: 'Basis-Wochentag',
   LABEL_REPEAT_EVERY: 'Wiederholung',
   LABEL_TIME: 'Uhrzeit',
+  LABEL_ALL_DAY: 'Ganztägig',
   LABEL_BUFFER_HOURS: 'Wartungsdauer (Puffer)',
   LABEL_TIME_WINDOW: 'Berechnetes Zeitfenster',
   LABEL_SHIFT_REQUIRED: 'Schichtplan erforderlich',

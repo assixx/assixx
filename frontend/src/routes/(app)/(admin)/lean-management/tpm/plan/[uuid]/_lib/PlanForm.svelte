@@ -72,6 +72,9 @@
   let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
   let baseRepeatEvery = $state(untrack(() => plan?.baseRepeatEvery ?? 1));
   let baseTime = $state(untrack(() => plan?.baseTime ?? ''));
+  let isAllDay = $state(
+    untrack(() => (plan?.baseTime ?? '').trim().length === 0),
+  );
   let bufferHours = $state(untrack(() => plan?.bufferHours ?? 4));
   let shiftPlanRequired = $state(
     untrack(() => plan?.shiftPlanRequired ?? false),
@@ -98,6 +101,16 @@
     machineUuid = '';
     departmentDropdownOpen = false;
     onmachinechange?.('');
+  }
+
+  /** Toggle all-day mode: checked → reset time, unchecked → set default */
+  function toggleAllDay(): void {
+    isAllDay = !isAllDay;
+    if (isAllDay) {
+      baseTime = '';
+    } else {
+      baseTime = '09:00';
+    }
   }
 
   // Notify parent when shiftPlanRequired changes
@@ -149,7 +162,8 @@
   const canSubmit = $derived(
     !submitting &&
       name.trim().length > 0 &&
-      (isCreateMode ? machineUuid.length > 0 : true),
+      (isCreateMode ? machineUuid.length > 0 : true) &&
+      (isAllDay || baseTime.trim().length > 0),
   );
 
   // =========================================================================
@@ -492,14 +506,33 @@
     </div>
   </div>
 
+  <!-- All-day toggle -->
+  <label class="choice-card plan-form__all-day-card">
+    <input
+      type="checkbox"
+      class="choice-card__input"
+      checked={isAllDay}
+      onchange={toggleAllDay}
+      disabled={submitting}
+    />
+    <span class="choice-card__text">{MESSAGES.LABEL_ALL_DAY}</span>
+  </label>
+
   <!-- Time + Buffer Hours (side by side) -->
   <div class="form-row">
     <div class="form-field plan-form__half">
       <span class="form-field__label">{MESSAGES.LABEL_TIME}</span>
-      <AppTimePicker
-        bind:value={baseTime}
-        disabled={submitting}
-      />
+      {#if isAllDay}
+        <div class="form-static">
+          <i class="fas fa-clock"></i>
+          {MESSAGES.HELP_BUFFER_FULL_DAY}
+        </div>
+      {:else}
+        <AppTimePicker
+          bind:value={baseTime}
+          disabled={submitting}
+        />
+      {/if}
     </div>
 
     <div class="form-field plan-form__half">
@@ -607,6 +640,11 @@
 
   .plan-form__narrow {
     max-width: 160px;
+  }
+
+  .plan-form__all-day-card {
+    padding: 0.5rem 0.75rem;
+    width: fit-content;
   }
 
   .form-static {
