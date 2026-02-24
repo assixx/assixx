@@ -250,13 +250,13 @@ function isDateInAvailabilityEntry(
   }
 
   const checkDate = new Date(date);
-  checkDate.setHours(0, 0, 0, 0);
+  checkDate.setUTCHours(0, 0, 0, 0);
 
   const startDate = new Date(entry.startDate);
-  startDate.setHours(0, 0, 0, 0);
+  startDate.setUTCHours(0, 0, 0, 0);
 
   const endDate = new Date(entry.endDate);
-  endDate.setHours(23, 59, 59, 999);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   return checkDate >= startDate && checkDate <= endDate;
 }

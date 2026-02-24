@@ -70,9 +70,9 @@ function buildCalendarDateRange(): {
   today: Date;
 } {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
   const futureDate = new Date(today);
-  futureDate.setMonth(futureDate.getMonth() + CALENDAR_MONTHS_AHEAD);
+  futureDate.setUTCMonth(futureDate.getUTCMonth() + CALENDAR_MONTHS_AHEAD);
   return {
     startISO: today.toISOString(),
     endISO: futureDate.toISOString(),

@@ -52,7 +52,7 @@ export class TpmPlansIntervalService {
     fromDate: Date,
   ): Date {
     const result = new Date(fromDate);
-    result.setHours(0, 0, 0, 0);
+    result.setUTCHours(0, 0, 0, 0);
 
     // JS: 0=Sunday, 1=Monday ... 6=Saturday
     // TPM: 0=Monday ... 6=Sunday
@@ -60,16 +60,16 @@ export class TpmPlansIntervalService {
     const jsWeekday = (weekday + 1) % 7;
 
     // Find next matching weekday
-    const currentJsDay = result.getDay();
+    const currentJsDay = result.getUTCDay();
     let daysUntil = jsWeekday - currentJsDay;
     if (daysUntil <= 0) {
       daysUntil += 7;
     }
-    result.setDate(result.getDate() + daysUntil);
+    result.setUTCDate(result.getUTCDate() + daysUntil);
 
     // Apply repeat frequency (skip weeks if repeatEvery > 1)
     if (repeatEvery > 1) {
-      result.setDate(result.getDate() + (repeatEvery - 1) * 7);
+      result.setUTCDate(result.getUTCDate() + (repeatEvery - 1) * 7);
     }
 
     return result;
@@ -92,19 +92,19 @@ export class TpmPlansIntervalService {
     nth: number,
   ): Date {
     const jsWeekday = (weekday + 1) % 7;
-    const firstOfMonth = new Date(year, month, 1);
-    firstOfMonth.setHours(0, 0, 0, 0);
+    const firstOfMonth = new Date(Date.UTC(year, month, 1));
+    firstOfMonth.setUTCHours(0, 0, 0, 0);
 
-    let daysUntilFirst = jsWeekday - firstOfMonth.getDay();
+    let daysUntilFirst = jsWeekday - firstOfMonth.getUTCDay();
     if (daysUntilFirst < 0) daysUntilFirst += 7;
 
     const nthDay = 1 + daysUntilFirst + (nth - 1) * 7;
-    const result = new Date(year, month, nthDay);
-    result.setHours(0, 0, 0, 0);
+    const result = new Date(Date.UTC(year, month, nthDay));
+    result.setUTCHours(0, 0, 0, 0);
 
     // Overflow into next month → fall back to last occurrence
-    if (result.getMonth() !== month) {
-      result.setDate(result.getDate() - 7);
+    if (result.getUTCMonth() !== month) {
+      result.setUTCDate(result.getUTCDate() - 7);
     }
 
     return result;
@@ -143,12 +143,12 @@ export class TpmPlansIntervalService {
     anchor: WeekdayAnchor,
   ): Date {
     const target = new Date(baseDate);
-    target.setHours(0, 0, 0, 0);
-    target.setMonth(target.getMonth() + monthsToAdd);
+    target.setUTCHours(0, 0, 0, 0);
+    target.setUTCMonth(target.getUTCMonth() + monthsToAdd);
 
     return this.getNthWeekdayOfMonth(
-      target.getFullYear(),
-      target.getMonth(),
+      target.getUTCFullYear(),
+      target.getUTCMonth(),
       anchor.weekday,
       anchor.nth,
     );
@@ -161,35 +161,35 @@ export class TpmPlansIntervalService {
     customDays?: number | null,
   ): Date {
     const result = new Date(baseDate);
-    result.setHours(0, 0, 0, 0);
+    result.setUTCHours(0, 0, 0, 0);
 
     switch (intervalType) {
       case 'daily': {
-        result.setDate(result.getDate() + 1);
+        result.setUTCDate(result.getUTCDate() + 1);
         break;
       }
       case 'weekly': {
-        result.setDate(result.getDate() + 7);
+        result.setUTCDate(result.getUTCDate() + 7);
         break;
       }
       case 'monthly': {
-        result.setMonth(result.getMonth() + 1);
+        result.setUTCMonth(result.getUTCMonth() + 1);
         break;
       }
       case 'quarterly': {
-        result.setMonth(result.getMonth() + 3);
+        result.setUTCMonth(result.getUTCMonth() + 3);
         break;
       }
       case 'semi_annual': {
-        result.setMonth(result.getMonth() + 6);
+        result.setUTCMonth(result.getUTCMonth() + 6);
         break;
       }
       case 'annual': {
-        result.setFullYear(result.getFullYear() + 1);
+        result.setUTCFullYear(result.getUTCFullYear() + 1);
         break;
       }
       case 'custom': {
-        result.setDate(result.getDate() + (customDays ?? 30));
+        result.setUTCDate(result.getUTCDate() + (customDays ?? 30));
         break;
       }
     }

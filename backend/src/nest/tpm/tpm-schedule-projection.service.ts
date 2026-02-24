@@ -173,11 +173,11 @@ export class TpmScheduleProjectionService {
     baseRepeatEvery: number,
   ): Date {
     const created = new Date(planCreatedAt);
-    created.setHours(0, 0, 0, 0);
+    created.setUTCHours(0, 0, 0, 0);
 
     const sameMonth = this.intervalService.getNthWeekdayOfMonth(
-      created.getFullYear(),
-      created.getMonth(),
+      created.getUTCFullYear(),
+      created.getUTCMonth(),
       baseWeekday,
       baseRepeatEvery,
     );
@@ -185,10 +185,10 @@ export class TpmScheduleProjectionService {
     if (sameMonth >= created) return sameMonth;
 
     const nextMonth = new Date(created);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
     return this.intervalService.getNthWeekdayOfMonth(
-      nextMonth.getFullYear(),
-      nextMonth.getMonth(),
+      nextMonth.getUTCFullYear(),
+      nextMonth.getUTCMonth(),
       baseWeekday,
       baseRepeatEvery,
     );
@@ -229,7 +229,7 @@ export class TpmScheduleProjectionService {
   ): Date[] {
     const dates: Date[] = [];
     let current = new Date(plan.seedDate);
-    current.setHours(0, 0, 0, 0);
+    current.setUTCHours(0, 0, 0, 0);
 
     const anchor = { weekday: plan.baseWeekday, nth: plan.baseRepeatEvery };
     let iterations = 0;
@@ -345,17 +345,15 @@ function compareSlots(a: ProjectedSlot, b: ProjectedSlot): number {
   return a.startTime.localeCompare(b.startTime);
 }
 
-/** Parse YYYY-MM-DD to Date at midnight */
+/** Parse YYYY-MM-DD to Date at UTC midnight */
 function parseDate(dateStr: string): Date {
-  const d = new Date(dateStr);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  return new Date(dateStr + 'T00:00:00Z');
 }
 
-/** Format Date to YYYY-MM-DD */
+/** Format Date to YYYY-MM-DD (UTC-safe) */
 function formatDate(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }

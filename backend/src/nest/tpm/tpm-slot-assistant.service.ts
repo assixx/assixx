@@ -567,14 +567,12 @@ export class TpmSlotAssistantService {
 /** Generate an array of ISO date strings for each day in the range (inclusive) */
 function generateDateRange(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
-  const current = new Date(startDate);
-  const end = new Date(endDate);
-  current.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
+  const current = new Date(startDate + 'T00:00:00Z');
+  const end = new Date(endDate + 'T00:00:00Z');
 
   while (current <= end) {
     dates.push(current.toISOString().slice(0, 10));
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
   return dates;
@@ -668,13 +666,11 @@ function collectScheduleConflicts(
 function expandRangesToDateSet(rows: ShiftCoverageRangeRow[]): Set<string> {
   const result = new Set<string>();
   for (const row of rows) {
-    const current = new Date(row.range_start);
-    const end = new Date(row.range_end);
-    current.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
+    const current = new Date(row.range_start + 'T00:00:00Z');
+    const end = new Date(row.range_end + 'T00:00:00Z');
     while (current <= end) {
       result.add(current.toISOString().slice(0, 10));
-      current.setDate(current.getDate() + 1);
+      current.setUTCDate(current.getUTCDate() + 1);
     }
   }
   return result;

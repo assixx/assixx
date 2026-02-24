@@ -242,9 +242,9 @@ export class VacationValidationService {
   /** Reject start dates in the past — independent of advance_notice_days. */
   private validateStartDateNotInPast(startDate: string): void {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
+    start.setUTCHours(0, 0, 0, 0);
     if (start < today) {
       throw new BadRequestException(
         'Startdatum darf nicht in der Vergangenheit liegen',
@@ -255,9 +255,9 @@ export class VacationValidationService {
   private validateAdvanceNotice(startDate: string, advanceDays: number): void {
     if (advanceDays === 0) return;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     const earliest = new Date(today);
-    earliest.setDate(earliest.getDate() + advanceDays);
+    earliest.setUTCDate(earliest.getUTCDate() + advanceDays);
     if (new Date(startDate) < earliest) {
       throw new BadRequestException(
         `Vacation must be requested at least ${String(advanceDays)} day(s) in advance`,

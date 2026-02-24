@@ -346,11 +346,11 @@ export class MachineAvailabilityService {
     }
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     const entryEndDate =
       entry.end_date !== null ? new Date(entry.end_date) : null;
     if (entryEndDate !== null) {
-      entryEndDate.setHours(0, 0, 0, 0);
+      entryEndDate.setUTCHours(0, 0, 0, 0);
       if (entryEndDate < today) {
         throw new BadRequestException(
           'Cannot edit past machine availability entries',

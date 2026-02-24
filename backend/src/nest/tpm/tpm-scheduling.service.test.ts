@@ -56,7 +56,7 @@ describe('TpmSchedulingService', () => {
       );
 
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       expect(result.getTime()).toBe(today.getTime());
     });
 
@@ -69,7 +69,7 @@ describe('TpmSchedulingService', () => {
 
       // Should be a Wednesday (JS: 3)
       const jsWeekday = (2 + 1) % 7; // TPM 2 = JS 3 (Wednesday)
-      expect(result.getDay()).toBe(jsWeekday);
+      expect(result.getUTCDay()).toBe(jsWeekday);
       expect(result > new Date()).toBe(true);
     });
 
@@ -81,16 +81,16 @@ describe('TpmSchedulingService', () => {
       );
 
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       const targetMonth = new Date(today);
-      targetMonth.setMonth(targetMonth.getMonth() + 1);
+      targetMonth.setUTCMonth(targetMonth.getUTCMonth() + 1);
 
       // Result must be a Monday (JS day 1) in the target month
-      expect(result.getDay()).toBe(1);
-      expect(result.getMonth()).toBe(targetMonth.getMonth());
+      expect(result.getUTCDay()).toBe(1);
+      expect(result.getUTCMonth()).toBe(targetMonth.getUTCMonth());
       // 1st Monday: between 1st and 7th of the month
-      expect(result.getDate()).toBeGreaterThanOrEqual(1);
-      expect(result.getDate()).toBeLessThanOrEqual(7);
+      expect(result.getUTCDate()).toBeGreaterThanOrEqual(1);
+      expect(result.getUTCDate()).toBeLessThanOrEqual(7);
     });
 
     it('should return 1st Monday 3 months ahead for quarterly interval', () => {
@@ -101,14 +101,14 @@ describe('TpmSchedulingService', () => {
       );
 
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       const targetMonth = new Date(today);
-      targetMonth.setMonth(targetMonth.getMonth() + 3);
+      targetMonth.setUTCMonth(targetMonth.getUTCMonth() + 3);
 
-      expect(result.getDay()).toBe(1); // Monday
-      expect(result.getMonth()).toBe(targetMonth.getMonth());
-      expect(result.getDate()).toBeGreaterThanOrEqual(1);
-      expect(result.getDate()).toBeLessThanOrEqual(7);
+      expect(result.getUTCDay()).toBe(1); // Monday
+      expect(result.getUTCMonth()).toBe(targetMonth.getUTCMonth());
+      expect(result.getUTCDate()).toBeGreaterThanOrEqual(1);
+      expect(result.getUTCDate()).toBeLessThanOrEqual(7);
     });
 
     it('should use custom days for custom interval', () => {
@@ -119,9 +119,9 @@ describe('TpmSchedulingService', () => {
       );
 
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       const expected = new Date(today);
-      expected.setDate(expected.getDate() + 14);
+      expected.setUTCDate(expected.getUTCDate() + 14);
       expect(result.getTime()).toBe(expected.getTime());
     });
   });

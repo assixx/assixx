@@ -40,7 +40,7 @@ export class TpmSchedulingService {
     customDays: number | null,
   ): Date {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     if (intervalType === 'daily') {
       return today;
@@ -141,7 +141,7 @@ export class TpmSchedulingService {
     customDays: number | null,
   ): Date[] {
     const oneYearOut = new Date(firstDate);
-    oneYearOut.setFullYear(oneYearOut.getFullYear() + 1);
+    oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
 
     const dates: Date[] = [new Date(firstDate)];
     let current = new Date(firstDate);
@@ -261,7 +261,10 @@ export class TpmSchedulingService {
   }
 }
 
-/** Convert a Date to YYYY-MM-DD string */
+/** Convert a Date to YYYY-MM-DD string (UTC-safe) */
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

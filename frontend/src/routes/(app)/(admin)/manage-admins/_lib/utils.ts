@@ -404,17 +404,17 @@ function isDateRangeActive(startDate?: string, endDate?: string): boolean {
   }
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
 
   if (isValidDateString(startDate)) {
     const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
+    start.setUTCHours(0, 0, 0, 0);
     if (today < start) return false;
   }
 
   if (isValidDateString(endDate)) {
     const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
+    end.setUTCHours(0, 0, 0, 0);
     if (today > end) return false;
   }
 
