@@ -23,7 +23,6 @@ export const TpmIntervalTypeSchema = z.enum(
     'quarterly',
     'semi_annual',
     'annual',
-    'long_runner',
     'custom',
   ],
   { message: 'Ungültiger Intervalltyp' },

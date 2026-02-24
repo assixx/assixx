@@ -539,7 +539,7 @@
               id="employee-teams"
               name="teamIds"
               multiple
-              class="form-field__control min-h-[120px]"
+              class="multi-select"
               onchange={handleTeamChange}
             >
               {#each allTeams as team (team.id)}

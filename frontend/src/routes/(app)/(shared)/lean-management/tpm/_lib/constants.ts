@@ -12,7 +12,6 @@ export const INTERVAL_LABELS: Record<IntervalType, string> = {
   quarterly: 'Vierteljährlich',
   semi_annual: 'Halbjährlich',
   annual: 'Jährlich',
-  long_runner: 'Langzeitplan',
   custom: 'Benutzerdefiniert',
 };
 

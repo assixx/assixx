@@ -514,7 +514,7 @@
           <select
             id="kvpTeamSelect"
             multiple
-            class="form-field__control form-field__control--multiselect"
+            class="multi-select"
             value={selectedTeamIds}
             onchange={handleTeamChange}
           >
@@ -542,7 +542,7 @@
             <select
               id="kvpMachineSelect"
               multiple
-              class="form-field__control form-field__control--multiselect"
+              class="multi-select"
               value={selectedMachineIds}
               onchange={handleMachineChange}
             >
@@ -724,10 +724,5 @@
   .photo-preview-item .remove-photo:hover {
     transform: scale(1.1);
     background: #f44336;
-  }
-
-  /* Multiselect */
-  :global(.form-field__control--multiselect) {
-    min-height: 120px;
   }
 </style>

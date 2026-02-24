@@ -134,6 +134,7 @@
       <SlotAssistant
         planUuid={data.plan.uuid}
         cardsHref={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
+        intervalColors={data.intervalColors}
       />
     </div>
   {:else if isCreateMode && createMachineUuid.length > 0}
@@ -141,6 +142,7 @@
       <SlotAssistant
         machineUuid={createMachineUuid}
         shiftPlanRequired={createShiftPlanRequired}
+        intervalColors={data.intervalColors}
       />
     </div>
   {/if}

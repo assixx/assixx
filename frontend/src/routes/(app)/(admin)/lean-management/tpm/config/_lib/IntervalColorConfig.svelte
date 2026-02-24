@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * TPM Card Status Color Configuration
+   * TPM Interval Color Configuration
    *
    * Per-row: ColorPicker (bind:hex) + Label input + Save button.
    * Reset-all button with confirmation modal.
@@ -13,33 +13,44 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   import {
-    updateColor as apiUpdateColor,
-    resetColors as apiResetColors,
+    updateIntervalColor as apiUpdateIntervalColor,
+    resetIntervalColors as apiResetIntervalColors,
     logApiError,
   } from '../../_lib/api';
-  import { MESSAGES, CARD_STATUS_LABELS } from '../../_lib/constants';
+  import { MESSAGES, INTERVAL_LABELS } from '../../_lib/constants';
 
-  import type { TpmColorConfigEntry, CardStatus } from '../../_lib/types';
+  import type {
+    IntervalColorConfigEntry,
+    IntervalType,
+  } from '../../_lib/types';
 
   // ===========================================================================
   // PROPS
   // ===========================================================================
 
-  const { colors }: { colors: TpmColorConfigEntry[] } = $props();
+  const { colors }: { colors: IntervalColorConfigEntry[] } = $props();
 
   // ===========================================================================
   // CONSTANTS
   // ===========================================================================
 
   const HEX_REGEX = /^#[\da-f]{6}$/i;
-  const STATUS_ORDER: CardStatus[] = ['green', 'red', 'yellow', 'overdue'];
+  const INTERVAL_ORDER: IntervalType[] = [
+    'daily',
+    'weekly',
+    'monthly',
+    'quarterly',
+    'semi_annual',
+    'annual',
+    'custom',
+  ];
 
   // ===========================================================================
   // TYPES
   // ===========================================================================
 
   interface EditRow {
-    key: CardStatus;
+    key: IntervalType;
     colorHex: string;
     label: string;
     originalHex: string;
@@ -51,16 +62,16 @@
   // ===========================================================================
 
   const rows = $derived.by<EditRow[]>(() =>
-    STATUS_ORDER.map((key: CardStatus) => {
+    INTERVAL_ORDER.map((key: IntervalType) => {
       const entry = colors.find(
-        (c: TpmColorConfigEntry) => c.statusKey === key,
+        (c: IntervalColorConfigEntry) => c.statusKey === key,
       );
       return {
         key,
         colorHex: entry?.colorHex ?? '#888888',
-        label: entry?.label ?? CARD_STATUS_LABELS[key],
+        label: entry?.label ?? INTERVAL_LABELS[key],
         originalHex: entry?.colorHex ?? '#888888',
-        originalLabel: entry?.label ?? CARD_STATUS_LABELS[key],
+        originalLabel: entry?.label ?? INTERVAL_LABELS[key],
       };
     }),
   );
@@ -96,17 +107,19 @@
 
     savingKey = row.key;
     try {
-      await apiUpdateColor({
-        statusKey: row.key,
+      await apiUpdateIntervalColor({
+        intervalKey: row.key,
         colorHex: row.colorHex,
         label: row.label.trim(),
       });
-      showSuccessAlert(MESSAGES.SUCCESS_COLOR_UPDATED);
+      showSuccessAlert(MESSAGES.SUCCESS_INTERVAL_COLOR_UPDATED);
       await invalidateAll();
     } catch (err: unknown) {
-      logApiError('updateColor', err);
+      logApiError('updateIntervalColor', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_COLOR_UPDATE;
+        err instanceof Error ?
+          err.message
+        : MESSAGES.ERROR_INTERVAL_COLOR_UPDATE;
       showErrorAlert(msg);
     } finally {
       savingKey = null;
@@ -117,13 +130,15 @@
     showResetConfirm = false;
     resetting = true;
     try {
-      await apiResetColors();
-      showSuccessAlert(MESSAGES.SUCCESS_COLORS_RESET);
+      await apiResetIntervalColors();
+      showSuccessAlert(MESSAGES.SUCCESS_INTERVAL_COLORS_RESET);
       await invalidateAll();
     } catch (err: unknown) {
-      logApiError('resetColors', err);
+      logApiError('resetIntervalColors', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_COLOR_RESET;
+        err instanceof Error ?
+          err.message
+        : MESSAGES.ERROR_INTERVAL_COLOR_RESET;
       showErrorAlert(msg);
     } finally {
       resetting = false;
@@ -136,11 +151,11 @@
     <h3
       class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
     >
-      <i class="fas fa-palette"></i>
-      {MESSAGES.COLOR_TITLE}
+      <i class="fas fa-swatchbook"></i>
+      {MESSAGES.INTERVAL_COLOR_TITLE}
     </h3>
     <p class="mt-1 text-sm text-(--color-text-secondary)">
-      {MESSAGES.COLOR_DESCRIPTION}
+      {MESSAGES.INTERVAL_COLOR_DESCRIPTION}
     </p>
   </div>
   <button
@@ -152,7 +167,7 @@
     }}
   >
     <i class="fas fa-undo"></i>
-    {MESSAGES.COLOR_RESET}
+    {MESSAGES.INTERVAL_COLOR_RESET}
   </button>
 </div>
 
@@ -163,7 +178,7 @@
     {@const validHex = isValidHex(row.colorHex)}
     <div class="color-row">
       <div class="color-name">
-        {CARD_STATUS_LABELS[row.key]}
+        {INTERVAL_LABELS[row.key]}
       </div>
       <div class="color-picker-wrapper">
         <ColorPicker
@@ -186,7 +201,7 @@
       </div>
       <div class="color-label-field">
         <input
-          id="label-{row.key}"
+          id="interval-label-{row.key}"
           type="text"
           class="form-field__control"
           bind:value={rows[i].label}
@@ -237,8 +252,10 @@
       <div class="confirm-modal__icon">
         <i class="fas fa-undo"></i>
       </div>
-      <h3 class="confirm-modal__title">{MESSAGES.COLOR_RESET}</h3>
-      <p class="confirm-modal__message">{MESSAGES.COLOR_RESET_CONFIRM}</p>
+      <h3 class="confirm-modal__title">{MESSAGES.INTERVAL_COLOR_RESET}</h3>
+      <p class="confirm-modal__message">
+        {MESSAGES.INTERVAL_COLOR_RESET_CONFIRM}
+      </p>
       <div class="confirm-modal__actions">
         <button
           type="button"
@@ -260,7 +277,7 @@
           {#if resetting}
             <i class="fas fa-spinner fa-spin"></i>
           {/if}
-          {MESSAGES.COLOR_RESET}
+          {MESSAGES.INTERVAL_COLOR_RESET}
         </button>
       </div>
     </div>

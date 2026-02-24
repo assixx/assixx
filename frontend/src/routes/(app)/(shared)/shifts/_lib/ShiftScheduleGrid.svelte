@@ -149,16 +149,16 @@
       {/each}
 
       <!-- TPM Toggle -->
-      <label class="tpm-toggle">
+      <label class="choice-card tpm-toggle">
         <input
           type="checkbox"
+          class="choice-card__input"
           checked={showTpmEvents}
           onchange={(e) => {
             ontoggleTpmEvents((e.target as HTMLInputElement).checked);
           }}
         />
-        <span class="tpm-toggle-icon">&#9881;</span>
-        <span class="machine-avail-legend-label">Wartungstermine</span>
+        <span class="choice-card__text">&#9881; Wartungstermine</span>
       </label>
     </div>
   </div>
@@ -580,30 +580,12 @@ Beispiele:
     font-weight: 500;
   }
 
-  /* TPM Toggle in legend */
+  /* TPM Toggle — compact sizing + separator from legend */
   .tpm-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    cursor: pointer;
     margin-left: var(--spacing-4);
-    padding-left: var(--spacing-4);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-md);
     border-left: 1px solid var(--color-glass-border);
-
-    font-size: 14px;
-  }
-
-  .tpm-toggle input[type='checkbox'] {
-    cursor: pointer;
-    accent-color: var(--primary-color);
-    width: 16px;
-    height: 16px;
-  }
-
-  .tpm-toggle-icon {
-    color: var(--primary-color);
-    font-size: 16px;
   }
 
   /* TPM Block inside shift cell */

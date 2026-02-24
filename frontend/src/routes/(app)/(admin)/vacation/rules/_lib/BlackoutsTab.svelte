@@ -503,7 +503,7 @@
           <select
             id="bo-area-select"
             multiple
-            class="form-field__control form-field__control--multiselect"
+            class="multi-select"
             value={areaIds}
             disabled={isGlobal}
             onchange={(e) => {
@@ -543,7 +543,7 @@
           <select
             id="bo-department-select"
             multiple
-            class="form-field__control form-field__control--multiselect"
+            class="multi-select"
             value={departmentIds}
             disabled={isGlobal}
             onchange={(e) => {
@@ -583,7 +583,7 @@
           <select
             id="bo-team-select"
             multiple
-            class="form-field__control form-field__control--multiselect"
+            class="multi-select"
             value={teamIds}
             disabled={isGlobal}
             onchange={(e) => {
@@ -708,9 +708,5 @@
 <style>
   .form-field__message--warning {
     color: var(--color-danger);
-  }
-
-  .form-field__control--multiselect {
-    min-height: 120px;
   }
 </style>

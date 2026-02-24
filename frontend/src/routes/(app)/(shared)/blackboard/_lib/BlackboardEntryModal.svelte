@@ -292,7 +292,7 @@
         <select
           id="entry-area-select"
           multiple
-          class="form-field__control form-field__control--multiselect"
+          class="multi-select"
           value={areaIds}
           disabled={companyWide}
           onchange={(e) => {
@@ -331,7 +331,7 @@
         <select
           id="entry-department-select"
           multiple
-          class="form-field__control form-field__control--multiselect"
+          class="multi-select"
           value={departmentIds}
           disabled={companyWide}
           onchange={(e) => {
@@ -368,7 +368,7 @@
         <select
           id="entry-team-select"
           multiple
-          class="form-field__control form-field__control--multiselect"
+          class="multi-select"
           value={teamIds}
           disabled={companyWide}
           onchange={(e) => {
@@ -550,10 +550,6 @@
 
   .form-field__message--warning {
     color: var(--color-danger);
-  }
-
-  .form-field__control--multiselect {
-    min-height: 120px;
   }
 
   /* ─── Color Picker ──────── */

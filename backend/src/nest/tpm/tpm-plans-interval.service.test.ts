@@ -158,11 +158,6 @@ describe('TpmPlansIntervalService', () => {
       expect(result).toEqual(new Date('2027-02-18'));
     });
 
-    it('long_runner: adds 2 years', () => {
-      const result = service.calculateIntervalDate(base, 'long_runner');
-      expect(result).toEqual(new Date('2028-02-18'));
-    });
-
     it('custom: uses provided customDays', () => {
       const result = service.calculateIntervalDate(base, 'custom', 45);
       expect(result).toEqual(new Date('2026-04-04'));
@@ -236,19 +231,6 @@ describe('TpmPlansIntervalService', () => {
       expect(result).toEqual(new Date(2027, 1, 10));
     });
 
-    it('long_runner: should return 3rd Friday 2 years ahead', () => {
-      const base = new Date('2026-02-18');
-      const anchor = { weekday: 4, nth: 3 };
-      const result = service.calculateIntervalDate(
-        base,
-        'long_runner',
-        null,
-        anchor,
-      );
-      // Feb 2028: 1st Fri = Feb 4, 3rd Fri = Feb 18
-      expect(result).toEqual(new Date(2028, 1, 18));
-    });
-
     it('daily: should ignore anchor and add 1 day', () => {
       const base = new Date('2026-02-18');
       const anchor = { weekday: 2, nth: 2 };
@@ -273,8 +255,8 @@ describe('TpmPlansIntervalService', () => {
       const from = new Date('2026-02-18');
       const results = service.calculateNextDueDates(0, 1, from);
 
-      // Should have 7 entries (all standard types, no custom)
-      expect(results).toHaveLength(7);
+      // Should have 6 entries (all standard types, no custom)
+      expect(results).toHaveLength(6);
 
       // Verify sorted ascending by dueDate
       const timestamps = results.map((r) => r.dueDate.getTime());

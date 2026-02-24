@@ -30,7 +30,6 @@ const INTERVAL_MONTHS: Partial<Record<TpmIntervalType, number>> = {
   quarterly: 3,
   semi_annual: 6,
   annual: 12,
-  long_runner: 24,
 };
 
 @Injectable()
@@ -189,10 +188,6 @@ export class TpmPlansIntervalService {
         result.setFullYear(result.getFullYear() + 1);
         break;
       }
-      case 'long_runner': {
-        result.setFullYear(result.getFullYear() + 2);
-        break;
-      }
       case 'custom': {
         result.setDate(result.getDate() + (customDays ?? 30));
         break;
@@ -228,7 +223,6 @@ export class TpmPlansIntervalService {
       'quarterly',
       'semi_annual',
       'annual',
-      'long_runner',
     ];
 
     const results: IntervalDueDate[] = [];

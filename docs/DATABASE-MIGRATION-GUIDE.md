@@ -409,6 +409,48 @@ Password: see docker/.env
 
 ---
 
+## Migration Quality Standards (Verbindlich)
+
+> **Jede neue Migration MUSS diese Regeln einhalten. Verstöße blockieren den PR.**
+
+### Verbotene Patterns (NEVER)
+
+| Pattern                                        | Warum verboten                                                   | Richtige Alternative                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `TRUNCATE` in Migrations                       | Löscht Produktionsdaten unwiderruflich                           | `UPDATE ... SET` zum Remappen, oder separate Data-Migration                             |
+| `IF NOT EXISTS` im `up()`                      | Maskiert fehlgeschlagene Partial-Applies statt laut zu scheitern | Nur `CREATE TABLE` / `ADD COLUMN` ohne Guard — Migration-Runner garantiert Einmaligkeit |
+| Stille Data-Fixes (`UPDATE` vor Schema-Change) | Versteckt Datenprobleme statt sie zu lösen                       | `RAISE EXCEPTION` wenn Daten nicht passen (Vorbild: Migration 028)                      |
+| `RAISE NOTICE` bei Datenverlust                | Warnt aber löscht trotzdem — schlimmer als nichts                | `RAISE EXCEPTION` — Migration MUSS abbrechen                                            |
+| Schema + Data in einer Migration               | Partial Failure zerstört Daten ohne Rollback-Möglichkeit         | Separate Migrations: (1) Schema-DDL, (2) Data-Backfill, (3) Cleanup                     |
+| Hardcoded Year-Ranges (Partitionen)            | Zeitbombe — INSERTs scheitern nach Ablauf                        | Mindestens 5 Jahre voraus + Kommentar wann nächste Erweiterung nötig                    |
+| `ON CONFLICT DO NOTHING` ohne Kommentar        | Schluckt Duplikate still — maskiert Korruptionsrisiko            | Expliziter Kommentar WARUM, oder `ON CONFLICT DO UPDATE`                                |
+| MySQL-Legacy-Namen (`idx_19037_*`, `_ibfk_*`)  | Fragile OID-basierte Namen brechen in anderen Umgebungen         | Aussagekräftige Namen: `idx_tablename_column`                                           |
+
+### Pflicht-Patterns (ALWAYS)
+
+- **FAIL LOUD**: Wenn bestehende Daten die Migration blockieren könnten → `DO $$ ... RAISE EXCEPTION` Pre-Check (Vorbild: Migration 028 `teams-deputy-lead`)
+- **`IF EXISTS` nur in `down()`**: Rollbacks dürfen defensiv sein, `up()` nicht
+- **Enum-Addition**: `ADD VALUE IF NOT EXISTS` ist erlaubt (PostgreSQL Enum-Sonderfall, keine Transaktion möglich)
+- **Feature-Flag-Inserts**: `ON CONFLICT (code) DO NOTHING` ist erlaubt für Seed-Daten — mit Kommentar
+- **Lossy Rollback dokumentieren**: Wenn `down()` Daten nicht wiederherstellen kann → Kommentar im Header: `WARNING: One-way migration. Rollback does NOT restore converted data.`
+- **Partitionen**: Bei Erstellung immer ≥5 Jahre voraus + Kommentar: `Next action required: Before YYYY, create migration for YYYY-YYYY+4`
+
+### Pre-Commit Checklist für neue Migrations
+
+```
+- [ ] Kein TRUNCATE
+- [ ] Kein IF NOT EXISTS im up() (außer ENUM ADD VALUE)
+- [ ] Kein stiller UPDATE vor Schema-Change (RAISE EXCEPTION stattdessen)
+- [ ] Schema und Data sind getrennte Migrations (wenn beides nötig)
+- [ ] down() dokumentiert wenn lossy
+- [ ] Keine hardcoded IDs, OIDs, oder environment-spezifische Werte
+- [ ] Keine MySQL-Legacy-Namen (idx_NNNNN_*, _ibfk_*)
+- [ ] RLS Policy + GRANTs vorhanden (für tenant-isolierte Tabellen)
+- [ ] Kein IF EXISTS im up() (Ausnahme: DROP vor REPLACE bei Triggern)
+```
+
+---
+
 ## PostgreSQL vs MySQL Syntax
 
 | MySQL                     | PostgreSQL                                 | Note                    |

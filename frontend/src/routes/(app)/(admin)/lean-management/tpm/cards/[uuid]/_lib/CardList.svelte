@@ -122,7 +122,6 @@
     'quarterly',
     'semi_annual',
     'annual',
-    'long_runner',
     'custom',
   ];
   const ROLE_OPTIONS: CardRole[] = ['operator', 'maintenance'];

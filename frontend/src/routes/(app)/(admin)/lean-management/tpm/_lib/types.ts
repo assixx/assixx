@@ -10,7 +10,6 @@ export type IntervalType =
   | 'quarterly'
   | 'semi_annual'
   | 'annual'
-  | 'long_runner'
   | 'custom';
 
 /** Card status (Kamishibai board colors) */
@@ -138,9 +137,18 @@ export interface TpmCardTemplate {
   updatedAt: string;
 }
 
-/** TPM Color Configuration Entry */
+/** TPM Color Configuration Entry (card status colors) */
 export interface TpmColorConfigEntry {
   statusKey: CardStatus;
+  colorHex: string;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** TPM Interval Color Configuration Entry (interval type colors) */
+export interface IntervalColorConfigEntry {
+  statusKey: IntervalType;
   colorHex: string;
   label: string;
   createdAt: string;
@@ -339,9 +347,16 @@ export interface DuplicateCheckResult {
 // CONFIG PAYLOADS
 // =============================================================================
 
-/** Payload for updating a single color config entry */
+/** Payload for updating a single card status color config entry */
 export interface UpdateColorPayload {
   statusKey: CardStatus;
+  colorHex: string;
+  label: string;
+}
+
+/** Payload for updating a single interval color config entry */
+export interface UpdateIntervalColorPayload {
+  intervalKey: IntervalType;
   colorHex: string;
   label: string;
 }

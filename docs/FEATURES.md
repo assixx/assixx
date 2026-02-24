@@ -118,7 +118,7 @@
 
 - Kamishibai Board (visual card management per machine per interval)
 - Plan Management (create/edit/delete maintenance plans with intervals)
-- 8 Interval Types (daily, weekly, monthly, quarterly, semi-annual, annual, long-runner, custom)
+- 7 Interval Types (daily, weekly, monthly, quarterly, semi-annual, annual, custom)
 - 4-State Card Status Machine (green → red → yellow → overdue)
 - Execution Workflow (employee marks card as done, optional photo upload)
 - Approval Workflow (team lead approves/rejects, card transitions accordingly)

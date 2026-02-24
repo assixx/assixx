@@ -4,9 +4,12 @@
  * REST endpoints for TPM configuration management:
  * - GET    /tpm/config/escalation       — Get escalation config
  * - PATCH  /tpm/config/escalation       — Update escalation config
- * - GET    /tpm/config/colors           — Get color config
- * - PATCH  /tpm/config/colors           — Update single color
- * - POST   /tpm/config/colors/reset     — Reset colors to defaults
+ * - GET    /tpm/config/colors                — Get card status colors
+ * - PATCH  /tpm/config/colors                — Update single status color
+ * - POST   /tpm/config/colors/reset          — Reset status colors to defaults
+ * - GET    /tpm/config/interval-colors       — Get interval type colors
+ * - PATCH  /tpm/config/interval-colors       — Update single interval color
+ * - POST   /tpm/config/interval-colors/reset — Reset interval colors to defaults
  * - GET    /tpm/config/templates        — List card templates
  * - POST   /tpm/config/templates        — Create template
  * - PATCH  /tpm/config/templates/:uuid  — Update template
@@ -30,6 +33,7 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { CreateTemplateDto } from './dto/create-template.dto.js';
 import { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
 import { UpdateEscalationConfigDto } from './dto/update-escalation-config.dto.js';
+import { UpdateIntervalColorConfigDto } from './dto/update-interval-color-config.dto.js';
 import { UpdateTemplateDto } from './dto/update-template.dto.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
@@ -100,7 +104,7 @@ export class TpmConfigController {
     return await this.colorConfigService.updateColor(tenantId, dto);
   }
 
-  /** POST /tpm/config/colors/reset — Reset all colors to defaults */
+  /** POST /tpm/config/colors/reset — Reset card status colors to defaults */
   @Post('colors/reset')
   @HttpCode(HttpStatus.OK)
   @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
@@ -108,6 +112,41 @@ export class TpmConfigController {
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry[]> {
     return await this.colorConfigService.resetToDefaults(tenantId);
+  }
+
+  // ============================================================================
+  // INTERVAL COLOR CONFIG
+  // ============================================================================
+
+  /** GET /tpm/config/interval-colors — Get all interval type colors */
+  @Get('interval-colors')
+  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  async getIntervalColors(
+    @TenantId() tenantId: number,
+  ): Promise<TpmColorConfigEntry[]> {
+    return await this.colorConfigService.getIntervalColors(tenantId);
+  }
+
+  /** PATCH /tpm/config/interval-colors — Update a single interval color */
+  @Patch('interval-colors')
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async updateIntervalColor(
+    @Body() dto: UpdateIntervalColorConfigDto,
+    @TenantId() tenantId: number,
+  ): Promise<TpmColorConfigEntry> {
+    return await this.colorConfigService.updateIntervalColor(tenantId, dto);
+  }
+
+  /** POST /tpm/config/interval-colors/reset — Reset interval colors to defaults */
+  @Post('interval-colors/reset')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async resetIntervalColors(
+    @TenantId() tenantId: number,
+  ): Promise<TpmColorConfigEntry[]> {
+    return await this.colorConfigService.resetIntervalColorsToDefaults(
+      tenantId,
+    );
   }
 
   // ============================================================================

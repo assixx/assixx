@@ -58,7 +58,7 @@ Plan (interval_type = 'weekly', baseWeekday = 1, baseRepeatEvery = 2)
 - No drift: Calendar-based, not timer-based (no accumulated scheduling errors)
 - Frontend can independently calculate dates (shift grid overlay)
 
-**Interval Types:** `daily | weekly | monthly | quarterly | semi_annual | annual | long_runner | custom`
+**Interval Types:** `daily | weekly | monthly | quarterly | semi_annual | annual | custom`
 
 ### 2. Card Status Machine
 

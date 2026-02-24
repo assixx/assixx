@@ -15,6 +15,7 @@
 
   import ColorConfig from './_lib/ColorConfig.svelte';
   import EscalationConfig from './_lib/EscalationConfig.svelte';
+  import IntervalColorConfig from './_lib/IntervalColorConfig.svelte';
   import TemplateManager from './_lib/TemplateManager.svelte';
 
   import type { PageData } from './$types';
@@ -110,6 +111,8 @@
     <div class="card__body">
       {#if activeTab === 'colors'}
         <ColorConfig colors={data.colors} />
+        <hr class="my-8 border-(--color-glass-border)" />
+        <IntervalColorConfig colors={data.intervalColors} />
       {:else if activeTab === 'escalation'}
         <EscalationConfig escalation={data.escalation} />
       {:else if activeTab === 'templates'}

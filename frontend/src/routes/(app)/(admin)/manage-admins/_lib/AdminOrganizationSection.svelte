@@ -167,7 +167,7 @@
       id="admin-areas"
       name="areaIds"
       multiple
-      class="form-field__control min-h-[100px]"
+      class="multi-select multi-select--compact"
       disabled={formHasFullAccess}
       onchange={handleAreaChange}
     >
@@ -207,7 +207,7 @@
       id="admin-departments"
       name="departmentIds"
       multiple
-      class="form-field__control min-h-[120px]"
+      class="multi-select"
       disabled={formHasFullAccess}
       onchange={handleDepartmentChange}
     >

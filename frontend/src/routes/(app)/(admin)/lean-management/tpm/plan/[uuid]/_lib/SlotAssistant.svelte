@@ -21,7 +21,12 @@
     fetchScheduleProjection,
     logApiError,
   } from '../../../_lib/api';
-  import { INTERVAL_LABELS, MESSAGES } from '../../../_lib/constants';
+  import {
+    INTERVAL_LABELS,
+    INTERVAL_SHORT_LABELS,
+    INTERVAL_COLORS,
+    MESSAGES,
+  } from '../../../_lib/constants';
   import {
     timestampToISO,
     NINETY_DAYS_MS,
@@ -37,6 +42,7 @@
     ProjectedSlot,
     DayAvailability,
     IntervalType,
+    IntervalColorConfigEntry,
   } from '../../../_lib/types';
 
   interface Props {
@@ -44,10 +50,25 @@
     machineUuid?: string;
     shiftPlanRequired?: boolean;
     cardsHref?: string;
+    intervalColors?: IntervalColorConfigEntry[];
   }
 
-  const { planUuid, machineUuid, shiftPlanRequired, cardsHref }: Props =
-    $props();
+  const {
+    planUuid,
+    machineUuid,
+    shiftPlanRequired,
+    cardsHref,
+    intervalColors = [],
+  }: Props = $props();
+
+  // Build color lookup: custom API colors override hardcoded defaults
+  const colorMap = $derived.by((): Record<IntervalType, string> => {
+    const base = { ...INTERVAL_COLORS };
+    for (const entry of intervalColors) {
+      base[entry.statusKey] = entry.colorHex;
+    }
+    return base;
+  });
 
   const isEditMode = $derived(planUuid !== undefined && planUuid.length > 0);
   const canFetch = $derived(
@@ -405,15 +426,13 @@
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-4">
-        <label
-          class="flex cursor-pointer items-center gap-1.5 text-xs text-(--color-text-secondary) select-none"
-        >
+        <label class="choice-card slot-weekend-toggle">
           <input
             type="checkbox"
+            class="choice-card__input"
             bind:checked={showWeekends}
-            class="accent-(--color-primary)"
           />
-          {MESSAGES.SLOT_SHOW_WEEKENDS}
+          <span class="choice-card__text">{MESSAGES.SLOT_SHOW_WEEKENDS}</span>
         </label>
         <span
           class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
@@ -427,12 +446,18 @@
           <span class="slot-dot slot-dot--unavailable"></span>
           {MESSAGES.SLOT_UNAVAILABLE}
         </span>
-        <span
-          class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
-        >
-          <span class="slot-dot slot-dot--scheduled"></span>
-          {MESSAGES.SLOT_SCHEDULED}
-        </span>
+        {#each Object.entries(colorMap).filter(([k]) => k !== 'daily' && k !== 'weekly') as [key, color] (key)}
+          <span
+            class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+            title={INTERVAL_LABELS[key as IntervalType]}
+          >
+            <span
+              class="slot-dot"
+              style="background: {color}"
+            ></span>
+            {INTERVAL_SHORT_LABELS[key as IntervalType]}
+          </span>
+        {/each}
       </div>
     </div>
 
@@ -494,11 +519,20 @@
             {#if available && !isScheduled}
               <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
             {:else if isScheduled}
-              <i class="fas fa-clock slot-day__icon slot-day__icon--scheduled"
-              ></i>
-              <span class="slot-day__conflict slot-day__conflict--scheduled">
-                {MESSAGES.SLOT_TPM_SCHEDULE}
-              </span>
+              {@const projSlots = getSlotsForDate(day.date)}
+              {#each projSlots as slot (slot.planUuid)}
+                <span class="slot-day__machine">{slot.machineName}</span>
+                <div class="slot-day__intervals">
+                  {#each slot.intervalTypes as interval (interval)}
+                    <span
+                      class="slot-day__badge"
+                      style="background: {colorMap[interval]}"
+                      title={INTERVAL_LABELS[interval]}
+                      >{INTERVAL_SHORT_LABELS[interval]}</span
+                    >
+                  {/each}
+                </div>
+              {/each}
             {:else if day.conflicts.length > 0}
               <i
                 class="fas {getConflictIcon(
@@ -543,10 +577,6 @@
     background: var(--color-danger);
   }
 
-  .slot-dot--scheduled {
-    background: var(--color-info, #3b82f6);
-  }
-
   /* ---- Calendar Grid ---- */
 
   .slot-calendar {
@@ -557,6 +587,13 @@
 
   .slot-calendar--weekdays-only {
     grid-template-columns: repeat(5, 1fr);
+  }
+
+  /* Weekend toggle — compact sizing override for choice-card */
+  .slot-weekend-toggle {
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-md);
+    margin: 0;
   }
 
   .slot-header {
@@ -639,10 +676,6 @@
     color: var(--color-danger);
   }
 
-  .slot-day__icon--scheduled {
-    color: var(--color-info, #3b82f6);
-  }
-
   .slot-day__conflict {
     font-size: 0.825rem;
     color: var(--color-danger);
@@ -650,7 +683,37 @@
     line-height: 1.2;
   }
 
-  .slot-day__conflict--scheduled {
-    color: var(--color-info, #3b82f6);
+  /* ---- Scheduled day: machine name + interval badges ---- */
+
+  .slot-day__machine {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-align: center;
+    line-height: 1.1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .slot-day__intervals {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .slot-day__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #000;
+    padding: 2px 4px;
+    border-radius: 2px;
+    line-height: 1;
+    min-width: 14px;
   }
 </style>

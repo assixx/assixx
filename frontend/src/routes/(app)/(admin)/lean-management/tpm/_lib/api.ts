@@ -26,6 +26,8 @@ import type {
   CheckDuplicatePayload,
   DuplicateCheckResult,
   UpdateColorPayload,
+  UpdateIntervalColorPayload,
+  IntervalColorConfigEntry,
   UpdateEscalationPayload,
   CreateTemplatePayload,
   UpdateTemplatePayload,
@@ -364,10 +366,39 @@ export async function updateColor(
   );
 }
 
-/** Reset all colors to defaults */
+/** Reset all card status colors to defaults */
 export async function resetColors(): Promise<TpmColorConfigEntry[]> {
   const result: unknown = await apiClient.post('/tpm/config/colors/reset', {});
   return extractArray<TpmColorConfigEntry>(result);
+}
+
+/** Fetch interval color configuration */
+export async function fetchIntervalColors(): Promise<
+  IntervalColorConfigEntry[]
+> {
+  const result: unknown = await apiClient.get('/tpm/config/interval-colors');
+  return extractArray<IntervalColorConfigEntry>(result);
+}
+
+/** Update a single interval color config entry */
+export async function updateIntervalColor(
+  payload: UpdateIntervalColorPayload,
+): Promise<IntervalColorConfigEntry> {
+  return await apiClient.patch<IntervalColorConfigEntry>(
+    '/tpm/config/interval-colors',
+    payload,
+  );
+}
+
+/** Reset all interval colors to defaults */
+export async function resetIntervalColors(): Promise<
+  IntervalColorConfigEntry[]
+> {
+  const result: unknown = await apiClient.post(
+    '/tpm/config/interval-colors/reset',
+    {},
+  );
+  return extractArray<IntervalColorConfigEntry>(result);
 }
 
 /** Update escalation configuration */

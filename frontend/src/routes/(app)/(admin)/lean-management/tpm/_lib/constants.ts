@@ -12,8 +12,29 @@ export const INTERVAL_LABELS: Record<IntervalType, string> = {
   quarterly: 'Vierteljährlich',
   semi_annual: 'Halbjährlich',
   annual: 'Jährlich',
-  long_runner: 'Langzeitplan',
   custom: 'Benutzerdefiniert',
+};
+
+/** Interval type short labels for compact display (calendar badges) */
+export const INTERVAL_SHORT_LABELS: Record<IntervalType, string> = {
+  daily: 'T',
+  weekly: 'W',
+  monthly: 'M',
+  quarterly: 'VJ',
+  semi_annual: 'HJ',
+  annual: 'J',
+  custom: 'BD',
+};
+
+/** Interval type colors for calendar badges (matching Kamishibai board style) */
+export const INTERVAL_COLORS: Record<IntervalType, string> = {
+  daily: '#4CAF50',
+  weekly: '#8BC34A',
+  monthly: '#5bb5f5',
+  quarterly: '#b0b0b0',
+  semi_annual: '#f5a0a0',
+  annual: '#c8b88a',
+  custom: '#FF9800',
 };
 
 /** Card status display labels (German) */
@@ -314,14 +335,14 @@ export const MESSAGES = {
   CONFIG_TAB_ESCALATION: 'Eskalation',
   CONFIG_TAB_TEMPLATES: 'Vorlagen',
 
-  // Color config
+  // Card status color config
   COLOR_TITLE: 'Status-Farben',
   COLOR_DESCRIPTION: 'Farben für die Kamishibai-Board Status-Anzeige anpassen',
   COLOR_STATUS: 'Status',
   COLOR_HEX: 'Hex-Farbe',
   COLOR_LABEL: 'Bezeichnung',
   COLOR_PREVIEW: 'Vorschau',
-  COLOR_RESET: 'Standardfarben wiederherstellen',
+  COLOR_RESET: 'Zurücksetzen',
   COLOR_RESET_CONFIRM: 'Alle Farben auf die Standardwerte zurücksetzen?',
   COLOR_SAVE: 'Farbe speichern',
   COLOR_HEX_INVALID: 'Ungültiges Hex-Format (z.B. #10b981)',
@@ -330,6 +351,18 @@ export const MESSAGES = {
   SUCCESS_COLORS_RESET: 'Farben auf Standard zurückgesetzt',
   ERROR_COLOR_UPDATE: 'Fehler beim Aktualisieren der Farbe',
   ERROR_COLOR_RESET: 'Fehler beim Zurücksetzen der Farben',
+
+  // Interval color config
+  INTERVAL_COLOR_TITLE: 'Intervall-Farben',
+  INTERVAL_COLOR_DESCRIPTION:
+    'Farben für die Wartungsintervalle im Kalender und Board anpassen',
+  INTERVAL_COLOR_RESET: 'Zurücksetzen',
+  INTERVAL_COLOR_RESET_CONFIRM:
+    'Alle Intervall-Farben auf die Standardwerte zurücksetzen?',
+  SUCCESS_INTERVAL_COLOR_UPDATED: 'Intervall-Farbe aktualisiert',
+  SUCCESS_INTERVAL_COLORS_RESET: 'Intervall-Farben auf Standard zurückgesetzt',
+  ERROR_INTERVAL_COLOR_UPDATE: 'Fehler beim Aktualisieren der Intervall-Farbe',
+  ERROR_INTERVAL_COLOR_RESET: 'Fehler beim Zurücksetzen der Intervall-Farben',
 
   // Escalation config
   ESCALATION_TITLE: 'Eskalation',

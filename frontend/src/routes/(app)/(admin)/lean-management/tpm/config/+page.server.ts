@@ -12,6 +12,7 @@ import { createLogger } from '$lib/utils/logger';
 import type { PageServerLoad } from './$types';
 import type {
   TpmColorConfigEntry,
+  IntervalColorConfigEntry,
   TpmEscalationConfig,
   TpmCardTemplate,
 } from '../_lib/types';
@@ -66,11 +67,17 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { activeFeatures } = await parent();
   requireFeature(activeFeatures, 'tpm');
 
-  const [escalationData, colorsData, templatesData] = await Promise.all([
-    apiFetch<TpmEscalationConfig>('/tpm/config/escalation', token, fetch),
-    apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
-    apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
-  ]);
+  const [escalationData, colorsData, intervalColorsData, templatesData] =
+    await Promise.all([
+      apiFetch<TpmEscalationConfig>('/tpm/config/escalation', token, fetch),
+      apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
+      apiFetch<IntervalColorConfigEntry[]>(
+        '/tpm/config/interval-colors',
+        token,
+        fetch,
+      ),
+      apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
+    ]);
 
   return {
     escalation: escalationData ?? {
@@ -81,6 +88,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
       updatedAt: '',
     },
     colors: Array.isArray(colorsData) ? colorsData : [],
+    intervalColors: Array.isArray(intervalColorsData) ? intervalColorsData : [],
     templates: Array.isArray(templatesData) ? templatesData : [],
   };
 };

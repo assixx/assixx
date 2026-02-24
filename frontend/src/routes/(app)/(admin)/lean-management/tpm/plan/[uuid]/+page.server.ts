@@ -16,6 +16,7 @@ import type {
   Machine,
   TpmArea,
   TpmDepartment,
+  IntervalColorConfigEntry,
 } from '../../_lib/types';
 
 const log = createLogger('TpmPlanDetail');
@@ -88,12 +89,18 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const isCreateMode = params.uuid === 'new';
 
-  // Load machines + areas + departments in parallel for cascade dropdown
-  const [machinesData, areasData, departmentsData] = await Promise.all([
-    apiFetch<Machine[]>('/machines', token, fetch),
-    apiFetch<TpmArea[]>('/areas', token, fetch),
-    apiFetch<TpmDepartment[]>('/departments', token, fetch),
-  ]);
+  // Load machines + areas + departments + interval colors in parallel
+  const [machinesData, areasData, departmentsData, intervalColorsData] =
+    await Promise.all([
+      apiFetch<Machine[]>('/machines', token, fetch),
+      apiFetch<TpmArea[]>('/areas', token, fetch),
+      apiFetch<TpmDepartment[]>('/departments', token, fetch),
+      apiFetch<IntervalColorConfigEntry[]>(
+        '/tpm/config/interval-colors',
+        token,
+        fetch,
+      ),
+    ]);
   const machines = safeArray(machinesData);
   const areas = safeArray(areasData);
   const departments = safeArray(departmentsData);
@@ -115,6 +122,7 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
       areas,
       departments,
       machineUuidsWithPlans,
+      intervalColors: safeArray(intervalColorsData),
     };
   }
 
@@ -141,5 +149,6 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
     machines,
     areas,
     departments,
+    intervalColors: safeArray(intervalColorsData),
   };
 };

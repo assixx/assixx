@@ -10,7 +10,6 @@ export type IntervalType =
   | 'quarterly'
   | 'semi_annual'
   | 'annual'
-  | 'long_runner'
   | 'custom';
 
 /** Card status (Kamishibai board colors) */

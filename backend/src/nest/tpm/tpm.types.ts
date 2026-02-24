@@ -22,7 +22,6 @@ export type TpmIntervalType =
   | 'quarterly'
   | 'semi_annual'
   | 'annual'
-  | 'long_runner'
   | 'custom';
 
 export type TpmCardStatus = 'green' | 'red' | 'yellow' | 'overdue';
@@ -359,8 +358,7 @@ export const INTERVAL_ORDER_MAP: Record<TpmIntervalType, number> = {
   quarterly: 4,
   semi_annual: 5,
   annual: 6,
-  long_runner: 7,
-  custom: 8,
+  custom: 7,
 } as const;
 
 /**
@@ -374,7 +372,6 @@ export const INTERVAL_TYPES_ORDERED: readonly TpmIntervalType[] = [
   'quarterly',
   'semi_annual',
   'annual',
-  'long_runner',
   'custom',
 ] as const;
 
@@ -386,7 +383,6 @@ export const INTERVAL_LABELS: Record<TpmIntervalType, string> = {
   quarterly: 'Vierteljährlich',
   semi_annual: 'Halbjährlich',
   annual: 'Jährlich',
-  long_runner: 'Langläufer',
   custom: 'Benutzerdefiniert',
 } as const;
 
@@ -410,7 +406,7 @@ export const CARD_CODE_PREFIX: Record<TpmCardRole, string> = {
   maintenance: 'IV',
 } as const;
 
-/** Default color configuration per status */
+/** Default color configuration per card status */
 export const DEFAULT_COLORS: Record<
   TpmCardStatus,
   { hex: string; label: string }
@@ -419,6 +415,20 @@ export const DEFAULT_COLORS: Record<
   red: { hex: '#ef4444', label: 'Fällig' },
   yellow: { hex: '#eab308', label: 'Freigabe ausstehend' },
   overdue: { hex: '#dc2626', label: 'Überfällig' },
+} as const;
+
+/** Default color configuration per interval type (calendar badges) */
+export const DEFAULT_INTERVAL_COLORS: Record<
+  TpmIntervalType,
+  { hex: string; label: string }
+> = {
+  daily: { hex: '#4CAF50', label: 'Täglich' },
+  weekly: { hex: '#8BC34A', label: 'Wöchentlich' },
+  monthly: { hex: '#5bb5f5', label: 'Monatlich' },
+  quarterly: { hex: '#b0b0b0', label: 'Vierteljährlich' },
+  semi_annual: { hex: '#f5a0a0', label: 'Halbjährlich' },
+  annual: { hex: '#c8b88a', label: 'Jährlich' },
+  custom: { hex: '#FF9800', label: 'Benutzerdefiniert' },
 } as const;
 
 /** Max photos per execution (enforced in service layer) */

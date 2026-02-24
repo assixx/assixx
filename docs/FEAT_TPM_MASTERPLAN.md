@@ -338,7 +338,7 @@ Trigger muss auf JEDE Tabelle mit `updated_at` angewendet werden:
    ```sql
    CREATE TYPE tpm_interval_type AS ENUM (
      'daily', 'weekly', 'monthly', 'quarterly',
-     'semi_annual', 'annual', 'long_runner', 'custom'
+     'semi_annual', 'annual', 'custom'
    );
 
    CREATE TYPE tpm_card_status AS ENUM (

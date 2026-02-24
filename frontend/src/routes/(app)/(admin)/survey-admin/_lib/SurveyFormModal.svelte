@@ -364,7 +364,7 @@
           <select
             id="survey-area-select"
             multiple
-            class="form-field__control min-h-25"
+            class="multi-select multi-select--compact"
             value={formSelectedAreas}
             disabled={formCompanyWide}
             onchange={handleAreaChange}
@@ -403,7 +403,7 @@
           <select
             id="survey-department-select"
             multiple
-            class="form-field__control min-h-25"
+            class="multi-select multi-select--compact"
             value={formSelectedDepartments}
             disabled={formCompanyWide}
             onchange={handleDepartmentChange}
@@ -442,7 +442,7 @@
           <select
             id="survey-team-select"
             multiple
-            class="form-field__control min-h-25"
+            class="multi-select multi-select--compact"
             bind:value={formSelectedTeams}
             disabled={formCompanyWide}
           >

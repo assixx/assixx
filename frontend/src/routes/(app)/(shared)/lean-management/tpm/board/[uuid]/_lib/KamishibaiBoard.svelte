@@ -24,7 +24,6 @@
     'quarterly',
     'semi_annual',
     'annual',
-    'long_runner',
     'custom',
   ];
 

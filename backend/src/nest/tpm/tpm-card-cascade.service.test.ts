@@ -302,12 +302,8 @@ describe('TpmCardCascadeService', () => {
       expect(service.getIntervalOrder('annual')).toBe(6);
     });
 
-    it('should return 7 for long_runner', () => {
-      expect(service.getIntervalOrder('long_runner')).toBe(7);
-    });
-
-    it('should return 8 for custom', () => {
-      expect(service.getIntervalOrder('custom')).toBe(8);
+    it('should return 7 for custom', () => {
+      expect(service.getIntervalOrder('custom')).toBe(7);
     });
   });
 
