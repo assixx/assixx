@@ -229,7 +229,6 @@ export const MESSAGES = {
     'Details für die ersten 90 Tage, darüber hinaus nur geplante Termine',
   SLOT_SHOW_WEEKENDS: 'Wochenende anzeigen',
   SLOT_SHOW_ONLY_SCHEDULED: 'Nur geplante Termine',
-  SLOT_SHOW_COMPACT: 'Kompakte Ansicht',
 
   // Timeline day view
   TIMELINE_TITLE: 'Tagesübersicht',

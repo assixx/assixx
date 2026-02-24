@@ -91,7 +91,6 @@
   let selectedDay = $state<string | null>(null);
   let showWeekends = $state(false);
   let showOnlyScheduled = $state(false);
-  let showCompact = $state(false);
   /** Saved endDate before switching to scheduled-only mode */
   let savedEndDate = $state('');
 
@@ -459,7 +458,6 @@
                 endDate = maxEndDate;
                 void loadData();
               } else {
-                showCompact = false;
                 endDate = savedEndDate;
                 void loadData();
               }
@@ -469,16 +467,6 @@
             >{MESSAGES.SLOT_SHOW_ONLY_SCHEDULED}</span
           >
         </label>
-        {#if showOnlyScheduled}
-          <label class="choice-card slot-weekend-toggle">
-            <input
-              type="checkbox"
-              class="choice-card__input"
-              bind:checked={showCompact}
-            />
-            <span class="choice-card__text">{MESSAGES.SLOT_SHOW_COMPACT}</span>
-          </label>
-        {/if}
         <span
           class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
         >
@@ -515,7 +503,7 @@
         {MESSAGES.SLOT_LOADING}
       </div>
     {:else if visibleCalendarDays.length > 0}
-      {#if showOnlyScheduled && showCompact}
+      {#if showOnlyScheduled}
         <!-- Compact: only scheduled days, no grid gaps -->
         <div class="slot-compact">
           {#each scheduledDays as day (day.date)}
