@@ -135,6 +135,12 @@ interface MachineTeamRow {
   team_name: string;
 }
 
+/** Row from shift coverage date-range query */
+interface ShiftCoverageRangeRow {
+  range_start: string;
+  range_end: string;
+}
+
 /** Max days allowed in a single range query */
 const MAX_RANGE_DAYS = 90;
 
@@ -171,9 +177,11 @@ export class TpmSlotAssistantService {
     }
 
     // Batch-fetch all 4 data sources for the full range
-    const [shiftPlanExists, downtimes, tpmDueDates, projection] =
+    const [shiftCoverageDates, downtimes, tpmDueDates, projection] =
       await Promise.all([
-        this.hasShiftPlan(tenantId, machineId, startDate, endDate),
+        shiftPlanRequired ?
+          this.fetchShiftCoverageDates(tenantId, machineId, startDate, endDate)
+        : Promise.resolve(new Set<string>()),
         this.fetchMachineDowntimes(tenantId, machineId, startDate, endDate),
         this.fetchExistingTpmDueDates(tenantId, machineId, startDate, endDate),
         this.scheduleProjection.projectSchedules(tenantId, startDate, endDate),
@@ -195,7 +203,8 @@ export class TpmSlotAssistantService {
     const dayResults = days.map((date: string) =>
       buildDayConflicts(
         date,
-        shiftPlanRequired && !shiftPlanExists,
+        shiftPlanRequired,
+        shiftCoverageDates,
         downtimeSet,
         tpmDueDates,
         tpmDateSet,
@@ -405,7 +414,50 @@ export class TpmSlotAssistantService {
   // ============================================================================
 
   /**
-   * Data source 1: Check if ANY shift coverage exists for machine + date range.
+   * Data source 1a: Fetch all dates with shift coverage within the range.
+   * Returns a Set<date> for per-day conflict resolution in getAvailableSlots().
+   * Expands shift_plans, rotation_patterns ranges + individual shifts to dates.
+   */
+  private async fetchShiftCoverageDates(
+    tenantId: number,
+    machineId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<Set<string>> {
+    const rows = await this.db.query<ShiftCoverageRangeRow>(
+      `WITH mt AS (
+         SELECT team_id FROM machine_teams
+         WHERE machine_id = $1 AND tenant_id = $2
+       )
+       SELECT GREATEST(sp.start_date, $3::date)::text AS range_start,
+              LEAST(sp.end_date, $4::date)::text AS range_end
+       FROM shift_plans sp
+       WHERE sp.tenant_id = $2
+         AND (sp.machine_id = $1 OR sp.team_id IN (SELECT team_id FROM mt))
+         AND sp.start_date <= $4::date AND sp.end_date >= $3::date
+         AND sp.status IN ('published', 'locked')
+       UNION ALL
+       SELECT GREATEST(srp.starts_at, $3::date)::text AS range_start,
+              LEAST(srp.ends_at, $4::date)::text AS range_end
+       FROM shift_rotation_patterns srp
+       WHERE srp.tenant_id = $2
+         AND srp.team_id IN (SELECT team_id FROM mt)
+         AND srp.starts_at <= $4::date AND srp.ends_at >= $3::date
+         AND srp.is_active = 1
+       UNION ALL
+       SELECT s.date::text AS range_start, s.date::text AS range_end
+       FROM shifts s
+       WHERE s.tenant_id = $2
+         AND (s.machine_id = $1 OR s.team_id IN (SELECT team_id FROM mt))
+         AND s.date BETWEEN $3::date AND $4::date`,
+      [machineId, tenantId, startDate, endDate],
+    );
+
+    return expandRangesToDateSet(rows);
+  }
+
+  /**
+   * Data source 1b: Check if ANY shift coverage exists for machine + date range.
    * Checks all 3 sources (see ADR-011):
    *   1. shift_plans — manual plans (direct machine_id OR via team_id)
    *   2. shift_rotation_patterns — rotation-based (via team_id → machine_teams)
@@ -622,7 +674,8 @@ function dedupeTeamMembers(
 /** Build conflicts for a single day from pre-fetched data sources */
 function buildDayConflicts(
   date: string,
-  missingShiftPlan: boolean,
+  shiftPlanRequired: boolean,
+  shiftCoverageDates: Set<string>,
   downtimeSet: Map<string, MachineDowntimeRow>,
   tpmDueDates: TpmDueDateRow[],
   tpmDateSet: Set<string>,
@@ -633,10 +686,10 @@ function buildDayConflicts(
 ): DayAvailability {
   const conflicts: SlotConflict[] = [];
 
-  if (missingShiftPlan) {
+  if (shiftPlanRequired && !shiftCoverageDates.has(date)) {
     conflicts.push({
       type: 'no_shift_plan',
-      description: 'Kein Schichtplan für diesen Zeitraum (E15)',
+      description: 'Kein Schichtplan für dieses Datum (E15)',
     });
   }
 
@@ -701,6 +754,22 @@ function collectScheduleConflicts(
       description: `TPM Plan '${slot.planName}' (${slot.machineName}, ${intervals}): ${timeRange}`,
     });
   }
+}
+
+/** Expand date ranges into a flat Set<YYYY-MM-DD> */
+function expandRangesToDateSet(rows: ShiftCoverageRangeRow[]): Set<string> {
+  const result = new Set<string>();
+  for (const row of rows) {
+    const current = new Date(row.range_start);
+    const end = new Date(row.range_end);
+    current.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    while (current <= end) {
+      result.add(current.toISOString().slice(0, 10));
+      current.setDate(current.getDate() + 1);
+    }
+  }
+  return result;
 }
 
 /**

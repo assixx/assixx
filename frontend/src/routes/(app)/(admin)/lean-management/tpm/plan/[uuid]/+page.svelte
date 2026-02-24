@@ -49,7 +49,7 @@
 
   // Create mode: track machine + shiftPlanRequired for SlotAssistant
   let createMachineUuid = $state('');
-  let createShiftPlanRequired = $state(true);
+  let createShiftPlanRequired = $state(false);
 
   // =============================================================================
   // HANDLERS

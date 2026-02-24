@@ -55,17 +55,17 @@ describe('Schedule Projection: Valid request', () => {
   });
 
   it('should return dateRange in response', () => {
-    expect(body.dateRange).toBeDefined();
-    expect(body.dateRange.startDate).toBe('2026-03-01');
-    expect(body.dateRange.endDate).toBe('2026-03-07');
+    expect(body.data.dateRange).toBeDefined();
+    expect(body.data.dateRange.start).toBe('2026-03-01');
+    expect(body.data.dateRange.end).toBe('2026-03-07');
   });
 
   it('should return slots array', () => {
-    expect(Array.isArray(body.slots)).toBe(true);
+    expect(Array.isArray(body.data.slots)).toBe(true);
   });
 
-  it('should return totalSlots as number', () => {
-    expect(typeof body.totalSlots).toBe('number');
+  it('should return planCount as number', () => {
+    expect(typeof body.data.planCount).toBe('number');
   });
 });
 
@@ -154,8 +154,8 @@ describe('Schedule Projection: excludePlanUuid valid', () => {
   });
 
   it('should return valid structure with slots array', () => {
-    expect(Array.isArray(body.slots)).toBe(true);
-    expect(body.dateRange).toBeDefined();
+    expect(Array.isArray(body.data.slots)).toBe(true);
+    expect(body.data.dateRange).toBeDefined();
   });
 });
 
@@ -210,7 +210,7 @@ describe('Schedule Projection: Single day range', () => {
   });
 
   it('should return same start and end date', () => {
-    expect(body.dateRange.startDate).toBe('2026-03-01');
-    expect(body.dateRange.endDate).toBe('2026-03-01');
+    expect(body.data.dateRange.start).toBe('2026-03-01');
+    expect(body.data.dateRange.end).toBe('2026-03-01');
   });
 });

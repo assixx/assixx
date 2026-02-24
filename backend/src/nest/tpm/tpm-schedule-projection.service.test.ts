@@ -2,17 +2,18 @@
  * Unit tests for TpmScheduleProjectionService
  *
  * Mocked dependencies: DatabaseService, TpmPlansIntervalService.
- * Tests: projectSchedules (date generation, deduplication, time windows,
- * sort order, excludePlanUuid, various interval types).
+ * Tests: projectSchedules — plan-derived interval projection (monthly,
+ * quarterly, semi_annual, annual), seed calculation, deduplication,
+ * time windows, sort order, excludePlanUuid.
  *
- * All methods are read-only (no mutations).
+ * Intervall-Kaskade Prinzip: All 4 intervals derive from plan config
+ * (base_weekday + base_repeat_every + created_at). No cards needed.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import type { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
-import type { TpmIntervalType } from './tpm.types.js';
 
 // =============================================================
 // Mock factories
@@ -24,12 +25,15 @@ function createMockDb() {
 type MockDb = ReturnType<typeof createMockDb>;
 
 function createMockIntervalService() {
-  return { calculateIntervalDate: vi.fn() };
+  return {
+    calculateIntervalDate: vi.fn(),
+    getNthWeekdayOfMonth: vi.fn(),
+  };
 }
 type MockInterval = ReturnType<typeof createMockIntervalService>;
 
-/** DB row shape from fetchPlanCards JOIN query */
-interface PlanCardRow {
+/** DB row shape from fetchActivePlans query */
+interface PlanRow {
   plan_uuid: string;
   plan_name: string;
   machine_id: number;
@@ -39,28 +43,20 @@ interface PlanCardRow {
   base_time: string | null;
   buffer_hours: string;
   plan_created_at: string;
-  interval_type: TpmIntervalType;
-  custom_interval_days: number | null;
-  weekday_override: number | null;
-  current_due_date: string | null;
 }
 
-/** Helper: create a PlanCardRow with sensible defaults */
-function makeRow(overrides: Partial<PlanCardRow> = {}): PlanCardRow {
+/** Helper: create a PlanRow with sensible defaults */
+function makeRow(overrides: Partial<PlanRow> = {}): PlanRow {
   return {
     plan_uuid: 'plan-1',
     plan_name: 'Test Plan A',
     machine_id: 1,
     machine_name: 'Machine A',
     base_weekday: 0, // Monday (TPM: 0=Mon)
-    base_repeat_every: 1,
+    base_repeat_every: 1, // 1st Monday of month
     base_time: '09:00',
     buffer_hours: '4',
     plan_created_at: '2026-01-01T00:00:00.000Z',
-    interval_type: 'weekly',
-    custom_interval_days: null,
-    weekday_override: null,
-    current_due_date: '2026-03-02', // Monday
     ...overrides,
   };
 }
@@ -107,24 +103,145 @@ describe('TpmScheduleProjectionService', () => {
   });
 
   // =============================================================
-  // Daily interval
+  // Core: 4 intervals projected automatically
   // =============================================================
 
-  it('should generate one slot per day for daily interval over 7 days', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({ interval_type: 'daily', current_due_date: '2026-03-01' }),
-    ]);
+  it('should project monthly, quarterly, semi_annual, annual for each plan', async () => {
+    mockDb.query.mockResolvedValueOnce([makeRow()]);
+
+    // Seed: 1st Monday of Jan 2026 = Jan 5
+    const seed = new Date('2026-01-05');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+
+    // For the range Mar 1-3, only monthly has dates
+    // Monthly: seed Jan 5 → Feb 2 → Mar 2 (in range) → Apr 6 (out)
+    // Quarterly: seed Jan 5 → Apr 6 (out of range)
+    // Semi_annual: seed Jan 5 → Jul 6 (out of range)
+    // Annual: seed Jan 5 → Jan 2027 (out of range)
+    mockInterval.calculateIntervalDate
+      // Monthly chain: Jan 5 → Feb 2 → Mar 2 → Apr 6
+      .mockReturnValueOnce(new Date('2026-02-02'))
+      .mockReturnValueOnce(new Date('2026-03-02'))
+      .mockReturnValueOnce(new Date('2026-04-06'))
+      // Quarterly chain: Jan 5 → Apr 6
+      .mockReturnValueOnce(new Date('2026-04-06'))
+      // Semi_annual chain: Jan 5 → Jul 6
+      .mockReturnValueOnce(new Date('2026-07-06'))
+      // Annual chain: Jan 5 → Jan 2027
+      .mockReturnValueOnce(new Date('2027-01-05'));
 
     const result = await service.projectSchedules(
       10,
       '2026-03-01',
-      '2026-03-07',
+      '2026-03-03',
     );
 
-    expect(result.slots).toHaveLength(7);
+    // Only monthly's Mar 2 falls in range
     expect(result.planCount).toBe(1);
-    expect(result.slots[0]?.date).toBe('2026-03-01');
-    expect(result.slots[6]?.date).toBe('2026-03-07');
+    expect(result.slots).toHaveLength(1);
+    expect(result.slots[0]?.date).toBe('2026-03-02');
+    expect(result.slots[0]?.intervalTypes).toContain('monthly');
+  });
+
+  // =============================================================
+  // Cascade: multiple intervals on the same date
+  // =============================================================
+
+  it('should merge intervalTypes when multiple intervals hit the same date', async () => {
+    mockDb.query.mockResolvedValueOnce([makeRow()]);
+
+    // Seed: Mar 2 (1st Monday of March)
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+
+    // All 4 intervals start at seed = Mar 2
+    // Monthly: Mar 2 (in range) → Apr 6 (out)
+    // Quarterly: Mar 2 (in range) → Jun 1 (out)
+    // Semi_annual: Mar 2 (in range) → Sep 7 (out)
+    // Annual: Mar 2 (in range) → Mar 2027 (out)
+    mockInterval.calculateIntervalDate
+      .mockReturnValueOnce(new Date('2026-04-06')) // monthly next
+      .mockReturnValueOnce(new Date('2026-06-01')) // quarterly next
+      .mockReturnValueOnce(new Date('2026-09-07')) // semi_annual next
+      .mockReturnValueOnce(new Date('2027-03-02')); // annual next
+
+    const result = await service.projectSchedules(
+      10,
+      '2026-03-02',
+      '2026-03-02',
+    );
+
+    // All 4 intervals land on Mar 2 → deduped into 1 slot
+    expect(result.slots).toHaveLength(1);
+    const slot = result.slots[0];
+    expect(slot?.date).toBe('2026-03-02');
+    expect(slot?.intervalTypes).toContain('monthly');
+    expect(slot?.intervalTypes).toContain('quarterly');
+    expect(slot?.intervalTypes).toContain('semi_annual');
+    expect(slot?.intervalTypes).toContain('annual');
+    expect(slot?.intervalTypes).toHaveLength(4);
+  });
+
+  // =============================================================
+  // Seed calculation
+  // =============================================================
+
+  it('should use Nth weekday of creation month when still in future', async () => {
+    // Plan created Jan 1, 1st Monday of Jan = Jan 5 (after Jan 1)
+    mockDb.query.mockResolvedValueOnce([
+      makeRow({ plan_created_at: '2026-01-01T00:00:00.000Z' }),
+    ]);
+
+    const jan5 = new Date('2026-01-05');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(jan5);
+
+    // Just need enough mocks to avoid errors
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
+    await service.projectSchedules(10, '2026-01-01', '2026-01-31');
+
+    // First call: same month (Jan)
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(
+      2026,
+      0,
+      0,
+      1,
+    );
+    // Should only be called once (same month works)
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledTimes(1);
+  });
+
+  it('should use next month when Nth weekday already passed in creation month', async () => {
+    // Plan created Jan 10, 1st Monday of Jan = Jan 5 (before Jan 10!)
+    mockDb.query.mockResolvedValueOnce([
+      makeRow({ plan_created_at: '2026-01-10T00:00:00.000Z' }),
+    ]);
+
+    const jan5 = new Date('2026-01-05'); // before created → skip
+    const feb2 = new Date('2026-02-02'); // next month's 1st Monday
+
+    mockInterval.getNthWeekdayOfMonth
+      .mockReturnValueOnce(jan5) // same month → too early
+      .mockReturnValueOnce(feb2); // next month → use this
+
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
+    await service.projectSchedules(10, '2026-02-01', '2026-02-28');
+
+    // Called twice: once for Jan (rejected), once for Feb (accepted)
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledTimes(2);
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(
+      2026,
+      0,
+      0,
+      1,
+    ); // Jan
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(
+      2026,
+      1,
+      0,
+      1,
+    ); // Feb
   });
 
   // =============================================================
@@ -133,62 +250,59 @@ describe('TpmScheduleProjectionService', () => {
 
   it('should calculate correct startTime/endTime from base_time + buffer_hours', async () => {
     mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        base_time: '09:00',
-        buffer_hours: '5',
-        current_due_date: '2026-03-01',
-      }),
+      makeRow({ base_time: '09:00', buffer_hours: '5' }),
     ]);
+
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-01',
+      '2026-03-02',
+      '2026-03-02',
     );
 
-    expect(result.slots).toHaveLength(1);
-    expect(result.slots[0]?.startTime).toBe('09:00');
-    expect(result.slots[0]?.endTime).toBe('14:00');
-    expect(result.slots[0]?.isFullDay).toBe(false);
-    expect(result.slots[0]?.bufferHours).toBe(5);
+    expect(result.slots.length).toBeGreaterThan(0);
+    const slot = result.slots[0];
+    expect(slot?.startTime).toBe('09:00');
+    expect(slot?.endTime).toBe('14:00');
+    expect(slot?.isFullDay).toBe(false);
+    expect(slot?.bufferHours).toBe(5);
   });
 
   it('should set isFullDay=true when base_time is null', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        base_time: null,
-        current_due_date: '2026-03-01',
-      }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([makeRow({ base_time: null })]);
+
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-01',
+      '2026-03-02',
+      '2026-03-02',
     );
 
-    expect(result.slots).toHaveLength(1);
-    expect(result.slots[0]?.startTime).toBeNull();
-    expect(result.slots[0]?.endTime).toBeNull();
-    expect(result.slots[0]?.isFullDay).toBe(true);
+    const slot = result.slots[0];
+    expect(slot?.startTime).toBeNull();
+    expect(slot?.endTime).toBeNull();
+    expect(slot?.isFullDay).toBe(true);
   });
 
   it('should handle buffer hours crossing midnight (22:00 + 4h → 02:00)', async () => {
     mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        base_time: '22:00',
-        buffer_hours: '4',
-        current_due_date: '2026-03-01',
-      }),
+      makeRow({ base_time: '22:00', buffer_hours: '4' }),
     ]);
+
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-01',
+      '2026-03-02',
+      '2026-03-02',
     );
 
     expect(result.slots[0]?.startTime).toBe('22:00');
@@ -197,18 +311,17 @@ describe('TpmScheduleProjectionService', () => {
 
   it('should handle fractional buffer hours (08:00 + 2.5h → 10:30)', async () => {
     mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        base_time: '08:00',
-        buffer_hours: '2.5',
-        current_due_date: '2026-03-01',
-      }),
+      makeRow({ base_time: '08:00', buffer_hours: '2.5' }),
     ]);
+
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-01',
+      '2026-03-02',
+      '2026-03-02',
     );
 
     expect(result.slots[0]?.endTime).toBe('10:30');
@@ -218,33 +331,36 @@ describe('TpmScheduleProjectionService', () => {
   // Multiple plans
   // =============================================================
 
-  it('should project slots for multiple plans', async () => {
+  it('should project slots for multiple plans independently', async () => {
     mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        plan_uuid: 'plan-1',
-        plan_name: 'Plan A',
-        interval_type: 'daily',
-        current_due_date: '2026-03-01',
-      }),
+      makeRow({ plan_uuid: 'plan-1', plan_name: 'Plan A' }),
       makeRow({
         plan_uuid: 'plan-2',
         plan_name: 'Plan B',
         machine_id: 2,
         machine_name: 'Machine B',
-        interval_type: 'daily',
-        current_due_date: '2026-03-01',
       }),
     ]);
 
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    // Each plan × 4 intervals: first call returns seed (in range), second goes out
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-03',
+      '2026-03-02',
+      '2026-03-02',
     );
 
-    // 3 days × 2 plans = 6 slots
-    expect(result.slots).toHaveLength(6);
     expect(result.planCount).toBe(2);
+    // Each plan has 4 intervals hitting seed date, deduped to 1 slot per plan
+    expect(result.slots).toHaveLength(2);
+
+    const planASlot = result.slots.find((s) => s.planName === 'Plan A');
+    const planBSlot = result.slots.find((s) => s.planName === 'Plan B');
+    expect(planASlot?.intervalTypes).toHaveLength(4);
+    expect(planBSlot?.intervalTypes).toHaveLength(4);
   });
 
   // =============================================================
@@ -279,35 +395,6 @@ describe('TpmScheduleProjectionService', () => {
   });
 
   // =============================================================
-  // Deduplication (same plan+date, different intervals)
-  // =============================================================
-
-  it('should deduplicate same plan+date into merged intervalTypes', async () => {
-    // daily + weekly for the same plan; both hit 2026-03-02 (Monday)
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        current_due_date: '2026-03-01',
-      }),
-      makeRow({
-        interval_type: 'weekly',
-        current_due_date: '2026-03-02', // Monday seed
-      }),
-    ]);
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
-
-    const plan1Slots = result.slots.filter((s) => s.planUuid === 'plan-1');
-    expect(plan1Slots).toHaveLength(1);
-    expect(plan1Slots[0]?.intervalTypes).toContain('daily');
-    expect(plan1Slots[0]?.intervalTypes).toContain('weekly');
-  });
-
-  // =============================================================
   // Sort order
   // =============================================================
 
@@ -316,248 +403,37 @@ describe('TpmScheduleProjectionService', () => {
       makeRow({
         plan_uuid: 'plan-a',
         plan_name: 'Plan A',
-        interval_type: 'daily',
         base_time: '14:00',
-        current_due_date: '2026-03-01',
       }),
       makeRow({
         plan_uuid: 'plan-b',
         plan_name: 'Plan B',
         machine_id: 2,
-        interval_type: 'daily',
         base_time: '08:00',
-        current_due_date: '2026-03-01',
       }),
       makeRow({
         plan_uuid: 'plan-c',
         plan_name: 'Plan C',
         machine_id: 3,
-        interval_type: 'daily',
         base_time: null,
-        current_due_date: '2026-03-01',
       }),
     ]);
 
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-01',
+      '2026-03-02',
+      '2026-03-02',
     );
 
+    // 3 plans, each deduped to 1 slot, sorted by startTime
     expect(result.slots).toHaveLength(3);
     expect(result.slots[0]?.planName).toBe('Plan B'); // 08:00
     expect(result.slots[1]?.planName).toBe('Plan A'); // 14:00
     expect(result.slots[2]?.planName).toBe('Plan C'); // null (full day → last)
-  });
-
-  // =============================================================
-  // Weekly interval
-  // =============================================================
-
-  it('should generate weekly dates on correct weekday', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'weekly',
-        base_weekday: 0, // Monday
-        base_repeat_every: 1,
-        current_due_date: '2026-03-02', // Monday
-      }),
-    ]);
-
-    // Mondays in March 2026: 2, 9, 16, 23, 30
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-31',
-    );
-
-    expect(result.slots).toHaveLength(5);
-    for (const slot of result.slots) {
-      expect(new Date(slot.date).getDay()).toBe(1); // JS Monday = 1
-    }
-  });
-
-  it('should respect base_repeat_every for bi-weekly', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'weekly',
-        base_weekday: 0,
-        base_repeat_every: 2, // every 2nd week
-        current_due_date: '2026-03-02',
-      }),
-    ]);
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-31',
-    );
-
-    // From Mar 2 every 2 weeks: Mar 2, Mar 16, Mar 30
-    expect(result.slots).toHaveLength(3);
-    expect(result.slots[0]?.date).toBe('2026-03-02');
-    expect(result.slots[1]?.date).toBe('2026-03-16');
-    expect(result.slots[2]?.date).toBe('2026-03-30');
-  });
-
-  // =============================================================
-  // Monthly+ interval (delegates to intervalService)
-  // =============================================================
-
-  it('should delegate to calculateIntervalDate for monthly intervals', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'monthly',
-        current_due_date: '2026-03-02',
-      }),
-    ]);
-
-    mockInterval.calculateIntervalDate
-      .mockReturnValueOnce(new Date('2026-04-06'))
-      .mockReturnValueOnce(new Date('2026-05-04')); // outside range
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-04-30',
-    );
-
-    expect(result.slots).toHaveLength(2);
-    expect(result.slots[0]?.date).toBe('2026-03-02');
-    expect(result.slots[1]?.date).toBe('2026-04-06');
-    expect(mockInterval.calculateIntervalDate).toHaveBeenCalled();
-  });
-
-  // =============================================================
-  // weekday_override
-  // =============================================================
-
-  it('should use weekday_override when present on card', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'weekly',
-        base_weekday: 0, // Monday
-        weekday_override: 2, // Wednesday
-        current_due_date: '2026-03-04', // Wednesday
-      }),
-    ]);
-
-    // Wednesdays in March 2026: 4, 11, 18, 25
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-31',
-    );
-
-    expect(result.slots).toHaveLength(4);
-    for (const slot of result.slots) {
-      expect(new Date(slot.date).getDay()).toBe(3); // JS Wednesday = 3
-    }
-  });
-
-  // =============================================================
-  // Custom interval
-  // =============================================================
-
-  it('should pass customIntervalDays to calculateIntervalDate', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'custom',
-        custom_interval_days: 10,
-        current_due_date: '2026-03-01',
-      }),
-    ]);
-
-    mockInterval.calculateIntervalDate
-      .mockReturnValueOnce(new Date('2026-03-11'))
-      .mockReturnValueOnce(new Date('2026-03-21'))
-      .mockReturnValueOnce(new Date('2026-03-31'))
-      .mockReturnValueOnce(new Date('2026-04-10')); // outside range
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-31',
-    );
-
-    expect(result.slots).toHaveLength(4);
-    expect(mockInterval.calculateIntervalDate).toHaveBeenCalledWith(
-      expect.any(Date),
-      'custom',
-      10,
-      expect.objectContaining({ weekday: 0, nth: 1 }),
-    );
-  });
-
-  // =============================================================
-  // Seed fallback
-  // =============================================================
-
-  it('should use plan_created_at as seed when current_due_date is null', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        current_due_date: null,
-        plan_created_at: '2026-03-01T00:00:00.000Z',
-      }),
-    ]);
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-03',
-    );
-
-    expect(result.slots).toHaveLength(3);
-  });
-
-  // =============================================================
-  // Same interval type deduplication (groupByPlan)
-  // =============================================================
-
-  it('should deduplicate same interval type within a plan', async () => {
-    // Two 'weekly' cards for the same plan — groupByPlan keeps only first
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'weekly',
-        current_due_date: '2026-03-02',
-      }),
-      makeRow({
-        interval_type: 'weekly',
-        current_due_date: '2026-03-09', // second card, same interval
-      }),
-    ]);
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-31',
-    );
-
-    // Should produce 5 Mondays (not 10) — dedup prevents double counting
-    const uniqueDates = new Set(result.slots.map((s) => s.date));
-    expect(uniqueDates.size).toBe(result.slots.length);
-  });
-
-  // =============================================================
-  // Large range
-  // =============================================================
-
-  it('should handle 365-day range with daily interval', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({
-        interval_type: 'daily',
-        current_due_date: '2026-01-01',
-      }),
-    ]);
-
-    const result = await service.projectSchedules(
-      10,
-      '2026-01-01',
-      '2026-12-31',
-    );
-
-    expect(result.slots).toHaveLength(365);
   });
 
   // =============================================================
@@ -571,17 +447,19 @@ describe('TpmScheduleProjectionService', () => {
         plan_name: 'Hydraulik Check',
         machine_id: 42,
         machine_name: 'Presse P17',
-        interval_type: 'daily',
         base_time: '10:30',
         buffer_hours: '2.5',
-        current_due_date: '2026-03-01',
       }),
     ]);
 
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
     const result = await service.projectSchedules(
       10,
-      '2026-03-01',
-      '2026-03-01',
+      '2026-03-02',
+      '2026-03-02',
     );
 
     const slot = result.slots[0];
@@ -592,6 +470,79 @@ describe('TpmScheduleProjectionService', () => {
     expect(slot?.startTime).toBe('10:30');
     expect(slot?.endTime).toBe('13:00');
     expect(slot?.bufferHours).toBe(2.5);
-    expect(slot?.intervalTypes).toContain('daily');
+  });
+
+  // =============================================================
+  // No daily/weekly in projection
+  // =============================================================
+
+  it('should never include daily or weekly interval types', async () => {
+    mockDb.query.mockResolvedValueOnce([makeRow()]);
+
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
+    const result = await service.projectSchedules(
+      10,
+      '2026-03-01',
+      '2026-03-31',
+    );
+
+    for (const slot of result.slots) {
+      for (const it of slot.intervalTypes) {
+        expect(it).not.toBe('daily');
+        expect(it).not.toBe('weekly');
+      }
+    }
+  });
+
+  // =============================================================
+  // Deduplication preserves correct structure
+  // =============================================================
+
+  it('should deduplicate same plan+date but keep different plans separate', async () => {
+    mockDb.query.mockResolvedValueOnce([
+      makeRow({ plan_uuid: 'plan-1', plan_name: 'Plan A' }),
+      makeRow({
+        plan_uuid: 'plan-2',
+        plan_name: 'Plan B',
+        machine_id: 2,
+      }),
+    ]);
+
+    const seed = new Date('2026-03-02');
+    mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
+    // All intervals converge on seed, then jump far out
+    mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
+
+    const result = await service.projectSchedules(
+      10,
+      '2026-03-02',
+      '2026-03-02',
+    );
+
+    // 2 plans × 4 intervals → deduped to 2 slots (1 per plan)
+    expect(result.slots).toHaveLength(2);
+    const plan1 = result.slots.find((s) => s.planUuid === 'plan-1');
+    const plan2 = result.slots.find((s) => s.planUuid === 'plan-2');
+    expect(plan1?.intervalTypes).toHaveLength(4);
+    expect(plan2?.intervalTypes).toHaveLength(4);
+  });
+
+  // =============================================================
+  // SQL query structure (no card JOIN)
+  // =============================================================
+
+  it('should query plans without card JOIN', async () => {
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.projectSchedules(10, '2026-03-01', '2026-03-07');
+
+    const [sql] = mockDb.query.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('tpm_maintenance_plans');
+    expect(sql).not.toContain('tpm_cards');
+    expect(sql).not.toContain('LEFT JOIN');
+    expect(sql).not.toContain('interval_type');
   });
 });

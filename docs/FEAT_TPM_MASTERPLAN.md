@@ -1,7 +1,7 @@
 # FEAT: TPM (Total Productive Maintenance) — Execution Masterplan
 
 > **Created:** 2026-02-18
-> **Version:** 2.0.0 (Feature vollständig abgeschlossen — alle 6 Phasen verifiziert)
+> **Version:** 2.1.0 (Schedule Projection Refactor — Intervall-Kaskade Prinzip)
 > **Status:** COMPLETE — Phase 6 DONE, alle 29 Sessions abgeschlossen
 > **Branch:** `feature/TPM`
 > **Spec:** [brainstorming-TPM.md](./brainstorming-TPM.md)
@@ -78,6 +78,7 @@ pnpm test                # unit + api tests
 | 1.26.0  | 2026-02-19 | Step 6.1 DONE / PHASE 6 COMPLETE / TPM FEATURE COMPLETE: E2E Verification (8/8 Integrationen geprüft, 4 nachverdrahtet). Fixes: DashboardCounts-Typ (+tpm +vacation in +layout.server.ts), TpmExecutionsService (+TpmNotificationService Injection, notifyAfterExecution mit notifyApprovalRequired/notifyMaintenanceCompleted, resolveApproverIds), TpmApprovalService (Refactored: resolveCardInfo statt resolveCardMachineId, fireApprovalEffects + fireRejectionEffects extrahiert, notifyApprovalResult wired, bridgeToMaintenanceHistory D11-Pattern direkte DB-Query), Tests aktualisiert (4. Constructor-Param TpmNotificationService in beide Tests). Dokumentation: ADR-026-tpm-architecture.md (Interval Cascade, Card Status Machine, Slot Assistant, Module Architecture, 6 Sections), FEATURES.md (Feature #11 TPM Wartung, Status Matrix, Planned Features). D16: Machine Availability Auto-Status V2 deferred (Infrastructure exists, trigger timing komplex). svelte-check 0, ESLint 0, tsc 0, 231 files 4764 Tests ✅                                                                                                                                                              |
 
 | 2.0.0 | 2026-02-19 | FEATURE COMPLETE: Full Post-Verification aller 6 Phasen. Phase 5 DoD Checkboxen nachgetragen (18/19 waren Doc-Bug, Code war vollständig). Ecosystem Integration Points verifiziert (15/15, Daten nachgetragen). Version Bump 1.26.0 → 2.0.0 gemäß Versionierungsregel |
+| 2.1.0 | 2026-02-24 | Schedule Projection Refactor — Intervall-Kaskade Prinzip: Card-JOIN entfernt, 4 Intervalle (monthly, quarterly, semi_annual, annual) leiten sich automatisch aus Plan-Config ab (base_weekday + base_repeat_every + created_at). Daily/weekly = Bediener-Aufgaben, ausgeschlossen. Seed = Nth Wochentag ab plan.created_at. Slot-Assistant: per-day Schichtplan-Abdeckung statt Range-Boolean. ADR-026 Section 10 aktualisiert. 17 Projection-Tests + 30 Slot-Assistant-Tests. Siehe ADR-026 §10 „Intervall-Kaskade Prinzip". |
 
 > **Versionierungsregel:**
 >

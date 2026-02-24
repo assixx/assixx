@@ -304,26 +304,46 @@ The cards controller (`tpm-cards.controller.ts`) includes the execution history 
 
 **Solution:** `TpmScheduleProjectionService` — a read-only projection engine that calculates future maintenance dates for all active plans within a configurable date range (0–365 days).
 
+**Intervall-Kaskade Prinzip:**
+
+Aus der Plan-Konfiguration (`base_weekday` + `base_repeat_every` + `created_at`) ergeben sich ALLE geplanten Wartungstermine deterministisch. Karten sind irrelevant für die Projektion.
+
+- **Tägliche/wöchentliche** Intervalle sind Bediener-Aufgaben → NICHT projiziert
+- Jeder Plan projiziert automatisch **4 Intervalle**: monthly, quarterly, semi_annual, annual
+
+**Beispiel:** Plan mit base_weekday=0 (Mo), base_repeat_every=1 (1. Mo im Monat), erstellt Feb 2026:
+
+```
+Seed = 1. Montag ab Erstellungsmonat (z.B. 2. März 2026)
+
+Monatlich:       1. Mo jedes Monats     (Mär 2, Apr 6, Mai 4, Jun 1, ...)
+Vierteljährlich: 1. Mo alle 3 Monate    (Mär 2, Jun 1, Sep 7, Dez 7)
+Halbjährlich:    1. Mo alle 6 Monate    (Mär 2, Sep 7)
+Jährlich:        1. Mo alle 12 Monate   (Mär 2, 2027)
+
+Am Jahrestag treffen ALLE 4 Intervalle aufeinander → Kaskade.
+Deduplizierung: Gleicher Plan + gleiches Datum → ein Slot mit merged intervalTypes[]
+```
+
 ```
 GET /tpm/plans/schedule-projection?startDate=2026-03-01&endDate=2026-03-31&excludePlanUuid=...
 
 TpmScheduleProjectionService.projectSchedules(tenantId, startDate, endDate, excludePlanUuid?)
-  1. Load all active plans + cards via single DB JOIN query
-  2. Group cards by plan (planUuid → PlanCardRow[])
-  3. For each plan + card: generate dates using interval logic
-     ├── Daily: every day in range (pure date arithmetic)
-     ├── Weekly: weekday match + bi-weekly seed phase via createdAt
-     └── Monthly+: delegates to TpmPlansIntervalService.calculateIntervalDate()
-  4. Deduplicate same plan+date (merge interval types)
+  1. Load all active plans (plan config only, no card JOIN)
+  2. Calculate seed date per plan: Nth weekday of creation month (or next month)
+  3. For each plan × 4 intervals: generate dates within [start, end]
+     └── Delegates to TpmPlansIntervalService.calculateIntervalDate()
+  4. Deduplicate same plan+date (merge interval types → Kaskade)
   5. Calculate time windows: base_time + buffer_hours → startTime/endTime
-  6. Sort by date → startTime → planName
-  → Returns ScheduleProjectionResult { slots[], dateRange, totalSlots, planCount }
+  6. Sort by date → startTime
+  → Returns ScheduleProjectionResult { slots[], dateRange, planCount }
 ```
 
 **Key Design Decisions:**
 
 - **Computation, not storage:** Dates are calculated at request time, not stored in DB. Deterministic: same input → same output.
-- **Single DB query:** One JOIN across `tpm_maintenance_plans` + `tpm_cards` + `machines`. All date generation is CPU-side.
+- **Plan config only:** Single query on `tpm_maintenance_plans` + `machines` (no card JOIN). Interval types derive from plan configuration, not from existing cards. Plans without cards project correctly.
+- **Seed calculation:** `getNthWeekdayOfMonth(creationYear, creationMonth, baseWeekday, baseRepeatEvery)`. If seed date < plan creation → use next month's Nth weekday.
 - **`excludePlanUuid`:** When editing a plan, excludes that plan from projection to avoid self-conflict.
 - **`buffer_hours`:** `NUMERIC(4,1)`, range 0.5–24, step 0.5. Defines time window duration: `base_time + buffer_hours = endTime`. Plans without `base_time` → `isFullDay: true`.
 - **Midnight wrap:** `calculateTimeWindow` handles `(22:00 + 4h) % 24 = 02:00` correctly.
@@ -335,7 +355,7 @@ TpmScheduleProjectionService.projectSchedules(tenantId, startDate, endDate, excl
 - Range selector: 30/60/90/180/365 days (default 90)
 - `tpm_schedule` conflict type shown in Slot Assistant tooltips
 
-**Testing:** 20 unit tests (mocked DB) + 13 API integration tests (real HTTP)
+**Testing:** 17 unit tests (mocked DB) + 13 API integration tests (real HTTP)
 
 ---
 

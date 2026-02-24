@@ -295,7 +295,7 @@
         machineUuid,
         startDate,
         slotEndDate,
-        shiftPlanRequired ?? true,
+        shiftPlanRequired ?? false,
       );
     }
     return null;

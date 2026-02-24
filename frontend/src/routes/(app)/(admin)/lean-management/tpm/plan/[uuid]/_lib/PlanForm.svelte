@@ -74,7 +74,7 @@
   let baseTime = $state(untrack(() => plan?.baseTime ?? ''));
   let bufferHours = $state(untrack(() => plan?.bufferHours ?? 4));
   let shiftPlanRequired = $state(
-    untrack(() => plan?.shiftPlanRequired ?? true),
+    untrack(() => plan?.shiftPlanRequired ?? false),
   );
   let notes = $state(untrack(() => plan?.notes ?? ''));
 

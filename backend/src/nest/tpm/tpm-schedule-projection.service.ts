@@ -4,12 +4,19 @@
  * Projects all active TPM plans' maintenance dates into the future.
  * Used for cross-plan conflict detection when creating/editing a plan.
  *
+ * Intervall-Kaskade Prinzip:
+ *   - Each plan automatically projects 4 intervals: monthly, quarterly,
+ *     semi_annual, annual (daily/weekly are operator tasks, excluded).
+ *   - Seed date = Nth weekday of plan creation month (or next month).
+ *   - All dates are deterministic from plan config alone (no cards needed).
+ *
  * Algorithm:
- *   1. Load all active plans + their cards (interval types + due dates)
- *   2. For each plan×intervalType, generate all dates within [start, end]
- *   3. Deduplicate per plan+date (multiple intervals → one slot with intervalTypes[])
- *   4. Compute time windows (base_time + buffer_hours)
- *   5. Sort by date + startTime
+ *   1. Load all active plans (plan config only, no card JOIN)
+ *   2. Calculate seed date per plan via getNthWeekdayOfMonth()
+ *   3. For each plan × 4 intervals, generate dates within [start, end]
+ *   4. Deduplicate per plan+date (cascade dates merge intervalTypes[])
+ *   5. Compute time windows (base_time + buffer_hours)
+ *   6. Sort by date + startTime
  *
  * Dependencies: DatabaseService, TpmPlansIntervalService
  */
@@ -23,8 +30,8 @@ import type {
   TpmIntervalType,
 } from './tpm.types.js';
 
-/** DB row from the plan+card JOIN query */
-interface PlanCardRow {
+/** DB row from the active plans query (no card data) */
+interface PlanRow {
   plan_uuid: string;
   plan_name: string;
   machine_id: number;
@@ -34,13 +41,9 @@ interface PlanCardRow {
   base_time: string | null;
   buffer_hours: string; // NUMERIC → string from pg
   plan_created_at: string;
-  interval_type: TpmIntervalType;
-  custom_interval_days: number | null;
-  weekday_override: number | null;
-  current_due_date: string | null;
 }
 
-/** Intermediate grouped plan data */
+/** Intermediate plan data with pre-calculated seed date */
 interface PlanProjectionData {
   planUuid: string;
   planName: string;
@@ -50,17 +53,16 @@ interface PlanProjectionData {
   baseRepeatEvery: number;
   baseTime: string | null;
   bufferHours: number;
-  planCreatedAt: string;
-  intervals: IntervalSeed[];
+  seedDate: Date;
 }
 
-/** One interval type with its seed date for iteration */
-interface IntervalSeed {
-  intervalType: TpmIntervalType;
-  customIntervalDays: number | null;
-  weekdayOverride: number | null;
-  seedDate: string; // earliest current_due_date or plan created_at
-}
+/** Intervals projected from plan config (operator tasks excluded) */
+const PROJECTION_INTERVALS: readonly TpmIntervalType[] = [
+  'monthly',
+  'quarterly',
+  'semi_annual',
+  'annual',
+] as const;
 
 /** Max projection range in days */
 const MAX_PROJECTION_DAYS = 365;
@@ -86,7 +88,7 @@ export class TpmScheduleProjectionService {
     endDate: string,
     excludePlanUuid?: string,
   ): Promise<ScheduleProjectionResult> {
-    const rows = await this.fetchPlanCards(tenantId, excludePlanUuid);
+    const rows = await this.fetchActivePlans(tenantId, excludePlanUuid);
 
     if (rows.length === 0) {
       return {
@@ -96,7 +98,7 @@ export class TpmScheduleProjectionService {
       };
     }
 
-    const plans = groupByPlan(rows);
+    const plans = this.mapToPlanProjections(rows);
     const rawSlots = this.generateAllSlots(plans, startDate, endDate);
     const deduped = deduplicateSlots(rawSlots);
 
@@ -109,11 +111,11 @@ export class TpmScheduleProjectionService {
     };
   }
 
-  /** Load all active plans with their active cards' interval info */
-  private async fetchPlanCards(
+  /** Load all active plans (plan config only, no card JOIN) */
+  private async fetchActivePlans(
     tenantId: number,
     excludePlanUuid?: string,
-  ): Promise<PlanCardRow[]> {
+  ): Promise<PlanRow[]> {
     const params: unknown[] = [tenantId];
     let excludeClause = '';
 
@@ -122,7 +124,7 @@ export class TpmScheduleProjectionService {
       params.push(excludePlanUuid);
     }
 
-    return await this.db.query<PlanCardRow>(
+    return await this.db.query<PlanRow>(
       `SELECT
          p.uuid AS plan_uuid,
          p.name AS plan_name,
@@ -132,21 +134,67 @@ export class TpmScheduleProjectionService {
          p.base_repeat_every,
          p.base_time,
          p.buffer_hours,
-         p.created_at AS plan_created_at,
-         c.interval_type,
-         c.custom_interval_days,
-         c.weekday_override,
-         c.current_due_date
+         p.created_at AS plan_created_at
        FROM tpm_maintenance_plans p
        JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
-       JOIN tpm_cards c ON c.plan_id = p.id AND c.tenant_id = p.tenant_id AND c.is_active = 1
        WHERE p.tenant_id = $1 AND p.is_active = 1 ${excludeClause}
-       ORDER BY p.name, c.interval_type, c.current_due_date ASC NULLS LAST`,
+       ORDER BY p.name`,
       params,
     );
   }
 
-  /** Generate projected slots for all plans across the date range */
+  /** Convert DB rows to projection data with pre-calculated seed dates */
+  private mapToPlanProjections(rows: PlanRow[]): PlanProjectionData[] {
+    return rows.map((row: PlanRow) => ({
+      planUuid: row.plan_uuid.trim(),
+      planName: row.plan_name,
+      machineId: row.machine_id,
+      machineName: row.machine_name,
+      baseWeekday: row.base_weekday,
+      baseRepeatEvery: row.base_repeat_every,
+      baseTime: row.base_time,
+      bufferHours: Number(row.buffer_hours),
+      seedDate: this.calculateSeedDate(
+        row.plan_created_at,
+        row.base_weekday,
+        row.base_repeat_every,
+      ),
+    }));
+  }
+
+  /**
+   * Calculate the seed date for interval projection.
+   * Finds the Nth weekday of the plan's creation month.
+   * If that date is before creation → use Nth weekday of next month.
+   */
+  private calculateSeedDate(
+    planCreatedAt: string,
+    baseWeekday: number,
+    baseRepeatEvery: number,
+  ): Date {
+    const created = new Date(planCreatedAt);
+    created.setHours(0, 0, 0, 0);
+
+    const sameMonth = this.intervalService.getNthWeekdayOfMonth(
+      created.getFullYear(),
+      created.getMonth(),
+      baseWeekday,
+      baseRepeatEvery,
+    );
+
+    if (sameMonth >= created) return sameMonth;
+
+    const nextMonth = new Date(created);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return this.intervalService.getNthWeekdayOfMonth(
+      nextMonth.getFullYear(),
+      nextMonth.getMonth(),
+      baseWeekday,
+      baseRepeatEvery,
+    );
+  }
+
+  /** Generate projected slots for all plans × 4 intervals across the date range */
   private generateAllSlots(
     plans: PlanProjectionData[],
     startDate: string,
@@ -157,28 +205,11 @@ export class TpmScheduleProjectionService {
     const allSlots: ProjectedSlot[] = [];
 
     for (const plan of plans) {
-      for (const interval of plan.intervals) {
-        const dates = this.generateDatesForInterval(plan, interval, start, end);
+      for (const intervalType of PROJECTION_INTERVALS) {
+        const dates = this.generateDates(plan, intervalType, start, end);
 
         for (const date of dates) {
-          const dateStr = formatDate(date);
-          const { startTime, endTime } = calculateTimeWindow(
-            plan.baseTime,
-            plan.bufferHours,
-          );
-
-          allSlots.push({
-            planUuid: plan.planUuid,
-            planName: plan.planName,
-            machineId: plan.machineId,
-            machineName: plan.machineName,
-            intervalTypes: [interval.intervalType],
-            date: dateStr,
-            startTime,
-            endTime,
-            bufferHours: plan.bufferHours,
-            isFullDay: plan.baseTime === null,
-          });
+          allSlots.push(createSlot(plan, intervalType, date));
         }
       }
     }
@@ -187,137 +218,31 @@ export class TpmScheduleProjectionService {
   }
 
   /**
-   * Generate all dates for a single plan×interval within [start, end].
-   *
-   * Strategy: Start from the seed date (earliest card due date or plan creation),
-   * iterate forward using TpmPlansIntervalService until past endDate.
-   * Collect dates that fall within [start, end].
+   * Generate all dates for a single plan × interval within [start, end].
+   * Iterates from seed using calculateIntervalDate until past endDate.
    */
-  private generateDatesForInterval(
+  private generateDates(
     plan: PlanProjectionData,
-    interval: IntervalSeed,
+    intervalType: TpmIntervalType,
     start: Date,
     end: Date,
   ): Date[] {
-    const effectiveWeekday = interval.weekdayOverride ?? plan.baseWeekday;
-
-    if (interval.intervalType === 'daily') {
-      return this.generateDailyDates(start, end);
-    }
-
-    if (interval.intervalType === 'weekly') {
-      return this.generateWeeklyDates(
-        effectiveWeekday,
-        plan.baseRepeatEvery,
-        start,
-        end,
-        parseDate(interval.seedDate),
-      );
-    }
-
-    // Monthly+ intervals: iterate from seed using calculateIntervalDate
-    return this.generateMonthlyPlusDates(
-      plan,
-      interval,
-      effectiveWeekday,
-      start,
-      end,
-    );
-  }
-
-  /** Daily: every day in the range */
-  private generateDailyDates(start: Date, end: Date): Date[] {
     const dates: Date[] = [];
-    const current = new Date(start);
+    let current = new Date(plan.seedDate);
     current.setHours(0, 0, 0, 0);
 
-    while (current <= end) {
-      dates.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-
-    return dates;
-  }
-
-  /**
-   * Weekly: every Nth week on the given weekday.
-   * Uses seed date to establish the phase of the repeating pattern.
-   */
-  private generateWeeklyDates(
-    weekday: number,
-    repeatEvery: number,
-    start: Date,
-    end: Date,
-    seed: Date,
-  ): Date[] {
-    const dates: Date[] = [];
-    const jsWeekday = (weekday + 1) % 7;
-
-    // Find the first occurrence of the weekday on or after seed
-    const firstOccurrence = new Date(seed);
-    firstOccurrence.setHours(0, 0, 0, 0);
-    const daysUntilWeekday = (jsWeekday - firstOccurrence.getDay() + 7) % 7;
-    firstOccurrence.setDate(firstOccurrence.getDate() + daysUntilWeekday);
-
-    // Calculate step in days
-    const stepDays = repeatEvery * 7;
-
-    // Fast-forward to start of range (avoid iterating through distant past)
-    let current = new Date(firstOccurrence);
-    if (current < start) {
-      const daysToStart = Math.floor(
-        (start.getTime() - current.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      const stepsToSkip = Math.floor(daysToStart / stepDays);
-      current.setDate(current.getDate() + stepsToSkip * stepDays);
-    }
-
-    // Iterate through range
-    while (current <= end) {
-      if (current >= start) {
-        dates.push(new Date(current));
-      }
-      current.setDate(current.getDate() + stepDays);
-    }
-
-    return dates;
-  }
-
-  /**
-   * Monthly/quarterly/semi_annual/annual/long_runner/custom:
-   * Iterate from seed using calculateIntervalDate until past end.
-   */
-  private generateMonthlyPlusDates(
-    plan: PlanProjectionData,
-    interval: IntervalSeed,
-    effectiveWeekday: number,
-    start: Date,
-    end: Date,
-  ): Date[] {
-    const dates: Date[] = [];
-    const seed = parseDate(interval.seedDate);
-    let current = new Date(seed);
-    current.setHours(0, 0, 0, 0);
-
-    // Safety: max iterations to prevent infinite loops
-    const maxIterations = MAX_PROJECTION_DAYS;
+    const anchor = { weekday: plan.baseWeekday, nth: plan.baseRepeatEvery };
     let iterations = 0;
 
-    while (current <= end && iterations < maxIterations) {
+    while (current <= end && iterations < MAX_PROJECTION_DAYS) {
       if (current >= start) {
         dates.push(new Date(current));
       }
-
-      // Calculate next occurrence
-      const anchor = {
-        weekday: effectiveWeekday,
-        nth: plan.baseRepeatEvery,
-      };
 
       current = this.intervalService.calculateIntervalDate(
         current,
-        interval.intervalType,
-        interval.customIntervalDays,
+        intervalType,
+        null,
         anchor,
       );
 
@@ -332,51 +257,28 @@ export class TpmScheduleProjectionService {
 // Pure helper functions (module-level, no DI)
 // ============================================================================
 
-/** Group flat DB rows into PlanProjectionData[] with deduplicated intervals */
-function groupByPlan(rows: PlanCardRow[]): PlanProjectionData[] {
-  const planMap = new Map<string, PlanProjectionData>();
-  /** Track seen interval types per plan to deduplicate */
-  const seenIntervals = new Map<string, Set<TpmIntervalType>>();
-
-  for (const row of rows) {
-    let plan = planMap.get(row.plan_uuid);
-    if (plan === undefined) {
-      plan = {
-        planUuid: row.plan_uuid.trim(),
-        planName: row.plan_name,
-        machineId: row.machine_id,
-        machineName: row.machine_name,
-        baseWeekday: row.base_weekday,
-        baseRepeatEvery: row.base_repeat_every,
-        baseTime: row.base_time,
-        bufferHours: Number(row.buffer_hours),
-        planCreatedAt:
-          typeof row.plan_created_at === 'string' ?
-            row.plan_created_at
-          : new Date(row.plan_created_at).toISOString(),
-        intervals: [],
-      };
-      planMap.set(row.plan_uuid, plan);
-      seenIntervals.set(row.plan_uuid, new Set());
-    }
-
-    const seen = seenIntervals.get(row.plan_uuid) ?? new Set<TpmIntervalType>();
-    if (!seen.has(row.interval_type)) {
-      seen.add(row.interval_type);
-
-      // Use earliest due date as seed, fallback to plan created_at
-      const seedDate = row.current_due_date ?? plan.planCreatedAt.slice(0, 10);
-
-      plan.intervals.push({
-        intervalType: row.interval_type,
-        customIntervalDays: row.custom_interval_days,
-        weekdayOverride: row.weekday_override,
-        seedDate,
-      });
-    }
-  }
-
-  return [...planMap.values()];
+/** Create a ProjectedSlot from plan data + interval type + date */
+function createSlot(
+  plan: PlanProjectionData,
+  intervalType: TpmIntervalType,
+  date: Date,
+): ProjectedSlot {
+  const { startTime, endTime } = calculateTimeWindow(
+    plan.baseTime,
+    plan.bufferHours,
+  );
+  return {
+    planUuid: plan.planUuid,
+    planName: plan.planName,
+    machineId: plan.machineId,
+    machineName: plan.machineName,
+    intervalTypes: [intervalType],
+    date: formatDate(date),
+    startTime,
+    endTime,
+    bufferHours: plan.bufferHours,
+    isFullDay: plan.baseTime === null,
+  };
 }
 
 /**
