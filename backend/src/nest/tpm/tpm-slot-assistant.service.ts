@@ -1,13 +1,12 @@
 /**
  * TPM Slot Availability Assistant
  *
- * Combines 5 data sources to determine when a machine is available
+ * Combines 4 data sources to determine when a machine is available
  * for maintenance scheduling:
  *   1. shift_plans — E15: shift plan must exist for the period
- *   2. machine_availability — planned downtime (maintenance, repair, etc.)
- *   3. tpm_cards — already scheduled TPM due dates
- *   4. user_availability — team member vacation/sick status
- *   5. tpm_schedule — projected schedules from other plans (cross-plan conflicts)
+ *   2. tpm_cards — already scheduled TPM due dates
+ *   3. user_availability — team member vacation/sick status
+ *   4. tpm_schedule — projected schedules from other plans (cross-plan conflicts)
  *
  * All methods are read-only. Uses DatabaseService directly to avoid
  * cross-module coupling (no ShiftsModule/MachinesModule/UsersModule imports).
@@ -30,7 +29,6 @@ import type { ProjectedSlot } from './tpm.types.js';
 /** Types of scheduling conflicts */
 export type SlotConflictType =
   | 'no_shift_plan'
-  | 'machine_downtime'
   | 'existing_tpm'
   | 'tpm_schedule';
 
@@ -105,13 +103,6 @@ interface ShiftPlanCountRow {
   count: string;
 }
 
-interface MachineDowntimeRow {
-  status: string;
-  start_date: string;
-  end_date: string;
-  reason: string | null;
-}
-
 interface TpmDueDateRow {
   current_due_date: string;
   card_code: string;
@@ -159,7 +150,7 @@ export class TpmSlotAssistantService {
 
   /**
    * Get per-day availability for a machine over a date range.
-   * Combines shift plan (E15), machine downtime, and existing TPM slots.
+   * Combines shift plan (E15), existing TPM slots, and projected schedules.
    * When shiftPlanRequired=false, missing shift plans are not flagged as conflicts.
    */
   async getAvailableSlots(
@@ -176,19 +167,16 @@ export class TpmSlotAssistantService {
       );
     }
 
-    // Batch-fetch all 4 data sources for the full range
-    const [shiftCoverageDates, downtimes, tpmDueDates, projection] =
-      await Promise.all([
-        shiftPlanRequired ?
-          this.fetchShiftCoverageDates(tenantId, machineId, startDate, endDate)
-        : Promise.resolve(new Set<string>()),
-        this.fetchMachineDowntimes(tenantId, machineId, startDate, endDate),
-        this.fetchExistingTpmDueDates(tenantId, machineId, startDate, endDate),
-        this.scheduleProjection.projectSchedules(tenantId, startDate, endDate),
-      ]);
+    // Batch-fetch all 3 data sources for the full range
+    const [shiftCoverageDates, tpmDueDates, projection] = await Promise.all([
+      shiftPlanRequired ?
+        this.fetchShiftCoverageDates(tenantId, machineId, startDate, endDate)
+      : Promise.resolve(new Set<string>()),
+      this.fetchExistingTpmDueDates(tenantId, machineId, startDate, endDate),
+      this.scheduleProjection.projectSchedules(tenantId, startDate, endDate),
+    ]);
 
     // Build per-day conflict map
-    const downtimeSet = buildDateOverlapSet(downtimes, days);
     const tpmDateSet = new Set(
       tpmDueDates.map((r: TpmDueDateRow) => r.current_due_date),
     );
@@ -205,7 +193,6 @@ export class TpmSlotAssistantService {
         date,
         shiftPlanRequired,
         shiftCoverageDates,
-        downtimeSet,
         tpmDueDates,
         tpmDateSet,
         scheduleMap,
@@ -236,9 +223,8 @@ export class TpmSlotAssistantService {
     date: string,
     shiftPlanRequired: boolean = true,
   ): Promise<SlotCheckResult> {
-    const [hasShiftPlan, downtimes, tpmDueDates] = await Promise.all([
+    const [hasShiftPlan, tpmDueDates] = await Promise.all([
       this.hasShiftPlan(tenantId, machineId, date, date),
-      this.fetchMachineDowntimes(tenantId, machineId, date, date),
       this.fetchExistingTpmDueDates(tenantId, machineId, date, date),
     ]);
 
@@ -248,16 +234,6 @@ export class TpmSlotAssistantService {
       conflicts.push({
         type: 'no_shift_plan',
         description: 'Kein Schichtplan für dieses Datum (E15)',
-      });
-    }
-
-    for (const dt of downtimes) {
-      conflicts.push({
-        type: 'machine_downtime',
-        description:
-          dt.reason === null ?
-            `Maschine ${dt.status}`
-          : `Maschine ${dt.status}: ${dt.reason}`,
       });
     }
 
@@ -499,27 +475,7 @@ export class TpmSlotAssistantService {
     return Number.parseInt(row?.count ?? '0', 10) > 0;
   }
 
-  /** Data source 2: Fetch machine downtime entries overlapping the range */
-  private async fetchMachineDowntimes(
-    tenantId: number,
-    machineId: number,
-    startDate: string,
-    endDate: string,
-  ): Promise<MachineDowntimeRow[]> {
-    return await this.db.query<MachineDowntimeRow>(
-      `SELECT status, start_date::text, end_date::text, reason
-       FROM machine_availability
-       WHERE machine_id = $1
-         AND tenant_id = $2
-         AND start_date <= $4::date
-         AND end_date >= $3::date
-         AND status != 'operational'
-       ORDER BY start_date ASC`,
-      [machineId, tenantId, startDate, endDate],
-    );
-  }
-
-  /** Data source 3: Fetch existing TPM cards with due dates in the range */
+  /** Data source 2: Fetch existing TPM cards with due dates in the range */
   private async fetchExistingTpmDueDates(
     tenantId: number,
     machineId: number,
@@ -539,7 +495,7 @@ export class TpmSlotAssistantService {
     );
   }
 
-  /** Data source 4: Fetch team members for a given team */
+  /** Data source 3: Fetch team members for a given team */
   private async fetchTeamMembers(
     tenantId: number,
     teamId: number,
@@ -587,7 +543,7 @@ export class TpmSlotAssistantService {
     return result;
   }
 
-  /** Data source 5: Fetch teams assigned to a machine via machine_teams */
+  /** Data source 4: Fetch teams assigned to a machine via machine_teams */
   private async fetchMachineTeams(
     tenantId: number,
     machineId: number,
@@ -624,36 +580,6 @@ function generateDateRange(startDate: string, endDate: string): string[] {
   return dates;
 }
 
-/**
- * Build a Map<dateString, downtimeRow> for quick per-day lookup.
- * A downtime entry spans multiple days — expand it to cover each day.
- */
-function buildDateOverlapSet(
-  downtimes: MachineDowntimeRow[],
-  days: string[],
-): Map<string, MachineDowntimeRow> {
-  const daySet = new Set(days);
-  const result = new Map<string, MachineDowntimeRow>();
-
-  for (const dt of downtimes) {
-    const dtStart = new Date(dt.start_date);
-    const dtEnd = new Date(dt.end_date);
-    dtStart.setHours(0, 0, 0, 0);
-    dtEnd.setHours(0, 0, 0, 0);
-
-    const cursor = new Date(dtStart);
-    while (cursor <= dtEnd) {
-      const dateStr = cursor.toISOString().slice(0, 10);
-      if (daySet.has(dateStr) && !result.has(dateStr)) {
-        result.set(dateStr, dt);
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
-  }
-
-  return result;
-}
-
 /** Merge team members across multiple teams, deduplicate by userId */
 function dedupeTeamMembers(
   teamResults: TeamAvailabilityResult[],
@@ -676,7 +602,6 @@ function buildDayConflicts(
   date: string,
   shiftPlanRequired: boolean,
   shiftCoverageDates: Set<string>,
-  downtimeSet: Map<string, MachineDowntimeRow>,
   tpmDueDates: TpmDueDateRow[],
   tpmDateSet: Set<string>,
   scheduleMap: Map<string, ProjectedSlot[]> = new Map<
@@ -693,27 +618,10 @@ function buildDayConflicts(
     });
   }
 
-  collectDowntimeConflicts(conflicts, downtimeSet.get(date));
   collectTpmDueDateConflicts(conflicts, date, tpmDueDates, tpmDateSet);
   collectScheduleConflicts(conflicts, scheduleMap.get(date));
 
   return { date, isAvailable: conflicts.length === 0, conflicts };
-}
-
-/** Append machine downtime conflict if present */
-function collectDowntimeConflicts(
-  conflicts: SlotConflict[],
-  downtime: MachineDowntimeRow | undefined,
-): void {
-  if (downtime === undefined) return;
-
-  conflicts.push({
-    type: 'machine_downtime',
-    description:
-      downtime.reason === null ?
-        `Maschine ${downtime.status}`
-      : `Maschine ${downtime.status}: ${downtime.reason}`,
-  });
 }
 
 /** Append existing TPM due date conflicts for this date */
@@ -786,10 +694,10 @@ function buildScheduleMap(
     if (slot.machineId === excludeMachineId) continue;
 
     const existing = map.get(slot.date);
-    if (existing !== undefined) {
-      existing.push(slot);
-    } else {
+    if (existing === undefined) {
       map.set(slot.date, [slot]);
+    } else {
+      existing.push(slot);
     }
   }
 

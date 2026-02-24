@@ -210,7 +210,6 @@ export const MESSAGES = {
   SLOT_UNAVAILABLE: 'Belegt',
   SLOT_SCHEDULED: 'Geplanter TPM-Termin',
   SLOT_NO_SHIFT: 'Kein Schichtplan',
-  SLOT_DOWNTIME: 'Maschinenstillstand',
   SLOT_TPM_EXISTING: 'Bestehende Wartung',
   SLOT_TPM_SCHEDULE: 'Geplante Wartung',
   SLOT_LOADING: 'Verfügbarkeit wird geprüft...',

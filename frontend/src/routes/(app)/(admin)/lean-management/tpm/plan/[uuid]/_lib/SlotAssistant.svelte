@@ -204,7 +204,6 @@
 
   function getConflictLabel(type: string): string {
     if (type === 'no_shift_plan') return MESSAGES.SLOT_NO_SHIFT;
-    if (type === 'machine_downtime') return MESSAGES.SLOT_DOWNTIME;
     if (type === 'existing_tpm') return MESSAGES.SLOT_TPM_EXISTING;
     if (type === 'tpm_schedule') return MESSAGES.SLOT_TPM_SCHEDULE;
     return type;
@@ -212,7 +211,6 @@
 
   function getConflictIcon(type: string): string {
     if (type === 'no_shift_plan') return 'fa-calendar-xmark';
-    if (type === 'machine_downtime') return 'fa-wrench';
     if (type === 'existing_tpm') return 'fa-clipboard-check';
     if (type === 'tpm_schedule') return 'fa-clock';
     return 'fa-exclamation';
@@ -620,13 +618,12 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    padding: 0.5rem 0.25rem;
+    padding: 0.3rem 0.25rem;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition:
       opacity 0.15s,
       box-shadow 0.15s;
-    min-height: 60px;
   }
 
   .slot-day:hover {

@@ -200,7 +200,6 @@ export interface TpmDepartment {
 /** Conflict type from slot assistant */
 export type SlotConflictType =
   | 'no_shift_plan'
-  | 'machine_downtime'
   | 'existing_tpm'
   | 'tpm_schedule';
 
