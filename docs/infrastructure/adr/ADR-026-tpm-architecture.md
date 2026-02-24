@@ -2,10 +2,10 @@
 
 | Metadata                | Value                                                                                                                           |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted (Updated 2026-02-22)                                                                                                   |
+| **Status**              | Accepted (Updated 2026-02-24)                                                                                                   |
 | **Date**                | 2026-02-19                                                                                                                      |
 | **Decision Makers**     | SCS-Technik Team                                                                                                                |
-| **Affected Components** | PostgreSQL (4 migrations, 9 tables), Backend (NestJS TPM module, 30+ files), Frontend (SvelteKit, 20+ files)                    |
+| **Affected Components** | PostgreSQL (5 migrations, 9 tables), Backend (NestJS TPM module, 35+ files), Frontend (SvelteKit, 25+ files)                    |
 | **Supersedes**          | ---                                                                                                                             |
 | **Related ADRs**        | ADR-003 (SSE), ADR-004 (Notifications), ADR-009 (Audit Logging), ADR-019 (RLS), ADR-020 (Permissions), ADR-024 (Feature Guards) |
 
@@ -103,9 +103,17 @@ SlotAssistant(machineId, startDate, endDate)
   ├── Query 1: Shift plan data (who's working when?)
   ├── Query 2: Machine availability (when is machine free?)
   ├── Query 3: User availability (who's available?)
-  └── Query 4: Existing TPM cards (what's already scheduled?)
+  ├── Query 4: Existing TPM cards (what's already scheduled?)
+  └── Query 5: Schedule Projection (cross-plan projected maintenance windows)
   → Merge & score → Return ranked available slots
 ```
+
+**Data Source 5 — Schedule Projection (`tpm_schedule`):**
+
+- Added in Schedule Projection feature (see Section 10)
+- `TpmScheduleProjectionService.projectSchedules()` provides projected future maintenance dates for all active plans
+- Conflict type `tpm_schedule` shows cross-plan time window conflicts (e.g. "TPM Plan X (Maschine A): 09:00–14:00")
+- Distinct from `existing_tpm` (Query 4) which shows only fällige red/overdue cards
 
 **Why direct DB queries instead of service imports?**
 
@@ -134,13 +142,14 @@ backend/src/nest/tpm/
 │   ├── tpm-cards.service.ts         # Card CRUD + pagination
 │   ├── tpm-executions.service.ts    # Execution lifecycle + photos + history
 │   └── tpm-approval.service.ts      # Approve/reject + history bridge
-├── Support Services (6):
-│   ├── tpm-plans-interval.service.ts # Interval calculation
-│   ├── tpm-card-status.service.ts    # Status transitions
-│   ├── tpm-card-cascade.service.ts   # Generate cards from plans
-│   ├── tpm-card-duplicate.service.ts # Duplicate detection
-│   ├── tpm-slot-assistant.service.ts # Slot availability
-│   └── tpm-escalation.service.ts     # Cron-based escalation
+├── Support Services (7):
+│   ├── tpm-plans-interval.service.ts       # Interval calculation
+│   ├── tpm-card-status.service.ts          # Status transitions
+│   ├── tpm-card-cascade.service.ts         # Generate cards from plans
+│   ├── tpm-card-duplicate.service.ts       # Duplicate detection
+│   ├── tpm-slot-assistant.service.ts       # Slot availability (5 data sources)
+│   ├── tpm-schedule-projection.service.ts  # Cross-plan schedule projection
+│   └── tpm-escalation.service.ts           # Cron-based escalation
 ├── Integration Services (2):
 │   ├── tpm-notification.service.ts   # SSE + persistent notifications
 │   └── tpm-dashboard.service.ts      # Unread count for badge
@@ -148,9 +157,9 @@ backend/src/nest/tpm/
 │   ├── tpm-time-estimates.service.ts
 │   ├── tpm-templates.service.ts
 │   └── tpm-color-config.service.ts
-├── DTOs (13 files)
+├── DTOs (14 files)
 ├── Helpers (3 files)
-└── Tests (6 files, 364 tests)
+└── Tests (7 files, 397 tests)
 ```
 
 ### 5. Integration Points
@@ -166,14 +175,15 @@ backend/src/nest/tpm/
 | Feature Gating                   | ADR-024 tenant-level feature flag         | Active   |
 | Execution History                | SSR page per card with lazy photo loading | Active   |
 | Photo Upload (Staged)            | Client-side staging → sequential upload   | Active   |
+| Schedule Projection              | Cross-plan time window conflict detection | Active   |
 | Machine Availability Auto-Status | Infrastructure ready (V2 wiring)          | Deferred |
 
 ### 6. Database Schema
 
-4 migrations, 9 core tables:
+5 migrations, 9 core tables:
 
 ```
-tpm_plans                  — maintenance plan definitions
+tpm_plans                  — maintenance plan definitions (+buffer_hours NUMERIC(4,1) for time windows)
 tpm_cards                  — individual maintenance cards (generated from plans)
 tpm_card_executions        — execution records (employee marks card as done)
 tpm_card_execution_photos  — photo attachments per execution (max 5)
@@ -288,6 +298,45 @@ The cards controller (`tpm-cards.controller.ts`) includes the execution history 
 
 **Route Note:** `check-duplicate` and `:uuid/executions` are defined before `:uuid` to prevent NestJS from matching path segments as UUID parameters. The `/executions` sub-resource endpoint reuses `TpmExecutionsService.listExecutionsForCard()` — the service method existed before the controller endpoint was added.
 
+### 10. Schedule Projection (Cross-Plan Conflict Detection)
+
+**Problem:** When creating/editing a TPM plan, admins couldn't see which time windows were already occupied by other plans across all machines. This led to resource conflicts (same team scheduled for overlapping maintenance windows).
+
+**Solution:** `TpmScheduleProjectionService` — a read-only projection engine that calculates future maintenance dates for all active plans within a configurable date range (0–365 days).
+
+```
+GET /tpm/plans/schedule-projection?startDate=2026-03-01&endDate=2026-03-31&excludePlanUuid=...
+
+TpmScheduleProjectionService.projectSchedules(tenantId, startDate, endDate, excludePlanUuid?)
+  1. Load all active plans + cards via single DB JOIN query
+  2. Group cards by plan (planUuid → PlanCardRow[])
+  3. For each plan + card: generate dates using interval logic
+     ├── Daily: every day in range (pure date arithmetic)
+     ├── Weekly: weekday match + bi-weekly seed phase via createdAt
+     └── Monthly+: delegates to TpmPlansIntervalService.calculateIntervalDate()
+  4. Deduplicate same plan+date (merge interval types)
+  5. Calculate time windows: base_time + buffer_hours → startTime/endTime
+  6. Sort by date → startTime → planName
+  → Returns ScheduleProjectionResult { slots[], dateRange, totalSlots, planCount }
+```
+
+**Key Design Decisions:**
+
+- **Computation, not storage:** Dates are calculated at request time, not stored in DB. Deterministic: same input → same output.
+- **Single DB query:** One JOIN across `tpm_maintenance_plans` + `tpm_cards` + `machines`. All date generation is CPU-side.
+- **`excludePlanUuid`:** When editing a plan, excludes that plan from projection to avoid self-conflict.
+- **`buffer_hours`:** `NUMERIC(4,1)`, range 0.5–24, step 0.5. Defines time window duration: `base_time + buffer_hours = endTime`. Plans without `base_time` → `isFullDay: true`.
+- **Midnight wrap:** `calculateTimeWindow` handles `(22:00 + 4h) % 24 = 02:00` correctly.
+
+**Frontend Integration:**
+
+- `SlotAssistant.svelte`: Calendar grid with day-click → `TimelineDayView.svelte`
+- `TimelineDayView.svelte`: Horizontal timeline (06:00–22:00) showing plan blocks + free gaps
+- Range selector: 30/60/90/180/365 days (default 90)
+- `tpm_schedule` conflict type shown in Slot Assistant tooltips
+
+**Testing:** 20 unit tests (mocked DB) + 13 API integration tests (real HTTP)
+
 ---
 
 ## Alternatives Considered
@@ -314,7 +363,7 @@ The cards controller (`tpm-cards.controller.ts`) includes the execution history 
 ### Positive
 
 - **Self-contained module**: 30+ files, 0 cross-module service imports (only DatabaseService + ActivityLoggerService)
-- **Comprehensive testing**: 3845 tests (unit + API) covering all services
+- **Comprehensive testing**: 3875+ tests (unit + API) covering all services
 - **Real-time updates**: SSE notifications for all lifecycle events
 - **Configurable**: Per-tenant escalation threshold, colors, templates, time estimates
 - **Shift planning integration**: TPM dates visible in shift grid via frontend calculation
@@ -333,6 +382,7 @@ The cards controller (`tpm-cards.controller.ts`) includes the execution history 
 ## References
 
 - [TPM Masterplan](../../FEAT_TPM_MASTERPLAN.md) — Full execution plan with 29 sessions
+- [Schedule Projection Masterplan](../../FEAT_TPM_SCHEDULE_PROJECTION_MASTERPLAN.md) — Schedule Projection sub-feature (8 sessions)
 - [ADR-003](./ADR-003-notification-system.md) — SSE notification pattern
 - [ADR-004](./ADR-004-persistent-notification-counts.md) — Persistent notification counts
 - [ADR-009](./ADR-009-central-audit-logging.md) — Central audit logging

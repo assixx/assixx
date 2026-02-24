@@ -38,6 +38,7 @@ export interface TpmPlan {
   baseWeekday: number;
   baseRepeatEvery: number;
   baseTime: string | null;
+  bufferHours: number;
   shiftPlanRequired: boolean;
   notes: string | null;
   createdBy: number;
@@ -191,7 +192,8 @@ export interface TpmDepartment {
 export type SlotConflictType =
   | 'no_shift_plan'
   | 'machine_downtime'
-  | 'existing_tpm';
+  | 'existing_tpm'
+  | 'tpm_schedule';
 
 /** Single conflict description */
 export interface SlotConflict {
@@ -260,6 +262,7 @@ export interface CreatePlanPayload {
   baseWeekday: number;
   baseRepeatEvery: number;
   baseTime: string | null;
+  bufferHours: number;
   shiftPlanRequired: boolean;
   notes: string | null;
 }
@@ -270,6 +273,7 @@ export interface UpdatePlanPayload {
   baseWeekday?: number;
   baseRepeatEvery?: number;
   baseTime?: string | null;
+  bufferHours?: number;
   shiftPlanRequired?: boolean;
   notes?: string | null;
 }
@@ -362,6 +366,31 @@ export interface UpdateTemplatePayload {
   description?: string | null;
   defaultFields?: Record<string, unknown>;
   isDefault?: boolean;
+}
+
+// =============================================================================
+// SCHEDULE PROJECTION
+// =============================================================================
+
+/** A projected TPM maintenance slot (computed, not stored in DB) */
+export interface ProjectedSlot {
+  planUuid: string;
+  planName: string;
+  machineId: number;
+  machineName: string;
+  intervalTypes: IntervalType[];
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  bufferHours: number;
+  isFullDay: boolean;
+}
+
+/** Result of a schedule projection across all active plans */
+export interface ScheduleProjectionResult {
+  slots: ProjectedSlot[];
+  dateRange: { start: string; end: string };
+  planCount: number;
 }
 
 // =============================================================================

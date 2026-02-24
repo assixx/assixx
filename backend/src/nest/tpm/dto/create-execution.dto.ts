@@ -11,8 +11,10 @@ import { z } from 'zod';
 
 export const CreateExecutionSchema = z.object({
   cardUuid: z.uuid(),
-  executionDate: z
-    .iso.date({ error: 'Ausführungsdatum muss ein gültiges Datum sein (YYYY-MM-DD)' })
+  executionDate: z.iso
+    .date({
+      error: 'Ausführungsdatum muss ein gültiges Datum sein (YYYY-MM-DD)',
+    })
     .optional(),
   noIssuesFound: z.boolean().default(false),
   actualDurationMinutes: z

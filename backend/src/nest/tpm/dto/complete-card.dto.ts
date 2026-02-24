@@ -12,8 +12,10 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const CompleteCardSchema = z.object({
-  executionDate: z
-    .iso.date({ error: 'Ausführungsdatum muss ein gültiges Datum sein (YYYY-MM-DD)' })
+  executionDate: z.iso
+    .date({
+      error: 'Ausführungsdatum muss ein gültiges Datum sein (YYYY-MM-DD)',
+    })
     .optional(),
   noIssuesFound: z.boolean().default(false),
   actualDurationMinutes: z

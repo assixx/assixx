@@ -1,19 +1,27 @@
 /**
  * TPM Slot Availability Assistant
  *
- * Combines 4 data sources to determine when a machine is available
+ * Combines 5 data sources to determine when a machine is available
  * for maintenance scheduling:
  *   1. shift_plans — E15: shift plan must exist for the period
  *   2. machine_availability — planned downtime (maintenance, repair, etc.)
  *   3. tpm_cards — already scheduled TPM due dates
  *   4. user_availability — team member vacation/sick status
+ *   5. tpm_schedule — projected schedules from other plans (cross-plan conflicts)
  *
  * All methods are read-only. Uses DatabaseService directly to avoid
  * cross-module coupling (no ShiftsModule/MachinesModule/UsersModule imports).
  */
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
+import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
+import type { ProjectedSlot } from './tpm.types.js';
 
 // ============================================================================
 // Exported Types
@@ -23,7 +31,8 @@ import { DatabaseService } from '../database/database.service.js';
 export type SlotConflictType =
   | 'no_shift_plan'
   | 'machine_downtime'
-  | 'existing_tpm';
+  | 'existing_tpm'
+  | 'tpm_schedule';
 
 /** A single scheduling conflict */
 export interface SlotConflict {
@@ -133,7 +142,10 @@ const MAX_RANGE_DAYS = 90;
 export class TpmSlotAssistantService {
   private readonly logger = new Logger(TpmSlotAssistantService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly scheduleProjection: TpmScheduleProjectionService,
+  ) {}
 
   // ============================================================================
   // PUBLIC METHODS
@@ -158,18 +170,23 @@ export class TpmSlotAssistantService {
       );
     }
 
-    // Batch-fetch all 3 data sources for the full range
-    const [shiftPlanExists, downtimes, tpmDueDates] = await Promise.all([
-      this.hasShiftPlan(tenantId, machineId, startDate, endDate),
-      this.fetchMachineDowntimes(tenantId, machineId, startDate, endDate),
-      this.fetchExistingTpmDueDates(tenantId, machineId, startDate, endDate),
-    ]);
+    // Batch-fetch all 4 data sources for the full range
+    const [shiftPlanExists, downtimes, tpmDueDates, projection] =
+      await Promise.all([
+        this.hasShiftPlan(tenantId, machineId, startDate, endDate),
+        this.fetchMachineDowntimes(tenantId, machineId, startDate, endDate),
+        this.fetchExistingTpmDueDates(tenantId, machineId, startDate, endDate),
+        this.scheduleProjection.projectSchedules(tenantId, startDate, endDate),
+      ]);
 
     // Build per-day conflict map
     const downtimeSet = buildDateOverlapSet(downtimes, days);
     const tpmDateSet = new Set(
       tpmDueDates.map((r: TpmDueDateRow) => r.current_due_date),
     );
+
+    // Build projected schedule map (exclude current machine — no self-conflict)
+    const scheduleMap = buildScheduleMap(projection.slots, machineId);
 
     this.logger.debug(
       `Slot-Abfrage: Maschine ${machineId}, ${startDate} bis ${endDate} (${days.length} Tage)`,
@@ -182,6 +199,7 @@ export class TpmSlotAssistantService {
         downtimeSet,
         tpmDueDates,
         tpmDateSet,
+        scheduleMap,
       ),
     );
     const availableDays = dayResults.filter(
@@ -361,6 +379,25 @@ export class TpmSlotAssistantService {
       availableCount,
       totalCount: members.length,
     };
+  }
+
+  /**
+   * Resolve machine UUID to numeric ID (D11: direct DB query, no MachinesModule import).
+   * Used by the create-mode endpoint where no plan UUID exists yet.
+   */
+  async resolveMachineIdByUuid(
+    tenantId: number,
+    machineUuid: string,
+  ): Promise<number> {
+    const row = await this.db.queryOne<{ id: number }>(
+      `SELECT id FROM machines
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      [machineUuid, tenantId],
+    );
+    if (row === null) {
+      throw new NotFoundException(`Maschine ${machineUuid} nicht gefunden`);
+    }
+    return row.id;
   }
 
   // ============================================================================
@@ -589,6 +626,10 @@ function buildDayConflicts(
   downtimeSet: Map<string, MachineDowntimeRow>,
   tpmDueDates: TpmDueDateRow[],
   tpmDateSet: Set<string>,
+  scheduleMap: Map<string, ProjectedSlot[]> = new Map<
+    string,
+    ProjectedSlot[]
+  >(),
 ): DayAvailability {
   const conflicts: SlotConflict[] = [];
 
@@ -599,27 +640,89 @@ function buildDayConflicts(
     });
   }
 
-  const downtime = downtimeSet.get(date);
-  if (downtime !== undefined) {
+  collectDowntimeConflicts(conflicts, downtimeSet.get(date));
+  collectTpmDueDateConflicts(conflicts, date, tpmDueDates, tpmDateSet);
+  collectScheduleConflicts(conflicts, scheduleMap.get(date));
+
+  return { date, isAvailable: conflicts.length === 0, conflicts };
+}
+
+/** Append machine downtime conflict if present */
+function collectDowntimeConflicts(
+  conflicts: SlotConflict[],
+  downtime: MachineDowntimeRow | undefined,
+): void {
+  if (downtime === undefined) return;
+
+  conflicts.push({
+    type: 'machine_downtime',
+    description:
+      downtime.reason === null ?
+        `Maschine ${downtime.status}`
+      : `Maschine ${downtime.status}: ${downtime.reason}`,
+  });
+}
+
+/** Append existing TPM due date conflicts for this date */
+function collectTpmDueDateConflicts(
+  conflicts: SlotConflict[],
+  date: string,
+  tpmDueDates: TpmDueDateRow[],
+  tpmDateSet: Set<string>,
+): void {
+  if (!tpmDateSet.has(date)) return;
+
+  for (const card of tpmDueDates) {
+    if (card.current_due_date === date) {
+      conflicts.push({
+        type: 'existing_tpm',
+        description: `TPM-Karte ${card.card_code} fällig: ${card.title}`,
+      });
+    }
+  }
+}
+
+/** Append projected schedule conflicts for this date */
+function collectScheduleConflicts(
+  conflicts: SlotConflict[],
+  scheduledSlots: ProjectedSlot[] | undefined,
+): void {
+  if (scheduledSlots === undefined) return;
+
+  for (const slot of scheduledSlots) {
+    const intervals = slot.intervalTypes.join(', ');
+    const timeRange =
+      slot.startTime !== null && slot.endTime !== null ?
+        `${slot.startTime}–${slot.endTime}`
+      : 'Ganztägig';
+
     conflicts.push({
-      type: 'machine_downtime',
-      description:
-        downtime.reason === null ?
-          `Maschine ${downtime.status}`
-        : `Maschine ${downtime.status}: ${downtime.reason}`,
+      type: 'tpm_schedule',
+      description: `TPM Plan '${slot.planName}' (${slot.machineName}, ${intervals}): ${timeRange}`,
     });
   }
+}
 
-  if (tpmDateSet.has(date)) {
-    for (const card of tpmDueDates) {
-      if (card.current_due_date === date) {
-        conflicts.push({
-          type: 'existing_tpm',
-          description: `TPM-Karte ${card.card_code} fällig: ${card.title}`,
-        });
-      }
+/**
+ * Build a Map<date, ProjectedSlot[]> from projected slots, excluding a specific machine.
+ * Excludes the current machine to avoid self-conflict (this machine's own plan).
+ */
+function buildScheduleMap(
+  slots: ProjectedSlot[],
+  excludeMachineId: number,
+): Map<string, ProjectedSlot[]> {
+  const map = new Map<string, ProjectedSlot[]>();
+
+  for (const slot of slots) {
+    if (slot.machineId === excludeMachineId) continue;
+
+    const existing = map.get(slot.date);
+    if (existing !== undefined) {
+      existing.push(slot);
+    } else {
+      map.set(slot.date, [slot]);
     }
   }
 
-  return { date, isAvailable: conflicts.length === 0, conflicts };
+  return map;
 }

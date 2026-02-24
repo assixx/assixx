@@ -28,6 +28,7 @@ import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmPlansController } from './tpm-plans.controller.js';
 import { TpmPlansService } from './tpm-plans.service.js';
+import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTemplatesService } from './tpm-templates.service.js';
@@ -65,6 +66,9 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     // Slot availability (Session 10)
     TpmSlotAssistantService,
 
+    // Schedule projection (Session 32)
+    TpmScheduleProjectionService,
+
     // Executions + Approval (Session 11)
     TpmExecutionsService,
     TpmApprovalService,
@@ -91,6 +95,7 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmCardCascadeService,
     TpmCardDuplicateService,
     TpmSlotAssistantService,
+    TpmScheduleProjectionService,
     TpmExecutionsService,
     TpmApprovalService,
     TpmNotificationService,

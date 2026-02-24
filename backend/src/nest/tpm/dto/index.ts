@@ -65,6 +65,10 @@ export {
   ListPlansQueryDto,
   ListPlansQuerySchema,
 } from './list-plans-query.dto.js';
+export {
+  MachineSlotsQueryDto,
+  MachineSlotsQuerySchema,
+} from './machine-slots-query.dto.js';
 
 // Common schemas (for reuse in services/controllers/tests)
 export {

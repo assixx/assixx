@@ -1,19 +1,21 @@
 /**
  * Unit tests for TpmSlotAssistantService
  *
- * Mocked dependencies: DatabaseService (query, queryOne, generateInPlaceholders).
- * Tests: getAvailableSlots (4 data sources combined, MAX_RANGE_DAYS validation,
+ * Mocked dependencies: DatabaseService, TpmScheduleProjectionService.
+ * Tests: getAvailableSlots (5 data sources combined, MAX_RANGE_DAYS validation,
  * per-day conflict resolution), checkSlotAvailability (single-date check),
  * getTeamAvailability (team members + unavailability lookup),
  * validateShiftPlanExists (E15 validation).
  *
  * All methods are read-only (no mutations).
  */
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
+import type { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
+import type { ProjectedSlot, ScheduleProjectionResult } from './tpm.types.js';
 
 // =============================================================
 // Mock factories
@@ -31,6 +33,42 @@ function createMockDb() {
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
+function createMockProjection() {
+  return {
+    projectSchedules: vi.fn(),
+  };
+}
+type MockProjection = ReturnType<typeof createMockProjection>;
+
+/** Helper: create an empty projection result */
+function emptyProjection(
+  startDate: string,
+  endDate: string,
+): ScheduleProjectionResult {
+  return {
+    slots: [],
+    dateRange: { start: startDate, end: endDate },
+    planCount: 0,
+  };
+}
+
+/** Helper: create a projected slot */
+function makeSlot(overrides: Partial<ProjectedSlot> = {}): ProjectedSlot {
+  return {
+    planUuid: 'plan-uuid-other',
+    planName: 'Plan X',
+    machineId: 99,
+    machineName: 'Maschine X',
+    intervalTypes: ['weekly'],
+    date: '2026-03-01',
+    startTime: '09:00',
+    endTime: '14:00',
+    bufferHours: 5,
+    isFullDay: false,
+    ...overrides,
+  };
+}
+
 // =============================================================
 // TpmSlotAssistantService
 // =============================================================
@@ -38,12 +76,17 @@ type MockDb = ReturnType<typeof createMockDb>;
 describe('TpmSlotAssistantService', () => {
   let service: TpmSlotAssistantService;
   let mockDb: MockDb;
+  let mockProjection: MockProjection;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
+    mockProjection = createMockProjection();
 
-    service = new TpmSlotAssistantService(mockDb as unknown as DatabaseService);
+    service = new TpmSlotAssistantService(
+      mockDb as unknown as DatabaseService,
+      mockProjection as unknown as TpmScheduleProjectionService,
+    );
   });
 
   // =============================================================
@@ -58,6 +101,10 @@ describe('TpmSlotAssistantService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
+      // scheduleProjection → empty
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-01', '2026-03-03'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -79,6 +126,9 @@ describe('TpmSlotAssistantService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-01', '2026-03-01'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -97,6 +147,9 @@ describe('TpmSlotAssistantService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-01', '2026-03-01'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -125,6 +178,10 @@ describe('TpmSlotAssistantService', () => {
       ]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
+      // scheduleProjection → empty
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-01', '2026-03-01'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -154,6 +211,10 @@ describe('TpmSlotAssistantService', () => {
           title: 'Sichtprüfung',
         },
       ]);
+      // scheduleProjection → empty
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-01', '2026-03-03'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -180,6 +241,9 @@ describe('TpmSlotAssistantService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-15', '2026-03-15'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -213,6 +277,10 @@ describe('TpmSlotAssistantService', () => {
           title: 'Ölwechsel',
         },
       ]);
+      // scheduleProjection → empty
+      mockProjection.projectSchedules.mockResolvedValueOnce(
+        emptyProjection('2026-03-01', '2026-03-01'),
+      );
 
       const result = await service.getAvailableSlots(
         10,
@@ -226,6 +294,155 @@ describe('TpmSlotAssistantService', () => {
       expect(types).toContain('no_shift_plan');
       expect(types).toContain('machine_downtime');
       expect(types).toContain('existing_tpm');
+    });
+
+    // =========================================================
+    // tpm_schedule conflict tests
+    // =========================================================
+
+    it('should detect tpm_schedule conflicts from other machines', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // Projected slot from a DIFFERENT machine (99 != 42)
+      mockProjection.projectSchedules.mockResolvedValueOnce({
+        slots: [makeSlot({ date: '2026-03-01', machineId: 99 })],
+        dateRange: { start: '2026-03-01', end: '2026-03-01' },
+        planCount: 1,
+      });
+
+      const result = await service.getAvailableSlots(
+        10,
+        42,
+        '2026-03-01',
+        '2026-03-01',
+      );
+
+      expect(result.availableDays).toBe(0);
+      const conflict = result.days[0]?.conflicts.find(
+        (c) => c.type === 'tpm_schedule',
+      );
+      expect(conflict).toBeDefined();
+      expect(conflict?.description).toContain('Plan X');
+      expect(conflict?.description).toContain('Maschine X');
+      expect(conflict?.description).toContain('weekly');
+      expect(conflict?.description).toContain('09:00');
+    });
+
+    it('should exclude same-machine projected slots (no self-conflict)', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // Projected slot for the SAME machine (42 === 42) → should be excluded
+      mockProjection.projectSchedules.mockResolvedValueOnce({
+        slots: [makeSlot({ date: '2026-03-01', machineId: 42 })],
+        dateRange: { start: '2026-03-01', end: '2026-03-01' },
+        planCount: 1,
+      });
+
+      const result = await service.getAvailableSlots(
+        10,
+        42,
+        '2026-03-01',
+        '2026-03-01',
+      );
+
+      expect(result.availableDays).toBe(1);
+      expect(result.days[0]?.isAvailable).toBe(true);
+      expect(result.days[0]?.conflicts).toHaveLength(0);
+    });
+
+    it('should show full-day schedule conflict with Ganztägig', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockProjection.projectSchedules.mockResolvedValueOnce({
+        slots: [
+          makeSlot({
+            date: '2026-03-01',
+            machineId: 99,
+            startTime: null,
+            endTime: null,
+            isFullDay: true,
+          }),
+        ],
+        dateRange: { start: '2026-03-01', end: '2026-03-01' },
+        planCount: 1,
+      });
+
+      const result = await service.getAvailableSlots(
+        10,
+        42,
+        '2026-03-01',
+        '2026-03-01',
+      );
+
+      const conflict = result.days[0]?.conflicts.find(
+        (c) => c.type === 'tpm_schedule',
+      );
+      expect(conflict?.description).toContain('Ganztägig');
+    });
+
+    it('should handle multiple projected slots on the same day', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockProjection.projectSchedules.mockResolvedValueOnce({
+        slots: [
+          makeSlot({
+            date: '2026-03-01',
+            machineId: 99,
+            planName: 'Plan A',
+          }),
+          makeSlot({
+            date: '2026-03-01',
+            machineId: 88,
+            planName: 'Plan B',
+            machineName: 'Maschine Y',
+          }),
+        ],
+        dateRange: { start: '2026-03-01', end: '2026-03-01' },
+        planCount: 2,
+      });
+
+      const result = await service.getAvailableSlots(
+        10,
+        42,
+        '2026-03-01',
+        '2026-03-01',
+      );
+
+      const schedConflicts = result.days[0]?.conflicts.filter(
+        (c) => c.type === 'tpm_schedule',
+      );
+      expect(schedConflicts).toHaveLength(2);
+      expect(schedConflicts?.[0]?.description).toContain('Plan A');
+      expect(schedConflicts?.[1]?.description).toContain('Plan B');
+    });
+
+    it('should combine tpm_schedule with other conflict types', async () => {
+      // No shift plan
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // Schedule conflict from another machine
+      mockProjection.projectSchedules.mockResolvedValueOnce({
+        slots: [makeSlot({ date: '2026-03-01', machineId: 99 })],
+        dateRange: { start: '2026-03-01', end: '2026-03-01' },
+        planCount: 1,
+      });
+
+      const result = await service.getAvailableSlots(
+        10,
+        42,
+        '2026-03-01',
+        '2026-03-01',
+      );
+
+      const types = result.days[0]?.conflicts.map((c) => c.type);
+      expect(types).toContain('no_shift_plan');
+      expect(types).toContain('tpm_schedule');
+      expect(result.days[0]?.conflicts).toHaveLength(2);
     });
   });
 
@@ -435,6 +652,32 @@ describe('TpmSlotAssistantService', () => {
       await service.getTeamAvailability(10, 5, '2026-03-01');
 
       expect(mockDb.generateInPlaceholders).toHaveBeenCalledWith(2, 3);
+    });
+  });
+
+  // =============================================================
+  // resolveMachineIdByUuid
+  // =============================================================
+
+  describe('resolveMachineIdByUuid()', () => {
+    it('should return machine id when found', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ id: 42 });
+
+      const result = await service.resolveMachineIdByUuid(10, 'abc-uuid');
+
+      expect(result).toBe(42);
+      expect(mockDb.queryOne).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT id FROM machines'),
+        ['abc-uuid', 10],
+      );
+    });
+
+    it('should throw NotFoundException when machine not found', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.resolveMachineIdByUuid(10, 'missing-uuid'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

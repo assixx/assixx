@@ -20,6 +20,7 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
     baseWeekday: row.base_weekday,
     baseRepeatEvery: row.base_repeat_every,
     baseTime: row.base_time,
+    bufferHours: Number(row.buffer_hours),
     shiftPlanRequired: row.shift_plan_required,
     notes: row.notes,
     createdBy: row.created_by,
@@ -48,6 +49,7 @@ const PLAN_UPDATE_MAPPINGS: readonly [string, string][] = [
   ['baseWeekday', 'base_weekday'],
   ['baseRepeatEvery', 'base_repeat_every'],
   ['baseTime', 'base_time'],
+  ['bufferHours', 'buffer_hours'],
   ['shiftPlanRequired', 'shift_plan_required'],
   ['notes', 'notes'],
 ] as const;

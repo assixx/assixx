@@ -4,30 +4,55 @@
    * @module plan/[uuid]/_lib/SlotAssistant
    *
    * 7-column calendar grid showing available/busy days for a machine.
-   * Uses GET /tpm/plans/:uuid/available-slots endpoint.
-   * Only rendered in edit mode (requires existing plan UUID).
+   * Combines two data sources:
+   *   1. Slot Assistant (5-source check, max 90 days)
+   *   2. Schedule Projection (cross-plan TPM dates, max 365 days)
+   *
+   * For the first 90 days: full slot data with projection overlay.
+   * Beyond 90 days: only projected TPM schedules shown.
    */
+  import { SvelteMap } from 'svelte/reactivity';
+
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
-  import { fetchAvailableSlots, logApiError } from '../../../_lib/api';
-  import { MESSAGES } from '../../../_lib/constants';
+  import {
+    fetchAvailableSlots,
+    fetchAvailableSlotsByMachine,
+    fetchScheduleProjection,
+    logApiError,
+  } from '../../../_lib/api';
+  import { INTERVAL_LABELS, MESSAGES } from '../../../_lib/constants';
   import {
     timestampToISO,
-    FOUR_WEEKS_MS,
+    NINETY_DAYS_MS,
     MAX_RANGE_MS,
+    MAX_RANGE_365_MS,
   } from '../../../_lib/date-helpers';
+
+  import TimelineDayView from './TimelineDayView.svelte';
 
   import type {
     SlotAvailabilityResult,
+    ScheduleProjectionResult,
+    ProjectedSlot,
     DayAvailability,
+    IntervalType,
   } from '../../../_lib/types';
 
   interface Props {
-    planUuid: string;
+    planUuid?: string;
+    machineUuid?: string;
+    shiftPlanRequired?: boolean;
     cardsHref?: string;
   }
 
-  const { planUuid, cardsHref }: Props = $props();
+  const { planUuid, machineUuid, shiftPlanRequired, cardsHref }: Props =
+    $props();
+
+  const isEditMode = $derived(planUuid !== undefined && planUuid.length > 0);
+  const canFetch = $derived(
+    isEditMode || (machineUuid !== undefined && machineUuid.length > 0),
+  );
 
   // =========================================================================
   // CONSTANTS
@@ -41,21 +66,91 @@
 
   let loading = $state(false);
   let slotData = $state<SlotAvailabilityResult | null>(null);
+  let projectionData = $state<ScheduleProjectionResult | null>(null);
+  let selectedDay = $state<string | null>(null);
 
-  // Date range: default next 4 weeks (pure timestamp math, no mutable Date)
+  // Date range: default next 90 days (pure timestamp math, no mutable Date)
   const nowMs = Date.now();
   let startDate = $state(timestampToISO(nowMs));
-  let endDate = $state(timestampToISO(nowMs + FOUR_WEEKS_MS));
+  let endDate = $state(timestampToISO(nowMs + NINETY_DAYS_MS));
 
-  // Max endDate = startDate + 90 days (backend limit)
+  // Max endDate = startDate + 365 days (schedule projection limit)
   const maxEndDate = $derived(
-    timestampToISO(new Date(startDate).getTime() + MAX_RANGE_MS),
+    timestampToISO(new Date(startDate).getTime() + MAX_RANGE_365_MS),
+  );
+
+  // Slot assistant is limited to 90 days — clamp end date for that call
+  const slotEndDate = $derived.by(() => {
+    const startMs = new Date(startDate).getTime();
+    const endMs = new Date(endDate).getTime();
+    const maxSlotMs = startMs + MAX_RANGE_MS;
+    return endMs <= maxSlotMs ? endDate : timestampToISO(maxSlotMs);
+  });
+
+  // Whether the selected range exceeds the slot assistant limit
+  const rangeExceedsSlotLimit = $derived(endDate !== slotEndDate);
+
+  // Build projection lookup: date → ProjectedSlot[]
+  const projectionByDate = $derived.by(() => {
+    const map = new SvelteMap<string, ProjectedSlot[]>();
+    if (projectionData === null) return map;
+    for (const slot of projectionData.slots) {
+      const existing = map.get(slot.date);
+      if (existing !== undefined) {
+        existing.push(slot);
+      } else {
+        map.set(slot.date, [slot]);
+      }
+    }
+    return map;
+  });
+
+  // Merged calendar days: slot data + projection-only days beyond 90d
+  const calendarDays = $derived.by((): DayAvailability[] => {
+    const slotDays = slotData?.days ?? [];
+    if (!rangeExceedsSlotLimit) return slotDays;
+
+    // All dates covered by slot data
+    const coveredDates = new Set(slotDays.map((d: DayAvailability) => d.date));
+
+    // Generate days beyond slot range from projection data
+    const extraDays: DayAvailability[] = [];
+    const endMs = new Date(endDate).getTime();
+    let curMs = new Date(slotEndDate).getTime() + 24 * 60 * 60 * 1000;
+
+    while (curMs <= endMs) {
+      const dateStr = timestampToISO(curMs);
+      if (!coveredDates.has(dateStr)) {
+        const projSlots = projectionByDate.get(dateStr);
+        const hasSchedule = projSlots !== undefined && projSlots.length > 0;
+        extraDays.push({
+          date: dateStr,
+          isAvailable: !hasSchedule,
+          conflicts:
+            hasSchedule ?
+              projSlots.map((s: ProjectedSlot) => ({
+                type: 'tpm_schedule' as const,
+                description: formatProjectionDescription(s),
+              }))
+            : [],
+        });
+      }
+      curMs += 24 * 60 * 60 * 1000;
+    }
+
+    return [...slotDays, ...extraDays];
+  });
+
+  // Stats from merged days
+  const totalDays = $derived(calendarDays.length);
+  const availableDays = $derived(
+    calendarDays.filter((d: DayAvailability) => d.isAvailable).length,
   );
 
   // Number of empty cells before first day (Mon=0, Sun=6)
   const leadingPadding = $derived.by(() => {
-    if (slotData === null || slotData.days.length === 0) return 0;
-    return isoWeekday(slotData.days[0].date);
+    if (calendarDays.length === 0) return 0;
+    return isoWeekday(calendarDays[0].date);
   });
 
   // =========================================================================
@@ -79,6 +174,7 @@
     if (type === 'no_shift_plan') return MESSAGES.SLOT_NO_SHIFT;
     if (type === 'machine_downtime') return MESSAGES.SLOT_DOWNTIME;
     if (type === 'existing_tpm') return MESSAGES.SLOT_TPM_EXISTING;
+    if (type === 'tpm_schedule') return MESSAGES.SLOT_TPM_SCHEDULE;
     return type;
   }
 
@@ -86,34 +182,131 @@
     if (type === 'no_shift_plan') return 'fa-calendar-xmark';
     if (type === 'machine_downtime') return 'fa-wrench';
     if (type === 'existing_tpm') return 'fa-clipboard-check';
+    if (type === 'tpm_schedule') return 'fa-clock';
     return 'fa-exclamation';
   }
 
+  /** Format a projected slot for display */
+  function formatProjectionDescription(slot: ProjectedSlot): string {
+    const intervals = slot.intervalTypes
+      .map((t: IntervalType) => INTERVAL_LABELS[t])
+      .join(', ');
+    const time =
+      slot.isFullDay ? 'Ganztägig' : (
+        `${slot.startTime ?? '?'} – ${slot.endTime ?? '?'}`
+      );
+    return `${slot.planName} (${slot.machineName}) — ${intervals} — ${time}`;
+  }
+
+  /** Format projection lines for tooltip display */
+  function formatProjectionLines(slots: ProjectedSlot[]): string[] {
+    return slots.map((s: ProjectedSlot) => formatProjectionDescription(s));
+  }
+
+  /** Collect conflict descriptions for an unavailable day */
+  function collectConflictParts(day: DayAvailability): string[] {
+    return day.conflicts.map((c) =>
+      c.type === 'tpm_schedule'
+        ? c.description
+        : `${getConflictLabel(c.type)}: ${c.description}`,
+    );
+  }
+
+  /** Append projection details not already present in conflict descriptions */
+  function appendUniqueProjections(
+    parts: string[],
+    projSlots: ProjectedSlot[],
+    conflictDescs: Set<string>,
+  ): void {
+    for (const s of projSlots) {
+      const desc = formatProjectionDescription(s);
+      if (!conflictDescs.has(desc)) {
+        parts.push(desc);
+      }
+    }
+  }
+
+  /** Build tooltip from slot data + projection enrichment */
   function buildDayTooltip(day: DayAvailability): string {
-    if (day.isAvailable) return 'Verfügbar';
-    return day.conflicts.map((c) => c.description).join(', ');
+    const projSlots = projectionByDate.get(day.date) ?? [];
+
+    if (day.isAvailable) {
+      if (projSlots.length === 0) return 'Verfügbar';
+      const lines = formatProjectionLines(projSlots);
+      return `Verfügbar\n\nGeplante Termine:\n${lines.join('\n')}`;
+    }
+
+    const parts = collectConflictParts(day);
+    const conflictDescs = new Set(day.conflicts.map((c) => c.description));
+    appendUniqueProjections(parts, projSlots, conflictDescs);
+    return parts.join('\n');
+  }
+
+  /** Check if a day has a tpm_schedule conflict */
+  function hasTpmScheduleConflict(day: DayAvailability): boolean {
+    return day.conflicts.some((c) => c.type === 'tpm_schedule');
+  }
+
+  /** Get projection slots for a specific date */
+  function getSlotsForDate(dateStr: string): ProjectedSlot[] {
+    return projectionByDate.get(dateStr) ?? [];
+  }
+
+  /** Toggle timeline view for a day (click same day to close) */
+  function handleDayClick(day: DayAvailability): void {
+    selectedDay = selectedDay === day.date ? null : day.date;
   }
 
   // =========================================================================
-  // LOAD SLOTS
+  // LOAD SLOTS + PROJECTION
   // =========================================================================
 
-  async function loadSlots(): Promise<void> {
-    if (startDate.length === 0 || endDate.length === 0) return;
+  async function loadData(): Promise<void> {
+    if (!canFetch || startDate.length === 0 || endDate.length === 0) return;
+    selectedDay = null;
     loading = true;
     try {
-      slotData = await fetchAvailableSlots(planUuid, startDate, endDate);
+      // Fetch slot data (max 90d) + projection (up to 365d) in parallel
+      const slotPromise = loadSlotData();
+      const projPromise = fetchScheduleProjection(startDate, endDate, planUuid);
+
+      const [slotResult, projResult] = await Promise.all([
+        slotPromise,
+        projPromise,
+      ]);
+
+      slotData = slotResult;
+      projectionData = projResult;
     } catch (err: unknown) {
-      logApiError('loadSlots', err);
+      logApiError('loadData', err);
       slotData = null;
+      projectionData = null;
     } finally {
       loading = false;
     }
   }
 
-  // Load on mount
+  async function loadSlotData(): Promise<SlotAvailabilityResult | null> {
+    if (isEditMode && planUuid !== undefined) {
+      return await fetchAvailableSlots(planUuid, startDate, slotEndDate);
+    }
+    if (machineUuid !== undefined) {
+      return await fetchAvailableSlotsByMachine(
+        machineUuid,
+        startDate,
+        slotEndDate,
+        shiftPlanRequired ?? true,
+      );
+    }
+    return null;
+  }
+
+  // Reactive: refetch when dependencies change
   $effect(() => {
-    void loadSlots();
+    void planUuid;
+    void machineUuid;
+    void shiftPlanRequired;
+    void loadData();
   });
 </script>
 
@@ -130,14 +323,14 @@
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-4">
-        {#if slotData !== null}
+        {#if calendarDays.length > 0}
           <div class="flex items-baseline gap-2">
             <span class="text-2xl font-bold text-(--color-success)">
-              {slotData.availableDays}
+              {availableDays}
             </span>
             <span class="text-sm text-(--color-text-muted)">
               {MESSAGES.SLOT_STATS}
-              {slotData.totalDays}
+              {totalDays}
             </span>
           </div>
         {/if}
@@ -156,7 +349,7 @@
   <div class="card__body">
     <!-- Date range controls + legend -->
     <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
-      <div class="flex gap-4">
+      <div class="flex flex-wrap items-end gap-4">
         <div
           class="min-w-0"
           style="width: 160px"
@@ -167,10 +360,10 @@
             size="sm"
             onchange={(newStart: string) => {
               const newStartMs = new Date(newStart).getTime();
-              const newEnd = newStartMs + FOUR_WEEKS_MS;
-              const maxEnd = newStartMs + MAX_RANGE_MS;
+              const newEnd = newStartMs + NINETY_DAYS_MS;
+              const maxEnd = newStartMs + MAX_RANGE_365_MS;
               endDate = timestampToISO(Math.min(newEnd, maxEnd));
-              void loadSlots();
+              void loadData();
             }}
           />
         </div>
@@ -185,15 +378,22 @@
             max={maxEndDate}
             size="sm"
             onchange={(_v: string) => {
-              void loadSlots();
+              void loadData();
             }}
           />
         </div>
-        <span class="self-center text-xs text-(--color-text-muted)">
-          Max. 90 Tage
-        </span>
+        <div class="flex flex-col gap-0.5 self-center">
+          <span class="text-xs text-(--color-text-muted)">
+            {MESSAGES.SLOT_RANGE_FULL}
+          </span>
+          {#if rangeExceedsSlotLimit}
+            <span class="text-[0.625rem] text-(--color-text-muted) italic">
+              {MESSAGES.SLOT_RANGE_DETAIL_HINT}
+            </span>
+          {/if}
+        </div>
       </div>
-      <div class="flex gap-4">
+      <div class="flex flex-wrap gap-4">
         <span
           class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
         >
@@ -206,6 +406,12 @@
           <span class="slot-dot slot-dot--unavailable"></span>
           {MESSAGES.SLOT_UNAVAILABLE}
         </span>
+        <span
+          class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+        >
+          <span class="slot-dot slot-dot--scheduled"></span>
+          {MESSAGES.SLOT_SCHEDULED}
+        </span>
       </div>
     </div>
 
@@ -217,7 +423,7 @@
         <i class="fas fa-spinner fa-spin"></i>
         {MESSAGES.SLOT_LOADING}
       </div>
-    {:else if slotData !== null}
+    {:else if calendarDays.length > 0}
       <!-- Calendar grid -->
       <div class="slot-calendar">
         <!-- Weekday headers -->
@@ -236,19 +442,37 @@
         {/each}
 
         <!-- Day cells -->
-        {#each slotData.days as day (day.date)}
+        {#each calendarDays as day (day.date)}
           {@const available = day.isAvailable}
           {@const isWeekend = isoWeekday(day.date) >= 5}
+          {@const isScheduled = hasTpmScheduleConflict(day)}
           <div
             class="slot-day"
-            class:slot-day--available={available}
-            class:slot-day--unavailable={!available}
+            class:slot-day--available={available && !isScheduled}
+            class:slot-day--unavailable={!available && !isScheduled}
+            class:slot-day--scheduled={isScheduled}
             class:slot-day--weekend={isWeekend}
+            class:slot-day--selected={selectedDay === day.date}
             title={buildDayTooltip(day)}
+            role="button"
+            tabindex="0"
+            onclick={() => { handleDayClick(day); }}
+            onkeydown={(e: KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleDayClick(day);
+              }
+            }}
           >
             <span class="slot-day__date">{formatDayMonth(day.date)}</span>
-            {#if available}
+            {#if available && !isScheduled}
               <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
+            {:else if isScheduled}
+              <i class="fas fa-clock slot-day__icon slot-day__icon--scheduled"
+              ></i>
+              <span class="slot-day__conflict slot-day__conflict--scheduled">
+                {MESSAGES.SLOT_TPM_SCHEDULE}
+              </span>
             {:else if day.conflicts.length > 0}
               <i
                 class="fas {getConflictIcon(
@@ -262,6 +486,17 @@
           </div>
         {/each}
       </div>
+
+      <!-- Timeline Day View (desktop only, opens on day click) -->
+      {#if selectedDay !== null}
+        <TimelineDayView
+          date={selectedDay}
+          slots={getSlotsForDate(selectedDay)}
+          onclose={() => {
+            selectedDay = null;
+          }}
+        />
+      {/if}
     {/if}
   </div>
 </div>
@@ -280,6 +515,10 @@
 
   .slot-dot--unavailable {
     background: var(--color-danger);
+  }
+
+  .slot-dot--scheduled {
+    background: var(--color-info, #3b82f6);
   }
 
   /* ---- Calendar Grid ---- */
@@ -316,13 +555,19 @@
     gap: 2px;
     padding: 0.5rem 0.25rem;
     border-radius: var(--radius-sm);
-    cursor: default;
-    transition: opacity 0.15s;
+    cursor: pointer;
+    transition:
+      opacity 0.15s,
+      box-shadow 0.15s;
     min-height: 60px;
   }
 
   .slot-day:hover {
     opacity: 85%;
+  }
+
+  .slot-day--selected {
+    box-shadow: 0 0 0 2px var(--color-info, #3b82f6);
   }
 
   .slot-day--available {
@@ -333,6 +578,12 @@
   .slot-day--unavailable {
     background: color-mix(in srgb, var(--color-danger) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  }
+
+  .slot-day--scheduled {
+    background: color-mix(in srgb, var(--color-info, #3b82f6) 10%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--color-info, #3b82f6) 30%, transparent);
   }
 
   .slot-day--weekend.slot-day--available {
@@ -358,10 +609,18 @@
     color: var(--color-danger);
   }
 
+  .slot-day__icon--scheduled {
+    color: var(--color-info, #3b82f6);
+  }
+
   .slot-day__conflict {
     font-size: 0.825rem;
     color: var(--color-danger);
     text-align: center;
     line-height: 1.2;
+  }
+
+  .slot-day__conflict--scheduled {
+    color: var(--color-info, #3b82f6);
   }
 </style>

@@ -45,6 +45,7 @@ export interface TpmMaintenancePlanRow {
   base_weekday: number;
   base_repeat_every: number;
   base_time: string | null;
+  buffer_hours: string; // NUMERIC(4,1) → pg returns string
   shift_plan_required: boolean;
   notes: string | null;
   created_by: number;
@@ -195,6 +196,7 @@ export interface TpmPlan {
   baseWeekday: number;
   baseRepeatEvery: number;
   baseTime: string | null;
+  bufferHours: number;
   shiftPlanRequired: boolean;
   notes: string | null;
   createdBy: number;
@@ -313,6 +315,31 @@ export interface TpmColorConfigEntry {
   label: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================================================
+// Schedule Projection Types (cross-plan conflict detection)
+// ============================================================================
+
+/** A projected TPM maintenance slot (computed, not stored in DB) */
+export interface ProjectedSlot {
+  planUuid: string;
+  planName: string;
+  machineId: number;
+  machineName: string;
+  intervalTypes: TpmIntervalType[];
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  bufferHours: number;
+  isFullDay: boolean;
+}
+
+/** Result of a schedule projection across all active plans */
+export interface ScheduleProjectionResult {
+  slots: ProjectedSlot[];
+  dateRange: { start: string; end: string };
+  planCount: number;
 }
 
 // ============================================================================

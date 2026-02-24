@@ -16,6 +16,7 @@ import type {
   TpmTimeEstimate,
   Machine,
   SlotAvailabilityResult,
+  ScheduleProjectionResult,
   MachineTeamAvailabilityResult,
   CreatePlanPayload,
   UpdatePlanPayload,
@@ -171,6 +172,53 @@ export async function fetchAvailableSlots(
     );
   } catch (err: unknown) {
     log.error({ err }, 'Error loading available slots');
+    return null;
+  }
+}
+
+/** Fetch available slots by machine UUID (no plan needed, for create mode) */
+export async function fetchAvailableSlotsByMachine(
+  machineUuid: string,
+  startDate: string,
+  endDate: string,
+  shiftPlanRequired: boolean,
+): Promise<SlotAvailabilityResult | null> {
+  try {
+    const params = new URLSearchParams({
+      machineUuid,
+      startDate,
+      endDate,
+      shiftPlanRequired: String(shiftPlanRequired),
+    });
+    return await apiClient.get<SlotAvailabilityResult>(
+      `/tpm/plans/available-slots?${params.toString()}`,
+    );
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading available slots by machine');
+    return null;
+  }
+}
+
+// =============================================================================
+// SCHEDULE PROJECTION
+// =============================================================================
+
+/** Fetch projected maintenance schedules across all active plans (max 365 days) */
+export async function fetchScheduleProjection(
+  startDate: string,
+  endDate: string,
+  excludePlanUuid?: string,
+): Promise<ScheduleProjectionResult | null> {
+  try {
+    const params = new URLSearchParams({ startDate, endDate });
+    if (excludePlanUuid !== undefined) {
+      params.set('excludePlanUuid', excludePlanUuid);
+    }
+    return await apiClient.get<ScheduleProjectionResult>(
+      `/tpm/plans/schedule-projection?${params.toString()}`,
+    );
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading schedule projection');
     return null;
   }
 }

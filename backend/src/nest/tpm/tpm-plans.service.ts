@@ -181,8 +181,8 @@ export class TpmPlansService {
         const result = await client.query<TpmPlanJoinRow>(
           `INSERT INTO tpm_maintenance_plans
              (uuid, tenant_id, machine_id, name, base_weekday, base_repeat_every,
-              base_time, shift_plan_required, notes, created_by, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1)
+              base_time, buffer_hours, shift_plan_required, notes, created_by, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1)
            RETURNING *`,
           [
             uuid,
@@ -192,6 +192,7 @@ export class TpmPlansService {
             dto.baseWeekday,
             dto.baseRepeatEvery,
             dto.baseTime ?? null,
+            dto.bufferHours,
             dto.shiftPlanRequired,
             dto.notes ?? null,
             userId,

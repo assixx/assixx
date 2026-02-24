@@ -143,6 +143,8 @@ export const MESSAGES = {
   LABEL_WEEKDAY: 'Basis-Wochentag',
   LABEL_REPEAT_EVERY: 'Wiederholung',
   LABEL_TIME: 'Uhrzeit',
+  LABEL_BUFFER_HOURS: 'Wartungsdauer (Puffer)',
+  LABEL_TIME_WINDOW: 'Berechnetes Zeitfenster',
   LABEL_SHIFT_REQUIRED: 'Schichtplan erforderlich',
   LABEL_NOTES: 'Notizen',
 
@@ -157,6 +159,9 @@ export const MESSAGES = {
   HELP_WEEKDAY: 'An welchem Wochentag soll die Wartung stattfinden?',
   HELP_REPEAT:
     'Der wievielte Wochentag im Monat (1 = erster, 2 = zweiter, 3 = dritter)',
+  HELP_BUFFER_HOURS:
+    'Wie lange dauert die Wartung? Definiert das Zeitfenster ab der Startzeit.',
+  HELP_BUFFER_FULL_DAY: 'Ganztägig (keine feste Uhrzeit)',
   HELP_SHIFT_REQUIRED:
     'Prüft ob ein Schichtplan für den Wartungszeitraum existiert',
 
@@ -177,14 +182,27 @@ export const MESSAGES = {
 
   // Slot assistant
   SLOT_TITLE: 'Verfügbare Zeitfenster',
-  SLOT_DESCRIPTION: 'Zeigt freie und belegte Tage für die Maschine',
+  SLOT_DESCRIPTION:
+    'Zeigt freie und belegte Tage für die Maschine (bis 365 Tage)',
   SLOT_AVAILABLE: 'Verfügbar',
   SLOT_UNAVAILABLE: 'Belegt',
+  SLOT_SCHEDULED: 'Geplanter TPM-Termin',
   SLOT_NO_SHIFT: 'Kein Schichtplan',
   SLOT_DOWNTIME: 'Maschinenstillstand',
   SLOT_TPM_EXISTING: 'Bestehende Wartung',
+  SLOT_TPM_SCHEDULE: 'Geplante Wartung',
   SLOT_LOADING: 'Verfügbarkeit wird geprüft...',
   SLOT_STATS: 'verfügbare Tage von',
+  SLOT_RANGE_FULL: 'Max. 365 Tage',
+  SLOT_RANGE_DETAIL_HINT:
+    'Details für die ersten 90 Tage, darüber hinaus nur geplante Termine',
+
+  // Timeline day view
+  TIMELINE_TITLE: 'Tagesübersicht',
+  TIMELINE_CLOSE: 'Schließen',
+  TIMELINE_FREE: 'Frei',
+  TIMELINE_FULL_DAY: 'Ganztägig',
+  TIMELINE_NO_DATA: 'Keine geplanten Termine für diesen Tag',
 
   // Employee assignment
   EMPLOYEE_TITLE: 'Team-Verfügbarkeit',

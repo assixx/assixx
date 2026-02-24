@@ -47,6 +47,10 @@
 
   let submitting = $state(false);
 
+  // Create mode: track machine + shiftPlanRequired for SlotAssistant
+  let createMachineUuid = $state('');
+  let createShiftPlanRequired = $state(true);
+
   // =============================================================================
   // HANDLERS
   // =============================================================================
@@ -124,12 +128,19 @@
     {/if}
   </div>
 
-  <!-- Slot Assistant: full width above form (edit mode only) -->
+  <!-- Slot Assistant: full width above form -->
   {#if !isCreateMode && data.plan !== null}
     <div class="mb-6">
       <SlotAssistant
         planUuid={data.plan.uuid}
         cardsHref={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
+      />
+    </div>
+  {:else if isCreateMode && createMachineUuid.length > 0}
+    <div class="mb-6">
+      <SlotAssistant
+        machineUuid={createMachineUuid}
+        shiftPlanRequired={createShiftPlanRequired}
       />
     </div>
   {/if}
@@ -155,6 +166,12 @@
             oncreate={handleCreate}
             onupdate={handleUpdate}
             oncancel={handleCancel}
+            onmachinechange={(uuid: string) => {
+              createMachineUuid = uuid;
+            }}
+            onshiftplanchange={(val: boolean) => {
+              createShiftPlanRequired = val;
+            }}
           />
         </div>
       </div>

@@ -24,6 +24,12 @@ export const UpdateMaintenancePlanSchema = z.object({
     .max(52, 'Wiederholung darf maximal 52 sein')
     .optional(),
   baseTime: TimeSchema.nullable().optional(),
+  bufferHours: z
+    .number()
+    .min(0.5, 'Puffer muss mindestens 0.5 Stunden sein')
+    .max(24, 'Puffer darf maximal 24 Stunden sein')
+    .multipleOf(0.5, 'Puffer muss in 0.5er-Schritten angegeben werden')
+    .optional(),
   shiftPlanRequired: z.boolean().optional(),
   notes: z
     .string()

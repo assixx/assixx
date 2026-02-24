@@ -31,6 +31,8 @@
     oncreate: (payload: CreatePlanPayload) => void;
     onupdate: (payload: UpdatePlanPayload) => void;
     oncancel: () => void;
+    onmachinechange?: (machineUuid: string) => void;
+    onshiftplanchange?: (shiftPlanRequired: boolean) => void;
   }
 
   const {
@@ -43,6 +45,8 @@
     oncreate,
     onupdate,
     oncancel,
+    onmachinechange,
+    onshiftplanchange,
   }: Props = $props();
 
   // =========================================================================
@@ -60,6 +64,7 @@
   let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
   let baseRepeatEvery = $state(untrack(() => plan?.baseRepeatEvery ?? 1));
   let baseTime = $state(untrack(() => plan?.baseTime ?? ''));
+  let bufferHours = $state(untrack(() => plan?.bufferHours ?? 4));
   let shiftPlanRequired = $state(
     untrack(() => plan?.shiftPlanRequired ?? true),
   );
@@ -77,13 +82,20 @@
     formDepartmentId = null;
     machineUuid = '';
     areaDropdownOpen = false;
+    onmachinechange?.('');
   }
 
   function selectDepartment(deptId: number): void {
     formDepartmentId = deptId;
     machineUuid = '';
     departmentDropdownOpen = false;
+    onmachinechange?.('');
   }
+
+  // Notify parent when shiftPlanRequired changes
+  $effect(() => {
+    onshiftplanchange?.(shiftPlanRequired);
+  });
 
   // =========================================================================
   // DROPDOWN STATE
@@ -176,12 +188,28 @@
     if (machineUuid === '') return MESSAGES.PH_MACHINE;
     const match = filteredMachines.find((m: Machine) => m.uuid === machineUuid);
     if (match === undefined) return MESSAGES.PH_MACHINE;
-    return match.machineNumber?.trim()
-      ? `${match.name} (${match.machineNumber})`
-      : match.name;
+    const num = match.machineNumber?.trim() ?? '';
+    return num.length > 0 ? `${match.name} (${num})` : match.name;
   });
 
   const selectedWeekdayText = $derived(WEEKDAY_LABELS[baseWeekday] ?? '—');
+
+  /** Live preview: base_time + buffer_hours = end time */
+  const timeWindowPreview = $derived.by(() => {
+    const trimmed = baseTime.trim();
+    if (trimmed.length === 0) return MESSAGES.HELP_BUFFER_FULL_DAY;
+    const parts = trimmed.split(':');
+    if (parts.length < 2) return MESSAGES.HELP_BUFFER_FULL_DAY;
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (Number.isNaN(h) || Number.isNaN(m))
+      return MESSAGES.HELP_BUFFER_FULL_DAY;
+    const totalMinutes = h * 60 + m + bufferHours * 60;
+    const endH = Math.floor(totalMinutes / 60) % 24;
+    const endM = Math.round(totalMinutes % 60);
+    const endStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    return `${trimmed} – ${endStr}`;
+  });
 
   // =========================================================================
   // HANDLERS
@@ -201,6 +229,7 @@
         baseWeekday,
         baseRepeatEvery,
         baseTime: timeValue,
+        bufferHours,
         shiftPlanRequired,
         notes: notesValue,
       });
@@ -210,6 +239,7 @@
         baseWeekday,
         baseRepeatEvery,
         baseTime: timeValue,
+        bufferHours,
         shiftPlanRequired,
         notes: notesValue,
       });
@@ -340,6 +370,7 @@
                 onclick={() => {
                   machineUuid = machine.uuid;
                   machineDropdownOpen = false;
+                  onmachinechange?.(machine.uuid);
                 }}
               >
                 {machine.name}
@@ -445,13 +476,45 @@
     </div>
   </div>
 
-  <!-- Time -->
+  <!-- Time + Buffer Hours (side by side) -->
+  <div class="form-row">
+    <div class="form-field plan-form__half">
+      <span class="form-field__label">{MESSAGES.LABEL_TIME}</span>
+      <AppTimePicker
+        bind:value={baseTime}
+        disabled={submitting}
+      />
+    </div>
+
+    <div class="form-field plan-form__half">
+      <label
+        class="form-field__label"
+        for="bufferHours">{MESSAGES.LABEL_BUFFER_HOURS}</label
+      >
+      <div class="form-input-group">
+        <input
+          id="bufferHours"
+          type="number"
+          class="form-field__control plan-form__narrow"
+          bind:value={bufferHours}
+          disabled={submitting}
+          min={0.5}
+          max={24}
+          step={0.5}
+        />
+        <span class="form-input-group__suffix">Stunden</span>
+      </div>
+      <span class="form-field__message">{MESSAGES.HELP_BUFFER_HOURS}</span>
+    </div>
+  </div>
+
+  <!-- Time window preview -->
   <div class="form-field">
-    <span class="form-field__label">{MESSAGES.LABEL_TIME}</span>
-    <AppTimePicker
-      bind:value={baseTime}
-      disabled={submitting}
-    />
+    <span class="form-field__label">{MESSAGES.LABEL_TIME_WINDOW}</span>
+    <div class="form-static">
+      <i class="fas fa-clock"></i>
+      {timeWindowPreview}
+    </div>
   </div>
 
   <!-- Shift plan required toggle -->

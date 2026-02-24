@@ -5,6 +5,8 @@
  * - POST   /tpm/plans                       — Create plan
  * - GET    /tpm/plans                       — List plans (paginated)
  * - GET    /tpm/plans/interval-matrix       — Card counts per plan × interval
+ * - GET    /tpm/plans/available-slots       — Slot availability by machine UUID
+ * - GET    /tpm/plans/schedule-projection  — Projected schedules for all plans
  * - GET    /tpm/plans/:uuid                 — Get single plan
  * - PATCH  /tpm/plans/:uuid                 — Update plan
  * - DELETE /tpm/plans/:uuid                 — Soft-delete plan
@@ -37,6 +39,8 @@ import { BoardQueryDto } from './dto/board-query.dto.js';
 import { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
 import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
 import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
+import { MachineSlotsQueryDto } from './dto/machine-slots-query.dto.js';
+import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
@@ -45,6 +49,7 @@ import type {
   PaginatedPlans,
 } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
+import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
 import type {
   MachineTeamAvailabilityResult,
   SlotAvailabilityResult,
@@ -52,6 +57,7 @@ import type {
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 import type {
+  ScheduleProjectionResult,
   TpmCardRole,
   TpmCardStatus,
   TpmIntervalType,
@@ -71,6 +77,7 @@ export class TpmPlansController {
     private readonly cardsService: TpmCardsService,
     private readonly timeEstimatesService: TpmTimeEstimatesService,
     private readonly slotAssistantService: TpmSlotAssistantService,
+    private readonly scheduleProjectionService: TpmScheduleProjectionService,
   ) {}
 
   // ============================================================================
@@ -106,6 +113,41 @@ export class TpmPlansController {
     @TenantId() tenantId: number,
   ): Promise<IntervalMatrixEntry[]> {
     return await this.plansService.getIntervalMatrix(tenantId);
+  }
+
+  /** GET /tpm/plans/available-slots — Slot availability by machine UUID (no plan needed) */
+  @Get('available-slots')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getAvailableSlotsByMachine(
+    @Query() query: MachineSlotsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<SlotAvailabilityResult> {
+    const machineId = await this.slotAssistantService.resolveMachineIdByUuid(
+      tenantId,
+      query.machineUuid,
+    );
+    return await this.slotAssistantService.getAvailableSlots(
+      tenantId,
+      machineId,
+      query.startDate,
+      query.endDate,
+      query.shiftPlanRequired,
+    );
+  }
+
+  /** GET /tpm/plans/schedule-projection — Projected schedules for all active plans */
+  @Get('schedule-projection')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getScheduleProjection(
+    @Query() query: ScheduleProjectionQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<ScheduleProjectionResult> {
+    return await this.scheduleProjectionService.projectSchedules(
+      tenantId,
+      query.startDate,
+      query.endDate,
+      query.excludePlanUuid,
+    );
   }
 
   /** GET /tpm/plans/:uuid — Get single plan by UUID */
