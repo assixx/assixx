@@ -650,9 +650,13 @@
 
   <!-- Time Estimates (per interval type) -->
   <TimeEstimateEditor
-    {estimateMap} {submitting} {isCreateMode}
+    {estimateMap}
+    {submitting}
+    {isCreateMode}
     showEstimates={showTimeEstimates}
-    ontoggle={(val: boolean) => { showTimeEstimates = val; }}
+    ontoggle={(val: boolean) => {
+      showTimeEstimates = val;
+    }}
   />
 
   <!-- Shift plan required toggle -->

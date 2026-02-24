@@ -45,6 +45,15 @@ const BaseSchema = z.object({
     .max(3650, 'Benutzerdefiniertes Intervall darf maximal 3650 Tage sein')
     .nullish(),
   weekdayOverride: WeekdaySchema.nullish(),
+  estimatedExecutionMinutes: z
+    .number()
+    .int()
+    .min(1, 'Geschätzte Durchführungszeit muss mindestens 1 Minute sein')
+    .max(
+      10080,
+      'Geschätzte Durchführungszeit darf maximal 10.080 Min. (1 Woche) sein',
+    )
+    .nullish(),
 });
 
 type BaseInput = z.infer<typeof BaseSchema>;

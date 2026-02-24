@@ -26,8 +26,13 @@
     ontoggle: (value: boolean) => void;
   }
 
-  const { estimateMap, submitting, isCreateMode, showEstimates, ontoggle }: Props =
-    $props();
+  const {
+    estimateMap,
+    submitting,
+    isCreateMode,
+    showEstimates,
+    ontoggle,
+  }: Props = $props();
 
   let activeTab = $state<IntervalType>('monthly');
   const activeEstimate = $derived(estimateMap[activeTab]);
@@ -40,7 +45,9 @@
       type="checkbox"
       class="toggle-switch__input"
       checked={showEstimates}
-      onchange={() => { ontoggle(!showEstimates); }}
+      onchange={() => {
+        ontoggle(!showEstimates);
+      }}
       disabled={submitting || isCreateMode}
     />
     <span class="toggle-switch__slider"></span>

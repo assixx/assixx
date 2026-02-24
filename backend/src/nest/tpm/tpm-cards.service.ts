@@ -312,6 +312,7 @@ export class TpmCardsService {
       requiresApproval: dto.requiresApproval,
       customIntervalDays: dto.customIntervalDays ?? null,
       weekdayOverride: dto.weekdayOverride ?? null,
+      estimatedExecutionMinutes: dto.estimatedExecutionMinutes ?? null,
     });
 
     const effectiveWeekday =
@@ -404,6 +405,7 @@ export class TpmCardsService {
       requiresApproval: boolean;
       customIntervalDays: number | null;
       weekdayOverride: number | null;
+      estimatedExecutionMinutes: number | null;
     },
   ): Promise<{ id: number; card: TpmCard }> {
     const uuid = uuidv7();
@@ -412,8 +414,9 @@ export class TpmCardsService {
          (uuid, tenant_id, plan_id, machine_id, card_code, card_role,
           interval_type, interval_order, title, description,
           location_description, requires_approval, sort_order,
-          custom_interval_days, weekday_override, created_by, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,1)
+          custom_interval_days, weekday_override,
+          estimated_execution_minutes, created_by, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,1)
        RETURNING *`,
       [
         uuid,
@@ -431,6 +434,7 @@ export class TpmCardsService {
         data.sortOrder,
         data.customIntervalDays,
         data.weekdayOverride,
+        data.estimatedExecutionMinutes,
         data.createdBy,
       ],
     );

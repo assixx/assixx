@@ -65,6 +65,8 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     sort_order: 1,
     custom_fields: {},
     custom_interval_days: null,
+    weekday_override: null,
+    estimated_execution_minutes: null,
     is_active: 1,
     created_by: 5,
     created_at: '2026-02-18T00:00:00.000Z',
@@ -534,10 +536,44 @@ describe('TpmCardsService', () => {
       );
 
       const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
-      // description at index 9, locationDescription at index 10, customIntervalDays at index 13
+      // description=9, locationDescription=10, customIntervalDays=13,
+      // weekdayOverride=14, estimatedExecutionMinutes=15
       expect(insertParams?.[9]).toBeNull();
       expect(insertParams?.[10]).toBeNull();
       expect(insertParams?.[13]).toBeNull();
+      expect(insertParams?.[14]).toBeNull();
+      expect(insertParams?.[15]).toBeNull();
+    });
+
+    it('should pass estimatedExecutionMinutes to INSERT when provided', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+        ],
+      });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ estimated_execution_minutes: 45 })],
+      });
+
+      const result = await service.createCard(
+        10,
+        {
+          planUuid: 'plan-uuid-001',
+          cardRole: 'operator',
+          intervalType: 'weekly',
+          title: 'Ölstandkontrolle',
+          requiresApproval: false,
+          estimatedExecutionMinutes: 45,
+        },
+        5,
+      );
+
+      // estimatedExecutionMinutes is at index 15 in INSERT params
+      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      expect(insertParams?.[15]).toBe(45);
+      expect(result.estimatedExecutionMinutes).toBe(45);
     });
 
     it('should call activity logger after successful creation', async () => {

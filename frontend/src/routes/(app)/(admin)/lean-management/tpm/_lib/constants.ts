@@ -294,7 +294,12 @@ export const MESSAGES = {
   HELP_WEEKDAY_OVERRIDE:
     'Optional: Wählen Sie einen anderen Tag für diese wöchentliche Aufgabe.',
 
-  // Time estimate in card form
+  // Per-card execution estimate
+  LABEL_CARD_EST_EXEC: 'Geschätzte Durchführungszeit',
+  HELP_CARD_EST_EXEC:
+    'Optional: Wie lange dauert diese Wartungsaufgabe? (in Minuten)',
+
+  // Time estimate in card form (legacy labels kept for Employee view)
   LABEL_TIME_ESTIMATE: 'Zeitschätzung',
   HELP_TIME_ESTIMATE: 'Optional: Geschätzte Dauer für diese Wartungsaufgabe',
   LABEL_TE_STAFF: 'Mitarbeiter',

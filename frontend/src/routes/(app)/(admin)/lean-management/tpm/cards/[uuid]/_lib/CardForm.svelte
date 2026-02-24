@@ -71,6 +71,9 @@
   let weekdayOverride = $state(
     untrack(() => card?.weekdayOverride ?? planBaseWeekday),
   );
+  let estimatedExecutionMinutes = $state<number | null>(
+    untrack(() => card?.estimatedExecutionMinutes ?? null),
+  );
 
   // =========================================================================
   // VALIDATION
@@ -170,6 +173,7 @@
         requiresApproval,
         customIntervalDays: customDays,
         weekdayOverride: weekdayOvr,
+        estimatedExecutionMinutes,
       });
     } else {
       onupdate({
@@ -181,6 +185,7 @@
         requiresApproval,
         customIntervalDays: customDays,
         weekdayOverride: weekdayOvr,
+        estimatedExecutionMinutes,
       });
     }
   }
@@ -412,6 +417,28 @@
       disabled={submitting}
       maxlength={1000}
     />
+  </div>
+
+  <!-- Estimated Execution Minutes (optional) -->
+  <div class="form-field">
+    <label
+      class="form-field__label"
+      for="estExecMin">{MESSAGES.LABEL_CARD_EST_EXEC}</label
+    >
+    <div class="form-input-group">
+      <input
+        id="estExecMin"
+        type="number"
+        class="form-field__control card-form__narrow"
+        bind:value={estimatedExecutionMinutes}
+        disabled={submitting}
+        min={1}
+        max={10080}
+        placeholder="Optional"
+      />
+      <span class="form-input-group__suffix">{MESSAGES.TE_SUFFIX_MIN}</span>
+    </div>
+    <span class="form-field__message">{MESSAGES.HELP_CARD_EST_EXEC}</span>
   </div>
 
   <!-- Requires Approval toggle -->
