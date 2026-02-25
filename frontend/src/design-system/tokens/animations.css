@@ -66,10 +66,10 @@
   --transition-shadow: box-shadow var(--duration-normal) var(--ease-out);
 
   /* ========== BACKDROP BLUR VALUES ========== */
+  /* Canonical blur tokens defined in variables-light.css / variables-dark.css */
+  /* Raw values kept here for non-filter usage (e.g. box-shadow spread) */
 
-  /* Used for glassmorphism effects */
   --blur-none: 0;
-  --blur-sm: 5px; /* Inputs, small elements */
   --blur-md: 10px; /* Buttons, smaller containers */
   --blur-lg: 20px; /* Cards, containers, modals */
   --blur-xl: 30px; /* Large overlays (rare, performance cost) */

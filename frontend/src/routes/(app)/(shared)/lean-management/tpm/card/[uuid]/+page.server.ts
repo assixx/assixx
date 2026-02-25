@@ -13,6 +13,7 @@ import type { PageServerLoad } from './$types';
 import type {
   TpmCard,
   TpmColorConfigEntry,
+  TpmLocation,
   TpmTimeEstimate,
 } from '../../_lib/types';
 
@@ -82,21 +83,31 @@ export const load: PageServerLoad = async ({
 
   const colors = extractArray<TpmColorConfigEntry>(colorsRaw);
 
-  // Step 2: If card exists and has planUuid, fetch time estimates
+  // Step 2: If card exists and has planUuid, fetch time estimates + locations
   let timeEstimates: TpmTimeEstimate[] = [];
+  let locations: TpmLocation[] = [];
   if (card?.planUuid !== undefined) {
-    const estimatesRaw = await apiFetch<unknown>(
-      `/tpm/plans/${card.planUuid}/time-estimates`,
-      token,
-      fetch,
-    );
+    const [estimatesRaw, locationsRaw] = await Promise.all([
+      apiFetch<unknown>(
+        `/tpm/plans/${card.planUuid}/time-estimates`,
+        token,
+        fetch,
+      ),
+      apiFetch<unknown>(
+        `/tpm/locations?planUuid=${card.planUuid}`,
+        token,
+        fetch,
+      ),
+    ]);
     timeEstimates = extractArray<TpmTimeEstimate>(estimatesRaw);
+    locations = extractArray<TpmLocation>(locationsRaw);
   }
 
   return {
     card,
     colors,
     timeEstimates,
+    locations,
     error: card === null ? 'Karte nicht gefunden' : null,
   };
 };

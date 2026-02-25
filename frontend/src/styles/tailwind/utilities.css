@@ -256,16 +256,7 @@
   }
 }
 
-/* Keyframe Animations */
-@keyframes fade-in {
-  from {
-    opacity: 0%;
-  }
-
-  to {
-    opacity: 100%;
-  }
-}
+/* @keyframes fade-in defined in design-system/tokens/animations.css */
 
 @keyframes slide-up {
   from {

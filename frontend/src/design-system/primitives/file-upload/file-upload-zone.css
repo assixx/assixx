@@ -194,16 +194,7 @@
   animation: pulse 1s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1.2);
-  }
-
-  50% {
-    transform: scale(1.3);
-  }
-}
+/* @keyframes pulse defined in tailwind/utilities.css */
 
 /* ============================================================
    UPLOADING STATE (JavaScript)
@@ -221,15 +212,7 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* @keyframes spin defined in tokens/animations.css */
 
 /* ============================================================
    SUCCESS STATE (JavaScript)

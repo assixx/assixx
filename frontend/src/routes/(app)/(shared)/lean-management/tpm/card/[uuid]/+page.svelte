@@ -20,11 +20,13 @@
   import ApprovalPanel from '../../board/[uuid]/_lib/ApprovalPanel.svelte';
   import ExecutionForm from '../../board/[uuid]/_lib/ExecutionForm.svelte';
   import TimeEstimateForm from '../../board/[uuid]/_lib/TimeEstimateForm.svelte';
+  import LocationCard from '../../locations/[uuid]/_lib/LocationCard.svelte';
 
   import type { PageData } from './$types';
   import type {
     TpmColorConfigEntry,
     TpmExecution,
+    TpmLocation,
     CardStatus,
   } from '../../_lib/types';
 
@@ -37,6 +39,7 @@
   const card = $derived(data.card);
   const colors = $derived(data.colors);
   const timeEstimates = $derived(data.timeEstimates);
+  const locations = $derived(data.locations);
 
   function getColor(status: CardStatus): string {
     const found = colors.find(
@@ -80,6 +83,47 @@
     if (card !== null) {
       void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}/history`));
     }
+  }
+
+  // =========================================================================
+  // PHOTO PREVIEW MODAL (blackboard pattern)
+  // =========================================================================
+
+  let showPreviewModal = $state(false);
+  let previewLocation: TpmLocation | null = $state(null);
+
+  function handlePreviewPhoto(loc: TpmLocation): void {
+    previewLocation = loc;
+    showPreviewModal = true;
+  }
+
+  function closePreview(): void {
+    showPreviewModal = false;
+    previewLocation = null;
+  }
+
+  function handlePreviewKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') closePreview();
+  }
+
+  function stopPropagation(e: Event): void {
+    e.stopPropagation();
+  }
+
+  function getPhotoUrl(loc: TpmLocation): string {
+    if (loc.photoPath === null) return '';
+    return `/${loc.photoPath}`;
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1_048_576).toFixed(1)} MB`;
+  }
+
+  /* No-op handler — LocationCard is read-only here (canWrite=false) */
+  function noopLoc(_loc: TpmLocation): void {
+    // Intentionally empty: admin callbacks unreachable with canWrite=false
   }
 </script>
 
@@ -179,8 +223,28 @@
           </div>
         </div>
 
-        <!-- Location -->
-        {#if card.locationDescription !== null}
+        <!-- Locations -->
+        {#if locations.length > 0}
+          <div>
+            <h3 class="card-detail__section-title mb-3">
+              <i class="fas fa-map-marker-alt"></i>
+              {MESSAGES.DETAIL_LOCATION}
+            </h3>
+            <div class="card-detail__locations">
+              {#each locations as loc (loc.uuid)}
+                <LocationCard
+                  location={loc}
+                  canWrite={false}
+                  onEdit={noopLoc}
+                  onDelete={noopLoc}
+                  onUploadPhoto={noopLoc}
+                  onRemovePhoto={noopLoc}
+                  onPreviewPhoto={handlePreviewPhoto}
+                />
+              {/each}
+            </div>
+          </div>
+        {:else if card.locationDescription !== null}
           <div class="card">
             <div class="card__body">
               <h3 class="card-detail__section-title mb-2">
@@ -323,6 +387,76 @@
   {/if}
 </div>
 
+<!-- Photo Preview Modal (blackboard pattern) -->
+{#if showPreviewModal && previewLocation !== null && previewLocation.photoPath !== null}
+  <div
+    class="modal-overlay modal-overlay--active"
+    onclick={closePreview}
+    onkeydown={handlePreviewKeydown}
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh;"
+      onclick={stopPropagation}
+      onkeydown={stopPropagation}
+      role="document"
+    >
+      <div class="ds-modal__header">
+        <h3 class="ds-modal__title">
+          <i class="fas fa-image text-success-500 mr-2"></i>
+          {previewLocation.photoFileName ?? previewLocation.title}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={closePreview}
+          aria-label="Schließen"><i class="fas fa-times"></i></button
+        >
+      </div>
+      <div class="ds-modal__body p-0">
+        <div
+          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+        >
+          <img
+            src={getPhotoUrl(previewLocation)}
+            alt="Standort {previewLocation.title}"
+            class="max-h-full max-w-full object-contain"
+          />
+        </div>
+        <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
+          <div
+            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
+          >
+            {#if previewLocation.photoFileSize !== null}
+              <span class="flex items-center gap-2">
+                <i class="fas fa-file-archive"></i>
+                {formatFileSize(previewLocation.photoFileSize)}
+              </span>
+            {/if}
+            <span class="flex items-center gap-2">
+              <i class="fas fa-map-marker-alt"></i>
+              #{previewLocation.positionNumber}
+              {previewLocation.title}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closePreview}
+          ><i class="fas fa-times mr-2"></i>Schließen</button
+        >
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .card-detail-grid {
     display: grid;
@@ -401,5 +535,11 @@
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     margin: 0;
+  }
+
+  .card-detail__locations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 </style>

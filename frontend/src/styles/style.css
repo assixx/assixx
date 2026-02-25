@@ -75,7 +75,6 @@
 }
 
 .text-left {
-  border-radius: var(--radius-xl);
   text-align: left !important;
 }
 
@@ -89,25 +88,9 @@
  * - mb-1 = 4px, mb-2 = 8px, mb-4 = 16px, mb-6 = 24px, mb-12 = 48px
  */
 
-.d-none {
-  display: none !important;
-}
-
-.d-block {
-  display: block !important;
-}
-
-.d-flex {
-  display: flex !important;
-}
-
-.justify-content-between {
-  justify-content: space-between !important;
-}
-
-.justify-content-center {
-  justify-content: center !important;
-}
+/* Bootstrap legacy removed 2026-02-25: .d-none, .d-block, .d-flex,
+   .justify-content-between, .justify-content-center — use Tailwind equivalents:
+   hidden, block, flex, justify-between, justify-center */
 
 .flex-wrap {
   flex-wrap: wrap !important;

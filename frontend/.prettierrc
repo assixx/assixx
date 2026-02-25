@@ -4,7 +4,7 @@
   "endOfLine": "lf",
   "experimentalTernaries": true,
   "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
-  "tailwindStylesheet": "./src/styles/tailwind.css",
+  "tailwindStylesheet": "./src/app.css",
   "overrides": [
     {
       "files": "*.svelte",
