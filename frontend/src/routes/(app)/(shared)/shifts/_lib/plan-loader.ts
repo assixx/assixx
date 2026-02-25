@@ -24,7 +24,7 @@ import {
 } from './data-loader';
 import { shiftsState } from './state.svelte';
 
-import type { RotationPatternType, TpmMaintenanceEvent } from './types';
+import type { RotationPatternType } from './types';
 
 // =============================================================================
 // NAVIGATION HELPER
