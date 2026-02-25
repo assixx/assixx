@@ -254,7 +254,7 @@
     <div class="table-responsive">
       <table
         class="gv-table"
-        style="transform: scale({zoomLevel / 100}); transform-origin: top left;"
+        style="zoom: {zoomLevel / 100};"
       >
         <!-- ===== HEADER ===== -->
         <thead>
