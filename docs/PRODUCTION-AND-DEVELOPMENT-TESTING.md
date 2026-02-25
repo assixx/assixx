@@ -489,5 +489,5 @@ This allows `pnpm deploy` without the `--legacy` flag for cleaner production bui
 ---
 
 **Last Updated:** 2026-01-06
-**Author:** Claude Code
+**Author:** Assixx
 **Version:** 1.1.0 (Added version info, pnpm config section, modern deploy)

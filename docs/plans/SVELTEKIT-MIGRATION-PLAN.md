@@ -2241,4 +2241,4 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 
 ---
 
-_Erstellt: 2025-12-18 | Aktualisiert: 2026-01-06 | Autor: Claude Code | Branch: feature/nestjs-migration_
+_Erstellt: 2025-12-18 | Aktualisiert: 2026-01-06 | Autor: | Branch: feature/nestjs-migration_

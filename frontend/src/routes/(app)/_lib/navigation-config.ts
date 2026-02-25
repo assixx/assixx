@@ -116,7 +116,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
       },
       {
         id: 'kvp-categories',
-        label: 'Definitionen',
+        label: 'Konfiguration',
         url: '/kvp-categories',
       },
     ],

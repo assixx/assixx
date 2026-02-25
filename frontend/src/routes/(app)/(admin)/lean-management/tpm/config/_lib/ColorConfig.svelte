@@ -50,8 +50,12 @@
   // STATE
   // ===========================================================================
 
-  const rows = $derived.by<EditRow[]>(() =>
-    STATUS_ORDER.map((key: CardStatus) => {
+  // eslint-disable-next-line svelte/prefer-writable-derived -- bind:hex/bind:value need deep reactivity from $state (derived proxies are shallow)
+  let rows = $state<EditRow[]>([]);
+  let savingKey = $state<string | null>(null);
+
+  $effect(() => {
+    rows = STATUS_ORDER.map((key: CardStatus) => {
       const entry = colors.find(
         (c: TpmColorConfigEntry) => c.statusKey === key,
       );
@@ -62,9 +66,8 @@
         originalHex: entry?.colorHex ?? '#888888',
         originalLabel: entry?.label ?? CARD_STATUS_LABELS[key],
       };
-    }),
-  );
-  let savingKey = $state<string | null>(null);
+    });
+  });
   let resetting = $state(false);
   let showResetConfirm = $state(false);
 

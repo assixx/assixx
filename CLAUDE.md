@@ -1,4 +1,4 @@
-# Claude Code - Assixx Project Guide
+# - Assixx Project Guide
 
 ALWAYS BE 100% BRUTAL HONEST.
 NO QUICK FIXES, NEVER EVER. KISS. CLEAN CODE. THINK LONG-TERM.

@@ -134,13 +134,22 @@
       <div class="card__header">
         <div class="flex items-center justify-between gap-4">
           <h2 class="card__title">{MESSAGES.STAT_TOTAL_PLANS}</h2>
-          <a
-            href={resolvePath('/lean-management/tpm/plan/new')}
-            class="btn btn-primary"
-          >
-            <i class="fas fa-plus"></i>
-            {MESSAGES.BTN_NEW_PLAN}
-          </a>
+          <div class="flex gap-2">
+            <a
+              href={resolvePath('/lean-management/tpm/gesamtansicht')}
+              class="btn btn-info"
+            >
+              <i class="fas fa-table"></i>
+              {MESSAGES.BTN_GESAMTANSICHT}
+            </a>
+            <a
+              href={resolvePath('/lean-management/tpm/plan/new')}
+              class="btn btn-primary"
+            >
+              <i class="fas fa-plus"></i>
+              {MESSAGES.BTN_NEW_PLAN}
+            </a>
+          </div>
         </div>
       </div>
       <div class="card__body">

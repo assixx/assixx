@@ -205,7 +205,7 @@ export async function fetchAvailableSlotsByMachine(
 // SCHEDULE PROJECTION
 // =============================================================================
 
-/** Fetch projected maintenance schedules across all active plans (max 365 days) */
+/** Fetch projected maintenance schedules across all active plans (max 3650 days) */
 export async function fetchScheduleProjection(
   startDate: string,
   endDate: string,

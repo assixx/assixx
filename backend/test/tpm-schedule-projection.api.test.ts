@@ -101,13 +101,14 @@ describe('Schedule Projection: Missing endDate', () => {
   });
 });
 
-// ---- seq: 4 -- Range exceeds 365 days ------------------------------------------
+// ---- seq: 4 -- Range exceeds 3650 days (10 years) ------------------------------
 
-describe('Schedule Projection: Range > 365 days', () => {
+describe('Schedule Projection: Range > 3650 days', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(`${ENDPOINT}?startDate=2026-01-01&endDate=2027-01-02`, {
+    // 3651 days: 2026-01-01 to 2036-01-02
+    res = await fetch(`${ENDPOINT}?startDate=2026-01-01&endDate=2036-01-02`, {
       headers: authOnly(auth.authToken),
     });
   });

@@ -1351,7 +1351,7 @@ T=27:00 → User klickt "Aktiv bleiben"
 
 ---
 
-**Dokumentation erstellt von:** Claude Code
+**Dokumentation erstellt von:** Assixx
 **Letzte Aktualisierung:** 2025-11-26 (Phase 8: Refresh Token Rotation)
 **Review Status:** ✅ User Testing Completed
 **Deployment Status:** ✅ PRODUCTION-READY

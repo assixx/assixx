@@ -90,6 +90,14 @@ export const WEEKDAY_LABELS: string[] = [
 /** Pagination defaults */
 export const DEFAULT_PAGE_SIZE = 20;
 
+/** Zoom configuration for zoomable views (Gesamtansicht etc.) */
+export const ZOOM_CONFIG = {
+  DEFAULT: 100,
+  MIN: 50,
+  MAX: 150,
+  STEP: 1,
+} as const;
+
 /** UI Messages (German) */
 export const MESSAGES = {
   // Page titles
@@ -425,4 +433,23 @@ export const MESSAGES = {
   // Placeholders
   PH_TEMPLATE_NAME: 'z.B. Hydraulik-Prüfung',
   PH_TEMPLATE_DESC: 'Optionale Beschreibung der Vorlage...',
+
+  // Gesamtansicht (matrix overview)
+  BTN_GESAMTANSICHT: 'Gesamtansicht',
+  GESAMTANSICHT_TITLE: 'TPM Gesamtansicht',
+  GESAMTANSICHT_PAGE_TITLE: 'TPM Gesamtansicht - Assixx',
+  GESAMTANSICHT_SLIDER_LABEL: 'Anzahl Termine',
+  GESAMTANSICHT_LOADING: 'Gesamtansicht wird geladen...',
+  GESAMTANSICHT_EMPTY: 'Keine aktiven Wartungspläne vorhanden',
+  GESAMTANSICHT_TH_MACHINE: 'Anlage',
+  GESAMTANSICHT_TH_TIME: 'Uhrzeit',
+  GESAMTANSICHT_TH_STAFF: 'Anzahl Mitarbeiter',
+  GESAMTANSICHT_TH_PREP: 'Vorbereitung',
+  GESAMTANSICHT_TH_EXEC: 'Durchführung',
+  GESAMTANSICHT_TH_FOLLOW: 'Nachbereitung',
+
+  // Zoom controls
+  ZOOM_IN: 'Vergrößern',
+  ZOOM_OUT: 'Verkleinern',
+  ZOOM_FULLSCREEN: 'Vollbild',
 } as const;

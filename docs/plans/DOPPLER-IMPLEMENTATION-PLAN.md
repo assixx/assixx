@@ -622,5 +622,5 @@ doppler run -- docker-compose up -d
 ---
 
 **Letzte Aktualisierung:** 2026-01-13
-**Autor:** Claude Code
+**Autor:** Assixx
 **Version:** 1.0.0

@@ -50,7 +50,7 @@ dist/
 *.swp
 *.swo
 
-# Claude Code
+# Assixx
 .claude/
 CLAUDE.local.md
 CLAUDE-KAIZEN-MANIFEST.md

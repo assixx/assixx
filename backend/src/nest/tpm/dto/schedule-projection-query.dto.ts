@@ -4,6 +4,10 @@
  * Query parameters for GET /tpm/plans/schedule-projection.
  * Projects all active plans' maintenance dates into the future
  * for cross-plan conflict detection.
+ *
+ * Max range: 3650 days (10 years).
+ * Gesamtansicht needs annual interval × 10 slider positions = 10 years.
+ * Slot Assistant typically uses ≤365 days (frontend-enforced).
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
@@ -26,10 +30,10 @@ export const ScheduleProjectionQuerySchema = z
       const end = new Date(data.endDate);
       const diffDays =
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-      return diffDays >= 0 && diffDays <= 365;
+      return diffDays >= 0 && diffDays <= 3650;
     },
     {
-      message: 'Datumsbereich muss 0–365 Tage umfassen (endDate >= startDate)',
+      message: 'Datumsbereich muss 0–3650 Tage umfassen (endDate >= startDate)',
       path: ['endDate'],
     },
   );

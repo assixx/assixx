@@ -175,7 +175,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT id, name, r
 
 ## 9. PostgreSQL-Abfragen (Diagnose)
 
-> **Bevorzugt:** `docker exec assixx-postgres psql` (Claude Code arbeitet besser damit).
+> **Bevorzugt:** `docker exec assixx-postgres psql` (arbeitet besser damit).
 > **Alternative für Menschen:** `psql -h localhost` (wenn psql lokal installiert → `export PGPASSWORD=$(docker exec assixx-postgres printenv POSTGRES_PASSWORD)`).
 > **Details:** [HOW-TO-POSTGRESQL-CLI.md](./HOW-TO-POSTGRESQL-CLI.md)
 
@@ -342,9 +342,9 @@ pnpm changeset --empty                                      # Erstellt Changeset
 
 ---
 
-## 17. Claude Code Headless Mode (`claude -p`)
+## 17. Headless Mode (`claude -p`)
 
-> **Was ist das?** Claude Code ohne interaktive Session — du gibst einen Befehl, Claude arbeitet ihn ab, fertig.
+> **Was ist das?** ohne interaktive Session — du gibst einen Befehl, Claude arbeitet ihn ab, fertig.
 > Kein Chat, kein Bestätigen, kein Warten. Ideal für mechanische, repetitive Aufgaben.
 >
 > **Wann sinnvoll:** Lint-Fixes, Type-Error-Fixes, Import-Sortierung, Formatting — alles wo keine kreative Entscheidung nötig ist.

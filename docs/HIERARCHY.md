@@ -713,5 +713,5 @@ Department Group "IT-Untergruppe"
 ---
 
 **Letzte Aktualisierung:** 2025-10-23
-**Analysiert von:** Claude Code
+**Analysiert von:** Assixx
 **Basierend auf:** Live-Datenbank (Tenant 5601 "testfirma.de")

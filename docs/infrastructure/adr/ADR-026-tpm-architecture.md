@@ -302,7 +302,7 @@ The cards controller (`tpm-cards.controller.ts`) includes the execution history 
 
 **Problem:** When creating/editing a TPM plan, admins couldn't see which time windows were already occupied by other plans across all machines. This led to resource conflicts (same team scheduled for overlapping maintenance windows).
 
-**Solution:** `TpmScheduleProjectionService` — a read-only projection engine that calculates future maintenance dates for all active plans within a configurable date range (0–365 days).
+**Solution:** `TpmScheduleProjectionService` — a read-only projection engine that calculates future maintenance dates for all active plans within a configurable date range (0–3650 days). The Slot Assistant typically uses ≤365 days; the Gesamtansicht (overall view) needs up to 3650 days (annual interval × 10 slider positions = 10 years).
 
 **Intervall-Kaskade Prinzip:**
 

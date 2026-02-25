@@ -61,8 +61,12 @@
   // STATE
   // ===========================================================================
 
-  const rows = $derived.by<EditRow[]>(() =>
-    INTERVAL_ORDER.map((key: IntervalType) => {
+  // eslint-disable-next-line svelte/prefer-writable-derived -- bind:hex/bind:value need deep reactivity from $state (derived proxies are shallow)
+  let rows = $state<EditRow[]>([]);
+  let savingKey = $state<string | null>(null);
+
+  $effect(() => {
+    rows = INTERVAL_ORDER.map((key: IntervalType) => {
       const entry = colors.find(
         (c: IntervalColorConfigEntry) => c.statusKey === key,
       );
@@ -73,9 +77,8 @@
         originalHex: entry?.colorHex ?? '#888888',
         originalLabel: entry?.label ?? INTERVAL_LABELS[key],
       };
-    }),
-  );
-  let savingKey = $state<string | null>(null);
+    });
+  });
   let resetting = $state(false);
   let showResetConfirm = $state(false);
 
