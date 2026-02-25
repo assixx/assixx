@@ -8,6 +8,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { RotationAssignmentService } from './rotation-assignment.service.js';
 
@@ -35,6 +36,13 @@ function createMockDb() {
 // RotationAssignmentService
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('RotationAssignmentService', () => {
   let service: RotationAssignmentService;
   let mockDb: ReturnType<typeof createMockDb>;
@@ -44,6 +52,7 @@ describe('RotationAssignmentService', () => {
     mockDb = createMockDb();
     service = new RotationAssignmentService(
       mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
     );
   });
 

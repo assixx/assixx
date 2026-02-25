@@ -89,6 +89,12 @@
         <div class="kamishibai-card__status-label">
           {CARD_STATUS_LABELS[card.status]}
         </div>
+        {#if card.estimatedExecutionMinutes !== null && card.estimatedExecutionMinutes > 0}
+          <div class="kamishibai-card__time">
+            <i class="fas fa-clock"></i>
+            {card.estimatedExecutionMinutes} Min.
+          </div>
+        {/if}
         {#if card.requiresApproval}
           <span
             class="kamishibai-card__approval"
@@ -154,8 +160,8 @@
 
     position: relative;
     isolation: isolate;
-    width: 140px;
-    height: 180px;
+    width: 160px;
+    height: 210px;
     border-radius: var(--card-radius);
     cursor: pointer;
     flex-shrink: 0;
@@ -237,6 +243,15 @@
     border-radius: var(--radius-full, 9999px);
     padding: 0.125rem 0.5rem;
     margin-top: auto;
+  }
+
+  .kamishibai-card__time {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.65rem;
+    opacity: 75%;
+    margin-top: 0.25rem;
   }
 
   .kamishibai-card__approval {

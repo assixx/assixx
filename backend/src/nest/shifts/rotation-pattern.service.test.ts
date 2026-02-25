@@ -8,6 +8,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { RotationPatternService } from './rotation-pattern.service.js';
 import type { DbPatternRow } from './rotation.types.js';
@@ -18,6 +19,15 @@ import type { DbPatternRow } from './rotation.types.js';
 
 function createMockDb() {
   return { query: vi.fn() };
+}
+
+function createMockActivityLogger() {
+  return {
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+    log: vi.fn(),
+  };
 }
 
 /** Full DB row with all fields populated */
@@ -52,7 +62,11 @@ describe('RotationPatternService', () => {
 
   beforeEach(() => {
     mockDb = createMockDb();
-    service = new RotationPatternService(mockDb as unknown as DatabaseService);
+    const mockActivityLogger = createMockActivityLogger();
+    service = new RotationPatternService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -314,6 +328,7 @@ describe('RotationPatternService', () => {
         1,
         { name: 'Updated', cycleLengthWeeks: 3 },
         42,
+        1,
       );
 
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
@@ -331,7 +346,7 @@ describe('RotationPatternService', () => {
       mockDb.query.mockResolvedValueOnce([createPatternRow()]);
 
       // Even empty DTO adds description=null, team_id=null, ends_at=null
-      await service.updateRotationPattern(1, {}, 42);
+      await service.updateRotationPattern(1, {}, 42, 1);
 
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain('description');
@@ -348,7 +363,7 @@ describe('RotationPatternService', () => {
     it('should throw NotFoundException for non-existent pattern', async () => {
       mockDb.query.mockResolvedValueOnce([]); // pattern not found
 
-      await expect(service.deleteRotationPattern(999, 42)).rejects.toThrow(
+      await expect(service.deleteRotationPattern(999, 42, 1)).rejects.toThrow(
         NotFoundException,
       );
     });

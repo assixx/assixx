@@ -11,8 +11,11 @@ import type {
   TpmColorConfigEntry,
   TpmExecution,
   TpmExecutionPhoto,
+  TpmLocation,
   TpmTimeEstimate,
   CreateExecutionPayload,
+  CreateLocationPayload,
+  UpdateLocationPayload,
   RespondExecutionPayload,
   PaginatedResponse,
   ScheduleProjectionResult,
@@ -226,6 +229,62 @@ export async function fetchTimeEstimates(
     `/tpm/plans/${planUuid}/time-estimates`,
   );
   return extractArray<TpmTimeEstimate>(result);
+}
+
+// =============================================================================
+// LOCATIONS
+// =============================================================================
+
+/** Fetch all active locations for a plan */
+export async function fetchLocations(planUuid: string): Promise<TpmLocation[]> {
+  const result: unknown = await apiClient.get(
+    `/tpm/locations?planUuid=${planUuid}`,
+  );
+  return extractArray<TpmLocation>(result);
+}
+
+/** Get a single location by UUID */
+export async function fetchLocation(
+  locationUuid: string,
+): Promise<TpmLocation> {
+  return await apiClient.get(`/tpm/locations/${locationUuid}`);
+}
+
+/** Create a new location */
+export async function createLocation(
+  payload: CreateLocationPayload,
+): Promise<TpmLocation> {
+  return await apiClient.post('/tpm/locations', payload);
+}
+
+/** Update a location */
+export async function updateLocation(
+  locationUuid: string,
+  payload: UpdateLocationPayload,
+): Promise<TpmLocation> {
+  return await apiClient.patch(`/tpm/locations/${locationUuid}`, payload);
+}
+
+/** Delete a location (soft-delete) */
+export async function deleteLocation(locationUuid: string): Promise<void> {
+  await apiClient.delete(`/tpm/locations/${locationUuid}`);
+}
+
+/** Upload a photo to a location */
+export async function uploadLocationPhoto(
+  locationUuid: string,
+  file: File,
+): Promise<TpmLocation> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await apiClient.post(`/tpm/locations/${locationUuid}/photo`, formData);
+}
+
+/** Remove a photo from a location */
+export async function removeLocationPhoto(
+  locationUuid: string,
+): Promise<TpmLocation> {
+  return await apiClient.delete(`/tpm/locations/${locationUuid}/photo`);
 }
 
 // =============================================================================

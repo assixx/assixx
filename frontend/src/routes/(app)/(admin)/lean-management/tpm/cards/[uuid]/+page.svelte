@@ -273,6 +273,7 @@
             card={editingCard}
             planUuid={data.planUuid}
             planBaseWeekday={data.plan.baseWeekday}
+            locations={data.locations}
             {isCreateMode}
             {submitting}
             oncreate={handleCreate}

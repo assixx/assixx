@@ -139,6 +139,7 @@ export class RotationController {
       dto,
       user.tenantId,
       user.role,
+      user.id,
     );
     return { pattern };
   }
@@ -160,6 +161,7 @@ export class RotationController {
       dto,
       user.tenantId,
       user.role,
+      user.id,
     );
     return { pattern };
   }
@@ -176,6 +178,7 @@ export class RotationController {
       uuid,
       user.tenantId,
       user.role,
+      user.id,
     );
     return null;
   }
@@ -195,6 +198,7 @@ export class RotationController {
       id,
       user.tenantId,
       user.role,
+      user.id,
     );
     return null;
   }
@@ -309,6 +313,7 @@ export class RotationController {
       user.tenantId,
       teamId,
       user.role,
+      user.id,
       patternId, // Optional: if provided, only delete this pattern
     );
     const message =
@@ -336,9 +341,10 @@ export class RotationController {
       await this.rotationService.deleteRotationHistoryByDateRange(
         user.tenantId,
         query.teamId,
+        user.role,
+        user.id,
         query.startDate,
         query.endDate,
-        user.role,
       );
     return {
       message: `Successfully deleted rotation history for team ${query.teamId} from ${query.startDate} to ${query.endDate}`,
@@ -358,6 +364,7 @@ export class RotationController {
       id,
       user.tenantId,
       user.role,
+      user.id,
     );
     return { message: 'Entry deleted successfully' };
   }

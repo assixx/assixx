@@ -925,11 +925,12 @@ describe('ShiftsService – delegation methods', () => {
     it('delegates to shiftPlansService', async () => {
       mockPlansService.deleteShiftPlanByUuid.mockResolvedValueOnce(undefined);
 
-      await service.deleteShiftPlanByUuid('plan-uuid', 42);
+      await service.deleteShiftPlanByUuid('plan-uuid', 42, 5);
 
       expect(mockPlansService.deleteShiftPlanByUuid).toHaveBeenCalledWith(
         'plan-uuid',
         42,
+        5,
       );
     });
   });
@@ -938,9 +939,9 @@ describe('ShiftsService – delegation methods', () => {
     it('delegates to shiftPlansService', async () => {
       mockPlansService.deleteShiftPlan.mockResolvedValueOnce(undefined);
 
-      await service.deleteShiftPlan(1, 42);
+      await service.deleteShiftPlan(1, 42, 5);
 
-      expect(mockPlansService.deleteShiftPlan).toHaveBeenCalledWith(1, 42);
+      expect(mockPlansService.deleteShiftPlan).toHaveBeenCalledWith(1, 42, 5);
     });
   });
 

@@ -17,6 +17,13 @@ import type {
   PaginatedResponse,
 } from '../../_lib/types';
 
+/** Subset of TpmLocation needed for card form dropdown */
+interface LocationOption {
+  uuid: string;
+  positionNumber: number;
+  title: string;
+}
+
 const log = createLogger('TpmCardManagement');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
@@ -79,16 +86,23 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const planUuid = params.uuid;
 
-  // Load plan + cards + templates in parallel
-  const [planData, cardsData, templatesData] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
-    apiFetch<PaginatedResponse<TpmCard>>(
-      `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
-      token,
-      fetch,
-    ),
-    apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
-  ]);
+  // Load plan + cards + templates + locations in parallel
+  const [planData, cardsData, templatesData, locationsData] = await Promise.all(
+    [
+      apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+      apiFetch<PaginatedResponse<TpmCard>>(
+        `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
+        token,
+        fetch,
+      ),
+      apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
+      apiFetch<LocationOption[]>(
+        `/tpm/locations?planUuid=${planUuid}`,
+        token,
+        fetch,
+      ),
+    ],
+  );
 
   if (planData === null) {
     redirect(302, '/lean-management/tpm');
@@ -96,12 +110,14 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const { cards, totalCards } = extractCards(cardsData);
   const templates = Array.isArray(templatesData) ? templatesData : [];
+  const locations = Array.isArray(locationsData) ? locationsData : [];
 
   return {
     plan: planData,
     cards,
     totalCards,
     templates,
+    locations,
     planUuid,
   };
 };

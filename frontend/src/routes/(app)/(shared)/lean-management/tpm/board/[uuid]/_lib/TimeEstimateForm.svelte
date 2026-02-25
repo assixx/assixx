@@ -11,9 +11,14 @@
   interface Props {
     estimates: TpmTimeEstimate[];
     intervalType: IntervalType;
+    cardEstimatedMinutes?: number | null;
   }
 
-  const { estimates, intervalType }: Props = $props();
+  const {
+    estimates,
+    intervalType,
+    cardEstimatedMinutes = null,
+  }: Props = $props();
 
   const estimate = $derived(
     estimates.find((e: TpmTimeEstimate) => e.intervalType === intervalType) ??
@@ -61,6 +66,16 @@
         <span class="time-estimate__label">{MESSAGES.TIME_TOTAL}</span>
         <span class="time-estimate__value">
           {estimate.totalMinutes}
+          {MESSAGES.TIME_MINUTES}
+        </span>
+      </div>
+    </div>
+  {:else if cardEstimatedMinutes !== null && cardEstimatedMinutes > 0}
+    <div class="time-estimate__grid">
+      <div class="time-estimate__row">
+        <span class="time-estimate__label">{MESSAGES.TIME_EXEC}</span>
+        <span class="time-estimate__value">
+          {cardEstimatedMinutes}
           {MESSAGES.TIME_MINUTES}
         </span>
       </div>

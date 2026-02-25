@@ -267,6 +267,16 @@
                   <i class="fas fa-th-large"></i>
                 </a>
                 <a
+                  href={resolvePath(
+                    `/lean-management/tpm/locations/${plan.uuid}`,
+                  )}
+                  class="action-icon action-icon--warning"
+                  title="Standorte"
+                  aria-label="Standorte"
+                >
+                  <i class="fas fa-map-marker-alt"></i>
+                </a>
+                <a
                   href={resolvePath(`/lean-management/tpm/cards/${plan.uuid}`)}
                   class="action-icon action-icon--info"
                   title="Karten verwalten"

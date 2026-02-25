@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 
 // ============================================================================
@@ -138,7 +139,10 @@ interface DbAffectedRows extends QueryResultRow {
 export class AdminPermissionsService {
   private readonly logger = new Logger(AdminPermissionsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ==========================================================================
   // PUBLIC METHODS
@@ -207,6 +211,16 @@ export class AdminPermissionsService {
       tenantId,
       `Updated permissions for admin ${adminId}: ${departmentIds.length} depts`,
     );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      modifiedBy,
+      'admin_permission',
+      adminId,
+      `Abteilungsberechtigungen aktualisiert für Admin ${adminId}: ${departmentIds.length} Abteilungen`,
+      undefined,
+      { departmentIds, permissions },
+    );
   }
 
   /**
@@ -255,6 +269,15 @@ export class AdminPermissionsService {
       modifiedBy,
       tenantId,
       `Revoked department permission for admin ${adminId} on department ${departmentId}`,
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      modifiedBy,
+      'admin_permission',
+      adminId,
+      `Abteilungsberechtigung entzogen für Admin ${adminId}, Abteilung ${departmentId}`,
+      { departmentId },
     );
   }
 
@@ -446,6 +469,16 @@ export class AdminPermissionsService {
       tenantId,
       `Updated area permissions for user ${userId}: ${areaIds.length} areas`,
     );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      modifiedBy,
+      'admin_permission',
+      userId,
+      `Bereichsberechtigungen aktualisiert für User ${userId}: ${areaIds.length} Bereiche`,
+      undefined,
+      { areaIds, permissions },
+    );
   }
 
   /**
@@ -539,6 +572,15 @@ export class AdminPermissionsService {
       tenantId,
       `Revoked area permission for user ${userId} on area ${areaId}`,
     );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      modifiedBy,
+      'admin_permission',
+      userId,
+      `Bereichsberechtigung entzogen für User ${userId}, Bereich ${areaId}`,
+      { areaId },
+    );
   }
 
   async setHasFullAccess(
@@ -574,6 +616,16 @@ export class AdminPermissionsService {
       modifiedBy,
       tenantId,
       `${hasFullAccess ? 'Granted' : 'Revoked'} full access for user ${userId}`,
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      modifiedBy,
+      'admin_permission',
+      userId,
+      `Vollzugriff ${hasFullAccess ? 'gewährt' : 'entzogen'} für User ${userId}`,
+      undefined,
+      { hasFullAccess },
     );
   }
 

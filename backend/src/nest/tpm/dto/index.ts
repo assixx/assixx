@@ -6,6 +6,10 @@
 export { CompleteCardDto, CompleteCardSchema } from './complete-card.dto.js';
 export { CreateCardDto, CreateCardSchema } from './create-card.dto.js';
 export {
+  CreateLocationDto,
+  CreateLocationSchema,
+} from './create-location.dto.js';
+export {
   CreateExecutionDto,
   CreateExecutionSchema,
 } from './create-execution.dto.js';
@@ -26,6 +30,10 @@ export {
   RespondExecutionSchema,
 } from './respond-execution.dto.js';
 export { UpdateCardDto, UpdateCardSchema } from './update-card.dto.js';
+export {
+  UpdateLocationDto,
+  UpdateLocationSchema,
+} from './update-location.dto.js';
 export {
   UpdateColorConfigDto,
   UpdateColorConfigSchema,

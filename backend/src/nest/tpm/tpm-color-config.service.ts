@@ -12,6 +12,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
 import type { UpdateIntervalColorConfigDto } from './dto/update-interval-color-config.dto.js';
@@ -76,7 +77,10 @@ function buildDefaultIntervalEntry(
 export class TpmColorConfigService {
   private readonly logger = new Logger(TpmColorConfigService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get all status colors for a tenant.
@@ -110,6 +114,7 @@ export class TpmColorConfigService {
    */
   async updateColor(
     tenantId: number,
+    userId: number,
     dto: UpdateColorConfigDto,
   ): Promise<TpmColorConfigEntry> {
     this.logger.debug(`Updating color for status "${dto.statusKey}"`);
@@ -133,6 +138,16 @@ export class TpmColorConfigService {
           throw new Error('UPSERT tpm_color_config returned no rows');
         }
 
+        void this.activityLogger.logUpdate(
+          tenantId,
+          userId,
+          'tpm_color_config',
+          0,
+          `TPM-Statusfarbe aktualisiert: ${dto.statusKey}`,
+          undefined,
+          { statusKey: dto.statusKey, colorHex: dto.colorHex },
+        );
+
         return mapColorRowToApi(row);
       },
     );
@@ -142,7 +157,10 @@ export class TpmColorConfigService {
    * Reset all status colors to defaults.
    * Deletes tenant-specific card status overrides only (not interval colors).
    */
-  async resetToDefaults(tenantId: number): Promise<TpmColorConfigEntry[]> {
+  async resetToDefaults(
+    tenantId: number,
+    userId: number,
+  ): Promise<TpmColorConfigEntry[]> {
     this.logger.debug(`Resetting card status colors for tenant ${tenantId}`);
 
     const statusKeys: TpmCardStatus[] = ['green', 'red', 'yellow', 'overdue'];
@@ -155,6 +173,14 @@ export class TpmColorConfigService {
           [tenantId, statusKeys],
         );
       },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_color_config',
+      0,
+      'TPM-Statusfarben auf Standard zurückgesetzt',
     );
 
     return statusKeys.map(buildDefaultEntry);
@@ -195,6 +221,7 @@ export class TpmColorConfigService {
    */
   async updateIntervalColor(
     tenantId: number,
+    userId: number,
     dto: UpdateIntervalColorConfigDto,
   ): Promise<TpmColorConfigEntry> {
     this.logger.debug(`Updating interval color for "${dto.intervalKey}"`);
@@ -218,6 +245,16 @@ export class TpmColorConfigService {
           throw new Error('UPSERT tpm_color_config returned no rows');
         }
 
+        void this.activityLogger.logUpdate(
+          tenantId,
+          userId,
+          'tpm_color_config',
+          0,
+          `TPM-Intervallfarbe aktualisiert: ${dto.intervalKey}`,
+          undefined,
+          { intervalKey: dto.intervalKey, colorHex: dto.colorHex },
+        );
+
         return mapColorRowToApi(row);
       },
     );
@@ -229,6 +266,7 @@ export class TpmColorConfigService {
    */
   async resetIntervalColorsToDefaults(
     tenantId: number,
+    userId: number,
   ): Promise<TpmColorConfigEntry[]> {
     this.logger.debug(`Resetting interval colors for tenant ${tenantId}`);
 
@@ -242,6 +280,14 @@ export class TpmColorConfigService {
           [tenantId, intervalKeys],
         );
       },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_color_config',
+      0,
+      'TPM-Intervallfarben auf Standard zurückgesetzt',
     );
 
     return INTERVAL_TYPES_ORDERED.map(buildDefaultIntervalEntry);

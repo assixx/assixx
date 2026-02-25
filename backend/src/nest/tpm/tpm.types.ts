@@ -161,6 +161,25 @@ export interface TpmScheduledDateRow {
   created_at: string;
 }
 
+/** Row type for `tpm_locations` table (migration 054) — structured location per plan */
+export interface TpmLocationRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  plan_id: number;
+  position_number: number;
+  title: string;
+  description: string | null;
+  photo_path: string | null;
+  photo_file_name: string | null;
+  photo_file_size: number | null;
+  photo_mime_type: string | null;
+  is_active: number;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Row type for `tpm_escalation_config` table (migration 044) — 1 row per tenant, no uuid */
 export interface TpmEscalationConfigRow {
   id: number;
@@ -260,6 +279,24 @@ export interface TpmCard {
   customIntervalDays: number | null;
   weekdayOverride: number | null;
   estimatedExecutionMinutes: number | null;
+  isActive: number;
+  createdBy: number;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Location as returned by the API */
+export interface TpmLocation {
+  uuid: string;
+  planUuid?: string;
+  positionNumber: number;
+  title: string;
+  description: string | null;
+  photoPath: string | null;
+  photoFileName: string | null;
+  photoFileSize: number | null;
+  photoMimeType: string | null;
   isActive: number;
   createdBy: number;
   createdByName?: string;

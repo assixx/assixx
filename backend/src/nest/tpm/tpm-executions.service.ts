@@ -244,6 +244,7 @@ export class TpmExecutionsService {
   async addPhoto(
     tenantId: number,
     executionUuid: string,
+    userId: number,
     fileData: PhotoFileData,
   ): Promise<TpmExecutionPhoto> {
     return await this.db.tenantTransaction(async (client: PoolClient) => {
@@ -289,6 +290,16 @@ export class TpmExecutionsService {
       if (row === undefined) {
         throw new Error('Photo INSERT returned no rows');
       }
+
+      void this.activityLogger.logCreate(
+        tenantId,
+        userId,
+        'tpm_execution',
+        0,
+        `TPM-Foto hinzugefügt: Durchführung ${executionUuid}`,
+        { executionUuid, fileName: fileData.fileName },
+      );
+
       return mapPhotoRowToApi(row);
     });
   }

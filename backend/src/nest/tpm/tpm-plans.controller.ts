@@ -207,9 +207,10 @@ export class TpmPlansController {
   @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
   async setTimeEstimate(
     @Body() dto: CreateTimeEstimateDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmTimeEstimate> {
-    return await this.timeEstimatesService.setEstimate(tenantId, dto);
+    return await this.timeEstimatesService.setEstimate(tenantId, user.id, dto);
   }
 
   // ============================================================================

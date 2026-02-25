@@ -100,6 +100,17 @@
           {/if}
           <button
             type="button"
+            class="btn btn-light"
+            onclick={() => {
+              void goto(
+                resolvePath(`/lean-management/tpm/locations/${data.planUuid}`),
+              );
+            }}
+          >
+            <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
+          </button>
+          <button
+            type="button"
             class="btn btn-primary"
             onclick={() => {
               void goto(

@@ -8,6 +8,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateTemplateDto } from './dto/create-template.dto.js';
 import type { UpdateTemplateDto } from './dto/update-template.dto.js';
@@ -37,7 +38,10 @@ function mapTemplateRowToApi(row: TpmCardTemplateRow): TpmCardTemplate {
 export class TpmTemplatesService {
   private readonly logger = new Logger(TpmTemplatesService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /** List all active templates for a tenant */
   async listTemplates(tenantId: number): Promise<TpmCardTemplate[]> {
@@ -74,6 +78,7 @@ export class TpmTemplatesService {
   /** Create a new card template */
   async createTemplate(
     tenantId: number,
+    userId: number,
     dto: CreateTemplateDto,
   ): Promise<TpmCardTemplate> {
     this.logger.debug(`Creating template "${dto.name}"`);
@@ -100,7 +105,18 @@ export class TpmTemplatesService {
           throw new Error('INSERT into tpm_card_templates returned no rows');
         }
 
-        return mapTemplateRowToApi(row);
+        const template = mapTemplateRowToApi(row);
+
+        void this.activityLogger.logCreate(
+          tenantId,
+          userId,
+          'tpm_template',
+          0,
+          `TPM-Vorlage erstellt: ${dto.name}`,
+          { name: dto.name, uuid: template.uuid },
+        );
+
+        return template;
       },
     );
   }
@@ -108,6 +124,7 @@ export class TpmTemplatesService {
   /** Update an existing card template */
   async updateTemplate(
     tenantId: number,
+    userId: number,
     templateUuid: string,
     dto: UpdateTemplateDto,
   ): Promise<TpmCardTemplate> {
@@ -126,32 +143,13 @@ export class TpmTemplatesService {
           );
         }
 
-        // Build dynamic SET
-        const setClauses: string[] = [];
-        const params: unknown[] = [];
-        let idx = 1;
-
-        if (dto.name !== undefined) {
-          setClauses.push(`name = $${idx++}`);
-          params.push(dto.name);
-        }
-        if (dto.description !== undefined) {
-          setClauses.push(`description = $${idx++}`);
-          params.push(dto.description);
-        }
-        if (dto.defaultFields !== undefined) {
-          setClauses.push(`default_fields = $${idx++}`);
-          params.push(JSON.stringify(dto.defaultFields));
-        }
-        if (dto.isDefault !== undefined) {
-          setClauses.push(`is_default = $${idx++}`);
-          params.push(dto.isDefault);
-        }
+        const { setClauses, params } = this.buildTemplateSetClauses(dto);
 
         if (setClauses.length === 0) {
           return mapTemplateRowToApi(existing.rows[0]);
         }
 
+        const idx = params.length + 1;
         params.push(templateUuid, tenantId);
         const sql = `UPDATE tpm_card_templates
                      SET ${setClauses.join(', ')}, updated_at = NOW()
@@ -164,13 +162,64 @@ export class TpmTemplatesService {
           throw new Error('UPDATE tpm_card_templates returned no rows');
         }
 
-        return mapTemplateRowToApi(row);
+        const template = mapTemplateRowToApi(row);
+
+        void this.activityLogger.logUpdate(
+          tenantId,
+          userId,
+          'tpm_template',
+          0,
+          `TPM-Vorlage aktualisiert: ${templateUuid}`,
+          undefined,
+          {
+            uuid: templateUuid,
+            name: dto.name,
+            description: dto.description,
+            defaultFields: dto.defaultFields,
+            isDefault: dto.isDefault,
+          },
+        );
+
+        return template;
       },
     );
   }
 
+  /** Build dynamic SET clause for template update. */
+  private buildTemplateSetClauses(dto: UpdateTemplateDto): {
+    setClauses: string[];
+    params: unknown[];
+  } {
+    const setClauses: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (dto.name !== undefined) {
+      setClauses.push(`name = $${idx++}`);
+      params.push(dto.name);
+    }
+    if (dto.description !== undefined) {
+      setClauses.push(`description = $${idx++}`);
+      params.push(dto.description);
+    }
+    if (dto.defaultFields !== undefined) {
+      setClauses.push(`default_fields = $${idx++}`);
+      params.push(JSON.stringify(dto.defaultFields));
+    }
+    if (dto.isDefault !== undefined) {
+      setClauses.push(`is_default = $${idx}`);
+      params.push(dto.isDefault);
+    }
+
+    return { setClauses, params };
+  }
+
   /** Soft-delete a template (is_active = 4) */
-  async deleteTemplate(tenantId: number, templateUuid: string): Promise<void> {
+  async deleteTemplate(
+    tenantId: number,
+    userId: number,
+    templateUuid: string,
+  ): Promise<void> {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         const result = await client.query<{ id: number }>(
@@ -186,6 +235,15 @@ export class TpmTemplatesService {
             `Kartenvorlage ${templateUuid} nicht gefunden`,
           );
         }
+
+        void this.activityLogger.logDelete(
+          tenantId,
+          userId,
+          'tpm_template',
+          0,
+          `TPM-Vorlage gelöscht: ${templateUuid}`,
+          { uuid: templateUuid },
+        );
       },
     );
   }

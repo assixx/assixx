@@ -15,6 +15,7 @@ import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import type { PoolClient } from 'pg';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { UpdateEscalationConfigDto } from './dto/update-escalation-config.dto.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
@@ -50,6 +51,7 @@ export class TpmEscalationService implements OnModuleInit {
     private readonly db: DatabaseService,
     private readonly cardStatusService: TpmCardStatusService,
     private readonly notificationService: TpmNotificationService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   /** Startup recovery — catch cards that expired while server was down */
@@ -79,6 +81,7 @@ export class TpmEscalationService implements OnModuleInit {
   /** Update (upsert) escalation config for a tenant */
   async updateConfig(
     tenantId: number,
+    userId: number,
     dto: UpdateEscalationConfigDto,
   ): Promise<TpmEscalationConfig> {
     return await this.db.tenantTransaction(
@@ -106,6 +109,16 @@ export class TpmEscalationService implements OnModuleInit {
         if (row === undefined) {
           throw new Error('UPSERT tpm_escalation_config returned no rows');
         }
+        void this.activityLogger.logUpdate(
+          tenantId,
+          userId,
+          'tpm_escalation_config',
+          0,
+          `TPM-Eskalationskonfiguration aktualisiert`,
+          undefined,
+          { escalationAfterHours: dto.escalationAfterHours },
+        );
+
         return mapConfigRowToApi(row);
       },
     );

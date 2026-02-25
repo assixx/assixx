@@ -183,6 +183,11 @@
       label: 'Wartungsverlauf',
       icon: 'fa-history',
     },
+    {
+      pattern: /^\/lean-management\/tpm\/locations\/[^/]+$/,
+      label: 'Standorte',
+      icon: 'fa-map-marker-alt',
+    },
   ];
 
   /**
@@ -288,6 +293,12 @@
     },
     {
       pattern: /^\/lean-management\/tpm\/card\/[^/]+\/history$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/locations\/[^/]+$/,
       label: 'TPM Übersicht',
       href: '/lean-management/tpm/overview',
       icon: 'fa-tools',

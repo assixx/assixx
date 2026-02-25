@@ -309,7 +309,7 @@ export class VacationEntitlementsService {
     );
 
     // Ensure target year entitlement exists, then set carry-over
-    return await this.db.tenantTransaction(
+    const entitlement = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationEntitlement> => {
         await this.ensureEntitlementExists(client, tenantId, userId, toYear);
 
@@ -337,6 +337,18 @@ export class VacationEntitlementsService {
         return this.mapRowToEntitlement(row);
       },
     );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'vacation_entitlement',
+      0,
+      `Urlaubsübertrag: ${carryOver} Tage von ${fromYear} nach ${toYear}`,
+      undefined,
+      { targetUserId: userId, fromYear, toYear, carryOver, expiresAt },
+    );
+
+    return entitlement;
   }
 
   /**
@@ -347,6 +359,7 @@ export class VacationEntitlementsService {
     tenantId: number,
     id: string,
     dto: UpdateEntitlementDto,
+    performedBy?: number,
   ): Promise<VacationEntitlement> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationEntitlement> => {
@@ -376,6 +389,24 @@ export class VacationEntitlementsService {
         const row: VacationEntitlementRow | undefined = result.rows[0];
         if (row === undefined) {
           throw new NotFoundException(`Entitlement ${id} not found`);
+        }
+
+        if (performedBy !== undefined) {
+          void this.activityLogger.logUpdate(
+            tenantId,
+            performedBy,
+            'vacation_entitlement',
+            0,
+            `Urlaubsanspruch aktualisiert: ${id}`,
+            undefined,
+            {
+              entitlementId: id,
+              totalDays: dto.totalDays,
+              carriedOverDays: dto.carriedOverDays,
+              additionalDays: dto.additionalDays,
+              carryOverExpiresAt: dto.carryOverExpiresAt,
+            },
+          );
         }
 
         return this.mapRowToEntitlement(row);

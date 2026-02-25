@@ -8,6 +8,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateShiftPlanDto } from './dto/shift-plan.dto.js';
 import type { UpdateShiftPlanDto } from './dto/update-shift-plan.dto.js';
@@ -22,7 +23,10 @@ import type {
 export class ShiftPlansService {
   private readonly logger = new Logger(ShiftPlansService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Finds the most recent shift plan matching the given filters.
@@ -94,6 +98,20 @@ export class ShiftPlansService {
         await this.insertPlanShifts(dto.shifts, planId, tenantId, dto, userId)
       : [];
 
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'shift_plan',
+      planId,
+      `Schichtplan erstellt: ${dto.name ?? dto.startDate}`,
+      {
+        name: dto.name,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        shiftCount: dto.shifts.length,
+      },
+    );
+
     return { planId, shiftIds, message: 'Shift plan created successfully' };
   }
 
@@ -148,6 +166,20 @@ export class ShiftPlansService {
       await this.cleanupOrphanedRotationHistory(tenantId, teamId, dto.shifts);
     }
 
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'shift_plan',
+      planId,
+      `Schichtplan aktualisiert: ${dto.name ?? plan?.name ?? planId}`,
+      undefined,
+      {
+        name: dto.name,
+        shiftNotes: dto.shiftNotes,
+        shiftCount: dto.shifts?.length,
+      },
+    );
+
     return { planId, shiftIds, message: 'Shift plan updated successfully' };
   }
 
@@ -185,12 +217,20 @@ export class ShiftPlansService {
   /**
    * Delete shift plan by UUID (wrapper for UUID-based API)
    */
-  async deleteShiftPlanByUuid(uuid: string, tenantId: number): Promise<void> {
+  async deleteShiftPlanByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     const planId = await this.resolveShiftPlanIdByUuid(uuid, tenantId);
-    await this.deleteShiftPlan(planId, tenantId);
+    await this.deleteShiftPlan(planId, tenantId, userId);
   }
 
-  async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
+  async deleteShiftPlan(
+    planId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     this.logger.debug(`Deleting shift plan ${planId} for tenant ${tenantId}`);
 
     const plans = await this.databaseService.query<DbShiftPlanRow>(
@@ -202,6 +242,8 @@ export class ShiftPlansService {
       throw new NotFoundException(`Shift plan ${planId} not found`);
     }
 
+    const plan = plans[0];
+
     // Delete associated shifts first
     await this.databaseService.query(
       `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
@@ -212,6 +254,19 @@ export class ShiftPlansService {
     await this.databaseService.query(
       `DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
       [planId, tenantId],
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'shift_plan',
+      planId,
+      `Schichtplan gelöscht: ${plan?.name ?? planId}`,
+      {
+        name: plan?.name,
+        startDate: plan?.start_date,
+        endDate: plan?.end_date,
+      },
     );
   }
 

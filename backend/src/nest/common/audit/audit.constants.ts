@@ -100,6 +100,10 @@ export const RESOURCE_TABLE_MAP: Record<
   holiday: { table: 'vacation_holidays', nameField: 'name' },
   'staffing-rule': { table: 'vacation_staffing_rules', nameField: 'id' },
   entitlement: { table: 'vacation_entitlements', nameField: 'id' },
+  // TPM module resources (ADR-026)
+  'tpm-plan': { table: 'tpm_maintenance_plans', nameField: 'name' },
+  'tpm-card': { table: 'tpm_cards', nameField: 'title' },
+  'tpm-execution': { table: 'tpm_card_executions', nameField: 'id' },
 };
 
 /**

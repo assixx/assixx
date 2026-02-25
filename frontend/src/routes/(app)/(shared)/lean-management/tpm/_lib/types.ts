@@ -64,11 +64,45 @@ export interface TpmCard {
   sortOrder: number;
   customFields: Record<string, unknown>;
   customIntervalDays: number | null;
+  estimatedExecutionMinutes: number | null;
   isActive: number;
   createdBy: number;
   createdByName?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** TPM Location (structured location description per plan) */
+export interface TpmLocation {
+  uuid: string;
+  planUuid?: string;
+  positionNumber: number;
+  title: string;
+  description: string | null;
+  photoPath: string | null;
+  photoFileName: string | null;
+  photoFileSize: number | null;
+  photoMimeType: string | null;
+  isActive: number;
+  createdBy: number;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Payload for creating a location */
+export interface CreateLocationPayload {
+  planUuid: string;
+  positionNumber: number;
+  title: string;
+  description?: string | null;
+}
+
+/** Payload for updating a location */
+export interface UpdateLocationPayload {
+  positionNumber?: number;
+  title?: string;
+  description?: string | null;
 }
 
 /** TPM Color Configuration Entry */

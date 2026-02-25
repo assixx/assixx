@@ -8,6 +8,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 import type { TpmTimeEstimateRow } from './tpm.types.js';
@@ -49,6 +50,13 @@ function createEstimateRow(
 // TpmTimeEstimatesService
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('TpmTimeEstimatesService', () => {
   let service: TpmTimeEstimatesService;
   let mockDb: MockDb;
@@ -65,7 +73,10 @@ describe('TpmTimeEstimatesService', () => {
       },
     );
 
-    service = new TpmTimeEstimatesService(mockDb as unknown as DatabaseService);
+    service = new TpmTimeEstimatesService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -83,7 +94,7 @@ describe('TpmTimeEstimatesService', () => {
         rows: [createEstimateRow()],
       });
 
-      const result = await service.setEstimate(10, {
+      const result = await service.setEstimate(10, 1, {
         planUuid: 'plan-uuid-001',
         intervalType: 'weekly',
         staffCount: 2,
@@ -111,7 +122,7 @@ describe('TpmTimeEstimatesService', () => {
         ],
       });
 
-      const result = await service.setEstimate(10, {
+      const result = await service.setEstimate(10, 1, {
         planUuid: 'plan-uuid-001',
         intervalType: 'monthly',
         staffCount: 1,
@@ -127,7 +138,7 @@ describe('TpmTimeEstimatesService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.setEstimate(10, {
+        service.setEstimate(10, 1, {
           planUuid: 'nonexistent',
           intervalType: 'daily',
           staffCount: 1,
@@ -143,7 +154,7 @@ describe('TpmTimeEstimatesService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.setEstimate(10, {
+        service.setEstimate(10, 1, {
           planUuid: 'plan-uuid-001',
           intervalType: 'daily',
           staffCount: 1,
@@ -225,7 +236,7 @@ describe('TpmTimeEstimatesService', () => {
       });
 
       await expect(
-        service.deleteEstimate(10, 'est-uuid-001'),
+        service.deleteEstimate(10, 1, 'est-uuid-001'),
       ).resolves.toBeUndefined();
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
@@ -235,9 +246,9 @@ describe('TpmTimeEstimatesService', () => {
     it('should throw NotFoundException when estimate not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deleteEstimate(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.deleteEstimate(10, 1, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

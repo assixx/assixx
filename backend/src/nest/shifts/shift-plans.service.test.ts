@@ -8,6 +8,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { ShiftPlansService } from './shift-plans.service.js';
 
@@ -43,6 +44,15 @@ function createMockDb() {
   return { query: vi.fn() };
 }
 
+function createMockActivityLogger() {
+  return {
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+    log: vi.fn(),
+  };
+}
+
 /** Standard DB shift plan row */
 function makePlanRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -75,7 +85,11 @@ describe('ShiftPlansService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new ShiftPlansService(mockDb as unknown as DatabaseService);
+    const mockActivityLogger = createMockActivityLogger();
+    service = new ShiftPlansService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -241,7 +255,7 @@ describe('ShiftPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteShiftPlan(999, 10)).rejects.toThrow(
+      await expect(service.deleteShiftPlan(999, 10, 1)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -254,7 +268,7 @@ describe('ShiftPlansService', () => {
       // DELETE plan
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.deleteShiftPlan(1, 10);
+      await service.deleteShiftPlan(1, 10, 1);
 
       expect(mockDb.query).toHaveBeenCalledTimes(3);
     });
@@ -275,7 +289,7 @@ describe('ShiftPlansService', () => {
       // DELETE plan
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.deleteShiftPlanByUuid('plan-uuid-1', 10);
+      await service.deleteShiftPlanByUuid('plan-uuid-1', 10, 1);
 
       expect(mockDb.query).toHaveBeenCalledTimes(4);
     });

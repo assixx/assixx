@@ -6,6 +6,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 
 /**
@@ -227,7 +228,10 @@ export interface UpdateAddonsRequest {
 export class PlansService {
   private readonly logger = new Logger(PlansService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Map database row to API Plan
@@ -520,7 +524,7 @@ export class PlansService {
   async updateAddons(
     tenantId: number,
     addons: UpdateAddonsRequest,
-    _userId?: number,
+    userId?: number,
   ): Promise<TenantAddons> {
     this.logger.log(`Updating addons for tenant ${tenantId}`);
 
@@ -561,6 +565,20 @@ export class PlansService {
         [tenantId, update.type, update.quantity, update.unitPrice],
       );
     }
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId ?? 0,
+      'subscription_plan',
+      tenantId,
+      `Addons aktualisiert für Tenant ${tenantId}`,
+      undefined,
+      {
+        employees: addons.employees,
+        admins: addons.admins,
+        storageGb: addons.storageGb,
+      },
+    );
 
     return await this.getTenantAddons(tenantId);
   }
@@ -628,7 +646,7 @@ export class PlansService {
     tenantId: number,
     newPlanCode: string,
     effectiveDate?: Date,
-    _userId?: number,
+    userId?: number,
   ): Promise<CurrentPlanResponse> {
     this.logger.log(`Upgrading plan for tenant ${tenantId} to ${newPlanCode}`);
 
@@ -669,8 +687,34 @@ export class PlansService {
       [newPlan.id, tenantId],
     );
 
-    // Deactivate features not included in new plan
-    const planFeatures = await this.getPlanFeaturesFromDb(newPlan.id);
+    await this.deactivateExcludedFeatures(tenantId, newPlan.id);
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId ?? 0,
+      'subscription_plan',
+      tenantId,
+      `Plan-Upgrade auf ${newPlanCode} für Tenant ${tenantId}`,
+      { previousPlanId: currentPlanRow.plan_id },
+      { newPlanCode, newPlanId: newPlan.id },
+    );
+
+    const result = await this.getCurrentPlan(tenantId);
+    if (result === null) {
+      throw new NotFoundException('Failed to retrieve updated plan');
+    }
+
+    return result;
+  }
+
+  /**
+   * Deactivate tenant features not included in the given plan
+   */
+  private async deactivateExcludedFeatures(
+    tenantId: number,
+    planId: number,
+  ): Promise<void> {
+    const planFeatures = await this.getPlanFeaturesFromDb(planId);
     const includedFeatureIds = planFeatures
       .filter((f: PlanFeature) => f.isIncluded)
       .map((f: PlanFeature) => f.featureId);
@@ -688,12 +732,5 @@ export class PlansService {
         [tenantId, ...includedFeatureIds],
       );
     }
-
-    const result = await this.getCurrentPlan(tenantId);
-    if (result === null) {
-      throw new NotFoundException('Failed to retrieve updated plan');
-    }
-
-    return result;
   }
 }

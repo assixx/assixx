@@ -27,9 +27,11 @@ import {
   Post,
 } from '@nestjs/common';
 
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { CreateTemplateDto } from './dto/create-template.dto.js';
 import { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
 import { UpdateEscalationConfigDto } from './dto/update-escalation-config.dto.js';
@@ -76,9 +78,10 @@ export class TpmConfigController {
   @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
   async updateEscalationConfig(
     @Body() dto: UpdateEscalationConfigDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmEscalationConfig> {
-    return await this.escalationService.updateConfig(tenantId, dto);
+    return await this.escalationService.updateConfig(tenantId, user.id, dto);
   }
 
   // ============================================================================
@@ -99,9 +102,10 @@ export class TpmConfigController {
   @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
   async updateColor(
     @Body() dto: UpdateColorConfigDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry> {
-    return await this.colorConfigService.updateColor(tenantId, dto);
+    return await this.colorConfigService.updateColor(tenantId, user.id, dto);
   }
 
   /** POST /tpm/config/colors/reset — Reset card status colors to defaults */
@@ -109,9 +113,10 @@ export class TpmConfigController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
   async resetColors(
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry[]> {
-    return await this.colorConfigService.resetToDefaults(tenantId);
+    return await this.colorConfigService.resetToDefaults(tenantId, user.id);
   }
 
   // ============================================================================
@@ -132,9 +137,14 @@ export class TpmConfigController {
   @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
   async updateIntervalColor(
     @Body() dto: UpdateIntervalColorConfigDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry> {
-    return await this.colorConfigService.updateIntervalColor(tenantId, dto);
+    return await this.colorConfigService.updateIntervalColor(
+      tenantId,
+      user.id,
+      dto,
+    );
   }
 
   /** POST /tpm/config/interval-colors/reset — Reset interval colors to defaults */
@@ -142,10 +152,12 @@ export class TpmConfigController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
   async resetIntervalColors(
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry[]> {
     return await this.colorConfigService.resetIntervalColorsToDefaults(
       tenantId,
+      user.id,
     );
   }
 
@@ -168,9 +180,10 @@ export class TpmConfigController {
   @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
   async createTemplate(
     @Body() dto: CreateTemplateDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmCardTemplate> {
-    return await this.templatesService.createTemplate(tenantId, dto);
+    return await this.templatesService.createTemplate(tenantId, user.id, dto);
   }
 
   /** PATCH /tpm/config/templates/:uuid — Update a card template */
@@ -179,9 +192,15 @@ export class TpmConfigController {
   async updateTemplate(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateTemplateDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmCardTemplate> {
-    return await this.templatesService.updateTemplate(tenantId, uuid, dto);
+    return await this.templatesService.updateTemplate(
+      tenantId,
+      user.id,
+      uuid,
+      dto,
+    );
   }
 
   /** DELETE /tpm/config/templates/:uuid — Soft-delete a card template */
@@ -189,9 +208,10 @@ export class TpmConfigController {
   @RequirePermission(FEAT, MOD_CARDS, 'canDelete')
   async deleteTemplate(
     @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ message: string }> {
-    await this.templatesService.deleteTemplate(tenantId, uuid);
+    await this.templatesService.deleteTemplate(tenantId, user.id, uuid);
     return { message: 'Kartenvorlage gelöscht' };
   }
 }

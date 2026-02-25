@@ -314,7 +314,11 @@ export class ShiftsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift plan ${uuid}`);
-    await this.shiftsService.deleteShiftPlanByUuid(uuid, user.tenantId);
+    await this.shiftsService.deleteShiftPlanByUuid(
+      uuid,
+      user.tenantId,
+      user.id,
+    );
     return { message: 'Shift plan deleted successfully' };
   }
 
@@ -330,7 +334,7 @@ export class ShiftsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift plan ${id}`);
-    await this.shiftsService.deleteShiftPlan(id, user.tenantId);
+    await this.shiftsService.deleteShiftPlan(id, user.tenantId, user.id);
     return { message: 'Shift plan deleted successfully' };
   }
 

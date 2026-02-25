@@ -9,6 +9,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { TpmTemplatesService } from './tpm-templates.service.js';
 import type { TpmCardTemplateRow } from './tpm.types.js';
@@ -48,6 +49,13 @@ function createTemplateRow(
 // TpmTemplatesService
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('TpmTemplatesService', () => {
   let service: TpmTemplatesService;
   let mockDb: MockDb;
@@ -64,7 +72,10 @@ describe('TpmTemplatesService', () => {
       },
     );
 
-    service = new TpmTemplatesService(mockDb as unknown as DatabaseService);
+    service = new TpmTemplatesService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -131,7 +142,7 @@ describe('TpmTemplatesService', () => {
         rows: [createTemplateRow({ default_fields: fields })],
       });
 
-      const result = await service.createTemplate(10, {
+      const result = await service.createTemplate(10, 1, {
         name: 'New Template',
         defaultFields: fields,
         isDefault: false,
@@ -153,7 +164,7 @@ describe('TpmTemplatesService', () => {
         rows: [createTemplateRow({ description: null })],
       });
 
-      const result = await service.createTemplate(10, {
+      const result = await service.createTemplate(10, 1, {
         name: 'Minimal Template',
         defaultFields: {},
         isDefault: false,
@@ -166,7 +177,7 @@ describe('TpmTemplatesService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.createTemplate(10, {
+        service.createTemplate(10, 1, {
           name: 'Test',
           defaultFields: {},
           isDefault: false,
@@ -190,7 +201,7 @@ describe('TpmTemplatesService', () => {
         rows: [createTemplateRow({ name: 'Updated Name' })],
       });
 
-      const result = await service.updateTemplate(10, 'tpl-uuid-001', {
+      const result = await service.updateTemplate(10, 1, 'tpl-uuid-001', {
         name: 'Updated Name',
       });
 
@@ -202,7 +213,7 @@ describe('TpmTemplatesService', () => {
         rows: [createTemplateRow()],
       });
 
-      const result = await service.updateTemplate(10, 'tpl-uuid-001', {});
+      const result = await service.updateTemplate(10, 1, 'tpl-uuid-001', {});
 
       expect(result.name).toBe('Standard-Prüfung');
       // Only the lock query should have been called
@@ -217,7 +228,7 @@ describe('TpmTemplatesService', () => {
         rows: [createTemplateRow({ name: 'Updated' })],
       });
 
-      await service.updateTemplate(10, 'tpl-uuid-001', { name: 'Updated' });
+      await service.updateTemplate(10, 1, 'tpl-uuid-001', { name: 'Updated' });
 
       const lockSql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(lockSql).toContain('FOR UPDATE');
@@ -227,7 +238,7 @@ describe('TpmTemplatesService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.updateTemplate(10, 'nonexistent', { name: 'X' }),
+        service.updateTemplate(10, 1, 'nonexistent', { name: 'X' }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -240,7 +251,7 @@ describe('TpmTemplatesService', () => {
       });
 
       const fields = { newField: 'value' };
-      await service.updateTemplate(10, 'tpl-uuid-001', {
+      await service.updateTemplate(10, 1, 'tpl-uuid-001', {
         defaultFields: fields,
       });
 
@@ -260,7 +271,7 @@ describe('TpmTemplatesService', () => {
       });
 
       await expect(
-        service.deleteTemplate(10, 'tpl-uuid-001'),
+        service.deleteTemplate(10, 1, 'tpl-uuid-001'),
       ).resolves.toBeUndefined();
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
@@ -270,9 +281,9 @@ describe('TpmTemplatesService', () => {
     it('should throw NotFoundException when template not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deleteTemplate(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.deleteTemplate(10, 1, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

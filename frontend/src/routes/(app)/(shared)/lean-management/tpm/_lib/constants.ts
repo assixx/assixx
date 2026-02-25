@@ -221,6 +221,39 @@ export const MESSAGES = {
   ZOOM_OUT: 'Verkleinern',
   ZOOM_FULLSCREEN: 'Vollbild',
 
+  // Locations
+  LOCATIONS_PAGE_TITLE: 'TPM Standorte - Assixx',
+  LOCATIONS_HEADING: 'Standorte',
+  LOCATIONS_DESCRIPTION:
+    'Strukturierte Standortbeschreibungen für diesen Wartungsplan',
+  LOCATIONS_EMPTY_TITLE: 'Keine Standorte',
+  LOCATIONS_EMPTY_DESC:
+    'Es wurden noch keine Standorte für diesen Wartungsplan angelegt.',
+  LOCATIONS_ADD: 'Standort hinzufügen',
+  LOCATIONS_EDIT: 'Bearbeiten',
+  LOCATIONS_DELETE: 'Löschen',
+  LOCATIONS_DELETE_CONFIRM: 'Standort wirklich löschen?',
+  LOCATIONS_POSITION: 'Position',
+  LOCATIONS_TITLE: 'Titel',
+  LOCATIONS_DESC_LABEL: 'Beschreibung',
+  LOCATIONS_DESC_PH: 'Kurze Beschreibung des Standorts...',
+  LOCATIONS_PHOTO: 'Foto',
+  LOCATIONS_PHOTO_UPLOAD: 'Foto hochladen',
+  LOCATIONS_PHOTO_REMOVE: 'Foto entfernen',
+  LOCATIONS_PHOTO_HINT:
+    'Zeigt wo sich der Standort an der Maschine befindet (max. 5 MB)',
+  LOCATIONS_SAVE: 'Speichern',
+  LOCATIONS_SAVING: 'Wird gespeichert...',
+  LOCATIONS_SUCCESS_CREATE: 'Standort erfolgreich erstellt',
+  LOCATIONS_SUCCESS_UPDATE: 'Standort erfolgreich aktualisiert',
+  LOCATIONS_SUCCESS_DELETE: 'Standort erfolgreich gelöscht',
+  LOCATIONS_ERROR_LOAD: 'Fehler beim Laden der Standorte',
+  LOCATIONS_ERROR_SAVE: 'Fehler beim Speichern des Standorts',
+  LOCATIONS_ERROR_DELETE: 'Fehler beim Löschen des Standorts',
+  LOCATIONS_BACK: 'Zurück zum Board',
+  LOCATIONS_CANCEL: 'Abbrechen',
+  BTN_LOCATIONS: 'Standorte',
+
   // Time Estimates
   TIME_HEADING: 'Zeitschätzung',
   TIME_STAFF: 'Mitarbeiter',

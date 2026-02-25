@@ -15,6 +15,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { TpmCardStatusService } from './tpm-card-status.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
@@ -101,6 +102,12 @@ describe('TpmEscalationService', () => {
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockCardStatusService: ReturnType<typeof createMockCardStatusService>;
   let mockNotificationService: ReturnType<typeof createMockNotificationService>;
+  const mockActivityLogger = {
+    logCreate: vi.fn().mockResolvedValue(undefined),
+    logUpdate: vi.fn().mockResolvedValue(undefined),
+    logDelete: vi.fn().mockResolvedValue(undefined),
+    log: vi.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -125,6 +132,7 @@ describe('TpmEscalationService', () => {
       mockDb as unknown as DatabaseService,
       mockCardStatusService as unknown as TpmCardStatusService,
       mockNotificationService as unknown as TpmNotificationService,
+      mockActivityLogger as unknown as ActivityLoggerService,
     );
   });
 
@@ -179,7 +187,7 @@ describe('TpmEscalationService', () => {
         ],
       });
 
-      const result = await service.updateConfig(10, {
+      const result = await service.updateConfig(10, 1, {
         escalationAfterHours: 72,
         notifyTeamLead: true,
         notifyDepartmentLead: true,
@@ -194,7 +202,7 @@ describe('TpmEscalationService', () => {
         rows: [createConfigRow()],
       });
 
-      await service.updateConfig(10, {
+      await service.updateConfig(10, 1, {
         escalationAfterHours: 24,
         notifyTeamLead: true,
       });
@@ -210,7 +218,7 @@ describe('TpmEscalationService', () => {
         rows: [createConfigRow()],
       });
 
-      await service.updateConfig(10, {
+      await service.updateConfig(10, 1, {
         escalationAfterHours: 24,
       });
 
@@ -221,7 +229,7 @@ describe('TpmEscalationService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.updateConfig(10, { escalationAfterHours: 24 }),
+        service.updateConfig(10, 1, { escalationAfterHours: 24 }),
       ).rejects.toThrow('UPSERT tpm_escalation_config returned no rows');
     });
 
@@ -230,7 +238,7 @@ describe('TpmEscalationService', () => {
         rows: [createConfigRow()],
       });
 
-      await service.updateConfig(10, {
+      await service.updateConfig(10, 1, {
         escalationAfterHours: 48,
       });
 

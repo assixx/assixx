@@ -475,12 +475,20 @@ export class ShiftsService {
     );
   }
 
-  async deleteShiftPlanByUuid(uuid: string, tenantId: number): Promise<void> {
-    await this.shiftPlansService.deleteShiftPlanByUuid(uuid, tenantId);
+  async deleteShiftPlanByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    await this.shiftPlansService.deleteShiftPlanByUuid(uuid, tenantId, userId);
   }
 
-  async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
-    await this.shiftPlansService.deleteShiftPlan(planId, tenantId);
+  async deleteShiftPlan(
+    planId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    await this.shiftPlansService.deleteShiftPlan(planId, tenantId, userId);
   }
 
   // ============================================================

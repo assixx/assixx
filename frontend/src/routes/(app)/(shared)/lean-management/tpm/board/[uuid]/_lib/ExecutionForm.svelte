@@ -13,6 +13,8 @@
    */
   import { onDestroy } from 'svelte';
 
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { createExecution, uploadPhoto, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
@@ -189,20 +191,13 @@
     {/if}
   {:else}
     <!-- Step 1: Execution Date -->
-    <div class="form-field">
-      <label
-        for="exec-date"
-        class="form-field__label"
-      >
-        {MESSAGES.EXEC_DATE}
-      </label>
-      <input
-        id="exec-date"
-        type="date"
-        class="form-field__control"
+    <div class="execution-form__date">
+      <AppDatePicker
         bind:value={executionDate}
+        label={MESSAGES.EXEC_DATE}
         max={new Date().toISOString().slice(0, 10)}
         disabled={submitting}
+        size="sm"
       />
     </div>
 
@@ -418,6 +413,10 @@
     margin: 0;
   }
 
+  .execution-form__date {
+    width: fit-content;
+  }
+
   .execution-form__success {
     display: flex;
     align-items: center;
@@ -441,6 +440,7 @@
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: background 0.15s ease;
+    width: fit-content;
   }
 
   .execution-form__checkbox:hover {

@@ -23,10 +23,18 @@
     UpdateCardPayload,
   } from '../../../_lib/types';
 
+  /** Subset of TpmLocation for dropdown */
+  interface LocationOption {
+    uuid: string;
+    positionNumber: number;
+    title: string;
+  }
+
   interface Props {
     card: TpmCard | null;
     planUuid: string;
     planBaseWeekday: number;
+    locations: LocationOption[];
     isCreateMode: boolean;
     submitting: boolean;
     oncreate: (payload: CreateCardPayload) => void;
@@ -38,6 +46,7 @@
     card,
     planUuid,
     planBaseWeekday,
+    locations,
     isCreateMode,
     submitting,
     oncreate,
@@ -90,16 +99,21 @@
   let roleDropdownOpen = $state(false);
   let intervalDropdownOpen = $state(false);
   let weekdayDropdownOpen = $state(false);
+  let locationDropdownOpen = $state(false);
 
   function closeAllDropdowns(): void {
     roleDropdownOpen = false;
     intervalDropdownOpen = false;
     weekdayDropdownOpen = false;
+    locationDropdownOpen = false;
   }
 
   $effect(() => {
     const anyOpen =
-      roleDropdownOpen || intervalDropdownOpen || weekdayDropdownOpen;
+      roleDropdownOpen ||
+      intervalDropdownOpen ||
+      weekdayDropdownOpen ||
+      locationDropdownOpen;
     if (!anyOpen) return;
 
     function handleClickOutside(event: MouseEvent): void {
@@ -121,6 +135,14 @@
 
   const selectedRoleText = $derived(CARD_ROLE_LABELS[cardRole]);
   const selectedIntervalText = $derived(INTERVAL_LABELS[intervalType]);
+  const selectedLocationText = $derived.by((): string => {
+    if (locationDescription.trim() === '') return MESSAGES.PH_LOCATION;
+    const found = locations.find(
+      (l: LocationOption) => l.title === locationDescription,
+    );
+    if (found !== undefined) return `#${found.positionNumber} ${found.title}`;
+    return locationDescription;
+  });
   const planWeekdayLabel = $derived(
     WEEKDAY_LABELS[planBaseWeekday] ?? 'Montag',
   );
@@ -404,19 +426,68 @@
 
   <!-- Location -->
   <div class="form-field">
-    <label
-      class="form-field__label"
-      for="location">{MESSAGES.LABEL_LOCATION}</label
-    >
-    <input
-      id="location"
-      type="text"
-      class="form-field__control"
-      placeholder={MESSAGES.PH_LOCATION}
-      bind:value={locationDescription}
-      disabled={submitting}
-      maxlength={1000}
-    />
+    <span class="form-field__label">{MESSAGES.LABEL_LOCATION}</span>
+    {#if locations.length > 0}
+      <div class="dropdown">
+        <button
+          type="button"
+          class="dropdown__trigger"
+          class:active={locationDropdownOpen}
+          disabled={submitting}
+          onclick={() => {
+            const wasOpen = locationDropdownOpen;
+            closeAllDropdowns();
+            locationDropdownOpen = !wasOpen;
+          }}
+        >
+          <span class:text-muted={locationDescription.trim() === ''}>
+            {selectedLocationText}
+          </span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div
+          class="dropdown__menu dropdown__menu--scrollable"
+          class:active={locationDropdownOpen}
+        >
+          <button
+            type="button"
+            class="dropdown__option"
+            class:dropdown__option--selected={locationDescription === ''}
+            onclick={() => {
+              locationDescription = '';
+              locationDropdownOpen = false;
+            }}
+          >
+            <span class="text-(--color-text-muted)">— Kein Standort —</span>
+          </button>
+          {#each locations as loc (loc.uuid)}
+            <button
+              type="button"
+              class="dropdown__option"
+              class:dropdown__option--selected={locationDescription ===
+                loc.title}
+              onclick={() => {
+                locationDescription = loc.title;
+                locationDropdownOpen = false;
+              }}
+            >
+              #{loc.positionNumber}
+              {loc.title}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <input
+        id="location"
+        type="text"
+        class="form-field__control"
+        placeholder={MESSAGES.PH_LOCATION}
+        bind:value={locationDescription}
+        disabled={submitting}
+        maxlength={1000}
+      />
+    {/if}
   </div>
 
   <!-- Estimated Execution Minutes (optional) -->

@@ -5,7 +5,9 @@
  * Provides maintenance plan management, card lifecycle, execution tracking,
  * approval workflow, escalation scheduling, and configuration.
  *
- * Services and controllers will be added incrementally in Phase 2 sessions.
+ * Sub-modules:
+ * - TpmLocationsModule — self-contained location management (controller + service)
+ * - TpmConfigServicesModule — pure config services (color, templates, time estimates)
  */
 import { Module } from '@nestjs/common';
 
@@ -16,13 +18,14 @@ import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
 import { TpmCardsController } from './tpm-cards.controller.js';
 import { TpmCardsService } from './tpm-cards.service.js';
-import { TpmColorConfigService } from './tpm-color-config.service.js';
+import { TpmConfigServicesModule } from './tpm-config-services.module.js';
 import { TpmConfigController } from './tpm-config.controller.js';
 import { TpmDashboardService } from './tpm-dashboard.service.js';
 import { TpmDueDateCronService } from './tpm-due-date-cron.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
 import { TpmExecutionsController } from './tpm-executions.controller.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
+import { TpmLocationsModule } from './tpm-locations.module.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
@@ -31,11 +34,9 @@ import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
-import { TpmTemplatesService } from './tpm-templates.service.js';
-import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 
 @Module({
-  imports: [FeatureCheckModule],
+  imports: [FeatureCheckModule, TpmLocationsModule, TpmConfigServicesModule],
   controllers: [
     TpmPlansController,
     TpmCardsController,
@@ -49,11 +50,6 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     // Plan management (Session 6)
     TpmPlansService,
     TpmPlansIntervalService,
-
-    // Config services (Session 7)
-    TpmTimeEstimatesService,
-    TpmTemplatesService,
-    TpmColorConfigService,
 
     // Card services (Session 8)
     TpmCardsService,
@@ -85,11 +81,13 @@ import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
     TpmDashboardService,
   ],
   exports: [
+    // Re-export sub-modules so consumers of TpmModule get full access
+    TpmLocationsModule,
+    TpmConfigServicesModule,
+
+    // Services from this module
     TpmPlansService,
     TpmPlansIntervalService,
-    TpmTimeEstimatesService,
-    TpmTemplatesService,
-    TpmColorConfigService,
     TpmCardsService,
     TpmCardStatusService,
     TpmCardCascadeService,

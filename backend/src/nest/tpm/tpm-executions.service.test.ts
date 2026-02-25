@@ -510,7 +510,7 @@ describe('TpmExecutionsService', () => {
         rows: [createPhotoRow()],
       });
 
-      const result = await service.addPhoto(10, 'exec-uuid-001', {
+      const result = await service.addPhoto(10, 'exec-uuid-001', 1, {
         filePath: '/uploads/tpm/photo1.jpg',
         fileName: 'photo1.jpg',
         fileSize: 2_000_000,
@@ -531,7 +531,7 @@ describe('TpmExecutionsService', () => {
       });
 
       await expect(
-        service.addPhoto(10, 'exec-uuid-001', {
+        service.addPhoto(10, 'exec-uuid-001', 1, {
           filePath: '/uploads/tpm/photo6.jpg',
           fileName: 'photo6.jpg',
           fileSize: 1_000_000,
@@ -544,7 +544,7 @@ describe('TpmExecutionsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.addPhoto(10, 'nonexistent', {
+        service.addPhoto(10, 'nonexistent', 1, {
           filePath: '/uploads/tpm/photo.jpg',
           fileName: 'photo.jpg',
           fileSize: 1_000_000,
@@ -564,7 +564,7 @@ describe('TpmExecutionsService', () => {
         rows: [createPhotoRow({ sort_order: 3 })],
       });
 
-      await service.addPhoto(10, 'exec-uuid-001', {
+      await service.addPhoto(10, 'exec-uuid-001', 1, {
         filePath: '/uploads/tpm/photo4.jpg',
         fileName: 'photo4.jpg',
         fileSize: 1_000_000,

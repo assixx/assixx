@@ -489,6 +489,7 @@ export class TpmSlotAssistantService {
          AND tenant_id = $2
          AND current_due_date BETWEEN $3::date AND $4::date
          AND status IN ('red', 'overdue')
+         AND interval_type NOT IN ('daily', 'weekly')
          AND is_active = 1
        ORDER BY current_due_date ASC`,
       [machineId, tenantId, startDate, endDate],

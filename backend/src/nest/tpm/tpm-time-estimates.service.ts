@@ -9,6 +9,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
 import type {
@@ -45,7 +46,10 @@ function mapEstimateRowToApi(row: TpmTimeEstimateRow): TpmTimeEstimate {
 export class TpmTimeEstimatesService {
   private readonly logger = new Logger(TpmTimeEstimatesService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Set (create or update) a time estimate for a plan+interval combination.
@@ -53,6 +57,7 @@ export class TpmTimeEstimatesService {
    */
   async setEstimate(
     tenantId: number,
+    userId: number,
     dto: CreateTimeEstimateDto,
   ): Promise<TpmTimeEstimate> {
     this.logger.debug(
@@ -93,7 +98,19 @@ export class TpmTimeEstimatesService {
           throw new Error('UPSERT tpm_time_estimates returned no rows');
         }
 
-        return mapEstimateRowToApi(row);
+        const estimate = mapEstimateRowToApi(row);
+
+        void this.activityLogger.logUpdate(
+          tenantId,
+          userId,
+          'tpm_time_estimate',
+          0,
+          `TPM-Zeitschätzung gesetzt: ${dto.planUuid} / ${dto.intervalType}`,
+          undefined,
+          { planUuid: dto.planUuid, intervalType: dto.intervalType },
+        );
+
+        return estimate;
       },
     );
   }
@@ -136,7 +153,11 @@ export class TpmTimeEstimatesService {
   }
 
   /** Delete a time estimate (soft-delete: is_active = 4) */
-  async deleteEstimate(tenantId: number, estimateUuid: string): Promise<void> {
+  async deleteEstimate(
+    tenantId: number,
+    userId: number,
+    estimateUuid: string,
+  ): Promise<void> {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         const result = await client.query<{ id: number }>(
@@ -152,6 +173,15 @@ export class TpmTimeEstimatesService {
             `Zeitschätzung ${estimateUuid} nicht gefunden`,
           );
         }
+
+        void this.activityLogger.logDelete(
+          tenantId,
+          userId,
+          'tpm_time_estimate',
+          0,
+          `TPM-Zeitschätzung gelöscht: ${estimateUuid}`,
+          { uuid: estimateUuid },
+        );
       },
     );
   }

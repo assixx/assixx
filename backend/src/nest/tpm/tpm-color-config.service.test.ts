@@ -7,6 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import type { TpmColorConfigRow } from './tpm.types.js';
@@ -43,6 +44,13 @@ function createColorRow(
 // TpmColorConfigService
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('TpmColorConfigService', () => {
   let service: TpmColorConfigService;
   let mockDb: MockDb;
@@ -59,7 +67,10 @@ describe('TpmColorConfigService', () => {
       },
     );
 
-    service = new TpmColorConfigService(mockDb as unknown as DatabaseService);
+    service = new TpmColorConfigService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -163,7 +174,7 @@ describe('TpmColorConfigService', () => {
         ],
       });
 
-      const result = await service.updateColor(10, {
+      const result = await service.updateColor(10, 1, {
         statusKey: 'red',
         colorHex: '#ff0000',
         label: 'Urgent',
@@ -182,7 +193,7 @@ describe('TpmColorConfigService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.updateColor(10, {
+        service.updateColor(10, 1, {
           statusKey: 'red',
           colorHex: '#ff0000',
           label: 'Red',
@@ -199,7 +210,7 @@ describe('TpmColorConfigService', () => {
     it('should delete all tenant configs and return defaults', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.resetToDefaults(10);
+      const result = await service.resetToDefaults(10, 1);
 
       expect(result).toHaveLength(4);
       expect(result.map((c) => c.statusKey)).toEqual([
@@ -216,7 +227,7 @@ describe('TpmColorConfigService', () => {
     it('should return correct default hex values after reset', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.resetToDefaults(10);
+      const result = await service.resetToDefaults(10, 1);
 
       const green = result.find((c) => c.statusKey === 'green');
       expect(green?.colorHex).toBe('#22c55e');

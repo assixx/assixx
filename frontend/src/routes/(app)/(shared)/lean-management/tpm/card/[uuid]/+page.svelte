@@ -272,6 +272,7 @@
             <TimeEstimateForm
               estimates={timeEstimates}
               intervalType={card.intervalType}
+              cardEstimatedMinutes={card.estimatedExecutionMinutes}
             />
           </div>
         </div>

@@ -45,8 +45,17 @@ export type ActivityEntityType =
   | 'settings'
   | 'calendar'
   | 'shift'
+  | 'shift_plan'
+  | 'shift_swap'
+  | 'rotation_pattern'
+  | 'rotation_assignment'
+  | 'rotation_history'
   | 'availability'
   | 'machine_availability'
+  | 'machine_maintenance'
+  | 'admin_permission'
+  | 'subscription_plan'
+  | 'user_profile'
   | 'vacation'
   | 'vacation_blackout'
   | 'vacation_holiday'
@@ -55,7 +64,11 @@ export type ActivityEntityType =
   | 'vacation_settings'
   | 'tpm_plan'
   | 'tpm_card'
-  | 'tpm_execution';
+  | 'tpm_execution'
+  | 'tpm_template'
+  | 'tpm_time_estimate'
+  | 'tpm_color_config'
+  | 'tpm_escalation_config';
 
 /**
  * Parameters for logging an activity

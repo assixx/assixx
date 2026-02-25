@@ -166,6 +166,7 @@ export class TpmExecutionsController {
   async uploadPhoto(
     @Param('uuid') executionUuid: string,
     @UploadedFile() file: MulterFile | undefined,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmExecutionPhoto> {
     if (file === undefined) {
@@ -174,12 +175,17 @@ export class TpmExecutionsController {
 
     const storagePath = await writePhotoToDisk(tenantId, executionUuid, file);
 
-    return await this.executionsService.addPhoto(tenantId, executionUuid, {
-      filePath: storagePath,
-      fileName: file.originalname,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-    });
+    return await this.executionsService.addPhoto(
+      tenantId,
+      executionUuid,
+      user.id,
+      {
+        filePath: storagePath,
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+      },
+    );
   }
 
   /** GET /tpm/executions/:uuid/photos — List photos for execution */

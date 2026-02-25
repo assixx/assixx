@@ -13,10 +13,6 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import { MESSAGES, DEFAULT_COLORS } from '../_lib/constants';
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
   import MachineList from '../_lib/MachineList.svelte';
 
   import type { PageData } from './$types';
@@ -25,6 +21,14 @@
     MachineWithTpmStatus,
     TpmColorConfigEntry,
   } from '../_lib/types';
+
+  // =============================================================================
+  // HELPERS
+  // =============================================================================
+
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
 
   // =============================================================================
   // SSR DATA
