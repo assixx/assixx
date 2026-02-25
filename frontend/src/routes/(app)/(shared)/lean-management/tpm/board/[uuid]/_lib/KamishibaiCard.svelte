@@ -84,25 +84,31 @@
         class="kamishibai-card__front"
         style="background-color: {statusColor}"
       >
-        <div class="kamishibai-card__code">{card.cardCode}</div>
-        <div class="kamishibai-card__title">{card.title}</div>
-        <div class="kamishibai-card__status-label">
-          {CARD_STATUS_LABELS[card.status]}
+        <div class="kamishibai-card__header">
+          <span class="kamishibai-card__code">{card.cardCode}</span>
+          {#if card.requiresApproval}
+            <span
+              class="kamishibai-card__approval"
+              title="Freigabe erforderlich"
+            >
+              <i class="fas fa-lock"></i>
+            </span>
+          {/if}
         </div>
-        {#if card.estimatedExecutionMinutes !== null && card.estimatedExecutionMinutes > 0}
-          <div class="kamishibai-card__time">
-            <i class="fas fa-clock"></i>
-            {card.estimatedExecutionMinutes} Min.
-          </div>
-        {/if}
-        {#if card.requiresApproval}
-          <span
-            class="kamishibai-card__approval"
-            title="Freigabe erforderlich"
-          >
-            <i class="fas fa-lock"></i>
+        <div class="kamishibai-card__body">
+          <div class="kamishibai-card__title">{card.title}</div>
+        </div>
+        <div class="kamishibai-card__footer">
+          {#if card.estimatedExecutionMinutes !== null && card.estimatedExecutionMinutes > 0}
+            <span class="kamishibai-card__time">
+              <i class="fas fa-clock"></i>
+              {card.estimatedExecutionMinutes} Min.
+            </span>
+          {/if}
+          <span class="kamishibai-card__status-label">
+            {CARD_STATUS_LABELS[card.status]}
           </span>
-        {/if}
+        </div>
       </div>
     {/snippet}
 
@@ -201,48 +207,64 @@
     }
   }
 
-  /* Front face */
+  /* Front face — 3-zone layout: header | body | footer */
   .kamishibai-card__front {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     height: 100%;
-    padding: 0.75rem;
+    padding: 0.625rem;
     color: #fff;
-    text-align: center;
-    position: relative;
     border-radius: var(--card-radius);
   }
 
+  /* Zone 1: Header — code left, icons right */
+  .kamishibai-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid rgb(0 0 0 / 15%);
+  }
+
   .kamishibai-card__code {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    opacity: 85%;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    margin-bottom: 0.375rem;
+  }
+
+  .kamishibai-card__approval {
+    font-size: 0.7rem;
+    opacity: 80%;
+  }
+
+  /* Zone 2: Body — title fills available space */
+  .kamishibai-card__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
   }
 
   .kamishibai-card__title {
     font-size: 0.875rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.35;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
     -webkit-box-orient: vertical;
-    margin-bottom: 0.5rem;
   }
 
-  .kamishibai-card__status-label {
-    font-size: 0.7rem;
-    opacity: 80%;
-    border: 1px solid rgb(255 255 255 / 40%);
-    border-radius: var(--radius-full, 9999px);
-    padding: 0.125rem 0.5rem;
-    margin-top: auto;
+  /* Zone 3: Footer — time left, status right */
+  .kamishibai-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid rgb(0 0 0 / 15%);
   }
 
   .kamishibai-card__time {
@@ -250,16 +272,13 @@
     align-items: center;
     gap: 0.25rem;
     font-size: 0.65rem;
-    opacity: 75%;
-    margin-top: 0.25rem;
+    opacity: 80%;
   }
 
-  .kamishibai-card__approval {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    font-size: 0.75rem;
+  .kamishibai-card__status-label {
+    font-size: 0.65rem;
     opacity: 85%;
+    margin-left: auto;
   }
 
   /* Back face */

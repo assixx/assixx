@@ -222,6 +222,7 @@ export interface TpmPlan {
   machineId: number;
   machineUuid?: string;
   machineName?: string;
+  departmentName?: string;
   name: string;
   baseWeekday: number;
   baseRepeatEvery: number;

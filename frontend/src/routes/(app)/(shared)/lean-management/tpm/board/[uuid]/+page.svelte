@@ -80,13 +80,16 @@
           </h2>
           {#if plan !== null}
             <p
-              class="mt-2 flex items-center gap-3 text-sm text-(--color-text-secondary)"
+              class="mt-2 flex items-center gap-3 text-(--color-text-secondary)"
             >
-              <span class="inline-flex items-center gap-1 font-medium">
+              {#if plan.departmentName}
+                <span class="text-lg font-bold">{plan.departmentName}</span>
+                <span class="text-(--color-text-muted)">/</span>
+              {/if}
+              <span class="inline-flex items-center gap-1 text-lg font-bold">
                 <i class="fas fa-cog"></i>
                 {plan.machineName ?? '—'}
               </span>
-              <span>{plan.name}</span>
             </p>
           {/if}
         </div>

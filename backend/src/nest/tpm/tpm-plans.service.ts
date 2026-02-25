@@ -56,9 +56,10 @@ export class TpmPlansService {
   /** Get a single plan by UUID */
   async getPlan(tenantId: number, planUuid: string): Promise<TpmPlan> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
        WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
       [planUuid, tenantId],
@@ -88,9 +89,10 @@ export class TpmPlansService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.db.query<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
        WHERE p.tenant_id = $1 AND p.is_active = 1
        ORDER BY p.name ASC
@@ -137,9 +139,10 @@ export class TpmPlansService {
     machineId: number,
   ): Promise<TpmPlan | null> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
        WHERE p.machine_id = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
       [machineId, tenantId],

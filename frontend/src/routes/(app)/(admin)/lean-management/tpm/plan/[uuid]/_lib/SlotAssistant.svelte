@@ -539,6 +539,17 @@
                     >
                   {/each}
                 </div>
+                {#if !slot.isFullDay && slot.startTime !== null && slot.endTime !== null}
+                  <span class="slot-day__time">
+                    <i class="fas fa-clock"></i>
+                    {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
+                  </span>
+                {:else if slot.isFullDay}
+                  <span class="slot-day__time">
+                    <i class="fas fa-clock"></i>
+                    Ganztägig
+                  </span>
+                {/if}
               {/each}
             </div>
           {/each}
@@ -611,6 +622,17 @@
                       >
                     {/each}
                   </div>
+                  {#if !slot.isFullDay && slot.startTime !== null && slot.endTime !== null}
+                    <span class="slot-day__time">
+                      <i class="fas fa-clock"></i>
+                      {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
+                    </span>
+                  {:else if slot.isFullDay}
+                    <span class="slot-day__time">
+                      <i class="fas fa-clock"></i>
+                      Ganztägig
+                    </span>
+                  {/if}
                 {/each}
               {:else if day.conflicts.length > 0}
                 <i
@@ -757,6 +779,14 @@
     font-size: 0.813rem;
     font-weight: 600;
     color: var(--color-text-secondary);
+  }
+
+  .slot-day__time {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.688rem;
+    color: var(--color-text-muted);
   }
 
   .slot-day__icon {

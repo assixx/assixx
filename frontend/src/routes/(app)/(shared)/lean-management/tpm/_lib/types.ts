@@ -27,6 +27,7 @@ export interface TpmPlan {
   uuid: string;
   machineId: number;
   machineName?: string;
+  departmentName?: string;
   name: string;
   baseWeekday: number;
   baseRepeatEvery: number;
