@@ -56,14 +56,15 @@ export const HexColorSchema = z
   .trim()
   .regex(/^#[\da-f]{6}$/i, 'Farbe muss im Format #RRGGBB sein');
 
-/** Time format HH:MM (24h) */
+/** Time format HH:MM (24h) — also accepts HH:MM:SS and strips seconds */
 export const TimeSchema = z
   .string()
   .trim()
   .regex(
-    /^([01]?\d|2[0-3]):[0-5]\d$/,
+    /^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/,
     'Uhrzeit muss im Format HH:MM sein (24h)',
-  );
+  )
+  .transform((val: string): string => val.slice(0, 5));
 
 /** Weekday 0-6 (Montag=0 bis Sonntag=6) */
 export const WeekdaySchema = z

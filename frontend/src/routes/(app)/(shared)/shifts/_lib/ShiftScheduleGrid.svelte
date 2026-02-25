@@ -10,7 +10,11 @@
   } from '$lib/machine-availability/constants';
 
   import { FULL_DAY_NAMES, SHIFT_TYPES, SHIFT_TIMES } from './constants';
-  import { formatDate, getEmployeeDisplayName } from './utils';
+  import {
+    formatDate,
+    getEmployeeDisplayName,
+    getVisibleTpmIntervals,
+  } from './utils';
 
   import type { Employee, ShiftDetailData, TpmMaintenanceEvent } from './types';
 
@@ -22,6 +26,42 @@
     'cleaning',
     'other',
   ];
+
+  /** TPM interval colors (matching SlotAssistant / Kamishibai palette) */
+  const TPM_COLORS: Record<string, string> = {
+    daily: '#66BB6A',
+    weekly: '#8BC34A',
+    monthly: '#5bb5f5',
+    quarterly: '#b0b0b0',
+    semi_annual: '#f5a0a0',
+    annual: '#c8b88a',
+    custom: '#FF9800',
+  };
+
+  /** TPM interval short labels for compact badges */
+  const TPM_SHORT: Record<string, string> = {
+    daily: 'T',
+    weekly: 'W',
+    monthly: 'M',
+    quarterly: 'VJ',
+    semi_annual: 'HJ',
+    annual: 'J',
+    custom: 'BD',
+  };
+
+  /** TPM interval full labels (German) */
+  const TPM_LABELS: Record<string, string> = {
+    daily: 'Täglich',
+    weekly: 'Wöchentlich',
+    monthly: 'Monatlich',
+    quarterly: 'Vierteljährlich',
+    semi_annual: 'Halbjährlich',
+    annual: 'Jährlich',
+    custom: 'Benutzerdefiniert',
+  };
+
+  /** Legend entries for TPM intervals */
+  const TPM_LEGEND = Object.entries(TPM_COLORS);
 
   /**
    * Props interface for ShiftScheduleGrid
@@ -160,6 +200,22 @@
         />
         <span class="choice-card__text">&#9881; Wartungstermine</span>
       </label>
+
+      <!-- TPM Interval Legend (visible when toggle active) -->
+      {#if showTpmEvents}
+        {#each TPM_LEGEND as [key, color] (key)}
+          <span
+            class="tpm-legend-item"
+            title={TPM_LABELS[key]}
+          >
+            <span
+              class="tpm-legend-dot"
+              style="background: {color}"
+            ></span>
+            {TPM_LABELS[key]}
+          </span>
+        {/each}
+      {/if}
     </div>
   </div>
 
@@ -214,22 +270,30 @@
             ></span>
           {/if}
 
-          <!-- TPM maintenance blocks -->
+          <!-- TPM maintenance badges -->
           {#if showTpmEvents}
             {@const tpmEvents = tpmEventsMap.get(dateKey)}
             {#if tpmEvents !== undefined}
               {#each tpmEvents as event (event.planUuid)}
-                <div
-                  class="tpm-block"
-                  title="{event.planName} — {event.machineName}"
-                >
-                  <span class="tpm-block-icon">&#9881;</span>
-                  <span class="tpm-block-label">TPM</span>
-                  <span class="tpm-block-machine">{event.machineName}</span>
-                  {#if event.baseTime !== null}
-                    <span class="tpm-block-time">{event.baseTime}</span>
-                  {/if}
-                </div>
+                {@const visibleIntervals = getVisibleTpmIntervals(
+                  event,
+                  shiftType,
+                )}
+                {#if visibleIntervals.length > 0}
+                  <div
+                    class="tpm-badges"
+                    title="{event.planName} — {event.machineName}"
+                  >
+                    {#each visibleIntervals as interval (interval)}
+                      <span
+                        class="tpm-badge"
+                        style="background: {TPM_COLORS[interval]}"
+                        title="{TPM_LABELS[interval]} — {event.machineName}"
+                        >{TPM_SHORT[interval]}</span
+                      >
+                    {/each}
+                  </div>
+                {/if}
               {/each}
             {/if}
           {/if}
@@ -588,55 +652,46 @@ Beispiele:
     border-left: 1px solid var(--color-glass-border);
   }
 
-  /* TPM Block inside shift cell */
-  .tpm-block {
+  /* TPM Legend dots (visible when toggle active) */
+  .tpm-legend-item {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: 4px;
 
-    margin: 2px 4px;
-    border: 1px solid rgb(99 102 241 / 40%);
-    border-radius: var(--radius-md);
-
-    background: rgb(99 102 241 / 12%);
-    padding: 3px 6px;
-
-    font-size: 10px;
-    line-height: 1.2;
-  }
-
-  .tpm-block-icon {
-    color: rgb(99 102 241);
+    color: var(--color-text-secondary);
+    font-weight: 500;
     font-size: 12px;
   }
 
-  .tpm-block-label {
-    color: rgb(99 102 241);
+  .tpm-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* TPM Badges inside shift cell */
+  .tpm-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+
+    margin: 2px 4px;
+  }
+
+  .tpm-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 3px;
+    border-radius: 2px;
+
+    min-width: 14px;
+    color: #000;
     font-weight: 700;
-    font-size: 9px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .tpm-block-machine {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 11px;
-  }
-
-  .tpm-block-time {
-    color: var(--text-secondary);
-    font-size: 10px;
-  }
-
-  .shift-cell.week-2-cell {
-    backdrop-filter: blur(5px);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg);
-    min-height: 85px;
+    font-size: 0.65rem;
+    line-height: 1;
   }
 
   .employee-assignment {

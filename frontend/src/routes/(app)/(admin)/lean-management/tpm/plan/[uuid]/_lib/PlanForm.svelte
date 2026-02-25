@@ -75,7 +75,7 @@
   let name = $state(untrack(() => plan?.name ?? ''));
   let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
   let baseRepeatEvery = $state(untrack(() => plan?.baseRepeatEvery ?? 1));
-  let baseTime = $state(untrack(() => plan?.baseTime ?? ''));
+  let baseTime = $state(untrack(() => (plan?.baseTime ?? '').slice(0, 5)));
   let isAllDay = $state(
     untrack(() => (plan?.baseTime ?? '').trim().length === 0),
   );

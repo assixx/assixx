@@ -387,4 +387,7 @@ export interface TpmMaintenanceEvent {
   planName: string;
   machineName: string;
   baseTime: string | null;
+  bufferHours: number;
+  /** Interval types due on this date (e.g. ['weekly', 'monthly', 'quarterly']) */
+  intervalTypes: string[];
 }

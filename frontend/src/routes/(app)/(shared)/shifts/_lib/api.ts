@@ -332,6 +332,7 @@ interface TpmPlanApiResponse {
   baseWeekday: number;
   baseRepeatEvery: number;
   baseTime: string | null;
+  bufferHours: number;
   createdAt: string;
 }
 
@@ -359,28 +360,165 @@ function isMaintenanceDate(date: Date, plan: TpmPlanApiResponse): boolean {
   return weeksDiff >= 0 && weeksDiff % plan.baseRepeatEvery === 0;
 }
 
-/** Build a TpmMaintenanceEvent from a plan API response */
-function planToEvent(plan: TpmPlanApiResponse): TpmMaintenanceEvent {
-  return {
-    planUuid: plan.uuid,
-    planName: plan.name,
-    machineName: plan.machineName ?? `Maschine #${plan.machineId}`,
-    baseTime: plan.baseTime,
-  };
+/**
+ * Find the Nth occurrence of a JS weekday in a given month.
+ * Returns null if that occurrence doesn't exist in the month.
+ */
+function getNthWeekdayOfMonth(
+  year: number,
+  month: number,
+  jsWeekday: number,
+  n: number,
+): Date | null {
+  const firstDay = new Date(year, month, 1);
+  const daysUntil = (jsWeekday - firstDay.getDay() + 7) % 7;
+  const day = 1 + daysUntil + (n - 1) * 7;
+  const result = new Date(year, month, day);
+  return result.getMonth() === month ? result : null;
 }
 
-/** Add a TPM event to the date→events map */
-function addEventToMap(
-  eventsMap: Map<string, TpmMaintenanceEvent[]>,
-  dateKey: string,
-  event: TpmMaintenanceEvent,
-): void {
-  const existing = eventsMap.get(dateKey);
-  if (existing !== undefined) {
-    existing.push(event);
-  } else {
-    eventsMap.set(dateKey, [event]);
+/**
+ * Calculate the seed date for interval cascade projection.
+ * Seed = Nth weekday of plan creation month (or next month if before createdAt).
+ */
+function calculateSeedDate(plan: TpmPlanApiResponse): Date | null {
+  const created = new Date(plan.createdAt);
+  const jsWeekday = tpmWeekdayToJs(plan.baseWeekday);
+  const seed = getNthWeekdayOfMonth(
+    created.getFullYear(),
+    created.getMonth(),
+    jsWeekday,
+    plan.baseRepeatEvery,
+  );
+  if (seed !== null && seed >= created) return seed;
+  const next = new Date(created.getFullYear(), created.getMonth() + 1, 1);
+  return getNthWeekdayOfMonth(
+    next.getFullYear(),
+    next.getMonth(),
+    jsWeekday,
+    plan.baseRepeatEvery,
+  );
+}
+
+/**
+ * Determine which interval types are due on a given date for a plan.
+ * Weekly is always included when isMaintenanceDate passes.
+ * Daily is excluded (operator task, not relevant for shift grid).
+ */
+function getIntervalTypesForDate(
+  date: Date,
+  plan: TpmPlanApiResponse,
+  seedDate: Date,
+): string[] {
+  const jsWeekday = tpmWeekdayToJs(plan.baseWeekday);
+  if (date.getDay() !== jsWeekday) return [];
+
+  const intervals: string[] = ['weekly'];
+
+  const nth = getNthWeekdayOfMonth(
+    date.getFullYear(),
+    date.getMonth(),
+    jsWeekday,
+    plan.baseRepeatEvery,
+  );
+  if (nth?.getDate() !== date.getDate()) return intervals;
+
+  intervals.push('monthly');
+
+  const seedIdx = seedDate.getFullYear() * 12 + seedDate.getMonth();
+  const dateIdx = date.getFullYear() * 12 + date.getMonth();
+  const diff = dateIdx - seedIdx;
+
+  if (diff >= 0) {
+    if (diff % 3 === 0) intervals.push('quarterly');
+    if (diff % 6 === 0) intervals.push('semi_annual');
+    if (diff % 12 === 0) intervals.push('annual');
   }
+
+  return intervals;
+}
+
+/** Canonical interval display order (most frequent → least frequent) */
+const INTERVAL_ORDER = [
+  'daily',
+  'weekly',
+  'monthly',
+  'quarterly',
+  'semi_annual',
+  'annual',
+  'custom',
+];
+
+/** Sort intervals by canonical order */
+function sortIntervals(intervals: Set<string>): string[] {
+  return INTERVAL_ORDER.filter((i) => intervals.has(i));
+}
+
+/** Collect all unique intervals from all plans that fire on a given date */
+function collectIntervalsForDate(
+  date: Date,
+  plans: TpmPlanApiResponse[],
+  seedDates: Map<string, Date>,
+): Set<string> {
+  const intervals = new Set<string>();
+  for (const plan of plans) {
+    if (!isMaintenanceDate(date, plan)) continue;
+    const seed = seedDates.get(plan.uuid);
+    const planIntervals =
+      seed !== undefined ?
+        getIntervalTypesForDate(date, plan, seed)
+      : ['weekly'];
+    for (const i of planIntervals) intervals.add(i);
+  }
+  return intervals;
+}
+
+/** Build seed date lookup for a set of plans */
+function buildSeedDates(plans: TpmPlanApiResponse[]): Map<string, Date> {
+  const seeds = new Map<string, Date>();
+  for (const plan of plans) {
+    const seed = calculateSeedDate(plan);
+    if (seed !== null) seeds.set(plan.uuid, seed);
+  }
+  return seeds;
+}
+
+/** Populate eventsMap with ONE merged event per date (deduplicated intervals) */
+function buildEventsMap(
+  plans: TpmPlanApiResponse[],
+  seedDates: Map<string, Date>,
+  startDate: string,
+  endDate: string,
+): Map<string, TpmMaintenanceEvent[]> {
+  const eventsMap = new Map<string, TpmMaintenanceEvent[]>();
+  if (plans.length === 0) return eventsMap;
+
+  const machineName = plans[0].machineName ?? `Maschine #${plans[0].machineId}`;
+  const end = new Date(endDate);
+  const cursor = new Date(startDate);
+
+  while (cursor <= end) {
+    const dateKey = cursor.toISOString().split('T')[0] ?? '';
+    const merged = collectIntervalsForDate(cursor, plans, seedDates);
+    merged.add('daily');
+
+    const names = plans
+      .filter((p: TpmPlanApiResponse) => isMaintenanceDate(cursor, p))
+      .map((p: TpmPlanApiResponse) => p.name);
+
+    eventsMap.set(dateKey, [
+      {
+        planUuid: 'merged',
+        planName: names.length > 0 ? names.join(', ') : 'TPM',
+        machineName,
+        baseTime: plans[0].baseTime,
+        bufferHours: plans[0].bufferHours,
+        intervalTypes: sortIntervals(merged),
+      },
+    ]);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return eventsMap;
 }
 
 /**
@@ -392,8 +530,6 @@ export async function fetchTpmMaintenanceDates(
   startDate: string,
   endDate: string,
 ): Promise<Map<string, TpmMaintenanceEvent[]>> {
-  const eventsMap = new Map<string, TpmMaintenanceEvent[]>();
-
   try {
     const response = await apiClient.get<{
       data: TpmPlanApiResponse[];
@@ -403,26 +539,14 @@ export async function fetchTpmMaintenanceDates(
     const plans = response.data.filter(
       (p: TpmPlanApiResponse) => p.machineId === machineId,
     );
+    if (plans.length === 0) return new Map();
 
-    if (plans.length === 0) return eventsMap;
-
-    const end = new Date(endDate);
-    const cursor = new Date(startDate);
-
-    while (cursor <= end) {
-      const dateKey = cursor.toISOString().split('T')[0] ?? '';
-      for (const plan of plans) {
-        if (isMaintenanceDate(cursor, plan)) {
-          addEventToMap(eventsMap, dateKey, planToEvent(plan));
-        }
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
+    const seedDates = buildSeedDates(plans);
+    return buildEventsMap(plans, seedDates, startDate, endDate);
   } catch (err) {
     log.error({ err }, 'Error loading TPM maintenance dates');
+    return new Map();
   }
-
-  return eventsMap;
 }
 
 // =============================================================================

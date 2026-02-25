@@ -14,6 +14,7 @@ import type {
   Employee,
   AvailabilityStatus,
   ShiftType,
+  TpmMaintenanceEvent,
 } from './types';
 
 // =============================================================================
@@ -391,4 +392,62 @@ export function capitalize(str: string): string {
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 3) + '...';
+}
+
+// =============================================================================
+// TPM SHIFT VISIBILITY
+// =============================================================================
+
+/** Shift time ranges in minutes from midnight. Night wraps → two ranges. */
+const SHIFT_MINUTES: Record<string, [number, number][]> = {
+  early: [[360, 840]],
+  late: [[840, 1320]],
+  night: [
+    [1320, 1440],
+    [0, 360],
+  ],
+};
+
+/** Check if a maintenance time window overlaps a shift */
+function maintenanceOverlapsShift(
+  baseTime: string,
+  bufferHours: number,
+  shiftType: string,
+): boolean {
+  const parts = baseTime.split(':');
+  const start = Number(parts[0]) * 60 + Number(parts[1]);
+  const end = start + bufferHours * 60;
+  const windows: [number, number][] =
+    end > 1440 ?
+      [
+        [start, 1440],
+        [0, end - 1440],
+      ]
+    : [[start, end]];
+  const ranges = SHIFT_MINUTES[shiftType] ?? [];
+  return windows.some(([ws, we]: [number, number]) =>
+    ranges.some(([rs, re]: [number, number]) => ws < re && rs < we),
+  );
+}
+
+/**
+ * Get visible TPM intervals for a specific shift cell.
+ * - daily/weekly: only in early shift
+ * - monthly+: all-day (baseTime null) → every shift; timed → only overlapping shift
+ */
+export function getVisibleTpmIntervals(
+  event: TpmMaintenanceEvent,
+  shiftType: string,
+): string[] {
+  return event.intervalTypes.filter((interval: string) => {
+    if (interval === 'daily' || interval === 'weekly') {
+      return shiftType === 'early';
+    }
+    if (event.baseTime === null) return true;
+    return maintenanceOverlapsShift(
+      event.baseTime,
+      event.bufferHours,
+      shiftType,
+    );
+  });
 }

@@ -488,7 +488,7 @@
               class="slot-dot"
               style="background: {color}"
             ></span>
-            {INTERVAL_SHORT_LABELS[key as IntervalType]}
+            {INTERVAL_LABELS[key as IntervalType]}
           </span>
         {/each}
       </div>
