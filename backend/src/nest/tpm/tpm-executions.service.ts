@@ -35,6 +35,7 @@ import type {
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
   TpmCardRow,
+  TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
 import { MAX_PHOTOS_PER_EXECUTION } from './tpm.types.js';
@@ -45,7 +46,18 @@ const EXECUTION_SELECT = `
     c.uuid AS card_uuid,
     COALESCE(NULLIF(CONCAT(u_exec.first_name, ' ', u_exec.last_name), ' '), u_exec.username) AS executed_by_name,
     COALESCE(NULLIF(CONCAT(u_appr.first_name, ' ', u_appr.last_name), ' '), u_appr.username) AS approved_by_name,
-    (SELECT COUNT(*)::int FROM tpm_card_execution_photos p WHERE p.execution_id = e.id) AS photo_count
+    (SELECT COUNT(*)::int FROM tpm_card_execution_photos p WHERE p.execution_id = e.id) AS photo_count,
+    COALESCE(
+      (SELECT json_agg(json_build_object(
+        'uuid', TRIM(u_part.uuid),
+        'firstName', u_part.first_name,
+        'lastName', u_part.last_name
+      ) ORDER BY part.created_at)
+      FROM tpm_execution_participants part
+      JOIN users u_part ON part.user_id = u_part.id
+      WHERE part.execution_id = e.id),
+      '[]'::json
+    ) AS participants
   FROM tpm_card_executions e
   LEFT JOIN tpm_cards c ON e.card_id = c.id
   LEFT JOIN users u_exec ON e.executed_by = u_exec.id
@@ -457,7 +469,64 @@ export class TpmExecutionsService {
     if (row === undefined) {
       throw new Error('Execution INSERT returned no rows');
     }
-    return mapExecutionRowToApi(row);
+
+    const execution = mapExecutionRowToApi(row);
+
+    const participantUuids = dto.participantUuids;
+    if (participantUuids.length > 0) {
+      execution.participants = await this.insertParticipants(
+        client,
+        tenantId,
+        row.id,
+        participantUuids,
+      );
+    }
+
+    return execution;
+  }
+
+  /** Resolve participant UUIDs → user rows, INSERT into junction table */
+  private async insertParticipants(
+    client: PoolClient,
+    tenantId: number,
+    executionId: number,
+    participantUuids: string[],
+  ): Promise<TpmExecutionParticipant[]> {
+    const usersResult = await client.query<{
+      id: number;
+      uuid: string;
+      first_name: string;
+      last_name: string;
+    }>(
+      `SELECT id, uuid, first_name, last_name FROM users
+       WHERE uuid = ANY($1) AND tenant_id = $2 AND is_active = 1`,
+      [participantUuids, tenantId],
+    );
+
+    if (usersResult.rows.length === 0) return [];
+
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+    let idx = 1;
+    for (const user of usersResult.rows) {
+      placeholders.push(`($${idx}, $${idx + 1}, $${idx + 2}, $${idx + 3})`);
+      values.push(uuidv7(), tenantId, executionId, user.id);
+      idx += 4;
+    }
+
+    await client.query(
+      `INSERT INTO tpm_execution_participants (uuid, tenant_id, execution_id, user_id)
+       VALUES ${placeholders.join(', ')}`,
+      values,
+    );
+
+    return usersResult.rows.map(
+      (u: { uuid: string; first_name: string; last_name: string }) => ({
+        uuid: u.uuid.trim(),
+        firstName: u.first_name,
+        lastName: u.last_name,
+      }),
+    );
   }
 
   /**

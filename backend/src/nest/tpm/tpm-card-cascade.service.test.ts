@@ -177,7 +177,7 @@ describe('TpmCardCascadeService', () => {
       expect(sql).toContain('COUNT(*)');
     });
 
-    it('should only affect green, active cards', async () => {
+    it('should only affect green, active cards not completed today', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ count: '0' }],
       });
@@ -193,6 +193,7 @@ describe('TpmCardCascadeService', () => {
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("status = 'green'");
       expect(sql).toContain('is_active = 1');
+      expect(sql).toContain('last_completed_at');
     });
 
     it('should handle null count gracefully', async () => {

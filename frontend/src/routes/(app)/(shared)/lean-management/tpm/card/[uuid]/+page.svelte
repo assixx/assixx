@@ -33,6 +33,7 @@
   const card = $derived(data.card);
   const timeEstimates = $derived(data.timeEstimates);
   const locations = $derived(data.locations);
+  const employees = $derived(data.employees);
 
   function formatDate(dateStr: string | null): string {
     if (dateStr === null) return '—';
@@ -330,6 +331,7 @@
             <ExecutionForm
               {card}
               {timeEstimates}
+              {employees}
               onExecutionCreated={handleExecutionCreated}
             />
           </div>

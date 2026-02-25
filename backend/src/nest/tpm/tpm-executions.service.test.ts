@@ -354,6 +354,98 @@ describe('TpmExecutionsService', () => {
       const lockSql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(lockSql).toContain('FOR UPDATE');
     });
+
+    it('should insert participants when participantUuids provided', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: false })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      // INSERT execution
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow({ approval_status: 'none' })],
+      });
+      // SELECT users by UUID
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 10,
+            uuid: 'user-uuid-001                            ',
+            first_name: 'Max',
+            last_name: 'Müller',
+          },
+          {
+            id: 11,
+            uuid: 'user-uuid-002                            ',
+            first_name: 'Anna',
+            last_name: 'Schmidt',
+          },
+        ],
+      });
+      // INSERT participants
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        customData: {},
+        participantUuids: ['user-uuid-001', 'user-uuid-002'],
+      });
+
+      expect(result.participants).toHaveLength(2);
+      expect(result.participants?.[0]?.firstName).toBe('Max');
+      expect(result.participants?.[1]?.lastName).toBe('Schmidt');
+
+      // Verify INSERT into tpm_execution_participants
+      const insertSql = mockClient.query.mock.calls[3]?.[0] as string;
+      expect(insertSql).toContain('tpm_execution_participants');
+    });
+
+    it('should skip participant insertion when participantUuids is empty', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: false })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow({ approval_status: 'none' })],
+      });
+
+      const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        customData: {},
+        participantUuids: [],
+      });
+
+      // Only 2 client.query calls: lockCard + INSERT execution
+      expect(mockClient.query).toHaveBeenCalledTimes(2);
+      expect(result.participants).toBeUndefined();
+    });
+
+    it('should return empty participants when no matching users found', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createCardRow({ status: 'red', requires_approval: false })],
+      });
+      mockCardStatusService.markCardCompleted.mockResolvedValueOnce({
+        targetStatus: 'green',
+        requiresApproval: false,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createExecutionRow({ approval_status: 'none' })],
+      });
+      // SELECT users returns empty (UUIDs unknown)
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        customData: {},
+        participantUuids: ['nonexistent-uuid'],
+      });
+
+      // No INSERT participants call (3 total: lock + exec INSERT + user SELECT)
+      expect(mockClient.query).toHaveBeenCalledTimes(3);
+      expect(result.participants).toEqual([]);
+    });
   });
 
   // =============================================================
@@ -402,6 +494,33 @@ describe('TpmExecutionsService', () => {
       expect(result.noIssuesFound).toBe(false);
       expect(result.actualDurationMinutes).toBe(30);
       expect(result.actualStaffCount).toBe(3);
+    });
+
+    it('should map participants from join row', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        createExecutionRow({
+          participants: [
+            { uuid: 'user-uuid-001', firstName: 'Max', lastName: 'Müller' },
+            { uuid: 'user-uuid-002', firstName: 'Anna', lastName: 'Schmidt' },
+          ],
+        }),
+      );
+
+      const result = await service.getExecution(10, 'exec-uuid-001');
+
+      expect(result.participants).toHaveLength(2);
+      expect(result.participants?.[0]?.firstName).toBe('Max');
+      expect(result.participants?.[1]?.uuid).toBe('user-uuid-002');
+    });
+
+    it('should omit participants when not present in row', async () => {
+      const row = createExecutionRow();
+      delete row.participants;
+      mockDb.queryOne.mockResolvedValueOnce(row);
+
+      const result = await service.getExecution(10, 'exec-uuid-001');
+
+      expect(result.participants).toBeUndefined();
     });
 
     it('should omit photoCount when not present in row', async () => {

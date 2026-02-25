@@ -118,8 +118,26 @@ export interface TpmColorConfigEntry {
 // EXECUTION & APPROVAL TYPES (Kamishibai Board)
 // =============================================================================
 
+/** Lightweight employee for participant selection */
+export interface TpmEmployee {
+  id: number;
+  uuid: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  employeeNumber?: string;
+  position?: string;
+}
+
 /** Approval status for card executions */
 export type ApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+/** Participant of a TPM execution */
+export interface TpmExecutionParticipant {
+  uuid: string;
+  firstName: string;
+  lastName: string;
+}
 
 /** Execution record for a card */
 export interface TpmExecution {
@@ -140,6 +158,7 @@ export interface TpmExecution {
   customData: Record<string, unknown>;
   photos?: TpmExecutionPhoto[];
   photoCount?: number;
+  participants?: TpmExecutionParticipant[];
   createdAt: string;
   updatedAt: string;
 }
@@ -179,6 +198,7 @@ export interface CreateExecutionPayload {
   actualStaffCount?: number | null;
   documentation?: string | null;
   customData?: Record<string, unknown>;
+  participantUuids?: string[];
 }
 
 /** Payload for responding to an execution (approve/reject) */

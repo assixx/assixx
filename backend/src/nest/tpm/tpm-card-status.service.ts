@@ -103,10 +103,11 @@ export class TpmCardStatusService {
     }
 
     // Flow A: no approval needed → green
+    // Clear current_due_date to prevent cron from re-triggering this card
     await client.query(
       `UPDATE tpm_cards
        SET status = 'green', last_completed_at = NOW(),
-           last_completed_by = $1, updated_at = NOW()
+           last_completed_by = $1, current_due_date = NULL, updated_at = NOW()
        WHERE id = $2 AND tenant_id = $3`,
       [userId, cardId, tenantId],
     );
@@ -149,10 +150,11 @@ export class TpmCardStatusService {
     const card = await this.lockCardById(client, tenantId, cardId);
     this.assertTransition(card.status, 'green');
 
+    // Clear current_due_date to prevent cron from re-triggering this card
     await client.query(
       `UPDATE tpm_cards
        SET status = 'green', last_completed_at = NOW(),
-           last_completed_by = $1, updated_at = NOW()
+           last_completed_by = $1, current_due_date = NULL, updated_at = NOW()
        WHERE id = $2 AND tenant_id = $3`,
       [executedBy, cardId, tenantId],
     );

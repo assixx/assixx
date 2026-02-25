@@ -135,14 +135,6 @@
 
   const selectedRoleText = $derived(CARD_ROLE_LABELS[cardRole]);
   const selectedIntervalText = $derived(INTERVAL_LABELS[intervalType]);
-  const selectedLocationText = $derived.by((): string => {
-    if (locationDescription.trim() === '') return MESSAGES.PH_LOCATION;
-    const found = locations.find(
-      (l: LocationOption) => l.title === locationDescription,
-    );
-    if (found !== undefined) return `#${found.positionNumber} ${found.title}`;
-    return locationDescription;
-  });
   const planWeekdayLabel = $derived(
     WEEKDAY_LABELS[planBaseWeekday] ?? 'Montag',
   );
@@ -424,27 +416,34 @@
     ></textarea>
   </div>
 
-  <!-- Location -->
+  <!-- Location (Combobox: Freitext + vordefinierte Standorte) -->
   <div class="form-field">
     <span class="form-field__label">{MESSAGES.LABEL_LOCATION}</span>
     {#if locations.length > 0}
-      <div class="dropdown">
-        <button
-          type="button"
-          class="dropdown__trigger"
-          class:active={locationDropdownOpen}
-          disabled={submitting}
-          onclick={() => {
-            const wasOpen = locationDropdownOpen;
-            closeAllDropdowns();
-            locationDropdownOpen = !wasOpen;
-          }}
-        >
-          <span class:text-muted={locationDescription.trim() === ''}>
-            {selectedLocationText}
-          </span>
-          <i class="fas fa-chevron-down"></i>
-        </button>
+      <div class="dropdown location-combobox__wrapper">
+        <div class="location-combobox">
+          <input
+            type="text"
+            class="form-field__control location-combobox__input"
+            placeholder={MESSAGES.PH_LOCATION}
+            bind:value={locationDescription}
+            disabled={submitting}
+            maxlength={1000}
+          />
+          <button
+            type="button"
+            class="location-combobox__toggle"
+            disabled={submitting}
+            onclick={() => {
+              const wasOpen = locationDropdownOpen;
+              closeAllDropdowns();
+              locationDropdownOpen = !wasOpen;
+            }}
+            aria-label="Standorte anzeigen"
+          >
+            <i class="fas fa-chevron-down"></i>
+          </button>
+        </div>
         <div
           class="dropdown__menu dropdown__menu--scrollable"
           class:active={locationDropdownOpen}
@@ -614,6 +613,50 @@
     gap: 0.75rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-glass-border);
+  }
+
+  .location-combobox__wrapper {
+    max-width: calc(400px + 2.5rem);
+  }
+
+  .location-combobox {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .location-combobox__input {
+    flex: 1;
+    min-width: 0;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-right: none !important;
+  }
+
+  .location-combobox__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--color-glass-border);
+    border-left: none;
+    border-top-right-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .location-combobox__toggle:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    background: var(--glass-bg-hover);
+  }
+
+  .location-combobox__toggle:disabled {
+    cursor: not-allowed;
+    opacity: 50%;
   }
 
   @media (width <= 640px) {

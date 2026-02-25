@@ -338,6 +338,44 @@
                           </div>
                         {/if}
 
+                        <!-- Duration + Staff -->
+                        {#if execution.actualDurationMinutes !== null || execution.actualStaffCount !== null}
+                          <div class="history-detail__meta">
+                            {#if execution.actualDurationMinutes !== null}
+                              <span class="history-detail__meta-item">
+                                <i class="fas fa-clock"></i>
+                                {execution.actualDurationMinutes}
+                                {MESSAGES.EXEC_DURATION_UNIT}
+                              </span>
+                            {/if}
+                            {#if execution.actualStaffCount !== null}
+                              <span class="history-detail__meta-item">
+                                <i class="fas fa-users"></i>
+                                {execution.actualStaffCount}
+                                {MESSAGES.TIME_STAFF}
+                              </span>
+                            {/if}
+                          </div>
+                        {/if}
+
+                        <!-- Participants -->
+                        {#if execution.participants !== undefined && execution.participants.length > 0}
+                          <div class="history-detail__section">
+                            <h4 class="history-detail__label">
+                              <i class="fas fa-user-friends"></i>
+                              Beteiligte Mitarbeiter
+                            </h4>
+                            <div class="history-detail__participants">
+                              {#each execution.participants as participant (participant.uuid)}
+                                <span class="history-detail__participant-chip">
+                                  {participant.firstName}
+                                  {participant.lastName}
+                                </span>
+                              {/each}
+                            </div>
+                          </div>
+                        {/if}
+
                         <!-- Documentation -->
                         <div class="history-detail__section">
                           <h4 class="history-detail__label">
@@ -609,6 +647,7 @@
     flex-direction: column;
     gap: 1rem;
     padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid var(--color-glass-border);
   }
 
   .history-detail__section {
@@ -696,10 +735,42 @@
     width: fit-content;
   }
 
+  .history-detail__meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .history-detail__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.813rem;
+    color: var(--color-text-secondary);
+  }
+
   .history-detail__approval {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
+  }
+
+  .history-detail__participants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .history-detail__participant-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.188rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-radius: var(--radius-full);
   }
 </style>

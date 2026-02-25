@@ -167,6 +167,7 @@ describe('TpmCardStatusService', () => {
       expect(updateSql).toContain("status = 'green'");
       expect(updateSql).toContain('last_completed_at');
       expect(updateSql).toContain('last_completed_by');
+      expect(updateSql).toContain('current_due_date = NULL');
     });
 
     it('should transition red → yellow (Flow B, approval required)', async () => {
@@ -284,7 +285,7 @@ describe('TpmCardStatusService', () => {
   // =============================================================
 
   describe('approveCard()', () => {
-    it('should transition yellow → green with last_completed_by', async () => {
+    it('should transition yellow → green with last_completed_by and clear due date', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createCardRow({ status: 'yellow' })],
       });
@@ -295,6 +296,7 @@ describe('TpmCardStatusService', () => {
       const updateSql = mockClient.query.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain("status = 'green'");
       expect(updateSql).toContain('last_completed_by');
+      expect(updateSql).toContain('current_due_date = NULL');
 
       const updateParams = mockClient.query.mock.calls[1]?.[1] as unknown[];
       expect(updateParams?.[0]).toBe(7);

@@ -8,8 +8,19 @@ import type {
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
+  TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
+
+/** Coerce a Date|string DB value to ISO string */
+function toIsoString(value: Date | string): string {
+  return typeof value === 'string' ? value : new Date(value).toISOString();
+}
+
+/** Coerce a nullable Date|string DB value to ISO string or null */
+function toIsoStringOrNull(value: Date | string | null): string | null {
+  return value === null ? null : toIsoString(value);
+}
 
 /** Extended row type including JOIN columns from related tables */
 export interface TpmExecutionJoinRow extends TpmCardExecutionRow {
@@ -17,6 +28,7 @@ export interface TpmExecutionJoinRow extends TpmCardExecutionRow {
   executed_by_name?: string;
   approved_by_name?: string;
   photo_count?: number;
+  participants?: TpmExecutionParticipant[];
 }
 
 /** Map execution DB row to API response */
@@ -26,30 +38,18 @@ export function mapExecutionRowToApi(
   const execution: TpmCardExecution = {
     uuid: row.uuid.trim(),
     executedBy: row.executed_by,
-    executionDate:
-      typeof row.execution_date === 'string' ?
-        row.execution_date
-      : new Date(row.execution_date).toISOString(),
+    executionDate: toIsoString(row.execution_date),
     documentation: row.documentation,
     noIssuesFound: row.no_issues_found,
     actualDurationMinutes: row.actual_duration_minutes,
     actualStaffCount: row.actual_staff_count,
     approvalStatus: row.approval_status,
     approvedBy: row.approved_by,
-    approvedAt:
-      row.approved_at === null ? null
-      : typeof row.approved_at === 'string' ? row.approved_at
-      : new Date(row.approved_at).toISOString(),
+    approvedAt: toIsoStringOrNull(row.approved_at),
     approvalNote: row.approval_note,
     customData: row.custom_data,
-    createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
-    updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
   };
 
   if (row.card_uuid !== undefined) execution.cardUuid = row.card_uuid.trim();
@@ -58,6 +58,9 @@ export function mapExecutionRowToApi(
   if (row.approved_by_name !== undefined)
     execution.approvedByName = row.approved_by_name;
   if (row.photo_count !== undefined) execution.photoCount = row.photo_count;
+  if (row.participants !== undefined && Array.isArray(row.participants)) {
+    execution.participants = row.participants;
+  }
 
   return execution;
 }
@@ -73,9 +76,6 @@ export function mapPhotoRowToApi(
     fileSize: row.file_size,
     mimeType: row.mime_type,
     sortOrder: row.sort_order,
-    createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
+    createdAt: toIsoString(row.created_at),
   };
 }

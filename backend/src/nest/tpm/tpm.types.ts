@@ -150,6 +150,16 @@ export interface TpmCardExecutionPhotoRow {
   created_at: string;
 }
 
+/** Row type for `tpm_execution_participants` table (migration 055) */
+export interface TpmExecutionParticipantRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  execution_id: number;
+  user_id: number;
+  created_at: string;
+}
+
 /** Row type for `tpm_scheduled_dates` table (migration 046) — year-ahead dates per card */
 export interface TpmScheduledDateRow {
   id: number;
@@ -304,6 +314,13 @@ export interface TpmLocation {
   updatedAt: string;
 }
 
+/** Participant of a TPM execution (API response) */
+export interface TpmExecutionParticipant {
+  uuid: string;
+  firstName: string;
+  lastName: string;
+}
+
 /** Execution record as returned by the API */
 export interface TpmCardExecution {
   uuid: string;
@@ -323,6 +340,7 @@ export interface TpmCardExecution {
   customData: Record<string, unknown>;
   photos?: TpmExecutionPhoto[];
   photoCount?: number;
+  participants?: TpmExecutionParticipant[];
   createdAt: string;
   updatedAt: string;
 }

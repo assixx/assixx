@@ -65,6 +65,7 @@ export class TpmCardCascadeService {
           AND interval_order <= $3
           AND status = 'green'
           AND is_active = 1
+          AND (last_completed_at IS NULL OR last_completed_at::date < $4::date)
         RETURNING id
       )
       SELECT COUNT(*) AS count FROM updated`,

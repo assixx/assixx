@@ -109,6 +109,7 @@ export class TpmExecutionsController {
         actualStaffCount: dto.actualStaffCount,
         documentation: dto.documentation,
         customData: dto.customData,
+        participantUuids: dto.participantUuids,
       },
     );
   }

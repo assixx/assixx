@@ -14,12 +14,14 @@
   import { onDestroy } from 'svelte';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import SearchResultUser from '$lib/components/SearchResultUser.svelte';
 
   import { createExecution, uploadPhoto, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
   import type {
     TpmCard,
+    TpmEmployee,
     TpmExecution,
     TpmTimeEstimate,
   } from '../../../_lib/types';
@@ -36,10 +38,16 @@
   interface Props {
     card: TpmCard;
     timeEstimates?: TpmTimeEstimate[];
+    employees?: TpmEmployee[];
     onExecutionCreated: (execution: TpmExecution) => void;
   }
 
-  const { card, timeEstimates = [], onExecutionCreated }: Props = $props();
+  const {
+    card,
+    timeEstimates = [],
+    employees = [],
+    onExecutionCreated,
+  }: Props = $props();
 
   // Form state
   let executionDate = $state(new Date().toISOString().slice(0, 10));
@@ -53,6 +61,64 @@
   let stagedPhotos = $state<StagedPhoto[]>([]);
   let photoError = $state<string | null>(null);
   let photoUploadWarning = $state<string | null>(null);
+
+  // Employee search state
+  let employeeQuery = $state('');
+  let employeeSearchOpen = $state(false);
+  let selectedEmployees = $state<TpmEmployee[]>([]);
+
+  const MAX_SEARCH_RESULTS = 5;
+
+  const filteredEmployees = $derived.by((): TpmEmployee[] => {
+    const term = employeeQuery.trim().toLowerCase();
+    if (term === '') return [];
+    return employees
+      .filter((e: TpmEmployee) => {
+        if (selectedEmployees.some((s: TpmEmployee) => s.uuid === e.uuid))
+          return false;
+        const fullName = `${e.firstName} ${e.lastName}`.toLowerCase();
+        const email = e.email.toLowerCase();
+        const empNr = (e.employeeNumber ?? '').toLowerCase();
+        return (
+          fullName.includes(term) ||
+          email.includes(term) ||
+          empNr.includes(term)
+        );
+      })
+      .slice(0, MAX_SEARCH_RESULTS);
+  });
+
+  function selectEmployee(employee: TpmEmployee): void {
+    selectedEmployees = [...selectedEmployees, employee];
+    employeeQuery = '';
+    employeeSearchOpen = false;
+  }
+
+  function removeEmployee(uuid: string): void {
+    selectedEmployees = selectedEmployees.filter(
+      (e: TpmEmployee) => e.uuid !== uuid,
+    );
+  }
+
+  function handleEmployeeInput(): void {
+    employeeSearchOpen = employeeQuery.trim().length > 0;
+  }
+
+  $effect(() => {
+    if (!employeeSearchOpen) return;
+
+    function handleClickOutside(event: MouseEvent): void {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.employee-search')) {
+        employeeSearchOpen = false;
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+    };
+  });
 
   // Derived: SOLL values from time estimates matching this card's interval
   const matchingEstimate = $derived(
@@ -132,6 +198,10 @@
         actualStaffCount: parseIntOrNull(actualStaffCount),
         documentation:
           documentation.trim().length > 0 ? documentation.trim() : null,
+        participantUuids:
+          selectedEmployees.length > 0 ?
+            selectedEmployees.map((e: TpmEmployee) => e.uuid)
+          : undefined,
       });
 
       // Step 2: Upload staged photos (sequential to avoid server overload)
@@ -273,7 +343,93 @@
           disabled={submitting}
         />
       </div>
+
+      <!-- Employee Search -->
+      {#if employees.length > 0}
+        <div class="form-field execution-form__half">
+          <span class="form-field__label">Beteiligte Mitarbeiter</span>
+          <div
+            class="search-input-wrapper employee-search"
+            class:search-input-wrapper--open={employeeSearchOpen &&
+              employeeQuery.trim().length > 0}
+          >
+            <div class="search-input">
+              <i class="search-input__icon fas fa-search"></i>
+              <input
+                type="search"
+                class="search-input__field"
+                placeholder="Mitarbeiter suchen..."
+                autocomplete="off"
+                bind:value={employeeQuery}
+                oninput={handleEmployeeInput}
+                onfocus={handleEmployeeInput}
+                disabled={submitting}
+              />
+              {#if employeeQuery.length > 0}
+                <button
+                  type="button"
+                  class="search-input__clear"
+                  aria-label="Suche löschen"
+                  onclick={() => {
+                    employeeQuery = '';
+                    employeeSearchOpen = false;
+                  }}
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              {/if}
+            </div>
+            <div class="search-input__results">
+              {#if filteredEmployees.length > 0}
+                {#each filteredEmployees as emp (emp.uuid)}
+                  <SearchResultUser
+                    id={emp.id}
+                    firstName={emp.firstName}
+                    lastName={emp.lastName}
+                    email={emp.email}
+                    employeeNumber={emp.employeeNumber}
+                    position={emp.position}
+                    query={employeeQuery}
+                    onclick={() => {
+                      selectEmployee(emp);
+                    }}
+                  />
+                {/each}
+              {:else}
+                <div class="employee-search__no-results">
+                  Keine Mitarbeiter gefunden
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+      {/if}
     </div>
+
+    <!-- Selected Employees (chips) -->
+    {#if selectedEmployees.length > 0}
+      <div class="employee-chips">
+        {#each selectedEmployees as emp (emp.uuid)}
+          <span class="employee-chip">
+            <span class="employee-chip__name">
+              {emp.firstName}
+              {emp.lastName}
+            </span>
+            <button
+              type="button"
+              class="employee-chip__remove"
+              onclick={() => {
+                removeEmployee(emp.uuid);
+              }}
+              disabled={submitting}
+              aria-label="{emp.firstName} {emp.lastName} entfernen"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </span>
+        {/each}
+      </div>
+    {/if}
 
     <!-- Step 4: Documentation -->
     <div class="form-field">
@@ -561,5 +717,59 @@
 
   .execution-form__submit {
     align-self: center;
+  }
+
+  /* Employee Search */
+  .employee-search {
+    position: relative;
+  }
+
+  .employee-search__no-results {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.813rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  /* Selected Employee Chips */
+  .employee-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .employee-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+    border-radius: var(--radius-full, 9999px);
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+  }
+
+  .employee-chip__name {
+    font-weight: 500;
+  }
+
+  .employee-chip__remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: var(--radius-full, 9999px);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.625rem;
+    transition: color 0.15s ease;
+  }
+
+  .employee-chip__remove:hover:not(:disabled) {
+    color: var(--color-danger);
   }
 </style>
