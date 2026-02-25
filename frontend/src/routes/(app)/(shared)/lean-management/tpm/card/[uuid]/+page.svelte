@@ -15,7 +15,6 @@
     CARD_STATUS_BADGE_CLASSES,
     CARD_ROLE_LABELS,
     INTERVAL_LABELS,
-    DEFAULT_COLORS,
   } from '../../_lib/constants';
   import ApprovalPanel from '../../board/[uuid]/_lib/ApprovalPanel.svelte';
   import ExecutionForm from '../../board/[uuid]/_lib/ExecutionForm.svelte';
@@ -23,12 +22,7 @@
   import LocationCard from '../../locations/[uuid]/_lib/LocationCard.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    TpmColorConfigEntry,
-    TpmExecution,
-    TpmLocation,
-    CardStatus,
-  } from '../../_lib/types';
+  import type { TpmExecution, TpmLocation } from '../../_lib/types';
 
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
@@ -37,16 +31,8 @@
   const { data }: { data: PageData } = $props();
 
   const card = $derived(data.card);
-  const colors = $derived(data.colors);
   const timeEstimates = $derived(data.timeEstimates);
   const locations = $derived(data.locations);
-
-  function getColor(status: CardStatus): string {
-    const found = colors.find(
-      (c: TpmColorConfigEntry) => c.statusKey === status,
-    );
-    return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
-  }
 
   function formatDate(dateStr: string | null): string {
     if (dateStr === null) return '—';
@@ -57,7 +43,6 @@
     });
   }
 
-  const statusColor = $derived(card !== null ? getColor(card.status) : '');
   const canExecute = $derived(
     card !== null && (card.status === 'red' || card.status === 'overdue'),
   );
@@ -161,32 +146,26 @@
     <div class="card">
       <div class="card__header">
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <span
-              class="card-detail__status-dot"
-              style="background-color: {statusColor}"
-            ></span>
-            <div>
-              <h2 class="card__title m-0">{card.title}</h2>
-              <div class="mt-1 flex items-center gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span
+                class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
+              >
+                {card.cardCode}
+              </span>
+              <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
+                {CARD_STATUS_LABELS[card.status]}
+              </span>
+              {#if card.requiresApproval}
                 <span
-                  class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
+                  class="text-xs text-(--color-warning)"
+                  title={MESSAGES.DETAIL_APPROVAL_REQUIRED}
                 >
-                  {card.cardCode}
+                  <i class="fas fa-lock"></i>
                 </span>
-                <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
-                  {CARD_STATUS_LABELS[card.status]}
-                </span>
-                {#if card.requiresApproval}
-                  <span
-                    class="text-xs text-(--color-warning)"
-                    title={MESSAGES.DETAIL_APPROVAL_REQUIRED}
-                  >
-                    <i class="fas fa-lock"></i>
-                  </span>
-                {/if}
-              </div>
+              {/if}
             </div>
+            <h2 class="card__title m-0 mt-1">{card.title}</h2>
           </div>
           <button
             type="button"
@@ -469,13 +448,6 @@
     .card-detail-grid {
       grid-template-columns: 1fr;
     }
-  }
-
-  .card-detail__status-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    flex-shrink: 0;
   }
 
   .card-detail__section-title {

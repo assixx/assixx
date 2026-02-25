@@ -330,6 +330,14 @@
                   <tr class="history-detail">
                     <td colspan="4">
                       <div class="history-detail__content">
+                        <!-- No Issues Checkbox Result -->
+                        {#if execution.noIssuesFound}
+                          <div class="history-detail__no-issues">
+                            <i class="fas fa-check-circle"></i>
+                            {MESSAGES.EXEC_NO_ISSUES}
+                          </div>
+                        {/if}
+
                         <!-- Documentation -->
                         <div class="history-detail__section">
                           <h4 class="history-detail__label">
@@ -673,6 +681,19 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .history-detail__no-issues {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.813rem;
+    font-weight: 500;
+    color: var(--color-success);
+    padding: 0.375rem 0.625rem;
+    background: color-mix(in srgb, var(--color-success) 8%, transparent);
+    border-radius: var(--radius-md);
+    width: fit-content;
   }
 
   .history-detail__approval {
