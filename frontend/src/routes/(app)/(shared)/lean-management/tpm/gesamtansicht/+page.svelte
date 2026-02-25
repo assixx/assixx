@@ -23,7 +23,7 @@
 <div class="container">
   <div class="gv-header">
     <a
-      href={resolvePath('/lean-management/tpm')}
+      href={resolvePath('/lean-management/tpm/overview')}
       class="btn btn-info btn-icon"
       title={MESSAGES.BTN_BACK_TO_OVERVIEW}
     >

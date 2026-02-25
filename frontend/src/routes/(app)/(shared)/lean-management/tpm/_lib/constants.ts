@@ -4,6 +4,25 @@
 
 import type { CardStatus, IntervalType } from './types';
 
+/** Interval type colors for Gesamtansicht headers */
+export const INTERVAL_COLORS: Record<IntervalType, string> = {
+  daily: '#4CAF50',
+  weekly: '#8BC34A',
+  monthly: '#5bb5f5',
+  quarterly: '#b6a5a5',
+  semi_annual: '#ee6969',
+  annual: '#d0ae49',
+  custom: '#ff9800',
+};
+
+/** Zoom configuration for zoomable views */
+export const ZOOM_CONFIG = {
+  DEFAULT: 100,
+  MIN: 50,
+  MAX: 150,
+  STEP: 1,
+} as const;
+
 /** Interval type display labels (German) */
 export const INTERVAL_LABELS: Record<IntervalType, string> = {
   daily: 'Täglich',
@@ -181,6 +200,26 @@ export const MESSAGES = {
   APPROVAL_STATUS_PENDING: 'Ausstehend',
   APPROVAL_STATUS_APPROVED: 'Freigegeben',
   APPROVAL_STATUS_REJECTED: 'Abgelehnt',
+
+  // Gesamtansicht
+  BTN_GESAMTANSICHT: 'Gesamtansicht',
+  GESAMTANSICHT_TITLE: 'TPM Gesamtansicht',
+  GESAMTANSICHT_PAGE_TITLE: 'TPM Gesamtansicht - Assixx',
+  GESAMTANSICHT_SLIDER_LABEL: 'Anzahl Termine',
+  GESAMTANSICHT_LOADING: 'Gesamtansicht wird geladen...',
+  GESAMTANSICHT_EMPTY: 'Keine aktiven Wartungspläne vorhanden',
+  GESAMTANSICHT_TH_MACHINE: 'Anlage',
+  GESAMTANSICHT_TH_TIME: 'Uhrzeit',
+  GESAMTANSICHT_TH_STAFF: 'Anzahl Mitarbeiter',
+  GESAMTANSICHT_TH_PREP: 'Vorbereitung',
+  GESAMTANSICHT_TH_EXEC: 'Durchführung',
+  GESAMTANSICHT_TH_FOLLOW: 'Nachbereitung',
+  BTN_BACK_TO_OVERVIEW: 'Zurück zur Übersicht',
+
+  // Zoom controls
+  ZOOM_IN: 'Vergrößern',
+  ZOOM_OUT: 'Verkleinern',
+  ZOOM_FULLSCREEN: 'Vollbild',
 
   // Time Estimates
   TIME_HEADING: 'Zeitschätzung',

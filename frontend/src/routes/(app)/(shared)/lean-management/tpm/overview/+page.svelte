@@ -8,9 +8,15 @@
    */
   import { onMount } from 'svelte';
 
+  import { resolve } from '$app/paths';
+
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import { MESSAGES, DEFAULT_COLORS } from '../_lib/constants';
+
+  function resolvePath(path: string): string {
+    return (resolve as (p: string) => string)(path);
+  }
   import MachineList from '../_lib/MachineList.svelte';
 
   import type { PageData } from './$types';
@@ -82,10 +88,19 @@
   <!-- Header -->
   <div class="card">
     <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-tools mr-2"></i>
-        {MESSAGES.PAGE_HEADING}
-      </h2>
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="card__title">
+          <i class="fas fa-tools mr-2"></i>
+          {MESSAGES.PAGE_HEADING}
+        </h2>
+        <a
+          href={resolvePath('/lean-management/tpm/gesamtansicht')}
+          class="btn btn-info"
+        >
+          <i class="fas fa-table"></i>
+          {MESSAGES.BTN_GESAMTANSICHT}
+        </a>
+      </div>
       <p class="mt-2 text-(--color-text-secondary)">
         {MESSAGES.PAGE_DESCRIPTION}
       </p>

@@ -58,7 +58,7 @@
     position: sticky;
     left: 0;
     min-width: 8rem;
-    background: var(--color-gray-900, #1a1a2e);
+    background: var(--color-surface);
     z-index: 1;
   }
 
@@ -67,7 +67,7 @@
     text-align: center;
     position: sticky;
     left: 8rem;
-    background: var(--color-gray-900, #1a1a2e);
+    background: var(--color-surface);
     z-index: 1;
   }
 

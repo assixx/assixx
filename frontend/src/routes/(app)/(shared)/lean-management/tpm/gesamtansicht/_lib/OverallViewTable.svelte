@@ -446,7 +446,8 @@
   .gv-th--sticky {
     position: sticky;
     left: 0;
-    background: var(--color-gray-900, #1a1a2e);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
     z-index: 2;
     text-align: left;
   }
@@ -494,7 +495,8 @@
     font-size: 0.85rem;
     position: sticky;
     left: 0;
-    background: var(--color-gray-900, #1a1a2e);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
     z-index: 1;
   }
 

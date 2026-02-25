@@ -174,6 +174,40 @@ export interface MachineWithTpmStatus {
 }
 
 // =============================================================================
+// SCHEDULE PROJECTION
+// =============================================================================
+
+/** A projected TPM maintenance slot (computed, not stored in DB) */
+export interface ProjectedSlot {
+  planUuid: string;
+  planName: string;
+  machineId: number;
+  machineName: string;
+  intervalTypes: IntervalType[];
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  bufferHours: number;
+  isFullDay: boolean;
+}
+
+/** Result of a schedule projection across all active plans */
+export interface ScheduleProjectionResult {
+  slots: ProjectedSlot[];
+  dateRange: { start: string; end: string };
+  planCount: number;
+}
+
+/** TPM Interval Color Configuration Entry (interval type colors) */
+export interface IntervalColorConfigEntry {
+  statusKey: IntervalType;
+  colorHex: string;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
 // API RESPONSE TYPES
 // =============================================================================
 

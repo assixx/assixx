@@ -15,6 +15,8 @@ import type {
   CreateExecutionPayload,
   RespondExecutionPayload,
   PaginatedResponse,
+  ScheduleProjectionResult,
+  IntervalColorConfigEntry,
 } from './types';
 
 const log = createLogger('TpmEmployeeApi');
@@ -100,6 +102,37 @@ export async function fetchBoardData(
 export async function fetchColors(): Promise<TpmColorConfigEntry[]> {
   const result: unknown = await apiClient.get('/tpm/config/colors');
   return extractArray<TpmColorConfigEntry>(result);
+}
+
+// =============================================================================
+// SCHEDULE PROJECTION
+// =============================================================================
+
+/** Fetch projected maintenance schedules across all active plans */
+export async function fetchScheduleProjection(
+  startDate: string,
+  endDate: string,
+): Promise<ScheduleProjectionResult | null> {
+  try {
+    return await apiClient.get<ScheduleProjectionResult>(
+      `/tpm/plans/schedule-projection?startDate=${startDate}&endDate=${endDate}`,
+    );
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading schedule projection');
+    return null;
+  }
+}
+
+// =============================================================================
+// INTERVAL COLORS
+// =============================================================================
+
+/** Fetch interval color configuration */
+export async function fetchIntervalColors(): Promise<
+  IntervalColorConfigEntry[]
+> {
+  const result: unknown = await apiClient.get('/tpm/config/interval-colors');
+  return extractArray<IntervalColorConfigEntry>(result);
 }
 
 // =============================================================================
