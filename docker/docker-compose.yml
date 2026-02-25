@@ -73,7 +73,7 @@ services:
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
         NODE_VERSION: ${NODE_VERSION_DEV:-24.13.1-alpine3.22}
-        PNPM_VERSION: ${PNPM_VERSION:-10.30.0}
+        PNPM_VERSION: ${PNPM_VERSION:-10.30.2}
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
@@ -319,7 +319,7 @@ services:
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
         NODE_VERSION: ${NODE_VERSION_PROD:-24.13.1-alpine3.22}
-        PNPM_VERSION: ${PNPM_VERSION:-10.30.0}
+        PNPM_VERSION: ${PNPM_VERSION:-10.30.2}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
       # BuildKit secrets - never persisted in image layers (unlike ARG/ENV)

@@ -1275,7 +1275,7 @@ unit-tests:
     - name: Install pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 10.30.0
+        version: 10.30.2
 
     - name: Setup Node.js
       uses: actions/setup-node@v5

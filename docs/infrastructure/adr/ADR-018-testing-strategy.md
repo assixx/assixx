@@ -401,7 +401,7 @@ unit-tests:
   steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v2
-      with: { version: 10.30.0 }
+      with: { version: 10.30.2 }
     - uses: actions/setup-node@v5
       with: { node-version: '24', cache: 'pnpm' }
     - run: pnpm install --frozen-lockfile

@@ -24,7 +24,7 @@ RUN apk add --no-cache curl jq && \
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version is configurable for consistency across environments
-ARG PNPM_VERSION=10.30.0
+ARG PNPM_VERSION=10.30.2
 RUN npm install -g npm@11.8.0 pnpm@${PNPM_VERSION}
 
 # Arbeitsverzeichnis
