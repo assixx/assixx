@@ -269,13 +269,13 @@
         </div>
 
         <!-- Two-Person-Principle Info Box -->
-        <div class="info-box mb-6">
-          <div class="flex items-start gap-3">
-            <i class="fas fa-shield-alt mt-1 text-blue-500"></i>
-            <div>
-              <p class="mb-2 font-semibold">
-                Zwei-Personen-Prinzip (4-Augen-Prinzip)
-              </p>
+        <div class="alert alert--info mb-6">
+          <div class="alert__icon"><i class="fas fa-shield-alt"></i></div>
+          <div class="alert__content">
+            <div class="alert__title">
+              Zwei-Personen-Prinzip (4-Augen-Prinzip)
+            </div>
+            <div class="alert__message">
               <p class="mb-2">
                 Die Löschung wird <strong>nicht sofort</strong> durchgeführt,
                 sondern muss zuerst von einem zweiten Root-Benutzer genehmigt
@@ -377,16 +377,5 @@
 
   .card--danger-border:hover {
     border-color: rgb(244 67 54 / 50%);
-  }
-
-  /* Info Box - Two-person-principle information */
-  .info-box {
-    margin-bottom: var(--spacing-6);
-    border: 1px solid rgb(33 150 243 / 20%);
-    border-radius: var(--radius-xl);
-    background: rgb(33 150 243 / 5%);
-    padding: var(--spacing-3);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
   }
 </style>

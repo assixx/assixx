@@ -255,23 +255,33 @@
 
               <!-- Permission Info Box -->
               {#if isCreator}
-                <div class="info-box info-box--warning">
-                  <i class="fas fa-info-circle"></i>
-                  <div>
-                    <strong>Sie sind der Ersteller dieser Löschanfrage.</strong
-                    ><br />
-                    Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer
-                    die Löschung genehmigt.
+                <div class="alert alert--warning">
+                  <div class="alert__icon">
+                    <i class="fas fa-info-circle"></i>
+                  </div>
+                  <div class="alert__content">
+                    <div class="alert__title">
+                      Sie sind der Ersteller dieser Löschanfrage.
+                    </div>
+                    <div class="alert__message">
+                      Das Zwei-Personen-Prinzip erfordert, dass ein anderer
+                      Root-Benutzer die Löschung genehmigt.
+                    </div>
                   </div>
                 </div>
               {:else if item.canApprove}
-                <div class="info-box info-box--success">
-                  <i class="fas fa-user-shield"></i>
-                  <div>
-                    <strong
-                      >Sie können diese Löschanfrage genehmigen oder ablehnen.</strong
-                    ><br />
-                    Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
+                <div class="alert alert--success">
+                  <div class="alert__icon">
+                    <i class="fas fa-user-shield"></i>
+                  </div>
+                  <div class="alert__content">
+                    <div class="alert__title">
+                      Sie können diese Löschanfrage genehmigen oder ablehnen.
+                    </div>
+                    <div class="alert__message">
+                      Die Anfrage wurde von einem anderen Root-Benutzer
+                      erstellt.
+                    </div>
                   </div>
                 </div>
               {/if}
@@ -294,26 +304,30 @@
 
               <!-- Grace Period Info -->
               {#if shouldShowGracePeriod(item)}
-                <div class="info-box info-box--info">
-                  <i class="fas fa-calendar-alt"></i>
-                  <div>
-                    <strong>30 Tage Grace Period läuft!</strong>
-                    <p class="mt-2 mb-2">
-                      <strong>Geplante Löschung:</strong>
-                      {formatDateOnly(item.scheduledFor)}
-                    </p>
-                    <p class="mb-2">
-                      Der Tenant kann innerhalb von 30 Tagen noch reaktiviert
-                      werden.
-                    </p>
-                    <p class="mb-2">
-                      Nach Ablauf der Grace Period erfolgt die automatische,
-                      unwiderrufliche Löschung.
-                    </p>
-                    <small class="text-muted"
-                      >Deletion Worker prüft alle 30 Sekunden nach abgelaufenen
-                      Grace Periods.</small
-                    >
+                <div class="alert alert--info">
+                  <div class="alert__icon">
+                    <i class="fas fa-calendar-alt"></i>
+                  </div>
+                  <div class="alert__content">
+                    <div class="alert__title">30 Tage Grace Period läuft!</div>
+                    <div class="alert__message">
+                      <p class="mt-2 mb-2">
+                        <strong>Geplante Löschung:</strong>
+                        {formatDateOnly(item.scheduledFor)}
+                      </p>
+                      <p class="mb-2">
+                        Der Tenant kann innerhalb von 30 Tagen noch reaktiviert
+                        werden.
+                      </p>
+                      <p class="mb-2">
+                        Nach Ablauf der Grace Period erfolgt die automatische,
+                        unwiderrufliche Löschung.
+                      </p>
+                      <small class="text-muted"
+                        >Deletion Worker prüft alle 30 Sekunden nach
+                        abgelaufenen Grace Periods.</small
+                      >
+                    </div>
                   </div>
                 </div>
               {/if}
@@ -602,54 +616,6 @@
 
   .process-info__item:last-child::after {
     content: '';
-  }
-
-  /* Info Boxes */
-  .info-box {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-3);
-    margin: var(--spacing-4) 0;
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
-  }
-
-  .info-box i {
-    flex-shrink: 0;
-    font-size: 1.25rem;
-  }
-
-  .info-box strong {
-    display: block;
-    margin-bottom: var(--spacing-1);
-    color: var(--color-text-primary);
-  }
-
-  .info-box--warning {
-    border: 1px solid rgb(255 152 0 / 30%);
-    background: rgb(255 152 0 / 10%);
-  }
-
-  .info-box--warning i {
-    color: var(--color-warning);
-  }
-
-  .info-box--success {
-    border: 1px solid rgb(76 175 80 / 30%);
-    background: rgb(76 175 80 / 10%);
-  }
-
-  .info-box--success i {
-    color: var(--color-success);
-  }
-
-  .info-box--info {
-    border: 1px solid rgb(33 150 243 / 30%);
-    background: rgb(33 150 243 / 10%);
-  }
-
-  .info-box--info i {
-    color: var(--color-primary);
   }
 
   /* Cooling Off Warning */

@@ -31,6 +31,7 @@ import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type {
+  EligibleParticipant,
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
@@ -473,7 +474,7 @@ export class TpmExecutionsService {
     const execution = mapExecutionRowToApi(row);
 
     const participantUuids = dto.participantUuids;
-    if (participantUuids.length > 0) {
+    if (participantUuids !== undefined && participantUuids.length > 0) {
       execution.participants = await this.insertParticipants(
         client,
         tenantId,
@@ -566,6 +567,39 @@ export class TpmExecutionsService {
         'Non-critical: notification after execution failed',
       );
     }
+  }
+
+  /** List active employees eligible as execution participants */
+  async getEligibleParticipants(
+    tenantId: number,
+  ): Promise<EligibleParticipant[]> {
+    const rows = await this.db.query<{
+      id: number;
+      uuid: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+      employee_number: string | null;
+      position: string | null;
+    }>(
+      `SELECT id, uuid, first_name, last_name, email, employee_number, position
+       FROM users
+       WHERE tenant_id = $1 AND is_active = 1 AND role = 'employee'
+       ORDER BY last_name, first_name`,
+      [tenantId],
+    );
+
+    return rows.map(
+      (r: (typeof rows)[number]): EligibleParticipant => ({
+        id: r.id,
+        uuid: r.uuid.trim(),
+        firstName: r.first_name,
+        lastName: r.last_name,
+        email: r.email,
+        employeeNumber: r.employee_number,
+        position: r.position,
+      }),
+    );
   }
 
   /** Resolve team leads + admins who can approve for a machine */

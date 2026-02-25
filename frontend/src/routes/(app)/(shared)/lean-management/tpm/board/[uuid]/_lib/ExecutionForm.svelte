@@ -389,6 +389,7 @@
                     email={emp.email}
                     employeeNumber={emp.employeeNumber}
                     position={emp.position}
+                    role="employee"
                     query={employeeQuery}
                     onclick={() => {
                       selectEmployee(emp);

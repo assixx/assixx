@@ -2,12 +2,13 @@
  * TPM Executions Controller
  *
  * REST endpoints for card execution lifecycle:
- * - POST   /tpm/executions                    — Create execution (mark card done)
- * - GET    /tpm/executions/pending-approvals   — List pending approvals
- * - GET    /tpm/executions/:uuid              — Get single execution
- * - POST   /tpm/executions/:uuid/respond      — Approve or reject
- * - POST   /tpm/executions/:uuid/photos       — Upload photo
- * - GET    /tpm/executions/:uuid/photos       — List photos
+ * - POST   /tpm/executions                           — Create execution (mark card done)
+ * - GET    /tpm/executions/pending-approvals          — List pending approvals
+ * - GET    /tpm/executions/eligible-participants      — List employees for participant selection
+ * - GET    /tpm/executions/:uuid                     — Get single execution
+ * - POST   /tpm/executions/:uuid/respond             — Approve or reject
+ * - POST   /tpm/executions/:uuid/photos              — Upload photo
+ * - GET    /tpm/executions/:uuid/photos              — List photos
  */
 import {
   BadRequestException,
@@ -40,7 +41,11 @@ import { RespondExecutionDto } from './dto/respond-execution.dto.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import type { PaginatedExecutions } from './tpm-executions.service.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
-import type { TpmCardExecution, TpmExecutionPhoto } from './tpm.types.js';
+import type {
+  EligibleParticipant,
+  TpmCardExecution,
+  TpmExecutionPhoto,
+} from './tpm.types.js';
 import { MAX_PHOTO_FILE_SIZE } from './tpm.types.js';
 
 const { memoryStorage } = multer;
@@ -87,6 +92,20 @@ export class TpmExecutionsController {
       query.page,
       query.limit,
     );
+  }
+
+  /**
+   * GET /tpm/executions/eligible-participants
+   *
+   * Returns active employees who can be selected as participants.
+   * Must be BEFORE :uuid route to avoid NestJS matching as UUID.
+   */
+  @Get('eligible-participants')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async getEligibleParticipants(
+    @TenantId() tenantId: number,
+  ): Promise<EligibleParticipant[]> {
+    return await this.executionsService.getEligibleParticipants(tenantId);
   }
 
   /** POST /tpm/executions — Create execution (employee marks card as done) */

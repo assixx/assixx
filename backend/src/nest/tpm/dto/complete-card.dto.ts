@@ -39,8 +39,7 @@ export const CompleteCardSchema = z.object({
   participantUuids: z
     .array(z.uuid())
     .max(10, 'Maximal 10 Teilnehmer')
-    .optional()
-    .default([]),
+    .optional(),
 });
 
 export class CompleteCardDto extends createZodDto(CompleteCardSchema) {}

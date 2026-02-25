@@ -80,7 +80,7 @@ export const load: PageServerLoad = async ({
   const [card, colorsRaw, employeesRaw] = await Promise.all([
     apiFetch<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
     apiFetch<unknown>('/tpm/config/colors', token, fetch),
-    apiFetch<unknown>('/users?role=employee', token, fetch),
+    apiFetch<unknown>('/tpm/executions/eligible-participants', token, fetch),
   ]);
 
   const colors = extractArray<TpmColorConfigEntry>(colorsRaw);

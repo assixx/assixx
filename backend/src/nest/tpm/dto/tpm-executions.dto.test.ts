@@ -277,9 +277,9 @@ describe('CompleteCardSchema', () => {
   // Defaults
   // -----------------------------------------------------------
 
-  it('should default participantUuids to empty array', () => {
+  it('should leave participantUuids undefined when not provided', () => {
     const data = CompleteCardSchema.parse({});
-    expect(data.participantUuids).toEqual([]);
+    expect(data.participantUuids).toBeUndefined();
   });
 
   it('should default noIssuesFound to false', () => {

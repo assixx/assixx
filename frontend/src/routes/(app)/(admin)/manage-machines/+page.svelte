@@ -430,6 +430,17 @@
         {MESSAGES.PAGE_DESCRIPTION}
       </p>
 
+      <div class="alert alert--info alert--sm mt-4">
+        <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
+        <div class="alert__content">
+          <div class="alert__message">
+            TPM-Wartungspläne werden hier nicht angezeigt. Diese Übersicht dient
+            primär für außerordentliche Zustände wie ungeplante Reparaturen oder
+            Stillstände.
+          </div>
+        </div>
+      </div>
+
       <div class="mt-6 flex items-center justify-between gap-4">
         <!-- Status Toggle Group -->
         <div
@@ -563,14 +574,14 @@
                     handleSearchResultClick(machine.id);
                   }}
                 >
-                  <div class="search-result__content">
-                    <div class="search-result__name">
+                  <div class="flex flex-col gap-1">
+                    <div class="font-medium text-(--color-text-primary)">
                       <HighlightText
                         text={machine.name}
                         query={machineState.currentSearchQuery}
                       />
                     </div>
-                    <div class="search-result__details">
+                    <div class="text-[0.813rem] text-(--color-text-secondary)">
                       <HighlightText
                         text={machine.model ?? ''}
                         query={machineState.currentSearchQuery}
@@ -587,7 +598,9 @@
                 </div>
               {/each}
               {#if filteredMachines.length > 5}
-                <div class="search-input__result-item search-result__more">
+                <div
+                  class="search-input__result-item border-t border-white/5 text-center text-[0.813rem] text-(--color-primary)"
+                >
                   {filteredMachines.length - 5} weitere Ergebnisse in Tabelle
                 </div>
               {/if}
@@ -788,29 +801,3 @@
   }}
   onmanage={navigateToAvailabilityHistory}
 />
-
-<style>
-  /* Search Result Items */
-  .search-result__content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .search-result__name {
-    font-weight: 500;
-    color: var(--color-text-primary);
-  }
-
-  .search-result__details {
-    font-size: 0.813rem;
-    color: var(--color-text-secondary);
-  }
-
-  .search-result__more {
-    font-size: 0.813rem;
-    color: var(--color-primary);
-    text-align: center;
-    border-top: 1px solid rgb(255 255 255 / 5%);
-  }
-</style>

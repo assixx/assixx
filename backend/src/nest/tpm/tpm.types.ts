@@ -488,6 +488,17 @@ export const DEFAULT_INTERVAL_COLORS: Record<
   custom: { hex: '#FF9800', label: 'Benutzerdefiniert' },
 } as const;
 
+/** Employee eligible as execution participant (API response shape) */
+export interface EligibleParticipant {
+  id: number;
+  uuid: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  employeeNumber: string | null;
+  position: string | null;
+}
+
 /** Max photos per execution (enforced in service layer) */
 export const MAX_PHOTOS_PER_EXECUTION = 5;
 
