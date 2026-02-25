@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 
 // ============================================================================
@@ -138,7 +139,10 @@ const SETTING_NOT_FOUND = 'Setting not found';
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ==================== SYSTEM SETTINGS ====================
 
@@ -619,6 +623,16 @@ export class SettingsService {
       );
     }
 
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'settings',
+      0,
+      `User-Setting aktualisiert: ${data.setting_key}`,
+      undefined,
+      { settingKey: data.setting_key, valueType: data.value_type ?? 'string' },
+    );
+
     return { success: true };
   }
 
@@ -705,9 +719,20 @@ export class SettingsService {
       throw new NotFoundException(SETTING_NOT_FOUND);
     }
 
+    const tenantId = rows[0]?.tenant_id ?? 0;
+
     await this.db.query(
       `DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
       [key, userId],
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'settings',
+      0,
+      `User-Setting gelöscht: ${key}`,
+      { settingKey: key },
     );
 
     return { success: true };

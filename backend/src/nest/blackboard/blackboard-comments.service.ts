@@ -11,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { ERROR_ENTRY_NOT_FOUND } from './blackboard.constants.js';
 import { transformComment } from './blackboard.helpers.js';
@@ -42,7 +43,10 @@ const COMMENT_JOIN = `
 export class BlackboardCommentsService {
   private readonly logger = new Logger(BlackboardCommentsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get top-level comments for an entry with pagination.
@@ -164,6 +168,15 @@ export class BlackboardCommentsService {
       throw new Error('Failed to add comment');
     }
 
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Kommentar erstellt: Eintrag ${String(numericId)}`,
+      { entryId: numericId, commentId: rows[0].id },
+    );
+
     return { id: rows[0].id, message: 'Comment added successfully' };
   }
 
@@ -179,6 +192,14 @@ export class BlackboardCommentsService {
     await this.db.query(
       'DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2',
       [commentId, tenantId],
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      0,
+      'blackboard',
+      commentId,
+      `Blackboard-Kommentar gelöscht: ${String(commentId)}`,
     );
 
     return { message: 'Comment deleted successfully' };

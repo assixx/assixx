@@ -11,6 +11,9 @@
  *
  * @see docs/plans/IMPLEMENT-E2E-ENCRYPTION.md (Section 6.4)
  */
+import { createLogger } from '$lib/utils/logger';
+
+const log = createLogger('CryptoBridge');
 
 /** Argon2 parameters stored alongside the escrow blob */
 interface Argon2Params {
@@ -284,7 +287,7 @@ class CryptoBridge {
     };
 
     this.worker.onerror = (event: ErrorEvent) => {
-      console.error('[CryptoBridge] Worker error:', event.message);
+      log.error({ err: event.message }, 'Worker error');
       this.handleCrash();
     };
   }

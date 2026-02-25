@@ -8,6 +8,7 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { MachineMaintenanceService } from './machine-maintenance.service.js';
 
@@ -62,6 +63,15 @@ function createMockDb() {
   };
 }
 
+function createMockActivityLogger() {
+  return {
+    log: vi.fn(),
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+  };
+}
+
 // =============================================================
 // MachineMaintenanceService
 // =============================================================
@@ -73,8 +83,10 @@ describe('MachineMaintenanceService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
+    const mockActivityLogger = createMockActivityLogger();
     service = new MachineMaintenanceService(
       mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
     );
   });
 

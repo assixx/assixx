@@ -9,6 +9,9 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('EditAvailabilityModal');
 
   import { AVAILABILITY_STATUS_OPTIONS } from '../../_lib/constants';
 
@@ -122,9 +125,7 @@
       handleClose();
       await onSuccess();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error('Error updating entry:', errorMessage);
+      log.error({ err }, 'Error updating entry');
     } finally {
       submitting = false;
     }

@@ -27,6 +27,11 @@
   const cards = $derived(data.cards);
   const colors = $derived(data.colors);
 
+  /** Only root/admin can manage cards and locations */
+  const canWrite = $derived(
+    data.userRole === 'root' || data.userRole === 'admin',
+  );
+
   /** Active board filter — client-side only */
   let activeFilter = $state<FilterType>('all');
 
@@ -109,17 +114,19 @@
           >
             <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
           </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={() => {
-              void goto(
-                resolvePath(`/lean-management/tpm/cards/${data.planUuid}`),
-              );
-            }}
-          >
-            <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
-          </button>
+          {#if canWrite}
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick={() => {
+                void goto(
+                  resolvePath(`/lean-management/tpm/cards/${data.planUuid}`),
+                );
+              }}
+            >
+              <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
+            </button>
+          {/if}
         </div>
       </div>
     </div>

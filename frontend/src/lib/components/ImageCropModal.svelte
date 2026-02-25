@@ -8,6 +8,10 @@
    */
   import Cropper from 'svelte-easy-crop';
 
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ImageCropModal');
+
   interface CropArea {
     x: number;
     y: number;
@@ -125,7 +129,7 @@
       const croppedBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
       onsave(croppedBlob);
     } catch (err) {
-      console.error('Error cropping image:', err);
+      log.error({ err }, 'Error cropping image');
     } finally {
       saving = false;
     }

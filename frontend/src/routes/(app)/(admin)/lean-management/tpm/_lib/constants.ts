@@ -321,6 +321,7 @@ export const MESSAGES = {
   TH_CARD_TITLE: 'Titel',
   TH_CARD_ROLE: 'Typ',
   TH_CARD_DUE: 'Fällig',
+  TH_CARD_ESTIMATED_TIME: 'SOLL-Zeit',
   TH_CARD_APPROVAL: 'Freigabe',
 
   // Card form buttons

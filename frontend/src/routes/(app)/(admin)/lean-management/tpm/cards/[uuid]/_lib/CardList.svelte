@@ -343,6 +343,7 @@
           <th scope="col">{MESSAGES.TH_INTERVAL}</th>
           <th scope="col">{MESSAGES.TH_STATUS}</th>
           <th scope="col">{MESSAGES.TH_CARD_DUE}</th>
+          <th scope="col">{MESSAGES.TH_CARD_ESTIMATED_TIME}</th>
           <th scope="col">{MESSAGES.TH_CARD_APPROVAL}</th>
           <th scope="col">{MESSAGES.TH_ACTIONS}</th>
         </tr>
@@ -384,6 +385,14 @@
               </span>
             </td>
             <td>{formatDate(card.currentDueDate)}</td>
+            <td>
+              {#if card.estimatedExecutionMinutes !== null}
+                <span class="text-sm">{card.estimatedExecutionMinutes} min</span
+                >
+              {:else}
+                <span class="text-(--color-text-muted)">—</span>
+              {/if}
+            </td>
             <td>
               {#if card.requiresApproval}
                 <i

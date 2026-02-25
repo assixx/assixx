@@ -4,12 +4,16 @@
   Self-contained with internal state and API calls.
 -->
 <script lang="ts">
+  import { createLogger } from '$lib/utils/logger';
+
   import {
     formatDate,
     getStatusClass,
     getStatusIcon,
     getStatusText,
   } from './helpers';
+
+  const log = createLogger('MachineDeleteConfirmationModal');
 
   // =============================================================================
   // TYPES
@@ -84,9 +88,7 @@
       handleClose();
       await onSuccess();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error('Error deleting machine availability entry:', errorMessage);
+      log.error({ err }, 'Error deleting machine availability entry');
     } finally {
       submitting = false;
     }

@@ -12,6 +12,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import type { PoolClient } from 'pg';
@@ -69,6 +70,8 @@ export interface PhotoFileData {
 
 @Injectable()
 export class TpmExecutionsService {
+  private readonly logger = new Logger(TpmExecutionsService.name);
+
   constructor(
     private readonly db: DatabaseService,
     private readonly cardStatusService: TpmCardStatusService,
@@ -94,6 +97,10 @@ export class TpmExecutionsService {
     userId: number,
     dto: CompleteCardDto,
   ): Promise<TpmCardExecution> {
+    this.logger.debug(
+      `Creating execution for card ${cardUuid} by user ${userId}`,
+    );
+
     const { execution, card } = await this.db.tenantTransaction(
       async (client: PoolClient) => {
         const lockedCard = await this.lockCardByUuid(
@@ -247,6 +254,10 @@ export class TpmExecutionsService {
     userId: number,
     fileData: PhotoFileData,
   ): Promise<TpmExecutionPhoto> {
+    this.logger.debug(
+      `Adding photo to execution ${executionUuid}: ${fileData.fileName}`,
+    );
+
     return await this.db.tenantTransaction(async (client: PoolClient) => {
       const execution = await this.lockExecutionByUuid(
         client,
@@ -480,8 +491,11 @@ export class TpmExecutionsService {
           userId,
         );
       }
-    } catch {
-      // Non-critical — notification failure should not affect execution creation
+    } catch (error: unknown) {
+      this.logger.warn(
+        { err: error, cardUuid: card.uuid },
+        'Non-critical: notification after execution failed',
+      );
     }
   }
 

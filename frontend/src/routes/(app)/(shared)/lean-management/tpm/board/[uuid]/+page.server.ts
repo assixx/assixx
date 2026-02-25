@@ -81,5 +81,7 @@ export const load: PageServerLoad = async ({
   const cards = extractCards(boardRaw);
   const colors = Array.isArray(colorsData) ? colorsData : [];
 
-  return { planUuid, plan, cards, colors };
+  const userRole = parentData.user?.role ?? 'employee';
+
+  return { planUuid, plan, cards, colors, userRole };
 };

@@ -11,6 +11,7 @@
 
   interface Props {
     location: TpmLocation;
+    canWrite: boolean;
     onEdit: (location: TpmLocation) => void;
     onDelete: (location: TpmLocation) => void;
     onUploadPhoto: (location: TpmLocation) => void;
@@ -20,6 +21,7 @@
 
   const {
     location,
+    canWrite,
     onEdit,
     onDelete,
     onUploadPhoto,
@@ -48,30 +50,32 @@
           <p class="loc-card__desc">{location.description}</p>
         {/if}
       </div>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="action-icon action-icon--edit"
-          title={MESSAGES.LOCATIONS_EDIT}
-          aria-label={MESSAGES.LOCATIONS_EDIT}
-          onclick={() => {
-            onEdit(location);
-          }}
-        >
-          <i class="fas fa-pen"></i>
-        </button>
-        <button
-          type="button"
-          class="action-icon action-icon--delete"
-          title={MESSAGES.LOCATIONS_DELETE}
-          aria-label={MESSAGES.LOCATIONS_DELETE}
-          onclick={() => {
-            onDelete(location);
-          }}
-        >
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
+      {#if canWrite}
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="action-icon action-icon--edit"
+            title={MESSAGES.LOCATIONS_EDIT}
+            aria-label={MESSAGES.LOCATIONS_EDIT}
+            onclick={() => {
+              onEdit(location);
+            }}
+          >
+            <i class="fas fa-pen"></i>
+          </button>
+          <button
+            type="button"
+            class="action-icon action-icon--delete"
+            title={MESSAGES.LOCATIONS_DELETE}
+            aria-label={MESSAGES.LOCATIONS_DELETE}
+            onclick={() => {
+              onDelete(location);
+            }}
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      {/if}
     </div>
 
     <!-- Photo -->
@@ -82,7 +86,7 @@
           onclick={() => {
             onPreviewPhoto(location);
           }}
-          onkeydown={(e) => {
+          onkeydown={(e: KeyboardEvent) => {
             if (e.key === 'Enter') onPreviewPhoto(location);
           }}
           role="button"
@@ -94,17 +98,19 @@
             loading="lazy"
           />
         </div>
-        <button
-          type="button"
-          class="loc-card__photo-remove-btn"
-          onclick={() => {
-            onRemovePhoto(location);
-          }}
-        >
-          <i class="fas fa-times mr-1"></i>
-          {MESSAGES.LOCATIONS_PHOTO_REMOVE}
-        </button>
-      {:else}
+        {#if canWrite}
+          <button
+            type="button"
+            class="loc-card__photo-remove-btn"
+            onclick={() => {
+              onRemovePhoto(location);
+            }}
+          >
+            <i class="fas fa-times mr-1"></i>
+            {MESSAGES.LOCATIONS_PHOTO_REMOVE}
+          </button>
+        {/if}
+      {:else if canWrite}
         <button
           type="button"
           class="loc-card__upload-btn"

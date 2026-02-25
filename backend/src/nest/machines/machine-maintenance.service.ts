@@ -14,6 +14,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import {
   buildMaintenanceInsertParams,
@@ -40,7 +41,10 @@ import type {
 export class MachineMaintenanceService {
   private readonly logger = new Logger(MachineMaintenanceService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get maintenance history for a machine
@@ -123,6 +127,19 @@ export class MachineMaintenanceService {
       data.performedDate,
       data.nextMaintenanceDate,
       statusAfter,
+    );
+
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'machine_maintenance',
+      data.machineId,
+      `Wartungseintrag erstellt: Maschine ${String(data.machineId)}, Typ ${data.maintenanceType}`,
+      {
+        machineId: data.machineId,
+        maintenanceType: data.maintenanceType,
+        recordId,
+      },
     );
 
     const history = await this.getMaintenanceHistory(data.machineId, tenantId);
@@ -223,6 +240,15 @@ export class MachineMaintenanceService {
           performed_by, description, status_after, created_by)
        VALUES ($1, $2, 'preventive', CURRENT_DATE, $3, $4, 'operational', $3)`,
       [tenantId, machineId, userId, description],
+    );
+
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'machine_maintenance',
+      machineId,
+      `TPM-Wartungseintrag erstellt: Maschine ${String(machineId)}`,
+      { machineId, source: 'tpm_execution' },
     );
   }
 

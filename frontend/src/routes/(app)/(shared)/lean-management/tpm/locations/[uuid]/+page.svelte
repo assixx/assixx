@@ -9,6 +9,9 @@
   import { resolve } from '$app/paths';
 
   import { showToast } from '$lib/stores/toast';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('TpmLocationsPage');
 
   import {
     createLocation,
@@ -34,6 +37,11 @@
   const plan = $derived(data.plan);
   const planUuid = $derived(data.planUuid);
   const locations = $derived(data.locations);
+
+  /** Only root/admin can create/edit/delete locations */
+  const canWrite = $derived(
+    data.userRole === 'root' || data.userRole === 'admin',
+  );
 
   // =========================================================================
   // STATE
@@ -93,7 +101,7 @@
       resetFormState();
       await invalidateAll();
     } catch (err: unknown) {
-      console.error(err);
+      log.error({ err }, 'Location operation failed');
       showToast({ title: MESSAGES.LOCATIONS_ERROR_SAVE, type: 'error' });
     } finally {
       saving = false;
@@ -125,7 +133,7 @@
       showToast({ title: MESSAGES.LOCATIONS_SUCCESS_DELETE, type: 'success' });
       await invalidateAll();
     } catch (err: unknown) {
-      console.error(err);
+      log.error({ err }, 'Location operation failed');
       showToast({ title: MESSAGES.LOCATIONS_ERROR_DELETE, type: 'error' });
     } finally {
       saving = false;
@@ -164,7 +172,7 @@
       showToast({ title: 'Foto hochgeladen', type: 'success' });
       await invalidateAll();
     } catch (err: unknown) {
-      console.error(err);
+      log.error({ err }, 'Location operation failed');
       showToast({ title: MESSAGES.PHOTO_ERROR, type: 'error' });
     } finally {
       input.value = '';
@@ -177,7 +185,7 @@
       showToast({ title: 'Foto entfernt', type: 'success' });
       await invalidateAll();
     } catch (err: unknown) {
-      console.error(err);
+      log.error({ err }, 'Location operation failed');
       showToast({ title: MESSAGES.PHOTO_ERROR, type: 'error' });
     }
   }
@@ -283,7 +291,7 @@
               </div>
             </div>
           </div>
-          {#if !showForm}
+          {#if canWrite && !showForm}
             <button
               type="button"
               class="btn btn-primary"
@@ -304,7 +312,7 @@
     <div class="loc-detail-grid mt-4">
       <!-- Main: Location List -->
       <div class="flex flex-col gap-4">
-        {#if showForm}
+        {#if canWrite && showForm}
           <!-- Create/Edit Form Section -->
           <div class="card">
             <div class="card__body">
@@ -338,6 +346,7 @@
             {#each locations as location (location.uuid)}
               <LocationCard
                 {location}
+                {canWrite}
                 onEdit={handleEdit}
                 onDelete={handleDeleteRequest}
                 onUploadPhoto={handleUploadPhoto}

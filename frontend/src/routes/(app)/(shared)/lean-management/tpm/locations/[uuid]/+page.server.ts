@@ -77,10 +77,13 @@ export const load: PageServerLoad = async ({
 
   const locations = extractArray<TpmLocation>(locationsRaw);
 
+  const userRole = parentData.user?.role ?? 'employee';
+
   return {
     plan,
     planUuid,
     locations,
+    userRole,
     error: plan === null ? 'Wartungsplan nicht gefunden' : null,
   };
 };

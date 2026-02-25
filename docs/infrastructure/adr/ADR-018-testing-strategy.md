@@ -241,6 +241,34 @@ flushThrottleKeys();  // Redis EVAL deletes throttle:* keys
 const res = await fetch(`${BASE_URL}/logs/export?format=json...`);
 ```
 
+### Common Service Test Patterns
+
+**ActivityLoggerService Mock (required in 48+ service tests):**
+
+Every service that injects `ActivityLoggerService` needs this mock. Fire-and-forget calls (`void this.activityLogger.logCreate(...)`) don't affect test outcomes, but the mock must be provided to satisfy the constructor.
+
+```typescript
+// Factory function — reuse in all service tests
+function createMockActivityLogger(): ActivityLoggerService {
+  return {
+    log: vi.fn(),
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+  } as unknown as ActivityLoggerService;
+}
+
+// Usage in test setup
+const mockActivityLogger = createMockActivityLogger();
+const service = new MyService(mockDb, mockActivityLogger);
+```
+
+**Key rules:**
+
+- Always use `as unknown as ActivityLoggerService` — partial mock needs type assertion
+- Never assert on `activityLogger` calls in unit tests — logging is a side effect, not business logic
+- If a service adds `ActivityLoggerService` to its constructor, the test **must** provide the mock or it will fail with a DI error
+
 ### Vitest Config (Workspace Projects)
 
 ```typescript
@@ -508,4 +536,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-02-24 (v4 - Phase 9 complete, thresholds 83%/76%, 4523 total tests)_
+_Last Updated: 2026-02-25 (v5 - Added ActivityLoggerService mock pattern, Phase 9 complete, thresholds 83%/76%, 4523 total tests)_

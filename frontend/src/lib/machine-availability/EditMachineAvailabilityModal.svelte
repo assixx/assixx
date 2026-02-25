@@ -6,6 +6,9 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('EditMachineAvailabilityModal');
 
   import { MACHINE_AVAILABILITY_STATUS_OPTIONS } from './constants';
   import { formatDateForInput, getStatusIcon, getStatusText } from './helpers';
@@ -116,9 +119,7 @@
       handleClose();
       await onSuccess();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error('Error updating machine availability entry:', errorMessage);
+      log.error({ err }, 'Error updating machine availability entry');
     } finally {
       submitting = false;
     }
