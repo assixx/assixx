@@ -9,59 +9,28 @@
     type MachineAvailabilityStatus,
   } from '$lib/machine-availability/constants';
 
-  import { FULL_DAY_NAMES, SHIFT_TYPES, SHIFT_TIMES } from './constants';
+  import {
+    FULL_DAY_NAMES,
+    INTERVAL_COLORS,
+    INTERVAL_LABELS,
+    INTERVAL_SHORT_LABELS,
+    SHIFT_TYPES,
+  } from './constants';
+  import ShiftScheduleLegend from './ShiftScheduleLegend.svelte';
   import {
     formatDate,
     getEmployeeDisplayName,
+    getShiftTimeInfo,
     getVisibleTpmIntervals,
   } from './utils';
 
-  import type { Employee, ShiftDetailData, TpmMaintenanceEvent } from './types';
-
-  /** Machine availability statuses that should be shown in the legend */
-  const LEGEND_STATUSES: MachineAvailabilityStatus[] = [
-    'maintenance',
-    'repair',
-    'standby',
-    'cleaning',
-    'other',
-  ];
-
-  /** TPM interval colors (matching SlotAssistant / Kamishibai palette) */
-  const TPM_COLORS: Record<string, string> = {
-    daily: '#66BB6A',
-    weekly: '#8BC34A',
-    monthly: '#5bb5f5',
-    quarterly: '#b0b0b0',
-    semi_annual: '#f5a0a0',
-    annual: '#c8b88a',
-    custom: '#FF9800',
-  };
-
-  /** TPM interval short labels for compact badges */
-  const TPM_SHORT: Record<string, string> = {
-    daily: 'T',
-    weekly: 'W',
-    monthly: 'M',
-    quarterly: 'VJ',
-    semi_annual: 'HJ',
-    annual: 'J',
-    custom: 'BD',
-  };
-
-  /** TPM interval full labels (German) */
-  const TPM_LABELS: Record<string, string> = {
-    daily: 'Täglich',
-    weekly: 'Wöchentlich',
-    monthly: 'Monatlich',
-    quarterly: 'Vierteljährlich',
-    semi_annual: 'Halbjährlich',
-    annual: 'Jährlich',
-    custom: 'Benutzerdefiniert',
-  };
-
-  /** Legend entries for TPM intervals */
-  const TPM_LEGEND = Object.entries(TPM_COLORS);
+  import type {
+    Employee,
+    IntervalColorEntry,
+    ShiftDetailData,
+    ShiftTimesMap,
+    TpmMaintenanceEvent,
+  } from './types';
 
   /**
    * Props interface for ShiftScheduleGrid
@@ -73,11 +42,20 @@
     isEditMode: boolean;
     currentPlanId: number | null;
 
+    /** Tenant-configurable shift times from API */
+    shiftTimesMap: ShiftTimesMap;
+
+    /** Precomputed shift minute ranges for TPM overlap */
+    shiftMinutes: Record<string, [number, number][]>;
+
     /** Machine availability: date (YYYY-MM-DD) → status string */
     machineAvailabilityMap: Map<string, string>;
 
     /** TPM maintenance events: date (YYYY-MM-DD) → events for that day */
     tpmEventsMap: Map<string, TpmMaintenanceEvent[]>;
+
+    /** Tenant-configurable TPM interval colors from API */
+    intervalColors: IntervalColorEntry[];
 
     /** Whether TPM events toggle is active */
     showTpmEvents: boolean;
@@ -110,8 +88,11 @@
     canEditShifts,
     isEditMode,
     currentPlanId,
+    shiftTimesMap,
+    shiftMinutes,
     machineAvailabilityMap,
     tpmEventsMap,
+    intervalColors,
     showTpmEvents,
     ontoggleTpmEvents,
     getShiftEmployees,
@@ -125,6 +106,15 @@
     onremoveEmployee,
     onnotesChange,
   }: Props = $props();
+
+  /** Merge tenant DB colors over hardcoded defaults (same pattern as SlotAssistant) */
+  const colorMap = $derived.by((): Record<string, string> => {
+    const base: Record<string, string> = { ...INTERVAL_COLORS };
+    for (const entry of intervalColors) {
+      base[entry.statusKey] = entry.colorHex;
+    }
+    return base;
+  });
 
   // Day names for data attributes
   const dayNames = [
@@ -173,51 +163,12 @@
 </script>
 
 <div class="week-schedule">
-  <!-- Machine Availability Legend (always visible) -->
-  <div class="machine-avail-legend">
-    <span class="machine-avail-legend-title">
-      <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
-    </span>
-    <div class="machine-avail-legend-items">
-      {#each LEGEND_STATUSES as status (status)}
-        <div class="machine-avail-legend-item">
-          <div class="machine-avail-legend-swatch legend-{status}"></div>
-          <span class="machine-avail-legend-label"
-            >{MACHINE_AVAILABILITY_LABELS[status]}</span
-          >
-        </div>
-      {/each}
-
-      <!-- TPM Toggle -->
-      <label class="choice-card tpm-toggle">
-        <input
-          type="checkbox"
-          class="choice-card__input"
-          checked={showTpmEvents}
-          onchange={(e) => {
-            ontoggleTpmEvents((e.target as HTMLInputElement).checked);
-          }}
-        />
-        <span class="choice-card__text">&#9881; Wartungstermine</span>
-      </label>
-
-      <!-- TPM Interval Legend (visible when toggle active) -->
-      {#if showTpmEvents}
-        {#each TPM_LEGEND as [key, color] (key)}
-          <span
-            class="tpm-legend-item"
-            title={TPM_LABELS[key]}
-          >
-            <span
-              class="tpm-legend-dot"
-              style="background: {color}"
-            ></span>
-            {TPM_LABELS[key]}
-          </span>
-        {/each}
-      {/if}
-    </div>
-  </div>
+  <!-- Machine Availability Legend + TPM Toggle -->
+  <ShiftScheduleLegend
+    {colorMap}
+    {showTpmEvents}
+    {ontoggleTpmEvents}
+  />
 
   <!-- Schedule Header -->
   <div class="schedule-header">
@@ -234,12 +185,11 @@
 
   <!-- Shift Rows -->
   {#each SHIFT_TYPES as shiftType (shiftType)}
+    {@const shiftInfo = getShiftTimeInfo(shiftType, shiftTimesMap)}
     <div class="shift-row">
       <div class="shift-label shift-type-{shiftType}">
-        {SHIFT_TIMES[shiftType].label}<br />
-        <span class="u-fs-11"
-          >{SHIFT_TIMES[shiftType].start}-{SHIFT_TIMES[shiftType].end}</span
-        >
+        {shiftInfo.label}<br />
+        <span class="u-fs-11">{shiftInfo.start}-{shiftInfo.end}</span>
       </div>
 
       {#each weekDates as date, dayIndex (formatDate(date))}
@@ -278,6 +228,7 @@
                 {@const visibleIntervals = getVisibleTpmIntervals(
                   event,
                   shiftType,
+                  shiftMinutes,
                 )}
                 {#if visibleIntervals.length > 0}
                   <div
@@ -287,9 +238,11 @@
                     {#each visibleIntervals as interval (interval)}
                       <span
                         class="tpm-badge"
-                        style="background: {TPM_COLORS[interval]}"
-                        title="{TPM_LABELS[interval]} — {event.machineName}"
-                        >{TPM_SHORT[interval]}</span
+                        style="background: {colorMap[interval]}"
+                        title="{INTERVAL_LABELS[
+                          interval
+                        ]} — {event.machineName}"
+                        >{INTERVAL_SHORT_LABELS[interval]}</span
                       >
                     {/each}
                   </div>
@@ -483,6 +436,8 @@ Beispiele:
   }
 
   .shift-cell {
+    display: flex;
+    flex-direction: column;
     position: relative;
     backdrop-filter: blur(5px);
     cursor: pointer;
@@ -492,6 +447,10 @@ Beispiele:
     background: var(--glass-bg);
 
     min-height: 85px;
+  }
+
+  .shift-cell:has(.tpm-badges) {
+    padding-top: 18px;
   }
 
   .shift-cell:hover {
@@ -565,119 +524,15 @@ Beispiele:
     border-radius: 50%;
   }
 
-  .machine-avail-legend {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-2);
-    backdrop-filter: blur(10px);
-
-    margin-bottom: var(--spacing-4);
-    border: var(--glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg);
-    padding: var(--spacing-3) var(--spacing-4);
-  }
-
-  .machine-avail-legend-title {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-
-    color: var(--text-secondary);
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-  }
-
-  .machine-avail-legend-title i {
-    color: var(--text-tertiary);
-    font-size: 16px;
-  }
-
-  .machine-avail-legend-items {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--spacing-4);
-  }
-
-  .machine-avail-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    font-size: 14px;
-  }
-
-  .machine-avail-legend-swatch {
-    border-radius: 50%;
-    width: 14px;
-    height: 14px;
-
-    box-shadow: 0 0 4px rgb(0 0 0 / 20%);
-  }
-
-  .machine-avail-legend-swatch.legend-maintenance {
-    background: #ffc107;
-  }
-
-  .machine-avail-legend-swatch.legend-repair {
-    background: #dc3545;
-  }
-
-  .machine-avail-legend-swatch.legend-standby {
-    background: #3498db;
-  }
-
-  .machine-avail-legend-swatch.legend-cleaning {
-    background: #20c997;
-  }
-
-  .machine-avail-legend-swatch.legend-other {
-    background: #6f42c1;
-  }
-
-  .machine-avail-legend-label {
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  /* TPM Toggle — compact sizing + separator from legend */
-  .tpm-toggle {
-    margin-left: var(--spacing-4);
-    padding: 0.375rem 0.75rem;
-    border-radius: var(--radius-md);
-    border-left: 1px solid var(--color-glass-border);
-  }
-
-  /* TPM Legend dots (visible when toggle active) */
-  .tpm-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-
-    color: var(--color-text-secondary);
-    font-weight: 500;
-    font-size: 12px;
-  }
-
-  .tpm-legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  /* TPM Badges inside shift cell */
+  /* TPM Badges — absolute top-left, out of flow */
   .tpm-badges {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    z-index: 1;
     gap: 2px;
-
-    margin: 2px 4px;
   }
 
   .tpm-badge {
@@ -696,21 +551,19 @@ Beispiele:
 
   .employee-assignment {
     display: flex;
+    flex: 1;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: var(--spacing-1);
-
-    height: 100%;
+    padding: 2px;
 
     text-align: center;
   }
 
   .employee-name {
-    padding: 5px;
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .empty-slot {
@@ -780,15 +633,15 @@ Beispiele:
   .employee-card {
     display: flex;
     position: relative;
-    flex-direction: column;
+    align-items: center;
     gap: 2px;
 
-    margin: 2px 0;
+    margin: 1px 0;
     border: 1px solid rgb(33 150 243 / 30%);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
 
     background: rgb(33 150 243 / 15%);
-    padding: 6px 8px;
+    padding: 3px 6px;
   }
 
   .employee-card:hover {
@@ -797,10 +650,10 @@ Beispiele:
   }
 
   .employee-card .employee-name {
-    padding: 5px;
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
+    line-height: 1.3;
   }
 
   .employee-card .employee-position {
@@ -813,22 +666,22 @@ Beispiele:
     display: flex;
 
     position: absolute;
-    top: -10px;
-    right: -3px;
+    top: -6px;
+    right: -4px;
     z-index: 10;
     justify-content: center;
     align-items: center;
 
     opacity: 0%;
     cursor: pointer;
-    border: 2px solid rgb(244 67 54);
-    border-radius: 50px;
+    border: 1.5px solid rgb(244 67 54);
+    border-radius: 50%;
     background: rgb(244 67 54 / 10%);
     padding: 0;
     pointer-events: auto;
 
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
 
     color: rgb(244 67 54);
   }
@@ -844,7 +697,7 @@ Beispiele:
   }
 
   .employee-card .remove-btn i {
-    font-size: 10px;
+    font-size: 7px;
   }
 
   .shift-name {

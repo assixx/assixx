@@ -10,6 +10,7 @@ import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
+import type { TpmIntervalType } from './constants';
 import type {
   User,
   Area,
@@ -172,9 +173,9 @@ export async function fetchMachines(
 
     const queryString = params.toString();
     const url =
-      queryString !== '' ?
-        `${API_ENDPOINTS.MACHINES}?${queryString}`
-      : API_ENDPOINTS.MACHINES;
+      queryString === '' ?
+        API_ENDPOINTS.MACHINES
+      : `${API_ENDPOINTS.MACHINES}?${queryString}`;
 
     const response = await apiClient.get<Machine[] | { data: Machine[] }>(url);
     return Array.isArray(response) ? response : response.data;
@@ -439,7 +440,7 @@ function getIntervalTypesForDate(
 }
 
 /** Canonical interval display order (most frequent → least frequent) */
-const INTERVAL_ORDER = [
+const INTERVAL_ORDER: TpmIntervalType[] = [
   'daily',
   'weekly',
   'monthly',
@@ -450,8 +451,8 @@ const INTERVAL_ORDER = [
 ];
 
 /** Sort intervals by canonical order */
-function sortIntervals(intervals: Set<string>): string[] {
-  return INTERVAL_ORDER.filter((i) => intervals.has(i));
+function sortIntervals(intervals: Set<string>): TpmIntervalType[] {
+  return INTERVAL_ORDER.filter((i: TpmIntervalType) => intervals.has(i));
 }
 
 /** Collect all unique intervals from all plans that fire on a given date */
@@ -465,9 +466,9 @@ function collectIntervalsForDate(
     if (!isMaintenanceDate(date, plan)) continue;
     const seed = seedDates.get(plan.uuid);
     const planIntervals =
-      seed !== undefined ?
-        getIntervalTypesForDate(date, plan, seed)
-      : ['weekly'];
+      seed === undefined ?
+        ['weekly']
+      : getIntervalTypesForDate(date, plan, seed);
     for (const i of planIntervals) intervals.add(i);
   }
   return intervals;
@@ -526,7 +527,7 @@ function buildEventsMap(
  * Filters plans by machineId and calculates which dates have maintenance.
  */
 export async function fetchTpmMaintenanceDates(
-  machineId: number,
+  machineId: number | null,
   startDate: string,
   endDate: string,
 ): Promise<Map<string, TpmMaintenanceEvent[]>> {
@@ -536,9 +537,12 @@ export async function fetchTpmMaintenanceDates(
       total: number;
     }>('/tpm/plans?page=1&limit=100');
 
-    const plans = response.data.filter(
-      (p: TpmPlanApiResponse) => p.machineId === machineId,
-    );
+    const plans =
+      machineId !== null ?
+        response.data.filter(
+          (p: TpmPlanApiResponse) => p.machineId === machineId,
+        )
+      : response.data;
     if (plans.length === 0) return new Map();
 
     const seedDates = buildSeedDates(plans);
@@ -899,9 +903,9 @@ export async function deleteRotationHistoryByTeam(
 ): Promise<DeleteRotationHistoryResponse> {
   // Build URL with optional patternId
   const url =
-    patternId !== undefined ?
-      `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}&patternId=${patternId}`
-    : `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}`;
+    patternId === undefined ?
+      `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}`
+    : `${API_ENDPOINTS.ROTATION_HISTORY}?teamId=${teamId}&patternId=${patternId}`;
 
   // apiClient.delete unwraps { success, data } → returns data directly
   const response = await apiClient.delete<{

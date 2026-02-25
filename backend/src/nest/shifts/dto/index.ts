@@ -117,3 +117,20 @@ export {
   DeleteRotationHistoryDto,
   DeleteRotationHistorySchema,
 } from './rotation-delete.dto.js';
+
+// Shift Times DTOs
+export {
+  ShiftKeyParamDto,
+  ShiftKeyParamSchema,
+  ShiftKeySchema,
+} from './shift-key-param.dto.js';
+export { ShiftTimeResponseSchema } from './shift-time-response.dto.js';
+export type { ShiftTimeResponse } from './shift-time-response.dto.js';
+export {
+  UpdateAllShiftTimesDto,
+  UpdateAllShiftTimesSchema,
+} from './update-all-shift-times.dto.js';
+export {
+  UpdateShiftTimeDto,
+  UpdateShiftTimeSchema,
+} from './update-shift-time.dto.js';

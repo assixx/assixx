@@ -12,7 +12,7 @@ import {
   deleteFavorite as apiDeleteFavorite,
   saveFavorite as apiSaveFavorite,
 } from './api';
-import { SHIFT_TIMES } from './constants';
+import { DEFAULT_SHIFT_TIMES } from './constants';
 import { buildShiftSaveData } from './data-loader';
 import { formatDate, getWeekStart, getWeekNumber } from './utils';
 
@@ -23,6 +23,7 @@ import type {
   Department,
   Machine,
   ShiftFavorite,
+  ShiftTimesMap,
 } from './types';
 
 // =============================================================================
@@ -36,6 +37,7 @@ export interface SaveScheduleParams {
   currentPlanId: number | null;
   selectedContext: SelectedContext;
   teams: Team[];
+  shiftTimesMap?: ShiftTimesMap;
 }
 
 export interface SaveScheduleResult {
@@ -54,9 +56,11 @@ export async function saveSchedule(
     currentPlanId,
     selectedContext,
     teams,
+    shiftTimesMap,
   } = params;
 
-  const shifts = buildShiftSaveData(weeklyShifts, SHIFT_TIMES);
+  const effectiveShiftTimes = shiftTimesMap ?? DEFAULT_SHIFT_TIMES;
+  const shifts = buildShiftSaveData(weeklyShifts, effectiveShiftTimes);
   const weekStart = getWeekStart(currentWeek);
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
   const teamName =

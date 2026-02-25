@@ -144,19 +144,28 @@ export async function loadShiftPlan(): Promise<void> {
     // Update employees with fresh availability data for this week
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
 
-    // Load machine availability + TPM events for the displayed week (if a machine is selected)
+    // Machine availability — only when a machine is selected
     if (machineId !== null && machineId !== 0) {
-      const emptyTpmMap = new Map<string, TpmMaintenanceEvent[]>();
-      const [availEntries, tpmEvents] = await Promise.all([
-        fetchMachineAvailability(machineId, startDate, endDate),
-        shiftsState.showTpmEvents ?
-          fetchTpmMaintenanceDates(machineId, startDate, endDate)
-        : Promise.resolve(emptyTpmMap),
-      ]);
+      const availEntries = await fetchMachineAvailability(
+        machineId,
+        startDate,
+        endDate,
+      );
       shiftsState.setMachineAvailability(availEntries);
-      shiftsState.setTpmEvents(tpmEvents);
     } else {
       shiftsState.clearMachineAvailability();
+    }
+
+    // TPM events — independent of machine selection
+    // With machineId: filtered to that machine. Without: all machines.
+    if (shiftsState.showTpmEvents) {
+      const tpmEvents = await fetchTpmMaintenanceDates(
+        machineId,
+        startDate,
+        endDate,
+      );
+      shiftsState.setTpmEvents(tpmEvents);
+    } else {
       shiftsState.clearTpmEvents();
     }
 

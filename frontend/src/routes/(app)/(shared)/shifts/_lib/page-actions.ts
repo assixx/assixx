@@ -38,7 +38,11 @@ import { loadShiftPlan, navigateToWeekContainingDate } from './plan-loader';
 import { buildAlgorithmConfig, buildRotationAssignments } from './rotation';
 import { shiftsState } from './state.svelte';
 
-import type { ShiftFavorite, CustomRotationConfig } from './types';
+import type {
+  ShiftTimesMap,
+  ShiftFavorite,
+  CustomRotationConfig,
+} from './types';
 
 const log = createLogger('ShiftsActions');
 
@@ -57,7 +61,9 @@ export async function handleResetSchedule(): Promise<void> {
 }
 
 /** Save the current shift schedule */
-export async function handleSaveSchedule(): Promise<void> {
+export async function handleSaveSchedule(
+  shiftTimesMap?: ShiftTimesMap,
+): Promise<void> {
   shiftsState.setIsLoading(true);
   try {
     const result = await saveSchedule({
@@ -67,6 +73,7 @@ export async function handleSaveSchedule(): Promise<void> {
       currentPlanId: shiftsState.currentPlanId,
       selectedContext: shiftsState.selectedContext,
       teams: shiftsState.teams,
+      shiftTimesMap,
     });
     if (shiftsState.currentPlanId === null && result.planId !== undefined)
       shiftsState.setCurrentPlanId(result.planId);

@@ -53,10 +53,13 @@
     getWeekDates,
     formatDate,
     addWeeks,
+    buildShiftTimesMap,
+    computeShiftMinutes,
   } from './_lib/utils';
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
+  import type { ShiftTimesMap, IntervalColorEntry } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -67,7 +70,18 @@
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
   const ssrStaffingRules = $derived(data.staffingRules);
+  const ssrIntervalColors: IntervalColorEntry[] = $derived(data.intervalColors);
   const ssrIsEmployee = $derived(data.isEmployee);
+
+  // Build shift times map from SSR API data (tenant-configurable)
+  const shiftTimesMap: ShiftTimesMap = $derived(
+    data.shiftTimes.length > 0 ? buildShiftTimesMap(data.shiftTimes) : {},
+  );
+  const shiftMinutes = $derived(
+    computeShiftMinutes(
+      Object.keys(shiftTimesMap).length > 0 ? shiftTimesMap : undefined,
+    ),
+  );
   let ssrInitialized = $state(false);
 
   // --- SSR INIT ---
@@ -350,12 +364,15 @@
           <!-- Week Schedule (Extracted Component) -->
           <ShiftScheduleGrid
             {weekDates}
+            {shiftTimesMap}
+            {shiftMinutes}
             weeklyNotes={shiftsState.weeklyNotes}
             canEditShifts={shiftsState.canEditShifts}
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
             machineAvailabilityMap={shiftsState.machineAvailabilityMap}
             tpmEventsMap={shiftsState.tpmEventsMap}
+            intervalColors={ssrIntervalColors}
             showTpmEvents={shiftsState.showTpmEvents}
             ontoggleTpmEvents={(show: boolean) => {
               shiftsState.setShowTpmEvents(show);
@@ -400,7 +417,7 @@
             isPlanLocked={shiftsState.isPlanLocked}
             isEditMode={shiftsState.isEditMode}
             onreset={handleResetSchedule}
-            onsave={handleSaveSchedule}
+            onsave={() => handleSaveSchedule(shiftTimesMap)}
             ondiscardWeek={handleDiscardWeek}
             ondiscardTeamPlan={handleDiscardTeamPlan}
             ondiscardYearPlan={handleDiscardYearPlan}
