@@ -1,5 +1,5 @@
 <script lang="ts">
-  /* eslint-disable max-lines -- 706/700: 60% is flat CSS (badges, responsive breakpoints). Logic+template clean. Splitting would force :global() hacks due to .sidebar.collapsed cascade. */
+   
   /**
    * App Sidebar Navigation
    * Extracted from +layout.svelte for modularity (max-lines)
