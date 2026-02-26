@@ -60,9 +60,6 @@
     /** Whether TPM events toggle is active */
     showTpmEvents: boolean;
 
-    /** Toggle TPM events on/off */
-    ontoggleTpmEvents: (show: boolean) => void;
-
     // Data access callbacks
     getShiftEmployees: (dateKey: string, shiftType: string) => number[];
     getEmployeeById: (id: number) => Employee | undefined;
@@ -94,7 +91,6 @@
     tpmEventsMap,
     intervalColors,
     showTpmEvents,
-    ontoggleTpmEvents,
     getShiftEmployees,
     getEmployeeById,
     getShiftDetail,
@@ -167,7 +163,6 @@
   <ShiftScheduleLegend
     {colorMap}
     {showTpmEvents}
-    {ontoggleTpmEvents}
   />
 
   <!-- Schedule Header -->

@@ -1,5 +1,4 @@
 <script lang="ts">
-   
   /**
    * App Sidebar Navigation
    * Extracted from +layout.svelte for modularity (max-lines)

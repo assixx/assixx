@@ -346,6 +346,7 @@
             autofillConfig={shiftsState.autofillConfig}
             standardRotationEnabled={shiftsState.standardRotationEnabled}
             customRotationEnabled={shiftsState.customRotationEnabled}
+            tpmModeEnabled={shiftsState.showTpmEvents}
             isPlanLocked={shiftsState.isPlanLocked}
             onautofillChange={(enabled: boolean) => {
               shiftsState.setAutofillConfig({ enabled });
@@ -355,6 +356,10 @@
             }}
             oncustomRotationChange={(enabled: boolean) => {
               shiftsState.setCustomRotationEnabled(enabled);
+            }}
+            ontpmModeChange={(enabled: boolean) => {
+              shiftsState.setShowTpmEvents(enabled);
+              if (enabled) void loadShiftPlan();
             }}
           />
         {/if}
@@ -374,10 +379,6 @@
             tpmEventsMap={shiftsState.tpmEventsMap}
             intervalColors={ssrIntervalColors}
             showTpmEvents={shiftsState.showTpmEvents}
-            ontoggleTpmEvents={(show: boolean) => {
-              shiftsState.setShowTpmEvents(show);
-              if (show) void loadShiftPlan();
-            }}
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}

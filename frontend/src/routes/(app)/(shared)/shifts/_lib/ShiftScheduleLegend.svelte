@@ -26,41 +26,33 @@
   interface Props {
     colorMap: Record<string, string>;
     showTpmEvents: boolean;
-    ontoggleTpmEvents: (show: boolean) => void;
   }
 
-  const { colorMap, showTpmEvents, ontoggleTpmEvents }: Props = $props();
+  const { colorMap, showTpmEvents }: Props = $props();
 </script>
 
-<div class="machine-avail-legend">
-  <span class="machine-avail-legend-title">
-    <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
-  </span>
-  <div class="machine-avail-legend-items">
+<div class="legend-bar">
+  <!-- Row 1: Maschinenverfügbarkeit -->
+  <div class="legend-row">
+    <span class="legend-row__title">
+      <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
+    </span>
     {#each LEGEND_STATUSES as status (status)}
-      <div class="machine-avail-legend-item">
-        <div class="machine-avail-legend-swatch legend-{status}"></div>
-        <span class="machine-avail-legend-label"
+      <div class="legend-item">
+        <div class="legend-swatch legend-{status}"></div>
+        <span class="legend-label"
           >{MACHINE_AVAILABILITY_LABELS[status]}</span
         >
       </div>
     {/each}
+  </div>
 
-    <!-- TPM Toggle -->
-    <label class="choice-card tpm-toggle">
-      <input
-        type="checkbox"
-        class="choice-card__input"
-        checked={showTpmEvents}
-        onchange={(e: Event) => {
-          ontoggleTpmEvents((e.target as HTMLInputElement).checked);
-        }}
-      />
-      <span class="choice-card__text">&#9881; Wartungstermine</span>
-    </label>
-
-    <!-- TPM Interval Legend (visible when toggle active) -->
-    {#if showTpmEvents}
+  <!-- Row 2: TPM Intervall-Legende (nur sichtbar wenn TPM-Modus aktiv) -->
+  {#if showTpmEvents}
+    <div class="legend-row">
+      <span class="legend-row__title">
+        <i class="fas fa-wrench"></i> TPM-Intervalle
+      </span>
       {#each TPM_LEGEND_KEYS as key (key)}
         <span
           class="tpm-legend-item"
@@ -73,15 +65,15 @@
           {INTERVAL_LABELS[key]}
         </span>
       {/each}
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .machine-avail-legend {
+  .legend-bar {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-2);
+    gap: var(--spacing-3);
     backdrop-filter: blur(10px);
 
     margin-bottom: var(--spacing-4);
@@ -92,7 +84,19 @@
     padding: var(--spacing-3) var(--spacing-4);
   }
 
-  .machine-avail-legend-title {
+  .legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-4);
+  }
+
+  .legend-row + .legend-row {
+    border-top: 1px solid var(--color-glass-border);
+    padding-top: var(--spacing-3);
+  }
+
+  .legend-row__title {
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
@@ -104,19 +108,12 @@
     text-transform: uppercase;
   }
 
-  .machine-avail-legend-title i {
+  .legend-row__title i {
     color: var(--text-tertiary);
     font-size: 16px;
   }
 
-  .machine-avail-legend-items {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--spacing-4);
-  }
-
-  .machine-avail-legend-item {
+  .legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -124,7 +121,7 @@
     font-size: 14px;
   }
 
-  .machine-avail-legend-swatch {
+  .legend-swatch {
     border-radius: 50%;
     width: 14px;
     height: 14px;
@@ -132,40 +129,31 @@
     box-shadow: 0 0 4px rgb(0 0 0 / 20%);
   }
 
-  .machine-avail-legend-swatch.legend-maintenance {
+  .legend-swatch.legend-maintenance {
     background: #ffc107;
   }
 
-  .machine-avail-legend-swatch.legend-repair {
+  .legend-swatch.legend-repair {
     background: #dc3545;
   }
 
-  .machine-avail-legend-swatch.legend-standby {
+  .legend-swatch.legend-standby {
     background: #3498db;
   }
 
-  .machine-avail-legend-swatch.legend-cleaning {
+  .legend-swatch.legend-cleaning {
     background: #20c997;
   }
 
-  .machine-avail-legend-swatch.legend-other {
+  .legend-swatch.legend-other {
     background: #6f42c1;
   }
 
-  .machine-avail-legend-label {
+  .legend-label {
     color: var(--text-secondary);
     font-weight: 500;
   }
 
-  /* TPM Toggle — compact sizing + separator from legend */
-  .tpm-toggle {
-    margin-left: var(--spacing-4);
-    padding: 0.375rem 0.75rem;
-    border-radius: var(--radius-md);
-    border-left: 1px solid var(--color-glass-border);
-  }
-
-  /* TPM Legend dots (visible when toggle active) */
   .tpm-legend-item {
     display: flex;
     align-items: center;
