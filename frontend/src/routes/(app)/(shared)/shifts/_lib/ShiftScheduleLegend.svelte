@@ -40,9 +40,7 @@
     {#each LEGEND_STATUSES as status (status)}
       <div class="legend-item">
         <div class="legend-swatch legend-{status}"></div>
-        <span class="legend-label"
-          >{MACHINE_AVAILABILITY_LABELS[status]}</span
-        >
+        <span class="legend-label">{MACHINE_AVAILABILITY_LABELS[status]}</span>
       </div>
     {/each}
   </div>

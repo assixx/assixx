@@ -224,6 +224,7 @@ export interface ShiftPlanResponse {
     shiftNotes?: string;
     startDate: string;
     endDate: string;
+    isTpmMode?: boolean;
   };
   shifts: {
     id?: number;
@@ -254,6 +255,7 @@ export interface CreateShiftPlanRequest {
   machineId?: number;
   name: string;
   shiftNotes?: string;
+  isTpmMode?: boolean;
   shifts: {
     userId: number;
     date: string;

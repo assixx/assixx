@@ -32,6 +32,7 @@ export interface TpmPlan {
   baseWeekday: number;
   baseRepeatEvery: number;
   baseTime: string | null;
+  bufferHours: number;
   shiftPlanRequired: boolean;
   notes: string | null;
   createdBy: number;
@@ -260,6 +261,21 @@ export interface IntervalColorConfigEntry {
   label: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// =============================================================================
+// SHIFT ASSIGNMENTS (Gesamtansicht — Zugewiesene Mitarbeiter)
+// =============================================================================
+
+/** Employee assigned to a TPM maintenance shift */
+export interface TpmShiftAssignment {
+  planUuid: string;
+  machineId: number;
+  shiftDate: string;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  shiftType: string;
 }
 
 // =============================================================================

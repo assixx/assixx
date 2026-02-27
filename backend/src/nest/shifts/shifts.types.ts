@@ -217,6 +217,7 @@ export interface DbShiftPlanRow {
   end_date: string;
   shift_notes: string | null;
   custom_rotation_pattern: string | null;
+  is_tpm_mode: boolean;
   created_by: number;
   created_at: Date;
   updated_at: Date;

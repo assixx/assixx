@@ -193,6 +193,7 @@
         {@const availStatus = machineAvailabilityMap.get(dateKey)}
         <div
           class="shift-cell {getMachineAvailClass(dateKey)}"
+          class:tpm-active={showTpmEvents}
           class:locked={isCellLocked(dateKey, shiftType, employeeIds)}
           data-day={dayNames[dayIndex]}
           data-shift={shiftType}
@@ -444,7 +445,7 @@ Beispiele:
     min-height: 85px;
   }
 
-  .shift-cell:has(.tpm-badges) {
+  .shift-cell.tpm-active {
     padding-top: 18px;
   }
 

@@ -74,8 +74,8 @@ export class ShiftPlansService {
     const planResult = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_plans (
         uuid, tenant_id, area_id, department_id, team_id, machine_id,
-        name, start_date, end_date, shift_notes, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        name, start_date, end_date, shift_notes, is_tpm_mode, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id`,
       [
         planUuid,
@@ -88,6 +88,7 @@ export class ShiftPlansService {
         dto.startDate,
         dto.endDate,
         dto.shiftNotes ?? null,
+        dto.isTpmMode ?? false,
         userId,
       ],
     );
@@ -398,6 +399,10 @@ export class ShiftPlansService {
     if (dto.shiftNotes !== undefined) {
       updates.push(`shift_notes = $${idx++}`);
       params.push(dto.shiftNotes);
+    }
+    if (dto.isTpmMode !== undefined) {
+      updates.push(`is_tpm_mode = $${idx++}`);
+      params.push(dto.isTpmMode);
     }
     if (updates.length > 0) {
       params.push(planId, tenantId);

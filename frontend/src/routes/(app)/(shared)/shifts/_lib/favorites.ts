@@ -139,14 +139,6 @@ function validateAddToFavorites(
   machines: Machine[],
   teams: Team[],
 ): AddFavoriteValidation {
-  if (isTeamAlreadyFavorited(favorites, context.teamId)) {
-    const existing = favorites.find((fav) => fav.teamId === context.teamId);
-    return {
-      valid: false,
-      error: `Diese Kombination ist bereits als Favorit "${existing?.name ?? 'unbekannt'}" gespeichert!`,
-    };
-  }
-
   if (!isContextCompleteForFavorite(context)) {
     return {
       valid: false,
@@ -156,9 +148,16 @@ function validateAddToFavorites(
   }
 
   if (isCombinationFavorited(favorites, context)) {
+    const existing = favorites.find(
+      (fav) =>
+        fav.areaId === context.areaId &&
+        fav.departmentId === context.departmentId &&
+        fav.machineId === context.machineId &&
+        fav.teamId === context.teamId,
+    );
     return {
       valid: false,
-      error: 'Diese Kombination existiert bereits als Favorit!',
+      error: `Diese Kombination ist bereits als Favorit "${existing?.name ?? 'unbekannt'}" gespeichert!`,
     };
   }
 
@@ -203,8 +202,10 @@ export async function addToFavorites(
   const { names } = validation;
 
   try {
+    const favoriteName = `${names.team.name} - ${names.machine.name}`;
+
     const savedFavorite = await apiSaveFavorite({
-      name: names.team.name,
+      name: favoriteName,
       areaId: context.areaId ?? 0,
       areaName: names.area.name,
       departmentId: context.departmentId ?? 0,

@@ -7,6 +7,7 @@
  * - GET    /tpm/plans/interval-matrix       — Card counts per plan × interval
  * - GET    /tpm/plans/available-slots       — Slot availability by machine UUID
  * - GET    /tpm/plans/schedule-projection  — Projected schedules for all plans
+ * - GET    /tpm/plans/shift-assignments    — Employees assigned to TPM shifts
  * - GET    /tpm/plans/:uuid                 — Get single plan
  * - PATCH  /tpm/plans/:uuid                 — Update plan
  * - DELETE /tpm/plans/:uuid                 — Soft-delete plan
@@ -41,6 +42,7 @@ import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
 import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
 import { MachineSlotsQueryDto } from './dto/machine-slots-query.dto.js';
 import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
+import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
@@ -50,6 +52,8 @@ import type {
 } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
+import type { TpmShiftAssignment } from './tpm-shift-assignments.service.js';
+import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import type {
   MachineTeamAvailabilityResult,
   SlotAvailabilityResult,
@@ -78,6 +82,7 @@ export class TpmPlansController {
     private readonly timeEstimatesService: TpmTimeEstimatesService,
     private readonly slotAssistantService: TpmSlotAssistantService,
     private readonly scheduleProjectionService: TpmScheduleProjectionService,
+    private readonly shiftAssignmentsService: TpmShiftAssignmentsService,
   ) {}
 
   // ============================================================================
@@ -147,6 +152,20 @@ export class TpmPlansController {
       query.startDate,
       query.endDate,
       query.excludePlanUuid,
+    );
+  }
+
+  /** GET /tpm/plans/shift-assignments — Employees assigned to TPM maintenance shifts */
+  @Get('shift-assignments')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getShiftAssignments(
+    @Query() query: ShiftAssignmentsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<TpmShiftAssignment[]> {
+    return await this.shiftAssignmentsService.getShiftAssignments(
+      tenantId,
+      query.startDate,
+      query.endDate,
     );
   }
 

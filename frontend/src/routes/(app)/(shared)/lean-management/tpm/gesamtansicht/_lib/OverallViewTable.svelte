@@ -13,6 +13,7 @@
     fetchScheduleProjection,
     fetchTimeEstimates,
     fetchIntervalColors,
+    fetchShiftAssignments,
     logApiError,
   } from '../../_lib/api';
   import {
@@ -23,6 +24,8 @@
   } from '../../_lib/constants';
 
   import { INTERVAL_COLUMNS, buildMatrix } from './overall-view-utils';
+  import OverallViewAssignments from './OverallViewAssignments.svelte';
+  import OverallViewGrouped from './OverallViewGrouped.svelte';
   import OverallViewRow from './OverallViewRow.svelte';
 
   import type { MatrixRow } from './overall-view-utils';
@@ -30,6 +33,7 @@
     IntervalType,
     TpmPlan,
     TpmTimeEstimate,
+    TpmShiftAssignment,
     ProjectedSlot,
     IntervalColorConfigEntry,
   } from '../../_lib/types';
@@ -38,12 +42,14 @@
   // STATE
   // =========================================================================
 
+  let groupedView = $state(false);
   let maxDates = $state(4);
   let loading = $state(true);
   let plans = $state<TpmPlan[]>([]);
   let slots = $state<ProjectedSlot[]>([]);
   let estimatesByPlan = $state<Map<string, TpmTimeEstimate[]>>(new Map());
   let intervalColorEntries = $state<IntervalColorConfigEntry[]>([]);
+  let assignments = $state<TpmShiftAssignment[]>([]);
   let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
 
   // =========================================================================
@@ -65,6 +71,8 @@
       (list: TpmTimeEstimate[]) => list.length > 0,
     ),
   );
+
+  const hasAnyAssignments = $derived(assignments.length > 0);
 
   /** Colspan distribution: 4 sub-columns across maxDates cells */
   const estColSpans = $derived.by((): number[] => {
@@ -99,10 +107,11 @@
     loading = true;
     try {
       const { start, end } = getDateRange(dates);
-      const [plansRes, projRes, colorsRes] = await Promise.all([
+      const [plansRes, projRes, colorsRes, assignRes] = await Promise.all([
         fetchPlans(1, 100),
         fetchScheduleProjection(start, end),
         fetchIntervalColors(),
+        fetchShiftAssignments(start, end),
       ]);
 
       const activePlans = plansRes.items.filter(
@@ -111,6 +120,7 @@
       plans = activePlans;
       slots = projRes?.slots ?? [];
       intervalColorEntries = colorsRes;
+      assignments = assignRes;
 
       await loadEstimates(activePlans);
     } catch (err: unknown) {
@@ -211,6 +221,17 @@
       <span class="gv-slider__value">{maxDates}</span>
     </label>
 
+    <label class="choice-card">
+      <input
+        type="checkbox"
+        class="choice-card__input"
+        bind:checked={groupedView}
+      />
+      <span class="choice-card__text"
+        >{MESSAGES.GESAMTANSICHT_TOGGLE_GROUPED}</span
+      >
+    </label>
+
     <div class="zoom-controls">
       <button
         type="button"
@@ -277,104 +298,120 @@
           </tr>
         </thead>
 
-        <!-- ===== SCHEDULE ROWS ===== -->
-        <tbody>
-          {#each matrixRows as row (row.plan.uuid)}
-            <OverallViewRow
-              {row}
-              {maxDates}
-            />
-          {/each}
-        </tbody>
-
-        <!-- ===== ESTIMATE SECTION ===== -->
-        {#if hasAnyEstimates}
-          <tbody class="gv-est-body">
-            <!-- Sub-header: colspan=2 on first cell covers Anlage+Uhrzeit -->
-            <tr class="gv-est-header">
-              <th
-                class="gv-th gv-th--sticky"
-                colspan={2}
-              >
-                {MESSAGES.GESAMTANSICHT_TH_MACHINE}
-              </th>
-              {#each INTERVAL_COLUMNS as _ (_)}
-                <th
-                  class="gv-th gv-th--sub"
-                  colspan={estColSpans[0]}
-                >
-                  {MESSAGES.GESAMTANSICHT_TH_STAFF}
-                </th>
-                <th
-                  class="gv-th gv-th--sub"
-                  colspan={estColSpans[1]}
-                >
-                  {MESSAGES.GESAMTANSICHT_TH_PREP}
-                </th>
-                <th
-                  class="gv-th gv-th--sub"
-                  colspan={estColSpans[2]}
-                >
-                  {MESSAGES.GESAMTANSICHT_TH_EXEC}
-                </th>
-                <th
-                  class="gv-th gv-th--sub"
-                  colspan={estColSpans[3]}
-                >
-                  {MESSAGES.GESAMTANSICHT_TH_FOLLOW}
-                </th>
-              {/each}
-            </tr>
-            <!-- Data rows -->
+        {#if groupedView}
+          <!-- ===== GROUPED VIEW ===== -->
+          <OverallViewGrouped
+            {matrixRows}
+            {maxDates}
+            {estColSpans}
+            {estimatesByPlan}
+            {assignments}
+          />
+        {:else}
+          <!-- ===== FLAT VIEW (Default) ===== -->
+          <tbody>
             {#each matrixRows as row (row.plan.uuid)}
-              <tr>
-                <td
-                  class="gv-est-cell gv-est-cell--machine"
-                  colspan={2}
-                >
-                  {row.plan.machineName ?? '—'}
-                </td>
-                {#each INTERVAL_COLUMNS as col (col)}
-                  {@const est = getEstimate(row.plan.uuid, col)}
-                  {#if est !== undefined && est.totalMinutes > 0}
-                    <td
-                      class="gv-est-cell gv-est-cell--num"
-                      colspan={estColSpans[0]}>{est.staffCount}</td
-                    >
-                    <td
-                      class="gv-est-cell gv-est-cell--num"
-                      colspan={estColSpans[1]}>{est.preparationMinutes}</td
-                    >
-                    <td
-                      class="gv-est-cell gv-est-cell--num"
-                      colspan={estColSpans[2]}>{est.executionMinutes}</td
-                    >
-                    <td
-                      class="gv-est-cell gv-est-cell--num"
-                      colspan={estColSpans[3]}>{est.followupMinutes}</td
-                    >
-                  {:else}
-                    <td
-                      class="gv-est-cell"
-                      colspan={estColSpans[0]}
-                    ></td>
-                    <td
-                      class="gv-est-cell"
-                      colspan={estColSpans[1]}
-                    ></td>
-                    <td
-                      class="gv-est-cell"
-                      colspan={estColSpans[2]}
-                    ></td>
-                    <td
-                      class="gv-est-cell"
-                      colspan={estColSpans[3]}
-                    ></td>
-                  {/if}
-                {/each}
-              </tr>
+              <OverallViewRow
+                {row}
+                {maxDates}
+              />
             {/each}
           </tbody>
+
+          {#if hasAnyEstimates}
+            <tbody class="gv-est-body">
+              <tr class="gv-est-header">
+                <th
+                  class="gv-th gv-th--sticky"
+                  colspan={2}
+                >
+                  {MESSAGES.GESAMTANSICHT_TH_MACHINE}
+                </th>
+                {#each INTERVAL_COLUMNS as _ (_)}
+                  <th
+                    class="gv-th gv-th--sub"
+                    colspan={estColSpans[0]}
+                  >
+                    {MESSAGES.GESAMTANSICHT_TH_STAFF}
+                  </th>
+                  <th
+                    class="gv-th gv-th--sub"
+                    colspan={estColSpans[1]}
+                  >
+                    {MESSAGES.GESAMTANSICHT_TH_PREP}
+                  </th>
+                  <th
+                    class="gv-th gv-th--sub"
+                    colspan={estColSpans[2]}
+                  >
+                    {MESSAGES.GESAMTANSICHT_TH_EXEC}
+                  </th>
+                  <th
+                    class="gv-th gv-th--sub"
+                    colspan={estColSpans[3]}
+                  >
+                    {MESSAGES.GESAMTANSICHT_TH_FOLLOW}
+                  </th>
+                {/each}
+              </tr>
+              {#each matrixRows as row (row.plan.uuid)}
+                <tr>
+                  <td
+                    class="gv-est-cell gv-est-cell--machine"
+                    colspan={2}
+                  >
+                    {row.plan.machineName ?? '\u2014'}
+                  </td>
+                  {#each INTERVAL_COLUMNS as col (col)}
+                    {@const est = getEstimate(row.plan.uuid, col)}
+                    {#if est !== undefined && est.totalMinutes > 0}
+                      <td
+                        class="gv-est-cell gv-est-cell--num"
+                        colspan={estColSpans[0]}>{est.staffCount}</td
+                      >
+                      <td
+                        class="gv-est-cell gv-est-cell--num"
+                        colspan={estColSpans[1]}>{est.preparationMinutes}</td
+                      >
+                      <td
+                        class="gv-est-cell gv-est-cell--num"
+                        colspan={estColSpans[2]}>{est.executionMinutes}</td
+                      >
+                      <td
+                        class="gv-est-cell gv-est-cell--num"
+                        colspan={estColSpans[3]}>{est.followupMinutes}</td
+                      >
+                    {:else}
+                      <td
+                        class="gv-est-cell"
+                        colspan={estColSpans[0]}
+                      ></td>
+                      <td
+                        class="gv-est-cell"
+                        colspan={estColSpans[1]}
+                      ></td>
+                      <td
+                        class="gv-est-cell"
+                        colspan={estColSpans[2]}
+                      ></td>
+                      <td
+                        class="gv-est-cell"
+                        colspan={estColSpans[3]}
+                      ></td>
+                    {/if}
+                  {/each}
+                </tr>
+              {/each}
+            </tbody>
+          {/if}
+
+          {#if hasAnyAssignments}
+            <OverallViewAssignments
+              {matrixRows}
+              {assignments}
+              {maxDates}
+            />
+          {/if}
         {/if}
       </table>
     </div>

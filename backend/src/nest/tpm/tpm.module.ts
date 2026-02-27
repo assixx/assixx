@@ -33,6 +33,7 @@ import { TpmPlansController } from './tpm-plans.controller.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
+import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 
 @Module({
@@ -65,6 +66,9 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     // Schedule projection (Session 32)
     TpmScheduleProjectionService,
 
+    // Shift assignments — TPM Gesamtansicht employee rows
+    TpmShiftAssignmentsService,
+
     // Executions + Approval (Session 11)
     TpmExecutionsService,
     TpmApprovalService,
@@ -94,6 +98,7 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     TpmCardDuplicateService,
     TpmSlotAssistantService,
     TpmScheduleProjectionService,
+    TpmShiftAssignmentsService,
     TpmExecutionsService,
     TpmApprovalService,
     TpmNotificationService,

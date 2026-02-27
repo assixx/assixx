@@ -1,7 +1,8 @@
 /**
  * Unit tests for Overall View (Gesamtansicht) utility functions
  *
- * Tests buildMatrix(), formatDate(), formatTime() and INTERVAL_COLUMNS.
+ * Tests buildMatrix(), formatDate(), formatTimeRange(), isFullDay()
+ * and INTERVAL_COLUMNS.
  * indexSlots() is private — tested indirectly via buildMatrix().
  */
 import { describe, expect, it } from 'vitest';
@@ -10,7 +11,8 @@ import {
   INTERVAL_COLUMNS,
   buildMatrix,
   formatDate,
-  formatTime,
+  formatTimeRange,
+  isFullDay,
 } from './overall-view-utils.js';
 
 import type { MatrixRow } from './overall-view-utils.js';
@@ -32,6 +34,7 @@ function makePlan(overrides: Partial<TpmPlan> = {}): TpmPlan {
     baseWeekday: 1,
     baseRepeatEvery: 1,
     baseTime: '08:00:00',
+    bufferHours: 2,
     shiftPlanRequired: false,
     notes: null,
     createdBy: 1,
@@ -255,25 +258,56 @@ describe('formatDate', () => {
 });
 
 // =============================================================================
-// formatTime
+// formatTimeRange
 // =============================================================================
 
-describe('formatTime', () => {
-  it('should return HH:MM from HH:MM:SS', () => {
-    expect(formatTime('08:00:00')).toBe('08:00');
-    expect(formatTime('14:30:00')).toBe('14:30');
+describe('formatTimeRange', () => {
+  it('should return start – end time range', () => {
+    expect(formatTimeRange('09:00:00', 5)).toBe('09:00 – 14:00');
+  });
+
+  it('should handle zero buffer hours', () => {
+    expect(formatTimeRange('08:00:00', 0)).toBe('08:00 – 08:00');
+  });
+
+  it('should handle minutes in base time', () => {
+    expect(formatTimeRange('08:30:00', 2)).toBe('08:30 – 10:30');
+  });
+
+  it('should wrap around midnight', () => {
+    expect(formatTimeRange('22:00:00', 4)).toBe('22:00 – 02:00');
   });
 
   it('should return empty string for null', () => {
-    expect(formatTime(null)).toBe('');
+    expect(formatTimeRange(null, 5)).toBe('');
   });
 
   it('should return empty string for empty/whitespace string', () => {
-    expect(formatTime('')).toBe('');
-    expect(formatTime('   ')).toBe('');
+    expect(formatTimeRange('', 5)).toBe('');
+    expect(formatTimeRange('   ', 5)).toBe('');
   });
 
   it('should handle HH:MM format (no seconds)', () => {
-    expect(formatTime('08:00')).toBe('08:00');
+    expect(formatTimeRange('08:00', 3)).toBe('08:00 – 11:00');
+  });
+});
+
+// =============================================================================
+// isFullDay
+// =============================================================================
+
+describe('isFullDay', () => {
+  it('should return true for null', () => {
+    expect(isFullDay(null)).toBe(true);
+  });
+
+  it('should return true for empty string', () => {
+    expect(isFullDay('')).toBe(true);
+    expect(isFullDay('   ')).toBe(true);
+  });
+
+  it('should return false for valid time', () => {
+    expect(isFullDay('08:00:00')).toBe(false);
+    expect(isFullDay('14:30')).toBe(false);
   });
 });

@@ -13,6 +13,7 @@ import type {
   TpmExecutionPhoto,
   TpmLocation,
   TpmTimeEstimate,
+  TpmShiftAssignment,
   CreateExecutionPayload,
   CreateLocationPayload,
   UpdateLocationPayload,
@@ -123,6 +124,26 @@ export async function fetchScheduleProjection(
   } catch (err: unknown) {
     log.error({ err }, 'Error loading schedule projection');
     return null;
+  }
+}
+
+// =============================================================================
+// SHIFT ASSIGNMENTS (Gesamtansicht — Zugewiesene Mitarbeiter)
+// =============================================================================
+
+/** Fetch employees assigned to TPM maintenance shifts within a date range */
+export async function fetchShiftAssignments(
+  startDate: string,
+  endDate: string,
+): Promise<TpmShiftAssignment[]> {
+  try {
+    const result: unknown = await apiClient.get(
+      `/tpm/plans/shift-assignments?startDate=${startDate}&endDate=${endDate}`,
+    );
+    return extractArray<TpmShiftAssignment>(result);
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading shift assignments');
+    return [];
   }
 }
 

@@ -100,6 +100,7 @@ function applyShiftPlanState(
   rotationData: ProcessedRotationData,
   patternId: number | null,
   patternType: RotationPatternType | null,
+  preserveTpmToggle: boolean,
 ): void {
   const hasAnyShiftData = rotationData.weeklyShifts.size > 0;
   const shouldLock = hasAnyShiftData && !shiftsState.isEditMode;
@@ -107,6 +108,9 @@ function applyShiftPlanState(
   shiftsState.setCurrentPlanId(planData.planId);
   shiftsState.setCurrentShiftNotes(planData.shiftNotes);
   shiftsState.setWeeklyNotes(planData.shiftNotes);
+  if (!preserveTpmToggle) {
+    shiftsState.setShowTpmEvents(planData.isTpmMode);
+  }
   shiftsState.setWeeklyShifts(rotationData.weeklyShifts);
   shiftsState.setShiftDetails(rotationData.shiftDetails);
   shiftsState.setRotationHistoryMap(rotationData.rotationHistoryMap);
@@ -122,8 +126,15 @@ function applyShiftPlanState(
 // MAIN LOAD FUNCTION
 // =============================================================================
 
-/** Load the full shift plan for the current week and context */
-export async function loadShiftPlan(): Promise<void> {
+/**
+ * Load the full shift plan for the current week and context.
+ * All independent API calls run in parallel to prevent FOUC.
+ *
+ * @param preserveTpmToggle - When true, keeps the current TPM toggle state
+ *   instead of overwriting it from the saved plan. Used when the user
+ *   explicitly toggles TPM mode ON (the plan may not have been saved yet).
+ */
+export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
   if (shiftsState.selectedContext.teamId === null) return;
 
   shiftsState.setIsLoading(true);
@@ -134,49 +145,52 @@ export async function loadShiftPlan(): Promise<void> {
   try {
     const teamId = shiftsState.selectedContext.teamId;
     const machineId = shiftsState.selectedContext.machineId;
+    const hasMachine = machineId !== null && machineId !== 0;
+    const wantTpm = shiftsState.showTpmEvents;
 
-    const [members, { planResponse, rotationHistory, planData, rotationData }] =
-      await Promise.all([
-        fetchTeamMembers(teamId, startDate, endDate),
-        fetchAndProcessShiftData(startDate, endDate),
-      ]);
+    // ALL independent fetches in parallel — no waterfall
+    const [members, shiftResult, machineAvail, tpmEvents] = await Promise.all([
+      fetchTeamMembers(teamId, startDate, endDate),
+      fetchAndProcessShiftData(startDate, endDate),
+      hasMachine ?
+        fetchMachineAvailability(machineId, startDate, endDate)
+      : Promise.resolve(null),
+      wantTpm ?
+        fetchTpmMaintenanceDates(machineId, startDate, endDate)
+      : Promise.resolve(null),
+    ]);
 
-    // Update employees with fresh availability data for this week
-    shiftsState.setEmployees(convertTeamMembersToEmployees(members));
+    const { planResponse, rotationHistory, planData, rotationData } =
+      shiftResult;
 
-    // Machine availability — only when a machine is selected
-    if (machineId !== null && machineId !== 0) {
-      const availEntries = await fetchMachineAvailability(
-        machineId,
-        startDate,
-        endDate,
-      );
-      shiftsState.setMachineAvailability(availEntries);
-    } else {
-      shiftsState.clearMachineAvailability();
-    }
-
-    // TPM events — independent of machine selection
-    // With machineId: filtered to that machine. Without: all machines.
-    if (shiftsState.showTpmEvents) {
-      const tpmEvents = await fetchTpmMaintenanceDates(
-        machineId,
-        startDate,
-        endDate,
-      );
-      shiftsState.setTpmEvents(tpmEvents);
-    } else {
-      shiftsState.clearTpmEvents();
-    }
-
-    // Load pattern type from rotation history
+    // Pattern detection depends on rotationHistory — must be sequential
     const { patternId, patternType } = await loadPatternFromHistory(
       rotationHistory,
       fetchRotationPatternById,
     );
 
-    // Apply all state updates
-    applyShiftPlanState(planData, rotationData, patternId, patternType);
+    // --- Batch all state updates in one render frame ---
+    shiftsState.setEmployees(convertTeamMembersToEmployees(members));
+
+    if (machineAvail !== null) {
+      shiftsState.setMachineAvailability(machineAvail);
+    } else {
+      shiftsState.clearMachineAvailability();
+    }
+
+    if (tpmEvents !== null) {
+      shiftsState.setTpmEvents(tpmEvents);
+    } else {
+      shiftsState.clearTpmEvents();
+    }
+
+    applyShiftPlanState(
+      planData,
+      rotationData,
+      patternId,
+      patternType,
+      preserveTpmToggle,
+    );
 
     // Clear if nothing loaded
     if (planResponse === null && rotationHistory.length === 0) {

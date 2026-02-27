@@ -186,6 +186,7 @@ export interface ProcessedShiftData {
   planId: number | null;
   shiftNotes: string;
   isPlanLocked: boolean;
+  isTpmMode: boolean;
 }
 
 export interface ProcessedRotationData {
@@ -198,6 +199,7 @@ export interface ShiftPlanResponse {
   plan?: {
     id: number;
     shiftNotes?: string;
+    isTpmMode?: boolean;
   };
   shifts: {
     date: string;
@@ -223,6 +225,29 @@ export interface RotationHistoryEntry {
 // SHIFT PLAN PROCESSING
 // =============================================================================
 
+/** Extract plan-level metadata from the API response (pure helper) */
+function extractPlanMetadata(plan: ShiftPlanResponse['plan']): {
+  planId: number | null;
+  shiftNotes: string;
+  isPlanLocked: boolean;
+  isTpmMode: boolean;
+} {
+  if (plan === undefined) {
+    return {
+      planId: null,
+      shiftNotes: '',
+      isPlanLocked: false,
+      isTpmMode: false,
+    };
+  }
+  return {
+    planId: plan.id,
+    shiftNotes: plan.shiftNotes ?? '',
+    isPlanLocked: true,
+    isTpmMode: plan.isTpmMode ?? false,
+  };
+}
+
 /**
  * Process shift plan response into weekly shifts map and details
  */
@@ -233,13 +258,7 @@ export function processShiftPlanResponse(
   const shiftDetails = new Map<string, ShiftDetailData>();
 
   if (planResponse === null) {
-    return {
-      weeklyShifts,
-      shiftDetails,
-      planId: null,
-      shiftNotes: '',
-      isPlanLocked: false,
-    };
+    return { weeklyShifts, shiftDetails, ...extractPlanMetadata(undefined) };
   }
 
   // Process shift data into weekly shifts map
@@ -278,9 +297,7 @@ export function processShiftPlanResponse(
   return {
     weeklyShifts,
     shiftDetails,
-    planId: planResponse.plan?.id ?? null,
-    shiftNotes: planResponse.plan?.shiftNotes ?? '',
-    isPlanLocked: planResponse.plan !== undefined,
+    ...extractPlanMetadata(planResponse.plan),
   };
 }
 

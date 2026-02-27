@@ -38,6 +38,7 @@ export interface SaveScheduleParams {
   selectedContext: SelectedContext;
   teams: Team[];
   shiftTimesMap?: ShiftTimesMap;
+  isTpmMode?: boolean;
 }
 
 export interface SaveScheduleResult {
@@ -57,6 +58,7 @@ export async function saveSchedule(
     selectedContext,
     teams,
     shiftTimesMap,
+    isTpmMode,
   } = params;
 
   const effectiveShiftTimes = shiftTimesMap ?? DEFAULT_SHIFT_TIMES;
@@ -75,6 +77,7 @@ export async function saveSchedule(
     endDate: formatDate(weekEnd),
     name: `${teamName} - KW ${getWeekNumber(weekStart)}`,
     shiftNotes: weeklyNotes,
+    isTpmMode: isTpmMode ?? false,
     shifts,
   };
 
@@ -267,8 +270,11 @@ export async function addToFavorites(
   const { area, dept, machine, team, areaId, departmentId, machineId, teamId } =
     entities;
 
+  const favoriteName =
+    machine !== undefined ? `${team.name} - ${machine.name}` : team.name;
+
   return await apiSaveFavorite({
-    name: team.name,
+    name: favoriteName,
     areaId,
     areaName: area.name,
     departmentId,

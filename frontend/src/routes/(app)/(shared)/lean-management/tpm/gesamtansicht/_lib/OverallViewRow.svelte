@@ -9,7 +9,8 @@
   import {
     INTERVAL_COLUMNS,
     formatDate,
-    formatTime,
+    formatTimeRange,
+    isFullDay,
   } from './overall-view-utils';
 
   import type { MatrixRow } from './overall-view-utils';
@@ -27,7 +28,14 @@
     {row.plan.machineName ?? '—'}
   </td>
   <td class="gv-cell gv-cell--time">
-    {formatTime(row.plan.baseTime)}
+    {#if isFullDay(row.plan.baseTime)}
+      <span
+        class="gv-full-day"
+        title="Ganztägig"
+      ></span>
+    {:else}
+      {formatTimeRange(row.plan.baseTime, row.plan.bufferHours)}
+    {/if}
   </td>
   {#each INTERVAL_COLUMNS as col (col)}
     {@const dates = row.cells[col]}
@@ -74,5 +82,14 @@
   .gv-cell--date {
     text-align: center;
     font-variant-numeric: tabular-nums;
+  }
+
+  .gv-full-day {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--color-glass-border);
   }
 </style>

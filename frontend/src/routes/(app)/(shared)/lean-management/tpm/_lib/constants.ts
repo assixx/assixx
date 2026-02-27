@@ -214,6 +214,9 @@ export const MESSAGES = {
   GESAMTANSICHT_TH_PREP: 'Vorbereitung',
   GESAMTANSICHT_TH_EXEC: 'Durchführung',
   GESAMTANSICHT_TH_FOLLOW: 'Nachbereitung',
+  GESAMTANSICHT_TH_ASSIGNMENTS: 'Zugewiesene Mitarbeiter',
+  GESAMTANSICHT_TOGGLE_GROUPED: 'Gruppierte Ansicht',
+  GESAMTANSICHT_LABEL_ASSIGNED: 'Mitarbeiter',
   BTN_BACK_TO_OVERVIEW: 'Zurück zur Übersicht',
 
   // Zoom controls

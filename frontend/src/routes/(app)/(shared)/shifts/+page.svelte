@@ -194,7 +194,7 @@
   async function navigateWeek(direction: number) {
     const newWeek = addWeeks(shiftsState.currentWeek, direction);
     shiftsState.setCurrentWeek(newWeek);
-    await loadShiftPlan();
+    await loadShiftPlan(shiftsState.showTpmEvents);
   }
 
   // --- DERIVED VALUES ---
@@ -359,7 +359,7 @@
             }}
             ontpmModeChange={(enabled: boolean) => {
               shiftsState.setShowTpmEvents(enabled);
-              if (enabled) void loadShiftPlan();
+              void loadShiftPlan(true);
             }}
           />
         {/if}
