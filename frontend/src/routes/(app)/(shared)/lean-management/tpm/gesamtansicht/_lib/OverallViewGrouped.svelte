@@ -253,7 +253,7 @@
     display: block;
     white-space: nowrap;
     font-weight: 500;
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     line-height: 1.4;
   }
 

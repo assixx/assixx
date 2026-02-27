@@ -176,3 +176,102 @@ export function buildAssignmentLookup(
   }
   return result;
 }
+
+// =============================================================================
+// Assignment Count Aggregation
+// =============================================================================
+
+/** Per-employee TPM assignment count across interval types */
+export interface TpmAssignmentCount {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  counts: Partial<Record<IntervalType, number>>;
+  total: number;
+}
+
+/** Internal accumulator for count aggregation */
+interface CountAccumulator {
+  fn: string;
+  ln: string;
+  perInterval: Map<IntervalType, number>;
+  total: number;
+}
+
+/** Ensure user entry exists in map, return it */
+function getOrCreateEntry(
+  map: Map<number, CountAccumulator>,
+  a: TpmShiftAssignment,
+): CountAccumulator {
+  let entry = map.get(a.userId);
+  if (entry === undefined) {
+    entry = {
+      fn: a.firstName,
+      ln: a.lastName,
+      perInterval: new Map(),
+      total: 0,
+    };
+    map.set(a.userId, entry);
+  }
+  return entry;
+}
+
+/**
+ * Count TPM date assignments per employee per interval type.
+ * Cross-references shift assignments with the projected date index
+ * to determine how many date cells each employee covers per interval.
+ */
+export function buildAssignmentCounts(
+  items: TpmShiftAssignment[],
+  dateIndex: Map<string, Set<IntervalType>>,
+): TpmAssignmentCount[] {
+  const seen = new Set<string>();
+  const map = new Map<number, CountAccumulator>();
+
+  for (const a of items) {
+    const intervals = dateIndex.get(`${a.planUuid}:${a.shiftDate}`);
+    if (intervals === undefined) continue;
+
+    for (const interval of intervals) {
+      const key = `${a.userId}:${a.planUuid}:${a.shiftDate}:${interval}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const entry = getOrCreateEntry(map, a);
+      entry.perInterval.set(
+        interval,
+        (entry.perInterval.get(interval) ?? 0) + 1,
+      );
+      entry.total++;
+    }
+  }
+
+  return toSortedCounts(map);
+}
+
+/** Convert internal map to sorted TpmAssignmentCount array */
+function toSortedCounts(
+  map: Map<number, CountAccumulator>,
+): TpmAssignmentCount[] {
+  const result: TpmAssignmentCount[] = [];
+  for (const [userId, d] of map) {
+    const counts: Partial<Record<IntervalType, number>> = {};
+    for (const col of INTERVAL_COLUMNS) {
+      const v = d.perInterval.get(col);
+      if (v !== undefined) counts[col] = v;
+    }
+    result.push({
+      userId,
+      firstName: d.fn,
+      lastName: d.ln,
+      counts,
+      total: d.total,
+    });
+  }
+  return result.sort((a: TpmAssignmentCount, b: TpmAssignmentCount): number =>
+    `${a.lastName}, ${a.firstName}`.localeCompare(
+      `${b.lastName}, ${b.firstName}`,
+      'de',
+    ),
+  );
+}

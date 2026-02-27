@@ -10,13 +10,20 @@ import { describe, expect, it } from 'vitest';
 import {
   INTERVAL_COLUMNS,
   buildMatrix,
+  buildDateIndex,
+  buildAssignmentCounts,
   formatDate,
   formatTimeRange,
   isFullDay,
 } from './overall-view-utils.js';
 
-import type { MatrixRow } from './overall-view-utils.js';
-import type { ProjectedSlot, TpmPlan } from '../../_lib/types.js';
+import type { MatrixRow, TpmAssignmentCount } from './overall-view-utils.js';
+import type {
+  IntervalType,
+  ProjectedSlot,
+  TpmPlan,
+  TpmShiftAssignment,
+} from '../../_lib/types.js';
 
 // =============================================================================
 // Test Fixtures
@@ -24,6 +31,7 @@ import type { ProjectedSlot, TpmPlan } from '../../_lib/types.js';
 
 const DEFAULT_PLAN_UUID = 'plan-001';
 const DEFAULT_DATE = '2026-03-01';
+const SECOND_DATE = '2026-03-11';
 
 function makePlan(overrides: Partial<TpmPlan> = {}): TpmPlan {
   return {
@@ -309,5 +317,304 @@ describe('isFullDay', () => {
   it('should return false for valid time', () => {
     expect(isFullDay('08:00:00')).toBe(false);
     expect(isFullDay('14:30')).toBe(false);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — Test Fixtures
+// =============================================================================
+
+function makeAssignment(
+  overrides: Partial<TpmShiftAssignment> = {},
+): TpmShiftAssignment {
+  return {
+    planUuid: DEFAULT_PLAN_UUID,
+    machineId: 1,
+    shiftDate: DEFAULT_DATE,
+    userId: 10,
+    firstName: 'Warren',
+    lastName: 'Buffett',
+    shiftType: 'early',
+    ...overrides,
+  };
+}
+
+/** Entry for building a test date index */
+interface DateIndexEntry {
+  planUuid: string;
+  date: string;
+  intervals: IntervalType[];
+}
+
+/** Build a dateIndex from plan UUID + dates → interval sets */
+function makeDateIndex(
+  entries: DateIndexEntry[],
+): Map<string, Set<IntervalType>> {
+  const idx = new Map<string, Set<IntervalType>>();
+  for (const e of entries) {
+    idx.set(`${e.planUuid}:${e.date}`, new Set(e.intervals));
+  }
+  return idx;
+}
+
+// =============================================================================
+// buildAssignmentCounts — empty inputs
+// =============================================================================
+
+describe('buildAssignmentCounts – empty inputs', () => {
+  it('should return empty array for empty assignments', () => {
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+    ]);
+    expect(buildAssignmentCounts([], idx)).toEqual([]);
+  });
+
+  it('should return empty array for empty date index', () => {
+    const items = [makeAssignment()];
+    const idx = new Map<string, Set<IntervalType>>();
+    expect(buildAssignmentCounts(items, idx)).toEqual([]);
+  });
+
+  it('should return empty array when both are empty', () => {
+    expect(buildAssignmentCounts([], new Map())).toEqual([]);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — single assignment
+// =============================================================================
+
+describe('buildAssignmentCounts – single assignment', () => {
+  it('should count one assignment in one interval', () => {
+    const items = [makeAssignment({ planUuid: 'p1', shiftDate: DEFAULT_DATE })];
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+    ]);
+
+    const result = buildAssignmentCounts(items, idx);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].counts.monthly).toBe(1);
+    expect(result[0].total).toBe(1);
+    expect(result[0].lastName).toBe('Buffett');
+  });
+
+  it('should skip assignment when date has no match in index', () => {
+    const items = [makeAssignment({ planUuid: 'p1', shiftDate: '2026-05-01' })];
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+    ]);
+
+    expect(buildAssignmentCounts(items, idx)).toEqual([]);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — cascade dates (multi-interval)
+// =============================================================================
+
+describe('buildAssignmentCounts – cascade dates', () => {
+  it('should count cascade date across multiple intervals', () => {
+    const items = [makeAssignment({ planUuid: 'p1', shiftDate: DEFAULT_DATE })];
+    const idx = makeDateIndex([
+      {
+        planUuid: 'p1',
+        date: DEFAULT_DATE,
+        intervals: ['monthly', 'quarterly', 'annual'],
+      },
+    ]);
+
+    const result = buildAssignmentCounts(items, idx);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].counts.monthly).toBe(1);
+    expect(result[0].counts.quarterly).toBe(1);
+    expect(result[0].counts.annual).toBe(1);
+    expect(result[0].total).toBe(3);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — multiple employees & plans
+// =============================================================================
+
+describe('buildAssignmentCounts – multiple employees & plans', () => {
+  it('should count separately per employee', () => {
+    const items = [
+      makeAssignment({
+        userId: 10,
+        firstName: 'Warren',
+        lastName: 'Buffett',
+        planUuid: 'p1',
+        shiftDate: DEFAULT_DATE,
+      }),
+      makeAssignment({
+        userId: 20,
+        firstName: 'Ray',
+        lastName: 'Dalio',
+        planUuid: 'p1',
+        shiftDate: DEFAULT_DATE,
+      }),
+    ];
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+    ]);
+
+    const result = buildAssignmentCounts(items, idx);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].lastName).toBe('Buffett');
+    expect(result[0].total).toBe(1);
+    expect(result[1].lastName).toBe('Dalio');
+    expect(result[1].total).toBe(1);
+  });
+
+  it('should aggregate across multiple plans per employee', () => {
+    const items = [
+      makeAssignment({ userId: 10, planUuid: 'p1', shiftDate: DEFAULT_DATE }),
+      makeAssignment({ userId: 10, planUuid: 'p2', shiftDate: SECOND_DATE }),
+    ];
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+      { planUuid: 'p2', date: SECOND_DATE, intervals: ['monthly'] },
+    ]);
+
+    const result = buildAssignmentCounts(items, idx);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].counts.monthly).toBe(2);
+    expect(result[0].total).toBe(2);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — deduplication
+// =============================================================================
+
+describe('buildAssignmentCounts – deduplication', () => {
+  it('should not double-count same userId+plan+date+interval', () => {
+    const items = [
+      makeAssignment({ userId: 10, planUuid: 'p1', shiftDate: DEFAULT_DATE }),
+      makeAssignment({ userId: 10, planUuid: 'p1', shiftDate: DEFAULT_DATE }),
+    ];
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+    ]);
+
+    const result = buildAssignmentCounts(items, idx);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].counts.monthly).toBe(1);
+    expect(result[0].total).toBe(1);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — sorting
+// =============================================================================
+
+describe('buildAssignmentCounts – sorting', () => {
+  it('should sort by lastName, firstName (German locale)', () => {
+    const items = [
+      makeAssignment({
+        userId: 30,
+        firstName: 'Tupac',
+        lastName: 'Shakur',
+        planUuid: 'p1',
+        shiftDate: DEFAULT_DATE,
+      }),
+      makeAssignment({
+        userId: 10,
+        firstName: 'Warren',
+        lastName: 'Buffett',
+        planUuid: 'p1',
+        shiftDate: DEFAULT_DATE,
+      }),
+      makeAssignment({
+        userId: 20,
+        firstName: 'Ray',
+        lastName: 'Dalio',
+        planUuid: 'p1',
+        shiftDate: DEFAULT_DATE,
+      }),
+    ];
+    const idx = makeDateIndex([
+      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
+    ]);
+
+    const result = buildAssignmentCounts(items, idx);
+
+    expect(result.map((r: TpmAssignmentCount) => r.lastName)).toEqual([
+      'Buffett',
+      'Dalio',
+      'Shakur',
+    ]);
+  });
+});
+
+// =============================================================================
+// buildAssignmentCounts — integration with buildDateIndex
+// =============================================================================
+
+describe('buildAssignmentCounts – integration with buildDateIndex', () => {
+  it('should work with dateIndex built from matrixRows', () => {
+    const plans = [
+      makePlan({ uuid: 'p1', machineName: 'Machine A' }),
+      makePlan({ uuid: 'p2', machineName: 'Machine B' }),
+    ];
+    const slots: ProjectedSlot[] = [
+      makeSlot({
+        planUuid: 'p1',
+        date: '2026-03-02',
+        intervalTypes: ['monthly', 'quarterly'],
+      }),
+      makeSlot({
+        planUuid: 'p2',
+        date: SECOND_DATE,
+        intervalTypes: ['monthly'],
+      }),
+    ];
+
+    const matrix = buildMatrix(plans, slots, 4);
+    const dateIdx = buildDateIndex(matrix);
+
+    const assignments: TpmShiftAssignment[] = [
+      makeAssignment({
+        userId: 30,
+        firstName: 'Tupac',
+        lastName: 'Shakur',
+        planUuid: 'p1',
+        shiftDate: '2026-03-02',
+      }),
+      makeAssignment({
+        userId: 30,
+        firstName: 'Tupac',
+        lastName: 'Shakur',
+        planUuid: 'p2',
+        shiftDate: SECOND_DATE,
+      }),
+      makeAssignment({
+        userId: 10,
+        firstName: 'Warren',
+        lastName: 'Buffett',
+        planUuid: 'p2',
+        shiftDate: SECOND_DATE,
+      }),
+    ];
+
+    const result = buildAssignmentCounts(assignments, dateIdx);
+
+    expect(result).toHaveLength(2);
+
+    // Buffett: p2 monthly = 1
+    expect(result[0].lastName).toBe('Buffett');
+    expect(result[0].counts.monthly).toBe(1);
+    expect(result[0].total).toBe(1);
+
+    // Shakur: p1 monthly=1, p1 quarterly=1, p2 monthly=1
+    expect(result[1].lastName).toBe('Shakur');
+    expect(result[1].counts.monthly).toBe(2);
+    expect(result[1].counts.quarterly).toBe(1);
+    expect(result[1].total).toBe(3);
   });
 });

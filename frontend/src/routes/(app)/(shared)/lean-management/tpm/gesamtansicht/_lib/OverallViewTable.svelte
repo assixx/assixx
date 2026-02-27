@@ -23,8 +23,14 @@
     MESSAGES,
   } from '../../_lib/constants';
 
-  import { INTERVAL_COLUMNS, buildMatrix } from './overall-view-utils';
+  import {
+    INTERVAL_COLUMNS,
+    buildMatrix,
+    buildDateIndex,
+    buildAssignmentCounts,
+  } from './overall-view-utils';
   import OverallViewAssignments from './OverallViewAssignments.svelte';
+  import OverallViewCounts from './OverallViewCounts.svelte';
   import OverallViewGrouped from './OverallViewGrouped.svelte';
   import OverallViewRow from './OverallViewRow.svelte';
 
@@ -73,6 +79,11 @@
   );
 
   const hasAnyAssignments = $derived(assignments.length > 0);
+
+  const dateIndex = $derived(buildDateIndex(matrixRows));
+  const assignmentCounts = $derived(
+    buildAssignmentCounts(assignments, dateIndex),
+  );
 
   /** Colspan distribution: 4 sub-columns across maxDates cells */
   const estColSpans = $derived.by((): number[] => {
@@ -415,6 +426,10 @@
         {/if}
       </table>
     </div>
+
+    {#if assignmentCounts.length > 0}
+      <OverallViewCounts counts={assignmentCounts} />
+    {/if}
   {/if}
 </div>
 
