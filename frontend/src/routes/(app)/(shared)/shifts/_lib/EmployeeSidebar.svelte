@@ -130,8 +130,6 @@
 
 <style>
   .employee-sidebar {
-    backdrop-filter: var(--glass-backdrop);
-
     border: var(--glass-border);
     border-radius: var(--radius-xl);
 

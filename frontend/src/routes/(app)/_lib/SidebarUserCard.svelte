@@ -1,7 +1,7 @@
 <!--
   SidebarUserCard.svelte
-  User info card in the sidebar — avatar, name, role badge
-  Extracted from AppSidebar.svelte for max-lines compliance
+  Sidebar footer — click-to-expand user info card
+  Trigger: Avatar + Name + Chevron → expands to show full details
 -->
 <script lang="ts">
   import {
@@ -25,11 +25,22 @@
     tenant: { id?: number; companyName?: string } | null;
     roleBadgeClass: string;
     roleBadgeText: string;
+    collapsed: boolean;
   }
 
-  const { user, tenant, roleBadgeClass, roleBadgeText }: Props = $props();
+  const { user, tenant, roleBadgeClass, roleBadgeText, collapsed }: Props =
+    $props();
 
-  /** Get user initials for avatar */
+  let expanded = $state(false);
+
+  /** Close details when sidebar collapses */
+  $effect(() => {
+    if (collapsed) {
+      expanded = false;
+    }
+  });
+
+  /** Get user initials for avatar fallback */
   function getInitials(): string {
     if (!user) return 'U';
     const first = user.firstName?.charAt(0) ?? '';
@@ -45,147 +56,195 @@
     if (user.email !== undefined && user.email !== '') return user.email;
     return 'User';
   }
+
+  function toggleExpanded(): void {
+    expanded = !expanded;
+  }
 </script>
 
-<div class="user-info-card">
-  {#if user?.profilePicture}
-    <div class="avatar avatar--md">
-      <img
-        src={getProfilePictureUrl(user.profilePicture)}
-        alt={getDisplayName()}
-        class="avatar__image"
-      />
-    </div>
-  {:else}
-    <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
-      <span class="avatar__initials">{getInitials()}</span>
-    </div>
-  {/if}
-  <div class="user-details">
-    <div class="company-info">
-      <div class="company-name">{tenant?.companyName ?? 'Firma'}</div>
-    </div>
-    <div class="user-name">{getDisplayName()}</div>
-    {#if user?.email}
-      <div class="user-email">{user.email}</div>
+<div
+  class="sidebar-footer"
+  class:collapsed
+  class:expanded
+>
+  <button
+    type="button"
+    class="footer-trigger"
+    onclick={toggleExpanded}
+    aria-expanded={expanded}
+    title={collapsed ? getDisplayName() : undefined}
+  >
+    {#if user?.profilePicture}
+      <div class="avatar avatar--md">
+        <img
+          src={getProfilePictureUrl(user.profilePicture)}
+          alt={getDisplayName()}
+          class="avatar__image"
+        />
+      </div>
+    {:else}
+      <div class="avatar avatar--md {getAvatarColorClass(user?.id)}">
+        <span class="avatar__initials">{getInitials()}</span>
+      </div>
     {/if}
-    {#if user?.position}
-      <div class="user-position">{user.position}</div>
-    {/if}
-    {#if user?.employeeNumber}
-      <span class="employee-number__text">{user.employeeNumber}</span>
-    {/if}
-    <span class="badge badge--sm {roleBadgeClass}">{roleBadgeText}</span>
+
+    <span class="footer-name">{getDisplayName()}</span>
+    <svg
+      class="footer-chevron"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <path d="m7 15 5 5 5-5" />
+      <path d="m7 9 5-5 5 5" />
+    </svg>
+  </button>
+
+  <div
+    class="footer-details"
+    class:open={expanded}
+  >
+    <div class="footer-details-inner">
+      <div class="detail-divider"></div>
+      <div class="detail-company">{tenant?.companyName ?? 'Firma'}</div>
+      {#if user?.email}
+        <div class="detail-item">{user.email}</div>
+      {/if}
+      {#if user?.position}
+        <div class="detail-item">{user.position}</div>
+      {/if}
+      {#if user?.employeeNumber}
+        <div class="detail-item detail-mono">{user.employeeNumber}</div>
+      {/if}
+      <span class="badge badge--sm {roleBadgeClass}">{roleBadgeText}</span>
+    </div>
   </div>
 </div>
 
 <style>
-  .user-info-card {
+  .sidebar-footer {
     position: relative;
-    align-items: center;
-
-    margin: 20px 15px;
+    margin: 0 8px 30px;
+    border: var(--glass-border);
     border-radius: var(--radius-xl);
     background: var(--glass-bg);
-    padding: 14px 10px 15px 20px;
-    width: 85%;
-    min-height: 100px;
     overflow: hidden;
   }
 
-  .user-info-card::before {
-    position: absolute;
-    opacity: 100%;
-    z-index: 0;
-    inset: 0;
-    background:
-      radial-gradient(
-        circle at 20% 80%,
-        var(--glass-bg-active) 0%,
-        transparent 50%
-      ),
-      radial-gradient(
-        circle at 80% 20%,
-        var(--glass-bg-active) 0%,
-        transparent 50%
-      );
-    content: '';
-  }
-
-  .user-info-card::after {
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    z-index: 0;
-    border-radius: 50%;
-    width: 200px;
-    height: 200px;
-    content: '';
-  }
-
-  .user-info-card > :global(*) {
-    position: relative;
-    z-index: 1;
-  }
-
-  .user-details {
+  /* Trigger button — always visible */
+  .footer-trigger {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    border: none;
+    border-radius: 0;
+    background: var(--glass-bg-active);
+    padding: 8px;
+    width: 100%;
+    min-height: 56px;
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+  }
+
+  .footer-trigger:hover {
+    background: var(--glass-bg-hover, rgb(255 255 255 / 5%));
+  }
+
+  .sidebar-footer.collapsed .footer-trigger {
+    padding: 8px;
+  }
+
+  .sidebar-footer.collapsed .footer-details {
+    display: none;
+  }
+
+  .footer-name {
     flex: 1;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .company-info {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    margin-bottom: 4px;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .company-name {
-    margin-top: 8px;
+  .footer-chevron {
+    flex-shrink: 0;
+    opacity: 60%;
+    color: var(--text-secondary);
+  }
+
+  /* Expandable details — same pattern as sidebar submenu-wrapper */
+  .footer-details {
+    display: grid;
+    grid-template-rows: 0fr;
     overflow: hidden;
+    background: var(--main-bg);
+    transition:
+      grid-template-rows 0.4s ease,
+      visibility 0s 0.4s;
+    visibility: hidden;
+  }
+
+  .footer-details.open {
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 0.4s ease,
+      visibility 0s 0s;
+    visibility: visible;
+  }
+
+  .footer-details-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 14px;
+    padding-bottom: 0;
+    opacity: 0%;
+    transition:
+      opacity 0.3s ease,
+      padding-bottom 0.4s ease;
+  }
+
+  .footer-details.open .footer-details-inner {
+    padding-bottom: 12px;
+    opacity: 100%;
+  }
+
+  .detail-divider {
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--glass-border, rgb(255 255 255 / 10%));
+  }
+
+  .detail-company {
     color: var(--primary-light);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 0.75rem;
     letter-spacing: 0.5px;
-    text-overflow: ellipsis;
     text-transform: uppercase;
-    white-space: nowrap;
   }
 
-  .user-name {
+  .detail-item {
     overflow: hidden;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 0.813rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .user-email {
-    overflow: hidden;
-    color: var(--text-muted);
-    font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .user-position {
-    margin-top: 2px;
-    font-size: 13px;
-  }
-
-  .employee-number__text {
+  .detail-mono {
     letter-spacing: 2px;
-    font-size: 13px;
   }
 
-  /* Role Badge spacing */
-  .user-info-card :global(.badge) {
-    margin-top: 6px;
+  .sidebar-footer :global(.badge) {
+    margin-top: 4px;
+    align-self: flex-start;
   }
 </style>

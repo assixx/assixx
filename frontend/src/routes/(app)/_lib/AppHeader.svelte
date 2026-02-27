@@ -100,30 +100,28 @@
   <a
     href={resolveDynamicPath(`/${currentRole}-dashboard`)}
     class="logo-container"
+    class:collapsed={sidebarCollapsed}
   >
-    {#if sidebarCollapsed}
-      <img
-        src="/images/logo_collapsed_darkmode.png"
-        alt="Assixx Logo"
-        class="logo-collapsed logo-dark"
-      />
-      <img
-        src="/images/logo_collapsed_lightmode.png"
-        alt="Assixx Logo"
-        class="logo-collapsed logo-light"
-      />
-    {:else}
-      <img
-        src="/images/logo_darkmode.png"
-        alt="Assixx Logo"
-        class="logo logo-dark"
-      />
-      <img
-        src="/images/logo_lightmode.png"
-        alt="Assixx Logo"
-        class="logo logo-light"
-      />
-    {/if}
+    <img
+      src="/images/logo_darkmode.png"
+      alt="Assixx Logo"
+      class="logo-full logo-dark"
+    />
+    <img
+      src="/images/logo_lightmode.png"
+      alt="Assixx Logo"
+      class="logo-full logo-light"
+    />
+    <img
+      src="/images/logo_collapsed_darkmode.png"
+      alt="Assixx Logo"
+      class="logo-small logo-dark"
+    />
+    <img
+      src="/images/logo_collapsed_lightmode.png"
+      alt="Assixx Logo"
+      class="logo-small logo-light"
+    />
   </a>
 
   <div class="header-content">
@@ -203,22 +201,50 @@
   }
 
   .logo-container {
-    display: flex;
+    display: grid;
     align-items: center;
     margin-right: var(--spacing-6);
     margin-bottom: -3px;
+    width: 135px;
+    overflow: hidden;
     text-decoration: none;
   }
 
-  .logo {
+  .logo-container.collapsed {
+    width: 47px;
+  }
+
+  /* Both logos stacked in same grid cell */
+  .logo-full,
+  .logo-small {
+    grid-area: 1 / 1;
+  }
+
+  /* Full logo: on top, instant hide on collapse, slow fade in on expand */
+  .logo-full {
+    z-index: 1;
     margin-bottom: 3px;
     margin-left: -10px;
     width: 135px;
+    transition: opacity 0.4s ease 0.05s;
   }
 
-  .logo-collapsed {
+  .logo-container.collapsed .logo-full {
+    opacity: 0%;
+    transition: none;
+  }
+
+  /* Collapsed logo: instant show on collapse, instant hide on expand */
+  .logo-small {
     margin-bottom: 8px;
     width: 47px;
+    opacity: 0%;
+    pointer-events: none;
+  }
+
+  .logo-container.collapsed .logo-small {
+    opacity: 100%;
+    pointer-events: auto;
   }
 
   /* Logo theme switching */
@@ -353,7 +379,11 @@
       display: none;
     }
 
-    .logo {
+    .logo-container {
+      width: 100px;
+    }
+
+    .logo-full {
       width: 100px;
     }
   }

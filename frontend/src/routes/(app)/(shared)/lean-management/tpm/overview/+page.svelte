@@ -173,10 +173,7 @@
         </h2>
       </div>
       <div class="card__body">
-        <MachineList
-          {machines}
-          {colors}
-        />
+        <MachineList {machines} />
       </div>
     </div>
   </div>

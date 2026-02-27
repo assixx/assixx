@@ -335,26 +335,29 @@
     </ul>
   </nav>
 
-  <!-- User Info Card (Extracted Component) -->
-  <SidebarUserCard
-    {user}
-    {tenant}
-    {roleBadgeClass}
-    {roleBadgeText}
-  />
-
-  <!-- Storage Widget (Root only, Extracted Component) -->
-  {#if currentRole === 'root'}
-    <SidebarStorageWidget />
-  {/if}
+  <!-- Sidebar Footer Area — pinned to bottom via flex -->
+  <div class="sidebar-footer-area">
+    {#if currentRole === 'root'}
+      <SidebarStorageWidget />
+    {/if}
+    <SidebarUserCard
+      {user}
+      {tenant}
+      {roleBadgeClass}
+      {roleBadgeText}
+      {collapsed}
+    />
+  </div>
 </aside>
 
 <style>
-  /* Base sidebar */
+  /* Base sidebar — flex column so footer stays pinned at bottom */
   .sidebar {
+    display: flex;
     position: sticky;
     top: 80px;
     left: 0;
+    flex-direction: column;
     flex-shrink: 0;
     align-self: flex-start;
     backdrop-filter: blur(20px);
@@ -368,24 +371,28 @@
     min-width: 260px;
     height: calc(100vh - 80px);
     max-height: calc(100vh - 80px);
-    overflow: hidden auto;
+    overflow: hidden;
   }
 
-  .sidebar {
+  /* Nav scrolls independently, footer stays visible */
+  .sidebar-nav {
+    display: flex;
+    position: relative;
+    flex: 1;
+    flex-direction: column;
+    padding-left: var(--spacing-4);
+    min-height: 0;
+    overflow: hidden auto;
     scrollbar-width: thin;
     scrollbar-color: rgb(0 0 0 / 25%) transparent;
   }
 
-  :global(html.dark) .sidebar {
+  :global(html.dark) .sidebar-nav {
     scrollbar-color: var(--glass-border) transparent;
   }
 
-  .sidebar-nav {
-    display: flex;
-    position: relative;
-    flex-direction: column;
-    padding-left: var(--spacing-4);
-    overflow: visible;
+  .sidebar-footer-area {
+    flex-shrink: 0;
   }
 
   /* Collapsed sidebar */
@@ -393,19 +400,6 @@
     margin-left: 10px;
     width: 4.5rem !important;
     min-width: 4.5rem !important;
-  }
-
-  .sidebar.collapsed :global(.user-info-card) {
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 9rem;
-    margin-left: 4px;
-    padding: 0.9rem 0.7rem 0.7rem;
-    min-height: auto;
-  }
-
-  .sidebar.collapsed :global(.user-details) {
-    display: none;
   }
 
   .sidebar.collapsed .sidebar-link .label {
@@ -801,10 +795,6 @@
       display: none !important;
     }
 
-    .sidebar :global(.user-details) {
-      display: none;
-    }
-
     .sidebar :global(.storage-widget) {
       display: none;
     }
@@ -814,15 +804,6 @@
       gap: 0;
       padding: 0.5rem;
       overflow: visible !important;
-    }
-
-    .sidebar :global(.user-info-card) {
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 9rem;
-      margin-left: 4px;
-      padding: 0.7rem;
-      min-height: auto;
     }
 
     /* Override expanded active style on tablet */

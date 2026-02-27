@@ -10,12 +10,10 @@
     INTERVAL_LABELS,
     CARD_STATUS_LABELS,
     CARD_STATUS_BADGE_CLASSES,
-    WEEKDAY_LABELS,
   } from './constants';
 
   import type {
     MachineWithTpmStatus,
-    TpmColorConfigEntry,
     TpmCard,
     CardStatus,
     IntervalType,
@@ -27,7 +25,6 @@
 
   interface Props {
     machines: MachineWithTpmStatus[];
-    colors: TpmColorConfigEntry[];
   }
 
   const { machines }: Props = $props();

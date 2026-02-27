@@ -182,6 +182,7 @@
 
   .gvg-row--first td {
     border-top: none;
+    border-bottom: 3px solid var(--color-glass-border);
   }
 
   /* ---- Machine name (rowspan=3) ---- */
