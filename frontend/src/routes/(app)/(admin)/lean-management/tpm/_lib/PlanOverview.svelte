@@ -6,6 +6,8 @@
   import {
     INTERVAL_LABELS,
     WEEKDAY_LABELS,
+    CARD_STATUS_LABELS,
+    CARD_STATUS_BADGE_CLASSES,
     MESSAGES,
     DEFAULT_PAGE_SIZE,
   } from './constants';
@@ -15,6 +17,7 @@
     PlanStatusFilter,
     IntervalType,
     IntervalMatrixEntry,
+    CardStatus,
   } from './types';
 
   function resolvePath(path: string): string {
@@ -55,16 +58,19 @@
 
   const filteredPlans = $derived(filterPlans(plans, statusFilter, searchQuery));
 
-  /** Lookup: planUuid → intervalType → cardCount */
+  /** Lookup: planUuid → intervalType → full matrix entry */
   const matrixLookup = $derived.by(() => {
-    const map = new SvelteMap<string, SvelteMap<IntervalType, number>>();
+    const map = new SvelteMap<
+      string,
+      SvelteMap<IntervalType, IntervalMatrixEntry>
+    >();
     for (const entry of intervalMatrix) {
       let planMap = map.get(entry.planUuid);
       if (planMap === undefined) {
-        planMap = new SvelteMap<IntervalType, number>();
+        planMap = new SvelteMap<IntervalType, IntervalMatrixEntry>();
         map.set(entry.planUuid, planMap);
       }
-      planMap.set(entry.intervalType, entry.cardCount);
+      planMap.set(entry.intervalType, entry);
     }
     return map;
   });
@@ -114,8 +120,36 @@
     return result;
   }
 
-  function getCardCount(planUuid: string, interval: IntervalType): number {
-    return matrixLookup.get(planUuid)?.get(interval) ?? 0;
+  function getMatrixEntry(
+    planUuid: string,
+    interval: IntervalType,
+  ): IntervalMatrixEntry | null {
+    return matrixLookup.get(planUuid)?.get(interval) ?? null;
+  }
+
+  /** Determine worst card status: overdue > red > yellow > green */
+  function getWorstStatus(entry: IntervalMatrixEntry): CardStatus {
+    if (entry.overdueCount > 0) return 'overdue';
+    if (entry.redCount > 0) return 'red';
+    if (entry.yellowCount > 0) return 'yellow';
+    return 'green';
+  }
+
+  /** Build tooltip with status breakdown */
+  function getStatusTooltip(
+    entry: IntervalMatrixEntry,
+    intervalLabel: string,
+  ): string {
+    const parts: string[] = [];
+    if (entry.greenCount > 0)
+      parts.push(`${String(entry.greenCount)} ${CARD_STATUS_LABELS.green}`);
+    if (entry.redCount > 0)
+      parts.push(`${String(entry.redCount)} ${CARD_STATUS_LABELS.red}`);
+    if (entry.yellowCount > 0)
+      parts.push(`${String(entry.yellowCount)} ${CARD_STATUS_LABELS.yellow}`);
+    if (entry.overdueCount > 0)
+      parts.push(`${String(entry.overdueCount)} ${CARD_STATUS_LABELS.overdue}`);
+    return `${intervalLabel}: ${parts.join(', ')}`;
   }
 
   function handleSearchInput(e: Event): void {
@@ -237,16 +271,17 @@
               <span class="badge {badge.cls} badge--sm">{badge.label}</span>
             </td>
             {#each intervalColumns as col (col)}
-              {@const count = getCardCount(plan.uuid, col)}
+              {@const entry = getMatrixEntry(plan.uuid, col)}
               <td class="text-center align-middle">
-                {#if count > 0}
+                {#if entry !== null}
+                  {@const worstStatus = getWorstStatus(entry)}
                   <span
-                    class="badge badge--success badge--sm"
-                    title="{INTERVAL_LABELS[col]}: {count} {count === 1 ?
-                      'Karte'
-                    : 'Karten'}"
+                    class="badge {CARD_STATUS_BADGE_CLASSES[
+                      worstStatus
+                    ]} badge--sm"
+                    title={getStatusTooltip(entry, INTERVAL_LABELS[col])}
                   >
-                    {count}
+                    {entry.cardCount}
                   </span>
                 {:else}
                   <span
@@ -315,7 +350,19 @@
   <div class="matrix-legend">
     <span class="matrix-legend__item">
       <span class="badge badge--success badge--sm">3</span>
-      Anzahl Karten
+      {CARD_STATUS_LABELS.green}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="badge badge--danger badge--sm">2</span>
+      {CARD_STATUS_LABELS.red}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="badge badge--warning badge--sm">1</span>
+      {CARD_STATUS_LABELS.yellow}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="badge badge--error badge--sm">1</span>
+      {CARD_STATUS_LABELS.overdue}
     </span>
     <span class="matrix-legend__item">
       <span class="text-(--color-text-muted)">—</span>

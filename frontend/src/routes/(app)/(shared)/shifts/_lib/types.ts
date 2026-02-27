@@ -384,6 +384,18 @@ export interface EmployeeTeamInfo {
 }
 
 /**
+ * Shift assignment count per employee (week, month, year)
+ */
+export interface AssignmentCount {
+  employeeId: number;
+  firstName: string;
+  lastName: string;
+  weekCount: number;
+  monthCount: number;
+  yearCount: number;
+}
+
+/**
  * Dropdown option item
  */
 export interface DropdownOption {

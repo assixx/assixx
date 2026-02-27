@@ -31,11 +31,14 @@
     ShiftTimesMap,
     TpmMaintenanceEvent,
   } from './types';
+  import type { Snippet } from 'svelte';
 
   /**
    * Props interface for ShiftScheduleGrid
    */
   interface Props {
+    /** Optional snippet rendered directly after the legend bar */
+    afterLegend?: Snippet | undefined;
     weekDates: Date[];
     weeklyNotes: string;
     canEditShifts: boolean;
@@ -80,6 +83,7 @@
   }
 
   const {
+    afterLegend,
     weekDates,
     weeklyNotes,
     canEditShifts,
@@ -164,6 +168,10 @@
     {colorMap}
     {showTpmEvents}
   />
+
+  {#if afterLegend}
+    {@render afterLegend()}
+  {/if}
 
   <!-- Schedule Header -->
   <div class="schedule-header">

@@ -61,6 +61,18 @@ export interface CalendarShiftResponse {
 }
 
 /**
+ * Assignment count per employee (week, month, year)
+ */
+export interface AssignmentCountResponse {
+  employeeId: number;
+  firstName: string;
+  lastName: string;
+  weekCount: number;
+  monthCount: number;
+  yearCount: number;
+}
+
+/**
  * Favorite response
  */
 export interface FavoriteResponse {

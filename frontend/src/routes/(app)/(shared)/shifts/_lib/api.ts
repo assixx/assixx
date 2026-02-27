@@ -14,6 +14,7 @@ import type { TpmIntervalType } from './constants';
 import type {
   User,
   Area,
+  AssignmentCount,
   Department,
   Machine,
   MachineAvailabilityEntry,
@@ -678,6 +679,28 @@ export async function assignShift(shiftData: {
   endTime: string;
 }): Promise<void> {
   await apiClient.post(API_ENDPOINTS.SHIFTS, shiftData);
+}
+
+// =============================================================================
+// ASSIGNMENT COUNTS
+// =============================================================================
+
+/**
+ * Fetch shift assignment counts per employee for week, month, year.
+ * Admin-only endpoint. Counts from both shifts + shift_rotation_history.
+ */
+export async function fetchAssignmentCounts(
+  teamId: number,
+  referenceDate: string,
+): Promise<AssignmentCount[]> {
+  try {
+    return await apiClient.get<AssignmentCount[]>(
+      `${API_ENDPOINTS.SHIFTS}/assignment-counts?teamId=${teamId}&referenceDate=${referenceDate}`,
+    );
+  } catch (err) {
+    log.error({ err }, 'Error loading assignment counts');
+    return [];
+  }
 }
 
 // =============================================================================

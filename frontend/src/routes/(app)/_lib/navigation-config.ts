@@ -90,11 +90,6 @@ const TPM_ADMIN_SUBMENU: NavItem[] = [
     badgeType: 'tpm',
   },
   {
-    id: 'tpm-boards',
-    label: 'Boards',
-    url: '/lean-management/tpm/overview',
-  },
-  {
     id: 'tpm-config',
     label: 'Konfiguration',
     url: '/lean-management/tpm/config',

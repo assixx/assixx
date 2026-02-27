@@ -36,6 +36,7 @@ import {
   dbShiftToApi,
 } from './shifts.helpers.js';
 import type {
+  AssignmentCountResponse,
   CalendarShiftResponse,
   DbFavoriteRow,
   DbShiftRow,
@@ -52,6 +53,7 @@ import type {
 
 // Re-export types for backward compatibility (controller and index.ts import from here)
 export type {
+  AssignmentCountResponse,
   CalendarShiftResponse,
   ExportFilters,
   FavoriteResponse,
@@ -63,6 +65,68 @@ export type {
   SwapRequestFilters,
   SwapRequestResponse,
 } from './shifts.types.js';
+
+/** DB row shape for assignment count query */
+interface DbAssignmentCountRow {
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  week_count: string;
+  month_count: string;
+  year_count: string;
+}
+
+/** UNION ALL query: shifts + shift_rotation_history with period FILTER */
+const ASSIGNMENT_COUNTS_SQL = `
+  WITH team_employees AS (
+    SELECT DISTINCT ut.user_id
+    FROM user_teams ut
+    JOIN users u ON u.id = ut.user_id
+    WHERE ut.team_id = $2 AND ut.tenant_id = $1 AND u.role = 'employee'
+  ),
+  all_shifts AS (
+    SELECT s.user_id, s.date
+    FROM shifts s
+    WHERE s.tenant_id = $1
+      AND s.user_id IN (SELECT user_id FROM team_employees)
+    UNION ALL
+    SELECT h.user_id, h.shift_date AS date
+    FROM shift_rotation_history h
+    WHERE h.tenant_id = $1
+      AND h.user_id IN (SELECT user_id FROM team_employees)
+  )
+  SELECT
+    te.user_id, u.first_name, u.last_name,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('week', $3::date)
+        AND a.date < DATE_TRUNC('week', $3::date) + INTERVAL '7 days'
+    ) AS week_count,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('month', $3::date)
+        AND a.date < DATE_TRUNC('month', $3::date) + INTERVAL '1 month'
+    ) AS month_count,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('year', $3::date)
+        AND a.date < DATE_TRUNC('year', $3::date) + INTERVAL '1 year'
+    ) AS year_count
+  FROM team_employees te
+  JOIN users u ON u.id = te.user_id
+  LEFT JOIN all_shifts a ON a.user_id = te.user_id
+  GROUP BY te.user_id, u.first_name, u.last_name
+  ORDER BY u.last_name, u.first_name`;
+
+function mapAssignmentCountRow(
+  r: DbAssignmentCountRow,
+): AssignmentCountResponse {
+  return {
+    employeeId: r.user_id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    weekCount: Number.parseInt(r.week_count, 10),
+    monthCount: Number.parseInt(r.month_count, 10),
+    yearCount: Number.parseInt(r.year_count, 10),
+  };
+}
 
 @Injectable()
 export class ShiftsService {
@@ -683,6 +747,31 @@ export class ShiftsService {
         : row.type === 'night' ? 'N'
         : row.type,
     }));
+  }
+
+  // ============================================================
+  // ASSIGNMENT COUNTS
+  // ============================================================
+
+  /**
+   * Counts shift assignments per employee across both data sources
+   * (shifts + shift_rotation_history) for week, month, and year.
+   */
+  async getAssignmentCounts(
+    tenantId: number,
+    teamId: number,
+    referenceDate: string,
+  ): Promise<AssignmentCountResponse[]> {
+    this.logger.debug(
+      `Getting assignment counts for team ${teamId}, ref ${referenceDate}`,
+    );
+
+    const rows = await this.databaseService.query<DbAssignmentCountRow>(
+      ASSIGNMENT_COUNTS_SQL,
+      [tenantId, teamId, referenceDate],
+    );
+
+    return rows.map((r: DbAssignmentCountRow) => mapAssignmentCountRow(r));
   }
 
   // ============================================================

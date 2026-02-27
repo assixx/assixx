@@ -420,6 +420,10 @@ export interface IntervalMatrixEntry {
   planUuid: string;
   intervalType: IntervalType;
   cardCount: number;
+  greenCount: number;
+  redCount: number;
+  yellowCount: number;
+  overdueCount: number;
 }
 
 // =============================================================================

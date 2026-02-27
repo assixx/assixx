@@ -30,6 +30,10 @@ export interface IntervalMatrixEntry {
   planUuid: string;
   intervalType: TpmIntervalType;
   cardCount: number;
+  greenCount: number;
+  redCount: number;
+  yellowCount: number;
+  overdueCount: number;
 }
 
 /** Paginated plan list response */
@@ -114,10 +118,20 @@ export class TpmPlansService {
       plan_uuid: string;
       interval_type: TpmIntervalType;
       card_count: string;
+      green_count: string;
+      red_count: string;
+      yellow_count: string;
+      overdue_count: string;
     }
 
     const rows = await this.db.query<MatrixRow>(
-      `SELECT p.uuid AS plan_uuid, c.interval_type, COUNT(*)::text AS card_count
+      `SELECT p.uuid AS plan_uuid,
+              c.interval_type,
+              COUNT(*)::text AS card_count,
+              COUNT(*) FILTER (WHERE c.status = 'green')::text AS green_count,
+              COUNT(*) FILTER (WHERE c.status = 'red')::text AS red_count,
+              COUNT(*) FILTER (WHERE c.status = 'yellow')::text AS yellow_count,
+              COUNT(*) FILTER (WHERE c.status = 'overdue')::text AS overdue_count
        FROM tpm_cards c
        JOIN tpm_maintenance_plans p ON c.plan_id = p.id
        WHERE c.tenant_id = $1 AND c.is_active = 1 AND p.is_active = 1
@@ -130,6 +144,10 @@ export class TpmPlansService {
       planUuid: r.plan_uuid,
       intervalType: r.interval_type,
       cardCount: Number.parseInt(r.card_count, 10),
+      greenCount: Number.parseInt(r.green_count, 10),
+      redCount: Number.parseInt(r.red_count, 10),
+      yellowCount: Number.parseInt(r.yellow_count, 10),
+      overdueCount: Number.parseInt(r.overdue_count, 10),
     }));
   }
 

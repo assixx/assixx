@@ -35,6 +35,7 @@ import { CreateSwapRequestDto } from './dto/create-swap-request.dto.js';
 import { ExportShiftsDto } from './dto/export-shift.dto.js';
 import { CreateFavoriteDto } from './dto/favorite.dto.js';
 import { QueryOvertimeDto } from './dto/overtime.dto.js';
+import { QueryAssignmentCountsDto } from './dto/query-assignment-counts.dto.js';
 import { QueryShiftPlanDto } from './dto/query-shift-plan.dto.js';
 import { QueryShiftsDto } from './dto/query-shifts.dto.js';
 import { QuerySwapRequestsDto } from './dto/query-swap-requests.dto.js';
@@ -43,6 +44,7 @@ import { UpdateSwapRequestStatusDto } from './dto/swap-request-status.dto.js';
 import { UpdateShiftPlanDto } from './dto/update-shift-plan.dto.js';
 import { UpdateShiftDto } from './dto/update-shift.dto.js';
 import type {
+  AssignmentCountResponse,
   CalendarShiftResponse,
   FavoriteResponse,
   ShiftPlanResponse,
@@ -190,6 +192,22 @@ export class ShiftsController {
     this.logger.debug(`Deleting favorite ${id}`);
     await this.shiftsService.deleteFavorite(id, user.tenantId, user.id);
     return { message: 'Favorite deleted successfully' };
+  }
+
+  /** GET /api/v2/shifts/assignment-counts */
+  @Get('assignment-counts')
+  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  async getAssignmentCounts(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: QueryAssignmentCountsDto,
+  ): Promise<AssignmentCountResponse[]> {
+    this.logger.debug(`Getting assignment counts for team ${query.teamId}`);
+    return await this.shiftsService.getAssignmentCounts(
+      user.tenantId,
+      query.teamId,
+      query.referenceDate,
+    );
   }
 
   /** GET /api/v2/shifts/my-calendar-shifts */

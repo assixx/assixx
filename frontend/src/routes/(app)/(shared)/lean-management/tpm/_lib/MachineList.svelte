@@ -1,19 +1,24 @@
 <script lang="ts">
   /**
-   * MachineList — Employee's assigned machines with TPM status summary.
-   * Each machine row shows plan name, card status counts, and a link to the board.
+   * MachineList — Employee's assigned machines as data table.
+   * Shows interval × status matrix with Board + Standorte actions.
    */
-  import { SvelteMap } from 'svelte/reactivity';
-
   import { resolve } from '$app/paths';
 
-  import { MESSAGES, INTERVAL_LABELS, DEFAULT_COLORS } from './constants';
-  import MaintenanceStatus from './MaintenanceStatus.svelte';
+  import {
+    MESSAGES,
+    INTERVAL_LABELS,
+    CARD_STATUS_LABELS,
+    CARD_STATUS_BADGE_CLASSES,
+    WEEKDAY_LABELS,
+  } from './constants';
 
   import type {
     MachineWithTpmStatus,
     TpmColorConfigEntry,
+    TpmCard,
     CardStatus,
+    IntervalType,
   } from './types';
 
   function resolvePath(path: string): string {
@@ -25,7 +30,7 @@
     colors: TpmColorConfigEntry[];
   }
 
-  const { machines, colors }: Props = $props();
+  const { machines }: Props = $props();
 
   /** Sort: machines with open tasks first, then by name */
   const sortedMachines = $derived(
@@ -39,70 +44,81 @@
     }),
   );
 
-  /** Resolve color for a status */
-  function getColor(status: CardStatus): string {
-    const custom = colors.find(
-      (c: TpmColorConfigEntry) => c.statusKey === status,
-    );
-    return custom !== undefined ? custom.colorHex : DEFAULT_COLORS[status];
+  const intervalColumns: IntervalType[] = [
+    'daily',
+    'weekly',
+    'monthly',
+    'quarterly',
+    'semi_annual',
+    'annual',
+  ];
+
+  const shortLabels: Record<string, string> = {
+    daily: 'T',
+    weekly: 'W',
+    monthly: 'M',
+    quarterly: 'Q',
+    semi_annual: 'H',
+    annual: 'J',
+  };
+
+  /** Status counts for one interval slot, computed from loaded cards */
+  interface IntervalStatusEntry {
+    cardCount: number;
+    greenCount: number;
+    redCount: number;
+    yellowCount: number;
+    overdueCount: number;
   }
 
-  /** Get urgency indicator color */
-  function getIndicatorColor(machine: MachineWithTpmStatus): string {
-    if (machine.statusCounts.overdue > 0) return getColor('overdue');
-    if (machine.statusCounts.red > 0) return getColor('red');
-    if (machine.statusCounts.yellow > 0) return getColor('yellow');
-    return getColor('green');
-  }
+  /** Compute status breakdown for a specific interval from card data */
+  function getIntervalEntry(
+    cards: TpmCard[],
+    interval: IntervalType,
+  ): IntervalStatusEntry | null {
+    const matching = cards.filter((c: TpmCard) => c.intervalType === interval);
+    if (matching.length === 0) return null;
 
-  /** Get next due card info */
-  function getNextDueInfo(machine: MachineWithTpmStatus): string | null {
-    const dueCards = machine.cards
-      .filter(
-        (c) =>
-          c.currentDueDate !== null &&
-          (c.status === 'red' || c.status === 'overdue'),
-      )
-      .sort((a, b) => {
-        const dateA = a.currentDueDate ?? '';
-        const dateB = b.currentDueDate ?? '';
-        return dateA.localeCompare(dateB);
-      });
-
-    if (dueCards.length === 0) return null;
-
-    const nextDueDate = dueCards[0]?.currentDueDate ?? null;
-    if (nextDueDate === null) return null;
-
-    return new Date(nextDueDate).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  }
-
-  /** Get most common interval from cards */
-  function getDominantInterval(machine: MachineWithTpmStatus): string {
-    if (machine.cards.length === 0) return '—';
-
-    const counts = new SvelteMap<string, number>();
-    for (const card of machine.cards) {
-      counts.set(card.intervalType, (counts.get(card.intervalType) ?? 0) + 1);
+    let green = 0;
+    let red = 0;
+    let yellow = 0;
+    let overdue = 0;
+    for (const card of matching) {
+      if (card.status === 'green') green++;
+      else if (card.status === 'red') red++;
+      else if (card.status === 'yellow') yellow++;
+      else overdue++;
     }
+    return {
+      cardCount: matching.length,
+      greenCount: green,
+      redCount: red,
+      yellowCount: yellow,
+      overdueCount: overdue,
+    };
+  }
 
-    let maxType = '';
-    let maxCount = 0;
-    for (const [type, count] of counts) {
-      if (count > maxCount) {
-        maxType = type;
-        maxCount = count;
-      }
-    }
+  function getWorstStatus(entry: IntervalStatusEntry): CardStatus {
+    if (entry.overdueCount > 0) return 'overdue';
+    if (entry.redCount > 0) return 'red';
+    if (entry.yellowCount > 0) return 'yellow';
+    return 'green';
+  }
 
-    const label = INTERVAL_LABELS[maxType as keyof typeof INTERVAL_LABELS];
-    return counts.size > 1 ?
-        `${label} + ${String(counts.size - 1)} weitere`
-      : label;
+  function getStatusTooltip(
+    entry: IntervalStatusEntry,
+    intervalLabel: string,
+  ): string {
+    const parts: string[] = [];
+    if (entry.greenCount > 0)
+      parts.push(`${String(entry.greenCount)} ${CARD_STATUS_LABELS.green}`);
+    if (entry.redCount > 0)
+      parts.push(`${String(entry.redCount)} ${CARD_STATUS_LABELS.red}`);
+    if (entry.yellowCount > 0)
+      parts.push(`${String(entry.yellowCount)} ${CARD_STATUS_LABELS.yellow}`);
+    if (entry.overdueCount > 0)
+      parts.push(`${String(entry.overdueCount)} ${CARD_STATUS_LABELS.overdue}`);
+    return `${intervalLabel}: ${parts.join(', ')}`;
   }
 </script>
 
@@ -115,137 +131,125 @@
     <p class="empty-state__description">{MESSAGES.EMPTY_DESCRIPTION}</p>
   </div>
 {:else}
-  <div class="machine-list">
-    {#each sortedMachines as machine (machine.plan.uuid)}
-      <div class="machine-row">
-        <!-- Urgency indicator bar -->
-        <div
-          class="machine-row__indicator"
-          style="background-color: {getIndicatorColor(machine)}"
-        ></div>
-
-        <div class="machine-row__content">
-          <!-- Machine info -->
-          <div class="machine-row__info">
-            <div class="flex items-center gap-2">
-              <i class="fas fa-cog text-sm text-(--color-text-muted)"></i>
-              <span
-                class="truncate text-base font-semibold text-(--color-text-primary)"
-              >
-                {machine.plan.machineName ?? '—'}
-              </span>
-            </div>
-            <div class="mt-0.5 truncate text-sm text-(--color-text-muted)">
-              {machine.plan.name}
-            </div>
-          </div>
-
-          <!-- Status badges -->
-          <div class="machine-row__status">
-            <MaintenanceStatus
-              statusCounts={machine.statusCounts}
-              {colors}
-              compact
-            />
-            <div class="flex gap-3 text-xs text-(--color-text-muted)">
-              <span>
-                {getDominantInterval(machine)}
-              </span>
-              {#if getNextDueInfo(machine) !== null}
-                <span class="font-medium">
-                  Nächste: {getNextDueInfo(machine)}
-                </span>
-              {/if}
-            </div>
-          </div>
-
-          <!-- Action -->
-          <div class="machine-row__actions">
-            <a
-              href={resolvePath(
-                `/lean-management/tpm/board/${machine.plan.uuid}`,
-              )}
-              class="btn btn-primary"
+  <div class="table-responsive">
+    <table class="data-table data-table--hover data-table--striped">
+      <thead>
+        <tr>
+          <th scope="col">{MESSAGES.MACHINE_COL_NAME}</th>
+          <th scope="col">{MESSAGES.MACHINE_COL_PLAN}</th>
+          {#each intervalColumns as col (col)}
+            <th
+              scope="col"
+              class="text-center"
+              style="width: 48px"
+              title={INTERVAL_LABELS[col]}
             >
-              <i class="fas fa-columns"></i>
-              {MESSAGES.BTN_VIEW_BOARD}
-            </a>
-          </div>
-        </div>
-      </div>
-    {/each}
+              {shortLabels[col] ?? col}
+            </th>
+          {/each}
+          <th scope="col">{MESSAGES.MACHINE_COL_ACTIONS}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each sortedMachines as machine (machine.plan.uuid)}
+          <tr>
+            <td>
+              <div class="flex items-center gap-2 font-medium">
+                <i class="fas fa-cog text-(--color-text-muted)"></i>
+                {machine.plan.machineName ?? '—'}
+              </div>
+            </td>
+            <td>{machine.plan.name}</td>
+            {#each intervalColumns as col (col)}
+              {@const entry = getIntervalEntry(machine.cards, col)}
+              <td class="text-center align-middle">
+                {#if entry !== null}
+                  {@const worstStatus = getWorstStatus(entry)}
+                  <span
+                    class="badge {CARD_STATUS_BADGE_CLASSES[
+                      worstStatus
+                    ]} badge--sm"
+                    title={getStatusTooltip(entry, INTERVAL_LABELS[col])}
+                  >
+                    {entry.cardCount}
+                  </span>
+                {:else}
+                  <span
+                    class="text-(--color-text-muted)"
+                    title="{INTERVAL_LABELS[col]}: keine Karten">—</span
+                  >
+                {/if}
+              </td>
+            {/each}
+            <td>
+              <div class="flex gap-2">
+                <a
+                  href={resolvePath(
+                    `/lean-management/tpm/board/${machine.plan.uuid}`,
+                  )}
+                  class="action-icon action-icon--primary"
+                  title={MESSAGES.BTN_VIEW_BOARD}
+                  aria-label={MESSAGES.BTN_VIEW_BOARD}
+                >
+                  <i class="fas fa-th-large"></i>
+                </a>
+                <a
+                  href={resolvePath(
+                    `/lean-management/tpm/locations/${machine.plan.uuid}`,
+                  )}
+                  class="action-icon action-icon--warning"
+                  title="Standorte"
+                  aria-label="Standorte"
+                >
+                  <i class="fas fa-map-marker-alt"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="matrix-legend">
+    <span class="matrix-legend__item">
+      <span class="badge badge--success badge--sm">3</span>
+      {CARD_STATUS_LABELS.green}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="badge badge--danger badge--sm">2</span>
+      {CARD_STATUS_LABELS.red}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="badge badge--warning badge--sm">1</span>
+      {CARD_STATUS_LABELS.yellow}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="badge badge--error badge--sm">1</span>
+      {CARD_STATUS_LABELS.overdue}
+    </span>
+    <span class="matrix-legend__item">
+      <span class="text-(--color-text-muted)">—</span>
+      Keine Karten
+    </span>
   </div>
 {/if}
 
 <style>
-  .machine-list {
+  .matrix-legend {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    gap: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-glass-border);
+    margin-top: 0.75rem;
   }
 
-  .machine-row {
-    display: flex;
-    background: var(--glass-bg);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-    transition: box-shadow 0.15s ease;
-  }
-
-  .machine-row:hover {
-    box-shadow: var(--shadow-md);
-  }
-
-  .machine-row__indicator {
-    width: 4px;
-    flex-shrink: 0;
-  }
-
-  .machine-row__content {
-    display: flex;
+  .matrix-legend__item {
+    display: inline-flex;
     align-items: center;
-    gap: 1.5rem;
-    padding: 1rem 1.25rem;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .machine-row__info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .machine-row__status {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
     gap: 0.375rem;
-    flex-shrink: 0;
-  }
-
-  .machine-row__actions {
-    flex-shrink: 0;
-  }
-
-  @media (width <= 768px) {
-    .machine-row__content {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
-    }
-
-    .machine-row__status {
-      align-items: flex-start;
-    }
-
-    .machine-row__actions {
-      width: 100%;
-    }
-
-    .machine-row__actions :global(.btn) {
-      width: 100%;
-      justify-content: center;
-    }
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
   }
 </style>

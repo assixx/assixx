@@ -4,6 +4,7 @@
 
   import AdminActions from './_lib/AdminActions.svelte';
   import {
+    fetchAssignmentCounts,
     fetchDepartments,
     fetchMachines,
     fetchTeams,
@@ -43,6 +44,7 @@
     syncRotationToggles,
   } from './_lib/plan-loader';
   import RotationSetupModal from './_lib/RotationSetupModal.svelte';
+  import ShiftAssignmentCounts from './_lib/ShiftAssignmentCounts.svelte';
   import ShiftControls from './_lib/ShiftControls.svelte';
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
   import { shiftsState } from './_lib/state.svelte';
@@ -59,7 +61,11 @@
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
-  import type { ShiftTimesMap, IntervalColorEntry } from './_lib/types';
+  import type {
+    AssignmentCount,
+    ShiftTimesMap,
+    IntervalColorEntry,
+  } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -83,6 +89,50 @@
     ),
   );
   let ssrInitialized = $state(false);
+  let baseAssignmentCounts = $state<AssignmentCount[]>([]);
+
+  /** Reactive: silently fetch base counts when teamId or week changes */
+  $effect(() => {
+    const teamId = shiftsState.selectedContext.teamId;
+    const week = shiftsState.currentWeek;
+    if (teamId === null || !shiftsState.isAdmin) return;
+    const refDate = formatDate(getWeekStart(week));
+    void fetchAssignmentCounts(teamId, refDate).then(
+      (result: AssignmentCount[]) => {
+        baseAssignmentCounts = result;
+      },
+    );
+  });
+
+  /** Count per-employee assignments from local weeklyShifts state */
+  function countLocalWeek(): Record<number, number> {
+    const counts: Record<number, number> = {};
+    for (const [, shiftMap] of shiftsState.weeklyShifts) {
+      for (const [, empIds] of shiftMap) {
+        for (const id of empIds) {
+          counts[id] = (counts[id] ?? 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }
+
+  /** Merged counts: DB base adjusted by live local week state.
+   *  During transition (weeklyShifts cleared), show base counts as-is. */
+  const assignmentCounts = $derived.by((): AssignmentCount[] => {
+    if (shiftsState.weeklyShifts.size === 0) return baseAssignmentCounts;
+    const localWeek = countLocalWeek();
+    return baseAssignmentCounts.map((entry: AssignmentCount) => {
+      const localWk = localWeek[entry.employeeId] ?? 0;
+      const diff = localWk - entry.weekCount;
+      return {
+        ...entry,
+        weekCount: localWk,
+        monthCount: entry.monthCount + diff,
+        yearCount: entry.yearCount + diff,
+      };
+    });
+  });
 
   // --- SSR INIT ---
   $effect(() => {
@@ -214,6 +264,12 @@
     return shiftsState.getShiftEmployees(dateKey, shiftType);
   }
 </script>
+
+{#snippet assignmentCountsSnippet()}
+  {#if shiftsState.isAdmin}
+    <ShiftAssignmentCounts counts={assignmentCounts} />
+  {/if}
+{/snippet}
 
 <svelte:head>
   <title>Schichtplanung - Assixx</title>
@@ -368,6 +424,7 @@
         <div class="main-planning-area">
           <!-- Week Schedule (Extracted Component) -->
           <ShiftScheduleGrid
+            afterLegend={assignmentCountsSnippet}
             {weekDates}
             {shiftTimesMap}
             {shiftMinutes}
