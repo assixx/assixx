@@ -255,7 +255,7 @@ export async function handleFavoriteClick(
 
   const [depts, machs, tms, members] = await Promise.all([
     fetchDepartments(favorite.areaId),
-    fetchMachines(favorite.departmentId, favorite.areaId),
+    fetchMachines(favorite.teamId),
     fetchTeams(favorite.departmentId),
     fetchTeamMembers(favorite.teamId, startDate, endDate),
   ]);

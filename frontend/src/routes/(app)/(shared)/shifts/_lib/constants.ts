@@ -90,7 +90,7 @@ export const DROPDOWN_PLACEHOLDERS = {
   TEAM: 'Team wählen...',
   AWAIT_AREA: 'Erst Bereich wählen...',
   AWAIT_DEPARTMENT: 'Erst Abteilung wählen...',
-  AWAIT_MACHINE: 'Erst Maschine wählen...',
+  AWAIT_TEAM: 'Erst Team wählen...',
 } as const;
 
 /**

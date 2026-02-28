@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CreateMachineSchema } from './create-machine.dto.js';
+import { ListMachinesQuerySchema } from './list-machines-query.dto.js';
 import { MachineIdParamSchema } from './machine-id-param.dto.js';
 import { AddMaintenanceRecordSchema } from './maintenance.dto.js';
 import { SetMachineTeamsSchema } from './set-machine-teams.dto.js';
@@ -229,5 +230,39 @@ describe('UpcomingMaintenanceQuerySchema', () => {
     expect(
       UpcomingMaintenanceQuerySchema.safeParse({ days: '366' }).success,
     ).toBe(false);
+  });
+});
+
+// =============================================================
+// ListMachinesQuerySchema
+// =============================================================
+
+describe('ListMachinesQuerySchema', () => {
+  it('should accept teamId as positive integer', () => {
+    const data = ListMachinesQuerySchema.parse({ teamId: '468' });
+
+    expect(data.teamId).toBe(468);
+  });
+
+  it('should accept departmentId and teamId together', () => {
+    const data = ListMachinesQuerySchema.parse({
+      departmentId: '5',
+      teamId: '468',
+    });
+
+    expect(data.departmentId).toBe(5);
+    expect(data.teamId).toBe(468);
+  });
+
+  it('should reject negative teamId', () => {
+    expect(ListMachinesQuerySchema.safeParse({ teamId: '-1' }).success).toBe(
+      false,
+    );
+  });
+
+  it('should leave teamId undefined when not provided', () => {
+    const data = ListMachinesQuerySchema.parse({});
+
+    expect(data.teamId).toBeUndefined();
   });
 });

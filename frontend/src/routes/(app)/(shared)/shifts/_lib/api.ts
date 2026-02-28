@@ -152,25 +152,30 @@ export async function fetchDepartments(
   }
 }
 
+/** Append a numeric query param if it has a meaningful value */
+function appendIfPresent(
+  params: URLSearchParams,
+  key: string,
+  value: number | null | undefined,
+): void {
+  if (value !== null && value !== undefined && value !== 0) {
+    params.append(key, String(value));
+  }
+}
+
 /**
- * Fetch machines, optionally filtered by department and area
+ * Fetch machines, optionally filtered by team, department and area
  */
 export async function fetchMachines(
+  teamId?: number | null,
   departmentId?: number | null,
   areaId?: number | null,
 ): Promise<Machine[]> {
   try {
     const params = new URLSearchParams();
-    if (
-      departmentId !== null &&
-      departmentId !== undefined &&
-      departmentId !== 0
-    ) {
-      params.append('departmentId', String(departmentId));
-    }
-    if (areaId !== null && areaId !== undefined && areaId !== 0) {
-      params.append('areaId', String(areaId));
-    }
+    appendIfPresent(params, 'teamId', teamId);
+    appendIfPresent(params, 'departmentId', departmentId);
+    appendIfPresent(params, 'areaId', areaId);
 
     const queryString = params.toString();
     const url =
@@ -539,11 +544,11 @@ export async function fetchTpmMaintenanceDates(
     }>('/tpm/plans?page=1&limit=100');
 
     const plans =
-      machineId !== null ?
-        response.data.filter(
+      machineId === null ?
+        response.data
+      : response.data.filter(
           (p: TpmPlanApiResponse) => p.machineId === machineId,
-        )
-      : response.data;
+        );
     if (plans.length === 0) return new Map();
 
     const seedDates = buildSeedDates(plans);

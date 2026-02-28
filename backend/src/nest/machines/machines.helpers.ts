@@ -8,6 +8,7 @@ import type {
   DbMachineRow,
   DbMaintenanceRow,
   MachineCreateRequest,
+  MachineFilters,
   MachineResponse,
   MachineTeamInfo,
   MachineUpdateRequest,
@@ -22,6 +23,58 @@ import type {
 /** Check if a string has content (not null, undefined, or empty) */
 export function hasContent(value: string | undefined | null): value is string {
   return value !== undefined && value !== null && value !== '';
+}
+
+/** Build WHERE clauses from MachineFilters (pure — no DB access) */
+export function buildMachineFilterClauses(
+  filters: MachineFilters,
+  startIndex: number,
+): { clauses: string; params: unknown[]; nextIndex: number } {
+  const parts: string[] = [];
+  const params: unknown[] = [];
+  let idx = startIndex;
+
+  if (hasContent(filters.status)) {
+    parts.push(`AND m.status = $${idx}`);
+    params.push(filters.status);
+    idx++;
+  }
+  if (hasContent(filters.machine_type)) {
+    parts.push(`AND m.machine_type = $${idx}`);
+    params.push(filters.machine_type);
+    idx++;
+  }
+  if (filters.department_id !== undefined && filters.department_id !== 0) {
+    parts.push(`AND m.department_id = $${idx}`);
+    params.push(filters.department_id);
+    idx++;
+  }
+  if (filters.team_id !== undefined && filters.team_id !== 0) {
+    parts.push(
+      `AND EXISTS (SELECT 1 FROM machine_teams mt2 WHERE mt2.machine_id = m.id AND mt2.team_id = $${idx})`,
+    );
+    params.push(filters.team_id);
+    idx++;
+  }
+  if (filters.is_active !== undefined) {
+    parts.push(`AND m.is_active = $${idx}`);
+    params.push(filters.is_active);
+    idx++;
+  }
+  if (filters.needs_maintenance === true) {
+    parts.push(
+      `AND (m.next_maintenance <= CURRENT_DATE + INTERVAL '30 days' OR m.status = 'maintenance')`,
+    );
+  }
+  if (hasContent(filters.search)) {
+    parts.push(
+      `AND (m.name ILIKE $${idx} OR m.model ILIKE $${idx} OR m.manufacturer ILIKE $${idx} OR m.serial_number ILIKE $${idx} OR m.asset_number ILIKE $${idx})`,
+    );
+    params.push(`%${filters.search}%`);
+    idx++;
+  }
+
+  return { clauses: parts.join(' '), params, nextIndex: idx };
 }
 
 /** Parse int or return 0 */

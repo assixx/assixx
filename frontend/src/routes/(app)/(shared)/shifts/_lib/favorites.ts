@@ -143,7 +143,7 @@ function validateAddToFavorites(
     return {
       valid: false,
       error:
-        'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)',
+        'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Team und Maschine)',
     };
   }
 
@@ -202,7 +202,7 @@ export async function addToFavorites(
   const { names } = validation;
 
   try {
-    const favoriteName = `${names.team.name} - ${names.machine.name}`;
+    const favoriteName = `${names.team.name} – ${names.machine.name}`;
 
     const savedFavorite = await apiSaveFavorite({
       name: favoriteName,
@@ -295,7 +295,7 @@ export async function removeFavorite(
  * Get favorite tooltip text
  */
 export function getFavoriteTooltip(favorite: ShiftFavorite): string {
-  return `${favorite.areaName} → ${favorite.departmentName} → ${favorite.machineName} → ${favorite.teamName}`;
+  return `${favorite.areaName} → ${favorite.departmentName} → ${favorite.teamName} → ${favorite.machineName}`;
 }
 
 /**

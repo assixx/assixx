@@ -36,6 +36,7 @@ export const ListMachinesQuerySchema = z.object({
   status: MachineStatusEnum.optional(),
   machineType: MachineTypeEnum.optional(),
   departmentId: z.coerce.number().int().positive().optional(),
+  teamId: z.coerce.number().int().positive().optional(),
   needsMaintenance: z
     .string()
     .transform((val: string) => val === 'true')

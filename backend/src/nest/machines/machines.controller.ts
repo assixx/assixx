@@ -107,6 +107,9 @@ export class MachinesController {
       ...(query.departmentId !== undefined && {
         department_id: query.departmentId,
       }),
+      ...(query.teamId !== undefined && {
+        team_id: query.teamId,
+      }),
       ...(query.needsMaintenance !== undefined && {
         needs_maintenance: query.needsMaintenance,
       }),

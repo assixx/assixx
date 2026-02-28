@@ -85,6 +85,28 @@ describe('MachinesService – DB-mocked methods', () => {
     mockTeams = result.mockTeams;
   });
 
+  describe('listMachines', () => {
+    it('should include team_id filter using EXISTS on machine_teams', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.listMachines(1, { team_id: 468 });
+
+      const sql = mockDb.query.mock.calls[0][0] as string;
+      expect(sql).toContain('machine_teams');
+      expect(sql).toContain('mt2.team_id');
+      expect(mockDb.query.mock.calls[0][1]).toContain(468);
+    });
+
+    it('should not include team_id filter when not provided', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.listMachines(1, {});
+
+      const sql = mockDb.query.mock.calls[0][0] as string;
+      expect(sql).not.toContain('mt2.team_id');
+    });
+  });
+
   describe('getMachineById', () => {
     it('throws NotFoundException when machine not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);

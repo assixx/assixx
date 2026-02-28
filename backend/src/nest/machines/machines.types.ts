@@ -150,6 +150,7 @@ export interface MachineFilters {
   status?: string;
   machine_type?: string;
   department_id?: number;
+  team_id?: number;
   is_active?: boolean;
   needs_maintenance?: boolean;
   search?: string;

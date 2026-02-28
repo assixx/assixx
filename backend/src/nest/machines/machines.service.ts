@@ -22,6 +22,7 @@ import { DatabaseService } from '../database/database.service.js';
 import { MachineMaintenanceService } from './machine-maintenance.service.js';
 import { MachineTeamService } from './machine-team.service.js';
 import {
+  buildMachineFilterClauses,
   buildMachineInsertParams,
   buildMachineUpdateFields,
   hasContent,
@@ -65,7 +66,7 @@ export class MachinesService {
   ): Promise<MachineResponse[]> {
     this.logger.debug(`Listing machines for tenant ${tenantId}`);
 
-    let sql = `
+    const baseSql = `
       SELECT m.*,
              d.name as department_name,
              a.name as area_name,
@@ -83,47 +84,12 @@ export class MachinesService {
       LEFT JOIN areas a ON m.area_id = a.id AND a.tenant_id = m.tenant_id
       LEFT JOIN users u1 ON m.created_by = u1.id
       LEFT JOIN users u2 ON m.updated_by = u2.id
-      WHERE m.tenant_id = $1 AND m.is_active != 4
-    `;
-    const params: unknown[] = [tenantId];
-    let paramIndex = 2;
+      WHERE m.tenant_id = $1 AND m.is_active != 4`;
 
-    if (hasContent(filters.status)) {
-      sql += ` AND m.status = $${paramIndex}`;
-      params.push(filters.status);
-      paramIndex++;
-    }
+    const { clauses, params } = buildMachineFilterClauses(filters, 2);
+    const sql = `${baseSql} ${clauses} ORDER BY m.name ASC`;
 
-    if (hasContent(filters.machine_type)) {
-      sql += ` AND m.machine_type = $${paramIndex}`;
-      params.push(filters.machine_type);
-      paramIndex++;
-    }
-
-    if (filters.department_id !== undefined && filters.department_id !== 0) {
-      sql += ` AND m.department_id = $${paramIndex}`;
-      params.push(filters.department_id);
-      paramIndex++;
-    }
-
-    if (filters.is_active !== undefined) {
-      sql += ` AND m.is_active = $${paramIndex}`;
-      params.push(filters.is_active);
-      paramIndex++;
-    }
-
-    if (filters.needs_maintenance === true) {
-      sql += ` AND (m.next_maintenance <= CURRENT_DATE + INTERVAL '30 days' OR m.status = 'maintenance')`;
-    }
-
-    if (hasContent(filters.search)) {
-      sql += ` AND (m.name ILIKE $${paramIndex} OR m.model ILIKE $${paramIndex} OR m.manufacturer ILIKE $${paramIndex} OR m.serial_number ILIKE $${paramIndex} OR m.asset_number ILIKE $${paramIndex})`;
-      params.push(`%${filters.search}%`);
-    }
-
-    sql += ' ORDER BY m.name ASC';
-
-    const rows = await this.db.query<DbMachineRow>(sql, params);
+    const rows = await this.db.query<DbMachineRow>(sql, [tenantId, ...params]);
     return rows.map((row: DbMachineRow) => mapDbMachineToApi(row));
   }
 

@@ -203,17 +203,14 @@
   async function handleDepartmentChange(departmentId: number) {
     shiftsState.setSelectedContext({
       departmentId,
-      machineId: null,
       teamId: null,
+      machineId: null,
     });
     shiftsState.clearShiftData();
     shiftsState.setShowPlanningUI(false);
+    shiftsState.setMachines([]);
 
-    const [machs, tms] = await Promise.all([
-      fetchMachines(departmentId, shiftsState.selectedContext.areaId),
-      fetchTeams(departmentId),
-    ]);
-    shiftsState.setMachines(machs);
+    const tms = await fetchTeams(departmentId);
     shiftsState.setTeams(tms);
   }
 
@@ -233,9 +230,15 @@
   }
 
   async function handleTeamChange(teamId: number) {
-    shiftsState.setSelectedContext({ teamId });
+    shiftsState.setSelectedContext({ teamId, machineId: null });
     const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
-    const members = await fetchTeamMembers(teamId, startDate, endDate);
+
+    const [machs, members] = await Promise.all([
+      fetchMachines(teamId),
+      fetchTeamMembers(teamId, startDate, endDate),
+    ]);
+
+    shiftsState.setMachines(machs);
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
     shiftsState.setShowPlanningUI(true);
     await loadShiftPlan();
