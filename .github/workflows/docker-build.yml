@@ -95,104 +95,106 @@ jobs:
           # Create external volumes (required by docker-compose.yml)
           docker volume create assixx_postgres_data
           docker volume create assixx_redis_data
-          # Use CI override to reduce resource limits (GitHub runners have only 2 CPUs)
-          # Only build the backend service — deletion-worker reuses the same image (assixx-backend:ci)
-          cd docker && \
-            docker compose -f docker-compose.yml -f docker-compose.ci.yml build backend && \
-            docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 
-          # Wait for PostgreSQL to be HEALTHY
+          cd docker
+          COMPOSE="docker compose -f docker-compose.yml -f docker-compose.ci.yml"
+
+          # Build backend image (deletion-worker reuses the same assixx-backend:ci image)
+          $COMPOSE build backend
+
+          # Start infrastructure first (avoids cascade failure if backend crashes)
+          $COMPOSE up -d postgres redis
+
+          # Wait for PostgreSQL to be HEALTHY (max 60s)
           echo "Waiting for PostgreSQL to be HEALTHY..."
-          MAX_WAIT=60
-          COUNTER=0
-
-          while [ $COUNTER -lt $MAX_WAIT ]; do
+          for i in $(seq 1 60); do
             HEALTH_STATUS=$(docker inspect --format "{{.State.Health.Status}}" assixx-postgres 2>/dev/null || echo "unknown")
-
             if [ "$HEALTH_STATUS" = "healthy" ]; then
-              echo "✓ PostgreSQL is healthy after $COUNTER seconds!"
+              echo "PostgreSQL is healthy after ${i}s"
               break
             fi
-
-            # Show status every 10 seconds
-            if [ $((COUNTER % 10)) -eq 0 ]; then
-              echo "PostgreSQL health status: $HEALTH_STATUS (waited ${COUNTER}s)"
-
-              # Show container status
-              if [ $COUNTER -eq 0 ]; then
-                echo "Container status:"
-                docker ps -a | grep postgres || true
-              fi
-
-              # Show logs after 30 seconds if still not healthy
-              if [ $COUNTER -ge 30 ] && [ "$HEALTH_STATUS" != "healthy" ]; then
-                echo "Recent PostgreSQL logs:"
-                docker logs assixx-postgres --tail 5 2>&1 || true
-              fi
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "PostgreSQL health: $HEALTH_STATUS (${i}s)"
             fi
-
-            COUNTER=$((COUNTER + 1))
             sleep 1
           done
 
-          # Final check
           if [ "$HEALTH_STATUS" != "healthy" ]; then
-            echo "ERROR: PostgreSQL failed to become healthy after ${MAX_WAIT} seconds"
-            echo "Final PostgreSQL status: $HEALTH_STATUS"
-            echo "Full PostgreSQL logs:"
-            docker logs assixx-postgres 2>&1 || true
+            echo "ERROR: PostgreSQL failed to become healthy"
+            docker logs assixx-postgres --tail 20 2>&1 || true
             exit 1
           fi
 
-          # Wait for backend to be healthy (max 90 seconds)
-          echo "Waiting for backend service to be healthy..."
-          for i in {1..90}; do
-            if docker compose ps | grep "assixx-backend" | grep -q "(healthy)"; then
-              echo "Backend service is healthy!"
+          # Start backend separately (not deletion-worker — avoids depends_on cascade)
+          $COMPOSE up -d backend
+
+          # Wait for backend to be healthy (max 120s — matches Dockerfile start_period)
+          echo "Waiting for backend to be healthy..."
+          BACKEND_HEALTHY=false
+          for i in $(seq 1 120); do
+            # Check if container is still running (detect crash loops)
+            CONTAINER_STATUS=$(docker inspect --format "{{.State.Status}}" assixx-backend 2>/dev/null || echo "unknown")
+            if [ "$CONTAINER_STATUS" = "exited" ] || [ "$CONTAINER_STATUS" = "dead" ]; then
+              echo "ERROR: Backend container crashed (status: $CONTAINER_STATUS)"
+              echo "Backend logs:"
+              docker logs assixx-backend 2>&1 || true
+              exit 1
+            fi
+
+            HEALTH=$(docker inspect --format "{{.State.Health.Status}}" assixx-backend 2>/dev/null || echo "unknown")
+            if [ "$HEALTH" = "healthy" ]; then
+              echo "Backend is healthy after ${i}s"
+              BACKEND_HEALTHY=true
               break
             fi
 
-            # Show logs every 15 seconds
-            if [ $((i % 15)) -eq 0 ]; then
-              echo "Backend logs:"
-              docker compose logs backend --tail 20
+            # Show logs every 20 seconds
+            if [ $((i % 20)) -eq 0 ]; then
+              echo "Backend health: $HEALTH (${i}s)"
+              docker logs assixx-backend --tail 10 2>&1 || true
             fi
 
-            echo "Waiting... ($i/90)"
             sleep 1
           done
 
-          docker compose ps
-
-          # If not healthy, show full logs
-          if ! docker compose ps | grep "assixx-backend" | grep -q "(healthy)"; then
-            echo "Backend failed to become healthy. Full logs:"
-            docker compose logs backend
+          if [ "$BACKEND_HEALTHY" != "true" ]; then
+            echo "ERROR: Backend failed to become healthy after 120s"
+            echo "Full backend logs:"
+            docker logs assixx-backend 2>&1 || true
+            $COMPOSE ps
+            exit 1
           fi
+
+          # Start deletion-worker (depends on backend being healthy)
+          $COMPOSE up -d deletion-worker
+
+          $COMPOSE ps
 
           # Test the health endpoint
           curl -f http://localhost:3000/health || exit 1
 
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml down
+          $COMPOSE down
 
-      - name: Debug PostgreSQL on failure
+      - name: Debug on failure
         if: failure()
         run: |
-          echo "=== Debugging PostgreSQL failure ==="
-          echo "PostgreSQL Container Status:"
-          docker ps -a | grep postgres || true
+          echo "=== All Container Status ==="
+          docker ps -a || true
           echo ""
-          echo "PostgreSQL Health Status:"
-          docker inspect --format "{{.State.Health.Status}}" assixx-postgres 2>/dev/null || echo "Container not found"
+          echo "=== Backend Logs (last 100 lines) ==="
+          docker logs assixx-backend --tail 100 2>&1 || true
           echo ""
-          echo "PostgreSQL Logs (last 50 lines):"
-          docker logs assixx-postgres --tail 50 2>&1 || true
+          echo "=== Backend Container Inspect ==="
+          docker inspect assixx-backend 2>&1 | head -80 || true
           echo ""
-          echo "PostgreSQL Container Inspect:"
-          docker inspect assixx-postgres 2>&1 || true
+          echo "=== PostgreSQL Logs (last 30 lines) ==="
+          docker logs assixx-postgres --tail 30 2>&1 || true
           echo ""
-          echo "Docker Compose Status:"
-          cd docker && docker compose ps || true
+          echo "=== Redis Logs ==="
+          docker logs assixx-redis --tail 10 2>&1 || true
+          echo ""
+          echo "=== Docker Compose Status ==="
+          cd docker && docker compose -f docker-compose.yml -f docker-compose.ci.yml ps || true
 
   security-scan-trivy:
     runs-on: ubuntu-latest
