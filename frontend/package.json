@@ -19,7 +19,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@sveltejs/adapter-node": "^5.5.4",
-    "@sveltejs/kit": "^2.53.3",
+    "@sveltejs/kit": "^2.53.4",
     "@sveltejs/vite-plugin-svelte": "6.2.4",
     "@tailwindcss/vite": "^4.2.1",
     "@types/html-minifier-terser": "7.0.2",
@@ -34,7 +34,7 @@
     "prettier-plugin-svelte": "^3.5.0",
     "prettier-plugin-tailwindcss": "0.7.2",
     "rollup-plugin-visualizer": "^7.0.0",
-    "svelte": "^5.53.5",
+    "svelte": "^5.53.6",
     "svelte-check": "^4.4.4",
     "tailwindcss": "^4.2.1",
     "typescript": "5.9.3",

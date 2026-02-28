@@ -16,14 +16,14 @@
 # -----------------------------------------------------------------------------
 # Node version is configurable via docker-compose.yml build args
 # Default: LTS version for stability
-ARG NODE_VERSION=24.13.1-alpine3.22
+ARG NODE_VERSION=24.14.0-alpine3.22
 FROM node:${NODE_VERSION} AS builder
 LABEL org.opencontainers.image.authors="Assixx"
 
 # pnpm version is configurable for consistency across environments
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-ARG PNPM_VERSION=10.30.2
-RUN npm install -g npm@11.8.0 pnpm@${PNPM_VERSION}
+ARG PNPM_VERSION=10.30.3
+RUN npm install -g npm@11.8.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
 
@@ -79,7 +79,7 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 # Stage 2: Production
 # -----------------------------------------------------------------------------
 # Re-declare ARG for this stage (ARG scope is per-stage)
-ARG NODE_VERSION=24.13.1-alpine3.22
+ARG NODE_VERSION=24.14.0-alpine3.22
 FROM node:${NODE_VERSION} AS production
 LABEL org.opencontainers.image.authors="Assixx"
 
