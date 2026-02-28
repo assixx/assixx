@@ -25,8 +25,9 @@ RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
 
-# Package files (cache-friendly order: least-changing first)
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# Package + config files (cache-friendly order: least-changing first)
+# tsconfig files needed for tsc compilation (NOT copied to production stage)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.json tsconfig.base.json ./
 
 # Workspace package.json files
 COPY shared/package.json ./shared/
