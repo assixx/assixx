@@ -28,6 +28,10 @@ services:
     image: assixx-backend:ci
     # Override base compose user (${UID:-1000}) to match production Dockerfile's nodejs:1001
     user: "1001:1001"
+    # Production image must run in production mode (devDependencies like pino-pretty
+    # are not installed — NODE_ENV=development would crash the logger on startup)
+    environment:
+      NODE_ENV: production
     # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
     # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
     volumes: !reset
@@ -52,6 +56,8 @@ services:
     image: assixx-backend:ci
     # Override base compose user (${UID:-1000}) to match production Dockerfile's nodejs:1001
     user: "1001:1001"
+    environment:
+      NODE_ENV: production
     # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
     # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
     volumes: !reset
