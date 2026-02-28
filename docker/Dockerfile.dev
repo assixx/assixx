@@ -9,57 +9,47 @@
 # =============================================================================
 
 # Node version is configurable via docker-compose.yml build args
-# Default: LTS version for stability
 ARG NODE_VERSION=24.14.0-alpine3.22
 FROM node:${NODE_VERSION}
 LABEL org.opencontainers.image.authors="Assixx"
 
 # Install development tools
-# Fix CVE-2025-10966: Upgrade curl to latest available version
-RUN apk add --no-cache curl jq && \
-    apk upgrade --no-cache curl
+RUN apk add --no-cache curl jq
 
 # Install pnpm globally (pinned version matching packageManager field)
-# tsx and nodemon are in devDependencies - no need to install globally!
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version is configurable for consistency across environments
 ARG PNPM_VERSION=10.30.3
-RUN npm install -g npm@11.8.0 "pnpm@${PNPM_VERSION}"
+RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
-# Arbeitsverzeichnis
 WORKDIR /app
 
-# Package files kopieren - pnpm workspace braucht alle package.json VORHER
-COPY package.json ./
-COPY .npmrc ./
-COPY pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
+# Package files — pnpm workspace needs all package.json before install
+COPY package.json .npmrc pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
 COPY shared/package.json ./shared/
 
-# Shared source kopieren (inject-workspace-packages needs source at install time)
+# Shared source (inject-workspace-packages needs source at install time)
 COPY shared/ ./shared/
 
 # Install all workspace dependencies with BuildKit cache mount
 # Cache persists between builds, so unchanged packages don't need re-download
-# onlyBuiltDependencies in package.json verhindert build scripts während Docker build
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 # Create writable directories and fix permissions
-# Only chown specific dirs (not node_modules - would take 100+ seconds!)
+# Only chown specific dirs (not node_modules — would take 100+ seconds!)
 RUN mkdir -p /app/logs /app/backend/logs /app/backend/dist && \
     chown -R 1000:1000 /app/logs /app/backend/logs /app/backend/dist && \
-    # Make /app writable for pnpm temp files (shallow, not recursive)
     chown 1000:1000 /app
 
-# Der Rest wird über Volumes gemountet
-
-# Port
 EXPOSE 3000
 
-# Development command - build first, then run NestJS
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))"
+
+# Development command — build first, then run NestJS
 # Note: tsx doesn't support parameter decorators, so we compile first
 CMD ["sh", "-c", "cd backend && pnpm run build && node dist/nest/main.js"]

@@ -49,6 +49,7 @@ ADRs document important architectural decisions:
 | [ADR-024](./ADR-024-frontend-feature-guards.md)             | Frontend Feature Guards              | Accepted | 2026-02-15 |
 | [ADR-025](./ADR-025-pg-stat-statements-query-monitoring.md) | pg_stat_statements Query Monitoring  | Accepted | 2026-02-16 |
 | [ADR-026](./ADR-026-tpm-architecture.md)                    | TPM Architecture                     | Accepted | 2026-02-19 |
+| [ADR-027](./ADR-027-dockerfile-hardening.md)                | Dockerfile Hardening                 | Accepted | 2026-02-28 |
 
 ## Template
 

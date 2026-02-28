@@ -15,24 +15,19 @@
 # Stage 1: Build
 # -----------------------------------------------------------------------------
 # Node version is configurable via docker-compose.yml build args
-# Default: LTS version for stability
 ARG NODE_VERSION=24.14.0-alpine3.22
 FROM node:${NODE_VERSION} AS builder
 LABEL org.opencontainers.image.authors="Assixx"
 
-# pnpm version is configurable for consistency across environments
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
+# pnpm version is configurable for consistency across environments
 ARG PNPM_VERSION=10.30.3
-RUN npm install -g npm@11.8.0 "pnpm@${PNPM_VERSION}"
+RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
 
 # Copy root package files for workspace resolution
-COPY package.json ./
-COPY pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml ./
-COPY .npmrc ./
-COPY tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig.base.json ./
 
 # Copy workspace package.json files
 COPY shared/package.json ./shared/
@@ -46,11 +41,12 @@ COPY shared/ ./shared/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
-# Build shared package (TypeScript → dist/) and sync into injected copy
+# Build shared package (TypeScript -> dist/) and sync into injected copy
 # inject-workspace-packages=true copies shared into node_modules at install time,
 # but dist/ doesn't exist yet during install. pnpm won't re-inject on subsequent
 # installs ("Already up to date"), so we sync dist/ into every injected copy.
 RUN pnpm run --filter=@assixx/shared build && \
+    test -d /app/shared/dist || { echo "ERROR: Shared build failed!"; exit 1; } && \
     find /app/node_modules -path '*/@assixx/shared' -type d \
       -exec cp -r /app/shared/dist {} \;
 
@@ -83,9 +79,12 @@ ARG NODE_VERSION=24.14.0-alpine3.22
 FROM node:${NODE_VERSION} AS production
 LABEL org.opencontainers.image.authors="Assixx"
 
-# Security: Run as non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S sveltekit -u 1001
+# Install dumb-init for proper signal handling + fix CVE-2025-64756
+# Create non-root user with proper group assignment
+RUN apk add --no-cache dumb-init && \
+    npm install -g npm@11.9.0 && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S sveltekit -u 1001 -G nodejs
 
 WORKDIR /app
 
@@ -98,20 +97,16 @@ COPY --link --from=builder --chown=1001:1001 /deploy/package.json ./
 # Copy built SvelteKit application
 COPY --link --from=builder --chown=1001:1001 /app/frontend/build ./build
 
-# Switch to non-root user
 USER sveltekit
 
-# SvelteKit adapter-node port
 EXPOSE 3001
 
-# Environment variables for SvelteKit
 ENV NODE_ENV=production
 ENV PORT=3001
 ENV ORIGIN=http://localhost
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "const http = require('http'); http.get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# Start SvelteKit server
-CMD ["node", "build"]
+# dumb-init ensures SIGTERM/SIGINT are forwarded to Node.js process
+CMD ["dumb-init", "node", "build"]

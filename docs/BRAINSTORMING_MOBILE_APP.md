@@ -95,4 +95,4 @@ Keine — bereit für Masterplan.
 
 ---
 
-*Nächster Schritt: Masterplan schreiben*
+_Nächster Schritt: Masterplan schreiben_
