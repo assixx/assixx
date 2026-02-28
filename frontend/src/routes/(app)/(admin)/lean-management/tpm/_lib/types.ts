@@ -152,6 +152,7 @@ export interface IntervalColorConfigEntry {
   statusKey: IntervalType;
   colorHex: string;
   label: string;
+  includeInCard: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -361,6 +362,7 @@ export interface UpdateIntervalColorPayload {
   intervalKey: IntervalType;
   colorHex: string;
   label: string;
+  includeInCard?: boolean;
 }
 
 /** Payload for updating escalation config */

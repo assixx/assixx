@@ -17,6 +17,7 @@ export const UpdateIntervalColorConfigSchema = z.object({
     .trim()
     .min(1, 'Label ist erforderlich')
     .max(50, 'Label darf maximal 50 Zeichen lang sein'),
+  includeInCard: z.boolean().optional(),
 });
 
 export class UpdateIntervalColorConfigDto extends createZodDto(

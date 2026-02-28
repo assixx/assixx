@@ -8,7 +8,11 @@
 
   import KamishibaiCard from './KamishibaiCard.svelte';
 
-  import type { TpmCard, TpmColorConfigEntry } from '../../../_lib/types';
+  import type {
+    TpmCard,
+    TpmColorConfigEntry,
+    IntervalColorConfigEntry,
+  } from '../../../_lib/types';
 
   interface Props {
     label: string;
@@ -16,10 +20,17 @@
     maintenanceCards: TpmCard[];
     totalOpen: number;
     colors: TpmColorConfigEntry[];
+    intervalColors: IntervalColorConfigEntry[];
   }
 
-  const { label, operatorCards, maintenanceCards, totalOpen, colors }: Props =
-    $props();
+  const {
+    label,
+    operatorCards,
+    maintenanceCards,
+    totalOpen,
+    colors,
+    intervalColors,
+  }: Props = $props();
 
   const hasOperator = $derived(operatorCards.length > 0);
   const hasMaintenance = $derived(maintenanceCards.length > 0);
@@ -54,6 +65,7 @@
           <KamishibaiCard
             {card}
             {colors}
+            {intervalColors}
           />
         {/each}
       </div>
@@ -72,6 +84,7 @@
           <KamishibaiCard
             {card}
             {colors}
+            {intervalColors}
           />
         {/each}
       </div>

@@ -11,7 +11,11 @@ import type { ActivityLoggerService } from '../common/services/activity-logger.s
 import type { DatabaseService } from '../database/database.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import type { TpmColorConfigRow } from './tpm.types.js';
-import { DEFAULT_COLORS } from './tpm.types.js';
+import {
+  DEFAULT_COLORS,
+  DEFAULT_INTERVAL_COLORS,
+  INTERVAL_TYPES_ORDERED,
+} from './tpm.types.js';
 
 // =============================================================
 // Mock factories
@@ -34,6 +38,7 @@ function createColorRow(
     status_key: 'green',
     color_hex: '#00ff00',
     label: 'Custom Grün',
+    include_in_card: false,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
     ...overrides,
@@ -100,6 +105,7 @@ describe('TpmColorConfigService', () => {
       const green = result.find((c) => c.statusKey === 'green');
       expect(green?.colorHex).toBe(DEFAULT_COLORS.green.hex);
       expect(green?.label).toBe(DEFAULT_COLORS.green.label);
+      expect(green?.includeInCard).toBe(false);
     });
 
     it('should merge tenant overrides with defaults', async () => {
@@ -183,6 +189,7 @@ describe('TpmColorConfigService', () => {
       expect(result.statusKey).toBe('red');
       expect(result.colorHex).toBe('#ff0000');
       expect(result.label).toBe('Urgent');
+      expect(result.includeInCard).toBe(false);
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('ON CONFLICT');
@@ -231,9 +238,199 @@ describe('TpmColorConfigService', () => {
 
       const green = result.find((c) => c.statusKey === 'green');
       expect(green?.colorHex).toBe('#22c55e');
+      expect(green?.includeInCard).toBe(false);
 
       const red = result.find((c) => c.statusKey === 'red');
       expect(red?.colorHex).toBe('#ef4444');
+    });
+  });
+
+  // =============================================================
+  // getIntervalColors
+  // =============================================================
+
+  describe('getIntervalColors()', () => {
+    it('should return all 7 defaults when no tenant config exists', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getIntervalColors(10);
+
+      expect(result).toHaveLength(7);
+      expect(result.map((c) => c.statusKey)).toEqual([
+        'daily',
+        'weekly',
+        'monthly',
+        'quarterly',
+        'semi_annual',
+        'annual',
+        'custom',
+      ]);
+    });
+
+    it('should use DEFAULT_INTERVAL_COLORS when no overrides exist', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getIntervalColors(10);
+
+      const daily = result.find((c) => c.statusKey === 'daily');
+      expect(daily?.colorHex).toBe(DEFAULT_INTERVAL_COLORS.daily.hex);
+      expect(daily?.label).toBe(DEFAULT_INTERVAL_COLORS.daily.label);
+      expect(daily?.includeInCard).toBe(false);
+    });
+
+    it('should merge tenant overrides with defaults', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        createColorRow({
+          status_key: 'weekly',
+          color_hex: '#aabbcc',
+          label: 'Mein Wöchentlich',
+          include_in_card: true,
+        }),
+      ]);
+
+      const result = await service.getIntervalColors(10);
+
+      expect(result).toHaveLength(7);
+
+      const weekly = result.find((c) => c.statusKey === 'weekly');
+      expect(weekly?.colorHex).toBe('#aabbcc');
+      expect(weekly?.label).toBe('Mein Wöchentlich');
+      expect(weekly?.includeInCard).toBe(true);
+
+      const daily = result.find((c) => c.statusKey === 'daily');
+      expect(daily?.colorHex).toBe(DEFAULT_INTERVAL_COLORS.daily.hex);
+      expect(daily?.includeInCard).toBe(false);
+    });
+
+    it('should pass interval keys as ANY($2) filter', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getIntervalColors(10);
+
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toEqual(INTERVAL_TYPES_ORDERED);
+    });
+  });
+
+  // =============================================================
+  // updateIntervalColor
+  // =============================================================
+
+  describe('updateIntervalColor()', () => {
+    it('should UPSERT with includeInCard=true', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          createColorRow({
+            status_key: 'monthly',
+            color_hex: '#112233',
+            label: 'Monat',
+            include_in_card: true,
+          }),
+        ],
+      });
+
+      const result = await service.updateIntervalColor(10, 1, {
+        intervalKey: 'monthly',
+        colorHex: '#112233',
+        label: 'Monat',
+        includeInCard: true,
+      });
+
+      expect(result.statusKey).toBe('monthly');
+      expect(result.colorHex).toBe('#112233');
+      expect(result.includeInCard).toBe(true);
+
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('include_in_card');
+      expect(sql).toContain('ON CONFLICT');
+
+      const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[4]).toBe(true);
+    });
+
+    it('should default includeInCard to false when omitted', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          createColorRow({
+            status_key: 'daily',
+            color_hex: '#ff0000',
+            label: 'Täglich',
+            include_in_card: false,
+          }),
+        ],
+      });
+
+      await service.updateIntervalColor(10, 1, {
+        intervalKey: 'daily',
+        colorHex: '#ff0000',
+        label: 'Täglich',
+      });
+
+      const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[4]).toBe(false);
+    });
+
+    it('should throw when UPSERT returns no rows', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(
+        service.updateIntervalColor(10, 1, {
+          intervalKey: 'weekly',
+          colorHex: '#aabbcc',
+          label: 'Woche',
+        }),
+      ).rejects.toThrow('UPSERT tpm_color_config returned no rows');
+    });
+  });
+
+  // =============================================================
+  // resetIntervalColorsToDefaults
+  // =============================================================
+
+  describe('resetIntervalColorsToDefaults()', () => {
+    it('should delete interval overrides and return 7 defaults', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.resetIntervalColorsToDefaults(10, 1);
+
+      expect(result).toHaveLength(7);
+      expect(result.map((c) => c.statusKey)).toEqual([
+        'daily',
+        'weekly',
+        'monthly',
+        'quarterly',
+        'semi_annual',
+        'annual',
+        'custom',
+      ]);
+
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('DELETE FROM tpm_color_config');
+    });
+
+    it('should return correct default hex values after reset', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.resetIntervalColorsToDefaults(10, 1);
+
+      const daily = result.find((c) => c.statusKey === 'daily');
+      expect(daily?.colorHex).toBe('#4CAF50');
+      expect(daily?.includeInCard).toBe(false);
+
+      const custom = result.find((c) => c.statusKey === 'custom');
+      expect(custom?.colorHex).toBe('#FF9800');
+      expect(custom?.includeInCard).toBe(false);
+    });
+
+    it('should target only interval keys in DELETE', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.resetIntervalColorsToDefaults(10, 1);
+
+      const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toEqual(INTERVAL_TYPES_ORDERED);
     });
   });
 });

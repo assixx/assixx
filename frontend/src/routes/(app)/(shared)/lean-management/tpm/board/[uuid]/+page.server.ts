@@ -9,7 +9,12 @@ import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { TpmPlan, TpmCard, TpmColorConfigEntry } from '../../_lib/types';
+import type {
+  TpmPlan,
+  TpmCard,
+  TpmColorConfigEntry,
+  IntervalColorConfigEntry,
+} from '../../_lib/types';
 
 const log = createLogger('TpmBoard');
 
@@ -68,7 +73,7 @@ export const load: PageServerLoad = async ({
 
   const { uuid: planUuid } = params;
 
-  const [plan, boardRaw, colorsData] = await Promise.all([
+  const [plan, boardRaw, colorsData, intervalColorsData] = await Promise.all([
     apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
     apiFetch<unknown>(
       `/tpm/plans/${planUuid}/board?page=1&limit=200`,
@@ -76,12 +81,19 @@ export const load: PageServerLoad = async ({
       fetch,
     ),
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
+    apiFetch<IntervalColorConfigEntry[]>(
+      '/tpm/config/interval-colors',
+      token,
+      fetch,
+    ),
   ]);
 
   const cards = extractCards(boardRaw);
   const colors = Array.isArray(colorsData) ? colorsData : [];
+  const intervalColors =
+    Array.isArray(intervalColorsData) ? intervalColorsData : [];
 
   const userRole = parentData.user?.role ?? 'employee';
 
-  return { planUuid, plan, cards, colors, userRole };
+  return { planUuid, plan, cards, colors, intervalColors, userRole };
 };

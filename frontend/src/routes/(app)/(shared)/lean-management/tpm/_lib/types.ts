@@ -259,6 +259,7 @@ export interface IntervalColorConfigEntry {
   statusKey: IntervalType;
   colorHex: string;
   label: string;
+  includeInCard: boolean;
   createdAt: string;
   updatedAt: string;
 }

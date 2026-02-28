@@ -53,13 +53,33 @@
     key: IntervalType;
     colorHex: string;
     label: string;
+    includeInCard: boolean;
     originalHex: string;
     originalLabel: string;
+    originalIncludeInCard: boolean;
   }
 
   // ===========================================================================
   // STATE
   // ===========================================================================
+
+  function buildEditRow(
+    key: IntervalType,
+    entry: IntervalColorConfigEntry | undefined,
+  ): EditRow {
+    const hex = entry?.colorHex ?? '#888888';
+    const lbl = entry?.label ?? INTERVAL_LABELS[key];
+    const inc = entry?.includeInCard ?? false;
+    return {
+      key,
+      colorHex: hex,
+      label: lbl,
+      includeInCard: inc,
+      originalHex: hex,
+      originalLabel: lbl,
+      originalIncludeInCard: inc,
+    };
+  }
 
   // eslint-disable-next-line svelte/prefer-writable-derived -- bind:hex/bind:value need deep reactivity from $state (derived proxies are shallow)
   let rows = $state<EditRow[]>([]);
@@ -70,13 +90,7 @@
       const entry = colors.find(
         (c: IntervalColorConfigEntry) => c.statusKey === key,
       );
-      return {
-        key,
-        colorHex: entry?.colorHex ?? '#888888',
-        label: entry?.label ?? INTERVAL_LABELS[key],
-        originalHex: entry?.colorHex ?? '#888888',
-        originalLabel: entry?.label ?? INTERVAL_LABELS[key],
-      };
+      return buildEditRow(key, entry);
     });
   });
   let resetting = $state(false);
@@ -91,7 +105,11 @@
   }
 
   function hasChanges(row: EditRow): boolean {
-    return row.colorHex !== row.originalHex || row.label !== row.originalLabel;
+    return (
+      row.colorHex !== row.originalHex ||
+      row.label !== row.originalLabel ||
+      row.includeInCard !== row.originalIncludeInCard
+    );
   }
 
   // ===========================================================================
@@ -114,6 +132,7 @@
         intervalKey: row.key,
         colorHex: row.colorHex,
         label: row.label.trim(),
+        includeInCard: row.includeInCard,
       });
       showSuccessAlert(MESSAGES.SUCCESS_INTERVAL_COLOR_UPDATED);
       await invalidateAll();
@@ -212,6 +231,14 @@
           placeholder="Bezeichnung"
         />
       </div>
+      <label class="choice-card interval-preview-toggle">
+        <input
+          type="checkbox"
+          class="choice-card__input"
+          bind:checked={rows[i].includeInCard}
+        />
+        <span class="choice-card__text">TPM Karte mit einschließen</span>
+      </label>
       <button
         type="button"
         class="btn btn-primary btn-icon"
@@ -227,6 +254,24 @@
         {/if}
       </button>
     </div>
+    {#if rows[i].includeInCard}
+      <div class="card-preview-wrapper">
+        <div
+          class="card-preview"
+          style="background-color: {row.colorHex}"
+        >
+          <div class="card-preview__header">
+            <span class="card-preview__code">BT1</span>
+          </div>
+          <div class="card-preview__body">
+            <div class="card-preview__title">{row.label}</div>
+          </div>
+          <div class="card-preview__footer">
+            <span class="card-preview__status">Erledigt</span>
+          </div>
+        </div>
+      </div>
+    {/if}
   {/each}
 </div>
 
@@ -342,6 +387,78 @@
     --thumb-border: 2px solid var(--color-text-primary, #fff);
   }
 
+  .interval-preview-toggle {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    min-width: max-content;
+  }
+
+  .card-preview-wrapper {
+    display: flex;
+    padding: 0.25rem 0.75rem 0.5rem;
+    padding-left: 11rem;
+  }
+
+  .card-preview {
+    width: 160px;
+    height: 210px;
+    border-radius: var(--radius-xs, 4px);
+    display: flex;
+    flex-direction: column;
+    padding: 0.625rem;
+    color: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+    flex-shrink: 0;
+  }
+
+  .card-preview__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid rgb(0 0 0 / 15%);
+  }
+
+  .card-preview__code {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card-preview__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+  }
+
+  .card-preview__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+  }
+
+  .card-preview__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid rgb(0 0 0 / 15%);
+  }
+
+  .card-preview__status {
+    font-size: 0.65rem;
+    opacity: 85%;
+    margin-left: auto;
+  }
+
   @media (width <= 768px) {
     .color-row {
       flex-wrap: wrap;
@@ -349,6 +466,10 @@
 
     .color-label-field {
       width: 100%;
+    }
+
+    .card-preview-wrapper {
+      padding-left: 0.75rem;
     }
   }
 </style>

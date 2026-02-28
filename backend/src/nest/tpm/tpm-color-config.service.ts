@@ -34,6 +34,7 @@ function mapColorRowToApi(row: TpmColorConfigRow): TpmColorConfigEntry {
     statusKey: row.status_key,
     colorHex: row.color_hex,
     label: row.label,
+    includeInCard: row.include_in_card,
     createdAt:
       typeof row.created_at === 'string' ?
         row.created_at
@@ -53,6 +54,7 @@ function buildDefaultEntry(statusKey: TpmCardStatus): TpmColorConfigEntry {
     statusKey,
     colorHex: def.hex,
     label: def.label,
+    includeInCard: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -68,6 +70,7 @@ function buildDefaultIntervalEntry(
     statusKey: intervalKey,
     colorHex: def.hex,
     label: def.label,
+    includeInCard: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -226,18 +229,21 @@ export class TpmColorConfigService {
   ): Promise<TpmColorConfigEntry> {
     this.logger.debug(`Updating interval color for "${dto.intervalKey}"`);
 
+    const includeInCard = dto.includeInCard ?? false;
+
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<TpmColorConfigEntry> => {
         const result = await client.query<TpmColorConfigRow>(
-          `INSERT INTO tpm_color_config (tenant_id, status_key, color_hex, label)
-           VALUES ($1, $2, $3, $4)
+          `INSERT INTO tpm_color_config (tenant_id, status_key, color_hex, label, include_in_card)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (tenant_id, status_key)
            DO UPDATE SET
              color_hex = EXCLUDED.color_hex,
              label = EXCLUDED.label,
+             include_in_card = EXCLUDED.include_in_card,
              updated_at = NOW()
            RETURNING *`,
-          [tenantId, dto.intervalKey, dto.colorHex, dto.label],
+          [tenantId, dto.intervalKey, dto.colorHex, dto.label, includeInCard],
         );
 
         const row = result.rows[0];
@@ -252,7 +258,11 @@ export class TpmColorConfigService {
           0,
           `TPM-Intervallfarbe aktualisiert: ${dto.intervalKey}`,
           undefined,
-          { intervalKey: dto.intervalKey, colorHex: dto.colorHex },
+          {
+            intervalKey: dto.intervalKey,
+            colorHex: dto.colorHex,
+            includeInCard,
+          },
         );
 
         return mapColorRowToApi(row);

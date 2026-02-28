@@ -129,6 +129,13 @@
   const sollDuration = $derived(matchingEstimate?.executionMinutes ?? null);
   const sollStaff = $derived(matchingEstimate?.staffCount ?? null);
 
+  // Clear documentation when user checks "no issues" back on
+  $effect(() => {
+    if (noIssuesFound) {
+      documentation = '';
+    }
+  });
+
   // Derived: validation
   const canExecute = $derived(
     card.status === 'red' || card.status === 'overdue',
@@ -432,32 +439,34 @@
       </div>
     {/if}
 
-    <!-- Step 4: Documentation -->
-    <div class="form-field">
-      <label
-        for="exec-docs"
-        class="form-field__label"
-      >
-        {MESSAGES.EXEC_DOCUMENTATION}
+    <!-- Step 4: Documentation (only when issues found) -->
+    {#if !noIssuesFound}
+      <div class="form-field">
+        <label
+          for="exec-docs"
+          class="form-field__label"
+        >
+          {MESSAGES.EXEC_DOCUMENTATION}
+          {#if requiresDocs}
+            <span class="text-(--color-danger)">*</span>
+          {/if}
+        </label>
+        <textarea
+          id="exec-docs"
+          class="form-field__control form-field__control--textarea"
+          placeholder={MESSAGES.EXEC_DOCUMENTATION_PH}
+          bind:value={documentation}
+          rows="3"
+          maxlength="10000"
+          disabled={submitting}
+        ></textarea>
         {#if requiresDocs}
-          <span class="text-(--color-danger)">*</span>
+          <span class="form-field__message">
+            {MESSAGES.EXEC_DOCUMENTATION_HINT}
+          </span>
         {/if}
-      </label>
-      <textarea
-        id="exec-docs"
-        class="form-field__control form-field__control--textarea"
-        placeholder={MESSAGES.EXEC_DOCUMENTATION_PH}
-        bind:value={documentation}
-        rows="3"
-        maxlength="10000"
-        disabled={submitting}
-      ></textarea>
-      {#if requiresDocs}
-        <span class="form-field__message">
-          {MESSAGES.EXEC_DOCUMENTATION_HINT}
-        </span>
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     <!-- Step 5: Photo staging -->
     <div class="execution-form__photos">

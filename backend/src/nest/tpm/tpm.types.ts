@@ -201,13 +201,14 @@ export interface TpmEscalationConfigRow {
   updated_at: string;
 }
 
-/** Row type for `tpm_color_config` table (migration 044) — per status per tenant, no uuid */
+/** Row type for `tpm_color_config` table (migration 044, 060) — per status per tenant, no uuid */
 export interface TpmColorConfigRow {
   id: number;
   tenant_id: number;
   status_key: string;
   color_hex: string;
   label: string;
+  include_in_card: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -371,6 +372,7 @@ export interface TpmColorConfigEntry {
   statusKey: string;
   colorHex: string;
   label: string;
+  includeInCard: boolean;
   createdAt: string;
   updatedAt: string;
 }

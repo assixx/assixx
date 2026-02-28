@@ -13,6 +13,7 @@
   import type {
     TpmCard,
     TpmColorConfigEntry,
+    IntervalColorConfigEntry,
     IntervalType,
   } from '../../../_lib/types';
 
@@ -38,9 +39,10 @@
   interface Props {
     cards: TpmCard[];
     colors: TpmColorConfigEntry[];
+    intervalColors: IntervalColorConfigEntry[];
   }
 
-  const { cards, colors }: Props = $props();
+  const { cards, colors, intervalColors }: Props = $props();
 
   function countOpen(sectionCards: TpmCard[]): number {
     return sectionCards.filter(
@@ -98,6 +100,7 @@
         maintenanceCards={section.maintenanceCards}
         totalOpen={section.totalOpen}
         {colors}
+        {intervalColors}
       />
     {/each}
   </div>

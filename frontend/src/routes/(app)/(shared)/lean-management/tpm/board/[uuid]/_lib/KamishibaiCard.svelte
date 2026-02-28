@@ -15,6 +15,7 @@
   import type {
     TpmCard,
     TpmColorConfigEntry,
+    IntervalColorConfigEntry,
     CardStatus,
   } from '../../../_lib/types';
 
@@ -25,9 +26,10 @@
   interface Props {
     card: TpmCard;
     colors: TpmColorConfigEntry[];
+    intervalColors: IntervalColorConfigEntry[];
   }
 
-  const { card, colors }: Props = $props();
+  const { card, colors, intervalColors }: Props = $props();
 
   let isFlipped = $state(false);
 
@@ -38,7 +40,18 @@
     return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
   }
 
-  const statusColor = $derived(getColor(card.status));
+  function getCardColor(status: CardStatus): string {
+    if (status === 'green') {
+      const interval = intervalColors.find(
+        (ic: IntervalColorConfigEntry) =>
+          ic.statusKey === card.intervalType && ic.includeInCard,
+      );
+      if (interval !== undefined) return interval.colorHex;
+    }
+    return getColor(status);
+  }
+
+  const statusColor = $derived(getCardColor(card.status));
   const isUrgent = $derived(card.status === 'red' || card.status === 'overdue');
 
   function formatDate(dateStr: string | null): string {
