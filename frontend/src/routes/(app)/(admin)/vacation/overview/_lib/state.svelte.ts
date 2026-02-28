@@ -1,15 +1,12 @@
 // =============================================================================
 // VACATION OVERVIEW — REACTIVE STATE (Svelte 5 Runes)
-// Cascade: Machine → Team → Year → Month → Calendar
+// Cascade: Team → Year → Month → Calendar
 // =============================================================================
 
 import type {
   BlackoutPeriod,
   CalendarDayCell,
   CalendarUserRow,
-  MachineAvailabilityEntry,
-  MachineListItem,
-  StaffingRule,
   TeamCalendarData,
   TeamCalendarEntry,
   TeamListItem,
@@ -22,16 +19,13 @@ import type {
 
 // ─── Data ───────────────────────────────────────────────────────────
 
-let machines = $state<MachineListItem[]>([]);
 let teams = $state<TeamListItem[]>([]);
 let blackouts = $state<BlackoutPeriod[]>([]);
-let staffingRules = $state<StaffingRule[]>([]);
 let calendarData = $state<TeamCalendarData | null>(null);
 let balance = $state<VacationBalance | null>(null);
 
 // ─── Cascade selection ──────────────────────────────────────────────
 
-let selectedMachineId = $state<number | null>(null);
 let selectedTeamId = $state<number | null>(null);
 let selectedYear = $state<number | null>(null);
 let selectedMonth = $state<number | null>(null);
@@ -40,22 +34,17 @@ let selectedMonth = $state<number | null>(null);
 
 let yearCalendarData = $state<TeamCalendarData[] | null>(null);
 
-// ─── Machine availability ───────────────────────────────────────────
-
-let machineAvailEntries = $state<MachineAvailabilityEntry[]>([]);
-
 // ─── UI ─────────────────────────────────────────────────────────────
 
 let isLoading = $state(false);
-let isLoadingTeams = $state(false);
 let isLoadingCalendar = $state(false);
 let isLoadingBalance = $state(false);
 let isLoadingYearCalendar = $state(false);
 
 // ─── Derived ────────────────────────────────────────────────────────
 
-/** Whether team dropdown is enabled (machine selected AND teams loaded) */
-const canSelectTeam = $derived(selectedMachineId !== null && !isLoadingTeams);
+/** Whether team dropdown is enabled (teams loaded) */
+const canSelectTeam = $derived(teams.length > 0);
 
 /** Whether year dropdown is enabled (team selected) */
 const canSelectYear = $derived(selectedTeamId !== null);
@@ -99,29 +88,6 @@ const blackoutDays = $derived.by((): Map<number, string> => {
   }
 
   return result;
-});
-
-/** Map of day numbers (1-based) to machine availability status. */
-const machineAvailDays = $derived.by((): Map<number, string> => {
-  if (
-    machineAvailEntries.length === 0 ||
-    selectedYear === null ||
-    selectedMonth === null
-  )
-    return new Map();
-
-  return buildAvailDayMap(
-    machineAvailEntries,
-    selectedYear,
-    selectedMonth,
-    daysInMonth,
-  );
-});
-
-/** Selected machine name */
-const selectedMachineName = $derived.by(() => {
-  if (selectedMachineId === null) return '';
-  return machines.find((m) => m.id === selectedMachineId)?.name ?? '';
 });
 
 /** Selected team name */
@@ -339,53 +305,6 @@ function addToYearMonthCell(
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-/** Fill day numbers from a single availability entry, clipped to month bounds. */
-function fillAvailDays(
-  result: Map<number, string>,
-  entry: MachineAvailabilityEntry,
-  monthStart: Date,
-  monthEnd: Date,
-): void {
-  const entryStart = new Date(entry.startDate + 'T00:00:00');
-  const entryEnd = new Date(entry.endDate + 'T00:00:00');
-
-  if (entryEnd < monthStart || entryStart > monthEnd) return;
-
-  const rangeStart = entryStart > monthStart ? entryStart : monthStart;
-  const rangeEnd = entryEnd < monthEnd ? entryEnd : monthEnd;
-
-  const cursor = new Date(rangeStart);
-  while (cursor <= rangeEnd) {
-    const dayNum = cursor.getDate();
-    if (!result.has(dayNum)) {
-      result.set(dayNum, entry.status);
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-}
-
-/**
- * Build a day-number-to-status map from availability entries,
- * clipped to the given month. First entry wins per day.
- */
-function buildAvailDayMap(
-  entries: MachineAvailabilityEntry[],
-  year: number,
-  month: number,
-  days: number,
-): Map<number, string> {
-  const result = new Map<number, string>();
-  const monthStart = new Date(year, month - 1, 1);
-  const monthEnd = new Date(year, month - 1, days);
-
-  for (const entry of entries) {
-    if (entry.status === 'operational') continue;
-    fillAvailDays(result, entry, monthStart, monthEnd);
-  }
-
-  return result;
-}
-
 /** Fill day cells from a single calendar entry, clipped to the selected month. */
 function fillDaysFromEntry(
   days: Map<number, CalendarDayCell>,
@@ -427,17 +346,6 @@ function fillDaysFromEntry(
 
 // ─── Cascade methods ────────────────────────────────────────────────
 
-/** Select machine → reset downstream (team, year, month, calendar) */
-function selectMachine(machineId: number) {
-  selectedMachineId = machineId;
-  selectedTeamId = null;
-  selectedYear = null;
-  selectedMonth = null;
-  teams = [];
-  calendarData = null;
-  machineAvailEntries = [];
-}
-
 /** Select team → reset downstream (year, month, calendar) */
 function selectTeam(teamId: number) {
   selectedTeamId = teamId;
@@ -452,38 +360,30 @@ function setYear(year: number) {
   selectedMonth = null;
   calendarData = null;
   yearCalendarData = null;
-  machineAvailEntries = [];
 }
 
 /** Select month → reset calendar (will be loaded after) */
 function setMonth(month: number) {
   selectedMonth = month;
   calendarData = null;
-  machineAvailEntries = [];
 }
 
 /** Clear month selection → back to year overview */
 function clearMonth() {
   selectedMonth = null;
   calendarData = null;
-  machineAvailEntries = [];
 }
 
 function reset() {
-  machines = [];
   teams = [];
   blackouts = [];
-  staffingRules = [];
-  selectedMachineId = null;
   selectedTeamId = null;
   calendarData = null;
   yearCalendarData = null;
   balance = null;
   selectedYear = null;
   selectedMonth = null;
-  machineAvailEntries = [];
   isLoading = false;
-  isLoadingTeams = false;
   isLoadingCalendar = false;
   isLoadingYearCalendar = false;
   isLoadingBalance = false;
@@ -493,14 +393,8 @@ function reset() {
 
 export const overviewState = {
   // Data getters
-  get machines() {
-    return machines;
-  },
   get teams() {
     return teams;
-  },
-  get selectedMachineId() {
-    return selectedMachineId;
   },
   get selectedTeamId() {
     return selectedTeamId;
@@ -520,9 +414,6 @@ export const overviewState = {
   get daysInMonth() {
     return daysInMonth;
   },
-  get selectedMachineName() {
-    return selectedMachineName;
-  },
   get selectedTeamName() {
     return selectedTeamName;
   },
@@ -531,12 +422,6 @@ export const overviewState = {
   },
   get blackoutDays() {
     return blackoutDays;
-  },
-  get staffingRules() {
-    return staffingRules;
-  },
-  get machineAvailDays() {
-    return machineAvailDays;
   },
 
   // Year overview
@@ -565,26 +450,17 @@ export const overviewState = {
   },
 
   // Data setters
-  setMachines: (data: MachineListItem[]) => {
-    machines = data;
-  },
   setTeams: (data: TeamListItem[]) => {
     teams = data;
   },
   setBlackouts: (data: BlackoutPeriod[]) => {
     blackouts = data;
   },
-  setStaffingRules: (data: StaffingRule[]) => {
-    staffingRules = data;
-  },
   setCalendarData: (data: TeamCalendarData | null) => {
     calendarData = data;
   },
   setBalance: (data: VacationBalance | null) => {
     balance = data;
-  },
-  setMachineAvailEntries: (data: MachineAvailabilityEntry[]) => {
-    machineAvailEntries = data;
   },
   setYearCalendarData: (data: TeamCalendarData[] | null) => {
     yearCalendarData = data;
@@ -597,9 +473,6 @@ export const overviewState = {
   get isLoading() {
     return isLoading;
   },
-  get isLoadingTeams() {
-    return isLoadingTeams;
-  },
   get isLoadingCalendar() {
     return isLoadingCalendar;
   },
@@ -611,9 +484,6 @@ export const overviewState = {
   setLoading: (val: boolean) => {
     isLoading = val;
   },
-  setLoadingTeams: (val: boolean) => {
-    isLoadingTeams = val;
-  },
   setLoadingCalendar: (val: boolean) => {
     isLoadingCalendar = val;
   },
@@ -622,7 +492,6 @@ export const overviewState = {
   },
 
   // Cascade navigation
-  selectMachine,
   selectTeam,
   setMonth,
   setYear,

@@ -44,7 +44,12 @@ export class CalendarPermissionService {
 
     const row = rows[0];
     if (row === undefined) {
-      return { role: null, department_ids: [], team_ids: [], has_full_access: false };
+      return {
+        role: null,
+        department_ids: [],
+        team_ids: [],
+        has_full_access: false,
+      };
     }
 
     return {

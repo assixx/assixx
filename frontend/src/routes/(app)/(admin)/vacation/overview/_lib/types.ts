@@ -77,32 +77,6 @@ export interface BlackoutPeriod {
   isGlobal: boolean;
 }
 
-// ─── Machine types ──────────────────────────────────────────────
-
-export interface MachineListItem {
-  id: number;
-  name: string;
-}
-
-// ─── Staffing rule types ─────────────────────────────────────────
-
-export interface StaffingRule {
-  id: string;
-  machineId: number;
-  machineName: string;
-  minStaffCount: number;
-}
-
-// ─── Machine availability (for day-header marking) ──────────────
-
-export interface MachineAvailabilityEntry {
-  id: number;
-  machineId: number;
-  status: string;
-  startDate: string;
-  endDate: string;
-}
-
 // ─── Year overview types ────────────────────────────────────────
 
 /** Summary of one vacation type in a specific month */
@@ -129,9 +103,8 @@ export interface YearUserRow {
 // ─── SSR page data ───────────────────────────────────────────────
 
 export interface VacationOverviewPageData {
-  machines: MachineListItem[];
+  teams: TeamListItem[];
   blackouts: BlackoutPeriod[];
-  staffingRules: StaffingRule[];
   currentYear: number;
   currentMonth: number;
 }

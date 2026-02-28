@@ -44,8 +44,8 @@ function makeEvent(overrides: Record<string, unknown> = {}) {
 function makeUserRole(overrides: Record<string, unknown> = {}) {
   return {
     role: 'employee',
-    department_id: 3,
-    team_id: 7,
+    department_ids: [3],
+    team_ids: [7],
     has_full_access: false,
     ...overrides,
   };
@@ -72,15 +72,22 @@ describe('SECURITY: CalendarPermissionService', () => {
   // =============================================================
 
   describe('getUserRole', () => {
-    it('should return user role info', async () => {
+    it('should return user role info with arrays', async () => {
       mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', department_id: 1, team_id: 2, has_full_access: true },
+        {
+          role: 'admin',
+          department_ids: [1, 2],
+          team_ids: [3],
+          has_full_access: true,
+        },
       ]);
 
       const result = await service.getUserRole(5, 10);
 
       expect(result.role).toBe('admin');
       expect(result.has_full_access).toBe(true);
+      expect(result.department_ids).toEqual([1, 2]);
+      expect(result.team_ids).toEqual([3]);
     });
 
     it('should return fallback when user not found', async () => {
@@ -90,6 +97,24 @@ describe('SECURITY: CalendarPermissionService', () => {
 
       expect(result.role).toBeNull();
       expect(result.has_full_access).toBe(false);
+      expect(result.department_ids).toEqual([]);
+      expect(result.team_ids).toEqual([]);
+    });
+
+    it('should handle null arrays from DB (no memberships)', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          role: 'employee',
+          department_ids: null,
+          team_ids: null,
+          has_full_access: false,
+        },
+      ]);
+
+      const result = await service.getUserRole(5, 10);
+
+      expect(result.department_ids).toEqual([]);
+      expect(result.team_ids).toEqual([]);
     });
   });
 
@@ -136,10 +161,40 @@ describe('SECURITY: CalendarPermissionService', () => {
           user_id: 99,
         }) as never,
         5,
-        makeUserRole({ department_id: 3 }) as never,
+        makeUserRole({ department_ids: [3, 8] }) as never,
       );
 
       expect(result).toBe(true);
+    });
+
+    it('should allow team event for same team', async () => {
+      const result = await service.checkEventAccess(
+        makeEvent({
+          org_level: 'team',
+          team_id: 7,
+          user_id: 99,
+        }) as never,
+        5,
+        makeUserRole({ team_ids: [7, 12] }) as never,
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('should deny team event for different team', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // no attendee
+
+      const result = await service.checkEventAccess(
+        makeEvent({
+          org_level: 'team',
+          team_id: 99,
+          user_id: 99,
+        }) as never,
+        5,
+        makeUserRole({ team_ids: [7, 12] }) as never,
+      );
+
+      expect(result).toBe(false);
     });
 
     it('should check attendees for other events', async () => {

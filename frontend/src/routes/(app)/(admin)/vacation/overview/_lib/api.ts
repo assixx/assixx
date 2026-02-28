@@ -4,34 +4,9 @@
  */
 import { getApiClient } from '$lib/utils/api-client';
 
-import type {
-  MachineAvailabilityEntry,
-  TeamCalendarData,
-  TeamListItem,
-  VacationBalance,
-} from './types';
+import type { TeamCalendarData, VacationBalance } from './types';
 
 const apiClient = getApiClient();
-
-// ─── Machine → Teams (cascade) ──────────────────────────────────
-
-/** Raw response from GET /machines/:id/teams */
-interface MachineTeamRaw {
-  teamId: number;
-  teamName: string;
-}
-
-/** Fetch teams assigned to a machine. */
-export async function getTeamsForMachine(
-  machineId: number,
-): Promise<TeamListItem[]> {
-  const raw = await apiClient.get<MachineTeamRaw[]>(
-    `/machines/${machineId}/teams`,
-  );
-  return raw
-    .map((t) => ({ id: t.teamId, name: t.teamName }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
-}
 
 // ─── Team Calendar ───────────────────────────────────────────────
 
@@ -44,20 +19,6 @@ export async function getTeamCalendar(
   return await apiClient.get<TeamCalendarData>(
     `/vacation/team-calendar?teamId=${teamId}&month=${month}&year=${year}`,
   );
-}
-
-// ─── Machine Availability (for day-header marking) ─────────────
-
-/** Fetch machine availability entries overlapping a date range. */
-export async function getMachineAvailability(
-  machineId: number,
-  startDate: string,
-  endDate: string,
-): Promise<MachineAvailabilityEntry[]> {
-  const raw = await apiClient.get<MachineAvailabilityEntry[]>(
-    `/machines/${machineId}/availability?startDate=${startDate}&endDate=${endDate}`,
-  );
-  return Array.isArray(raw) ? raw : [];
 }
 
 // ─── Year Overview (all 12 months) ───────────────────────────────

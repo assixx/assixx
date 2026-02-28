@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
    * Vacation Overview — Admin Page
-   * Cascade: Machine → Team → Year → Month → Calendar
-   * SSR: Machines, blackouts, staffing rules loaded in +page.server.ts.
-   * Client-side: Teams fetched on machine selection, calendar on month selection.
+   * Cascade: Team → Year → Month → Calendar
+   * SSR: Teams and blackouts loaded in +page.server.ts.
+   * Client-side: Calendar data fetched on month/year selection.
    */
   import { onDestroy } from 'svelte';
 
@@ -18,7 +18,7 @@
   import YearOverviewGrid from './_lib/YearOverviewGrid.svelte';
 
   import type { PageData } from './$types';
-  import type { MachineListItem, TeamListItem } from './_lib/types';
+  import type { TeamListItem } from './_lib/types';
 
   const log = createLogger('VacationOverview');
 
@@ -28,14 +28,9 @@
 
   const { data }: { data: PageData } = $props();
 
-  const ssrMachines = $derived(data.machines);
-  const ssrBlackouts = $derived(data.blackouts);
-  const ssrStaffingRules = $derived(data.staffingRules);
-
   $effect(() => {
-    overviewState.setMachines(ssrMachines);
-    overviewState.setBlackouts(ssrBlackouts);
-    overviewState.setStaffingRules(ssrStaffingRules);
+    overviewState.setTeams(data.teams);
+    overviewState.setBlackouts(data.blackouts);
     overviewState.setLoading(false);
   });
 
@@ -46,24 +41,6 @@
   // ==========================================================================
   // CASCADE HANDLERS
   // ==========================================================================
-
-  /** Machine selected → load teams for that machine */
-  async function handleMachineSelect(machine: MachineListItem): Promise<void> {
-    machineDropdownOpen = false;
-    overviewState.selectMachine(machine.id);
-
-    overviewState.setLoadingTeams(true);
-    try {
-      const teams = await api.getTeamsForMachine(machine.id);
-      overviewState.setTeams(teams);
-    } catch (err) {
-      log.error({ err }, 'Teams load failed');
-      showErrorAlert('Fehler beim Laden der Teams');
-      overviewState.setTeams([]);
-    } finally {
-      overviewState.setLoadingTeams(false);
-    }
-  }
 
   /** Team selected */
   function handleTeamSelect(team: TeamListItem): void {
@@ -101,7 +78,7 @@
     try {
       const data = await api.getTeamCalendarYear(teamId, year);
       overviewState.setYearCalendarData(data);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Year calendar load failed');
       showErrorAlert('Fehler beim Laden der Jahresübersicht');
       overviewState.setYearCalendarData(null);
@@ -116,33 +93,19 @@
     await loadCalendar();
   }
 
-  /** Load calendar data + machine availability for selected filters */
+  /** Load calendar data for selected filters */
   async function loadCalendar(): Promise<void> {
     const teamId = overviewState.selectedTeamId;
     const month = overviewState.selectedMonth;
     const year = overviewState.selectedYear;
-    const machineId = overviewState.selectedMachineId;
 
     if (teamId === null || month === null || year === null) return;
 
     overviewState.setLoadingCalendar(true);
     try {
-      // Build date range for the selected month
-      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-
-      // Fetch calendar + availability in parallel
-      const [calendarData, availEntries] = await Promise.all([
-        api.getTeamCalendar(teamId, month, year),
-        machineId !== null ?
-          api.getMachineAvailability(machineId, startDate, endDate)
-        : Promise.resolve([]),
-      ]);
-
+      const calendarData = await api.getTeamCalendar(teamId, month, year);
       overviewState.setCalendarData(calendarData);
-      overviewState.setMachineAvailEntries(availEntries);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Calendar load failed');
       showErrorAlert('Fehler beim Laden des Teamkalenders');
       overviewState.setCalendarData(null);
@@ -155,21 +118,11 @@
   // DROPDOWN STATE
   // ==========================================================================
 
-  let machineDropdownOpen = $state(false);
   let teamDropdownOpen = $state(false);
   let yearDropdownOpen = $state(false);
   let monthDropdownOpen = $state(false);
 
-  /** Display text helpers — same pattern as FilterDropdowns.svelte (shifts) */
-  function getMachineDisplayText(): string {
-    if (overviewState.selectedMachineId === null)
-      return DROPDOWN_PLACEHOLDERS.MACHINE;
-    return overviewState.selectedMachineName;
-  }
-
   function getTeamDisplayText(): string {
-    if (overviewState.selectedMachineId === null)
-      return DROPDOWN_PLACEHOLDERS.AWAIT_MACHINE;
     if (overviewState.selectedTeamId === null)
       return DROPDOWN_PLACEHOLDERS.TEAM;
     return overviewState.selectedTeamName;
@@ -197,21 +150,10 @@
   // Close all dropdowns on outside click
   $effect(() => {
     return onClickOutsideDropdown(() => {
-      machineDropdownOpen = false;
       teamDropdownOpen = false;
       yearDropdownOpen = false;
       monthDropdownOpen = false;
     });
-  });
-
-  /** Staffing rule for selected machine */
-  const machineStaffingRule = $derived.by(() => {
-    if (overviewState.selectedMachineId === null) return null;
-    return (
-      overviewState.staffingRules.find(
-        (r) => r.machineId === overviewState.selectedMachineId,
-      ) ?? null
-    );
   });
 </script>
 
@@ -225,81 +167,18 @@
        ================================================================ -->
   <div class="card mb-6">
     <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h2 class="card__title">
-          <i class="fas fa-calendar-alt mr-2"></i>
-          Urlaubsübersicht
-        </h2>
-        {#if machineStaffingRule !== null}
-          <span
-            class="badge badge--warning badge"
-            title="Mindestbesetzung: {machineStaffingRule.machineName}"
-          >
-            <i class="fas fa-hard-hat"></i>
-            Mindestbesetzung: {machineStaffingRule.minStaffCount}
-          </span>
-        {/if}
-      </div>
+      <h2 class="card__title">
+        <i class="fas fa-calendar-alt mr-2"></i>
+        Urlaubsübersicht
+      </h2>
     </div>
   </div>
 
   <!-- ================================================================
-       CASCADE FILTER ROW (like shifts page)
+       CASCADE FILTER ROW: Team → Year → Month
        ================================================================ -->
   <div class="card vacation-filter-row">
-    <!-- 1. Maschine -->
-    <div class="info-item">
-      <div class="info-label">Maschine</div>
-      <div
-        class="dropdown"
-        data-dropdown="ov-machine"
-      >
-        <div
-          class="dropdown__trigger"
-          class:active={machineDropdownOpen}
-          onclick={() => {
-            machineDropdownOpen = !machineDropdownOpen;
-          }}
-          onkeydown={(e) => {
-            if (e.key === 'Enter') machineDropdownOpen = !machineDropdownOpen;
-          }}
-          role="button"
-          tabindex="0"
-        >
-          <span>{getMachineDisplayText()}</span>
-          <i class="fas fa-chevron-down"></i>
-        </div>
-        <div
-          class="dropdown__menu"
-          class:active={machineDropdownOpen}
-        >
-          {#each overviewState.machines as machine (machine.id)}
-            <div
-              class="dropdown__option"
-              class:selected={overviewState.selectedMachineId === machine.id}
-              onclick={() => {
-                void handleMachineSelect(machine);
-              }}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') void handleMachineSelect(machine);
-              }}
-              role="option"
-              aria-selected={overviewState.selectedMachineId === machine.id}
-              tabindex="0"
-            >
-              {machine.name}
-            </div>
-          {/each}
-          {#if overviewState.machines.length === 0}
-            <div class="dropdown__option dropdown__option--disabled">
-              Keine Maschinen vorhanden
-            </div>
-          {/if}
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. Team (enabled after machine) -->
+    <!-- 1. Team -->
     <div class="info-item">
       <div class="info-label">Team</div>
       <div
@@ -345,16 +224,16 @@
               {team.name}
             </div>
           {/each}
-          {#if overviewState.canSelectTeam && overviewState.teams.length === 0 && !overviewState.isLoadingTeams}
+          {#if overviewState.canSelectTeam && overviewState.teams.length === 0}
             <div class="dropdown__option dropdown__option--disabled">
-              Keine Teams zugewiesen
+              Keine Teams vorhanden
             </div>
           {/if}
         </div>
       </div>
     </div>
 
-    <!-- 3. Jahr (enabled after team) -->
+    <!-- 2. Jahr (enabled after team) -->
     <div class="info-item">
       <div class="info-label">Jahr</div>
       <div
@@ -404,7 +283,7 @@
       </div>
     </div>
 
-    <!-- 4. Monat (enabled after year) -->
+    <!-- 3. Monat (enabled after year) -->
     <div class="info-item">
       <div class="info-label">Monat</div>
       <div
@@ -481,11 +360,11 @@
 </div>
 
 <style>
-  /* ─── Cascade Filter Row (mirrors shift-info-row pattern) ──────── */
+  /* ─── Cascade Filter Row ──────── */
 
   .vacation-filter-row {
     display: inline-grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: var(--spacing-6);
     position: relative;
     z-index: 1;
@@ -535,11 +414,5 @@
     min-width: 150px;
     left: auto;
     right: auto;
-  }
-
-  @media (width >= 1024px) {
-    .vacation-filter-row {
-      grid-template-columns: repeat(4, 1fr);
-    }
   }
 </style>

@@ -1,13 +1,8 @@
 <script lang="ts">
   /**
-   * CalendarGrid — Team vacation calendar with blackout/availability markers
+   * CalendarGrid — Team vacation calendar with blackout markers
    * Reads all data from overviewState (no props needed).
    */
-  import {
-    MACHINE_AVAILABILITY_LABELS,
-    type MachineAvailabilityStatus,
-  } from '$lib/machine-availability/constants';
-
   import {
     HALF_DAY_LABELS,
     TYPE_COLORS,
@@ -17,24 +12,6 @@
   import { overviewState } from './state.svelte';
 
   import type { CalendarDayCell } from './types';
-
-  /** Machine availability statuses shown in the legend */
-  const AVAIL_LEGEND: MachineAvailabilityStatus[] = [
-    'maintenance',
-    'repair',
-    'standby',
-    'cleaning',
-    'other',
-  ];
-
-  /** CSS color per availability status (matches shifts page) */
-  const AVAIL_COLORS: Record<string, string> = {
-    maintenance: '#ffc107',
-    repair: '#dc3545',
-    standby: '#3498db',
-    cleaning: '#20c997',
-    other: '#6f42c1',
-  };
 
   const dayNumbers = $derived(
     overviewState.daysInMonth > 0 ?
@@ -96,8 +73,8 @@
         </div>
         <h3 class="empty-state__title">Filter auswählen</h3>
         <p class="empty-state__description">
-          Wählen Sie oben Maschine, Team, Jahr und Monat aus, um den
-          Urlaubskalender anzuzeigen.
+          Wählen Sie oben Team, Jahr und Monat aus, um den Urlaubskalender
+          anzuzeigen.
         </p>
       </div>
     {:else if overviewState.isLoadingCalendar}
@@ -126,17 +103,11 @@
               <th class="calendar-grid__name-header">Mitarbeiter</th>
               {#each dayNumbers as day (day)}
                 {@const blackoutName = overviewState.blackoutDays.get(day)}
-                {@const availStatus = overviewState.machineAvailDays.get(day)}
                 <th
                   class="calendar-grid__day-header"
                   class:weekend={isWeekend(day)}
                   class:blackout={blackoutName !== undefined}
-                  title={blackoutName ??
-                    (availStatus !== undefined ?
-                      MACHINE_AVAILABILITY_LABELS[
-                        availStatus as MachineAvailabilityStatus
-                      ]
-                    : '')}
+                  title={blackoutName ?? ''}
                 >
                   <span class="calendar-grid__weekday">
                     {WEEKDAY_SHORT[getWeekday(day)]}
@@ -144,12 +115,6 @@
                   <span class="calendar-grid__day-num">{day}</span>
                   {#if blackoutName !== undefined}
                     <span class="calendar-grid__blackout-dot"></span>
-                  {:else if availStatus !== undefined}
-                    <span
-                      class="calendar-grid__avail-dot"
-                      style="background: {AVAIL_COLORS[availStatus] ??
-                        '#6f42c1'};"
-                    ></span>
                   {/if}
                 </th>
               {/each}
@@ -212,24 +177,6 @@
             <span class="calendar-legend__label">Urlaubssperre</span>
           </div>
         {/if}
-      </div>
-
-      <!-- Machine Availability Legend -->
-      <div class="calendar-legend calendar-legend--machine-avail">
-        <span class="calendar-legend__section-title">
-          <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
-        </span>
-        {#each AVAIL_LEGEND as status (status)}
-          <div class="calendar-legend__item">
-            <span
-              class="calendar-legend__dot"
-              style="background: {AVAIL_COLORS[status]};"
-            ></span>
-            <span class="calendar-legend__label">
-              {MACHINE_AVAILABILITY_LABELS[status]}
-            </span>
-          </div>
-        {/each}
       </div>
     {/if}
   </div>
@@ -445,33 +392,5 @@
       rgb(239 68 68 / 25%) 4px
     );
     border: 1px solid var(--color-danger-400);
-  }
-
-  /* ─── Machine Availability (day header marking) ──────── */
-
-  .calendar-grid__avail-dot {
-    display: block;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    margin: 2px auto 0;
-  }
-
-  .calendar-legend--machine-avail {
-    margin-top: var(--spacing-2);
-    padding-top: var(--spacing-2);
-    border-top: 1px dashed var(--color-glass-border);
-  }
-
-  .calendar-legend--machine-avail .calendar-legend__dot {
-    border-radius: 50%;
-  }
-
-  .calendar-legend__section-title {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
   }
 </style>
