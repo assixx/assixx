@@ -121,8 +121,11 @@ Use agents for reading. Read whole files.
 ### Quick Status Check
 
 ```bash
-cd /home/scs/projects/Assixx/docker
-doppler run -- docker-compose ps && curl -s http://localhost:3000/health | jq '.'
+doppler run -- docker-compose -f /home/scs/projects/Assixx/docker/docker-compose.yml ps
+```
+
+```bash
+curl -s http://localhost:3000/health | jq '.'
 ```
 
 ### Frontend (SvelteKit)

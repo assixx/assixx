@@ -435,7 +435,7 @@ unit-tests:
     - run: pnpm install --frozen-lockfile
     - run: cd frontend && pnpm exec svelte-kit sync # SvelteKit Types!
     - run: pnpm vitest run --project unit --project frontend-unit --coverage
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: always()
       with: { name: coverage-report, path: coverage/, retention-days: 30 }
 ```
