@@ -17,9 +17,12 @@
     resetIntervalColors as apiResetIntervalColors,
     logApiError,
   } from '../../_lib/api';
-  import { MESSAGES, INTERVAL_LABELS, DEFAULT_COLORS  } from '../../_lib/constants';
+  import {
+    MESSAGES,
+    INTERVAL_LABELS,
+    DEFAULT_COLORS,
+  } from '../../_lib/constants';
 
-  
   import type {
     IntervalColorConfigEntry,
     IntervalType,

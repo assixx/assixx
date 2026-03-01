@@ -8,14 +8,9 @@
     fetchDepartments,
     fetchMachines,
     fetchTeams,
-    fetchTeamMembers,
   } from './_lib/api';
   import CustomRotationModal from './_lib/CustomRotationModal.svelte';
-  import {
-    convertTeamMembersToEmployees,
-    convertSSRTeamMembersToEmployees,
-    getWeekDateBounds,
-  } from './_lib/data-loader';
+  import { convertSSRTeamMembersToEmployees } from './_lib/data-loader';
   import {
     handleDragStart,
     handleDragEnd,
@@ -91,11 +86,12 @@
   let ssrInitialized = $state(false);
   let baseAssignmentCounts = $state<AssignmentCount[]>([]);
 
-  /** Reactive: silently fetch base counts when teamId or week changes */
+  /** Reactive: silently fetch base counts when planning UI is active */
   $effect(() => {
     const teamId = shiftsState.selectedContext.teamId;
     const week = shiftsState.currentWeek;
-    if (teamId === null || !shiftsState.isAdmin) return;
+    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isAdmin)
+      return;
     const refDate = formatDate(getWeekStart(week));
     void fetchAssignmentCounts(teamId, refDate).then(
       (result: AssignmentCount[]) => {
@@ -225,23 +221,31 @@
     return rule?.minStaffCount ?? null;
   });
 
-  function handleMachineChange(machineId: number): void {
+  async function handleMachineChange(machineId: number): Promise<void> {
     shiftsState.setSelectedContext({ machineId });
+    shiftsState.setShowPlanningUI(true);
+    await loadShiftPlan();
   }
 
   async function handleTeamChange(teamId: number) {
     shiftsState.setSelectedContext({ teamId, machineId: null });
-    const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
+    shiftsState.clearShiftData();
+    shiftsState.setShowPlanningUI(false);
 
-    const [machs, members] = await Promise.all([
-      fetchMachines(teamId),
-      fetchTeamMembers(teamId, startDate, endDate),
-    ]);
-
+    const machs = await fetchMachines(teamId);
     shiftsState.setMachines(machs);
-    shiftsState.setEmployees(convertTeamMembersToEmployees(members));
-    shiftsState.setShowPlanningUI(true);
-    await loadShiftPlan();
+
+    if (machs.length === 0) {
+      // Team ohne Maschinenzuordnung → sofort laden
+      shiftsState.setShowPlanningUI(true);
+      await loadShiftPlan();
+    } else if (machs.length === 1) {
+      // Genau eine Maschine → auto-select + sofort laden
+      shiftsState.setSelectedContext({ machineId: machs[0].id });
+      shiftsState.setShowPlanningUI(true);
+      await loadShiftPlan();
+    }
+    // 2+ Maschinen → warten bis User im Dropdown wählt
   }
 
   async function navigateWeek(direction: number) {
@@ -379,14 +383,14 @@
         </div>
       {/if}
 
-      <!-- Admin Notice (show when no team selected) -->
+      <!-- Admin Notice (show when filters incomplete) -->
       {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
         <div class="department-notice">
           <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
-          <h3>Team auswählen</h3>
+          <h3>Maschine auswählen</h3>
           <p>
-            Bitte wählen Sie einen Bereich, eine Abteilung und ein Team aus, um
-            den Schichtplan anzuzeigen.
+            Bitte wählen Sie einen Bereich, eine Abteilung, ein Team und eine
+            Maschine aus, um den Schichtplan anzuzeigen.
           </p>
         </div>
       {/if}
