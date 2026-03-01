@@ -159,9 +159,11 @@
           <td class="gvg-cell gvg-cell--assign">
             {#if i === 0}
               {#if names.length > 0}
-                {#each names as name (name)}
-                  <span class="gvg-assign-name">{name}</span>
-                {/each}
+                <div class="gvg-assign-badges">
+                  {#each names as name (name)}
+                    <span class="badge badge--sm badge--info">{name}</span>
+                  {/each}
+                </div>
               {:else}
                 <span class="gvg-assign-empty">&mdash;</span>
               {/if}
@@ -246,15 +248,15 @@
   }
 
   .gvg-cell--assign {
-    vertical-align: top;
+    vertical-align: middle;
+    text-align: center;
   }
 
-  .gvg-assign-name {
-    display: block;
-    white-space: nowrap;
-    font-weight: 500;
-    font-size: 0.85rem;
-    line-height: 1.4;
+  .gvg-assign-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 
   .gvg-assign-empty {

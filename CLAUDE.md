@@ -64,6 +64,7 @@ See [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md) for all commands.
 
 - Use ESLint disable comments without justification (if 100% necessary — with comment explaining WHY)
 - Create new files when existing ones can be edited
+- Use Bash to read files (`cat`, `head`, `tail`, `sed`, `awk`) — ALWAYS use the dedicated `Read` tool instead, including in subagents
 
 **ALWAYS:**
 

@@ -593,7 +593,8 @@
   :global(body.tpm-gv-fullscreen .sidebar),
   :global(body.tpm-gv-fullscreen .header),
   :global(body.tpm-gv-fullscreen #breadcrumb-container),
-  :global(body.tpm-gv-fullscreen .gv-header) {
+  :global(body.tpm-gv-fullscreen .gv-header),
+  :global(body.tpm-gv-fullscreen .tpm-counts) {
     display: none !important;
   }
 

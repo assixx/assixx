@@ -66,12 +66,14 @@
       {#each INTERVAL_COLUMNS as col (col)}
         {@const names = getNames(row.plan.uuid, col)}
         {#each { length: maxDates } as _, i (i)}
-          <td class="gv-assign-cell">
+          <td class="gv-assign-cell gv-assign-cell--names">
             {#if i === 0}
               {#if names.length > 0}
-                {#each names as name (name)}
-                  <span class="gv-assign-name">{name}</span>
-                {/each}
+                <div class="gv-assign-badges">
+                  {#each names as name (name)}
+                    <span class="badge badge--sm badge--info">{name}</span>
+                  {/each}
+                </div>
               {:else}
                 <span class="gv-assign-empty">—</span>
               {/if}
@@ -104,7 +106,7 @@
     padding: 0.25rem 0.375rem;
     border-bottom: 1px solid var(--color-glass-border);
     border-right: 1px solid var(--color-glass-border);
-    vertical-align: top;
+    vertical-align: middle;
   }
 
   .gv-assign-cell--machine {
@@ -117,12 +119,15 @@
     z-index: 1;
   }
 
-  .gv-assign-name {
-    display: block;
-    white-space: nowrap;
-    font-weight: 500;
-    font-size: 0.85rem;
-    line-height: 1.4;
+  .gv-assign-cell--names {
+    text-align: center;
+  }
+
+  .gv-assign-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 
   .gv-assign-empty {

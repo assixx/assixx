@@ -17,18 +17,27 @@
     resetIntervalColors as apiResetIntervalColors,
     logApiError,
   } from '../../_lib/api';
-  import { MESSAGES, INTERVAL_LABELS } from '../../_lib/constants';
+  import { MESSAGES, INTERVAL_LABELS, DEFAULT_COLORS  } from '../../_lib/constants';
 
+  
   import type {
     IntervalColorConfigEntry,
     IntervalType,
+    TpmColorConfigEntry,
+    CardStatus,
   } from '../../_lib/types';
 
   // ===========================================================================
   // PROPS
   // ===========================================================================
 
-  const { colors }: { colors: IntervalColorConfigEntry[] } = $props();
+  const {
+    colors,
+    statusColors,
+  }: {
+    colors: IntervalColorConfigEntry[];
+    statusColors: TpmColorConfigEntry[];
+  } = $props();
 
   // ===========================================================================
   // CONSTANTS
@@ -102,6 +111,13 @@
 
   function isValidHex(hex: string): boolean {
     return HEX_REGEX.test(hex);
+  }
+
+  function getStatusColor(status: CardStatus): string {
+    const found = statusColors.find(
+      (c: TpmColorConfigEntry) => c.statusKey === status,
+    );
+    return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
   }
 
   function hasChanges(row: EditRow): boolean {
@@ -256,19 +272,69 @@
     </div>
     {#if rows[i].includeInCard}
       <div class="card-preview-wrapper">
-        <div
-          class="card-preview"
-          style="background-color: {row.colorHex}"
-        >
-          <div class="card-preview__header">
-            <span class="card-preview__code">BT1</span>
+        <!-- Erledigt: Custom-Farbe als Hintergrund -->
+        <div class="card-preview-item">
+          <div
+            class="card-preview"
+            style="background-color: {row.colorHex}"
+          >
+            <div class="card-preview__header">
+              <span class="card-preview__code">BT1</span>
+            </div>
+            <div class="card-preview__body">
+              <div class="card-preview__title">{row.label}</div>
+            </div>
+            <div class="card-preview__footer">
+              <span class="card-preview__status">Erledigt</span>
+            </div>
           </div>
-          <div class="card-preview__body">
-            <div class="card-preview__title">{row.label}</div>
+          <span class="card-preview-label">Erledigt</span>
+        </div>
+
+        <!-- Fällig: Rot + Custom-Farbpunkt -->
+        <div class="card-preview-item">
+          <div
+            class="card-preview"
+            style="background-color: {getStatusColor('red')}"
+          >
+            <div class="card-preview__header">
+              <span
+                class="card-preview__dot"
+                style="background-color: {row.colorHex}"
+              ></span>
+              <span class="card-preview__code">BT1</span>
+            </div>
+            <div class="card-preview__body">
+              <div class="card-preview__title">{row.label}</div>
+            </div>
+            <div class="card-preview__footer">
+              <span class="card-preview__status">Fällig</span>
+            </div>
           </div>
-          <div class="card-preview__footer">
-            <span class="card-preview__status">Erledigt</span>
+          <span class="card-preview-label">Fällig</span>
+        </div>
+
+        <!-- Überfällig: Dunkelrot + Custom-Farbpunkt -->
+        <div class="card-preview-item">
+          <div
+            class="card-preview"
+            style="background-color: {getStatusColor('overdue')}"
+          >
+            <div class="card-preview__header">
+              <span
+                class="card-preview__dot"
+                style="background-color: {row.colorHex}"
+              ></span>
+              <span class="card-preview__code">BT1</span>
+            </div>
+            <div class="card-preview__body">
+              <div class="card-preview__title">{row.label}</div>
+            </div>
+            <div class="card-preview__footer">
+              <span class="card-preview__status">Überfällig</span>
+            </div>
           </div>
+          <span class="card-preview-label">Überfällig</span>
         </div>
       </div>
     {/if}
@@ -395,8 +461,22 @@
 
   .card-preview-wrapper {
     display: flex;
-    padding: 0.25rem 0.75rem 0.5rem;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem 0.75rem;
     padding-left: 11rem;
+  }
+
+  .card-preview-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .card-preview-label {
+    font-size: 0.688rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
   }
 
   .card-preview {
@@ -414,7 +494,7 @@
   .card-preview__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.375rem;
     padding-bottom: 0.375rem;
     border-bottom: 1px solid rgb(0 0 0 / 15%);
   }
@@ -424,6 +504,14 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .card-preview__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid rgb(255 255 255 / 60%);
+    flex-shrink: 0;
   }
 
   .card-preview__body {
@@ -470,6 +558,7 @@
 
     .card-preview-wrapper {
       padding-left: 0.75rem;
+      flex-wrap: wrap;
     }
   }
 </style>

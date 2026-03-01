@@ -54,6 +54,15 @@
   const statusColor = $derived(getCardColor(card.status));
   const isUrgent = $derived(card.status === 'red' || card.status === 'overdue');
 
+  const intervalDotColor = $derived.by((): string | null => {
+    if (card.status === 'green') return null;
+    const interval = intervalColors.find(
+      (ic: IntervalColorConfigEntry) =>
+        ic.statusKey === card.intervalType && ic.includeInCard,
+    );
+    return interval !== undefined ? interval.colorHex : null;
+  });
+
   function formatDate(dateStr: string | null): string {
     if (dateStr === null) return '—';
     return new Date(dateStr).toLocaleDateString('de-DE', {
@@ -98,6 +107,12 @@
         style="background-color: {statusColor}"
       >
         <div class="kamishibai-card__header">
+          {#if intervalDotColor !== null}
+            <span
+              class="kamishibai-card__interval-dot"
+              style="background-color: {intervalDotColor}"
+            ></span>
+          {/if}
           <span class="kamishibai-card__code">{card.cardCode}</span>
           {#if card.requiresApproval}
             <span
@@ -234,7 +249,7 @@
   .kamishibai-card__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.375rem;
     padding-bottom: 0.375rem;
     border-bottom: 1px solid rgb(0 0 0 / 15%);
   }
@@ -246,9 +261,18 @@
     text-transform: uppercase;
   }
 
+  .kamishibai-card__interval-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid rgb(255 255 255 / 60%);
+    flex-shrink: 0;
+  }
+
   .kamishibai-card__approval {
     font-size: 0.7rem;
     opacity: 80%;
+    margin-left: auto;
   }
 
   /* Zone 2: Body — title fills available space */

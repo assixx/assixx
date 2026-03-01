@@ -112,7 +112,10 @@
       {#if activeTab === 'colors'}
         <ColorConfig colors={data.colors} />
         <hr class="my-8 border-(--color-glass-border)" />
-        <IntervalColorConfig colors={data.intervalColors} />
+        <IntervalColorConfig
+          colors={data.intervalColors}
+          statusColors={data.colors}
+        />
       {:else if activeTab === 'escalation'}
         <EscalationConfig escalation={data.escalation} />
       {:else if activeTab === 'templates'}
