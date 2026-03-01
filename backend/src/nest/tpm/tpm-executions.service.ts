@@ -24,18 +24,23 @@ import type { CompleteCardDto } from './dto/complete-card.dto.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
 import {
   type TpmExecutionJoinRow,
+  mapDefectRowToApi,
   mapExecutionRowToApi,
   mapPhotoRowToApi,
+  toIsoString,
 } from './tpm-executions.helpers.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type {
   EligibleParticipant,
+  TpmApprovalStatus,
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
   TpmCardRow,
+  TpmExecutionDefect,
+  TpmExecutionDefectRow,
   TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
@@ -48,6 +53,7 @@ const EXECUTION_SELECT = `
     COALESCE(NULLIF(CONCAT(u_exec.first_name, ' ', u_exec.last_name), ' '), u_exec.username) AS executed_by_name,
     COALESCE(NULLIF(CONCAT(u_appr.first_name, ' ', u_appr.last_name), ' '), u_appr.username) AS approved_by_name,
     (SELECT COUNT(*)::int FROM tpm_card_execution_photos p WHERE p.execution_id = e.id) AS photo_count,
+    (SELECT COUNT(*)::int FROM tpm_execution_defects d WHERE d.execution_id = e.id AND d.is_active = 1) AS defect_count,
     COALESCE(
       (SELECT json_agg(json_build_object(
         'uuid', TRIM(u_part.uuid),
@@ -71,6 +77,35 @@ export interface PaginatedExecutions {
   total: number;
   page: number;
   pageSize: number;
+}
+
+/** Defect with execution context (for Mängelliste page) */
+export interface DefectWithContext {
+  uuid: string;
+  title: string;
+  description: string | null;
+  positionNumber: number;
+  executionUuid: string;
+  executionDate: string;
+  executedByName: string | null;
+  approvalStatus: TpmApprovalStatus;
+  createdAt: string;
+}
+
+/** Paginated defect list response */
+export interface PaginatedDefects {
+  data: DefectWithContext[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** DB row type for defect with execution context JOIN */
+interface DefectWithContextRow extends TpmExecutionDefectRow {
+  execution_uuid: string;
+  execution_date: string;
+  executed_by_name: string | null;
+  approval_status: TpmApprovalStatus;
 }
 
 /** Photo file data for addPhoto */
@@ -483,6 +518,17 @@ export class TpmExecutionsService {
       );
     }
 
+    const defects = dto.defects;
+    if (defects !== undefined && defects.length > 0) {
+      execution.defects = await this.insertDefects(
+        client,
+        tenantId,
+        row.id,
+        defects,
+      );
+      execution.defectCount = defects.length;
+    }
+
     return execution;
   }
 
@@ -528,6 +574,106 @@ export class TpmExecutionsService {
         lastName: u.last_name,
       }),
     );
+  }
+
+  /** Insert defect entries for an execution within transaction */
+  private async insertDefects(
+    client: PoolClient,
+    tenantId: number,
+    executionId: number,
+    defects: ReadonlyArray<{ title: string; description?: string | null | undefined }>,
+  ): Promise<TpmExecutionDefect[]> {
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+    let idx = 1;
+    for (let pos = 0; pos < defects.length; pos++) {
+      const entry = defects[pos]!;
+      placeholders.push(
+        `($${idx}, $${idx + 1}, $${idx + 2}, $${idx + 3}, $${idx + 4}, $${idx + 5})`,
+      );
+      values.push(
+        uuidv7(),
+        tenantId,
+        executionId,
+        entry.title,
+        entry.description ?? null,
+        pos + 1,
+      );
+      idx += 6;
+    }
+
+    const rows = await client.query<TpmExecutionDefectRow>(
+      `INSERT INTO tpm_execution_defects
+         (uuid, tenant_id, execution_id, title, description, position_number)
+       VALUES ${placeholders.join(', ')}
+       RETURNING *`,
+      values,
+    );
+
+    return rows.rows.map(mapDefectRowToApi);
+  }
+
+  /** Fetch defects for a single execution */
+  async fetchDefectsForExecution(
+    tenantId: number,
+    executionUuid: string,
+  ): Promise<TpmExecutionDefect[]> {
+    const rows = await this.db.query<TpmExecutionDefectRow>(
+      `SELECT d.*
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       WHERE e.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
+       ORDER BY d.position_number ASC`,
+      [executionUuid, tenantId],
+    );
+
+    return rows.map(mapDefectRowToApi);
+  }
+
+  /** List all defects for a card across all executions (for Mängelliste page) */
+  async listDefectsForCard(
+    tenantId: number,
+    cardUuid: string,
+    page: number,
+    pageSize: number,
+  ): Promise<PaginatedDefects> {
+    const countResult = await this.db.queryOne<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       JOIN tpm_cards c ON e.card_id = c.id
+       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1`,
+      [cardUuid, tenantId],
+    );
+
+    const total = Number.parseInt(countResult?.count ?? '0', 10);
+    const offset = (page - 1) * pageSize;
+
+    const rows = await this.db.query<DefectWithContextRow>(
+      `SELECT d.*,
+         e.uuid AS execution_uuid,
+         e.execution_date,
+         COALESCE(
+           NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '),
+           u.username
+         ) AS executed_by_name,
+         e.approval_status
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       JOIN tpm_cards c ON e.card_id = c.id
+       LEFT JOIN users u ON e.executed_by = u.id
+       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
+       ORDER BY e.execution_date DESC, d.position_number ASC
+       LIMIT $3 OFFSET $4`,
+      [cardUuid, tenantId, pageSize, offset],
+    );
+
+    return {
+      data: rows.map(mapDefectWithContextToApi),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   /**
@@ -620,6 +766,21 @@ export class TpmExecutionsService {
     );
     return rows.map((r: { user_id: number }) => r.user_id);
   }
+}
+
+/** Map defect-with-context DB row to API response (module-level helper) */
+function mapDefectWithContextToApi(row: DefectWithContextRow): DefectWithContext {
+  return {
+    uuid: row.uuid.trim(),
+    title: row.title,
+    description: row.description,
+    positionNumber: row.position_number,
+    executionUuid: row.execution_uuid.trim(),
+    executionDate: toIsoString(row.execution_date),
+    executedByName: row.executed_by_name,
+    approvalStatus: row.approval_status,
+    createdAt: toIsoString(row.created_at),
+  };
 }
 
 /** Convert a TpmCardRow to TpmNotificationCard (module-level helper) */

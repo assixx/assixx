@@ -71,6 +71,12 @@
     }
   }
 
+  function navigateToDefects(): void {
+    if (card !== null) {
+      void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}/defects`));
+    }
+  }
+
   // =========================================================================
   // PHOTO PREVIEW MODAL (blackboard pattern)
   // =========================================================================
@@ -168,14 +174,24 @@
             </div>
             <h2 class="card__title m-0 mt-1">{card.title}</h2>
           </div>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={navigateToHistory}
-          >
-            <i class="fas fa-history mr-2"></i>
-            {MESSAGES.HISTORY_HEADING}
-          </button>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="btn btn-outline"
+              onclick={navigateToDefects}
+            >
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              {MESSAGES.BTN_DEFECTS}
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick={navigateToHistory}
+            >
+              <i class="fas fa-history mr-2"></i>
+              {MESSAGES.HISTORY_HEADING}
+            </button>
+          </div>
         </div>
       </div>
     </div>

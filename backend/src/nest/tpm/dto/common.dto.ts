@@ -84,3 +84,24 @@ export const StaffCountSchema = z
   .number()
   .int()
   .min(1, 'Mindestens 1 Person erforderlich');
+
+/** Single defect item schema (shared between CreateExecution + CompleteCard) */
+export const TpmDefectItemSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Mängelbezeichnung darf nicht leer sein')
+    .max(500, 'Mängelbezeichnung darf maximal 500 Zeichen lang sein'),
+  description: z
+    .string()
+    .trim()
+    .max(5000, 'Beschreibung darf maximal 5.000 Zeichen lang sein')
+    .nullish(),
+});
+
+/** Defects array schema — max 20 per execution */
+export const TpmDefectsArraySchema = z
+  .array(TpmDefectItemSchema)
+  .max(20, 'Maximal 20 Mängel pro Durchführung')
+  .optional()
+  .default([]);

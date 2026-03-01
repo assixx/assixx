@@ -129,6 +129,7 @@ export class TpmExecutionsController {
         documentation: dto.documentation,
         customData: dto.customData,
         participantUuids: dto.participantUuids,
+        defects: dto.defects,
       },
     );
   }

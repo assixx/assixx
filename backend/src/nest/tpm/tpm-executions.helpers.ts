@@ -8,12 +8,14 @@ import type {
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
+  TpmExecutionDefect,
+  TpmExecutionDefectRow,
   TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
 
 /** Coerce a Date|string DB value to ISO string */
-function toIsoString(value: Date | string): string {
+export function toIsoString(value: Date | string): string {
   return typeof value === 'string' ? value : new Date(value).toISOString();
 }
 
@@ -28,6 +30,7 @@ export interface TpmExecutionJoinRow extends TpmCardExecutionRow {
   executed_by_name?: string;
   approved_by_name?: string;
   photo_count?: number;
+  defect_count?: number;
   participants?: TpmExecutionParticipant[];
 }
 
@@ -58,11 +61,25 @@ export function mapExecutionRowToApi(
   if (row.approved_by_name !== undefined)
     execution.approvedByName = row.approved_by_name;
   if (row.photo_count !== undefined) execution.photoCount = row.photo_count;
+  if (row.defect_count !== undefined) execution.defectCount = row.defect_count;
   if (row.participants !== undefined && Array.isArray(row.participants)) {
     execution.participants = row.participants;
   }
 
   return execution;
+}
+
+/** Map defect DB row to API response */
+export function mapDefectRowToApi(
+  row: TpmExecutionDefectRow,
+): TpmExecutionDefect {
+  return {
+    uuid: row.uuid.trim(),
+    title: row.title,
+    description: row.description,
+    positionNumber: row.position_number,
+    createdAt: toIsoString(row.created_at),
+  };
 }
 
 /** Map photo DB row to API response */

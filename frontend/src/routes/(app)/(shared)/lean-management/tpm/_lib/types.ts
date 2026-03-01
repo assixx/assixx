@@ -161,8 +161,38 @@ export interface TpmExecution {
   photos?: TpmExecutionPhoto[];
   photoCount?: number;
   participants?: TpmExecutionParticipant[];
+  defects?: TpmExecutionDefect[];
+  defectCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Defect entry attached to an execution */
+export interface TpmExecutionDefect {
+  uuid: string;
+  title: string;
+  description: string | null;
+  positionNumber: number;
+  createdAt: string;
+}
+
+/** Defect with execution context (for Mängelliste page) */
+export interface DefectWithContext {
+  uuid: string;
+  title: string;
+  description: string | null;
+  positionNumber: number;
+  executionUuid: string;
+  executionDate: string;
+  executedByName: string | null;
+  approvalStatus: ApprovalStatus;
+  createdAt: string;
+}
+
+/** Defect entry payload for creating an execution */
+export interface DefectPayload {
+  title: string;
+  description?: string | null;
 }
 
 /** Photo attached to an execution */
@@ -201,6 +231,7 @@ export interface CreateExecutionPayload {
   documentation?: string | null;
   customData?: Record<string, unknown>;
   participantUuids?: string[];
+  defects?: DefectPayload[];
 }
 
 /** Payload for responding to an execution (approve/reject) */

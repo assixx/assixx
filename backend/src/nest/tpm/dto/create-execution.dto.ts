@@ -9,6 +9,8 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { TpmDefectsArraySchema } from './common.dto.js';
+
 export const CreateExecutionSchema = z.object({
   cardUuid: z.uuid(),
   executionDate: z.iso
@@ -40,6 +42,7 @@ export const CreateExecutionSchema = z.object({
     .max(10, 'Maximal 10 Teilnehmer')
     .optional()
     .default([]),
+  defects: TpmDefectsArraySchema,
 });
 
 export class CreateExecutionDto extends createZodDto(CreateExecutionSchema) {}

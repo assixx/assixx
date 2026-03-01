@@ -257,6 +257,30 @@ export const MESSAGES = {
   LOCATIONS_CANCEL: 'Abbrechen',
   BTN_LOCATIONS: 'Standorte',
 
+  // Defects (Mängel)
+  DEFECT_SECTION_TITLE: 'Festgestellte Mängel',
+  DEFECT_TITLE_LABEL: 'Mängelbezeichnung',
+  DEFECT_TITLE_PH: 'z.B. Leckage, Verschleiß, Riss...',
+  DEFECT_DESC_LABEL: 'Weitere Informationen',
+  DEFECT_DESC_PH: 'Details zum Mangel...',
+  DEFECT_ADD: 'Weiteren Mangel hinzufügen',
+  DEFECT_REMOVE: 'Mangel entfernen',
+  DEFECT_NUMBER: 'Mangel',
+
+  // Mängelliste Page
+  DEFECTS_PAGE_TITLE: 'Mängelliste',
+  DEFECTS_HEADING: 'Mängelliste',
+  DEFECTS_BACK: 'Zurück zur Karte',
+  DEFECTS_EMPTY_TITLE: 'Keine Mängel',
+  DEFECTS_EMPTY_DESC: 'Für diese Karte wurden keine Mängel dokumentiert.',
+  DEFECTS_COUNT: 'Mängel gesamt',
+  DEFECTS_COL_TITLE: 'Mängelbezeichnung',
+  DEFECTS_COL_DATE: 'Datum',
+  DEFECTS_COL_PERSON: 'Durchgeführt von',
+  DEFECTS_COL_STATUS: 'Freigabe',
+  DEFECTS_NO_DESC: 'Keine weiteren Informationen',
+  BTN_DEFECTS: 'Mängelliste',
+
   // Time Estimates
   TIME_HEADING: 'Zeitschätzung',
   TIME_STAFF: 'Mitarbeiter',

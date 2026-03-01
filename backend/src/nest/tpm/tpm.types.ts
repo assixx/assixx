@@ -190,6 +190,20 @@ export interface TpmLocationRow {
   updated_at: string;
 }
 
+/** Row type for `tpm_execution_defects` table (migration 061) */
+export interface TpmExecutionDefectRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  execution_id: number;
+  title: string;
+  description: string | null;
+  position_number: number;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Row type for `tpm_escalation_config` table (migration 044) — 1 row per tenant, no uuid */
 export interface TpmEscalationConfigRow {
   id: number;
@@ -323,6 +337,15 @@ export interface TpmExecutionParticipant {
   lastName: string;
 }
 
+/** Defect entry as returned by the API */
+export interface TpmExecutionDefect {
+  uuid: string;
+  title: string;
+  description: string | null;
+  positionNumber: number;
+  createdAt: string;
+}
+
 /** Execution record as returned by the API */
 export interface TpmCardExecution {
   uuid: string;
@@ -343,6 +366,8 @@ export interface TpmCardExecution {
   photos?: TpmExecutionPhoto[];
   photoCount?: number;
   participants?: TpmExecutionParticipant[];
+  defects?: TpmExecutionDefect[];
+  defectCount?: number;
   createdAt: string;
   updatedAt: string;
 }

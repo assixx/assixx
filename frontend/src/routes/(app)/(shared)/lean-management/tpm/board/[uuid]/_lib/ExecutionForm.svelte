@@ -20,6 +20,7 @@
   import { MESSAGES } from '../../../_lib/constants';
 
   import type {
+    DefectPayload,
     TpmCard,
     TpmEmployee,
     TpmExecution,
@@ -28,6 +29,7 @@
 
   const MAX_PHOTOS = 5;
   const MAX_FILE_SIZE = 5_242_880;
+  const MAX_DEFECTS = 20;
   const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
   interface StagedPhoto {
@@ -61,6 +63,31 @@
   let stagedPhotos = $state<StagedPhoto[]>([]);
   let photoError = $state<string | null>(null);
   let photoUploadWarning = $state<string | null>(null);
+
+  // Defect state
+  interface DefectEntry {
+    id: number;
+    title: string;
+    description: string;
+  }
+  let defectIdCounter = 1;
+  function createEmptyDefect(): DefectEntry {
+    return { id: defectIdCounter++, title: '', description: '' };
+  }
+  let defects = $state<DefectEntry[]>([createEmptyDefect()]);
+
+  function addDefect(): void {
+    defects = [...defects, createEmptyDefect()];
+  }
+
+  function removeDefect(index: number): void {
+    defects = defects.filter((_: DefectEntry, i: number) => i !== index);
+    if (defects.length === 0) {
+      defects = [createEmptyDefect()];
+    }
+  }
+
+  const canAddDefect = $derived(defects.length < MAX_DEFECTS && !submitting);
 
   // Employee search state
   let employeeQuery = $state('');
@@ -129,10 +156,11 @@
   const sollDuration = $derived(matchingEstimate?.executionMinutes ?? null);
   const sollStaff = $derived(matchingEstimate?.staffCount ?? null);
 
-  // Clear documentation when user checks "no issues" back on
+  // Clear defects + documentation when user checks "no issues" back on
   $effect(() => {
     if (noIssuesFound) {
       documentation = '';
+      defects = [createEmptyDefect()];
     }
   });
 
@@ -141,7 +169,13 @@
     card.status === 'red' || card.status === 'overdue',
   );
   const requiresDocs = $derived(card.requiresApproval && !noIssuesFound);
-  const isValid = $derived(!requiresDocs || documentation.trim().length > 0);
+  const hasValidDefects = $derived(
+    noIssuesFound ||
+      defects.some((d: DefectEntry) => d.title.trim().length > 0),
+  );
+  const isValid = $derived(
+    hasValidDefects && (!requiresDocs || documentation.trim().length > 0),
+  );
   const canAddPhoto = $derived(stagedPhotos.length < MAX_PHOTOS && !submitting);
 
   function validateFile(file: File): string | null {
@@ -197,6 +231,17 @@
 
     try {
       // Step 1: Create execution
+      // Build defect payloads (only non-empty titles)
+      const validDefects: DefectPayload[] = noIssuesFound ?
+        [] :
+        defects
+          .filter((d: DefectEntry) => d.title.trim().length > 0)
+          .map((d: DefectEntry) => ({
+            title: d.title.trim(),
+            description:
+              d.description.trim().length > 0 ? d.description.trim() : null,
+          }));
+
       const execution = await createExecution({
         cardUuid: card.uuid,
         executionDate,
@@ -209,6 +254,7 @@
           selectedEmployees.length > 0 ?
             selectedEmployees.map((e: TpmEmployee) => e.uuid)
           : undefined,
+        defects: validDefects.length > 0 ? validDefects : undefined,
       });
 
       // Step 2: Upload staged photos (sequential to avoid server overload)
@@ -279,21 +325,101 @@
     </div>
 
     <!-- Step 2: No Issues Checkbox -->
-    <label class="execution-form__checkbox">
+    <label class="choice-card execution-form__no-issues">
       <input
         type="checkbox"
+        class="choice-card__input"
         bind:checked={noIssuesFound}
         disabled={submitting}
       />
-      <span class="execution-form__checkbox-content">
-        <span class="execution-form__checkbox-label">
-          {MESSAGES.EXEC_NO_ISSUES}
-        </span>
-        <span class="execution-form__checkbox-hint">
+      <span class="choice-card__text">
+        {MESSAGES.EXEC_NO_ISSUES}
+        <span class="choice-card__description">
           {MESSAGES.EXEC_NO_ISSUES_HINT}
         </span>
       </span>
     </label>
+
+    <!-- Step 2b: Defects (when issues found) -->
+    {#if !noIssuesFound}
+      <div class="defects-section">
+        <h5 class="defects-section__title">
+          <i class="fas fa-exclamation-triangle"></i>
+          {MESSAGES.DEFECT_SECTION_TITLE}
+        </h5>
+
+        {#each defects as defect, index (defect.id)}
+          <div class="defect-entry">
+            <div class="defect-entry__header">
+              <span class="defect-entry__number">
+                {MESSAGES.DEFECT_NUMBER} {index + 1}
+              </span>
+              {#if defects.length > 1}
+                <button
+                  type="button"
+                  class="defect-entry__remove"
+                  onclick={() => {
+                    removeDefect(index);
+                  }}
+                  disabled={submitting}
+                  aria-label={MESSAGES.DEFECT_REMOVE}
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              {/if}
+            </div>
+
+            <div class="form-field">
+              <label
+                for="defect-title-{index}"
+                class="form-field__label"
+              >
+                {MESSAGES.DEFECT_TITLE_LABEL}
+              </label>
+              <input
+                id="defect-title-{index}"
+                type="text"
+                class="form-field__control"
+                placeholder={MESSAGES.DEFECT_TITLE_PH}
+                bind:value={defect.title}
+                maxlength="500"
+                disabled={submitting}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                for="defect-desc-{index}"
+                class="form-field__label"
+              >
+                {MESSAGES.DEFECT_DESC_LABEL}
+              </label>
+              <textarea
+                id="defect-desc-{index}"
+                class="form-field__control form-field__control--textarea"
+                placeholder={MESSAGES.DEFECT_DESC_PH}
+                bind:value={defect.description}
+                rows="2"
+                maxlength="5000"
+                disabled={submitting}
+              ></textarea>
+            </div>
+          </div>
+        {/each}
+
+        {#if canAddDefect}
+          <button
+            type="button"
+            class="defects-section__add"
+            onclick={addDefect}
+            disabled={submitting}
+          >
+            <i class="fas fa-plus"></i>
+            {MESSAGES.DEFECT_ADD}
+          </button>
+        {/if}
+      </div>
+    {/if}
 
     <!-- Step 3: Time & Staff (optional) -->
     <div class="execution-form__row">
@@ -595,44 +721,10 @@
     border-radius: var(--radius-md);
   }
 
-  /* Checkbox */
-  .execution-form__checkbox {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.625rem 0.75rem;
-    background: color-mix(in srgb, var(--color-success) 6%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-success) 20%, transparent);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: background 0.15s ease;
+
+  .execution-form__no-issues {
+    padding: 0.5rem 0.75rem;
     width: fit-content;
-  }
-
-  .execution-form__checkbox:hover {
-    background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  }
-
-  .execution-form__checkbox input[type='checkbox'] {
-    margin-top: 2px;
-    flex-shrink: 0;
-  }
-
-  .execution-form__checkbox-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  .execution-form__checkbox-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text-primary);
-  }
-
-  .execution-form__checkbox-hint {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
   }
 
   /* Row layout for duration + staff */
@@ -781,5 +873,100 @@
 
   .employee-chip__remove:hover:not(:disabled) {
     color: var(--color-danger);
+  }
+
+  /* Defects Section */
+  .defects-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: color-mix(in srgb, var(--color-warning) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent);
+    border-radius: var(--radius-md);
+  }
+
+  .defects-section__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.813rem;
+    font-weight: 600;
+    color: var(--color-warning);
+    margin: 0;
+  }
+
+  .defect-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.625rem;
+    background: var(--color-glass-bg);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .defect-entry__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .defect-entry__number {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .defect-entry__remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .defect-entry__remove:hover:not(:disabled) {
+    color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  }
+
+  .defects-section__add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.813rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    background: transparent;
+    border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .defects-section__add:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    border-color: var(--color-primary);
+  }
+
+  .defects-section__add:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

@@ -21,6 +21,7 @@ import type {
   PaginatedResponse,
   ScheduleProjectionResult,
   IntervalColorConfigEntry,
+  DefectWithContext,
 } from './types';
 
 const log = createLogger('TpmEmployeeApi');
@@ -180,6 +181,18 @@ export async function fetchCardExecutions(
     `/tpm/cards/${cardUuid}/executions?page=${page}&limit=${limit}`,
   );
   return extractPaginated<TpmExecution>(result);
+}
+
+/** Fetch defects for a card (Mängelliste, paginated) */
+export async function fetchCardDefects(
+  cardUuid: string,
+  page = 1,
+  limit = 50,
+): Promise<PaginatedResponse<DefectWithContext>> {
+  const result: unknown = await apiClient.get(
+    `/tpm/cards/${cardUuid}/defects?page=${page}&limit=${limit}`,
+  );
+  return extractPaginated<DefectWithContext>(result);
 }
 
 /** Get a single execution */

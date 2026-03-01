@@ -41,7 +41,10 @@ import type { DuplicateCheckResult } from './tpm-card-duplicate.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
-import type { PaginatedExecutions } from './tpm-executions.service.js';
+import type {
+  PaginatedDefects,
+  PaginatedExecutions,
+} from './tpm-executions.service.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import type {
@@ -155,6 +158,22 @@ export class TpmCardsController {
     @TenantId() tenantId: number,
   ): Promise<PaginatedExecutions> {
     return await this.executionsService.listExecutionsForCard(
+      tenantId,
+      cardUuid,
+      query.page,
+      query.limit,
+    );
+  }
+
+  /** GET /tpm/cards/:uuid/defects — Mängelliste for a card */
+  @Get(':uuid/defects')
+  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  async listCardDefects(
+    @Param('uuid') cardUuid: string,
+    @Query() query: ListExecutionsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<PaginatedDefects> {
+    return await this.executionsService.listDefectsForCard(
       tenantId,
       cardUuid,
       query.page,
