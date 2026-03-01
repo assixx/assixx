@@ -67,9 +67,16 @@ const TRANSIENT_TABLES = [
   'tpm_card_templates',
   'tpm_maintenance_plans',
 
-  // NOTE: departments, teams, machines are SEED data — do NOT delete.
-  // They grow by ~1-2 rows/run (from vacation/TPM test setup) but are
-  // required by other tests. Acceptable accumulation.
+  // Org structure: departments, teams, machines accumulate ~2-3 rows/run.
+  // Order: machines first (tpm_cards already cleaned above), then teams
+  // (FK CASCADE handles user_teams, machine_teams, etc.), then departments last.
+  // RESTRICT FKs: shifts + document_permissions reference departments/teams
+  // with RESTRICT — currently 0 rows for apitest tenant, but if they ever
+  // accumulate, add them BEFORE these three tables.
+  // Seed data from 00-auth.api.test.ts is auto-recreated via WHERE NOT EXISTS.
+  'machines',
+  'teams',
+  'departments',
 ] as const;
 
 const CLEANUP_SQL = `

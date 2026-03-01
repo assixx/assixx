@@ -15,6 +15,7 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  createDepartmentAndTeam,
   loginApitest,
 } from './helpers.js';
 
@@ -27,10 +28,21 @@ let machineId: number | undefined;
 let staffingRuleId: string | undefined;
 let requestId: string | undefined;
 
+/** Department + team created for this suite (self-sufficient). */
+let ownDepartmentId: number | undefined;
+let ownTeamId: number | undefined;
+
 const VACATION_URL = `${BASE_URL}/vacation`;
 
 beforeAll(async () => {
   auth = await loginApitest();
+
+  // Create own department + team (vacation requires team membership)
+  const { departmentId, teamId } = await createDepartmentAndTeam(
+    auth.authToken,
+  );
+  ownDepartmentId = departmentId;
+  ownTeamId = teamId;
 });
 
 // ── seq: 0 — Auth: Unauthenticated ──────────────────────────────────────────
@@ -376,20 +388,10 @@ describe('Vacation: Get My Balance', () => {
 
 describe('Vacation: Setup Team Assignment', () => {
   it('should ensure the user belongs to a team', async () => {
-    // Find an existing team (created by teams.api.test earlier in the run)
-    const listRes = await fetch(`${BASE_URL}/teams`, {
-      headers: authOnly(auth.authToken),
-    });
-    const listBody = (await listRes.json()) as JsonBody;
-    const teams = listBody.data as Array<{ id: number }>;
-
-    expect(Array.isArray(teams)).toBe(true);
-    expect(teams.length).toBeGreaterThan(0);
-
-    const teamId = teams[0]!.id;
+    expect(ownTeamId).toBeDefined();
 
     // Add current user to team (ignore 409 if already a member)
-    const addRes = await fetch(`${BASE_URL}/teams/${teamId}/members`, {
+    const addRes = await fetch(`${BASE_URL}/teams/${ownTeamId}/members`, {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({ userId: auth.userId }),
@@ -693,4 +695,23 @@ describe('Vacation: Notification created after cancel', () => {
     expect(body.data.vacation).toHaveProperty('count');
     expect(typeof body.data.vacation.count).toBe('number');
   });
+});
+
+// ── Cleanup: delete department + team created for this suite ──────────────────
+
+afterAll(async () => {
+  // Delete team first (FK: teams → departments)
+  if (ownTeamId !== undefined) {
+    await fetch(`${BASE_URL}/teams/${ownTeamId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  }
+
+  if (ownDepartmentId !== undefined) {
+    await fetch(`${BASE_URL}/departments/${ownDepartmentId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  }
 });

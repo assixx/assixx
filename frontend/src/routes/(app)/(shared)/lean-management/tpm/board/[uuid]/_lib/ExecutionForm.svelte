@@ -20,6 +20,7 @@
   import { MESSAGES } from '../../../_lib/constants';
 
   import type {
+    CreateExecutionPayload,
     DefectPayload,
     TpmCard,
     TpmEmployee,
@@ -53,7 +54,7 @@
 
   // Form state
   let executionDate = $state(new Date().toISOString().slice(0, 10));
-  let noIssuesFound = $state(true);
+  let noIssuesFound = $state<boolean>(true);
   let actualDurationMinutes = $state<string>('');
   let actualStaffCount = $state<string>('');
   let documentation = $state('');
@@ -222,6 +223,34 @@
     return Number.isNaN(n) || n <= 0 ? null : n;
   }
 
+  function buildExecutionPayload(): CreateExecutionPayload {
+    const validDefects: DefectPayload[] =
+      noIssuesFound ?
+        []
+      : defects
+          .filter((d: DefectEntry) => d.title.trim().length > 0)
+          .map((d: DefectEntry) => ({
+            title: d.title.trim(),
+            description:
+              d.description.trim().length > 0 ? d.description.trim() : null,
+          }));
+
+    return {
+      cardUuid: card.uuid,
+      executionDate,
+      noIssuesFound,
+      actualDurationMinutes: parseIntOrNull(actualDurationMinutes),
+      actualStaffCount: parseIntOrNull(actualStaffCount),
+      documentation:
+        documentation.trim().length > 0 ? documentation.trim() : null,
+      participantUuids:
+        selectedEmployees.length > 0 ?
+          selectedEmployees.map((e: TpmEmployee) => e.uuid)
+        : undefined,
+      defects: validDefects.length > 0 ? validDefects : undefined,
+    };
+  }
+
   async function handleSubmit(): Promise<void> {
     if (!canExecute || !isValid || submitting) return;
 
@@ -230,32 +259,7 @@
     photoUploadWarning = null;
 
     try {
-      // Step 1: Create execution
-      // Build defect payloads (only non-empty titles)
-      const validDefects: DefectPayload[] = noIssuesFound ?
-        [] :
-        defects
-          .filter((d: DefectEntry) => d.title.trim().length > 0)
-          .map((d: DefectEntry) => ({
-            title: d.title.trim(),
-            description:
-              d.description.trim().length > 0 ? d.description.trim() : null,
-          }));
-
-      const execution = await createExecution({
-        cardUuid: card.uuid,
-        executionDate,
-        noIssuesFound,
-        actualDurationMinutes: parseIntOrNull(actualDurationMinutes),
-        actualStaffCount: parseIntOrNull(actualStaffCount),
-        documentation:
-          documentation.trim().length > 0 ? documentation.trim() : null,
-        participantUuids:
-          selectedEmployees.length > 0 ?
-            selectedEmployees.map((e: TpmEmployee) => e.uuid)
-          : undefined,
-        defects: validDefects.length > 0 ? validDefects : undefined,
-      });
+      const execution = await createExecution(buildExecutionPayload());
 
       // Step 2: Upload staged photos (sequential to avoid server overload)
       let failedUploads = 0;
@@ -342,67 +346,72 @@
 
     <!-- Step 2b: Defects (when issues found) -->
     {#if !noIssuesFound}
-      <div class="defects-section">
-        <h5 class="defects-section__title">
+      <div class="flex flex-col gap-3">
+        <h5
+          class="m-0 flex items-center gap-2 text-sm font-semibold text-(--color-warning)"
+        >
           <i class="fas fa-exclamation-triangle"></i>
           {MESSAGES.DEFECT_SECTION_TITLE}
         </h5>
 
         {#each defects as defect, index (defect.id)}
-          <div class="defect-entry">
-            <div class="defect-entry__header">
-              <span class="defect-entry__number">
-                {MESSAGES.DEFECT_NUMBER} {index + 1}
-              </span>
-              {#if defects.length > 1}
-                <button
-                  type="button"
-                  class="defect-entry__remove"
-                  onclick={() => {
-                    removeDefect(index);
-                  }}
-                  disabled={submitting}
-                  aria-label={MESSAGES.DEFECT_REMOVE}
+          <div class="card card--compact card--no-margin">
+            <div class="card__body flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="badge badge--warning">
+                  {MESSAGES.DEFECT_NUMBER}
+                  {index + 1}
+                </span>
+                {#if defects.length > 1}
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-icon btn-sm"
+                    onclick={() => {
+                      removeDefect(index);
+                    }}
+                    disabled={submitting}
+                    aria-label={MESSAGES.DEFECT_REMOVE}
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                {/if}
+              </div>
+
+              <div class="form-field">
+                <label
+                  for="defect-title-{index}"
+                  class="form-field__label"
                 >
-                  <i class="fas fa-times"></i>
-                </button>
-              {/if}
-            </div>
+                  {MESSAGES.DEFECT_TITLE_LABEL}
+                </label>
+                <input
+                  id="defect-title-{index}"
+                  type="text"
+                  class="form-field__control"
+                  placeholder={MESSAGES.DEFECT_TITLE_PH}
+                  bind:value={defect.title}
+                  maxlength="500"
+                  disabled={submitting}
+                />
+              </div>
 
-            <div class="form-field">
-              <label
-                for="defect-title-{index}"
-                class="form-field__label"
-              >
-                {MESSAGES.DEFECT_TITLE_LABEL}
-              </label>
-              <input
-                id="defect-title-{index}"
-                type="text"
-                class="form-field__control"
-                placeholder={MESSAGES.DEFECT_TITLE_PH}
-                bind:value={defect.title}
-                maxlength="500"
-                disabled={submitting}
-              />
-            </div>
-
-            <div class="form-field">
-              <label
-                for="defect-desc-{index}"
-                class="form-field__label"
-              >
-                {MESSAGES.DEFECT_DESC_LABEL}
-              </label>
-              <textarea
-                id="defect-desc-{index}"
-                class="form-field__control form-field__control--textarea"
-                placeholder={MESSAGES.DEFECT_DESC_PH}
-                bind:value={defect.description}
-                rows="2"
-                maxlength="5000"
-                disabled={submitting}
-              ></textarea>
+              <div class="form-field">
+                <label
+                  for="defect-desc-{index}"
+                  class="form-field__label"
+                >
+                  {MESSAGES.DEFECT_DESC_LABEL}
+                </label>
+                <textarea
+                  id="defect-desc-{index}"
+                  class="form-field__control form-field__control--textarea"
+                  placeholder={MESSAGES.DEFECT_DESC_PH}
+                  bind:value={defect.description}
+                  rows="2"
+                  maxlength="5000"
+                  disabled={submitting}
+                ></textarea>
+              </div>
             </div>
           </div>
         {/each}
@@ -410,11 +419,11 @@
         {#if canAddDefect}
           <button
             type="button"
-            class="defects-section__add"
+            class="btn btn-light btn-sm self-start"
             onclick={addDefect}
             disabled={submitting}
           >
-            <i class="fas fa-plus"></i>
+            <i class="fas fa-plus mr-1"></i>
             {MESSAGES.DEFECT_ADD}
           </button>
         {/if}
@@ -721,7 +730,6 @@
     border-radius: var(--radius-md);
   }
 
-
   .execution-form__no-issues {
     padding: 0.5rem 0.75rem;
     width: fit-content;
@@ -873,100 +881,5 @@
 
   .employee-chip__remove:hover:not(:disabled) {
     color: var(--color-danger);
-  }
-
-  /* Defects Section */
-  .defects-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    background: color-mix(in srgb, var(--color-warning) 5%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent);
-    border-radius: var(--radius-md);
-  }
-
-  .defects-section__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.813rem;
-    font-weight: 600;
-    color: var(--color-warning);
-    margin: 0;
-  }
-
-  .defect-entry {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.625rem;
-    background: var(--color-glass-bg);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-sm);
-  }
-
-  .defect-entry__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .defect-entry__number {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-  }
-
-  .defect-entry__remove {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 0.75rem;
-    transition:
-      color 0.15s ease,
-      background 0.15s ease;
-  }
-
-  .defect-entry__remove:hover:not(:disabled) {
-    color: var(--color-danger);
-    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-  }
-
-  .defects-section__add {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.813rem;
-    font-weight: 500;
-    color: var(--color-primary);
-    background: transparent;
-    border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-  }
-
-  .defects-section__add:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-    border-color: var(--color-primary);
-  }
-
-  .defects-section__add:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 </style>

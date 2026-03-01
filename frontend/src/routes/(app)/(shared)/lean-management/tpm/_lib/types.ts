@@ -18,6 +18,9 @@ export type CardStatus = 'green' | 'red' | 'yellow' | 'overdue';
 /** Card role — who performs the task */
 export type CardRole = 'operator' | 'maintenance';
 
+/** Card category — what type of maintenance activity */
+export type CardCategory = 'reinigung' | 'wartung' | 'instandhaltung';
+
 // =============================================================================
 // DOMAIN ENTITIES
 // =============================================================================
@@ -67,6 +70,7 @@ export interface TpmCard {
   customFields: Record<string, unknown>;
   customIntervalDays: number | null;
   estimatedExecutionMinutes: number | null;
+  cardCategories: CardCategory[];
   isActive: number;
   createdBy: number;
   createdByName?: string;

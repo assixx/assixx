@@ -11,6 +11,7 @@ import { z } from 'zod';
 import {
   LimitSchema,
   PageSchema,
+  TpmCardCategorySchema,
   TpmCardRoleSchema,
   TpmCardStatusSchema,
   TpmIntervalTypeSchema,
@@ -22,6 +23,7 @@ export const ListCardsQuerySchema = z.object({
   status: TpmCardStatusSchema.optional(),
   intervalType: TpmIntervalTypeSchema.optional(),
   cardRole: TpmCardRoleSchema.optional(),
+  cardCategory: TpmCardCategorySchema.optional(),
   page: PageSchema,
   limit: LimitSchema,
 });

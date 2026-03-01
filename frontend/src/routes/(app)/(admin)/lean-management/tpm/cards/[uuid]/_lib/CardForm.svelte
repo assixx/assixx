@@ -11,6 +11,8 @@
   import {
     INTERVAL_LABELS,
     CARD_ROLE_LABELS,
+    CARD_CATEGORY_LABELS,
+    CARD_CATEGORY_ICONS,
     WEEKDAY_LABELS,
     MESSAGES,
   } from '../../../_lib/constants';
@@ -18,6 +20,7 @@
   import type {
     TpmCard,
     CardRole,
+    CardCategory,
     IntervalType,
     CreateCardPayload,
     UpdateCardPayload,
@@ -83,6 +86,23 @@
   let estimatedExecutionMinutes = $state<number | null>(
     untrack(() => card?.estimatedExecutionMinutes ?? null),
   );
+  let cardCategories = $state<CardCategory[]>(
+    untrack(() => card?.cardCategories ?? []),
+  );
+
+  const CATEGORY_OPTIONS: CardCategory[] = [
+    'reinigung',
+    'wartung',
+    'instandhaltung',
+  ];
+
+  function toggleCategory(cat: CardCategory): void {
+    if (cardCategories.includes(cat)) {
+      cardCategories = cardCategories.filter((c: CardCategory) => c !== cat);
+    } else {
+      cardCategories = [...cardCategories, cat];
+    }
+  }
 
   // =========================================================================
   // VALIDATION
@@ -188,6 +208,7 @@
         customIntervalDays: customDays,
         weekdayOverride: weekdayOvr,
         estimatedExecutionMinutes,
+        cardCategories,
       });
     } else {
       onupdate({
@@ -200,6 +221,7 @@
         customIntervalDays: customDays,
         weekdayOverride: weekdayOvr,
         estimatedExecutionMinutes,
+        cardCategories,
       });
     }
   }
@@ -287,6 +309,31 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Card Categories (choice-card checkboxes) -->
+  <div class="form-field">
+    <span class="form-field__label">{MESSAGES.LABEL_CARD_CATEGORIES}</span>
+    <div class="choice-group choice-group--compact card-form__categories">
+      {#each CATEGORY_OPTIONS as cat (cat)}
+        <label class="choice-card choice-card--with-icon">
+          <input
+            type="checkbox"
+            class="choice-card__input"
+            checked={cardCategories.includes(cat)}
+            disabled={submitting}
+            onchange={() => {
+              toggleCategory(cat);
+            }}
+          />
+          <span class="choice-card__text">
+            <i class="fas {CARD_CATEGORY_ICONS[cat]}"></i>
+            {CARD_CATEGORY_LABELS[cat]}
+          </span>
+        </label>
+      {/each}
+    </div>
+    <span class="form-field__message">{MESSAGES.HELP_CARD_CATEGORIES}</span>
   </div>
 
   <!-- Custom interval days (only for custom) -->
@@ -659,8 +706,17 @@
     opacity: 50%;
   }
 
+  .card-form__categories {
+    flex-direction: row;
+    margin: 0;
+  }
+
   @media (width <= 640px) {
     .form-row {
+      flex-direction: column;
+    }
+
+    .card-form__categories {
       flex-direction: column;
     }
   }

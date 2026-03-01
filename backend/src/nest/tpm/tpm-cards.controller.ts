@@ -49,6 +49,7 @@ import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import type {
   TpmCard,
+  TpmCardCategory,
   TpmCardRole,
   TpmCardStatus,
   TpmIntervalType,
@@ -225,11 +226,14 @@ function buildFilters(source: {
   status?: TpmCardStatus | undefined;
   intervalType?: TpmIntervalType | undefined;
   cardRole?: TpmCardRole | undefined;
+  cardCategory?: TpmCardCategory | undefined;
 }): CardListFilter {
   const filters: CardListFilter = {};
   if (source.status !== undefined) filters.status = source.status;
   if (source.intervalType !== undefined)
     filters.intervalType = source.intervalType;
   if (source.cardRole !== undefined) filters.cardRole = source.cardRole;
+  if (source.cardCategory !== undefined)
+    filters.cardCategory = source.cardCategory;
   return filters;
 }

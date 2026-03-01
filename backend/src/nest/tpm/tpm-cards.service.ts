@@ -26,6 +26,7 @@ import {
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
 import type {
   TpmCard,
+  TpmCardCategory,
   TpmCardRole,
   TpmCardRow,
   TpmCardStatus,
@@ -38,6 +39,7 @@ export interface CardListFilter {
   status?: TpmCardStatus;
   intervalType?: TpmIntervalType;
   cardRole?: TpmCardRole;
+  cardCategory?: TpmCardCategory;
 }
 
 /** Paginated card list response */
@@ -313,6 +315,7 @@ export class TpmCardsService {
       customIntervalDays: dto.customIntervalDays ?? null,
       weekdayOverride: dto.weekdayOverride ?? null,
       estimatedExecutionMinutes: dto.estimatedExecutionMinutes ?? null,
+      cardCategories: dto.cardCategories,
     });
 
     const effectiveWeekday =
@@ -406,6 +409,7 @@ export class TpmCardsService {
       customIntervalDays: number | null;
       weekdayOverride: number | null;
       estimatedExecutionMinutes: number | null;
+      cardCategories: TpmCardCategory[];
     },
   ): Promise<{ id: number; card: TpmCard }> {
     const uuid = uuidv7();
@@ -415,8 +419,8 @@ export class TpmCardsService {
           interval_type, interval_order, title, description,
           location_description, requires_approval, sort_order,
           custom_interval_days, weekday_override,
-          estimated_execution_minutes, created_by, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,1)
+          estimated_execution_minutes, card_categories, created_by, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,1)
        RETURNING *`,
       [
         uuid,
@@ -435,6 +439,7 @@ export class TpmCardsService {
         data.customIntervalDays,
         data.weekdayOverride,
         data.estimatedExecutionMinutes,
+        data.cardCategories,
         data.createdBy,
       ],
     );
@@ -539,6 +544,13 @@ function buildFilterClauses(
   }
   if (filters.cardRole !== undefined)
     addFilter('c.card_role', filters.cardRole);
+  if (filters.cardCategory !== undefined) {
+    whereClauses.push(
+      `c.card_categories @> ARRAY[$${idx}]::tpm_card_category[]`,
+    );
+    params.push(filters.cardCategory);
+    idx++;
+  }
 
   return { whereClauses, params };
 }

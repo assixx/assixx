@@ -13,6 +13,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 import {
+  TpmCardCategorySchema,
   TpmCardRoleSchema,
   TpmIntervalTypeSchema,
   WeekdaySchema,
@@ -45,6 +46,10 @@ const BaseSchema = z.object({
     .max(3650, 'Benutzerdefiniertes Intervall darf maximal 3650 Tage sein')
     .nullish(),
   weekdayOverride: WeekdaySchema.nullish(),
+  cardCategories: z
+    .array(TpmCardCategorySchema)
+    .max(3, 'Maximal 3 Kategorien erlaubt')
+    .optional(),
   estimatedExecutionMinutes: z
     .number()
     .int()

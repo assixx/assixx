@@ -13,13 +13,14 @@
   import KamishibaiBoard from './_lib/KamishibaiBoard.svelte';
 
   import type { PageData } from './$types';
-  import type { TpmCard } from '../../_lib/types';
+  import type { CardCategory, TpmCard } from '../../_lib/types';
+
+  type FilterType = 'all' | 'operator' | 'maintenance' | 'open_only';
+  type CategoryFilterType = 'all' | CardCategory;
 
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
   }
-
-  type FilterType = 'all' | 'operator' | 'maintenance' | 'open_only';
 
   const { data }: { data: PageData } = $props();
 
@@ -33,25 +34,43 @@
     data.userRole === 'root' || data.userRole === 'admin',
   );
 
-  /** Active board filter — client-side only */
+  /** Active board filters — client-side only */
   let activeFilter = $state<FilterType>('all');
+  let activeCategoryFilter = $state<CategoryFilterType>('all');
 
-  function filterCards(allCards: TpmCard[], filterType: FilterType): TpmCard[] {
-    switch (filterType) {
+  function filterCards(
+    allCards: TpmCard[],
+    roleFilter: FilterType,
+    catFilter: CategoryFilterType,
+  ): TpmCard[] {
+    let result = allCards;
+
+    switch (roleFilter) {
       case 'operator':
-        return allCards.filter((c: TpmCard) => c.cardRole === 'operator');
+        result = result.filter((c: TpmCard) => c.cardRole === 'operator');
+        break;
       case 'maintenance':
-        return allCards.filter((c: TpmCard) => c.cardRole === 'maintenance');
+        result = result.filter((c: TpmCard) => c.cardRole === 'maintenance');
+        break;
       case 'open_only':
-        return allCards.filter(
+        result = result.filter(
           (c: TpmCard) => c.status === 'red' || c.status === 'overdue',
         );
-      default:
-        return allCards;
+        break;
     }
+
+    if (catFilter !== 'all') {
+      result = result.filter((c: TpmCard) =>
+        c.cardCategories.includes(catFilter),
+      );
+    }
+
+    return result;
   }
 
-  const filteredCards = $derived(filterCards(cards, activeFilter));
+  const filteredCards = $derived(
+    filterCards(cards, activeFilter, activeCategoryFilter),
+  );
 
   const pageTitle = $derived(
     plan !== null ?
@@ -138,7 +157,10 @@
 
   <!-- Filter Bar -->
   <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-    <BoardFilter bind:filter={activeFilter} />
+    <BoardFilter
+      bind:filter={activeFilter}
+      bind:categoryFilter={activeCategoryFilter}
+    />
     <span class="text-sm whitespace-nowrap text-(--color-text-muted)">
       {filteredCards.length} / {cards.length} Karten
     </span>

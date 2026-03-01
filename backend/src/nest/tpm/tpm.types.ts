@@ -28,6 +28,8 @@ export type TpmCardStatus = 'green' | 'red' | 'yellow' | 'overdue';
 
 export type TpmCardRole = 'operator' | 'maintenance';
 
+export type TpmCardCategory = 'reinigung' | 'wartung' | 'instandhaltung';
+
 export type TpmApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
 // ============================================================================
@@ -109,6 +111,7 @@ export interface TpmCardRow {
   custom_interval_days: number | null;
   weekday_override: number | null;
   estimated_execution_minutes: number | null;
+  card_categories: TpmCardCategory[];
   is_active: number;
   created_by: number;
   created_at: string;
@@ -305,6 +308,7 @@ export interface TpmCard {
   customIntervalDays: number | null;
   weekdayOverride: number | null;
   estimatedExecutionMinutes: number | null;
+  cardCategories: TpmCardCategory[];
   isActive: number;
   createdBy: number;
   createdByName?: string;
@@ -483,6 +487,13 @@ export const STATUS_LABELS: Record<TpmCardStatus, string> = {
 export const ROLE_LABELS: Record<TpmCardRole, string> = {
   operator: 'Bediener',
   maintenance: 'Instandhaltung',
+} as const;
+
+/** German labels for card categories */
+export const CATEGORY_LABELS: Record<TpmCardCategory, string> = {
+  reinigung: 'Reinigung',
+  wartung: 'Wartung',
+  instandhaltung: 'Instandhaltung',
 } as const;
 
 /** Card code prefixes per role */

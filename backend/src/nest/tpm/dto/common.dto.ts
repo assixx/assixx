@@ -33,6 +33,12 @@ export const TpmCardRoleSchema = z.enum(['operator', 'maintenance'], {
   message: 'Kartenrolle muss operator oder maintenance sein',
 });
 
+/** Card category enum — mirrors PostgreSQL tpm_card_category */
+export const TpmCardCategorySchema = z.enum(
+  ['reinigung', 'wartung', 'instandhaltung'],
+  { message: 'Ungültige Kartenkategorie' },
+);
+
 /** Card status enum — mirrors PostgreSQL tpm_card_status */
 export const TpmCardStatusSchema = z.enum(
   ['green', 'red', 'yellow', 'overdue'],

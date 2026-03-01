@@ -37,6 +37,7 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
     customIntervalDays: row.custom_interval_days,
     weekdayOverride: row.weekday_override,
     estimatedExecutionMinutes: row.estimated_execution_minutes,
+    cardCategories: row.card_categories,
     isActive: row.is_active,
     createdBy: row.created_by,
     createdAt:
@@ -76,6 +77,7 @@ const CARD_UPDATE_MAPPINGS: readonly [string, string][] = [
   ['customIntervalDays', 'custom_interval_days'],
   ['weekdayOverride', 'weekday_override'],
   ['estimatedExecutionMinutes', 'estimated_execution_minutes'],
+  ['cardCategories', 'card_categories'],
 ] as const;
 
 /** Build SET clause for card update — only includes provided fields */

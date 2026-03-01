@@ -519,7 +519,7 @@ export class TpmExecutionsService {
     }
 
     const defects = dto.defects;
-    if (defects !== undefined && defects.length > 0) {
+    if (defects.length > 0) {
       execution.defects = await this.insertDefects(
         client,
         tenantId,
@@ -581,13 +581,15 @@ export class TpmExecutionsService {
     client: PoolClient,
     tenantId: number,
     executionId: number,
-    defects: ReadonlyArray<{ title: string; description?: string | null | undefined }>,
+    defects: readonly {
+      title: string;
+      description?: string | null | undefined;
+    }[],
   ): Promise<TpmExecutionDefect[]> {
     const values: unknown[] = [];
     const placeholders: string[] = [];
     let idx = 1;
-    for (let pos = 0; pos < defects.length; pos++) {
-      const entry = defects[pos]!;
+    for (const [pos, entry] of defects.entries()) {
       placeholders.push(
         `($${idx}, $${idx + 1}, $${idx + 2}, $${idx + 3}, $${idx + 4}, $${idx + 5})`,
       );
@@ -610,7 +612,9 @@ export class TpmExecutionsService {
       values,
     );
 
-    return rows.rows.map(mapDefectRowToApi);
+    return rows.rows.map((row: TpmExecutionDefectRow) =>
+      mapDefectRowToApi(row),
+    );
   }
 
   /** Fetch defects for a single execution */
@@ -627,7 +631,7 @@ export class TpmExecutionsService {
       [executionUuid, tenantId],
     );
 
-    return rows.map(mapDefectRowToApi);
+    return rows.map((row: TpmExecutionDefectRow) => mapDefectRowToApi(row));
   }
 
   /** List all defects for a card across all executions (for Mängelliste page) */
@@ -769,7 +773,9 @@ export class TpmExecutionsService {
 }
 
 /** Map defect-with-context DB row to API response (module-level helper) */
-function mapDefectWithContextToApi(row: DefectWithContextRow): DefectWithContext {
+function mapDefectWithContextToApi(
+  row: DefectWithContextRow,
+): DefectWithContext {
   return {
     uuid: row.uuid.trim(),
     title: row.title,

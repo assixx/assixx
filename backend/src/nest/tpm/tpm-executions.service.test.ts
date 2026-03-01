@@ -177,6 +177,9 @@ describe('TpmExecutionsService', () => {
   // =============================================================
 
   describe('createExecution()', () => {
+    /** Zod default fields that unit tests must provide (bypassing validation) */
+    const dtoDefaults = { customData: {}, defects: [] } as const;
+
     it('should create execution with Flow A (no approval)', async () => {
       // lockCardByUuid
       mockClient.query.mockResolvedValueOnce({
@@ -193,7 +196,7 @@ describe('TpmExecutionsService', () => {
       });
 
       const result = await service.createExecution(10, 'card-uuid-001', 7, {
-        customData: {},
+        ...dtoDefaults,
       });
 
       expect(result.uuid).toBe('exec-uuid-001');
@@ -213,8 +216,8 @@ describe('TpmExecutionsService', () => {
       });
 
       const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        ...dtoDefaults,
         documentation: 'Durchführungsbericht',
-        customData: {},
       });
 
       expect(result.approvalStatus).toBe('pending');
@@ -227,8 +230,8 @@ describe('TpmExecutionsService', () => {
 
       await expect(
         service.createExecution(10, 'card-uuid-001', 7, {
+          ...dtoDefaults,
           noIssuesFound: false,
-          customData: {},
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -240,9 +243,9 @@ describe('TpmExecutionsService', () => {
 
       await expect(
         service.createExecution(10, 'card-uuid-001', 7, {
+          ...dtoDefaults,
           noIssuesFound: false,
           documentation: '   ',
-          customData: {},
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -260,8 +263,8 @@ describe('TpmExecutionsService', () => {
       });
 
       const result = await service.createExecution(10, 'card-uuid-001', 7, {
+        ...dtoDefaults,
         noIssuesFound: true,
-        customData: {},
       });
 
       expect(result.approvalStatus).toBe('pending');
@@ -286,11 +289,11 @@ describe('TpmExecutionsService', () => {
       });
 
       await service.createExecution(10, 'card-uuid-001', 7, {
+        ...dtoDefaults,
         executionDate: '2026-02-20',
         noIssuesFound: true,
         actualDurationMinutes: 45,
         actualStaffCount: 2,
-        customData: {},
       });
 
       // INSERT is the 2nd call (index 1): [0]=lockCardByUuid, [1]=INSERT
@@ -305,7 +308,7 @@ describe('TpmExecutionsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
-        service.createExecution(10, 'nonexistent', 7, { customData: {} }),
+        service.createExecution(10, 'nonexistent', 7, { ...dtoDefaults }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -322,7 +325,7 @@ describe('TpmExecutionsService', () => {
       });
 
       await service.createExecution(10, 'card-uuid-001', 7, {
-        customData: {},
+        ...dtoDefaults,
       });
 
       expect(mockActivityLogger.logCreate).toHaveBeenCalledWith(
@@ -348,7 +351,7 @@ describe('TpmExecutionsService', () => {
       });
 
       await service.createExecution(10, 'card-uuid-001', 7, {
-        customData: {},
+        ...dtoDefaults,
       });
 
       const lockSql = mockClient.query.mock.calls[0]?.[0] as string;
@@ -388,7 +391,7 @@ describe('TpmExecutionsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       const result = await service.createExecution(10, 'card-uuid-001', 7, {
-        customData: {},
+        ...dtoDefaults,
         participantUuids: ['user-uuid-001', 'user-uuid-002'],
       });
 
@@ -414,7 +417,7 @@ describe('TpmExecutionsService', () => {
       });
 
       const result = await service.createExecution(10, 'card-uuid-001', 7, {
-        customData: {},
+        ...dtoDefaults,
         participantUuids: [],
       });
 
@@ -438,7 +441,7 @@ describe('TpmExecutionsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       const result = await service.createExecution(10, 'card-uuid-001', 7, {
-        customData: {},
+        ...dtoDefaults,
         participantUuids: ['nonexistent-uuid'],
       });
 

@@ -177,7 +177,7 @@
           <div class="flex gap-2">
             <button
               type="button"
-              class="btn btn-outline"
+              class="btn btn-primary"
               onclick={navigateToDefects}
             >
               <i class="fas fa-exclamation-triangle mr-2"></i>

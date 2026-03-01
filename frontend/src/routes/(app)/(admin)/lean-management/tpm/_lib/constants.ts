@@ -2,7 +2,7 @@
 // TPM (Total Productive Maintenance) - CONSTANTS
 // =============================================================================
 
-import type { CardStatus, IntervalType } from './types';
+import type { CardCategory, CardStatus, IntervalType } from './types';
 
 /** Interval type display labels (German) */
 export const INTERVAL_LABELS: Record<IntervalType, string> = {
@@ -57,6 +57,20 @@ export const CARD_STATUS_BADGE_CLASSES: Record<CardStatus, string> = {
 export const CARD_ROLE_LABELS: Record<string, string> = {
   operator: 'Bediener',
   maintenance: 'Instandhaltung',
+};
+
+/** Card category labels (German) */
+export const CARD_CATEGORY_LABELS: Record<CardCategory, string> = {
+  reinigung: 'Reinigung',
+  wartung: 'Wartung',
+  instandhaltung: 'Instandhaltung',
+};
+
+/** Card category icons */
+export const CARD_CATEGORY_ICONS: Record<CardCategory, string> = {
+  reinigung: 'fa-broom',
+  wartung: 'fa-tools',
+  instandhaltung: 'fa-wrench',
 };
 
 /** Default Kamishibai board colors */
@@ -300,6 +314,10 @@ export const MESSAGES = {
   HELP_WEEKDAY_DEFAULT: 'Der Wartungsplan beginnt standardmäßig am',
   HELP_WEEKDAY_OVERRIDE:
     'Optional: Wählen Sie einen anderen Tag für diese wöchentliche Aufgabe.',
+
+  // Card categories
+  LABEL_CARD_CATEGORIES: 'Kategorie',
+  HELP_CARD_CATEGORIES: 'Welche Art von Tätigkeit? Mehrfachauswahl möglich.',
 
   // Per-card execution estimate
   LABEL_CARD_EST_EXEC: 'Geschätzte Durchführungszeit',

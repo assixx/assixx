@@ -168,6 +168,102 @@ export async function ensureTestEmployee(token: string): Promise<number> {
 }
 
 /**
+ * Create N machines for the apitest tenant and return their UUIDs.
+ * Each machine gets a unique name to avoid conflicts.
+ * Caller is responsible for cleanup via deleteMachines().
+ */
+export async function createMachines(
+  token: string,
+  count: number,
+): Promise<string[]> {
+  const uuids: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const res = await fetch(`${BASE_URL}/machines`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        name: `Test Machine ${i + 1} ${Date.now()}`,
+        model: `TM-${String(i + 1).padStart(3, '0')}`,
+        manufacturer: 'Test Corp',
+        machineType: 'production',
+        status: 'operational',
+        location: 'Test Location',
+      }),
+    });
+
+    if (res.status !== 201) {
+      throw new Error(`Machine creation failed: ${res.status}`);
+    }
+
+    const body = (await res.json()) as JsonBody;
+    uuids.push(body.data.uuid as string);
+  }
+
+  return uuids;
+}
+
+/**
+ * Delete machines by UUID. Silently ignores 404/409 errors.
+ */
+export async function deleteMachines(
+  token: string,
+  uuids: string[],
+): Promise<void> {
+  for (const uuid of uuids) {
+    await fetch(`${BASE_URL}/machines/${uuid}`, {
+      method: 'DELETE',
+      headers: authOnly(token),
+    });
+  }
+}
+
+/**
+ * Create a department + team for the apitest tenant and return their IDs.
+ * Caller is responsible for cleanup.
+ */
+export async function createDepartmentAndTeam(
+  token: string,
+): Promise<{ departmentId: number; teamId: number }> {
+  // Create department
+  const deptRes = await fetch(`${BASE_URL}/departments`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      name: `Test Department ${Date.now()}`,
+      description: 'Auto-created for integration tests',
+    }),
+  });
+
+  if (deptRes.status !== 201) {
+    throw new Error(`Department creation failed: ${deptRes.status}`);
+  }
+
+  const deptBody = (await deptRes.json()) as JsonBody;
+  const departmentId = deptBody.data.id as number;
+
+  // Create team under that department
+  const teamRes = await fetch(`${BASE_URL}/teams`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      name: `Test Team ${Date.now()}`,
+      departmentId,
+      description: 'Auto-created for integration tests',
+    }),
+  });
+
+  if (teamRes.status !== 201) {
+    throw new Error(`Team creation failed: ${teamRes.status}`);
+  }
+
+  const teamBody = (await teamRes.json()) as JsonBody;
+  const teamId = teamBody.data.id as number;
+
+  return { departmentId, teamId };
+}
+
+/**
  * Ensure the authenticated user has an E2E key registered.
  * Idempotent: checks GET /e2e/keys/me first, registers only if absent.
  * Returns { keyVersion } for use in encrypted message tests.

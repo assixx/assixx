@@ -92,9 +92,7 @@ describe('UpdateIntervalColorConfigSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept valid payload without includeInCard', () => {
-    expect(
-      UpdateIntervalColorConfigSchema.safeParse(valid).success,
-    ).toBe(true);
+    expect(UpdateIntervalColorConfigSchema.safeParse(valid).success).toBe(true);
   });
 
   it('should accept valid payload with includeInCard=true', () => {

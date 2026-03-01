@@ -18,6 +18,9 @@ export type CardStatus = 'green' | 'red' | 'yellow' | 'overdue';
 /** Card role — who performs the task */
 export type CardRole = 'operator' | 'maintenance';
 
+/** Card category — what type of maintenance activity */
+export type CardCategory = 'reinigung' | 'wartung' | 'instandhaltung';
+
 /** Execution approval status */
 export type ApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
@@ -74,6 +77,7 @@ export interface TpmCard {
   customIntervalDays: number | null;
   weekdayOverride: number | null;
   estimatedExecutionMinutes: number | null;
+  cardCategories: CardCategory[];
   isActive: number;
   createdBy: number;
   createdByName?: string;
@@ -318,6 +322,7 @@ export interface CreateCardPayload {
   customIntervalDays: number | null;
   weekdayOverride: number | null;
   estimatedExecutionMinutes?: number | null;
+  cardCategories: CardCategory[];
 }
 
 /** Payload for updating a card */
@@ -331,6 +336,7 @@ export interface UpdateCardPayload {
   customIntervalDays?: number | null;
   weekdayOverride?: number | null;
   estimatedExecutionMinutes?: number | null;
+  cardCategories?: CardCategory[];
 }
 
 /** Payload for checking card duplicates */

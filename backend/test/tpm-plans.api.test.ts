@@ -12,12 +12,15 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  createMachines,
+  deleteMachines,
   loginApitest,
 } from './helpers.js';
 
 let auth: AuthState;
 
 // Shared state across sequential describe blocks
+let machineUuids: string[] = [];
 let machineUuid: string;
 let planUuid: string;
 let cardUuid: string;
@@ -26,18 +29,9 @@ let timeEstimateUuid: string;
 beforeAll(async () => {
   auth = await loginApitest();
 
-  // Find an available machine without an existing TPM plan
-  const machinesRes = await fetch(`${BASE_URL}/machines?limit=5`, {
-    headers: authOnly(auth.authToken),
-  });
-  const machinesBody = (await machinesRes.json()) as JsonBody;
-  const machines = machinesBody.data as Array<{ uuid: string }>;
-
-  const first = machines[0];
-  if (first === undefined) {
-    throw new Error('No machines available in apitest tenant for TPM tests');
-  }
-  machineUuid = first.uuid;
+  // Create own machine (self-sufficient — no dependency on other suites)
+  machineUuids = await createMachines(auth.authToken, 1);
+  machineUuid = machineUuids[0]!;
 });
 
 // ---- seq: 0 -- Unauthenticated ------------------------------------------------
@@ -653,4 +647,12 @@ describe('TPM: Verify Plan Deleted', () => {
   it('should return 404 after deletion', () => {
     expect(res.status).toBe(404);
   });
+});
+
+// ---- Cleanup: delete machines created for this suite ----------------------------
+
+afterAll(async () => {
+  if (machineUuids.length > 0) {
+    await deleteMachines(auth.authToken, machineUuids);
+  }
 });

@@ -14,12 +14,15 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  createMachines,
+  deleteMachines,
   loginApitest,
 } from './helpers.js';
 
 let auth: AuthState;
 
 // Shared state across sequential describe blocks
+let machineUuids: string[] = [];
 let machineUuid: string;
 let planUuid: string;
 let cardUuid: string;
@@ -37,17 +40,9 @@ function forceCardStatus(uuid: string, status: string): void {
 beforeAll(async () => {
   auth = await loginApitest();
 
-  // Find an available machine
-  const machinesRes = await fetch(`${BASE_URL}/machines?limit=10`, {
-    headers: authOnly(auth.authToken),
-  });
-  const machinesBody = (await machinesRes.json()) as JsonBody;
-  const machines = machinesBody.data as Array<{ uuid: string; name: string }>;
-  const second = machines[1];
-  if (second === undefined) {
-    throw new Error('Need at least 2 machines in apitest tenant for TPM tests');
-  }
-  machineUuid = second.uuid;
+  // Create 2 machines (this suite needs the 2nd one)
+  machineUuids = await createMachines(auth.authToken, 2);
+  machineUuid = machineUuids[1]!;
 
   // Create plan for execution + slot tests
   const planRes = await fetch(`${BASE_URL}/tpm/plans`, {
@@ -769,5 +764,10 @@ afterAll(async () => {
       method: 'DELETE',
       headers: authOnly(auth.authToken),
     });
+  }
+
+  // Delete machines created for this suite
+  if (machineUuids.length > 0) {
+    await deleteMachines(auth.authToken, machineUuids);
   }
 });

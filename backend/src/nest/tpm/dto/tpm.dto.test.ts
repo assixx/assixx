@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  TpmDefectItemSchema,
-  TpmDefectsArraySchema,
-} from './common.dto.js';
-import { CreateExecutionSchema } from './create-execution.dto.js';
+import { TpmDefectItemSchema, TpmDefectsArraySchema } from './common.dto.js';
 import { CompleteCardSchema } from './complete-card.dto.js';
+import { CreateExecutionSchema } from './create-execution.dto.js';
 
 const VALID_UUID = '019c9547-9fc0-771a-b022-3767e233d6f3';
 
@@ -137,9 +134,9 @@ describe('TpmDefectsArraySchema', () => {
   });
 
   it('should reject array with invalid defect item', () => {
-    expect(
-      TpmDefectsArraySchema.safeParse([{ title: '' }]).success,
-    ).toBe(false);
+    expect(TpmDefectsArraySchema.safeParse([{ title: '' }]).success).toBe(
+      false,
+    );
   });
 });
 

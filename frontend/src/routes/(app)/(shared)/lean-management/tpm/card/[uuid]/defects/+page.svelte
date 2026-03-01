@@ -220,7 +220,9 @@
                             </p>
                           </div>
                         {:else}
-                          <p class="defect-detail__text defect-detail__text--empty">
+                          <p
+                            class="defect-detail__text defect-detail__text--empty"
+                          >
                             {MESSAGES.DEFECTS_NO_DESC}
                           </p>
                         {/if}

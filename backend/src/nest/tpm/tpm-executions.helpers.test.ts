@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import type {
-  TpmCardExecutionPhotoRow,
-  TpmCardExecutionRow,
-  TpmExecutionDefectRow,
-} from './tpm.types.js';
 import {
   type TpmExecutionJoinRow,
   mapDefectRowToApi,
@@ -12,6 +7,10 @@ import {
   mapPhotoRowToApi,
   toIsoString,
 } from './tpm-executions.helpers.js';
+import type {
+  TpmCardExecutionPhotoRow,
+  TpmExecutionDefectRow,
+} from './tpm.types.js';
 
 // =============================================================
 // toIsoString
@@ -154,9 +153,7 @@ describe('mapExecutionRowToApi', () => {
   it('should include participants array when present', () => {
     const result = mapExecutionRowToApi({
       ...baseRow,
-      participants: [
-        { uuid: 'p1', firstName: 'Anna', lastName: 'Schmidt' },
-      ],
+      participants: [{ uuid: 'p1', firstName: 'Anna', lastName: 'Schmidt' }],
     });
     expect(result.participants).toHaveLength(1);
     expect(result.participants?.[0]?.firstName).toBe('Anna');
