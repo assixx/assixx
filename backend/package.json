@@ -40,7 +40,7 @@
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.13",
     "@nestjs/jwt": "^11.0.2",
-    "@nestjs/platform-fastify": "^11.1.13",
+    "@nestjs/platform-fastify": "^11.1.14",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/throttler": "6.5.0",
     "@sentry/nestjs": "^10.39.0",
