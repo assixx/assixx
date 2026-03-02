@@ -278,8 +278,16 @@ export const MESSAGES = {
   DEFECTS_COL_DATE: 'Datum',
   DEFECTS_COL_PERSON: 'Durchgeführt von',
   DEFECTS_COL_STATUS: 'Freigabe',
+  DEFECTS_COL_PHOTOS: 'Fotos',
   DEFECTS_NO_DESC: 'Keine weiteren Informationen',
+  DEFECTS_PHOTOS_LOADING: 'Fotos werden geladen...',
+  DEFECTS_PHOTOS_ERROR: 'Fehler beim Laden der Fotos',
   BTN_DEFECTS: 'Mängelliste',
+
+  // Defect Photo Upload
+  DEFECT_PHOTO_ADD: 'Mängelfoto hinzufügen',
+  DEFECT_PHOTO_MAX_SIZE: 'Max. 5 MB pro Foto',
+  DEFECT_PHOTO_MAX_REACHED: 'Maximum von 5 Fotos pro Mangel erreicht',
 
   // Time Estimates
   TIME_HEADING: 'Zeitschätzung',

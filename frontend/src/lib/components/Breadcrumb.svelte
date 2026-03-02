@@ -184,6 +184,11 @@
       icon: 'fa-history',
     },
     {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/defects$/,
+      label: 'Mängelliste',
+      icon: 'fa-exclamation-triangle',
+    },
+    {
       pattern: /^\/lean-management\/tpm\/locations\/[^/]+$/,
       label: 'Standorte',
       icon: 'fa-map-marker-alt',
@@ -293,6 +298,12 @@
     },
     {
       pattern: /^\/lean-management\/tpm\/card\/[^/]+\/history$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/defects$/,
       label: 'TPM Übersicht',
       href: '/lean-management/tpm/overview',
       icon: 'fa-tools',

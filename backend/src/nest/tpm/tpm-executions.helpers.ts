@@ -8,6 +8,8 @@ import type {
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
+  TpmDefectPhoto,
+  TpmDefectPhotoRow,
   TpmExecutionDefect,
   TpmExecutionDefectRow,
   TpmExecutionParticipant,
@@ -82,10 +84,30 @@ export function mapDefectRowToApi(
   };
 }
 
-/** Map photo DB row to API response */
-export function mapPhotoRowToApi(
-  row: TpmCardExecutionPhotoRow,
-): TpmExecutionPhoto {
+/** Shared shape for all photo DB rows (execution photos + defect photos) */
+interface PhotoRowShape {
+  uuid: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  sort_order: number;
+  created_at: string;
+}
+
+/** Shared shape for all photo API responses */
+interface PhotoApiShape {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+/** Generic photo row → API mapper (shared by execution photos + defect photos) */
+function mapPhotoRow(row: PhotoRowShape): PhotoApiShape {
   return {
     uuid: row.uuid.trim(),
     filePath: row.file_path,
@@ -95,4 +117,16 @@ export function mapPhotoRowToApi(
     sortOrder: row.sort_order,
     createdAt: toIsoString(row.created_at),
   };
+}
+
+/** Map execution photo DB row to API response */
+export function mapPhotoRowToApi(
+  row: TpmCardExecutionPhotoRow,
+): TpmExecutionPhoto {
+  return mapPhotoRow(row);
+}
+
+/** Map defect photo DB row to API response */
+export function mapDefectPhotoRowToApi(row: TpmDefectPhotoRow): TpmDefectPhoto {
+  return mapPhotoRow(row);
 }

@@ -5,7 +5,7 @@
  * When an employee completes a maintenance card, an execution record
  * is created and the card status transitions accordingly.
  *
- * Photo management is also handled here (max 5 per execution).
+ * Photo management is also handled here (max 5 per execution, max 5 per defect).
  *
  * Dependencies: TpmCardStatusService (status transitions), DatabaseService
  */
@@ -24,6 +24,7 @@ import type { CompleteCardDto } from './dto/complete-card.dto.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
 import {
   type TpmExecutionJoinRow,
+  mapDefectPhotoRowToApi,
   mapDefectRowToApi,
   mapExecutionRowToApi,
   mapPhotoRowToApi,
@@ -39,12 +40,17 @@ import type {
   TpmCardExecutionPhotoRow,
   TpmCardExecutionRow,
   TpmCardRow,
+  TpmDefectPhoto,
+  TpmDefectPhotoRow,
   TpmExecutionDefect,
   TpmExecutionDefectRow,
   TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
-import { MAX_PHOTOS_PER_EXECUTION } from './tpm.types.js';
+import {
+  MAX_PHOTOS_PER_DEFECT,
+  MAX_PHOTOS_PER_EXECUTION,
+} from './tpm.types.js';
 
 /** Base SELECT for execution reads with JOINs */
 const EXECUTION_SELECT = `
@@ -89,6 +95,7 @@ export interface DefectWithContext {
   executionDate: string;
   executedByName: string | null;
   approvalStatus: TpmApprovalStatus;
+  photoCount: number;
   createdAt: string;
 }
 
@@ -106,9 +113,10 @@ interface DefectWithContextRow extends TpmExecutionDefectRow {
   execution_date: string;
   executed_by_name: string | null;
   approval_status: TpmApprovalStatus;
+  photo_count: number;
 }
 
-/** Photo file data for addPhoto */
+/** Photo file data for addPhoto / addDefectPhoto */
 export interface PhotoFileData {
   filePath: string;
   fileName: string;
@@ -295,6 +303,10 @@ export class TpmExecutionsService {
     };
   }
 
+  // ============================================================================
+  // EXECUTION PHOTOS
+  // ============================================================================
+
   /** Add a photo to an execution (max 5 per execution) */
   async addPhoto(
     tenantId: number,
@@ -381,6 +393,158 @@ export class TpmExecutionsService {
   }
 
   // ============================================================================
+  // DEFECT PHOTOS
+  // ============================================================================
+
+  /** Add a photo to a defect (max 5 per defect) */
+  async addDefectPhoto(
+    tenantId: number,
+    defectUuid: string,
+    userId: number,
+    fileData: PhotoFileData,
+  ): Promise<TpmDefectPhoto> {
+    this.logger.debug(
+      `Adding photo to defect ${defectUuid}: ${fileData.fileName}`,
+    );
+
+    return await this.db.tenantTransaction(async (client: PoolClient) => {
+      const defect = await this.lockDefectByUuid(client, tenantId, defectUuid);
+
+      const photoCount = await this.getDefectPhotoCount(
+        client,
+        tenantId,
+        defect.id,
+      );
+      if (photoCount >= MAX_PHOTOS_PER_DEFECT) {
+        throw new BadRequestException(
+          `Maximal ${MAX_PHOTOS_PER_DEFECT} Fotos pro Mangel erlaubt`,
+        );
+      }
+
+      const photoUuid = uuidv7();
+
+      const result = await client.query<TpmDefectPhotoRow>(
+        `INSERT INTO tpm_defect_photos
+           (uuid, tenant_id, defect_id, file_path, file_name,
+            file_size, mime_type, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          photoUuid,
+          tenantId,
+          defect.id,
+          fileData.filePath,
+          fileData.fileName,
+          fileData.fileSize,
+          fileData.mimeType,
+          photoCount,
+        ],
+      );
+
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('Defect photo INSERT returned no rows');
+      }
+
+      void this.activityLogger.logCreate(
+        tenantId,
+        userId,
+        'tpm_execution',
+        0,
+        `TPM-Mängelfoto hinzugefügt: Mangel ${defectUuid}`,
+        { defectUuid, fileName: fileData.fileName },
+      );
+
+      return mapDefectPhotoRowToApi(row);
+    });
+  }
+
+  /** Get all photos for a defect, ordered by sort_order */
+  async getDefectPhotos(
+    tenantId: number,
+    defectUuid: string,
+  ): Promise<TpmDefectPhoto[]> {
+    const rows = await this.db.query<TpmDefectPhotoRow>(
+      `SELECT dp.*
+       FROM tpm_defect_photos dp
+       JOIN tpm_execution_defects d ON dp.defect_id = d.id
+       WHERE d.uuid = $1 AND dp.tenant_id = $2
+       ORDER BY dp.sort_order ASC`,
+      [defectUuid, tenantId],
+    );
+
+    return rows.map(mapDefectPhotoRowToApi);
+  }
+
+  // ============================================================================
+  // DEFECTS
+  // ============================================================================
+
+  /** Fetch defects for a single execution */
+  async fetchDefectsForExecution(
+    tenantId: number,
+    executionUuid: string,
+  ): Promise<TpmExecutionDefect[]> {
+    const rows = await this.db.query<TpmExecutionDefectRow>(
+      `SELECT d.*
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       WHERE e.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
+       ORDER BY d.position_number ASC`,
+      [executionUuid, tenantId],
+    );
+
+    return rows.map((row: TpmExecutionDefectRow) => mapDefectRowToApi(row));
+  }
+
+  /** List all defects for a card across all executions (for Mängelliste page) */
+  async listDefectsForCard(
+    tenantId: number,
+    cardUuid: string,
+    page: number,
+    pageSize: number,
+  ): Promise<PaginatedDefects> {
+    const countResult = await this.db.queryOne<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       JOIN tpm_cards c ON e.card_id = c.id
+       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1`,
+      [cardUuid, tenantId],
+    );
+
+    const total = Number.parseInt(countResult?.count ?? '0', 10);
+    const offset = (page - 1) * pageSize;
+
+    const rows = await this.db.query<DefectWithContextRow>(
+      `SELECT d.*,
+         e.uuid AS execution_uuid,
+         e.execution_date,
+         COALESCE(
+           NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '),
+           u.username
+         ) AS executed_by_name,
+         e.approval_status,
+         (SELECT COUNT(*)::int FROM tpm_defect_photos dp WHERE dp.defect_id = d.id) AS photo_count
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       JOIN tpm_cards c ON e.card_id = c.id
+       LEFT JOIN users u ON e.executed_by = u.id
+       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
+       ORDER BY e.execution_date DESC, d.position_number ASC
+       LIMIT $3 OFFSET $4`,
+      [cardUuid, tenantId, pageSize, offset],
+    );
+
+    return {
+      data: rows.map(mapDefectWithContextToApi),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
 
@@ -424,6 +588,25 @@ export class TpmExecutionsService {
     return row;
   }
 
+  /** Lock a defect by UUID and return the full row */
+  private async lockDefectByUuid(
+    client: PoolClient,
+    tenantId: number,
+    defectUuid: string,
+  ): Promise<TpmExecutionDefectRow> {
+    const result = await client.query<TpmExecutionDefectRow>(
+      `SELECT * FROM tpm_execution_defects
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       FOR UPDATE`,
+      [defectUuid, tenantId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) {
+      throw new NotFoundException(`Mangel ${defectUuid} nicht gefunden`);
+    }
+    return row;
+  }
+
   /** Get photo count for an execution (within transaction) */
   private async getPhotoCount(
     client: PoolClient,
@@ -435,6 +618,21 @@ export class TpmExecutionsService {
        FROM tpm_card_execution_photos
        WHERE execution_id = $1 AND tenant_id = $2`,
       [executionId, tenantId],
+    );
+    return Number.parseInt(result.rows[0]?.count ?? '0', 10);
+  }
+
+  /** Get photo count for a defect (within transaction) */
+  private async getDefectPhotoCount(
+    client: PoolClient,
+    tenantId: number,
+    defectId: number,
+  ): Promise<number> {
+    const result = await client.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM tpm_defect_photos
+       WHERE defect_id = $1 AND tenant_id = $2`,
+      [defectId, tenantId],
     );
     return Number.parseInt(result.rows[0]?.count ?? '0', 10);
   }
@@ -617,69 +815,6 @@ export class TpmExecutionsService {
     );
   }
 
-  /** Fetch defects for a single execution */
-  async fetchDefectsForExecution(
-    tenantId: number,
-    executionUuid: string,
-  ): Promise<TpmExecutionDefect[]> {
-    const rows = await this.db.query<TpmExecutionDefectRow>(
-      `SELECT d.*
-       FROM tpm_execution_defects d
-       JOIN tpm_card_executions e ON d.execution_id = e.id
-       WHERE e.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
-       ORDER BY d.position_number ASC`,
-      [executionUuid, tenantId],
-    );
-
-    return rows.map((row: TpmExecutionDefectRow) => mapDefectRowToApi(row));
-  }
-
-  /** List all defects for a card across all executions (for Mängelliste page) */
-  async listDefectsForCard(
-    tenantId: number,
-    cardUuid: string,
-    page: number,
-    pageSize: number,
-  ): Promise<PaginatedDefects> {
-    const countResult = await this.db.queryOne<{ count: string }>(
-      `SELECT COUNT(*) AS count
-       FROM tpm_execution_defects d
-       JOIN tpm_card_executions e ON d.execution_id = e.id
-       JOIN tpm_cards c ON e.card_id = c.id
-       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1`,
-      [cardUuid, tenantId],
-    );
-
-    const total = Number.parseInt(countResult?.count ?? '0', 10);
-    const offset = (page - 1) * pageSize;
-
-    const rows = await this.db.query<DefectWithContextRow>(
-      `SELECT d.*,
-         e.uuid AS execution_uuid,
-         e.execution_date,
-         COALESCE(
-           NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '),
-           u.username
-         ) AS executed_by_name,
-         e.approval_status
-       FROM tpm_execution_defects d
-       JOIN tpm_card_executions e ON d.execution_id = e.id
-       JOIN tpm_cards c ON e.card_id = c.id
-       LEFT JOIN users u ON e.executed_by = u.id
-       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
-       ORDER BY e.execution_date DESC, d.position_number ASC
-       LIMIT $3 OFFSET $4`,
-      [cardUuid, tenantId, pageSize, offset],
-    );
-
-    return {
-      data: rows.map(mapDefectWithContextToApi),
-      total,
-      page,
-      pageSize,
-    };
-  }
-
   /**
    * Fire-and-forget notification after execution creation.
    * If approval required → notify approvers. Otherwise → notify completion.
@@ -785,6 +920,7 @@ function mapDefectWithContextToApi(
     executionDate: toIsoString(row.execution_date),
     executedByName: row.executed_by_name,
     approvalStatus: row.approval_status,
+    photoCount: row.photo_count,
     createdAt: toIsoString(row.created_at),
   };
 }

@@ -538,8 +538,36 @@ export interface EligibleParticipant {
   position: string | null;
 }
 
+/** Row type for `tpm_defect_photos` table (migration 063) — immutable, no updated_at */
+export interface TpmDefectPhotoRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  defect_id: number;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  sort_order: number;
+  created_at: string;
+}
+
+/** Defect photo as returned by the API */
+export interface TpmDefectPhoto {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
 /** Max photos per execution (enforced in service layer) */
 export const MAX_PHOTOS_PER_EXECUTION = 5;
+
+/** Max photos per defect (enforced in service layer) */
+export const MAX_PHOTOS_PER_DEFECT = 5;
 
 /** Max photo file size in bytes (5MB, enforced in DB + service) */
 export const MAX_PHOTO_FILE_SIZE = 5_242_880;

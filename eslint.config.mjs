@@ -520,6 +520,9 @@ export default [
         Response: 'readonly', // Node 18+ native fetch
         Request: 'readonly', // Node 18+ native fetch
         Headers: 'readonly', // Node 18+ native fetch
+        FormData: 'readonly', // Node 18+ Web API
+        File: 'readonly', // Node 20+ Web API
+        Blob: 'readonly', // Node 18+ Web API
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         Promise: 'readonly',

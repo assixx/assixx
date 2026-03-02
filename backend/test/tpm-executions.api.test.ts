@@ -28,7 +28,6 @@ let planUuid: string;
 let cardUuid: string;
 let templateUuid: string;
 let executionUuid: string;
-
 /** Force a card's status via direct DB update (test-only) */
 function forceCardStatus(uuid: string, status: string): void {
   execSync(
@@ -685,6 +684,169 @@ describe('TPM Exec: Photos Empty', () => {
   });
 
   it('should return 200 OK (empty array for non-existent execution)', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return empty array', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.length).toBe(0);
+  });
+});
+
+// ============================================================================
+// DEFECT PHOTOS
+// ============================================================================
+
+// Module-scoped state for defect photo tests (populated in seq 15b)
+let defectUuid: string;
+
+// ---- seq: 15b -- Create Execution With Defect → extract defectUuid ----------
+
+describe('TPM Defect Photos: Create Execution With Defect', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    forceCardStatus(cardUuid, 'red');
+
+    res = await fetch(`${BASE_URL}/tpm/executions`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        cardUuid,
+        noIssuesFound: false,
+        documentation: 'Mangel festgestellt bei Sichtprüfung',
+        defects: [
+          { title: 'Riss am Gehäuse', description: 'Haarriss Position 3' },
+        ],
+      }),
+    });
+    body = (await res.json()) as JsonBody;
+
+    if (res.status === 201 && Array.isArray(body.data.defects)) {
+      defectUuid = (body.data.defects as Array<{ uuid: string }>)[0]!.uuid;
+    }
+  });
+
+  it('should return 201 Created', () => {
+    expect(res.status).toBe(201);
+  });
+
+  it('should include defects array with uuid', () => {
+    expect(Array.isArray(body.data.defects)).toBe(true);
+    expect(body.data.defects.length).toBe(1);
+    expect(typeof body.data.defects[0].uuid).toBe('string');
+  });
+});
+
+// ---- seq: 15c -- Get Defect Photos (empty) ----------------------------------
+
+describe('TPM Defect Photos: Get Empty', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`,
+      { headers: authOnly(auth.authToken) },
+    );
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return empty array', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.length).toBe(0);
+  });
+});
+
+// ---- seq: 15d -- Upload Defect Photo ----------------------------------------
+
+describe('TPM Defect Photos: Upload', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    const formData = new FormData();
+    const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9]);
+    formData.append(
+      'file',
+      new File([jpegBytes], 'riss.jpg', { type: 'image/jpeg' }),
+    );
+
+    res = await fetch(
+      `${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${auth.authToken}` },
+        body: formData,
+      },
+    );
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 201 Created', () => {
+    expect(res.status).toBe(201);
+  });
+
+  it('should return photo with uuid and fileName', () => {
+    expect(typeof body.data.uuid).toBe('string');
+    expect(body.data.fileName).toBe('riss.jpg');
+  });
+
+  it('should return correct mimeType', () => {
+    expect(body.data.mimeType).toBe('image/jpeg');
+  });
+});
+
+// ---- seq: 15e -- Get Defect Photos (after upload) ---------------------------
+
+describe('TPM Defect Photos: Get After Upload', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`,
+      { headers: authOnly(auth.authToken) },
+    );
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return 1 photo', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.length).toBe(1);
+  });
+
+  it('should return the uploaded photo details', () => {
+    expect(body.data[0].fileName).toBe('riss.jpg');
+    expect(body.data[0].mimeType).toBe('image/jpeg');
+    expect(typeof body.data[0].filePath).toBe('string');
+  });
+});
+
+// ---- seq: 15f -- Get Defect Photos (non-existent defect) → empty ------------
+
+describe('TPM Defect Photos: Non-Existent Defect', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/tpm/executions/defects/019fffff-ffff-7fff-bfff-ffffffffffff/photos`,
+      { headers: authOnly(auth.authToken) },
+    );
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK (empty array)', () => {
     expect(res.status).toBe(200);
   });
 

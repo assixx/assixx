@@ -190,6 +190,7 @@ export interface DefectWithContext {
   executionDate: string;
   executedByName: string | null;
   approvalStatus: ApprovalStatus;
+  photoCount: number;
   createdAt: string;
 }
 
@@ -201,6 +202,17 @@ export interface DefectPayload {
 
 /** Photo attached to an execution */
 export interface TpmExecutionPhoto {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+/** Photo attached to a defect */
+export interface TpmDefectPhoto {
   uuid: string;
   filePath: string;
   fileName: string;

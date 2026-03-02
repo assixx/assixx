@@ -20,7 +20,12 @@ import type { TpmExecutionJoinRow } from './tpm-executions.helpers.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
 import type { TpmNotificationService } from './tpm-notification.service.js';
 import type { TpmSchedulingService } from './tpm-scheduling.service.js';
-import type { TpmCardExecutionPhotoRow, TpmCardRow } from './tpm.types.js';
+import type {
+  TpmCardExecutionPhotoRow,
+  TpmCardRow,
+  TpmDefectPhotoRow,
+  TpmExecutionDefectRow,
+} from './tpm.types.js';
 
 // =============================================================
 // Mock factories
@@ -130,6 +135,42 @@ function createPhotoRow(
     mime_type: 'image/jpeg',
     sort_order: 0,
     created_at: '2026-03-01T08:31:00.000Z',
+    ...overrides,
+  };
+}
+
+function createDefectRow(
+  overrides?: Partial<TpmExecutionDefectRow>,
+): TpmExecutionDefectRow {
+  return {
+    id: 5,
+    uuid: 'defect-uuid-001                          ',
+    tenant_id: 10,
+    execution_id: 1,
+    title: 'Leckage am Ventil',
+    description: null,
+    position_number: 1,
+    is_active: 1,
+    created_at: '2026-03-02T10:00:00.000Z',
+    updated_at: '2026-03-02T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function createDefectPhotoRow(
+  overrides?: Partial<TpmDefectPhotoRow>,
+): TpmDefectPhotoRow {
+  return {
+    id: 1,
+    uuid: 'defect-photo-uuid-001                    ',
+    tenant_id: 10,
+    defect_id: 5,
+    file_path: '/uploads/tpm/10/defects/abc/photo.jpg',
+    file_name: 'riss.jpg',
+    file_size: 2_500_000,
+    mime_type: 'image/jpeg',
+    sort_order: 0,
+    created_at: '2026-03-02T10:05:00.000Z',
     ...overrides,
   };
 }
@@ -722,6 +763,154 @@ describe('TpmExecutionsService', () => {
       const result = await service.getPhotos(10, 'exec-uuid-001');
 
       expect(result).toHaveLength(0);
+    });
+  });
+
+  // =============================================================
+  // addDefectPhoto
+  // =============================================================
+
+  describe('addDefectPhoto()', () => {
+    it('should add a photo to a defect', async () => {
+      // lockDefectByUuid
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectRow()],
+      });
+      // getDefectPhotoCount → 2
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '2' }],
+      });
+      // INSERT photo
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectPhotoRow()],
+      });
+
+      const result = await service.addDefectPhoto(10, 'defect-uuid-001', 7, {
+        filePath: '/uploads/tpm/10/defects/abc/photo.jpg',
+        fileName: 'riss.jpg',
+        fileSize: 2_500_000,
+        mimeType: 'image/jpeg',
+      });
+
+      expect(result.uuid).toBe('defect-photo-uuid-001');
+      expect(result.fileName).toBe('riss.jpg');
+      expect(result.fileSize).toBe(2_500_000);
+    });
+
+    it('should throw BadRequestException when photo limit exceeded (max 5)', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectRow()],
+      });
+      // Already 5 photos
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '5' }],
+      });
+
+      await expect(
+        service.addDefectPhoto(10, 'defect-uuid-001', 7, {
+          filePath: '/uploads/tpm/10/defects/abc/photo6.jpg',
+          fileName: 'photo6.jpg',
+          fileSize: 1_000_000,
+          mimeType: 'image/jpeg',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when defect not found', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(
+        service.addDefectPhoto(10, 'nonexistent', 7, {
+          filePath: '/uploads/tpm/photo.jpg',
+          fileName: 'photo.jpg',
+          fileSize: 1_000_000,
+          mimeType: 'image/jpeg',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should use sort_order based on current photo count', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectRow()],
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '3' }],
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectPhotoRow({ sort_order: 3 })],
+      });
+
+      await service.addDefectPhoto(10, 'defect-uuid-001', 7, {
+        filePath: '/uploads/tpm/10/defects/abc/photo4.jpg',
+        fileName: 'photo4.jpg',
+        fileSize: 1_000_000,
+        mimeType: 'image/jpeg',
+      });
+
+      // INSERT params: sort_order is at index 7 (0-based)
+      const insertParams = mockClient.query.mock.calls[2]?.[1] as unknown[];
+      expect(insertParams?.[7]).toBe(3);
+    });
+
+    it('should use FOR UPDATE lock on defect', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectRow()],
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ count: '0' }],
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [createDefectPhotoRow()],
+      });
+
+      await service.addDefectPhoto(10, 'defect-uuid-001', 7, {
+        filePath: '/uploads/tpm/photo.jpg',
+        fileName: 'photo.jpg',
+        fileSize: 1_000_000,
+        mimeType: 'image/jpeg',
+      });
+
+      const lockSql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(lockSql).toContain('FOR UPDATE');
+      expect(lockSql).toContain('tpm_execution_defects');
+    });
+  });
+
+  // =============================================================
+  // getDefectPhotos
+  // =============================================================
+
+  describe('getDefectPhotos()', () => {
+    it('should return photos sorted by sort_order', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        createDefectPhotoRow({ sort_order: 0 }),
+        createDefectPhotoRow({ id: 2, sort_order: 1 }),
+      ]);
+
+      const result = await service.getDefectPhotos(10, 'defect-uuid-001');
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.sortOrder).toBe(0);
+      expect(result[1]?.sortOrder).toBe(1);
+    });
+
+    it('should return empty array when no photos', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getDefectPhotos(10, 'defect-uuid-001');
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should map defect photo fields correctly', async () => {
+      mockDb.query.mockResolvedValueOnce([createDefectPhotoRow()]);
+
+      const result = await service.getDefectPhotos(10, 'defect-uuid-001');
+
+      expect(result[0]?.uuid).toBe('defect-photo-uuid-001');
+      expect(result[0]?.fileName).toBe('riss.jpg');
+      expect(result[0]?.mimeType).toBe('image/jpeg');
+      expect(result[0]?.fileSize).toBe(2_500_000);
     });
   });
 });

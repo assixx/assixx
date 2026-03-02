@@ -7,7 +7,7 @@
    *   2. "Ohne Beanstandung" checkbox (fast path for 80% of routine maintenance)
    *   3. Actual duration + staff count (IST vs SOLL comparison)
    *   4. Documentation / remarks (optional when no issues, required when issues found)
-   *   5. Photo staging (optional, max 5)
+   *   5. Photo staging (optional, max 5 per execution + max 5 per defect)
    *
    * Only shown when card status is 'red' or 'overdue'.
    */
@@ -16,7 +16,12 @@
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
 
-  import { createExecution, uploadPhoto, logApiError } from '../../../_lib/api';
+  import {
+    createExecution,
+    uploadPhoto,
+    uploadDefectPhoto,
+    logApiError,
+  } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
   import type {
@@ -70,10 +75,16 @@
     id: number;
     title: string;
     description: string;
+    stagedPhotos: StagedPhoto[];
   }
   let defectIdCounter = 1;
   function createEmptyDefect(): DefectEntry {
-    return { id: defectIdCounter++, title: '', description: '' };
+    return {
+      id: defectIdCounter++,
+      title: '',
+      description: '',
+      stagedPhotos: [],
+    };
   }
   let defects = $state<DefectEntry[]>([createEmptyDefect()]);
 
@@ -212,9 +223,43 @@
     );
   }
 
+  function handleDefectFileSelect(defectIndex: number, e: Event): void {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file === undefined) return;
+
+    const validationError = validateFile(file);
+    if (validationError !== null) {
+      photoError = validationError;
+      input.value = '';
+      return;
+    }
+
+    photoError = null;
+    const defect = defects[defectIndex];
+    defect.stagedPhotos = [
+      ...defect.stagedPhotos,
+      { file, previewUrl: URL.createObjectURL(file) },
+    ];
+    input.value = '';
+  }
+
+  function removeDefectPhoto(defectIndex: number, photoIndex: number): void {
+    const defect = defects[defectIndex];
+    URL.revokeObjectURL(defect.stagedPhotos[photoIndex].previewUrl);
+    defect.stagedPhotos = defect.stagedPhotos.filter(
+      (_: StagedPhoto, i: number) => i !== photoIndex,
+    );
+  }
+
   function cleanupPreviews(): void {
     for (const staged of stagedPhotos) {
       URL.revokeObjectURL(staged.previewUrl);
+    }
+    for (const defect of defects) {
+      for (const staged of defect.stagedPhotos) {
+        URL.revokeObjectURL(staged.previewUrl);
+      }
     }
   }
 
@@ -251,6 +296,44 @@
     };
   }
 
+  /** Upload staged execution photos, return failure count */
+  async function uploadStagedPhotos(executionUuid: string): Promise<number> {
+    let failed = 0;
+    for (const staged of stagedPhotos) {
+      try {
+        await uploadPhoto(executionUuid, staged.file);
+      } catch (uploadErr: unknown) {
+        failed++;
+        logApiError('uploadPhoto', uploadErr);
+      }
+    }
+    return failed;
+  }
+
+  /** Upload staged defect photos, return failure count */
+  async function uploadStagedDefectPhotos(
+    execution: TpmExecution,
+  ): Promise<number> {
+    if (noIssuesFound) return 0;
+    const validDefects = defects.filter(
+      (d: DefectEntry) => d.title.trim().length > 0,
+    );
+    const serverDefects = execution.defects ?? [];
+    const limit = Math.min(validDefects.length, serverDefects.length);
+    let failed = 0;
+    for (let i = 0; i < limit; i++) {
+      for (const staged of validDefects[i].stagedPhotos) {
+        try {
+          await uploadDefectPhoto(serverDefects[i].uuid, staged.file);
+        } catch (uploadErr: unknown) {
+          failed++;
+          logApiError('uploadDefectPhoto', uploadErr);
+        }
+      }
+    }
+    return failed;
+  }
+
   async function handleSubmit(): Promise<void> {
     if (!canExecute || !isValid || submitting) return;
 
@@ -260,19 +343,10 @@
 
     try {
       const execution = await createExecution(buildExecutionPayload());
+      const failedUploads =
+        (await uploadStagedPhotos(execution.uuid)) +
+        (await uploadStagedDefectPhotos(execution));
 
-      // Step 2: Upload staged photos (sequential to avoid server overload)
-      let failedUploads = 0;
-      for (const staged of stagedPhotos) {
-        try {
-          await uploadPhoto(execution.uuid, staged.file);
-        } catch (uploadErr: unknown) {
-          failedUploads++;
-          logApiError('uploadPhoto', uploadErr);
-        }
-      }
-
-      // Step 3: Clean up blob URLs
       cleanupPreviews();
 
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
@@ -295,8 +369,10 @@
   onDestroy(cleanupPreviews);
 </script>
 
-<div class="execution-form">
-  <h4 class="execution-form__title">
+<div class="flex flex-col gap-3">
+  <h4
+    class="m-0 flex items-center gap-2 text-sm font-semibold text-(--color-text-primary)"
+  >
     <i class="fas fa-check-double"></i>
     {MESSAGES.EXEC_HEADING}
   </h4>
@@ -306,7 +382,10 @@
       {MESSAGES.EXEC_CARD_NOT_DUE}
     </p>
   {:else if completed}
-    <div class="execution-form__success">
+    <div
+      class="flex items-center gap-2 rounded-(--radius-md) px-3 py-2 text-sm font-medium text-(--color-success)"
+      style="background: color-mix(in srgb, var(--color-success) 8%, transparent)"
+    >
       <i class="fas fa-check-circle"></i>
       {MESSAGES.EXEC_SUCCESS}
     </div>
@@ -317,8 +396,8 @@
       </span>
     {/if}
   {:else}
-    <!-- Step 1: Execution Date -->
-    <div class="execution-form__date">
+    <!-- Execution Date -->
+    <div class="w-fit">
       <AppDatePicker
         bind:value={executionDate}
         label={MESSAGES.EXEC_DATE}
@@ -328,8 +407,8 @@
       />
     </div>
 
-    <!-- Step 2: No Issues Checkbox -->
-    <label class="choice-card execution-form__no-issues">
+    <!-- No Issues Checkbox -->
+    <label class="choice-card w-fit px-3 py-2">
       <input
         type="checkbox"
         class="choice-card__input"
@@ -344,7 +423,7 @@
       </span>
     </label>
 
-    <!-- Step 2b: Defects (when issues found) -->
+    <!-- Defects (when issues found) -->
     {#if !noIssuesFound}
       <div class="flex flex-col gap-3">
         <h5
@@ -412,6 +491,68 @@
                   disabled={submitting}
                 ></textarea>
               </div>
+
+              <!-- Defect Photos -->
+              {#if defect.stagedPhotos.length > 0}
+                <div class="flex flex-wrap gap-2">
+                  {#each defect.stagedPhotos as staged, pi (staged.previewUrl)}
+                    <div class="photo-thumb">
+                      <img
+                        src={staged.previewUrl}
+                        alt={staged.file.name}
+                        class="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        class="photo-thumb__remove"
+                        onclick={() => {
+                          removeDefectPhoto(index, pi);
+                        }}
+                        disabled={submitting}
+                        aria-label="Mängelfoto entfernen"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+
+              {#if defect.stagedPhotos.length < MAX_PHOTOS && !submitting}
+                <div class="file-upload-zone file-upload-zone--compact">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onchange={(e: Event) => {
+                      handleDefectFileSelect(index, e);
+                    }}
+                    class="file-upload-zone__input"
+                    id="defect-photo-{index}"
+                    disabled={submitting}
+                  />
+                  <label
+                    for="defect-photo-{index}"
+                    class="file-upload-zone__label"
+                  >
+                    <div class="file-upload-zone__icon">
+                      <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="file-upload-zone__text">
+                      <p class="file-upload-zone__title">
+                        {MESSAGES.DEFECT_PHOTO_ADD}
+                      </p>
+                      <p class="file-upload-zone__subtitle">
+                        {MESSAGES.DEFECT_PHOTO_MAX_SIZE} · {defect.stagedPhotos
+                          .length} / {MAX_PHOTOS}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              {:else if defect.stagedPhotos.length >= MAX_PHOTOS}
+                <span class="text-xs text-(--color-text-muted) italic">
+                  {MESSAGES.DEFECT_PHOTO_MAX_REACHED}
+                </span>
+              {/if}
             </div>
           </div>
         {/each}
@@ -430,46 +571,46 @@
       </div>
     {/if}
 
-    <!-- Step 3: Time & Staff (optional) -->
-    <div class="execution-form__row">
-      <div class="form-field execution-form__half">
+    <!-- Time & Staff (optional) -->
+    <div class="flex gap-3">
+      <div class="form-field min-w-0 flex-1">
         <label
           for="exec-duration"
           class="form-field__label"
         >
           {MESSAGES.EXEC_DURATION}
           {#if sollDuration !== null}
-            <span class="execution-form__soll">
+            <span class="text-xs font-normal text-(--color-text-muted)">
               ({MESSAGES.EXEC_SOLL}: {sollDuration}
               {MESSAGES.EXEC_DURATION_UNIT})
             </span>
           {/if}
         </label>
-        <div class="execution-form__input-suffix">
+        <div class="flex items-center gap-1.5">
           <input
             id="exec-duration"
             type="number"
-            class="form-field__control"
+            class="form-field__control flex-1"
             bind:value={actualDurationMinutes}
             min="1"
             max="1440"
             placeholder="—"
             disabled={submitting}
           />
-          <span class="execution-form__suffix"
-            >{MESSAGES.EXEC_DURATION_UNIT}</span
-          >
+          <span class="text-xs whitespace-nowrap text-(--color-text-muted)">
+            {MESSAGES.EXEC_DURATION_UNIT}
+          </span>
         </div>
       </div>
 
-      <div class="form-field execution-form__half">
+      <div class="form-field min-w-0 flex-1">
         <label
           for="exec-staff"
           class="form-field__label"
         >
           {MESSAGES.EXEC_STAFF}
           {#if sollStaff !== null}
-            <span class="execution-form__soll">
+            <span class="text-xs font-normal text-(--color-text-muted)">
               ({MESSAGES.EXEC_SOLL}: {sollStaff})
             </span>
           {/if}
@@ -488,10 +629,10 @@
 
       <!-- Employee Search -->
       {#if employees.length > 0}
-        <div class="form-field execution-form__half">
+        <div class="form-field min-w-0 flex-1">
           <span class="form-field__label">Beteiligte Mitarbeiter</span>
           <div
-            class="search-input-wrapper employee-search"
+            class="search-input-wrapper relative"
             class:search-input-wrapper--open={employeeSearchOpen &&
               employeeQuery.trim().length > 0}
           >
@@ -539,7 +680,9 @@
                   />
                 {/each}
               {:else}
-                <div class="employee-search__no-results">
+                <div
+                  class="px-3 py-2 text-[0.813rem] text-(--color-text-muted) italic"
+                >
                   Keine Mitarbeiter gefunden
                 </div>
               {/if}
@@ -551,16 +694,16 @@
 
     <!-- Selected Employees (chips) -->
     {#if selectedEmployees.length > 0}
-      <div class="employee-chips">
+      <div class="flex flex-wrap gap-1.5">
         {#each selectedEmployees as emp (emp.uuid)}
           <span class="employee-chip">
-            <span class="employee-chip__name">
+            <span class="font-medium">
               {emp.firstName}
               {emp.lastName}
             </span>
             <button
               type="button"
-              class="employee-chip__remove"
+              class="flex size-4 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[0.625rem] text-(--color-text-muted) transition-colors duration-150 hover:enabled:text-(--color-danger)"
               onclick={() => {
                 removeEmployee(emp.uuid);
               }}
@@ -574,7 +717,7 @@
       </div>
     {/if}
 
-    <!-- Step 4: Documentation (only when issues found) -->
+    <!-- Documentation (only when issues found) -->
     {#if !noIssuesFound}
       <div class="form-field">
         <label
@@ -603,20 +746,20 @@
       </div>
     {/if}
 
-    <!-- Step 5: Photo staging -->
-    <div class="execution-form__photos">
+    <!-- Execution Photo staging -->
+    <div class="flex flex-col gap-3">
       {#if stagedPhotos.length > 0}
-        <div class="execution-form__photo-grid">
+        <div class="flex flex-wrap gap-2">
           {#each stagedPhotos as staged, index (staged.previewUrl)}
-            <div class="execution-form__photo-thumb">
+            <div class="photo-thumb">
               <img
                 src={staged.previewUrl}
                 alt={staged.file.name}
-                class="execution-form__photo-img"
+                class="h-full w-full object-cover"
               />
               <button
                 type="button"
-                class="execution-form__photo-remove"
+                class="photo-thumb__remove"
                 onclick={() => {
                   removePhoto(index);
                 }}
@@ -632,7 +775,7 @@
 
       {#if canAddPhoto}
         <div
-          class="file-upload-zone file-upload-zone--compact execution-form__upload-zone"
+          class="file-upload-zone file-upload-zone--compact mb-3 w-full max-w-[600px] self-center"
         >
           <input
             type="file"
@@ -679,10 +822,10 @@
       </span>
     {/if}
 
-    <!-- Step 6: Submit -->
+    <!-- Submit -->
     <button
       type="button"
-      class="btn btn-primary execution-form__submit"
+      class="btn btn-primary self-center"
       onclick={handleSubmit}
       disabled={submitting || !isValid}
     >
@@ -698,97 +841,7 @@
 </div>
 
 <style>
-  .execution-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .execution-form__title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0;
-  }
-
-  .execution-form__date {
-    width: fit-content;
-  }
-
-  .execution-form__success {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-success);
-    padding: 0.5rem 0.75rem;
-    background: color-mix(in srgb, var(--color-success) 8%, transparent);
-    border-radius: var(--radius-md);
-  }
-
-  .execution-form__no-issues {
-    padding: 0.5rem 0.75rem;
-    width: fit-content;
-  }
-
-  /* Row layout for duration + staff */
-  .execution-form__row {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  .execution-form__half {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .execution-form__input-suffix {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-  }
-
-  .execution-form__input-suffix .form-field__control {
-    flex: 1;
-  }
-
-  .execution-form__suffix {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-  }
-
-  .execution-form__soll {
-    font-weight: 400;
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-  }
-
-  /* Photo staging */
-  .execution-form__photos {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .execution-form__upload-zone {
-    max-width: 600px;
-    width: 100%;
-    align-self: center;
-    margin-bottom: 0.75rem;
-  }
-
-  .execution-form__photo-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .execution-form__photo-thumb {
+  .photo-thumb {
     position: relative;
     width: 72px;
     height: 72px;
@@ -797,13 +850,7 @@
     border: 1px solid var(--color-glass-border);
   }
 
-  .execution-form__photo-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .execution-form__photo-remove {
+  .photo-thumb__remove {
     position: absolute;
     top: 2px;
     right: 2px;
@@ -821,31 +868,8 @@
     transition: background 0.15s ease;
   }
 
-  .execution-form__photo-remove:hover {
+  .photo-thumb__remove:hover {
     background: var(--color-danger);
-  }
-
-  .execution-form__submit {
-    align-self: center;
-  }
-
-  /* Employee Search */
-  .employee-search {
-    position: relative;
-  }
-
-  .employee-search__no-results {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.813rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-
-  /* Selected Employee Chips */
-  .employee-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
   }
 
   .employee-chip {
@@ -858,28 +882,5 @@
     border-radius: var(--radius-full, 9999px);
     font-size: 0.75rem;
     color: var(--color-text-primary);
-  }
-
-  .employee-chip__name {
-    font-weight: 500;
-  }
-
-  .employee-chip__remove {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border: none;
-    border-radius: var(--radius-full, 9999px);
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 0.625rem;
-    transition: color 0.15s ease;
-  }
-
-  .employee-chip__remove:hover:not(:disabled) {
-    color: var(--color-danger);
   }
 </style>

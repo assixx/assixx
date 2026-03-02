@@ -5,6 +5,8 @@
  * - POST   /tpm/executions                           — Create execution (mark card done)
  * - GET    /tpm/executions/pending-approvals          — List pending approvals
  * - GET    /tpm/executions/eligible-participants      — List employees for participant selection
+ * - POST   /tpm/executions/defects/:uuid/photos      — Upload defect photo
+ * - GET    /tpm/executions/defects/:uuid/photos       — List defect photos
  * - GET    /tpm/executions/:uuid                     — Get single execution
  * - POST   /tpm/executions/:uuid/respond             — Approve or reject
  * - POST   /tpm/executions/:uuid/photos              — Upload photo
@@ -44,6 +46,7 @@ import { TpmExecutionsService } from './tpm-executions.service.js';
 import type {
   EligibleParticipant,
   TpmCardExecution,
+  TpmDefectPhoto,
   TpmExecutionPhoto,
 } from './tpm.types.js';
 import { MAX_PHOTO_FILE_SIZE } from './tpm.types.js';
@@ -107,6 +110,58 @@ export class TpmExecutionsController {
   ): Promise<EligibleParticipant[]> {
     return await this.executionsService.getEligibleParticipants(tenantId);
   }
+
+  // ============================================================================
+  // DEFECT PHOTOS (must be BEFORE :uuid to avoid path collision)
+  // ============================================================================
+
+  /** POST /tpm/executions/defects/:uuid/photos — Upload a defect photo */
+  @Post('defects/:uuid/photos')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('file', tpmPhotoOptions))
+  @RequirePermission(FEAT, MOD_EXEC, 'canWrite')
+  async uploadDefectPhoto(
+    @Param('uuid') defectUuid: string,
+    @UploadedFile() file: MulterFile | undefined,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmDefectPhoto> {
+    if (file === undefined) {
+      throw new BadRequestException('Keine Datei hochgeladen');
+    }
+
+    const storagePath = await writeDefectPhotoToDisk(
+      tenantId,
+      defectUuid,
+      file,
+    );
+
+    return await this.executionsService.addDefectPhoto(
+      tenantId,
+      defectUuid,
+      user.id,
+      {
+        filePath: storagePath,
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+      },
+    );
+  }
+
+  /** GET /tpm/executions/defects/:uuid/photos — List photos for a defect */
+  @Get('defects/:uuid/photos')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async getDefectPhotos(
+    @Param('uuid') defectUuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<TpmDefectPhoto[]> {
+    return await this.executionsService.getDefectPhotos(tenantId, defectUuid);
+  }
+
+  // ============================================================================
+  // EXECUTION CRUD (continued)
+  // ============================================================================
 
   /** POST /tpm/executions — Create execution (employee marks card as done) */
   @Post()
@@ -176,7 +231,7 @@ export class TpmExecutionsController {
   }
 
   // ============================================================================
-  // PHOTOS
+  // EXECUTION PHOTOS
   // ============================================================================
 
   /** POST /tpm/executions/:uuid/photos — Upload a photo */
@@ -224,7 +279,7 @@ export class TpmExecutionsController {
 // Helpers (module-level pure functions)
 // ============================================================================
 
-/** Write uploaded file to disk and return the relative storage path */
+/** Write uploaded execution photo to disk and return the relative storage path */
 async function writePhotoToDisk(
   tenantId: number,
   executionUuid: string,
@@ -237,6 +292,30 @@ async function writePhotoToDisk(
     'tpm',
     tenantId.toString(),
     executionUuid,
+    `${fileUuid}${extension}`,
+  );
+  const absolutePath = path.join(process.cwd(), relativePath);
+
+  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  await fs.writeFile(absolutePath, file.buffer);
+
+  return relativePath;
+}
+
+/** Write uploaded defect photo to disk and return the relative storage path */
+async function writeDefectPhotoToDisk(
+  tenantId: number,
+  defectUuid: string,
+  file: MulterFile,
+): Promise<string> {
+  const fileUuid = uuidv7();
+  const extension = path.extname(file.originalname).toLowerCase();
+  const relativePath = path.join(
+    'uploads',
+    'tpm',
+    tenantId.toString(),
+    'defects',
+    defectUuid,
     `${fileUuid}${extension}`,
   );
   const absolutePath = path.join(process.cwd(), relativePath);

@@ -9,6 +9,7 @@ import type {
   TpmPlan,
   TpmCard,
   TpmColorConfigEntry,
+  TpmDefectPhoto,
   TpmExecution,
   TpmExecutionPhoto,
   TpmLocation,
@@ -249,6 +250,33 @@ export async function fetchPhotos(
     `/tpm/executions/${executionUuid}/photos`,
   );
   return extractArray<TpmExecutionPhoto>(result);
+}
+
+// =============================================================================
+// DEFECT PHOTOS
+// =============================================================================
+
+/** Upload a photo to a defect */
+export async function uploadDefectPhoto(
+  defectUuid: string,
+  file: File,
+): Promise<TpmDefectPhoto> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await apiClient.post(
+    `/tpm/executions/defects/${defectUuid}/photos`,
+    formData,
+  );
+}
+
+/** Fetch photos for a defect */
+export async function fetchDefectPhotos(
+  defectUuid: string,
+): Promise<TpmDefectPhoto[]> {
+  const result: unknown = await apiClient.get(
+    `/tpm/executions/defects/${defectUuid}/photos`,
+  );
+  return extractArray<TpmDefectPhoto>(result);
 }
 
 // =============================================================================
