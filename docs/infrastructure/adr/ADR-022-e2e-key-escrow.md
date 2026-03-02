@@ -2,7 +2,7 @@
 
 | Metadata                | Value                                                                            |
 | ----------------------- | -------------------------------------------------------------------------------- |
-| **Status**              | Proposed                                                                         |
+| **Status**              | Accepted                                                                         |
 | **Date**                | 2026-02-11                                                                       |
 | **Decision Makers**     | SCS-Technik Team                                                                 |
 | **Affected Components** | Frontend (CryptoWorker, Login, Profile), Backend (E2E Escrow Module), PostgreSQL |
@@ -422,23 +422,23 @@ Each attempt costs ~0.5 seconds and 64 MiB of RAM due to Argon2id's memory-hardn
 
 ## Definition of Done
 
-- [ ] `hash-wasm` dependency added to `frontend/package.json`
-- [ ] `crypto-worker.ts`: `wrapPrivateKey` and `unwrapPrivateKey` handlers implemented
-- [ ] `crypto-bridge.ts`: `wrapKey()` and `unwrapKey()` methods added
-- [ ] `login-password-bridge.ts`: module-scoped password bridge created
-- [ ] `e2e-state.svelte.ts`: `tryRecoverFromEscrow()` integrated before `generateAndRegisterKey()`
-- [ ] `e2e-state.svelte.ts`: `createEscrowBlob()` called after key generation
-- [ ] `e2e-state.svelte.ts`: `reEncryptEscrow()` for password change flow
-- [ ] `login/+page.svelte`: `setLoginPassword()` called before `goto()`
-- [ ] Profile pages: `reEncryptEscrow()` called after password change
-- [ ] Backend: `e2e-escrow` module with POST/GET/PUT endpoints
-- [ ] Backend: `e2e-escrow.service.ts` with proper `tenantTransaction()` (ADR-019)
-- [ ] Database: migration for `e2e_key_escrow` table with RLS + GRANT
-- [ ] Unit tests: Argon2id derivation, wrap/unwrap roundtrip, wrong password rejection
-- [ ] API tests: CRUD endpoints, tenant isolation, rate limiting
-- [ ] Integration test: full login → escrow creation → "device loss" → recovery → decryption
-- [ ] Password change test: re-encryption with new password, old password rejection after change
-- [ ] ADR-021 amended: "no key escrow" constraint removed, cross-reference to ADR-022
+- [x] `hash-wasm` dependency added to `frontend/package.json`
+- [x] `crypto-worker.ts`: `wrapPrivateKey` and `unwrapPrivateKey` handlers implemented
+- [x] `crypto-bridge.ts`: `wrapKey()` and `unwrapKey()` methods added
+- [x] `login-password-bridge.ts`: module-scoped password bridge created
+- [x] `e2e-state.svelte.ts`: `tryRecoverFromEscrow()` integrated before `generateAndRegisterKey()`
+- [x] `e2e-state.svelte.ts`: `createEscrowBlob()` called after key generation
+- [x] `e2e-state.svelte.ts`: `reEncryptEscrow()` for password change flow
+- [x] `login/+page.svelte`: `setLoginPassword()` called before `goto()`
+- [x] Profile pages: `reEncryptEscrow()` called after password change
+- [x] Backend: `e2e-escrow` module with POST/GET/PUT endpoints
+- [x] Backend: `e2e-escrow.service.ts` with proper `tenantTransaction()` (ADR-019)
+- [x] Database: migration for `e2e_key_escrow` table with RLS + GRANT
+- [x] Unit tests: Argon2id derivation, wrap/unwrap roundtrip, wrong password rejection
+- [x] API tests: CRUD endpoints, tenant isolation, rate limiting
+- [x] Integration test: full login → escrow creation → "device loss" → recovery → decryption
+- [x] Password change test: re-encryption with new password, old password rejection after change
+- [x] ADR-021 amended: "no key escrow" constraint removed, cross-reference to ADR-022
 
 ---
 
