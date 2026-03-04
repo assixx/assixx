@@ -633,7 +633,7 @@ backend/src/nest/dummy-users/
 
 ### Phase 5 — Definition of Done
 
-- [x] >= 15 API Integration Tests (18 Tests)
+- [x] > = 15 API Integration Tests (18 Tests)
 - [x] Alle Tests grün (5945 total, 0 Fehler)
 - [x] Dummy-Login funktioniert
 - [x] Zugriffskontrolle verifiziert (erlaubt + verboten)
