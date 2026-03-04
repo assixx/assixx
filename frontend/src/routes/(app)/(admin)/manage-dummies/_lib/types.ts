@@ -73,12 +73,10 @@ export interface UpdateDummyPayload {
 // API RESPONSE TYPES
 // =============================================================================
 
-/** Paginated list response */
+/** Paginated list response (matches backend PaginatedDummyUsers) */
 export interface PaginatedDummies {
-  data: DummyUser[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-  };
+  items: DummyUser[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

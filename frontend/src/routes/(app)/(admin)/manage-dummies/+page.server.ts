@@ -58,13 +58,14 @@ function extractDummies(data: PaginatedDummies | null): {
   totalPages: number;
   totalItems: number;
 } {
-  if (data === null || !Array.isArray(data.data)) {
+  if (data === null || !Array.isArray(data.items)) {
     return { dummies: [], totalPages: 1, totalItems: 0 };
   }
+  const pageSize = data.pageSize > 0 ? data.pageSize : 20;
   return {
-    dummies: data.data,
-    totalPages: data.pagination.totalPages,
-    totalItems: data.pagination.totalItems,
+    dummies: data.items,
+    totalPages: Math.ceil(data.total / pageSize),
+    totalItems: data.total,
   };
 }
 

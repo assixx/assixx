@@ -23,18 +23,16 @@ const apiClient = getApiClient();
 /** Type-safe extraction of paginated dummies from API response */
 function extractPaginated(result: unknown): PaginatedDummies {
   if (result === null || typeof result !== 'object') {
-    return {
-      data: [],
-      pagination: { currentPage: 1, totalPages: 1, totalItems: 0 },
-    };
+    return { items: [], total: 0, page: 1, pageSize: 20 };
   }
   const obj = result as Record<string, unknown>;
-  const data = Array.isArray(obj.data) ? (obj.data as DummyUser[]) : [];
-  const pag =
-    typeof obj.pagination === 'object' && obj.pagination !== null ?
-      (obj.pagination as PaginatedDummies['pagination'])
-    : { currentPage: 1, totalPages: 1, totalItems: 0 };
-  return { data, pagination: pag };
+  const items = Array.isArray(obj.items) ? (obj.items as DummyUser[]) : [];
+  return {
+    items,
+    total: typeof obj.total === 'number' ? obj.total : 0,
+    page: typeof obj.page === 'number' ? obj.page : 1,
+    pageSize: typeof obj.pageSize === 'number' ? obj.pageSize : 20,
+  };
 }
 
 /** Type-safe extraction of array data from API response */

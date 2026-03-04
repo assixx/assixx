@@ -71,8 +71,9 @@
       if (searchTerm !== '') filters.search = searchTerm;
 
       const result = await listDummies(currentPage, 20, filters);
-      clientDummies = result.data;
-      clientTotalPages = result.pagination.totalPages;
+      clientDummies = result.items;
+      const ps = result.pageSize > 0 ? result.pageSize : 20;
+      clientTotalPages = Math.ceil(result.total / ps);
     } catch (err: unknown) {
       logApiError('loadDummies', err);
       showErrorAlert('Fehler beim Laden der Dummy-Benutzer');
