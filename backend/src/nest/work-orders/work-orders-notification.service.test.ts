@@ -342,8 +342,8 @@ describe('WorkOrderNotificationService', () => {
       );
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
-      // 3 users × 7 base params + 3 UUIDs = 24 params
-      expect(params).toHaveLength(24);
+      // 3 users × 8 base params (incl. metadata) + 3 UUIDs = 27 params
+      expect(params).toHaveLength(27);
     });
 
     it('should use UUIDv7 for notification uuid', async () => {
@@ -358,6 +358,24 @@ describe('WorkOrderNotificationService', () => {
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params).toContain('mock-uuid-v7-001');
+    });
+
+    it('should include metadata with entityUuid in params', async () => {
+      setupPayloadSuccess(mockDb);
+
+      await service.persistAssignedNotification(
+        TENANT_ID,
+        WO_UUID,
+        [5],
+        CREATED_BY,
+      );
+
+      const sql = mockDb._mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('metadata');
+
+      const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
+      const metadataJson = JSON.stringify({ entityUuid: WO_UUID });
+      expect(params).toContain(metadataJson);
     });
 
     it('should skip when assigneeUserIds is empty', async () => {

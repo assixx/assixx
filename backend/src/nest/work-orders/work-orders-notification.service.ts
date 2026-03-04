@@ -91,6 +91,7 @@ export class WorkOrderNotificationService {
       `Neuer Arbeitsauftrag: ${wo.title}`,
       `Dir wurde der Arbeitsauftrag "${wo.title}" (Priorität: ${wo.priority}) zugewiesen.`,
       createdByUserId,
+      { entityUuid: workOrderUuid },
     );
   }
 
@@ -110,6 +111,7 @@ export class WorkOrderNotificationService {
       `Arbeitsauftrag verifiziert: ${wo.title}`,
       `Dein Arbeitsauftrag "${wo.title}" wurde verifiziert.`,
       verifiedByUserId,
+      { entityUuid: workOrderUuid },
     );
   }
 
@@ -125,17 +127,21 @@ export class WorkOrderNotificationService {
     title: string,
     message: string,
     createdBy: number,
+    metadata: Record<string, unknown> | null = null,
   ): Promise<void> {
     if (userIds.length === 0) return;
 
     try {
+      const colsPerRow = 8;
       await this.db.transaction(
         async (client: import('pg').PoolClient) => {
           const values = userIds.map(
             (_uid: number, i: number): string =>
-              `($${i * 7 + 1}, $${i * 7 + 2}, $${i * 7 + 3}, $${i * 7 + 4}, $${i * 7 + 5}, $${i * 7 + 6}, $${i * 7 + 7})`,
+              `($${i * colsPerRow + 1}, $${i * colsPerRow + 2}, $${i * colsPerRow + 3}, $${i * colsPerRow + 4}, $${i * colsPerRow + 5}, $${i * colsPerRow + 6}, $${i * colsPerRow + 7}, $${i * colsPerRow + 8})`,
           );
 
+          const metadataJson =
+            metadata !== null ? JSON.stringify(metadata) : null;
           const params = userIds.flatMap((uid: number): unknown[] => [
             tenantId,
             type,
@@ -144,11 +150,12 @@ export class WorkOrderNotificationService {
             'user',
             uid,
             createdBy,
+            metadataJson,
           ]);
 
           const sql = `INSERT INTO notifications
-             (tenant_id, type, title, message, recipient_type, recipient_id, created_by, uuid, uuid_created_at)
-           VALUES ${values.map((v: string, i: number): string => v.replace(/\)$/, `, $${userIds.length * 7 + i * 2 + 1}, NOW())`)).join(', ')}`;
+             (tenant_id, type, title, message, recipient_type, recipient_id, created_by, metadata, uuid, uuid_created_at)
+           VALUES ${values.map((v: string, i: number): string => v.replace(/\)$/, `, $${userIds.length * colsPerRow + i * 2 + 1}, NOW())`)).join(', ')}`;
 
           await client.query(sql, [
             ...params,

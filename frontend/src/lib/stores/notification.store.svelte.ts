@@ -192,6 +192,34 @@ async function markFeatureTypeAsRead(
 }
 
 /**
+ * Mark notifications for a specific entity as read (e.g., one work order).
+ * Decrements count by the number of actually marked notifications.
+ */
+async function markFeatureEntityAsRead(
+  state: NotificationState,
+  featureType: FeatureType,
+  entityUuid: string,
+): Promise<void> {
+  try {
+    const response = await fetch(
+      `/api/v2/notifications/mark-read/${featureType}/${entityUuid}`,
+      { method: 'POST', credentials: 'include' },
+    );
+
+    if (!response.ok) return;
+
+    const json = (await response.json()) as { marked: number };
+    const countKey = FEATURE_TO_COUNT_KEY[featureType];
+
+    for (let i = 0; i < json.marked; i++) {
+      decrementCountMut(state, countKey);
+    }
+  } catch {
+    // Silent — notification dismiss is non-critical
+  }
+}
+
+/**
  * Dashboard counts response from /api/v2/dashboard/counts
  * Single endpoint that combines all notification counts
  */
@@ -399,6 +427,10 @@ function buildStoreActions(
     },
     markTypeAsRead: async (featureType: FeatureType) => {
       if (browser) await markFeatureTypeAsRead(state, featureType);
+    },
+    markEntityAsRead: async (featureType: FeatureType, entityUuid: string) => {
+      if (browser)
+        await markFeatureEntityAsRead(state, featureType, entityUuid);
     },
     /**
      * Suppress an SSE event type from auto-incrementing badge counts.

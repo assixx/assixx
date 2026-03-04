@@ -41,7 +41,7 @@
 </script>
 
 <tr>
-  <td>{employee.id}</td>
+  <td><code class="text-muted">{employee.id}</code></td>
   <td>
     <div class="flex items-center gap-2">
       <div

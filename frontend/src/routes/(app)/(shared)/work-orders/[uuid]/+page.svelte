@@ -7,7 +7,11 @@
    * Main: info, description, comments.
    * Sidebar: status badge, transitions, assignees, photos.
    */
+  import { onMount } from 'svelte';
+
   import { resolve } from '$app/paths';
+
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import { MESSAGES, STATUS_LABELS } from '../_lib/constants';
 
@@ -56,6 +60,10 @@
   const photos = $derived(data.photos);
   const userRole = $derived(data.userRole);
   const userId = $derived(data.userId);
+
+  onMount(() => {
+    void notificationStore.markEntityAsRead('work_orders', workOrder.uuid);
+  });
 
   const statusLogs = $derived(
     comments.comments.filter((c: WorkOrderComment) => c.isStatusChange),

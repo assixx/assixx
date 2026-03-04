@@ -12,6 +12,7 @@
     showSuccessAlert,
     showWarningAlert,
     showErrorAlert,
+    showToast,
   } from '$lib/stores/toast';
   import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
@@ -205,16 +206,27 @@
         isEditMode,
       );
 
-      await saveAdminWithPermissions(formData, currentEditId);
-
-      // Show success message based on mode
-      showSuccessAlert(
-        isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
-      );
+      const result = await saveAdminWithPermissions(formData, currentEditId);
 
       closeAdminModal();
-      // Level 3: Trigger SSR refetch
       await invalidateAll();
+
+      if (!isEditMode && result.uuid !== null) {
+        showToast({
+          type: 'success',
+          title: 'Admin erstellt',
+          message: 'Berechtigungen jetzt zuweisen?',
+          duration: 8000,
+          action: {
+            label: 'Berechtigungen',
+            href: `/manage-admins/permission/${result.uuid}`,
+          },
+        });
+      } else {
+        showSuccessAlert(
+          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+        );
+      }
     } catch (err) {
       log.error({ err }, 'Error saving admin');
       showErrorAlert(

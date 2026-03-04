@@ -496,6 +496,7 @@
             >
               <thead>
                 <tr>
+                  <th scope="col">ID</th>
                   <th scope="col">{MESSAGES.TH_NAME}</th>
                   <th scope="col">{MESSAGES.TH_DESCRIPTION}</th>
                   <th scope="col">{MESSAGES.TH_STATUS}</th>
@@ -508,6 +509,7 @@
               <tbody>
                 {#each filteredDepartments as dept (dept.id)}
                   <tr>
+                    <td><code class="text-muted">{dept.id}</code></td>
                     <td>
                       <div class="font-medium text-(--color-text-primary)">
                         {dept.name}

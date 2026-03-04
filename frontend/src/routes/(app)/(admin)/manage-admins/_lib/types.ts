@@ -112,8 +112,10 @@ export interface AdminPermissions {
 export interface AdminApiResponse {
   adminId?: number;
   id?: number;
+  uuid?: string;
   data?: {
     id?: number;
+    uuid?: string;
   };
 }
 

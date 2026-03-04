@@ -66,6 +66,46 @@ export class NotificationFeatureService {
   }
 
   /**
+   * Mark notifications of a feature type for a specific entity as read.
+   * Called when user visits a detail page (e.g., /work-orders/:uuid).
+   * Filters by metadata->>'entityUuid' to target only that entity's notifications.
+   */
+  async markFeatureEntityAsRead(
+    type: 'work_orders',
+    entityUuid: string,
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
+    this.logger.log(
+      `Marking ${type} notifications for entity ${entityUuid} as read for user ${userId}`,
+    );
+
+    const result = await this.db.query<{ id: number }>(
+      `WITH unread_notifications AS (
+        SELECT n.id FROM notifications n
+        LEFT JOIN notification_read_status nrs
+          ON n.id = nrs.notification_id AND nrs.user_id = $2
+        WHERE n.tenant_id = $1
+          AND n.type = $3
+          AND n.metadata->>'entityUuid' = $4
+          AND nrs.id IS NULL
+          AND (n.recipient_type = 'all'
+               OR (n.recipient_type = 'user' AND n.recipient_id = $2))
+      )
+      INSERT INTO notification_read_status (notification_id, user_id, tenant_id, read_at)
+      SELECT id, $2, $1, NOW() FROM unread_notifications
+      ON CONFLICT DO NOTHING
+      RETURNING id`,
+      [tenantId, userId, type, entityUuid],
+    );
+
+    this.logger.log(
+      `Marked ${result.length} ${type} notifications for entity ${entityUuid} as read`,
+    );
+    return result.length;
+  }
+
+  /**
    * Mark all notifications of a feature type as read for a user.
    * Called when user visits the feature page (e.g., /surveys).
    */

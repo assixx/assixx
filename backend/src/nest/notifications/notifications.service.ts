@@ -424,6 +424,21 @@ export class NotificationsService {
     return await this.feature.markFeatureTypeAsRead(type, userId, tenantId);
   }
 
+  /** Mark notifications for a specific entity as read (e.g., one work order) */
+  async markFeatureEntityAsRead(
+    type: 'work_orders',
+    entityUuid: string,
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
+    return await this.feature.markFeatureEntityAsRead(
+      type,
+      entityUuid,
+      userId,
+      tenantId,
+    );
+  }
+
   // ==========================================================================
   // UUID-BASED METHODS (P1 Migration)
   // ==========================================================================

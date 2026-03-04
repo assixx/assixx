@@ -461,6 +461,7 @@
           <table class="data-table data-table--striped">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>{MESSAGES.TH_NAME}</th>
                 <th>{MESSAGES.TH_DESCRIPTION}</th>
                 <th>{MESSAGES.TH_AREA_LEAD}</th>
@@ -475,6 +476,7 @@
             <tbody>
               {#each filteredAreas as area (area.id)}
                 <tr data-area-id={area.id}>
+                  <td><code class="text-muted">{area.id}</code></td>
                   <td>
                     <div class="font-medium text-(--color-text-primary)">
                       {area.name}

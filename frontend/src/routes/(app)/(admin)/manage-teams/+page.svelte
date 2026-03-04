@@ -525,6 +525,7 @@
             >
               <thead>
                 <tr>
+                  <th scope="col">ID</th>
                   <th scope="col">Name</th>
                   <th scope="col">Abteilung</th>
                   <th scope="col">Team-Lead</th>
@@ -541,6 +542,7 @@
                   {@const membersBadge = getMembersBadge(team)}
                   {@const machinesBadge = getMachinesBadge(team)}
                   <tr>
+                    <td><code class="text-muted">{team.id}</code></td>
                     <td>
                       <div class="flex items-center gap-2">
                         <i class="fas fa-users text-blue-500"></i>

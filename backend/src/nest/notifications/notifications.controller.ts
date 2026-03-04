@@ -640,6 +640,38 @@ export class NotificationsController {
   }
 
   /**
+   * POST /notifications/mark-read/:type/:entityUuid
+   * Mark notifications for a specific entity as read (e.g., one work order)
+   */
+  @Post('mark-read/:type/:entityUuid')
+  @HttpCode(HttpStatus.OK)
+  async markFeatureEntityAsRead(
+    @Param('type') type: string,
+    @Param('entityUuid') entityUuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ marked: number; message: string }> {
+    const validTypes = ['work_orders'];
+    if (!validTypes.includes(type)) {
+      throw new BadRequestException(
+        `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
+      );
+    }
+
+    const marked = await this.notificationsService.markFeatureEntityAsRead(
+      type as 'work_orders',
+      entityUuid,
+      user.id,
+      tenantId,
+    );
+
+    return {
+      marked,
+      message: `${marked} ${type} notifications for entity ${entityUuid} marked as read`,
+    };
+  }
+
+  /**
    * PUT /notifications/mark-all-read
    * Mark all notifications as read
    */

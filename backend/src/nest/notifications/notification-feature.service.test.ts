@@ -87,6 +87,62 @@ describe('NotificationFeatureService', () => {
   });
 
   // =============================================================
+  // markFeatureEntityAsRead
+  // =============================================================
+
+  describe('markFeatureEntityAsRead', () => {
+    it('should return count of marked notifications', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
+
+      const result = await service.markFeatureEntityAsRead(
+        'work_orders',
+        '019cb994-aaaa-bbbb-cccc-dddddddddddd',
+        5,
+        10,
+      );
+
+      expect(result).toBe(2);
+    });
+
+    it('should pass entityUuid in query params', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      const entityUuid = '019cb994-aaaa-bbbb-cccc-dddddddddddd';
+
+      await service.markFeatureEntityAsRead('work_orders', entityUuid, 5, 10);
+
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params).toContain(entityUuid);
+    });
+
+    it('should filter by metadata entityUuid in SQL', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.markFeatureEntityAsRead(
+        'work_orders',
+        '019cb994-aaaa-bbbb-cccc-dddddddddddd',
+        5,
+        10,
+      );
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain("metadata->>'entityUuid'");
+    });
+
+    it('should return 0 when nothing to mark', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.markFeatureEntityAsRead(
+        'work_orders',
+        '019cb994-aaaa-bbbb-cccc-dddddddddddd',
+        5,
+        10,
+      );
+
+      expect(result).toBe(0);
+    });
+  });
+
+  // =============================================================
   // markFeatureTypeAsRead
   // =============================================================
 

@@ -8,6 +8,7 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
+  import { showToast } from '$lib/stores/toast';
   import {
     showSuccessAlert,
     showErrorAlert,
@@ -186,20 +187,33 @@
         isEditMode,
       );
 
-      const userId = await apiSaveEmployee(payload, currentEditId);
+      const result = await apiSaveEmployee(payload, currentEditId);
       await syncTeamMemberships(
-        userId,
+        result.id,
         formTeamIds,
         originalTeamIds,
         isEditMode,
       );
 
       closeEmployeeModal();
-      // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
-      );
+
+      if (!isEditMode && result.uuid !== null) {
+        showToast({
+          type: 'success',
+          title: 'Mitarbeiter erstellt',
+          message: 'Berechtigungen jetzt zuweisen?',
+          duration: 8000,
+          action: {
+            label: 'Berechtigungen',
+            href: `/manage-employees/permission/${result.uuid}`,
+          },
+        });
+      } else {
+        showSuccessAlert(
+          isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
+        );
+      }
     } catch (err) {
       log.error({ err }, 'Error saving employee');
       showErrorAlert(
