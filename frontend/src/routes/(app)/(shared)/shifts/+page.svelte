@@ -425,6 +425,18 @@
               void loadShiftPlan(true);
             }}
           />
+
+          {#if shiftsState.showTpmEvents}
+            <div
+              class="alert alert--warning alert--sm mb-6"
+              role="alert"
+            >
+              <i class="fas fa-triangle-exclamation"></i>
+              <strong>TPM-Modus aktiv:</strong> Mitarbeiterzuweisungen hier erstellen
+              keine Schichtplanung — sie werden ausschließlich als Wartungstermine
+              für die TPM-Instandhaltung übernommen.
+            </div>
+          {/if}
         {/if}
 
         <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
