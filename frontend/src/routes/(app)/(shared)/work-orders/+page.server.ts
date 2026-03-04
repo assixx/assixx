@@ -2,7 +2,7 @@
  * Work Orders (Employee) — Server-Side Data Loading
  * @module shared/work-orders/+page.server
  *
- * SSR: Loads employee's assigned work orders (first page).
+ * SSR: Loads employee's assigned work orders (first page) + stats.
  * Feature guard: requires 'work_orders' feature active for tenant.
  */
 import { redirect } from '@sveltejs/kit';
@@ -11,7 +11,11 @@ import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { PaginatedResponse, WorkOrderListItem } from './_lib/types';
+import type {
+  PaginatedResponse,
+  WorkOrderListItem,
+  WorkOrderStats,
+} from './_lib/types';
 
 const log = createLogger('WorkOrders');
 
@@ -67,6 +71,17 @@ function emptyPage(): PaginatedResponse<WorkOrderListItem> {
   return { items: [], total: 0, page: 1, pageSize: 20 };
 }
 
+function emptyStats(): WorkOrderStats {
+  return {
+    open: 0,
+    inProgress: 0,
+    completed: 0,
+    verified: 0,
+    total: 0,
+    overdue: 0,
+  };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -76,13 +91,17 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const parentData = await parent();
   requireFeature(parentData.activeFeatures, 'work_orders');
 
-  const workOrdersData = await apiFetch<PaginatedResponse<WorkOrderListItem>>(
-    '/work-orders/my?page=1&limit=20',
-    token,
-    fetch,
-  );
+  const [workOrdersData, statsData] = await Promise.all([
+    apiFetch<PaginatedResponse<WorkOrderListItem>>(
+      '/work-orders/my?page=1&limit=20',
+      token,
+      fetch,
+    ),
+    apiFetch<WorkOrderStats>('/work-orders/my/stats', token, fetch),
+  ]);
 
   return {
     workOrders: workOrdersData ?? emptyPage(),
+    stats: statsData ?? emptyStats(),
   };
 };

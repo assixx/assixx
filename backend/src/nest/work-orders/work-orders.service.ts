@@ -306,8 +306,34 @@ export class WorkOrdersService {
     );
   }
 
-  /** Get stats (counts per status) for dashboard */
+  /** Get stats (counts per status) for dashboard — all work orders */
   async getStats(tenantId: number): Promise<WorkOrderStats> {
+    return await this.queryStats(
+      `FROM work_orders
+       WHERE tenant_id = $1 AND is_active = 1`,
+      [tenantId],
+    );
+  }
+
+  /** Get stats filtered to work orders assigned to a specific user */
+  async getMyStats(tenantId: number, userId: number): Promise<WorkOrderStats> {
+    return await this.queryStats(
+      `FROM work_orders wo
+       JOIN work_order_assignees woa ON woa.work_order_id = wo.id
+       WHERE wo.tenant_id = $1 AND wo.is_active = 1 AND woa.user_id = $2`,
+      [tenantId, userId],
+    );
+  }
+
+  // ==========================================================================
+  // Private helpers
+  // ==========================================================================
+
+  /** Shared stats query — DRY helper for getStats + getMyStats */
+  private async queryStats(
+    fromClause: string,
+    params: (number | string)[],
+  ): Promise<WorkOrderStats> {
     const row = await this.db.queryOne<{
       open: string;
       in_progress: string;
@@ -323,9 +349,8 @@ export class WorkOrdersService {
          COUNT(*) FILTER (WHERE status = 'verified') AS verified,
          COUNT(*) AS total,
          COUNT(*) FILTER (WHERE due_date < CURRENT_DATE AND status IN ('open', 'in_progress')) AS overdue
-       FROM work_orders
-       WHERE tenant_id = $1 AND is_active = 1`,
-      [tenantId],
+       ${fromClause}`,
+      params,
     );
 
     return {
@@ -337,10 +362,6 @@ export class WorkOrdersService {
       overdue: Number.parseInt(row?.overdue ?? '0', 10),
     };
   }
-
-  // ==========================================================================
-  // Private helpers
-  // ==========================================================================
 
   /** INSERT work_order row and return it with counts */
   private async insertWorkOrder(

@@ -33,7 +33,7 @@ export const STATUS_ICONS: Record<WorkOrderStatus, string> = {
   open: 'fa-circle',
   in_progress: 'fa-spinner',
   completed: 'fa-check-circle',
-  verified: 'fa-shield-check',
+  verified: 'fa-check-double',
 };
 
 // =============================================================================

@@ -105,6 +105,15 @@ export class WorkOrdersController {
     return await this.service.listMyWorkOrders(tenantId, user.id, query);
   }
 
+  @Get('my/stats')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async getMyStats(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<WorkOrderStats> {
+    return await this.service.getMyStats(tenantId, user.id);
+  }
+
   @Get('eligible-users')
   @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async getEligibleUsers(

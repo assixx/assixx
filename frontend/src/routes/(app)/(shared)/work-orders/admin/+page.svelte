@@ -249,59 +249,37 @@
 
   <!-- Stats Cards -->
   <div class="stats-grid mb-6">
-    <div class="card-stat">
-      <div class="card-stat__icon card-stat__icon--info">
-        <i class="fas fa-circle"></i>
-      </div>
-      <div class="card-stat__content">
-        <span class="card-stat__value">{stats.open}</span>
-        <span class="card-stat__label">{MESSAGES.STAT_OPEN}</span>
-      </div>
+    <div class="card-stat card-stat--sm">
+      <div class="card-stat__icon"><i class="fas fa-circle"></i></div>
+      <span class="card-stat__value">{stats.open}</span>
+      <span class="card-stat__label">{MESSAGES.STAT_OPEN}</span>
     </div>
-    <div class="card-stat">
-      <div class="card-stat__icon card-stat__icon--warning">
-        <i class="fas fa-spinner"></i>
-      </div>
-      <div class="card-stat__content">
-        <span class="card-stat__value">{stats.inProgress}</span>
-        <span class="card-stat__label">{MESSAGES.STAT_IN_PROGRESS}</span>
-      </div>
+    <div class="card-stat card-stat--sm">
+      <div class="card-stat__icon"><i class="fas fa-spinner"></i></div>
+      <span class="card-stat__value">{stats.inProgress}</span>
+      <span class="card-stat__label">{MESSAGES.STAT_IN_PROGRESS}</span>
     </div>
-    <div class="card-stat">
-      <div class="card-stat__icon card-stat__icon--success">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <div class="card-stat__content">
-        <span class="card-stat__value">{stats.completed}</span>
-        <span class="card-stat__label">{MESSAGES.STAT_COMPLETED}</span>
-      </div>
+    <div class="card-stat card-stat--sm">
+      <div class="card-stat__icon"><i class="fas fa-check-circle"></i></div>
+      <span class="card-stat__value">{stats.completed}</span>
+      <span class="card-stat__label">{MESSAGES.STAT_COMPLETED}</span>
     </div>
-    <div class="card-stat">
-      <div class="card-stat__icon card-stat__icon--primary">
-        <i class="fas fa-shield-check"></i>
-      </div>
-      <div class="card-stat__content">
-        <span class="card-stat__value">{stats.verified}</span>
-        <span class="card-stat__label">{MESSAGES.STAT_VERIFIED}</span>
-      </div>
+    <div class="card-stat card-stat--sm">
+      <div class="card-stat__icon"><i class="fas fa-check-double"></i></div>
+      <span class="card-stat__value">{stats.verified}</span>
+      <span class="card-stat__label">{MESSAGES.STAT_VERIFIED}</span>
     </div>
-    <div class="card-stat">
-      <div class="card-stat__icon card-stat__icon--danger">
+    <div class="card-stat card-stat--sm">
+      <div class="card-stat__icon">
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <div class="card-stat__content">
-        <span class="card-stat__value">{stats.overdue}</span>
-        <span class="card-stat__label">{MESSAGES.STAT_OVERDUE}</span>
-      </div>
+      <span class="card-stat__value">{stats.overdue}</span>
+      <span class="card-stat__label">{MESSAGES.STAT_OVERDUE}</span>
     </div>
-    <div class="card-stat">
-      <div class="card-stat__icon">
-        <i class="fas fa-list"></i>
-      </div>
-      <div class="card-stat__content">
-        <span class="card-stat__value">{stats.total}</span>
-        <span class="card-stat__label">{MESSAGES.STAT_TOTAL}</span>
-      </div>
+    <div class="card-stat card-stat--sm">
+      <div class="card-stat__icon"><i class="fas fa-list"></i></div>
+      <span class="card-stat__value">{stats.total}</span>
+      <span class="card-stat__label">{MESSAGES.STAT_TOTAL}</span>
     </div>
   </div>
 
@@ -520,8 +498,20 @@
 <style>
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (width <= 768px) {
+    .stats-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (width <= 480px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .filter-bar {

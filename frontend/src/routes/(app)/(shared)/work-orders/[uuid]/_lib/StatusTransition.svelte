@@ -66,7 +66,7 @@
         target: 'verified',
         label: STATUS_TRANSITION_LABELS['completed→verified'],
         variant: 'btn-primary',
-        icon: 'fa-shield-check',
+        icon: 'fa-check-double',
       });
       result.push({
         target: 'in_progress',

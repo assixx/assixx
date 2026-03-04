@@ -280,9 +280,14 @@ export async function deletePhoto(
 // STATS
 // =============================================================================
 
-/** Fetch work order stats (counts per status) for dashboard */
+/** Fetch work order stats (counts per status) for dashboard — all (admin) */
 export async function fetchStats(): Promise<WorkOrderStats> {
   return await apiClient.get<WorkOrderStats>('/work-orders/stats');
+}
+
+/** Fetch work order stats filtered to current user's assignments */
+export async function fetchMyStats(): Promise<WorkOrderStats> {
+  return await apiClient.get<WorkOrderStats>('/work-orders/my/stats');
 }
 
 // =============================================================================
