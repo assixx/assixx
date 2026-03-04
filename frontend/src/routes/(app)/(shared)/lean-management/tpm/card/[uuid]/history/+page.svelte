@@ -217,7 +217,10 @@
   </div>
 
   <div class="card">
-    <div class="card__header">
+    <div
+      class="card__header"
+      style="display: flex; justify-content: space-between; align-items: flex-start;"
+    >
       <div>
         <h2 class="card__title">
           <i class="fas fa-history mr-2"></i>
@@ -243,6 +246,19 @@
           </div>
         {/if}
       </div>
+      {#if card !== null}
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={() => {
+            void goto(
+              resolvePath(`/lean-management/tpm/card/${card.uuid}/defects`),
+            );
+          }}
+        >
+          <i class="fas fa-exclamation-triangle mr-2"></i>{MESSAGES.BTN_DEFECTS}
+        </button>
+      {/if}
     </div>
 
     <div class="card__body">
@@ -278,6 +294,7 @@
                 <th scope="col">{MESSAGES.HISTORY_COL_PERSON}</th>
                 <th scope="col">{MESSAGES.HISTORY_COL_STATUS}</th>
                 <th scope="col">{MESSAGES.HISTORY_COL_PHOTOS}</th>
+                <th scope="col">{MESSAGES.HISTORY_COL_DEFECTS}</th>
               </tr>
             </thead>
             <tbody>
@@ -323,12 +340,33 @@
                       <span class="text-sm text-(--color-text-muted)">—</span>
                     {/if}
                   </td>
+                  <td>
+                    {#if (execution.defectCount ?? 0) > 0}
+                      <button
+                        type="button"
+                        class="history-defect-link"
+                        onclick={(e: MouseEvent) => {
+                          e.stopPropagation();
+                          void goto(
+                            resolvePath(
+                              `/lean-management/tpm/card/${card?.uuid ?? ''}/defects?execution=${execution.uuid}`,
+                            ),
+                          );
+                        }}
+                      >
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {execution.defectCount}
+                      </button>
+                    {:else}
+                      <span class="text-sm text-(--color-text-muted)">—</span>
+                    {/if}
+                  </td>
                 </tr>
 
                 <!-- Expanded Details -->
                 {#if expandedUuid === execution.uuid}
                   <tr class="history-detail">
-                    <td colspan="4">
+                    <td colspan="5">
                       <div class="history-detail__content">
                         <!-- No Issues Checkbox Result -->
                         {#if execution.noIssuesFound}
@@ -772,5 +810,24 @@
     color: var(--color-text-secondary);
     background: color-mix(in srgb, var(--color-primary) 10%, transparent);
     border-radius: var(--radius-full);
+  }
+
+  .history-defect-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-danger);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  .history-defect-link:hover {
+    opacity: 0.75;
+    text-decoration: underline;
   }
 </style>

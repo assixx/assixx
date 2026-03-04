@@ -184,6 +184,7 @@ export const MESSAGES = {
   HISTORY_COL_PERSON: 'Durchgeführt von',
   HISTORY_COL_STATUS: 'Freigabe',
   HISTORY_COL_PHOTOS: 'Fotos',
+  HISTORY_COL_DEFECTS: 'Mängel',
   HISTORY_EMPTY_TITLE: 'Keine Durchführungen',
   HISTORY_EMPTY_DESC:
     'Für diese Karte wurden noch keine Wartungen dokumentiert.',

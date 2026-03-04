@@ -74,6 +74,7 @@ export const load: PageServerLoad = async ({
   fetch,
   parent,
   params,
+  url,
 }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
@@ -103,5 +104,6 @@ export const load: PageServerLoad = async ({
     total,
     error: card === null ? 'Karte nicht gefunden' : null,
     userRole: user.role as string,
+    expandExecutionUuid: url.searchParams.get('execution'),
   };
 };

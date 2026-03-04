@@ -47,12 +47,21 @@
   const userRole = $derived(data.userRole);
   const isAdmin = $derived(userRole === 'admin' || userRole === 'root');
   const colSpan = $derived(isAdmin ? 5 : 4);
+  const expandExecutionUuid = $derived(data.expandExecutionUuid);
+
+  // Auto-expand first defect matching the execution UUID from query param
+  const initialExpandUuid = $derived.by((): string | null => {
+    if (expandExecutionUuid === null) return null;
+    const match = defects.find((d) => d.executionUuid === expandExecutionUuid);
+    return match?.uuid ?? null;
+  });
 
   // ===========================================================================
   // EXPAND / PHOTO STATE
   // ===========================================================================
 
   let expandedUuid = $state<string | null>(null);
+  let initialExpandApplied = $state(false);
   let loadedPhotos = $state<Partial<Record<string, TpmDefectPhoto[]>>>({});
   let loadingPhotos = $state<Partial<Record<string, boolean>>>({});
   let photoErrors = $state<Partial<Record<string, boolean>>>({});
@@ -65,6 +74,13 @@
   const previewPhoto = $derived.by((): TpmDefectPhoto | null => {
     if (previewPhotoIndex === null) return null;
     return previewPhotos[previewPhotoIndex] ?? null;
+  });
+
+  // Auto-expand matching defect on initial load (from history page link)
+  $effect(() => {
+    if (initialExpandApplied || initialExpandUuid === null) return;
+    initialExpandApplied = true;
+    toggleExpand(initialExpandUuid);
   });
 
   // Work Order Modal State (admin only)
@@ -287,7 +303,10 @@
   </div>
 
   <div class="card">
-    <div class="card__header">
+    <div
+      class="card__header"
+      style="display: flex; justify-content: space-between; align-items: flex-start;"
+    >
       <div>
         <h2 class="card__title">
           <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -313,6 +332,19 @@
           </div>
         {/if}
       </div>
+      {#if card !== null}
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick={() => {
+            void goto(
+              resolvePath(`/lean-management/tpm/card/${card.uuid}/history`),
+            );
+          }}
+        >
+          <i class="fas fa-history mr-2"></i>{MESSAGES.HISTORY_HEADING}
+        </button>
+      {/if}
     </div>
 
     <div class="card__body">
