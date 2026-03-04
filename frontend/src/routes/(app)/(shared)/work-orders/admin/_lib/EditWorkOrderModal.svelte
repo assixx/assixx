@@ -97,6 +97,7 @@
 
 {#if show}
   <div
+    id="work-order-edit-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

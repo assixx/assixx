@@ -436,6 +436,7 @@
 <!-- Delete Confirmation -->
 {#if showDeleteConfirm && deletingItem !== null}
   <div
+    id="work-order-delete-confirm-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

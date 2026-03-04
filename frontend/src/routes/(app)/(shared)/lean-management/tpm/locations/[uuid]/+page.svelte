@@ -411,7 +411,10 @@
 
     <!-- Delete Confirmation Modal (design system pattern) -->
     {#if confirmDelete !== null}
-      <div class="modal-overlay modal-overlay--active">
+      <div
+        id="tpm-location-delete-confirm-modal"
+        class="modal-overlay modal-overlay--active"
+      >
         <div class="ds-modal ds-modal--sm">
           <div class="ds-modal__header">
             <h3 class="ds-modal__title">{MESSAGES.LOCATIONS_DELETE_CONFIRM}</h3>
@@ -466,6 +469,7 @@
 <!-- Photo Preview Modal (blackboard AttachmentPreviewModal pattern, image-only) -->
 {#if showPreviewModal && previewLocation !== null && previewLocation.photoPath !== null}
   <div
+    id="tpm-location-photo-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={closePreview}
     onkeydown={handlePreviewKeydown}

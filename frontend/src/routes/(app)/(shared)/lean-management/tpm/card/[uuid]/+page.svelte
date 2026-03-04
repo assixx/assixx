@@ -387,6 +387,7 @@
 <!-- Photo Preview Modal (blackboard pattern) -->
 {#if showPreviewModal && previewLocation !== null && previewLocation.photoPath !== null}
   <div
+    id="tpm-card-photo-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={closePreview}
     onkeydown={handlePreviewKeydown}

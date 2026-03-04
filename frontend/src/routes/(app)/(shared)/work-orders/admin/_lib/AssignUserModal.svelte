@@ -83,6 +83,7 @@
 
 {#if show && workOrder !== null}
   <div
+    id="work-order-assign-user-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

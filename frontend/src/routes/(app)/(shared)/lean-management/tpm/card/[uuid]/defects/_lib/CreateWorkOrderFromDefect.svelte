@@ -153,6 +153,7 @@
 
 {#if show && defect !== null}
   <div
+    id="tpm-defect-create-work-order-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"

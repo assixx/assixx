@@ -37,9 +37,7 @@
   let previewIndex = $state(0);
   let fileInput: HTMLInputElement | undefined = $state();
 
-  const canUpload = $derived(
-    photos.length < MAX_PHOTOS && !isClosedStatus,
-  );
+  const canUpload = $derived(photos.length < MAX_PHOTOS && !isClosedStatus);
   const currentPhoto = $derived(
     showPreview && photos.length > 0 ? photos[previewIndex] : null,
   );
@@ -235,6 +233,7 @@
 <!-- Preview Modal (ds-modal pattern — matches TPM, KVP, blackboard) -->
 {#if showPreview && currentPhoto !== null}
   <div
+    id="work-order-photo-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={closePreview}
     onkeydown={(e) => {

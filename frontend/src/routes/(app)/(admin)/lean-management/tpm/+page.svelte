@@ -175,6 +175,7 @@
 {#if tpmState.showDeleteModal}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    id="tpm-plan-delete-modal"
     class="modal-overlay modal-overlay--active"
     onclick={() => {
       tpmState.closeDeleteModal();

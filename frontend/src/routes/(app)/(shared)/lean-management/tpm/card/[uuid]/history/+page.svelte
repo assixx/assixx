@@ -557,6 +557,7 @@
 <!-- Photo Preview Modal -->
 {#if showPhotoPreview && previewPhoto !== null}
   <div
+    id="tpm-history-photo-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={closePhotoPreview}
     onkeydown={(e) => {

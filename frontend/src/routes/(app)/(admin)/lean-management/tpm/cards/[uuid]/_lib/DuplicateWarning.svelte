@@ -35,6 +35,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+  id="tpm-card-duplicate-warning-modal"
   class="modal-overlay modal-overlay--active"
   onclick={handleBackdrop}
   onkeydown={handleKeydown}

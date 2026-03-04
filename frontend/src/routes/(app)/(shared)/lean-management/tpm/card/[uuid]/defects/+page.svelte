@@ -591,6 +591,7 @@
 <!-- Edit Defect Modal (admin only) -->
 {#if showEditModal && editDefect !== null}
   <div
+    id="tpm-defect-edit-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
@@ -701,6 +702,7 @@
 <!-- Photo Preview Modal -->
 {#if showPhotoPreview && previewPhoto !== null}
   <div
+    id="tpm-defect-photo-preview-modal"
     class="modal-overlay modal-overlay--active"
     onclick={closePhotoPreview}
     onkeydown={(e) => {
