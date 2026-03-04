@@ -37,16 +37,15 @@
   let previewIndex = $state(0);
   let fileInput: HTMLInputElement | undefined = $state();
 
+  const isClosedStatus = $derived(
+    workOrderStatus === 'completed' || workOrderStatus === 'verified',
+  );
   const canUpload = $derived(photos.length < MAX_PHOTOS && !isClosedStatus);
   const currentPhoto = $derived(
     showPreview && photos.length > 0 ? photos[previewIndex] : null,
   );
   const hasNavigation = $derived(photos.length > 1);
   const isPrivileged = $derived(userRole === 'root' || userRole === 'admin');
-
-  const isClosedStatus = $derived(
-    workOrderStatus === 'completed' || workOrderStatus === 'verified',
-  );
 
   function canDeletePhoto(photo: WorkOrderPhoto): boolean {
     if (isClosedStatus) return false;

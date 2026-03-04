@@ -106,7 +106,13 @@
   padding: 0.5rem 0;
 
   min-height: 200px; /* Prevent layout shift */
-  overflow-x: auto;
+}
+
+/* Override fixed width for dashboard widget — fill available space equally */
+.sticky-notes-container .sticky-note {
+  width: auto;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* Prevent layout shift during load */
@@ -132,6 +138,13 @@
 @media (width < 768px) {
   .sticky-notes-container {
     gap: 0.75rem;
+    overflow-x: auto;
+  }
+
+  /* On mobile, revert to fixed width + scroll */
+  .sticky-notes-container .sticky-note {
+    flex: 0 0 200px;
+    width: 200px;
   }
 }
 

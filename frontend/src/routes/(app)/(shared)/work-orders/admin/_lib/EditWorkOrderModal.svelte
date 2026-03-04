@@ -1,9 +1,16 @@
 <script lang="ts">
   /**
    * EditWorkOrderModal — Create / Edit work order form.
-   * Create mode: includes assignee multi-select.
+   *
+   * Create mode: all fields + assignee multi-select (required).
    * Edit mode: title, description, priority, due date only.
+   *
+   * Pattern: ds-modal with custom dropdown + AppDatePicker + multi-select
+   * (matches TPM defect create-work-order modal).
    */
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+
   import { MESSAGES, PRIORITY_LABELS } from '../../_lib/constants';
 
   import type {
@@ -26,16 +33,35 @@
   const { show, workOrder, eligibleUsers, submitting, onclose, onsave }: Props =
     $props();
 
+  // ---------------------------------------------------------------------------
+  // DERIVED
+  // ---------------------------------------------------------------------------
+
   const isEditMode = $derived(workOrder !== null);
   const modalTitle = $derived(
     isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_CREATE_TITLE,
   );
+  const modalIcon = $derived(isEditMode ? 'fa-pen' : 'fa-clipboard-check');
+
+  // ---------------------------------------------------------------------------
+  // FORM STATE
+  // ---------------------------------------------------------------------------
 
   let formTitle = $state('');
   let formDescription = $state('');
   let formPriority = $state<WorkOrderPriority>('medium');
   let formDueDate = $state('');
   let selectedUserUuids = $state<string[]>([]);
+  let assigneeTouched = $state(false);
+  let priorityDropdownOpen = $state(false);
+
+  const priorityLabel = $derived(PRIORITY_LABELS[formPriority]);
+  const hasAssignees = $derived(selectedUserUuids.length > 0);
+  const showAssigneeError = $derived(assigneeTouched && !hasAssignees);
+
+  // ---------------------------------------------------------------------------
+  // LIFECYCLE
+  // ---------------------------------------------------------------------------
 
   /** Reset form when modal opens */
   $effect(() => {
@@ -52,16 +78,36 @@
         formPriority = 'medium';
         formDueDate = '';
         selectedUserUuids = [];
+        assigneeTouched = false;
       }
+      priorityDropdownOpen = false;
     }
   });
 
-  function toggleUser(uuid: string): void {
-    if (selectedUserUuids.includes(uuid)) {
-      selectedUserUuids = selectedUserUuids.filter((u: string) => u !== uuid);
-    } else {
-      selectedUserUuids = [...selectedUserUuids, uuid];
+  /** Close priority dropdown on click-outside */
+  $effect(() => {
+    return onClickOutsideDropdown(() => {
+      priorityDropdownOpen = false;
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // HANDLERS
+  // ---------------------------------------------------------------------------
+
+  function setPriority(value: WorkOrderPriority): void {
+    formPriority = value;
+    priorityDropdownOpen = false;
+  }
+
+  function handleUserSelect(e: Event): void {
+    const select = e.currentTarget as HTMLSelectElement;
+    const selected: string[] = [];
+    for (const opt of select.selectedOptions) {
+      selected.push(opt.value);
     }
+    selectedUserUuids = selected;
+    assigneeTouched = true;
   }
 
   function handleOverlayClick(e: MouseEvent): void {
@@ -82,13 +128,15 @@
       };
       onsave(payload);
     } else {
+      assigneeTouched = true;
+      if (!hasAssignees) return;
+
       const payload: CreateWorkOrderPayload = {
         title: trimmedTitle,
         description: formDescription.trim() || undefined,
         priority: formPriority,
         dueDate: formDueDate !== '' ? formDueDate : null,
-        assigneeUuids:
-          selectedUserUuids.length > 0 ? selectedUserUuids : undefined,
+        assigneeUuids: selectedUserUuids,
       };
       onsave(payload);
     }
@@ -121,6 +169,7 @@
           class="ds-modal__title"
           id="wo-modal-title"
         >
+          <i class="fas {modalIcon} mr-2"></i>
           {modalTitle}
         </h3>
         <button
@@ -170,69 +219,105 @@
           ></textarea>
         </div>
 
-        <!-- Priority -->
+        <!-- Priority (custom dropdown) -->
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="wo-priority"
+          <span class="form-field__label">{MESSAGES.MODAL_FIELD_PRIORITY}</span>
+          <div
+            class="dropdown"
+            id="wo-priority-dropdown"
+            role="listbox"
           >
-            {MESSAGES.MODAL_FIELD_PRIORITY}
-          </label>
-          <select
-            id="wo-priority"
-            class="form-field__control"
-            bind:value={formPriority}
-          >
-            {#each Object.entries(PRIORITY_LABELS) as [value, label] (value)}
-              <option {value}>{label}</option>
-            {/each}
-          </select>
+            <div
+              class="dropdown__trigger"
+              onclick={() => (priorityDropdownOpen = !priorityDropdownOpen)}
+              onkeydown={(e: KeyboardEvent) => {
+                if (e.key === 'Enter')
+                  priorityDropdownOpen = !priorityDropdownOpen;
+              }}
+              role="button"
+              tabindex="0"
+            >
+              <span>{priorityLabel}</span>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            {#if priorityDropdownOpen}
+              <div class="dropdown__menu active">
+                {#each Object.entries(PRIORITY_LABELS) as [value, label] (value)}
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      setPriority(value as WorkOrderPriority);
+                    }}
+                    onkeydown={(e: KeyboardEvent) => {
+                      if (e.key === 'Enter')
+                        setPriority(value as WorkOrderPriority);
+                    }}
+                    role="option"
+                    tabindex="0"
+                    aria-selected={formPriority === value}
+                  >
+                    {label}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
         </div>
 
-        <!-- Due Date -->
+        <!-- Due Date (AppDatePicker) -->
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="wo-due-date"
-          >
-            {MESSAGES.MODAL_FIELD_DUE_DATE}
-          </label>
-          <input
-            type="date"
-            id="wo-due-date"
-            class="form-field__control"
-            bind:value={formDueDate}
+          <AppDatePicker
+            label={MESSAGES.MODAL_FIELD_DUE_DATE}
+            value={formDueDate}
+            onchange={(v: string) => {
+              formDueDate = v;
+            }}
           />
         </div>
 
-        <!-- Assignees (create mode only) -->
-        {#if !isEditMode && eligibleUsers.length > 0}
+        <!-- Assignees (create mode only, multi-select) -->
+        {#if !isEditMode}
           <div class="form-field">
-            <span class="form-field__label">
+            <label
+              class="form-field__label"
+              for="wo-assignees"
+            >
               {MESSAGES.MODAL_FIELD_ASSIGNEES}
-            </span>
-            <div class="user-select-list">
-              {#each eligibleUsers as user (user.uuid)}
-                <label class="user-select-item">
-                  <input
-                    type="checkbox"
-                    checked={selectedUserUuids.includes(user.uuid)}
-                    onchange={() => {
-                      toggleUser(user.uuid);
-                    }}
-                  />
-                  <span class="user-select-item__name">
+              <span class="text-red-500">*</span>
+            </label>
+            {#if eligibleUsers.length === 0}
+              <div class="p-3 text-center text-sm text-(--color-text-muted)">
+                <i class="fas fa-info-circle mr-1"></i>
+                Keine zuweisbaren Mitarbeiter gefunden
+              </div>
+            {:else}
+              <select
+                id="wo-assignees"
+                multiple
+                class="multi-select multi-select--compact"
+                class:error={showAssigneeError}
+                aria-invalid={showAssigneeError}
+                onchange={handleUserSelect}
+              >
+                {#each eligibleUsers as user (user.uuid)}
+                  <option value={user.uuid}>
                     {user.firstName}
                     {user.lastName}
-                  </span>
-                  {#if user.employeeNumber !== null}
-                    <span class="user-select-item__number">
-                      ({user.employeeNumber})
-                    </span>
-                  {/if}
-                </label>
-              {/each}
-            </div>
+                    {#if user.employeeNumber !== null}({user.employeeNumber}){/if}
+                  </option>
+                {/each}
+              </select>
+              {#if showAssigneeError}
+                <span class="form-field__message form-field__message--error">
+                  Mindestens 1 Mitarbeiter auswählen
+                </span>
+              {:else}
+                <span class="multi-select__hint">
+                  <i class="fas fa-info-circle"></i>
+                  Strg + Klick für Mehrfachauswahl
+                </span>
+              {/if}
+            {/if}
           </div>
         {/if}
       </div>
@@ -254,6 +339,7 @@
             <span class="spinner-ring spinner-ring--sm mr-2"></span>
             {MESSAGES.MODAL_SAVING}
           {:else}
+            <i class="fas {modalIcon} mr-2"></i>
             {MESSAGES.BTN_SAVE}
           {/if}
         </button>
@@ -261,39 +347,3 @@
     </form>
   </div>
 {/if}
-
-<style>
-  .user-select-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm, 0.25rem);
-    padding: 0.5rem;
-  }
-
-  .user-select-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm, 0.25rem);
-    cursor: pointer;
-    font-size: 0.875rem;
-  }
-
-  .user-select-item:hover {
-    background: var(--color-bg-secondary, #f8f9fa);
-  }
-
-  .user-select-item__name {
-    font-weight: 500;
-  }
-
-  .user-select-item__number {
-    color: var(--color-text-muted);
-    font-size: 0.8rem;
-  }
-</style>
