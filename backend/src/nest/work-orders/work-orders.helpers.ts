@@ -12,7 +12,7 @@ import type {
   WorkOrderCommentWithNameRow,
   WorkOrderListItem,
   WorkOrderPhoto,
-  WorkOrderPhotoRow,
+  WorkOrderPhotoWithNameRow,
   WorkOrderStatus,
   WorkOrderWithCountsRow,
 } from './work-orders.types.js';
@@ -112,11 +112,12 @@ export function mapCommentRowToApi(
   };
 }
 
-/** Map photo DB row to API response */
-export function mapPhotoRowToApi(row: WorkOrderPhotoRow): WorkOrderPhoto {
+/** Map photo DB row (with user name JOIN) to API response */
+export function mapPhotoRowToApi(row: WorkOrderPhotoWithNameRow): WorkOrderPhoto {
   return {
     uuid: row.uuid.trim(),
     uploadedBy: row.uploaded_by,
+    uploaderName: `${row.first_name} ${row.last_name}`.trim(),
     filePath: row.file_path,
     fileName: row.file_name,
     fileSize: row.file_size,

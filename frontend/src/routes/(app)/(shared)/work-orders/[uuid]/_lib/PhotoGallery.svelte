@@ -281,8 +281,8 @@
               {formatFileSize(currentPhoto.fileSize)}
             </span>
             <span class="flex items-center gap-2">
-              <i class="fas fa-file-image"></i>
-              {currentPhoto.fileName}
+              <i class="fas fa-user"></i>
+              {currentPhoto.uploaderName}
             </span>
           </div>
         </div>

@@ -19,7 +19,10 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { mapPhotoRowToApi } from './work-orders.helpers.js';
-import type { WorkOrderPhoto, WorkOrderPhotoRow } from './work-orders.types.js';
+import type {
+  WorkOrderPhoto,
+  WorkOrderPhotoWithNameRow,
+} from './work-orders.types.js';
 import {
   MAX_PHOTOS_PER_WORK_ORDER,
   WORK_ORDER_UPLOAD_DIR,
@@ -56,12 +59,17 @@ export class WorkOrderPhotosService {
 
     const filePath = await this.writeToDisk(tenantId, workOrderUuid, file);
 
-    const row = await this.db.queryOne<WorkOrderPhotoRow>(
-      `INSERT INTO work_order_photos
-         (uuid, tenant_id, work_order_id, uploaded_by, file_path, file_name, file_size, mime_type, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-         (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM work_order_photos WHERE work_order_id = $3))
-       RETURNING *`,
+    const row = await this.db.queryOne<WorkOrderPhotoWithNameRow>(
+      `WITH inserted AS (
+         INSERT INTO work_order_photos
+           (uuid, tenant_id, work_order_id, uploaded_by, file_path, file_name, file_size, mime_type, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+           (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM work_order_photos WHERE work_order_id = $3))
+         RETURNING *
+       )
+       SELECT i.*, u.first_name, u.last_name
+       FROM inserted i
+       JOIN users u ON i.uploaded_by = u.id`,
       [
         uuidv7(),
         tenantId,
@@ -95,9 +103,11 @@ export class WorkOrderPhotosService {
     tenantId: number,
     workOrderUuid: string,
   ): Promise<WorkOrderPhoto[]> {
-    const rows = await this.db.query<WorkOrderPhotoRow>(
-      `SELECT p.* FROM work_order_photos p
+    const rows = await this.db.query<WorkOrderPhotoWithNameRow>(
+      `SELECT p.*, u.first_name, u.last_name
+       FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
+       JOIN users u ON p.uploaded_by = u.id
        WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1
        ORDER BY p.sort_order ASC`,
       [workOrderUuid, tenantId],

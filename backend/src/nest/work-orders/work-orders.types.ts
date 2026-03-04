@@ -133,6 +133,11 @@ export interface WorkOrderPhotoRow {
   created_at: string;
 }
 
+export interface WorkOrderPhotoWithNameRow extends WorkOrderPhotoRow {
+  first_name: string;
+  last_name: string;
+}
+
 // ============================================================================
 // API Types (camelCase — response shapes)
 // ============================================================================
@@ -164,6 +169,7 @@ export interface WorkOrderComment {
 export interface WorkOrderPhoto {
   uuid: string;
   uploadedBy: number;
+  uploaderName: string;
   filePath: string;
   fileName: string;
   fileSize: number;
