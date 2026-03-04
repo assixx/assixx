@@ -187,7 +187,7 @@ const authHandle: Handle = async ({ event, resolve }) => {
         pathname.startsWith(prefix),
       );
       if (!isAllowed) {
-        log.debug(
+        log.warn(
           { pathname },
           'Auth: Dummy blocked, redirecting to /blackboard',
         );
