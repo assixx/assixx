@@ -116,6 +116,7 @@ export function mapCommentRowToApi(
 export function mapPhotoRowToApi(row: WorkOrderPhotoRow): WorkOrderPhoto {
   return {
     uuid: row.uuid.trim(),
+    uploadedBy: row.uploaded_by,
     filePath: row.file_path,
     fileName: row.file_name,
     fileSize: row.file_size,

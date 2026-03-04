@@ -163,6 +163,7 @@ export interface WorkOrderComment {
 
 export interface WorkOrderPhoto {
   uuid: string;
+  uploadedBy: number;
   filePath: string;
   fileName: string;
   fileSize: number;

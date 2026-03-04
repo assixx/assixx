@@ -55,6 +55,7 @@ export interface PaginatedComments {
 /** Photo attached to a work order */
 export interface WorkOrderPhoto {
   uuid: string;
+  uploadedBy: number;
   filePath: string;
   fileName: string;
   fileSize: number;

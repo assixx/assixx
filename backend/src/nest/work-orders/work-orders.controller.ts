@@ -6,7 +6,7 @@
  * - Employee view (execute: my orders)
  * - Status transitions, comments, photos, assignees
  *
- * 15 endpoints total. All require @TenantFeature('work_orders').
+ * 17 endpoints total. All require @TenantFeature('work_orders').
  */
 import {
   BadRequestException,
@@ -20,11 +20,14 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@webundsoehne/nest-fastify-file-upload';
+import type { FastifyReply } from 'fastify';
 import multer from 'fastify-multer';
+import { createReadStream } from 'node:fs';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -343,5 +346,40 @@ export class WorkOrdersController {
       throw new BadRequestException('Keine Datei hochgeladen');
     }
     return await this.photosService.addPhoto(tenantId, user.id, uuid, file);
+  }
+
+  @Get(':uuid/photos/:photoUuid/file')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async servePhoto(
+    @Param('uuid') uuid: string,
+    @Param('photoUuid') photoUuid: string,
+    @TenantId() tenantId: number,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const photo = await this.photosService.getPhotoFile(
+      tenantId,
+      uuid,
+      photoUuid,
+    );
+    await reply
+      .header('Content-Type', photo.mimeType)
+      .header('Cache-Control', 'private, max-age=3600')
+      .send(createReadStream(photo.filePath));
+  }
+
+  @Delete(':uuid/photos/:photoUuid')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission(FEAT, MOD_EXEC, 'canWrite')
+  async deletePhoto(
+    @Param('photoUuid') photoUuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<void> {
+    await this.photosService.deletePhoto(
+      tenantId,
+      user.id,
+      user.role,
+      photoUuid,
+    );
   }
 }

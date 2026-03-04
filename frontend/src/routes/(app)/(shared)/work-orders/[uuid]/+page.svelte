@@ -38,6 +38,7 @@
   const comments = $derived(data.comments);
   const photos = $derived(data.photos);
   const userRole = $derived(data.userRole);
+  const userId = $derived(data.userId);
 </script>
 
 <svelte:head>
@@ -141,6 +142,8 @@
           <PhotoGallery
             {photos}
             uuid={workOrder.uuid}
+            {userRole}
+            {userId}
           />
         </div>
       </div>

@@ -268,6 +268,14 @@ export async function fetchPhotos(uuid: string): Promise<WorkOrderPhoto[]> {
   return extractArray<WorkOrderPhoto>(result);
 }
 
+/** Delete a photo from a work order */
+export async function deletePhoto(
+  uuid: string,
+  photoUuid: string,
+): Promise<void> {
+  await apiClient.delete(`/work-orders/${uuid}/photos/${photoUuid}`);
+}
+
 // =============================================================================
 // STATS
 // =============================================================================

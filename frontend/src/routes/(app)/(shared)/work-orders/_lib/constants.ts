@@ -205,6 +205,10 @@ export const MESSAGES = {
   PHOTOS_ERROR: 'Fehler beim Hochladen',
   PHOTOS_TOO_LARGE: 'Datei ist größer als 5 MB',
   PHOTOS_INVALID_TYPE: 'Nur Bilder (JPG, PNG, WebP) erlaubt',
+  PHOTOS_DELETE_CONFIRM: 'Foto wirklich löschen?',
+  PHOTOS_DELETE_SUCCESS: 'Foto gelöscht',
+  PHOTOS_DELETE_ERROR: 'Fehler beim Löschen',
+  PHOTOS_DELETING: 'Wird gelöscht...',
 
   // Create/Edit modal
   MODAL_CREATE_TITLE: 'Neuen Arbeitsauftrag erstellen',

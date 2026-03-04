@@ -390,6 +390,7 @@ describe('mapPhotoRowToApi', () => {
     const result = mapPhotoRowToApi(row);
 
     expect(result.uuid).toBe('019c9547-dddd-771a-b022-444444444444');
+    expect(result.uploadedBy).toBe(42);
     expect(result.filePath).toBe('uploads/work-orders/1/uuid/photo.jpg');
     expect(result.fileName).toBe('reparatur-foto.jpg');
     expect(result.fileSize).toBe(1_234_567);

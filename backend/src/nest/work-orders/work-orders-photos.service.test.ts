@@ -6,7 +6,11 @@
  *        getPhotos (happy path, empty result),
  *        deletePhoto (happy path, photo not found).
  */
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -178,26 +182,68 @@ describe('WorkOrderPhotosService', () => {
 
   describe('deletePhoto', () => {
     it('should delete photo from DB and trigger file cleanup', async () => {
-      // find photo
+      // find photo (owned by user 5)
       mockDb.queryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
+        uploaded_by: 5,
       });
       // DELETE query
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.deletePhoto(10, 5, 'photo-uuid');
+      await service.deletePhoto(10, 5, 'admin', 'photo-uuid');
 
       expect(mockDb.queryOne).toHaveBeenCalledTimes(1);
       expect(mockDb.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('should allow admin to delete any photo', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
+        work_order_id: 42,
+        uploaded_by: 99,
+      });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.deletePhoto(10, 5, 'admin', 'photo-uuid');
+
+      expect(mockDb.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('should allow employee to delete own photo', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
+        work_order_id: 42,
+        uploaded_by: 5,
+      });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.deletePhoto(10, 5, 'employee', 'photo-uuid');
+
+      expect(mockDb.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw ForbiddenException when employee deletes other photo', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
+        work_order_id: 42,
+        uploaded_by: 99,
+      });
+
+      await expect(
+        service.deletePhoto(10, 5, 'employee', 'photo-uuid'),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when photo does not exist', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
       await expect(
-        service.deletePhoto(10, 5, 'missing-photo-uuid'),
+        service.deletePhoto(10, 5, 'admin', 'missing-photo-uuid'),
       ).rejects.toThrow(NotFoundException);
     });
   });

@@ -5,8 +5,10 @@
  * list, and hard-delete with file cleanup.
  * Path: uploads/work-orders/{tenantId}/{workOrderUuid}/{fileUuid}.ext
  */
+import type { UserRole } from '@assixx/shared';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -96,18 +98,20 @@ export class WorkOrderPhotosService {
     return rows.map(mapPhotoRowToApi);
   }
 
-  /** Hard-delete a photo + remove file from disk */
+  /** Hard-delete a photo + remove file from disk (admin=any, employee=own) */
   async deletePhoto(
     tenantId: number,
     userId: number,
+    userRole: UserRole,
     photoUuid: string,
   ): Promise<void> {
     const photo = await this.db.queryOne<{
       id: number;
       file_path: string;
       work_order_id: number;
+      uploaded_by: number;
     }>(
-      `SELECT p.id, p.file_path, p.work_order_id
+      `SELECT p.id, p.file_path, p.work_order_id, p.uploaded_by
        FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
        WHERE p.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1`,
@@ -116,6 +120,12 @@ export class WorkOrderPhotosService {
 
     if (photo === null) {
       throw new NotFoundException('Foto nicht gefunden');
+    }
+
+    const isOwner = photo.uploaded_by === userId;
+    const isPrivileged = userRole === 'root' || userRole === 'admin';
+    if (!isOwner && !isPrivileged) {
+      throw new ForbiddenException('Nur eigene Fotos können gelöscht werden');
     }
 
     await this.db.query(`DELETE FROM work_order_photos WHERE id = $1`, [
@@ -132,6 +142,36 @@ export class WorkOrderPhotosService {
       `Foto gelöscht`,
       { photoUuid },
     );
+  }
+
+  /** Resolve a photo file for streaming (auth-checked via controller guard) */
+  async getPhotoFile(
+    tenantId: number,
+    workOrderUuid: string,
+    photoUuid: string,
+  ): Promise<{ filePath: string; fileName: string; mimeType: string }> {
+    const row = await this.db.queryOne<{
+      file_path: string;
+      file_name: string;
+      mime_type: string;
+    }>(
+      `SELECT p.file_path, p.file_name, p.mime_type
+       FROM work_order_photos p
+       JOIN work_orders wo ON p.work_order_id = wo.id
+       WHERE p.uuid = $1 AND wo.uuid = $2
+         AND wo.tenant_id = $3 AND wo.is_active = 1`,
+      [photoUuid, workOrderUuid, tenantId],
+    );
+
+    if (row === null) {
+      throw new NotFoundException('Foto nicht gefunden');
+    }
+
+    return {
+      filePath: row.file_path,
+      fileName: row.file_name,
+      mimeType: row.mime_type,
+    };
   }
 
   // ==========================================================================
