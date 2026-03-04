@@ -84,6 +84,7 @@ function createAssigneeRow(
     assigned_by: 5,
     first_name: 'Anna',
     last_name: 'Schmidt',
+    profile_picture: null,
     ...overrides,
   };
 }

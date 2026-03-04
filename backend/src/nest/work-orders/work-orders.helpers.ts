@@ -86,6 +86,7 @@ export function mapAssigneeRowToApi(
     uuid: row.uuid.trim(),
     userId: row.user_id,
     userName: `${row.first_name} ${row.last_name}`.trim(),
+    profilePicture: row.profile_picture ?? null,
     assignedAt: toIsoString(row.assigned_at),
   };
 }

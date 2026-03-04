@@ -24,6 +24,7 @@ export interface WorkOrderAssignee {
   uuid: string;
   userId: number;
   userName: string;
+  profilePicture: string | null;
   assignedAt: string;
 }
 

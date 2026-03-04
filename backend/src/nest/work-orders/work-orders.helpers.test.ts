@@ -71,6 +71,7 @@ function createAssigneeRow(
     assigned_by: 5,
     first_name: 'Anna',
     last_name: 'Schmidt',
+    profile_picture: null,
     ...overrides,
   };
 }
@@ -297,6 +298,7 @@ describe('mapAssigneeRowToApi', () => {
     expect(result.uuid).toBe('019c9547-bbbb-771a-b022-222222222222');
     expect(result.userId).toBe(42);
     expect(result.userName).toBe('Anna Schmidt');
+    expect(result.profilePicture).toBeNull();
     expect(result.assignedAt).toBe('2026-03-01T09:00:00.000Z');
   });
 

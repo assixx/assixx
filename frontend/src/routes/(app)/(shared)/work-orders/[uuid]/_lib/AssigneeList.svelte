@@ -3,6 +3,11 @@
    * AssigneeList — Displays assigned employees for a work order.
    * Read-only in employee view. Admin add/remove in Step 5.4.
    */
+  import {
+    getAvatarColorClass,
+    getProfilePictureUrl,
+  } from '$lib/utils/avatar-helpers';
+
   import { MESSAGES } from '../../_lib/constants';
 
   import type { WorkOrderAssignee } from '../../_lib/types';
@@ -29,6 +34,16 @@
     }
     return name.substring(0, 2).toUpperCase();
   }
+
+  function hasProfilePic(value: string | null): value is string {
+    return value !== null && value !== '';
+  }
+
+  function avatarColorClass(assignee: WorkOrderAssignee): string {
+    return hasProfilePic(assignee.profilePicture) ? '' : (
+        getAvatarColorClass(assignee.userId)
+      );
+  }
 </script>
 
 <div class="assignee-section">
@@ -44,10 +59,18 @@
     <div class="assignee-list">
       {#each assignees as assignee (assignee.uuid)}
         <div class="assignee-item">
-          <div class="avatar avatar--sm">
-            <span class="avatar__initials">
-              {getInitials(assignee.userName)}
-            </span>
+          <div class="avatar avatar--sm {avatarColorClass(assignee)}">
+            {#if hasProfilePic(assignee.profilePicture)}
+              <img
+                src={getProfilePictureUrl(assignee.profilePicture)}
+                alt={assignee.userName}
+                class="avatar__image"
+              />
+            {:else}
+              <span class="avatar__initials">
+                {getInitials(assignee.userName)}
+              </span>
+            {/if}
           </div>
           <div class="assignee-item__info">
             <span class="assignee-item__name">{assignee.userName}</span>

@@ -112,7 +112,7 @@ export class WorkOrderAssigneesService {
     workOrderUuid: string,
   ): Promise<WorkOrderAssignee[]> {
     const rows = await this.db.query<WorkOrderAssigneeWithNameRow>(
-      `SELECT a.*, u.first_name, u.last_name
+      `SELECT a.*, u.first_name, u.last_name, u.profile_picture
        FROM work_order_assignees a
        JOIN users u ON a.user_id = u.id
        JOIN work_orders wo ON a.work_order_id = wo.id
@@ -181,7 +181,8 @@ export class WorkOrderAssigneesService {
          FROM users u WHERE u.uuid = $4 AND u.tenant_id = $2 AND u.is_active = 1
          ON CONFLICT (work_order_id, user_id) DO NOTHING
          RETURNING *, (SELECT first_name FROM users WHERE id = user_id) AS first_name,
-                      (SELECT last_name FROM users WHERE id = user_id) AS last_name`,
+                      (SELECT last_name FROM users WHERE id = user_id) AS last_name,
+                      (SELECT profile_picture FROM users WHERE id = user_id) AS profile_picture`,
         [uuidv7(), tenantId, workOrderId, userUuid, assignedBy],
       );
       if (result.rows[0] !== undefined) {

@@ -141,6 +141,7 @@ export interface WorkOrderAssignee {
   uuid: string;
   userId: number;
   userName: string;
+  profilePicture: string | null;
   assignedAt: string;
 }
 
@@ -250,6 +251,7 @@ export interface WorkOrderWithCountsRow extends WorkOrderRow {
 export interface WorkOrderAssigneeWithNameRow extends WorkOrderAssigneeRow {
   first_name: string;
   last_name: string;
+  profile_picture: string | null;
 }
 
 export interface WorkOrderCommentWithNameRow extends WorkOrderCommentRow {
