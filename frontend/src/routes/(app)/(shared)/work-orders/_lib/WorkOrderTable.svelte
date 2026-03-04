@@ -55,6 +55,7 @@
         <th>{MESSAGES.LIST_COL_DUE_DATE}</th>
         <th>{MESSAGES.LIST_COL_SOURCE}</th>
         <th>{MESSAGES.LIST_COL_CREATED}</th>
+        <th>{MESSAGES.LIST_COL_ACTIONS}</th>
       </tr>
     </thead>
     <tbody>
@@ -105,6 +106,17 @@
           </td>
           <td>{SOURCE_TYPE_LABELS[item.sourceType]}</td>
           <td>{formatDate(item.createdAt)}</td>
+          <td>
+            <div class="action-icons">
+              <a
+                href={resolvePath(`/work-orders/${item.uuid}`)}
+                class="action-icon action-icon--info"
+                title={MESSAGES.BTN_VIEW_DETAIL}
+              >
+                <i class="fas fa-eye"></i>
+              </a>
+            </div>
+          </td>
         </tr>
       {/each}
     </tbody>
@@ -112,6 +124,12 @@
 </div>
 
 <style>
+  .action-icons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
   .table-link {
     color: var(--color-primary);
     text-decoration: none;

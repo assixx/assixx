@@ -113,7 +113,9 @@ export function mapCommentRowToApi(
 }
 
 /** Map photo DB row (with user name JOIN) to API response */
-export function mapPhotoRowToApi(row: WorkOrderPhotoWithNameRow): WorkOrderPhoto {
+export function mapPhotoRowToApi(
+  row: WorkOrderPhotoWithNameRow,
+): WorkOrderPhoto {
   return {
     uuid: row.uuid.trim(),
     uploadedBy: row.uploaded_by,

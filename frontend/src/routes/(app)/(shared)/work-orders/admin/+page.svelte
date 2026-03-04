@@ -452,25 +452,29 @@
       }
     }}
   >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
-      class="confirm-modal"
-      role="presentation"
+      class="confirm-modal confirm-modal--danger"
+      role="document"
       onclick={(e: MouseEvent) => {
         e.stopPropagation();
       }}
+      onkeydown={(e: KeyboardEvent) => {
+        e.stopPropagation();
+      }}
     >
-      <div class="confirm-modal__icon confirm-modal__icon--danger">
-        <i class="fas fa-exclamation-triangle"></i>
+      <div class="confirm-modal__icon">
+        <i class="fas fa-trash-alt"></i>
       </div>
       <h3 class="confirm-modal__title">{MESSAGES.DELETE_CONFIRM_TITLE}</h3>
-      <p class="confirm-modal__text">
-        <strong>{deletingItem.title}</strong>
+      <p class="confirm-modal__message">
+        <strong>{deletingItem.title}</strong><br />
+        {MESSAGES.DELETE_CONFIRM_TEXT}
       </p>
-      <p class="confirm-modal__text">{MESSAGES.DELETE_CONFIRM_TEXT}</p>
       <div class="confirm-modal__actions">
         <button
           type="button"
-          class="btn btn-cancel"
+          class="confirm-modal__btn confirm-modal__btn--cancel"
           onclick={() => {
             showDeleteConfirm = false;
             deletingItem = null;
@@ -480,7 +484,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-danger"
+          class="confirm-modal__btn confirm-modal__btn--danger"
           disabled={submitting}
           onclick={() => {
             void handleDelete();
