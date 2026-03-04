@@ -146,7 +146,7 @@ const TEAM_MEMBERS_DATE_RANGE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND ea.start_date <= $2::date AND ea.end_date >= $3::date
-  WHERE ut.team_id = $1`;
+  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = 1`;
 
 /**
  * SQL query for team members with current date availability
@@ -159,7 +159,7 @@ const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
-  WHERE ut.team_id = $1`;
+  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = 1`;
 
 @Injectable()
 export class TeamsService {

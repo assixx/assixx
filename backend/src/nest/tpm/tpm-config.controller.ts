@@ -10,6 +10,9 @@
  * - GET    /tpm/config/interval-colors       — Get interval type colors
  * - PATCH  /tpm/config/interval-colors       — Update single interval color
  * - POST   /tpm/config/interval-colors/reset — Reset interval colors to defaults
+ * - GET    /tpm/config/category-colors       — Get card category colors
+ * - PATCH  /tpm/config/category-colors       — Update single category color
+ * - POST   /tpm/config/category-colors/reset — Reset category colors (remove all)
  * - GET    /tpm/config/templates        — List card templates
  * - POST   /tpm/config/templates        — Create template
  * - PATCH  /tpm/config/templates/:uuid  — Update template
@@ -33,6 +36,7 @@ import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js'
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { CreateTemplateDto } from './dto/create-template.dto.js';
+import { UpdateCategoryColorConfigDto } from './dto/update-category-color-config.dto.js';
 import { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
 import { UpdateEscalationConfigDto } from './dto/update-escalation-config.dto.js';
 import { UpdateIntervalColorConfigDto } from './dto/update-interval-color-config.dto.js';
@@ -42,6 +46,7 @@ import { TpmEscalationService } from './tpm-escalation.service.js';
 import { TpmTemplatesService } from './tpm-templates.service.js';
 import type {
   TpmCardTemplate,
+  TpmCategoryColorConfigEntry,
   TpmColorConfigEntry,
   TpmEscalationConfig,
 } from './tpm.types.js';
@@ -159,6 +164,45 @@ export class TpmConfigController {
       tenantId,
       user.id,
     );
+  }
+
+  // ============================================================================
+  // CATEGORY COLOR CONFIG
+  // ============================================================================
+
+  /** GET /tpm/config/category-colors — Get all category colors */
+  @Get('category-colors')
+  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  async getCategoryColors(
+    @TenantId() tenantId: number,
+  ): Promise<TpmCategoryColorConfigEntry[]> {
+    return await this.colorConfigService.getCategoryColors(tenantId);
+  }
+
+  /** PATCH /tpm/config/category-colors — Update a single category color */
+  @Patch('category-colors')
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async updateCategoryColor(
+    @Body() dto: UpdateCategoryColorConfigDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmCategoryColorConfigEntry> {
+    return await this.colorConfigService.updateCategoryColor(
+      tenantId,
+      user.id,
+      dto,
+    );
+  }
+
+  /** POST /tpm/config/category-colors/reset — Remove all custom category colors */
+  @Post('category-colors/reset')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async resetCategoryColors(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmCategoryColorConfigEntry[]> {
+    return await this.colorConfigService.resetCategoryColors(tenantId, user.id);
   }
 
   // ============================================================================

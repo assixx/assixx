@@ -29,7 +29,8 @@ export interface NavItem {
     | 'blackboard'
     | 'calendar'
     | 'vacation'
-    | 'tpm';
+    | 'tpm'
+    | 'workOrders';
   /** Tenant feature code — items with this field are hidden when feature is not active */
   featureCode?: string;
 }
@@ -43,6 +44,7 @@ export const ICONS: Record<string, string> = {
   document: '<i class="fas fa-file-alt"></i>',
   calendar: '<i class="fas fa-calendar-alt"></i>',
   lean: '<i class="fas fa-chart-line"></i>',
+  'clipboard-check': '<i class="fas fa-clipboard-check"></i>',
   clock: '<i class="fas fa-clock"></i>',
   vacation: '<i class="fas fa-umbrella-beach"></i>',
   chat: '<i class="fas fa-comments"></i>',
@@ -54,6 +56,7 @@ export const ICONS: Record<string, string> = {
   building: '<i class="fas fa-building"></i>',
   feature: '<i class="fas fa-puzzle-piece"></i>',
   logs: '<i class="fas fa-list-alt"></i>',
+  desktop: '<i class="fas fa-desktop"></i>',
 };
 
 /** Shared blackboard submenu (root + admin) */
@@ -210,7 +213,19 @@ export const rootMenuItems: NavItem[] = [
     id: 'admins',
     icon: ICONS.admin,
     label: 'Administratoren',
-    url: '/manage-admins',
+    submenu: [
+      {
+        id: 'admins-list',
+        label: 'Administratoren',
+        url: '/manage-admins',
+      },
+      {
+        id: 'dummy-users',
+        icon: ICONS.desktop,
+        label: 'Dummy-Benutzer',
+        url: '/manage-dummies',
+      },
+    ],
   },
   { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
   {
@@ -246,6 +261,14 @@ export const rootMenuItems: NavItem[] = [
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: LEAN_ADMIN_SUBMENU,
+  },
+  {
+    id: 'work-orders',
+    icon: ICONS['clipboard-check'],
+    label: 'Arbeitsaufträge',
+    url: '/work-orders/admin',
+    badgeType: 'workOrders',
+    featureCode: 'work_orders',
   },
   {
     id: 'chat',
@@ -300,7 +323,19 @@ export const adminMenuItems: NavItem[] = [
     id: 'employees',
     icon: ICONS.users,
     label: 'Mitarbeiter',
-    url: '/manage-employees',
+    submenu: [
+      {
+        id: 'employees-list',
+        label: 'Mitarbeiter',
+        url: '/manage-employees',
+      },
+      {
+        id: 'dummy-users',
+        icon: ICONS.desktop,
+        label: 'Dummy-Benutzer',
+        url: '/manage-dummies',
+      },
+    ],
   },
   { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
   {
@@ -336,6 +371,14 @@ export const adminMenuItems: NavItem[] = [
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: LEAN_ADMIN_SUBMENU,
+  },
+  {
+    id: 'work-orders',
+    icon: ICONS['clipboard-check'],
+    label: 'Arbeitsaufträge',
+    url: '/work-orders/admin',
+    badgeType: 'workOrders',
+    featureCode: 'work_orders',
   },
   {
     id: 'shifts',
@@ -439,6 +482,14 @@ export const employeeMenuItems: NavItem[] = [
     ],
   },
   {
+    id: 'work-orders',
+    icon: ICONS['clipboard-check'],
+    label: 'Arbeitsaufträge',
+    url: '/work-orders',
+    badgeType: 'workOrders',
+    featureCode: 'work_orders',
+  },
+  {
     id: 'chat',
     icon: ICONS.chat,
     label: 'Chat',
@@ -473,11 +524,41 @@ export const employeeMenuItems: NavItem[] = [
   },
 ];
 
+export const dummyMenuItems: NavItem[] = [
+  {
+    id: 'blackboard',
+    icon: ICONS.pin,
+    label: LABELS.BLACKBOARD,
+    url: '/blackboard',
+    featureCode: 'blackboard',
+  },
+  {
+    id: 'calendar',
+    icon: ICONS.calendar,
+    label: 'Kalender',
+    url: '/calendar',
+    featureCode: 'calendar',
+  },
+  {
+    id: 'lean-management',
+    icon: ICONS.lean,
+    label: 'LEAN-Management',
+    submenu: [
+      {
+        id: 'tpm',
+        label: 'TPM Wartung',
+        url: '/lean-management/tpm/overview',
+        featureCode: 'tpm',
+      },
+    ],
+  },
+];
+
 /**
  * Get menu items for a specific role
  */
 export function getMenuItemsForRole(
-  role: 'root' | 'admin' | 'employee',
+  role: 'root' | 'admin' | 'employee' | 'dummy',
 ): NavItem[] {
   switch (role) {
     case 'root':
@@ -486,6 +567,8 @@ export function getMenuItemsForRole(
       return adminMenuItems;
     case 'employee':
       return employeeMenuItems;
+    case 'dummy':
+      return dummyMenuItems;
   }
 }
 

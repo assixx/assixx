@@ -18,7 +18,7 @@
     firstName?: string;
     lastName?: string;
     email?: string;
-    role?: 'root' | 'admin' | 'employee';
+    role?: 'root' | 'admin' | 'employee' | 'dummy';
     profilePicture?: string;
   }
 
@@ -28,9 +28,9 @@
     tokenWarning: boolean;
     tokenExpired: boolean;
     user: UserInfo | null;
-    userRole: 'root' | 'admin' | 'employee';
-    activeRole: 'root' | 'admin' | 'employee';
-    currentRole: 'root' | 'admin' | 'employee';
+    userRole: 'root' | 'admin' | 'employee' | 'dummy';
+    activeRole: 'root' | 'admin' | 'employee' | 'dummy';
+    currentRole: 'root' | 'admin' | 'employee' | 'dummy';
     onToggleSidebar: () => void;
     onShowLogoutModal: () => void;
   }

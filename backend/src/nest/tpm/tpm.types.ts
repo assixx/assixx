@@ -28,7 +28,7 @@ export type TpmCardStatus = 'green' | 'red' | 'yellow' | 'overdue';
 
 export type TpmCardRole = 'operator' | 'maintenance';
 
-export type TpmCardCategory = 'reinigung' | 'wartung' | 'instandhaltung';
+export type TpmCardCategory = 'reinigung' | 'wartung' | 'inspektion';
 
 export type TpmApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
@@ -493,8 +493,24 @@ export const ROLE_LABELS: Record<TpmCardRole, string> = {
 export const CATEGORY_LABELS: Record<TpmCardCategory, string> = {
   reinigung: 'Reinigung',
   wartung: 'Wartung',
-  instandhaltung: 'Instandhaltung',
+  inspektion: 'Inspektion',
 } as const;
+
+/** Ordered category keys for consistent iteration */
+export const CATEGORY_KEYS_ORDERED: readonly TpmCardCategory[] = [
+  'reinigung',
+  'wartung',
+  'inspektion',
+] as const;
+
+/** Category color config entry — colorHex is null when no custom color is set */
+export interface TpmCategoryColorConfigEntry {
+  categoryKey: TpmCardCategory;
+  colorHex: string | null;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 /** Card code prefixes per role */
 export const CARD_CODE_PREFIX: Record<TpmCardRole, string> = {

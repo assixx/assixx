@@ -51,6 +51,7 @@ type AllCounts = [
   CountItem,
   CountItem,
   CountItem,
+  CountItem,
 ];
 
 @Injectable()
@@ -97,6 +98,7 @@ export class DashboardService {
       surveys,
       vacation,
       tpm,
+      workOrders,
     ] = await this.fetchAllCounts(user, tenantId, canAccess);
 
     return {
@@ -109,6 +111,7 @@ export class DashboardService {
       surveys,
       vacation,
       tpm,
+      workOrders,
       fetchedAt: new Date().toISOString(),
     };
   }
@@ -176,6 +179,11 @@ export class DashboardService {
       ),
       g(null, () => this.fetchVacationCount(uid, tenantId), EMPTY_COUNT),
       g('tpm', () => this.fetchTpmCount(uid, tenantId), EMPTY_COUNT),
+      g(
+        'work_orders',
+        () => this.fetchWorkOrdersCount(uid, tenantId),
+        EMPTY_COUNT,
+      ),
     ]);
   }
 
@@ -347,6 +355,30 @@ export class DashboardService {
          ON n.id = nrs.notification_id AND nrs.user_id = $2
        WHERE n.tenant_id = $1
          AND n.type = 'tpm'
+         AND n.recipient_type = 'user'
+         AND n.recipient_id = $2
+         AND nrs.id IS NULL`,
+      [tenantId, userId],
+    );
+    return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };
+  }
+
+  /**
+   * Fetch unread work order notification count.
+   * Counts notifications of type='work_orders' targeted at the user
+   * that have no entry in notification_read_status.
+   */
+  private async fetchWorkOrdersCount(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    const rows = await this.db.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM notifications n
+       LEFT JOIN notification_read_status nrs
+         ON n.id = nrs.notification_id AND nrs.user_id = $2
+       WHERE n.tenant_id = $1
+         AND n.type = 'work_orders'
          AND n.recipient_type = 'user'
          AND n.recipient_id = $2
          AND nrs.id IS NULL`,

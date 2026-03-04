@@ -14,7 +14,7 @@
     firstName?: string;
     lastName?: string;
     email?: string;
-    role?: 'root' | 'admin' | 'employee';
+    role?: 'root' | 'admin' | 'employee' | 'dummy';
     employeeNumber?: string;
     profilePicture?: string;
     position?: string;

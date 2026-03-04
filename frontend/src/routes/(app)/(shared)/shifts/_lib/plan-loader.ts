@@ -94,6 +94,24 @@ async function fetchAndProcessShiftData(startDate: string, endDate: string) {
   return { planResponse, rotationHistory, planData, rotationData };
 }
 
+/** Apply optional fetch results (machine availability + TPM events) to state */
+function applyOptionalFetchResults(
+  machineAvail: Awaited<ReturnType<typeof fetchMachineAvailability>> | null,
+  tpmEvents: Awaited<ReturnType<typeof fetchTpmMaintenanceDates>> | null,
+): void {
+  if (machineAvail !== null) {
+    shiftsState.setMachineAvailability(machineAvail);
+  } else {
+    shiftsState.clearMachineAvailability();
+  }
+
+  if (tpmEvents !== null) {
+    shiftsState.setTpmEvents(tpmEvents);
+  } else {
+    shiftsState.clearTpmEvents();
+  }
+}
+
 /** Apply processed shift data to state (batched updates) */
 function applyShiftPlanState(
   planData: ProcessedShiftData,
@@ -146,7 +164,10 @@ export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
     const teamId = shiftsState.selectedContext.teamId;
     const machineId = shiftsState.selectedContext.machineId;
     const hasMachine = machineId !== null && machineId !== 0;
-    const wantTpm = shiftsState.showTpmEvents;
+    // On fresh load (!preserveTpmToggle), always fetch TPM data because
+    // the saved plan may have isTpmMode=true — we don't know yet.
+    // On week navigation (preserveTpmToggle=true), respect the current toggle.
+    const wantTpm = preserveTpmToggle ? shiftsState.showTpmEvents : true;
 
     // ALL independent fetches in parallel — no waterfall
     const [members, shiftResult, machineAvail, tpmEvents] = await Promise.all([
@@ -171,18 +192,7 @@ export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
 
     // --- Batch all state updates in one render frame ---
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
-
-    if (machineAvail !== null) {
-      shiftsState.setMachineAvailability(machineAvail);
-    } else {
-      shiftsState.clearMachineAvailability();
-    }
-
-    if (tpmEvents !== null) {
-      shiftsState.setTpmEvents(tpmEvents);
-    } else {
-      shiftsState.clearTpmEvents();
-    }
+    applyOptionalFetchResults(machineAvail, tpmEvents);
 
     applyShiftPlanState(
       planData,

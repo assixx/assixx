@@ -1,0 +1,167 @@
+/**
+ * Work Orders Comments Service
+ *
+ * Handles user comments and documentation on work orders.
+ * Status-change comments are created automatically by WorkOrderStatusService.
+ */
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
+
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import { DatabaseService } from '../database/database.service.js';
+import { mapCommentRowToApi } from './work-orders.helpers.js';
+import type {
+  WorkOrderComment,
+  WorkOrderCommentWithNameRow,
+} from './work-orders.types.js';
+
+/** Paginated comment list */
+export interface PaginatedComments {
+  items: WorkOrderComment[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+@Injectable()
+export class WorkOrderCommentsService {
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
+
+  /** Add a user comment to a work order */
+  async addComment(
+    tenantId: number,
+    userId: number,
+    workOrderUuid: string,
+    content: string,
+  ): Promise<WorkOrderComment> {
+    const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
+
+    const row = await this.db.queryOne<WorkOrderCommentWithNameRow>(
+      `INSERT INTO work_order_comments
+         (uuid, tenant_id, work_order_id, user_id, content)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *, (SELECT first_name FROM users WHERE id = $4) AS first_name,
+                    (SELECT last_name FROM users WHERE id = $4) AS last_name`,
+      [uuidv7(), tenantId, wo.id, userId, content],
+    );
+
+    if (row === null) {
+      throw new NotFoundException('Kommentar konnte nicht erstellt werden');
+    }
+
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'work_order_comment',
+      wo.id,
+      `Kommentar zu "${wo.title}" hinzugefügt`,
+      { workOrderUuid },
+    );
+
+    return mapCommentRowToApi(row);
+  }
+
+  /** List comments for a work order (paginated, chronological) */
+  async listComments(
+    tenantId: number,
+    workOrderUuid: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedComments> {
+    const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
+    const offset = (page - 1) * limit;
+
+    const countResult = await this.db.queryOne<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM work_order_comments
+       WHERE work_order_id = $1 AND is_active = 1`,
+      [wo.id],
+    );
+    const total = Number.parseInt(countResult?.count ?? '0', 10);
+
+    const rows = await this.db.query<WorkOrderCommentWithNameRow>(
+      `SELECT c.*, u.first_name, u.last_name
+       FROM work_order_comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.work_order_id = $1 AND c.is_active = 1
+       ORDER BY c.created_at ASC
+       LIMIT $2 OFFSET $3`,
+      [wo.id, limit, offset],
+    );
+
+    return {
+      items: rows.map(mapCommentRowToApi),
+      total,
+      page,
+      pageSize: limit,
+    };
+  }
+
+  /** Soft-delete a comment (own comment or admin) */
+  async deleteComment(
+    tenantId: number,
+    userId: number,
+    commentUuid: string,
+    isAdmin: boolean,
+  ): Promise<void> {
+    const comment = await this.db.queryOne<{
+      id: number;
+      user_id: number;
+      work_order_id: number;
+    }>(
+      `SELECT id, user_id, work_order_id FROM work_order_comments
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      [commentUuid, tenantId],
+    );
+
+    if (comment === null) {
+      throw new NotFoundException('Kommentar nicht gefunden');
+    }
+
+    if (comment.user_id !== userId && !isAdmin) {
+      throw new ForbiddenException(
+        'Nur eigene Kommentare können gelöscht werden',
+      );
+    }
+
+    await this.db.query(
+      `UPDATE work_order_comments SET is_active = 4
+       WHERE id = $1`,
+      [comment.id],
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'work_order_comment',
+      comment.work_order_id,
+      `Kommentar gelöscht`,
+      { commentUuid },
+    );
+  }
+
+  // ==========================================================================
+  // Private helper
+  // ==========================================================================
+
+  private async resolveWorkOrder(
+    tenantId: number,
+    uuid: string,
+  ): Promise<{ id: number; title: string }> {
+    const row = await this.db.queryOne<{ id: number; title: string }>(
+      `SELECT id, title FROM work_orders
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      [uuid, tenantId],
+    );
+    if (row === null) {
+      throw new NotFoundException('Arbeitsauftrag nicht gefunden');
+    }
+    return row;
+  }
+}

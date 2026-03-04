@@ -857,6 +857,157 @@ describe('TPM Defect Photos: Non-Existent Defect', () => {
 });
 
 // ============================================================================
+// DEFECTS LIST (Mängelliste with Work Order Context)
+// ============================================================================
+
+// ---- seq: 15g -- List Defects For Card (with work order fields) -------------
+
+describe('TPM Defects: List For Card', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/tpm/cards/${cardUuid}/defects?page=1&limit=50`,
+      { headers: authOnly(auth.authToken) },
+    );
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return paginated structure', () => {
+    expect(typeof body.data.total).toBe('number');
+    expect(typeof body.data.page).toBe('number');
+    expect(typeof body.data.pageSize).toBe('number');
+    expect(Array.isArray(body.data.data)).toBe(true);
+  });
+
+  it('should include defect with execution context fields', () => {
+    expect(body.data.data.length).toBeGreaterThanOrEqual(1);
+    const defect = body.data.data[0];
+    expect(typeof defect.uuid).toBe('string');
+    expect(typeof defect.title).toBe('string');
+    expect(typeof defect.executionUuid).toBe('string');
+    expect(typeof defect.executionDate).toBe('string');
+    expect(typeof defect.photoCount).toBe('number');
+    expect(typeof defect.createdAt).toBe('string');
+  });
+
+  it('should include work order fields (null when no WO)', () => {
+    const defect = body.data.data[0];
+    expect(defect).toHaveProperty('workOrderUuid');
+    expect(defect).toHaveProperty('workOrderStatus');
+    expect(defect).toHaveProperty('workOrderPriority');
+    expect(defect).toHaveProperty('workOrderAssigneeNames');
+    expect(defect).toHaveProperty('workOrderCreatedAt');
+    expect(Array.isArray(defect.workOrderAssigneeNames)).toBe(true);
+    expect(defect.workOrderAssigneeNames.length).toBe(0);
+  });
+});
+
+// ============================================================================
+// DEFECT UPDATE (PATCH)
+// ============================================================================
+
+// ---- seq: 15h -- Update Defect Title ----------------------------------------
+
+describe('TPM Defects: Update Title', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/${defectUuid}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ title: 'Aktualisierter Mangeltitel' }),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return updated title', () => {
+    expect(body.data.title).toBe('Aktualisierter Mangeltitel');
+  });
+
+  it('should preserve uuid', () => {
+    expect(body.data.uuid).toBe(defectUuid);
+  });
+});
+
+// ---- seq: 15i -- Update Defect Description ----------------------------------
+
+describe('TPM Defects: Update Description', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/${defectUuid}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ description: 'Neue Beschreibung' }),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return updated description', () => {
+    expect(body.data.description).toBe('Neue Beschreibung');
+  });
+
+  it('should keep previously updated title', () => {
+    expect(body.data.title).toBe('Aktualisierter Mangeltitel');
+  });
+});
+
+// ---- seq: 15j -- Update Defect with empty body → 400 -----------------------
+
+describe('TPM Defects: Update Empty Body', () => {
+  let res: Response;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/${defectUuid}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
+  });
+
+  it('should return 400 for empty body', () => {
+    expect(res.status).toBe(400);
+  });
+});
+
+// ---- seq: 15k -- Update Non-Existent Defect → 404 --------------------------
+
+describe('TPM Defects: Update Non-Existent', () => {
+  let res: Response;
+
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/tpm/executions/defects/019fffff-ffff-7fff-bfff-ffffffffffff`,
+      {
+        method: 'PATCH',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({ title: 'Sollte fehlschlagen' }),
+      },
+    );
+  });
+
+  it('should return 404 for non-existent defect', () => {
+    expect(res.status).toBe(404);
+  });
+});
+
+// ============================================================================
 // SLOT ASSISTANT
 // ============================================================================
 

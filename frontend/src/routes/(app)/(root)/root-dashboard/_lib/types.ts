@@ -41,7 +41,7 @@ export interface LogsApiResponse {
 }
 
 /** User role type */
-export type UserRole = 'root' | 'admin' | 'employee';
+export type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
 /** Action type */
 export type ActionType =

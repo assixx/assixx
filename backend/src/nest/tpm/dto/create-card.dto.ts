@@ -48,7 +48,7 @@ const BaseSchema = z.object({
   weekdayOverride: WeekdaySchema.nullish(),
   cardCategories: z
     .array(TpmCardCategorySchema)
-    .max(3, 'Maximal 3 Kategorien erlaubt')
+    .max(1, 'Nur eine Kategorie erlaubt')
     .default([]),
   estimatedExecutionMinutes: z
     .number()

@@ -31,7 +31,7 @@
     firstName?: string;
     lastName?: string;
     email?: string;
-    role?: 'root' | 'admin' | 'employee';
+    role?: 'root' | 'admin' | 'employee' | 'dummy';
     employeeNumber?: string;
     profilePicture?: string;
     position?: string;
@@ -40,7 +40,7 @@
   interface Props {
     collapsed: boolean;
     menuItems: NavItem[];
-    currentRole: 'root' | 'admin' | 'employee';
+    currentRole: 'root' | 'admin' | 'employee' | 'dummy';
     user: UserInfo | null;
     tenant: { id?: number; companyName?: string } | null;
     mobileMenuOpen?: boolean;
@@ -388,7 +388,7 @@
   }
 
   :global(html.dark) .sidebar-nav {
-    scrollbar-color: var(--glass-border) transparent;
+    scrollbar-color: var(--glass-border-sidebar-tree) transparent;
   }
 
   .sidebar-footer-area {
@@ -607,8 +607,8 @@
     left: -1rem;
     width: 0.625rem;
     height: 50%;
-    border-left: 1px solid var(--color-glass-border-hover);
-    border-bottom: 1px solid var(--color-glass-border-hover);
+    border-left: var(--glass-border-sidebar-tree);
+    border-bottom: var(--glass-border-sidebar-tree);
     border-bottom-left-radius: 6px;
   }
 
@@ -618,7 +618,7 @@
     top: 50%;
     left: -1rem;
     height: calc(50% + 0.125rem);
-    border-left: 1px solid var(--color-glass-border-hover);
+    border-left: var(--glass-border-sidebar-tree);
   }
 
   .submenu-item:last-child::after {

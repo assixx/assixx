@@ -30,11 +30,15 @@ html.dark {
   --color-icon-primary: #a9d9ff;
   --color-accent-bg: #a9d9ff;
 
+  /* Stacked section background (Kamishibai board collapsed sections) */
+  --color-section-stacked-bg: #000000ed;
+
   /* Glass Backgrounds (white overlays on dark surfaces) */
   --glass-bg: rgb(255 255 255 / 2.5%);
   --glass-bg-hover: rgb(255 255 255 / 3%);
   --glass-bg-active: rgb(255 255 255 / 5%);
   --glass-border: 1px solid rgb(255 255 255 / 10%);
+  --glass-border-sidebar-tree: 1px solid rgba(255, 255, 255, 0.267);
 
   /* Glass Form (dark mode) */
   --glass-form-bg: rgb(255 255 255 / 4%);

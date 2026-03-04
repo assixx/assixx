@@ -68,7 +68,12 @@ export type ActivityEntityType =
   | 'tpm_template'
   | 'tpm_time_estimate'
   | 'tpm_color_config'
-  | 'tpm_escalation_config';
+  | 'tpm_escalation_config'
+  | 'tpm_defect'
+  | 'work_order'
+  | 'work_order_comment'
+  | 'work_order_photo'
+  | 'dummy_user';
 
 /**
  * Parameters for logging an activity

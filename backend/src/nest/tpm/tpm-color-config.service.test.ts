@@ -12,6 +12,8 @@ import type { DatabaseService } from '../database/database.service.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import type { TpmColorConfigRow } from './tpm.types.js';
 import {
+  CATEGORY_KEYS_ORDERED,
+  CATEGORY_LABELS,
   DEFAULT_COLORS,
   DEFAULT_INTERVAL_COLORS,
   INTERVAL_TYPES_ORDERED,
@@ -431,6 +433,263 @@ describe('TpmColorConfigService', () => {
       const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params[0]).toBe(10);
       expect(params[1]).toEqual(INTERVAL_TYPES_ORDERED);
+    });
+  });
+
+  // =============================================================
+  // getCategoryColors
+  // =============================================================
+
+  describe('getCategoryColors()', () => {
+    it('should return all 3 defaults when no tenant config exists', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCategoryColors(10);
+
+      expect(result).toHaveLength(3);
+      expect(result.map((c) => c.categoryKey)).toEqual(CATEGORY_KEYS_ORDERED);
+    });
+
+    it('should return colorHex=null for all defaults (no custom color)', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCategoryColors(10);
+
+      for (const entry of result) {
+        expect(entry.colorHex).toBeNull();
+      }
+    });
+
+    it('should use CATEGORY_LABELS for default labels', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCategoryColors(10);
+
+      const reinigung = result.find((c) => c.categoryKey === 'reinigung');
+      expect(reinigung?.label).toBe(CATEGORY_LABELS.reinigung);
+
+      const wartung = result.find((c) => c.categoryKey === 'wartung');
+      expect(wartung?.label).toBe(CATEGORY_LABELS.wartung);
+
+      const inspektion = result.find((c) => c.categoryKey === 'inspektion');
+      expect(inspektion?.label).toBe(CATEGORY_LABELS.inspektion);
+    });
+
+    it('should merge tenant overrides with defaults', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        createColorRow({
+          status_key: 'reinigung',
+          color_hex: '#0030b4',
+          label: 'Reinigung',
+        }),
+      ]);
+
+      const result = await service.getCategoryColors(10);
+
+      expect(result).toHaveLength(3);
+
+      const reinigung = result.find((c) => c.categoryKey === 'reinigung');
+      expect(reinigung?.colorHex).toBe('#0030b4');
+      expect(reinigung?.label).toBe('Reinigung');
+
+      const wartung = result.find((c) => c.categoryKey === 'wartung');
+      expect(wartung?.colorHex).toBeNull();
+      expect(wartung?.label).toBe(CATEGORY_LABELS.wartung);
+    });
+
+    it('should handle all 3 categories overridden', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        createColorRow({
+          status_key: 'reinigung',
+          color_hex: '#111111',
+          label: 'R',
+        }),
+        createColorRow({
+          status_key: 'wartung',
+          color_hex: '#222222',
+          label: 'W',
+        }),
+        createColorRow({
+          status_key: 'inspektion',
+          color_hex: '#333333',
+          label: 'I',
+        }),
+      ]);
+
+      const result = await service.getCategoryColors(10);
+
+      expect(result).toHaveLength(3);
+      expect(result.every((c) => c.colorHex !== null)).toBe(true);
+    });
+
+    it('should pass category keys as ANY($2) filter', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getCategoryColors(10);
+
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toEqual(CATEGORY_KEYS_ORDERED);
+    });
+  });
+
+  // =============================================================
+  // updateCategoryColor
+  // =============================================================
+
+  describe('updateCategoryColor()', () => {
+    it('should UPSERT a category color entry', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          createColorRow({
+            status_key: 'reinigung',
+            color_hex: '#0030b4',
+            label: 'Reinigung',
+          }),
+        ],
+      });
+
+      const result = await service.updateCategoryColor(10, 1, {
+        categoryKey: 'reinigung',
+        colorHex: '#0030b4',
+        label: 'Reinigung',
+      });
+
+      expect(result.categoryKey).toBe('reinigung');
+      expect(result.colorHex).toBe('#0030b4');
+      expect(result.label).toBe('Reinigung');
+
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('ON CONFLICT');
+      expect(sql).toContain('DO UPDATE');
+    });
+
+    it('should pass correct params to UPSERT', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          createColorRow({
+            status_key: 'wartung',
+            color_hex: '#ff5500',
+            label: 'Wartung',
+          }),
+        ],
+      });
+
+      await service.updateCategoryColor(10, 1, {
+        categoryKey: 'wartung',
+        colorHex: '#ff5500',
+        label: 'Wartung',
+      });
+
+      const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toBe('wartung');
+      expect(params[2]).toBe('#ff5500');
+      expect(params[3]).toBe('Wartung');
+    });
+
+    it('should throw when UPSERT returns no rows', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(
+        service.updateCategoryColor(10, 1, {
+          categoryKey: 'reinigung',
+          colorHex: '#0030b4',
+          label: 'Reinigung',
+        }),
+      ).rejects.toThrow('UPSERT tpm_color_config returned no rows');
+    });
+
+    it('should call activityLogger.logUpdate', async () => {
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          createColorRow({
+            status_key: 'reinigung',
+            color_hex: '#0030b4',
+            label: 'Reinigung',
+          }),
+        ],
+      });
+
+      await service.updateCategoryColor(10, 1, {
+        categoryKey: 'reinigung',
+        colorHex: '#0030b4',
+        label: 'Reinigung',
+      });
+
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
+        10,
+        1,
+        'tpm_color_config',
+        0,
+        'TPM-Kategoriefarbe aktualisiert: reinigung',
+        undefined,
+        { categoryKey: 'reinigung', colorHex: '#0030b4' },
+      );
+    });
+  });
+
+  // =============================================================
+  // resetCategoryColors
+  // =============================================================
+
+  describe('resetCategoryColors()', () => {
+    it('should delete category overrides and return 3 defaults', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.resetCategoryColors(10, 1);
+
+      expect(result).toHaveLength(3);
+      expect(result.map((c) => c.categoryKey)).toEqual(CATEGORY_KEYS_ORDERED);
+
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('DELETE FROM tpm_color_config');
+    });
+
+    it('should return colorHex=null for all entries after reset', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.resetCategoryColors(10, 1);
+
+      for (const entry of result) {
+        expect(entry.colorHex).toBeNull();
+      }
+    });
+
+    it('should return correct default labels after reset', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.resetCategoryColors(10, 1);
+
+      const reinigung = result.find((c) => c.categoryKey === 'reinigung');
+      expect(reinigung?.label).toBe('Reinigung');
+
+      const wartung = result.find((c) => c.categoryKey === 'wartung');
+      expect(wartung?.label).toBe('Wartung');
+    });
+
+    it('should target only category keys in DELETE', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.resetCategoryColors(10, 1);
+
+      const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toEqual(CATEGORY_KEYS_ORDERED);
+    });
+
+    it('should call activityLogger.logUpdate', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.resetCategoryColors(10, 1);
+
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
+        10,
+        1,
+        'tpm_color_config',
+        0,
+        'TPM-Kategoriefarben zurückgesetzt',
+      );
     });
   });
 });

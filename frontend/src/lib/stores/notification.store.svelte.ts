@@ -29,6 +29,7 @@ export interface NotificationCounts {
   calendar: number;
   vacation: number;
   tpm: number;
+  workOrders: number;
 }
 
 interface NotificationState {
@@ -55,6 +56,7 @@ function createInitialCounts(): NotificationCounts {
     calendar: 0,
     vacation: 0,
     tpm: 0,
+    workOrders: 0,
   };
 }
 
@@ -85,6 +87,10 @@ const SSE_EVENT_TO_COUNT = new Map<string, CountType>([
   ['TPM_CARD_STATUS_YELLOW', 'tpm'],
   ['TPM_CARD_OVERDUE', 'tpm'],
   ['TPM_EXECUTION_PENDING', 'tpm'],
+  ['WORK_ORDER_ASSIGNED', 'workOrders'],
+  ['WORK_ORDER_STATUS_CHANGED', 'workOrders'],
+  ['WORK_ORDER_DUE_SOON', 'workOrders'],
+  ['WORK_ORDER_VERIFIED', 'workOrders'],
 ]);
 
 function handleSSEEvent(
@@ -122,21 +128,17 @@ function setCountsMut(
   state: NotificationState,
   counts: Partial<NotificationCounts>,
 ): void {
-  state.counts = {
-    total: counts.total ?? 0,
-    surveys: counts.surveys ?? 0,
-    documents: counts.documents ?? 0,
-    kvp: counts.kvp ?? 0,
-    chat: counts.chat ?? 0,
-    blackboard: counts.blackboard ?? 0,
-    calendar: counts.calendar ?? 0,
-    vacation: counts.vacation ?? 0,
-    tpm: counts.tpm ?? 0,
-  };
+  state.counts = { ...createInitialCounts(), ...counts };
   state.lastUpdate = new Date();
 }
 
-export type FeatureType = 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm';
+export type FeatureType =
+  | 'survey'
+  | 'document'
+  | 'kvp'
+  | 'vacation'
+  | 'tpm'
+  | 'work_orders';
 
 /** Map feature type to store count key */
 const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
@@ -145,6 +147,7 @@ const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
   kvp: 'kvp',
   vacation: 'vacation',
   tpm: 'tpm',
+  work_orders: 'workOrders',
 };
 
 /** Rollback count after failed API call */
@@ -212,6 +215,8 @@ interface DashboardCountsResponse {
     vacation?: { count: number };
     /** Unread TPM notifications */
     tpm?: { count: number };
+    /** Unread work order notifications */
+    workOrders?: { count: number };
     fetchedAt?: string;
   };
 }
@@ -293,6 +298,8 @@ interface SSRCounts {
   vacation?: { count: number };
   /** Unread TPM notifications */
   tpm?: { count: number };
+  /** Unread work order notifications */
+  workOrders?: { count: number };
 }
 
 /** Safely extract count from an optional API field (defensive against missing data) */
@@ -310,10 +317,19 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const documents = safeCount(counts.documents);
   const vacation = safeCount(counts.vacation);
   const tpm = safeCount(counts.tpm);
+  const workOrders = safeCount(counts.workOrders);
 
   state.counts = {
     total:
-      chat + surveys + documents + kvp + blackboard + calendar + vacation + tpm,
+      chat +
+      surveys +
+      documents +
+      kvp +
+      blackboard +
+      calendar +
+      vacation +
+      tpm +
+      workOrders,
     chat,
     surveys,
     documents,
@@ -322,6 +338,7 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
     calendar,
     vacation,
     tpm,
+    workOrders,
   };
   state.lastUpdate = new Date();
 

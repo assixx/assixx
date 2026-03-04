@@ -681,7 +681,7 @@ export class DocumentsService {
   async getUnreadCount(
     tenantId: number,
     userId: number,
-    userRole: 'root' | 'admin' | 'employee',
+    userRole: 'root' | 'admin' | 'employee' | 'dummy',
   ): Promise<UnreadCountResponse> {
     const isAdmin = userRole === 'admin' || userRole === 'root';
 

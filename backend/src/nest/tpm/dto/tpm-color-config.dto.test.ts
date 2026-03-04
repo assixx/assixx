@@ -1,11 +1,13 @@
 /**
  * DTO validation tests for TPM Color Config schemas
  *
- * Tests: UpdateColorConfigSchema, UpdateIntervalColorConfigSchema
+ * Tests: UpdateColorConfigSchema, UpdateIntervalColorConfigSchema,
+ *        UpdateCategoryColorConfigSchema
  * Pattern: ADR-018 Phase 8 — Zod .safeParse() assertions.
  */
 import { describe, expect, it } from 'vitest';
 
+import { UpdateCategoryColorConfigSchema } from './update-category-color-config.dto.js';
 import { UpdateColorConfigSchema } from './update-color-config.dto.js';
 import { UpdateIntervalColorConfigSchema } from './update-interval-color-config.dto.js';
 
@@ -253,5 +255,152 @@ describe('UpdateIntervalColorConfigSchema', () => {
     });
     expect(result.colorHex).toBe('#aabbcc');
     expect(result.label).toBe('Täglich');
+  });
+});
+
+// =============================================================
+// UpdateCategoryColorConfigSchema
+// =============================================================
+
+describe('UpdateCategoryColorConfigSchema', () => {
+  const valid = {
+    categoryKey: 'reinigung' as const,
+    colorHex: '#0030b4',
+    label: 'Reinigung',
+  };
+
+  // -----------------------------------------------------------
+  // Happy path
+  // -----------------------------------------------------------
+
+  it('should accept valid payload', () => {
+    expect(UpdateCategoryColorConfigSchema.safeParse(valid).success).toBe(true);
+  });
+
+  // -----------------------------------------------------------
+  // categoryKey validation
+  // -----------------------------------------------------------
+
+  it.each(['reinigung', 'wartung', 'inspektion'] as const)(
+    'should accept categoryKey=%s',
+    (categoryKey) => {
+      expect(
+        UpdateCategoryColorConfigSchema.safeParse({ ...valid, categoryKey })
+          .success,
+      ).toBe(true);
+    },
+  );
+
+  it('should reject invalid categoryKey', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        categoryKey: 'cleaning',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('should reject uppercase categoryKey', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        categoryKey: 'Reinigung',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('should reject empty categoryKey', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({ ...valid, categoryKey: '' })
+        .success,
+    ).toBe(false);
+  });
+
+  // -----------------------------------------------------------
+  // colorHex validation
+  // -----------------------------------------------------------
+
+  it('should reject invalid hex color', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        colorHex: 'not-a-color',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('should reject 3-digit hex shorthand', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({ ...valid, colorHex: '#abc' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('should accept lowercase hex', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        colorHex: '#aabbcc',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('should accept uppercase hex', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        colorHex: '#AABBCC',
+      }).success,
+    ).toBe(true);
+  });
+
+  // -----------------------------------------------------------
+  // label validation
+  // -----------------------------------------------------------
+
+  it('should reject empty label', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({ ...valid, label: '' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('should reject whitespace-only label', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({ ...valid, label: '   ' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('should reject label longer than 50 chars', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        label: 'A'.repeat(51),
+      }).success,
+    ).toBe(false);
+  });
+
+  it('should accept label with exactly 50 chars', () => {
+    expect(
+      UpdateCategoryColorConfigSchema.safeParse({
+        ...valid,
+        label: 'A'.repeat(50),
+      }).success,
+    ).toBe(true);
+  });
+
+  // -----------------------------------------------------------
+  // Transforms (trim)
+  // -----------------------------------------------------------
+
+  it('should trim whitespace from colorHex and label', () => {
+    const result = UpdateCategoryColorConfigSchema.parse({
+      ...valid,
+      colorHex: '  #aabbcc  ',
+      label: '  Reinigung  ',
+    });
+    expect(result.colorHex).toBe('#aabbcc');
+    expect(result.label).toBe('Reinigung');
   });
 });

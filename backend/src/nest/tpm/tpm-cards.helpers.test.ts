@@ -49,10 +49,10 @@ function createMinimalRow(
 }
 
 // =============================================================
-// mapCardRowToApi — card_categories mapping
+// mapCardRowToApi — card_categories mapping (JS array input)
 // =============================================================
 
-describe('mapCardRowToApi — cardCategories', () => {
+describe('mapCardRowToApi — cardCategories (JS array)', () => {
   it('should map empty card_categories to empty array', () => {
     const row = createMinimalRow({ card_categories: [] });
     const result = mapCardRowToApi(row);
@@ -67,22 +67,105 @@ describe('mapCardRowToApi — cardCategories', () => {
 
   it('should map multiple categories', () => {
     const row = createMinimalRow({
-      card_categories: ['reinigung', 'wartung', 'instandhaltung'],
+      card_categories: ['reinigung', 'wartung', 'inspektion'],
     });
     const result = mapCardRowToApi(row);
     expect(result.cardCategories).toEqual([
       'reinigung',
       'wartung',
-      'instandhaltung',
+      'inspektion',
     ]);
   });
 
   it('should preserve category order', () => {
     const row = createMinimalRow({
-      card_categories: ['instandhaltung', 'reinigung'],
+      card_categories: ['inspektion', 'reinigung'],
     });
     const result = mapCardRowToApi(row);
-    expect(result.cardCategories).toEqual(['instandhaltung', 'reinigung']);
+    expect(result.cardCategories).toEqual(['inspektion', 'reinigung']);
+  });
+});
+
+// =============================================================
+// mapCardRowToApi — cardCategories parsing (PostgreSQL string input)
+// pg returns custom ENUM arrays as string literals: '{reinigung}'
+// =============================================================
+
+describe('mapCardRowToApi — parsePgCategoryArray (pg string)', () => {
+  it('should parse single-value pg array string', () => {
+    const row = createMinimalRow({
+      card_categories: '{reinigung}' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual(['reinigung']);
+  });
+
+  it('should parse multi-value pg array string', () => {
+    const row = createMinimalRow({
+      card_categories: '{reinigung,wartung}' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual(['reinigung', 'wartung']);
+  });
+
+  it('should parse all 3 categories from pg array string', () => {
+    const row = createMinimalRow({
+      card_categories: '{reinigung,wartung,inspektion}' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual([
+      'reinigung',
+      'wartung',
+      'inspektion',
+    ]);
+  });
+
+  it('should parse empty pg array string to empty array', () => {
+    const row = createMinimalRow({
+      card_categories: '{}' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual([]);
+  });
+
+  it('should handle empty string as empty array', () => {
+    const row = createMinimalRow({
+      card_categories: '' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual([]);
+  });
+
+  it('should handle quoted values in pg array string', () => {
+    const row = createMinimalRow({
+      card_categories: '{"reinigung","wartung"}' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual(['reinigung', 'wartung']);
+  });
+
+  it('should return empty array for null/undefined input', () => {
+    const row = createMinimalRow({
+      card_categories: null as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual([]);
+  });
+
+  it('should return empty array for numeric input', () => {
+    const row = createMinimalRow({
+      card_categories: 42 as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual([]);
+  });
+
+  it('should trim whitespace around pg array values', () => {
+    const row = createMinimalRow({
+      card_categories: '{ reinigung , wartung }' as unknown as string[],
+    });
+    const result = mapCardRowToApi(row);
+    expect(result.cardCategories).toEqual(['reinigung', 'wartung']);
   });
 });
 
@@ -123,11 +206,11 @@ describe('buildCardUpdateFields — cardCategories', () => {
   it('should map cardCategories alongside other fields', () => {
     const { setClauses, params } = buildCardUpdateFields({
       title: 'Neuer Titel',
-      cardCategories: ['instandhaltung'],
+      cardCategories: ['inspektion'],
     });
     expect(setClauses).toHaveLength(2);
     expect(setClauses).toContain('title = $1');
     expect(setClauses).toContain('card_categories = $2');
-    expect(params).toEqual(['Neuer Titel', ['instandhaltung']]);
+    expect(params).toEqual(['Neuer Titel', ['inspektion']]);
   });
 });

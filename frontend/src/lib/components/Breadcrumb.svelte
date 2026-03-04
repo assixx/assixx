@@ -17,7 +17,7 @@
 
   // Props
   interface Props {
-    userRole?: 'root' | 'admin' | 'employee';
+    userRole?: 'root' | 'admin' | 'employee' | 'dummy';
   }
   const { userRole = 'employee' }: Props = $props();
 
@@ -115,6 +115,18 @@
         label: 'Tenant Löschstatus',
         icon: 'fa-trash-alt',
       },
+      '/work-orders': {
+        label: 'Meine Arbeitsaufträge',
+        icon: 'fa-clipboard-check',
+      },
+      '/work-orders/admin': {
+        label: 'Alle Aufträge',
+        icon: 'fa-clipboard-check',
+      },
+      '/manage-dummies': {
+        label: 'Dummy-Benutzer verwalten',
+        icon: 'fa-desktop',
+      },
     };
 
   /**
@@ -193,6 +205,11 @@
       label: 'Standorte',
       icon: 'fa-map-marker-alt',
     },
+    {
+      pattern: /^\/work-orders\/[0-9a-f-]+$/,
+      label: 'Auftragsdetail',
+      icon: 'fa-info-circle',
+    },
   ];
 
   /**
@@ -223,6 +240,11 @@
       label: 'Schwarzes Brett',
       href: '/blackboard',
       icon: 'fa-clipboard',
+    },
+    '/work-orders/admin': {
+      label: 'Arbeitsaufträge',
+      href: '/work-orders',
+      icon: 'fa-clipboard-check',
     },
   };
 
@@ -314,6 +336,12 @@
       href: '/lean-management/tpm/overview',
       icon: 'fa-tools',
     },
+    {
+      pattern: /^\/work-orders\/[0-9a-f-]+$/,
+      label: 'Arbeitsaufträge',
+      href: '/work-orders',
+      icon: 'fa-clipboard-check',
+    },
   ];
 
   // =============================================================================
@@ -324,6 +352,7 @@
   function getHomeUrl(): string {
     if (userRole === 'root') return '/root-dashboard';
     if (userRole === 'admin') return '/admin-dashboard';
+    if (userRole === 'dummy') return '/blackboard';
     return '/employee-dashboard';
   }
 

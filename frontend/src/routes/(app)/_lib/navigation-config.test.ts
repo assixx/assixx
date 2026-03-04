@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type NavItem,
   adminMenuItems,
+  dummyMenuItems,
   employeeMenuItems,
   filterMenuByAccess,
   filterMenuByFeatures,
@@ -436,6 +437,10 @@ describe('getMenuItemsForRole', () => {
 
   it('should return employeeMenuItems for employee', () => {
     expect(getMenuItemsForRole('employee')).toBe(employeeMenuItems);
+  });
+
+  it('should return dummyMenuItems for dummy', () => {
+    expect(getMenuItemsForRole('dummy')).toBe(dummyMenuItems);
   });
 });
 

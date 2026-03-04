@@ -88,7 +88,7 @@
     firstName?: string;
     lastName?: string;
     email?: string;
-    role?: 'root' | 'admin' | 'employee';
+    role?: 'root' | 'admin' | 'employee' | 'dummy';
     employeeNumber?: string;
     profilePicture?: string;
     position?: string;
@@ -98,11 +98,16 @@
   const getStorageValue = (key: string): string | null =>
     typeof window === 'undefined' ? null : localStorage.getItem(key);
 
-  const getInitialActiveRole = (): 'root' | 'admin' | 'employee' => {
+  const getInitialActiveRole = (): 'root' | 'admin' | 'employee' | 'dummy' => {
     const stored = getStorageValue('activeRole');
-    return stored === 'root' || stored === 'admin' || stored === 'employee' ?
-        stored
-      : (data.user?.role ?? 'employee');
+    if (stored === 'root' || stored === 'admin' || stored === 'employee') {
+      return stored;
+    }
+    return (data.user?.role ?? 'employee') as
+      | 'root'
+      | 'admin'
+      | 'employee'
+      | 'dummy';
   };
 
   const isBannerDismissed = (role: string): boolean =>
@@ -110,10 +115,10 @@
 
   // Role Switch State - activeRole read from localStorage IMMEDIATELY during hydration
   // svelte-ignore state_referenced_locally
-  let userRole = $state<'root' | 'admin' | 'employee'>(
-    data.user?.role ?? 'employee',
+  let userRole = $state<'root' | 'admin' | 'employee' | 'dummy'>(
+    (data.user?.role ?? 'employee') as 'root' | 'admin' | 'employee' | 'dummy',
   );
-  let activeRole = $state<'root' | 'admin' | 'employee'>(
+  let activeRole = $state<'root' | 'admin' | 'employee' | 'dummy'>(
     getInitialActiveRole(),
   );
   let sidebarCollapsed = $state(false);

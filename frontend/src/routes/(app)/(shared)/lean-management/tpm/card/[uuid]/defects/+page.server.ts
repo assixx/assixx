@@ -94,10 +94,14 @@ export const load: PageServerLoad = async ({
 
   const { defects, total } = extractDefects(defectsRaw);
 
+  const user = parentData.user;
+  if (!user) redirect(302, '/login');
+
   return {
     card,
     defects,
     total,
     error: card === null ? 'Karte nicht gefunden' : null,
+    userRole: user.role as string,
   };
 };

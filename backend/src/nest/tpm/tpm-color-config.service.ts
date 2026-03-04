@@ -4,8 +4,9 @@
  * Manages per-tenant color customization for:
  * - Card status colors (green, red, yellow, overdue)
  * - Interval type colors (daily, weekly, monthly, etc.)
+ * - Card category colors (reinigung, wartung, inspektion)
  *
- * Both use the same tpm_color_config table (status_key VARCHAR(20)).
+ * All use the same tpm_color_config table (status_key VARCHAR(20)).
  * Falls back to code defaults when no tenant-specific config exists.
  * Uses UPSERT pattern for updates and DELETE for reset-to-defaults.
  */
@@ -14,15 +15,20 @@ import type { PoolClient } from 'pg';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import type { UpdateCategoryColorConfigDto } from './dto/update-category-color-config.dto.js';
 import type { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
 import type { UpdateIntervalColorConfigDto } from './dto/update-interval-color-config.dto.js';
 import type {
+  TpmCardCategory,
   TpmCardStatus,
+  TpmCategoryColorConfigEntry,
   TpmColorConfigEntry,
   TpmColorConfigRow,
   TpmIntervalType,
 } from './tpm.types.js';
 import {
+  CATEGORY_KEYS_ORDERED,
+  CATEGORY_LABELS,
   DEFAULT_COLORS,
   DEFAULT_INTERVAL_COLORS,
   INTERVAL_TYPES_ORDERED,
@@ -301,5 +307,159 @@ export class TpmColorConfigService {
     );
 
     return INTERVAL_TYPES_ORDERED.map(buildDefaultIntervalEntry);
+  }
+
+  // ============================================================================
+  // CATEGORY COLORS
+  // ============================================================================
+
+  /**
+   * Get all category colors for a tenant.
+   * Returns all 3 categories — colorHex is null when no custom color is set.
+   */
+  async getCategoryColors(
+    tenantId: number,
+  ): Promise<TpmCategoryColorConfigEntry[]> {
+    const categoryKeys: readonly string[] = CATEGORY_KEYS_ORDERED;
+
+    const rows = await this.db.query<TpmColorConfigRow>(
+      `SELECT * FROM tpm_color_config
+       WHERE tenant_id = $1 AND status_key = ANY($2)
+       ORDER BY status_key`,
+      [tenantId, categoryKeys],
+    );
+
+    const overrides = new Map<string, TpmColorConfigRow>();
+    for (const row of rows) {
+      overrides.set(row.status_key, row);
+    }
+
+    return CATEGORY_KEYS_ORDERED.map(
+      (key: TpmCardCategory): TpmCategoryColorConfigEntry => {
+        const row = overrides.get(key);
+        if (row !== undefined) {
+          return {
+            categoryKey: key,
+            colorHex: row.color_hex,
+            label: row.label,
+            createdAt:
+              typeof row.created_at === 'string' ?
+                row.created_at
+              : new Date(row.created_at).toISOString(),
+            updatedAt:
+              typeof row.updated_at === 'string' ?
+                row.updated_at
+              : new Date(row.updated_at).toISOString(),
+          };
+        }
+        const now = new Date().toISOString();
+        return {
+          categoryKey: key,
+          colorHex: null,
+          label: CATEGORY_LABELS[key],
+          createdAt: now,
+          updatedAt: now,
+        };
+      },
+    );
+  }
+
+  /**
+   * Update (or create) a single category color.
+   * Uses PostgreSQL UPSERT: INSERT ... ON CONFLICT DO UPDATE.
+   */
+  async updateCategoryColor(
+    tenantId: number,
+    userId: number,
+    dto: UpdateCategoryColorConfigDto,
+  ): Promise<TpmCategoryColorConfigEntry> {
+    this.logger.debug(`Updating category color for "${dto.categoryKey}"`);
+
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<TpmCategoryColorConfigEntry> => {
+        const result = await client.query<TpmColorConfigRow>(
+          `INSERT INTO tpm_color_config (tenant_id, status_key, color_hex, label)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (tenant_id, status_key)
+           DO UPDATE SET
+             color_hex = EXCLUDED.color_hex,
+             label = EXCLUDED.label,
+             updated_at = NOW()
+           RETURNING *`,
+          [tenantId, dto.categoryKey, dto.colorHex, dto.label],
+        );
+
+        const row = result.rows[0];
+        if (row === undefined) {
+          throw new Error('UPSERT tpm_color_config returned no rows');
+        }
+
+        void this.activityLogger.logUpdate(
+          tenantId,
+          userId,
+          'tpm_color_config',
+          0,
+          `TPM-Kategoriefarbe aktualisiert: ${dto.categoryKey}`,
+          undefined,
+          { categoryKey: dto.categoryKey, colorHex: dto.colorHex },
+        );
+
+        return {
+          categoryKey: dto.categoryKey,
+          colorHex: row.color_hex,
+          label: row.label,
+          createdAt:
+            typeof row.created_at === 'string' ?
+              row.created_at
+            : new Date(row.created_at).toISOString(),
+          updatedAt:
+            typeof row.updated_at === 'string' ?
+              row.updated_at
+            : new Date(row.updated_at).toISOString(),
+        };
+      },
+    );
+  }
+
+  /**
+   * Reset all category colors to defaults (= no custom color).
+   * Deletes tenant-specific category overrides only.
+   */
+  async resetCategoryColors(
+    tenantId: number,
+    userId: number,
+  ): Promise<TpmCategoryColorConfigEntry[]> {
+    this.logger.debug(`Resetting category colors for tenant ${tenantId}`);
+
+    const categoryKeys: readonly string[] = CATEGORY_KEYS_ORDERED;
+
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        await client.query(
+          `DELETE FROM tpm_color_config
+           WHERE tenant_id = $1 AND status_key = ANY($2)`,
+          [tenantId, categoryKeys],
+        );
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_color_config',
+      0,
+      'TPM-Kategoriefarben zurückgesetzt',
+    );
+
+    const now = new Date().toISOString();
+    return CATEGORY_KEYS_ORDERED.map(
+      (key: TpmCardCategory): TpmCategoryColorConfigEntry => ({
+        categoryKey: key,
+        colorHex: null,
+        label: CATEGORY_LABELS[key],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
   }
 }

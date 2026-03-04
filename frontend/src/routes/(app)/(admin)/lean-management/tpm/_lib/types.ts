@@ -19,7 +19,7 @@ export type CardStatus = 'green' | 'red' | 'yellow' | 'overdue';
 export type CardRole = 'operator' | 'maintenance';
 
 /** Card category — what type of maintenance activity */
-export type CardCategory = 'reinigung' | 'wartung' | 'instandhaltung';
+export type CardCategory = 'reinigung' | 'wartung' | 'inspektion';
 
 /** Execution approval status */
 export type ApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
@@ -157,6 +157,15 @@ export interface IntervalColorConfigEntry {
   colorHex: string;
   label: string;
   includeInCard: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** TPM Category Color Configuration Entry — colorHex is null when no custom color */
+export interface CategoryColorConfigEntry {
+  categoryKey: CardCategory;
+  colorHex: string | null;
+  label: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -369,6 +378,13 @@ export interface UpdateIntervalColorPayload {
   colorHex: string;
   label: string;
   includeInCard?: boolean;
+}
+
+/** Payload for updating a single category color config entry */
+export interface UpdateCategoryColorPayload {
+  categoryKey: CardCategory;
+  colorHex: string;
+  label: string;
 }
 
 /** Payload for updating escalation config */

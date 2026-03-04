@@ -3,7 +3,23 @@
  *
  * Stateless helper functions. No DI, no DB calls, no side effects.
  */
-import type { TpmCard, TpmCardRow } from './tpm.types.js';
+import type { TpmCard, TpmCardCategory, TpmCardRow } from './tpm.types.js';
+
+/**
+ * Parse a PostgreSQL array literal string into a JS array.
+ * pg returns custom ENUM arrays as strings: '{reinigung,wartung}' → ['reinigung','wartung'].
+ * Also handles already-parsed JS arrays (no-op).
+ */
+function parsePgCategoryArray(value: unknown): TpmCardCategory[] {
+  if (Array.isArray(value)) return value as TpmCardCategory[];
+  if (typeof value !== 'string') return [];
+  const trimmed = value.trim();
+  if (trimmed === '{}' || trimmed === '') return [];
+  const inner = trimmed.slice(1, -1);
+  return inner
+    .split(',')
+    .map((s: string) => s.trim().replace(/^"|"$/g, '')) as TpmCardCategory[];
+}
 
 /** Extended row type including JOIN columns from related tables */
 export interface TpmCardJoinRow extends TpmCardRow {
@@ -37,7 +53,7 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
     customIntervalDays: row.custom_interval_days,
     weekdayOverride: row.weekday_override,
     estimatedExecutionMinutes: row.estimated_execution_minutes,
-    cardCategories: row.card_categories,
+    cardCategories: parsePgCategoryArray(row.card_categories),
     isActive: row.is_active,
     createdBy: row.created_by,
     createdAt:

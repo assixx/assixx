@@ -4,9 +4,13 @@
    * Sections are ordered by intervalOrder (daily→custom).
    * Shows empty state if no cards match the current filter.
    */
-  import { SvelteMap } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-  import { INTERVAL_LABELS } from '../../../_lib/constants';
+  import {
+    INTERVAL_LABELS,
+    MESSAGES,
+    ZOOM_CONFIG,
+  } from '../../../_lib/constants';
 
   import KamishibaiSection from './KamishibaiSection.svelte';
 
@@ -14,6 +18,7 @@
     TpmCard,
     TpmColorConfigEntry,
     IntervalColorConfigEntry,
+    CategoryColorConfigEntry,
     IntervalType,
   } from '../../../_lib/types';
 
@@ -37,12 +42,20 @@
   }
 
   interface Props {
-    cards: TpmCard[];
+    allCards: TpmCard[];
+    filteredCards: TpmCard[];
     colors: TpmColorConfigEntry[];
     intervalColors: IntervalColorConfigEntry[];
+    categoryColors?: CategoryColorConfigEntry[];
   }
 
-  const { cards, colors, intervalColors }: Props = $props();
+  const {
+    allCards,
+    filteredCards,
+    colors,
+    intervalColors,
+    categoryColors = [],
+  }: Props = $props();
 
   function countOpen(sectionCards: TpmCard[]): number {
     return sectionCards.filter(
@@ -50,50 +63,166 @@
     ).length;
   }
 
-  function buildSections(allCards: TpmCard[]): SectionData[] {
+  function buildSections(all: TpmCard[], filtered: TpmCard[]): SectionData[] {
     const grouped = new SvelteMap<IntervalType, TpmCard[]>();
-    for (const card of allCards) {
+    for (const card of all) {
       const existing = grouped.get(card.intervalType) ?? [];
       existing.push(card);
       grouped.set(card.intervalType, existing);
     }
 
+    const filteredUuids = new Set(filtered.map((c: TpmCard) => c.uuid));
+
     return INTERVAL_ORDER.filter((it: IntervalType) => grouped.has(it)).map(
       (it: IntervalType) => {
-        const sectionCards = grouped.get(it) ?? [];
-        const operatorCards = sectionCards.filter(
-          (c: TpmCard) => c.cardRole === 'operator',
-        );
-        const maintenanceCards = sectionCards.filter(
-          (c: TpmCard) => c.cardRole === 'maintenance',
+        const sectionAll = grouped.get(it) ?? [];
+        const sectionFiltered = sectionAll.filter((c: TpmCard) =>
+          filteredUuids.has(c.uuid),
         );
         return {
           intervalType: it,
           label: INTERVAL_LABELS[it],
-          operatorCards,
-          maintenanceCards,
-          totalOpen: countOpen(sectionCards),
+          operatorCards: sectionFiltered.filter(
+            (c: TpmCard) => c.cardRole === 'operator',
+          ),
+          maintenanceCards: sectionFiltered.filter(
+            (c: TpmCard) => c.cardRole === 'maintenance',
+          ),
+          totalOpen: countOpen(sectionAll),
         };
       },
     );
   }
 
-  const sections = $derived(buildSections(cards));
+  const sections = $derived(buildSections(allCards, filteredCards));
+
+  /** Global stacking toggle — collapsed (stacked) by default */
+  let globalCollapsed = $state(true);
+
+  /** In stacked mode, hide sections with 0 filtered cards */
+  function sectionHasCards(s: SectionData): boolean {
+    return s.operatorCards.length > 0 || s.maintenanceCards.length > 0;
+  }
+
+  const visibleSections = $derived(
+    globalCollapsed ?
+      sections.filter((s: SectionData) => sectionHasCards(s))
+    : sections,
+  );
+
+  /** Tracks which cards are currently flipped — drives section expansion */
+  const flippedCards = new SvelteSet<string>();
+
+  function handleToggle(): void {
+    globalCollapsed = !globalCollapsed;
+    flippedCards.clear();
+  }
+
+  function handleCardFlip(uuid: string, isFlipped: boolean): void {
+    if (isFlipped) {
+      flippedCards.add(uuid);
+    } else {
+      flippedCards.delete(uuid);
+    }
+  }
+
+  /** Section is expanded if any of its cards are currently flipped */
+  function sectionHasFlippedCards(section: SectionData): boolean {
+    return [...section.operatorCards, ...section.maintenanceCards].some(
+      (c: TpmCard) => flippedCards.has(c.uuid),
+    );
+  }
+
+  const toggleLabel = $derived(
+    globalCollapsed ? MESSAGES.BTN_BOARD_STACKED : MESSAGES.BTN_BOARD_EXPANDED,
+  );
+  const toggleIcon = $derived(
+    globalCollapsed ? 'fa-layer-group' : 'fa-th-large',
+  );
+
+  /** Zoom — same pattern as Gesamtansicht (OverallViewTable) */
+  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+
+  function zoomIn(): void {
+    if (zoomLevel < ZOOM_CONFIG.MAX) zoomLevel += ZOOM_CONFIG.STEP;
+  }
+
+  function zoomOut(): void {
+    if (zoomLevel > ZOOM_CONFIG.MIN) zoomLevel -= ZOOM_CONFIG.STEP;
+  }
+
+  /** Fullscreen — same pattern as Gesamtansicht (OverallViewTable) */
+  const FULLSCREEN_CLASS = 'tpm-board-fullscreen';
+
+  async function toggleFullscreen(): Promise<void> {
+    try {
+      if (document.fullscreenElement !== null) {
+        await document.exitFullscreen();
+      } else {
+        document.body.classList.add(FULLSCREEN_CLASS);
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      document.body.classList.remove(FULLSCREEN_CLASS);
+    }
+  }
+
+  function handleFullscreenChange(): void {
+    if (document.fullscreenElement === null) {
+      document.body.classList.remove(FULLSCREEN_CLASS);
+    }
+  }
 </script>
 
-{#if sections.length === 0}
-  <div class="empty-state">
-    <div class="empty-state__icon">
-      <i class="fas fa-filter"></i>
+<svelte:document onfullscreenchange={handleFullscreenChange} />
+
+<div class="kamishibai-board">
+  <div class="kamishibai-board__toolbar">
+    <button
+      type="button"
+      class="toggle-group__btn"
+      class:active={globalCollapsed}
+      aria-pressed={globalCollapsed}
+      aria-label={globalCollapsed ? 'Sections aufklappen' : 'Sections stapeln'}
+      onclick={handleToggle}
+    >
+      <i class="fas {toggleIcon}"></i>
+      <span>{toggleLabel}</span>
+    </button>
+
+    <div class="zoom-controls">
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title={MESSAGES.ZOOM_IN}
+        disabled={zoomLevel >= ZOOM_CONFIG.MAX}
+        onclick={zoomIn}><i class="fas fa-plus"></i></button
+      >
+      <span class="zoom-level">{zoomLevel}%</span>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title={MESSAGES.ZOOM_OUT}
+        disabled={zoomLevel <= ZOOM_CONFIG.MIN}
+        onclick={zoomOut}><i class="fas fa-minus"></i></button
+      >
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary ml-2"
+        title={MESSAGES.ZOOM_FULLSCREEN}
+        onclick={() => {
+          void toggleFullscreen();
+        }}><i class="fas fa-expand"></i></button
+      >
     </div>
-    <h3 class="empty-state__title">Keine Karten gefunden</h3>
-    <p class="empty-state__description">
-      Keine Karten entsprechen dem gewählten Filter.
-    </p>
   </div>
-{:else}
-  <div class="flex flex-col gap-5">
-    {#each sections as section (section.intervalType)}
+
+  <div
+    class="kamishibai-board__sections"
+    class:kamishibai-board__sections--collapsed={globalCollapsed}
+    style="zoom: {zoomLevel / 100};"
+  >
+    {#each visibleSections as section, idx (section.intervalType)}
       <KamishibaiSection
         label={section.label}
         operatorCards={section.operatorCards}
@@ -101,7 +230,80 @@
         totalOpen={section.totalOpen}
         {colors}
         {intervalColors}
+        {categoryColors}
+        sectionIndex={idx}
+        isLast={idx === visibleSections.length - 1}
+        isCollapsed={globalCollapsed}
+        isSectionExpanded={sectionHasFlippedCards(section)}
+        isPreviousExpanded={idx > 0 &&
+          sectionHasFlippedCards(visibleSections[idx - 1])}
+        onCardFlip={handleCardFlip}
       />
     {/each}
   </div>
-{/if}
+</div>
+
+<style>
+  .kamishibai-board__toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  .kamishibai-board__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: gap 300ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .kamishibai-board__sections--collapsed {
+    gap: 0;
+  }
+
+  /* ---- Zoom Controls ---- */
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+  }
+
+  .zoom-level {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    min-width: 3rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Fullscreen ---- */
+  :global(body.tpm-board-fullscreen .kamishibai-board) {
+    position: fixed !important;
+    z-index: 9999 !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    padding: 1.5rem !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    overflow: auto;
+    background: var(--main-bg) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :global(body.tpm-board-fullscreen .sidebar),
+  :global(body.tpm-board-fullscreen .header),
+  :global(body.tpm-board-fullscreen #breadcrumb-container),
+  :global(body.tpm-board-fullscreen .card__header) {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kamishibai-board__sections {
+      transition: none;
+    }
+  }
+</style>

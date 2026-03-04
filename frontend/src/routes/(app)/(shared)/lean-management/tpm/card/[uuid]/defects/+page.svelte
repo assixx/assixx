@@ -4,12 +4,21 @@
    *
    * Displays all documented defects for a single Kamishibai card.
    * Expandable rows show defect description, photos + execution context.
+   * Admin users can create work orders from defects via "Zuweisen" button.
    * Pattern: mirrors history/+page.svelte structure.
    */
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { fetchDefectPhotos, logApiError } from '../../../_lib/api';
+  import {
+    STATUS_LABELS as WO_STATUS_LABELS,
+    STATUS_BADGE_CLASSES as WO_STATUS_BADGE_CLASSES,
+  } from '../../../../../work-orders/_lib/constants';
+  import {
+    fetchDefectPhotos,
+    updateDefect,
+    logApiError,
+  } from '../../../_lib/api';
   import {
     INTERVAL_LABELS,
     CARD_STATUS_LABELS,
@@ -17,8 +26,11 @@
     MESSAGES,
   } from '../../../_lib/constants';
 
+  import CreateWorkOrderFromDefect from './_lib/CreateWorkOrderFromDefect.svelte';
+
   import type { PageData } from './$types';
-  import type { TpmDefectPhoto } from '../../../_lib/types';
+  import type { WorkOrderStatus } from '../../../../../work-orders/_lib/types';
+  import type { DefectWithContext, TpmDefectPhoto } from '../../../_lib/types';
 
   // ===========================================================================
   // SSR DATA
@@ -30,6 +42,9 @@
   const defects = $derived(data.defects);
   const total = $derived(data.total);
   const error = $derived(data.error);
+  const userRole = $derived(data.userRole);
+  const isAdmin = $derived(userRole === 'admin' || userRole === 'root');
+  const colSpan = $derived(isAdmin ? 5 : 4);
 
   // ===========================================================================
   // EXPAND / PHOTO STATE
@@ -49,6 +64,18 @@
     if (previewPhotoIndex === null) return null;
     return previewPhotos[previewPhotoIndex] ?? null;
   });
+
+  // Work Order Modal State (admin only)
+  let showWoModal = $state(false);
+  let woDefect = $state<DefectWithContext | null>(null);
+
+  // Edit Defect Modal State (admin only)
+  let showEditModal = $state(false);
+  let editDefect = $state<DefectWithContext | null>(null);
+  let editTitle = $state('');
+  let editDescription = $state('');
+  let editSubmitting = $state(false);
+  let editError = $state<string | null>(null);
 
   // ===========================================================================
   // HELPERS
@@ -145,6 +172,77 @@
     if (e.key === 'Escape') closePhotoPreview();
     else if (e.key === 'ArrowLeft') handlePreviewPrev();
     else if (e.key === 'ArrowRight') handlePreviewNext();
+  }
+
+  // ===========================================================================
+  // WORK ORDER MODAL (admin only)
+  // ===========================================================================
+
+  function openCreateWoModal(
+    defectItem: DefectWithContext,
+    event: MouseEvent,
+  ): void {
+    event.stopPropagation();
+    woDefect = defectItem;
+    showWoModal = true;
+  }
+
+  function closeWoModal(): void {
+    showWoModal = false;
+    woDefect = null;
+  }
+
+  function handleWoSaved(): void {
+    showWoModal = false;
+    woDefect = null;
+    void invalidateAll();
+  }
+
+  // ===========================================================================
+  // EDIT DEFECT MODAL (admin only)
+  // ===========================================================================
+
+  function openEditModal(
+    defectItem: DefectWithContext,
+    event: MouseEvent,
+  ): void {
+    event.stopPropagation();
+    editDefect = defectItem;
+    editTitle = defectItem.title;
+    editDescription = defectItem.description ?? '';
+    editError = null;
+    showEditModal = true;
+  }
+
+  function closeEditModal(): void {
+    showEditModal = false;
+    editDefect = null;
+  }
+
+  async function handleEditSubmit(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const currentDefect = editDefect;
+    if (currentDefect === null) return;
+
+    const trimmedTitle = editTitle.trim();
+    if (trimmedTitle === '') return;
+
+    editSubmitting = true;
+    editError = null;
+
+    try {
+      await updateDefect(currentDefect.uuid, {
+        title: trimmedTitle,
+        description: editDescription.trim() || null,
+      });
+      closeEditModal();
+      void invalidateAll();
+    } catch (err: unknown) {
+      logApiError('updateDefect', err);
+      editError = 'Fehler beim Speichern des Mangels.';
+    } finally {
+      editSubmitting = false;
+    }
   }
 
   // ===========================================================================
@@ -246,6 +344,9 @@
                 <th scope="col">{MESSAGES.DEFECTS_COL_DATE}</th>
                 <th scope="col">{MESSAGES.DEFECTS_COL_PERSON}</th>
                 <th scope="col">{MESSAGES.DEFECTS_COL_PHOTOS}</th>
+                {#if isAdmin}
+                  <th scope="col">{MESSAGES.DEFECTS_COL_ACTIONS}</th>
+                {/if}
               </tr>
             </thead>
             <tbody>
@@ -278,12 +379,72 @@
                       <span class="text-sm text-(--color-text-muted)">—</span>
                     {/if}
                   </td>
+                  {#if isAdmin}
+                    <td>
+                      <div class="action-group">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-ghost"
+                          onclick={(e: MouseEvent) => {
+                            openEditModal(defect, e);
+                          }}
+                          title="Mangel bearbeiten"
+                        >
+                          <i class="fas fa-pen"></i>
+                        </button>
+                        {#if defect.workOrderUuid !== null && defect.workOrderStatus !== null}
+                          <div class="wo-info">
+                            <span
+                              class="badge {WO_STATUS_BADGE_CLASSES[
+                                defect.workOrderStatus as WorkOrderStatus
+                              ]}"
+                            >
+                              {WO_STATUS_LABELS[
+                                defect.workOrderStatus as WorkOrderStatus
+                              ]}
+                            </span>
+                            {#if defect.workOrderAssigneeNames.length > 0}
+                              <span class="wo-info__assignees">
+                                <i class="fas fa-user text-(--color-text-muted)"
+                                ></i>
+                                {defect.workOrderAssigneeNames.join(', ')}
+                              </span>
+                            {/if}
+                            <a
+                              href={resolvePath(
+                                `/work-orders/${defect.workOrderUuid}`,
+                              )}
+                              class="btn btn-sm btn-ghost"
+                              onclick={(e: MouseEvent) => {
+                                e.stopPropagation();
+                              }}
+                              title="Arbeitsauftrag anzeigen"
+                            >
+                              <i class="fas fa-external-link-alt"></i>
+                            </a>
+                          </div>
+                        {:else}
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-secondary"
+                            onclick={(e: MouseEvent) => {
+                              openCreateWoModal(defect, e);
+                            }}
+                            title={MESSAGES.DEFECTS_BTN_ASSIGN_WO}
+                          >
+                            <i class="fas fa-clipboard-check mr-1"></i>
+                            {MESSAGES.DEFECTS_BTN_ASSIGN_WO}
+                          </button>
+                        {/if}
+                      </div>
+                    </td>
+                  {/if}
                 </tr>
 
                 <!-- Expanded Details -->
                 {#if expandedUuid === defect.uuid}
                   <tr class="defect-detail">
-                    <td colspan="4">
+                    <td colspan={colSpan}>
                       <div class="defect-detail__content">
                         {#if defect.description !== null && defect.description.trim().length > 0}
                           <div class="defect-detail__section">
@@ -379,6 +540,127 @@
     </div>
   </div>
 </div>
+
+<!-- Work Order from Defect Modal (admin only) -->
+{#if isAdmin}
+  <CreateWorkOrderFromDefect
+    show={showWoModal}
+    defect={woDefect}
+    {card}
+    onclose={closeWoModal}
+    onsaved={handleWoSaved}
+  />
+{/if}
+
+<!-- Edit Defect Modal (admin only) -->
+{#if showEditModal && editDefect !== null}
+  <div
+    class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-defect-modal-title"
+    tabindex="-1"
+    onclick={(e: MouseEvent) => {
+      if (e.target === e.currentTarget) closeEditModal();
+    }}
+    onkeydown={(e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeEditModal();
+    }}
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
+    <form
+      class="ds-modal"
+      onclick={(e: MouseEvent) => {
+        e.stopPropagation();
+      }}
+      onsubmit={handleEditSubmit}
+    >
+      <div class="ds-modal__header">
+        <h3
+          class="ds-modal__title"
+          id="edit-defect-modal-title"
+        >
+          <i class="fas fa-pen mr-2"></i>
+          Mangel bearbeiten
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={closeEditModal}
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="ds-modal__body">
+        {#if editError !== null}
+          <div class="alert alert--danger mb-4">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            {editError}
+          </div>
+        {/if}
+
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="edit-defect-title"
+          >
+            Mängelbezeichnung
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="edit-defect-title"
+            class="form-field__control"
+            placeholder="Kurze Beschreibung des Mangels..."
+            required
+            bind:value={editTitle}
+          />
+        </div>
+
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="edit-defect-desc"
+          >
+            Beschreibung
+          </label>
+          <textarea
+            id="edit-defect-desc"
+            class="form-field__control"
+            placeholder="Detaillierte Beschreibung..."
+            rows="4"
+            bind:value={editDescription}
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closeEditModal}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={editSubmitting}
+        >
+          {#if editSubmitting}
+            <span class="spinner-ring spinner-ring--sm mr-2"></span>
+            Wird gespeichert...
+          {:else}
+            <i class="fas fa-check mr-2"></i>
+            Speichern
+          {/if}
+        </button>
+      </div>
+    </form>
+  </div>
+{/if}
 
 <!-- Photo Preview Modal -->
 {#if showPhotoPreview && previewPhoto !== null}
@@ -584,5 +866,30 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .action-group {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .wo-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .wo-info__assignees {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

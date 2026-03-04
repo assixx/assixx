@@ -63,14 +63,14 @@ export const CARD_ROLE_LABELS: Record<string, string> = {
 export const CARD_CATEGORY_LABELS: Record<CardCategory, string> = {
   reinigung: 'Reinigung',
   wartung: 'Wartung',
-  instandhaltung: 'Instandhaltung',
+  inspektion: 'Inspektion',
 };
 
 /** Card category icons */
 export const CARD_CATEGORY_ICONS: Record<CardCategory, string> = {
   reinigung: 'fa-broom',
   wartung: 'fa-tools',
-  instandhaltung: 'fa-wrench',
+  inspektion: 'fa-search',
 };
 
 /** Default Kamishibai board colors */
@@ -317,7 +317,7 @@ export const MESSAGES = {
 
   // Card categories
   LABEL_CARD_CATEGORIES: 'Kategorie',
-  HELP_CARD_CATEGORIES: 'Welche Art von Tätigkeit? Mehrfachauswahl möglich.',
+  HELP_CARD_CATEGORIES: 'Welche Art von Tätigkeit? Nur eine Auswahl möglich.',
 
   // Per-card execution estimate
   LABEL_CARD_EST_EXEC: 'Geschätzte Durchführungszeit',
@@ -409,6 +409,19 @@ export const MESSAGES = {
   SUCCESS_INTERVAL_COLORS_RESET: 'Intervall-Farben auf Standard zurückgesetzt',
   ERROR_INTERVAL_COLOR_UPDATE: 'Fehler beim Aktualisieren der Intervall-Farbe',
   ERROR_INTERVAL_COLOR_RESET: 'Fehler beim Zurücksetzen der Intervall-Farben',
+
+  // Category color config
+  CATEGORY_COLOR_TITLE: 'Kategorie-Farben',
+  CATEGORY_COLOR_DESCRIPTION:
+    'Optionale Farben für Wartungskategorien — überschreibt die Kartenfarbe bei grünem Status',
+  CATEGORY_COLOR_RESET: 'Zurücksetzen',
+  CATEGORY_COLOR_RESET_CONFIRM:
+    'Alle Kategorie-Farben entfernen? Karten zeigen dann wieder die Status-Farbe.',
+  CATEGORY_COLOR_NONE: 'Keine Farbe',
+  SUCCESS_CATEGORY_COLOR_UPDATED: 'Kategorie-Farbe aktualisiert',
+  SUCCESS_CATEGORY_COLORS_RESET: 'Kategorie-Farben zurückgesetzt',
+  ERROR_CATEGORY_COLOR_UPDATE: 'Fehler beim Aktualisieren der Kategorie-Farbe',
+  ERROR_CATEGORY_COLOR_RESET: 'Fehler beim Zurücksetzen der Kategorie-Farben',
 
   // Escalation config
   ESCALATION_TITLE: 'Eskalation',

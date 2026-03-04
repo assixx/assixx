@@ -93,15 +93,11 @@
   const CATEGORY_OPTIONS: CardCategory[] = [
     'reinigung',
     'wartung',
-    'instandhaltung',
+    'inspektion',
   ];
 
   function toggleCategory(cat: CardCategory): void {
-    if (cardCategories.includes(cat)) {
-      cardCategories = cardCategories.filter((c: CardCategory) => c !== cat);
-    } else {
-      cardCategories = [...cardCategories, cat];
-    }
+    cardCategories = cardCategories.includes(cat) ? [] : [cat];
   }
 
   // =========================================================================

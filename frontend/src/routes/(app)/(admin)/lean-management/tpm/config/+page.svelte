@@ -13,6 +13,7 @@
 
   import { MESSAGES } from '../_lib/constants';
 
+  import CategoryColorConfig from './_lib/CategoryColorConfig.svelte';
   import ColorConfig from './_lib/ColorConfig.svelte';
   import EscalationConfig from './_lib/EscalationConfig.svelte';
   import IntervalColorConfig from './_lib/IntervalColorConfig.svelte';
@@ -114,6 +115,11 @@
         <hr class="my-8 border-(--color-glass-border)" />
         <IntervalColorConfig
           colors={data.intervalColors}
+          statusColors={data.colors}
+        />
+        <hr class="my-8 border-(--color-glass-border)" />
+        <CategoryColorConfig
+          categoryColors={data.categoryColors}
           statusColors={data.colors}
         />
       {:else if activeTab === 'escalation'}

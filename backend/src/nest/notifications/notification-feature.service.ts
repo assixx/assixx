@@ -70,7 +70,7 @@ export class NotificationFeatureService {
    * Called when user visits the feature page (e.g., /surveys).
    */
   async markFeatureTypeAsRead(
-    type: 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm',
+    type: 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm' | 'work_orders',
     userId: number,
     tenantId: number,
   ): Promise<number> {

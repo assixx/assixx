@@ -724,7 +724,7 @@ export class DepartmentsService {
       `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id, u.role, u.is_active
        FROM users u
        JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id
-       WHERE ud.department_id = $1`,
+       WHERE ud.department_id = $1 AND u.role != 'dummy' AND u.is_active = 1`,
       [id],
     );
 

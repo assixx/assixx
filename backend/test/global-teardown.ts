@@ -67,6 +67,12 @@ const TRANSIENT_TABLES = [
   'tpm_card_templates',
   'tpm_maintenance_plans',
 
+  // Work Orders: photos → comments → assignees → work_orders (FK CASCADE safe)
+  'work_order_photos',
+  'work_order_comments',
+  'work_order_assignees',
+  'work_orders',
+
   // Org structure: departments, teams, machines accumulate ~2-3 rows/run.
   // Order: machines first (tpm_cards already cleaned above), then teams
   // (FK CASCADE handles user_teams, machine_teams, etc.), then departments last.

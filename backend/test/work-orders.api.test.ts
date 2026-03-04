@@ -1,0 +1,327 @@
+/**
+ * Work Orders API Integration Tests
+ *
+ * Runs against REAL backend (Docker must be running).
+ * Tests full CRUD lifecycle: Create → List → Get → Update → Status → Comment → Stats → Delete
+ *
+ * @see vitest.config.api.ts
+ */
+import {
+  type AuthState,
+  BASE_URL,
+  type JsonBody,
+  authHeaders,
+  authOnly,
+  loginApitest,
+} from './helpers.js';
+
+let auth: AuthState;
+
+/** UUID of the work order created during tests — reused across describe blocks */
+let workOrderUuid: string;
+
+beforeAll(async () => {
+  auth = await loginApitest();
+});
+
+// ============================================================================
+// seq: 1 -- Create Work Order
+// ============================================================================
+
+describe('Work Orders: Create', () => {
+  it('should return 201 Created with valid payload', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        title: `API-Test Auftrag ${Date.now()}`,
+        description: 'Automatischer Test-Arbeitsauftrag',
+        priority: 'high',
+        sourceType: 'manual',
+      }),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(201);
+    expect(body.success).toBe(true);
+    expect(body.data.uuid).toBeDefined();
+    expect(body.data.title).toContain('API-Test Auftrag');
+    expect(body.data.status).toBe('open');
+    expect(body.data.priority).toBe('high');
+    expect(body.data.sourceType).toBe('manual');
+    expect(body.data.createdByName).toBeDefined();
+
+    workOrderUuid = body.data.uuid;
+  });
+
+  it('should return 400 for missing title', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        description: 'No title provided',
+      }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+// ============================================================================
+// seq: 2 -- List All Work Orders (Admin)
+// ============================================================================
+
+describe('Work Orders: List All (Admin)', () => {
+  it('should return 200 with paginated structure', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.items).toBeDefined();
+    expect(Array.isArray(body.data.items)).toBe(true);
+    expect(body.data.total).toBeGreaterThanOrEqual(1);
+    expect(body.data.page).toBe(1);
+    expect(body.data.pageSize).toBeDefined();
+  });
+
+  it('should support status filter', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders?status=open`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    for (const item of body.data.items) {
+      expect(item.status).toBe('open');
+    }
+  });
+
+  it('should support pagination', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders?page=1&limit=1`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.data.items.length).toBeLessThanOrEqual(1);
+    expect(body.data.pageSize).toBe(1);
+  });
+});
+
+// ============================================================================
+// seq: 3 -- Get Single Work Order
+// ============================================================================
+
+describe('Work Orders: Get By UUID', () => {
+  it('should return 200 with full detail', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.uuid).toBe(workOrderUuid);
+    expect(body.data.assignees).toBeDefined();
+    expect(Array.isArray(body.data.assignees)).toBe(true);
+    expect(typeof body.data.commentCount).toBe('number');
+    expect(typeof body.data.photoCount).toBe('number');
+  });
+
+  it('should return 404 for unknown UUID', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/00000000-0000-0000-0000-000000000000`,
+      { headers: authOnly(auth.authToken) },
+    );
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ============================================================================
+// seq: 4 -- Update Work Order
+// ============================================================================
+
+describe('Work Orders: Update (PATCH)', () => {
+  it('should return 200 with updated fields', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        title: 'Aktualisierter Titel',
+        priority: 'low',
+      }),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.data.title).toBe('Aktualisierter Titel');
+    expect(body.data.priority).toBe('low');
+  });
+});
+
+// ============================================================================
+// seq: 5 -- Status Transition
+// ============================================================================
+
+describe('Work Orders: Status Transition', () => {
+  it('should allow open → in_progress', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ status: 'in_progress' }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should allow in_progress → completed', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ status: 'completed' }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should reject invalid transition (completed → open)', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ status: 'open' }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('should allow completed → verified', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ status: 'verified' }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+});
+
+// ============================================================================
+// seq: 6 -- Comments
+// ============================================================================
+
+describe('Work Orders: Comments', () => {
+  it('should add a comment (201)', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${workOrderUuid}/comments`,
+      {
+        method: 'POST',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({ content: 'Test-Kommentar vom API-Test' }),
+      },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(201);
+    expect(body.data.content).toBe('Test-Kommentar vom API-Test');
+    expect(body.data.isStatusChange).toBe(false);
+  });
+
+  it('should list comments with pagination', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${workOrderUuid}/comments?page=1&limit=20`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.data.items).toBeDefined();
+    // Should have status-change comments + our manual comment
+    expect(body.data.total).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ============================================================================
+// seq: 7 -- Stats
+// ============================================================================
+
+describe('Work Orders: Stats', () => {
+  it('should return stats with correct structure', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/stats`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(typeof body.data.open).toBe('number');
+    expect(typeof body.data.inProgress).toBe('number');
+    expect(typeof body.data.completed).toBe('number');
+    expect(typeof body.data.verified).toBe('number');
+    expect(typeof body.data.total).toBe('number');
+    expect(typeof body.data.overdue).toBe('number');
+    expect(body.data.total).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ============================================================================
+// seq: 8 -- Eligible Users
+// ============================================================================
+
+describe('Work Orders: Eligible Users', () => {
+  it('should return eligible users list', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/eligible-users`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+});
+
+// ============================================================================
+// seq: 9 -- My Work Orders (Employee View)
+// ============================================================================
+
+describe('Work Orders: My Work Orders', () => {
+  it('should return 200 with paginated structure', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/my`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.items).toBeDefined();
+    expect(Array.isArray(body.data.items)).toBe(true);
+    expect(typeof body.data.total).toBe('number');
+  });
+});
+
+// ============================================================================
+// seq: 10 -- Delete Work Order (last — cleans up test data)
+// ============================================================================
+
+describe('Work Orders: Delete', () => {
+  it('should soft-delete the work order (204)', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+
+    expect(res.status).toBe(204);
+  });
+
+  it('should return 404 after deletion', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+
+    expect(res.status).toBe(404);
+  });
+});

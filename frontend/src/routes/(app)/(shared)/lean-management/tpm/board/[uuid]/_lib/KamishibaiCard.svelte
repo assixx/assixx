@@ -16,6 +16,7 @@
     TpmCard,
     TpmColorConfigEntry,
     IntervalColorConfigEntry,
+    CategoryColorConfigEntry,
     CardStatus,
   } from '../../../_lib/types';
 
@@ -27,9 +28,17 @@
     card: TpmCard;
     colors: TpmColorConfigEntry[];
     intervalColors: IntervalColorConfigEntry[];
+    categoryColors?: CategoryColorConfigEntry[];
+    onFlipChange?: (uuid: string, isFlipped: boolean) => void;
   }
 
-  const { card, colors, intervalColors }: Props = $props();
+  const {
+    card,
+    colors,
+    intervalColors,
+    categoryColors = [],
+    onFlipChange,
+  }: Props = $props();
 
   let isFlipped = $state(false);
 
@@ -40,8 +49,27 @@
     return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
   }
 
+  /** Find the first matching category color for this card's categories */
+  function getCategoryColor(): string | null {
+    if (categoryColors.length === 0 || card.cardCategories.length === 0) {
+      return null;
+    }
+    for (const cat of card.cardCategories) {
+      const entry = categoryColors.find(
+        (cc: CategoryColorConfigEntry) =>
+          cc.categoryKey === cat && cc.colorHex !== null,
+      );
+      if (entry !== undefined) return entry.colorHex;
+    }
+    return null;
+  }
+
   function getCardColor(status: CardStatus): string {
     if (status === 'green') {
+      // Priority: category color > interval color > status color
+      const catColor = getCategoryColor();
+      if (catColor !== null) return catColor;
+
       const interval = intervalColors.find(
         (ic: IntervalColorConfigEntry) =>
           ic.statusKey === card.intervalType && ic.includeInCard,
@@ -63,6 +91,12 @@
     return interval !== undefined ? interval.colorHex : null;
   });
 
+  /** Category dot color — shown on non-green cards when a category color is set */
+  const categoryDotColor = $derived.by((): string | null => {
+    if (card.status === 'green') return null;
+    return getCategoryColor();
+  });
+
   function formatDate(dateStr: string | null): string {
     if (dateStr === null) return '—';
     return new Date(dateStr).toLocaleDateString('de-DE', {
@@ -74,6 +108,7 @@
 
   function toggle(): void {
     isFlipped = !isFlipped;
+    onFlipChange?.(card.uuid, isFlipped);
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -107,6 +142,13 @@
         style="background-color: {statusColor}"
       >
         <div class="kamishibai-card__header">
+          {#if categoryDotColor !== null}
+            <span
+              class="kamishibai-card__interval-dot"
+              style="background-color: {categoryDotColor}"
+              title="Kategorie"
+            ></span>
+          {/if}
           {#if intervalDotColor !== null}
             <span
               class="kamishibai-card__interval-dot"

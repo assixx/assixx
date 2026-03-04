@@ -1,13 +1,13 @@
 # ADR-026: TPM (Total Productive Maintenance) Architecture
 
-| Metadata                | Value                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted (Updated 2026-02-24)                                                                                                   |
-| **Date**                | 2026-02-19                                                                                                                      |
-| **Decision Makers**     | SCS-Technik Team                                                                                                                |
-| **Affected Components** | PostgreSQL (5 migrations, 9 tables), Backend (NestJS TPM module, 35+ files), Frontend (SvelteKit, 25+ files)                    |
-| **Supersedes**          | ---                                                                                                                             |
-| **Related ADRs**        | ADR-003 (SSE), ADR-004 (Notifications), ADR-009 (Audit Logging), ADR-019 (RLS), ADR-020 (Permissions), ADR-024 (Feature Guards) |
+| Metadata                | Value                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Status**              | Accepted (Updated 2026-03-03)                                                                                                                          |
+| **Date**                | 2026-02-19                                                                                                                                             |
+| **Decision Makers**     | SCS-Technik Team                                                                                                                                       |
+| **Affected Components** | PostgreSQL (5 migrations, 9 tables), Backend (NestJS TPM module, 35+ files), Frontend (SvelteKit, 25+ files)                                           |
+| **Supersedes**          | ---                                                                                                                                                    |
+| **Related ADRs**        | ADR-003 (SSE), ADR-004 (Notifications), ADR-009 (Audit Logging), ADR-019 (RLS), ADR-020 (Permissions), ADR-024 (Feature Guards), ADR-028 (Work Orders) |
 
 ---
 
@@ -176,6 +176,7 @@ backend/src/nest/tpm/
 | Execution History                | SSR page per card with lazy photo loading | Active   |
 | Photo Upload (Staged)            | Client-side staging → sequential upload   | Active   |
 | Schedule Projection              | Cross-plan time window conflict detection | Active   |
+| Work Orders (Arbeitsaufträge)    | TPM-Defekt → Arbeitsauftrag (ADR-028)     | Active   |
 | Machine Availability Auto-Status | Infrastructure ready (V2 wiring)          | Deferred |
 
 ### 6. Database Schema
@@ -409,3 +410,4 @@ TpmScheduleProjectionService.projectSchedules(tenantId, startDate, endDate, excl
 - [ADR-019](./ADR-019-multi-tenant-rls-isolation.md) — Multi-tenant RLS isolation
 - [ADR-020](./ADR-020-per-user-feature-permissions.md) — Per-user feature permissions
 - [ADR-024](./ADR-024-frontend-feature-guards.md) — Frontend feature guards
+- [ADR-028](./ADR-028-work-orders-architecture.md) — Work Orders (TPM-Defekt → Arbeitsauftrag → Bearbeitung → Verifizierung)

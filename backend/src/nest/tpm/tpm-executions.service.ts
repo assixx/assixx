@@ -97,6 +97,16 @@ export interface DefectWithContext {
   approvalStatus: TpmApprovalStatus;
   photoCount: number;
   createdAt: string;
+  /** Work order UUID if a work order was created from this defect */
+  workOrderUuid: string | null;
+  /** Work order status (open, in_progress, completed, verified) */
+  workOrderStatus: string | null;
+  /** Work order priority (low, medium, high) */
+  workOrderPriority: string | null;
+  /** Names of assigned employees */
+  workOrderAssigneeNames: string[];
+  /** When the work order was created */
+  workOrderCreatedAt: string | null;
 }
 
 /** Paginated defect list response */
@@ -114,7 +124,52 @@ interface DefectWithContextRow extends TpmExecutionDefectRow {
   executed_by_name: string | null;
   approval_status: TpmApprovalStatus;
   photo_count: number;
+  work_order_uuid: string | null;
+  work_order_status: string | null;
+  work_order_priority: string | null;
+  work_order_assignee_names: string | null;
+  work_order_created_at: string | null;
 }
+
+/** SQL for fetching defects with execution context + work order info */
+const DEFECT_WITH_CONTEXT_SELECT = `
+  SELECT d.*,
+    e.uuid AS execution_uuid,
+    e.execution_date,
+    COALESCE(
+      NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '),
+      u.username
+    ) AS executed_by_name,
+    e.approval_status,
+    (SELECT COUNT(*)::int FROM tpm_defect_photos dp WHERE dp.defect_id = d.id) AS photo_count,
+    TRIM(wo.uuid) AS work_order_uuid,
+    wo.status::text AS work_order_status,
+    wo.priority::text AS work_order_priority,
+    wo.created_at AS work_order_created_at,
+    (
+      SELECT string_agg(
+        COALESCE(NULLIF(CONCAT(ua.first_name, ' ', ua.last_name), ' '), ua.username),
+        ', ' ORDER BY ua.last_name, ua.first_name
+      )
+      FROM work_order_assignees woa
+      JOIN users ua ON woa.user_id = ua.id
+      WHERE woa.work_order_id = wo.id
+    ) AS work_order_assignee_names
+  FROM tpm_execution_defects d
+  JOIN tpm_card_executions e ON d.execution_id = e.id
+  JOIN tpm_cards c ON e.card_id = c.id
+  LEFT JOIN users u ON e.executed_by = u.id
+  LEFT JOIN LATERAL (
+    SELECT wo_inner.id, wo_inner.uuid, wo_inner.status, wo_inner.priority, wo_inner.created_at
+    FROM work_orders wo_inner
+    WHERE wo_inner.source_type = 'tpm_defect'
+      AND wo_inner.source_uuid = d.uuid
+      AND wo_inner.tenant_id = d.tenant_id
+      AND wo_inner.is_active = 1
+    ORDER BY wo_inner.created_at DESC
+    LIMIT 1
+  ) wo ON true
+` as const;
 
 /** Photo file data for addPhoto / addDefectPhoto */
 export interface PhotoFileData {
@@ -517,19 +572,7 @@ export class TpmExecutionsService {
     const offset = (page - 1) * pageSize;
 
     const rows = await this.db.query<DefectWithContextRow>(
-      `SELECT d.*,
-         e.uuid AS execution_uuid,
-         e.execution_date,
-         COALESCE(
-           NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '),
-           u.username
-         ) AS executed_by_name,
-         e.approval_status,
-         (SELECT COUNT(*)::int FROM tpm_defect_photos dp WHERE dp.defect_id = d.id) AS photo_count
-       FROM tpm_execution_defects d
-       JOIN tpm_card_executions e ON d.execution_id = e.id
-       JOIN tpm_cards c ON e.card_id = c.id
-       LEFT JOIN users u ON e.executed_by = u.id
+      `${DEFECT_WITH_CONTEXT_SELECT}
        WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
        ORDER BY e.execution_date DESC, d.position_number ASC
        LIMIT $3 OFFSET $4`,
@@ -542,6 +585,59 @@ export class TpmExecutionsService {
       page,
       pageSize,
     };
+  }
+
+  /** Update a defect's title and/or description (admin action) */
+  async updateDefect(
+    tenantId: number,
+    defectUuid: string,
+    userId: number,
+    fields: {
+      title?: string | undefined;
+      description?: string | null | undefined;
+    },
+  ): Promise<TpmExecutionDefect> {
+    const setClauses: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (fields.title !== undefined) {
+      setClauses.push(`title = $${idx}`);
+      values.push(fields.title);
+      idx++;
+    }
+    if (fields.description !== undefined) {
+      setClauses.push(`description = $${idx}`);
+      values.push(fields.description);
+      idx++;
+    }
+
+    setClauses.push(`updated_at = NOW()`);
+
+    values.push(defectUuid, tenantId);
+
+    const row = await this.db.queryOne<TpmExecutionDefectRow>(
+      `UPDATE tpm_execution_defects
+       SET ${setClauses.join(', ')}
+       WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = 1
+       RETURNING *`,
+      values,
+    );
+
+    if (row === null) {
+      throw new NotFoundException(`Mangel ${defectUuid} nicht gefunden`);
+    }
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_defect',
+      0,
+      `TPM-Mangel bearbeitet: ${row.title}`,
+      { defectUuid, updatedFields: Object.keys(fields) },
+    );
+
+    return mapDefectRowToApi(row);
   }
 
   // ============================================================================
@@ -911,6 +1007,12 @@ export class TpmExecutionsService {
 function mapDefectWithContextToApi(
   row: DefectWithContextRow,
 ): DefectWithContext {
+  const assigneeNamesRaw = row.work_order_assignee_names;
+  const assigneeNames =
+    assigneeNamesRaw !== null && assigneeNamesRaw !== '' ?
+      assigneeNamesRaw.split(', ')
+    : [];
+
   return {
     uuid: row.uuid.trim(),
     title: row.title,
@@ -922,6 +1024,14 @@ function mapDefectWithContextToApi(
     approvalStatus: row.approval_status,
     photoCount: row.photo_count,
     createdAt: toIsoString(row.created_at),
+    workOrderUuid: row.work_order_uuid,
+    workOrderStatus: row.work_order_status,
+    workOrderPriority: row.work_order_priority,
+    workOrderAssigneeNames: assigneeNames,
+    workOrderCreatedAt:
+      row.work_order_created_at !== null ?
+        toIsoString(row.work_order_created_at)
+      : null,
   };
 }
 

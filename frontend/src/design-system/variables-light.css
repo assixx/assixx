@@ -92,11 +92,15 @@
   --color-icon-primary: var(--color-primary);
   --color-accent-bg: #a9d9ff;
 
+  /* Stacked section background (Kamishibai board collapsed sections) */
+  --color-section-stacked-bg: #ffffffed;
+
   /* Glass Backgrounds (dark overlays on light surfaces) */
   --glass-bg: rgb(0 0 0 / 1%);
-  --glass-bg-hover: rgb(0 0 0 / 3%);
+  --glass-bg-hover: rgb(0 0 0 / 7%);
   --glass-bg-active: rgb(0 0 0 / 5%);
   --glass-border: 1px solid rgb(0 0 0 / 20%);
+  --glass-border-sidebar-tree: 1px solid rgb(0 0 0 / 35%);
 
   /* Glass Form (light mode) */
   --glass-form-bg: rgb(255 255 255 / 1%);

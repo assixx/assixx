@@ -1,8 +1,8 @@
 # Assixx Features & Overview
 
-> **Last Updated:** 2026-02-19
-> **Version:** 1.3.0
-> **Status:** Production Ready (11 of 12 main features live)
+> **Last Updated:** 2026-03-04
+> **Version:** 1.5.0
+> **Status:** Production Ready (13 of 14 main features live)
 
 ## Table of Contents
 
@@ -134,9 +134,36 @@
 - 364 Tests (278 unit + 86 API)
 - Architecture: ADR-026
 
+#### 12. **Arbeitsaufträge (Work Orders)** (NEW)
+
+- Modulübergreifendes Arbeitsauftrag-System (TPM-Mängel, manuell)
+- 4-Stufen-Lebenszyklus: Offen -> In Bearbeitung -> Erledigt -> Verifiziert
+- N:M Mitarbeiter-Zuweisung (gefiltert nach Maschinen-Team)
+- Foto-Dokumentation + Kommentarsystem
+- Prioritäten (Hoch/Mittel/Niedrig) + Fälligkeitsdatum
+- Real-time SSE-Benachrichtigungen (Zuweisung, Status, Fälligkeit, Verifizierung)
+- Täglicher Fälligkeits-Cron (24h Vorwarnung)
+- Employee-View (eigene Aufträge) + Admin-View (alle Aufträge)
+- TPM-Integration: "Zuweisen" Button auf Mängelliste
+- Audit-Logging für alle Mutationen
+
+#### 13. **Dummy-Benutzer (Kiosk Accounts)** (NEW)
+
+- Anonyme Display-Accounts für Firmen-TVs und Hallendisplays
+- Auto-generierte Email + Personalnummer (kein manueller Aufwand)
+- Manuelle Bezeichnung (z.B. "Halle 1 Display")
+- Passwort mit Stärke-Indikator (zxcvbn)
+- Team-Zuordnung (Multi-Select)
+- Whitelist-Zugriff: Nur Schwarzes Brett, Kalender, TPM-Boards
+- Automatischer Redirect zu /blackboard bei unerlaubtem Zugriff
+- Verwaltet als Submenu unter Mitarbeiter (Admin) bzw. Administratoren (Root)
+- 2-Stufen-Löschbestätigung (Soft-Delete)
+- Activity Logging für alle Mutationen
+- 89 Unit Tests + 18 API-Integrationstests
+
 ### In Development
 
-#### 12. **Survey Tool** (80% complete)
+#### 14. **Survey Tool** (80% complete)
 
 - Admin can Create Surveys
 - Multiple Choice and Free Text
@@ -159,6 +186,8 @@
 | Vacation Management | No       | Yes       | Yes          | Live            |
 | Feature-Gating      | Yes      | Yes       | Yes          | Live            |
 | TPM Wartung         | No       | Yes       | Yes          | Live            |
+| Arbeitsaufträge     | No       | Yes       | Yes          | Live            |
+| Dummy-Benutzer      | Yes      | Yes       | Yes          | Live            |
 | Survey Tool         | No       | Yes       | Yes          | In Development  |
 | Mobile App          | No       | No        | Yes          | Planned Q2/2025 |
 

@@ -11,6 +11,7 @@ import type {
   TpmColorConfigEntry,
   TpmDefectPhoto,
   TpmExecution,
+  TpmExecutionDefect,
   TpmExecutionPhoto,
   TpmLocation,
   TpmTimeEstimate,
@@ -277,6 +278,17 @@ export async function fetchDefectPhotos(
     `/tpm/executions/defects/${defectUuid}/photos`,
   );
   return extractArray<TpmDefectPhoto>(result);
+}
+
+/** Update a defect's title and/or description */
+export async function updateDefect(
+  defectUuid: string,
+  payload: { title?: string; description?: string | null },
+): Promise<TpmExecutionDefect> {
+  return await apiClient.patch(
+    `/tpm/executions/defects/${defectUuid}`,
+    payload,
+  );
 }
 
 // =============================================================================

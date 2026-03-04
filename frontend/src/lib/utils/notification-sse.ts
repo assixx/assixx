@@ -31,7 +31,11 @@ export type NotificationEventType =
   | 'VACATION_REQUEST_CREATED'
   | 'VACATION_REQUEST_RESPONDED'
   | 'VACATION_REQUEST_WITHDRAWN'
-  | 'VACATION_REQUEST_CANCELLED';
+  | 'VACATION_REQUEST_CANCELLED'
+  | 'WORK_ORDER_ASSIGNED'
+  | 'WORK_ORDER_STATUS_CHANGED'
+  | 'WORK_ORDER_DUE_SOON'
+  | 'WORK_ORDER_VERIFIED';
 
 export interface NotificationEvent {
   type: NotificationEventType;
@@ -46,6 +50,8 @@ export interface NotificationEvent {
   kvp?: KvpEventData;
   /** Vacation request data — present when type starts with 'VACATION_REQUEST_' */
   request?: VacationRequestEventData;
+  /** Work order data — present when type starts with 'WORK_ORDER_' */
+  workOrder?: WorkOrderEventData;
   user?: {
     id: number;
     role: string;
@@ -81,6 +87,14 @@ interface VacationRequestEventData {
   computedDays: number;
   requesterName?: string;
   approverName?: string;
+}
+
+interface WorkOrderEventData {
+  uuid: string;
+  title: string;
+  status?: string;
+  assigneeId?: number;
+  assigneeName?: string;
 }
 
 export interface MessageEventData {

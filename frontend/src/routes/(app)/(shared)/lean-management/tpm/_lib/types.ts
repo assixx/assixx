@@ -19,7 +19,7 @@ export type CardStatus = 'green' | 'red' | 'yellow' | 'overdue';
 export type CardRole = 'operator' | 'maintenance';
 
 /** Card category — what type of maintenance activity */
-export type CardCategory = 'reinigung' | 'wartung' | 'instandhaltung';
+export type CardCategory = 'reinigung' | 'wartung' | 'inspektion';
 
 // =============================================================================
 // DOMAIN ENTITIES
@@ -192,6 +192,16 @@ export interface DefectWithContext {
   approvalStatus: ApprovalStatus;
   photoCount: number;
   createdAt: string;
+  /** Work order UUID if a work order was created from this defect */
+  workOrderUuid: string | null;
+  /** Work order status (open, in_progress, completed, verified) */
+  workOrderStatus: string | null;
+  /** Work order priority (low, medium, high) */
+  workOrderPriority: string | null;
+  /** Names of assigned employees */
+  workOrderAssigneeNames: string[];
+  /** When the work order was created */
+  workOrderCreatedAt: string | null;
 }
 
 /** Defect entry payload for creating an execution */
@@ -307,6 +317,15 @@ export interface IntervalColorConfigEntry {
   colorHex: string;
   label: string;
   includeInCard: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** TPM Category Color Configuration Entry — colorHex is null when no custom color */
+export interface CategoryColorConfigEntry {
+  categoryKey: CardCategory;
+  colorHex: string | null;
+  label: string;
   createdAt: string;
   updatedAt: string;
 }

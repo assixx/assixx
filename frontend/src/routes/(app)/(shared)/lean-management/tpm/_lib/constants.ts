@@ -279,10 +279,16 @@ export const MESSAGES = {
   DEFECTS_COL_PERSON: 'Durchgeführt von',
   DEFECTS_COL_STATUS: 'Freigabe',
   DEFECTS_COL_PHOTOS: 'Fotos',
+  DEFECTS_COL_ACTIONS: 'Aktion',
+  DEFECTS_BTN_ASSIGN_WO: 'Zuweisen',
   DEFECTS_NO_DESC: 'Keine weiteren Informationen',
   DEFECTS_PHOTOS_LOADING: 'Fotos werden geladen...',
   DEFECTS_PHOTOS_ERROR: 'Fehler beim Laden der Fotos',
   BTN_DEFECTS: 'Mängelliste',
+
+  // Board view toggle
+  BTN_BOARD_STACKED: 'Gestapelt',
+  BTN_BOARD_EXPANDED: 'Aufgeklappt',
 
   // Defect Photo Upload
   DEFECT_PHOTO_ADD: 'Mängelfoto hinzufügen',

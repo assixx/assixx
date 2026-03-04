@@ -84,6 +84,19 @@ export interface VacationRequestEvent {
   };
 }
 
+export interface WorkOrderEvent {
+  tenantId: number;
+  workOrder: {
+    uuid: string;
+    title: string;
+    status: string;
+    priority: string;
+    assigneeUserIds: number[];
+  };
+  changedByUserId?: number;
+  changedByName?: string;
+}
+
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus | null = null;
 
@@ -223,6 +236,57 @@ class NotificationEventBus extends EventEmitter {
       card,
       executionUuid,
       approved,
+    });
+  }
+
+  // Work Order events
+  emitWorkOrderAssigned(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.assigned for tenant ${tenantId}`,
+    );
+    this.emit('workorder.assigned', { tenantId, workOrder });
+  }
+
+  emitWorkOrderStatusChanged(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+    changedByUserId: number,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.status.changed for tenant ${tenantId}`,
+    );
+    this.emit('workorder.status.changed', {
+      tenantId,
+      workOrder,
+      changedByUserId,
+    });
+  }
+
+  emitWorkOrderDueSoon(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.due.soon for tenant ${tenantId}`,
+    );
+    this.emit('workorder.due.soon', { tenantId, workOrder });
+  }
+
+  emitWorkOrderVerified(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+    changedByUserId: number,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.verified for tenant ${tenantId}`,
+    );
+    this.emit('workorder.verified', {
+      tenantId,
+      workOrder,
+      changedByUserId,
     });
   }
 

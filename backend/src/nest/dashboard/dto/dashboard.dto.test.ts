@@ -109,6 +109,7 @@ describe('DashboardCountsSchema', () => {
     surveys: { count: 0 },
     vacation: { count: 0 },
     tpm: { count: 0 },
+    workOrders: { count: 0 },
     fetchedAt: '2025-06-01T12:00:00Z',
   };
 

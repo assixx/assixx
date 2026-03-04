@@ -145,7 +145,7 @@ export class BlackboardConfirmationsService {
              c.confirmed_at
       FROM users u
       LEFT JOIN blackboard_confirmations c ON u.id = c.user_id AND c.entry_id = $1
-      WHERE u.tenant_id = $2
+      WHERE u.tenant_id = $2 AND u.role != 'dummy' AND u.is_active = 1
     `;
     const queryParams: unknown[] = [numericId, tenantId];
 

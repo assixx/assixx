@@ -28,6 +28,7 @@
   const cards = $derived(data.cards);
   const colors = $derived(data.colors);
   const intervalColors = $derived(data.intervalColors);
+  const categoryColors = $derived(data.categoryColors);
 
   /** Only root/admin can manage cards and locations */
   const canWrite = $derived(
@@ -190,9 +191,11 @@
       </div>
     {:else}
       <KamishibaiBoard
-        cards={filteredCards}
+        allCards={cards}
+        {filteredCards}
         {colors}
         {intervalColors}
+        {categoryColors}
       />
     {/if}
   </div>

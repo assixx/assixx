@@ -28,6 +28,8 @@ import type {
   UpdateColorPayload,
   UpdateIntervalColorPayload,
   IntervalColorConfigEntry,
+  CategoryColorConfigEntry,
+  UpdateCategoryColorPayload,
   UpdateEscalationPayload,
   CreateTemplatePayload,
   UpdateTemplatePayload,
@@ -399,6 +401,39 @@ export async function resetIntervalColors(): Promise<
     {},
   );
   return extractArray<IntervalColorConfigEntry>(result);
+}
+
+// =============================================================================
+// CATEGORY COLORS
+// =============================================================================
+
+/** Fetch category color configuration */
+export async function fetchCategoryColors(): Promise<
+  CategoryColorConfigEntry[]
+> {
+  const result: unknown = await apiClient.get('/tpm/config/category-colors');
+  return extractArray<CategoryColorConfigEntry>(result);
+}
+
+/** Update a single category color config entry */
+export async function updateCategoryColor(
+  payload: UpdateCategoryColorPayload,
+): Promise<CategoryColorConfigEntry> {
+  return await apiClient.patch<CategoryColorConfigEntry>(
+    '/tpm/config/category-colors',
+    payload,
+  );
+}
+
+/** Reset all category colors (remove custom colors) */
+export async function resetCategoryColors(): Promise<
+  CategoryColorConfigEntry[]
+> {
+  const result: unknown = await apiClient.post(
+    '/tpm/config/category-colors/reset',
+    {},
+  );
+  return extractArray<CategoryColorConfigEntry>(result);
 }
 
 /** Update escalation configuration */

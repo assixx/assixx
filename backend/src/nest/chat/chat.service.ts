@@ -150,12 +150,12 @@ export class ChatService {
 
     if (isPrivileged) {
       return await this.databaseService.query<ChatUserRow>(
-        `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND u.is_active = 1`,
+        `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND u.is_active = 1 AND u.role != 'dummy'`,
         [tenantId, userId],
       );
     }
     return await this.databaseService.query<ChatUserRow>(
-      `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND u.is_active = 1 AND (ud.department_id = $3 OR u.role IN ('admin', 'root'))`,
+      `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND u.is_active = 1 AND u.role != 'dummy' AND (ud.department_id = $3 OR u.role IN ('admin', 'root'))`,
       [tenantId, userId, currentUser.department_id],
     );
   }

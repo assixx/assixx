@@ -66,6 +66,8 @@ See [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md) for all commands.
 - Create new files when existing ones can be edited
 - Use Bash to read files (`cat`, `head`, `tail`, `sed`, `awk`) — ALWAYS use the dedicated `Read` tool instead, including in subagents
 
+Use `AskUserQuestion` whenever anything is unclear — keep asking until you 100% understand the task and are confident how to execute it; never hesitate to ask follow-up questions.
+
 **ALWAYS:**
 
 - Start Docker from [docker/](./docker/)

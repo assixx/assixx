@@ -7,6 +7,7 @@
  * - GET    /tpm/executions/eligible-participants      — List employees for participant selection
  * - POST   /tpm/executions/defects/:uuid/photos      — Upload defect photo
  * - GET    /tpm/executions/defects/:uuid/photos       — List defect photos
+ * - PATCH  /tpm/executions/defects/:uuid              — Update defect title/description
  * - GET    /tpm/executions/:uuid                     — Get single execution
  * - POST   /tpm/executions/:uuid/respond             — Approve or reject
  * - POST   /tpm/executions/:uuid/photos              — Upload photo
@@ -20,6 +21,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -40,6 +42,7 @@ import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import { CreateExecutionDto } from './dto/create-execution.dto.js';
 import { ListExecutionsQueryDto } from './dto/list-executions-query.dto.js';
 import { RespondExecutionDto } from './dto/respond-execution.dto.js';
+import { UpdateDefectDto } from './dto/update-defect.dto.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import type { PaginatedExecutions } from './tpm-executions.service.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
@@ -47,6 +50,7 @@ import type {
   EligibleParticipant,
   TpmCardExecution,
   TpmDefectPhoto,
+  TpmExecutionDefect,
   TpmExecutionPhoto,
 } from './tpm.types.js';
 import { MAX_PHOTO_FILE_SIZE } from './tpm.types.js';
@@ -157,6 +161,23 @@ export class TpmExecutionsController {
     @TenantId() tenantId: number,
   ): Promise<TpmDefectPhoto[]> {
     return await this.executionsService.getDefectPhotos(tenantId, defectUuid);
+  }
+
+  /** PATCH /tpm/executions/defects/:uuid — Update defect title/description */
+  @Patch('defects/:uuid')
+  @RequirePermission(FEAT, MOD_EXEC, 'canWrite')
+  async updateDefect(
+    @Param('uuid') defectUuid: string,
+    @Body() dto: UpdateDefectDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmExecutionDefect> {
+    return await this.executionsService.updateDefect(
+      tenantId,
+      defectUuid,
+      user.id,
+      { title: dto.title, description: dto.description },
+    );
   }
 
   // ============================================================================

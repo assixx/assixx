@@ -19,7 +19,7 @@ const VALID_UUID = '019c9547-9fc0-771a-b022-3767e233d6f3';
 // =============================================================
 
 describe('TpmCardCategorySchema', () => {
-  it.each(['reinigung', 'wartung', 'instandhaltung'] as const)(
+  it.each(['reinigung', 'wartung', 'inspektion'] as const)(
     'should accept category=%s',
     (value) => {
       expect(TpmCardCategorySchema.safeParse(value).success).toBe(true);
@@ -77,19 +77,11 @@ describe('CreateCardSchema — cardCategories', () => {
     expect(result.cardCategories).toEqual(['reinigung']);
   });
 
-  it('should accept all three categories', () => {
-    const result = CreateCardSchema.parse({
-      ...validBase,
-      cardCategories: ['reinigung', 'wartung', 'instandhaltung'],
-    });
-    expect(result.cardCategories).toHaveLength(3);
-  });
-
-  it('should reject more than 3 categories', () => {
+  it('should reject more than 1 category', () => {
     expect(
       CreateCardSchema.safeParse({
         ...validBase,
-        cardCategories: ['reinigung', 'wartung', 'instandhaltung', 'reinigung'],
+        cardCategories: ['reinigung', 'wartung'],
       }).success,
     ).toBe(false);
   });
@@ -98,7 +90,7 @@ describe('CreateCardSchema — cardCategories', () => {
     expect(
       CreateCardSchema.safeParse({
         ...validBase,
-        cardCategories: ['reinigung', 'invalid'],
+        cardCategories: ['invalid'],
       }).success,
     ).toBe(false);
   });
@@ -133,17 +125,10 @@ describe('UpdateCardSchema — cardCategories', () => {
     expect(result.cardCategories).toEqual(['wartung']);
   });
 
-  it('should accept all three categories', () => {
-    const result = UpdateCardSchema.parse({
-      cardCategories: ['reinigung', 'wartung', 'instandhaltung'],
-    });
-    expect(result.cardCategories).toHaveLength(3);
-  });
-
-  it('should reject more than 3 categories', () => {
+  it('should reject more than 1 category', () => {
     expect(
       UpdateCardSchema.safeParse({
-        cardCategories: ['reinigung', 'wartung', 'instandhaltung', 'reinigung'],
+        cardCategories: ['reinigung', 'wartung'],
       }).success,
     ).toBe(false);
   });
@@ -167,7 +152,7 @@ describe('ListCardsQuerySchema — cardCategory', () => {
     expect(result.cardCategory).toBeUndefined();
   });
 
-  it.each(['reinigung', 'wartung', 'instandhaltung'] as const)(
+  it.each(['reinigung', 'wartung', 'inspektion'] as const)(
     'should accept cardCategory=%s',
     (cardCategory) => {
       expect(ListCardsQuerySchema.safeParse({ cardCategory }).success).toBe(
