@@ -160,7 +160,7 @@
     try {
       await apiDeleteMachine(machineState.deleteMachineId);
       showSuccessAlert(MESSAGES.SUCCESS_DELETED);
-      machineState.closeDeleteConfirmModal();
+      machineState.closeDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err) {
@@ -405,8 +405,6 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
       if (showAvailabilityModal) closeAvailabilityModal();
-      else if (machineState.showDeleteConfirmModal)
-        machineState.closeDeleteConfirmModal();
       else if (machineState.showDeleteModal) machineState.closeDeleteModal();
       else if (machineState.showMachineModal) machineState.closeMachineModal();
     }

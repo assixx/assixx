@@ -88,7 +88,6 @@
   // Modal States
   let showEmployeeModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showAvailabilityModal = $state(false);
   let showUpgradeConfirmModal = $state(false);
   let upgradeEmployeeId = $state<number | null>(null);
@@ -260,7 +259,7 @@
 
     // Reset state immediately to prevent double-clicks
     deleteEmployeeId = null;
-    showDeleteConfirmModal = false;
+    showDeleteModal = false;
 
     try {
       await apiDeleteEmployee(idToDelete);
@@ -314,11 +313,6 @@
     showDeleteModal = true;
   }
 
-  function proceedToDeleteConfirm(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   function closeEmployeeModal(): void {
     showEmployeeModal = false;
     currentEditId = null;
@@ -327,11 +321,6 @@
 
   function closeDeleteModal(): void {
     showDeleteModal = false;
-    deleteEmployeeId = null;
-  }
-
-  function closeDeleteConfirmModal(): void {
-    showDeleteConfirmModal = false;
     deleteEmployeeId = null;
   }
 
@@ -474,7 +463,6 @@
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showEmployeeModal) closeEmployeeModal();
     }
@@ -731,12 +719,9 @@
 
 <!-- Delete Modals Component -->
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  ondeleteConfirm={deleteEmployee}
+  show={showDeleteModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteEmployee}
 />
 
 <!-- Availability Modal Component -->

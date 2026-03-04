@@ -15,7 +15,6 @@ export function createUIState() {
   let submitting = $state(false);
   let showMachineModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let currentEditId = $state<number | null>(null);
   let deleteMachineId = $state<number | null>(null);
 
@@ -43,9 +42,6 @@ export function createUIState() {
     },
     get showDeleteModal() {
       return showDeleteModal;
-    },
-    get showDeleteConfirmModal() {
-      return showDeleteConfirmModal;
     },
     get currentEditId() {
       return currentEditId;
@@ -76,9 +72,6 @@ export function createUIState() {
     },
     setShowDeleteModal: (v: boolean) => {
       showDeleteModal = v;
-    },
-    setShowDeleteConfirmModal: (v: boolean) => {
-      showDeleteConfirmModal = v;
     },
     setCurrentEditId: (v: number | null) => {
       currentEditId = v;

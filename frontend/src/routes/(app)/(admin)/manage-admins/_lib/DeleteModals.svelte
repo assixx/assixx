@@ -1,155 +1,25 @@
 <script lang="ts">
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import { MESSAGES } from './constants';
 
-  // =============================================================================
-  // PROPS
-  // =============================================================================
-
   interface Props {
-    showDeleteModal: boolean;
-    showDeleteConfirmModal: boolean;
-    oncloseDelete: () => void;
-    oncloseDeleteConfirm: () => void;
-    onproceedToConfirm: () => void;
-    onconfirmDelete: () => void;
+    show: boolean;
+    oncancel: () => void;
+    onconfirm: () => void;
   }
 
-  const {
-    showDeleteModal,
-    showDeleteConfirmModal,
-    oncloseDelete,
-    oncloseDeleteConfirm,
-    onproceedToConfirm,
-    onconfirmDelete,
-  }: Props = $props();
-
-  // =============================================================================
-  // HANDLERS
-  // =============================================================================
-
-  function handleDeleteOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) oncloseDelete();
-  }
-
-  function handleDeleteConfirmOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) oncloseDeleteConfirm();
-  }
+  const { show, oncancel, onconfirm }: Props = $props();
 </script>
 
-<!-- Delete Modal Step 1 -->
-{#if showDeleteModal}
-  <div
-    id="delete-admin-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="delete-modal-title"
-    tabindex="-1"
-    onclick={handleDeleteOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') oncloseDelete();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="ds-modal ds-modal--sm"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="ds-modal__header">
-        <h3
-          class="ds-modal__title"
-          id="delete-modal-title"
-        >
-          <i class="fas fa-trash-alt mr-2 text-red-500"></i>
-          {MESSAGES.MODAL_DELETE_TITLE}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schließen"
-          onclick={oncloseDelete}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="ds-modal__body">
-        <p class="text-(--color-text-secondary)">
-          {MESSAGES.DELETE_CONFIRM_MESSAGE}
-        </p>
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={oncloseDelete}>{MESSAGES.BTN_CANCEL}</button
-        >
-        <button
-          type="button"
-          class="btn btn-danger"
-          onclick={onproceedToConfirm}>{MESSAGES.BTN_DELETE}</button
-        >
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- Delete Modal Step 2 -->
-{#if showDeleteConfirmModal}
-  <div
-    id="delete-admin-confirm-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="delete-confirm-title"
-    tabindex="-1"
-    onclick={handleDeleteConfirmOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') oncloseDeleteConfirm();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--danger"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3
-        class="confirm-modal__title"
-        id="delete-confirm-title"
-      >
-        {MESSAGES.MODAL_DELETE_CONFIRM_TITLE}
-      </h3>
-      <p class="confirm-modal__message">
-        <strong>{MESSAGES.DELETE_FINAL_WARNING}</strong>
-        <br /><br />
-        {MESSAGES.DELETE_FINAL_INFO}
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={oncloseDeleteConfirm}>{MESSAGES.BTN_CANCEL}</button
-        >
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={onconfirmDelete}
-        >
-          {MESSAGES.BTN_DELETE_FINAL}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  {show}
+  id="delete-admin-confirm-modal"
+  title={MESSAGES.MODAL_DELETE_CONFIRM_TITLE}
+  {onconfirm}
+  {oncancel}
+>
+  <strong>{MESSAGES.DELETE_FINAL_WARNING}</strong>
+  <br /><br />
+  {MESSAGES.DELETE_FINAL_INFO}
+</ConfirmModal>

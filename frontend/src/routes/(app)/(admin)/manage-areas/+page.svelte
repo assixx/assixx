@@ -64,7 +64,6 @@
   // Modal states
   let showAreaModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showForceDeleteModal = $state(false);
 
   // Search dropdown state
@@ -93,10 +92,6 @@
   const modalTitle = $derived(
     isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
   );
-  const deletingAreaName = $derived(
-    areas.find((a) => a.id === deletingAreaId)?.name ?? '',
-  );
-
   // Filter areas by status
   const statusFilteredAreas = $derived.by(() =>
     filterByStatus(areas, statusFilter),
@@ -164,15 +159,6 @@
 
   function closeDeleteModal() {
     showDeleteModal = false;
-  }
-
-  function proceedToDeleteConfirm() {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
-  function closeDeleteConfirmModal() {
-    showDeleteConfirmModal = false;
     deletingAreaId = null;
   }
 
@@ -229,17 +215,17 @@
 
     if (result.success) {
       showSuccessAlert(MESSAGES.SUCCESS_DELETED);
-      closeDeleteConfirmModal();
+      closeDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } else if (result.hasDependencies === true) {
       forceDeleteMessage =
         result.dependencyMessage ?? MESSAGES.FORCE_DELETE_DEFAULT_MESSAGE;
-      showDeleteConfirmModal = false;
+      showDeleteModal = false;
       showForceDeleteModal = true;
     } else if (result.error !== null) {
       showErrorAlert(result.error);
-      closeDeleteConfirmModal();
+      closeDeleteModal();
     }
   }
 
@@ -606,15 +592,11 @@
 
 <!-- Delete Modals -->
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
+  show={showDeleteModal}
   {showForceDeleteModal}
   {forceDeleteMessage}
-  {deletingAreaName}
-  onCloseDelete={closeDeleteModal}
-  onCloseDeleteConfirm={closeDeleteConfirmModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteArea}
   onCloseForceDelete={closeForceDeleteModal}
-  onProceedToConfirm={proceedToDeleteConfirm}
-  onConfirmDelete={deleteArea}
   onForceDelete={forceDeleteArea}
 />

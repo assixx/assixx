@@ -99,7 +99,6 @@
   // Modal State
   let showEntryModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let entryModalMode = $state<FormMode>('create');
   let editingEntryId = $state<number | null>(null);
   let deletingEntryId = $state<number | null>(null);
@@ -281,7 +280,6 @@
 
     // Clear state immediately to prevent double-submission
     deletingEntryId = null;
-    showDeleteConfirmModal = false;
     showDeleteModal = false;
     loading = true;
 
@@ -379,12 +377,6 @@
 
   function closeDeleteModals(): void {
     showDeleteModal = false;
-    showDeleteConfirmModal = false;
-  }
-
-  function proceedDelete(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
   }
 
   function handleEntrySubmit(e: Event): void {
@@ -453,8 +445,7 @@
 
   function handleKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
-      if (showDeleteConfirmModal) showDeleteConfirmModal = false;
-      else if (showDeleteModal) showDeleteModal = false;
+      if (showDeleteModal) showDeleteModal = false;
       else if (showEntryModal) closeEntryModal();
     }
   }
@@ -639,13 +630,11 @@
   />
 {/if}
 
-<!-- Delete Confirmation Modals (Two-Step) -->
+<!-- Delete Confirmation Modal -->
 <DeleteConfirmModal
-  showStep1={showDeleteModal}
-  showStep2={showDeleteConfirmModal}
+  show={showDeleteModal}
   {loading}
   oncancel={closeDeleteModals}
-  onproceed={proceedDelete}
   onconfirm={deleteEntry}
 />
 

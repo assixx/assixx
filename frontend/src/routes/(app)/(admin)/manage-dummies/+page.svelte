@@ -46,9 +46,8 @@
   let editingDummy = $state<DummyUser | null>(null);
   let submitting = $state(false);
 
-  // Delete flow (2-step)
+  // Delete flow
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let deletingDummy = $state<DummyUser | null>(null);
 
   // =============================================================================
@@ -130,17 +129,6 @@
     deletingDummy = null;
   }
 
-  function closeDeleteConfirmModal(): void {
-    showDeleteConfirmModal = false;
-    showDeleteModal = false;
-    deletingDummy = null;
-  }
-
-  function proceedToDeleteConfirm(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   async function handleSave(formData: DummyFormData): Promise<void> {
     submitting = true;
     try {
@@ -180,7 +168,7 @@
     try {
       await deleteDummy(deletingDummy.uuid);
       showSuccessAlert('Dummy-Benutzer wurde gelöscht');
-      closeDeleteConfirmModal();
+      closeDeleteModal();
       await loadDummies();
     } catch (err: unknown) {
       logApiError('deleteDummy', err);
@@ -327,16 +315,12 @@
   }}
 />
 
-<!-- Delete Confirmation (2-step) -->
+<!-- Delete Confirmation -->
 <DeleteConfirmModal
-  {showDeleteModal}
-  {showDeleteConfirmModal}
-  displayName={deletingDummy?.displayName ?? ''}
+  show={showDeleteModal}
   {submitting}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  ondeleteConfirm={() => {
+  oncancel={closeDeleteModal}
+  onconfirm={() => {
     void handleDeleteConfirm();
   }}
 />

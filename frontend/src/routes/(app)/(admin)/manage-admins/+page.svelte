@@ -80,7 +80,6 @@
   // Modal States
   let showAdminModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showUpgradeConfirmModal = $state(false);
   let upgradeAdminId = $state<number | null>(null);
   let upgradeLoading = $state(false);
@@ -317,7 +316,7 @@
     if (adminId === null) return;
 
     // Reset state before async operations to avoid race conditions
-    showDeleteConfirmModal = false;
+    showDeleteModal = false;
     deleteAdminId = null;
 
     try {
@@ -441,11 +440,6 @@
     showDeleteModal = true;
   }
 
-  function proceedToDeleteConfirm() {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   function closeAdminModal() {
     showAdminModal = false;
     currentEditId = null;
@@ -454,11 +448,6 @@
 
   function closeDeleteModal() {
     showDeleteModal = false;
-    deleteAdminId = null;
-  }
-
-  function closeDeleteConfirmModal() {
-    showDeleteConfirmModal = false;
     deleteAdminId = null;
   }
 
@@ -550,7 +539,6 @@
       if (showAvailabilityModal) closeAvailabilityModal();
       else if (showDowngradeConfirmModal) closeDowngradeConfirmModal();
       else if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showAdminModal) closeAdminModal();
     }
@@ -802,12 +790,9 @@
 
 <!-- Delete Modals Component -->
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  onconfirmDelete={deleteAdmin}
+  show={showDeleteModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteAdmin}
 />
 
 <!-- Role Change Confirm Modals (Upgrade/Downgrade) -->

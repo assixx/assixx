@@ -73,7 +73,6 @@
   // Modal States
   let showDepartmentModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showForceDeleteModal = $state(false);
 
   // Edit State
@@ -144,7 +143,7 @@
     if (idToDelete === null) return;
     // Clear immediately after capture to prevent race conditions
     deleteDepartmentId = null;
-    showDeleteConfirmModal = false;
+    showDeleteModal = false;
 
     const result = await apiDeleteDepartment(idToDelete);
     if (result.success) {
@@ -179,7 +178,7 @@
   }
 
   function showForceDeleteWarning(details: DependencyDetails) {
-    showDeleteConfirmModal = false;
+    showDeleteModal = false;
     const totalDeps = details.totalDependencies ?? 0;
     const depList = buildDependencyMessage(details);
     forceDeleteMessage = MESSAGES.forceDeleteMessage(totalDeps, depList);
@@ -216,11 +215,6 @@
     showDeleteModal = true;
   }
 
-  function proceedToDeleteConfirm() {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   function closeDepartmentModal() {
     showDepartmentModal = false;
     currentEditId = null;
@@ -229,11 +223,6 @@
 
   function closeDeleteModalFn() {
     showDeleteModal = false;
-    deleteDepartmentId = null;
-  }
-
-  function closeDeleteConfirmModal() {
-    showDeleteConfirmModal = false;
     deleteDepartmentId = null;
   }
 
@@ -314,7 +303,6 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
       if (showForceDeleteModal) closeForceDeleteModalFn();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModalFn();
       else if (showDepartmentModal) closeDepartmentModal();
     }
@@ -630,14 +618,11 @@
 
 <!-- Delete Modals -->
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
+  show={showDeleteModal}
   {showForceDeleteModal}
   {forceDeleteMessage}
-  onCloseDelete={closeDeleteModalFn}
-  onCloseDeleteConfirm={closeDeleteConfirmModal}
+  oncancel={closeDeleteModalFn}
+  onconfirm={deleteDepartment}
   onCloseForceDelete={closeForceDeleteModalFn}
-  onProceedToConfirm={proceedToDeleteConfirm}
-  onConfirmDelete={deleteDepartment}
   onForceDelete={forceDeleteDepartment}
 />

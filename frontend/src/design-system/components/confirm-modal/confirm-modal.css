@@ -237,7 +237,7 @@ html.dark .confirm-modal--warning .confirm-modal__title {
 }
 
 html.dark .confirm-modal--danger {
-  background: linear-gradient(-106deg, #350000 0%, rgb(0 0 0 / 60%) 100%);
+  background: linear-gradient(-106deg, #540000 0%, rgb(0 0 0 / 60%) 100%);
 }
 
 .confirm-modal--danger .confirm-modal__icon {

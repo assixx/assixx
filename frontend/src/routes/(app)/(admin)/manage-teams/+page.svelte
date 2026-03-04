@@ -78,7 +78,6 @@
   // Modal States
   let showTeamModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showForceDeleteModal = $state(false);
 
   // Edit State
@@ -169,7 +168,7 @@
       const result = await apiDeleteTeam(teamId);
 
       if (result.success) {
-        showDeleteConfirmModal = false;
+        showDeleteModal = false;
         // Only reset if unchanged during async operation
         if (deleteTeamId === teamId) deleteTeamId = null;
         // Level 3: Trigger SSR refetch
@@ -177,7 +176,7 @@
         showSuccessAlert('Team gelöscht');
       } else if (result.hasMembers) {
         forceDeleteMemberCount = result.memberCount;
-        showDeleteConfirmModal = false;
+        showDeleteModal = false;
         showForceDeleteModal = true;
       }
     } catch (err) {
@@ -254,11 +253,6 @@
     showDeleteModal = true;
   }
 
-  function proceedToDeleteConfirm(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   function closeTeamModal(): void {
     showTeamModal = false;
     currentEditId = null;
@@ -267,11 +261,6 @@
 
   function closeDeleteModal(): void {
     showDeleteModal = false;
-    deleteTeamId = null;
-  }
-
-  function closeDeleteConfirmModal(): void {
-    showDeleteConfirmModal = false;
     deleteTeamId = null;
   }
 
@@ -350,7 +339,6 @@
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showForceDeleteModal) closeForceDeleteModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showTeamModal) closeTeamModal();
     }
@@ -662,14 +650,11 @@
 
 <!-- Delete Modals -->
 <TeamDeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
+  show={showDeleteModal}
   {showForceDeleteModal}
   {forceDeleteMemberCount}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteTeam}
   oncloseForceDelete={closeForceDeleteModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  onconfirmDelete={deleteTeam}
   onforceDelete={forceDeleteTeam}
 />

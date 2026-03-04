@@ -38,15 +38,6 @@ function createMachineState() {
     ui.setShowDeleteModal(false);
     ui.setDeleteMachineId(null);
   };
-  const openDeleteConfirmModal = () => {
-    ui.setShowDeleteModal(false);
-    ui.setShowDeleteConfirmModal(true);
-  };
-  const closeDeleteConfirmModal = () => {
-    ui.setShowDeleteConfirmModal(false);
-    ui.setDeleteMachineId(null);
-  };
-
   return {
     // Data (pass through getters and setters)
     get allMachines() {
@@ -93,9 +84,6 @@ function createMachineState() {
     },
     get showDeleteModal() {
       return ui.showDeleteModal;
-    },
-    get showDeleteConfirmModal() {
-      return ui.showDeleteConfirmModal;
     },
     get currentEditId() {
       return ui.currentEditId;
@@ -218,8 +206,6 @@ function createMachineState() {
     closeMachineModal,
     openDeleteModal,
     closeDeleteModal,
-    openDeleteConfirmModal,
-    closeDeleteConfirmModal,
   };
 }
 
