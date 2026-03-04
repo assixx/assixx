@@ -687,6 +687,49 @@ describe('CreateCommentSchema', () => {
   it('should reject missing content', () => {
     expect(CreateCommentSchema.safeParse({}).success).toBe(false);
   });
+
+  // -----------------------------------------------------------
+  // parentId (optional reply threading)
+  // -----------------------------------------------------------
+
+  it('should accept comment without parentId', () => {
+    const result = CreateCommentSchema.parse({ content: 'Top-level' });
+    expect(result.parentId).toBeUndefined();
+  });
+
+  it('should accept valid parentId', () => {
+    const result = CreateCommentSchema.parse({
+      content: 'Antwort',
+      parentId: 42,
+    });
+    expect(result.parentId).toBe(42);
+  });
+
+  it('should coerce parentId from string', () => {
+    const result = CreateCommentSchema.parse({
+      content: 'Antwort',
+      parentId: '42',
+    });
+    expect(result.parentId).toBe(42);
+  });
+
+  it('should reject parentId = 0', () => {
+    expect(
+      CreateCommentSchema.safeParse({ content: 'Test', parentId: 0 }).success,
+    ).toBe(false);
+  });
+
+  it('should reject negative parentId', () => {
+    expect(
+      CreateCommentSchema.safeParse({ content: 'Test', parentId: -1 }).success,
+    ).toBe(false);
+  });
+
+  it('should reject non-integer parentId', () => {
+    expect(
+      CreateCommentSchema.safeParse({ content: 'Test', parentId: 1.5 }).success,
+    ).toBe(false);
+  });
 });
 
 // =============================================================

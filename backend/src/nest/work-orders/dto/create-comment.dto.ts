@@ -13,6 +13,7 @@ export const CreateCommentSchema = z.object({
     .trim()
     .min(1, 'Kommentar darf nicht leer sein')
     .max(5000, 'Kommentar darf maximal 5.000 Zeichen lang sein'),
+  parentId: z.coerce.number().int().positive().optional(),
 });
 
 export class CreateCommentDto extends createZodDto(CreateCommentSchema) {}

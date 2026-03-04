@@ -88,11 +88,14 @@ function createCommentRow(
     is_status_change: false,
     old_status: null,
     new_status: null,
+    parent_id: null,
     is_active: 1,
     created_at: '2026-03-02T10:00:00.000Z',
     updated_at: '2026-03-02T10:00:00.000Z',
     first_name: 'Anna',
     last_name: 'Schmidt',
+    profile_picture: null,
+    reply_count: '0',
     ...overrides,
   };
 }
@@ -322,13 +325,18 @@ describe('mapCommentRowToApi', () => {
     const row = createCommentRow();
     const result = mapCommentRowToApi(row);
 
+    expect(result.id).toBe(20);
     expect(result.uuid).toBe('019c9547-cccc-771a-b022-333333333333');
     expect(result.userId).toBe(42);
-    expect(result.userName).toBe('Anna Schmidt');
+    expect(result.firstName).toBe('Anna');
+    expect(result.lastName).toBe('Schmidt');
+    expect(result.profilePicture).toBeNull();
     expect(result.content).toBe('Arbeit begonnen, Ersatzteile bestellt');
     expect(result.isStatusChange).toBe(false);
     expect(result.oldStatus).toBeNull();
     expect(result.newStatus).toBeNull();
+    expect(result.parentId).toBeNull();
+    expect(result.replyCount).toBe(0);
     expect(result.createdAt).toBe('2026-03-02T10:00:00.000Z');
   });
 
@@ -344,6 +352,29 @@ describe('mapCommentRowToApi', () => {
     expect(result.isStatusChange).toBe(true);
     expect(result.oldStatus).toBe('open');
     expect(result.newStatus).toBe('in_progress');
+  });
+
+  it('should map reply comment with parentId', () => {
+    const row = createCommentRow({ parent_id: 10 });
+    const result = mapCommentRowToApi(row);
+
+    expect(result.parentId).toBe(10);
+  });
+
+  it('should map profile picture when present', () => {
+    const row = createCommentRow({
+      profile_picture: 'uploads/avatars/anna.jpg',
+    });
+    const result = mapCommentRowToApi(row);
+
+    expect(result.profilePicture).toBe('uploads/avatars/anna.jpg');
+  });
+
+  it('should convert reply_count string to number', () => {
+    const row = createCommentRow({ reply_count: '5' });
+    const result = mapCommentRowToApi(row);
+
+    expect(result.replyCount).toBe(5);
   });
 });
 

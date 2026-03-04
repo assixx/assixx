@@ -1,10 +1,14 @@
 /**
  * Work Orders Comments Service -- Unit Tests
  *
- * Tests addComment, listComments, deleteComment with mocked DB + ActivityLogger.
- * Covers happy paths, NotFoundException, and ForbiddenException edge cases.
+ * Tests addComment, listComments, listReplies, deleteComment with mocked DB + ActivityLogger.
+ * Covers happy paths, NotFoundException, ForbiddenException, and threading validation.
  */
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -73,11 +77,14 @@ function createCommentRow(
     is_status_change: false,
     old_status: null,
     new_status: null,
+    parent_id: null,
     is_active: 1,
     created_at: '2026-03-02T10:00:00.000Z',
     updated_at: '2026-03-02T10:00:00.000Z',
     first_name: 'Anna',
     last_name: 'Schmidt',
+    profile_picture: null,
+    reply_count: '0',
     ...overrides,
   };
 }
@@ -115,11 +122,15 @@ describe('addComment', () => {
 
     expect(result.uuid).toBe(COMMENT_UUID);
     expect(result.userId).toBe(USER_ID);
-    expect(result.userName).toBe('Anna Schmidt');
+    expect(result.firstName).toBe('Anna');
+    expect(result.lastName).toBe('Schmidt');
+    expect(result.profilePicture).toBeNull();
     expect(result.content).toBe('Neuer Kommentar');
     expect(result.isStatusChange).toBe(false);
     expect(result.oldStatus).toBeNull();
     expect(result.newStatus).toBeNull();
+    expect(result.parentId).toBeNull();
+    expect(result.replyCount).toBe(0);
     expect(result.createdAt).toBe('2026-03-02T10:00:00.000Z');
 
     // Verify resolveWorkOrder query
@@ -129,13 +140,14 @@ describe('addComment', () => {
       TENANT_ID,
     ]);
 
-    // Verify INSERT query params
+    // Verify INSERT query params (includes parent_id = null)
     expect(mockDb.queryOne.mock.calls[1][1]).toEqual([
       '019c9999-aaaa-7000-0000-000000000001', // mocked uuidv7
       TENANT_ID,
       woRow.id,
       USER_ID,
       'Neuer Kommentar',
+      null,
     ]);
 
     // Activity logger fires (void, non-awaited)
@@ -354,5 +366,117 @@ describe('deleteComment', () => {
     await service.deleteComment(TENANT_ID, USER_ID, COMMENT_UUID, true);
 
     expect(mockDb.query).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================================
+// addComment with parentId (reply threading)
+// ============================================================================
+
+describe('addComment with parentId', () => {
+  it('should insert reply when parent is valid top-level comment', async () => {
+    const woRow = createWorkOrderRow();
+    const parentRow = { id: 100, parent_id: null };
+    const replyRow = createCommentRow({
+      content: 'Antwort',
+      parent_id: 100,
+    });
+
+    mockDb.queryOne
+      .mockResolvedValueOnce(woRow) // resolveWorkOrder
+      .mockResolvedValueOnce(parentRow) // validateParent
+      .mockResolvedValueOnce(replyRow); // INSERT RETURNING
+
+    const result = await service.addComment(
+      TENANT_ID,
+      USER_ID,
+      WORK_ORDER_UUID,
+      'Antwort',
+      100,
+    );
+
+    expect(result.parentId).toBe(100);
+    expect(result.content).toBe('Antwort');
+
+    // Verify INSERT params include parentId
+    expect(mockDb.queryOne.mock.calls[2][1]).toEqual([
+      '019c9999-aaaa-7000-0000-000000000001',
+      TENANT_ID,
+      woRow.id,
+      USER_ID,
+      'Antwort',
+      100,
+    ]);
+  });
+
+  it('should throw NotFoundException when parent comment does not exist', async () => {
+    const woRow = createWorkOrderRow();
+
+    mockDb.queryOne
+      .mockResolvedValueOnce(woRow) // resolveWorkOrder
+      .mockResolvedValueOnce(null); // validateParent → not found
+
+    await expect(
+      service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Reply', 999),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('should throw BadRequestException when replying to a reply (nested)', async () => {
+    const woRow = createWorkOrderRow();
+    const nestedParent = { id: 50, parent_id: 10 }; // already a reply
+
+    mockDb.queryOne
+      .mockResolvedValueOnce(woRow) // resolveWorkOrder
+      .mockResolvedValueOnce(nestedParent); // validateParent → is a reply
+
+    await expect(
+      service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Nested', 50),
+    ).rejects.toThrow(BadRequestException);
+  });
+});
+
+// ============================================================================
+// listReplies
+// ============================================================================
+
+describe('listReplies', () => {
+  it('should return replies for a comment', async () => {
+    const woRow = createWorkOrderRow();
+    const replies = [
+      createCommentRow({ id: 30, content: 'Antwort 1', parent_id: 20 }),
+      createCommentRow({ id: 31, content: 'Antwort 2', parent_id: 20 }),
+    ];
+
+    mockDb.queryOne.mockResolvedValueOnce(woRow); // resolveWorkOrder
+    mockDb.query.mockResolvedValueOnce(replies);
+
+    const result = await service.listReplies(TENANT_ID, WORK_ORDER_UUID, 20);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].content).toBe('Antwort 1');
+    expect(result[0].parentId).toBe(20);
+    expect(result[1].content).toBe('Antwort 2');
+
+    // Verify query params: [wo.id, commentId]
+    expect(mockDb.query.mock.calls[0][1]).toEqual([woRow.id, 20]);
+  });
+
+  it('should return empty array when no replies exist', async () => {
+    const woRow = createWorkOrderRow();
+
+    mockDb.queryOne.mockResolvedValueOnce(woRow);
+    mockDb.query.mockResolvedValueOnce([]);
+
+    const result = await service.listReplies(TENANT_ID, WORK_ORDER_UUID, 20);
+
+    expect(result).toEqual([]);
+  });
+
+  it('should throw NotFoundException when work order does not exist', async () => {
+    mockDb.queryOne.mockResolvedValueOnce(null);
+
+    await expect(
+      service.listReplies(TENANT_ID, WORK_ORDER_UUID, 20),
+    ).rejects.toThrow(NotFoundException);
   });
 });

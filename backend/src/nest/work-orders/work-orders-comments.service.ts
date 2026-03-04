@@ -3,8 +3,10 @@
  *
  * Handles user comments and documentation on work orders.
  * Status-change comments are created automatically by WorkOrderStatusService.
+ * Supports one-level-deep reply threading (parent_id).
  */
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -34,22 +36,30 @@ export class WorkOrderCommentsService {
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
-  /** Add a user comment to a work order */
+  /** Add a user comment (or reply) to a work order */
   async addComment(
     tenantId: number,
     userId: number,
     workOrderUuid: string,
     content: string,
+    parentId?: number,
   ): Promise<WorkOrderComment> {
     const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
 
+    if (parentId !== undefined) {
+      await this.validateParent(wo.id, parentId);
+    }
+
     const row = await this.db.queryOne<WorkOrderCommentWithNameRow>(
       `INSERT INTO work_order_comments
-         (uuid, tenant_id, work_order_id, user_id, content)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *, (SELECT first_name FROM users WHERE id = $4) AS first_name,
-                    (SELECT last_name FROM users WHERE id = $4) AS last_name`,
-      [uuidv7(), tenantId, wo.id, userId, content],
+         (uuid, tenant_id, work_order_id, user_id, content, parent_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *,
+         (SELECT first_name FROM users WHERE id = $4) AS first_name,
+         (SELECT last_name FROM users WHERE id = $4) AS last_name,
+         (SELECT profile_picture FROM users WHERE id = $4) AS profile_picture,
+         '0' AS reply_count`,
+      [uuidv7(), tenantId, wo.id, userId, content, parentId ?? null],
     );
 
     if (row === null) {
@@ -68,7 +78,7 @@ export class WorkOrderCommentsService {
     return mapCommentRowToApi(row);
   }
 
-  /** List comments for a work order (paginated, chronological) */
+  /** List top-level comments for a work order (paginated, chronological) */
   async listComments(
     tenantId: number,
     workOrderUuid: string,
@@ -80,16 +90,18 @@ export class WorkOrderCommentsService {
 
     const countResult = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM work_order_comments
-       WHERE work_order_id = $1 AND is_active = 1`,
+       WHERE work_order_id = $1 AND is_active = 1 AND parent_id IS NULL`,
       [wo.id],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.db.query<WorkOrderCommentWithNameRow>(
-      `SELECT c.*, u.first_name, u.last_name
+      `SELECT c.*, u.first_name, u.last_name, u.profile_picture,
+              (SELECT COUNT(*)::text FROM work_order_comments r
+               WHERE r.parent_id = c.id AND r.is_active = 1) AS reply_count
        FROM work_order_comments c
        JOIN users u ON c.user_id = u.id
-       WHERE c.work_order_id = $1 AND c.is_active = 1
+       WHERE c.work_order_id = $1 AND c.is_active = 1 AND c.parent_id IS NULL
        ORDER BY c.created_at ASC
        LIMIT $2 OFFSET $3`,
       [wo.id, limit, offset],
@@ -101,6 +113,27 @@ export class WorkOrderCommentsService {
       page,
       pageSize: limit,
     };
+  }
+
+  /** List replies for a specific comment (all, no pagination) */
+  async listReplies(
+    tenantId: number,
+    workOrderUuid: string,
+    commentId: number,
+  ): Promise<WorkOrderComment[]> {
+    const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
+
+    const rows = await this.db.query<WorkOrderCommentWithNameRow>(
+      `SELECT c.*, u.first_name, u.last_name, u.profile_picture,
+              '0' AS reply_count
+       FROM work_order_comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.work_order_id = $1 AND c.parent_id = $2 AND c.is_active = 1
+       ORDER BY c.created_at ASC`,
+      [wo.id, commentId],
+    );
+
+    return rows.map(mapCommentRowToApi);
   }
 
   /** Soft-delete a comment (own comment or admin) */
@@ -147,7 +180,7 @@ export class WorkOrderCommentsService {
   }
 
   // ==========================================================================
-  // Private helper
+  // Private helpers
   // ==========================================================================
 
   private async resolveWorkOrder(
@@ -163,5 +196,30 @@ export class WorkOrderCommentsService {
       throw new NotFoundException('Arbeitsauftrag nicht gefunden');
     }
     return row;
+  }
+
+  /** Validate that parent comment exists, belongs to same work order, and is top-level */
+  private async validateParent(
+    workOrderId: number,
+    parentId: number,
+  ): Promise<void> {
+    const parent = await this.db.queryOne<{
+      id: number;
+      parent_id: number | null;
+    }>(
+      `SELECT id, parent_id FROM work_order_comments
+       WHERE id = $1 AND work_order_id = $2 AND is_active = 1`,
+      [parentId, workOrderId],
+    );
+
+    if (parent === null) {
+      throw new NotFoundException('Elternkommentar nicht gefunden');
+    }
+
+    if (parent.parent_id !== null) {
+      throw new BadRequestException(
+        'Antworten auf Antworten sind nicht erlaubt (nur eine Ebene)',
+      );
+    }
   }
 }

@@ -187,6 +187,12 @@ export const MESSAGES = {
   COMMENTS_SUCCESS: 'Kommentar hinzugefügt',
   COMMENTS_ERROR: 'Fehler beim Senden des Kommentars',
   COMMENTS_STATUS_CHANGE: 'Statusänderung',
+  COMMENTS_REPLY: 'Antworten',
+  COMMENTS_REPLY_PH: 'Antwort schreiben...',
+  COMMENTS_REPLY_SUCCESS: 'Antwort hinzugefügt',
+  COMMENTS_REPLY_ERROR: 'Fehler beim Hinzufügen der Antwort',
+  COMMENTS_REPLY_CANCEL: 'Abbrechen',
+  COMMENTS_LOADING_MORE: 'Weitere Kommentare laden...',
 
   // Photos
   PHOTOS_HEADING: 'Fotos',

@@ -113,6 +113,7 @@ export interface WorkOrderCommentRow {
   is_status_change: boolean;
   old_status: WorkOrderStatus | null;
   new_status: WorkOrderStatus | null;
+  parent_id: number | null;
   is_active: number;
   created_at: string;
   updated_at: string;
@@ -144,13 +145,18 @@ export interface WorkOrderAssignee {
 }
 
 export interface WorkOrderComment {
+  id: number;
   uuid: string;
   userId: number;
-  userName: string;
+  firstName: string;
+  lastName: string;
+  profilePicture: string | null;
   content: string;
   isStatusChange: boolean;
   oldStatus: WorkOrderStatus | null;
   newStatus: WorkOrderStatus | null;
+  parentId: number | null;
+  replyCount: number;
   createdAt: string;
 }
 
@@ -249,4 +255,6 @@ export interface WorkOrderAssigneeWithNameRow extends WorkOrderAssigneeRow {
 export interface WorkOrderCommentWithNameRow extends WorkOrderCommentRow {
   first_name: string;
   last_name: string;
+  profile_picture: string | null;
+  reply_count: string;
 }

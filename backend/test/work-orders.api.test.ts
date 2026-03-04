@@ -213,8 +213,11 @@ describe('Work Orders: Status Transition', () => {
 // seq: 6 -- Comments
 // ============================================================================
 
+/** Comment ID for reply testing — set after creating top-level comment */
+let topLevelCommentId: number;
+
 describe('Work Orders: Comments', () => {
-  it('should add a comment (201)', async () => {
+  it('should add a comment (201) with threading fields', async () => {
     const res = await fetch(
       `${BASE_URL}/work-orders/${workOrderUuid}/comments`,
       {
@@ -228,9 +231,35 @@ describe('Work Orders: Comments', () => {
     expect(res.status).toBe(201);
     expect(body.data.content).toBe('Test-Kommentar vom API-Test');
     expect(body.data.isStatusChange).toBe(false);
+    expect(body.data.id).toBeDefined();
+    expect(typeof body.data.firstName).toBe('string');
+    expect(typeof body.data.lastName).toBe('string');
+    expect(body.data.parentId).toBeNull();
+    expect(body.data.replyCount).toBe(0);
+
+    topLevelCommentId = body.data.id;
   });
 
-  it('should list comments with pagination', async () => {
+  it('should add a reply to a comment (201)', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${workOrderUuid}/comments`,
+      {
+        method: 'POST',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({
+          content: 'Antwort auf Kommentar',
+          parentId: topLevelCommentId,
+        }),
+      },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(201);
+    expect(body.data.content).toBe('Antwort auf Kommentar');
+    expect(body.data.parentId).toBe(topLevelCommentId);
+  });
+
+  it('should list top-level comments with pagination', async () => {
     const res = await fetch(
       `${BASE_URL}/work-orders/${workOrderUuid}/comments?page=1&limit=20`,
       { headers: authOnly(auth.authToken) },
@@ -239,8 +268,27 @@ describe('Work Orders: Comments', () => {
 
     expect(res.status).toBe(200);
     expect(body.data.items).toBeDefined();
-    // Should have status-change comments + our manual comment
     expect(body.data.total).toBeGreaterThanOrEqual(1);
+
+    // Top-level comments should not include replies
+    for (const item of body.data.items) {
+      expect(item.parentId).toBeNull();
+      expect(typeof item.replyCount).toBe('number');
+    }
+  });
+
+  it('should list replies for a comment', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${workOrderUuid}/comments/${topLevelCommentId}/replies`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.length).toBeGreaterThanOrEqual(1);
+    expect(body.data[0].parentId).toBe(topLevelCommentId);
+    expect(body.data[0].content).toBe('Antwort auf Kommentar');
   });
 });
 

@@ -95,13 +95,18 @@ export function mapCommentRowToApi(
   row: WorkOrderCommentWithNameRow,
 ): WorkOrderComment {
   return {
+    id: row.id,
     uuid: row.uuid.trim(),
     userId: row.user_id,
-    userName: `${row.first_name} ${row.last_name}`.trim(),
+    firstName: row.first_name,
+    lastName: row.last_name,
+    profilePicture: row.profile_picture ?? null,
     content: row.content,
     isStatusChange: row.is_status_change,
     oldStatus: row.old_status,
     newStatus: row.new_status,
+    parentId: row.parent_id,
+    replyCount: Number(row.reply_count),
     createdAt: toIsoString(row.created_at),
   };
 }

@@ -827,7 +827,7 @@
   }
 
   .history-defect-link:hover {
-    opacity: 0.75;
+    opacity: 75%;
     text-decoration: underline;
   }
 </style>

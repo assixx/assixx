@@ -129,26 +129,33 @@ export class WorkOrderNotificationService {
     if (userIds.length === 0) return;
 
     try {
-      const values = userIds.map(
-        (_uid: number, i: number): string =>
-          `($${i * 7 + 1}, $${i * 7 + 2}, $${i * 7 + 3}, $${i * 7 + 4}, $${i * 7 + 5}, $${i * 7 + 6}, $${i * 7 + 7})`,
-      );
+      await this.db.transaction(
+        async (client: import('pg').PoolClient) => {
+          const values = userIds.map(
+            (_uid: number, i: number): string =>
+              `($${i * 7 + 1}, $${i * 7 + 2}, $${i * 7 + 3}, $${i * 7 + 4}, $${i * 7 + 5}, $${i * 7 + 6}, $${i * 7 + 7})`,
+          );
 
-      const params = userIds.flatMap((uid: number): unknown[] => [
-        tenantId,
-        type,
-        title,
-        message,
-        'user',
-        uid,
-        createdBy,
-      ]);
+          const params = userIds.flatMap((uid: number): unknown[] => [
+            tenantId,
+            type,
+            title,
+            message,
+            'user',
+            uid,
+            createdBy,
+          ]);
 
-      await this.db.query(
-        `INSERT INTO notifications
-           (tenant_id, type, title, message, recipient_type, recipient_id, created_by, uuid, uuid_created_at)
-         VALUES ${values.map((v: string, i: number): string => v.replace(/\)$/, `, $${userIds.length * 7 + i * 2 + 1}, NOW())`)).join(', ')}`,
-        [...params, ...userIds.map((): string => uuidv7())],
+          const sql = `INSERT INTO notifications
+             (tenant_id, type, title, message, recipient_type, recipient_id, created_by, uuid, uuid_created_at)
+           VALUES ${values.map((v: string, i: number): string => v.replace(/\)$/, `, $${userIds.length * 7 + i * 2 + 1}, NOW())`)).join(', ')}`;
+
+          await client.query(sql, [
+            ...params,
+            ...userIds.map((): string => uuidv7()),
+          ]);
+        },
+        { tenantId },
       );
     } catch (error: unknown) {
       this.logger.error(

@@ -11,6 +11,7 @@ import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
+  PaginatedComments,
   PaginatedResponse,
   WorkOrder,
   WorkOrderComment,
@@ -62,10 +63,6 @@ async function apiFetch<T>(
   }
 }
 
-function emptyComments(): PaginatedResponse<WorkOrderComment> {
-  return { items: [], total: 0, page: 1, pageSize: 20 };
-}
-
 export const load: PageServerLoad = async ({
   cookies,
   fetch,
@@ -98,9 +95,21 @@ export const load: PageServerLoad = async ({
 
   const user = parentData.user;
 
+  const rawComments = commentsData ?? {
+    items: [] as WorkOrderComment[],
+    total: 0,
+    page: 1,
+    pageSize: 20,
+  };
+  const comments: PaginatedComments = {
+    comments: rawComments.items,
+    total: rawComments.total,
+    hasMore: rawComments.items.length < rawComments.total,
+  };
+
   return {
     workOrder,
-    comments: commentsData ?? emptyComments(),
+    comments,
     photos: Array.isArray(photosData) ? photosData : [],
     userRole: user?.role ?? 'employee',
     userId: user?.id ?? 0,

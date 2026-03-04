@@ -106,8 +106,9 @@
       <div class="card">
         <div class="card__body">
           <CommentSection
-            comments={comments.items}
+            comments={comments.comments}
             total={comments.total}
+            hasMore={comments.hasMore}
             uuid={workOrder.uuid}
           />
         </div>

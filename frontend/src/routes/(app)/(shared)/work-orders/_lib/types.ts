@@ -29,14 +29,26 @@ export interface WorkOrderAssignee {
 
 /** Comment on a work order (manual or auto-generated on status change) */
 export interface WorkOrderComment {
+  id: number;
   uuid: string;
   userId: number;
-  userName: string;
+  firstName: string;
+  lastName: string;
+  profilePicture: string | null;
   content: string;
   isStatusChange: boolean;
   oldStatus: WorkOrderStatus | null;
   newStatus: WorkOrderStatus | null;
+  parentId: number | null;
+  replyCount: number;
   createdAt: string;
+}
+
+/** Paginated comments with hasMore flag for lazy loading */
+export interface PaginatedComments {
+  comments: WorkOrderComment[];
+  total: number;
+  hasMore: boolean;
 }
 
 /** Photo attached to a work order */
@@ -137,11 +149,6 @@ export interface UpdateWorkOrderPayload {
 /** Payload for PATCH /work-orders/:uuid/status */
 export interface UpdateStatusPayload {
   status: WorkOrderStatus;
-}
-
-/** Payload for POST /work-orders/:uuid/comments */
-export interface CreateCommentPayload {
-  content: string;
 }
 
 /** Payload for POST /work-orders/:uuid/assignees */

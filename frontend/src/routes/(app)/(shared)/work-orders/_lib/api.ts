@@ -7,7 +7,6 @@ import { createLogger } from '$lib/utils/logger';
 
 import type {
   AssignUsersPayload,
-  CreateCommentPayload,
   CreateWorkOrderPayload,
   EligibleUser,
   PaginatedResponse,
@@ -199,27 +198,51 @@ export async function fetchEligibleUsers(
 // COMMENTS
 // =============================================================================
 
-/** Add a comment to a work order */
+/** Add a comment (or reply) to a work order */
 export async function addComment(
   uuid: string,
-  payload: CreateCommentPayload,
-): Promise<WorkOrderComment> {
-  return await apiClient.post<WorkOrderComment>(
-    `/work-orders/${uuid}/comments`,
-    payload,
-  );
+  content: string,
+  parentId?: number,
+): Promise<boolean> {
+  try {
+    await apiClient.post<WorkOrderComment>(
+      `/work-orders/${uuid}/comments`,
+      parentId !== undefined ? { content, parentId } : { content },
+    );
+    return true;
+  } catch (err: unknown) {
+    logApiError('addComment', err);
+    return false;
+  }
 }
 
-/** Fetch paginated comments for a work order */
+/** Fetch paginated top-level comments (offset-based for lazy loading) */
 export async function fetchComments(
   uuid: string,
-  page = 1,
   limit = 20,
-): Promise<PaginatedResponse<WorkOrderComment>> {
+  offset = 0,
+): Promise<{ comments: WorkOrderComment[]; total: number; hasMore: boolean }> {
+  const page = Math.floor(offset / limit) + 1;
   const result: unknown = await apiClient.get(
     `/work-orders/${uuid}/comments?page=${page}&limit=${limit}`,
   );
-  return extractPaginated<WorkOrderComment>(result);
+  const paginated = extractPaginated<WorkOrderComment>(result);
+  return {
+    comments: paginated.items,
+    total: paginated.total,
+    hasMore: offset + paginated.items.length < paginated.total,
+  };
+}
+
+/** Fetch all replies for a specific comment */
+export async function fetchReplies(
+  uuid: string,
+  commentId: number,
+): Promise<WorkOrderComment[]> {
+  const result: unknown = await apiClient.get(
+    `/work-orders/${uuid}/comments/${commentId}/replies`,
+  );
+  return extractArray<WorkOrderComment>(result);
 }
 
 // =============================================================================

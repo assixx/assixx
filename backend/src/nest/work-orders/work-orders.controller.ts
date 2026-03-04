@@ -126,7 +126,27 @@ export class WorkOrdersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<WorkOrder> {
-    return await this.service.createWorkOrder(tenantId, user.id, dto);
+    const result = await this.service.createWorkOrder(tenantId, user.id, dto);
+
+    // Fire-and-forget: SSE + persistent notification for assignees
+    const assigneeUserIds = result.assignees.map(
+      (a: WorkOrder['assignees'][number]): number => a.userId,
+    );
+    if (assigneeUserIds.length > 0) {
+      void this.notifications.notifyAssigned(
+        tenantId,
+        result.uuid,
+        assigneeUserIds,
+      );
+      void this.notifications.persistAssignedNotification(
+        tenantId,
+        result.uuid,
+        assigneeUserIds,
+        user.id,
+      );
+    }
+
+    return result;
   }
 
   @Get(':uuid')
@@ -278,6 +298,21 @@ export class WorkOrdersController {
       user.id,
       uuid,
       dto.content,
+      dto.parentId,
+    );
+  }
+
+  @Get(':uuid/comments/:commentId/replies')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async listReplies(
+    @Param('uuid') uuid: string,
+    @Param('commentId') commentId: string,
+    @TenantId() tenantId: number,
+  ): Promise<WorkOrderComment[]> {
+    return await this.commentsService.listReplies(
+      tenantId,
+      uuid,
+      Number(commentId),
     );
   }
 
