@@ -21,7 +21,7 @@
   import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   import { addComment, fetchComments, fetchReplies } from '../../_lib/api';
-  import { MESSAGES, STATUS_LABELS } from '../../_lib/constants';
+  import { MESSAGES } from '../../_lib/constants';
 
   import type { WorkOrderComment } from '../../_lib/types';
 
@@ -190,14 +190,6 @@
       minute: '2-digit',
     });
   }
-
-  function statusChangeText(comment: WorkOrderComment): string {
-    const oldLabel =
-      comment.oldStatus !== null ? STATUS_LABELS[comment.oldStatus] : '?';
-    const newLabel =
-      comment.newStatus !== null ? STATUS_LABELS[comment.newStatus] : '?';
-    return `${oldLabel} → ${newLabel}`;
-  }
 </script>
 
 <div class="comments-section">
@@ -244,176 +236,157 @@
       <p class="text-muted">{MESSAGES.COMMENTS_EMPTY}</p>
     {:else}
       {#each allComments as comment (comment.id)}
-        {#if comment.isStatusChange}
-          <!-- Status change entry -->
-          <div class="comment-item--status-change">
-            <div class="comment-item__status">
-              <i class="fas fa-exchange-alt"></i>
-              <span class="comment-item__status-text">
-                <strong>{comment.firstName} {comment.lastName}</strong>
-                — {MESSAGES.COMMENTS_STATUS_CHANGE}: {statusChangeText(comment)}
-              </span>
-              <span class="thread-item__date">
-                {formatDateTime(comment.createdAt)}
-              </span>
+        <!-- Top-Level Comment -->
+        <div class="thread-item">
+          <div class="thread-item__main">
+            <div
+              class="avatar avatar--sm {avatarColorClass(
+                comment.profilePicture,
+                comment.userId,
+              )}"
+            >
+              {#if hasProfilePic(comment.profilePicture)}
+                <img
+                  src={getProfilePictureUrl(comment.profilePicture)}
+                  alt="{comment.firstName} {comment.lastName}"
+                  class="avatar__image"
+                />
+              {:else}
+                <span class="avatar__initials"
+                  >{getInitials(comment.firstName, comment.lastName)}</span
+                >
+              {/if}
             </div>
-          </div>
-        {:else}
-          <!-- Top-Level Comment -->
-          <div class="thread-item">
-            <div class="thread-item__main">
-              <div
-                class="avatar avatar--sm {avatarColorClass(
-                  comment.profilePicture,
-                  comment.userId,
-                )}"
-              >
-                {#if hasProfilePic(comment.profilePicture)}
-                  <img
-                    src={getProfilePictureUrl(comment.profilePicture)}
-                    alt="{comment.firstName} {comment.lastName}"
-                    class="avatar__image"
-                  />
-                {:else}
-                  <span class="avatar__initials"
-                    >{getInitials(comment.firstName, comment.lastName)}</span
-                  >
-                {/if}
+            <div class="thread-item__content">
+              <div class="thread-item__meta">
+                <span class="thread-item__author">
+                  {comment.firstName}
+                  {comment.lastName}
+                </span>
+                <span class="thread-item__date"
+                  >{formatDateTime(comment.createdAt)}</span
+                >
               </div>
-              <div class="thread-item__content">
-                <div class="thread-item__meta">
-                  <span class="thread-item__author">
-                    {comment.firstName}
-                    {comment.lastName}
-                  </span>
-                  <span class="thread-item__date"
-                    >{formatDateTime(comment.createdAt)}</span
-                  >
-                </div>
-                <p class="thread-item__text">{comment.content}</p>
-                <div class="thread-item__actions">
+              <p class="thread-item__text">{comment.content}</p>
+              <div class="thread-item__actions">
+                <button
+                  type="button"
+                  class="thread-action-btn"
+                  onclick={() => {
+                    startReply(comment.id);
+                  }}
+                >
+                  <i class="fas fa-reply"></i>
+                  {MESSAGES.COMMENTS_REPLY}
+                </button>
+                {#if comment.replyCount > 0}
                   <button
                     type="button"
-                    class="thread-action-btn"
+                    class="thread-action-btn thread-action-btn--replies"
                     onclick={() => {
-                      startReply(comment.id);
+                      void toggleReplies(comment.id);
                     }}
                   >
-                    <i class="fas fa-reply"></i>
+                    {#if expandedReplies.has(comment.id)}
+                      <i class="fas fa-chevron-up"></i>
+                    {:else}
+                      <i class="fas fa-chevron-down"></i>
+                    {/if}
+                    {comment.replyCount}
+                    {comment.replyCount === 1 ? 'Antwort' : 'Antworten'}
+                  </button>
+                {/if}
+              </div>
+            </div>
+          </div>
+
+          <!-- Inline Reply Form -->
+          {#if replyingTo === comment.id}
+            <div class="reply-form-wrapper">
+              <div class="thread-line"></div>
+              <div class="reply-form">
+                <textarea
+                  class="form-field__control form-field__control--sm"
+                  placeholder={MESSAGES.COMMENTS_REPLY_PH}
+                  rows="2"
+                  bind:value={replyText}
+                ></textarea>
+                <div class="reply-form__actions">
+                  <button
+                    class="btn btn--sm btn-ghost"
+                    type="button"
+                    onclick={cancelReply}
+                    >{MESSAGES.COMMENTS_REPLY_CANCEL}</button
+                  >
+                  <button
+                    class="btn btn--sm btn-primary"
+                    type="button"
+                    disabled={submittingReply || replyText.trim() === ''}
+                    onclick={() => {
+                      void handleSubmitReply(comment.id);
+                    }}
+                  >
+                    {#if submittingReply}
+                      <span class="spinner-ring spinner-ring--xs mr-1"></span>
+                    {/if}
                     {MESSAGES.COMMENTS_REPLY}
                   </button>
-                  {#if comment.replyCount > 0}
-                    <button
-                      type="button"
-                      class="thread-action-btn thread-action-btn--replies"
-                      onclick={() => {
-                        void toggleReplies(comment.id);
-                      }}
-                    >
-                      {#if expandedReplies.has(comment.id)}
-                        <i class="fas fa-chevron-up"></i>
-                      {:else}
-                        <i class="fas fa-chevron-down"></i>
-                      {/if}
-                      {comment.replyCount}
-                      {comment.replyCount === 1 ? 'Antwort' : 'Antworten'}
-                    </button>
-                  {/if}
                 </div>
               </div>
             </div>
+          {/if}
 
-            <!-- Inline Reply Form -->
-            {#if replyingTo === comment.id}
-              <div class="reply-form-wrapper">
-                <div class="thread-line"></div>
-                <div class="reply-form">
-                  <textarea
-                    class="form-field__control form-field__control--sm"
-                    placeholder={MESSAGES.COMMENTS_REPLY_PH}
-                    rows="2"
-                    bind:value={replyText}
-                  ></textarea>
-                  <div class="reply-form__actions">
-                    <button
-                      class="btn btn--sm btn-ghost"
-                      type="button"
-                      onclick={cancelReply}
-                      >{MESSAGES.COMMENTS_REPLY_CANCEL}</button
+          <!-- Replies Thread -->
+          {#if loadingReplies.has(comment.id)}
+            <div class="replies-thread">
+              <div class="load-more-spinner">
+                <span class="spinner-ring spinner-ring--sm"></span>
+              </div>
+            </div>
+          {/if}
+          {#if expandedReplies.has(comment.id)}
+            {@const replies = expandedReplies.get(comment.id) ?? []}
+            <div class="replies-thread">
+              {#each replies as reply (reply.id)}
+                <div class="reply-item">
+                  <div class="thread-line"></div>
+                  <div class="reply-item__main">
+                    <div
+                      class="avatar avatar--xs {avatarColorClass(
+                        reply.profilePicture,
+                        reply.userId,
+                      )}"
                     >
-                    <button
-                      class="btn btn--sm btn-primary"
-                      type="button"
-                      disabled={submittingReply || replyText.trim() === ''}
-                      onclick={() => {
-                        void handleSubmitReply(comment.id);
-                      }}
-                    >
-                      {#if submittingReply}
-                        <span class="spinner-ring spinner-ring--xs mr-1"></span>
+                      {#if hasProfilePic(reply.profilePicture)}
+                        <img
+                          src={getProfilePictureUrl(reply.profilePicture)}
+                          alt="{reply.firstName} {reply.lastName}"
+                          class="avatar__image"
+                        />
+                      {:else}
+                        <span class="avatar__initials"
+                          >{getInitials(reply.firstName, reply.lastName)}</span
+                        >
                       {/if}
-                      {MESSAGES.COMMENTS_REPLY}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            {/if}
-
-            <!-- Replies Thread -->
-            {#if loadingReplies.has(comment.id)}
-              <div class="replies-thread">
-                <div class="load-more-spinner">
-                  <span class="spinner-ring spinner-ring--sm"></span>
-                </div>
-              </div>
-            {/if}
-            {#if expandedReplies.has(comment.id)}
-              {@const replies = expandedReplies.get(comment.id) ?? []}
-              <div class="replies-thread">
-                {#each replies as reply (reply.id)}
-                  <div class="reply-item">
-                    <div class="thread-line"></div>
-                    <div class="reply-item__main">
-                      <div
-                        class="avatar avatar--xs {avatarColorClass(
-                          reply.profilePicture,
-                          reply.userId,
-                        )}"
-                      >
-                        {#if hasProfilePic(reply.profilePicture)}
-                          <img
-                            src={getProfilePictureUrl(reply.profilePicture)}
-                            alt="{reply.firstName} {reply.lastName}"
-                            class="avatar__image"
-                          />
-                        {:else}
-                          <span class="avatar__initials"
-                            >{getInitials(
-                              reply.firstName,
-                              reply.lastName,
-                            )}</span
-                          >
-                        {/if}
+                    </div>
+                    <div class="thread-item__content">
+                      <div class="thread-item__meta">
+                        <span class="thread-item__author">
+                          {reply.firstName}
+                          {reply.lastName}
+                        </span>
+                        <span class="thread-item__date"
+                          >{formatDateTime(reply.createdAt)}</span
+                        >
                       </div>
-                      <div class="thread-item__content">
-                        <div class="thread-item__meta">
-                          <span class="thread-item__author">
-                            {reply.firstName}
-                            {reply.lastName}
-                          </span>
-                          <span class="thread-item__date"
-                            >{formatDateTime(reply.createdAt)}</span
-                          >
-                        </div>
-                        <p class="thread-item__text">{reply.content}</p>
-                      </div>
+                      <p class="thread-item__text">{reply.content}</p>
                     </div>
                   </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/each}
 
       <!-- Lazy Load Sentinel -->
@@ -500,27 +473,6 @@
     display: flex;
     gap: var(--spacing-3);
     margin-top: var(--spacing-1);
-  }
-
-  /* ─── Status Change Entry ──────── */
-
-  .comment-item--status-change {
-    background: var(--color-bg-secondary, #f8f9fa);
-    border-radius: var(--radius-sm, 0.25rem);
-    padding: 0.5rem 0.75rem;
-    margin: 0.25rem 0;
-  }
-
-  .comment-item__status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.813rem;
-    color: var(--color-text-secondary);
-  }
-
-  .comment-item__status-text {
-    flex: 1;
   }
 
   /* ─── Action Buttons (Reply, Expand) ──────── */

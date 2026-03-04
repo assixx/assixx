@@ -9,7 +9,7 @@
    */
   import { resolve } from '$app/paths';
 
-  import { MESSAGES } from '../_lib/constants';
+  import { MESSAGES, STATUS_LABELS } from '../_lib/constants';
 
   import AssigneeList from './_lib/AssigneeList.svelte';
   import CommentSection from './_lib/CommentSection.svelte';
@@ -19,6 +19,7 @@
   import WorkOrderInfo from './_lib/WorkOrderInfo.svelte';
 
   import type { PageData } from './$types';
+  import type { WorkOrderComment } from '../_lib/types';
 
   // =============================================================================
   // HELPERS
@@ -26,6 +27,22 @@
 
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
+  }
+
+  function formatDateTime(iso: string): string {
+    return new Date(iso).toLocaleString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  function statusChangeText(c: WorkOrderComment): string {
+    const from = c.oldStatus !== null ? STATUS_LABELS[c.oldStatus] : '?';
+    const to = c.newStatus !== null ? STATUS_LABELS[c.newStatus] : '?';
+    return `${from} → ${to}`;
   }
 
   // =============================================================================
@@ -39,6 +56,13 @@
   const photos = $derived(data.photos);
   const userRole = $derived(data.userRole);
   const userId = $derived(data.userId);
+
+  const statusLogs = $derived(
+    comments.comments.filter((c: WorkOrderComment) => c.isStatusChange),
+  );
+  const regularComments = $derived(
+    comments.comments.filter((c: WorkOrderComment) => !c.isStatusChange),
+  );
 </script>
 
 <svelte:head>
@@ -67,6 +91,22 @@
         </div>
       </div>
     </div>
+    {#if statusLogs.length > 0}
+      <div class="card__body status-log-list">
+        {#each statusLogs as log (log.id)}
+          <div class="alert alert--info status-log-entry">
+            <i class="alert__icon fas fa-exchange-alt"></i>
+            <span class="status-log-entry__text">
+              <strong>{log.firstName} {log.lastName}</strong>
+              — {MESSAGES.COMMENTS_STATUS_CHANGE}: {statusChangeText(log)}
+            </span>
+            <span class="status-log-entry__date">
+              {formatDateTime(log.createdAt)}
+            </span>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </div>
 
   <!-- Two-column layout -->
@@ -107,8 +147,8 @@
       <div class="card">
         <div class="card__body">
           <CommentSection
-            comments={comments.comments}
-            total={comments.total}
+            comments={regularComments}
+            total={comments.total - statusLogs.length}
             hasMore={comments.hasMore}
             uuid={workOrder.uuid}
           />
@@ -194,6 +234,30 @@
     margin: 0;
     color: var(--color-text-muted);
     font-style: italic;
+  }
+
+  /* ─── Status Log in Header Card ──────── */
+
+  .status-log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .status-log-entry {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.813rem;
+  }
+
+  .status-log-entry__text {
+    flex: 1;
+  }
+
+  .status-log-entry__date {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    margin-left: auto;
   }
 
   @media (width <= 900px) {
