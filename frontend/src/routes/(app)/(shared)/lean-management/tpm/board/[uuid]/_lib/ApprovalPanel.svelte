@@ -4,6 +4,8 @@
    * Shown when card status is 'yellow' (pending approval).
    * Rejection requires a note (Zod validation on backend).
    */
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+
   import {
     respondToExecution,
     fetchPendingApprovals,
@@ -56,11 +58,13 @@
       });
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
       submitting = false;
+      showSuccessAlert(MESSAGES.APPROVAL_SUCCESS_APPROVED);
       onApprovalDone(result);
     } catch (err: unknown) {
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
       submitting = false;
       logApiError('approveExecution', err);
+      showErrorAlert(MESSAGES.APPROVAL_ERROR);
       error = MESSAGES.APPROVAL_ERROR;
     }
   }
@@ -77,11 +81,13 @@
       });
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
       submitting = false;
+      showSuccessAlert(MESSAGES.APPROVAL_SUCCESS_REJECTED);
       onApprovalDone(result);
     } catch (err: unknown) {
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
       submitting = false;
       logApiError('rejectExecution', err);
+      showErrorAlert(MESSAGES.APPROVAL_ERROR);
       error = MESSAGES.APPROVAL_ERROR;
     }
   }

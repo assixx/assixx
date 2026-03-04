@@ -7,6 +7,8 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+
   import { updateStatus, logApiError } from '../../_lib/api';
   import { STATUS_TRANSITION_LABELS, MESSAGES } from '../../_lib/constants';
 
@@ -90,9 +92,11 @@
     transitioning = true;
     try {
       await updateStatus(uuid, { status: target });
+      showSuccessAlert(MESSAGES.SUCCESS_STATUS);
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('statusTransition', err);
+      showErrorAlert(MESSAGES.ERROR_STATUS);
     } finally {
       transitioning = false;
     }

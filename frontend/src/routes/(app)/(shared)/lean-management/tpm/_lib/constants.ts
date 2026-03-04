@@ -284,6 +284,9 @@ export const MESSAGES = {
   DEFECTS_NO_DESC: 'Keine weiteren Informationen',
   DEFECTS_PHOTOS_LOADING: 'Fotos werden geladen...',
   DEFECTS_PHOTOS_ERROR: 'Fehler beim Laden der Fotos',
+  DEFECTS_EDIT_SUCCESS: 'Mangel erfolgreich aktualisiert',
+  DEFECTS_EDIT_ERROR: 'Fehler beim Speichern des Mangels',
+  DEFECTS_WO_CREATED: 'Arbeitsauftrag erfolgreich erstellt',
   BTN_DEFECTS: 'Mängelliste',
 
   // Board view toggle

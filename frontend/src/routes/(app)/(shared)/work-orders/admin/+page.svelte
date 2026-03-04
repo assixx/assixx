@@ -6,6 +6,8 @@
    * Level 3 SSR: Stats cards, filter bar, data table, FAB, modals.
    * Role guard in +page.server.ts (admin/root only).
    */
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+
   import {
     fetchWorkOrders,
     createWorkOrder,
@@ -164,13 +166,18 @@
           editingItem.uuid,
           payload as UpdateWorkOrderPayload,
         );
+        showSuccessAlert(MESSAGES.SUCCESS_UPDATED);
       } else {
         await createWorkOrder(payload as CreateWorkOrderPayload);
+        showSuccessAlert(MESSAGES.SUCCESS_CREATED);
       }
       closeAllModals();
       await refreshAll();
     } catch (err: unknown) {
       logApiError('saveWorkOrder', err);
+      showErrorAlert(
+        editingItem !== null ? MESSAGES.ERROR_UPDATE : MESSAGES.ERROR_CREATE,
+      );
     } finally {
       submitting = false;
     }
@@ -181,10 +188,12 @@
     submitting = true;
     try {
       await assignUsers(assigningItem.uuid, { userUuids });
+      showSuccessAlert(MESSAGES.ASSIGNEES_SUCCESS_ADD);
       closeAllModals();
       await refreshAll();
     } catch (err: unknown) {
       logApiError('assignUsers', err);
+      showErrorAlert(MESSAGES.ASSIGNEES_ERROR_ADD);
     } finally {
       submitting = false;
     }
@@ -195,10 +204,12 @@
     submitting = true;
     try {
       await deleteWorkOrder(deletingItem.uuid);
+      showSuccessAlert(MESSAGES.DELETE_SUCCESS);
       closeAllModals();
       await refreshAll();
     } catch (err: unknown) {
       logApiError('deleteWorkOrder', err);
+      showErrorAlert(MESSAGES.DELETE_ERROR);
     } finally {
       submitting = false;
     }

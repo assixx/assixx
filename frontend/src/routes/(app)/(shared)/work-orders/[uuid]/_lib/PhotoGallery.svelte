@@ -5,6 +5,8 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+
   import { uploadPhoto, logApiError } from '../../_lib/api';
   import { MESSAGES } from '../../_lib/constants';
 
@@ -72,20 +74,22 @@
     if (file === undefined) return;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      logApiError('uploadPhoto', new Error(MESSAGES.PHOTOS_INVALID_TYPE));
+      showErrorAlert(MESSAGES.PHOTOS_INVALID_TYPE);
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      logApiError('uploadPhoto', new Error(MESSAGES.PHOTOS_TOO_LARGE));
+      showErrorAlert(MESSAGES.PHOTOS_TOO_LARGE);
       return;
     }
 
     uploading = true;
     try {
       await uploadPhoto(uuid, file);
+      showSuccessAlert(MESSAGES.PHOTOS_SUCCESS);
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('uploadPhoto', err);
+      showErrorAlert(MESSAGES.PHOTOS_ERROR);
     } finally {
       uploading = false;
       target.value = '';

@@ -6,6 +6,8 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import { showErrorAlert } from '$lib/stores/toast';
+
   import { addComment, logApiError } from '../../_lib/api';
   import { MESSAGES, STATUS_LABELS } from '../../_lib/constants';
 
@@ -55,13 +57,15 @@
     const trimmed = newComment.trim();
     if (trimmed === '') return;
 
-    newComment = '';
     submitting = true;
     try {
       await addComment(uuid, { content: trimmed });
+      // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; submit button disabled prevents concurrent calls
+      newComment = '';
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('addComment', err);
+      showErrorAlert(MESSAGES.COMMENTS_ERROR);
     } finally {
       submitting = false;
     }

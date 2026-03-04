@@ -7,13 +7,17 @@
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   import {
     createWorkOrder,
     fetchEligibleUsers,
     logApiError,
   } from '../../../../../../work-orders/_lib/api';
-  import { PRIORITY_LABELS } from '../../../../../../work-orders/_lib/constants';
+  import {
+    PRIORITY_LABELS,
+    MESSAGES as WO_MESSAGES,
+  } from '../../../../../../work-orders/_lib/constants';
 
   import type {
     CreateWorkOrderPayload,
@@ -135,10 +139,12 @@
         assigneeUuids: selectedUserUuids,
       };
       await createWorkOrder(payload);
+      showSuccessAlert(WO_MESSAGES.SUCCESS_CREATED);
       onsaved();
     } catch (err: unknown) {
       logApiError('createWorkOrder', err);
-      errorMessage = 'Fehler beim Erstellen des Arbeitsauftrags.';
+      showErrorAlert(WO_MESSAGES.ERROR_CREATE);
+      errorMessage = WO_MESSAGES.ERROR_CREATE;
     } finally {
       submitting = false;
     }

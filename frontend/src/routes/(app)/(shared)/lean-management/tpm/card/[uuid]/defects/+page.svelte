@@ -10,6 +10,8 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+
   import {
     STATUS_LABELS as WO_STATUS_LABELS,
     STATUS_BADGE_CLASSES as WO_STATUS_BADGE_CLASSES,
@@ -235,11 +237,13 @@
         title: trimmedTitle,
         description: editDescription.trim() || null,
       });
+      showSuccessAlert(MESSAGES.DEFECTS_EDIT_SUCCESS);
       closeEditModal();
       void invalidateAll();
     } catch (err: unknown) {
       logApiError('updateDefect', err);
-      editError = 'Fehler beim Speichern des Mangels.';
+      showErrorAlert(MESSAGES.DEFECTS_EDIT_ERROR);
+      editError = MESSAGES.DEFECTS_EDIT_ERROR;
     } finally {
       editSubmitting = false;
     }
