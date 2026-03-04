@@ -45,6 +45,13 @@ export class WorkOrderPhotosService {
     },
   ): Promise<WorkOrderPhoto> {
     const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
+
+    if (wo.status === 'completed' || wo.status === 'verified') {
+      throw new BadRequestException(
+        'Fotos können bei abgeschlossenen Aufträgen nicht hochgeladen werden',
+      );
+    }
+
     await this.enforcePhotoLimit(wo.id);
 
     const filePath = await this.writeToDisk(tenantId, workOrderUuid, file);
@@ -110,8 +117,9 @@ export class WorkOrderPhotosService {
       file_path: string;
       work_order_id: number;
       uploaded_by: number;
+      wo_status: string;
     }>(
-      `SELECT p.id, p.file_path, p.work_order_id, p.uploaded_by
+      `SELECT p.id, p.file_path, p.work_order_id, p.uploaded_by, wo.status AS wo_status
        FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
        WHERE p.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1`,
@@ -120,6 +128,12 @@ export class WorkOrderPhotosService {
 
     if (photo === null) {
       throw new NotFoundException('Foto nicht gefunden');
+    }
+
+    if (photo.wo_status === 'completed' || photo.wo_status === 'verified') {
+      throw new BadRequestException(
+        'Fotos können bei abgeschlossenen Aufträgen nicht gelöscht werden',
+      );
     }
 
     const isOwner = photo.uploaded_by === userId;
@@ -181,9 +195,13 @@ export class WorkOrderPhotosService {
   private async resolveWorkOrder(
     tenantId: number,
     uuid: string,
-  ): Promise<{ id: number; title: string }> {
-    const row = await this.db.queryOne<{ id: number; title: string }>(
-      `SELECT id, title FROM work_orders
+  ): Promise<{ id: number; title: string; status: string }> {
+    const row = await this.db.queryOne<{
+      id: number;
+      title: string;
+      status: string;
+    }>(
+      `SELECT id, title, status FROM work_orders
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
       [uuid, tenantId],
     );

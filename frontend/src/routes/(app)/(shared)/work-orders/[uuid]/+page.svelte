@@ -144,6 +144,7 @@
             uuid={workOrder.uuid}
             {userRole}
             {userId}
+            workOrderStatus={workOrder.status}
           />
         </div>
       </div>

@@ -90,7 +90,11 @@ describe('WorkOrderPhotosService', () => {
   describe('addPhoto', () => {
     it('should upload a photo and return mapped API response', async () => {
       // resolveWorkOrder
-      mockDb.queryOne.mockResolvedValueOnce({ id: 42, title: 'Pumpe prüfen' });
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
       // enforcePhotoLimit
       mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
       // INSERT RETURNING *
@@ -117,9 +121,37 @@ describe('WorkOrderPhotosService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('should throw BadRequestException when work order is completed', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'completed',
+      });
+
+      await expect(
+        service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when work order is verified', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'verified',
+      });
+
+      await expect(
+        service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw BadRequestException when photo limit is reached', async () => {
       // resolveWorkOrder
-      mockDb.queryOne.mockResolvedValueOnce({ id: 42, title: 'Pumpe prüfen' });
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
       // enforcePhotoLimit — count >= 10
       mockDb.queryOne.mockResolvedValueOnce({ count: '10' });
 
@@ -130,7 +162,11 @@ describe('WorkOrderPhotosService', () => {
 
     it('should throw BadRequestException when INSERT returns null', async () => {
       // resolveWorkOrder
-      mockDb.queryOne.mockResolvedValueOnce({ id: 42, title: 'Pumpe prüfen' });
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
       // enforcePhotoLimit
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       // INSERT returns null
@@ -188,6 +224,7 @@ describe('WorkOrderPhotosService', () => {
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
         uploaded_by: 5,
+        wo_status: 'open',
       });
       // DELETE query
       mockDb.query.mockResolvedValueOnce([]);
@@ -204,6 +241,7 @@ describe('WorkOrderPhotosService', () => {
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
         uploaded_by: 99,
+        wo_status: 'in_progress',
       });
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -218,6 +256,7 @@ describe('WorkOrderPhotosService', () => {
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
         uploaded_by: 5,
+        wo_status: 'open',
       });
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -226,12 +265,41 @@ describe('WorkOrderPhotosService', () => {
       expect(mockDb.query).toHaveBeenCalledTimes(1);
     });
 
+    it('should throw BadRequestException when work order is completed', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
+        work_order_id: 42,
+        uploaded_by: 5,
+        wo_status: 'completed',
+      });
+
+      await expect(
+        service.deletePhoto(10, 5, 'admin', 'photo-uuid'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when work order is verified', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
+        work_order_id: 42,
+        uploaded_by: 5,
+        wo_status: 'verified',
+      });
+
+      await expect(
+        service.deletePhoto(10, 5, 'admin', 'photo-uuid'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw ForbiddenException when employee deletes other photo', async () => {
       mockDb.queryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
         uploaded_by: 99,
+        wo_status: 'open',
       });
 
       await expect(

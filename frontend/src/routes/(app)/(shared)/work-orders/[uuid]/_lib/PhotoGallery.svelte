@@ -15,7 +15,7 @@
   import { deletePhoto, uploadPhoto, logApiError } from '../../_lib/api';
   import { MESSAGES } from '../../_lib/constants';
 
-  import type { WorkOrderPhoto } from '../../_lib/types';
+  import type { WorkOrderPhoto, WorkOrderStatus } from '../../_lib/types';
 
   const MAX_PHOTOS = 10;
   const MAX_FILE_SIZE = 5_242_880;
@@ -26,9 +26,10 @@
     uuid: string;
     userRole: string;
     userId: number;
+    workOrderStatus: WorkOrderStatus;
   }
 
-  const { photos, uuid, userRole, userId }: Props = $props();
+  const { photos, uuid, userRole, userId, workOrderStatus }: Props = $props();
 
   let uploading = $state(false);
   let deleting = $state(false);
@@ -36,14 +37,21 @@
   let previewIndex = $state(0);
   let fileInput: HTMLInputElement | undefined = $state();
 
-  const canUpload = $derived(photos.length < MAX_PHOTOS);
+  const canUpload = $derived(
+    photos.length < MAX_PHOTOS && !isClosedStatus,
+  );
   const currentPhoto = $derived(
     showPreview && photos.length > 0 ? photos[previewIndex] : null,
   );
   const hasNavigation = $derived(photos.length > 1);
   const isPrivileged = $derived(userRole === 'root' || userRole === 'admin');
 
+  const isClosedStatus = $derived(
+    workOrderStatus === 'completed' || workOrderStatus === 'verified',
+  );
+
   function canDeletePhoto(photo: WorkOrderPhoto): boolean {
+    if (isClosedStatus) return false;
     return isPrivileged || photo.uploadedBy === userId;
   }
 
@@ -403,14 +411,14 @@
     color: #fff;
     font-size: 0.7rem;
     cursor: pointer;
-    opacity: 0;
+    opacity: 0%;
     transition:
       opacity 0.15s ease,
       background 0.15s ease;
   }
 
   .photo-thumbnail-wrapper:hover .photo-delete-btn {
-    opacity: 1;
+    opacity: 100%;
   }
 
   .photo-delete-btn:hover {
@@ -419,7 +427,7 @@
 
   .photo-delete-btn:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 50%;
   }
 
   .photo-empty,
