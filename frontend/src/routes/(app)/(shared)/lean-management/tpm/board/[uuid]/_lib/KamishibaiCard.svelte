@@ -8,11 +8,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import {
-    CARD_STATUS_LABELS,
-    CATEGORY_LABELS,
-    DEFAULT_COLORS,
-  } from '../../../_lib/constants';
+  import { CATEGORY_LABELS, DEFAULT_COLORS } from '../../../_lib/constants';
 
   import CardFlip from './CardFlip.svelte';
 
@@ -166,6 +162,11 @@
             ></span>
           {/if}
           <span class="kamishibai-card__code">{card.cardCode}</span>
+          {#if categoryLabel !== null}
+            <span class="kamishibai-card__category-label">
+              {categoryLabel}
+            </span>
+          {/if}
           {#if card.requiresApproval}
             <span
               class="kamishibai-card__approval"
@@ -183,14 +184,6 @@
             <span class="kamishibai-card__time">
               <i class="fas fa-clock"></i>
               {card.estimatedExecutionMinutes} Min.
-            </span>
-          {/if}
-          {#if categoryLabel !== null}
-            <span
-              class="kamishibai-card__category-label"
-              title={CARD_STATUS_LABELS[card.status]}
-            >
-              {categoryLabel}
             </span>
           {/if}
         </div>
@@ -370,13 +363,13 @@
   }
 
   .kamishibai-card__category-label {
-    font-size: 0.7rem;
+    font-size: 0.625rem;
     font-weight: 600;
-    opacity: 95%;
     margin-left: auto;
     background: rgb(0 0 0 / 20%);
-    padding: 0.1rem 0.35rem;
+    padding: 0.075rem 0.3rem;
     border-radius: var(--radius-xs, 4px);
+    white-space: nowrap;
   }
 
   /* Back face */

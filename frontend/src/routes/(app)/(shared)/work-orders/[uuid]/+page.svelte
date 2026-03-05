@@ -23,7 +23,7 @@
   import WorkOrderInfo from './_lib/WorkOrderInfo.svelte';
 
   import type { PageData } from './$types';
-  import type { WorkOrderComment } from '../_lib/types';
+  import type { SourcePhoto, WorkOrderComment } from '../_lib/types';
 
   // =============================================================================
   // HELPERS
@@ -58,8 +58,39 @@
   const workOrder = $derived(data.workOrder);
   const comments = $derived(data.comments);
   const photos = $derived(data.photos);
+  const sourcePhotos = $derived(data.sourcePhotos);
   const userRole = $derived(data.userRole);
   const userId = $derived(data.userId);
+
+  let showSourcePreview = $state(false);
+  let sourcePreviewIndex = $state(0);
+
+  const currentSourcePhoto: SourcePhoto | null = $derived(
+    showSourcePreview && sourcePhotos.length > 0 ?
+      (sourcePhotos[sourcePreviewIndex] ?? null)
+    : null,
+  );
+
+  function openSourcePreview(index: number): void {
+    sourcePreviewIndex = index;
+    showSourcePreview = true;
+  }
+
+  function closeSourcePreview(): void {
+    showSourcePreview = false;
+  }
+
+  function handleSourceKeydown(event: KeyboardEvent): void {
+    if (!showSourcePreview) return;
+    if (event.key === 'Escape') closeSourcePreview();
+    if (event.key === 'ArrowLeft' && sourcePreviewIndex > 0)
+      sourcePreviewIndex--;
+    if (
+      event.key === 'ArrowRight' &&
+      sourcePreviewIndex < sourcePhotos.length - 1
+    )
+      sourcePreviewIndex++;
+  }
 
   onMount(() => {
     void notificationStore.markEntityAsRead('work_orders', workOrder.uuid);
@@ -76,6 +107,8 @@
 <svelte:head>
   <title>{workOrder.title} — {MESSAGES.PAGE_TITLE_DETAIL}</title>
 </svelte:head>
+
+<svelte:window onkeydown={handleSourceKeydown} />
 
 <div class="container">
   <!-- Back button -->
@@ -151,6 +184,42 @@
         </div>
       </div>
 
+      <!-- Source Photos (TPM Defect) -->
+      {#if sourcePhotos.length > 0}
+        <div class="card mb-6">
+          <div class="card__header">
+            <h3 class="card__title">
+              <i class="fas fa-camera mr-2"></i>
+              Quell-Fotos (TPM-Mangel)
+              <span class="badge badge--count ml-2">{sourcePhotos.length}</span>
+            </h3>
+          </div>
+          <div class="card__body">
+            <div class="source-photo-grid">
+              {#each sourcePhotos as photo, index (photo.uuid)}
+                <div
+                  class="source-photo-thumb"
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
+                    openSourcePreview(index);
+                  }}
+                  onkeydown={(e: KeyboardEvent) => {
+                    if (e.key === 'Enter') openSourcePreview(index);
+                  }}
+                >
+                  <img
+                    src="/{photo.filePath}"
+                    alt={photo.fileName}
+                    loading="lazy"
+                  />
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
+
       <!-- Comments -->
       <div class="card">
         <div class="card__body">
@@ -199,6 +268,99 @@
     </div>
   </div>
 </div>
+
+<!-- Source Photo Preview Modal -->
+{#if showSourcePreview && currentSourcePhoto !== null}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="modal-overlay modal-overlay--active"
+    onclick={closeSourcePreview}
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh;"
+      onclick={(e: MouseEvent) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e: KeyboardEvent) => {
+        e.stopPropagation();
+      }}
+      role="document"
+    >
+      <div class="ds-modal__header">
+        <h3 class="ds-modal__title">
+          <i class="fas fa-image text-success-500 mr-2"></i>
+          {currentSourcePhoto.fileName}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={closeSourcePreview}
+          aria-label="Schließen"><i class="fas fa-times"></i></button
+        >
+      </div>
+      <div class="ds-modal__body p-0">
+        <div
+          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+        >
+          <img
+            src="/{currentSourcePhoto.filePath}"
+            alt={currentSourcePhoto.fileName}
+            class="max-h-full max-w-full object-contain"
+          />
+        </div>
+      </div>
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closeSourcePreview}
+        >
+          <i class="fas fa-times mr-2"></i>Schließen
+        </button>
+      </div>
+    </div>
+    {#if sourcePhotos.length > 1}
+      <button
+        type="button"
+        class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+        onclick={(e: MouseEvent) => {
+          e.stopPropagation();
+          if (sourcePreviewIndex > 0) sourcePreviewIndex--;
+        }}
+        aria-label="Vorheriges Foto"
+      >
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button
+        type="button"
+        class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+        onclick={(e: MouseEvent) => {
+          e.stopPropagation();
+          if (sourcePreviewIndex < sourcePhotos.length - 1)
+            sourcePreviewIndex++;
+        }}
+        aria-label="Nächstes Foto"
+      >
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+        onclick={(e: MouseEvent) => {
+          e.stopPropagation();
+        }}
+      >
+        {sourcePreviewIndex + 1} / {sourcePhotos.length}
+      </div>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .detail-layout {
@@ -267,6 +429,37 @@
     color: var(--color-text-secondary);
     white-space: nowrap;
     margin-left: auto;
+  }
+
+  /* ─── Source Photos Grid ──────── */
+
+  .source-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .source-photo-thumb {
+    cursor: pointer;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 2px solid transparent;
+    border-radius: var(--radius-xl, 0.75rem);
+    background: var(--glass-bg-active, #f8f9fa);
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .source-photo-thumb:hover {
+    transform: scale(1.02);
+    border-color: var(--color-primary);
+  }
+
+  .source-photo-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   @media (width <= 900px) {

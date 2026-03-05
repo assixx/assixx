@@ -18,8 +18,13 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import { mapPhotoRowToApi } from './work-orders.helpers.js';
+import {
+  type SourcePhotoRow,
+  mapPhotoRowToApi,
+  mapSourcePhotoRowToApi,
+} from './work-orders.helpers.js';
 import type {
+  SourcePhoto,
   WorkOrderPhoto,
   WorkOrderPhotoWithNameRow,
 } from './work-orders.types.js';
@@ -196,6 +201,25 @@ export class WorkOrderPhotosService {
       fileName: row.file_name,
       mimeType: row.mime_type,
     };
+  }
+
+  /** Get photos from the source entity (e.g. TPM defect) — read-only */
+  async getSourcePhotos(
+    tenantId: number,
+    workOrderUuid: string,
+  ): Promise<SourcePhoto[]> {
+    const rows = await this.db.query<SourcePhotoRow>(
+      `SELECT dp.uuid, dp.file_path, dp.file_name,
+              dp.file_size, dp.mime_type, dp.created_at
+       FROM tpm_defect_photos dp
+       JOIN tpm_execution_defects d ON dp.defect_id = d.id
+       JOIN work_orders wo ON wo.source_uuid = d.uuid
+       WHERE wo.uuid = $1 AND wo.tenant_id = $2
+         AND wo.is_active = 1 AND wo.source_type = 'tpm_defect'
+       ORDER BY dp.sort_order ASC`,
+      [workOrderUuid, tenantId],
+    );
+    return rows.map(mapSourcePhotoRowToApi);
   }
 
   // ==========================================================================

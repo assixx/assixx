@@ -5,6 +5,7 @@
  * Maps DB Row types (snake_case) to API types (camelCase).
  */
 import type {
+  SourcePhoto,
   WorkOrder,
   WorkOrderAssignee,
   WorkOrderAssigneeWithNameRow,
@@ -125,6 +126,28 @@ export function mapPhotoRowToApi(
     fileSize: row.file_size,
     mimeType: row.mime_type,
     sortOrder: row.sort_order,
+    createdAt: toIsoString(row.created_at),
+  };
+}
+
+/** DB row shape for source photos (tpm_defect_photos, no uploaded_by) */
+export interface SourcePhotoRow {
+  uuid: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string | Date;
+}
+
+/** Map a source photo DB row to API response */
+export function mapSourcePhotoRowToApi(row: SourcePhotoRow): SourcePhoto {
+  return {
+    uuid: row.uuid.trim(),
+    filePath: row.file_path,
+    fileName: row.file_name,
+    fileSize: row.file_size,
+    mimeType: row.mime_type,
     createdAt: toIsoString(row.created_at),
   };
 }

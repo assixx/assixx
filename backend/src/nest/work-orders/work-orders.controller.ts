@@ -49,6 +49,7 @@ import { WorkOrderStatusService } from './work-orders-status.service.js';
 import { WorkOrdersService } from './work-orders.service.js';
 import type {
   EligibleUser,
+  SourcePhoto,
   WorkOrder,
   WorkOrderAssignee,
   WorkOrderComment,
@@ -331,6 +332,15 @@ export class WorkOrdersController {
   // ==========================================================================
   // Photos
   // ==========================================================================
+
+  @Get(':uuid/source-photos')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async listSourcePhotos(
+    @Param('uuid') uuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<SourcePhoto[]> {
+    return await this.photosService.getSourcePhotos(tenantId, uuid);
+  }
 
   @Get(':uuid/photos')
   @RequirePermission(FEAT, MOD_EXEC, 'canRead')

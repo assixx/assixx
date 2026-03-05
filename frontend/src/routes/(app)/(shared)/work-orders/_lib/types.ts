@@ -52,6 +52,16 @@ export interface PaginatedComments {
   hasMore: boolean;
 }
 
+/** Read-only photo from the source entity (e.g. TPM defect) */
+export interface SourcePhoto {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+}
+
 /** Photo attached to a work order */
 export interface WorkOrderPhoto {
   uuid: string;

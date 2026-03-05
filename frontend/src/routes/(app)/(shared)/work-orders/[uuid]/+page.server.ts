@@ -13,6 +13,7 @@ import type { PageServerLoad } from './$types';
 import type {
   PaginatedComments,
   PaginatedResponse,
+  SourcePhoto,
   WorkOrder,
   WorkOrderComment,
   WorkOrderPhoto,
@@ -63,6 +64,34 @@ async function apiFetch<T>(
   }
 }
 
+async function fetchSourcePhotos(
+  workOrder: WorkOrder,
+  uuid: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<SourcePhoto[]> {
+  if (workOrder.sourceType !== 'tpm_defect' || workOrder.sourceUuid === null) {
+    return [];
+  }
+  const result = await apiFetch<SourcePhoto[]>(
+    `/work-orders/${uuid}/source-photos`,
+    token,
+    fetchFn,
+  );
+  return Array.isArray(result) ? result : [];
+}
+
+function buildComments(
+  data: PaginatedResponse<WorkOrderComment> | null,
+): PaginatedComments {
+  const raw = data ?? { items: [] as WorkOrderComment[], total: 0 };
+  return {
+    comments: raw.items,
+    total: raw.total,
+    hasMore: raw.items.length < raw.total,
+  };
+}
+
 export const load: PageServerLoad = async ({
   cookies,
   fetch,
@@ -93,24 +122,14 @@ export const load: PageServerLoad = async ({
     error(404, 'Arbeitsauftrag nicht gefunden');
   }
 
+  const sourcePhotos = await fetchSourcePhotos(workOrder, uuid, token, fetch);
   const user = parentData.user;
-
-  const rawComments = commentsData ?? {
-    items: [] as WorkOrderComment[],
-    total: 0,
-    page: 1,
-    pageSize: 20,
-  };
-  const comments: PaginatedComments = {
-    comments: rawComments.items,
-    total: rawComments.total,
-    hasMore: rawComments.items.length < rawComments.total,
-  };
 
   return {
     workOrder,
-    comments,
+    comments: buildComments(commentsData),
     photos: Array.isArray(photosData) ? photosData : [],
+    sourcePhotos,
     userRole: user?.role ?? 'employee',
     userId: user?.id ?? 0,
   };

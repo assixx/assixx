@@ -229,6 +229,16 @@ export interface EligibleUser {
   employeeNumber: string | null;
 }
 
+/** Read-only photo from the source entity (e.g. TPM defect) */
+export interface SourcePhoto {
+  uuid: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+}
+
 /** Stats per status for dashboard counters */
 export interface WorkOrderStats {
   open: number;
