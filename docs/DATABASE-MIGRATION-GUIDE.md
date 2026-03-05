@@ -16,8 +16,8 @@
 | **Database**       | `assixx`                             |
 | **App User**       | `app_user` (RLS enforced)            |
 | **Admin User**     | `assixx_user` (superuser, BYPASSRLS) |
-| **Tables**         | 109 total (84 with RLS, 25 global)   |
-| **RLS Policies**   | 89                                   |
+| **Tables**         | 128 base (109 with RLS, 19 global) + partitions |
+| **RLS Policies**   | 114                                  |
 | **Migration Tool** | `node-pg-migrate` 8.x                |
 | **Tracking Table** | `pgmigrations`                       |
 | **GUI Tool**       | DBeaver (Windows)                    |
@@ -312,7 +312,7 @@ doppler run -- pnpm run db:seed
 
 | File                                                       | Content                              |
 | ---------------------------------------------------------- | ------------------------------------ |
-| `20260127000000_baseline.ts`                               | Complete schema (109 tables, 89 RLS) |
+| `20260127000000_baseline.ts`                               | Complete schema (baseline, 89 RLS at time of creation) |
 | `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed             |
 | `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS      |
 | `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id      |
