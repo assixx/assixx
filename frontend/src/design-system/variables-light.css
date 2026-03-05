@@ -93,11 +93,12 @@
   --color-accent-bg: #a9d9ff;
 
   /* Stacked section background (Kamishibai board collapsed sections) */
-  --color-section-stacked-bg: #ffffffed;
+  --color-section-stacked-bg: #f6f8fc;
+  --color-section-header-bg: #eceef2;
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
   --glass-bg: rgb(0 0 0 / 2%);
-  --glass-bg-hover: rgb(0 0 0 / 4%);
+  --glass-bg-hover: rgb(0 0 0 / 5%);
   --glass-bg-active: rgb(0 0 0 / 6%);
   --glass-border: 1px solid rgb(0 0 0 / 20%);
   --glass-border-sidebar-tree: 1px solid rgb(0 0 0 / 35%);

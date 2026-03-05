@@ -31,7 +31,8 @@ html.dark {
   --color-accent-bg: #a9d9ff;
 
   /* Stacked section background (Kamishibai board collapsed sections) */
-  --color-section-stacked-bg: #000000ed;
+  --color-section-stacked-bg: #020202f6;
+  --color-section-header-bg: #0d0d0d;
 
   /* Borders (theme-dependent — from colors.css refactor) */
   --color-border: var(--color-gray-800);

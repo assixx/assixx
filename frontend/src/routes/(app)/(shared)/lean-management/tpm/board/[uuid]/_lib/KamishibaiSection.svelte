@@ -29,6 +29,7 @@
     isSectionExpanded?: boolean;
     isPreviousExpanded?: boolean;
     onCardFlip?: (uuid: string, isFlipped: boolean) => void;
+    onHeaderClick?: () => void;
   }
 
   const {
@@ -45,6 +46,7 @@
     isSectionExpanded = false,
     isPreviousExpanded = false,
     onCardFlip,
+    onHeaderClick,
   }: Props = $props();
 
   const hasOperator = $derived(operatorCards.length > 0);
@@ -66,7 +68,12 @@
   class:kamishibai-section--stacked={isStacked}
   style:z-index={isCollapsed ? sectionIndex + 1 : 'auto'}
 >
-  <div class="kamishibai-section__header">
+  <button
+    type="button"
+    class="kamishibai-section__header"
+    aria-expanded={isSectionExpanded}
+    onclick={onHeaderClick}
+  >
     <h3 class="kamishibai-section__label">
       <i class="fas fa-layer-group"></i>
       {label}
@@ -80,7 +87,11 @@
         <i class="fas fa-check"></i> Alles erledigt
       </span>
     {/if}
-  </div>
+    <i
+      class="fas fa-chevron-down kamishibai-section__chevron"
+      class:kamishibai-section__chevron--expanded={isSectionExpanded}
+    ></i>
+  </button>
 
   {#if isEmpty}
     <div class="kamishibai-section__empty">
@@ -140,8 +151,9 @@
     --section-overlap: 200px;
 
     position: relative;
-    background: var(--glass-bg);
-    border-radius: var(--radius-lg);
+    background: var(--glass-bg-hover);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
     transition: margin-top 250ms
@@ -164,7 +176,7 @@
     max-height: var(--section-max-height);
   }
 
-  .kamishibai-section--clipped::after {
+  .kamishibai-section::after {
     content: '';
     position: absolute;
     inset: auto 0 0;
@@ -176,6 +188,12 @@
     );
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 250ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .kamishibai-section--clipped::after {
+    opacity: 1;
   }
 
   /* Stacked: collapsed + not first → pull up + depth shadow */
@@ -187,10 +205,32 @@
   .kamishibai-section__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
     padding: 0.875rem 1.25rem;
+    border: none;
     border-bottom: 1px solid var(--color-glass-border);
-    background: var(--glass-bg-hover);
+    border-radius: 0;
+    background: var(--color-section-header-bg);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 150ms ease;
+  }
+
+  .kamishibai-section__header:hover {
+    background: var(--color-section-header-bg);
+    filter: brightness(1.03);
+  }
+
+  .kamishibai-section__chevron {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    transition: transform 250ms
+      var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .kamishibai-section__chevron--expanded {
+    transform: rotate(180deg);
   }
 
   .kamishibai-section__label {
@@ -212,6 +252,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    margin-left: auto;
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-full, 9999px);
     font-size: 0.813rem;
@@ -235,6 +276,7 @@
 
   .kamishibai-section__role-group:last-child {
     border-bottom: none;
+    background: var(--color-section-stacked-bg);
   }
 
   .kamishibai-section__role-label {
@@ -281,7 +323,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .kamishibai-section {
+    .kamishibai-section,
+    .kamishibai-section__header,
+    .kamishibai-section__chevron {
       transition: none;
     }
   }

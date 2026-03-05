@@ -113,9 +113,21 @@
   /** Tracks which cards are currently flipped — drives section expansion */
   const flippedCards = new SvelteSet<string>();
 
+  /** Tracks sections manually expanded via header click */
+  const expandedSections = new SvelteSet<IntervalType>();
+
   function handleToggle(): void {
     globalCollapsed = !globalCollapsed;
     flippedCards.clear();
+    expandedSections.clear();
+  }
+
+  function handleSectionHeaderClick(intervalType: IntervalType): void {
+    if (expandedSections.has(intervalType)) {
+      expandedSections.delete(intervalType);
+    } else {
+      expandedSections.add(intervalType);
+    }
   }
 
   function handleCardFlip(uuid: string, isFlipped: boolean): void {
@@ -178,22 +190,23 @@
 
 <div class="kamishibai-board">
   <div class="kamishibai-board__toolbar">
-    <button
-      type="button"
-      class="toggle-group__btn"
-      class:active={globalCollapsed}
-      aria-pressed={globalCollapsed}
-      aria-label={globalCollapsed ? 'Sections aufklappen' : 'Sections stapeln'}
-      onclick={handleToggle}
-    >
-      <i class="fas {toggleIcon}"></i>
-      <span>{toggleLabel}</span>
-    </button>
-
     <div class="zoom-controls">
       <button
         type="button"
-        class="btn btn-icon btn-secondary"
+        class="toggle-group__btn"
+        class:active={globalCollapsed}
+        aria-pressed={globalCollapsed}
+        aria-label={globalCollapsed ?
+          'Sections aufklappen'
+        : 'Sections stapeln'}
+        onclick={handleToggle}
+      >
+        <i class="fas {toggleIcon}"></i>
+        <span>{toggleLabel}</span>
+      </button>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary ml-2"
         title={MESSAGES.ZOOM_IN}
         disabled={zoomLevel >= ZOOM_CONFIG.MAX}
         onclick={zoomIn}><i class="fas fa-plus"></i></button
@@ -234,10 +247,15 @@
         sectionIndex={idx}
         isLast={idx === visibleSections.length - 1}
         isCollapsed={globalCollapsed}
-        isSectionExpanded={sectionHasFlippedCards(section)}
+        isSectionExpanded={sectionHasFlippedCards(section) ||
+          expandedSections.has(section.intervalType)}
         isPreviousExpanded={idx > 0 &&
-          sectionHasFlippedCards(visibleSections[idx - 1])}
+          (sectionHasFlippedCards(visibleSections[idx - 1]) ||
+            expandedSections.has(visibleSections[idx - 1].intervalType))}
         onCardFlip={handleCardFlip}
+        onHeaderClick={() => {
+          handleSectionHeaderClick(section.intervalType);
+        }}
       />
     {/each}
   </div>
@@ -262,6 +280,11 @@
   }
 
   /* ---- Zoom Controls ---- */
+  .toggle-group__btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
   .zoom-controls {
     display: flex;
     align-items: center;
