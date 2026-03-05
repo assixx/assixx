@@ -2,7 +2,7 @@
 // TPM Employee View — CONSTANTS
 // =============================================================================
 
-import type { CardStatus, IntervalType } from './types';
+import type { CardCategory, CardStatus, IntervalType } from './types';
 
 /** Interval type colors for Gesamtansicht headers */
 export const INTERVAL_COLORS: Record<IntervalType, string> = {
@@ -32,6 +32,13 @@ export const INTERVAL_LABELS: Record<IntervalType, string> = {
   semi_annual: 'Halbjährlich',
   annual: 'Jährlich',
   custom: 'Benutzerdefiniert',
+};
+
+/** Card category display labels (German) */
+export const CATEGORY_LABELS: Record<CardCategory, string> = {
+  reinigung: 'Reinigung',
+  wartung: 'Wartung',
+  inspektion: 'Inspektion',
 };
 
 /** Card status display labels (German) */

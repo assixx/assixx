@@ -249,12 +249,13 @@
   .status-log-list {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
   }
 
   .status-log-entry {
     padding: 0.375rem 0.75rem;
     font-size: 0.813rem;
+    width: fit-content;
   }
 
   .status-log-entry__text {

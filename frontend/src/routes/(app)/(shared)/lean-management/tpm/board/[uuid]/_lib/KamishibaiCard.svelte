@@ -8,7 +8,11 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { CARD_STATUS_LABELS, DEFAULT_COLORS } from '../../../_lib/constants';
+  import {
+    CARD_STATUS_LABELS,
+    CATEGORY_LABELS,
+    DEFAULT_COLORS,
+  } from '../../../_lib/constants';
 
   import CardFlip from './CardFlip.svelte';
 
@@ -78,6 +82,12 @@
     }
     return getColor(status);
   }
+
+  const categoryLabel = $derived(
+    card.cardCategories.length > 0 ?
+      card.cardCategories.map((c) => CATEGORY_LABELS[c]).join(', ')
+    : null,
+  );
 
   const statusColor = $derived(getCardColor(card.status));
   const isUrgent = $derived(card.status === 'red' || card.status === 'overdue');
@@ -175,9 +185,14 @@
               {card.estimatedExecutionMinutes} Min.
             </span>
           {/if}
-          <span class="kamishibai-card__status-label">
-            {CARD_STATUS_LABELS[card.status]}
-          </span>
+          {#if categoryLabel !== null}
+            <span
+              class="kamishibai-card__category-label"
+              title={CARD_STATUS_LABELS[card.status]}
+            >
+              {categoryLabel}
+            </span>
+          {/if}
         </div>
       </div>
     {/snippet}
@@ -354,10 +369,14 @@
     opacity: 80%;
   }
 
-  .kamishibai-card__status-label {
-    font-size: 0.65rem;
-    opacity: 85%;
+  .kamishibai-card__category-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 95%;
     margin-left: auto;
+    background: rgb(0 0 0 / 20%);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-xs, 4px);
   }
 
   /* Back face */
