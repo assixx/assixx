@@ -394,8 +394,10 @@ export const MESSAGES = {
   COLOR_LABEL_REQUIRED: 'Bezeichnung ist erforderlich',
   SUCCESS_COLOR_UPDATED: 'Farbe aktualisiert',
   SUCCESS_COLORS_RESET: 'Farben auf Standard zurückgesetzt',
+  SUCCESS_SINGLE_COLOR_RESET: 'Farbe auf Standard zurückgesetzt',
   ERROR_COLOR_UPDATE: 'Fehler beim Aktualisieren der Farbe',
   ERROR_COLOR_RESET: 'Fehler beim Zurücksetzen der Farben',
+  ERROR_SINGLE_COLOR_RESET: 'Fehler beim Zurücksetzen der Farbe',
 
   // Interval color config
   INTERVAL_COLOR_TITLE: 'Intervall-Farben',
@@ -406,8 +408,10 @@ export const MESSAGES = {
     'Alle Intervall-Farben auf die Standardwerte zurücksetzen?',
   SUCCESS_INTERVAL_COLOR_UPDATED: 'Intervall-Farbe aktualisiert',
   SUCCESS_INTERVAL_COLORS_RESET: 'Intervall-Farben auf Standard zurückgesetzt',
+  SUCCESS_SINGLE_INTERVAL_COLOR_RESET: 'Intervall-Farbe auf Standard zurückgesetzt',
   ERROR_INTERVAL_COLOR_UPDATE: 'Fehler beim Aktualisieren der Intervall-Farbe',
   ERROR_INTERVAL_COLOR_RESET: 'Fehler beim Zurücksetzen der Intervall-Farben',
+  ERROR_SINGLE_INTERVAL_COLOR_RESET: 'Fehler beim Zurücksetzen der Intervall-Farbe',
 
   // Category color config
   CATEGORY_COLOR_TITLE: 'Kategorie-Farben',
@@ -419,8 +423,10 @@ export const MESSAGES = {
   CATEGORY_COLOR_NONE: 'Keine Farbe',
   SUCCESS_CATEGORY_COLOR_UPDATED: 'Kategorie-Farbe aktualisiert',
   SUCCESS_CATEGORY_COLORS_RESET: 'Kategorie-Farben zurückgesetzt',
+  SUCCESS_SINGLE_CATEGORY_COLOR_RESET: 'Kategorie-Farbe zurückgesetzt',
   ERROR_CATEGORY_COLOR_UPDATE: 'Fehler beim Aktualisieren der Kategorie-Farbe',
   ERROR_CATEGORY_COLOR_RESET: 'Fehler beim Zurücksetzen der Kategorie-Farben',
+  ERROR_SINGLE_CATEGORY_COLOR_RESET: 'Fehler beim Zurücksetzen der Kategorie-Farbe',
 
   // Escalation config
   ESCALATION_TITLE: 'Eskalation',

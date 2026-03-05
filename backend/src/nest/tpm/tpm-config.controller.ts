@@ -7,18 +7,22 @@
  * - GET    /tpm/config/colors                — Get card status colors
  * - PATCH  /tpm/config/colors                — Update single status color
  * - POST   /tpm/config/colors/reset          — Reset status colors to defaults
+ * - DELETE /tpm/config/colors/:statusKey     — Reset single status color to default
  * - GET    /tpm/config/interval-colors       — Get interval type colors
  * - PATCH  /tpm/config/interval-colors       — Update single interval color
  * - POST   /tpm/config/interval-colors/reset — Reset interval colors to defaults
+ * - DELETE /tpm/config/interval-colors/:intervalKey — Reset single interval color
  * - GET    /tpm/config/category-colors       — Get card category colors
  * - PATCH  /tpm/config/category-colors       — Update single category color
  * - POST   /tpm/config/category-colors/reset — Reset category colors (remove all)
+ * - DELETE /tpm/config/category-colors/:categoryKey — Reset single category color
  * - GET    /tpm/config/templates        — List card templates
  * - POST   /tpm/config/templates        — Create template
  * - PATCH  /tpm/config/templates/:uuid  — Update template
  * - DELETE /tpm/config/templates/:uuid  — Delete template
  */
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -35,6 +39,11 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import {
+  TpmCardCategorySchema,
+  TpmCardStatusSchema,
+  TpmIntervalTypeSchema,
+} from './dto/common.dto.js';
 import { CreateTemplateDto } from './dto/create-template.dto.js';
 import { UpdateCategoryColorConfigDto } from './dto/update-category-color-config.dto.js';
 import { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
@@ -124,6 +133,25 @@ export class TpmConfigController {
     return await this.colorConfigService.resetToDefaults(tenantId, user.id);
   }
 
+  /** DELETE /tpm/config/colors/:statusKey — Reset single status color to default */
+  @Delete('colors/:statusKey')
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async resetSingleColor(
+    @Param('statusKey') statusKey: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmColorConfigEntry> {
+    const parsed = TpmCardStatusSchema.safeParse(statusKey);
+    if (!parsed.success) {
+      throw new BadRequestException('Ungültiger Status-Key');
+    }
+    return await this.colorConfigService.resetSingleColor(
+      tenantId,
+      user.id,
+      parsed.data,
+    );
+  }
+
   // ============================================================================
   // INTERVAL COLOR CONFIG
   // ============================================================================
@@ -166,6 +194,25 @@ export class TpmConfigController {
     );
   }
 
+  /** DELETE /tpm/config/interval-colors/:intervalKey — Reset single interval color */
+  @Delete('interval-colors/:intervalKey')
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async resetSingleIntervalColor(
+    @Param('intervalKey') intervalKey: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmColorConfigEntry> {
+    const parsed = TpmIntervalTypeSchema.safeParse(intervalKey);
+    if (!parsed.success) {
+      throw new BadRequestException('Ungültiger Intervall-Key');
+    }
+    return await this.colorConfigService.resetSingleIntervalColor(
+      tenantId,
+      user.id,
+      parsed.data,
+    );
+  }
+
   // ============================================================================
   // CATEGORY COLOR CONFIG
   // ============================================================================
@@ -203,6 +250,25 @@ export class TpmConfigController {
     @TenantId() tenantId: number,
   ): Promise<TpmCategoryColorConfigEntry[]> {
     return await this.colorConfigService.resetCategoryColors(tenantId, user.id);
+  }
+
+  /** DELETE /tpm/config/category-colors/:categoryKey — Reset single category color */
+  @Delete('category-colors/:categoryKey')
+  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  async resetSingleCategoryColor(
+    @Param('categoryKey') categoryKey: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmCategoryColorConfigEntry> {
+    const parsed = TpmCardCategorySchema.safeParse(categoryKey);
+    if (!parsed.success) {
+      throw new BadRequestException('Ungültiger Kategorie-Key');
+    }
+    return await this.colorConfigService.resetSingleCategoryColor(
+      tenantId,
+      user.id,
+      parsed.data,
+    );
   }
 
   // ============================================================================

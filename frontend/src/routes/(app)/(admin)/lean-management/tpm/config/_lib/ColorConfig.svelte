@@ -15,6 +15,7 @@
   import {
     updateColor as apiUpdateColor,
     resetColors as apiResetColors,
+    resetSingleColor as apiResetSingleColor,
     logApiError,
   } from '../../_lib/api';
   import { MESSAGES, CARD_STATUS_LABELS } from '../../_lib/constants';
@@ -69,6 +70,7 @@
     });
   });
   let resetting = $state(false);
+  let resettingKey = $state<string | null>(null);
   let showResetConfirm = $state(false);
 
   // ===========================================================================
@@ -130,6 +132,22 @@
       showErrorAlert(msg);
     } finally {
       resetting = false;
+    }
+  }
+
+  async function handleResetSingleColor(row: EditRow): Promise<void> {
+    resettingKey = row.key;
+    try {
+      await apiResetSingleColor(row.key);
+      showSuccessAlert(MESSAGES.SUCCESS_SINGLE_COLOR_RESET);
+      await invalidateAll();
+    } catch (err: unknown) {
+      logApiError('resetSingleColor', err);
+      const msg =
+        err instanceof Error ? err.message : MESSAGES.ERROR_SINGLE_COLOR_RESET;
+      showErrorAlert(msg);
+    } finally {
+      resettingKey = null;
     }
   }
 </script>
@@ -209,6 +227,21 @@
           <i class="fas fa-spinner fa-spin"></i>
         {:else}
           <i class="fas fa-check"></i>
+        {/if}
+      </button>
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon"
+        title="Diese Farbe auf Standard zurücksetzen"
+        disabled={resettingKey === row.key}
+        onclick={() => {
+          void handleResetSingleColor(row);
+        }}
+      >
+        {#if resettingKey === row.key}
+          <i class="fas fa-spinner fa-spin"></i>
+        {:else}
+          <i class="fas fa-undo"></i>
         {/if}
       </button>
     </div>

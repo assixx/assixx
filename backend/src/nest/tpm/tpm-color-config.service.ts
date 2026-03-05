@@ -195,6 +195,40 @@ export class TpmColorConfigService {
     return statusKeys.map(buildDefaultEntry);
   }
 
+  /**
+   * Reset a single status color to its default.
+   * Deletes the tenant-specific override for one key.
+   */
+  async resetSingleColor(
+    tenantId: number,
+    userId: number,
+    statusKey: TpmCardStatus,
+  ): Promise<TpmColorConfigEntry> {
+    this.logger.debug(
+      `Resetting single color "${statusKey}" for tenant ${tenantId}`,
+    );
+
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        await client.query(
+          `DELETE FROM tpm_color_config
+           WHERE tenant_id = $1 AND status_key = $2`,
+          [tenantId, statusKey],
+        );
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_color_config',
+      0,
+      `TPM-Statusfarbe zurückgesetzt: ${statusKey}`,
+    );
+
+    return buildDefaultEntry(statusKey);
+  }
+
   // ============================================================================
   // INTERVAL COLORS
   // ============================================================================
@@ -307,6 +341,40 @@ export class TpmColorConfigService {
     );
 
     return INTERVAL_TYPES_ORDERED.map(buildDefaultIntervalEntry);
+  }
+
+  /**
+   * Reset a single interval color to its default.
+   * Deletes the tenant-specific override for one key.
+   */
+  async resetSingleIntervalColor(
+    tenantId: number,
+    userId: number,
+    intervalKey: TpmIntervalType,
+  ): Promise<TpmColorConfigEntry> {
+    this.logger.debug(
+      `Resetting single interval color "${intervalKey}" for tenant ${tenantId}`,
+    );
+
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        await client.query(
+          `DELETE FROM tpm_color_config
+           WHERE tenant_id = $1 AND status_key = $2`,
+          [tenantId, intervalKey],
+        );
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_color_config',
+      0,
+      `TPM-Intervallfarbe zurückgesetzt: ${intervalKey}`,
+    );
+
+    return buildDefaultIntervalEntry(intervalKey);
   }
 
   // ============================================================================
@@ -461,5 +529,46 @@ export class TpmColorConfigService {
         updatedAt: now,
       }),
     );
+  }
+
+  /**
+   * Reset a single category color to its default (= no custom color).
+   * Deletes the tenant-specific override for one category key.
+   */
+  async resetSingleCategoryColor(
+    tenantId: number,
+    userId: number,
+    categoryKey: TpmCardCategory,
+  ): Promise<TpmCategoryColorConfigEntry> {
+    this.logger.debug(
+      `Resetting single category color "${categoryKey}" for tenant ${tenantId}`,
+    );
+
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        await client.query(
+          `DELETE FROM tpm_color_config
+           WHERE tenant_id = $1 AND status_key = $2`,
+          [tenantId, categoryKey],
+        );
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_color_config',
+      0,
+      `TPM-Kategoriefarbe zurückgesetzt: ${categoryKey}`,
+    );
+
+    const now = new Date().toISOString();
+    return {
+      categoryKey,
+      colorHex: null,
+      label: CATEGORY_LABELS[categoryKey],
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 }

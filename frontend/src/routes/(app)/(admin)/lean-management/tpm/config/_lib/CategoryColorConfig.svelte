@@ -16,6 +16,7 @@
   import {
     updateCategoryColor as apiUpdateCategoryColor,
     resetCategoryColors as apiResetCategoryColors,
+    resetSingleCategoryColor as apiResetSingleCategoryColor,
     logApiError,
   } from '../../_lib/api';
   import {
@@ -103,6 +104,7 @@
     });
   });
   let resetting = $state(false);
+  let resettingKey = $state<string | null>(null);
   let showResetConfirm = $state(false);
 
   // ===========================================================================
@@ -182,6 +184,24 @@
       showErrorAlert(msg);
     } finally {
       resetting = false;
+    }
+  }
+
+  async function handleResetSingleColor(row: EditRow): Promise<void> {
+    resettingKey = row.key;
+    try {
+      await apiResetSingleCategoryColor(row.key);
+      showSuccessAlert(MESSAGES.SUCCESS_SINGLE_CATEGORY_COLOR_RESET);
+      await invalidateAll();
+    } catch (err: unknown) {
+      logApiError('resetSingleCategoryColor', err);
+      const msg =
+        err instanceof Error ?
+          err.message
+        : MESSAGES.ERROR_SINGLE_CATEGORY_COLOR_RESET;
+      showErrorAlert(msg);
+    } finally {
+      resettingKey = null;
     }
   }
 </script>
@@ -264,6 +284,21 @@
             <i class="fas fa-spinner fa-spin"></i>
           {:else}
             <i class="fas fa-check"></i>
+          {/if}
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-icon"
+          title="Farbe entfernen (auf Standard zurücksetzen)"
+          disabled={resettingKey === row.key}
+          onclick={() => {
+            void handleResetSingleColor(row);
+          }}
+        >
+          {#if resettingKey === row.key}
+            <i class="fas fa-spinner fa-spin"></i>
+          {:else}
+            <i class="fas fa-undo"></i>
           {/if}
         </button>
       {:else}

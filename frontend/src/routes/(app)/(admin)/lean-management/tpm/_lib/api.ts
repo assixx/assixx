@@ -374,6 +374,15 @@ export async function resetColors(): Promise<TpmColorConfigEntry[]> {
   return extractArray<TpmColorConfigEntry>(result);
 }
 
+/** Reset a single status color to its default */
+export async function resetSingleColor(
+  statusKey: string,
+): Promise<TpmColorConfigEntry> {
+  return await apiClient.delete<TpmColorConfigEntry>(
+    `/tpm/config/colors/${statusKey}`,
+  );
+}
+
 /** Fetch interval color configuration */
 export async function fetchIntervalColors(): Promise<
   IntervalColorConfigEntry[]
@@ -401,6 +410,15 @@ export async function resetIntervalColors(): Promise<
     {},
   );
   return extractArray<IntervalColorConfigEntry>(result);
+}
+
+/** Reset a single interval color to its default */
+export async function resetSingleIntervalColor(
+  intervalKey: string,
+): Promise<IntervalColorConfigEntry> {
+  return await apiClient.delete<IntervalColorConfigEntry>(
+    `/tpm/config/interval-colors/${intervalKey}`,
+  );
 }
 
 // =============================================================================
@@ -434,6 +452,15 @@ export async function resetCategoryColors(): Promise<
     {},
   );
   return extractArray<CategoryColorConfigEntry>(result);
+}
+
+/** Reset a single category color (remove custom color) */
+export async function resetSingleCategoryColor(
+  categoryKey: string,
+): Promise<CategoryColorConfigEntry> {
+  return await apiClient.delete<CategoryColorConfigEntry>(
+    `/tpm/config/category-colors/${categoryKey}`,
+  );
 }
 
 /** Update escalation configuration */
