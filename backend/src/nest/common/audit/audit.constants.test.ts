@@ -108,6 +108,16 @@ describe('EXCLUDED_PATHS', () => {
   it('should contain favicon', () => {
     expect(EXCLUDED_PATHS).toContain('/favicon.ico');
   });
+
+  it('should exclude SSE connection-ticket noise', () => {
+    expect(EXCLUDED_PATHS).toContain('/auth/connection-ticket');
+    expect(EXCLUDED_PATHS).toContain('/api/v2/auth/connection-ticket');
+  });
+
+  it('should exclude cosmetic theme toggle', () => {
+    expect(EXCLUDED_PATHS).toContain('/settings/user/theme');
+    expect(EXCLUDED_PATHS).toContain('/api/v2/settings/user/theme');
+  });
 });
 
 describe('EXCLUDED_PREFIXES', () => {
@@ -172,6 +182,13 @@ describe('PAGE_INIT_ENDPOINTS', () => {
   it('should contain feature/plan check endpoints', () => {
     expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/features/my-features');
     expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/plans/current');
+  });
+
+  it('should contain E2E encryption key init endpoints', () => {
+    expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/e2e/keys/me');
+    expect(PAGE_INIT_ENDPOINTS).toContain('/e2e/keys/me');
+    expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/e2e/escrow');
+    expect(PAGE_INIT_ENDPOINTS).toContain('/e2e/escrow');
   });
 });
 

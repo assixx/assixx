@@ -46,6 +46,7 @@ function createMockMetadataService() {
       endpoint: '/users',
       resourceType: 'users',
       resourceId: '123',
+      resourceUuid: null,
       action: 'view',
     }),
     fetchResourceBeforeMutation: vi
@@ -240,6 +241,7 @@ describe('AuditTrailInterceptor', () => {
         endpoint: '/users',
         resourceType: 'users',
         resourceId: '456',
+        resourceUuid: null,
         action: 'delete',
       });
       const next = createMockCallHandler();
@@ -253,6 +255,7 @@ describe('AuditTrailInterceptor', () => {
       expect(mockMetadata.fetchResourceBeforeMutation).toHaveBeenCalledWith(
         'users',
         '456',
+        null,
         1,
       );
       expect(mockLogging.logSuccess).toHaveBeenCalledWith(
@@ -271,6 +274,7 @@ describe('AuditTrailInterceptor', () => {
         endpoint: '/users',
         resourceType: 'users',
         resourceId: '789',
+        resourceUuid: null,
         action: 'update',
       });
       const next = createMockCallHandler();
@@ -284,17 +288,19 @@ describe('AuditTrailInterceptor', () => {
       expect(mockMetadata.fetchResourceBeforeMutation).toHaveBeenCalledWith(
         'users',
         '789',
+        null,
         1,
       );
       expect(mockLogging.logSuccess).toHaveBeenCalledOnce();
     });
 
-    it('should use standard logging for DELETE without resourceId', async () => {
+    it('should use standard logging for DELETE without resourceId or UUID', async () => {
       mockHelpers.determineAction.mockReturnValueOnce('delete');
       mockMetadata.extractRequestMetadata.mockReturnValueOnce({
         endpoint: '/users',
         resourceType: 'users',
         resourceId: null,
+        resourceUuid: null,
         action: 'delete',
       });
       const next = createMockCallHandler();
@@ -316,6 +322,7 @@ describe('AuditTrailInterceptor', () => {
         endpoint: '/users',
         resourceType: 'users',
         resourceId: '456',
+        resourceUuid: null,
         action: 'delete',
       });
       const error = new Error('Delete failed');
@@ -344,6 +351,7 @@ describe('AuditTrailInterceptor', () => {
         endpoint: '/users',
         resourceType: 'users',
         resourceId: '456',
+        resourceUuid: null,
         action: 'delete',
       });
       const next = createMockCallHandler();

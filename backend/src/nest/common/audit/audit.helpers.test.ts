@@ -12,6 +12,7 @@ import {
   extractResourceId,
   extractResourceName,
   extractResourceType,
+  extractResourceUuid,
   getPathBasedAction,
   isAuthEndpoint,
   isCurrentUserEndpoint,
@@ -154,10 +155,73 @@ describe('extractResourceId', () => {
     expect(extractResourceId('/api/v2/users/abc', { id: 'abc' })).toBeNull();
   });
 
+  it('should return null for UUID in URL (not a numeric ID)', () => {
+    expect(
+      extractResourceId(
+        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
+        undefined,
+      ),
+    ).toBeNull();
+  });
+
   it('should strip query string before parsing', () => {
     expect(extractResourceId('/api/v2/users/42?tab=profile', undefined)).toBe(
       42,
     );
+  });
+});
+
+// =============================================================
+// extractResourceUuid
+// =============================================================
+
+describe('extractResourceUuid', () => {
+  it('should extract UUID from params', () => {
+    expect(
+      extractResourceUuid(
+        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
+        {
+          uuid: '019c9088-c3da-751f-ad4f-06ef7c086342',
+        },
+      ),
+    ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
+  });
+
+  it('should extract UUID from URL when no params', () => {
+    expect(
+      extractResourceUuid(
+        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
+        undefined,
+      ),
+    ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
+  });
+
+  it('should extract UUID from id param', () => {
+    expect(
+      extractResourceUuid(
+        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
+        {
+          id: '019c9088-c3da-751f-ad4f-06ef7c086342',
+        },
+      ),
+    ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
+  });
+
+  it('should return null when no UUID present', () => {
+    expect(extractResourceUuid('/api/v2/users/42', { id: '42' })).toBeNull();
+  });
+
+  it('should return null for empty path', () => {
+    expect(extractResourceUuid('/api/v2/users', undefined)).toBeNull();
+  });
+
+  it('should strip query string', () => {
+    expect(
+      extractResourceUuid(
+        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342?tab=board',
+        undefined,
+      ),
+    ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
   });
 });
 
@@ -218,8 +282,27 @@ describe('shouldExclude', () => {
     expect(shouldExclude('/api/v2/departments')).toBe(true);
   });
 
+  it('should exclude TPM config reference data', () => {
+    expect(shouldExclude('/api/v2/tpm/config/colors')).toBe(true);
+    expect(shouldExclude('/api/v2/tpm/config/interval-colors')).toBe(true);
+    expect(shouldExclude('/api/v2/tpm/locations')).toBe(true);
+  });
+
   it('should exclude page init endpoints', () => {
     expect(shouldExclude('/api/v2/users/me')).toBe(true);
+  });
+
+  it('should exclude E2E key init endpoints', () => {
+    expect(shouldExclude('/api/v2/e2e/keys/me')).toBe(true);
+    expect(shouldExclude('/api/v2/e2e/escrow')).toBe(true);
+  });
+
+  it('should exclude SSE connection-ticket', () => {
+    expect(shouldExclude('/api/v2/auth/connection-ticket')).toBe(true);
+  });
+
+  it('should exclude theme toggle', () => {
+    expect(shouldExclude('/api/v2/settings/user/theme')).toBe(true);
   });
 
   it('should NOT exclude normal API paths', () => {
@@ -435,6 +518,22 @@ describe('shouldSkipGetRequest', () => {
     );
   });
 
+  it('should skip sub-resource data endpoints', () => {
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/uuid/board')).toBe(true);
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/uuid/time-estimates')).toBe(
+      true,
+    );
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/interval-matrix')).toBe(
+      true,
+    );
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/schedule-projection')).toBe(
+      true,
+    );
+    expect(
+      shouldSkipGetRequest('/api/v2/tpm/executions/eligible-participants'),
+    ).toBe(true);
+  });
+
   it('should not skip normal endpoints', () => {
     expect(shouldSkipGetRequest('/api/v2/kvp/42')).toBe(false);
   });
@@ -541,6 +640,17 @@ describe('buildAuditChanges', () => {
     const result = buildAuditChanges('view', req, httpMeta);
 
     expect(result.resource_id).toBe(42);
+  });
+
+  it('should add UUID as resource_id for view action with UUID URL', () => {
+    const req = createMockRequest({
+      url: '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
+      params: { uuid: '019c9088-c3da-751f-ad4f-06ef7c086342' },
+    });
+
+    const result = buildAuditChanges('view', req, httpMeta);
+
+    expect(result.resource_id).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
   });
 });
 

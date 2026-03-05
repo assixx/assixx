@@ -95,8 +95,13 @@ describe('AuditMetadataService', () => {
   // =============================================================
 
   describe('fetchResourceBeforeMutation', () => {
-    it('should return null when resourceId is null', async () => {
-      const result = await service.fetchResourceBeforeMutation('user', null, 1);
+    it('should return null when both resourceId and resourceUuid are null', async () => {
+      const result = await service.fetchResourceBeforeMutation(
+        'user',
+        null,
+        null,
+        1,
+      );
 
       expect(result).toBeNull();
       expect(mockDb.query).not.toHaveBeenCalled();
@@ -106,6 +111,7 @@ describe('AuditMetadataService', () => {
       const result = await service.fetchResourceBeforeMutation(
         'unknown-type',
         42,
+        null,
         1,
       );
 
@@ -113,24 +119,57 @@ describe('AuditMetadataService', () => {
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
-    it('should return sanitized data when resource is found', async () => {
+    it('should return sanitized data when resource is found by numeric ID', async () => {
       mockDb.query.mockResolvedValueOnce([
         { id: 42, name: 'Test User', password: 'secret' },
       ]);
 
-      const result = await service.fetchResourceBeforeMutation('user', 42, 1);
+      const result = await service.fetchResourceBeforeMutation(
+        'user',
+        42,
+        null,
+        1,
+      );
 
       expect(result).not.toBeNull();
       expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT * FROM users'),
+        expect.stringContaining('WHERE id = $1'),
         [42, 1],
+      );
+    });
+
+    it('should return sanitized data when resource is found by UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 7,
+          uuid: '019c9088-c3da-751f-ad4f-06ef7c086342',
+          name: 'TPM Plan',
+        },
+      ]);
+
+      const result = await service.fetchResourceBeforeMutation(
+        'tpm-plan',
+        null,
+        '019c9088-c3da-751f-ad4f-06ef7c086342',
+        1,
+      );
+
+      expect(result).not.toBeNull();
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('WHERE uuid = $1'),
+        ['019c9088-c3da-751f-ad4f-06ef7c086342', 1],
       );
     });
 
     it('should return null when resource is not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.fetchResourceBeforeMutation('user', 999, 1);
+      const result = await service.fetchResourceBeforeMutation(
+        'user',
+        999,
+        null,
+        1,
+      );
 
       expect(result).toBeNull();
     });
@@ -138,7 +177,12 @@ describe('AuditMetadataService', () => {
     it('should return null and not throw when DB query fails', async () => {
       mockDb.query.mockRejectedValueOnce(new Error('Connection refused'));
 
-      const result = await service.fetchResourceBeforeMutation('user', 42, 1);
+      const result = await service.fetchResourceBeforeMutation(
+        'user',
+        42,
+        null,
+        1,
+      );
 
       expect(result).toBeNull();
     });

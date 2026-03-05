@@ -81,10 +81,10 @@ export class AuditTrailInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    // Route to appropriate handler
+    // Route to appropriate handler — pre-fetch supports both numeric IDs and UUIDs
     const needsPreFetch =
       (action === 'delete' || action === 'update') &&
-      metadata.resourceId !== null;
+      (metadata.resourceId !== null || metadata.resourceUuid !== null);
 
     if (needsPreFetch && user !== undefined) {
       return this.handleMutationWithPreFetch(
@@ -172,6 +172,7 @@ export class AuditTrailInterceptor implements NestInterceptor {
       this.metadataService.fetchResourceBeforeMutation(
         metadata.resourceType,
         metadata.resourceId,
+        metadata.resourceUuid,
         user.tenantId,
       ),
     ).pipe(

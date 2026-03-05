@@ -165,7 +165,7 @@ export class LogFormattersService {
   }
 
   /**
-   * Add optional markers (details, status, source) to TXT output.
+   * Add optional markers (details, changes, status, source) to TXT output.
    */
   private addOptionalMarkers(parts: string[], entry: UnifiedLogEntry): void {
     // Details (truncated)
@@ -175,6 +175,9 @@ export class LogFormattersService {
       parts.push(`"${truncated}"`);
     }
 
+    // Change summary for mutations
+    this.addChangeSummary(parts, entry);
+
     // Status and markers
     if (entry.status === 'failure') {
       parts.push('[FAILURE]');
@@ -183,6 +186,31 @@ export class LogFormattersService {
       parts.push('[ROLE-SWITCHED]');
     }
     parts.push(`[${entry.source}]`);
+  }
+
+  /**
+   * Add a condensed change summary for UPDATE/DELETE/CREATE actions.
+   * Shows which fields were affected without full JSON dump.
+   */
+  private addChangeSummary(parts: string[], entry: UnifiedLogEntry): void {
+    if (entry.changes === undefined) {
+      return;
+    }
+
+    const updated = entry.changes['updated'] as Record<string, unknown> | undefined;
+    const deleted = entry.changes['deleted'] as Record<string, unknown> | undefined;
+
+    if (entry.action === 'update' && updated !== undefined) {
+      const fields = Object.keys(updated).filter((k: string) => k !== '_http').slice(0, 5);
+      if (fields.length > 0) {
+        parts.push(`[changed: ${fields.join(', ')}]`);
+      }
+    } else if (entry.action === 'delete' && deleted !== undefined) {
+      const fields = Object.keys(deleted).filter((k: string) => k !== '_http').slice(0, 5);
+      if (fields.length > 0) {
+        parts.push(`[deleted-fields: ${fields.join(', ')}]`);
+      }
+    }
   }
 
   /**

@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../../database/database.service.js';
 import { AuditLoggingService } from './audit-logging.service.js';
+import type { AuditMetadataService } from './audit-metadata.service.js';
 import type { AuditRequestMetadata } from './audit.constants.js';
 
 // =============================================================
@@ -19,6 +20,10 @@ function createMockDb() {
   return { query: vi.fn().mockResolvedValue([]) };
 }
 
+function createMockMetadataService() {
+  return { fetchResourceName: vi.fn().mockResolvedValue(null) };
+}
+
 function createMinimalMetadata(
   overrides?: Partial<AuditRequestMetadata>,
 ): AuditRequestMetadata {
@@ -26,6 +31,7 @@ function createMinimalMetadata(
     action: 'create',
     resourceType: 'users',
     resourceId: 42,
+    resourceUuid: null,
     endpoint: '/api/v2/users',
     httpMethod: 'POST',
     ipAddress: '127.0.0.1',
@@ -71,7 +77,11 @@ describe('AuditLoggingService', () => {
 
   beforeEach(() => {
     mockDb = createMockDb();
-    service = new AuditLoggingService(mockDb as unknown as DatabaseService);
+    const mockMeta = createMockMetadataService();
+    service = new AuditLoggingService(
+      mockDb as unknown as DatabaseService,
+      mockMeta as unknown as AuditMetadataService,
+    );
   });
 
   // =============================================================

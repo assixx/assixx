@@ -188,12 +188,12 @@
     );
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     pointer-events: none;
-    opacity: 0;
+    opacity: 0%;
     transition: opacity 250ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .kamishibai-section--clipped::after {
-    opacity: 1;
+    opacity: 100%;
   }
 
   /* Stacked: collapsed + not first → pull up + depth shadow */
