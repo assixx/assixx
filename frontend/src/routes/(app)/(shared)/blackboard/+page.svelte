@@ -658,7 +658,7 @@
     border-radius: 12px;
     background-image: radial-gradient(
       circle,
-      rgb(255 255 255 / 25%) 1.5px,
+      rgb(255 255 255 / 45%) 1.5px,
       transparent 1.5px
     );
     background-size: 20px 20px;
@@ -675,7 +675,7 @@
   :global(html:not(.dark)) .blackboard-container::after {
     background-image: radial-gradient(
       circle,
-      rgb(0 0 0 / 40%) 1.5px,
+      rgb(0 0 0 / 60%) 1.5px,
       transparent 1.5px
     );
   }

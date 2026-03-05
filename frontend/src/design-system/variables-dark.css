@@ -33,6 +33,12 @@ html.dark {
   /* Stacked section background (Kamishibai board collapsed sections) */
   --color-section-stacked-bg: #000000ed;
 
+  /* Borders (theme-dependent — from colors.css refactor) */
+  --color-border: var(--color-gray-800);
+  --color-border-hover: #a9d9ff54;
+  --color-glass-border: rgb(255 255 255 / 10%);
+  --color-glass-border-hover: rgb(255 255 255 / 20%);
+
   /* Glass Backgrounds (white overlays on dark surfaces) */
   --glass-bg: rgb(255 255 255 / 2.5%);
   --glass-bg-hover: rgb(255 255 255 / 3%);
