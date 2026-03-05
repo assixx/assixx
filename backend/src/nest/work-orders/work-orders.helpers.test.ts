@@ -7,10 +7,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  type SourcePhotoRow,
   isValidStatusTransition,
   mapAssigneeRowToApi,
   mapCommentRowToApi,
   mapPhotoRowToApi,
+  mapSourcePhotoRowToApi,
   mapWorkOrderRowToApi,
   mapWorkOrderRowToListItem,
   toIsoString,
@@ -403,6 +405,57 @@ describe('mapPhotoRowToApi', () => {
     const row = createPhotoRow({ uuid: '  photo-uuid  ' });
     const result = mapPhotoRowToApi(row);
     expect(result.uuid).toBe('photo-uuid');
+  });
+});
+
+// ============================================================================
+// mapSourcePhotoRowToApi
+// ============================================================================
+
+describe('mapSourcePhotoRowToApi', () => {
+  const baseRow: SourcePhotoRow = {
+    uuid: '  019caf7b-be0f-70c4-b4e1-6b14d55c5bcd  ',
+    file_path: 'uploads/tpm/2/defects/abc/photo.jpg',
+    file_name: 'Kentaro_Miura.jpg',
+    file_size: 14_499,
+    mime_type: 'image/jpeg',
+    created_at: '2026-03-02T16:57:28.331Z',
+  };
+
+  it('should map all fields correctly', () => {
+    const result = mapSourcePhotoRowToApi(baseRow);
+
+    expect(result).toEqual({
+      uuid: '019caf7b-be0f-70c4-b4e1-6b14d55c5bcd',
+      filePath: 'uploads/tpm/2/defects/abc/photo.jpg',
+      fileName: 'Kentaro_Miura.jpg',
+      fileSize: 14_499,
+      mimeType: 'image/jpeg',
+      createdAt: '2026-03-02T16:57:28.331Z',
+    });
+  });
+
+  it('should trim uuid whitespace', () => {
+    const result = mapSourcePhotoRowToApi(baseRow);
+    expect(result.uuid).not.toContain(' ');
+  });
+
+  it('should convert Date created_at to ISO string', () => {
+    const result = mapSourcePhotoRowToApi({
+      ...baseRow,
+      created_at: new Date('2026-01-20T09:15:00Z'),
+    });
+    expect(result.createdAt).toBe('2026-01-20T09:15:00.000Z');
+  });
+
+  it('should handle PNG mime type', () => {
+    const result = mapSourcePhotoRowToApi({
+      ...baseRow,
+      mime_type: 'image/png',
+      file_name: 'screenshot.png',
+    });
+    expect(result.mimeType).toBe('image/png');
+    expect(result.fileName).toBe('screenshot.png');
   });
 });
 

@@ -213,6 +213,51 @@ describe('WorkOrderPhotosService', () => {
   });
 
   // =============================================================
+  // getSourcePhotos
+  // =============================================================
+
+  describe('getSourcePhotos', () => {
+    it('should return mapped source photos for tpm_defect', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: '019caf7b-be0f-70c4-b4e1-6b14d55c5bcd',
+          file_path: 'uploads/tpm/2/defects/abc/photo.jpg',
+          file_name: 'defect-photo.jpg',
+          file_size: 14_499,
+          mime_type: 'image/jpeg',
+          created_at: '2026-03-02T16:57:28.331Z',
+        },
+      ]);
+
+      const result = await service.getSourcePhotos(10, 'wo-uuid');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.uuid).toBe('019caf7b-be0f-70c4-b4e1-6b14d55c5bcd');
+      expect(result[0]?.filePath).toBe('uploads/tpm/2/defects/abc/photo.jpg');
+      expect(result[0]?.fileName).toBe('defect-photo.jpg');
+      expect(result[0]?.fileSize).toBe(14_499);
+      expect(result[0]?.mimeType).toBe('image/jpeg');
+    });
+
+    it('should return empty array when no source photos exist', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getSourcePhotos(10, 'wo-uuid');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array for manual work order (no tpm_defect match)', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getSourcePhotos(10, 'manual-wo-uuid');
+
+      expect(result).toEqual([]);
+      expect(mockDb.query).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // =============================================================
   // deletePhoto
   // =============================================================
 
