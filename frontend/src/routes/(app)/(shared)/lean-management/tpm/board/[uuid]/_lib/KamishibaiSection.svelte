@@ -106,7 +106,11 @@
           {CARD_ROLE_LABELS.operator}
           <span class="kamishibai-section__count">{operatorCards.length}</span>
         </div>
-        <div class="kamishibai-section__cards">
+        <div
+          class="kamishibai-section__cards"
+          class:kamishibai-section__cards--stacked={isCollapsed &&
+            !isSectionExpanded}
+        >
           {#each operatorCards as card (card.uuid)}
             <KamishibaiCard
               {card}
@@ -129,7 +133,11 @@
             >{maintenanceCards.length}</span
           >
         </div>
-        <div class="kamishibai-section__cards">
+        <div
+          class="kamishibai-section__cards"
+          class:kamishibai-section__cards--stacked={isCollapsed &&
+            !isSectionExpanded}
+        >
           {#each maintenanceCards as card (card.uuid)}
             <KamishibaiCard
               {card}
@@ -253,10 +261,10 @@
     align-items: center;
     gap: 0.25rem;
     margin-left: auto;
-    padding: 0.25rem 0.75rem;
+    padding: 0.475rem 1rem;
     border-radius: var(--radius-full, 9999px);
-    font-size: 0.813rem;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 600;
   }
 
   .kamishibai-section__badge--open {
@@ -305,6 +313,27 @@
     gap: 0.75rem;
     min-height: 180px;
     align-items: flex-start;
+    transition: gap 300ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .kamishibai-section__cards :global(.kamishibai-card) {
+    transition: margin-left 300ms
+      var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  /* Stacked cards — horizontal overlap like a fanned deck */
+  .kamishibai-section__cards--stacked {
+    flex-wrap: nowrap;
+    gap: 0;
+    min-height: auto;
+  }
+
+  .kamishibai-section__cards--stacked :global(.kamishibai-card) {
+    margin-left: -100px;
+  }
+
+  .kamishibai-section__cards--stacked :global(.kamishibai-card:first-child) {
+    margin-left: 0;
   }
 
   .kamishibai-section__empty {
@@ -325,7 +354,9 @@
   @media (prefers-reduced-motion: reduce) {
     .kamishibai-section,
     .kamishibai-section__header,
-    .kamishibai-section__chevron {
+    .kamishibai-section__chevron,
+    .kamishibai-section__cards,
+    .kamishibai-section__cards :global(.kamishibai-card) {
       transition: none;
     }
   }

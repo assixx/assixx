@@ -1,92 +1,81 @@
-# How to curl - Assixx API Login
+# How to curl - Assixx API
 
-## Das Problem
+## Token holen
 
-Bash escaped `!` (History Expansion) auch in Single Quotes. Das macht JSON mit Passwörtern wie `ApiTest12345!` kaputt:
+### Option A: Browser (schnellste Methode)
 
-```
-# Bash sendet: ApiTest123\!  → Fastify: "Body is not valid JSON"
-```
+1. Browser: F12 (DevTools) -> Network Tab
+2. Beliebigen API-Request anklicken
+3. Header `Authorization: Bearer eyJ...` kopieren
 
-## Lösung: JSON-Datei verwenden
+### Option B: Login via curl
+
+Bash escaped `!` in Passwörtern -> JSON-Datei verwenden:
 
 ```bash
-# 1. JSON-Datei anlegen (einmalig)
 cat > /tmp/login.json << 'EOF'
 {"email":"admin@apitest.de","password":"ApiTest12345!"}
 EOF
 
-# 2. Login
-curl -s -X POST http://localhost:3000/api/v2/auth/login \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-ID: apitest" \
-  -d @/tmp/login.json | jq '.'
-```
-
-## Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbG...",
-    "refreshToken": "eyJhbG...",
-    "user": {
-      "id": 1,
-      "email": "admin@apitest.de",
-      "firstName": "Bruno",
-      "lastName": "Tester",
-      "role": "root",
-      "tenantId": 1
-    }
-  }
-}
-```
-
-## Token weiterverwenden
-
-```bash
-# Token aus Login-Response extrahieren
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v2/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Tenant-ID: apitest" \
   -d @/tmp/login.json | jq -r '.data.accessToken')
-
-# Authentifizierte Requests
-curl -s http://localhost:3000/api/v2/users \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "X-Tenant-ID: apitest" | jq '.'
 ```
 
-## Schnelltest: Token aus Browser kopieren
+## API-Requests mit Token
 
-Einfachster Weg — Token aus Browser DevTools (Network Tab) kopieren und direkt verwenden:
+Jeder Request braucht zwei Header: `Authorization` und `X-Tenant-ID`.
 
 ```bash
-# Beliebigen Endpoint testen (Token aus Browser einfügen)
-curl -s http://localhost:3000/api/v2/notifications/stream \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "X-Tenant-ID: testfirma" -m 5
+# Variable setzen (Token aus Browser oder Login)
+T="eyJhbG..."
 
-# Beispiel: User-Profil abfragen
+# GET
 curl -s http://localhost:3000/api/v2/users/me \
-  -H "Authorization: Bearer <TOKEN>" \
+  -H "Authorization: Bearer $T" \
   -H "X-Tenant-ID: testfirma" | jq '.'
+
+# POST (Body als JSON-Datei)
+cat > /tmp/payload.json << 'EOF'
+{"title":"Mein Titel","description":"Beschreibung"}
+EOF
+
+curl -s -X POST http://localhost:3000/api/v2/tpm/cards \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $T" \
+  -H "X-Tenant-ID: testfirma" \
+  -d @/tmp/payload.json | jq '.'
 ```
 
-**Wo Token finden:** Browser → F12 → Network Tab → beliebiger API Request → Headers → `Authorization: Bearer eyJ...` kopieren.
+## Bulk-Erstellung (Beispiel: 10 Einträge)
 
-**Hinweis:** `-m 5` setzt ein 5-Sekunden-Timeout (nützlich bei SSE-Streams wie `/notifications/stream`).
+```bash
+T="eyJhbG..."
 
-## Credentials (apitest Tenant)
+for i in $(seq 1 10); do
+cat > /tmp/item.json << JSONEOF
+{"planUuid":"<UUID>","cardRole":"operator","intervalType":"daily","title":"Karte $i"}
+JSONEOF
 
-| Feld     | Wert             |
-| -------- | ---------------- |
-| Email    | admin@apitest.de |
-| Passwort | ApiTest12345!    |
-| Tenant   | apitest          |
+curl -s -X POST http://localhost:3000/api/v2/tpm/cards \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $T" \
+  -H "X-Tenant-ID: testfirma" \
+  -d @/tmp/item.json | jq -r '.data.title // .error.message'
+done
+```
 
-thats the right bash :
-● Bash(curl -s http://localhost:3000/api/v2/features/my-features -H "Authorization: Bearer
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJhZG1pbkB0ZXNmaXJ…)
-⎿ Running…
+## Wichtig
+
+- Token läuft nach **30 Minuten** ab
+- `X-Tenant-ID` ist der Tenant-Slug (z.B. `apitest`, `testfirma`)
+- JSON-Body immer via `@/tmp/datei.json` senden (kein Inline-JSON wegen `!`-Escaping)
+- SSE-Streams: `-m 5` für Timeout
+
+## Credentials
+
+| Tenant    | Email              | Passwort       |
+|-----------|--------------------|----------------|
+| apitest   | admin@apitest.de   | ApiTest12345!  |
+| testfirma | admin@tesfirma.de  | ApiTest12345!  |

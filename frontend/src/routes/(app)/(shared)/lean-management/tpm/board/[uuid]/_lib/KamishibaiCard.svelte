@@ -246,6 +246,7 @@
     isolation: isolate;
     width: 160px;
     height: 210px;
+    border-left: 2px solid rgb(0 0 0 / 60%);
     border-radius: var(--card-radius);
     cursor: pointer;
     flex-shrink: 0;
