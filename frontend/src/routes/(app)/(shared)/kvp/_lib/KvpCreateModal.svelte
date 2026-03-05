@@ -16,10 +16,10 @@
   import { kvpState } from './state.svelte';
   import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
-  import type { KvpFormData, KvpPriority, UserTeamWithMachines } from './types';
+  import type { KvpFormData, KvpPriority, UserTeamWithAssets } from './types';
 
   interface Props {
-    userOrganizations: UserTeamWithMachines[];
+    userOrganizations: UserTeamWithAssets[];
     onclose: () => void;
     onsuccess: () => void;
   }
@@ -39,33 +39,33 @@
   let formPriorityDisplay = $state('Normal');
   let formPriorityValue = $state<KvpPriority>('normal');
 
-  // Team/Machine selection state
+  // Team/Asset selection state
   let selectedTeamIds = $state<number[]>([]);
-  let selectedMachineIds = $state<number[]>([]);
+  let selectedAssetIds = $state<number[]>([]);
 
-  /** All machines from all user teams (deduplicated) */
-  const allMachines = $derived.by(() => {
+  /** All assets from all user teams (deduplicated) */
+  const allAssets = $derived.by(() => {
     const seen = new SvelteSet<number>();
-    const machines: { id: number; name: string }[] = [];
+    const assets: { id: number; name: string }[] = [];
     for (const team of userOrganizations) {
-      for (const machine of team.machines) {
-        if (!seen.has(machine.id)) {
-          seen.add(machine.id);
-          machines.push(machine);
+      for (const asset of team.assets) {
+        if (!seen.has(asset.id)) {
+          seen.add(asset.id);
+          assets.push(asset);
         }
       }
     }
-    return machines;
+    return assets;
   });
 
-  /** Show machine select only when no team is selected */
-  const showMachineSelect = $derived(
-    selectedTeamIds.length === 0 && allMachines.length > 0,
+  /** Show asset select only when no team is selected */
+  const showAssetSelect = $derived(
+    selectedTeamIds.length === 0 && allAssets.length > 0,
   );
 
-  /** Validation: at least 1 team or 1 machine */
+  /** Validation: at least 1 team or 1 asset */
   const hasOrgSelection = $derived(
-    selectedTeamIds.length > 0 || selectedMachineIds.length > 0,
+    selectedTeamIds.length > 0 || selectedAssetIds.length > 0,
   );
 
   // Form refs
@@ -105,15 +105,15 @@
     selectedTeamIds = Array.from(select.selectedOptions).map((o) =>
       Number(o.value),
     );
-    // Clear machines when teams are selected
+    // Clear assets when teams are selected
     if (selectedTeamIds.length > 0) {
-      selectedMachineIds = [];
+      selectedAssetIds = [];
     }
   }
 
-  function handleMachineChange(event: Event) {
+  function handleAssetChange(event: Event) {
     const select = event.target as HTMLSelectElement;
-    selectedMachineIds = Array.from(select.selectedOptions).map((o) =>
+    selectedAssetIds = Array.from(select.selectedOptions).map((o) =>
       Number(o.value),
     );
   }
@@ -167,7 +167,7 @@
     photoPreviews = [];
     selectedPhotos = [];
     selectedTeamIds = [];
-    selectedMachineIds = [];
+    selectedAssetIds = [];
     formCategoryDisplay = 'Bitte wählen';
     formCategoryIcon = undefined;
     formCategoryColor = undefined;
@@ -204,7 +204,7 @@
       priority: formPriorityValue,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
       teamIds: selectedTeamIds,
-      machineIds: selectedMachineIds,
+      assetIds: selectedAssetIds,
       departmentId: kvpState.currentUser?.departmentId ?? null,
     };
   }
@@ -238,7 +238,7 @@
 
     if (!hasOrgSelection) {
       showWarningAlert(
-        'Bitte wählen Sie mindestens ein Team oder eine Maschine aus',
+        'Bitte wählen Sie mindestens ein Team oder eine Anlage aus',
       );
       return;
     }
@@ -499,7 +499,7 @@
         <!-- Team Selection -->
         <div
           class="form-field"
-          class:md:col-span-2={!showMachineSelect}
+          class:md:col-span-2={!showAssetSelect}
         >
           <label
             class="form-field__label"
@@ -526,29 +526,29 @@
           </select>
         </div>
 
-        <!-- Machine Selection (only when no team selected) -->
-        {#if showMachineSelect}
+        <!-- Asset Selection (only when no team selected) -->
+        {#if showAssetSelect}
           <div class="form-field">
             <label
               class="form-field__label"
-              for="kvpMachineSelect"
+              for="kvpAssetSelect"
             >
-              Maschine(n) zuweisen
+              Anlage(n) zuweisen
               <span class="text-red-500">*</span>
               <span class="form-field__hint"
                 >(Strg+Klick für Mehrfachauswahl)</span
               >
             </label>
             <select
-              id="kvpMachineSelect"
+              id="kvpAssetSelect"
               multiple
               class="multi-select"
-              value={selectedMachineIds}
-              onchange={handleMachineChange}
+              value={selectedAssetIds}
+              onchange={handleAssetChange}
             >
-              {#each allMachines as machine (machine.id)}
-                <option value={machine.id}>
-                  {machine.name}
+              {#each allAssets as asset (asset.id)}
+                <option value={asset.id}>
+                  {asset.name}
                 </option>
               {/each}
             </select>
@@ -560,7 +560,7 @@
           <div class="form-field md:col-span-2">
             <p class="text-sm text-amber-400">
               <i class="fas fa-exclamation-triangle mr-1"></i>
-              Bitte wählen Sie mindestens ein Team oder eine Maschine aus.
+              Bitte wählen Sie mindestens ein Team oder eine Anlage aus.
             </p>
           </div>
         {/if}

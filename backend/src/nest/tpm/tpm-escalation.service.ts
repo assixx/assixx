@@ -33,8 +33,8 @@ interface OverdueCandidate {
   tenant_id: number;
   card_code: string;
   title: string;
-  machine_id: number;
-  machine_name: string | null;
+  asset_id: number;
+  asset_name: string | null;
   interval_type: string;
   status: string;
 }
@@ -173,13 +173,13 @@ export class TpmEscalationService implements OnModuleInit {
   private async findOverdueCandidates(): Promise<OverdueCandidate[]> {
     return await this.db.query<OverdueCandidate>(
       `SELECT c.id, c.uuid, c.tenant_id, c.card_code, c.title,
-              c.machine_id, c.interval_type, c.status,
-              m.name AS machine_name
+              c.asset_id, c.interval_type, c.status,
+              m.name AS asset_name
        FROM tpm_cards c
        LEFT JOIN tpm_escalation_config ec
          ON c.tenant_id = ec.tenant_id
-       LEFT JOIN machines m
-         ON c.machine_id = m.id AND c.tenant_id = m.tenant_id
+       LEFT JOIN assets m
+         ON c.asset_id = m.id AND c.tenant_id = m.tenant_id
        WHERE c.status = 'red'
          AND c.is_active = 1
          AND c.current_due_date IS NOT NULL
@@ -239,16 +239,16 @@ export class TpmEscalationService implements OnModuleInit {
   // NOTIFICATION + LOOKUP HELPERS
   // ============================================================================
 
-  /** Resolve team lead for the card's machine and send notification */
+  /** Resolve team lead for the card's asset and send notification */
   private async notifyTeamLead(candidate: OverdueCandidate): Promise<void> {
     const teamLeadId = await this.resolveTeamLead(
       candidate.tenant_id,
-      candidate.machine_id,
+      candidate.asset_id,
     );
 
     if (teamLeadId === null) {
       this.logger.warn(
-        `No team lead found for machine ${String(candidate.machine_id)} — skipping notification`,
+        `No team lead found for asset ${String(candidate.asset_id)} — skipping notification`,
       );
       return;
     }
@@ -260,20 +260,20 @@ export class TpmEscalationService implements OnModuleInit {
     );
   }
 
-  /** Find the team lead responsible for a machine */
+  /** Find the team lead responsible for a asset */
   private async resolveTeamLead(
     tenantId: number,
-    machineId: number,
+    assetId: number,
   ): Promise<number | null> {
     const result = await this.db.queryOne<{ team_lead_id: number }>(
       `SELECT DISTINCT t.team_lead_id
        FROM teams t
-       JOIN machine_teams mt
+       JOIN asset_teams mt
          ON t.id = mt.team_id AND t.tenant_id = mt.tenant_id
-       WHERE mt.machine_id = $1 AND mt.tenant_id = $2
+       WHERE mt.asset_id = $1 AND mt.tenant_id = $2
          AND t.is_active = 1 AND t.team_lead_id IS NOT NULL
        LIMIT 1`,
-      [machineId, tenantId],
+      [assetId, tenantId],
     );
     return result?.team_lead_id ?? null;
   }
@@ -284,9 +284,9 @@ export class TpmEscalationService implements OnModuleInit {
       uuid: candidate.uuid,
       cardCode: candidate.card_code,
       title: candidate.title,
-      machineId: candidate.machine_id,
-      ...(candidate.machine_name !== null && {
-        machineName: candidate.machine_name,
+      assetId: candidate.asset_id,
+      ...(candidate.asset_name !== null && {
+        assetName: candidate.asset_name,
       }),
       intervalType: candidate.interval_type,
       status: 'overdue',

@@ -36,8 +36,8 @@ const SECOND_DATE = '2026-03-11';
 function makePlan(overrides: Partial<TpmPlan> = {}): TpmPlan {
   return {
     uuid: DEFAULT_PLAN_UUID,
-    machineId: 1,
-    machineName: 'Presse P17',
+    assetId: 1,
+    assetName: 'Presse P17',
     name: 'Wartungsplan A',
     baseWeekday: 1,
     baseRepeatEvery: 1,
@@ -57,8 +57,8 @@ function makeSlot(overrides: Partial<ProjectedSlot> = {}): ProjectedSlot {
   return {
     planUuid: DEFAULT_PLAN_UUID,
     planName: 'Wartungsplan A',
-    machineId: 1,
-    machineName: 'Presse P17',
+    assetId: 1,
+    assetName: 'Presse P17',
     intervalTypes: ['monthly'],
     date: DEFAULT_DATE,
     startTime: '08:00:00',
@@ -210,8 +210,8 @@ describe('buildMatrix – multi-interval & multi-plan', () => {
 
   it('should handle multiple plans independently', () => {
     const plans = [
-      makePlan({ uuid: 'plan-A', machineName: 'Maschine A' }),
-      makePlan({ uuid: 'plan-B', machineName: 'Maschine B' }),
+      makePlan({ uuid: 'plan-A', assetName: 'Anlage A' }),
+      makePlan({ uuid: 'plan-B', assetName: 'Anlage B' }),
     ];
     const slots = [
       makeSlot({
@@ -329,7 +329,7 @@ function makeAssignment(
 ): TpmShiftAssignment {
   return {
     planUuid: DEFAULT_PLAN_UUID,
-    machineId: 1,
+    assetId: 1,
     shiftDate: DEFAULT_DATE,
     userId: 10,
     firstName: 'Warren',
@@ -559,8 +559,8 @@ describe('buildAssignmentCounts – sorting', () => {
 describe('buildAssignmentCounts – integration with buildDateIndex', () => {
   it('should work with dateIndex built from matrixRows', () => {
     const plans = [
-      makePlan({ uuid: 'p1', machineName: 'Machine A' }),
-      makePlan({ uuid: 'p2', machineName: 'Machine B' }),
+      makePlan({ uuid: 'p1', assetName: 'Asset A' }),
+      makePlan({ uuid: 'p2', assetName: 'Asset B' }),
     ];
     const slots: ProjectedSlot[] = [
       makeSlot({

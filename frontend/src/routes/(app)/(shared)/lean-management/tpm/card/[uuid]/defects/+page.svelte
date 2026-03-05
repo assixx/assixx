@@ -317,8 +317,8 @@
             <span class="font-semibold">{card.cardCode}</span>
             — {card.title}
             · {INTERVAL_LABELS[card.intervalType]}
-            {#if card.machineName !== undefined}
-              · {card.machineName}
+            {#if card.assetName !== undefined}
+              · {card.assetName}
             {/if}
           </p>
           <div class="mt-2 flex items-center gap-3">

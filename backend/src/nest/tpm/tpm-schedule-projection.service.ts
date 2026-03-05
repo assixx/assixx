@@ -34,8 +34,8 @@ import type {
 interface PlanRow {
   plan_uuid: string;
   plan_name: string;
-  machine_id: number;
-  machine_name: string;
+  asset_id: number;
+  asset_name: string;
   base_weekday: number;
   base_repeat_every: number;
   base_time: string | null;
@@ -47,8 +47,8 @@ interface PlanRow {
 interface PlanProjectionData {
   planUuid: string;
   planName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   baseWeekday: number;
   baseRepeatEvery: number;
   baseTime: string | null;
@@ -128,15 +128,15 @@ export class TpmScheduleProjectionService {
       `SELECT
          p.uuid AS plan_uuid,
          p.name AS plan_name,
-         p.machine_id,
-         m.name AS machine_name,
+         p.asset_id,
+         m.name AS asset_name,
          p.base_weekday,
          p.base_repeat_every,
          p.base_time,
          p.buffer_hours,
          p.created_at AS plan_created_at
        FROM tpm_maintenance_plans p
-       JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        WHERE p.tenant_id = $1 AND p.is_active = 1 ${excludeClause}
        ORDER BY p.name`,
       params,
@@ -148,8 +148,8 @@ export class TpmScheduleProjectionService {
     return rows.map((row: PlanRow) => ({
       planUuid: row.plan_uuid.trim(),
       planName: row.plan_name,
-      machineId: row.machine_id,
-      machineName: row.machine_name,
+      assetId: row.asset_id,
+      assetName: row.asset_name,
       baseWeekday: row.base_weekday,
       baseRepeatEvery: row.base_repeat_every,
       baseTime: row.base_time,
@@ -270,8 +270,8 @@ function createSlot(
   return {
     planUuid: plan.planUuid,
     planName: plan.planName,
-    machineId: plan.machineId,
-    machineName: plan.machineName,
+    assetId: plan.assetId,
+    assetName: plan.assetName,
     intervalTypes: [intervalType],
     date: formatDate(date),
     startTime,

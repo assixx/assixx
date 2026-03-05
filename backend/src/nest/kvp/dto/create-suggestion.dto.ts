@@ -12,10 +12,10 @@ import { IdSchema } from '../../../schemas/common.schema.js';
  * Organization level enum
  */
 const OrgLevelSchema = z.enum(
-  ['company', 'department', 'area', 'team', 'machine'],
+  ['company', 'department', 'area', 'team', 'asset'],
   {
     message:
-      'Organization level must be company, department, area, team, or machine',
+      'Organization level must be company, department, area, team, or asset',
   },
 );
 
@@ -30,7 +30,7 @@ const PrioritySchema = z.enum(['low', 'normal', 'high', 'urgent'], {
  * Create suggestion request body schema
  *
  * Either categoryId (global) or customCategoryId (tenant-specific) must be provided.
- * Either teamIds[] or machineIds[] must be provided (at least one entry).
+ * Either teamIds[] or assetIds[] must be provided (at least one entry).
  */
 const BaseCreateSuggestionSchema = z.object({
   title: z
@@ -57,7 +57,7 @@ const BaseCreateSuggestionSchema = z.object({
     .max(3, 'Maximal 3 Teams pro Vorschlag')
     .optional()
     .default([]),
-  machineIds: z.array(IdSchema).optional().default([]),
+  assetIds: z.array(IdSchema).optional().default([]),
   priority: PrioritySchema.optional(),
   expectedBenefit: z
     .string()
@@ -80,8 +80,8 @@ interface RefineData {
   categoryId?: number | null | undefined;
   customCategoryId?: number | null | undefined;
   teamIds: number[];
-  machineIds: number[];
-  orgLevel?: 'company' | 'department' | 'area' | 'team' | 'machine' | undefined;
+  assetIds: number[];
+  orgLevel?: 'company' | 'department' | 'area' | 'team' | 'asset' | undefined;
   orgId?: number | undefined;
 }
 
@@ -95,10 +95,10 @@ export const CreateSuggestionSchema = BaseCreateSuggestionSchema.refine(
 ).refine(
   (data: RefineData) =>
     data.teamIds.length > 0 ||
-    data.machineIds.length > 0 ||
+    data.assetIds.length > 0 ||
     (data.orgLevel !== undefined && data.orgId !== undefined),
   {
-    message: 'Mindestens ein Team oder eine Maschine muss ausgewählt werden',
+    message: 'Mindestens ein Team oder eine Anlage muss ausgewählt werden',
     path: ['teamIds'],
   },
 );

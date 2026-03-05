@@ -49,7 +49,7 @@ export const ENTITY_OPTIONS: DropdownOption[] = [
   { value: 'document', text: 'Dokument' },
   { value: 'blackboard', text: 'Schwarzes Brett' },
   { value: 'calendar', text: 'Kalender' },
-  { value: 'machine', text: 'Maschine' },
+  { value: 'asset', text: 'Anlage' },
   { value: 'shift', text: 'Schicht' },
   { value: 'logs', text: 'Logs' },
   { value: 'tenant', text: 'Tenant' },

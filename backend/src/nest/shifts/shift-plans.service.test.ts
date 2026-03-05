@@ -62,7 +62,7 @@ function makePlanRow(overrides: Record<string, unknown> = {}) {
     area_id: null,
     department_id: 5,
     team_id: null,
-    machine_id: null,
+    asset_id: null,
     name: 'Week Plan',
     start_date: '2025-06-01',
     end_date: '2025-06-07',

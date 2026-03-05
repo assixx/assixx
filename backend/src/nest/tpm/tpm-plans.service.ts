@@ -2,7 +2,7 @@
  * TPM Plans Service
  *
  * CRUD operations for maintenance plans.
- * Each plan belongs to exactly one machine (UNIQUE constraint).
+ * Each plan belongs to exactly one asset (UNIQUE constraint).
  * Uses tenantTransaction() for mutations, direct queries for reads.
  */
 import {
@@ -60,9 +60,9 @@ export class TpmPlansService {
   /** Get a single plan by UUID */
   async getPlan(tenantId: number, planUuid: string): Promise<TpmPlan> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, d.name AS department_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
-       LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
        WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
@@ -93,9 +93,9 @@ export class TpmPlansService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.db.query<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, d.name AS department_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
-       LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
        WHERE p.tenant_id = $1 AND p.is_active = 1
@@ -151,19 +151,19 @@ export class TpmPlansService {
     }));
   }
 
-  /** Get plan by machine ID (for slot assistant and inter-service lookups) */
-  async getPlanByMachineId(
+  /** Get plan by asset ID (for slot assistant and inter-service lookups) */
+  async getPlanByAssetId(
     tenantId: number,
-    machineId: number,
+    assetId: number,
   ): Promise<TpmPlan | null> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS machine_uuid, m.name AS machine_name, d.name AS department_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
-       LEFT JOIN machines m ON p.machine_id = m.id AND m.tenant_id = p.tenant_id
+       LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.machine_id = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
-      [machineId, tenantId],
+       WHERE p.asset_id = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
+      [assetId, tenantId],
     );
 
     if (row === null) return null;
@@ -181,34 +181,32 @@ export class TpmPlansService {
     userId: number,
     dto: CreateMaintenancePlanDto,
   ): Promise<TpmPlan> {
-    this.logger.debug(
-      `Creating plan "${dto.name}" for machine ${dto.machineUuid}`,
-    );
+    this.logger.debug(`Creating plan "${dto.name}" for asset ${dto.assetUuid}`);
 
     const plan = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<TpmPlan> => {
-        // Resolve machine UUID → internal ID
-        const machineId = await this.resolveMachineId(
+        // Resolve asset UUID → internal ID
+        const assetId = await this.resolveAssetId(
           client,
           tenantId,
-          dto.machineUuid,
+          dto.assetUuid,
         );
 
-        // Check uniqueness: one active plan per machine
-        await this.ensureNoPlanForMachine(client, tenantId, machineId);
+        // Check uniqueness: one active plan per asset
+        await this.ensureNoPlanForAsset(client, tenantId, assetId);
 
         // INSERT
         const uuid = uuidv7();
         const result = await client.query<TpmPlanJoinRow>(
           `INSERT INTO tpm_maintenance_plans
-             (uuid, tenant_id, machine_id, name, base_weekday, base_repeat_every,
+             (uuid, tenant_id, asset_id, name, base_weekday, base_repeat_every,
               base_time, buffer_hours, shift_plan_required, notes, created_by, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1)
            RETURNING *`,
           [
             uuid,
             tenantId,
-            machineId,
+            assetId,
             dto.name,
             dto.baseWeekday,
             dto.baseRepeatEvery,
@@ -233,9 +231,9 @@ export class TpmPlansService {
       tenantId,
       userId,
       'tpm_plan',
-      plan.machineId,
+      plan.assetId,
       `TPM-Wartungsplan erstellt: ${plan.name}`,
-      { planUuid: plan.uuid, machineName: plan.machineName },
+      { planUuid: plan.uuid, assetName: plan.assetName },
     );
 
     return plan;
@@ -283,7 +281,7 @@ export class TpmPlansService {
       tenantId,
       userId,
       'tpm_plan',
-      plan.machineId,
+      plan.assetId,
       `TPM-Wartungsplan aktualisiert: ${plan.name}`,
       { planUuid },
       dto as Record<string, unknown>,
@@ -317,9 +315,9 @@ export class TpmPlansService {
       tenantId,
       userId,
       'tpm_plan',
-      plan.machineId,
+      plan.assetId,
       `TPM-Wartungsplan gelöscht: ${plan.name}`,
-      { planUuid, machineName: plan.machineName },
+      { planUuid, assetName: plan.assetName },
     );
   }
 
@@ -327,37 +325,37 @@ export class TpmPlansService {
   // PRIVATE HELPERS
   // ============================================================================
 
-  /** Resolve machine UUID to internal ID within a transaction */
-  private async resolveMachineId(
+  /** Resolve asset UUID to internal ID within a transaction */
+  private async resolveAssetId(
     client: PoolClient,
     tenantId: number,
-    machineUuid: string,
+    assetUuid: string,
   ): Promise<number> {
     const result = await client.query<{ id: number }>(
-      `SELECT id FROM machines WHERE uuid = $1 AND tenant_id = $2`,
-      [machineUuid, tenantId],
+      `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2`,
+      [assetUuid, tenantId],
     );
     const row = result.rows[0];
     if (row === undefined) {
-      throw new NotFoundException(`Maschine ${machineUuid} nicht gefunden`);
+      throw new NotFoundException(`Anlage ${assetUuid} nicht gefunden`);
     }
     return row.id;
   }
 
-  /** Ensure no active plan exists for this machine (UNIQUE constraint guard) */
-  private async ensureNoPlanForMachine(
+  /** Ensure no active plan exists for this asset (UNIQUE constraint guard) */
+  private async ensureNoPlanForAsset(
     client: PoolClient,
     tenantId: number,
-    machineId: number,
+    assetId: number,
   ): Promise<void> {
     const result = await client.query<{ uuid: string }>(
       `SELECT uuid FROM tpm_maintenance_plans
-       WHERE tenant_id = $1 AND machine_id = $2 AND is_active = 1`,
-      [tenantId, machineId],
+       WHERE tenant_id = $1 AND asset_id = $2 AND is_active = 1`,
+      [tenantId, assetId],
     );
     if (result.rows[0] !== undefined) {
       throw new ConflictException(
-        'Für diese Maschine existiert bereits ein aktiver Wartungsplan',
+        'Für diese Anlage existiert bereits ein aktiver Wartungsplan',
       );
     }
   }

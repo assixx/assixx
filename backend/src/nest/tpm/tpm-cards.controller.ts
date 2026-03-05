@@ -3,7 +3,7 @@
  *
  * REST endpoints for maintenance card (Kamishibai card) management:
  * - POST   /tpm/cards                      — Create card
- * - GET    /tpm/cards                      — List cards (filter by machine/plan/status)
+ * - GET    /tpm/cards                      — List cards (filter by asset/plan/status)
  * - GET    /tpm/cards/:uuid                — Get single card
  * - GET    /tpm/cards/:uuid/executions     — Execution history for card
  * - PATCH  /tpm/cards/:uuid                — Update card
@@ -11,7 +11,7 @@
  * - POST   /tpm/cards/check-duplicate      — Check for potential duplicates
  *
  * Route note: check-duplicate uses planUuid in body (not :uuid path param)
- * because the duplicate check runs against a plan's machine before card creation.
+ * because the duplicate check runs against a plan's asset before card creation.
  */
 import {
   BadRequestException,
@@ -89,7 +89,7 @@ export class TpmCardsController {
     const plan = await this.plansService.getPlan(tenantId, dto.planUuid);
     return await this.duplicateService.checkDuplicate(
       tenantId,
-      plan.machineId,
+      plan.assetId,
       dto.title,
       dto.intervalType,
     );
@@ -107,7 +107,7 @@ export class TpmCardsController {
     return await this.cardsService.createCard(tenantId, dto, user.id);
   }
 
-  /** GET /tpm/cards — List cards with filters (machineUuid, planUuid, or status required) */
+  /** GET /tpm/cards — List cards with filters (assetUuid, planUuid, or status required) */
   @Get()
   @RequirePermission(FEAT, MOD_CARDS, 'canRead')
   async listCards(
@@ -116,10 +116,10 @@ export class TpmCardsController {
   ): Promise<PaginatedCards> {
     const filters = buildFilters(query);
 
-    if (query.machineUuid !== undefined) {
-      return await this.cardsService.listCardsForMachine(
+    if (query.assetUuid !== undefined) {
+      return await this.cardsService.listCardsForAsset(
         tenantId,
-        query.machineUuid,
+        query.assetUuid,
         query.page,
         query.limit,
         filters,
@@ -146,7 +146,7 @@ export class TpmCardsController {
     }
 
     throw new BadRequestException(
-      'machineUuid, planUuid oder status muss angegeben werden',
+      'assetUuid, planUuid oder status muss angegeben werden',
     );
   }
 

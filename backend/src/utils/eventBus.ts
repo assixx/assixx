@@ -58,8 +58,8 @@ export interface TpmEvent {
     uuid: string;
     cardCode: string;
     title: string;
-    machineId: number;
-    machineName?: string;
+    assetId: number;
+    assetName?: string;
     intervalType: string;
     status: string;
   };

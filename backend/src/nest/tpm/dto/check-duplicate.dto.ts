@@ -2,7 +2,7 @@
  * TPM Check Duplicate DTO
  *
  * Request body for POST /tpm/cards/check-duplicate.
- * Uses planUuid to resolve machine context for duplicate detection.
+ * Uses planUuid to resolve asset context for duplicate detection.
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';

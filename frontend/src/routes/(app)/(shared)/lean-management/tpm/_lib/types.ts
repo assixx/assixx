@@ -28,8 +28,8 @@ export type CardCategory = 'reinigung' | 'wartung' | 'inspektion';
 /** TPM Maintenance Plan (employee-relevant subset) */
 export interface TpmPlan {
   uuid: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   departmentName?: string;
   name: string;
   baseWeekday: number;
@@ -49,8 +49,8 @@ export interface TpmPlan {
 export interface TpmCard {
   uuid: string;
   planUuid?: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   templateUuid?: string | null;
   cardCode: string;
   cardRole: CardRole;
@@ -270,7 +270,7 @@ export interface RespondExecutionPayload {
 // AGGREGATED TYPES (Employee Overview)
 // =============================================================================
 
-/** Status count summary for a machine's cards */
+/** Status count summary for a asset's cards */
 export interface StatusCounts {
   green: number;
   red: number;
@@ -279,8 +279,8 @@ export interface StatusCounts {
   total: number;
 }
 
-/** Machine with TPM plan and card status summary */
-export interface MachineWithTpmStatus {
+/** Asset with TPM plan and card status summary */
+export interface AssetWithTpmStatus {
   plan: TpmPlan;
   statusCounts: StatusCounts;
   cards: TpmCard[];
@@ -294,8 +294,8 @@ export interface MachineWithTpmStatus {
 export interface ProjectedSlot {
   planUuid: string;
   planName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   intervalTypes: IntervalType[];
   date: string;
   startTime: string | null;
@@ -337,7 +337,7 @@ export interface CategoryColorConfigEntry {
 /** Employee assigned to a TPM maintenance shift */
 export interface TpmShiftAssignment {
   planUuid: string;
-  machineId: number;
+  assetId: number;
   shiftDate: string;
   userId: number;
   firstName: string;

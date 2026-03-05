@@ -78,7 +78,7 @@ export const RESOURCE_TABLE_MAP: Record<
   department: { table: 'departments', nameField: 'name' },
   team: { table: 'teams', nameField: 'name' },
   area: { table: 'areas', nameField: 'name' },
-  machine: { table: 'machines', nameField: 'name' },
+  asset: { table: 'assets', nameField: 'name' },
   blackboard: { table: 'blackboard_entries', nameField: 'title' },
   calendar: { table: 'calendar_events', nameField: 'title' },
   document: { table: 'documents', nameField: 'original_filename' },

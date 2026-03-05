@@ -4,7 +4,7 @@
    * @module plan/[uuid]/_lib/PlanForm
    *
    * Handles both create and edit mode for maintenance plans.
-   * Fields: Machine, Name, Weekday, RepeatEvery, Time, TimeEstimates,
+   * Fields: Asset, Name, Weekday, RepeatEvery, Time, TimeEstimates,
    * ShiftPlanRequired, Notes.
    */
   import { untrack } from 'svelte';
@@ -17,13 +17,13 @@
     MESSAGES,
   } from '../../../_lib/constants';
 
-  import MachineCascadeSelector from './MachineCascadeSelector.svelte';
+  import AssetCascadeSelector from './AssetCascadeSelector.svelte';
   import TimeEstimateEditor from './TimeEstimateEditor.svelte';
 
   import type {
     TpmPlan,
     TpmTimeEstimate,
-    Machine,
+    Asset,
     TpmArea,
     TpmDepartment,
     CreatePlanPayload,
@@ -33,10 +33,10 @@
 
   interface Props {
     plan: TpmPlan | null;
-    machines: Machine[];
+    assets: Asset[];
     areas: TpmArea[];
     departments: TpmDepartment[];
-    machineUuidsWithPlans?: string[];
+    assetUuidsWithPlans?: string[];
     timeEstimates?: TpmTimeEstimate[];
     isCreateMode: boolean;
     submitting: boolean;
@@ -46,23 +46,23 @@
       estimates: CreateTimeEstimatePayload[],
     ) => void;
     oncancel: () => void;
-    onmachinechange?: (machineUuid: string) => void;
+    onassetchange?: (assetUuid: string) => void;
     onshiftplanchange?: (shiftPlanRequired: boolean) => void;
   }
 
   const {
     plan,
-    machines,
+    assets,
     areas,
     departments,
-    machineUuidsWithPlans = [],
+    assetUuidsWithPlans = [],
     timeEstimates = [],
     isCreateMode,
     submitting,
     oncreate,
     onupdate,
     oncancel,
-    onmachinechange,
+    onassetchange,
     onshiftplanchange,
   }: Props = $props();
 
@@ -70,7 +70,7 @@
   // FORM STATE
   // =========================================================================
 
-  let machineUuid = $state('');
+  let assetUuid = $state('');
 
   let name = $state(untrack(() => plan?.name ?? ''));
   let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
@@ -187,9 +187,9 @@
   // MACHINE SELECTION
   // =========================================================================
 
-  function handleMachineSelect(uuid: string): void {
-    machineUuid = uuid;
-    onmachinechange?.(uuid);
+  function handleAssetSelect(uuid: string): void {
+    assetUuid = uuid;
+    onassetchange?.(uuid);
   }
 
   // =========================================================================
@@ -199,7 +199,7 @@
   const canSubmit = $derived(
     !submitting &&
       name.trim().length > 0 &&
-      (isCreateMode ? machineUuid.length > 0 : true) &&
+      (isCreateMode ? assetUuid.length > 0 : true) &&
       (isAllDay || baseTime.trim().length > 0),
   );
 
@@ -239,7 +239,7 @@
 
     if (isCreateMode) {
       oncreate({
-        machineUuid,
+        assetUuid,
         name: name.trim(),
         baseWeekday,
         baseRepeatEvery,
@@ -273,22 +273,22 @@
   class="plan-form"
   onsubmit={handleSubmit}
 >
-  <!-- Machine Selection (cascade in create mode, static in edit mode) -->
+  <!-- Asset Selection (cascade in create mode, static in edit mode) -->
   {#if isCreateMode}
-    <MachineCascadeSelector
-      {machines}
+    <AssetCascadeSelector
+      {assets}
       {areas}
       {departments}
-      {machineUuidsWithPlans}
+      {assetUuidsWithPlans}
       {submitting}
-      onselect={handleMachineSelect}
+      onselect={handleAssetSelect}
     />
   {:else if plan !== null}
     <div class="form-field">
       <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
       <div class="form-static">
         <i class="fas fa-cog"></i>
-        {plan.machineName ?? '—'}
+        {plan.assetName ?? '—'}
       </div>
     </div>
   {/if}

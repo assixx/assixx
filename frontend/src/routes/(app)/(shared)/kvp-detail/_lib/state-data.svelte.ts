@@ -11,7 +11,7 @@ import type {
   Department,
   Team,
   Area,
-  Machine,
+  Asset,
 } from './types';
 
 type ImageFileType = (typeof IMAGE_FILE_TYPES)[number];
@@ -21,7 +21,7 @@ export function createOrgState() {
   let departments = $state<Department[]>([]);
   let teams = $state<Team[]>([]);
   let areas = $state<Area[]>([]);
-  let machines = $state<Machine[]>([]);
+  let assets = $state<Asset[]>([]);
 
   return {
     get departments() {
@@ -33,8 +33,8 @@ export function createOrgState() {
     get areas() {
       return areas;
     },
-    get machines() {
-      return machines;
+    get assets() {
+      return assets;
     },
     setDepartments: (data: Department[]) => {
       departments = data;
@@ -45,8 +45,8 @@ export function createOrgState() {
     setAreas: (data: Area[]) => {
       areas = data;
     },
-    setMachines: (data: Machine[]) => {
-      machines = data;
+    setAssets: (data: Asset[]) => {
+      assets = data;
     },
   };
 }

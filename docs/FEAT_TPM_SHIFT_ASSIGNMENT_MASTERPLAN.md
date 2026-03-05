@@ -23,7 +23,7 @@
 
 ### Was fehlt
 
-Die TPM-Gesamtansicht (`/lean-management/tpm/gesamtansicht`) zeigt pro Maschine:
+Die TPM-Gesamtansicht (`/lean-management/tpm/gesamtansicht`) zeigt pro Anlage:
 
 - **Zeile 1:** Geplante Wartungstermine (Monatlich, Vierteljährlich, Halbjährlich, Jährlich, Custom)
 - **Zeile 2:** Zeitschätzungen (Mitarbeiteranzahl, Vorbereitung, Durchführung, Nachbereitung)
@@ -33,7 +33,7 @@ Die TPM-Gesamtansicht (`/lean-management/tpm/gesamtansicht`) zeigt pro Maschine:
 
 Mehrere Teams können am selben Tag/Schicht eingeplant sein:
 
-- **Team A:** Produktionsteam — bedient die Maschine regulär
+- **Team A:** Produktionsteam — bedient die Anlage regulär
 - **Team B:** Instandhaltungsteam — macht Wartung
 
 Ein reiner JOIN `shifts ⨝ tpm_scheduled_dates` kann **nicht unterscheiden** ob ein Team für Produktion oder Wartung eingeplant ist. Der **TPM-Modus** markiert explizit: "Dieser Schichtplan ist ein Wartungsplan."
@@ -305,7 +305,7 @@ PUT /shifts/plan/:uuid → Backend speichert is_tpm_mode = true
 
 **Props:**
 
-- `matrixRows` — Gleiche Matrix wie Schedule-Rows (für Maschinen-Reihenfolge)
+- `matrixRows` — Gleiche Matrix wie Schedule-Rows (für Anlagen-Reihenfolge)
 - `assignments` — `Map<planUuid, Map<intervalType, TpmShiftAssignment[]>>`
 - `maxDates` — Für Colspan-Berechnung
 - `estColSpans` — Gleiche Verteilung wie Zeitschätzungen
@@ -375,7 +375,7 @@ PUT /shifts/plan/:uuid → Backend speichert is_tpm_mode = true
 
 ## Known Limitations (V1)
 
-1. **Keine Mitarbeiter-pro-Maschine Zuordnung** — Alle Mitarbeiter im TPM-Shift gelten für alle Wartungen an dem Tag. Per-Maschine-Assignment ist V2.
+1. **Keine Mitarbeiter-pro-Anlage Zuordnung** — Alle Mitarbeiter im TPM-Shift gelten für alle Wartungen an dem Tag. Per-Anlage-Assignment ist V2.
 2. **Keine Validierung gegen `staff_count`** — Gesamtansicht zeigt wer eingeteilt ist, warnt aber nicht wenn zu wenige/viele für die Zeitschätzung.
 3. **Nur geplante Schichten** — `shift_rotation_history`-only Wochen (nicht gespeichert) haben kein TPM-Flag.
 4. **Kein historisches Tracking** — Wenn `is_tpm_mode` geändert wird, wird nur der aktuelle State gespeichert (Audit Trail loggt die Änderung).

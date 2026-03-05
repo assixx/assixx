@@ -37,7 +37,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     uuid: 'card-uuid-001                            ',
     tenant_id: 10,
     plan_id: 100,
-    machine_id: 42,
+    asset_id: 42,
     template_id: null,
     card_code: 'BT1',
     card_role: 'operator',
@@ -60,7 +60,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
     plan_uuid: 'plan-uuid-001                            ',
-    machine_name: 'CNC-001',
+    asset_name: 'CNC-001',
     ...overrides,
   };
 }
@@ -152,7 +152,7 @@ describe('TpmCardCascadeService', () => {
       );
 
       const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[0]).toBe(42); // machineId
+      expect(params?.[0]).toBe(42); // assetId
       expect(params?.[1]).toBe(10); // tenantId
       expect(params?.[2]).toBe(4); // triggerIntervalOrder
       expect(params?.[3]).toBe('2026-06-01'); // dueDateStr
@@ -249,7 +249,7 @@ describe('TpmCardCascadeService', () => {
       const card = result.cards[0];
       expect(card).toBeDefined();
       expect(card?.uuid).toBe('card-uuid-001');
-      expect(card?.machineName).toBe('CNC-001');
+      expect(card?.assetName).toBe('CNC-001');
     });
 
     it('should only query green, active cards', async () => {
@@ -262,13 +262,13 @@ describe('TpmCardCascadeService', () => {
       expect(sql).toContain('c.is_active = 1');
     });
 
-    it('should filter by machine_id and interval_order', async () => {
+    it('should filter by asset_id and interval_order', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.getCascadePreview(10, 42, 4);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[0]).toBe(42); // machineId
+      expect(params?.[0]).toBe(42); // assetId
       expect(params?.[1]).toBe(10); // tenantId
       expect(params?.[2]).toBe(4); // triggerIntervalOrder
     });
@@ -314,7 +314,7 @@ describe('TpmCardCascadeService', () => {
 
   describe('Performance', () => {
     it('should handle cascade with 2400 cards (batch SQL approach)', async () => {
-      // Simulate 2400-card cascade: 20 machines × 8 intervals × 15 cards
+      // Simulate 2400-card cascade: 20 assets × 8 intervals × 15 cards
       // The batch SQL runs a single UPDATE — the mock returns instantly,
       // but we verify the SQL structure supports batch operations.
       mockClient.query.mockResolvedValueOnce({
@@ -343,8 +343,8 @@ describe('TpmCardCascadeService', () => {
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('UPDATE tpm_cards');
       expect(sql).toContain('interval_order <= $');
-      // Uses machine_id filter (batch), not WHERE id = $X (individual)
-      expect(sql).toContain('machine_id = $');
+      // Uses asset_id filter (batch), not WHERE id = $X (individual)
+      expect(sql).toContain('asset_id = $');
     });
 
     it('should use single query for preview of 2400 cards', async () => {

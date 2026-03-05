@@ -9,7 +9,7 @@
 
 ## Was ist TPM?
 
-**Total Productive Maintenance** (TPM) ist eine ganzheitliche Instandhaltungsstrategie, die darauf abzielt, die Gesamtanlageneffektivität (OEE — Overall Equipment Effectiveness) zu maximieren, indem ALLE Mitarbeiter (nicht nur die Instandhaltung) in die Pflege und Wartung der Maschinen einbezogen werden.
+**Total Productive Maintenance** (TPM) ist eine ganzheitliche Instandhaltungsstrategie, die darauf abzielt, die Gesamtanlageneffektivität (OEE — Overall Equipment Effectiveness) zu maximieren, indem ALLE Mitarbeiter (nicht nur die Instandhaltung) in die Pflege und Wartung der Anlagen einbezogen werden.
 
 ### Kernprinzip
 
@@ -30,7 +30,7 @@
 
 ### Die 8 Säulen des TPM
 
-1. **Autonome Instandhaltung (Autonomous Maintenance)** — Maschinenbediener übernehmen einfache Wartungsaufgaben (Reinigung, Schmierung, Sichtprüfung). DAS Herzstück von TPM — der Bediener kennt seine Maschine am besten.
+1. **Autonome Instandhaltung (Autonomous Maintenance)** — Anlagenbediener übernehmen einfache Wartungsaufgaben (Reinigung, Schmierung, Sichtprüfung). DAS Herzstück von TPM — der Bediener kennt seine Anlage am besten.
 2. **Geplante Instandhaltung (Planned Maintenance)** — Systematische, zeitbasierte oder zustandsbasierte Wartung. Intervalle: täglich, wöchentlich, monatlich, vierteljährlich, jährlich.
 3. **Qualitätserhaltung (Quality Maintenance)** — Null-Fehler-Ansatz durch vorbeugende Maßnahmen an der Ursache.
 4. **Fokussierte Verbesserung (Focused Improvement / Kaizen)** — Systematische Beseitigung der 6 großen Verluste durch interdisziplinäre Teams.
@@ -45,7 +45,7 @@
 
 | #   | Verlust                      | Kategorie     | Beispiel                          |
 | --- | ---------------------------- | ------------- | --------------------------------- |
-| 1   | Ungeplante Stillstände       | Verfügbarkeit | Maschinenausfall, Störung         |
+| 1   | Ungeplante Stillstände       | Verfügbarkeit | Anlagenausfall, Störung           |
 | 2   | Rüsten & Einstellen          | Verfügbarkeit | Werkzeugwechsel, Umrüstung        |
 | 3   | Kurzstillstände              | Leistung      | Sensorfehler, kurze Blockierungen |
 | 4   | Geschwindigkeitsverluste     | Leistung      | Verschleiß → langsamerer Betrieb  |
@@ -101,7 +101,7 @@ Durchschnitt Industrie: 60%
 Ursachenforschung durch wiederholtes "Warum?" fragen bis zur Grundursache:
 
 ```
-Problem: Maschine steht still
+Problem: Anlage steht still
 → Warum? Motor überhitzt
 → Warum? Kühlung defekt
 → Warum? Filter verstopft
@@ -112,7 +112,7 @@ Problem: Maschine steht still
 
 ### SMED (Single-Minute Exchange of Die)
 
-Rüstzeitoptimierung: Werkzeugwechsel in unter 10 Minuten. Trennung von internem (Maschine steht) und externem (Maschine läuft) Rüsten.
+Rüstzeitoptimierung: Werkzeugwechsel in unter 10 Minuten. Trennung von internem (Anlage steht) und externem (Anlage läuft) Rüsten.
 
 ---
 
@@ -242,11 +242,11 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 
 **Typisch in KMU-Produktion:**
 
-- Wartungsplan als laminiertes A3-Blatt an der Maschine
-- Maschinenbediener hakt ab mit Edding (Reinigung, Ölstand, Sichtprüfung)
+- Wartungsplan als laminiertes A3-Blatt an der Anlage
+- Anlagenbediener hakt ab mit Edding (Reinigung, Ölstand, Sichtprüfung)
 - Wartungstechniker sammelt Zettel ein
 - Excel-Liste für "große" Wartungen (Intervall-basiert)
-- Papier-Störmeldungen: Maschinenbediener füllt Formular aus, legt es in Fach
+- Papier-Störmeldungen: Anlagenbediener füllt Formular aus, legt es in Fach
 - Keine Auswertung, kein Überblick, keine Trends
 
 **Probleme:**
@@ -254,7 +254,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 - Keiner weiß, ob die tägliche Wartung wirklich gemacht wurde
 - Wartungsintervalle werden vergessen
 - Störungen werden zu spät gemeldet
-- Kein Überblick über Maschinenhistorie
+- Kein Überblick über Anlagenhistorie
 - Kein OEE-Tracking
 - Ersatzteil-Management per Bauchgefühl
 
@@ -262,7 +262,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 
 **Beobachtet bei echtem Kunden (Screenshots vorhanden):**
 
-**Board-Aufbau an der Maschine:**
+**Board-Aufbau an der Anlage:**
 
 - Physisches Wandboard mit T-Karten-Haltern
 - Sektionen nach Intervall UND Verantwortlichem getrennt:
@@ -304,7 +304,7 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 
 **Probleme (identisch mit allgemeinem Szenario + zusätzlich):**
 
-- Board ist nur VOR ORT sichtbar — kein Überblick über alle Maschinen
+- Board ist nur VOR ORT sichtbar — kein Überblick über alle Anlagen
 - Keine Historie — Karten werden einfach zurückgedreht
 - Kein digitaler Nachweis für Audits/Zertifizierung
 - Keine automatischen Erinnerungen wenn Intervall überschritten
@@ -315,34 +315,34 @@ Teams die gleichzeitig Projektarbeit, Support UND Wartung machen müssen, stehen
 **Excel-Wartungsplanung parallel zum Board:**
 
 - Separate Excel "Bestimmung TPM Maßnahmedauer Instandhaltung"
-- Zeilen = Maschinen (SP08, P07, SAG20, BRM11, RE09, STM, RE05, P03, RE04, DEM, SR05, SAG28, P17, RE06, P02, ST08)
+- Zeilen = Anlagen (SP08, P07, SAG20, BRM11, RE09, STM, RE05, P03, RE04, DEM, SR05, SAG28, P17, RE06, P02, ST08)
 - Spalten = Monate (12 pro Intervall)
 - Mehrere Intervall-Blöcke: Monatlich, Vierteljährlich, Halbjährlich, Jährlich, Langläufer
 - Farbcodierung der Termine (orange/gelb/blau)
-- Mitarbeiter-Zuweisung pro Maschine (Dialog mit Multi-Select)
+- Mitarbeiter-Zuweisung pro Anlage (Dialog mit Multi-Select)
 - Zeiterfassung pro Wartungsevent: Anzahl Mitarbeiter + Vorbereitung + Durchführung + Nachbereitung (alles in Minuten)
-- Tabs pro Maschine (BS02, P17, RE04, RE05, RE06, RE09, SP08, SR05, STM, ST08...)
+- Tabs pro Anlage (BS02, P17, RE04, RE05, RE06, RE09, SP08, SR05, STM, ST08...)
 
 ### Szenario 3: Digitales TPM (SOLL-Zustand — Assixx)
 
 **Was wir bieten wollen:**
 
-- Digitales Kamishibai pro Maschine — von überall sichtbar
+- Digitales Kamishibai pro Anlage — von überall sichtbar
 - Automatische Intervall-Erinnerungen (SSE + Notification Badge)
 - Automatisches Umdrehen: Grün→Rot bei Termin, Rot→Grün bei "Done"
 - Lückenlose Historie (wer, wann, was, Fotos/Protokoll)
-- Wartungsplan-Übersicht: Alle Maschinen × alle Intervalle auf einen Blick
+- Wartungsplan-Übersicht: Alle Anlagen × alle Intervalle auf einen Blick
 - **CRITICAL: Slot-Verfügbarkeits-Assistent** beim Planen (freie Termine vorschlagen)
 - Zeiterfassung pro Wartung (MA-Anzahl, Vor-/Durchführung/Nachbereitung)
 - Custom Kartenvorlagen (jede Firma hat eigene Standards)
-- Maschinen-Dokumentation (Anleitungen, Handbücher hochladen)
-- Multi-Tenant: Jeder Kunde sieht nur seine Maschinen (RLS)
+- Anlagen-Dokumentation (Anleitungen, Handbücher hochladen)
+- Multi-Tenant: Jeder Kunde sieht nur seine Anlagen (RLS)
 
 ---
 
 ## Intervall-Kaskade — Fundamentale Business-Regel
 
-In der realen Produktion gilt: Wenn eine Maschine für eine große Wartung (z.B. jährlich) stillsteht, werden ALLE kürzeren Intervalle gleichzeitig abgearbeitet. Die Maschine steht sowieso — also macht man alles auf einmal.
+In der realen Produktion gilt: Wenn eine Anlage für eine große Wartung (z.B. jährlich) stillsteht, werden ALLE kürzeren Intervalle gleichzeitig abgearbeitet. Die Anlage steht sowieso — also macht man alles auf einmal.
 
 ```
 Hierarchie (höher = inkludiert alle darunter):
@@ -414,7 +414,7 @@ Hierarchie (höher = inkludiert alle darunter):
 | Predictive Maintenance | Vorausschauende Instandh.    | Zustandsbasiert, Sensorik, Trends                                         |
 | Work Order             | Arbeitsauftrag               | Formaler Auftrag für Wartungs-/Reparaturarbeit                            |
 | Checklist              | Prüfliste                    | Abzuarbeitende Punkte bei Wartung/Inspektion                              |
-| Downtime               | Stillstandszeit              | Zeit in der die Maschine nicht produziert                                 |
+| Downtime               | Stillstandszeit              | Zeit in der die Anlage nicht produziert                                   |
 | Spare Parts            | Ersatzteile                  | Lagerbestand für Wartung/Reparatur                                        |
 | Kamishibai             | Kartensystem                 | Visuelles Board mit Rot/Grün-Karten für wiederkehrende Aufgaben           |
 | Kanban                 | Pull-System                  | Arbeit wird "gezogen" statt "geschoben" — WIP-Limits begrenzen Paralleles |

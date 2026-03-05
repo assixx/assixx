@@ -16,8 +16,8 @@ import type {
   Area,
   AssignmentCount,
   Department,
-  Machine,
-  MachineAvailabilityEntry,
+  Asset,
+  AssetAvailabilityEntry,
   TpmMaintenanceEvent,
   Team,
   TeamMember,
@@ -45,7 +45,7 @@ const API_ENDPOINTS = {
   // Hierarchy
   AREAS: '/areas',
   DEPARTMENTS: '/departments',
-  MACHINES: '/machines',
+  MACHINES: '/assets',
   TEAMS: '/teams',
 
   // Shifts
@@ -114,7 +114,7 @@ export async function fetchCurrentUser(): Promise<User | null> {
 }
 
 // =============================================================================
-// HIERARCHY DATA (Areas, Departments, Machines, Teams)
+// HIERARCHY DATA (Areas, Departments, Assets, Teams)
 // =============================================================================
 
 /**
@@ -164,13 +164,13 @@ function appendIfPresent(
 }
 
 /**
- * Fetch machines, optionally filtered by team, department and area
+ * Fetch assets, optionally filtered by team, department and area
  */
-export async function fetchMachines(
+export async function fetchAssets(
   teamId?: number | null,
   departmentId?: number | null,
   areaId?: number | null,
-): Promise<Machine[]> {
+): Promise<Asset[]> {
   try {
     const params = new URLSearchParams();
     appendIfPresent(params, 'teamId', teamId);
@@ -183,10 +183,10 @@ export async function fetchMachines(
         API_ENDPOINTS.MACHINES
       : `${API_ENDPOINTS.MACHINES}?${queryString}`;
 
-    const response = await apiClient.get<Machine[] | { data: Machine[] }>(url);
+    const response = await apiClient.get<Asset[] | { data: Asset[] }>(url);
     return Array.isArray(response) ? response : response.data;
   } catch (err) {
-    log.error({ err }, 'Error loading machines');
+    log.error({ err }, 'Error loading assets');
     return [];
   }
 }
@@ -307,21 +307,21 @@ export async function fetchTeamMembers(
 // =============================================================================
 
 /**
- * Fetch machine availability entries that overlap with a date range.
- * Used to visually mark shift cells when a machine is unavailable.
+ * Fetch asset availability entries that overlap with a date range.
+ * Used to visually mark shift cells when a asset is unavailable.
  */
-export async function fetchMachineAvailability(
-  machineId: number,
+export async function fetchAssetAvailability(
+  assetId: number,
   startDate: string,
   endDate: string,
-): Promise<MachineAvailabilityEntry[]> {
+): Promise<AssetAvailabilityEntry[]> {
   try {
-    const response = await apiClient.get<MachineAvailabilityEntry[]>(
-      `${API_ENDPOINTS.MACHINES}/${machineId}/availability?startDate=${startDate}&endDate=${endDate}`,
+    const response = await apiClient.get<AssetAvailabilityEntry[]>(
+      `${API_ENDPOINTS.MACHINES}/${assetId}/availability?startDate=${startDate}&endDate=${endDate}`,
     );
     return Array.isArray(response) ? response : [];
   } catch (err) {
-    log.error({ err }, 'Error loading machine availability');
+    log.error({ err }, 'Error loading asset availability');
     return [];
   }
 }
@@ -333,8 +333,8 @@ export async function fetchMachineAvailability(
 /** API response shape for a TPM plan (subset of fields needed) */
 interface TpmPlanApiResponse {
   uuid: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   name: string;
   baseWeekday: number;
   baseRepeatEvery: number;
@@ -500,7 +500,7 @@ function buildEventsMap(
   const eventsMap = new Map<string, TpmMaintenanceEvent[]>();
   if (plans.length === 0) return eventsMap;
 
-  const machineName = plans[0].machineName ?? `Maschine #${plans[0].machineId}`;
+  const assetName = plans[0].assetName ?? `Anlage #${plans[0].assetId}`;
   const end = new Date(endDate);
   const cursor = new Date(startDate);
 
@@ -517,7 +517,7 @@ function buildEventsMap(
       {
         planUuid: 'merged',
         planName: names.length > 0 ? names.join(', ') : 'TPM',
-        machineName,
+        assetName,
         baseTime: plans[0].baseTime,
         bufferHours: plans[0].bufferHours,
         intervalTypes: sortIntervals(merged),
@@ -530,10 +530,10 @@ function buildEventsMap(
 
 /**
  * Fetch TPM plans and build a date→events map for a given week.
- * Filters plans by machineId and calculates which dates have maintenance.
+ * Filters plans by assetId and calculates which dates have maintenance.
  */
 export async function fetchTpmMaintenanceDates(
-  machineId: number | null,
+  assetId: number | null,
   startDate: string,
   endDate: string,
 ): Promise<Map<string, TpmMaintenanceEvent[]>> {
@@ -544,11 +544,9 @@ export async function fetchTpmMaintenanceDates(
     }>('/tpm/plans?page=1&limit=100');
 
     const plans =
-      machineId === null ?
+      assetId === null ?
         response.data
-      : response.data.filter(
-          (p: TpmPlanApiResponse) => p.machineId === machineId,
-        );
+      : response.data.filter((p: TpmPlanApiResponse) => p.assetId === assetId);
     if (plans.length === 0) return new Map();
 
     const seedDates = buildSeedDates(plans);
@@ -609,7 +607,7 @@ export async function fetchShiftPlan(
   context: {
     departmentId?: number | null;
     teamId?: number | null;
-    machineId?: number | null;
+    assetId?: number | null;
     areaId?: number | null;
   },
 ): Promise<ShiftPlanResponse | null> {
@@ -622,8 +620,8 @@ export async function fetchShiftPlan(
     if (context.teamId !== null && context.teamId !== undefined) {
       params.append('teamId', String(context.teamId));
     }
-    if (context.machineId !== null && context.machineId !== undefined) {
-      params.append('machineId', String(context.machineId));
+    if (context.assetId !== null && context.assetId !== undefined) {
+      params.append('assetId', String(context.assetId));
     }
     if (context.areaId !== null && context.areaId !== undefined) {
       params.append('areaId', String(context.areaId));
@@ -679,7 +677,7 @@ export async function assignShift(shiftData: {
   type: string;
   departmentId?: number | null;
   teamId?: number | null;
-  machineId?: number | null;
+  assetId?: number | null;
   startTime: string;
   endTime: string;
 }): Promise<void> {
@@ -734,8 +732,8 @@ export async function saveFavorite(favoriteData: {
   areaName: string;
   departmentId: number;
   departmentName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   teamId: number;
   teamName: string;
 }): Promise<ShiftFavorite | null> {

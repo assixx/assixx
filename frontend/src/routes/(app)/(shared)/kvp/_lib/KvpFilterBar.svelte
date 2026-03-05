@@ -12,10 +12,10 @@
   import { kvpState } from './state.svelte';
   import { debounce } from './utils';
 
-  import type { UserTeamWithMachines } from './types';
+  import type { UserTeamWithAssets } from './types';
 
   interface Props {
-    userOrganizations: UserTeamWithMachines[];
+    userOrganizations: UserTeamWithAssets[];
     onfilterchange: () => void;
   }
 
@@ -30,7 +30,7 @@
   let categoryDisplayText = $state('Alle Kategorien');
   let departmentDisplayText = $state('Alle Abteilungen');
   let teamDisplayText = $state('Alle Teams');
-  let machineDisplayText = $state('Alle Maschinen');
+  let assetDisplayText = $state('Alle Anlagen');
 
   const debouncedSearch = debounce(() => {
     onfilterchange();
@@ -81,26 +81,26 @@
     onfilterchange();
   }
 
-  function handleMachineSelect(value: string, label: string) {
-    kvpState.setMachineFilter(value);
-    machineDisplayText = label;
+  function handleAssetSelect(value: string, label: string) {
+    kvpState.setAssetFilter(value);
+    assetDisplayText = label;
     closeAllDropdowns();
     onfilterchange();
   }
 
-  /** All machines from user organizations (deduplicated) */
-  const allFilterMachines = $derived.by(() => {
+  /** All assets from user organizations (deduplicated) */
+  const allFilterAssets = $derived.by(() => {
     const seen = new SvelteSet<number>();
-    const machines: { id: number; name: string }[] = [];
+    const assets: { id: number; name: string }[] = [];
     for (const team of userOrganizations) {
-      for (const machine of team.machines) {
-        if (!seen.has(machine.id)) {
-          seen.add(machine.id);
-          machines.push(machine);
+      for (const asset of team.assets) {
+        if (!seen.has(asset.id)) {
+          seen.add(asset.id);
+          assets.push(asset);
         }
       }
     }
-    return machines;
+    return assets;
   });
 
   function handleSearchInput(event: Event) {
@@ -335,47 +335,47 @@
         </div>
       </div>
 
-      <!-- Machine Filter -->
-      {#if allFilterMachines.length > 0}
+      <!-- Asset Filter -->
+      {#if allFilterAssets.length > 0}
         <div class="form-field">
-          <span class="form-field__label">Maschine</span>
+          <span class="form-field__label">Anlage</span>
           <div
             class="dropdown mt-2"
-            data-dropdown="machine"
+            data-dropdown="asset"
           >
             <button
               type="button"
               class="dropdown__trigger"
-              class:active={activeDropdown === 'machine'}
+              class:active={activeDropdown === 'asset'}
               onclick={() => {
-                toggleDropdown('machine');
+                toggleDropdown('asset');
               }}
             >
-              <span>{machineDisplayText}</span>
+              <span>{assetDisplayText}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
             <div
               class="dropdown__menu"
-              class:active={activeDropdown === 'machine'}
+              class:active={activeDropdown === 'asset'}
             >
               <button
                 type="button"
                 class="dropdown__option"
                 onclick={() => {
-                  handleMachineSelect('', 'Alle Maschinen');
+                  handleAssetSelect('', 'Alle Anlagen');
                 }}
               >
-                Alle Maschinen
+                Alle Anlagen
               </button>
-              {#each allFilterMachines as machine (machine.id)}
+              {#each allFilterAssets as asset (asset.id)}
                 <button
                   type="button"
                   class="dropdown__option"
                   onclick={() => {
-                    handleMachineSelect(machine.id.toString(), machine.name);
+                    handleAssetSelect(asset.id.toString(), asset.name);
                   }}
                 >
-                  {machine.name}
+                  {asset.name}
                 </button>
               {/each}
             </div>

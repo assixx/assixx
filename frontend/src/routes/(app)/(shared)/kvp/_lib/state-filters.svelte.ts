@@ -13,7 +13,7 @@ function createFilterState() {
   let categoryFilter = $state('');
   let departmentFilter = $state('');
   let teamFilter = $state('');
-  let machineFilter = $state('');
+  let assetFilter = $state('');
   let searchQuery = $state('');
 
   return {
@@ -32,8 +32,8 @@ function createFilterState() {
     get teamFilter() {
       return teamFilter;
     },
-    get machineFilter() {
-      return machineFilter;
+    get assetFilter() {
+      return assetFilter;
     },
     get searchQuery() {
       return searchQuery;
@@ -43,7 +43,7 @@ function createFilterState() {
     setCategoryFilter: (v: string) => void (categoryFilter = v),
     setDepartmentFilter: (v: string) => void (departmentFilter = v),
     setTeamFilter: (v: string) => void (teamFilter = v),
-    setMachineFilter: (v: string) => void (machineFilter = v),
+    setAssetFilter: (v: string) => void (assetFilter = v),
     setSearchQuery: (v: string) => void (searchQuery = v),
     reset: () => {
       currentFilter = 'all';
@@ -51,7 +51,7 @@ function createFilterState() {
       categoryFilter = '';
       departmentFilter = '';
       teamFilter = '';
-      machineFilter = '';
+      assetFilter = '';
       searchQuery = '';
     },
   };
@@ -70,7 +70,7 @@ export function computeBadgeCounts(
     all: suggestions.length,
     mine: suggestions.filter((s) => s.submittedBy === userId).length,
     team: suggestions.filter((s) => s.orgLevel === 'team').length,
-    machine: suggestions.filter((s) => s.orgLevel === 'machine').length,
+    asset: suggestions.filter((s) => s.orgLevel === 'asset').length,
     department: suggestions.filter((s) => s.orgLevel === 'department').length,
     company: suggestions.filter((s) => s.orgLevel === 'company').length,
     manage: 0,

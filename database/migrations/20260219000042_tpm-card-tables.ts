@@ -80,7 +80,7 @@ export function up(pgm: MigrationBuilder): void {
       uuid                  CHAR(36) NOT NULL,
       tenant_id             INTEGER NOT NULL,
       plan_id               INTEGER NOT NULL,
-      machine_id            INTEGER NOT NULL,
+      asset_id            INTEGER NOT NULL,
       template_id           INTEGER,
       card_code             VARCHAR(10) NOT NULL,
       card_role             tpm_card_role NOT NULL,
@@ -116,7 +116,7 @@ export function up(pgm: MigrationBuilder): void {
         ON DELETE CASCADE,
 
       CONSTRAINT fk_tpm_cards_machine
-        FOREIGN KEY (machine_id)
+        FOREIGN KEY (asset_id)
         REFERENCES machines(id)
         ON UPDATE RESTRICT
         ON DELETE CASCADE,
@@ -151,7 +151,7 @@ export function up(pgm: MigrationBuilder): void {
       ON tpm_cards(tenant_id, plan_id);
 
     CREATE INDEX idx_tpm_cards_tenant_machine_status
-      ON tpm_cards(tenant_id, machine_id, status);
+      ON tpm_cards(tenant_id, asset_id, status);
 
     CREATE INDEX idx_tpm_cards_interval_order
       ON tpm_cards(interval_order);

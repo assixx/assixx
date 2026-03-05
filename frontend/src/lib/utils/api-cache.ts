@@ -38,8 +38,8 @@ const CACHE_TTL_CONFIG: Partial<Record<string, number>> = {
   // Calendar - cache for 1 minute
   '/calendar': 60_000,
 
-  // Machines - cache for 2 minutes
-  '/machines': 120_000,
+  // Assets - cache for 2 minutes
+  '/assets': 120_000,
 
   // Surveys - cache for 1 minute
   '/surveys': 60_000,

@@ -2,7 +2,7 @@
  * Create Maintenance Plan DTO
  *
  * Zod schema for creating a new TPM maintenance plan.
- * One plan per machine (enforced by DB UNIQUE constraint).
+ * One plan per asset (enforced by DB UNIQUE constraint).
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { TimeSchema, WeekdaySchema } from './common.dto.js';
 
 export const CreateMaintenancePlanSchema = z.object({
-  machineUuid: z.uuid('Ungültige Maschinen-UUID'),
+  assetUuid: z.uuid('Ungültige Anlagen-UUID'),
   name: z
     .string()
     .trim()

@@ -63,7 +63,7 @@ import type {
   PaginatedKVPComments,
   PaginatedSuggestionsResult,
   SuggestionFilters,
-  UserTeamWithMachines,
+  UserTeamWithAssets,
 } from './kvp.types.js';
 
 // Re-export API types for controller
@@ -77,7 +77,7 @@ export type {
   KvpOrgAssignment,
   PaginatedKVPComments,
   PaginatedSuggestionsResult,
-  UserTeamWithMachines,
+  UserTeamWithAssets,
 } from './kvp.types.js';
 
 @Injectable()
@@ -130,26 +130,26 @@ export class KvpService {
   // MY ORGANIZATIONS (for KVP create modal)
   // ==========================================================================
 
-  /** Get user's assigned teams with their machines — for KVP create modal */
+  /** Get user's assigned teams with their assets — for KVP create modal */
   async getMyOrganizations(
     userId: number,
     tenantId: number,
-  ): Promise<UserTeamWithMachines[]> {
+  ): Promise<UserTeamWithAssets[]> {
     const rows = await this.db.query<{
       team_id: number;
       team_name: string;
-      machines: { id: number; name: string }[] | null;
+      assets: { id: number; name: string }[] | null;
     }>(
       `SELECT
          t.id AS team_id,
          t.name AS team_name,
          COALESCE(
            (SELECT json_agg(json_build_object('id', m.id, 'name', m.name) ORDER BY m.name)
-            FROM machine_teams mt
-            JOIN machines m ON mt.machine_id = m.id AND m.is_active = 1
+            FROM asset_teams mt
+            JOIN assets m ON mt.asset_id = m.id AND m.is_active = 1
             WHERE mt.team_id = t.id AND mt.tenant_id = $2),
            '[]'
-         ) AS machines
+         ) AS assets
        FROM user_teams ut
        JOIN teams t ON ut.team_id = t.id AND t.is_active = 1
        WHERE ut.user_id = $1 AND ut.tenant_id = $2
@@ -161,14 +161,14 @@ export class KvpService {
       (row: {
         team_id: number;
         team_name: string;
-        machines: { id: number; name: string }[] | null;
+        assets: { id: number; name: string }[] | null;
       }) => ({
         teamId: row.team_id,
         teamName: row.team_name,
-        machines:
-          typeof row.machines === 'string' ?
-            (JSON.parse(row.machines) as { id: number; name: string }[])
-          : (row.machines ?? []),
+        assets:
+          typeof row.assets === 'string' ?
+            (JSON.parse(row.assets) as { id: number; name: string }[])
+          : (row.assets ?? []),
       }),
     );
   }
@@ -179,7 +179,7 @@ export class KvpService {
     tenantId: number,
   ): Promise<KvpOrgAssignment[]> {
     const rows = await this.db.query<{
-      org_type: 'team' | 'machine';
+      org_type: 'team' | 'asset';
       org_id: number;
       org_name: string | null;
     }>(
@@ -188,11 +188,11 @@ export class KvpService {
          kso.org_id,
          CASE
            WHEN kso.org_type = 'team' THEN t.name
-           WHEN kso.org_type = 'machine' THEN m.name
+           WHEN kso.org_type = 'asset' THEN m.name
          END AS org_name
        FROM kvp_suggestion_organizations kso
        LEFT JOIN teams t ON kso.org_type = 'team' AND kso.org_id = t.id
-       LEFT JOIN machines m ON kso.org_type = 'machine' AND kso.org_id = m.id
+       LEFT JOIN assets m ON kso.org_type = 'asset' AND kso.org_id = m.id
        WHERE kso.suggestion_id = $1 AND kso.tenant_id = $2
        ORDER BY kso.org_type, kso.org_id`,
       [suggestionId, tenantId],
@@ -200,7 +200,7 @@ export class KvpService {
 
     const assignments: KvpOrgAssignment[] = rows.map(
       (row: {
-        org_type: 'team' | 'machine';
+        org_type: 'team' | 'asset';
         org_id: number;
         org_name: string | null;
       }) => ({
@@ -214,7 +214,7 @@ export class KvpService {
     const tempMap = new Map<number, KvpOrgAssignment[]>([
       [suggestionId, assignments],
     ]);
-    await this.enrichMachineTeamIds(tempMap, tenantId);
+    await this.enrichAssetTeamIds(tempMap, tenantId);
 
     return assignments;
   }
@@ -387,7 +387,7 @@ export class KvpService {
 
     const rows = await this.db.query<{
       suggestion_id: number;
-      org_type: 'team' | 'machine';
+      org_type: 'team' | 'asset';
       org_id: number;
       org_name: string | null;
     }>(
@@ -397,11 +397,11 @@ export class KvpService {
          kso.org_id,
          CASE
            WHEN kso.org_type = 'team' THEN t.name
-           WHEN kso.org_type = 'machine' THEN m.name
+           WHEN kso.org_type = 'asset' THEN m.name
          END AS org_name
        FROM kvp_suggestion_organizations kso
        LEFT JOIN teams t ON kso.org_type = 'team' AND kso.org_id = t.id
-       LEFT JOIN machines m ON kso.org_type = 'machine' AND kso.org_id = m.id
+       LEFT JOIN assets m ON kso.org_type = 'asset' AND kso.org_id = m.id
        WHERE kso.suggestion_id = ANY($1) AND kso.tenant_id = $2
        ORDER BY kso.org_type, kso.org_id`,
       [ids, tenantId],
@@ -419,8 +419,8 @@ export class KvpService {
       orgMap.set(row.suggestion_id, list);
     }
 
-    // Enrich machine assignments with related team IDs from machine_teams
-    await this.enrichMachineTeamIds(orgMap, tenantId);
+    // Enrich asset assignments with related team IDs from asset_teams
+    await this.enrichAssetTeamIds(orgMap, tenantId);
 
     // Attach to suggestions
     for (const suggestion of suggestions) {
@@ -428,42 +428,42 @@ export class KvpService {
     }
   }
 
-  /** For machine assignments, load which teams own each machine */
-  private async enrichMachineTeamIds(
+  /** For asset assignments, load which teams own each asset */
+  private async enrichAssetTeamIds(
     orgMap: Map<number, KvpOrgAssignment[]>,
     tenantId: number,
   ): Promise<void> {
-    // Flatten all orgs and pick only machine assignments
+    // Flatten all orgs and pick only asset assignments
     const allOrgs = Array.from(orgMap.values()).flat();
-    const machineOrgs = allOrgs.filter(
-      (o: KvpOrgAssignment) => o.orgType === 'machine',
+    const assetOrgs = allOrgs.filter(
+      (o: KvpOrgAssignment) => o.orgType === 'asset',
     );
-    if (machineOrgs.length === 0) return;
+    if (assetOrgs.length === 0) return;
 
-    const machineIds = [
-      ...new Set(machineOrgs.map((o: KvpOrgAssignment) => o.orgId)),
+    const assetIds = [
+      ...new Set(assetOrgs.map((o: KvpOrgAssignment) => o.orgId)),
     ];
 
     const mtRows = await this.db.query<{
-      machine_id: number;
+      asset_id: number;
       team_id: number;
     }>(
-      `SELECT machine_id, team_id FROM machine_teams
-       WHERE machine_id = ANY($1) AND tenant_id = $2`,
-      [machineIds, tenantId],
+      `SELECT asset_id, team_id FROM asset_teams
+       WHERE asset_id = ANY($1) AND tenant_id = $2`,
+      [assetIds, tenantId],
     );
 
-    // Group team IDs by machine ID
-    const machineTeamMap = new Map<number, number[]>();
+    // Group team IDs by asset ID
+    const assetTeamMap = new Map<number, number[]>();
     for (const row of mtRows) {
-      const list = machineTeamMap.get(row.machine_id) ?? [];
+      const list = assetTeamMap.get(row.asset_id) ?? [];
       list.push(row.team_id);
-      machineTeamMap.set(row.machine_id, list);
+      assetTeamMap.set(row.asset_id, list);
     }
 
-    // Attach to machine org assignments
-    for (const org of machineOrgs) {
-      org.relatedTeamIds = machineTeamMap.get(org.orgId) ?? [];
+    // Attach to asset org assignments
+    for (const org of assetOrgs) {
+      org.relatedTeamIds = assetTeamMap.get(org.orgId) ?? [];
     }
   }
 
@@ -599,20 +599,20 @@ export class KvpService {
     return createdSuggestion;
   }
 
-  /** Insert organization assignments (teams/machines) into junction table */
+  /** Insert organization assignments (teams/assets) into junction table */
   private async insertOrgAssignments(
     suggestionId: number,
     tenantId: number,
     dto: CreateSuggestionDto,
   ): Promise<void> {
-    const entries: { orgType: 'team' | 'machine'; orgId: number }[] = [];
+    const entries: { orgType: 'team' | 'asset'; orgId: number }[] = [];
 
     for (const teamId of dto.teamIds) {
       entries.push({ orgType: 'team', orgId: teamId });
     }
 
-    for (const machineId of dto.machineIds) {
-      entries.push({ orgType: 'machine', orgId: machineId });
+    for (const assetId of dto.assetIds) {
+      entries.push({ orgType: 'asset', orgId: assetId });
     }
 
     if (entries.length === 0) return;

@@ -249,7 +249,7 @@ export const CompactTable = () => {
               <th>Start</th>
               <th>Ende</th>
               <th>Mitarbeiter</th>
-              <th>Maschine</th>
+              <th>Anlage</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -260,7 +260,7 @@ export const CompactTable = () => {
               <td>06:00</td>
               <td>14:00</td>
               <td>Max Mustermann</td>
-              <td>Maschine A1</td>
+              <td>Anlage A1</td>
               <td><span class="badge badge--success" style="font-size: 11px; padding: 2px 8px;">Aktiv</span></td>
             </tr>
             <tr>
@@ -269,7 +269,7 @@ export const CompactTable = () => {
               <td>14:00</td>
               <td>22:00</td>
               <td>Anna Schmidt</td>
-              <td>Maschine A2</td>
+              <td>Anlage A2</td>
               <td><span class="badge badge--warning" style="font-size: 11px; padding: 2px 8px;">Geplant</span></td>
             </tr>
             <tr>
@@ -278,7 +278,7 @@ export const CompactTable = () => {
               <td>22:00</td>
               <td>06:00</td>
               <td>Thomas Müller</td>
-              <td>Maschine B1</td>
+              <td>Anlage B1</td>
               <td><span class="badge badge--info" style="font-size: 11px; padding: 2px 8px;">Geplant</span></td>
             </tr>
             <tr>
@@ -287,7 +287,7 @@ export const CompactTable = () => {
               <td>06:00</td>
               <td>14:00</td>
               <td>Lisa Weber</td>
-              <td>Maschine A1</td>
+              <td>Anlage A1</td>
               <td><span class="badge badge--info" style="font-size: 11px; padding: 2px 8px;">Geplant</span></td>
             </tr>
             <tr>
@@ -296,7 +296,7 @@ export const CompactTable = () => {
               <td>14:00</td>
               <td>22:00</td>
               <td>Peter Klein</td>
-              <td>Maschine C1</td>
+              <td>Anlage C1</td>
               <td><span class="badge badge--info" style="font-size: 11px; padding: 2px 8px;">Geplant</span></td>
             </tr>
             <tr>
@@ -305,7 +305,7 @@ export const CompactTable = () => {
               <td>22:00</td>
               <td>06:00</td>
               <td>Max Mustermann</td>
-              <td>Maschine B2</td>
+              <td>Anlage B2</td>
               <td><span class="badge badge--info" style="font-size: 11px; padding: 2px 8px;">Geplant</span></td>
             </tr>
           </tbody>

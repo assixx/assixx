@@ -7,7 +7,7 @@
  * Tests: assignUsers (happy path, max limit exceeded, WO not found),
  * removeAssignee (happy path, not found, WO not found),
  * getAssignees (mapped array, empty array),
- * getEligibleUsers (with machineId team-filtered, without machineId all employees).
+ * getEligibleUsers (with assetId team-filtered, without assetId all employees).
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
@@ -374,7 +374,7 @@ describe('WorkOrderAssigneesService', () => {
       employee_number: null,
     };
 
-    it('should return team-filtered users when machineId is provided', async () => {
+    it('should return team-filtered users when assetId is provided', async () => {
       mockDb.query.mockResolvedValueOnce([teamFilteredRow]);
 
       const result = await service.getEligibleUsers(1, 99);
@@ -387,7 +387,7 @@ describe('WorkOrderAssigneesService', () => {
       expect(result[0]?.employeeNumber).toBe('EMP-001');
     });
 
-    it('should pass machineId and tenantId to team-filtered query', async () => {
+    it('should pass assetId and tenantId to team-filtered query', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.getEligibleUsers(1, 99);
@@ -398,7 +398,7 @@ describe('WorkOrderAssigneesService', () => {
       );
     });
 
-    it('should return all employees when machineId is undefined', async () => {
+    it('should return all employees when assetId is undefined', async () => {
       mockDb.query.mockResolvedValueOnce([allEmployeeRow]);
 
       const result = await service.getEligibleUsers(1);

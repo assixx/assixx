@@ -8,7 +8,7 @@
  * canUserApprove (team lead, admin, unauthorized).
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
- * Call order per approve/reject: lock → validateApprover → resolveCardMachineId
+ * Call order per approve/reject: lock → validateApprover → resolveCardAssetId
  *   → UPDATE → cardStatusService → fetchExecution.
  */
 import {
@@ -158,14 +158,14 @@ describe('TpmApprovalService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ can_approve: true }],
       });
-      // 3. resolveCardInfo (replaces resolveCardMachineId)
+      // 3. resolveCardInfo (replaces resolveCardAssetId)
       mockClient.query.mockResolvedValueOnce({
         rows: [
           {
             uuid: 'card-uuid-001',
             card_code: 'TPM-C-001',
             title: 'Ölstand prüfen',
-            machine_id: 42,
+            asset_id: 42,
             interval_type: 'weekly',
             status: 'yellow',
           },
@@ -322,14 +322,14 @@ describe('TpmApprovalService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ can_approve: true }],
       });
-      // 3. resolveCardInfo (replaces resolveCardMachineId)
+      // 3. resolveCardInfo (replaces resolveCardAssetId)
       mockClient.query.mockResolvedValueOnce({
         rows: [
           {
             uuid: 'card-uuid-001',
             card_code: 'TPM-C-001',
             title: 'Ölstand prüfen',
-            machine_id: 42,
+            asset_id: 42,
             interval_type: 'weekly',
             status: 'yellow',
           },
@@ -500,7 +500,7 @@ describe('TpmApprovalService', () => {
 
       const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('teams');
-      expect(sql).toContain('machine_teams');
+      expect(sql).toContain('asset_teams');
       expect(sql).toContain('users');
     });
   });
@@ -537,7 +537,7 @@ describe('TpmApprovalService', () => {
             uuid: 'card-uuid-001',
             card_code: 'TPM-C-001',
             title: 'Test',
-            machine_id: 42,
+            asset_id: 42,
             interval_type: 'weekly',
             status: 'yellow',
           },
@@ -573,7 +573,7 @@ describe('TpmApprovalService', () => {
             uuid: 'card-uuid-001',
             card_code: 'TPM-C-001',
             title: 'Test',
-            machine_id: 42,
+            asset_id: 42,
             interval_type: 'weekly',
             status: 'yellow',
           },

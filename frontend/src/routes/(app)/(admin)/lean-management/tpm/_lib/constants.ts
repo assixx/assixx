@@ -134,7 +134,7 @@ export const MESSAGES = {
   BTN_VIEW_CARDS: 'Karten anzeigen',
 
   // Table headers
-  TH_MACHINE: 'Maschine',
+  TH_MACHINE: 'Anlage',
   TH_PLAN_NAME: 'Planname',
   TH_INTERVAL: 'Intervall',
   TH_WEEKDAY: 'Wochentag',
@@ -148,7 +148,7 @@ export const MESSAGES = {
   FILTER_ARCHIVED: 'Archiviert',
 
   // Search
-  SEARCH_PLACEHOLDER: 'Maschine, Planname...',
+  SEARCH_PLACEHOLDER: 'Anlage, Planname...',
 
   // Empty state
   EMPTY_TITLE: 'Keine Wartungspläne vorhanden',
@@ -190,7 +190,7 @@ export const MESSAGES = {
   PH_SELECT_DEPT_FIRST: 'Bitte zuerst Abteilung wählen',
 
   // Plan form labels
-  LABEL_MACHINE: 'Maschine',
+  LABEL_MACHINE: 'Anlage',
   LABEL_PLAN_NAME: 'Planname',
   LABEL_WEEKDAY: 'Basis-Wochentag',
   LABEL_REPEAT_EVERY: 'Wiederholung',
@@ -202,7 +202,7 @@ export const MESSAGES = {
   LABEL_NOTES: 'Notizen',
 
   // Plan form placeholders
-  PH_MACHINE: 'Maschine auswählen...',
+  PH_MACHINE: 'Anlage auswählen...',
   PH_PLAN_NAME: 'z.B. Wartungsplan Presse P17',
   PH_REPEAT: 'Jeder',
   PH_TIME: 'HH:MM',
@@ -229,15 +229,14 @@ export const MESSAGES = {
   SUCCESS_PLAN_UPDATED: 'Wartungsplan erfolgreich aktualisiert',
   ERROR_PLAN_CREATE: 'Fehler beim Erstellen des Wartungsplans',
   ERROR_PLAN_UPDATE: 'Fehler beim Aktualisieren des Wartungsplans',
-  ERROR_MACHINE_HAS_PLAN:
-    'Diese Maschine hat bereits einen aktiven Wartungsplan',
+  ERROR_MACHINE_HAS_PLAN: 'Diese Anlage hat bereits einen aktiven Wartungsplan',
   MACHINE_HAS_PLAN: 'TPM Plan existiert',
-  ERROR_MACHINES_LOAD: 'Fehler beim Laden der Maschinen',
+  ERROR_MACHINES_LOAD: 'Fehler beim Laden der Anlagen',
 
   // Slot assistant
   SLOT_TITLE: 'Verfügbare Zeitfenster',
   SLOT_DESCRIPTION:
-    'Zeigt freie und belegte Tage für die Maschine (bis 365 Tage)',
+    'Zeigt freie und belegte Tage für die Anlage (bis 365 Tage)',
   SLOT_AVAILABLE: 'Verfügbar',
   SLOT_UNAVAILABLE: 'Belegt',
   SLOT_SCHEDULED: 'Geplanter TPM-Termin',
@@ -261,7 +260,7 @@ export const MESSAGES = {
 
   // Employee assignment
   EMPLOYEE_TITLE: 'Team-Verfügbarkeit',
-  EMPLOYEE_DESCRIPTION: 'Mitarbeiter im Maschinen-Team und ihre Verfügbarkeit',
+  EMPLOYEE_DESCRIPTION: 'Mitarbeiter im Anlagen-Team und ihre Verfügbarkeit',
   EMPLOYEE_AVAILABLE: 'Verfügbar',
   EMPLOYEE_UNAVAILABLE: 'Nicht verfügbar',
   EMPLOYEE_EMPTY: 'Kein Team zugewiesen',
@@ -300,7 +299,7 @@ export const MESSAGES = {
   // Card form placeholders
   PH_TITLE: 'z.B. Sichtprüfung Hydraulik',
   PH_DESCRIPTION: 'Detaillierte Anleitung für die Wartungsaufgabe...',
-  PH_LOCATION: 'z.B. Maschinenrückseite, Schaltschrank rechts',
+  PH_LOCATION: 'z.B. Anlagenrückseite, Schaltschrank rechts',
   PH_CUSTOM_DAYS: 'Tage',
 
   // Card form help text
@@ -362,7 +361,7 @@ export const MESSAGES = {
 
   // Duplicate warning
   DUPLICATE_TITLE: 'Mögliche Duplikate gefunden',
-  DUPLICATE_MESSAGE: 'Es wurden ähnliche Karten für diese Maschine gefunden:',
+  DUPLICATE_MESSAGE: 'Es wurden ähnliche Karten für diese Anlage gefunden:',
   DUPLICATE_CONTINUE: 'Trotzdem erstellen',
   DUPLICATE_CANCEL: 'Abbrechen',
 

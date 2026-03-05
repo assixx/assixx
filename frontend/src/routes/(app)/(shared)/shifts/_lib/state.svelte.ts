@@ -103,8 +103,8 @@ export const shiftsState = {
   get departments() {
     return dataState.departments;
   },
-  get machines() {
-    return dataState.machines;
+  get assets() {
+    return dataState.assets;
   },
   get teams() {
     return dataState.teams;
@@ -129,7 +129,7 @@ export const shiftsState = {
   },
   setAreas: dataState.setAreas,
   setDepartments: dataState.setDepartments,
-  setMachines: dataState.setMachines,
+  setAssets: dataState.setAssets,
   setTeams: dataState.setTeams,
   setTeamLeaders: dataState.setTeamLeaders,
   setEmployees: dataState.setEmployees,
@@ -141,7 +141,7 @@ export const shiftsState = {
   getMemberNameById: dataState.getMemberNameById,
   getAreaById: dataState.getAreaById,
   getDepartmentById: dataState.getDepartmentById,
-  getMachineById: dataState.getMachineById,
+  getAssetById: dataState.getAssetById,
   getTeamById: dataState.getTeamById,
 
   // Shift data state
@@ -218,8 +218,8 @@ export const shiftsState = {
   get isContextComplete() {
     return contextState.isContextComplete;
   },
-  get machineAvailabilityMap() {
-    return contextState.machineAvailabilityMap;
+  get assetAvailabilityMap() {
+    return contextState.assetAvailabilityMap;
   },
   get tpmEventsMap() {
     return contextState.tpmEventsMap;
@@ -233,8 +233,8 @@ export const shiftsState = {
   setCurrentPatternId: contextState.setCurrentPatternId,
   setCurrentPatternType: contextState.setCurrentPatternType,
   isHierarchyValid: contextState.isHierarchyValid,
-  setMachineAvailability: contextState.setMachineAvailability,
-  clearMachineAvailability: contextState.clearMachineAvailability,
+  setAssetAvailability: contextState.setAssetAvailability,
+  clearAssetAvailability: contextState.clearAssetAvailability,
   setTpmEvents: contextState.setTpmEvents,
   clearTpmEvents: contextState.clearTpmEvents,
   setShowTpmEvents: uiState.setShowTpmEvents,
@@ -284,15 +284,15 @@ export const shiftsState = {
   get departmentDropdownOpen() {
     return dropdownState.departmentDropdownOpen;
   },
-  get machineDropdownOpen() {
-    return dropdownState.machineDropdownOpen;
+  get assetDropdownOpen() {
+    return dropdownState.assetDropdownOpen;
   },
   get teamDropdownOpen() {
     return dropdownState.teamDropdownOpen;
   },
   toggleAreaDropdown: dropdownState.toggleAreaDropdown,
   toggleDepartmentDropdown: dropdownState.toggleDepartmentDropdown,
-  toggleMachineDropdown: dropdownState.toggleMachineDropdown,
+  toggleAssetDropdown: dropdownState.toggleAssetDropdown,
   toggleTeamDropdown: dropdownState.toggleTeamDropdown,
   closeAllDropdowns: dropdownState.closeAllDropdowns,
 

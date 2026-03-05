@@ -3,7 +3,7 @@
    * TPM Employee Assignment Component
    * @module plan/[uuid]/_lib/EmployeeAssignment
    *
-   * Shows team members assigned to the machine's team(s)
+   * Shows team members assigned to the asset's team(s)
    * with their availability status. Informational only.
    * Uses GET /tpm/plans/:uuid/team-availability endpoint.
    */
@@ -11,7 +11,7 @@
   import { MESSAGES } from '../../../_lib/constants';
 
   import type {
-    MachineTeamAvailabilityResult,
+    AssetTeamAvailabilityResult,
     TeamMemberStatus,
   } from '../../../_lib/types';
 
@@ -26,7 +26,7 @@
   // =========================================================================
 
   let loading = $state(true);
-  let teamData = $state<MachineTeamAvailabilityResult | null>(null);
+  let teamData = $state<AssetTeamAvailabilityResult | null>(null);
 
   const teams = $derived(teamData?.teams ?? []);
   const members = $derived(teamData?.members ?? []);

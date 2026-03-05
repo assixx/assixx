@@ -121,9 +121,9 @@ export interface Department {
 }
 
 /**
- * Machine
+ * Asset
  */
-export interface Machine {
+export interface Asset {
   id: number;
   name: string;
   departmentId: number;
@@ -183,7 +183,7 @@ export interface ShiftAssignment {
   date: string;
   shiftType: ShiftType;
   departmentId?: number;
-  machineId?: number;
+  assetId?: number;
   teamLeaderId?: number;
   notes?: string;
   createdAt: string;
@@ -196,7 +196,7 @@ export interface ShiftAssignment {
 export interface SelectedContext {
   areaId: number | null;
   departmentId: number | null;
-  machineId: number | null;
+  assetId: number | null;
   teamId: number | null;
   teamLeaderId: number | null;
 }
@@ -252,7 +252,7 @@ export interface CreateShiftPlanRequest {
   areaId?: number;
   departmentId?: number;
   teamId?: number;
-  machineId?: number;
+  assetId?: number;
   name: string;
   shiftNotes?: string;
   isTpmMode?: boolean;
@@ -276,8 +276,8 @@ export interface ShiftFavorite {
   areaName: string;
   departmentId: number;
   departmentName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   teamId: number;
   teamName: string;
   createdAt: string;
@@ -378,8 +378,8 @@ export interface EmployeeTeamInfo {
   departmentName: string;
   areaId: number;
   areaName: string;
-  machineId?: number;
-  machineName?: string;
+  assetId?: number;
+  assetName?: string;
   teamLeaderId?: number | null; // For permission checks (SSR)
 }
 
@@ -404,12 +404,12 @@ export interface DropdownOption {
 }
 
 /**
- * Machine availability entry (from GET /machines/:id/availability)
- * Used by shift planning to visually mark cells where a machine is unavailable.
+ * Asset availability entry (from GET /assets/:id/availability)
+ * Used by shift planning to visually mark cells where a asset is unavailable.
  */
-export interface MachineAvailabilityEntry {
+export interface AssetAvailabilityEntry {
   id: number;
-  machineId: number;
+  assetId: number;
   status: string;
   startDate: string;
   endDate: string;
@@ -433,7 +433,7 @@ export interface IntervalColorEntry {
 export interface TpmMaintenanceEvent {
   planUuid: string;
   planName: string;
-  machineName: string;
+  assetName: string;
   baseTime: string | null;
   bufferHours: number;
   /** Interval types due on this date (e.g. ['weekly', 'monthly', 'quarterly']) */

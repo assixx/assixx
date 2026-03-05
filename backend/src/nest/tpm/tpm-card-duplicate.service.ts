@@ -3,7 +3,7 @@
  *
  * Detects potential duplicate maintenance cards before creation.
  * Checks for cards with similar titles in the same or shorter intervals
- * on the same machine — helps prevent redundant maintenance tasks.
+ * on the same asset — helps prevent redundant maintenance tasks.
  *
  * All methods are read-only (no mutations).
  */
@@ -33,7 +33,7 @@ export class TpmCardDuplicateService {
    * Check if a potential new card would be a duplicate.
    *
    * A card is considered a potential duplicate when:
-   *   - Same machine (machineId)
+   *   - Same asset (assetId)
    *   - Similar title (case-insensitive ILIKE match)
    *   - Same or shorter interval (interval_order <= given interval's order)
    *
@@ -42,7 +42,7 @@ export class TpmCardDuplicateService {
    */
   async checkDuplicate(
     tenantId: number,
-    machineId: number,
+    assetId: number,
     title: string,
     intervalType: TpmIntervalType,
   ): Promise<DuplicateCheckResult> {
@@ -52,18 +52,18 @@ export class TpmCardDuplicateService {
     const rows = await this.db.query<TpmCardJoinRow>(
       `SELECT c.*,
          p.uuid AS plan_uuid,
-         m.name AS machine_name
+         m.name AS asset_name
        FROM tpm_cards c
        LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
-       LEFT JOIN machines m ON c.machine_id = m.id AND m.tenant_id = c.tenant_id
-       WHERE c.machine_id = $1
+       LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
+       WHERE c.asset_id = $1
          AND c.tenant_id = $2
          AND c.title ILIKE $3
          AND c.interval_order <= $4
          AND c.is_active = 1
        ORDER BY c.interval_order ASC
        LIMIT $5`,
-      [machineId, tenantId, searchPattern, intervalOrder, MAX_SIMILAR_RESULTS],
+      [assetId, tenantId, searchPattern, intervalOrder, MAX_SIMILAR_RESULTS],
     );
 
     const existingCards = rows.map(mapCardRowToApi);
@@ -71,7 +71,7 @@ export class TpmCardDuplicateService {
     if (existingCards.length > 0) {
       this.logger.debug(
         `Duplikat-Warnung: "${title}" (${intervalType}) — ` +
-          `${existingCards.length} ähnliche Karten gefunden auf Maschine ${machineId}`,
+          `${existingCards.length} ähnliche Karten gefunden auf Anlage ${assetId}`,
       );
     }
 
@@ -82,12 +82,12 @@ export class TpmCardDuplicateService {
   }
 
   /**
-   * Search for cards with similar titles or descriptions on a machine.
+   * Search for cards with similar titles or descriptions on a asset.
    * Uses case-insensitive ILIKE matching across both fields.
    */
   async findSimilarCards(
     tenantId: number,
-    machineId: number,
+    assetId: number,
     searchText: string,
   ): Promise<TpmCard[]> {
     const searchPattern = `%${escapeLikePattern(searchText)}%`;
@@ -95,17 +95,17 @@ export class TpmCardDuplicateService {
     const rows = await this.db.query<TpmCardJoinRow>(
       `SELECT c.*,
          p.uuid AS plan_uuid,
-         m.name AS machine_name
+         m.name AS asset_name
        FROM tpm_cards c
        LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
-       LEFT JOIN machines m ON c.machine_id = m.id AND m.tenant_id = c.tenant_id
-       WHERE c.machine_id = $1
+       LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
+       WHERE c.asset_id = $1
          AND c.tenant_id = $2
          AND (c.title ILIKE $3 OR c.description ILIKE $3)
          AND c.is_active = 1
        ORDER BY c.interval_order ASC, c.sort_order ASC
        LIMIT $4`,
-      [machineId, tenantId, searchPattern, MAX_SIMILAR_RESULTS],
+      [assetId, tenantId, searchPattern, MAX_SIMILAR_RESULTS],
     );
 
     return rows.map(mapCardRowToApi);

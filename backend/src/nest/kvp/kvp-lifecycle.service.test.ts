@@ -100,13 +100,13 @@ describe('KvpLifecycleService', () => {
       );
     });
 
-    it('should insert junction table entry for machine org level', async () => {
+    it('should insert junction table entry for asset org level', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.shareSuggestion(
         42,
-        createShareDto({ orgLevel: 'machine', orgId: 10 }),
+        createShareDto({ orgLevel: 'asset', orgId: 10 }),
         1,
         100,
       );
@@ -115,7 +115,7 @@ describe('KvpLifecycleService', () => {
       expect(mockDb.query).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('ON CONFLICT'),
-        [42, 'machine', 10, 1],
+        [42, 'asset', 10, 1],
       );
     });
 
@@ -189,7 +189,7 @@ describe('KvpLifecycleService', () => {
       );
     });
 
-    it('should skip junction table delete for non-team/machine org level', async () => {
+    it('should skip junction table delete for non-team/asset org level', async () => {
       mockDb.query.mockResolvedValueOnce([
         { id: 42, org_level: 'company', org_id: 1 },
       ]);
@@ -210,9 +210,9 @@ describe('KvpLifecycleService', () => {
       );
     });
 
-    it('should delete junction for machine org level', async () => {
+    it('should delete junction for asset org level', async () => {
       mockDb.query.mockResolvedValueOnce([
-        { id: 42, org_level: 'machine', org_id: 10 },
+        { id: 42, org_level: 'asset', org_id: 10 },
       ]);
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
@@ -222,7 +222,7 @@ describe('KvpLifecycleService', () => {
       expect(mockDb.query).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('DELETE'),
-        [42, 'machine', 10],
+        [42, 'asset', 10],
       );
     });
   });

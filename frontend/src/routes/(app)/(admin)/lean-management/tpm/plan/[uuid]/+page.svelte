@@ -52,8 +52,8 @@
 
   let submitting = $state(false);
 
-  // Create mode: track machine + shiftPlanRequired for SlotAssistant
-  let createMachineUuid = $state('');
+  // Create mode: track asset + shiftPlanRequired for SlotAssistant
+  let createAssetUuid = $state('');
   let createShiftPlanRequired = $state(false);
 
   // =============================================================================
@@ -141,7 +141,7 @@
     </h1>
     {#if !isCreateMode && data.plan !== null}
       <p class="mt-1 text-sm text-(--color-text-secondary)">
-        {data.plan.machineName ?? '—'} — {data.plan.name}
+        {data.plan.assetName ?? '—'} — {data.plan.name}
       </p>
     {/if}
   </div>
@@ -155,10 +155,10 @@
         intervalColors={data.intervalColors}
       />
     </div>
-  {:else if isCreateMode && createMachineUuid.length > 0}
+  {:else if isCreateMode && createAssetUuid.length > 0}
     <div class="mb-6">
       <SlotAssistant
-        machineUuid={createMachineUuid}
+        assetUuid={createAssetUuid}
         shiftPlanRequired={createShiftPlanRequired}
         intervalColors={data.intervalColors}
       />
@@ -178,18 +178,18 @@
         <div class="card__body">
           <PlanForm
             plan={data.plan}
-            machines={data.machines}
+            assets={data.assets}
             areas={data.areas}
             departments={data.departments}
-            machineUuidsWithPlans={data.machineUuidsWithPlans ?? []}
+            assetUuidsWithPlans={data.assetUuidsWithPlans ?? []}
             timeEstimates={data.timeEstimates}
             {isCreateMode}
             {submitting}
             oncreate={handleCreate}
             onupdate={handleUpdate}
             oncancel={handleCancel}
-            onmachinechange={(uuid: string) => {
-              createMachineUuid = uuid;
+            onassetchange={(uuid: string) => {
+              createAssetUuid = uuid;
             }}
             onshiftplanchange={(val: boolean) => {
               createShiftPlanRequired = val;

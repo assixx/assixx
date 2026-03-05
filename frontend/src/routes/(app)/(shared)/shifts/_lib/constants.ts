@@ -86,7 +86,7 @@ export const ADMIN_ROLES = ['admin', 'root', 'manager', 'team_lead'] as const;
 export const DROPDOWN_PLACEHOLDERS = {
   AREA: 'Bereich wählen...',
   DEPARTMENT: 'Abteilung wählen...',
-  MACHINE: 'Maschine wählen...',
+  MACHINE: 'Anlage wählen...',
   TEAM: 'Team wählen...',
   AWAIT_AREA: 'Erst Bereich wählen...',
   AWAIT_DEPARTMENT: 'Erst Abteilung wählen...',

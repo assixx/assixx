@@ -21,7 +21,7 @@ type MockDb = ReturnType<typeof createMockDb>;
 function makeAssignmentRow(overrides: Record<string, unknown> = {}) {
   return {
     plan_uuid: 'plan-uuid-001                           ',
-    machine_id: 10,
+    asset_id: 10,
     shift_date: '2026-03-15',
     user_id: 5,
     first_name: 'Max',
@@ -83,13 +83,13 @@ describe('TpmShiftAssignmentsService', () => {
       expect(sql).toContain('sp.is_tpm_mode = true');
     });
 
-    it('should join tpm_maintenance_plans by machine_id', async () => {
+    it('should join tpm_maintenance_plans by asset_id', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.getShiftAssignments(10, '2026-03-01', '2026-03-31');
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('mp.machine_id = sp.machine_id');
+      expect(sql).toContain('mp.asset_id = sp.asset_id');
     });
 
     it('should map DB rows to API response correctly', async () => {
@@ -97,7 +97,7 @@ describe('TpmShiftAssignmentsService', () => {
         makeAssignmentRow(),
         makeAssignmentRow({
           plan_uuid: 'plan-uuid-002                           ',
-          machine_id: 20,
+          asset_id: 20,
           user_id: 7,
           first_name: 'Anna',
           last_name: 'Schmidt',
@@ -114,7 +114,7 @@ describe('TpmShiftAssignmentsService', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         planUuid: 'plan-uuid-001',
-        machineId: 10,
+        assetId: 10,
         shiftDate: '2026-03-15',
         userId: 5,
         firstName: 'Max',
@@ -123,7 +123,7 @@ describe('TpmShiftAssignmentsService', () => {
       });
       expect(result[1]).toEqual({
         planUuid: 'plan-uuid-002',
-        machineId: 20,
+        assetId: 20,
         shiftDate: '2026-03-15',
         userId: 7,
         firstName: 'Anna',

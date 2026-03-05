@@ -9,7 +9,7 @@
 
   const { onconfirm }: Props = $props();
 
-  /** Teams not yet assigned (directly or via machine ownership) */
+  /** Teams not yet assigned (directly or via asset ownership) */
   const availableTeams = $derived.by(() => {
     const orgs: KvpOrgAssignment[] =
       kvpDetailState.suggestion?.organizations ?? [];
@@ -21,8 +21,8 @@
       if (org.orgType === 'team') {
         coveredTeamIds[org.orgId] = true;
       }
-      // Teams that own an assigned machine
-      if (org.orgType === 'machine' && org.relatedTeamIds !== undefined) {
+      // Teams that own an assigned asset
+      if (org.orgType === 'asset' && org.relatedTeamIds !== undefined) {
         for (const teamId of org.relatedTeamIds) {
           coveredTeamIds[teamId] = true;
         }
@@ -32,17 +32,17 @@
     return kvpDetailState.teams.filter((t) => !(t.id in coveredTeamIds));
   });
 
-  /** Machines not yet assigned to this suggestion */
-  const availableMachines = $derived.by(() => {
+  /** Assets not yet assigned to this suggestion */
+  const availableAssets = $derived.by(() => {
     const orgs: KvpOrgAssignment[] =
       kvpDetailState.suggestion?.organizations ?? [];
-    const assignedMachineIds: Record<number, true> = {};
+    const assignedAssetIds: Record<number, true> = {};
     for (const org of orgs) {
-      if (org.orgType === 'machine') {
-        assignedMachineIds[org.orgId] = true;
+      if (org.orgType === 'asset') {
+        assignedAssetIds[org.orgId] = true;
       }
     }
-    return kvpDetailState.machines.filter((m) => !(m.id in assignedMachineIds));
+    return kvpDetailState.assets.filter((m) => !(m.id in assignedAssetIds));
   });
 </script>
 
@@ -280,31 +280,31 @@
             </label>
           {/if}
 
-          <!-- Machine -->
-          {#if availableMachines.length > 0}
+          <!-- Asset -->
+          {#if availableAssets.length > 0}
             <label class="choice-card choice-card--lg">
               <input
                 type="radio"
                 name="orgLevel"
-                value="machine"
+                value="asset"
                 class="choice-card__input"
-                checked={kvpDetailState.selectedShareLevel === 'machine'}
+                checked={kvpDetailState.selectedShareLevel === 'asset'}
                 onchange={() => {
-                  kvpDetailState.setSelectedShareLevel('machine');
+                  kvpDetailState.setSelectedShareLevel('asset');
                 }}
               />
               <span class="choice-card__text">
-                Maschine
+                Anlage
                 <span class="choice-card__description"
-                  >Für eine bestimmte Maschine sichtbar</span
+                  >Für eine bestimmte Anlage sichtbar</span
                 >
               </span>
-              {#if kvpDetailState.selectedShareLevel === 'machine'}
+              {#if kvpDetailState.selectedShareLevel === 'asset'}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="dropdown"
-                  data-dropdown="shareMachine"
+                  data-dropdown="shareAsset"
                   onclick={(e) => {
                     e.stopPropagation();
                   }}
@@ -313,37 +313,37 @@
                     type="button"
                     class="dropdown__trigger"
                     class:active={kvpDetailState.activeDropdown ===
-                      'shareMachine'}
+                      'shareAsset'}
                     onclick={(e) => {
                       e.preventDefault();
-                      kvpDetailState.toggleDropdown('shareMachine');
+                      kvpDetailState.toggleDropdown('shareAsset');
                     }}
                   >
                     <span>
                       {kvpDetailState.selectedOrgId !== null ?
-                        (availableMachines.find(
+                        (availableAssets.find(
                           (m) => m.id === kvpDetailState.selectedOrgId,
-                        )?.name ?? 'Maschine auswählen...')
-                      : 'Maschine auswählen...'}
+                        )?.name ?? 'Anlage auswählen...')
+                      : 'Anlage auswählen...'}
                     </span>
                     <i class="fas fa-chevron-down"></i>
                   </button>
                   <div
                     class="dropdown__menu"
                     class:active={kvpDetailState.activeDropdown ===
-                      'shareMachine'}
+                      'shareAsset'}
                   >
-                    {#each availableMachines as machine (machine.id)}
+                    {#each availableAssets as asset (asset.id)}
                       <button
                         type="button"
                         class="dropdown__option"
                         onclick={(e) => {
                           e.preventDefault();
-                          kvpDetailState.setSelectedOrgId(machine.id);
+                          kvpDetailState.setSelectedOrgId(asset.id);
                           kvpDetailState.closeAllDropdowns();
                         }}
                       >
-                        {machine.name}
+                        {asset.name}
                       </button>
                     {/each}
                   </div>
@@ -403,7 +403,7 @@
   :global([data-dropdown='shareDept'] .dropdown__trigger),
   :global([data-dropdown='shareArea'] .dropdown__trigger),
   :global([data-dropdown='shareTeam'] .dropdown__trigger),
-  :global([data-dropdown='shareMachine'] .dropdown__trigger) {
+  :global([data-dropdown='shareAsset'] .dropdown__trigger) {
     min-width: 220px;
     width: 50%;
   }
@@ -411,7 +411,7 @@
   :global([data-dropdown='shareDept'] .dropdown__menu),
   :global([data-dropdown='shareArea'] .dropdown__menu),
   :global([data-dropdown='shareTeam'] .dropdown__menu),
-  :global([data-dropdown='shareMachine'] .dropdown__menu) {
+  :global([data-dropdown='shareAsset'] .dropdown__menu) {
     min-width: 220px;
     width: 50%;
   }

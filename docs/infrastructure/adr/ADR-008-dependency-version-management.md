@@ -31,7 +31,7 @@ During the development of Assixx, the question arose of how dependency versions 
 | Risk                       | Impact                                  |
 | -------------------------- | --------------------------------------- |
 | Dev dependencies in prod   | Larger images, security vulnerabilities |
-| Different package versions | "Works on my machine" bugs              |
+| Different package versions | "Works on my asset" bugs                |
 | Uncontrolled updates       | Breaking changes in production          |
 | Version drift              | Non-reproducible builds                 |
 
@@ -72,7 +72,7 @@ pnpm-lock.yaml  \u2190 Single Source of Truth
 
 - Testing integrity: What is tested = what is deployed
 - Reproducible builds: Identical versions everywhere
-- No "works on my machine" bugs
+- No "works on my asset" bugs
 
 ### 3. Which Packages Are Installed: dependencies vs devDependencies
 
@@ -124,12 +124,12 @@ Branch: main (stable)          Branch: testing/svelte-upgrade
 
 ### 1. Separate Lock Files per Environment
 
-| Pros                        | Cons                             |
-| --------------------------- | -------------------------------- |
-| Different versions possible | Version drift                    |
-| Flexibility                 | Not reproducible                 |
-|                             | Maintenance effort doubled       |
-|                             | "Works on my machine" guaranteed |
+| Pros                        | Cons                           |
+| --------------------------- | ------------------------------ |
+| Different versions possible | Version drift                  |
+| Flexibility                 | Not reproducible               |
+|                             | Maintenance effort doubled     |
+|                             | "Works on my asset" guaranteed |
 
 **Decision**: Rejected - Violates reproducibility.
 

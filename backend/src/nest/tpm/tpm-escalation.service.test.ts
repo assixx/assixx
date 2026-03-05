@@ -69,8 +69,8 @@ interface OverdueCandidate {
   tenant_id: number;
   card_code: string;
   title: string;
-  machine_id: number;
-  machine_name: string | null;
+  asset_id: number;
+  asset_name: string | null;
   interval_type: string;
   status: string;
 }
@@ -84,8 +84,8 @@ function createOverdueCandidate(
     tenant_id: 10,
     card_code: 'BT5',
     title: 'Ölstand prüfen',
-    machine_id: 42,
-    machine_name: 'Presse P17',
+    asset_id: 42,
+    asset_name: 'Presse P17',
     interval_type: 'weekly',
     status: 'red',
     ...overrides,
@@ -419,9 +419,9 @@ describe('TpmEscalationService', () => {
       );
     });
 
-    it('should include machineName in notification card when available', async () => {
+    it('should include assetName in notification card when available', async () => {
       mockDb.query.mockResolvedValueOnce([
-        createOverdueCandidate({ machine_name: 'Fräse F9' }),
+        createOverdueCandidate({ asset_name: 'Fräse F9' }),
       ]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
@@ -430,12 +430,12 @@ describe('TpmEscalationService', () => {
 
       const notificationCard = mockNotificationService.notifyMaintenanceOverdue
         .mock.calls[0]?.[1] as Record<string, unknown>;
-      expect(notificationCard.machineName).toBe('Fräse F9');
+      expect(notificationCard.assetName).toBe('Fräse F9');
     });
 
-    it('should omit machineName from notification card when null', async () => {
+    it('should omit assetName from notification card when null', async () => {
       mockDb.query.mockResolvedValueOnce([
-        createOverdueCandidate({ machine_name: null }),
+        createOverdueCandidate({ asset_name: null }),
       ]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
@@ -444,7 +444,7 @@ describe('TpmEscalationService', () => {
 
       const notificationCard = mockNotificationService.notifyMaintenanceOverdue
         .mock.calls[0]?.[1] as Record<string, unknown>;
-      expect(notificationCard).not.toHaveProperty('machineName');
+      expect(notificationCard).not.toHaveProperty('assetName');
     });
   });
 
@@ -470,7 +470,7 @@ describe('TpmEscalationService', () => {
   // =============================================================
 
   describe('resolveTeamLead()', () => {
-    it('should query teams + machine_teams for team lead', async () => {
+    it('should query teams + asset_teams for team lead', async () => {
       mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
@@ -479,7 +479,7 @@ describe('TpmEscalationService', () => {
 
       const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('teams');
-      expect(sql).toContain('machine_teams');
+      expect(sql).toContain('asset_teams');
       expect(sql).toContain('team_lead_id');
     });
 

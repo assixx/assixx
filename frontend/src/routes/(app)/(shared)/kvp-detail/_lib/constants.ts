@@ -75,7 +75,7 @@ export const PRIORITY_TEXT: Record<KvpPriority, string> = {
  */
 export const VISIBILITY_BADGE_CLASSES: Record<OrgLevel, string> = {
   team: 'badge--visibility-team',
-  machine: 'badge--visibility-team',
+  asset: 'badge--visibility-team',
   department: 'badge--visibility-department',
   area: 'badge--visibility-area',
   company: 'badge--visibility-company',
@@ -90,7 +90,7 @@ export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
     department: { icon: 'fa-building', text: 'Abteilung' },
     area: { icon: 'fa-sitemap', text: 'Bereich' },
     team: { icon: 'fa-users', text: 'Team' },
-    machine: { icon: 'fa-cog', text: 'Maschine' },
+    asset: { icon: 'fa-cog', text: 'Anlage' },
   } as const;
 
 /**
@@ -101,7 +101,7 @@ export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> = {
   department: 'Abteilungsebene',
   area: 'Bereichsebene',
   team: 'Teamebene',
-  machine: 'Maschinenebene',
+  asset: 'Anlagenebene',
 } as const;
 
 /**

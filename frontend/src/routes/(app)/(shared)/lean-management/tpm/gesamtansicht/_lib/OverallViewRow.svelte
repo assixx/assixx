@@ -24,8 +24,8 @@
 </script>
 
 <tr>
-  <td class="gv-cell gv-cell--machine">
-    {row.plan.machineName ?? '—'}
+  <td class="gv-cell gv-cell--asset">
+    {row.plan.assetName ?? '—'}
   </td>
   <td class="gv-cell gv-cell--time">
     {#if isFullDay(row.plan.baseTime)}
@@ -59,7 +59,7 @@
     border-right: 1px solid var(--color-glass-border);
   }
 
-  .gv-cell--machine {
+  .gv-cell--asset {
     font-weight: 600;
     font-size: 0.85rem;
     color: var(--color-text-primary);

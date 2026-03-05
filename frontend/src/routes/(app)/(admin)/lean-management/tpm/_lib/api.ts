@@ -14,10 +14,10 @@ import type {
   TpmCardTemplate,
   TpmCardExecution,
   TpmTimeEstimate,
-  Machine,
+  Asset,
   SlotAvailabilityResult,
   ScheduleProjectionResult,
-  MachineTeamAvailabilityResult,
+  AssetTeamAvailabilityResult,
   CreatePlanPayload,
   UpdatePlanPayload,
   CreateTimeEstimatePayload,
@@ -124,13 +124,13 @@ export async function deletePlan(
 // MACHINES
 // =============================================================================
 
-/** Fetch list of machines (for plan creation dropdown) */
-export async function fetchMachines(): Promise<Machine[]> {
-  const result: unknown = await apiClient.get('/machines');
-  if (Array.isArray(result)) return result as Machine[];
+/** Fetch list of assets (for plan creation dropdown) */
+export async function fetchAssets(): Promise<Asset[]> {
+  const result: unknown = await apiClient.get('/assets');
+  if (Array.isArray(result)) return result as Asset[];
   if (result !== null && typeof result === 'object') {
     const obj = result as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as Machine[];
+    if (Array.isArray(obj.data)) return obj.data as Asset[];
   }
   return [];
 }
@@ -164,7 +164,7 @@ export async function setTimeEstimate(
 // SLOT ASSISTANT
 // =============================================================================
 
-/** Fetch available slots for a plan's machine */
+/** Fetch available slots for a plan's asset */
 export async function fetchAvailableSlots(
   planUuid: string,
   startDate: string,
@@ -180,16 +180,16 @@ export async function fetchAvailableSlots(
   }
 }
 
-/** Fetch available slots by machine UUID (no plan needed, for create mode) */
-export async function fetchAvailableSlotsByMachine(
-  machineUuid: string,
+/** Fetch available slots by asset UUID (no plan needed, for create mode) */
+export async function fetchAvailableSlotsByAsset(
+  assetUuid: string,
   startDate: string,
   endDate: string,
   shiftPlanRequired: boolean,
 ): Promise<SlotAvailabilityResult | null> {
   try {
     const params = new URLSearchParams({
-      machineUuid,
+      assetUuid,
       startDate,
       endDate,
       shiftPlanRequired: String(shiftPlanRequired),
@@ -198,7 +198,7 @@ export async function fetchAvailableSlotsByMachine(
       `/tpm/plans/available-slots?${params.toString()}`,
     );
   } catch (err: unknown) {
-    log.error({ err }, 'Error loading available slots by machine');
+    log.error({ err }, 'Error loading available slots by asset');
     return null;
   }
 }
@@ -231,12 +231,12 @@ export async function fetchScheduleProjection(
 // TEAM AVAILABILITY
 // =============================================================================
 
-/** Fetch team member availability for a plan's machine */
+/** Fetch team member availability for a plan's asset */
 export async function fetchTeamAvailability(
   planUuid: string,
-): Promise<MachineTeamAvailabilityResult | null> {
+): Promise<AssetTeamAvailabilityResult | null> {
   try {
-    return await apiClient.get<MachineTeamAvailabilityResult>(
+    return await apiClient.get<AssetTeamAvailabilityResult>(
       `/tpm/plans/${planUuid}/team-availability`,
     );
   } catch (err: unknown) {
@@ -253,7 +253,7 @@ export async function fetchTeamAvailability(
 export async function fetchCards(
   filters: {
     planUuid?: string;
-    machineUuid?: string;
+    assetUuid?: string;
     status?: string;
     intervalType?: string;
     page?: number;
@@ -262,8 +262,8 @@ export async function fetchCards(
 ): Promise<PaginatedResponse<TpmCard>> {
   const params = new URLSearchParams();
   if (filters.planUuid !== undefined) params.set('planUuid', filters.planUuid);
-  if (filters.machineUuid !== undefined)
-    params.set('machineUuid', filters.machineUuid);
+  if (filters.assetUuid !== undefined)
+    params.set('assetUuid', filters.assetUuid);
   if (filters.status !== undefined) params.set('status', filters.status);
   if (filters.intervalType !== undefined)
     params.set('intervalType', filters.intervalType);

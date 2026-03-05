@@ -87,7 +87,7 @@ export interface AreaStatsResponse {
  */
 interface AreaDependencies {
   departments: number;
-  machines: number;
+  assets: number;
   shifts: number;
   shiftPlans: number;
   shiftFavorites: number;
@@ -426,7 +426,7 @@ export class AreasService {
   ): Promise<AreaDependencies> {
     const tables = [
       'departments',
-      'machines',
+      'assets',
       'shifts',
       'shift_plans',
       'shift_favorites',
@@ -444,7 +444,7 @@ export class AreasService {
 
     return {
       departments: counts[0] ?? 0,
-      machines: counts[1] ?? 0,
+      assets: counts[1] ?? 0,
       shifts: counts[2] ?? 0,
       shiftPlans: counts[3] ?? 0,
       shiftFavorites: counts[4] ?? 0,
@@ -466,7 +466,7 @@ export class AreasService {
       count: number;
     }[] = [
       { table: 'departments', operation: 'UPDATE', count: deps.departments },
-      { table: 'machines', operation: 'UPDATE', count: deps.machines },
+      { table: 'assets', operation: 'UPDATE', count: deps.assets },
       { table: 'shifts', operation: 'UPDATE', count: deps.shifts },
       { table: 'shift_plans', operation: 'UPDATE', count: deps.shiftPlans },
       {
@@ -524,7 +524,7 @@ export class AreasService {
           details: {
             totalDependencies: deps.total,
             ...(deps.departments > 0 && { departments: deps.departments }),
-            ...(deps.machines > 0 && { machines: deps.machines }),
+            ...(deps.assets > 0 && { assets: deps.assets }),
             ...(deps.shifts > 0 && { shifts: deps.shifts }),
             ...(deps.shiftPlans > 0 && { shiftPlans: deps.shiftPlans }),
             ...(deps.shiftFavorites > 0 && {

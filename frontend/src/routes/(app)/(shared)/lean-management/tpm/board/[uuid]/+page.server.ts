@@ -1,7 +1,7 @@
 /**
  * TPM Kamishibai Board — Server-Side Data Loading
  * Loads plan + all cards + colors in parallel.
- * [uuid] = plan UUID (linked from employee machine overview)
+ * [uuid] = plan UUID (linked from employee asset overview)
  */
 import { redirect } from '@sveltejs/kit';
 

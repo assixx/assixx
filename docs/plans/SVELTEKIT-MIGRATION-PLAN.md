@@ -1597,7 +1597,7 @@ Konvertierung der 25 Storybook Stories zu Svelte Components.
 | manage-employees.html        | /(app)/manage/employees          | 5         |
 | manage-departments.html      | /(app)/manage/departments        | 5         |
 | manage-teams.html            | /(app)/manage/teams              | 5         |
-| manage-machines.html         | /(app)/manage/machines           | 5         |
+| manage-assets.html           | /(app)/manage/machines           | 5         |
 | manage-admins.html           | /(app)/manage/admins             | 5         |
 | manage-areas.html            | /(app)/manage/areas              | 5         |
 | admin-profile.html           | /(app)/profile                   | 6         |

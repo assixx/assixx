@@ -70,7 +70,7 @@
     <div class="mt-2 mb-2 flex items-center gap-2">
       <span
         class="badge badge--warning"
-        title="Mindestbesetzung für diese Maschine"
+        title="Mindestbesetzung für diese Anlage"
       >
         <i class="fas fa-hard-hat"></i>
         Mindestbesetzung: {minStaffCount}

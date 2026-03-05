@@ -7,8 +7,8 @@ import type { TpmMaintenancePlanRow, TpmPlan } from './tpm.types.js';
 
 /** Extended row type including JOIN columns from related tables */
 export interface TpmPlanJoinRow extends TpmMaintenancePlanRow {
-  machine_uuid?: string;
-  machine_name?: string;
+  asset_uuid?: string;
+  asset_name?: string;
   department_name?: string;
   created_by_name?: string;
 }
@@ -17,7 +17,7 @@ export interface TpmPlanJoinRow extends TpmMaintenancePlanRow {
 export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
   const plan: TpmPlan = {
     uuid: row.uuid.trim(),
-    machineId: row.machine_id,
+    assetId: row.asset_id,
     name: row.name,
     baseWeekday: row.base_weekday,
     baseRepeatEvery: row.base_repeat_every,
@@ -38,9 +38,8 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
   };
 
   // Optional properties: only set when JOIN data is present
-  if (row.machine_uuid !== undefined)
-    plan.machineUuid = row.machine_uuid.trim();
-  if (row.machine_name !== undefined) plan.machineName = row.machine_name;
+  if (row.asset_uuid !== undefined) plan.assetUuid = row.asset_uuid.trim();
+  if (row.asset_name !== undefined) plan.assetName = row.asset_name;
   if (row.department_name !== undefined)
     plan.departmentName = row.department_name;
   if (row.created_by_name !== undefined)

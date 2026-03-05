@@ -24,7 +24,7 @@ let auth: AuthState;
 /** IDs of resources created during tests, used for cleanup and chaining. */
 let holidayId: string | undefined;
 let blackoutId: string | undefined;
-let machineId: number | undefined;
+let assetId: number | undefined;
 let staffingRuleId: string | undefined;
 let requestId: string | undefined;
 
@@ -252,39 +252,39 @@ describe('Vacation: Delete Blackout', () => {
   });
 });
 
-// ── seq: 9 — Setup: Create Machine (for staffing rules) ────────────────────
+// ── seq: 9 — Setup: Create Asset (for staffing rules) ────────────────────
 
-describe('Vacation: Setup Machine for Staffing Rules', () => {
-  it('should create or find a machine', async () => {
-    // Try to create a machine
-    const createRes = await fetch(`${BASE_URL}/machines`, {
+describe('Vacation: Setup Asset for Staffing Rules', () => {
+  it('should create or find a asset', async () => {
+    // Try to create a asset
+    const createRes = await fetch(`${BASE_URL}/assets`, {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Vacation SR Machine ${Date.now()}`,
+        name: `Vacation SR Asset ${Date.now()}`,
       }),
     });
     const createBody = (await createRes.json()) as JsonBody;
 
     if (createRes.status === 201 && createBody.data?.id) {
-      machineId = createBody.data.id as number;
+      assetId = createBody.data.id as number;
       // eslint-disable-next-line vitest/no-conditional-expect -- Integration: create vs fallback
       expect(createRes.status).toBe(201);
       return;
     }
 
-    // Fallback: fetch list (machines returns flat array, not paginated)
-    const listRes = await fetch(`${BASE_URL}/machines`, {
+    // Fallback: fetch list (assets returns flat array, not paginated)
+    const listRes = await fetch(`${BASE_URL}/assets`, {
       headers: authOnly(auth.authToken),
     });
     const listBody = (await listRes.json()) as JsonBody;
-    const machines = listBody.data as Array<{ id: number }>;
+    const assets = listBody.data as Array<{ id: number }>;
 
-    if (Array.isArray(machines) && machines.length > 0) {
-      machineId = machines[0]!.id;
+    if (Array.isArray(assets) && assets.length > 0) {
+      assetId = assets[0]!.id;
     }
 
-    expect(machineId).toBeDefined();
+    expect(assetId).toBeDefined();
   });
 });
 
@@ -299,7 +299,7 @@ describe('Vacation: Create Staffing Rule', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        machineId: machineId,
+        assetId: assetId,
         minStaffCount: 2,
       }),
     });

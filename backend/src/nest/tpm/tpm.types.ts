@@ -41,7 +41,7 @@ export interface TpmMaintenancePlanRow {
   id: number;
   uuid: string;
   tenant_id: number;
-  machine_id: number;
+  asset_id: number;
   name: string;
   base_weekday: number;
   base_repeat_every: number;
@@ -91,7 +91,7 @@ export interface TpmCardRow {
   uuid: string;
   tenant_id: number;
   plan_id: number;
-  machine_id: number;
+  asset_id: number;
   template_id: number | null;
   card_code: string;
   card_role: TpmCardRole;
@@ -237,9 +237,9 @@ export interface TpmColorConfigRow {
 /** Maintenance plan as returned by the API */
 export interface TpmPlan {
   uuid: string;
-  machineId: number;
-  machineUuid?: string;
-  machineName?: string;
+  assetId: number;
+  assetUuid?: string;
+  assetName?: string;
   departmentName?: string;
   name: string;
   baseWeekday: number;
@@ -286,8 +286,8 @@ export interface TpmCardTemplate {
 export interface TpmCard {
   uuid: string;
   planUuid?: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   templateUuid?: string | null;
   cardCode: string;
   cardRole: TpmCardRole;
@@ -414,8 +414,8 @@ export interface TpmColorConfigEntry {
 export interface ProjectedSlot {
   planUuid: string;
   planName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   intervalTypes: TpmIntervalType[];
   date: string;
   startTime: string | null;

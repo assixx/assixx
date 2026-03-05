@@ -263,18 +263,18 @@ export function up(pgm: MigrationBuilder): void {
     CREATE TABLE vacation_staffing_rules (
         id                  UUID PRIMARY KEY,            -- UUIDv7
         tenant_id           INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-        machine_id          INTEGER NOT NULL REFERENCES machines(id) ON DELETE CASCADE,
+        asset_id          INTEGER NOT NULL REFERENCES machines(id) ON DELETE CASCADE,
         min_staff_count     INTEGER NOT NULL,
         is_active           INTEGER NOT NULL DEFAULT 1,
         created_by          INTEGER NOT NULL REFERENCES users(id),
         created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-        UNIQUE(tenant_id, machine_id),
+        UNIQUE(tenant_id, asset_id),
         CONSTRAINT positive_staff CHECK (min_staff_count > 0)
     );
 
-    CREATE INDEX idx_vsr_machine ON vacation_staffing_rules(tenant_id, machine_id)
+    CREATE INDEX idx_vsr_machine ON vacation_staffing_rules(tenant_id, asset_id)
         WHERE is_active = 1;
 
     ALTER TABLE vacation_staffing_rules ENABLE ROW LEVEL SECURITY;

@@ -34,9 +34,9 @@ export type PlanStatusFilter = 'all' | 'active' | 'archived';
 /** TPM Maintenance Plan */
 export interface TpmPlan {
   uuid: string;
-  machineId: number;
-  machineUuid?: string;
-  machineName?: string;
+  assetId: number;
+  assetUuid?: string;
+  assetName?: string;
   name: string;
   baseWeekday: number;
   baseRepeatEvery: number;
@@ -55,8 +55,8 @@ export interface TpmPlan {
 export interface TpmCard {
   uuid: string;
   planUuid?: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   templateUuid?: string | null;
   cardCode: string;
   cardRole: CardRole;
@@ -180,16 +180,16 @@ export interface TpmEscalationConfig {
 }
 
 // =============================================================================
-// MACHINE (from /machines endpoint)
+// MACHINE (from /assets endpoint)
 // =============================================================================
 
-/** Machine entity (simplified for TPM dropdowns) */
-export interface Machine {
+/** Asset entity (simplified for TPM dropdowns) */
+export interface Asset {
   uuid: string;
   name: string;
-  machineNumber: string | null;
+  assetNumber: string | null;
   status: string;
-  machineType: string | null;
+  assetType: string | null;
   areaId?: number | null;
   departmentId?: number | null;
   departmentName?: string;
@@ -233,7 +233,7 @@ export interface DayAvailability {
 
 /** Full slot availability result */
 export interface SlotAvailabilityResult {
-  machineId: number;
+  assetId: number;
   startDate: string;
   endDate: string;
   days: DayAvailability[];
@@ -258,17 +258,17 @@ export interface TeamAvailabilityResult {
   totalCount: number;
 }
 
-/** Team info from machine_teams */
-export interface MachineTeamInfo {
+/** Team info from asset_teams */
+export interface AssetTeamInfo {
   teamId: number;
   teamName: string;
 }
 
-/** Combined team availability for a machine (all assigned teams) */
-export interface MachineTeamAvailabilityResult {
-  machineId: number;
+/** Combined team availability for a asset (all assigned teams) */
+export interface AssetTeamAvailabilityResult {
+  assetId: number;
   date: string;
-  teams: MachineTeamInfo[];
+  teams: AssetTeamInfo[];
   members: TeamMemberStatus[];
   availableCount: number;
   totalCount: number;
@@ -280,7 +280,7 @@ export interface MachineTeamAvailabilityResult {
 
 /** Payload for creating a maintenance plan */
 export interface CreatePlanPayload {
-  machineUuid: string;
+  assetUuid: string;
   name: string;
   baseWeekday: number;
   baseRepeatEvery: number;
@@ -418,8 +418,8 @@ export interface UpdateTemplatePayload {
 export interface ProjectedSlot {
   planUuid: string;
   planName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   intervalTypes: IntervalType[];
   date: string;
   startTime: string | null;

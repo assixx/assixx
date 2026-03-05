@@ -89,7 +89,7 @@ export async function fetchPlans(
 // CARDS
 // =============================================================================
 
-/** Fetch board data (all cards for a plan's machine) */
+/** Fetch board data (all cards for a plan's asset) */
 export async function fetchBoardData(
   planUuid: string,
   page = 1,

@@ -1,14 +1,14 @@
 /**
  * Create Staffing Rule DTO
  *
- * Zod schema for creating a minimum staffing rule per machine.
- * UNIQUE(tenant_id, machine_id) enforced at DB level.
+ * Zod schema for creating a minimum staffing rule per asset.
+ * UNIQUE(tenant_id, asset_id) enforced at DB level.
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const CreateStaffingRuleSchema = z.object({
-  machineId: z.number().int().positive('Machine ID is required'),
+  assetId: z.number().int().positive('Asset ID is required'),
   minStaffCount: z
     .number()
     .int()

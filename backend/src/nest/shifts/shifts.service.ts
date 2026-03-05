@@ -275,7 +275,7 @@ export class ShiftsService {
       `INSERT INTO shifts (
         tenant_id, plan_id, user_id, date, start_time, end_time,
         title, required_employees, break_minutes, status, type, notes,
-        area_id, department_id, team_id, machine_id, created_by
+        area_id, department_id, team_id, asset_id, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id`,
       [
@@ -294,7 +294,7 @@ export class ShiftsService {
         dbData['area_id'] ?? null,
         dbData['department_id'],
         dbData['team_id'] ?? null,
-        dbData['machine_id'] ?? null,
+        dbData['asset_id'] ?? null,
         userId,
       ],
     );
@@ -811,7 +811,7 @@ export class ShiftsService {
       result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shift_favorites (
           tenant_id, user_id, name, area_id, area_name, department_id, department_name,
-          machine_id, machine_name, team_id, team_name
+          asset_id, asset_name, team_id, team_name
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id`,
         [
@@ -822,8 +822,8 @@ export class ShiftsService {
           dto.areaName,
           dto.departmentId,
           dto.departmentName,
-          dto.machineId,
-          dto.machineName,
+          dto.assetId,
+          dto.assetName,
           dto.teamId,
           dto.teamName,
         ],

@@ -119,9 +119,9 @@ export class WorkOrdersController {
   @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async getEligibleUsers(
     @TenantId() tenantId: number,
-    @Query('machineId') machineId?: string,
+    @Query('assetId') assetId?: string,
   ): Promise<EligibleUser[]> {
-    const parsed = machineId !== undefined ? Number(machineId) : undefined;
+    const parsed = assetId !== undefined ? Number(assetId) : undefined;
     return await this.assigneesService.getEligibleUsers(tenantId, parsed);
   }
 

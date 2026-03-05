@@ -1,18 +1,18 @@
 <!--
   ShiftScheduleLegend.svelte
-  Legend bar for machine availability statuses and TPM maintenance interval badges.
+  Legend bar for asset availability statuses and TPM maintenance interval badges.
   Extracted from ShiftScheduleGrid.svelte for maintainability.
 -->
 <script lang="ts">
   import {
     MACHINE_AVAILABILITY_LABELS,
-    type MachineAvailabilityStatus,
-  } from '$lib/machine-availability/constants';
+    type AssetAvailabilityStatus,
+  } from '$lib/asset-availability/constants';
 
   import { INTERVAL_LABELS, type TpmIntervalType } from './constants';
 
-  /** Machine availability statuses shown in the legend */
-  const LEGEND_STATUSES: MachineAvailabilityStatus[] = [
+  /** Asset availability statuses shown in the legend */
+  const LEGEND_STATUSES: AssetAvailabilityStatus[] = [
     'maintenance',
     'repair',
     'standby',
@@ -32,10 +32,10 @@
 </script>
 
 <div class="legend-bar">
-  <!-- Row 1: Maschinenverfügbarkeit -->
+  <!-- Row 1: Anlagenverfügbarkeit -->
   <div class="legend-row">
     <span class="legend-row__title">
-      <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
+      <i class="fas fa-cogs"></i> Anlagenverfügbarkeit
     </span>
     {#each LEGEND_STATUSES as status (status)}
       <div class="legend-item">

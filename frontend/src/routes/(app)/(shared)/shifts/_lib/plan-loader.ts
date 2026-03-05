@@ -6,7 +6,7 @@
 import { tick } from 'svelte';
 
 import {
-  fetchMachineAvailability,
+  fetchAssetAvailability,
   fetchTpmMaintenanceDates,
   fetchShiftPlan,
   fetchRotationHistory,
@@ -74,7 +74,7 @@ async function fetchAndProcessShiftData(startDate: string, endDate: string) {
       teamId: shiftsState.selectedContext.teamId,
       departmentId: shiftsState.selectedContext.departmentId,
       areaId: shiftsState.selectedContext.areaId,
-      machineId: shiftsState.selectedContext.machineId,
+      assetId: shiftsState.selectedContext.assetId,
     }),
     fetchRotationHistory(
       startDate,
@@ -94,15 +94,15 @@ async function fetchAndProcessShiftData(startDate: string, endDate: string) {
   return { planResponse, rotationHistory, planData, rotationData };
 }
 
-/** Apply optional fetch results (machine availability + TPM events) to state */
+/** Apply optional fetch results (asset availability + TPM events) to state */
 function applyOptionalFetchResults(
-  machineAvail: Awaited<ReturnType<typeof fetchMachineAvailability>> | null,
+  assetAvail: Awaited<ReturnType<typeof fetchAssetAvailability>> | null,
   tpmEvents: Awaited<ReturnType<typeof fetchTpmMaintenanceDates>> | null,
 ): void {
-  if (machineAvail !== null) {
-    shiftsState.setMachineAvailability(machineAvail);
+  if (assetAvail !== null) {
+    shiftsState.setAssetAvailability(assetAvail);
   } else {
-    shiftsState.clearMachineAvailability();
+    shiftsState.clearAssetAvailability();
   }
 
   if (tpmEvents !== null) {
@@ -162,22 +162,22 @@ export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
 
   try {
     const teamId = shiftsState.selectedContext.teamId;
-    const machineId = shiftsState.selectedContext.machineId;
-    const hasMachine = machineId !== null && machineId !== 0;
+    const assetId = shiftsState.selectedContext.assetId;
+    const hasAsset = assetId !== null && assetId !== 0;
     // On fresh load (!preserveTpmToggle), always fetch TPM data because
     // the saved plan may have isTpmMode=true — we don't know yet.
     // On week navigation (preserveTpmToggle=true), respect the current toggle.
     const wantTpm = preserveTpmToggle ? shiftsState.showTpmEvents : true;
 
     // ALL independent fetches in parallel — no waterfall
-    const [members, shiftResult, machineAvail, tpmEvents] = await Promise.all([
+    const [members, shiftResult, assetAvail, tpmEvents] = await Promise.all([
       fetchTeamMembers(teamId, startDate, endDate),
       fetchAndProcessShiftData(startDate, endDate),
-      hasMachine ?
-        fetchMachineAvailability(machineId, startDate, endDate)
+      hasAsset ?
+        fetchAssetAvailability(assetId, startDate, endDate)
       : Promise.resolve(null),
       wantTpm ?
-        fetchTpmMaintenanceDates(machineId, startDate, endDate)
+        fetchTpmMaintenanceDates(assetId, startDate, endDate)
       : Promise.resolve(null),
     ]);
 
@@ -192,7 +192,7 @@ export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
 
     // --- Batch all state updates in one render frame ---
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
-    applyOptionalFetchResults(machineAvail, tpmEvents);
+    applyOptionalFetchResults(assetAvail, tpmEvents);
 
     applyShiftPlanState(
       planData,

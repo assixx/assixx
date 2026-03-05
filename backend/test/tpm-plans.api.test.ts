@@ -12,16 +12,16 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
-  createMachines,
-  deleteMachines,
+  createAssets,
+  deleteAssets,
   loginApitest,
 } from './helpers.js';
 
 let auth: AuthState;
 
 // Shared state across sequential describe blocks
-let machineUuids: string[] = [];
-let machineUuid: string;
+let assetUuids: string[] = [];
+let assetUuid: string;
 let planUuid: string;
 let cardUuid: string;
 let timeEstimateUuid: string;
@@ -29,9 +29,9 @@ let timeEstimateUuid: string;
 beforeAll(async () => {
   auth = await loginApitest();
 
-  // Create own machine (self-sufficient — no dependency on other suites)
-  machineUuids = await createMachines(auth.authToken, 1);
-  machineUuid = machineUuids[0]!;
+  // Create own asset (self-sufficient — no dependency on other suites)
+  assetUuids = await createAssets(auth.authToken, 1);
+  assetUuid = assetUuids[0]!;
 });
 
 // ---- seq: 0 -- Unauthenticated ------------------------------------------------
@@ -59,7 +59,7 @@ describe('TPM: Create Plan', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        machineUuid,
+        assetUuid,
         name: `TPM Test Plan ${Date.now()}`,
         baseWeekday: 1,
         baseRepeatEvery: 1,
@@ -90,12 +90,12 @@ describe('TPM: Create Plan', () => {
     expect(body.data.baseRepeatEvery).toBe(1);
     expect(body.data.baseTime).toBe('08:00:00');
     expect(body.data.shiftPlanRequired).toBe(false);
-    expect(body.data.machineId).toBeDefined();
+    expect(body.data.assetId).toBeDefined();
     expect(body.data.isActive).toBe(1);
   });
 });
 
-// ---- seq: 2 -- Plan Duplicate (same machine) ----------------------------------
+// ---- seq: 2 -- Plan Duplicate (same asset) ----------------------------------
 
 describe('TPM: Plan Duplicate', () => {
   let res: Response;
@@ -106,7 +106,7 @@ describe('TPM: Plan Duplicate', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        machineUuid,
+        assetUuid,
         name: 'Duplicate Plan',
         baseWeekday: 3,
         baseRepeatEvery: 2,
@@ -115,7 +115,7 @@ describe('TPM: Plan Duplicate', () => {
     body = (await res.json()) as JsonBody;
   });
 
-  it('should return 409 Conflict for same machine', () => {
+  it('should return 409 Conflict for same asset', () => {
     expect(res.status).toBe(409);
   });
 
@@ -174,9 +174,9 @@ describe('TPM: Get Single Plan', () => {
     expect(body.data.uuid).toBe(planUuid);
   });
 
-  it('should include machine name', () => {
-    expect(body.data.machineName).toBeDefined();
-    expect(typeof body.data.machineName).toBe('string');
+  it('should include asset name', () => {
+    expect(body.data.assetName).toBeDefined();
+    expect(typeof body.data.assetName).toBe('string');
   });
 });
 
@@ -429,9 +429,9 @@ describe('TPM: Get Single Card', () => {
     expect(body.data.uuid).toBe(cardUuid);
   });
 
-  it('should include plan and machine references', () => {
+  it('should include plan and asset references', () => {
     expect(body.data.planUuid).toBeDefined();
-    expect(body.data.machineId).toBeDefined();
+    expect(body.data.assetId).toBeDefined();
   });
 });
 
@@ -649,10 +649,10 @@ describe('TPM: Verify Plan Deleted', () => {
   });
 });
 
-// ---- Cleanup: delete machines created for this suite ----------------------------
+// ---- Cleanup: delete assets created for this suite ----------------------------
 
 afterAll(async () => {
-  if (machineUuids.length > 0) {
-    await deleteMachines(auth.authToken, machineUuids);
+  if (assetUuids.length > 0) {
+    await deleteAssets(auth.authToken, assetUuids);
   }
 });

@@ -52,7 +52,7 @@ export const STATUS_TEXT: Record<KvpStatus, string> = {
  */
 export const VISIBILITY_BADGE_CLASSES: Record<OrgLevel, string> = {
   team: 'badge--visibility-team',
-  machine: 'badge--visibility-team',
+  asset: 'badge--visibility-team',
   department: 'badge--visibility-department',
   area: 'badge--visibility-area',
   company: 'badge--visibility-company',
@@ -110,10 +110,10 @@ export const FILTER_OPTIONS: {
     showBadge: true,
   },
   {
-    value: 'machine',
-    label: 'Maschine',
+    value: 'asset',
+    label: 'Anlage',
     icon: 'fa-cog',
-    title: 'Maschinen-Vorschläge',
+    title: 'Anlagen-Vorschläge',
     showBadge: true,
   },
   {
@@ -178,7 +178,7 @@ export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
     department: { icon: 'fa-building', text: 'Abteilung' },
     area: { icon: 'fa-sitemap', text: 'Bereich' },
     team: { icon: 'fa-users', text: 'Team' },
-    machine: { icon: 'fa-cog', text: 'Maschine' },
+    asset: { icon: 'fa-cog', text: 'Anlage' },
   } as const;
 
 /**

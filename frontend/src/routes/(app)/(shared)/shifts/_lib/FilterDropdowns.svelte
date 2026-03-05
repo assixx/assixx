@@ -1,6 +1,6 @@
 <!--
   FilterDropdowns.svelte
-  Admin filter controls for Area/Department/Machine/Team selection
+  Admin filter controls for Area/Department/Asset/Team selection
   Plus favorites management
   Extracted from +page.svelte for maintainability
 -->
@@ -11,7 +11,7 @@
   import type {
     Area,
     Department,
-    Machine,
+    Asset,
     Team,
     ShiftFavorite,
     SelectedContext,
@@ -24,7 +24,7 @@
     // Data
     areas: Area[];
     departments: Department[];
-    machines: Machine[];
+    assets: Asset[];
     teams: Team[];
     favorites: ShiftFavorite[];
     selectedContext: SelectedContext;
@@ -32,20 +32,20 @@
     // Dropdown open states
     areaDropdownOpen: boolean;
     departmentDropdownOpen: boolean;
-    machineDropdownOpen: boolean;
+    assetDropdownOpen: boolean;
     teamDropdownOpen: boolean;
 
     // Callbacks
     ontoggleAreaDropdown: () => void;
     ontoggleDepartmentDropdown: () => void;
-    ontoggleMachineDropdown: () => void;
+    ontoggleAssetDropdown: () => void;
     ontoggleTeamDropdown: () => void;
     oncloseAllDropdowns: () => void;
 
     // Change handlers
     onareaChange: (areaId: number) => void;
     ondepartmentChange: (departmentId: number) => void;
-    onmachineChange: (machineId: number) => void;
+    onassetChange: (assetId: number) => void;
     onteamChange: (teamId: number) => void;
 
     // Favorite handlers
@@ -57,22 +57,22 @@
   const {
     areas,
     departments,
-    machines,
+    assets,
     teams,
     favorites,
     selectedContext,
     areaDropdownOpen,
     departmentDropdownOpen,
-    machineDropdownOpen,
+    assetDropdownOpen,
     teamDropdownOpen,
     ontoggleAreaDropdown,
     ontoggleDepartmentDropdown,
-    ontoggleMachineDropdown,
+    ontoggleAssetDropdown,
     ontoggleTeamDropdown,
     oncloseAllDropdowns,
     onareaChange,
     ondepartmentChange,
-    onmachineChange,
+    onassetChange,
     onteamChange,
     onfavoriteClick,
     ondeleteFavorite,
@@ -109,13 +109,12 @@
     );
   }
 
-  function getSelectedMachineName(): string {
+  function getSelectedAssetName(): string {
     if (selectedContext.teamId === null)
       return DROPDOWN_PLACEHOLDERS.AWAIT_TEAM;
-    if (selectedContext.machineId === null)
-      return DROPDOWN_PLACEHOLDERS.MACHINE;
+    if (selectedContext.assetId === null) return DROPDOWN_PLACEHOLDERS.MACHINE;
     return (
-      machines.find((m) => m.id === selectedContext.machineId)?.name ??
+      assets.find((m) => m.id === selectedContext.assetId)?.name ??
       DROPDOWN_PLACEHOLDERS.MACHINE
     );
   }
@@ -280,53 +279,53 @@
     </div>
   </div>
 
-  <!-- Machine Dropdown (requires Team) -->
+  <!-- Asset Dropdown (requires Team) -->
   <div class="info-item">
-    <div class="info-label">Maschine</div>
+    <div class="info-label">Anlage</div>
     <div
       class="dropdown"
       class:dropdown--disabled={selectedContext.teamId === null}
-      data-dropdown="machine"
+      data-dropdown="asset"
     >
       <div
         class="dropdown__trigger"
-        class:active={machineDropdownOpen}
+        class:active={assetDropdownOpen}
         onclick={() => {
-          if (selectedContext.teamId !== null) ontoggleMachineDropdown();
+          if (selectedContext.teamId !== null) ontoggleAssetDropdown();
         }}
         onkeydown={(e) => {
           if (e.key === 'Enter' && selectedContext.teamId !== null)
-            ontoggleMachineDropdown();
+            ontoggleAssetDropdown();
         }}
         role="button"
         tabindex={selectedContext.teamId === null ? -1 : 0}
       >
-        <span>{getSelectedMachineName()}</span>
+        <span>{getSelectedAssetName()}</span>
         <i class="fas fa-chevron-down"></i>
       </div>
       <div
         class="dropdown__menu"
-        class:active={machineDropdownOpen}
+        class:active={assetDropdownOpen}
       >
-        {#each machines as machine (machine.id)}
+        {#each assets as asset (asset.id)}
           <div
             class="dropdown__option"
-            data-value={machine.id}
+            data-value={asset.id}
             onclick={() => {
-              onmachineChange(machine.id);
+              onassetChange(asset.id);
               oncloseAllDropdowns();
             }}
             onkeydown={(e) => {
               if (e.key === 'Enter') {
-                onmachineChange(machine.id);
+                onassetChange(asset.id);
                 oncloseAllDropdowns();
               }
             }}
             role="option"
-            aria-selected={selectedContext.machineId === machine.id}
+            aria-selected={selectedContext.assetId === asset.id}
             tabindex="0"
           >
-            {machine.name}
+            {asset.name}
           </div>
         {/each}
       </div>

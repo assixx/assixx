@@ -308,7 +308,7 @@ describe('TpmLocationsService', () => {
       expect(mockActivityLogger.logCreate).toHaveBeenCalledWith(
         10,
         42,
-        'machine',
+        'asset',
         0,
         expect.stringContaining('TPM-Standort erstellt'),
         expect.objectContaining({ positionNumber: 1 }),
@@ -426,7 +426,7 @@ describe('TpmLocationsService', () => {
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
         10,
         42,
-        'machine',
+        'asset',
         0,
         expect.stringContaining('TPM-Standort aktualisiert'),
         undefined,
@@ -471,7 +471,7 @@ describe('TpmLocationsService', () => {
       expect(mockActivityLogger.logDelete).toHaveBeenCalledWith(
         10,
         42,
-        'machine',
+        'asset',
         0,
         expect.stringContaining('TPM-Standort gelöscht'),
         expect.objectContaining({ uuid: 'loc-uuid-001' }),
@@ -564,7 +564,7 @@ describe('TpmLocationsService', () => {
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
         10,
         42,
-        'machine',
+        'asset',
         0,
         expect.stringContaining('Foto aktualisiert'),
         undefined,
@@ -655,7 +655,7 @@ describe('TpmLocationsService', () => {
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
         10,
         42,
-        'machine',
+        'asset',
         0,
         expect.stringContaining('Foto entfernt'),
         undefined,

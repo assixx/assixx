@@ -73,7 +73,7 @@ export class ShiftPlansService {
     const planUuid = uuidv7();
     const planResult = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_plans (
-        uuid, tenant_id, area_id, department_id, team_id, machine_id,
+        uuid, tenant_id, area_id, department_id, team_id, asset_id,
         name, start_date, end_date, shift_notes, is_tpm_mode, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id`,
@@ -83,7 +83,7 @@ export class ShiftPlansService {
         dto.areaId ?? null,
         dto.departmentId,
         dto.teamId ?? null,
-        dto.machineId ?? null,
+        dto.assetId ?? null,
         dto.name ?? `Shift Plan ${dto.startDate}`,
         dto.startDate,
         dto.endDate,
@@ -149,7 +149,7 @@ export class ShiftPlansService {
             departmentId: dto.departmentId ?? plan?.department_id,
             teamId: dto.teamId ?? plan?.team_id,
             areaId: dto.areaId ?? plan?.area_id,
-            machineId: dto.machineId ?? plan?.machine_id,
+            assetId: dto.assetId ?? plan?.asset_id,
           },
           userId,
         )
@@ -284,7 +284,7 @@ export class ShiftPlansService {
     tenantId: number,
     context: Pick<
       CreateShiftPlanDto,
-      'areaId' | 'departmentId' | 'teamId' | 'machineId'
+      'areaId' | 'departmentId' | 'teamId' | 'assetId'
     >,
     createdBy: number,
   ): Promise<number[]> {
@@ -295,7 +295,7 @@ export class ShiftPlansService {
       const result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, start_time, end_time, type,
-          area_id, department_id, team_id, machine_id, created_by
+          area_id, department_id, team_id, asset_id, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id`,
         [
@@ -309,7 +309,7 @@ export class ShiftPlansService {
           context.areaId ?? null,
           context.departmentId,
           context.teamId ?? null,
-          context.machineId ?? null,
+          context.assetId ?? null,
           createdBy,
         ],
       );
@@ -337,7 +337,7 @@ export class ShiftPlansService {
       departmentId: number | undefined;
       teamId: number | null | undefined;
       areaId: number | null | undefined;
-      machineId: number | null | undefined;
+      assetId: number | null | undefined;
     },
     createdBy: number,
   ): Promise<number[]> {
@@ -354,7 +354,7 @@ export class ShiftPlansService {
       const result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, start_time, end_time, type,
-          area_id, department_id, team_id, machine_id, created_by
+          area_id, department_id, team_id, asset_id, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (tenant_id, plan_id, user_id, date) DO UPDATE SET
            start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, type = EXCLUDED.type
@@ -370,7 +370,7 @@ export class ShiftPlansService {
           context.areaId ?? null,
           context.departmentId,
           context.teamId ?? null,
-          context.machineId ?? null,
+          context.assetId ?? null,
           createdBy,
         ],
       );

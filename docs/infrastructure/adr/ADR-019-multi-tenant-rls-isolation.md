@@ -231,7 +231,7 @@ async tenantTransaction<T>(
 | `features`              | Available features                          |
 | `plan_features`         | Plan-to-feature mapping                     |
 | `kvp_categories`        | Default KVP categories (seeds)              |
-| `machine_categories`    | Default machine categories (seeds)          |
+| `machine_categories`    | Default asset categories (seeds)            |
 | `system_settings`       | Global system configuration                 |
 | `password_reset_tokens` | Stateless, short-lived tokens               |
 | `user_sessions`         | JWT sessions (validated by signature)       |

@@ -282,8 +282,8 @@
                 >
                   {plan.name}
                 </span>
-                {#if plan.machineName !== undefined}
-                  <span class="badge badge--info">{plan.machineName}</span>
+                {#if plan.assetName !== undefined}
+                  <span class="badge badge--info">{plan.assetName}</span>
                 {/if}
                 <span class="badge badge--success">
                   {locations.length} Standorte
@@ -371,10 +371,10 @@
                 <span class="loc-info__label">Wartungsplan</span>
                 <span class="loc-info__value">{plan.name}</span>
               </div>
-              {#if plan.machineName !== undefined}
+              {#if plan.assetName !== undefined}
                 <div class="loc-info__row">
-                  <span class="loc-info__label">Maschine</span>
-                  <span class="loc-info__value">{plan.machineName}</span>
+                  <span class="loc-info__label">Anlage</span>
+                  <span class="loc-info__value">{plan.assetName}</span>
                 </div>
               {/if}
               <div class="loc-info__row">
@@ -400,7 +400,7 @@
               Hinweis
             </h3>
             <p class="loc-hint">
-              Standorte beschreiben Positionen an der Maschine, die bei der
+              Standorte beschreiben Positionen an der Anlage, die bei der
               Wartung relevant sind. Jeder Standort kann mit einem Foto
               dokumentiert werden, das zeigt, wo sich die Stelle befindet.
             </p>

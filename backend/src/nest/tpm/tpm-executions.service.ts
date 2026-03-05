@@ -262,7 +262,7 @@ export class TpmExecutionsService {
       tenantId,
       userId,
       'tpm_execution',
-      card.machine_id,
+      card.asset_id,
       `TPM-Durchführung erstellt: Karte ${cardUuid}`,
       { executionUuid: execution.uuid, cardUuid },
     );
@@ -927,7 +927,7 @@ export class TpmExecutionsService {
       if (execution.approvalStatus === 'pending') {
         const approverIds = await this.resolveApproverIds(
           tenantId,
-          card.machine_id,
+          card.asset_id,
         );
         this.notificationService.notifyApprovalRequired(
           tenantId,
@@ -983,21 +983,21 @@ export class TpmExecutionsService {
     );
   }
 
-  /** Resolve team leads + admins who can approve for a machine */
+  /** Resolve team leads + admins who can approve for a asset */
   private async resolveApproverIds(
     tenantId: number,
-    machineId: number,
+    assetId: number,
   ): Promise<number[]> {
     const rows = await this.db.query<{ user_id: number }>(
       `SELECT DISTINCT t.team_lead_id AS user_id
        FROM teams t
-       JOIN machine_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
-       WHERE mt.machine_id = $1 AND mt.tenant_id = $2
+       JOIN asset_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
+       WHERE mt.asset_id = $1 AND mt.tenant_id = $2
          AND t.team_lead_id IS NOT NULL AND t.is_active = 1
        UNION
        SELECT id AS user_id FROM users
        WHERE tenant_id = $2 AND has_full_access = true AND is_active = 1`,
-      [machineId, tenantId],
+      [assetId, tenantId],
     );
     return rows.map((r: { user_id: number }) => r.user_id);
   }
@@ -1041,7 +1041,7 @@ function cardRowToNotification(card: TpmCardRow): TpmNotificationCard {
     uuid: card.uuid,
     cardCode: card.card_code,
     title: card.title,
-    machineId: card.machine_id,
+    assetId: card.asset_id,
     intervalType: card.interval_type,
     status: card.status,
   };

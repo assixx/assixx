@@ -66,7 +66,7 @@ function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
     uuid: 'card-uuid-001                            ',
     tenant_id: 10,
     plan_id: 100,
-    machine_id: 42,
+    asset_id: 42,
     template_id: null,
     card_code: 'BT1',
     card_role: 'operator',

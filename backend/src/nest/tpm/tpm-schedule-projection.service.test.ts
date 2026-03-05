@@ -36,8 +36,8 @@ type MockInterval = ReturnType<typeof createMockIntervalService>;
 interface PlanRow {
   plan_uuid: string;
   plan_name: string;
-  machine_id: number;
-  machine_name: string;
+  asset_id: number;
+  asset_name: string;
   base_weekday: number;
   base_repeat_every: number;
   base_time: string | null;
@@ -50,8 +50,8 @@ function makeRow(overrides: Partial<PlanRow> = {}): PlanRow {
   return {
     plan_uuid: 'plan-1',
     plan_name: 'Test Plan A',
-    machine_id: 1,
-    machine_name: 'Machine A',
+    asset_id: 1,
+    asset_name: 'Asset A',
     base_weekday: 0, // Monday (TPM: 0=Mon)
     base_repeat_every: 1, // 1st Monday of month
     base_time: '09:00',
@@ -337,8 +337,8 @@ describe('TpmScheduleProjectionService', () => {
       makeRow({
         plan_uuid: 'plan-2',
         plan_name: 'Plan B',
-        machine_id: 2,
-        machine_name: 'Machine B',
+        asset_id: 2,
+        asset_name: 'Asset B',
       }),
     ]);
 
@@ -408,13 +408,13 @@ describe('TpmScheduleProjectionService', () => {
       makeRow({
         plan_uuid: 'plan-b',
         plan_name: 'Plan B',
-        machine_id: 2,
+        asset_id: 2,
         base_time: '08:00',
       }),
       makeRow({
         plan_uuid: 'plan-c',
         plan_name: 'Plan C',
-        machine_id: 3,
+        asset_id: 3,
         base_time: null,
       }),
     ]);
@@ -445,8 +445,8 @@ describe('TpmScheduleProjectionService', () => {
       makeRow({
         plan_uuid: 'uuid-abc',
         plan_name: 'Hydraulik Check',
-        machine_id: 42,
-        machine_name: 'Presse P17',
+        asset_id: 42,
+        asset_name: 'Presse P17',
         base_time: '10:30',
         buffer_hours: '2.5',
       }),
@@ -465,8 +465,8 @@ describe('TpmScheduleProjectionService', () => {
     const slot = result.slots[0];
     expect(slot?.planUuid).toBe('uuid-abc');
     expect(slot?.planName).toBe('Hydraulik Check');
-    expect(slot?.machineId).toBe(42);
-    expect(slot?.machineName).toBe('Presse P17');
+    expect(slot?.assetId).toBe(42);
+    expect(slot?.assetName).toBe('Presse P17');
     expect(slot?.startTime).toBe('10:30');
     expect(slot?.endTime).toBe('13:00');
     expect(slot?.bufferHours).toBe(2.5);
@@ -507,7 +507,7 @@ describe('TpmScheduleProjectionService', () => {
       makeRow({
         plan_uuid: 'plan-2',
         plan_name: 'Plan B',
-        machine_id: 2,
+        asset_id: 2,
       }),
     ]);
 

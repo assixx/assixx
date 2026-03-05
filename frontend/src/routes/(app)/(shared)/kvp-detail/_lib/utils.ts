@@ -63,7 +63,7 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): {
   icon: string;
   text: string;
 } {
-  // Junction table organizations take priority (new multi-team/machine flow)
+  // Junction table organizations take priority (new multi-team/asset flow)
   if (
     suggestion.organizations !== undefined &&
     suggestion.organizations.length > 0
@@ -82,19 +82,19 @@ function getOrganizationsVisibility(suggestion: KvpSuggestion): {
 } {
   const orgs = suggestion.organizations ?? [];
   const teams = orgs.filter((o) => o.orgType === 'team');
-  const machines = orgs.filter((o) => o.orgType === 'machine');
+  const assets = orgs.filter((o) => o.orgType === 'asset');
 
   const parts: string[] = [];
   for (const t of teams) {
     parts.push(t.orgName ?? `Team ${t.orgId}`);
   }
-  for (const m of machines) {
-    parts.push(m.orgName ?? `Maschine ${m.orgId}`);
+  for (const m of assets) {
+    parts.push(m.orgName ?? `Anlage ${m.orgId}`);
   }
 
   if (parts.length > 0) {
     const icon =
-      machines.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
+      assets.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
     return { icon, text: parts.join(', ') };
   }
 

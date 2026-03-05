@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Global Seed Data - Idempotent (safe to run multiple times)
 -- =============================================================================
--- Tables: features, kvp_categories, machine_categories, plans, plan_features
+-- Tables: features, kvp_categories, asset_categories, plans, plan_features
 -- These are global tables (no tenant_id, no RLS).
 -- =============================================================================
 
@@ -29,18 +29,18 @@ INSERT INTO public.kvp_categories VALUES (4, 'Umwelt', 'Umweltfreundliche Verbes
 INSERT INTO public.kvp_categories VALUES (5, 'Ergonomie', 'Arbeitsplatzverbesserungen', '#9b59b6', '💤', '2025-11-13 22:07:17+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.kvp_categories VALUES (6, 'Kosteneinsparung', 'Maßnahmen zur Kostenreduzierung', '#f39c12', '💰', '2025-11-13 22:07:17+01') ON CONFLICT (id) DO NOTHING;
 
--- Machine Categories (11 entries)
-INSERT INTO public.machine_categories VALUES (1, 'CNC-Maschinen', 'Computer Numerical Control Maschinen', 'fa-cogs', 1, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (2, 'Spritzgussmaschinen', 'Kunststoff-Spritzgussmaschinen', 'fa-industry', 2, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (3, 'Pressen', 'Hydraulische und mechanische Pressen', 'fa-compress', 3, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (4, 'Schweißanlagen', 'Verschiedene Schweißtechnologien', 'fa-fire', 4, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (5, 'Messgeräte', 'Qualitätskontrolle und Messtechnik', 'fa-ruler', 5, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (6, 'Verpackungsmaschinen', 'Verpackung und Etikettierung', 'fa-box', 6, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (7, 'Fördertechnik', 'Transportbänder und Fördersysteme', 'fa-truck', 7, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (8, 'Kompressoren', 'Druckluft und Vakuumsysteme', 'fa-wind', 8, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (9, 'Kühlanlagen', 'Klimatisierung und Kühlung', 'fa-snowflake', 9, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (10, 'Sonstige', 'Andere Maschinentypen', 'fa-wrench', 10, 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.machine_categories VALUES (11, 'Test Category', 'Test Category Description', 'fa-test', 99, 1) ON CONFLICT (id) DO NOTHING;
+-- Asset Categories (11 entries)
+INSERT INTO public.asset_categories VALUES (1, 'CNC-Anlagen', 'CNC-Anlagen (Computer Numerical Control)', 'fa-cogs', 1, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (2, 'Spritzgussanlagen', 'Kunststoff-Spritzgussanlagen', 'fa-industry', 2, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (3, 'Pressen', 'Hydraulische und mechanische Pressen', 'fa-compress', 3, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (4, 'Schweißanlagen', 'Verschiedene Schweißtechnologien', 'fa-fire', 4, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (5, 'Messgeräte', 'Qualitätskontrolle und Messtechnik', 'fa-ruler', 5, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (6, 'Verpackungsanlagen', 'Verpackung und Etikettierung', 'fa-box', 6, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (7, 'Fördertechnik', 'Transportbänder und Fördersysteme', 'fa-truck', 7, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (8, 'Kompressoren', 'Druckluft und Vakuumsysteme', 'fa-wind', 8, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (9, 'Kühlanlagen', 'Klimatisierung und Kühlung', 'fa-snowflake', 9, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (10, 'Sonstige', 'Andere Anlagentypen', 'fa-wrench', 10, 1) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.asset_categories VALUES (11, 'Test Category', 'Test Category Description', 'fa-test', 99, 1) ON CONFLICT (id) DO NOTHING;
 
 -- Plans (3 tiers)
 INSERT INTO public.plans VALUES (1, 'basic', 'Basic', 'Perfekt für kleine Teams und Startups', 49.00, 10, 1, 100, 1, 1, '2025-06-02 19:21:07+02', '2026-01-14 15:31:35.067297+01') ON CONFLICT (id) DO NOTHING;
@@ -96,6 +96,6 @@ INSERT INTO public.plan_features VALUES (42, 3, 14, true, '2026-02-18 22:42:13+0
 -- Sync sequences to max values
 SELECT pg_catalog.setval('public.features_id_seq', GREATEST((SELECT MAX(id) FROM public.features), 14), true);
 SELECT pg_catalog.setval('public.kvp_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.kvp_categories), 6), true);
-SELECT pg_catalog.setval('public.machine_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.machine_categories), 11), true);
+SELECT pg_catalog.setval('public.asset_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.asset_categories), 11), true);
 SELECT pg_catalog.setval('public.plan_features_id_seq', GREATEST((SELECT MAX(id) FROM public.plan_features), 42), true);
 SELECT pg_catalog.setval('public.plans_id_seq', GREATEST((SELECT MAX(id) FROM public.plans), 3), true);

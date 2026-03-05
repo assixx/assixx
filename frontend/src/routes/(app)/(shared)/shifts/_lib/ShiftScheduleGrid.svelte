@@ -6,8 +6,8 @@
 <script lang="ts">
   import {
     MACHINE_AVAILABILITY_LABELS,
-    type MachineAvailabilityStatus,
-  } from '$lib/machine-availability/constants';
+    type AssetAvailabilityStatus,
+  } from '$lib/asset-availability/constants';
 
   import {
     FULL_DAY_NAMES,
@@ -51,8 +51,8 @@
     /** Precomputed shift minute ranges for TPM overlap */
     shiftMinutes: Record<string, [number, number][]>;
 
-    /** Machine availability: date (YYYY-MM-DD) → status string */
-    machineAvailabilityMap: Map<string, string>;
+    /** Asset availability: date (YYYY-MM-DD) → status string */
+    assetAvailabilityMap: Map<string, string>;
 
     /** TPM maintenance events: date (YYYY-MM-DD) → events for that day */
     tpmEventsMap: Map<string, TpmMaintenanceEvent[]>;
@@ -91,7 +91,7 @@
     currentPlanId,
     shiftTimesMap,
     shiftMinutes,
-    machineAvailabilityMap,
+    assetAvailabilityMap,
     tpmEventsMap,
     intervalColors,
     showTpmEvents,
@@ -154,16 +154,16 @@
     return !hasRotationShift(`${dateKey}_${shiftType}_${empId}`);
   }
 
-  /** Get machine availability CSS class for a date (empty string if operational/none) */
-  function getMachineAvailClass(dateKey: string): string {
-    const status = machineAvailabilityMap.get(dateKey);
+  /** Get asset availability CSS class for a date (empty string if operational/none) */
+  function getAssetAvailClass(dateKey: string): string {
+    const status = assetAvailabilityMap.get(dateKey);
     if (status === undefined) return '';
-    return `machine-avail-${status}`;
+    return `asset-avail-${status}`;
   }
 </script>
 
 <div class="week-schedule">
-  <!-- Machine Availability Legend + TPM Toggle -->
+  <!-- Asset Availability Legend + TPM Toggle -->
   <ShiftScheduleLegend
     {colorMap}
     {showTpmEvents}
@@ -198,9 +198,9 @@
       {#each weekDates as date, dayIndex (formatDate(date))}
         {@const dateKey = formatDate(date)}
         {@const employeeIds = getShiftEmployees(dateKey, shiftType)}
-        {@const availStatus = machineAvailabilityMap.get(dateKey)}
+        {@const availStatus = assetAvailabilityMap.get(dateKey)}
         <div
-          class="shift-cell {getMachineAvailClass(dateKey)}"
+          class="shift-cell {getAssetAvailClass(dateKey)}"
           class:tpm-active={showTpmEvents}
           class:locked={isCellLocked(dateKey, shiftType, employeeIds)}
           data-day={dayNames[dayIndex]}
@@ -215,11 +215,11 @@
           role="gridcell"
           tabindex="0"
         >
-          <!-- Machine availability dot -->
+          <!-- Asset availability dot -->
           {#if availStatus !== undefined}
-            {@const statusKey = availStatus as MachineAvailabilityStatus}
+            {@const statusKey = availStatus as AssetAvailabilityStatus}
             <span
-              class="machine-avail-dot avail-{availStatus}"
+              class="asset-avail-dot avail-{availStatus}"
               title={MACHINE_AVAILABILITY_LABELS[statusKey]}
             ></span>
           {/if}
@@ -237,15 +237,13 @@
                 {#if visibleIntervals.length > 0}
                   <div
                     class="tpm-badges"
-                    title="{event.planName} — {event.machineName}"
+                    title="{event.planName} — {event.assetName}"
                   >
                     {#each visibleIntervals as interval (interval)}
                       <span
                         class="tpm-badge"
                         style="background: {colorMap[interval]}"
-                        title="{INTERVAL_LABELS[
-                          interval
-                        ]} — {event.machineName}"
+                        title="{INTERVAL_LABELS[interval]} — {event.assetName}"
                         >{INTERVAL_SHORT_LABELS[interval]}</span
                       >
                     {/each}
@@ -499,27 +497,27 @@ Beispiele:
     pointer-events: none;
   }
 
-  .shift-cell.machine-avail-maintenance {
+  .shift-cell.asset-avail-maintenance {
     border-top: 3px solid #ffc107;
   }
 
-  .shift-cell.machine-avail-repair {
+  .shift-cell.asset-avail-repair {
     border-top: 3px solid #dc3545;
   }
 
-  .shift-cell.machine-avail-standby {
+  .shift-cell.asset-avail-standby {
     border-top: 3px solid #3498db;
   }
 
-  .shift-cell.machine-avail-cleaning {
+  .shift-cell.asset-avail-cleaning {
     border-top: 3px solid #20c997;
   }
 
-  .shift-cell.machine-avail-other {
+  .shift-cell.asset-avail-other {
     border-top: 3px solid #6f42c1;
   }
 
-  .machine-avail-dot {
+  .asset-avail-dot {
     position: absolute;
     top: 3px;
     right: 3px;

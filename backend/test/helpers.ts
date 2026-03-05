@@ -168,32 +168,32 @@ export async function ensureTestEmployee(token: string): Promise<number> {
 }
 
 /**
- * Create N machines for the apitest tenant and return their UUIDs.
- * Each machine gets a unique name to avoid conflicts.
- * Caller is responsible for cleanup via deleteMachines().
+ * Create N assets for the apitest tenant and return their UUIDs.
+ * Each asset gets a unique name to avoid conflicts.
+ * Caller is responsible for cleanup via deleteAssets().
  */
-export async function createMachines(
+export async function createAssets(
   token: string,
   count: number,
 ): Promise<string[]> {
   const uuids: string[] = [];
 
   for (let i = 0; i < count; i++) {
-    const res = await fetch(`${BASE_URL}/machines`, {
+    const res = await fetch(`${BASE_URL}/assets`, {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify({
-        name: `Test Machine ${i + 1} ${Date.now()}`,
+        name: `Test Asset ${i + 1} ${Date.now()}`,
         model: `TM-${String(i + 1).padStart(3, '0')}`,
         manufacturer: 'Test Corp',
-        machineType: 'production',
+        assetType: 'production',
         status: 'operational',
         location: 'Test Location',
       }),
     });
 
     if (res.status !== 201) {
-      throw new Error(`Machine creation failed: ${res.status}`);
+      throw new Error(`Asset creation failed: ${res.status}`);
     }
 
     const body = (await res.json()) as JsonBody;
@@ -204,14 +204,14 @@ export async function createMachines(
 }
 
 /**
- * Delete machines by UUID. Silently ignores 404/409 errors.
+ * Delete assets by UUID. Silently ignores 404/409 errors.
  */
-export async function deleteMachines(
+export async function deleteAssets(
   token: string,
   uuids: string[],
 ): Promise<void> {
   for (const uuid of uuids) {
-    await fetch(`${BASE_URL}/machines/${uuid}`, {
+    await fetch(`${BASE_URL}/assets/${uuid}`, {
       method: 'DELETE',
       headers: authOnly(token),
     });

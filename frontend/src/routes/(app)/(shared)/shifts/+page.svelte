@@ -6,7 +6,7 @@
   import {
     fetchAssignmentCounts,
     fetchDepartments,
-    fetchMachines,
+    fetchAssets,
     fetchTeams,
   } from './_lib/api';
   import CustomRotationModal from './_lib/CustomRotationModal.svelte';
@@ -145,7 +145,7 @@
         areaId: ssrEmployeeTeamInfo.areaId,
         departmentId: ssrEmployeeTeamInfo.departmentId,
         teamId: ssrEmployeeTeamInfo.teamId,
-        machineId: null,
+        assetId: null,
         teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId,
       });
       shiftsState.setEmployees(
@@ -184,7 +184,7 @@
     shiftsState.setSelectedContext({
       areaId,
       departmentId: null,
-      machineId: null,
+      assetId: null,
       teamId: null,
     });
     shiftsState.clearShiftData();
@@ -192,7 +192,7 @@
 
     const depts = await fetchDepartments(areaId);
     shiftsState.setDepartments(depts);
-    shiftsState.setMachines([]);
+    shiftsState.setAssets([]);
     shiftsState.setTeams([]);
   }
 
@@ -200,52 +200,51 @@
     shiftsState.setSelectedContext({
       departmentId,
       teamId: null,
-      machineId: null,
+      assetId: null,
     });
     shiftsState.clearShiftData();
     shiftsState.setShowPlanningUI(false);
-    shiftsState.setMachines([]);
+    shiftsState.setAssets([]);
 
     const tms = await fetchTeams(departmentId);
     shiftsState.setTeams(tms);
   }
 
-  /** Min staff count derived from SSR staffing rules + selected machine */
+  /** Min staff count derived from SSR staffing rules + selected asset */
   const minStaffCount = $derived.by(() => {
-    const machineId = shiftsState.selectedContext.machineId;
-    if (machineId === null) return null;
+    const assetId = shiftsState.selectedContext.assetId;
+    if (assetId === null) return null;
     const rule = ssrStaffingRules.find(
-      (r: { machineId: number; minStaffCount: number }) =>
-        r.machineId === machineId,
+      (r: { assetId: number; minStaffCount: number }) => r.assetId === assetId,
     );
     return rule?.minStaffCount ?? null;
   });
 
-  async function handleMachineChange(machineId: number): Promise<void> {
-    shiftsState.setSelectedContext({ machineId });
+  async function handleAssetChange(assetId: number): Promise<void> {
+    shiftsState.setSelectedContext({ assetId });
     shiftsState.setShowPlanningUI(true);
     await loadShiftPlan();
   }
 
   async function handleTeamChange(teamId: number) {
-    shiftsState.setSelectedContext({ teamId, machineId: null });
+    shiftsState.setSelectedContext({ teamId, assetId: null });
     shiftsState.clearShiftData();
     shiftsState.setShowPlanningUI(false);
 
-    const machs = await fetchMachines(teamId);
-    shiftsState.setMachines(machs);
+    const machs = await fetchAssets(teamId);
+    shiftsState.setAssets(machs);
 
     if (machs.length === 0) {
-      // Team ohne Maschinenzuordnung → sofort laden
+      // Team ohne Anlagenzuordnung → sofort laden
       shiftsState.setShowPlanningUI(true);
       await loadShiftPlan();
     } else if (machs.length === 1) {
-      // Genau eine Maschine → auto-select + sofort laden
-      shiftsState.setSelectedContext({ machineId: machs[0].id });
+      // Genau eine Anlage → auto-select + sofort laden
+      shiftsState.setSelectedContext({ assetId: machs[0].id });
       shiftsState.setShowPlanningUI(true);
       await loadShiftPlan();
     }
-    // 2+ Maschinen → warten bis User im Dropdown wählt
+    // 2+ Anlagen → warten bis User im Dropdown wählt
   }
 
   async function navigateWeek(direction: number) {
@@ -333,13 +332,13 @@
         <FilterDropdowns
           areas={shiftsState.areas}
           departments={shiftsState.departments}
-          machines={shiftsState.machines}
+          assets={shiftsState.assets}
           teams={shiftsState.teams}
           favorites={ssrFavorites}
           selectedContext={shiftsState.selectedContext}
           areaDropdownOpen={shiftsState.areaDropdownOpen}
           departmentDropdownOpen={shiftsState.departmentDropdownOpen}
-          machineDropdownOpen={shiftsState.machineDropdownOpen}
+          assetDropdownOpen={shiftsState.assetDropdownOpen}
           teamDropdownOpen={shiftsState.teamDropdownOpen}
           ontoggleAreaDropdown={() => {
             shiftsState.toggleAreaDropdown();
@@ -347,8 +346,8 @@
           ontoggleDepartmentDropdown={() => {
             shiftsState.toggleDepartmentDropdown();
           }}
-          ontoggleMachineDropdown={() => {
-            shiftsState.toggleMachineDropdown();
+          ontoggleAssetDropdown={() => {
+            shiftsState.toggleAssetDropdown();
           }}
           ontoggleTeamDropdown={() => {
             shiftsState.toggleTeamDropdown();
@@ -358,7 +357,7 @@
           }}
           onareaChange={handleAreaChange}
           ondepartmentChange={handleDepartmentChange}
-          onmachineChange={handleMachineChange}
+          onassetChange={handleAssetChange}
           onteamChange={handleTeamChange}
           onfavoriteClick={handleFavoriteClick}
           ondeleteFavorite={handleDeleteFavorite}
@@ -387,10 +386,10 @@
       {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
         <div class="department-notice">
           <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
-          <h3>Maschine auswählen</h3>
+          <h3>Anlage auswählen</h3>
           <p>
             Bitte wählen Sie einen Bereich, eine Abteilung, ein Team und eine
-            Maschine aus, um den Schichtplan anzuzeigen.
+            Anlage aus, um den Schichtplan anzuzeigen.
           </p>
         </div>
       {/if}
@@ -451,7 +450,7 @@
             canEditShifts={shiftsState.canEditShifts}
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
-            machineAvailabilityMap={shiftsState.machineAvailabilityMap}
+            assetAvailabilityMap={shiftsState.assetAvailabilityMap}
             tpmEventsMap={shiftsState.tpmEventsMap}
             intervalColors={ssrIntervalColors}
             showTpmEvents={shiftsState.showTpmEvents}

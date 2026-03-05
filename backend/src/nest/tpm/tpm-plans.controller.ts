@@ -5,7 +5,7 @@
  * - POST   /tpm/plans                       — Create plan
  * - GET    /tpm/plans                       — List plans (paginated)
  * - GET    /tpm/plans/interval-matrix       — Card counts per plan × interval
- * - GET    /tpm/plans/available-slots       — Slot availability by machine UUID
+ * - GET    /tpm/plans/available-slots       — Slot availability by asset UUID
  * - GET    /tpm/plans/schedule-projection  — Projected schedules for all plans
  * - GET    /tpm/plans/shift-assignments    — Employees assigned to TPM shifts
  * - GET    /tpm/plans/:uuid                 — Get single plan
@@ -14,7 +14,7 @@
  * - GET    /tpm/plans/:uuid/time-estimates  — Time estimates for plan
  * - POST   /tpm/plans/:uuid/time-estimates  — Set time estimate
  * - GET    /tpm/plans/:uuid/available-slots     — Slot availability assistant
- * - GET    /tpm/plans/:uuid/team-availability  — Machine team member availability
+ * - GET    /tpm/plans/:uuid/team-availability  — Asset team member availability
  * - GET    /tpm/plans/:uuid/board               — Board data (cards for plan)
  */
 import {
@@ -35,12 +35,12 @@ import { RequirePermission } from '../common/decorators/require-permission.decor
 import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import { AssetSlotsQueryDto } from './dto/asset-slots-query.dto.js';
 import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto.js';
 import { BoardQueryDto } from './dto/board-query.dto.js';
 import { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
 import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
 import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
-import { MachineSlotsQueryDto } from './dto/machine-slots-query.dto.js';
 import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
 import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
@@ -55,7 +55,7 @@ import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.
 import type { TpmShiftAssignment } from './tpm-shift-assignments.service.js';
 import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import type {
-  MachineTeamAvailabilityResult,
+  AssetTeamAvailabilityResult,
   SlotAvailabilityResult,
 } from './tpm-slot-assistant.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
@@ -120,20 +120,20 @@ export class TpmPlansController {
     return await this.plansService.getIntervalMatrix(tenantId);
   }
 
-  /** GET /tpm/plans/available-slots — Slot availability by machine UUID (no plan needed) */
+  /** GET /tpm/plans/available-slots — Slot availability by asset UUID (no plan needed) */
   @Get('available-slots')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
-  async getAvailableSlotsByMachine(
-    @Query() query: MachineSlotsQueryDto,
+  async getAvailableSlotsByAsset(
+    @Query() query: AssetSlotsQueryDto,
     @TenantId() tenantId: number,
   ): Promise<SlotAvailabilityResult> {
-    const machineId = await this.slotAssistantService.resolveMachineIdByUuid(
+    const assetId = await this.slotAssistantService.resolveAssetIdByUuid(
       tenantId,
-      query.machineUuid,
+      query.assetUuid,
     );
     return await this.slotAssistantService.getAvailableSlots(
       tenantId,
-      machineId,
+      assetId,
       query.startDate,
       query.endDate,
       query.shiftPlanRequired,
@@ -247,7 +247,7 @@ export class TpmPlansController {
     const plan = await this.plansService.getPlan(tenantId, planUuid);
     return await this.slotAssistantService.getAvailableSlots(
       tenantId,
-      plan.machineId,
+      plan.assetId,
       query.startDate,
       query.endDate,
       plan.shiftPlanRequired,
@@ -258,18 +258,18 @@ export class TpmPlansController {
   // TEAM AVAILABILITY
   // ============================================================================
 
-  /** GET /tpm/plans/:uuid/team-availability — Machine team member availability */
+  /** GET /tpm/plans/:uuid/team-availability — Asset team member availability */
   @Get(':uuid/team-availability')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
   async getTeamAvailability(
     @Param('uuid') planUuid: string,
     @TenantId() tenantId: number,
-  ): Promise<MachineTeamAvailabilityResult> {
+  ): Promise<AssetTeamAvailabilityResult> {
     const plan = await this.plansService.getPlan(tenantId, planUuid);
     const today = new Date().toISOString().slice(0, 10);
-    return await this.slotAssistantService.getMachineTeamAvailability(
+    return await this.slotAssistantService.getAssetTeamAvailability(
       tenantId,
-      plan.machineId,
+      plan.assetId,
       today,
     );
   }
@@ -278,7 +278,7 @@ export class TpmPlansController {
   // BOARD DATA
   // ============================================================================
 
-  /** GET /tpm/plans/:uuid/board — All cards for this plan's machine */
+  /** GET /tpm/plans/:uuid/board — All cards for this plan's asset */
   @Get(':uuid/board')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
   async getBoardData(

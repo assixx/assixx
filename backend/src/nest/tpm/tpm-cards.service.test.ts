@@ -3,8 +3,8 @@
  *
  * Mocked dependencies: DatabaseService (query, queryOne, tenantTransaction),
  * ActivityLoggerService (logCreate, logUpdate, logDelete).
- * Tests: getCard, listCardsForMachine, listCardsForPlan, getCardsByStatus,
- * createCard (plan resolution, card code generation, auto machine_id,
+ * Tests: getCard, listCardsForAsset, listCardsForPlan, getCardsByStatus,
+ * createCard (plan resolution, card code generation, auto asset_id,
  * interval_order from map, sort_order auto-increment, UUIDv7),
  * updateCard (dynamic SET, interval_order recalc, FOR UPDATE, empty dto),
  * deleteCard (soft-delete, activity logging).
@@ -47,7 +47,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     uuid: 'card-uuid-001                            ',
     tenant_id: 10,
     plan_id: 100,
-    machine_id: 42,
+    asset_id: 42,
     template_id: null,
     card_code: 'BT1',
     card_role: 'operator',
@@ -55,7 +55,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     interval_order: 2,
     title: 'Sichtprüfung',
     description: 'Visuelle Kontrolle der Dichtungen',
-    location_description: 'Halle 3, Maschine links',
+    location_description: 'Halle 3, Anlage links',
     location_photo_url: null,
     requires_approval: false,
     status: 'green',
@@ -72,7 +72,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
     plan_uuid: 'plan-uuid-001                            ',
-    machine_name: 'CNC-001',
+    asset_name: 'CNC-001',
     created_by_name: 'admin',
     ...overrides,
   };
@@ -121,14 +121,14 @@ describe('TpmCardsService', () => {
       const result = await service.getCard(10, 'card-uuid-001');
 
       expect(result.uuid).toBe('card-uuid-001');
-      expect(result.machineId).toBe(42);
+      expect(result.assetId).toBe(42);
       expect(result.cardCode).toBe('BT1');
       expect(result.cardRole).toBe('operator');
       expect(result.intervalType).toBe('weekly');
       expect(result.intervalOrder).toBe(2);
       expect(result.title).toBe('Sichtprüfung');
       expect(result.planUuid).toBe('plan-uuid-001');
-      expect(result.machineName).toBe('CNC-001');
+      expect(result.assetName).toBe('CNC-001');
     });
 
     it('should throw NotFoundException when card not found', async () => {
@@ -143,7 +143,7 @@ describe('TpmCardsService', () => {
       mockDb.queryOne.mockResolvedValueOnce(
         createCardRow({
           plan_uuid: undefined,
-          machine_name: undefined,
+          asset_name: undefined,
           template_uuid: undefined,
           created_by_name: undefined,
           last_completed_by_name: undefined,
@@ -153,7 +153,7 @@ describe('TpmCardsService', () => {
       const result = await service.getCard(10, 'card-uuid-001');
 
       expect(result.planUuid).toBeUndefined();
-      expect(result.machineName).toBeUndefined();
+      expect(result.assetName).toBeUndefined();
       expect(result.templateUuid).toBeUndefined();
       expect(result.createdByName).toBeUndefined();
       expect(result.lastCompletedByName).toBeUndefined();
@@ -161,10 +161,10 @@ describe('TpmCardsService', () => {
   });
 
   // =============================================================
-  // listCardsForMachine
+  // listCardsForAsset
   // =============================================================
 
-  describe('listCardsForMachine()', () => {
+  describe('listCardsForAsset()', () => {
     it('should return paginated cards with total', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '5' });
       mockDb.query.mockResolvedValueOnce([
@@ -172,7 +172,7 @@ describe('TpmCardsService', () => {
         createCardRow({ id: 2, uuid: 'card-uuid-002', card_code: 'BT2' }),
       ]);
 
-      const result = await service.listCardsForMachine(10, 'machine-uuid-001');
+      const result = await service.listCardsForAsset(10, 'asset-uuid-001');
 
       expect(result.total).toBe(5);
       expect(result.data).toHaveLength(2);
@@ -184,7 +184,7 @@ describe('TpmCardsService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.listCardsForMachine(10, 'machine-uuid-001');
+      const result = await service.listCardsForAsset(10, 'asset-uuid-001');
 
       expect(result.total).toBe(0);
       expect(result.data).toHaveLength(0);
@@ -194,7 +194,7 @@ describe('TpmCardsService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '2' });
       mockDb.query.mockResolvedValueOnce([createCardRow({ status: 'red' })]);
 
-      await service.listCardsForMachine(10, 'machine-uuid-001', 1, 50, {
+      await service.listCardsForAsset(10, 'asset-uuid-001', 1, 50, {
         status: 'red',
       });
 
@@ -206,7 +206,7 @@ describe('TpmCardsService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
       mockDb.query.mockResolvedValueOnce([createCardRow()]);
 
-      await service.listCardsForMachine(10, 'machine-uuid-001', 1, 50, {
+      await service.listCardsForAsset(10, 'asset-uuid-001', 1, 50, {
         status: 'green',
         intervalType: 'weekly',
         cardRole: 'operator',
@@ -284,7 +284,7 @@ describe('TpmCardsService', () => {
       // resolvePlanIds
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       // generateCardCode (COUNT)
@@ -313,18 +313,18 @@ describe('TpmCardsService', () => {
       );
 
       expect(result.cardCode).toBe('BT1');
-      expect(result.machineId).toBe(42);
+      expect(result.assetId).toBe(42);
       expect(result.intervalOrder).toBe(2);
     });
 
-    it('should auto-set machine_id from plan (denormalization)', async () => {
+    it('should auto-set asset_id from plan (denormalization)', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 100, machine_id: 99 }],
+        rows: [{ id: 100, asset_id: 99 }],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
-        rows: [createCardRow({ machine_id: 99 })],
+        rows: [createCardRow({ asset_id: 99 })],
       });
 
       const result = await service.createCard(
@@ -339,16 +339,16 @@ describe('TpmCardsService', () => {
         5,
       );
 
-      // INSERT params: machine_id is at index 3 (0-based)
+      // INSERT params: asset_id is at index 3 (0-based)
       const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
       expect(insertParams?.[3]).toBe(99);
-      expect(result.machineId).toBe(99);
+      expect(result.assetId).toBe(99);
     });
 
     it('should generate BT prefix for operator role', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '4' }] });
@@ -377,7 +377,7 @@ describe('TpmCardsService', () => {
     it('should generate IV prefix for maintenance role', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '2' }] });
@@ -405,7 +405,7 @@ describe('TpmCardsService', () => {
     it('should auto-set interval_order from INTERVAL_ORDER_MAP', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -436,7 +436,7 @@ describe('TpmCardsService', () => {
     it('should auto-increment sort_order per plan', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -483,7 +483,7 @@ describe('TpmCardsService', () => {
     it('should throw when INSERT returns no rows', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -508,7 +508,7 @@ describe('TpmCardsService', () => {
     it('should pass null for optional fields when not provided', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -548,7 +548,7 @@ describe('TpmCardsService', () => {
     it('should pass estimatedExecutionMinutes to INSERT when provided', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -579,7 +579,7 @@ describe('TpmCardsService', () => {
     it('should call activity logger after successful creation', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { id: 100, machine_id: 42, base_weekday: 0, base_repeat_every: 1 },
+          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });

@@ -66,13 +66,13 @@
 
 #### P2 — MEDIUM
 
-| Service                        | Mutation-Methoden | ActivityLogger? | Notiz                                      |
-| ------------------------------ | ----------------- | --------------- | ------------------------------------------ |
-| settings.service.ts            | 2 (user settings) | NEIN            | System/Tenant haben eigenes createAuditLog |
-| machine-maintenance.service.ts | 2                 | NEIN            |                                            |
-| user-profile.service.ts        | 4                 | NEIN            |                                            |
-| chat-conversations.service.ts  | 3 real            | NEIN            | GDPR-Entscheidung nötig                    |
-| chat-messages.service.ts       | 3 real            | NEIN            | GDPR-Entscheidung nötig                    |
+| Service                       | Mutation-Methoden | ActivityLogger? | Notiz                                      |
+| ----------------------------- | ----------------- | --------------- | ------------------------------------------ |
+| settings.service.ts           | 2 (user settings) | NEIN            | System/Tenant haben eigenes createAuditLog |
+| asset-maintenance.service.ts  | 2                 | NEIN            |                                            |
+| user-profile.service.ts       | 4                 | NEIN            |                                            |
+| chat-conversations.service.ts | 3 real            | NEIN            | GDPR-Entscheidung nötig                    |
+| chat-messages.service.ts      | 3 real            | NEIN            | GDPR-Entscheidung nötig                    |
 
 #### P3 — LOW
 
@@ -107,8 +107,8 @@
 | --- | ---------------------------------------------------------------------------------------- | ----- | ------------------------------- |
 | 1   | `routes/(app)/(admin)/manage-employees/availability/_lib/EditAvailabilityModal.svelte`   | 127   | console.error statt logger      |
 | 2   | `routes/(app)/(admin)/manage-employees/availability/_lib/DeleteConfirmationModal.svelte` | 89    | console.error statt logger      |
-| 3   | `lib/machine-availability/EditMachineAvailabilityModal.svelte`                           | 121   | console.error statt logger      |
-| 4   | `lib/machine-availability/DeleteConfirmationModal.svelte`                                | 89    | console.error statt logger      |
+| 3   | `lib/asset-availability/EditMachineAvailabilityModal.svelte`                             | 121   | console.error statt logger      |
+| 4   | `lib/asset-availability/DeleteConfirmationModal.svelte`                                  | 89    | console.error statt logger      |
 | 5   | `lib/availability/EditAvailabilityModal.svelte`                                          | 120   | console.error statt logger      |
 | 6   | `lib/availability/DeleteConfirmationModal.svelte`                                        | 87    | console.error statt logger      |
 | 7   | `lib/components/ImageCropModal.svelte`                                                   | 128   | console.error statt logger      |
@@ -146,7 +146,7 @@
 
 **Datei:** `backend/src/nest/common/services/activity-logger.service.ts`
 
-**Bereits vorhanden (26):** user, department, team, area, machine, document, blackboard, kvp, survey, notification, auth, tenant, settings, calendar, shift, availability, machine_availability, vacation, vacation_blackout, vacation_holiday, vacation_staffing_rule, vacation_entitlement, vacation_settings, tpm_plan, tpm_card, tpm_execution
+**Bereits vorhanden (26):** user, department, team, area, asset, document, blackboard, kvp, survey, notification, auth, tenant, settings, calendar, shift, availability, machine_availability, vacation, vacation_blackout, vacation_holiday, vacation_staffing_rule, vacation_entitlement, vacation_settings, tpm_plan, tpm_card, tpm_execution
 
 **Hinzufügen:**
 
@@ -277,8 +277,8 @@
 | --- | ---------------------------------------------------------------------------------------- | ----- |
 | 1   | `routes/(app)/(admin)/manage-employees/availability/_lib/EditAvailabilityModal.svelte`   | 127   |
 | 2   | `routes/(app)/(admin)/manage-employees/availability/_lib/DeleteConfirmationModal.svelte` | 89    |
-| 3   | `lib/machine-availability/EditMachineAvailabilityModal.svelte`                           | 121   |
-| 4   | `lib/machine-availability/DeleteConfirmationModal.svelte`                                | 89    |
+| 3   | `lib/asset-availability/EditMachineAvailabilityModal.svelte`                             | 121   |
+| 4   | `lib/asset-availability/DeleteConfirmationModal.svelte`                                  | 89    |
 | 5   | `lib/availability/EditAvailabilityModal.svelte`                                          | 120   |
 | 6   | `lib/availability/DeleteConfirmationModal.svelte`                                        | 87    |
 | 7   | `lib/components/ImageCropModal.svelte`                                                   | 128   |
@@ -348,7 +348,7 @@ Worker.onerror → `log.error(...)` statt `console.error(...)`.
 
 ### Step 5.2: Machine-Maintenance [DONE]
 
-**Datei:** `backend/src/nest/machines/machine-maintenance.service.ts` (2 Methoden)
+**Datei:** `backend/src/nest/machines/asset-maintenance.service.ts` (2 Methoden)
 
 ### Step 5.3: User-Profile [DONE]
 
@@ -486,7 +486,7 @@ Diese Services werden in V1 NICHT instrumentiert:
 - **Notifications:** notifications.service.ts, notification-preferences.service.ts — Infrastructure
 - **Feature Management:** features.service.ts, feature-check.service.ts, feature-visits.service.ts
 - **Log Infrastructure:** logs.service.ts, log-retention.service.ts, audit-trail.service.ts, audit-logging.service.ts
-- **Other:** role-switch.service.ts, document-storage.service.ts, kvp-categories.service.ts, kvp-attachments.service.ts, machine-team.service.ts, survey-questions.service.ts
+- **Other:** role-switch.service.ts, document-storage.service.ts, kvp-categories.service.ts, kvp-attachments.service.ts, asset-team.service.ts, survey-questions.service.ts
 
 ---
 

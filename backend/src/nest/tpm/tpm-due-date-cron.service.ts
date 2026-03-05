@@ -6,12 +6,12 @@
  *
  * Flow per run:
  *   1. Find all green cards where current_due_date <= today
- *   2. Group by (tenant_id, machine_id) and find max interval_order
+ *   2. Group by (tenant_id, asset_id) and find max interval_order
  *   3. For each group: triggerCascade → batch-SET all lower-order cards to red
  *
  * Concurrency safety:
  *   - isProcessing guard prevents parallel runs within the same process
- *   - Cascade uses batch UPDATE (single SQL per machine)
+ *   - Cascade uses batch UPDATE (single SQL per asset)
  *
  * Startup recovery via OnModuleInit catches cards that expired while offline.
  *
@@ -24,10 +24,10 @@ import type { PoolClient } from 'pg';
 import { DatabaseService } from '../database/database.service.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
 
-/** Due card group: one entry per (tenant, machine) */
+/** Due card group: one entry per (tenant, asset) */
 interface DueCardGroup {
   tenant_id: number;
-  machine_id: number;
+  asset_id: number;
   max_interval_order: number;
 }
 
@@ -69,7 +69,7 @@ export class TpmDueDateCronService implements OnModuleInit {
   // CORE PROCESSING
   // ============================================================================
 
-  /** Find all due cards and trigger cascade per machine */
+  /** Find all due cards and trigger cascade per asset */
   private async processDueCards(): Promise<void> {
     if (this.isProcessing) {
       this.logger.debug('Due date check already in progress, skipping');
@@ -82,7 +82,7 @@ export class TpmDueDateCronService implements OnModuleInit {
       if (groups.length === 0) return;
 
       this.logger.log(
-        `Found ${String(groups.length)} machine(s) with due TPM cards`,
+        `Found ${String(groups.length)} asset(s) with due TPM cards`,
       );
 
       for (const group of groups) {
@@ -96,25 +96,25 @@ export class TpmDueDateCronService implements OnModuleInit {
   }
 
   /**
-   * Find green cards due today or earlier, grouped by (tenant, machine).
+   * Find green cards due today or earlier, grouped by (tenant, asset).
    * Returns max interval_order per group for cascade trigger.
    *
    * System-level query (no RLS context) — sees all tenants.
    */
   private async findDueCardGroups(): Promise<DueCardGroup[]> {
     return await this.db.query<DueCardGroup>(
-      `SELECT tenant_id, machine_id,
+      `SELECT tenant_id, asset_id,
               MAX(interval_order) AS max_interval_order
        FROM tpm_cards
        WHERE status = 'green'
          AND is_active = 1
          AND current_due_date IS NOT NULL
          AND current_due_date <= CURRENT_DATE
-       GROUP BY tenant_id, machine_id`,
+       GROUP BY tenant_id, asset_id`,
     );
   }
 
-  /** Trigger cascade for a single (tenant, machine) group */
+  /** Trigger cascade for a single (tenant, asset) group */
   private async triggerGroupCascade(group: DueCardGroup): Promise<void> {
     try {
       await this.db.transaction(
@@ -122,13 +122,13 @@ export class TpmDueDateCronService implements OnModuleInit {
           const result = await this.cascadeService.triggerCascade(
             client,
             group.tenant_id,
-            group.machine_id,
+            group.asset_id,
             group.max_interval_order,
             new Date(),
           );
 
           this.logger.log(
-            `Cascade: machine ${String(group.machine_id)}, ` +
+            `Cascade: asset ${String(group.asset_id)}, ` +
               `order <= ${String(group.max_interval_order)}, ` +
               `${String(result.affectedCount)} Karten → red`,
           );
@@ -137,7 +137,7 @@ export class TpmDueDateCronService implements OnModuleInit {
       );
     } catch (error: unknown) {
       this.logger.error(
-        `Cascade failed for machine ${String(group.machine_id)}: ${String(error)}`,
+        `Cascade failed for asset ${String(group.asset_id)}: ${String(error)}`,
       );
     }
   }

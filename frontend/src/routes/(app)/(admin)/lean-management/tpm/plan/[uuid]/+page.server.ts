@@ -3,7 +3,7 @@
  * @module lean-management/tpm/plan/[uuid]/+page.server
  *
  * SSR: Handles both create (uuid='new') and edit modes.
- * Edit mode loads plan data, machines, and time estimates in parallel.
+ * Edit mode loads plan data, assets, and time estimates in parallel.
  */
 import { redirect } from '@sveltejs/kit';
 
@@ -13,7 +13,7 @@ import type { PageServerLoad } from './$types';
 import type {
   TpmPlan,
   TpmTimeEstimate,
-  Machine,
+  Asset,
   TpmArea,
   TpmDepartment,
   IntervalColorConfigEntry,
@@ -38,11 +38,11 @@ function safeArray<T>(data: T[] | null): T[] {
   return Array.isArray(data) ? data : [];
 }
 
-/** Extract machine UUIDs from paginated plan list */
-function extractMachineUuids(plansData: PlanListData | null): string[] {
+/** Extract asset UUIDs from paginated plan list */
+function extractAssetUuids(plansData: PlanListData | null): string[] {
   return (
     plansData?.data
-      .map((p: TpmPlan) => p.machineUuid)
+      .map((p: TpmPlan) => p.assetUuid)
       .filter(
         (uuid: string | undefined): uuid is string => uuid !== undefined,
       ) ?? []
@@ -89,10 +89,10 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const isCreateMode = params.uuid === 'new';
 
-  // Load machines + areas + departments + interval colors in parallel
-  const [machinesData, areasData, departmentsData, intervalColorsData] =
+  // Load assets + areas + departments + interval colors in parallel
+  const [assetsData, areasData, departmentsData, intervalColorsData] =
     await Promise.all([
-      apiFetch<Machine[]>('/machines', token, fetch),
+      apiFetch<Asset[]>('/assets', token, fetch),
       apiFetch<TpmArea[]>('/areas', token, fetch),
       apiFetch<TpmDepartment[]>('/departments', token, fetch),
       apiFetch<IntervalColorConfigEntry[]>(
@@ -101,27 +101,27 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
         fetch,
       ),
     ]);
-  const machines = safeArray(machinesData);
+  const assets = safeArray(assetsData);
   const areas = safeArray(areasData);
   const departments = safeArray(departmentsData);
 
   if (isCreateMode) {
-    // Fetch active plans to determine which machines already have a TPM plan
+    // Fetch active plans to determine which assets already have a TPM plan
     const plansData = await apiFetch<PlanListData>(
       '/tpm/plans?page=1&limit=500',
       token,
       fetch,
     );
-    const machineUuidsWithPlans = extractMachineUuids(plansData);
+    const assetUuidsWithPlans = extractAssetUuids(plansData);
 
     return {
       isCreateMode: true,
       plan: null,
       timeEstimates: [],
-      machines,
+      assets,
       areas,
       departments,
-      machineUuidsWithPlans,
+      assetUuidsWithPlans,
       intervalColors: safeArray(intervalColorsData),
     };
   }
@@ -146,7 +146,7 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
     isCreateMode: false,
     plan: planData,
     timeEstimates,
-    machines,
+    assets,
     areas,
     departments,
     intervalColors: safeArray(intervalColorsData),

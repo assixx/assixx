@@ -22,7 +22,7 @@ import type {
   SuggestionsResponse,
   PaginatedResponse,
   KvpFilter,
-  UserTeamWithMachines,
+  UserTeamWithAssets,
 } from './types';
 
 const log = createLogger('KvpApi');
@@ -160,13 +160,13 @@ function buildSuggestionParams(
   categoryFilter: string,
   departmentFilter: string,
   teamFilter: string,
-  machineFilter: string,
+  assetFilter: string,
   searchQuery: string,
 ): URLSearchParams {
   const params = new URLSearchParams();
 
   // Map filter to backend orgLevel parameter
-  const orgLevelFilters = ['team', 'machine', 'department', 'area', 'company'];
+  const orgLevelFilters = ['team', 'asset', 'department', 'area', 'company'];
   if (orgLevelFilters.includes(filter)) {
     params.append('orgLevel', filter);
   }
@@ -184,7 +184,7 @@ function buildSuggestionParams(
   appendCategoryParam(params, categoryFilter);
   if (departmentFilter !== '') params.append('departmentId', departmentFilter);
   if (teamFilter !== '') params.append('teamId', teamFilter);
-  if (machineFilter !== '') params.append('machineId', machineFilter);
+  if (assetFilter !== '') params.append('assetId', assetFilter);
   if (searchQuery !== '') params.append('search', searchQuery);
 
   return params;
@@ -199,7 +199,7 @@ export async function fetchSuggestions(
   categoryFilter: string,
   departmentFilter: string,
   teamFilter: string,
-  machineFilter: string,
+  assetFilter: string,
   searchQuery: string,
 ): Promise<KvpSuggestion[]> {
   try {
@@ -209,7 +209,7 @@ export async function fetchSuggestions(
       categoryFilter,
       departmentFilter,
       teamFilter,
-      machineFilter,
+      assetFilter,
       searchQuery,
     );
 
@@ -332,15 +332,15 @@ export async function fetchStatistics(): Promise<KvpStats | null> {
 }
 
 // =============================================================================
-// USER ORGANIZATIONS (teams + machines)
+// USER ORGANIZATIONS (teams + assets)
 // =============================================================================
 
 /**
- * Load user's teams with their assigned machines
+ * Load user's teams with their assigned assets
  */
-export async function loadMyOrganizations(): Promise<UserTeamWithMachines[]> {
+export async function loadMyOrganizations(): Promise<UserTeamWithAssets[]> {
   try {
-    return await apiClient.get<UserTeamWithMachines[]>(
+    return await apiClient.get<UserTeamWithAssets[]>(
       API_ENDPOINTS.KVP_MY_ORGANIZATIONS,
     );
   } catch (err) {

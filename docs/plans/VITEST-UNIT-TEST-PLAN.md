@@ -93,7 +93,7 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  unit  backend/src/nest/common/audit/audit-metadata.service.test.ts               ( 8 tests)
  ✓  unit  backend/src/nest/common/audit/audit-logging.service.test.ts                ( 5 tests)
  ✓  unit  backend/src/nest/logs/log-retention.service.test.ts                        ( 8 tests)
- ✓  unit  backend/src/nest/machines/machine-team.service.test.ts                     ( 5 tests)
+ ✓  unit  backend/src/nest/machines/asset-team.service.test.ts                     ( 5 tests)
  ✓  unit  backend/src/nest/shifts/rotation-generator.service.test.ts                 ( 6 tests)
  ✓  unit  backend/src/nest/audit-trail/audit-trail.service.test.ts                   (30 tests)
  ✓  unit  backend/src/nest/shifts/rotation-pattern.service.test.ts                   (17 tests)
@@ -132,7 +132,7 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  unit  backend/src/nest/shifts/rotation.service.test.ts                           (10 tests)
  ✓  unit  backend/src/nest/shifts/rotation-history.service.test.ts                   ( 8 tests)
  ✓  unit  backend/src/nest/blackboard/blackboard-confirmations.service.test.ts       ( 9 tests)
- ✓  unit  backend/src/nest/machines/machine-maintenance.service.test.ts              ( 7 tests)
+ ✓  unit  backend/src/nest/machines/asset-maintenance.service.test.ts              ( 7 tests)
  ✓  unit  backend/src/nest/dashboard/dashboard.service.test.ts                       ( 4 tests)
  ✓  unit  backend/src/nest/root/root-deletion.service.test.ts                        (14 tests)
  ✓  unit  backend/src/nest/root/root-admin.service.test.ts                           (10 tests)
@@ -679,7 +679,7 @@ Alle Zod-DTOs in `backend/src/nest/*/dto/` testen: valid→pass, missing require
 | 3   | `audit-metadata.service.ts`     | 108   | 8     | Request-Metadata, fire-and-forget         | ✅     |
 | 4   | `audit-logging.service.ts`      | 199   | 5     | Fire-and-forget, error extraction         | ✅     |
 | 5   | `log-retention.service.ts`      | 363   | 8     | Retention days validation, min enforce    | ✅     |
-| 6   | `machine-team.service.ts`       | 118   | 5     | Row mapper, team validation               | ✅     |
+| 6   | `asset-team.service.ts`         | 118   | 5     | Row mapper, team validation               | ✅     |
 | 7   | `rotation-generator.service.ts` | 621   | 6     | Schichttyp-Algorithmus, Weekend-Skip      | ✅     |
 | 8   | `audit-trail.service.ts`        | 824   | 30    | CSV, row mapper, access control, stats    | ✅     |
 | 9   | `rotation-pattern.service.ts`   | 332   | 17    | Config parsing, date fmt, UUID, CRUD      | ✅     |
@@ -836,7 +836,7 @@ mockDb.queryOne.mockResolvedValueOnce({
 | 12  | `rotation.service.ts`                    | 10    | DB-mocked, rotation CRUD               | ✅     |
 | 13  | `rotation-history.service.ts`            | 8     | DB-mocked, history CRUD                | ✅     |
 | 14  | `blackboard-confirmations.service.ts`    | 9     | DB-mocked, UUID resolution             | ✅     |
-| 15  | `machine-maintenance.service.ts`         | 7     | DB-mocked, maintenance CRUD            | ✅     |
+| 15  | `asset-maintenance.service.ts`           | 7     | DB-mocked, maintenance CRUD            | ✅     |
 | 16  | `dashboard.service.ts`                   | 4     | DB-mocked, aggregate queries           | ✅     |
 | 17  | `root-deletion.service.ts`               | 14    | DB-mocked, cascading deletion          | ✅     |
 | 18  | `root-admin.service.ts`                  | 10    | DB-mocked, admin CRUD                  | ✅     |

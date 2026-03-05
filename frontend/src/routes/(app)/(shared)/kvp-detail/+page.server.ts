@@ -15,7 +15,7 @@ import type {
   Department,
   Team,
   Area,
-  Machine,
+  Asset,
   PaginatedComments,
 } from './_lib/types';
 
@@ -80,7 +80,7 @@ async function fetchPageData(
   token: string,
   fetchFn: typeof fetch,
 ) {
-  const [commentsData, attachmentsData, depts, teams, areas, machines] =
+  const [commentsData, attachmentsData, depts, teams, areas, assets] =
     await Promise.all([
       apiFetch<PaginatedComments>(
         `/kvp/${idOrUuid}/comments?limit=20&offset=0`,
@@ -91,7 +91,7 @@ async function fetchPageData(
       apiFetch<Department[]>('/departments', token, fetchFn),
       apiFetch<Team[]>('/teams', token, fetchFn),
       apiFetch<Area[]>('/areas', token, fetchFn),
-      apiFetch<Machine[]>('/machines', token, fetchFn),
+      apiFetch<Asset[]>('/assets', token, fetchFn),
     ]);
 
   return {
@@ -100,7 +100,7 @@ async function fetchPageData(
     departments: ensureArray(depts),
     teams: ensureArray(teams),
     areas: ensureArray(areas),
-    machines: ensureArray(machines),
+    assets: ensureArray(assets),
   };
 }
 

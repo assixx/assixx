@@ -5,13 +5,13 @@
  * Pattern: 1:1 from vacation.service.ts:respondToRequest()
  *
  * Authorization chain:
- *   Card → machine_id → machine_teams → teams → team_lead_id
+ *   Card → asset_id → asset_teams → teams → team_lead_id
  *   OR: user.has_full_access = true (admin override)
  *
  * Post-transaction side effects:
  *   - Activity logging (fire-and-forget)
  *   - SSE notification to executor (fire-and-forget)
- *   - Bridge: approved execution → machine_maintenance_history (Step 2.11)
+ *   - Bridge: approved execution → asset_maintenance_history (Step 2.11)
  */
 import {
   ConflictException,
@@ -41,7 +41,7 @@ import type {
 
 /** Card info resolved within the transaction for side effects */
 interface CardInfo {
-  machineId: number;
+  assetId: number;
   notification: TpmNotificationCard;
 }
 
@@ -195,8 +195,8 @@ export class TpmApprovalService {
     const result = await this.db.queryOne<{ can_approve: boolean }>(
       `SELECT EXISTS (
         SELECT 1 FROM teams t
-        JOIN machine_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
-        JOIN tpm_cards c ON c.machine_id = mt.machine_id AND c.tenant_id = mt.tenant_id
+        JOIN asset_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
+        JOIN tpm_cards c ON c.asset_id = mt.asset_id AND c.tenant_id = mt.tenant_id
         WHERE c.id = $1
           AND c.tenant_id = $2
           AND t.team_lead_id = $3
@@ -228,7 +228,7 @@ export class TpmApprovalService {
       tenantId,
       approverId,
       'tpm_execution',
-      cardInfo.machineId,
+      cardInfo.assetId,
       `TPM-Durchführung freigegeben: ${executionUuid}`,
       { approvalStatus: 'pending' },
       { approvalStatus: 'approved' },
@@ -244,7 +244,7 @@ export class TpmApprovalService {
 
     await this.bridgeToMaintenanceHistory(
       tenantId,
-      cardInfo.machineId,
+      cardInfo.assetId,
       result.executedBy,
       executionUuid,
     );
@@ -263,7 +263,7 @@ export class TpmApprovalService {
       tenantId,
       approverId,
       'tpm_execution',
-      cardInfo.machineId,
+      cardInfo.assetId,
       `TPM-Durchführung abgelehnt: ${executionUuid} — ${dto.approvalNote ?? ''}`,
       { approvalStatus: 'pending' },
       { approvalStatus: 'rejected' },
@@ -279,25 +279,25 @@ export class TpmApprovalService {
   }
 
   /**
-   * Bridge: approved execution → machine_maintenance_history entry.
+   * Bridge: approved execution → asset_maintenance_history entry.
    * Direct DB query (D11 pattern — TpmModule stays self-contained).
    */
   private async bridgeToMaintenanceHistory(
     tenantId: number,
-    machineId: number,
+    assetId: number,
     performedBy: number,
     executionUuid: string,
   ): Promise<void> {
     try {
       await this.db.query(
-        `INSERT INTO machine_maintenance_history
-           (tenant_id, machine_id, maintenance_type, performed_date,
+        `INSERT INTO asset_maintenance_history
+           (tenant_id, asset_id, maintenance_type, performed_date,
             performed_by, description, status_after, created_by)
          VALUES ($1, $2, 'preventive', CURRENT_DATE, $3, $4, 'operational', $3)`,
-        [tenantId, machineId, performedBy, `TPM-Durchführung ${executionUuid}`],
+        [tenantId, assetId, performedBy, `TPM-Durchführung ${executionUuid}`],
       );
     } catch (error: unknown) {
-      this.logger.error(`Machine history bridge failed: ${String(error)}`);
+      this.logger.error(`Asset history bridge failed: ${String(error)}`);
     }
   }
 
@@ -344,8 +344,8 @@ export class TpmApprovalService {
     const result = await client.query<{ can_approve: boolean }>(
       `SELECT EXISTS (
         SELECT 1 FROM teams t
-        JOIN machine_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
-        JOIN tpm_cards c ON c.machine_id = mt.machine_id AND c.tenant_id = mt.tenant_id
+        JOIN asset_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
+        JOIN tpm_cards c ON c.asset_id = mt.asset_id AND c.tenant_id = mt.tenant_id
         WHERE c.id = $1
           AND c.tenant_id = $2
           AND t.team_lead_id = $3
@@ -423,11 +423,11 @@ export class TpmApprovalService {
       uuid: string;
       card_code: string;
       title: string;
-      machine_id: number;
+      asset_id: number;
       interval_type: string;
       status: string;
     }>(
-      `SELECT uuid, card_code, title, machine_id, interval_type, status
+      `SELECT uuid, card_code, title, asset_id, interval_type, status
        FROM tpm_cards WHERE id = $1 AND tenant_id = $2`,
       [cardId, tenantId],
     );
@@ -436,12 +436,12 @@ export class TpmApprovalService {
       throw new NotFoundException(`TPM-Karte ${cardId} nicht gefunden`);
     }
     return {
-      machineId: row.machine_id,
+      assetId: row.asset_id,
       notification: {
         uuid: row.uuid,
         cardCode: row.card_code,
         title: row.title,
-        machineId: row.machine_id,
+        assetId: row.asset_id,
         intervalType: row.interval_type,
         status: row.status,
       },

@@ -154,7 +154,7 @@ export class TpmLocationsService {
         void this.activityLogger.logCreate(
           tenantId,
           userId,
-          'machine',
+          'asset',
           0,
           `TPM-Standort erstellt: #${dto.positionNumber} ${dto.title}`,
           { uuid: row.uuid.trim(), positionNumber: dto.positionNumber },
@@ -216,7 +216,7 @@ export class TpmLocationsService {
         void this.activityLogger.logUpdate(
           tenantId,
           userId,
-          'machine',
+          'asset',
           0,
           `TPM-Standort aktualisiert: ${locationUuid}`,
           undefined,
@@ -258,7 +258,7 @@ export class TpmLocationsService {
         void this.activityLogger.logDelete(
           tenantId,
           userId,
-          'machine',
+          'asset',
           0,
           `TPM-Standort gelöscht: ${locationUuid}`,
           { uuid: locationUuid },
@@ -304,7 +304,7 @@ export class TpmLocationsService {
         void this.activityLogger.logUpdate(
           tenantId,
           userId,
-          'machine',
+          'asset',
           0,
           `TPM-Standort Foto aktualisiert: ${locationUuid}`,
           undefined,
@@ -345,7 +345,7 @@ export class TpmLocationsService {
         void this.activityLogger.logUpdate(
           tenantId,
           userId,
-          'machine',
+          'asset',
           0,
           `TPM-Standort Foto entfernt: ${locationUuid}`,
           undefined,

@@ -59,8 +59,8 @@ function createTestCard(
     uuid: 'card-uuid-001',
     cardCode: 'BT1',
     title: 'Sichtprüfung',
-    machineId: 42,
-    machineName: 'Presse P17',
+    assetId: 42,
+    assetName: 'Presse P17',
     intervalType: 'weekly',
     status: 'red',
     ...overrides,
@@ -97,8 +97,8 @@ describe('TpmNotificationService', () => {
           uuid: 'card-uuid-001',
           cardCode: 'BT1',
           title: 'Sichtprüfung',
-          machineId: 42,
-          machineName: 'Presse P17',
+          assetId: 42,
+          assetName: 'Presse P17',
           intervalType: 'weekly',
           status: 'red',
         }),
@@ -134,14 +134,14 @@ describe('TpmNotificationService', () => {
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
-    it('should fallback to "Maschine #ID" when machineName is undefined', () => {
-      const card = createTestCard({ machineName: undefined });
+    it('should fallback to "Anlage #ID" when assetName is undefined', () => {
+      const card = createTestCard({ assetName: undefined });
 
       service.notifyMaintenanceDue(10, card, [7]);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
       const message = params?.[2] as string;
-      expect(message).toContain('Maschine #42');
+      expect(message).toContain('Anlage #42');
     });
   });
 
@@ -341,14 +341,14 @@ describe('TpmNotificationService', () => {
       );
     });
 
-    it('should omit machineName from event payload when undefined', () => {
-      const card = createTestCard({ machineName: undefined });
+    it('should omit assetName from event payload when undefined', () => {
+      const card = createTestCard({ assetName: undefined });
 
       service.notifyMaintenanceDue(10, card, [7]);
 
       const eventPayload = mockEventBus.emitTpmMaintenanceDue.mock
         .calls[0]?.[1] as Record<string, unknown>;
-      expect(eventPayload).not.toHaveProperty('machineName');
+      expect(eventPayload).not.toHaveProperty('assetName');
     });
   });
 });

@@ -29,7 +29,7 @@
     KvpSuggestion,
     KvpStats,
     CurrentUser,
-    UserTeamWithMachines,
+    UserTeamWithAssets,
   } from './_lib/types';
 
   const log = createLogger('KvpPage');
@@ -48,7 +48,7 @@
   const ssrSuggestions = $derived<KvpSuggestion[]>(data.suggestions);
   const ssrStatistics = $derived<KvpStats | null>(data.statistics);
   const ssrCurrentUser = $derived<CurrentUser | null>(data.currentUser);
-  const ssrUserOrganizations = $derived<UserTeamWithMachines[]>(
+  const ssrUserOrganizations = $derived<UserTeamWithAssets[]>(
     data.userOrganizations,
   );
 
@@ -90,7 +90,7 @@
         kvpState.categoryFilter,
         kvpState.departmentFilter,
         kvpState.teamFilter,
-        kvpState.machineFilter,
+        kvpState.assetFilter,
         kvpState.searchQuery,
       );
       kvpState.setSuggestions(suggestions);

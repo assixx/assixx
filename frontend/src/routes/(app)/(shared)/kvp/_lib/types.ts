@@ -28,7 +28,7 @@ export type KvpPriority = 'low' | 'normal' | 'high' | 'urgent';
 /**
  * Organization level
  */
-export type OrgLevel = 'company' | 'department' | 'area' | 'team' | 'machine';
+export type OrgLevel = 'company' | 'department' | 'area' | 'team' | 'asset';
 
 /**
  * Filter types for KVP list
@@ -37,7 +37,7 @@ export type KvpFilter =
   | 'all'
   | 'mine'
   | 'team'
-  | 'machine'
+  | 'asset'
   | 'department'
   | 'company'
   | 'manage'
@@ -100,7 +100,7 @@ export interface KvpSuggestion {
   isConfirmed?: boolean;
   /** When user FIRST saw this suggestion (null = never seen, for "Neu" badge) */
   firstSeenAt?: string | null;
-  /** Organization assignments from junction table (teams and/or machines) */
+  /** Organization assignments from junction table (teams and/or assets) */
   organizations?: KvpOrgAssignment[];
 }
 
@@ -157,24 +157,24 @@ export interface KvpFormData {
   priority: KvpPriority;
   expectedBenefit?: string;
   teamIds: number[];
-  machineIds: number[];
+  assetIds: number[];
   departmentId: number | null;
 }
 
 /** Organization assignment on a KVP suggestion */
 export interface KvpOrgAssignment {
-  orgType: 'team' | 'machine';
+  orgType: 'team' | 'asset';
   orgId: number;
   orgName?: string;
-  /** For machines: team IDs that own this machine (from machine_teams) */
+  /** For assets: team IDs that own this asset (from asset_teams) */
   relatedTeamIds?: number[];
 }
 
-/** User's team with assigned machines — from GET /kvp/my-organizations */
-export interface UserTeamWithMachines {
+/** User's team with assigned assets — from GET /kvp/my-organizations */
+export interface UserTeamWithAssets {
   teamId: number;
   teamName: string;
-  machines: { id: number; name: string }[];
+  assets: { id: number; name: string }[];
 }
 
 /**
@@ -184,7 +184,7 @@ export interface BadgeCounts {
   all: number;
   mine: number;
   team: number;
-  machine: number;
+  asset: number;
   department: number;
   company: number;
   manage: number;

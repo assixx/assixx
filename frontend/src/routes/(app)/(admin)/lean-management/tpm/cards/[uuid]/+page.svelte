@@ -231,7 +231,7 @@
           {MESSAGES.CARD_PAGE_HEADING}
         </h1>
         <p class="mt-1 text-sm text-(--color-text-secondary)">
-          {data.plan.machineName ?? '—'} — {data.plan.name}
+          {data.plan.assetName ?? '—'} — {data.plan.name}
         </p>
       </div>
       <div class="flex gap-2">

@@ -1,7 +1,7 @@
 /**
  * Unit tests for TpmDueDateCronService
  *
- * Covers: processDueCards (finds due groups, triggers cascade per machine),
+ * Covers: processDueCards (finds due groups, triggers cascade per asset),
  * isProcessing guard (prevents parallel runs), error handling.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -60,10 +60,10 @@ describe('TpmDueDateCronService', () => {
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
-    it('should trigger cascade for each machine group', async () => {
+    it('should trigger cascade for each asset group', async () => {
       mockDb.query.mockResolvedValueOnce([
-        { tenant_id: 10, machine_id: 1, max_interval_order: 3 },
-        { tenant_id: 10, machine_id: 2, max_interval_order: 6 },
+        { tenant_id: 10, asset_id: 1, max_interval_order: 3 },
+        { tenant_id: 10, asset_id: 2, max_interval_order: 6 },
       ]);
 
       // transaction calls: each returns void
@@ -88,7 +88,7 @@ describe('TpmDueDateCronService', () => {
 
       const queryCall = mockDb.query.mock.calls[0];
       const sql = queryCall[0] as string;
-      expect(sql).toContain('GROUP BY tenant_id, machine_id');
+      expect(sql).toContain('GROUP BY tenant_id, asset_id');
       expect(sql).toContain('MAX(interval_order)');
       expect(sql).toContain("status = 'green'");
       expect(sql).toContain('current_due_date <= CURRENT_DATE');
@@ -96,8 +96,8 @@ describe('TpmDueDateCronService', () => {
 
     it('should continue processing if one group fails', async () => {
       mockDb.query.mockResolvedValueOnce([
-        { tenant_id: 10, machine_id: 1, max_interval_order: 3 },
-        { tenant_id: 10, machine_id: 2, max_interval_order: 6 },
+        { tenant_id: 10, asset_id: 1, max_interval_order: 3 },
+        { tenant_id: 10, asset_id: 2, max_interval_order: 6 },
       ]);
 
       // First group fails, second succeeds

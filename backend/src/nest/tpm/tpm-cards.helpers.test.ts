@@ -19,7 +19,7 @@ function createMinimalRow(
     uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
     tenant_id: 1,
     plan_id: 1,
-    machine_id: 100,
+    asset_id: 100,
     template_id: null,
     card_code: 'B-W-001',
     card_role: 'operator',

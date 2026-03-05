@@ -26,10 +26,10 @@ Assixx serves industrial companies where **preventive maintenance** is critical 
 ### Requirements
 
 - **Interval Cascade**: Generate recurring maintenance cards from plan definitions (daily to annual + custom)
-- **Kamishibai Board**: Visual card board (green/yellow/red/overdue) per machine per interval
+- **Kamishibai Board**: Visual card board (green/yellow/red/overdue) per asset per interval
 - **Execution + Approval Workflow**: Employee executes card → optional team lead approval → card resets
 - **Execution History**: Per-card history page showing all past executions (documentation, photos, approval status)
-- **Slot Availability Assistant**: Suggest optimal maintenance time slots based on shift data + machine availability + user availability
+- **Slot Availability Assistant**: Suggest optimal maintenance time slots based on shift data + asset availability + user availability
 - **Real-time Notifications**: SSE events for due cards, overdue escalation, approval results
 - **Shift Grid Integration**: Show TPM maintenance dates as overlay in the shift planning grid
 - **Machine History Bridge**: Approved executions create entries in `machine_maintenance_history`
@@ -62,7 +62,7 @@ Plan (interval_type = 'weekly', baseWeekday = 1, baseRepeatEvery = 2)
 
 ### 2. Card Status Machine
 
-Four-state machine with clear transition rules:
+Four-state asset with clear transition rules:
 
 ```
   [green] ──due date passed──→ [red]
@@ -99,9 +99,9 @@ Four-state machine with clear transition rules:
 **Solution:** Self-contained service with direct DB queries (no cross-module imports):
 
 ```
-SlotAssistant(machineId, startDate, endDate)
+SlotAssistant(asset_Id, startDate, endDate)
   ├── Query 1: Shift plan data (who's working when?)
-  ├── Query 2: Machine availability (when is machine free?)
+  ├── Query 2: Machine availability (when is asset free?)
   ├── Query 3: User availability (who's available?)
   ├── Query 4: Existing TPM cards (what's already scheduled?)
   └── Query 5: Schedule Projection (cross-plan projected maintenance windows)
@@ -112,7 +112,7 @@ SlotAssistant(machineId, startDate, endDate)
 
 - Added in Schedule Projection feature (see Section 10)
 - `TpmScheduleProjectionService.projectSchedules()` provides projected future maintenance dates for all active plans
-- Conflict type `tpm_schedule` shows cross-plan time window conflicts (e.g. "TPM Plan X (Maschine A): 09:00–14:00")
+- Conflict type `tpm_schedule` shows cross-plan time window conflicts (e.g. "TPM Plan X (Anlage A): 09:00–14:00")
 - Distinct from `existing_tpm` (Query 4) which shows only fällige red/overdue cards
 
 **Why direct DB queries instead of service imports?**
@@ -287,15 +287,15 @@ CardDetail (red/overdue card)
 
 The cards controller (`tpm-cards.controller.ts`) includes the execution history endpoint:
 
-| Method | Path                          | Description                                |
-| ------ | ----------------------------- | ------------------------------------------ |
-| POST   | `/tpm/cards`                  | Create card                                |
-| POST   | `/tpm/cards/check-duplicate`  | Duplicate check (before creation)          |
-| GET    | `/tpm/cards`                  | List cards (filter by machine/plan/status) |
-| GET    | `/tpm/cards/:uuid`            | Get single card                            |
-| GET    | `/tpm/cards/:uuid/executions` | Execution history for card (paginated)     |
-| PATCH  | `/tpm/cards/:uuid`            | Update card                                |
-| DELETE | `/tpm/cards/:uuid`            | Soft-delete card                           |
+| Method | Path                          | Description                              |
+| ------ | ----------------------------- | ---------------------------------------- |
+| POST   | `/tpm/cards`                  | Create card                              |
+| POST   | `/tpm/cards/check-duplicate`  | Duplicate check (before creation)        |
+| GET    | `/tpm/cards`                  | List cards (filter by asset/plan/status) |
+| GET    | `/tpm/cards/:uuid`            | Get single card                          |
+| GET    | `/tpm/cards/:uuid/executions` | Execution history for card (paginated)   |
+| PATCH  | `/tpm/cards/:uuid`            | Update card                              |
+| DELETE | `/tpm/cards/:uuid`            | Soft-delete card                         |
 
 **Route Note:** `check-duplicate` and `:uuid/executions` are defined before `:uuid` to prevent NestJS from matching path segments as UUID parameters. The `/executions` sub-resource endpoint reuses `TpmExecutionsService.listExecutionsForCard()` — the service method existed before the controller endpoint was added.
 
@@ -369,13 +369,13 @@ TpmScheduleProjectionService.projectSchedules(tenantId, startDate, endDate, excl
 
 ### B. Cross-Module Service Imports (Rejected)
 
-**Pros:** Reuse existing machine/user/shift services
+**Pros:** Reuse existing asset/user/shift services
 **Cons:** Circular dependency risk, tight coupling, harder to test in isolation, breaks module encapsulation
 
 ### C. CQRS/Event Sourcing for Card Status (Rejected)
 
 **Pros:** Full audit trail of state transitions
-**Cons:** Massive overengineering for 4-state machine. Activity logging provides sufficient audit trail. V2 consideration if state machine grows.
+**Cons:** Massive overengineering for 4-state asset. Activity logging provides sufficient audit trail. V2 consideration if state asset grows.
 
 ---
 

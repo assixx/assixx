@@ -3,7 +3,7 @@
  * Date: 2026-02-27
  *
  * Replaces the MySQL-legacy UNIQUE on (tenant_id, user_id, name) with a
- * proper UNIQUE on (tenant_id, user_id, team_id, machine_id).
+ * proper UNIQUE on (tenant_id, user_id, team_id, asset_id).
  *
  * The old constraint was name-based, which broke when the same team had
  * multiple machines assigned. The new constraint ensures uniqueness on
@@ -23,9 +23,9 @@ export function up(pgm: MigrationBuilder): void {
     BEGIN
       SELECT COUNT(*) INTO dup_count
       FROM (
-        SELECT tenant_id, user_id, team_id, machine_id
+        SELECT tenant_id, user_id, team_id, asset_id
         FROM shift_favorites
-        GROUP BY tenant_id, user_id, team_id, machine_id
+        GROUP BY tenant_id, user_id, team_id, asset_id
         HAVING COUNT(*) > 1
       ) duplicates;
 
@@ -42,7 +42,7 @@ export function up(pgm: MigrationBuilder): void {
     -- Create proper UNIQUE constraint on entity IDs
     ALTER TABLE shift_favorites
       ADD CONSTRAINT unique_shift_favorites_user_combination
-      UNIQUE (tenant_id, user_id, team_id, machine_id);
+      UNIQUE (tenant_id, user_id, team_id, asset_id);
   `);
 }
 

@@ -113,7 +113,7 @@
       result = result.filter(
         (p: TpmPlan) =>
           p.name.toLowerCase().includes(lower) ||
-          (p.machineName?.toLowerCase().includes(lower) ?? false),
+          (p.assetName?.toLowerCase().includes(lower) ?? false),
       );
     }
 
@@ -262,7 +262,7 @@
                 class="inline-flex items-center gap-2 font-medium text-(--color-text-primary) no-underline hover:text-(--color-primary)"
               >
                 <i class="fas fa-cog"></i>
-                {plan.machineName ?? '—'}
+                {plan.assetName ?? '—'}
               </a>
             </td>
             <td>{plan.name}</td>

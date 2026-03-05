@@ -5,7 +5,7 @@
  * Cards belong to a plan and have interval-based scheduling.
  *
  * Key invariants enforced here:
- *   - machine_id is auto-set from plan.machine_id (denormalization, never manual)
+ *   - asset_id is auto-set from plan.asset_id (denormalization, never manual)
  *   - interval_order is auto-set from INTERVAL_ORDER_MAP
  *   - card_code is auto-generated: prefix (BT/IV) + sequential number per plan+role
  *   - sort_order is auto-incremented per plan
@@ -54,13 +54,13 @@ export interface PaginatedCards {
 const CARD_SELECT_SQL = `
   SELECT c.*,
     p.uuid AS plan_uuid,
-    m.name AS machine_name,
+    m.name AS asset_name,
     t.uuid AS template_uuid,
     COALESCE(NULLIF(CONCAT(u_created.first_name, ' ', u_created.last_name), ' '), u_created.username) AS created_by_name,
     COALESCE(NULLIF(CONCAT(u_completed.first_name, ' ', u_completed.last_name), ' '), u_completed.username) AS last_completed_by_name
   FROM tpm_cards c
   LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
-  LEFT JOIN machines m ON c.machine_id = m.id AND m.tenant_id = c.tenant_id
+  LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
   LEFT JOIN tpm_card_templates t ON c.template_id = t.id
   LEFT JOIN users u_created ON c.created_by = u_created.id
   LEFT JOIN users u_completed ON c.last_completed_by = u_completed.id`;
@@ -94,10 +94,10 @@ export class TpmCardsService {
     return mapCardRowToApi(row);
   }
 
-  /** List all cards for a machine (by machine UUID) with filters */
-  async listCardsForMachine(
+  /** List all cards for a asset (by asset UUID) with filters */
+  async listCardsForAsset(
     tenantId: number,
-    machineUuid: string,
+    assetUuid: string,
     page: number = 1,
     pageSize: number = 50,
     filters: CardListFilter = {},
@@ -108,7 +108,7 @@ export class TpmCardsService {
 
     return await this.executePaginatedQuery(
       fullWhere,
-      [tenantId, machineUuid, ...params],
+      [tenantId, assetUuid, ...params],
       page,
       pageSize,
     );
@@ -172,7 +172,7 @@ export class TpmCardsService {
       tenantId,
       createdBy,
       'tpm_card',
-      card.machineId,
+      card.assetId,
       `TPM-Karte erstellt: ${card.cardCode} — ${card.title}`,
       { cardUuid: card.uuid, cardCode: card.cardCode },
     );
@@ -230,7 +230,7 @@ export class TpmCardsService {
       tenantId,
       userId,
       'tpm_card',
-      card.machineId,
+      card.assetId,
       `TPM-Karte aktualisiert: ${card.cardCode} — ${card.title}`,
       { cardUuid },
       dto as Record<string, unknown>,
@@ -264,7 +264,7 @@ export class TpmCardsService {
       tenantId,
       userId,
       'tpm_card',
-      card.machineId,
+      card.assetId,
       `TPM-Karte gelöscht: ${card.cardCode} — ${card.title}`,
       { cardUuid, cardCode: card.cardCode },
     );
@@ -301,7 +301,7 @@ export class TpmCardsService {
     const { id: cardId, card } = await this.executeCardInsert(client, {
       tenantId,
       planId: planCtx.planId,
-      machineId: planCtx.machineId,
+      assetId: planCtx.assetId,
       cardCode,
       sortOrder,
       createdBy,
@@ -338,24 +338,24 @@ export class TpmCardsService {
     return card;
   }
 
-  /** Resolve plan UUID → plan ID + machine ID + scheduling config */
+  /** Resolve plan UUID → plan ID + asset ID + scheduling config */
   private async resolvePlanContext(
     client: PoolClient,
     tenantId: number,
     planUuid: string,
   ): Promise<{
     planId: number;
-    machineId: number;
+    assetId: number;
     baseWeekday: number;
     baseRepeatEvery: number;
   }> {
     const result = await client.query<{
       id: number;
-      machine_id: number;
+      asset_id: number;
       base_weekday: number;
       base_repeat_every: number;
     }>(
-      `SELECT id, machine_id, base_weekday, base_repeat_every
+      `SELECT id, asset_id, base_weekday, base_repeat_every
        FROM tpm_maintenance_plans
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
       [planUuid, tenantId],
@@ -366,7 +366,7 @@ export class TpmCardsService {
     }
     return {
       planId: row.id,
-      machineId: row.machine_id,
+      assetId: row.asset_id,
       baseWeekday: row.base_weekday,
       baseRepeatEvery: row.base_repeat_every,
     };
@@ -395,7 +395,7 @@ export class TpmCardsService {
     data: {
       tenantId: number;
       planId: number;
-      machineId: number;
+      assetId: number;
       cardCode: string;
       sortOrder: number;
       createdBy: number;
@@ -415,7 +415,7 @@ export class TpmCardsService {
     const uuid = uuidv7();
     const result = await client.query<TpmCardJoinRow>(
       `INSERT INTO tpm_cards
-         (uuid, tenant_id, plan_id, machine_id, card_code, card_role,
+         (uuid, tenant_id, plan_id, asset_id, card_code, card_role,
           interval_type, interval_order, title, description,
           location_description, requires_approval, sort_order,
           custom_interval_days, weekday_override,
@@ -426,7 +426,7 @@ export class TpmCardsService {
         uuid,
         data.tenantId,
         data.planId,
-        data.machineId,
+        data.assetId,
         data.cardCode,
         data.cardRole,
         data.intervalType,
@@ -498,7 +498,7 @@ export class TpmCardsService {
     const countResult = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM tpm_cards c
        LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
-       LEFT JOIN machines m ON c.machine_id = m.id AND m.tenant_id = c.tenant_id
+       LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
        WHERE ${whereClause}`,
       baseParams,
     );

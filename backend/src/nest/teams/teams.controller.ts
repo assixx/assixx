@@ -10,9 +10,9 @@
  * - GET  /teams/:id/members          - Get team members
  * - POST /teams/:id/members          - Add team member (admin only)
  * - DELETE /teams/:id/members/:userId - Remove team member (admin only)
- * - GET  /teams/:id/machines         - Get team machines
- * - POST /teams/:id/machines         - Add team machine (admin only)
- * - DELETE /teams/:id/machines/:machineId - Remove team machine (admin only)
+ * - GET  /teams/:id/assets         - Get team assets
+ * - POST /teams/:id/assets         - Add team asset (admin only)
+ * - DELETE /teams/:id/assets/:assetId - Remove team asset (admin only)
  */
 import {
   Body,
@@ -33,7 +33,7 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
-  AddMachineDto,
+  AddAssetDto,
   AddMemberDto,
   CreateTeamDto,
   DeleteTeamQueryDto,
@@ -41,7 +41,7 @@ import {
   TeamMembersQueryDto,
   UpdateTeamDto,
 } from './dto/index.js';
-import type { TeamMachine, TeamMember, TeamResponse } from './teams.service.js';
+import type { TeamAsset, TeamMember, TeamResponse } from './teams.service.js';
 import { TeamsService } from './teams.service.js';
 
 /**
@@ -52,9 +52,9 @@ interface MessageResponse {
 }
 
 /**
- * Response type for add machine
+ * Response type for add asset
  */
-interface AddMachineResponse {
+interface AddAssetResponse {
   id: number;
   message: string;
 }
@@ -191,49 +191,49 @@ export class TeamsController {
   }
 
   /**
-   * GET /teams/:id/machines
-   * Get team machines
+   * GET /teams/:id/assets
+   * Get team assets
    */
-  @Get(':id/machines')
-  async getTeamMachines(
+  @Get(':id/assets')
+  async getTeamAssets(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
-  ): Promise<TeamMachine[]> {
-    return await this.teamsService.getTeamMachines(id, tenantId);
+  ): Promise<TeamAsset[]> {
+    return await this.teamsService.getTeamAssets(id, tenantId);
   }
 
   /**
-   * POST /teams/:id/machines
-   * Add machine to team (admin only)
+   * POST /teams/:id/assets
+   * Add asset to team (admin only)
    */
-  @Post(':id/machines')
+  @Post(':id/assets')
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
-  async addTeamMachine(
+  async addTeamAsset(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: AddMachineDto,
+    @Body() dto: AddAssetDto,
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
-  ): Promise<AddMachineResponse> {
-    return await this.teamsService.addTeamMachine(
+  ): Promise<AddAssetResponse> {
+    return await this.teamsService.addTeamAsset(
       id,
-      dto.machineId,
+      dto.assetId,
       tenantId,
       user.id,
     );
   }
 
   /**
-   * DELETE /teams/:id/machines/:machineId
-   * Remove machine from team (admin only)
+   * DELETE /teams/:id/assets/:assetId
+   * Remove asset from team (admin only)
    */
-  @Delete(':id/machines/:machineId')
+  @Delete(':id/assets/:assetId')
   @Roles('admin', 'root')
-  async removeTeamMachine(
+  async removeTeamAsset(
     @Param('id', ParseIntPipe) id: number,
-    @Param('machineId', ParseIntPipe) machineId: number,
+    @Param('assetId', ParseIntPipe) assetId: number,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.teamsService.removeTeamMachine(id, machineId, tenantId);
+    return await this.teamsService.removeTeamAsset(id, assetId, tenantId);
   }
 }

@@ -53,8 +53,8 @@ export class KvpLifecycleService {
       throw new NotFoundException(ERROR_SUGGESTION_NOT_FOUND);
     }
 
-    // Add shared org to junction table (team/machine only)
-    if (dto.orgLevel === 'team' || dto.orgLevel === 'machine') {
+    // Add shared org to junction table (team/asset only)
+    if (dto.orgLevel === 'team' || dto.orgLevel === 'asset') {
       await this.db.query(
         `INSERT INTO kvp_suggestion_organizations (suggestion_id, org_type, org_id, tenant_id)
          VALUES ($1, $2, $3, $4)
@@ -91,8 +91,8 @@ export class KvpLifecycleService {
       throw new NotFoundException(ERROR_SUGGESTION_NOT_FOUND);
     }
 
-    // Remove shared org from junction table (team/machine only)
-    if (suggestion.org_level === 'team' || suggestion.org_level === 'machine') {
+    // Remove shared org from junction table (team/asset only)
+    if (suggestion.org_level === 'team' || suggestion.org_level === 'asset') {
       await this.db.query(
         `DELETE FROM kvp_suggestion_organizations
          WHERE suggestion_id = $1 AND org_type = $2 AND org_id = $3`,

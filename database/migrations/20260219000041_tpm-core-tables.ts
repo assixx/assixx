@@ -52,7 +52,7 @@ export function up(pgm: MigrationBuilder): void {
       id                    SERIAL PRIMARY KEY,
       uuid                  CHAR(36) NOT NULL,
       tenant_id             INTEGER NOT NULL,
-      machine_id            INTEGER NOT NULL,
+      asset_id            INTEGER NOT NULL,
       name                  VARCHAR(255) NOT NULL,
       base_weekday          INTEGER NOT NULL,
       base_repeat_every     INTEGER NOT NULL DEFAULT 1,
@@ -71,7 +71,7 @@ export function up(pgm: MigrationBuilder): void {
         ON DELETE CASCADE,
 
       CONSTRAINT fk_tpm_plans_machine
-        FOREIGN KEY (machine_id)
+        FOREIGN KEY (asset_id)
         REFERENCES machines(id)
         ON UPDATE RESTRICT
         ON DELETE CASCADE,
@@ -91,11 +91,11 @@ export function up(pgm: MigrationBuilder): void {
 
     -- Partial unique: one active plan per machine per tenant
     CREATE UNIQUE INDEX uq_tpm_plans_tenant_machine
-      ON tpm_maintenance_plans(tenant_id, machine_id)
+      ON tpm_maintenance_plans(tenant_id, asset_id)
       WHERE is_active = 1;
 
     CREATE INDEX idx_tpm_plans_tenant    ON tpm_maintenance_plans(tenant_id);
-    CREATE INDEX idx_tpm_plans_machine   ON tpm_maintenance_plans(machine_id);
+    CREATE INDEX idx_tpm_plans_machine   ON tpm_maintenance_plans(asset_id);
     CREATE INDEX idx_tpm_plans_uuid      ON tpm_maintenance_plans(uuid);
     CREATE INDEX idx_tpm_plans_active    ON tpm_maintenance_plans(tenant_id)
       WHERE is_active = 1;

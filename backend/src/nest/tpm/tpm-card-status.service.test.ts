@@ -1,7 +1,7 @@
 /**
  * Unit tests for TpmCardStatusService
  *
- * Tests the complete card status state machine:
+ * Tests the complete card status state asset:
  *   green   → red     (setCardDue)
  *   red     → green   (markCardCompleted, Flow A — no approval)
  *   red     → yellow  (markCardCompleted, Flow B — approval required)
@@ -34,7 +34,7 @@ function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
     uuid: 'card-uuid-001                            ',
     tenant_id: 10,
     plan_id: 100,
-    machine_id: 42,
+    asset_id: 42,
     template_id: null,
     card_code: 'BT1',
     card_role: 'operator',
@@ -105,7 +105,7 @@ describe('TpmCardStatusService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should allow yellow → red transition (valid per state machine)', async () => {
+    it('should allow yellow → red transition (valid per state asset)', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createCardRow({ status: 'yellow' })],
       });

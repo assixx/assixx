@@ -28,7 +28,7 @@ export const CreateShiftPlanSchema = z.object({
   departmentId: z.number().int().positive('Department ID is required'),
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
-  machineId: z.number().int().positive().optional(),
+  assetId: z.number().int().positive().optional(),
   name: z
     .string()
     .trim()

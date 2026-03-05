@@ -5,7 +5,7 @@
  * Handles shift calculation, assignment creation, and history generation.
  *
  * Note: This service exceeds the 400-line sub-service guideline because the
- * shift generation algorithm is a tightly coupled state machine. Splitting it
+ * shift generation algorithm is a tightly coupled state asset. Splitting it
  * would scatter related logic across files and harm readability.
  */
 import {

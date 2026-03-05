@@ -88,13 +88,13 @@
 #### 9. **Vacation Management** (NEW)
 
 - Vacation Request Workflow (create, edit, respond, withdraw, cancel)
-- Pre-Approval Capacity Analysis (team headcount, machine staffing, blackout conflicts, entitlement check)
+- Pre-Approval Capacity Analysis (team headcount, asset staffing, blackout conflicts, entitlement check)
 - Multi-Level Approver Chain (team lead → deputy → area lead → admin)
 - Half-Day Support (morning/afternoon at start/end of range)
 - 7 Vacation Types (regular, doctor, bereavement, birth, wedding, move, unpaid)
 - Entitlement Management (per-employee, per-year, carry-over, additional days)
 - Blackout Periods (global, department, team, area scoped)
-- Machine Staffing Rules (minimum headcount per machine)
+- Machine Staffing Rules (minimum headcount per asset)
 - Holiday Management (recurring + one-time, per-tenant)
 - Team Calendar Overview (approved vacations per member per day)
 - Tenant-Wide Settings (default days, carry-over limits, notice period)
@@ -116,7 +116,7 @@
 
 #### 11. **TPM — Total Productive Maintenance** (NEW)
 
-- Kamishibai Board (visual card management per machine per interval)
+- Kamishibai Board (visual card management per asset per interval)
 - Plan Management (create/edit/delete maintenance plans with intervals)
 - 7 Interval Types (daily, weekly, monthly, quarterly, semi-annual, annual, custom)
 - 4-State Card Status Machine (green → red → yellow → overdue)
@@ -138,7 +138,7 @@
 
 - Modulübergreifendes Arbeitsauftrag-System (TPM-Mängel, manuell)
 - 4-Stufen-Lebenszyklus: Offen -> In Bearbeitung -> Erledigt -> Verifiziert
-- N:M Mitarbeiter-Zuweisung (gefiltert nach Maschinen-Team)
+- N:M Mitarbeiter-Zuweisung (gefiltert nach Anlagen-Team)
 - Foto-Dokumentation + Kommentarsystem
 - Prioritäten (Hoch/Mittel/Niedrig) + Fälligkeitsdatum
 - Real-time SSE-Benachrichtigungen (Zuweisung, Status, Fälligkeit, Verifizierung)

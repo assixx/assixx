@@ -86,10 +86,10 @@ export const WEEKDAY_LABELS: string[] = [
 export const MESSAGES = {
   PAGE_TITLE: 'TPM Wartung - Assixx',
   PAGE_HEADING: 'TPM Wartung',
-  PAGE_DESCRIPTION: 'Ihre zugewiesenen Maschinen und Wartungsaufgaben',
+  PAGE_DESCRIPTION: 'Ihre zugewiesenen Anlagen und Wartungsaufgaben',
 
   // Stats
-  STAT_MACHINES: 'Zugewiesene Maschinen',
+  STAT_MACHINES: 'Zugewiesene Anlagen',
   STAT_OPEN_CARDS: 'Offene Aufgaben',
   STAT_OVERDUE: 'Überfällig',
   STAT_COMPLETED_TODAY: 'Heute erledigt',
@@ -99,9 +99,9 @@ export const MESSAGES = {
   BTN_MANAGE_CARDS: 'Karten verwalten',
   BTN_VIEW_DETAILS: 'Details anzeigen',
 
-  // Machine list
-  MACHINE_LIST_TITLE: 'Ihre Maschinen',
-  MACHINE_COL_NAME: 'Maschine',
+  // Asset list
+  MACHINE_LIST_TITLE: 'Ihre Anlagen',
+  MACHINE_COL_NAME: 'Anlage',
   MACHINE_COL_PLAN: 'Wartungsplan',
   MACHINE_COL_STATUS: 'Status',
   MACHINE_COL_NEXT: 'Nächste Wartung',
@@ -114,7 +114,7 @@ export const MESSAGES = {
   // Empty state
   EMPTY_TITLE: 'Keine Wartungsaufgaben',
   EMPTY_DESCRIPTION:
-    'Ihnen sind aktuell keine Maschinen mit TPM-Wartungsplänen zugewiesen.',
+    'Ihnen sind aktuell keine Anlagen mit TPM-Wartungsplänen zugewiesen.',
 
   // Loading
   LOADING: 'Wartungsdaten werden geladen...',
@@ -252,7 +252,7 @@ export const MESSAGES = {
   LOCATIONS_PHOTO_UPLOAD: 'Foto hochladen',
   LOCATIONS_PHOTO_REMOVE: 'Foto entfernen',
   LOCATIONS_PHOTO_HINT:
-    'Zeigt wo sich der Standort an der Maschine befindet (max. 5 MB)',
+    'Zeigt wo sich der Standort an der Anlage befindet (max. 5 MB)',
   LOCATIONS_SAVE: 'Speichern',
   LOCATIONS_SAVING: 'Wird gespeichert...',
   LOCATIONS_SUCCESS_CREATE: 'Standort erfolgreich erstellt',

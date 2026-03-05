@@ -1,10 +1,10 @@
 // =============================================================================
 // SHIFTS STATE - CONTEXT MODULE
-// Selected context (hierarchy selection), plan management, and machine availability
+// Selected context (hierarchy selection), plan management, and asset availability
 // =============================================================================
 
 import type {
-  MachineAvailabilityEntry,
+  AssetAvailabilityEntry,
   TpmMaintenanceEvent,
   SelectedContext,
   RotationPatternType,
@@ -13,7 +13,7 @@ import type {
 const DEFAULT_CONTEXT: SelectedContext = {
   areaId: null,
   departmentId: null,
-  machineId: null,
+  assetId: null,
   teamId: null,
   teamLeaderId: null,
 };
@@ -24,7 +24,7 @@ const DEFAULT_CONTEXT: SelectedContext = {
  * If multiple entries overlap the same day, the first (earliest start_date) wins.
  */
 function buildAvailabilityDateMap(
-  entries: MachineAvailabilityEntry[],
+  entries: AssetAvailabilityEntry[],
 ): Map<string, string> {
   const dateMap = new Map<string, string>();
 
@@ -47,22 +47,22 @@ function buildAvailabilityDateMap(
   return dateMap;
 }
 
-/** Machine availability sub-state (date-to-status map for shift cell marking) */
-function createMachineAvailabilityState() {
-  let machineAvailabilityMap = $state<Map<string, string>>(new Map());
+/** Asset availability sub-state (date-to-status map for shift cell marking) */
+function createAssetAvailabilityState() {
+  let assetAvailabilityMap = $state<Map<string, string>>(new Map());
 
   return {
-    get machineAvailabilityMap() {
-      return machineAvailabilityMap;
+    get assetAvailabilityMap() {
+      return assetAvailabilityMap;
     },
-    setMachineAvailability: (entries: MachineAvailabilityEntry[]) => {
-      machineAvailabilityMap = buildAvailabilityDateMap(entries);
+    setAssetAvailability: (entries: AssetAvailabilityEntry[]) => {
+      assetAvailabilityMap = buildAvailabilityDateMap(entries);
     },
-    clearMachineAvailability: () => {
-      machineAvailabilityMap = new Map();
+    clearAssetAvailability: () => {
+      assetAvailabilityMap = new Map();
     },
     reset: () => {
-      machineAvailabilityMap = new Map();
+      assetAvailabilityMap = new Map();
     },
   };
 }
@@ -123,7 +123,7 @@ function createPlanState() {
 function createContextState() {
   let selectedContext = $state<SelectedContext>({ ...DEFAULT_CONTEXT });
   const plan = createPlanState();
-  const machineAvail = createMachineAvailabilityState();
+  const assetAvail = createAssetAvailabilityState();
   const tpmEvents = createTpmEventsState();
 
   const setSelectedContext = (context: Partial<SelectedContext>) => {
@@ -154,8 +154,8 @@ function createContextState() {
     get isContextComplete() {
       return selectedContext.teamId !== null && selectedContext.teamId !== 0;
     },
-    get machineAvailabilityMap() {
-      return machineAvail.machineAvailabilityMap;
+    get assetAvailabilityMap() {
+      return assetAvail.assetAvailabilityMap;
     },
     get tpmEventsMap() {
       return tpmEvents.tpmEventsMap;
@@ -167,8 +167,8 @@ function createContextState() {
     setCurrentPlanId: plan.setCurrentPlanId,
     setCurrentPatternId: plan.setCurrentPatternId,
     setCurrentPatternType: plan.setCurrentPatternType,
-    setMachineAvailability: machineAvail.setMachineAvailability,
-    clearMachineAvailability: machineAvail.clearMachineAvailability,
+    setAssetAvailability: assetAvail.setAssetAvailability,
+    clearAssetAvailability: assetAvail.clearAssetAvailability,
     setTpmEvents: tpmEvents.setTpmEvents,
     clearTpmEvents: tpmEvents.clearTpmEvents,
     isHierarchyValid,
@@ -176,7 +176,7 @@ function createContextState() {
     reset: () => {
       selectedContext = { ...DEFAULT_CONTEXT };
       plan.clear();
-      machineAvail.reset();
+      assetAvail.reset();
       tpmEvents.reset();
     },
   };

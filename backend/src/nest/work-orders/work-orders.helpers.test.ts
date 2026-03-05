@@ -38,7 +38,7 @@ function createWorkOrderRow(
     uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
     tenant_id: 1,
     title: 'Ölwechsel durchführen',
-    description: 'Motor-Öl wechseln an Maschine M-001',
+    description: 'Motor-Öl wechseln an Anlage M-001',
     status: 'open',
     priority: 'medium',
     source_type: 'tpm_defect',
@@ -172,7 +172,7 @@ describe('mapWorkOrderRowToApi', () => {
 
     expect(result.uuid).toBe('019c9547-9fc0-771a-b022-3767e233d6f3');
     expect(result.title).toBe('Ölwechsel durchführen');
-    expect(result.description).toBe('Motor-Öl wechseln an Maschine M-001');
+    expect(result.description).toBe('Motor-Öl wechseln an Anlage M-001');
     expect(result.status).toBe('open');
     expect(result.priority).toBe('medium');
     expect(result.sourceType).toBe('tpm_defect');

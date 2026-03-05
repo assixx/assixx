@@ -23,7 +23,7 @@ function parsePgCategoryArray(value: unknown): TpmCardCategory[] {
 
 /** Extended row type including JOIN columns from related tables */
 export interface TpmCardJoinRow extends TpmCardRow {
-  machine_name?: string;
+  asset_name?: string;
   plan_uuid?: string;
   template_uuid?: string | null;
   created_by_name?: string;
@@ -34,7 +34,7 @@ export interface TpmCardJoinRow extends TpmCardRow {
 export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
   const card: TpmCard = {
     uuid: row.uuid.trim(),
-    machineId: row.machine_id,
+    assetId: row.asset_id,
     cardCode: row.card_code,
     cardRole: row.card_role,
     intervalType: row.interval_type,
@@ -68,7 +68,7 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
 
   // Optional properties: only set when JOIN data is present
   if (row.plan_uuid !== undefined) card.planUuid = row.plan_uuid.trim();
-  if (row.machine_name !== undefined) card.machineName = row.machine_name;
+  if (row.asset_name !== undefined) card.assetName = row.asset_name;
   if (row.template_uuid !== undefined) {
     card.templateUuid =
       row.template_uuid !== null ? row.template_uuid.trim() : null;

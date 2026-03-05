@@ -59,19 +59,19 @@ pnpm test                # unit + api tests
 | 1.8.0   | 2026-02-19 | Step 2.8 DONE: Executions + Approval — tpm-executions.helpers.ts (78 Z.), tpm-executions.service.ts (405 Z.), tpm-approval.service.ts (346 Z.), tpm.module.ts updated (13/15 Services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 1.9.0   | 2026-02-19 | Step 2.9 DONE: Notification + Escalation — eventBus.ts TpmEvent + 5 Emitter, tpm-notification.service.ts (222 Z., Dual-Pattern ADR-004), tpm-escalation.service.ts (230 Z., @Cron 5min + FOR UPDATE SKIP LOCKED), tpm.module.ts (15/15 Services)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 1.10.0  | 2026-02-19 | Step 2.10 DONE: Controllers Plans + Cards — tpm-plans.controller.ts (220 Z., 9 Endpoints), tpm-cards.controller.ts (186 Z., 6 Endpoints), 5 Query-DTOs (1 Klasse/Datei), tpm.module.ts (2/4 Controller). D12: check-duplicate Route geändert zu POST /cards/check-duplicate (body: planUuid) statt /cards/:uuid/check-duplicate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| 1.11.0  | 2026-02-19 | Step 2.11 DONE / PHASE 2 COMPLETE: tpm-executions.controller.ts (190 Z., 6 Endpoints), tpm-config.controller.ts (160 Z., 9 Endpoints), tpm-dashboard.service.ts (40 Z.), 2 neue DTOs (CreateExecution, ListExecutionsQuery). Integrations: notifications.controller.ts (5 TPM SSE Events + registerTpmHandlers()), dashboard.service.ts (fetchTpmCount), dashboard-counts.dto.ts (tpm: CountItemSchema), machine-availability.service.ts (createFromTpmPlan), machine-maintenance.service.ts (createFromTpmExecution), tpm-escalation.service.ts (getConfig + updateConfig + UPSERT). tpm.module.ts: 4/4 Controller, 16 Services. 4400 Tests, 0 ESLint/TS Errors                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'machine'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 1.11.0  | 2026-02-19 | Step 2.11 DONE / PHASE 2 COMPLETE: tpm-executions.controller.ts (190 Z., 6 Endpoints), tpm-config.controller.ts (160 Z., 9 Endpoints), tpm-dashboard.service.ts (40 Z.), 2 neue DTOs (CreateExecution, ListExecutionsQuery). Integrations: notifications.controller.ts (5 TPM SSE Events + registerTpmHandlers()), dashboard.service.ts (fetchTpmCount), dashboard-counts.dto.ts (tpm: CountItemSchema), asset-availability.service.ts (createFromTpmPlan), asset-maintenance.service.ts (createFromTpmExecution), tpm-escalation.service.ts (getConfig + updateConfig + UPSERT). tpm.module.ts: 4/4 Controller, 16 Services. 4400 Tests, 0 ESLint/TS Errors                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 1.11.1  | 2026-02-19 | ActivityEntityType-Fix: 3 neue Types (`tpm_plan`, `tpm_card`, `tpm_execution`) in `activity-logger.service.ts` hinzugefügt. 9 Logger-Calls in 4 Services gefixt (`'asset'` → feature-spezifisch). Ref: HOW-TO-INTEGRATE-FEATURE.md §2.7                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 1.12.0  | 2026-02-19 | Step 3.1 DONE: Unit Tests Plans + Config — 5 Testdateien, 81 Tests (tpm-plans.service 26, tpm-plans-interval.service 21, tpm-time-estimates.service 11, tpm-templates.service 13, tpm-color-config.service 10). ESLint 0, Type-Check 0, 4481 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 1.13.0  | 2026-02-19 | Step 3.2 DONE: Unit Tests Cards + Cascade + Duplicate — 4 Testdateien, 88 Tests (tpm-cards.service 31, tpm-card-status.service 22, tpm-card-cascade.service 22, tpm-card-duplicate.service 13). State Machine komplett getestet, R1-Performance-Test (Batch-SQL für 2400 Karten), ILIKE-Escaping, Intervall-Order alle 8 Typen. ESLint 0, Type-Check 0, 4569 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 1.14.0  | 2026-02-19 | Step 3.3 DONE: Unit Tests Slot Assistant + Executions + Approval — 3 Testdateien, 63 Tests (tpm-slot-assistant.service 20, tpm-executions.service 19, tpm-approval.service 24). Slot-Konflikte (4 Datenquellen), Execution-Lifecycle (Flow A/B, Foto-Limit), Approval-Chain (ConflictException, ForbiddenException, FOR UPDATE Lock, Activity Logger). ESLint 0, Type-Check 0, 4632 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 1.15.0  | 2026-02-19 | Step 3.4 DONE / PHASE 3 COMPLETE: Unit Tests Notification + Escalation — 2 Testdateien, 46 Tests (tpm-notification.service 22, tpm-escalation.service 24). Dual-Pattern (EventBus + DB persistent notifications), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery, Team Lead Resolution), Config CRUD (getConfig defaults, updateConfig UPSERT), machineName-Fallback, Silent Error Catch. ESLint 0, Type-Check 0, 4678 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 1.15.0  | 2026-02-19 | Step 3.4 DONE / PHASE 3 COMPLETE: Unit Tests Notification + Escalation — 2 Testdateien, 46 Tests (tpm-notification.service 22, tpm-escalation.service 24). Dual-Pattern (EventBus + DB persistent notifications), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery, Team Lead Resolution), Config CRUD (getConfig defaults, updateConfig UPSERT), assetName-Fallback, Silent Error Catch. ESLint 0, Type-Check 0, 4678 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 1.16.0  | 2026-02-19 | Step 4.1 DONE: API Tests Plans + Cards — 1 Testdatei `backend/test/tpm-plans.api.test.ts`, 50 Tests. Unauthenticated (401), Plan CRUD (POST 201, GET 200, PATCH 200, DELETE 200), Plan Duplicate (409), List Plans (200 + Pagination), Time Estimates (POST 201, GET 200 + totalMinutes), Card CRUD (POST 201, GET 200, PATCH 200, DELETE 200), Card Board Data (200), Duplicate Check (200), List Cards without filter (400), Not Found (404), Maintenance Card (IV prefix, requiresApproval), Verify Delete (404). ESLint 0, Type-Check 0, 4728 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 1.17.0  | 2026-02-19 | Step 4.2 DONE / PHASE 4 COMPLETE: API Tests Executions + Config — 1 Testdatei `backend/test/tpm-executions.api.test.ts`, 36 Tests. Config: Escalation (GET defaults, PATCH 24h, verify persistence), Colors (GET 4 entries, PATCH update hex, POST reset defaults), Templates (POST 201 + JSONB, GET list, PATCH update + preserve JSONB, DELETE). Execution: green card → 400 (invalid state), Pending Approvals (200 + paginated), Not Found (404), Reject without note → 400 (Zod validation), Photos empty (200 + []). Slot Assistant: 200 structure, invalid dates → 400. ESLint 0, Type-Check 0, 4764 Tests gesamt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | 1.18.0  | 2026-02-19 | Step 5.1 DONE: Frontend Admin Dashboard + Foundation — 10 neue Dateien, 3 modifiziert. Dashboard (+page.svelte + +page.server.ts), Foundation (\_lib/: types.ts, constants.ts, api.ts, state-data.svelte.ts, state-ui.svelte.ts, state.svelte.ts), Components (PlanOverview.svelte, NextMaintenanceInfo.svelte). Config: navigation-config.ts (badgeType 'tpm' + LEAN_ADMIN_SUBMENU + employee menu), Breadcrumb.svelte (URL mappings + dynamic routes), notification.store.svelte.ts (tpm counter + 4 SSE events). svelte-check 0, ESLint 0, Type-Check 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| 1.19.0  | 2026-02-19 | Step 5.2 DONE: Admin Plan Creation — 8 neue/modifizierte Dateien. plan/[uuid]/+page.server.ts (SSR create/edit), plan/[uuid]/+page.svelte (Page Orchestration), PlanForm.svelte (Machine, Name, Weekday, RepeatEvery, Time, ShiftPlan Toggle, Notes), SlotAssistant.svelte (Kalender-Grid verfügbar/belegt), EmployeeAssignment.svelte (Team-Verfügbarkeit), PlanTable.svelte (Maschine×Intervall Matrix). Fixes: extractPaginated (API gibt .data statt .items, .pageSize statt .limit), SSR plansData Extraction, machineNumber-Null-Check. date-helpers.ts für ESLint svelte/prefer-svelte-reactivity. API-Endpunkte verifiziert (6/6). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 1.19.0  | 2026-02-19 | Step 5.2 DONE: Admin Plan Creation — 8 neue/modifizierte Dateien. plan/[uuid]/+page.server.ts (SSR create/edit), plan/[uuid]/+page.svelte (Page Orchestration), PlanForm.svelte (Machine, Name, Weekday, RepeatEvery, Time, ShiftPlan Toggle, Notes), SlotAssistant.svelte (Kalender-Grid verfügbar/belegt), EmployeeAssignment.svelte (Team-Verfügbarkeit), PlanTable.svelte (Anlage×Intervall Matrix). Fixes: extractPaginated (API gibt .data statt .items, .pageSize statt .limit), SSR plansData Extraction, machineNumber-Null-Check. date-helpers.ts für ESLint svelte/prefer-svelte-reactivity. API-Endpunkte verifiziert (6/6). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 1.20.0  | 2026-02-19 | Step 5.3 DONE: Admin Card Management — 5 neue Dateien, 3 modifiziert. cards/[uuid]/+page.server.ts (SSR: Plan+Cards+Templates parallel), cards/[uuid]/+page.svelte (Page Orchestration: CRUD + Delete-Modal + Duplicate-Warning), CardForm.svelte (CardRole, IntervalType, Title, Description, Location, RequiresApproval, CustomIntervalDays), CardList.svelte (Filterable Table: Status/Intervall/Rolle, Edit/Delete Actions), DuplicateWarning.svelte (Modal mit existierenden Karten). api.ts erweitert (+6 Funktionen: fetchCard, createCard, updateCard, deleteCard, checkDuplicate), types.ts (+4 Interfaces: CreateCardPayload, UpdateCardPayload, CheckDuplicatePayload, DuplicateCheckResult), constants.ts (+40 Messages). svelte-check 0, ESLint 0, Type-Check 0, 4764 Tests                                                                                                                                                                                                                                                                                                                                                                                                             |
 | 1.22.0  | 2026-02-19 | Step 5.5 DONE: Kamishibai Board (Employee View) — 7 neue Dateien. board/[uuid]/+page.server.ts (SSR: Plan+Cards+Colors parallel), board/[uuid]/+page.svelte (Page Orchestration: Header + Filter + KamishibaiBoard), \_lib/CardFlip.svelte (CSS 3D perspective, will-change GPU, reduced-motion), \_lib/KamishibaiCard.svelte (Status-Color Front, Description/Location/Due-Date Back, pulse animation für urgent), \_lib/KamishibaiSection.svelte (Interval-Group: Operator + Instandhaltung Rows, open-badge), \_lib/KamishibaiBoard.svelte (SvelteMap grouping, INTERVAL_ORDER sort, empty-state), \_lib/BoardFilter.svelte (4 Filter: Alle/Bediener/Instandhaltung/Nur Offene, $bindable). svelte-check 0 Errors 0 Warnings, ESLint 0, 3808 Unit-Tests ✅                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| 1.21.0  | 2026-02-19 | Step 5.4 DONE: Shared Employee Overview — 7 neue Dateien, 2 modifiziert. Route-Conflict gelöst: Employee-Page unter `overview/` Subdirectory (URL: `/lean-management/tpm/overview`). overview/+page.server.ts (SSR: Plans+Colors parallel, Board-Data per Plan, countStatuses), overview/+page.svelte (4 Stat-Cards + MachineList), \_lib/types.ts (TpmPlan, TpmCard, TpmColorConfigEntry, StatusCounts, MachineWithTpmStatus), \_lib/constants.ts (INTERVAL_LABELS, CARD_STATUS_LABELS, DEFAULT_COLORS, WEEKDAY_LABELS, MESSAGES), \_lib/api.ts (Employee API Client), \_lib/MachineList.svelte (Sortierte Maschinenliste mit Urgency-Indicator, Schedule, Status-Badges, Board-Link), \_lib/MaintenanceStatus.svelte (Color-coded Status-Badges mit Tenant-Config). navigation-config.ts (Employee TPM URL aktualisiert), Breadcrumb.svelte (overview + board URL-Mappings). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                                              |
+| 1.21.0  | 2026-02-19 | Step 5.4 DONE: Shared Employee Overview — 7 neue Dateien, 2 modifiziert. Route-Conflict gelöst: Employee-Page unter `overview/` Subdirectory (URL: `/lean-management/tpm/overview`). overview/+page.server.ts (SSR: Plans+Colors parallel, Board-Data per Plan, countStatuses), overview/+page.svelte (4 Stat-Cards + MachineList), \_lib/types.ts (TpmPlan, TpmCard, TpmColorConfigEntry, StatusCounts, MachineWithTpmStatus), \_lib/constants.ts (INTERVAL_LABELS, CARD_STATUS_LABELS, DEFAULT_COLORS, WEEKDAY_LABELS, MESSAGES), \_lib/api.ts (Employee API Client), \_lib/MachineList.svelte (Sortierte Anlagenliste mit Urgency-Indicator, Schedule, Status-Badges, Board-Link), \_lib/MaintenanceStatus.svelte (Color-coded Status-Badges mit Tenant-Config). navigation-config.ts (Employee TPM URL aktualisiert), Breadcrumb.svelte (overview + board URL-Mappings). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                                                |
 | 1.23.0  | 2026-02-19 | Step 5.6 DONE: Card Detail + Execution + Approval UI — 5 neue Dateien, 4 modifiziert. CardDetail.svelte (Slide-Over Panel: Info-Grid, Beschreibung, Location, TimeEstimate, ExecutionForm/ApprovalPanel je nach Status), ExecutionForm.svelte (Durchführung melden: Dokumentation Textarea, Post-Submit PhotoUpload), ApprovalPanel.svelte (Freigabe/Ablehnung: Pending-Execution laden, Note-Pflicht bei Reject), PhotoUpload.svelte (Max 5×5MB, JPG/PNG/WebP, Thumbnail-Grid), TimeEstimateForm.svelte (Read-Only SOLL-Zeit Anzeige). KamishibaiCard.svelte (+onCardSelect Prop, Details-Button auf Rückseite), KamishibaiSection.svelte (+onCardSelect Durchreichung), KamishibaiBoard.svelte (+onCardSelect Durchreichung), +page.svelte (+selectedCard State, CardDetail Overlay, invalidateAll nach Aktion). api.ts (+7 Funktionen), types.ts (+6 Interfaces), constants.ts (+50 Messages). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                           |
 | 1.24.0  | 2026-02-19 | Step 5.7 DONE: Config UI + Integration — 5 neue Dateien, 3 modifiziert. config/+page.server.ts (SSR: Escalation+Colors+Templates parallel, requireFeature), config/+page.svelte (Tab-Layout: 3 Tabs Farben/Eskalation/Vorlagen), config/\_lib/ColorConfig.svelte (SvelteMap $derived, Hex-Picker+Text-Input, per-Color Save, Reset-All mit Confirmation), config/\_lib/EscalationConfig.svelte (Hours 1-720, TeamLead/DeptLead Toggles, Form mit Validation), config/\_lib/TemplateManager.svelte (CRUD: Inline Create/Edit, Delete-Confirmation, isDefault Badge, Empty-State). api.ts (+7 Mutation-Funktionen: updateColor, resetColors, updateEscalation, createTemplate, updateTemplate, deleteTemplate), types.ts (+5 Payload-Interfaces), constants.ts (+60 Messages). Breadcrumb.svelte (config URL-Mapping). svelte-check 0 Errors 0 Warnings, ESLint 0, 4764 Tests ✅                                                                                                                                                                                                                                                                                                                       |
 | 1.25.0  | 2026-02-19 | Step 5.8 DONE / PHASE 5 COMPLETE: Shift-Grid TPM Wartungstermine Toggle (E17) — 0 neue Dateien, 7 modifiziert. types.ts (+TpmMaintenanceEvent Interface), state-ui.svelte.ts (+showTpmEvents Toggle, Getter/Setter komprimiert auf 37 Zeilen), api.ts (+fetchTpmMaintenanceDates mit isMaintenanceDate Zyklusberechnung, planToEvent, addEventToMap Helpers), state-context.svelte.ts (+createTpmEventsState Map<string, TpmMaintenanceEvent[]>, tpmEventsMap Getter/Setter/Clear), state.svelte.ts (+tpmEventsMap, showTpmEvents, setTpmEvents, clearTpmEvents, setShowTpmEvents Durchreichung), plan-loader.ts (TPM parallel zu machineAvailability laden via Promise.all, showTpmEvents Guard), ShiftScheduleGrid.svelte (+3 Props tpmEventsMap/showTpmEvents/ontoggleTpmEvents, Toggle-Checkbox in Legend, TPM-Blöcke in Grid-Cells mit Icon+Label+Machine+Time, 60 Zeilen CSS), +page.svelte (+3 Props + ontoggleTpmEvents mit loadShiftPlan Reload). D14: Masterplan sagte WeekGrid.svelte — tatsächlich ShiftScheduleGrid.svelte (Shared statt Admin). D15: Masterplan sagte 3 Dateien — tatsächlich 7+1 (State-Architektur erfordert Durchreichung). svelte-check 0, ESLint 0, 4764 Tests ✅ |
@@ -103,15 +103,15 @@ pnpm test                # unit + api tests
 
 ### 0.2 Risk Register
 
-| #   | Risiko                                                           | Impact  | Wahrscheinlichkeit | Mitigation                                                                    | Verifikation                                                               |
-| --- | ---------------------------------------------------------------- | ------- | ------------------ | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| R1  | Intervall-Kaskade: Jährlich fällig → 50+ Karten gleichzeitig ROT | Hoch    | Mittel             | Batch-SQL `UPDATE WHERE interval_order <= X` statt Einzelupdates              | Performance-Test mit 2400 Karten (20 Maschinen × 8 Intervalle × 15 Karten) |
-| R2  | Slot-Assistant: 4 Datenquellen → langsame Abfrage                | Mittel  | Mittel             | Dedizierter Service mit optimierten JOINs, keine N+1 Queries                  | API-Response-Time < 500ms bei 20 Maschinen                                 |
-| R3  | Schichtplan-Änderung NACH Wartungsplan → Inkonsistenz            | Hoch    | Hoch               | Event-basiert: Shift-Änderung → Check auf betroffene TPM-Pläne → Notification | Unit Test: Schichtplan-Änderung triggert Warnung                           |
-| R4  | Card-Flip Animation: 50+ Karten gleichzeitig → Performance       | Niedrig | Mittel             | CSS `transform` ist GPU-beschleunigt. Lazy Loading pro Board-Sektion          | Browser-Performance-Test mit 60 Karten                                     |
-| R5  | Custom Card Templates: JSONB Flexibilität vs. Typsicherheit      | Mittel  | Niedrig            | V1: Festes Schema + max 3 Custom-Felder (JSONB). V2: Template-Builder         | Zod-Validierung auf JSONB-Inhalt                                           |
-| R6  | Cron-Eskalation: Race Condition bei Container-Restart            | Mittel  | Niedrig            | `FOR UPDATE SKIP LOCKED` + `isProcessing` Guard (Chat-Pattern)                | Unit Test: Paralleler Cron-Run → kein Duplikat                             |
-| R7  | Foto-Upload bei Durchführung: Dateigröße, Storage                | Niedrig | Mittel             | Max 5 Fotos × 5MB = 25MB pro Execution. UUIDv7 Dateinamen                     | API-Test: Upload > 5MB → 413                                               |
+| #   | Risiko                                                           | Impact  | Wahrscheinlichkeit | Mitigation                                                                    | Verifikation                                                             |
+| --- | ---------------------------------------------------------------- | ------- | ------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| R1  | Intervall-Kaskade: Jährlich fällig → 50+ Karten gleichzeitig ROT | Hoch    | Mittel             | Batch-SQL `UPDATE WHERE interval_order <= X` statt Einzelupdates              | Performance-Test mit 2400 Karten (20 Anlagen × 8 Intervalle × 15 Karten) |
+| R2  | Slot-Assistant: 4 Datenquellen → langsame Abfrage                | Mittel  | Mittel             | Dedizierter Service mit optimierten JOINs, keine N+1 Queries                  | API-Response-Time < 500ms bei 20 Anlagen                                 |
+| R3  | Schichtplan-Änderung NACH Wartungsplan → Inkonsistenz            | Hoch    | Hoch               | Event-basiert: Shift-Änderung → Check auf betroffene TPM-Pläne → Notification | Unit Test: Schichtplan-Änderung triggert Warnung                         |
+| R4  | Card-Flip Animation: 50+ Karten gleichzeitig → Performance       | Niedrig | Mittel             | CSS `transform` ist GPU-beschleunigt. Lazy Loading pro Board-Sektion          | Browser-Performance-Test mit 60 Karten                                   |
+| R5  | Custom Card Templates: JSONB Flexibilität vs. Typsicherheit      | Mittel  | Niedrig            | V1: Festes Schema + max 3 Custom-Felder (JSONB). V2: Template-Builder         | Zod-Validierung auf JSONB-Inhalt                                         |
+| R6  | Cron-Eskalation: Race Condition bei Container-Restart            | Mittel  | Niedrig            | `FOR UPDATE SKIP LOCKED` + `isProcessing` Guard (Chat-Pattern)                | Unit Test: Paralleler Cron-Run → kein Duplikat                           |
+| R7  | Foto-Upload bei Durchführung: Dateigröße, Storage                | Niedrig | Mittel             | Max 5 Fotos × 5MB = 25MB pro Execution. UUIDv7 Dateinamen                     | API-Test: Upload > 5MB → 413                                             |
 
 ### 0.3 Ecosystem Integration Points
 
@@ -189,8 +189,8 @@ backend/src/nest/tpm/                        ← Neues Modul
 | `backend/src/nest/notifications/notifications.controller.ts` | TPM SSE Handler                  | 2     |
 | `backend/src/nest/dashboard/dashboard.service.ts`            | `fetchTpmCount()`                | 2     |
 | `backend/src/nest/dashboard/dto/dashboard-counts.dto.ts`     | `tpm: CountItemSchema`           | 2     |
-| `backend/src/nest/machines/machine-availability.service.ts`  | `createFromTpmPlan()`            | 2     |
-| `backend/src/nest/machines/machine-maintenance.service.ts`   | Bridge: TPM → History            | 2     |
+| `backend/src/nest/machines/asset-availability.service.ts`    | `createFromTpmPlan()`            | 2     |
+| `backend/src/nest/machines/asset-maintenance.service.ts`     | Bridge: TPM → History            | 2     |
 
 ### Frontend — Neue Dateien (~35 Dateien)
 
@@ -278,7 +278,7 @@ frontend/src/routes/(app)/
 ## Phase 1: Database Migrations
 
 > **Abhängigkeit:** Keine (erste Phase)
-> **Letzte Migration:** `20260218000040_kvp-multi-team-machine.ts` → nächste ist 041+
+> **Letzte Migration:** `20260218000040_kvp-multi-team-asset.ts` → nächste ist 041+
 > **MUST READ:** [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md)
 
 ### Mandatory Checklist pro Tabelle (Multi-Tenant!)
@@ -356,7 +356,7 @@ Trigger muss auf JEDE Tabelle mit `updated_at` angewendet werden:
 
 2. Tabelle `tpm_maintenance_plans`:
    - `id SERIAL PK`, `uuid CHAR(36)`, `tenant_id FK`
-   - `machine_id FK → machines(id)` — 1 Plan pro Maschine
+   - `asset_id FK → machines(id)` — 1 Plan pro Anlage
    - `name VARCHAR(255)` — z.B. "Wartungsplan P17"
    - `base_weekday INTEGER` (0=Mo...6=So) — Basis-Wochentag
    - `base_repeat_every INTEGER DEFAULT 1` — z.B. "jeden 2. Donnerstag"
@@ -364,8 +364,8 @@ Trigger muss auf JEDE Tabelle mit `updated_at` angewendet werden:
    - `shift_plan_required BOOLEAN DEFAULT true` — E15: Schichtplan muss existieren
    - `notes TEXT`
    - `created_by FK → users(id)`, `is_active`, `created_at`, `updated_at`
-   - UNIQUE: `(tenant_id, machine_id)` WHERE `is_active = 1`
-   - Indexes: tenant_id, machine_id, is_active
+   - UNIQUE: `(tenant_id, asset_id)` WHERE `is_active = 1`
+   - Indexes: tenant_id, asset_id, is_active
 
 3. Tabelle `tpm_time_estimates`:
    - `id SERIAL PK`, `uuid CHAR(36)`, `tenant_id FK`
@@ -405,7 +405,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM pg_p
 2. Tabelle `tpm_cards`:
    - `id SERIAL PK`, `uuid CHAR(36)`, `tenant_id FK`
    - `plan_id FK → tpm_maintenance_plans(id) ON DELETE CASCADE`
-   - `machine_id FK → machines(id)` — **Denormalisiert für Performance** (siehe ⚠️ unten)
+   - `asset_id FK → machines(id)` — **Denormalisiert für Performance** (siehe ⚠️ unten)
    - `template_id FK → tpm_card_templates(id)` — Nullable
    - `card_code VARCHAR(10) NOT NULL` — z.B. "BT1", "IV13"
    - `card_role tpm_card_role NOT NULL` — operator | maintenance
@@ -424,10 +424,10 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT * FROM pg_p
    - `custom_fields JSONB DEFAULT '{}'` — V1: max 3 Custom-Felder
    - `custom_interval_days INTEGER` — Nur bei interval_type='custom'
    - `is_active`, `created_by FK → users(id)`, `created_at`, `updated_at`
-   - Indexes: (tenant_id, plan_id), (tenant_id, machine_id, status), (interval_order), (current_due_date)
+   - Indexes: (tenant_id, plan_id), (tenant_id, asset_id, status), (interval_order), (current_due_date)
    - CHECK: `(interval_type = 'custom' OR custom_interval_days IS NULL)` — Verhindert Daten-Müll (z.B. weekly-Karte mit custom_interval_days=45)
 
-   **⚠️ Denormalisierung `machine_id`:** `tpm_cards.machine_id` ist eine bewusste Denormalisierung von `tpm_maintenance_plans.machine_id` für schnelle Board-Queries (`WHERE machine_id = X AND status = 'red'`). **Konsistenz wird im Service-Layer erzwungen:** `tpm-cards.service.ts:createCard()` setzt `machine_id` automatisch aus `plan.machine_id` — kein manuelles Setzen erlaubt. Der Wert wird NIEMALS direkt via API aktualisiert.
+   **⚠️ Denormalisierung `asset_id`:** `tpm_cards.asset_id` ist eine bewusste Denormalisierung von `tpm_maintenance_plans.asset_id` für schnelle Board-Queries (`WHERE asset_id = X AND status = 'red'`). **Konsistenz wird im Service-Layer erzwungen:** `tpm-cards.service.ts:createCard()` setzt `asset_id` automatisch aus `plan.asset_id` — kein manuelles Setzen erlaubt. Der Wert wird NIEMALS direkt via API aktualisiert.
 
 **Verifikation:**
 
@@ -592,7 +592,7 @@ Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-s
    - `getPlan(tenantId, planUuid)` → SELECT mit Machine+User JOINs
    - `listPlans(tenantId, page, pageSize)` → Paginiert mit COUNT + JOINs
    - `deletePlan(tenantId, userId, planUuid)` → Soft-Delete (is_active=4)
-   - `getPlanByMachineId(tenantId, machineId)` → Für Slot-Assistant (returns null)
+   - `getPlanByMachineId(tenantId, asset_Id)` → Für Slot-Assistant (returns null)
 
 2. `tpm-plans-interval.service.ts` (178 Zeilen)
    - `getNextOccurrence(weekday, repeatEvery, fromDate)` → Nächster passender Wochentag (TPM weekday → JS weekday Konvertierung)
@@ -655,7 +655,7 @@ Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-s
 **Architektur-Entscheidungen:**
 
 - Helpers-Datei extrahiert (`tpm-cards.helpers.ts`) — `tpm-plans.helpers.ts` Pattern
-- `machine_id` wird automatisch aus `plan.machine_id` gesetzt (Denormalisierung im Service erzwungen)
+- `asset_id` wird automatisch aus `plan.asset_id` gesetzt (Denormalisierung im Service erzwungen)
 - `interval_order` wird automatisch aus `INTERVAL_ORDER_MAP` gesetzt
 - `card_code` wird auto-generiert: Prefix (BT/IV) + Sequenznummer pro Plan+Rolle
 - `sort_order` wird auto-inkrementiert pro Plan
@@ -695,14 +695,14 @@ Alle DTOs nutzen Zod + `createZodDto()` Pattern. 1 ESLint-Fix (`sonarjs/prefer-s
 **Neue Dateien:**
 
 1. `tpm-card-cascade.service.ts` (~150 Zeilen)
-   - `triggerCascade(tenantId, machineId, triggerIntervalOrder, dueDate)` → Batch-UPDATE alle Karten mit `interval_order <= triggerIntervalOrder`
-   - `getCascadePreview(tenantId, machineId, triggerIntervalOrder)` → Zeigt welche Karten betroffen wären (für UI-Preview)
+   - `triggerCascade(tenantId, asset_Id, triggerIntervalOrder, dueDate)` → Batch-UPDATE alle Karten mit `interval_order <= triggerIntervalOrder`
+   - `getCascadePreview(tenantId, asset_Id, triggerIntervalOrder)` → Zeigt welche Karten betroffen wären (für UI-Preview)
    - `getIntervalOrder(intervalType)` → daily=1, weekly=2, ..., custom=8
-   - SQL: `UPDATE tpm_cards SET status = 'red', current_due_date = $3 WHERE machine_id = $1 AND interval_order <= $2 AND status = 'green' AND is_active = 1`
+   - SQL: `UPDATE tpm_cards SET status = 'red', current_due_date = $3 WHERE asset_id = $1 AND interval_order <= $2 AND status = 'green' AND is_active = 1`
 
 2. `tpm-card-duplicate.service.ts` (~100 Zeilen)
-   - `checkDuplicate(tenantId, machineId, title, intervalType)` → Sucht ähnliche Karten in kürzeren Intervallen
-   - `findSimilarCards(tenantId, machineId, searchText)` → ILIKE-Suche
+   - `checkDuplicate(tenantId, asset_Id, title, intervalType)` → Sucht ähnliche Karten in kürzeren Intervallen
+   - `findSimilarCards(tenantId, asset_Id, searchText)` → ILIKE-Suche
    - Return: `{ hasDuplicate: boolean, existingCards: TpmCard[] }`
 
 **Verifikation:**
@@ -722,20 +722,20 @@ pnpm run validate:all
 
 **Methoden:**
 
-- `getAvailableSlots(tenantId, machineId, startDate, endDate)` → Kombiniert 4 Datenquellen
-- `checkSlotAvailability(tenantId, machineId, date, time)` → Boolean + Konflikte
+- `getAvailableSlots(tenantId, asset_Id, startDate, endDate)` → Kombiniert 4 Datenquellen
+- `checkSlotAvailability(tenantId, asset_Id, date, time)` → Boolean + Konflikte
 - `getTeamAvailability(tenantId, teamId, date)` → Welche MA sind verfügbar?
 
 **4 Datenquellen (via bestehende Services):**
 
-1. `ShiftsService.findAll({ machineId, date })` → Maschine belegt?
+1. `ShiftsService.findAll({ asset_Id, date })` → Anlage belegt?
 2. `MachineAvailabilityService.getMachineAvailabilityForDateRange()` → Geplante Ausfallzeit?
 3. `UserAvailabilityService.getUserAvailabilityBatch()` → MA im Urlaub/Krank?
 4. `tpm_maintenance_plans` + `tpm_cards` → Schon geplante TPM-Slots?
 
 **Abhängigkeiten:** ShiftsService, MachineAvailabilityService, UserAvailabilityService, DatabaseService
 
-**E15-Validierung:** `validateShiftPlanExists(tenantId, machineId, date)` → Prüft ob Schichtplan für den Zeitraum existiert
+**E15-Validierung:** `validateShiftPlanExists(tenantId, asset_Id, date)` → Prüft ob Schichtplan für den Zeitraum existiert
 
 **Verifikation:**
 
@@ -756,8 +756,8 @@ pnpm run validate:all
 - `tenantTransaction()` für Mutationen, `db.query()` für Reads
 - `FOR UPDATE` Lock bei Execution-Mutations (Race-Condition-Schutz bei parallelem Approve/Reject)
 - `lockPendingExecution()` validiert `approval_status = 'pending'` → `ConflictException` bei Doppelbearbeitung
-- Approval-Berechtigung: Team-Lead des Maschinen-Teams ODER Admin (`has_full_access = 1`)
-- Activity Logging nach Transaction (fire-and-forget `void`) — `logCreate`/`logUpdate` mit entity `'machine'`
+- Approval-Berechtigung: Team-Lead des Anlagen-Teams ODER Admin (`has_full_access = 1`)
+- Activity Logging nach Transaction (fire-and-forget `void`) — `logCreate`/`logUpdate` mit entity `'asset'`
 - Documentation-Pflicht bei `requires_approval=true` im Service-Layer validiert
 - Photo-Limit (max 5) im Service-Layer enforced via `getPhotoCount()`
 - `insertExecution` als Private Helper extrahiert (ESLint max-lines-per-function: 60)
@@ -834,17 +834,17 @@ pnpm run validate:all
 
 1. `tpm-plans.controller.ts` (~220 Zeilen)
 
-| Method | Route                              | Guard                | Beschreibung                                           |
-| ------ | ---------------------------------- | -------------------- | ------------------------------------------------------ |
-| POST   | `/tpm/plans`                       | canWrite(tpm-plans)  | Plan erstellen                                         |
-| GET    | `/tpm/plans`                       | canRead(tpm-plans)   | Alle Pläne (paginiert)                                 |
-| GET    | `/tpm/plans/:uuid`                 | canRead(tpm-plans)   | Einzelner Plan                                         |
-| PATCH  | `/tpm/plans/:uuid`                 | canWrite(tpm-plans)  | Plan aktualisieren                                     |
-| DELETE | `/tpm/plans/:uuid`                 | canDelete(tpm-plans) | Plan soft-deleten                                      |
-| GET    | `/tpm/plans/:uuid/time-estimates`  | canRead(tpm-plans)   | Zeitschätzungen                                        |
-| POST   | `/tpm/plans/:uuid/time-estimates`  | canWrite(tpm-plans)  | Zeitschätzung setzen                                   |
-| GET    | `/tpm/plans/:uuid/available-slots` | canRead(tpm-plans)   | Slot-Assistant                                         |
-| GET    | `/tpm/plans/:uuid/board`           | canRead(tpm-plans)   | Board-Daten (alle Karten einer Maschine via Plan-UUID) |
+| Method | Route                              | Guard                | Beschreibung                                         |
+| ------ | ---------------------------------- | -------------------- | ---------------------------------------------------- |
+| POST   | `/tpm/plans`                       | canWrite(tpm-plans)  | Plan erstellen                                       |
+| GET    | `/tpm/plans`                       | canRead(tpm-plans)   | Alle Pläne (paginiert)                               |
+| GET    | `/tpm/plans/:uuid`                 | canRead(tpm-plans)   | Einzelner Plan                                       |
+| PATCH  | `/tpm/plans/:uuid`                 | canWrite(tpm-plans)  | Plan aktualisieren                                   |
+| DELETE | `/tpm/plans/:uuid`                 | canDelete(tpm-plans) | Plan soft-deleten                                    |
+| GET    | `/tpm/plans/:uuid/time-estimates`  | canRead(tpm-plans)   | Zeitschätzungen                                      |
+| POST   | `/tpm/plans/:uuid/time-estimates`  | canWrite(tpm-plans)  | Zeitschätzung setzen                                 |
+| GET    | `/tpm/plans/:uuid/available-slots` | canRead(tpm-plans)   | Slot-Assistant                                       |
+| GET    | `/tpm/plans/:uuid/board`           | canRead(tpm-plans)   | Board-Daten (alle Karten einer Anlage via Plan-UUID) |
 
 2. `tpm-cards.controller.ts` (~250 Zeilen)
 
@@ -868,7 +868,7 @@ Alle Controller: `@TenantFeature('tpm')` + `@RequirePermission(FEAT, MOD, ACTION
 - 5 Query-DTOs in Einzeldateien (max-classes-per-file: 1 ESLint-Regel)
 - D12: `check-duplicate` Route auf `POST /tpm/cards/check-duplicate` (body: `{ planUuid, title, intervalType }`) statt `POST /tpm/cards/:uuid/check-duplicate` — vermeidet UUID-Ambiguität, Plan-UUID im Body statt Path
 - `buildFilters()` als Module-Level Pure Function — `exactOptionalPropertyTypes`-konform via `| undefined` in Parameter-Typ
-- Slot-Assistant: Plan-UUID → `getPlan()` → `machineId` → `getAvailableSlots()` (kein direkter DB-Zugriff im Controller)
+- Slot-Assistant: Plan-UUID → `getPlan()` → `asset_Id` → `getAvailableSlots()` (kein direkter DB-Zugriff im Controller)
 - Board-Endpoint nutzt `listCardsForPlan()` (nicht `listCardsForMachine()`) — Plan-UUID ist der natürliche Entry Point
 - Cards-Liste: Fallthrough-Logik `machineUuid > planUuid > status`, sonst BadRequestException
 
@@ -921,8 +921,8 @@ pnpm test                                         # 215 files, 4400 tests ✅
 6. `notifications.controller.ts` — TPM SSE Handler registrieren
 7. `dashboard.service.ts` — `fetchTpmCount()` in `fetchAllCounts()`
 8. `dashboard-counts.dto.ts` — `tpm: CountItemSchema`
-9. `machine-availability.service.ts` — `createFromTpmPlan()` Methode
-10. `machine-maintenance.service.ts` — Bridge: TPM → History
+9. `asset-availability.service.ts` — `createFromTpmPlan()` Methode
+10. `asset-maintenance.service.ts` — Bridge: TPM → History
 
 **Verifikation:**
 
@@ -985,12 +985,12 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 **Dateien (co-located, Projekt-Konvention):**
 
-- `backend/src/nest/tpm/tpm-cards.service.test.ts` (31 Tests — getCard, listCardsForMachine/ForPlan/ByStatus, createCard auto-machineId/cardCode/intervalOrder/sortOrder, updateCard intervalOrder-recalc, deleteCard)
+- `backend/src/nest/tpm/tpm-cards.service.test.ts` (31 Tests — getCard, listCardsForMachine/ForPlan/ByStatus, createCard auto-asset_Id/cardCode/intervalOrder/sortOrder, updateCard intervalOrder-recalc, deleteCard)
 - `backend/src/nest/tpm/tpm-card-status.service.test.ts` (22 Tests — setCardDue green→red, markCardCompleted Flow A/B red+overdue, markCardOverdue, approveCard yellow→green, rejectCard yellow→red, alle ungültigen Transitionen, NotFoundException)
 - `backend/src/nest/tpm/tpm-card-cascade.service.test.ts` (22 Tests — triggerCascade Batch-SQL/affectedCount/dueDateFormat, getCascadePreview, getIntervalOrder alle 8 Typen, Performance 2400 Karten < 500ms)
 - `backend/src/nest/tpm/tpm-card-duplicate.service.test.ts` (13 Tests — checkDuplicate ILIKE/intervalOrder/escaping, findSimilarCards title+description, escapeLikePattern %, \_, \)
 
-**Szenarien abgedeckt:** State Machine (8 gültige + 6 ungültige Transitionen), CardCode-Generierung (BT/IV Prefix + Sequenznummer), Intervall-Kaskade (Batch-SQL, CTE mit RETURNING), Duplikat-Erkennung (ILIKE, Interval-Order-Filter, Special-Char-Escaping), Denormalisierung (machine_id auto-set), FOR UPDATE Lock, Soft-Delete, Activity Logger, Pagination, Performance R1-Mitigation
+**Szenarien abgedeckt:** State Machine (8 gültige + 6 ungültige Transitionen), CardCode-Generierung (BT/IV Prefix + Sequenznummer), Intervall-Kaskade (Batch-SQL, CTE mit RETURNING), Duplikat-Erkennung (ILIKE, Interval-Order-Filter, Special-Char-Escaping), Denormalisierung (asset_id auto-set), FOR UPDATE Lock, Soft-Delete, Activity Logger, Pagination, Performance R1-Mitigation
 
 **Abweichung vom Plan:** Masterplan sagt `__tests__/` Verzeichnis — Projekt-Konvention ist co-located (Step 3.1 Pattern beibehalten). Test-Counts höher als geplant: 88 statt ~70.
 
@@ -1014,10 +1014,10 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 **Dateien (co-located, Projekt-Konvention):**
 
-- `backend/src/nest/tpm/tpm-notification.service.test.ts` (22 Tests — notifyMaintenanceDue EventBus+DB per user, notifyMaintenanceOverdue escalation, notifyMaintenanceCompleted SSE-only, notifyApprovalRequired per approver, notifyApprovalResult approved/rejected, machineName fallback, silent error catch, UUIDv7, metadata JSON)
+- `backend/src/nest/tpm/tpm-notification.service.test.ts` (22 Tests — notifyMaintenanceDue EventBus+DB per user, notifyMaintenanceOverdue escalation, notifyMaintenanceCompleted SSE-only, notifyApprovalRequired per approver, notifyApprovalResult approved/rejected, assetName fallback, silent error catch, UUIDv7, metadata JSON)
 - `backend/src/nest/tpm/tpm-escalation.service.test.ts` (24 Tests — getConfig DB+defaults, updateConfig UPSERT/ON CONFLICT/tenantTransaction, handleEscalation candidates/FOR UPDATE SKIP LOCKED/markCardOverdue/notifyTeamLead/no team lead skip/isProcessing guard/error recovery/concurrent lock skip/continue on failure, onModuleInit startup recovery, resolveTeamLead SQL verification)
 
-**Szenarien abgedeckt:** Dual-Notification (EventBus + DB persistent), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery via onModuleInit), Config CRUD (getConfig default fallback, updateConfig UPSERT), Team Lead Resolution (teams + machine_teams JOIN), machineName conditional spread, Silent Error Catch (fire-and-forget), Error Recovery (isProcessing reset in finally), Concurrent Instance Safety (SKIP LOCKED returns empty → skip card)
+**Szenarien abgedeckt:** Dual-Notification (EventBus + DB persistent), vi.hoisted für Module-Level eventBus Mock, Cron-Escalation (isProcessing Guard, FOR UPDATE SKIP LOCKED, Startup Recovery via onModuleInit), Config CRUD (getConfig default fallback, updateConfig UPSERT), Team Lead Resolution (teams + machine_teams JOIN), assetName conditional spread, Silent Error Catch (fire-and-forget), Error Recovery (isProcessing reset in finally), Concurrent Instance Safety (SKIP LOCKED returns empty → skip card)
 
 **Abweichung vom Plan:** Masterplan sagt `__tests__/` Verzeichnis — Projekt-Konvention ist co-located (Step 3.1-3.3 Pattern beibehalten). Test-Counts höher als geplant: 46 statt ~27.
 
@@ -1049,8 +1049,8 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 **Abgedeckte Szenarien (21 describe-Blöcke):**
 
 - Unauthenticated → 401
-- Plan CRUD: Create (201), List (200 + Pagination), Get (200 + machineName), Update (200), Delete (200)
-- Plan Duplicate → 409 (same machine, DB UNIQUE Constraint)
+- Plan CRUD: Create (201), List (200 + Pagination), Get (200 + assetName), Update (200), Delete (200)
+- Plan Duplicate → 409 (same asset, DB UNIQUE Constraint)
 - Time Estimates: Set/UPSERT (201 + totalMinutes), List (200)
 - Card CRUD: Create (201 + auto-cardCode BT prefix + intervalOrder), List by Plan (200 + Pagination), Get (200), Update (200), Delete (200)
 - Card Board Data → 200 (via Plan UUID)
@@ -1080,7 +1080,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 - [x] > = 40 API Integration Tests (86 Tests: 50 Plans+Cards + 36 Executions+Config = 215%)
 - [x] Alle Tests grün (86/86)
-- [x] Tenant-Isolation verifiziert (apitest tenant_id=6, separate Maschinen)
+- [x] Tenant-Isolation verifiziert (apitest tenant_id=6, separate Anlagen)
 - [x] Feature-Flag-Gating verifiziert (TenantFeature('tpm') auf allen Controllern)
 - [x] Pagination verifiziert auf List-Endpoints (Plans, Cards, Pending Approvals)
 - [x] `pnpm run validate:all` ✅
@@ -1134,7 +1134,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - `plan/[uuid]/_lib/PlanForm.svelte` — Formular: Basis-Intervall, Wochentag, Uhrzeit
 - `plan/[uuid]/_lib/SlotAssistant.svelte` — Freie Slots visualisieren
 - `plan/[uuid]/_lib/EmployeeAssignment.svelte` — MA Multi-Select
-- `(admin)/lean-management/tpm/_lib/PlanTable.svelte` — Tabelle: Alle Maschinen × Intervalle
+- `(admin)/lean-management/tpm/_lib/PlanTable.svelte` — Tabelle: Alle Anlagen × Intervalle
 
 ---
 
@@ -1171,11 +1171,11 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 **Neue Dateien:**
 
 - `(shared)/lean-management/tpm/overview/+page.server.ts` — Auth + requireFeature + SSR (Plans+Colors+Board parallel)
-- `(shared)/lean-management/tpm/overview/+page.svelte` — Employee Maschinen-Übersicht (4 Stat-Cards + MachineList)
+- `(shared)/lean-management/tpm/overview/+page.svelte` — Employee Anlagen-Übersicht (4 Stat-Cards + MachineList)
 - `(shared)/lean-management/tpm/_lib/api.ts` — Employee API Client
 - `(shared)/lean-management/tpm/_lib/types.ts` — TpmPlan, TpmCard, StatusCounts, MachineWithTpmStatus
 - `(shared)/lean-management/tpm/_lib/constants.ts` — German Labels + DEFAULT_COLORS + MESSAGES
-- `(shared)/lean-management/tpm/_lib/MachineList.svelte` — Sortierte Maschinenliste mit Urgency, Schedule, Status
+- `(shared)/lean-management/tpm/_lib/MachineList.svelte` — Sortierte Anlagenliste mit Urgency, Schedule, Status
 - `(shared)/lean-management/tpm/_lib/MaintenanceStatus.svelte` — Color-coded Status-Badges mit Tenant-Config
 
 **Modifizierte Dateien:**
@@ -1268,7 +1268,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 - ⚙️ Icon + "TPM" Label
 - Intervall-Typ (Täglich, Wöchentlich, Monatlich, Vierteljährlich, ...)
-- Maschinen-Name (z.B. "P17", "SP08")
+- Anlagen-Name (z.B. "P17", "SP08")
 - Geplante Uhrzeit
 - Farbcodierung: gleiche Farben wie im Kamishibai Board (tenant-konfigurierbar via `tpm_color_config`)
 
@@ -1299,7 +1299,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 - [x] Admin Dashboard rendert mit Wartungsplanübersicht ✅ (Step 5.1: +page.svelte + PlanOverview.svelte)
 - [x] Plan-Erstellung funktioniert (Basis-Intervall, Slot-Assistant) ✅ (Step 5.2: PlanForm + SlotAssistant + EmployeeAssignment)
 - [x] Karten-Management funktioniert (CRUD, Duplikat-Warnung) ✅ (Step 5.3: CardForm + CardList + DuplicateWarning)
-- [x] Employee sieht nur eigene Maschinen (Team-basiert) ✅ (Step 5.4: overview/+page.server.ts mit Team-Filter)
+- [x] Employee sieht nur eigene Anlagen (Team-basiert) ✅ (Step 5.4: overview/+page.server.ts mit Team-Filter)
 - [x] Kamishibai Board rendert mit allen Sektionen ✅ (Step 5.5: KamishibaiBoard + KamishibaiSection + 7 Dateien)
 - [x] Card-Flip Animation funktioniert (ROT ↔ GRÜN) ✅ (Step 5.5: CardFlip.svelte mit CSS 3D perspective + reduced-motion)
 - [x] Freigabe-Flow funktioniert (ROT → GELB → GRÜN/ROT) ✅ (Step 5.6: ExecutionForm + ApprovalPanel + CardDetail)
@@ -1313,7 +1313,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 - [x] Notification Badge funktioniert ✅ (Step 5.1: notification.store.svelte.ts tpm counter + 4 SSE Events)
 - [x] Responsive Design (Mobile + Desktop) ✅ (Tailwind responsive classes in allen Svelte-Components)
 - [x] Deutsche Labels überall ✅ (constants.ts in admin + shared mit deutschen Messages/Labels)
-- [x] Shift-Grid: TPM Toggle funktioniert (⚙️-Blöcke mit Intervall, Maschine, Uhrzeit) ✅ (Step 5.8: ShiftScheduleGrid + api + state-ui + 7 Dateien)
+- [x] Shift-Grid: TPM Toggle funktioniert (⚙️-Blöcke mit Intervall, Anlage, Uhrzeit) ✅ (Step 5.8: ShiftScheduleGrid + api + state-ui + 7 Dateien)
 - [x] `pnpm run validate:all` ✅ (Step 5.8 Changelog: 4764 Tests)
 - [x] `pnpm test` ✅ (Step 5.8 Changelog: 4764 Tests)
 
@@ -1393,12 +1393,12 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 ## Known Limitations (V1 — Bewusst ausgeschlossen)
 
 1. **Kein Kosten-/Ersatzteil-Tracking** — Kein Lagerbestand, keine Kosten pro Wartung. Spalte `cost` existiert in `machine_maintenance_history` für V2.
-2. **Keine Prädiktive Wartung** — Kein Sensor-/Maschinenzähler-basiertes Triggering. Reine Kalenderberechnung. `machine_metrics` Tabelle existiert für V2.
+2. **Keine Prädiktive Wartung** — Kein Sensor-/Anlagenzähler-basiertes Triggering. Reine Kalenderberechnung. `machine_metrics` Tabelle existiert für V2.
 3. **Kein OEE-Dashboard** — Keine Verfügbarkeit × Leistung × Qualität Berechnung. V2 mit `machine_metrics`.
 4. **Kein Template-Builder** — V1: Festes Schema + max 3 JSONB Custom-Felder. V2: Drag-and-Drop Template-Builder.
 5. **Keine Störmeldungen** — TPM V1 = nur geplante/präventive Wartung. Korrektive (reaktive) Wartung separat.
 6. **Kein Offline-Modus** — Shopfloor braucht Netzwerk. V2: Service Worker + Offline Queue.
-7. **Keine Maschinengruppen** — Karten sind pro Maschine, nicht pro Maschinentyp. Wenn 10 identische Maschinen → 10× gleiche Karten.
+7. **Keine Anlagengruppen** — Karten sind pro Anlage, nicht pro Anlagentyp. Wenn 10 identische Anlagen → 10× gleiche Karten.
 
 ---
 
@@ -1411,7 +1411,7 @@ cd frontend && pnpm exec svelte-check && pnpm exec eslint src/
 | D3  | Kein `tpm-plans.helpers.ts` im Plan         | 74 Zeilen erstellt          | Extracted nach `machines.helpers.ts` Pattern — SRP                                            |
 | D4  | `tpm-templates.service.ts` ~150 Zeilen      | 195 Zeilen                  | CRUD + Dynamic SET + FOR UPDATE → leicht über Budget                                          |
 | D5  | `tpm-time-estimates.service.ts` ~150 Zeilen | 179 Zeilen                  | UPSERT + resolvePlanId Helper → leicht über Budget                                            |
-| D6  | ActivityEntityType 'tpm_plan' erwartet      | Reuse 'machine' Entity-Type | Kein neues Entity-Type hinzugefügt — Plans gehören zu Maschinen                               |
+| D6  | ActivityEntityType 'tpm_plan' erwartet      | Reuse 'asset' Entity-Type   | Kein neues Entity-Type hinzugefügt — Plans gehören zu Anlagen                                 |
 | D7  | Template-DTOs in Step 2.2 geplant           | Nachgereicht in Step 2.4    | Im Plan vergessen, bei Bedarf erstellt                                                        |
 | D8  | `tpm-cards.service.ts` ~280 Zeilen          | 468 Zeilen                  | 8 CRUD-Methoden + Pagination-Infrastruktur + 6 Private Helpers → Über Budget, aber alle SRP   |
 | D9  | `resetCardAfterApproval/Rejection` Naming   | `approveCard`/`rejectCard`  | Intent-basiert statt Implementierung-basiert — klarer, kürzer                                 |

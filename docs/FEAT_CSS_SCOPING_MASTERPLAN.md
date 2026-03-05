@@ -94,7 +94,7 @@ Alle externen CSS-Dateien (`frontend/src/styles/*.css`) in Svelte `<style>` Blö
 | --- | ---------------------- | ------ | ------------------------------- |
 | 1   | admin-profile.css      | 82     | admin-profile/+page.svelte      |
 | 2   | employee-profile.css   | 82     | employee-profile/+page.svelte   |
-| 3   | manage-machines.css    | 100    | manage-machines/+page.svelte    |
+| 3   | manage-assets.css      | 100    | manage-assets/+page.svelte      |
 | 4   | documents-explorer.css | 141    | documents-explorer/+page.svelte |
 | 5   | root-profile.css       | 146    | root-profile/+page.svelte       |
 | 6   | survey-results.css     | 197    | survey-results/+page.svelte     |
@@ -103,7 +103,7 @@ Alle externen CSS-Dateien (`frontend/src/styles/*.css`) in Svelte `<style>` Blö
 **DoD Session 2:**
 
 - [x] 7 CSS-Imports entfernt
-- [x] 7 `<style>` Blöcke hinzugefügt (manage-machines + documents-explorer mit `:global()`)
+- [x] 7 `<style>` Blöcke hinzugefügt (manage-assets + documents-explorer mit `:global()`)
 - [x] 7 CSS-Dateien gelöscht
 - [x] Frontend kompiliert fehlerfrei (`pnpm run build` ✓)
 - [x] svelte-check: 0 Errors, 0 Warnings (`pnpm exec svelte-check` ✓)

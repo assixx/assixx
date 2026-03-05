@@ -7,9 +7,9 @@
  * UNIQUE constraint on (tenant_id, user_id, name) → 409 CONFLICT.
  *
  * This data migration:
- * 1. Pre-check: detect duplicate (tenant_id, user_id, team_id, machine_id) combos
+ * 1. Pre-check: detect duplicate (tenant_id, user_id, team_id, asset_id) combos
  * 2. Delete exact duplicates (keep lowest id per combo)
- * 3. Update names to "team_name - machine_name" format
+ * 3. Update names to "team_name - asset_name" format
  *
  * WARNING: One-way migration. Rollback restores old name format but cannot
  * restore deleted duplicate rows.
@@ -25,7 +25,7 @@ export function up(pgm: MigrationBuilder): void {
     WHERE id NOT IN (
       SELECT MIN(id)
       FROM shift_favorites
-      GROUP BY tenant_id, user_id, team_id, machine_id
+      GROUP BY tenant_id, user_id, team_id, asset_id
     );
 
     -- Step 2: Verify no duplicates remain (FAIL LOUD)
@@ -35,9 +35,9 @@ export function up(pgm: MigrationBuilder): void {
     BEGIN
       SELECT COUNT(*) INTO dup_count
       FROM (
-        SELECT tenant_id, user_id, team_id, machine_id
+        SELECT tenant_id, user_id, team_id, asset_id
         FROM shift_favorites
-        GROUP BY tenant_id, user_id, team_id, machine_id
+        GROUP BY tenant_id, user_id, team_id, asset_id
         HAVING COUNT(*) > 1
       ) duplicates;
 
@@ -48,12 +48,12 @@ export function up(pgm: MigrationBuilder): void {
       END IF;
     END $$;
 
-    -- Step 3: Update names to "team_name - machine_name" format
-    -- Only update rows where machine_name is not empty
+    -- Step 3: Update names to "team_name - asset_name" format
+    -- Only update rows where asset_name is not empty
     UPDATE shift_favorites
-    SET name = team_name || ' - ' || machine_name
-    WHERE machine_name IS NOT NULL
-      AND machine_name <> '';
+    SET name = team_name || ' - ' || asset_name
+    WHERE asset_name IS NOT NULL
+      AND asset_name <> '';
   `);
 }
 

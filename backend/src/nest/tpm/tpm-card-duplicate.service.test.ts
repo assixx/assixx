@@ -32,7 +32,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     uuid: 'card-uuid-001                            ',
     tenant_id: 10,
     plan_id: 100,
-    machine_id: 42,
+    asset_id: 42,
     template_id: null,
     card_code: 'BT1',
     card_role: 'operator',
@@ -55,7 +55,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
     plan_uuid: 'plan-uuid-001                            ',
-    machine_name: 'CNC-001',
+    asset_name: 'CNC-001',
     ...overrides,
   };
 }
@@ -170,13 +170,13 @@ describe('TpmCardDuplicateService', () => {
       expect(result.existingCards).toHaveLength(2);
     });
 
-    it('should pass machineId and tenantId correctly', async () => {
+    it('should pass assetId and tenantId correctly', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.checkDuplicate(20, 99, 'Test', 'weekly');
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[0]).toBe(99); // machineId
+      expect(params?.[0]).toBe(99); // assetId
       expect(params?.[1]).toBe(20); // tenantId
     });
 

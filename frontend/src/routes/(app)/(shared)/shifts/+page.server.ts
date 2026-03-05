@@ -61,8 +61,8 @@ interface TeamMemberApiResponse {
 /** Raw staffing rule from API */
 interface StaffingRuleRaw {
   id: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   minStaffCount: number;
 }
 

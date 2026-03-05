@@ -3,7 +3,7 @@
  *
  * Mocked dependencies: DatabaseService (query, queryOne, tenantTransaction),
  * ActivityLoggerService (logCreate, logUpdate, logDelete).
- * Tests: getPlan, listPlans, getPlanByMachineId, createPlan (machine resolution,
+ * Tests: getPlan, listPlans, getPlanByAssetId, createPlan (asset resolution,
  * uniqueness check, UUIDv7), updatePlan (dynamic SET, FOR UPDATE),
  * deletePlan (soft-delete, activity logging).
  *
@@ -43,7 +43,7 @@ function createPlanRow(overrides?: Partial<TpmPlanJoinRow>): TpmPlanJoinRow {
     id: 1,
     uuid: 'plan-uuid-001                          ',
     tenant_id: 10,
-    machine_id: 42,
+    asset_id: 42,
     name: 'Wartungsplan P17',
     base_weekday: 3,
     base_repeat_every: 1,
@@ -54,7 +54,7 @@ function createPlanRow(overrides?: Partial<TpmPlanJoinRow>): TpmPlanJoinRow {
     is_active: 1,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
-    machine_name: 'CNC-001',
+    asset_name: 'CNC-001',
     created_by_name: 'admin',
     ...overrides,
   };
@@ -99,13 +99,13 @@ describe('TpmPlansService', () => {
       const result = await service.getPlan(10, 'plan-uuid-001');
 
       expect(result.uuid).toBe('plan-uuid-001');
-      expect(result.machineId).toBe(42);
+      expect(result.assetId).toBe(42);
       expect(result.name).toBe('Wartungsplan P17');
       expect(result.baseWeekday).toBe(3);
       expect(result.baseRepeatEvery).toBe(1);
       expect(result.baseTime).toBe('09:15');
       expect(result.shiftPlanRequired).toBe(true);
-      expect(result.machineName).toBe('CNC-001');
+      expect(result.assetName).toBe('CNC-001');
       expect(result.createdByName).toBe('admin');
     });
 
@@ -119,12 +119,12 @@ describe('TpmPlansService', () => {
 
     it('should not set optional fields when JOIN columns are missing', async () => {
       mockDb.queryOne.mockResolvedValueOnce(
-        createPlanRow({ machine_name: undefined, created_by_name: undefined }),
+        createPlanRow({ asset_name: undefined, created_by_name: undefined }),
       );
 
       const result = await service.getPlan(10, 'plan-uuid-001');
 
-      expect(result.machineName).toBeUndefined();
+      expect(result.assetName).toBeUndefined();
       expect(result.createdByName).toBeUndefined();
     });
   });
@@ -191,23 +191,23 @@ describe('TpmPlansService', () => {
   });
 
   // =============================================================
-  // getPlanByMachineId
+  // getPlanByAssetId
   // =============================================================
 
-  describe('getPlanByMachineId()', () => {
-    it('should return a plan for the given machine', async () => {
+  describe('getPlanByAssetId()', () => {
+    it('should return a plan for the given asset', async () => {
       mockDb.queryOne.mockResolvedValueOnce(createPlanRow());
 
-      const result = await service.getPlanByMachineId(10, 42);
+      const result = await service.getPlanByAssetId(10, 42);
 
       expect(result).not.toBeNull();
-      expect(result?.machineId).toBe(42);
+      expect(result?.assetId).toBe(42);
     });
 
-    it('should return null when no plan exists for the machine', async () => {
+    it('should return null when no plan exists for the asset', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      const result = await service.getPlanByMachineId(10, 99);
+      const result = await service.getPlanByAssetId(10, 99);
 
       expect(result).toBeNull();
     });
@@ -218,12 +218,12 @@ describe('TpmPlansService', () => {
   // =============================================================
 
   describe('createPlan()', () => {
-    it('should resolve machine UUID, check uniqueness, and INSERT', async () => {
-      // resolveMachineId
+    it('should resolve asset UUID, check uniqueness, and INSERT', async () => {
+      // resolveAssetId
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 42 }],
       });
-      // ensureNoPlanForMachine → no existing plan
+      // ensureNoPlanForAsset → no existing plan
       mockClient.query.mockResolvedValueOnce({
         rows: [],
       });
@@ -233,7 +233,7 @@ describe('TpmPlansService', () => {
       });
 
       const result = await service.createPlan(10, 5, {
-        machineUuid: 'machine-uuid-001',
+        assetUuid: 'asset-uuid-001',
         name: 'Wartungsplan P17',
         baseWeekday: 3,
         baseRepeatEvery: 1,
@@ -241,15 +241,15 @@ describe('TpmPlansService', () => {
       });
 
       expect(result.name).toBe('Wartungsplan P17');
-      expect(result.machineId).toBe(42);
+      expect(result.assetId).toBe(42);
     });
 
-    it('should throw NotFoundException when machine UUID not found', async () => {
+    it('should throw NotFoundException when asset UUID not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await expect(
         service.createPlan(10, 5, {
-          machineUuid: 'nonexistent',
+          assetUuid: 'nonexistent',
           name: 'Test Plan',
           baseWeekday: 0,
           baseRepeatEvery: 1,
@@ -258,19 +258,19 @@ describe('TpmPlansService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ConflictException when machine already has a plan', async () => {
-      // resolveMachineId → found
+    it('should throw ConflictException when asset already has a plan', async () => {
+      // resolveAssetId → found
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 42 }],
       });
-      // ensureNoPlanForMachine → existing plan found
+      // ensureNoPlanForAsset → existing plan found
       mockClient.query.mockResolvedValueOnce({
         rows: [{ uuid: 'existing-plan' }],
       });
 
       await expect(
         service.createPlan(10, 5, {
-          machineUuid: 'machine-uuid-001',
+          assetUuid: 'asset-uuid-001',
           name: 'Duplicate Plan',
           baseWeekday: 0,
           baseRepeatEvery: 1,
@@ -287,7 +287,7 @@ describe('TpmPlansService', () => {
       });
 
       const result = await service.createPlan(10, 5, {
-        machineUuid: 'machine-uuid-001',
+        assetUuid: 'asset-uuid-001',
         name: 'Minimal Plan',
         baseWeekday: 0,
         baseRepeatEvery: 1,
@@ -306,7 +306,7 @@ describe('TpmPlansService', () => {
       });
 
       await service.createPlan(10, 5, {
-        machineUuid: 'machine-uuid-001',
+        assetUuid: 'asset-uuid-001',
         name: 'Wartungsplan P17',
         baseWeekday: 3,
         baseRepeatEvery: 1,
@@ -330,7 +330,7 @@ describe('TpmPlansService', () => {
 
       await expect(
         service.createPlan(10, 5, {
-          machineUuid: 'machine-uuid-001',
+          assetUuid: 'asset-uuid-001',
           name: 'Broken Plan',
           baseWeekday: 0,
           baseRepeatEvery: 1,
@@ -347,7 +347,7 @@ describe('TpmPlansService', () => {
       });
 
       await service.createPlan(10, 5, {
-        machineUuid: 'machine-uuid-001',
+        assetUuid: 'asset-uuid-001',
         name: 'Test Plan',
         baseWeekday: 0,
         baseRepeatEvery: 1,

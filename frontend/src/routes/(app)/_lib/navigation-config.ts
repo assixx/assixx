@@ -339,10 +339,10 @@ export const adminMenuItems: NavItem[] = [
   },
   { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
   {
-    id: 'machines',
+    id: 'assets',
     icon: ICONS.generator,
-    label: 'Maschinen',
-    url: '/manage-machines',
+    label: 'Anlagen',
+    url: '/manage-assets',
   },
   {
     id: 'documents',

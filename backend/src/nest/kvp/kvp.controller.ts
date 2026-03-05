@@ -80,7 +80,7 @@ import type {
   KVPSuggestionResponse,
   PaginatedKVPComments,
   PaginatedSuggestionsResult,
-  UserTeamWithMachines,
+  UserTeamWithAssets,
 } from './kvp.service.js';
 import { KvpService } from './kvp.service.js';
 
@@ -304,14 +304,14 @@ export class KvpController {
 
   /**
    * GET /kvp/my-organizations
-   * Returns user's assigned teams with their machines — for KVP create modal
+   * Returns user's assigned teams with their assets — for KVP create modal
    */
   @Get('my-organizations')
   @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getMyOrganizations(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-  ): Promise<UserTeamWithMachines[]> {
+  ): Promise<UserTeamWithAssets[]> {
     return await this.kvpService.getMyOrganizations(user.id, tenantId);
   }
 
@@ -362,7 +362,7 @@ export class KvpController {
       priority: query.priority,
       orgLevel: query.orgLevel,
       teamId: query.teamId,
-      machineId: query.machineId,
+      assetId: query.assetId,
       search: query.search,
       page: query.page,
       limit: query.limit,

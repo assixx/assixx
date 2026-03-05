@@ -57,8 +57,8 @@ function makeSlot(overrides: Partial<ProjectedSlot> = {}): ProjectedSlot {
   return {
     planUuid: 'plan-uuid-other',
     planName: 'Plan X',
-    machineId: 99,
-    machineName: 'Maschine X',
+    assetId: 99,
+    assetName: 'Anlage X',
     intervalTypes: ['weekly'],
     date: '2026-03-01',
     startTime: '09:00',
@@ -113,7 +113,7 @@ describe('TpmSlotAssistantService', () => {
         '2026-03-03',
       );
 
-      expect(result.machineId).toBe(42);
+      expect(result.assetId).toBe(42);
       expect(result.startDate).toBe('2026-03-01');
       expect(result.endDate).toBe('2026-03-03');
       expect(result.totalDays).toBe(3);
@@ -284,16 +284,16 @@ describe('TpmSlotAssistantService', () => {
     // tpm_schedule conflict tests
     // =========================================================
 
-    it('should detect tpm_schedule conflicts from other machines', async () => {
+    it('should detect tpm_schedule conflicts from other assets', async () => {
       // fetchShiftCoverageDates → full coverage
       mockDb.query.mockResolvedValueOnce([
         { range_start: '2026-03-01', range_end: '2026-03-01' },
       ]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
-      // Projected slot from a DIFFERENT machine (99 != 42)
+      // Projected slot from a DIFFERENT asset (99 != 42)
       mockProjection.projectSchedules.mockResolvedValueOnce({
-        slots: [makeSlot({ date: '2026-03-01', machineId: 99 })],
+        slots: [makeSlot({ date: '2026-03-01', assetId: 99 })],
         dateRange: { start: '2026-03-01', end: '2026-03-01' },
         planCount: 1,
       });
@@ -311,21 +311,21 @@ describe('TpmSlotAssistantService', () => {
       );
       expect(conflict).toBeDefined();
       expect(conflict?.description).toContain('Plan X');
-      expect(conflict?.description).toContain('Maschine X');
+      expect(conflict?.description).toContain('Anlage X');
       expect(conflict?.description).toContain('weekly');
       expect(conflict?.description).toContain('09:00');
     });
 
-    it('should exclude same-machine projected slots (no self-conflict)', async () => {
+    it('should exclude same-asset projected slots (no self-conflict)', async () => {
       // fetchShiftCoverageDates → full coverage
       mockDb.query.mockResolvedValueOnce([
         { range_start: '2026-03-01', range_end: '2026-03-01' },
       ]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
-      // Projected slot for the SAME machine (42 === 42) → should be excluded
+      // Projected slot for the SAME asset (42 === 42) → should be excluded
       mockProjection.projectSchedules.mockResolvedValueOnce({
-        slots: [makeSlot({ date: '2026-03-01', machineId: 42 })],
+        slots: [makeSlot({ date: '2026-03-01', assetId: 42 })],
         dateRange: { start: '2026-03-01', end: '2026-03-01' },
         planCount: 1,
       });
@@ -353,7 +353,7 @@ describe('TpmSlotAssistantService', () => {
         slots: [
           makeSlot({
             date: '2026-03-01',
-            machineId: 99,
+            assetId: 99,
             startTime: null,
             endTime: null,
             isFullDay: true,
@@ -387,14 +387,14 @@ describe('TpmSlotAssistantService', () => {
         slots: [
           makeSlot({
             date: '2026-03-01',
-            machineId: 99,
+            assetId: 99,
             planName: 'Plan A',
           }),
           makeSlot({
             date: '2026-03-01',
-            machineId: 88,
+            assetId: 88,
             planName: 'Plan B',
-            machineName: 'Maschine Y',
+            assetName: 'Anlage Y',
           }),
         ],
         dateRange: { start: '2026-03-01', end: '2026-03-01' },
@@ -421,9 +421,9 @@ describe('TpmSlotAssistantService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
-      // Schedule conflict from another machine
+      // Schedule conflict from another asset
       mockProjection.projectSchedules.mockResolvedValueOnce({
-        slots: [makeSlot({ date: '2026-03-01', machineId: 99 })],
+        slots: [makeSlot({ date: '2026-03-01', assetId: 99 })],
         dateRange: { start: '2026-03-01', end: '2026-03-01' },
         planCount: 1,
       });
@@ -607,27 +607,27 @@ describe('TpmSlotAssistantService', () => {
   });
 
   // =============================================================
-  // resolveMachineIdByUuid
+  // resolveAssetIdByUuid
   // =============================================================
 
-  describe('resolveMachineIdByUuid()', () => {
-    it('should return machine id when found', async () => {
+  describe('resolveAssetIdByUuid()', () => {
+    it('should return asset id when found', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ id: 42 });
 
-      const result = await service.resolveMachineIdByUuid(10, 'abc-uuid');
+      const result = await service.resolveAssetIdByUuid(10, 'abc-uuid');
 
       expect(result).toBe(42);
       expect(mockDb.queryOne).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT id FROM machines'),
+        expect.stringContaining('SELECT id FROM assets'),
         ['abc-uuid', 10],
       );
     });
 
-    it('should throw NotFoundException when machine not found', async () => {
+    it('should throw NotFoundException when asset not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
       await expect(
-        service.resolveMachineIdByUuid(10, 'missing-uuid'),
+        service.resolveAssetIdByUuid(10, 'missing-uuid'),
       ).rejects.toThrow(NotFoundException);
     });
   });

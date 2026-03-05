@@ -122,13 +122,13 @@ export class WorkOrderAssigneesService {
     return rows.map(mapAssigneeRowToApi);
   }
 
-  /** Get eligible users for assignment, optionally filtered by machine teams */
+  /** Get eligible users for assignment, optionally filtered by asset teams */
   async getEligibleUsers(
     tenantId: number,
-    machineId?: number,
+    assetId?: number,
   ): Promise<EligibleUser[]> {
-    if (machineId !== undefined) {
-      return await this.fetchTeamFilteredUsers(tenantId, machineId);
+    if (assetId !== undefined) {
+      return await this.fetchTeamFilteredUsers(tenantId, assetId);
     }
     return await this.fetchAllEmployees(tenantId);
   }
@@ -192,10 +192,10 @@ export class WorkOrderAssigneesService {
     return rows;
   }
 
-  /** Team-filtered: only employees belonging to teams assigned to the machine */
+  /** Team-filtered: only employees belonging to teams assigned to the asset */
   private async fetchTeamFilteredUsers(
     tenantId: number,
-    machineId: number,
+    assetId: number,
   ): Promise<EligibleUser[]> {
     const rows = await this.db.query<{
       id: number;
@@ -208,10 +208,10 @@ export class WorkOrderAssigneesService {
       `SELECT DISTINCT u.id, u.uuid, u.first_name, u.last_name, u.email, u.employee_number
        FROM users u
        JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-       JOIN machine_teams mt ON ut.team_id = mt.team_id AND mt.tenant_id = ut.tenant_id
-       WHERE mt.machine_id = $1 AND u.tenant_id = $2 AND u.is_active = 1 AND u.role = 'employee'
+       JOIN asset_teams mt ON ut.team_id = mt.team_id AND mt.tenant_id = ut.tenant_id
+       WHERE mt.asset_id = $1 AND u.tenant_id = $2 AND u.is_active = 1 AND u.role = 'employee'
        ORDER BY u.last_name, u.first_name`,
-      [machineId, tenantId],
+      [assetId, tenantId],
     );
     return rows.map(mapEligibleUserRow);
   }

@@ -182,13 +182,13 @@ export async function removeAssignee(
   await apiClient.delete(`/work-orders/${uuid}/assignees/${userUuid}`);
 }
 
-/** Fetch eligible users for assignment (team-filtered if machineId given) */
+/** Fetch eligible users for assignment (team-filtered if assetId given) */
 export async function fetchEligibleUsers(
-  machineId?: number,
+  assetId?: number,
 ): Promise<EligibleUser[]> {
   const url =
-    machineId !== undefined ?
-      `/work-orders/eligible-users?machineId=${machineId}`
+    assetId !== undefined ?
+      `/work-orders/eligible-users?assetId=${assetId}`
     : '/work-orders/eligible-users';
   const result: unknown = await apiClient.get(url);
   return extractArray<EligibleUser>(result);

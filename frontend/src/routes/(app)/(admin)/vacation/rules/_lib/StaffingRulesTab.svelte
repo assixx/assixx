@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
    * StaffingRulesTab — Staffing rules list, create/edit form modal, delete confirm.
-   * Create mode: Cascade dropdown (Area -> Department -> Machine) for machine selection.
-   * Edit mode: Machine locked, only minStaffCount editable.
+   * Create mode: Cascade dropdown (Area -> Department -> Asset) for asset selection.
+   * Edit mode: Asset locked, only minStaffCount editable.
    */
   import { invalidateAll } from '$app/navigation';
 
@@ -12,7 +12,7 @@
   import * as api from './api';
   import { rulesState } from './state.svelte';
 
-  import type { CreateStaffingRulePayload, OrgMachine } from './types';
+  import type { CreateStaffingRulePayload, OrgAsset } from './types';
 
   const log = createLogger('StaffingRulesTab');
 
@@ -26,14 +26,14 @@
   // Cascade state (create mode)
   let selectedAreaId = $state<number | null>(null);
   let selectedDepartmentId = $state<number | null>(null);
-  let selectedMachineId = $state<number | null>(null);
-  let cascadeMachines = $state<OrgMachine[]>([]);
-  let isLoadingMachines = $state(false);
+  let selectedAssetId = $state<number | null>(null);
+  let cascadeAssets = $state<OrgAsset[]>([]);
+  let isLoadingAssets = $state(false);
 
   // Dropdown open states
   let areaDropdownOpen = $state(false);
   let departmentDropdownOpen = $state(false);
-  let machineDropdownOpen = $state(false);
+  let assetDropdownOpen = $state(false);
 
   /** Departments filtered by selected area (client-side from SSR data) */
   const filteredDepartments = $derived(
@@ -46,20 +46,20 @@
   $effect(() => {
     const editing = rulesState.editingStaffingRule;
     if (editing !== null) {
-      selectedMachineId = editing.machineId;
+      selectedAssetId = editing.assetId;
       ruleMinStaff = String(editing.minStaffCount);
     } else if (rulesState.showStaffingRuleForm) {
       selectedAreaId = null;
       selectedDepartmentId = null;
-      selectedMachineId = null;
-      cascadeMachines = [];
+      selectedAssetId = null;
+      cascadeAssets = [];
       ruleMinStaff = '1';
       closeAllDropdowns();
     }
   });
 
   const canSubmit = $derived(
-    selectedMachineId !== null && Number(ruleMinStaff) >= 1,
+    selectedAssetId !== null && Number(ruleMinStaff) >= 1,
   );
 
   // ==========================================================================
@@ -68,12 +68,12 @@
 
   let searchQuery = $state('');
 
-  /** Staffing rules filtered by machine name */
+  /** Staffing rules filtered by asset name */
   const filteredRules = $derived.by(() => {
     const q = searchQuery.trim().toLowerCase();
     if (q === '') return rulesState.staffingRules;
     return rulesState.staffingRules.filter((rule) => {
-      const name = (rule.machineName ?? '').toLowerCase();
+      const name = (rule.assetName ?? '').toLowerCase();
       return name.includes(q);
     });
   });
@@ -94,7 +94,7 @@
   function closeAllDropdowns(): void {
     areaDropdownOpen = false;
     departmentDropdownOpen = false;
-    machineDropdownOpen = false;
+    assetDropdownOpen = false;
   }
 
   function getSelectedAreaName(): string {
@@ -114,13 +114,13 @@
     );
   }
 
-  function getSelectedMachineName(): string {
+  function getSelectedAssetName(): string {
     if (selectedDepartmentId === null) return 'Erst Abteilung wählen...';
-    if (isLoadingMachines) return 'Laden...';
-    if (selectedMachineId === null) return 'Maschine wählen...';
+    if (isLoadingAssets) return 'Laden...';
+    if (selectedAssetId === null) return 'Anlage wählen...';
     return (
-      cascadeMachines.find((m) => m.id === selectedMachineId)?.name ??
-      'Maschine wählen...'
+      cascadeAssets.find((m) => m.id === selectedAssetId)?.name ??
+      'Anlage wählen...'
     );
   }
 
@@ -131,33 +131,33 @@
   function handleAreaSelect(areaId: number): void {
     selectedAreaId = areaId;
     selectedDepartmentId = null;
-    selectedMachineId = null;
-    cascadeMachines = [];
+    selectedAssetId = null;
+    cascadeAssets = [];
     closeAllDropdowns();
   }
 
   function handleDepartmentSelect(departmentId: number): void {
     selectedDepartmentId = departmentId;
-    selectedMachineId = null;
+    selectedAssetId = null;
     closeAllDropdowns();
 
-    isLoadingMachines = true;
+    isLoadingAssets = true;
     api
-      .fetchMachinesByDepartment(departmentId)
-      .then((machines) => {
-        cascadeMachines = machines;
+      .fetchAssetsByDepartment(departmentId)
+      .then((assets) => {
+        cascadeAssets = assets;
       })
       .catch((err: unknown) => {
-        log.error({ err }, 'Failed to load machines');
-        cascadeMachines = [];
+        log.error({ err }, 'Failed to load assets');
+        cascadeAssets = [];
       })
       .finally(() => {
-        isLoadingMachines = false;
+        isLoadingAssets = false;
       });
   }
 
-  function handleMachineSelect(machineId: number): void {
-    selectedMachineId = machineId;
+  function handleAssetSelect(assetId: number): void {
+    selectedAssetId = assetId;
     closeAllDropdowns();
   }
 
@@ -172,9 +172,9 @@
       });
       showSuccessAlert('Besetzungsregel aktualisiert');
     } else {
-      if (selectedMachineId === null) return;
+      if (selectedAssetId === null) return;
       const payload: CreateStaffingRulePayload = {
-        machineId: selectedMachineId,
+        assetId: selectedAssetId,
         minStaffCount: Number(ruleMinStaff),
       };
       await api.createStaffingRule(payload);
@@ -249,7 +249,7 @@
             type="search"
             id="staffing-search"
             class="search-input__field"
-            placeholder="Maschine suchen..."
+            placeholder="Anlage suchen..."
             autocomplete="off"
             value={searchQuery}
             oninput={handleSearchInput}
@@ -275,7 +275,7 @@
         </div>
         <h3 class="empty-state__title">Keine Besetzungsregeln definiert</h3>
         <p class="empty-state__description">
-          Besetzungsregeln legen fest, wie viele Mitarbeiter pro Maschine
+          Besetzungsregeln legen fest, wie viele Mitarbeiter pro Anlage
           mindestens anwesend sein muessen.
         </p>
       </div>
@@ -291,7 +291,7 @@
           <div class="rules-list__item">
             <div class="rules-list__info">
               <span class="rules-list__name">
-                {rule.machineName ?? `Maschine #${rule.machineId}`}
+                {rule.assetName ?? `Anlage #${rule.assetId}`}
               </span>
               <div class="rules-list__meta">
                 <span>
@@ -387,20 +387,20 @@
 
       <div class="ds-modal__body">
         {#if rulesState.editingStaffingRule !== null}
-          <!-- Edit mode: machine is locked, show name only -->
+          <!-- Edit mode: asset is locked, show name only -->
           <div class="form-field">
-            <span class="form-field__label">Maschine</span>
+            <span class="form-field__label">Anlage</span>
             <p style="padding: 0.5rem 0; opacity: 70%;">
               <i class="fas fa-cog mr-1"></i>
-              {rulesState.editingStaffingRule.machineName ??
-                `Maschine #${rulesState.editingStaffingRule.machineId}`}
+              {rulesState.editingStaffingRule.assetName ??
+                `Anlage #${rulesState.editingStaffingRule.assetId}`}
             </p>
             <span class="form-field__hint">
-              Maschine kann nicht geaendert werden
+              Anlage kann nicht geaendert werden
             </span>
           </div>
         {:else}
-          <!-- Create mode: Cascade Area -> Department -> Machine -->
+          <!-- Create mode: Cascade Area -> Department -> Asset -->
 
           <!-- Area Dropdown -->
           <div class="form-field">
@@ -509,69 +509,69 @@
             </div>
           </div>
 
-          <!-- Machine Dropdown -->
+          <!-- Asset Dropdown -->
           <div class="form-field">
-            <span class="form-field__label">Maschine</span>
+            <span class="form-field__label">Anlage</span>
             <div
               class="dropdown"
               class:dropdown--disabled={selectedDepartmentId === null ||
-                isLoadingMachines}
+                isLoadingAssets}
             >
               <div
                 class="dropdown__trigger"
-                class:active={machineDropdownOpen}
+                class:active={assetDropdownOpen}
                 tabindex={selectedDepartmentId === null ? -1 : 0}
                 onclick={() => {
-                  if (selectedDepartmentId !== null && !isLoadingMachines) {
-                    const wasOpen = machineDropdownOpen;
+                  if (selectedDepartmentId !== null && !isLoadingAssets) {
+                    const wasOpen = assetDropdownOpen;
                     closeAllDropdowns();
-                    if (!wasOpen) machineDropdownOpen = true;
+                    if (!wasOpen) assetDropdownOpen = true;
                   }
                 }}
                 onkeydown={(e) => {
                   if (
                     e.key === 'Enter' &&
                     selectedDepartmentId !== null &&
-                    !isLoadingMachines
+                    !isLoadingAssets
                   ) {
-                    const wasOpen = machineDropdownOpen;
+                    const wasOpen = assetDropdownOpen;
                     closeAllDropdowns();
-                    if (!wasOpen) machineDropdownOpen = true;
+                    if (!wasOpen) assetDropdownOpen = true;
                   }
                 }}
                 role="button"
               >
-                <span>{getSelectedMachineName()}</span>
+                <span>{getSelectedAssetName()}</span>
                 <i class="fas fa-chevron-down"></i>
               </div>
               <div
                 class="dropdown__menu"
-                class:active={machineDropdownOpen}
+                class:active={assetDropdownOpen}
               >
-                {#if cascadeMachines.length === 0 && !isLoadingMachines}
+                {#if cascadeAssets.length === 0 && !isLoadingAssets}
                   <div
                     class="dropdown__option"
                     style="opacity: 50%; cursor: default;"
                   >
-                    Keine Maschinen in dieser Abteilung
+                    Keine Anlagen in dieser Abteilung
                   </div>
                 {:else}
-                  {#each cascadeMachines as machine (machine.id)}
+                  {#each cascadeAssets as asset (asset.id)}
                     <div
                       class="dropdown__option"
                       onclick={() => {
-                        handleMachineSelect(machine.id);
+                        handleAssetSelect(asset.id);
                       }}
                       onkeydown={(e) => {
                         if (e.key === 'Enter') {
-                          handleMachineSelect(machine.id);
+                          handleAssetSelect(asset.id);
                         }
                       }}
                       role="option"
-                      aria-selected={selectedMachineId === machine.id}
+                      aria-selected={selectedAssetId === asset.id}
                       tabindex="0"
                     >
-                      {machine.name}
+                      {asset.name}
                     </div>
                   {/each}
                 {/if}
@@ -673,7 +673,7 @@
       <div class="ds-modal__body">
         <p>
           Moechten Sie die Besetzungsregel fuer
-          <strong>"{rule.machineName ?? `Maschine #${rule.machineId}`}"</strong>
+          <strong>"{rule.assetName ?? `Anlage #${rule.assetId}`}"</strong>
           wirklich loeschen?
         </p>
       </div>

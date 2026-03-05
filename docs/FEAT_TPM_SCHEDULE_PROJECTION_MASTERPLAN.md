@@ -41,9 +41,9 @@
 ### Problem (IST-Zustand)
 
 Wenn ein Admin einen neuen TPM-Wartungsplan erstellt, sieht er **nicht**, welche Zeitfenster
-bereits durch bestehende TPM-Pläne (auf anderen Maschinen) belegt sind. Das führt zu:
+bereits durch bestehende TPM-Pläne (auf anderen Anlagen) belegt sind. Das führt zu:
 
-1. **Ressourcenkonflikte** — Dasselbe Wartungsteam kann nicht gleichzeitig 2 Maschinen warten
+1. **Ressourcenkonflikte** — Dasselbe Wartungsteam kann nicht gleichzeitig 2 Anlagen warten
 2. **Blinde Planung** — Admin muss manuell in jedem Plan nachschauen, welche Zeiten belegt sind
 3. **Keine Zeitfenster** — `base_time` existiert, aber es gibt kein Dauer/Puffer-Konzept
 4. **90-Tage-Limit** — Quartals-/Halbjahres-/Jahresintervalle nicht planbar
@@ -53,7 +53,7 @@ bereits durch bestehende TPM-Pläne (auf anderen Maschinen) belegt sind. Das fü
 | Quelle                | Was geprüft wird                             | Status                                                         |
 | --------------------- | -------------------------------------------- | -------------------------------------------------------------- |
 | Schichtpläne          | Existiert eine Schicht an dem Tag?           | OK                                                             |
-| Maschinenstillstand   | `machine_availability` Status != operational | OK                                                             |
+| Anlagenstillstand     | `machine_availability` Status != operational | OK                                                             |
 | Bestehende TPM-Karten | Nur `status IN ('red', 'overdue')`           | **Falsch** — zeigt nur FÄLLIGE Karten, nicht den Plan-Rhythmus |
 | User-Verfügbarkeit    | Urlaub, krank, etc.                          | OK                                                             |
 
@@ -70,7 +70,7 @@ bereits durch bestehende TPM-Pläne (auf anderen Maschinen) belegt sind. Das fü
 Beim Erstellen/Bearbeiten eines TPM-Plans sieht der Admin:
 
 ```
-Plan erstellen für: Maschine B
+Plan erstellen für: Anlage B
 
 ┌─ ZEITLEISTE: Montag, 03.03.2026 ─────────────────────────────┐
 │  06   08   10   12   14   16   18   20   22                   │
@@ -181,8 +181,8 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT uuid, name,
 interface ProjectedSlot {
   planUuid: string;
   planName: string;
-  machineId: number;
-  machineName: string;
+  asset_Id: number;
+  assetName: string;
   intervalTypes: IntervalType[]; // Alle Intervalle dieses Plans
   date: string; // ISO date (YYYY-MM-DD)
   startTime: string | null; // HH:MM (aus base_time) oder null (ganztägig)
@@ -209,7 +209,7 @@ interface ScheduleProjectionResult {
 
 **Neue Datei:** `backend/src/nest/tpm/tpm-schedule-projection.service.ts`
 
-**Warum eigener Service:** Separation of Concerns — Slot Assistant bleibt für Maschinen-Verfügbarkeit,
+**Warum eigener Service:** Separation of Concerns — Slot Assistant bleibt für Anlagen-Verfügbarkeit,
 Schedule Projection ist für Cross-Plan Terminplanung. Unterschiedliche Datenquellen, unterschiedliche Limits.
 
 **Methoden:**
@@ -348,7 +348,7 @@ Berechnetes Zeitfenster: 09:00 – 13:00
 **UI-Elemente:**
 
 - Zeitachse (horizontal, 1h-Raster)
-- Planblöcke (farbig, mit Maschinen-Name + Intervall-Label)
+- Planblöcke (farbig, mit Anlagen-Name + Intervall-Label)
 - Freie Fenster (grün schraffiert)
 - "Vorgeschlagen"-Marker für den neuen Plan
 

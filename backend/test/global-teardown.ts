@@ -73,14 +73,14 @@ const TRANSIENT_TABLES = [
   'work_order_assignees',
   'work_orders',
 
-  // Org structure: departments, teams, machines accumulate ~2-3 rows/run.
-  // Order: machines first (tpm_cards already cleaned above), then teams
-  // (FK CASCADE handles user_teams, machine_teams, etc.), then departments last.
+  // Org structure: departments, teams, assets accumulate ~2-3 rows/run.
+  // Order: assets first (tpm_cards already cleaned above), then teams
+  // (FK CASCADE handles user_teams, asset_teams, etc.), then departments last.
   // RESTRICT FKs: shifts + document_permissions reference departments/teams
   // with RESTRICT — currently 0 rows for apitest tenant, but if they ever
   // accumulate, add them BEFORE these three tables.
   // Seed data from 00-auth.api.test.ts is auto-recreated via WHERE NOT EXISTS.
-  'machines',
+  'assets',
   'teams',
   'departments',
 ] as const;

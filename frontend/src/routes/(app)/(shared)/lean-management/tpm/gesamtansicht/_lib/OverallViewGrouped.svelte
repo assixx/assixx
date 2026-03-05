@@ -3,9 +3,9 @@
    * Gesamtansicht Grouped View Component
    * @module gesamtansicht/_lib/OverallViewGrouped
    *
-   * Grouped layout: each machine is a block of 3 sub-rows
+   * Grouped layout: each asset is a block of 3 sub-rows
    * (schedule dates, time estimates, assigned employees)
-   * with the machine name shown once via rowspan.
+   * with the asset name shown once via rowspan.
    */
   import { MESSAGES } from '../../_lib/constants';
 
@@ -73,10 +73,10 @@
       class:gvg-row--first={rowIdx === 0}
     >
       <td
-        class="gvg-cell gvg-cell--machine"
+        class="gvg-cell gvg-cell--asset"
         rowspan={3}
       >
-        {row.plan.machineName ?? '\u2014'}
+        {row.plan.assetName ?? '\u2014'}
       </td>
       <td class="gvg-cell gvg-cell--label">
         {#if isFullDay(row.plan.baseTime)}
@@ -176,7 +176,7 @@
 </tbody>
 
 <style>
-  /* ---- Machine block separator ---- */
+  /* ---- Asset block separator ---- */
   .gvg-row--assign td {
     border-bottom: 3px solid var(--color-glass-border);
     padding-bottom: 1rem;
@@ -187,8 +187,8 @@
     border-bottom: 3px solid var(--color-glass-border);
   }
 
-  /* ---- Machine name (rowspan=3) ---- */
-  .gvg-cell--machine {
+  /* ---- Asset name (rowspan=3) ---- */
+  .gvg-cell--asset {
     font-weight: 700;
     font-size: 0.85rem;
     color: var(--color-text-primary);

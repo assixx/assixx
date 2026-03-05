@@ -9,18 +9,18 @@
 
 ## Quick Reference
 
-| Setting            | Value                                |
-| ------------------ | ------------------------------------ |
-| **Container**      | `assixx-postgres`                    |
-| **Port**           | `5432`                               |
-| **Database**       | `assixx`                             |
-| **App User**       | `app_user` (RLS enforced)            |
-| **Admin User**     | `assixx_user` (superuser, BYPASSRLS) |
+| Setting            | Value                                           |
+| ------------------ | ----------------------------------------------- |
+| **Container**      | `assixx-postgres`                               |
+| **Port**           | `5432`                                          |
+| **Database**       | `assixx`                                        |
+| **App User**       | `app_user` (RLS enforced)                       |
+| **Admin User**     | `assixx_user` (superuser, BYPASSRLS)            |
 | **Tables**         | 128 base (109 with RLS, 19 global) + partitions |
-| **RLS Policies**   | 114                                  |
-| **Migration Tool** | `node-pg-migrate` 8.x                |
-| **Tracking Table** | `pgmigrations`                       |
-| **GUI Tool**       | DBeaver (Windows)                    |
+| **RLS Policies**   | 114                                             |
+| **Migration Tool** | `node-pg-migrate` 8.x                           |
+| **Tracking Table** | `pgmigrations`                                  |
+| **GUI Tool**       | DBeaver (Windows)                               |
 
 ---
 
@@ -263,13 +263,13 @@ truncated or converted first.
 
 Seeds are **global configuration data** without tenant_id:
 
-| Table                | Rows | Description                                          |
-| -------------------- | ---- | ---------------------------------------------------- |
-| `plans`              | 3    | Subscription plans (Basic, Professional, Enterprise) |
-| `features`           | 12   | Available features                                   |
-| `plan_features`      | 36   | Plan-to-feature mapping                              |
-| `kvp_categories`     | 6    | KVP proposal categories                              |
-| `machine_categories` | 11   | Machine categories                                   |
+| Table              | Rows | Description                                          |
+| ------------------ | ---- | ---------------------------------------------------- |
+| `plans`            | 3    | Subscription plans (Basic, Professional, Enterprise) |
+| `features`         | 12   | Available features                                   |
+| `plan_features`    | 36   | Plan-to-feature mapping                              |
+| `kvp_categories`   | 6    | KVP proposal categories                              |
+| `asset_categories` | 11   | Asset categories (Anlagen)                           |
 
 ```bash
 # Apply seeds (idempotent — safe to run multiple times)
@@ -310,23 +310,23 @@ doppler run -- pnpm run db:seed
 
 ## Migration Files Overview
 
-| File                                                       | Content                              |
-| ---------------------------------------------------------- | ------------------------------------ |
+| File                                                       | Content                                                |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
 | `20260127000000_baseline.ts`                               | Complete schema (baseline, 89 RLS at time of creation) |
-| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed             |
-| `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS      |
-| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id      |
-| `20260127000004_audit-log-partitioning.ts`                 | Monthly partitioning                 |
-| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration            |
-| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"       |
-| `20260127000007_audit-trail-request-id.ts`                 | UUID request correlation             |
-| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger           |
-| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                |
-| `20260127000010_kvp-confirmations.ts`                      | Read tracking with RLS               |
-| `20260127000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status            |
-| `20260127000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                 |
-| `20260127000013_kvp-status-restored.ts`                    | ENUM value "restored" added          |
-| `20260127000014_remove-deprecated-availability-columns.ts` | Data migration + column drop         |
+| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed                               |
+| `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS                        |
+| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id                        |
+| `20260127000004_audit-log-partitioning.ts`                 | Monthly partitioning                                   |
+| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration                              |
+| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"                         |
+| `20260127000007_audit-trail-request-id.ts`                 | UUID request correlation                               |
+| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger                             |
+| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                                  |
+| `20260127000010_kvp-confirmations.ts`                      | Read tracking with RLS                                 |
+| `20260127000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status                              |
+| `20260127000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                                   |
+| `20260127000013_kvp-status-restored.ts`                    | ENUM value "restored" added                            |
+| `20260127000014_remove-deprecated-availability-columns.ts` | Data migration + column drop                           |
 
 ---
 

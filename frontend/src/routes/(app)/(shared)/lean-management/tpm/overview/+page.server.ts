@@ -15,7 +15,7 @@ import type {
   TpmPlan,
   TpmCard,
   TpmColorConfigEntry,
-  MachineWithTpmStatus,
+  AssetWithTpmStatus,
   StatusCounts,
 } from '../_lib/types';
 
@@ -123,8 +123,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   );
   const boardResults = await Promise.all(boardPromises);
 
-  // Build machine-with-status list
-  const machines: MachineWithTpmStatus[] = plans.map(
+  // Build asset-with-status list
+  const assets: AssetWithTpmStatus[] = plans.map(
     (plan: TpmPlan, idx: number) => {
       const cards = extractCards(boardResults[idx]);
       return {
@@ -135,5 +135,5 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     },
   );
 
-  return { machines, colors };
+  return { assets, colors };
 };

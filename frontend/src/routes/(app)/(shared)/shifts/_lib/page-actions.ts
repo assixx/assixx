@@ -25,7 +25,7 @@ import {
 } from './admin-actions';
 import {
   fetchDepartments,
-  fetchMachines,
+  fetchAssets,
   fetchTeams,
   fetchTeamMembers,
   generateRotationFromConfig,
@@ -233,7 +233,7 @@ export async function handleAddToFavorites(): Promise<void> {
       selectedContext: shiftsState.selectedContext,
       areas: shiftsState.areas,
       departments: shiftsState.departments,
-      machines: shiftsState.machines,
+      assets: shiftsState.assets,
       teams: shiftsState.teams,
     });
     if (newFavorite !== null) {
@@ -255,13 +255,13 @@ export async function handleFavoriteClick(
 
   const [depts, machs, tms, members] = await Promise.all([
     fetchDepartments(favorite.areaId),
-    fetchMachines(favorite.teamId),
+    fetchAssets(favorite.teamId),
     fetchTeams(favorite.departmentId),
     fetchTeamMembers(favorite.teamId, startDate, endDate),
   ]);
 
   shiftsState.setDepartments(depts);
-  shiftsState.setMachines(machs);
+  shiftsState.setAssets(machs);
   shiftsState.setTeams(tms);
 
   const teamLeaderId =
@@ -269,7 +269,7 @@ export async function handleFavoriteClick(
   shiftsState.setSelectedContext({
     areaId: favorite.areaId,
     departmentId: favorite.departmentId,
-    machineId: favorite.machineId,
+    assetId: favorite.assetId,
     teamId: favorite.teamId,
     teamLeaderId,
   });

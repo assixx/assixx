@@ -4,7 +4,7 @@
    * @module shared/lean-management/tpm/+page
    *
    * Level 3 SSR: $derived from props, notification mark-as-read on mount.
-   * Shows employee's assigned machines with TPM status summary.
+   * Shows employee's assigned assets with TPM status summary.
    */
   import { onMount } from 'svelte';
 
@@ -12,13 +12,13 @@
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
+  import AssetList from '../_lib/AssetList.svelte';
   import { MESSAGES, DEFAULT_COLORS } from '../_lib/constants';
-  import MachineList from '../_lib/MachineList.svelte';
 
   import type { PageData } from './$types';
   import type {
     CardStatus,
-    MachineWithTpmStatus,
+    AssetWithTpmStatus,
     TpmColorConfigEntry,
   } from '../_lib/types';
 
@@ -36,33 +36,33 @@
 
   const { data }: { data: PageData } = $props();
 
-  const machines = $derived(data.machines);
+  const assets = $derived(data.assets);
   const colors = $derived(data.colors);
 
   // =============================================================================
   // DERIVED STATS
   // =============================================================================
 
-  const totalMachines = $derived(machines.length);
+  const totalAssets = $derived(assets.length);
 
   const totalOpenCards = $derived(
-    machines.reduce(
-      (sum: number, m: MachineWithTpmStatus) =>
+    assets.reduce(
+      (sum: number, m: AssetWithTpmStatus) =>
         sum + m.statusCounts.red + m.statusCounts.overdue,
       0,
     ),
   );
 
   const totalOverdue = $derived(
-    machines.reduce(
-      (sum: number, m: MachineWithTpmStatus) => sum + m.statusCounts.overdue,
+    assets.reduce(
+      (sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.overdue,
       0,
     ),
   );
 
   const totalGreenToday = $derived(
-    machines.reduce(
-      (sum: number, m: MachineWithTpmStatus) => sum + m.statusCounts.green,
+    assets.reduce(
+      (sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.green,
       0,
     ),
   );
@@ -118,7 +118,7 @@
         <i class="fas fa-cog"></i>
       </div>
       <div class="card-stat__content">
-        <div class="card-stat__value">{totalMachines}</div>
+        <div class="card-stat__value">{totalAssets}</div>
         <div class="card-stat__label">{MESSAGES.STAT_MACHINES}</div>
       </div>
     </div>
@@ -163,7 +163,7 @@
     </div>
   </div>
 
-  <!-- Machine List -->
+  <!-- Asset List -->
   <div class="mt-6">
     <div class="card">
       <div class="card__header">
@@ -173,7 +173,7 @@
         </h2>
       </div>
       <div class="card__body">
-        <MachineList {machines} />
+        <AssetList {assets} />
       </div>
     </div>
   </div>

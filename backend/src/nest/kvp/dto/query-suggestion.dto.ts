@@ -29,7 +29,7 @@ const PrioritySchema = z.enum(['low', 'normal', 'high', 'urgent'], {
  * Organization level enum
  */
 const OrgLevelSchema = z.enum(
-  ['company', 'department', 'area', 'team', 'machine'],
+  ['company', 'department', 'area', 'team', 'asset'],
   {
     message: 'Invalid organization level',
   },
@@ -45,7 +45,7 @@ export const ListSuggestionsQuerySchema = PaginationSchema.extend({
   priority: PrioritySchema.optional(),
   orgLevel: OrgLevelSchema.optional(),
   teamId: IdSchema.optional(),
-  machineId: IdSchema.optional(),
+  assetId: IdSchema.optional(),
   search: z.string().trim().max(100, 'Search query too long').optional(),
   mineOnly: z
     .string()

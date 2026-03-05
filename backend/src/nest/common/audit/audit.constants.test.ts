@@ -64,7 +64,7 @@ describe('RESOURCE_TABLE_MAP', () => {
       'department',
       'team',
       'area',
-      'machine',
+      'asset',
       'blackboard',
       'calendar',
       'document',

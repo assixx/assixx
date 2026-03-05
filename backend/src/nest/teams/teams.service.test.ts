@@ -2,7 +2,7 @@
  * Unit tests for TeamsService
  *
  * Phase 11: Service tests -- mocked dependencies.
- * Focus: CRUD operations, member/machine management, validation guards,
+ * Focus: CRUD operations, member/asset management, validation guards,
  *        duplicate name checks, leader role enforcement.
  *
  * Uses DatabaseService DI with mocked query method.
@@ -68,9 +68,9 @@ function makeTeamRow(overrides: Partial<TeamRow> = {}): TeamRow {
     department_area_name: undefined,
     team_lead_name: undefined,
     member_count: undefined,
-    machine_count: undefined,
+    asset_count: undefined,
     member_names: null,
-    machine_names: null,
+    asset_names: null,
     ...overrides,
   } as TeamRow;
 }
@@ -175,18 +175,18 @@ describe('TeamsService', () => {
       expect(result).toHaveLength(2);
     });
 
-    it('should map member_names and machine_names', async () => {
+    it('should map member_names and asset_names', async () => {
       mockDb.query.mockResolvedValueOnce([
         makeTeamRow({
           member_names: 'Max, Anna',
-          machine_names: 'CNC-1, Drill-2',
+          asset_names: 'CNC-1, Drill-2',
         }),
       ]);
 
       const result = await service.listTeams(10);
 
       expect(result[0]?.memberNames).toBe('Max, Anna');
-      expect(result[0]?.machineNames).toBe('CNC-1, Drill-2');
+      expect(result[0]?.assetNames).toBe('CNC-1, Drill-2');
     });
 
     it('should map inactive status correctly', async () => {
@@ -684,50 +684,50 @@ describe('TeamsService', () => {
   });
 
   // =============================================================
-  // addTeamMachine
+  // addTeamAsset
   // =============================================================
 
-  describe('addTeamMachine', () => {
-    it('should throw NotFoundException when machine not found', async () => {
+  describe('addTeamAsset', () => {
+    it('should throw NotFoundException when asset not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.addTeamMachine(1, 999, 10, 1)).rejects.toThrow(
+      await expect(service.addTeamAsset(1, 999, 10, 1)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should throw ConflictException when machine already assigned', async () => {
-      // find machine
+    it('should throw ConflictException when asset already assigned', async () => {
+      // find asset
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // check existing -> already assigned
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
-      await expect(service.addTeamMachine(1, 1, 10, 1)).rejects.toThrow(
+      await expect(service.addTeamAsset(1, 1, 10, 1)).rejects.toThrow(
         ConflictException,
       );
     });
 
-    it('should add machine successfully', async () => {
-      // find machine
+    it('should add asset successfully', async () => {
+      // find asset
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // check existing -> not assigned
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
-      const result = await service.addTeamMachine(1, 1, 10, 1);
+      const result = await service.addTeamAsset(1, 1, 10, 1);
 
       expect(result.id).toBe(42);
-      expect(result.message).toBe('Machine added to team successfully');
+      expect(result.message).toBe('Asset added to team successfully');
     });
   });
 
   // =============================================================
-  // getTeamMachines
+  // getTeamAssets
   // =============================================================
 
-  describe('getTeamMachines', () => {
-    it('should return mapped machines', async () => {
+  describe('getTeamAssets', () => {
+    it('should return mapped assets', async () => {
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
@@ -736,17 +736,17 @@ describe('TeamsService', () => {
           status: 'operational',
           is_primary: true,
           assigned_at: new Date('2025-01-01'),
-          notes: 'Primary machine',
+          notes: 'Primary asset',
         },
       ]);
 
-      const result = await service.getTeamMachines(1, 10);
+      const result = await service.getTeamAssets(1, 10);
 
       expect(result).toHaveLength(1);
       expect(result[0]?.name).toBe('CNC-500');
       expect(result[0]?.serialNumber).toBe('SN-001');
       expect(result[0]?.isPrimary).toBe(true);
-      expect(result[0]?.notes).toBe('Primary machine');
+      expect(result[0]?.notes).toBe('Primary asset');
     });
 
     it('should handle null optional fields', async () => {
@@ -762,7 +762,7 @@ describe('TeamsService', () => {
         },
       ]);
 
-      const result = await service.getTeamMachines(1, 10);
+      const result = await service.getTeamAssets(1, 10);
 
       expect(result[0]?.serialNumber).toBeUndefined();
       expect(result[0]?.status).toBeUndefined();
@@ -771,27 +771,27 @@ describe('TeamsService', () => {
   });
 
   // =============================================================
-  // removeTeamMachine
+  // removeTeamAsset
   // =============================================================
 
-  describe('removeTeamMachine', () => {
-    it('should throw NotFoundException when machine not assigned', async () => {
+  describe('removeTeamAsset', () => {
+    it('should throw NotFoundException when asset not assigned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.removeTeamMachine(1, 999, 10)).rejects.toThrow(
+      await expect(service.removeTeamAsset(1, 999, 10)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should remove machine successfully', async () => {
+    it('should remove asset successfully', async () => {
       // check existing -> is assigned
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // DELETE
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.removeTeamMachine(1, 1, 10);
+      const result = await service.removeTeamAsset(1, 1, 10);
 
-      expect(result.message).toBe('Machine removed from team successfully');
+      expect(result.message).toBe('Asset removed from team successfully');
     });
   });
 });

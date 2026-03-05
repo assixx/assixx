@@ -43,9 +43,9 @@ export const MESSAGES = {
   NO_DEPARTMENT: 'Keine Abteilung',
   NO_LEADER: 'Kein Team-Leiter',
   NO_MEMBERS: 'Keine Mitglieder zugewiesen',
-  NO_MACHINES: 'Keine Maschinen zugewiesen',
+  NO_MACHINES: 'Keine Anlagen zugewiesen',
   NO_EMPLOYEES_AVAILABLE: 'Keine Mitarbeiter verfügbar',
-  NO_MACHINES_AVAILABLE: 'Keine Maschinen verfügbar',
+  NO_MACHINES_AVAILABLE: 'Keine Anlagen verfügbar',
 
   // Form hints
   STATUS_HINT: 'Inaktive/Archivierte Teams werden nicht angezeigt',
@@ -60,14 +60,14 @@ export const API_ENDPOINTS = {
   teamMembers: (teamId: number) => `/teams/${teamId}/members`,
   teamMember: (teamId: number, userId: number) =>
     `/teams/${teamId}/members/${userId}`,
-  teamMachines: (teamId: number) => `/teams/${teamId}/machines`,
-  teamMachine: (teamId: number, machineId: number) =>
-    `/teams/${teamId}/machines/${machineId}`,
+  teamAssets: (teamId: number) => `/teams/${teamId}/assets`,
+  teamAsset: (teamId: number, assetId: number) =>
+    `/teams/${teamId}/assets/${assetId}`,
   DEPARTMENTS: '/departments',
   ADMINS: '/users?role=admin',
   ROOT_USERS: '/users?role=root',
   EMPLOYEES: '/users?role=employee',
-  MACHINES: '/machines',
+  MACHINES: '/assets',
 } as const;
 
 /**
@@ -79,7 +79,7 @@ export const FORM_DEFAULTS: {
   departmentId: null;
   leaderId: null;
   memberIds: number[];
-  machineIds: number[];
+  assetIds: number[];
   isActive: 1;
 } = {
   name: '',
@@ -87,6 +87,6 @@ export const FORM_DEFAULTS: {
   departmentId: null,
   leaderId: null,
   memberIds: [],
-  machineIds: [],
+  assetIds: [],
   isActive: 1,
 };

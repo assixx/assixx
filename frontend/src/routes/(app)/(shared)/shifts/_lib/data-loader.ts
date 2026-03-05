@@ -418,7 +418,7 @@ export interface ShiftSaveData {
 export interface ShiftPlanSaveData {
   teamId: number;
   departmentId?: number;
-  machineId?: number;
+  assetId?: number;
   areaId?: number;
   startDate: string;
   endDate: string;

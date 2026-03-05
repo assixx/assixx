@@ -368,10 +368,10 @@
               {#each matrixRows as row (row.plan.uuid)}
                 <tr>
                   <td
-                    class="gv-est-cell gv-est-cell--machine"
+                    class="gv-est-cell gv-est-cell--asset"
                     colspan={2}
                   >
-                    {row.plan.machineName ?? '\u2014'}
+                    {row.plan.assetName ?? '\u2014'}
                   </td>
                   {#each INTERVAL_COLUMNS as col (col)}
                     {@const est = getEstimate(row.plan.uuid, col)}
@@ -542,7 +542,7 @@
     border-right: 1px solid var(--color-glass-border);
   }
 
-  .gv-est-cell--machine {
+  .gv-est-cell--asset {
     font-weight: 600;
     font-size: 0.85rem;
     position: sticky;

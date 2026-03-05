@@ -136,9 +136,9 @@ export function buildVisibilityClause(
     OR (s.org_level = 'department' AND (s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})))
     OR (s.org_level = 'area' AND (s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})))
     OR s.org_level = 'company'
-    OR (s.org_level = 'machine' AND EXISTS (
+    OR (s.org_level = 'asset' AND EXISTS (
       SELECT 1 FROM kvp_suggestion_organizations kso
-      JOIN machine_teams mt ON kso.org_type = 'machine' AND kso.org_id = mt.machine_id
+      JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
       WHERE kso.suggestion_id = s.id AND mt.team_id = ANY(${h.teamIds})
     ))
     OR EXISTS (
@@ -225,11 +225,11 @@ export function hasExtendedOrgAccess(
     );
   }
 
-  // Machine level: visible via junction table check (handled at query level)
-  // For single-check scenarios, machine KVPs are visible if user is in any
-  // team that has this machine assigned — but we can't check machine_teams
+  // Asset level: visible via junction table check (handled at query level)
+  // For single-check scenarios, asset KVPs are visible if user is in any
+  // team that has this asset assigned — but we can't check asset_teams
   // from a pure function. Return true and let the query-level check handle it.
-  if (orgLevel === 'machine') return true;
+  if (orgLevel === 'asset') return true;
 
   return false;
 }
@@ -378,12 +378,12 @@ export function buildFilterConditions(
     )`;
     params.push(filters.teamId);
   }
-  if (filters.machineId !== undefined) {
+  if (filters.assetId !== undefined) {
     clause += ` AND EXISTS (
       SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'machine' AND kso.org_id = $${idx++}
+      WHERE kso.suggestion_id = s.id AND kso.org_type = 'asset' AND kso.org_id = $${idx++}
     )`;
-    params.push(filters.machineId);
+    params.push(filters.assetId);
   }
   if (isNonEmptyString(filters.search)) {
     clause += ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
@@ -478,18 +478,18 @@ export function deriveOrgFields(dto: CreateSuggestionDto): {
   teamId: number | null;
 } {
   const teamIds = dto.teamIds;
-  const machineIds = dto.machineIds;
+  const assetIds = dto.assetIds;
   const hasTeams = teamIds.length > 0;
-  const hasMachines = machineIds.length > 0;
+  const hasAssets = assetIds.length > 0;
   const orgLevel =
     dto.orgLevel ??
     (hasTeams ? 'team'
-    : hasMachines ? 'machine'
+    : hasAssets ? 'asset'
     : 'team');
   const orgId =
     dto.orgId ??
     (hasTeams ? (teamIds[0] ?? 0)
-    : hasMachines ? (machineIds[0] ?? 0)
+    : hasAssets ? (assetIds[0] ?? 0)
     : 0);
   const teamId = orgLevel === 'team' ? orgId : null;
 
@@ -501,14 +501,14 @@ export function mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
   type: 'user' | 'department' | 'team' | 'all';
   id: number | null;
 } {
-  // New teamIds/machineIds flow: notify first team or fall back to 'all'
+  // New teamIds/assetIds flow: notify first team or fall back to 'all'
   const teamIds = dto.teamIds;
-  const machineIds = dto.machineIds;
+  const assetIds = dto.assetIds;
   if (teamIds.length > 0) {
     return { type: 'team', id: teamIds[0] ?? null };
   }
-  if (machineIds.length > 0) {
-    // Machine-level: no direct team notification, use 'all' for the tenant
+  if (assetIds.length > 0) {
+    // Asset-level: no direct team notification, use 'all' for the tenant
     return { type: 'all', id: null };
   }
 
@@ -525,7 +525,7 @@ export function mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
       return dto.departmentId !== undefined && dto.departmentId !== null ?
           { type: 'department', id: dto.departmentId }
         : { type: 'all', id: null };
-    case 'machine':
+    case 'asset':
       return { type: 'all', id: null };
     case 'company':
     default:

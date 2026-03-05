@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * TPM Kamishibai Board — Page Component
-   * Renders the visual maintenance board for one machine's plan.
+   * Renders the visual maintenance board for one asset's plan.
    * SSR data: plan + cards + colors. Filter is client-state only.
    */
   import { goto } from '$app/navigation';
@@ -75,7 +75,7 @@
 
   const pageTitle = $derived(
     plan !== null ?
-      `${plan.machineName ?? plan.name} — Kamishibai Board`
+      `${plan.assetName ?? plan.name} — Kamishibai Board`
     : 'Kamishibai Board',
   );
 
@@ -109,7 +109,7 @@
               {/if}
               <span class="inline-flex items-center gap-1 text-lg font-bold">
                 <i class="fas fa-cog"></i>
-                {plan.machineName ?? '—'}
+                {plan.assetName ?? '—'}
               </span>
             </p>
           {/if}

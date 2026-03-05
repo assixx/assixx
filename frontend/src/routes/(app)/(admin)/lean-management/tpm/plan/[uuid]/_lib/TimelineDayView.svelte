@@ -251,12 +251,12 @@
               i,
             )}"
             title="{block.slot.planName} ({block.slot
-              .machineName}) — {intervalLabel(
+              .assetName}) — {intervalLabel(
               block.slot.intervalTypes,
             )} — {block.timeLabel}"
           >
             <span class="tl-block__name">
-              {block.slot.planName} ({block.slot.machineName})
+              {block.slot.planName} ({block.slot.assetName})
             </span>
             <span class="tl-block__detail">
               {intervalLabel(block.slot.intervalTypes)} &middot; {block.timeLabel}

@@ -1,11 +1,11 @@
 /**
  * TPM Card Status Service
  *
- * Manages card status transitions in the TPM state machine.
+ * Manages card status transitions in the TPM state asset.
  * All methods accept a PoolClient for transaction composability —
  * the caller manages the transaction boundary.
  *
- * State machine:
+ * State asset:
  *   green   → red     (setCardDue)
  *   red     → green   (markCardCompleted, Flow A — no approval)
  *   red     → yellow  (markCardCompleted, Flow B — approval required)

@@ -388,7 +388,7 @@ claude -p "Fix all code quality issues in the Assixx project.
 # ═══════════════════════════════════════════════════════════════
 # Nützliche Flags
 # ═══════════════════════════════════════════════════════════════
-# --output-format json          # Maschinenlesbare Ausgabe (für Skripte)
+# --output-format json          # Anlagenlesbare Ausgabe (für Skripte)
 # --output-format stream-json   # Streaming JSON (für Live-Monitoring)
 # --max-turns 20                # Maximale Anzahl Durchläufe begrenzen
 # --max-budget-usd 2.00         # Budget-Limit setzen (Kostenkontrolle)

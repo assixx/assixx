@@ -104,9 +104,9 @@ private async fetchVacationCount(userId: number, tenantId: number): Promise<{ co
 
 ---
 
-## 3. Zeiterfassung pro Maschine (SOLL)
+## 3. Zeiterfassung pro Anlage (SOLL)
 
-> Brainstorming: Sektion "3. Zeiterfassung pro Maschine" + Entscheidung E2
+> Brainstorming: Sektion "3. Zeiterfassung pro Anlage" + Entscheidung E2
 
 ### Backend-Andockpunkte
 
@@ -117,7 +117,7 @@ private async fetchVacationCount(userId: number, tenantId: number): Promise<{ co
 
 ### Was muss gemacht werden
 
-- ❌ Neue Tabelle `tpm_time_estimates` mit Spalten: `machine_id`, `interval_type`, `staff_count`, `preparation_minutes`, `execution_minutes`, `followup_minutes`
+- ❌ Neue Tabelle `tpm_time_estimates` mit Spalten: `asset_id`, `interval_type`, `staff_count`, `preparation_minutes`, `execution_minutes`, `followup_minutes`
 - ❌ CRUD-Service für Zeitschätzungen
 
 ### ADR-Referenz
@@ -151,7 +151,7 @@ machines.area_id           INTEGER FK    -- Zuordnung zu Bereich
 
 ### Was muss gemacht werden
 
-- ❌ Neue Tabelle `tpm_maintenance_plans` — Plan pro Maschine mit Basis-Intervall (Wochentag, Wiederholung, Uhrzeit)
+- ❌ Neue Tabelle `tpm_maintenance_plans` — Plan pro Anlage mit Basis-Intervall (Wochentag, Wiederholung, Uhrzeit)
 - ❌ Intervall-Berechnung: Aus Basis-Intervall alle Termine ableiten (T, W, M, VJ, HJ, J, LL, Custom)
 - ❌ Bei TPM-Abschluss: Bridge-Eintrag in `machine_maintenance_history` schreiben + `machines.last_maintenance` / `machines.next_maintenance` aktualisieren
 
@@ -168,30 +168,30 @@ machines.area_id           INTEGER FK    -- Zuordnung zu Bereich
 
 ### Backend-Andockpunkte — 4 Datenquellen
 
-| Datenquelle             | Status | Service                      | Methode                                                               | Dateipfad                                                   |
-| ----------------------- | ------ | ---------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Schichtplan             | ✅     | `ShiftsService`              | `findAll({ machineId, date, userId })`                                | `backend/src/nest/shifts/shifts.service.ts`                 |
-| User-Verfügbarkeit      | ✅     | `UserAvailabilityService`    | `getUserAvailabilityBatch(userIds, tenantId)`                         | `backend/src/nest/users/user-availability.service.ts`       |
-| Maschinen-Verfügbarkeit | ✅     | `MachineAvailabilityService` | `getMachineAvailabilityForDateRange(machineId, tenantId, start, end)` | `backend/src/nest/machines/machine-availability.service.ts` |
-| Bestehende TPM-Pläne    | ❌     | —                            | —                                                                     | Muss gebaut werden                                          |
+| Datenquelle           | Status | Service                      | Methode                                                              | Dateipfad                                                 |
+| --------------------- | ------ | ---------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
+| Schichtplan           | ✅     | `ShiftsService`              | `findAll({ asset_Id, date, userId })`                                | `backend/src/nest/shifts/shifts.service.ts`               |
+| User-Verfügbarkeit    | ✅     | `UserAvailabilityService`    | `getUserAvailabilityBatch(userIds, tenantId)`                        | `backend/src/nest/users/user-availability.service.ts`     |
+| Anlagen-Verfügbarkeit | ✅     | `MachineAvailabilityService` | `getMachineAvailabilityForDateRange(asset_Id, tenantId, start, end)` | `backend/src/nest/machines/asset-availability.service.ts` |
+| Bestehende TPM-Pläne  | ❌     | —                            | —                                                                    | Muss gebaut werden                                        |
 
 ### DB-Schema (existierend, Abfrage-relevant)
 
 ```sql
 -- Schichtplan: Welche MA sind wann eingeteilt?
-shifts.machine_id    INTEGER FK → machines(id) [nullable]
+shifts.asset_id    INTEGER FK → machines(id) [nullable]
 shifts.user_id       INTEGER FK → users(id)
 shifts.date          DATE
 shifts.start_time    TIME
 shifts.end_time      TIME
-shift_plans.machine_id INTEGER FK → machines(id) [nullable]
+shift_plans.asset_id INTEGER FK → machines(id) [nullable]
 
 -- User-Verfügbarkeit: Wer ist an dem Tag verfügbar?
 user_availability.status  ENUM ('available','unavailable','vacation','sick','training','other')
 user_availability.start_date  DATE
 user_availability.end_date    DATE
 
--- Maschinen-Verfügbarkeit: Ist die Maschine frei?
+-- Anlagen-Verfügbarkeit: Ist die Anlage frei?
 machine_availability.status  ENUM ('operational','maintenance','repair','standby','cleaning','other')
 machine_availability.start_date  DATE
 machine_availability.end_date    DATE
@@ -200,12 +200,12 @@ machine_availability.end_date    DATE
 ### Konkrete Abfrage-Logik (Slot-Assistant)
 
 ```
-1. shifts WHERE machine_id = X AND date BETWEEN Y AND Z
-   → Welche Schichten nutzen die Maschine? → Wann ist sie FREI?
+1. shifts WHERE asset_id = X AND date BETWEEN Y AND Z
+   → Welche Schichten nutzen die Anlage? → Wann ist sie FREI?
 2. shifts WHERE user_id IN (Instandhaltungsteam) AND date = Z
    → Welche IH-MA sind an dem Tag eingeteilt? → VERFÜGBAR für Wartung
-3. machine_availability WHERE machine_id = X AND start_date <= Z AND end_date >= Z
-   → Hat die Maschine schon geplante Ausfallzeit?
+3. machine_availability WHERE asset_id = X AND start_date <= Z AND end_date >= Z
+   → Hat die Anlage schon geplante Ausfallzeit?
 4. user_availability WHERE user_id IN (Team) AND start_date <= Z AND end_date >= Z
    → Hat ein MA Urlaub/Krank an dem Tag?
 ```
@@ -218,7 +218,7 @@ machine_availability.end_date    DATE
 
 ### ADR-Referenz
 
-- **ADR-011** Shift Data Architecture — `shifts.machine_id` FK ist die Brücke
+- **ADR-011** Shift Data Architecture — `shifts.asset_id` FK ist die Brücke
 
 ---
 
@@ -228,18 +228,18 @@ machine_availability.end_date    DATE
 
 ### Backend-Andockpunkte
 
-| Was            | Status | Service              | Methode                                                     | Dateipfad                                           |
-| -------------- | ------ | -------------------- | ----------------------------------------------------------- | --------------------------------------------------- |
-| Machine ↔ Team | ✅     | `MachineTeamService` | `setMachineTeams(machineId, teamIds, tenantId, assignedBy)` | `backend/src/nest/machines/machine-team.service.ts` |
-| Team ↔ User    | ✅     | `TeamsService`       | `getTeamMembers(teamId, tenantId)`                          | `backend/src/nest/teams/teams.service.ts`           |
-| Multi-Team     | ✅     | —                    | `user_teams` hat keinen UNIQUE auf `user_id` mehr           | Migration `20260218000040`                          |
+| Was            | Status | Service              | Methode                                                    | Dateipfad                                         |
+| -------------- | ------ | -------------------- | ---------------------------------------------------------- | ------------------------------------------------- |
+| Machine ↔ Team | ✅     | `MachineTeamService` | `setMachineTeams(asset_Id, teamIds, tenantId, assignedBy)` | `backend/src/nest/machines/asset-team.service.ts` |
+| Team ↔ User    | ✅     | `TeamsService`       | `getTeamMembers(teamId, tenantId)`                         | `backend/src/nest/teams/teams.service.ts`         |
+| Multi-Team     | ✅     | —                    | `user_teams` hat keinen UNIQUE auf `user_id` mehr          | Migration `20260218000040`                        |
 
 ### DB-Schema (existierend)
 
 ```sql
 -- Zugriffskette: Employee → Team → Machine
-machine_teams (machine_id, team_id, is_primary, assigned_by, notes)
-  UNIQUE (tenant_id, machine_id, team_id)
+machine_teams (asset_id, team_id, is_primary, assigned_by, notes)
+  UNIQUE (tenant_id, asset_id, team_id)
 
 user_teams (user_id, team_id, role ENUM('member','lead'), tenant_id)
   -- Kein UNIQUE auf user_id → Multi-Team erlaubt seit 20260218
@@ -248,7 +248,7 @@ user_teams (user_id, team_id, role ENUM('member','lead'), tenant_id)
 ### Was muss gemacht werden
 
 - ✅ Nichts — Zuweisungskette existiert vollständig
-- TPM nutzt einfach: `machine_teams` JOIN `user_teams` → alle MA einer Maschine
+- TPM nutzt einfach: `machine_teams` JOIN `user_teams` → alle MA einer Anlage
 
 ---
 
@@ -323,8 +323,8 @@ this.notificationService.notifyResponded(tenantId, updatedRequest);
 ### Was muss gemacht werden
 
 - ❌ Kaskade-Logik in `tpm-cards.service.ts`: Wenn Jährlich fällig → SQL Batch-Update aller kürzeren Intervall-Karten auf ROT
-- ❌ Performance-Aspekt: Batch `UPDATE tpm_cards SET status = 'due' WHERE machine_id = X AND interval_order <= Y` statt Einzelupdates
-- Schätzung: 20 Maschinen × 8 Intervalle × 5-15 Karten = 800-2400 Karten pro Tenant
+- ❌ Performance-Aspekt: Batch `UPDATE tpm_cards SET status = 'due' WHERE asset_id = X AND interval_order <= Y` statt Einzelupdates
+- Schätzung: 20 Anlagen × 8 Intervalle × 5-15 Karten = 800-2400 Karten pro Tenant
 
 ---
 
@@ -338,7 +338,7 @@ this.notificationService.notifyResponded(tenantId, updatedRequest);
 
 ### Was muss gemacht werden
 
-- ❌ Bei Karten-Erstellung: `SELECT * FROM tpm_cards WHERE machine_id = X AND task_description ILIKE '%suchtext%' AND interval_order < Y`
+- ❌ Bei Karten-Erstellung: `SELECT * FROM tpm_cards WHERE asset_id = X AND task_description ILIKE '%suchtext%' AND interval_order < Y`
 - ❌ Response enthält Warnung + existierende Karten-Info → Frontend zeigt Dialog
 
 ---
@@ -349,12 +349,12 @@ this.notificationService.notifyResponded(tenantId, updatedRequest);
 
 ### Backend-Andockpunkte
 
-| Was                 | Status | Service                      | Methode                                                               | Dateipfad                                                   |
-| ------------------- | ------ | ---------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Availability CRUD   | ✅     | `MachineAvailabilityService` | `updateAvailability(machineId, dto, tenantId, createdBy)`             | `backend/src/nest/machines/machine-availability.service.ts` |
-| Batch-Query         | ✅     | gleich                       | `getMachineAvailabilityBatch(machineIds, tenantId)`                   | gleich                                                      |
-| Date-Range-Query    | ✅     | gleich                       | `getMachineAvailabilityForDateRange(machineId, tenantId, start, end)` | gleich                                                      |
-| Overlap-Validierung | ✅     | gleich                       | `ConflictException` bei überlappenden Zeiträumen                      | gleich                                                      |
+| Was                 | Status | Service                      | Methode                                                              | Dateipfad                                                 |
+| ------------------- | ------ | ---------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
+| Availability CRUD   | ✅     | `MachineAvailabilityService` | `updateAvailability(asset_Id, dto, tenantId, createdBy)`             | `backend/src/nest/machines/asset-availability.service.ts` |
+| Batch-Query         | ✅     | gleich                       | `getMachineAvailabilityBatch(machineIds, tenantId)`                  | gleich                                                    |
+| Date-Range-Query    | ✅     | gleich                       | `getMachineAvailabilityForDateRange(asset_Id, tenantId, start, end)` | gleich                                                    |
+| Overlap-Validierung | ✅     | gleich                       | `ConflictException` bei überlappenden Zeiträumen                     | gleich                                                    |
 
 ### DB-Schema (existierend)
 
@@ -365,7 +365,7 @@ CREATE TYPE machine_availability_status AS ENUM (
 
 CREATE TABLE machine_availability (
   id          SERIAL PRIMARY KEY,
-  machine_id  INTEGER NOT NULL FK → machines(id),
+  asset_id  INTEGER NOT NULL FK → machines(id),
   tenant_id   INTEGER NOT NULL FK → tenants(id),
   status      machine_availability_status NOT NULL DEFAULT 'operational',
   start_date  DATE NOT NULL,
@@ -394,17 +394,17 @@ CREATE TABLE machine_availability (
 
 | Was                                | Status | Service                      | Methode                                                                     | Dateipfad                                   |
 | ---------------------------------- | ------ | ---------------------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
-| Shift CRUD                         | ✅     | `ShiftsService`              | `findAll(filters)` — Filter: date, userId, departmentId, teamId, machineId  | `backend/src/nest/shifts/shifts.service.ts` |
+| Shift CRUD                         | ✅     | `ShiftsService`              | `findAll(filters)` — Filter: date, userId, departmentId, teamId, asset_Id   | `backend/src/nest/shifts/shifts.service.ts` |
 | Shift Plans                        | ✅     | gleich                       | `createPlan(dto)` — Plan mit shift_items (userId, date, startTime, endTime) | gleich                                      |
-| Shift ↔ Machine FK                 | ✅     | —                            | `shifts.machine_id INTEGER FK → machines(id) [nullable]`                    | DB                                          |
+| Shift ↔ Machine FK                 | ✅     | —                            | `shifts.asset_id INTEGER FK → machines(id) [nullable]`                      | DB                                          |
 | Shift Calendar                     | ✅     | gleich                       | `getMyCalendarShifts()` — Kalender-Ansicht                                  | gleich                                      |
-| Machine Availability im Shift-Grid | ✅     | `MachineAvailabilityService` | `getMachineAvailabilityForDateRange()` — wird schon im Shift-Grid genutzt   | `machine-availability.service.ts`           |
+| Machine Availability im Shift-Grid | ✅     | `MachineAvailabilityService` | `getMachineAvailabilityForDateRange()` — wird schon im Shift-Grid genutzt   | `asset-availability.service.ts`             |
 
 ### DB-Schema (existierend)
 
 ```sql
-shifts.machine_id      INTEGER FK → machines(id) [nullable]
-shift_plans.machine_id INTEGER FK → machines(id) [nullable]
+shifts.asset_id      INTEGER FK → machines(id) [nullable]
+shift_plans.asset_id INTEGER FK → machines(id) [nullable]
 shift_plans.start_date DATE
 shift_plans.end_date   DATE
 ```
@@ -417,7 +417,7 @@ shift_plans.end_date   DATE
 
 ### ADR-Referenz
 
-- **ADR-011** Shift Data Architecture — `shifts.machine_id` FK
+- **ADR-011** Shift Data Architecture — `shifts.asset_id` FK
 
 ---
 
@@ -430,7 +430,7 @@ shift_plans.end_date   DATE
 | Was                    | Status | Detail                                                            | Dateipfad                                 |
 | ---------------------- | ------ | ----------------------------------------------------------------- | ----------------------------------------- |
 | Multi-Team Membership  | ✅     | `user_teams` hat keinen UNIQUE mehr auf `user_id`                 | Migration `20260218000040`                |
-| Machine-Team optional  | ✅     | `machine_teams.is_primary` Flag — IH-Team muss NICHT primary sein | `machine-team.service.ts`                 |
+| Machine-Team optional  | ✅     | `machine_teams.is_primary` Flag — IH-Team muss NICHT primary sein | `asset-team.service.ts`                   |
 | Team mit Lead + Deputy | ✅     | `teams.team_lead_id` + `teams.deputy_lead_id`                     | `backend/src/nest/teams/teams.service.ts` |
 
 ### Konsequenz
@@ -445,10 +445,10 @@ Ein MA kann gleichzeitig in "Produktion Halle 3" (Bediener) UND "Instandhaltungs
 
 ### Backend-Andockpunkte
 
-| Was                         | Status        | Detail                                                             | Dateipfad                                                  |
-| --------------------------- | ------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
-| machine_maintenance_history | ✅ als Bridge | Einfacher Audit Trail — TPM-Abschluss schreibt ZUSÄTZLICH hierhin  | `backend/src/nest/machines/machine-maintenance.service.ts` |
-| maintenance_type ENUM       | ✅            | `preventive, corrective, inspection, calibration, cleaning, other` | DB Baseline                                                |
+| Was                         | Status        | Detail                                                             | Dateipfad                                                |
+| --------------------------- | ------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| machine_maintenance_history | ✅ als Bridge | Einfacher Audit Trail — TPM-Abschluss schreibt ZUSÄTZLICH hierhin  | `backend/src/nest/machines/asset-maintenance.service.ts` |
+| maintenance_type ENUM       | ✅            | `preventive, corrective, inspection, calibration, cleaning, other` | DB Baseline                                              |
 
 ### ⚠️ KRITISCH: machine_maintenance_history reicht NICHT
 
@@ -502,20 +502,20 @@ color: z.string().regex(/^#[0-9a-f]{6}$/i, 'Color must be a valid hex color (e.g
 
 ---
 
-## 16. Maschinen-Dokumentation
+## 16. Anlagen-Dokumentation
 
-> Brainstorming: Sektion "8. Maschinen-Dokumentation"
+> Brainstorming: Sektion "8. Anlagen-Dokumentation"
 
 ### Backend-Andockpunkte
 
-| Was                         | Status   | Detail                                                                                            |
-| --------------------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `machine_documents` Tabelle | ✅ in DB | Existiert mit document storage, validity dates, uploaded_by — aber **KEIN Backend-Service**       |
-| MachineMaintenanceService   | ✅       | `backend/src/nest/machines/machine-maintenance.service.ts` — hat `report_url VARCHAR(500)` Spalte |
+| Was                         | Status   | Detail                                                                                          |
+| --------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `machine_documents` Tabelle | ✅ in DB | Existiert mit document storage, validity dates, uploaded_by — aber **KEIN Backend-Service**     |
+| MachineMaintenanceService   | ✅       | `backend/src/nest/machines/asset-maintenance.service.ts` — hat `report_url VARCHAR(500)` Spalte |
 
 ### Was muss gemacht werden
 
-- ❌ Neuer Service: `machine-documents.service.ts` — CRUD für Dokumente (Upload, Liste, Verknüpfung)
+- ❌ Neuer Service: `asset-documents.service.ts` — CRUD für Dokumente (Upload, Liste, Verknüpfung)
 - ❌ Neuer Controller + Endpoints: `GET/POST /machines/:uuid/documents`
 - ❌ TPM-Karten können dann auf `machine_documents.id` verweisen (Örtlichkeit als Foto)
 
@@ -847,13 +847,13 @@ CREATE TYPE tpm_interval_type AS ENUM (
 | #   | Was                            | Andockpunkt                                                                                  |
 | --- | ------------------------------ | -------------------------------------------------------------------------------------------- |
 | 1   | Machine CRUD + UUID + RLS      | `MachinesService` → `backend/src/nest/machines/machines.service.ts`                          |
-| 2   | Machine ↔ Team Assignment      | `MachineTeamService.setMachineTeams()` → `machine-team.service.ts`                           |
+| 2   | Machine ↔ Team Assignment      | `MachineTeamService.setMachineTeams()` → `asset-team.service.ts`                             |
 | 3   | User ↔ Team (Multi-Team)       | `user_teams` (kein UNIQUE) → Migration `20260218000040`                                      |
-| 4   | Machine Availability CRUD      | `MachineAvailabilityService.updateAvailability()` → `machine-availability.service.ts`        |
+| 4   | Machine Availability CRUD      | `MachineAvailabilityService.updateAvailability()` → `asset-availability.service.ts`          |
 | 5   | Machine Availability Batch     | `MachineAvailabilityService.getMachineAvailabilityBatch()` → gleich                          |
 | 6   | Machine Availability DateRange | `MachineAvailabilityService.getMachineAvailabilityForDateRange()` → gleich                   |
 | 7   | User Availability Batch        | `UserAvailabilityService.getUserAvailabilityBatch()` → `user-availability.service.ts`        |
-| 8   | Shifts + Machine FK            | `ShiftsService.findAll({ machineId })` → `shifts.service.ts`                                 |
+| 8   | Shifts + Machine FK            | `ShiftsService.findAll({ asset_Id })` → `shifts.service.ts`                                  |
 | 9   | Route Groups                   | `(admin)/`, `(shared)/` → `frontend/src/routes/(app)/`                                       |
 | 10  | requireFeature()               | `frontend/src/lib/utils/feature-guard.ts`                                                    |
 | 11  | TenantFeatureGuard             | `@TenantFeature('tpm')` → `tenant-feature.guard.ts`                                          |
@@ -868,16 +868,16 @@ CREATE TYPE tpm_interval_type AS ENUM (
 
 ### Muss erweitert werden (bestehende Module ändern)
 
-| #   | Was                           | Wo                                | Änderung                                 |
-| --- | ----------------------------- | --------------------------------- | ---------------------------------------- |
-| 1   | Navigation Config             | `navigation-config.ts`            | TPM-Einträge + badgeType Union           |
-| 2   | Notification Store            | `notification.store.svelte.ts`    | `tpm: number` in Interface + SSE Mapping |
-| 3   | Dashboard Counts              | `dashboard.service.ts` + DTO      | `fetchTpmCount()` + Schema-Erweiterung   |
-| 4   | Machine Availability Auto-Set | `machine-availability.service.ts` | `createFromTpmPlan()` Methode            |
-| 5   | Shift-Grid Toggle             | `/shifts/` Frontend               | "Wartungstermine anzeigen" Toggle        |
-| 6   | SSE Handler                   | `notifications.controller.ts`     | TPM Event-Handler registrieren           |
-| 7   | EventBus                      | `eventBus.ts`                     | 5 neue `emit*()` Methoden                |
-| 8   | machine_maintenance_history   | `machine-maintenance.service.ts`  | Bridge: TPM-Abschluss → History-Eintrag  |
+| #   | Was                           | Wo                              | Änderung                                 |
+| --- | ----------------------------- | ------------------------------- | ---------------------------------------- |
+| 1   | Navigation Config             | `navigation-config.ts`          | TPM-Einträge + badgeType Union           |
+| 2   | Notification Store            | `notification.store.svelte.ts`  | `tpm: number` in Interface + SSE Mapping |
+| 3   | Dashboard Counts              | `dashboard.service.ts` + DTO    | `fetchTpmCount()` + Schema-Erweiterung   |
+| 4   | Machine Availability Auto-Set | `asset-availability.service.ts` | `createFromTpmPlan()` Methode            |
+| 5   | Shift-Grid Toggle             | `/shifts/` Frontend             | "Wartungstermine anzeigen" Toggle        |
+| 6   | SSE Handler                   | `notifications.controller.ts`   | TPM Event-Handler registrieren           |
+| 7   | EventBus                      | `eventBus.ts`                   | 5 neue `emit*()` Methoden                |
+| 8   | machine_maintenance_history   | `asset-maintenance.service.ts`  | Bridge: TPM-Abschluss → History-Eintrag  |
 
 ### Muss neu gebaut werden
 
@@ -893,7 +893,7 @@ CREATE TYPE tpm_interval_type AS ENUM (
 | 8   | Duplicate Detection         | In `tpm-cards.service.ts` — ILIKE-Suche                                                                                                                                                      |
 | 9   | Approval Flow               | `tpm-executions.service.ts` — FOR UPDATE + Status-Branching                                                                                                                                  |
 | 10  | Escalation Engine           | `tpm-escalation.service.ts` — @Cron + Notification                                                                                                                                           |
-| 11  | Machine Documents Backend   | `machine-documents.service.ts` — CRUD für existierende Tabelle                                                                                                                               |
+| 11  | Machine Documents Backend   | `asset-documents.service.ts` — CRUD für existierende Tabelle                                                                                                                                 |
 | 12  | Kamishibai Board Frontend   | `frontend/src/lib/tpm/KamishibaiBoard.svelte`                                                                                                                                                |
 | 13  | Card Flip Component         | `frontend/src/lib/tpm/KamishibaiCard.svelte`                                                                                                                                                 |
 | 14  | TPM Dashboard Page          | `routes/(app)/(admin)/lean-management/tpm/+page.svelte`                                                                                                                                      |
@@ -915,4 +915,4 @@ CREATE TYPE tpm_interval_type AS ENUM (
 | Feature Guard Frontend  | Utils         | `frontend/src/lib/utils/feature-guard.ts`                                                |
 | SSE Stream              | Notifications | `backend/src/nest/notifications/notifications.controller.ts`                             |
 | Dashboard Counts        | Dashboard     | `backend/src/nest/dashboard/dashboard.service.ts`                                        |
-| Machine Availability    | Machines      | `backend/src/nest/machines/machine-availability.service.ts`                              |
+| Machine Availability    | Machines      | `backend/src/nest/machines/asset-availability.service.ts`                                |

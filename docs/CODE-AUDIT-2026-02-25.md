@@ -72,7 +72,7 @@ ESLint meldet **0 Fehler**. Limit: 700 Code-Zeilen für `.svelte`.
 | Komponente                       | Total | Code-Zeilen | Limit | Puffer                              |
 | -------------------------------- | ----- | ----------- | ----- | ----------------------------------- |
 | `AppSidebar.svelte`              | 861   | **734**     | 700   | eslint-disable (begründet: 60% CSS) |
-| `manage-machines/+page.svelte`   | 803   | **680**     | 700   | 20 frei                             |
+| `manage-assets/+page.svelte`     | 803   | **680**     | 700   | 20 frei                             |
 | `vacation/+page.svelte`          | 832   | **682**     | 700   | 18 frei                             |
 | `manage-employees/+page.svelte`  | 813   | **672**     | 700   | 28 frei                             |
 | `SlotAssistant.svelte`           | 814   | **671**     | 700   | 29 frei                             |
@@ -144,7 +144,7 @@ export function checkSessionExpired(err: unknown): boolean {
 
 4 `+page.server.ts` Dateien mit 90%+ identischem Code:
 
-- `manage-machines/availability/[uuid]/+page.server.ts`
+- `manage-assets/availability/[uuid]/+page.server.ts`
 - `manage-employees/availability/[uuid]/+page.server.ts`
 - `manage-admins/availability/[uuid]/+page.server.ts`
 - `manage-root/availability/[uuid]/+page.server.ts`
@@ -243,7 +243,7 @@ Diese Dateien bestehen ESLint, aber jede Erweiterung erzwingt Extraktion:
 | Komponente                      | Code-Zeilen | Puffer | Risiko                         |
 | ------------------------------- | ----------- | ------ | ------------------------------ |
 | `vacation/+page.svelte`         | 682         | 18     | Nächstes Feature sprengt Limit |
-| `manage-machines/+page.svelte`  | 680         | 20     | Nächstes Feature sprengt Limit |
+| `manage-assets/+page.svelte`    | 680         | 20     | Nächstes Feature sprengt Limit |
 | `manage-employees/+page.svelte` | 672         | 28     | Knapp                          |
 | `RotationSetupModal.svelte`     | 673         | 27     | Knapp                          |
 | `SlotAssistant.svelte`          | 671         | 29     | Knapp + 5 Nesting-Levels       |
@@ -379,12 +379,12 @@ Legacy aus der frühen Entwicklungsphase:
 
 ### Bei nächster Erweiterung (proaktiv splitten)
 
-| Service / Komponente                     | Trigger                      | Aktion                                              |
-| ---------------------------------------- | ---------------------------- | --------------------------------------------------- |
-| `kvp.service.ts` (869/900)               | Nächstes KVP-Feature         | → KvpSuggestionService + KvpQueryService            |
-| `vacation.service.ts` (853/900)          | Nächstes Vacation-Feature    | → VacationRequestService + VacationLifecycleService |
-| `vacation/+page.svelte` (682/700)        | Nächstes Vacation-UI-Feature | → Modal-Logik extrahieren                           |
-| `manage-machines/+page.svelte` (680/700) | Nächstes Machines-Feature    | → Shared CRUD Composable                            |
+| Service / Komponente                   | Trigger                      | Aktion                                              |
+| -------------------------------------- | ---------------------------- | --------------------------------------------------- |
+| `kvp.service.ts` (869/900)             | Nächstes KVP-Feature         | → KvpSuggestionService + KvpQueryService            |
+| `vacation.service.ts` (853/900)        | Nächstes Vacation-Feature    | → VacationRequestService + VacationLifecycleService |
+| `vacation/+page.svelte` (682/700)      | Nächstes Vacation-UI-Feature | → Modal-Logik extrahieren                           |
+| `manage-assets/+page.svelte` (680/700) | Nächstes Machines-Feature    | → Shared CRUD Composable                            |
 
 ---
 

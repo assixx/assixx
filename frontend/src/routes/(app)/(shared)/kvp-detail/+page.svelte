@@ -78,7 +78,7 @@
   const departments = $derived(data.departments);
   const teams = $derived(data.teams);
   const areas = $derived(data.areas);
-  const machines = $derived(data.machines);
+  const assets = $derived(data.assets);
   const currentUser = $derived(data.currentUser);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
@@ -176,7 +176,7 @@
       kvpDetailState.setDepartments(departments);
       kvpDetailState.setTeams(teams);
       kvpDetailState.setAreas(areas);
-      kvpDetailState.setMachines(machines);
+      kvpDetailState.setAssets(assets);
       kvpDetailState.setLoading(false);
     });
   });

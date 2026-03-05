@@ -14,16 +14,16 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
-  createMachines,
-  deleteMachines,
+  createAssets,
+  deleteAssets,
   loginApitest,
 } from './helpers.js';
 
 let auth: AuthState;
 
 // Shared state across sequential describe blocks
-let machineUuids: string[] = [];
-let machineUuid: string;
+let assetUuids: string[] = [];
+let assetUuid: string;
 let planUuid: string;
 let cardUuid: string;
 let templateUuid: string;
@@ -39,16 +39,16 @@ function forceCardStatus(uuid: string, status: string): void {
 beforeAll(async () => {
   auth = await loginApitest();
 
-  // Create 2 machines (this suite needs the 2nd one)
-  machineUuids = await createMachines(auth.authToken, 2);
-  machineUuid = machineUuids[1]!;
+  // Create 2 assets (this suite needs the 2nd one)
+  assetUuids = await createAssets(auth.authToken, 2);
+  assetUuid = assetUuids[1]!;
 
   // Create plan for execution + slot tests
   const planRes = await fetch(`${BASE_URL}/tpm/plans`, {
     method: 'POST',
     headers: authHeaders(auth.authToken),
     body: JSON.stringify({
-      machineUuid,
+      assetUuid,
       name: `TPM Exec Test Plan ${Date.now()}`,
       baseWeekday: 2,
       baseRepeatEvery: 1,
@@ -1079,8 +1079,8 @@ afterAll(async () => {
     });
   }
 
-  // Delete machines created for this suite
-  if (machineUuids.length > 0) {
-    await deleteMachines(auth.authToken, machineUuids);
+  // Delete assets created for this suite
+  if (assetUuids.length > 0) {
+    await deleteAssets(auth.authToken, assetUuids);
   }
 });

@@ -3,7 +3,7 @@
    * TPM Slot Assistant Component
    * @module plan/[uuid]/_lib/SlotAssistant
    *
-   * 7-column calendar grid showing available/busy days for a machine.
+   * 7-column calendar grid showing available/busy days for a asset.
    * Combines two data sources:
    *   1. Slot Assistant (5-source check, max 90 days)
    *   2. Schedule Projection (cross-plan TPM dates, max 365 days)
@@ -17,7 +17,7 @@
 
   import {
     fetchAvailableSlots,
-    fetchAvailableSlotsByMachine,
+    fetchAvailableSlotsByAsset,
     fetchScheduleProjection,
     logApiError,
   } from '../../../_lib/api';
@@ -47,7 +47,7 @@
 
   interface Props {
     planUuid?: string;
-    machineUuid?: string;
+    assetUuid?: string;
     shiftPlanRequired?: boolean;
     cardsHref?: string;
     intervalColors?: IntervalColorConfigEntry[];
@@ -55,7 +55,7 @@
 
   const {
     planUuid,
-    machineUuid,
+    assetUuid,
     shiftPlanRequired,
     cardsHref,
     intervalColors = [],
@@ -72,7 +72,7 @@
 
   const isEditMode = $derived(planUuid !== undefined && planUuid.length > 0);
   const canFetch = $derived(
-    isEditMode || (machineUuid !== undefined && machineUuid.length > 0),
+    isEditMode || (assetUuid !== undefined && assetUuid.length > 0),
   );
 
   // =========================================================================
@@ -239,7 +239,7 @@
       slot.isFullDay ? 'Ganztägig' : (
         `${slot.startTime ?? '?'} – ${slot.endTime ?? '?'}`
       );
-    return `${slot.planName} (${slot.machineName}) — ${intervals} — ${time}`;
+    return `${slot.planName} (${slot.assetName}) — ${intervals} — ${time}`;
   }
 
   /** Format projection lines for tooltip display */
@@ -334,9 +334,9 @@
     if (isEditMode && planUuid !== undefined) {
       return await fetchAvailableSlots(planUuid, startDate, slotEndDate);
     }
-    if (machineUuid !== undefined) {
-      return await fetchAvailableSlotsByMachine(
-        machineUuid,
+    if (assetUuid !== undefined) {
+      return await fetchAvailableSlotsByAsset(
+        assetUuid,
         startDate,
         slotEndDate,
         shiftPlanRequired ?? false,
@@ -348,7 +348,7 @@
   // Reactive: refetch when dependencies change
   $effect(() => {
     void planUuid;
-    void machineUuid;
+    void assetUuid;
     void shiftPlanRequired;
     void loadData();
   });
@@ -528,7 +528,7 @@
                 >{formatDayMonth(day.date, true)}</span
               >
               {#each projSlots as slot (slot.planUuid)}
-                <span class="slot-day__machine">{slot.machineName}</span>
+                <span class="slot-day__asset">{slot.assetName}</span>
                 <div class="slot-day__intervals">
                   {#each slot.intervalTypes as interval (interval)}
                     <span
@@ -611,7 +611,7 @@
               {:else if isScheduled}
                 {@const projSlots = getSlotsForDate(day.date)}
                 {#each projSlots as slot (slot.planUuid)}
-                  <span class="slot-day__machine">{slot.machineName}</span>
+                  <span class="slot-day__asset">{slot.assetName}</span>
                   <div class="slot-day__intervals">
                     {#each slot.intervalTypes as interval (interval)}
                       <span
@@ -808,9 +808,9 @@
     line-height: 1.2;
   }
 
-  /* ---- Scheduled day: machine name + interval badges ---- */
+  /* ---- Scheduled day: asset name + interval badges ---- */
 
-  .slot-day__machine {
+  .slot-day__asset {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--color-text-secondary);

@@ -21,7 +21,7 @@ import type {
   Team,
   Area,
   Department,
-  Machine,
+  Asset,
   ShiftFavorite,
   ShiftTimesMap,
 } from './types';
@@ -71,7 +71,7 @@ export async function saveSchedule(
   const planData = {
     teamId: selectedContext.teamId ?? 0,
     departmentId: selectedContext.departmentId ?? undefined,
-    machineId: selectedContext.machineId ?? undefined,
+    assetId: selectedContext.assetId ?? undefined,
     areaId: selectedContext.areaId ?? undefined,
     startDate: formatDate(weekStart),
     endDate: formatDate(weekEnd),
@@ -219,18 +219,18 @@ export interface AddFavoriteParams {
   selectedContext: SelectedContext;
   areas: Area[];
   departments: Department[];
-  machines: Machine[];
+  assets: Asset[];
   teams: Team[];
 }
 
 interface FavoriteEntities {
   area: Area;
   dept: Department;
-  machine: Machine | undefined;
+  asset: Asset | undefined;
   team: Team;
   areaId: number;
   departmentId: number;
-  machineId: number | null;
+  assetId: number | null;
   teamId: number;
 }
 
@@ -241,8 +241,8 @@ interface FavoriteEntities {
 function findFavoriteEntities(
   params: AddFavoriteParams,
 ): FavoriteEntities | null {
-  const { selectedContext, areas, departments, machines, teams } = params;
-  const { areaId, departmentId, machineId, teamId } = selectedContext;
+  const { selectedContext, areas, departments, assets, teams } = params;
+  const { areaId, departmentId, assetId, teamId } = selectedContext;
 
   if (areaId === null || departmentId === null || teamId === null) {
     return null;
@@ -256,9 +256,9 @@ function findFavoriteEntities(
     return null;
   }
 
-  const machine =
-    machineId !== null ? machines.find((m) => m.id === machineId) : undefined;
-  return { area, dept, machine, team, areaId, departmentId, machineId, teamId };
+  const asset =
+    assetId !== null ? assets.find((m) => m.id === assetId) : undefined;
+  return { area, dept, asset, team, areaId, departmentId, assetId, teamId };
 }
 
 export async function addToFavorites(
@@ -267,11 +267,11 @@ export async function addToFavorites(
   const entities = findFavoriteEntities(params);
   if (entities === null) return null;
 
-  const { area, dept, machine, team, areaId, departmentId, machineId, teamId } =
+  const { area, dept, asset, team, areaId, departmentId, assetId, teamId } =
     entities;
 
   const favoriteName =
-    machine !== undefined ? `${team.name} - ${machine.name}` : team.name;
+    asset !== undefined ? `${team.name} - ${asset.name}` : team.name;
 
   return await apiSaveFavorite({
     name: favoriteName,
@@ -279,8 +279,8 @@ export async function addToFavorites(
     areaName: area.name,
     departmentId,
     departmentName: dept.name,
-    machineId: machineId ?? 0,
-    machineName: machine?.name ?? '',
+    assetId: assetId ?? 0,
+    assetName: asset?.name ?? '',
     teamId,
     teamName: team.name,
   });

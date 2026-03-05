@@ -3,7 +3,7 @@
  *
  * Queries which employees are assigned to TPM maintenance shifts.
  * Joins shifts (via shift_plans with is_tpm_mode = true) against
- * tpm_maintenance_plans (by machine) to build the "Zugewiesene Mitarbeiter"
+ * tpm_maintenance_plans (by asset) to build the "Zugewiesene Mitarbeiter"
  * row in the Gesamtansicht.
  *
  * NOTE: interval_type is NOT determined here. The frontend already has the
@@ -17,7 +17,7 @@ import { DatabaseService } from '../database/database.service.js';
 /** DB row returned by the shift assignments query */
 interface DbShiftAssignmentRow {
   plan_uuid: string;
-  machine_id: number;
+  asset_id: number;
   shift_date: string;
   user_id: number;
   first_name: string;
@@ -28,7 +28,7 @@ interface DbShiftAssignmentRow {
 /** API response shape for a single shift assignment */
 export interface TpmShiftAssignment {
   planUuid: string;
-  machineId: number;
+  assetId: number;
   shiftDate: string;
   userId: number;
   firstName: string;
@@ -48,11 +48,11 @@ export class TpmShiftAssignmentsService {
    * The query joins:
    * 1. shifts — actual employee assignments on specific dates
    * 2. shift_plans — filtered by is_tpm_mode = true (TPM maintenance teams)
-   * 3. tpm_maintenance_plans — matched by machine_id (which machine this team maintains)
+   * 3. tpm_maintenance_plans — matched by asset_id (which asset this team maintains)
    * 4. users — employee names
    *
    * No dependency on tpm_cards or tpm_scheduled_dates — assignments exist
-   * as soon as a TPM shift plan is created for a machine that has a TPM plan.
+   * as soon as a TPM shift plan is created for a asset that has a TPM plan.
    */
   async getShiftAssignments(
     tenantId: number,
@@ -66,7 +66,7 @@ export class TpmShiftAssignmentsService {
     const rows = await this.db.query<DbShiftAssignmentRow>(
       `SELECT DISTINCT
         mp.uuid AS plan_uuid,
-        mp.machine_id,
+        mp.asset_id,
         s.date::text AS shift_date,
         s.user_id,
         u.first_name,
@@ -77,7 +77,7 @@ export class TpmShiftAssignmentsService {
         ON sp.id = s.plan_id
        AND sp.is_tpm_mode = true
       JOIN tpm_maintenance_plans mp
-        ON mp.machine_id = sp.machine_id
+        ON mp.asset_id = sp.asset_id
        AND mp.tenant_id = sp.tenant_id
        AND mp.is_active = 1
       JOIN users u
@@ -91,7 +91,7 @@ export class TpmShiftAssignmentsService {
 
     return rows.map((row: DbShiftAssignmentRow) => ({
       planUuid: row.plan_uuid.trim(),
-      machineId: row.machine_id,
+      assetId: row.asset_id,
       shiftDate: row.shift_date,
       userId: row.user_id,
       firstName: row.first_name,

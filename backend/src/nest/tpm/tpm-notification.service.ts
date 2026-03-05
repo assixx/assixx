@@ -19,8 +19,8 @@ export interface TpmNotificationCard {
   uuid: string;
   cardCode: string;
   title: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   intervalType: string;
   status: string;
 }
@@ -33,7 +33,7 @@ export class TpmNotificationService {
 
   /**
    * Notify that a maintenance card is now due (red).
-   * Recipients: users assigned to the machine's teams.
+   * Recipients: users assigned to the asset's teams.
    */
   notifyMaintenanceDue(
     tenantId: number,
@@ -41,7 +41,7 @@ export class TpmNotificationService {
     assignedUserIds: number[],
   ): void {
     this.logger.log(
-      `TPM card due: ${card.cardCode} (${card.uuid}) on machine ${String(card.machineId)}`,
+      `TPM card due: ${card.cardCode} (${card.uuid}) on asset ${String(card.assetId)}`,
     );
     eventBus.emitTpmMaintenanceDue(tenantId, this.toEventPayload(card));
 
@@ -50,7 +50,7 @@ export class TpmNotificationService {
         tenantId,
         userId,
         `Wartung fällig: ${card.cardCode}`,
-        `${card.title} an ${card.machineName ?? `Maschine #${String(card.machineId)}`} ist fällig (${card.intervalType})`,
+        `${card.title} an ${card.assetName ?? `Anlage #${String(card.assetId)}`} ist fällig (${card.intervalType})`,
         userId,
         card.uuid,
       );
@@ -59,7 +59,7 @@ export class TpmNotificationService {
 
   /**
    * Notify that a maintenance card is overdue (escalation).
-   * Recipient: team lead responsible for the machine.
+   * Recipient: team lead responsible for the asset.
    */
   notifyMaintenanceOverdue(
     tenantId: number,
@@ -75,7 +75,7 @@ export class TpmNotificationService {
       tenantId,
       teamLeadId,
       `Eskalation: ${card.cardCode} überfällig`,
-      `${card.title} an ${card.machineName ?? `Maschine #${String(card.machineId)}`} ist überfällig`,
+      `${card.title} an ${card.assetName ?? `Anlage #${String(card.assetId)}`} ist überfällig`,
       teamLeadId,
       card.uuid,
     );
@@ -83,7 +83,7 @@ export class TpmNotificationService {
 
   /**
    * Notify that a maintenance card was completed.
-   * Recipients: team leads of the machine's teams.
+   * Recipients: team leads of the asset's teams.
    */
   notifyMaintenanceCompleted(
     tenantId: number,
@@ -124,7 +124,7 @@ export class TpmNotificationService {
         tenantId,
         approverId,
         `Freigabe erforderlich: ${card.cardCode}`,
-        `${card.title} an ${card.machineName ?? `Maschine #${String(card.machineId)}`} wartet auf Freigabe`,
+        `${card.title} an ${card.assetName ?? `Anlage #${String(card.assetId)}`} wartet auf Freigabe`,
         approverId,
         card.uuid,
       );
@@ -173,8 +173,8 @@ export class TpmNotificationService {
       uuid: card.uuid,
       cardCode: card.cardCode,
       title: card.title,
-      machineId: card.machineId,
-      ...(card.machineName !== undefined && { machineName: card.machineName }),
+      assetId: card.assetId,
+      ...(card.assetName !== undefined && { assetName: card.assetName }),
       intervalType: card.intervalType,
       status: card.status,
     };

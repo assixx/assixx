@@ -4,10 +4,10 @@
    * @module gesamtansicht/_lib/OverallViewAssignments
    *
    * Shows which employees are assigned to TPM maintenance shifts.
-   * One row per machine, one cell per interval with employee names.
+   * One row per asset, one cell per interval with employee names.
    *
    * The backend returns shift assignments WITHOUT interval_type — it only
-   * knows "employee X works on date Y for machine Z". This component
+   * knows "employee X works on date Y for asset Z". This component
    * cross-references those dates against the projected schedule (matrixRows)
    * to determine which interval each employee covers.
    */
@@ -58,10 +58,10 @@
   {#each matrixRows as row (row.plan.uuid)}
     <tr>
       <td
-        class="gv-assign-cell gv-assign-cell--machine"
+        class="gv-assign-cell gv-assign-cell--asset"
         colspan={2}
       >
-        {row.plan.machineName ?? '—'}
+        {row.plan.assetName ?? '—'}
       </td>
       {#each INTERVAL_COLUMNS as col (col)}
         {@const names = getNames(row.plan.uuid, col)}
@@ -109,7 +109,7 @@
     vertical-align: middle;
   }
 
-  .gv-assign-cell--machine {
+  .gv-assign-cell--asset {
     font-weight: 600;
     font-size: 0.85rem;
     position: sticky;

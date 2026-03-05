@@ -43,12 +43,12 @@ export class TpmCardCascadeService {
    * interval_order <= triggerIntervalOrder to red (due).
    *
    * Uses a single batch UPDATE for performance.
-   * Only affects active, green cards for the given machine.
+   * Only affects active, green cards for the given asset.
    */
   async triggerCascade(
     client: PoolClient,
     tenantId: number,
-    machineId: number,
+    assetId: number,
     triggerIntervalOrder: number,
     dueDate: Date,
   ): Promise<CascadeResult> {
@@ -60,7 +60,7 @@ export class TpmCardCascadeService {
         SET status = 'red',
             current_due_date = $4,
             updated_at = NOW()
-        WHERE machine_id = $1
+        WHERE asset_id = $1
           AND tenant_id = $2
           AND interval_order <= $3
           AND status = 'green'
@@ -69,13 +69,13 @@ export class TpmCardCascadeService {
         RETURNING id
       )
       SELECT COUNT(*) AS count FROM updated`,
-      [machineId, tenantId, triggerIntervalOrder, dueDateStr],
+      [assetId, tenantId, triggerIntervalOrder, dueDateStr],
     );
 
     const affectedCount = Number.parseInt(result.rows[0]?.count ?? '0', 10);
 
     this.logger.debug(
-      `Cascade triggered: machine ${machineId}, order <= ${triggerIntervalOrder}, ` +
+      `Cascade triggered: asset ${assetId}, order <= ${triggerIntervalOrder}, ` +
         `${affectedCount} Karten → red (fällig: ${dueDateStr})`,
     );
 
@@ -92,29 +92,29 @@ export class TpmCardCascadeService {
    */
   async getCascadePreview(
     tenantId: number,
-    machineId: number,
+    assetId: number,
     triggerIntervalOrder: number,
   ): Promise<CascadePreview> {
     const rows = await this.db.query<TpmCardJoinRow>(
       `SELECT c.*,
          p.uuid AS plan_uuid,
-         m.name AS machine_name,
+         m.name AS asset_name,
          t.uuid AS template_uuid,
          u_created.username AS created_by_name,
          u_completed.username AS last_completed_by_name
        FROM tpm_cards c
        LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
-       LEFT JOIN machines m ON c.machine_id = m.id AND m.tenant_id = c.tenant_id
+       LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
        LEFT JOIN tpm_card_templates t ON c.template_id = t.id
        LEFT JOIN users u_created ON c.created_by = u_created.id
        LEFT JOIN users u_completed ON c.last_completed_by = u_completed.id
-       WHERE c.machine_id = $1
+       WHERE c.asset_id = $1
          AND c.tenant_id = $2
          AND c.interval_order <= $3
          AND c.status = 'green'
          AND c.is_active = 1
        ORDER BY c.interval_order ASC, c.sort_order ASC`,
-      [machineId, tenantId, triggerIntervalOrder],
+      [assetId, tenantId, triggerIntervalOrder],
     );
 
     return {

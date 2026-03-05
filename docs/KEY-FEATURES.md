@@ -1,15 +1,15 @@
 # 🔑 Assixx Key Features
 
-> **Stand:** 03.06.2025  
-> **Version:** 0.1.0 (Development)  
+> **Stand:** 03.06.2025
+> **Version:** 0.1.0 (Development)
 > **Ziel:** Übersicht der 8 Kern-Features für Multi-Tenant Industrieverwaltung
 
 ## 📋 Die 8 Haupt-Features
 
 ### 1. 📄 Dokumenten-Management
 
-**Code:** `document_upload`, `payslip_management`  
-**Kategorie:** Basic Feature  
+**Code:** `document_upload`, `payslip_management`
+**Kategorie:** Basic Feature
 **Beschreibung:** Zentrales System für alle Unternehmensdokumente
 
 - **Upload & Kategorisierung** - Dokumente hochladen und organisieren
@@ -20,8 +20,8 @@
 
 ### 2. 📌 Schwarzes Brett (Blackboard)
 
-**Code:** `blackboard`  
-**Kategorie:** Premium Feature  
+**Code:** `blackboard`
+**Kategorie:** Premium Feature
 **Beschreibung:** Digitale Informationszentrale für alle Mitarbeiter
 
 - **Ankündigungen** - Wichtige Mitteilungen an alle
@@ -32,8 +32,8 @@
 
 ### 3. 💬 Chat-System
 
-**Code:** `chat`  
-**Kategorie:** Premium Feature  
+**Code:** `chat`
+**Kategorie:** Premium Feature
 **Beschreibung:** Echtzeit-Kommunikation im Unternehmen
 
 - **Direktnachrichten** - 1:1 Kommunikation
@@ -44,8 +44,8 @@
 
 ### 4. 📅 Kalender
 
-**Code:** `calendar`  
-**Kategorie:** Premium Feature  
+**Code:** `calendar`
+**Kategorie:** Premium Feature
 **Beschreibung:** Unternehmensweite Terminverwaltung
 
 - **Event-Management** - Termine erstellen und verwalten
@@ -56,8 +56,8 @@
 
 ### 5. 📊 Schichtplanung
 
-**Code:** `shift_planning`  
-**Kategorie:** Enterprise Feature  
+**Code:** `shift_planning`
+**Kategorie:** Enterprise Feature
 **Beschreibung:** Professionelle Schichtverwaltung für Industriebetriebe
 
 - **Wochenansicht** - Übersichtliche Schichtdarstellung
@@ -68,8 +68,8 @@
 
 ### 6. 💡 KVP-System (Kontinuierlicher Verbesserungsprozess)
 
-**Code:** `kvp`  
-**Kategorie:** Enterprise Feature  
+**Code:** `kvp`
+**Kategorie:** Enterprise Feature
 **Beschreibung:** Mitarbeiter-getriebene Prozessverbesserung
 
 - **Vorschlagseinreichung** - Ideen digital erfassen
@@ -80,8 +80,8 @@
 
 ### 7. 📊 Survey-System
 
-**Code:** `surveys`  
-**Kategorie:** Premium Feature  
+**Code:** `surveys`
+**Kategorie:** Premium Feature
 **Beschreibung:** Professionelle Mitarbeiterumfragen
 
 - **Umfrage-Editor** - Verschiedene Fragetypen
@@ -92,8 +92,8 @@
 
 ### 8. 👥 Team-Management
 
-**Code:** `team_management`  
-**Kategorie:** Premium Feature  
+**Code:** `team_management`
+**Kategorie:** Premium Feature
 **Beschreibung:** Organisations- und Teamstruktur verwalten
 
 - **Abteilungen** - Organisationseinheiten definieren
@@ -136,7 +136,7 @@
 
 1. **🌴 Urlaubsantrag-System** - Digitale Urlaubsverwaltung
 2. **💰 Gehaltsabrechnung Upload** - Sichere Lohnzettel-Verteilung
-3. **🔧 TPM-System** - Total Productive Maintenance für Maschinen
+3. **🔧 TPM-System** - Total Productive Maintenance für Anlagen
 
 ### Weitere geplante Features
 

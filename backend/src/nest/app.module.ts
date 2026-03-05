@@ -17,6 +17,7 @@ import { randomUUID } from 'node:crypto';
 
 import { AdminPermissionsModule } from './admin-permissions/admin-permissions.module.js';
 import { AreasModule } from './areas/areas.module.js';
+import { AssetsModule } from './assets/assets.module.js';
 import { AuditTrailModule } from './audit-trail/audit-trail.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BlackboardModule } from './blackboard/blackboard.module.js';
@@ -46,7 +47,6 @@ import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { FeaturesModule } from './features/features.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
-import { MachinesModule } from './machines/machines.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PlansModule } from './plans/plans.module.js';
@@ -164,7 +164,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     FeaturesModule,
     KvpModule,
     LogsModule,
-    MachinesModule,
+    AssetsModule,
     SurveysModule,
     NotificationsModule,
     PlansModule,

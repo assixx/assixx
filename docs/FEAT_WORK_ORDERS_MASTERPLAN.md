@@ -89,14 +89,14 @@ Admin-View (/work-orders/admin):
 
 ### 0.2 Risk Register
 
-| #   | Risiko                                          | Impact  | Wahrscheinlichkeit | Mitigation                                                                 | Verifikation                                       |
-| --- | ----------------------------------------------- | ------- | ------------------ | -------------------------------------------------------------------------- | -------------------------------------------------- |
-| R1  | Polymorphe `source_type` erschwert JOINs        | Mittel  | Niedrig            | `source_type` + `source_uuid` statt FK. Kein JOIN auf Quelltabelle nötig   | API Test: Arbeitsauftrag aus TPM-Mangel erstellen  |
-| R2  | N:M Assignees: Race Condition bei Zuweisung     | Mittel  | Mittel             | `FOR UPDATE` Lock auf `work_orders` Row vor Assignee-Mutation              | Unit Test: parallele Zuweisung → kein Datenverlust |
-| R3  | SSE-Notification Flut bei vielen Statuswechseln | Niedrig | Mittel             | Debounce: Max 1 Notification pro Auftrag pro User pro 5 Min                | API Test: 3x Status-Update → nur 1 SSE Event       |
-| R4  | Feature-Flag vergessen → Open für alle Tenants  | Hoch    | Niedrig            | `@TenantFeature('work_orders')` auf Controller + API Test unauth           | API Test: Feature disabled → 403                   |
-| R5  | Team-Filterung fehlt → Alle Employees sichtbar  | Mittel  | Niedrig            | Endpoint akzeptiert `machineId`, filtert über `machine_teams`→`user_teams` | API Test: Nur Team-Members in Response             |
-| R6  | Migration bricht bei bestehenden Daten ab       | Hoch    | Niedrig            | Neue Tabellen ohne FK zu bestehenden Daten (nur `tenants`, `users`)        | Dry-Run vor Apply                                  |
+| #   | Risiko                                          | Impact  | Wahrscheinlichkeit | Mitigation                                                                | Verifikation                                       |
+| --- | ----------------------------------------------- | ------- | ------------------ | ------------------------------------------------------------------------- | -------------------------------------------------- |
+| R1  | Polymorphe `source_type` erschwert JOINs        | Mittel  | Niedrig            | `source_type` + `source_uuid` statt FK. Kein JOIN auf Quelltabelle nötig  | API Test: Arbeitsauftrag aus TPM-Mangel erstellen  |
+| R2  | N:M Assignees: Race Condition bei Zuweisung     | Mittel  | Mittel             | `FOR UPDATE` Lock auf `work_orders` Row vor Assignee-Mutation             | Unit Test: parallele Zuweisung → kein Datenverlust |
+| R3  | SSE-Notification Flut bei vielen Statuswechseln | Niedrig | Mittel             | Debounce: Max 1 Notification pro Auftrag pro User pro 5 Min               | API Test: 3x Status-Update → nur 1 SSE Event       |
+| R4  | Feature-Flag vergessen → Open für alle Tenants  | Hoch    | Niedrig            | `@TenantFeature('work_orders')` auf Controller + API Test unauth          | API Test: Feature disabled → 403                   |
+| R5  | Team-Filterung fehlt → Alle Employees sichtbar  | Mittel  | Niedrig            | Endpoint akzeptiert `asset_Id`, filtert über `machine_teams`→`user_teams` | API Test: Nur Team-Members in Response             |
+| R6  | Migration bricht bei bestehenden Daten ab       | Hoch    | Niedrig            | Neue Tabellen ohne FK zu bestehenden Daten (nur `tenants`, `users`)       | Dry-Run vor Apply                                  |
 
 ### 0.3 Ecosystem Integration Points
 
@@ -363,20 +363,20 @@ export const WORK_ORDER_PERMISSIONS: PermissionCategoryDef = {
 - `assignUsers(tenantId, workOrderUuid, userUuids[], assignedByUserId)` — Bulk-Assign
 - `removeAssignee(tenantId, workOrderUuid, userUuid)` — Einzelne Zuweisung entfernen
 - `getAssignees(tenantId, workOrderUuid)` — Liste aller Zugewiesenen
-- `getEligibleUsers(tenantId, machineId?)` — Team-gefilterte Employee-Liste
+- `getEligibleUsers(tenantId, asset_Id?)` — Team-gefilterte Employee-Liste
 
 **Kritische Logik `getEligibleUsers`:**
 
 ```sql
--- Wenn machineId vorhanden: Nur Team-Members der Maschine
+-- Wenn asset_Id vorhanden: Nur Team-Members der Anlage
 SELECT DISTINCT u.id, u.uuid, u.first_name, u.last_name, u.email, u.employee_number
 FROM users u
 JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
 JOIN machine_teams mt ON ut.team_id = mt.team_id AND mt.tenant_id = ut.tenant_id
-WHERE mt.machine_id = $1 AND u.tenant_id = $2 AND u.is_active = 1 AND u.role = 'employee'
+WHERE mt.asset_id = $1 AND u.tenant_id = $2 AND u.is_active = 1 AND u.role = 'employee'
 ORDER BY u.last_name, u.first_name
 
--- Wenn KEIN machineId: Alle aktiven Employees (Fallback für manuelle Aufträge)
+-- Wenn KEIN asset_Id: Alle aktiven Employees (Fallback für manuelle Aufträge)
 SELECT u.id, u.uuid, u.first_name, u.last_name, u.email, u.employee_number
 FROM users u
 WHERE u.tenant_id = $1 AND u.is_active = 1 AND u.role = 'employee'
@@ -570,8 +570,8 @@ backend/src/nest/work-orders/
 - [ ] Max Photos (10) → Fehler bei 11
 - [ ] Leerer Titel → Validierungsfehler
 - [ ] Fälligkeit in der Vergangenheit → Validierungsfehler (beim Erstellen)
-- [ ] `getEligibleUsers` mit machineId → nur Team-Members
-- [ ] `getEligibleUsers` ohne machineId → alle Employees
+- [ ] `getEligibleUsers` mit asset_Id → nur Team-Members
+- [ ] `getEligibleUsers` ohne asset_Id → alle Employees
 
 **Datenintegrität:**
 
@@ -584,7 +584,7 @@ backend/src/nest/work-orders/
 - [x] > = 130 Unit Tests total — 137 Tests ✅
 - [x] Alle Tests grün ✅
 - [x] Jede Status-Transition (erlaubt + verboten) getestet ✅ (6 erlaubt + 10 verboten in helpers, 6+5 in status service)
-- [x] Eligible Users Team-Filterung getestet ✅ (mit/ohne machineId)
+- [x] Eligible Users Team-Filterung getestet ✅ (mit/ohne asset_Id)
 - [x] Max-Limits (Assignees, Photos) getestet ✅
 - [x] Coverage: Alle public Methoden haben mindestens 1 Test ✅
 
@@ -722,7 +722,7 @@ frontend/src/routes/(app)/
 - `frontend/src/routes/(app)/(shared)/lean-management/tpm/_lib/constants.ts` — `DEFECTS_COL_ACTIONS` + `DEFECTS_BTN_ASSIGN_WO` MESSAGES
 - Neues File: `defects/_lib/CreateWorkOrderFromDefect.svelte` — Spezialisiertes Modal mit vorausgefüllten Feldern
 
-**Details:** 5. Spalte "Aktion" + "Zuweisen" Button (admin/root only), Modal mit Pre-Fill (Titel, Beschreibung, sourceType=tpm_defect), Team-gefilterte Mitarbeiter via `fetchEligibleUsers(machineId)`
+**Details:** 5. Spalte "Aktion" + "Zuweisen" Button (admin/root only), Modal mit Pre-Fill (Titel, Beschreibung, sourceType=tpm_defect), Team-gefilterte Mitarbeiter via `fetchEligibleUsers(asset_Id)`
 
 ### Step 5.6: Navigation + Breadcrumb + Notifications [DONE]
 

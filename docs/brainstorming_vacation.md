@@ -10,7 +10,7 @@
 
 ## 1. Kernidee
 
-Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmigt oder abgelehnt werden. Das System zeigt dabei automatisch Kapazität swarnungen an (Mindestbesetzung pro Maschine, bereits genehmigte Urlaube, Sperrzeitraeume).
+Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmigt oder abgelehnt werden. Das System zeigt dabei automatisch Kapazität swarnungen an (Mindestbesetzung pro Anlage, bereits genehmigte Urlaube, Sperrzeitraeume).
 
 ---
 
@@ -40,8 +40,8 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 | `absences`              | id (SERIAL PK), tenant_id, user_id, type (ENUM: vacation/sick/training/other), status (ENUM: pending/approved/rejected/cancelled), start_date, end_date, reason, approved_by, approved_at | **Legacy — wird gedroppt.** Nie im Backend verdrahtet (0 Referenzen).          |
 | `teams`                 | id, tenant_id, team_lead_id (FK users.id), name, department_id, is_active                                                                                                                 | Wer genehmigt Employee-Anträge. **Bekommt `deputy_lead_id`.**                  |
 | `areas`                 | id, area_lead_id (FK users.id)                                                                                                                                                            | Wer genehmigt Admin-Anträge                                                    |
-| `machines`              | id (SERIAL PK), area_id, department_id, status, name                                                                                                                                      | Maschinen-Inventar                                                             |
-| `machine_teams`         | machine_id, team_id, is_primary                                                                                                                                                           | Welches Team bedient welche Maschine                                           |
+| `machines`              | id (SERIAL PK), area_id, department_id, status, name                                                                                                                                      | Anlagen-Inventar                                                               |
+| `machine_teams`         | asset_id, team_id, is_primary                                                                                                                                                             | Welches Team bedient welche Anlage                                             |
 | `user_teams`            | user_id, team_id, role                                                                                                                                                                    | Employee-Team-Zuordnung                                                        |
 | `user_departments`      | user_id, department_id, is_primary                                                                                                                                                        | Employee-Abteilungs-Zuordnung                                                  |
 | `users`                 | id (SERIAL PK), role (ENUM: root/admin/employee), has_full_access, is_active, tenant_id                                                                                                   | Rollen und Berechtigungen                                                      |
@@ -52,10 +52,10 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 
 ### Wichtige Erkenntnisse:
 
-1. **Kein `machine_operators`-Table** — Maschinen sind Teams zugewiesen, nicht einzelnen Personen
+1. **Kein `machine_operators`-Table** — Anlagen sind Teams zugewiesen, nicht einzelnen Personen
 2. **`employee_availability` nur fuer Employees** — **RESOLVED:** Umbenennen zu `user_availability`, `employee_id` → `user_id`
 3. **`absences` Tabelle existiert** — Legacy, nie verdrahtet (0 Backend-Referenzen). Wird gedroppt.
-4. **Mindestbesetzung pro Maschine** = Alle User im zugewiesenen Team (`machine_teams` + `user_teams`)
+4. **Mindestbesetzung pro Anlage** = Alle User im zugewiesenen Team (`machine_teams` + `user_teams`)
 5. **Availability-Modal** existiert unter `manage-employees/_lib/AvailabilityModal.svelte` mit History-Seite
 6. **Backend-Code der geaendert werden muss** bei Availability-Rename:
    - `backend/src/nest/users/user-availability.service.ts` — Tabellen/Spalten-Namen in SQL
@@ -75,10 +75,10 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 
 ### 4.1 Mindestbesetzung
 
-- **IMMER pro Maschine** (nicht pro Team)
-- Logik: Maschine -> machine_teams -> user_teams -> verfuegbare User zaehlen
-- Lead muss Mindestbesetzung pro Maschine definieren koennen
-- **Eigene Tabelle:** `vacation_staffing_rules` (UUID PK, UNIQUE tenant_id+machine_id)
+- **IMMER pro Anlage** (nicht pro Team)
+- Logik: Anlage -> machine_teams -> user_teams -> verfuegbare User zaehlen
+- Lead muss Mindestbesetzung pro Anlage definieren koennen
+- **Eigene Tabelle:** `vacation_staffing_rules` (UUID PK, UNIQUE tenant_id+asset_id)
 
 ### 4.2 Halbe Tage & Zeitvariablen
 
@@ -149,10 +149,10 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 | Kapazität sanalyse:                               |
 | - Team "CNC-Fertigung": 8 Mitarbeiter            |
 | - Bereits im Urlaub: Schmidt (15-19.03)           |
-| - Mindestbesetzung Maschine CNC-1: 3 noetig      |
+| - Mindestbesetzung Anlage CNC-1: 3 noetig      |
 | - Verfuegbar nach Genehmigung: 6 (OK)            |
 |                                                   |
-| - Maschine "CNC-Fraese 2": 2 Bediener noetig     |
+| - Anlage "CNC-Fraese 2": 2 Bediener noetig     |
 | - Verfuegbar: 3 -> nach Genehmigung: 2 (KNAPP)   |
 |                                                   |
 | - Resturlaub Mueller: 18/30 Tagen                 |
@@ -196,7 +196,7 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 | `/vacation`              | Employee                     | Eigene Anträge, Inline-Formular neuer Antrag, Restanspruch, Kalender-Preview mit Team-Urlaub |
 | `/vacation`              | Lead/Admin                   | Eingehende Anträge + Kapazität s-Hinweise + Genehmigen/Ablehnen + eigene Anträge             |
 | `/vacation`              | Root/Area-Lead               | Direkte Eintragung (kein Approval noetig) + Übersicht                                        |
-| `/vacation/rules`        | Lead/Admin/Root              | Mindestbesetzung pro Maschine, Urlaubssperren, Vorlaufzeit                                   |
+| `/vacation/rules`        | Lead/Admin/Root              | Mindestbesetzung pro Anlage, Urlaubssperren, Vorlaufzeit                                     |
 | `/vacation/overview`     | Lead/Admin/Root              | Team-Kalender, Jahresuebersicht, Statistiken                                                 |
 | `/vacation/entitlements` | Admin/Root                   | Urlaubsansprüche pro Mitarbeiter, Übertrag-Einstellungen                                     |
 | `/vacation/holidays`     | Root / has_full_access Admin | Feiertage fuer Tenant verwalten                                                              |

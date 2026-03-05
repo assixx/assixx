@@ -3,7 +3,7 @@
    * CreateWorkOrderFromDefect — Modal für Arbeitsauftrag aus TPM-Mangel.
    *
    * Pre-fills title + description from defect, sets sourceType='tpm_defect'.
-   * Fetches eligible users (team-filtered by machineId) on open.
+   * Fetches eligible users (team-filtered by assetId) on open.
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
@@ -81,7 +81,7 @@
   async function loadUsers(): Promise<void> {
     loadingUsers = true;
     try {
-      eligibleUsers = await fetchEligibleUsers(card?.machineId);
+      eligibleUsers = await fetchEligibleUsers(card?.assetId);
     } catch (err: unknown) {
       logApiError('fetchEligibleUsers', err);
       eligibleUsers = [];
