@@ -135,12 +135,6 @@
   aria-label="{card.cardCode}: {card.title}"
   aria-pressed={isFlipped}
 >
-  {#if isUrgent}
-    <span
-      class="kamishibai-card__pulse"
-      style="background-color: {statusColor}"
-    ></span>
-  {/if}
   <CardFlip {isFlipped}>
     {#snippet front()}
       <div
@@ -255,35 +249,6 @@
 
   .kamishibai-card:focus-visible {
     box-shadow: 0 0 0 3px var(--color-primary);
-  }
-
-  /* Urgency pulse ring — direct child of .kamishibai-card (no overflow:hidden parent)
-     z-index: -1 puts it behind CardFlip content within the isolate stacking context */
-  .kamishibai-card__pulse {
-    position: absolute;
-    inset: -4px;
-    border-radius: inherit;
-    opacity: 35%;
-    animation: pulse-ring 3s ease-out infinite;
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  @keyframes pulse-ring {
-    0% {
-      transform: scale(1);
-      opacity: 35%;
-    }
-
-    70% {
-      transform: scale(1.06);
-      opacity: 0%;
-    }
-
-    100% {
-      transform: scale(1.06);
-      opacity: 0%;
-    }
   }
 
   /* Front face — 3-zone layout: header | body | footer */

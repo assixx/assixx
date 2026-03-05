@@ -98,6 +98,20 @@
       <i class="fas fa-filter"></i>
       <span>Keine Karten für diesen Filter</span>
     </div>
+  {:else if isCollapsed && !isSectionExpanded}
+    <div class="kamishibai-section__role-group">
+      <div class="kamishibai-section__cards kamishibai-section__cards--stacked">
+        {#each [...operatorCards, ...maintenanceCards] as card (card.uuid)}
+          <KamishibaiCard
+            {card}
+            {colors}
+            {intervalColors}
+            {categoryColors}
+            onFlipChange={onCardFlip}
+          />
+        {/each}
+      </div>
+    </div>
   {:else}
     {#if hasOperator}
       <div class="kamishibai-section__role-group">
@@ -106,11 +120,7 @@
           {CARD_ROLE_LABELS.operator}
           <span class="kamishibai-section__count">{operatorCards.length}</span>
         </div>
-        <div
-          class="kamishibai-section__cards"
-          class:kamishibai-section__cards--stacked={isCollapsed &&
-            !isSectionExpanded}
-        >
+        <div class="kamishibai-section__cards">
           {#each operatorCards as card (card.uuid)}
             <KamishibaiCard
               {card}
@@ -133,11 +143,7 @@
             >{maintenanceCards.length}</span
           >
         </div>
-        <div
-          class="kamishibai-section__cards"
-          class:kamishibai-section__cards--stacked={isCollapsed &&
-            !isSectionExpanded}
-        >
+        <div class="kamishibai-section__cards">
           {#each maintenanceCards as card (card.uuid)}
             <KamishibaiCard
               {card}
@@ -270,6 +276,20 @@
   .kamishibai-section__badge--open {
     background: color-mix(in srgb, var(--color-danger) 12%, transparent);
     color: var(--color-danger);
+    animation: badge-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes badge-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0
+        color-mix(in srgb, var(--color-danger) 30%, transparent);
+    }
+
+    50% {
+      box-shadow: 0 0 0 6px
+        color-mix(in srgb, var(--color-danger) 0%, transparent);
+    }
   }
 
   .kamishibai-section__badge--ok {
