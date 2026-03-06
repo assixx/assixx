@@ -6,7 +6,7 @@
     getStatusBadgeClass,
     getStatusLabel,
     getMembersDisplayText,
-    getMachinesDisplayText,
+    getAssetsDisplayText,
     getDepartmentDisplayText,
     getLeaderDisplayText,
     toggleIdInArray,
@@ -16,7 +16,7 @@
     Department,
     Admin,
     TeamMember,
-    Machine,
+    Asset,
     FormIsActiveStatus,
   } from './types';
 
@@ -28,12 +28,12 @@
     formDepartmentId: number | null;
     formLeaderId: number | null;
     formMemberIds: number[];
-    formMachineIds: number[];
+    formAssetIds: number[];
     formIsActive: FormIsActiveStatus;
     allDepartments: Department[];
     allAdmins: Admin[];
     allEmployees: TeamMember[];
-    allMachines: Machine[];
+    allAssets: Asset[];
     submitting: boolean;
     onclose: () => void;
     onsubmit: (data: {
@@ -42,7 +42,7 @@
       departmentId: number | null;
       leaderId: number | null;
       memberIds: number[];
-      machineIds: number[];
+      assetIds: number[];
       isActive: FormIsActiveStatus;
     }) => void;
   }
@@ -56,12 +56,12 @@
     formDepartmentId,
     formLeaderId,
     formMemberIds,
-    formMachineIds,
+    formAssetIds,
     formIsActive,
     allDepartments,
     allAdmins,
     allEmployees,
-    allMachines,
+    allAssets,
     submitting,
     onclose,
     onsubmit,
@@ -73,7 +73,7 @@
   let localDepartmentId = $state<number | null>(null);
   let localLeaderId = $state<number | null>(null);
   let localMemberIds = $state<number[]>([]);
-  let localMachineIds = $state<number[]>([]);
+  let localAssetIds = $state<number[]>([]);
   let localIsActive = $state<FormIsActiveStatus>(1);
 
   // Sync props to local state when they change
@@ -83,7 +83,7 @@
     localDepartmentId = formDepartmentId;
     localLeaderId = formLeaderId;
     localMemberIds = [...formMemberIds];
-    localMachineIds = [...formMachineIds];
+    localAssetIds = [...formAssetIds];
     localIsActive = formIsActive;
   });
 
@@ -91,14 +91,14 @@
   let departmentDropdownOpen = $state(false);
   let leaderDropdownOpen = $state(false);
   let membersDropdownOpen = $state(false);
-  let machinesDropdownOpen = $state(false);
+  let assetsDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
 
   function closeOtherDropdowns(except: string): void {
     if (except !== 'department') departmentDropdownOpen = false;
     if (except !== 'leader') leaderDropdownOpen = false;
     if (except !== 'members') membersDropdownOpen = false;
-    if (except !== 'machines') machinesDropdownOpen = false;
+    if (except !== 'assets') assetsDropdownOpen = false;
     if (except !== 'status') statusDropdownOpen = false;
   }
 
@@ -134,14 +134,14 @@
     localMemberIds = toggleIdInArray(localMemberIds, id);
   }
 
-  function toggleMachinesDropdown(e: MouseEvent): void {
+  function toggleAssetsDropdown(e: MouseEvent): void {
     e.stopPropagation();
-    closeOtherDropdowns('machines');
-    machinesDropdownOpen = !machinesDropdownOpen;
+    closeOtherDropdowns('assets');
+    assetsDropdownOpen = !assetsDropdownOpen;
   }
 
-  function toggleMachine(id: number): void {
-    localMachineIds = toggleIdInArray(localMachineIds, id);
+  function toggleAsset(id: number): void {
+    localAssetIds = toggleIdInArray(localAssetIds, id);
   }
 
   function toggleStatusDropdown(e: MouseEvent): void {
@@ -167,7 +167,7 @@
       departmentId: localDepartmentId,
       leaderId: localLeaderId,
       memberIds: localMemberIds,
-      machineIds: localMachineIds,
+      assetIds: localAssetIds,
       isActive: localIsActive,
     });
   }
@@ -178,7 +178,7 @@
       departmentDropdownOpen = false;
       leaderDropdownOpen = false;
       membersDropdownOpen = false;
-      machinesDropdownOpen = false;
+      assetsDropdownOpen = false;
       statusDropdownOpen = false;
     });
   });
@@ -410,48 +410,48 @@
       <div class="form-field">
         <label
           class="form-field__label"
-          for="team-machines">Zugewiesene Maschinen</label
+          for="team-assets">Zugewiesene Anlagen</label
         >
         <div
           class="dropdown"
-          id="team-machines-dropdown"
+          id="team-assets-dropdown"
         >
           <button
             type="button"
             class="dropdown__trigger"
-            class:active={machinesDropdownOpen}
-            onclick={toggleMachinesDropdown}
+            class:active={assetsDropdownOpen}
+            onclick={toggleAssetsDropdown}
           >
-            <span>{getMachinesDisplayText(localMachineIds, allMachines)}</span>
+            <span>{getAssetsDisplayText(localAssetIds, allAssets)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
             class="dropdown__menu dropdown__menu--scrollable"
-            class:active={machinesDropdownOpen}
+            class:active={assetsDropdownOpen}
           >
-            {#each allMachines as machine (machine.id)}
+            {#each allAssets as asset (asset.id)}
               <button
                 type="button"
                 class="dropdown__option dropdown__option--checkbox"
                 onclick={() => {
-                  toggleMachine(machine.id);
+                  toggleAsset(asset.id);
                 }}
               >
                 <input
                   type="checkbox"
-                  checked={localMachineIds.includes(machine.id)}
+                  checked={localAssetIds.includes(asset.id)}
                   class="mr-2"
                   onclick={(e) => {
                     e.stopPropagation();
                   }}
                   onchange={() => {
-                    toggleMachine(machine.id);
+                    toggleAsset(asset.id);
                   }}
                 />
-                {machine.name}
+                {asset.name}
               </button>
             {/each}
-            {#if allMachines.length === 0}
+            {#if allAssets.length === 0}
               <div class="dropdown__option dropdown__option--disabled">
                 {MESSAGES.NO_MACHINES_AVAILABLE}
               </div>

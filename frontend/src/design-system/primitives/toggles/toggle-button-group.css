@@ -11,8 +11,8 @@
     display: inline-flex;
     gap: var(--spacing-2); /* 8px */
     backdrop-filter: blur(10px);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl); /* 8px */
+    border: var(--form-field-border);
+    border-radius: var(--form-field-radius);
 
     background: var(--glass-bg);
 

@@ -68,7 +68,33 @@
   }
 
   .employee-name-hero {
-    color: #000;
+    background: linear-gradient(
+      135deg,
+      #000 0%,
+      #000 33%,
+      #0070f3 66%,
+      #38bdf8 83%,
+      #ff0080 100%
+    );
+    background-size: 300% 300%;
+    background-clip: text;
+    color: transparent;
+    font-size: 2rem;
+    animation: aurora 10s ease infinite;
+  }
+
+  @keyframes aurora {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   /* Floating Elements Container */

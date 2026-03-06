@@ -16,7 +16,7 @@ import type {
   SelectedContext,
   Area,
   Department,
-  Machine,
+  Asset,
   Team,
 } from './types';
 
@@ -37,8 +37,8 @@ export function isContextCompleteForFavorite(
     context.areaId !== 0 &&
     context.departmentId !== null &&
     context.departmentId !== 0 &&
-    context.machineId !== null &&
-    context.machineId !== 0 &&
+    context.assetId !== null &&
+    context.assetId !== 0 &&
     context.teamId !== null &&
     context.teamId !== 0
   );
@@ -66,7 +66,7 @@ export function isCombinationFavorited(
     (fav) =>
       fav.areaId === context.areaId &&
       fav.departmentId === context.departmentId &&
-      fav.machineId === context.machineId &&
+      fav.assetId === context.assetId &&
       fav.teamId === context.teamId,
   );
 }
@@ -98,24 +98,24 @@ export function getContextNames(
   context: SelectedContext,
   areas: Area[],
   departments: Department[],
-  machines: Machine[],
+  assets: Asset[],
   teams: Team[],
-): { area: Area; department: Department; machine: Machine; team: Team } | null {
+): { area: Area; department: Department; asset: Asset; team: Team } | null {
   const area = areas.find((a) => a.id === context.areaId);
   const department = departments.find((d) => d.id === context.departmentId);
-  const machine = machines.find((m) => m.id === context.machineId);
+  const asset = assets.find((m) => m.id === context.assetId);
   const team = teams.find((t) => t.id === context.teamId);
 
   if (
     area === undefined ||
     department === undefined ||
-    machine === undefined ||
+    asset === undefined ||
     team === undefined
   ) {
     return null;
   }
 
-  return { area, department, machine, team };
+  return { area, department, asset, team };
 }
 
 // =============================================================================
@@ -125,7 +125,7 @@ export function getContextNames(
 interface AddFavoriteValidation {
   valid: boolean;
   error?: string;
-  names?: { area: Area; department: Department; machine: Machine; team: Team };
+  names?: { area: Area; department: Department; asset: Asset; team: Team };
 }
 
 /**
@@ -136,33 +136,32 @@ function validateAddToFavorites(
   favorites: ShiftFavorite[],
   areas: Area[],
   departments: Department[],
-  machines: Machine[],
+  assets: Asset[],
   teams: Team[],
 ): AddFavoriteValidation {
-  if (isTeamAlreadyFavorited(favorites, context.teamId)) {
-    const existing = favorites.find((fav) => fav.teamId === context.teamId);
+  if (!isContextCompleteForFavorite(context)) {
+    return {
+      valid: false,
+      error:
+        'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Team und Anlage)',
+    };
+  }
+
+  if (isCombinationFavorited(favorites, context)) {
+    const existing = favorites.find(
+      (fav) =>
+        fav.areaId === context.areaId &&
+        fav.departmentId === context.departmentId &&
+        fav.assetId === context.assetId &&
+        fav.teamId === context.teamId,
+    );
     return {
       valid: false,
       error: `Diese Kombination ist bereits als Favorit "${existing?.name ?? 'unbekannt'}" gespeichert!`,
     };
   }
 
-  if (!isContextCompleteForFavorite(context)) {
-    return {
-      valid: false,
-      error:
-        'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)',
-    };
-  }
-
-  if (isCombinationFavorited(favorites, context)) {
-    return {
-      valid: false,
-      error: 'Diese Kombination existiert bereits als Favorit!',
-    };
-  }
-
-  const names = getContextNames(context, areas, departments, machines, teams);
+  const names = getContextNames(context, areas, departments, assets, teams);
   if (names === null) {
     return { valid: false, error: 'Fehler beim Ermitteln der Namen' };
   }
@@ -185,7 +184,7 @@ export async function addToFavorites(
   favorites: ShiftFavorite[],
   areas: Area[],
   departments: Department[],
-  machines: Machine[],
+  assets: Asset[],
   teams: Team[],
 ): Promise<AddFavoriteResult> {
   const validation = validateAddToFavorites(
@@ -193,7 +192,7 @@ export async function addToFavorites(
     favorites,
     areas,
     departments,
-    machines,
+    assets,
     teams,
   );
   if (!validation.valid || validation.names === undefined) {
@@ -203,14 +202,16 @@ export async function addToFavorites(
   const { names } = validation;
 
   try {
+    const favoriteName = `${names.team.name} – ${names.asset.name}`;
+
     const savedFavorite = await apiSaveFavorite({
-      name: names.team.name,
+      name: favoriteName,
       areaId: context.areaId ?? 0,
       areaName: names.area.name,
       departmentId: context.departmentId ?? 0,
       departmentName: names.department.name,
-      machineId: context.machineId ?? 0,
-      machineName: names.machine.name,
+      assetId: context.assetId ?? 0,
+      assetName: names.asset.name,
       teamId: context.teamId ?? 0,
       teamName: names.team.name,
     });
@@ -294,7 +295,7 @@ export async function removeFavorite(
  * Get favorite tooltip text
  */
 export function getFavoriteTooltip(favorite: ShiftFavorite): string {
-  return `${favorite.areaName} → ${favorite.departmentName} → ${favorite.machineName} → ${favorite.teamName}`;
+  return `${favorite.areaName} → ${favorite.departmentName} → ${favorite.teamName} → ${favorite.assetName}`;
 }
 
 /**
@@ -307,7 +308,7 @@ export function isFavoriteActive(
   return (
     favorite.areaId === context.areaId &&
     favorite.departmentId === context.departmentId &&
-    favorite.machineId === context.machineId &&
+    favorite.assetId === context.assetId &&
     favorite.teamId === context.teamId
   );
 }

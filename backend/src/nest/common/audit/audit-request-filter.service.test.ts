@@ -189,5 +189,46 @@ describe('AuditRequestFilterService', () => {
 
       expect(result).toBe(true);
     });
+
+    it('should allow after list throttle window expires', () => {
+      const user = { id: 5 } as never;
+
+      service.shouldThrottleListOrView('list', user, '/api/entries');
+
+      vi.advanceTimersByTime(31_000); // > LIST_ACTION_THROTTLE_MS (30000)
+
+      const result = service.shouldThrottleListOrView(
+        'list',
+        user,
+        '/api/entries',
+      );
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // =============================================================
+  // cleanupRecentLogs (via setInterval timer)
+  // =============================================================
+
+  describe('cleanupRecentLogs', () => {
+    it('should remove expired entries after interval fires', () => {
+      const user = { id: 5 } as never;
+
+      // Create an entry
+      service.shouldSkipRequest('GET', '/users/me', false, user);
+      // Second call within window → throttled
+      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(
+        true,
+      );
+
+      // Advance past the cleanup interval (5 min) + 2× throttle window
+      vi.advanceTimersByTime(5 * 60 * 1000 + 1);
+
+      // After cleanup, the entry should be gone → not throttled
+      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(
+        false,
+      );
+    });
   });
 });

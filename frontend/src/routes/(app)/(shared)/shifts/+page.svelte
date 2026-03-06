@@ -4,17 +4,13 @@
 
   import AdminActions from './_lib/AdminActions.svelte';
   import {
+    fetchAssignmentCounts,
     fetchDepartments,
-    fetchMachines,
+    fetchAssets,
     fetchTeams,
-    fetchTeamMembers,
   } from './_lib/api';
   import CustomRotationModal from './_lib/CustomRotationModal.svelte';
-  import {
-    convertTeamMembersToEmployees,
-    convertSSRTeamMembersToEmployees,
-    getWeekDateBounds,
-  } from './_lib/data-loader';
+  import { convertSSRTeamMembersToEmployees } from './_lib/data-loader';
   import {
     handleDragStart,
     handleDragEnd,
@@ -43,6 +39,7 @@
     syncRotationToggles,
   } from './_lib/plan-loader';
   import RotationSetupModal from './_lib/RotationSetupModal.svelte';
+  import ShiftAssignmentCounts from './_lib/ShiftAssignmentCounts.svelte';
   import ShiftControls from './_lib/ShiftControls.svelte';
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
   import { shiftsState } from './_lib/state.svelte';
@@ -53,10 +50,17 @@
     getWeekDates,
     formatDate,
     addWeeks,
+    buildShiftTimesMap,
+    computeShiftMinutes,
   } from './_lib/utils';
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
+  import type {
+    AssignmentCount,
+    ShiftTimesMap,
+    IntervalColorEntry,
+  } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -67,8 +71,64 @@
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
   const ssrStaffingRules = $derived(data.staffingRules);
+  const ssrIntervalColors: IntervalColorEntry[] = $derived(data.intervalColors);
   const ssrIsEmployee = $derived(data.isEmployee);
+
+  // Build shift times map from SSR API data (tenant-configurable)
+  const shiftTimesMap: ShiftTimesMap = $derived(
+    data.shiftTimes.length > 0 ? buildShiftTimesMap(data.shiftTimes) : {},
+  );
+  const shiftMinutes = $derived(
+    computeShiftMinutes(
+      Object.keys(shiftTimesMap).length > 0 ? shiftTimesMap : undefined,
+    ),
+  );
   let ssrInitialized = $state(false);
+  let baseAssignmentCounts = $state<AssignmentCount[]>([]);
+
+  /** Reactive: silently fetch base counts when planning UI is active */
+  $effect(() => {
+    const teamId = shiftsState.selectedContext.teamId;
+    const week = shiftsState.currentWeek;
+    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isAdmin)
+      return;
+    const refDate = formatDate(getWeekStart(week));
+    void fetchAssignmentCounts(teamId, refDate).then(
+      (result: AssignmentCount[]) => {
+        baseAssignmentCounts = result;
+      },
+    );
+  });
+
+  /** Count per-employee assignments from local weeklyShifts state */
+  function countLocalWeek(): Record<number, number> {
+    const counts: Record<number, number> = {};
+    for (const [, shiftMap] of shiftsState.weeklyShifts) {
+      for (const [, empIds] of shiftMap) {
+        for (const id of empIds) {
+          counts[id] = (counts[id] ?? 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }
+
+  /** Merged counts: DB base adjusted by live local week state.
+   *  During transition (weeklyShifts cleared), show base counts as-is. */
+  const assignmentCounts = $derived.by((): AssignmentCount[] => {
+    if (shiftsState.weeklyShifts.size === 0) return baseAssignmentCounts;
+    const localWeek = countLocalWeek();
+    return baseAssignmentCounts.map((entry: AssignmentCount) => {
+      const localWk = localWeek[entry.employeeId] ?? 0;
+      const diff = localWk - entry.weekCount;
+      return {
+        ...entry,
+        weekCount: localWk,
+        monthCount: entry.monthCount + diff,
+        yearCount: entry.yearCount + diff,
+      };
+    });
+  });
 
   // --- SSR INIT ---
   $effect(() => {
@@ -85,7 +145,7 @@
         areaId: ssrEmployeeTeamInfo.areaId,
         departmentId: ssrEmployeeTeamInfo.departmentId,
         teamId: ssrEmployeeTeamInfo.teamId,
-        machineId: null,
+        assetId: null,
         teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId,
       });
       shiftsState.setEmployees(
@@ -124,7 +184,7 @@
     shiftsState.setSelectedContext({
       areaId,
       departmentId: null,
-      machineId: null,
+      assetId: null,
       teamId: null,
     });
     shiftsState.clearShiftData();
@@ -132,55 +192,65 @@
 
     const depts = await fetchDepartments(areaId);
     shiftsState.setDepartments(depts);
-    shiftsState.setMachines([]);
+    shiftsState.setAssets([]);
     shiftsState.setTeams([]);
   }
 
   async function handleDepartmentChange(departmentId: number) {
     shiftsState.setSelectedContext({
       departmentId,
-      machineId: null,
       teamId: null,
+      assetId: null,
     });
     shiftsState.clearShiftData();
     shiftsState.setShowPlanningUI(false);
+    shiftsState.setAssets([]);
 
-    const [machs, tms] = await Promise.all([
-      fetchMachines(departmentId, shiftsState.selectedContext.areaId),
-      fetchTeams(departmentId),
-    ]);
-    shiftsState.setMachines(machs);
+    const tms = await fetchTeams(departmentId);
     shiftsState.setTeams(tms);
   }
 
-  /** Min staff count derived from SSR staffing rules + selected machine */
+  /** Min staff count derived from SSR staffing rules + selected asset */
   const minStaffCount = $derived.by(() => {
-    const machineId = shiftsState.selectedContext.machineId;
-    if (machineId === null) return null;
+    const assetId = shiftsState.selectedContext.assetId;
+    if (assetId === null) return null;
     const rule = ssrStaffingRules.find(
-      (r: { machineId: number; minStaffCount: number }) =>
-        r.machineId === machineId,
+      (r: { assetId: number; minStaffCount: number }) => r.assetId === assetId,
     );
     return rule?.minStaffCount ?? null;
   });
 
-  function handleMachineChange(machineId: number): void {
-    shiftsState.setSelectedContext({ machineId });
+  async function handleAssetChange(assetId: number): Promise<void> {
+    shiftsState.setSelectedContext({ assetId });
+    shiftsState.setShowPlanningUI(true);
+    await loadShiftPlan();
   }
 
   async function handleTeamChange(teamId: number) {
-    shiftsState.setSelectedContext({ teamId });
-    const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
-    const members = await fetchTeamMembers(teamId, startDate, endDate);
-    shiftsState.setEmployees(convertTeamMembersToEmployees(members));
-    shiftsState.setShowPlanningUI(true);
-    await loadShiftPlan();
+    shiftsState.setSelectedContext({ teamId, assetId: null });
+    shiftsState.clearShiftData();
+    shiftsState.setShowPlanningUI(false);
+
+    const machs = await fetchAssets(teamId);
+    shiftsState.setAssets(machs);
+
+    if (machs.length === 0) {
+      // Team ohne Anlagenzuordnung → sofort laden
+      shiftsState.setShowPlanningUI(true);
+      await loadShiftPlan();
+    } else if (machs.length === 1) {
+      // Genau eine Anlage → auto-select + sofort laden
+      shiftsState.setSelectedContext({ assetId: machs[0].id });
+      shiftsState.setShowPlanningUI(true);
+      await loadShiftPlan();
+    }
+    // 2+ Anlagen → warten bis User im Dropdown wählt
   }
 
   async function navigateWeek(direction: number) {
     const newWeek = addWeeks(shiftsState.currentWeek, direction);
     shiftsState.setCurrentWeek(newWeek);
-    await loadShiftPlan();
+    await loadShiftPlan(shiftsState.showTpmEvents);
   }
 
   // --- DERIVED VALUES ---
@@ -200,6 +270,12 @@
     return shiftsState.getShiftEmployees(dateKey, shiftType);
   }
 </script>
+
+{#snippet assignmentCountsSnippet()}
+  {#if shiftsState.isAdmin}
+    <ShiftAssignmentCounts counts={assignmentCounts} />
+  {/if}
+{/snippet}
 
 <svelte:head>
   <title>Schichtplanung - Assixx</title>
@@ -256,13 +332,13 @@
         <FilterDropdowns
           areas={shiftsState.areas}
           departments={shiftsState.departments}
-          machines={shiftsState.machines}
+          assets={shiftsState.assets}
           teams={shiftsState.teams}
           favorites={ssrFavorites}
           selectedContext={shiftsState.selectedContext}
           areaDropdownOpen={shiftsState.areaDropdownOpen}
           departmentDropdownOpen={shiftsState.departmentDropdownOpen}
-          machineDropdownOpen={shiftsState.machineDropdownOpen}
+          assetDropdownOpen={shiftsState.assetDropdownOpen}
           teamDropdownOpen={shiftsState.teamDropdownOpen}
           ontoggleAreaDropdown={() => {
             shiftsState.toggleAreaDropdown();
@@ -270,8 +346,8 @@
           ontoggleDepartmentDropdown={() => {
             shiftsState.toggleDepartmentDropdown();
           }}
-          ontoggleMachineDropdown={() => {
-            shiftsState.toggleMachineDropdown();
+          ontoggleAssetDropdown={() => {
+            shiftsState.toggleAssetDropdown();
           }}
           ontoggleTeamDropdown={() => {
             shiftsState.toggleTeamDropdown();
@@ -281,7 +357,7 @@
           }}
           onareaChange={handleAreaChange}
           ondepartmentChange={handleDepartmentChange}
-          onmachineChange={handleMachineChange}
+          onassetChange={handleAssetChange}
           onteamChange={handleTeamChange}
           onfavoriteClick={handleFavoriteClick}
           ondeleteFavorite={handleDeleteFavorite}
@@ -306,14 +382,14 @@
         </div>
       {/if}
 
-      <!-- Admin Notice (show when no team selected) -->
+      <!-- Admin Notice (show when filters incomplete) -->
       {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
         <div class="department-notice">
           <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
-          <h3>Team auswählen</h3>
+          <h3>Anlage auswählen</h3>
           <p>
-            Bitte wählen Sie einen Bereich, eine Abteilung und ein Team aus, um
-            den Schichtplan anzuzeigen.
+            Bitte wählen Sie einen Bereich, eine Abteilung, ein Team und eine
+            Anlage aus, um den Schichtplan anzuzeigen.
           </p>
         </div>
       {/if}
@@ -332,6 +408,7 @@
             autofillConfig={shiftsState.autofillConfig}
             standardRotationEnabled={shiftsState.standardRotationEnabled}
             customRotationEnabled={shiftsState.customRotationEnabled}
+            tpmModeEnabled={shiftsState.showTpmEvents}
             isPlanLocked={shiftsState.isPlanLocked}
             onautofillChange={(enabled: boolean) => {
               shiftsState.setAutofillConfig({ enabled });
@@ -342,19 +419,41 @@
             oncustomRotationChange={(enabled: boolean) => {
               shiftsState.setCustomRotationEnabled(enabled);
             }}
+            ontpmModeChange={(enabled: boolean) => {
+              shiftsState.setShowTpmEvents(enabled);
+              void loadShiftPlan(true);
+            }}
           />
+
+          {#if shiftsState.showTpmEvents}
+            <div
+              class="alert alert--warning alert--sm mb-6"
+              role="alert"
+            >
+              <i class="fas fa-triangle-exclamation"></i>
+              <strong>TPM-Modus aktiv:</strong> Mitarbeiterzuweisungen hier erstellen
+              keine Schichtplanung — sie werden ausschließlich als Wartungstermine
+              für die TPM-Instandhaltung übernommen.
+            </div>
+          {/if}
         {/if}
 
         <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
         <div class="main-planning-area">
           <!-- Week Schedule (Extracted Component) -->
           <ShiftScheduleGrid
+            afterLegend={assignmentCountsSnippet}
             {weekDates}
+            {shiftTimesMap}
+            {shiftMinutes}
             weeklyNotes={shiftsState.weeklyNotes}
             canEditShifts={shiftsState.canEditShifts}
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
-            machineAvailabilityMap={shiftsState.machineAvailabilityMap}
+            assetAvailabilityMap={shiftsState.assetAvailabilityMap}
+            tpmEventsMap={shiftsState.tpmEventsMap}
+            intervalColors={ssrIntervalColors}
+            showTpmEvents={shiftsState.showTpmEvents}
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
@@ -394,7 +493,7 @@
             isPlanLocked={shiftsState.isPlanLocked}
             isEditMode={shiftsState.isEditMode}
             onreset={handleResetSchedule}
-            onsave={handleSaveSchedule}
+            onsave={() => handleSaveSchedule(shiftTimesMap)}
             ondiscardWeek={handleDiscardWeek}
             ondiscardTeamPlan={handleDiscardTeamPlan}
             ondiscardYearPlan={handleDiscardYearPlan}

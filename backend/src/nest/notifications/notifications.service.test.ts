@@ -36,6 +36,7 @@ function createServiceWithMock(): {
   const mockFeature = {
     createFeatureNotification: vi.fn(),
     markFeatureTypeAsRead: vi.fn(),
+    markFeatureEntityAsRead: vi.fn(),
   };
 
   const service = new NotificationsService(
@@ -258,6 +259,27 @@ describe('NotificationsService – DB-mocked methods', () => {
         1,
       );
       expect(result).toBe(5);
+    });
+  });
+
+  describe('markFeatureEntityAsRead – delegation', () => {
+    it('delegates to feature sub-service', async () => {
+      mockFeature.markFeatureEntityAsRead.mockResolvedValueOnce(2);
+
+      const result = await service.markFeatureEntityAsRead(
+        'work_orders',
+        '019cb994-aaaa-bbbb-cccc-dddddddddddd',
+        5,
+        10,
+      );
+
+      expect(mockFeature.markFeatureEntityAsRead).toHaveBeenCalledWith(
+        'work_orders',
+        '019cb994-aaaa-bbbb-cccc-dddddddddddd',
+        5,
+        10,
+      );
+      expect(result).toBe(2);
     });
   });
 });

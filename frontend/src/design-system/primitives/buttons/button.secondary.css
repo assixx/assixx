@@ -72,7 +72,7 @@
 
 .btn-cancel {
   /* ========== VISUAL ========== */
-  backdrop-filter: blur(var(--blur-sm)); /* 5px blur for glass effect */
+  backdrop-filter: var(--blur-sm); /* Glass effect — --blur-sm = blur(10px) */
 
   /* No transitions - instant response */
   transition: none;

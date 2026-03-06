@@ -15,6 +15,7 @@ import {
 import { v7 as uuidv7 } from 'uuid';
 
 import { dbToApi } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateRotationPatternDto } from './dto/create-rotation-pattern.dto.js';
 import type { UpdateRotationPatternDto } from './dto/update-rotation-pattern.dto.js';
@@ -27,7 +28,10 @@ import type {
 export class RotationPatternService {
   private readonly logger = new Logger(RotationPatternService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ============================================================
   // HELPER METHODS
@@ -65,7 +69,7 @@ export class RotationPatternService {
       patternConfig: this.parsePatternConfig(row.pattern_config),
       isActive: row.is_active === 1,
       startsAt: this.formatDate(row.starts_at),
-      endsAt: row.ends_at !== null ? this.formatDate(row.ends_at) : null,
+      endsAt: row.ends_at === null ? null : this.formatDate(row.ends_at),
     } as RotationPatternResponse;
   }
 
@@ -136,6 +140,24 @@ export class RotationPatternService {
   }
 
   /**
+   * Ensures no active pattern with the same name exists
+   */
+  private async ensureUniquePatternName(
+    name: string,
+    tenantId: number,
+  ): Promise<void> {
+    const existing = await this.databaseService.query<{ id: number }>(
+      'SELECT id FROM shift_rotation_patterns WHERE name = $1 AND tenant_id = $2 AND is_active = 1',
+      [name, tenantId],
+    );
+    if (existing.length > 0 && existing[0] !== undefined) {
+      throw new ConflictException(
+        `Ein Rotationsmuster mit dem Namen "${name}" existiert bereits.`,
+      );
+    }
+  }
+
+  /**
    * Create rotation pattern
    */
   async createRotationPattern(
@@ -144,21 +166,10 @@ export class RotationPatternService {
     userId: number,
   ): Promise<RotationPatternResponse> {
     this.logger.debug(`Creating rotation pattern for tenant ${tenantId}`);
-
-    // Check for existing pattern with same name
-    const existing = await this.databaseService.query<{ id: number }>(
-      'SELECT id FROM shift_rotation_patterns WHERE name = $1 AND tenant_id = $2 AND is_active = 1',
-      [dto.name, tenantId],
-    );
-
-    if (existing.length > 0 && existing[0] !== undefined) {
-      throw new ConflictException(
-        `Ein Rotationsmuster mit dem Namen "${dto.name}" existiert bereits.`,
-      );
-    }
+    await this.ensureUniquePatternName(dto.name, tenantId);
 
     // is_active is SMALLINT: 0=inactive, 1=active
-    const isActiveValue = !dto.isActive ? 0 : 1;
+    const isActiveValue = dto.isActive ? 1 : 0;
     const patternUuid = uuidv7();
 
     const insertQuery = `
@@ -194,6 +205,19 @@ export class RotationPatternService {
       );
     }
 
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'rotation_pattern',
+      result[0].id,
+      `Rotationsmuster erstellt: ${dto.name}`,
+      {
+        name: dto.name,
+        patternType: dto.patternType,
+        cycleLengthWeeks: dto.cycleLengthWeeks,
+      },
+    );
+
     return await this.getRotationPattern(result[0].id, tenantId);
   }
 
@@ -204,6 +228,7 @@ export class RotationPatternService {
     patternId: number,
     dto: UpdateRotationPatternDto,
     tenantId: number,
+    userId: number,
   ): Promise<RotationPatternResponse> {
     this.logger.debug(
       `Updating rotation pattern ${patternId} for tenant ${tenantId}`,
@@ -249,6 +274,19 @@ export class RotationPatternService {
       params,
     );
 
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'rotation_pattern',
+      patternId,
+      `Rotationsmuster aktualisiert: ${dto.name ?? patternId}`,
+      undefined,
+      {
+        name: dto.name,
+        patternType: dto.patternConfig === undefined ? undefined : 'updated',
+      },
+    );
+
     return await this.getRotationPattern(patternId, tenantId);
   }
 
@@ -258,18 +296,28 @@ export class RotationPatternService {
   async deleteRotationPattern(
     patternId: number,
     tenantId: number,
+    userId: number,
   ): Promise<void> {
     this.logger.debug(
       `Deleting rotation pattern ${patternId} for tenant ${tenantId}`,
     );
 
-    // Check pattern exists
-    await this.getRotationPattern(patternId, tenantId);
+    // Check pattern exists (and get data for audit log)
+    const pattern = await this.getRotationPattern(patternId, tenantId);
 
     // Delete pattern (cascade will handle assignments and history)
     await this.databaseService.query(
       'DELETE FROM shift_rotation_patterns WHERE id = $1 AND tenant_id = $2',
       [patternId, tenantId],
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'rotation_pattern',
+      patternId,
+      `Rotationsmuster gelöscht: ${pattern.name}`,
+      { name: pattern.name },
     );
   }
 
@@ -314,9 +362,10 @@ export class RotationPatternService {
     uuid: string,
     dto: UpdateRotationPatternDto,
     tenantId: number,
+    userId: number,
   ): Promise<RotationPatternResponse> {
     const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
-    return await this.updateRotationPattern(patternId, dto, tenantId);
+    return await this.updateRotationPattern(patternId, dto, tenantId, userId);
   }
 
   /**
@@ -325,8 +374,9 @@ export class RotationPatternService {
   async deleteRotationPatternByUuid(
     uuid: string,
     tenantId: number,
+    userId: number,
   ): Promise<void> {
     const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
-    await this.deleteRotationPattern(patternId, tenantId);
+    await this.deleteRotationPattern(patternId, tenantId, userId);
   }
 }

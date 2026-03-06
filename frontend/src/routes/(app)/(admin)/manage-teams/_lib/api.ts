@@ -14,7 +14,7 @@ import type {
   Department,
   Admin,
   TeamMember,
-  Machine,
+  Asset,
   TeamPayload,
   ApiErrorWithDetails,
 } from './types';
@@ -150,14 +150,14 @@ export async function loadEmployees(): Promise<TeamMember[]> {
 }
 
 /**
- * Load machines for assignment
+ * Load assets for assignment
  */
-export async function loadMachines(): Promise<Machine[]> {
+export async function loadAssets(): Promise<Asset[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.MACHINES);
-    return extractArrayFromResponse<Machine>(result);
+    return extractArrayFromResponse<Asset>(result);
   } catch (err) {
-    log.error({ err }, 'Error loading machines');
+    log.error({ err }, 'Error loading assets');
     return [];
   }
 }
@@ -181,19 +181,19 @@ export async function fetchTeamMembers(
 }
 
 /**
- * Fetch team machines from /teams/:id/machines endpoint
- * Returns array of machine objects with id
+ * Fetch team assets from /teams/:id/assets endpoint
+ * Returns array of asset objects with id
  */
-export async function fetchTeamMachines(
+export async function fetchTeamAssets(
   teamId: number,
 ): Promise<{ id: number }[]> {
   try {
     const result: unknown = await apiClient.get(
-      API_ENDPOINTS.teamMachines(teamId),
+      API_ENDPOINTS.teamAssets(teamId),
     );
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err) {
-    log.error({ err }, 'Error fetching team machines');
+    log.error({ err }, 'Error fetching team assets');
     return [];
   }
 }
@@ -241,53 +241,53 @@ export async function removeTeamMember(
 }
 
 /**
- * Add machine to team
+ * Add asset to team
  */
-export async function addTeamMachine(
+export async function addTeamAsset(
   teamId: number,
-  machineId: number,
+  assetId: number,
 ): Promise<void> {
   try {
-    await apiClient.post(API_ENDPOINTS.teamMachines(teamId), { machineId });
+    await apiClient.post(API_ENDPOINTS.teamAssets(teamId), { assetId });
   } catch (err) {
-    log.error({ err, machineId }, 'Error adding machine');
+    log.error({ err, assetId }, 'Error adding asset');
   }
 }
 
 /**
- * Remove machine from team
+ * Remove asset from team
  */
-export async function removeTeamMachine(
+export async function removeTeamAsset(
   teamId: number,
-  machineId: number,
+  assetId: number,
 ): Promise<void> {
   try {
-    await apiClient.delete(API_ENDPOINTS.teamMachine(teamId, machineId));
+    await apiClient.delete(API_ENDPOINTS.teamAsset(teamId, assetId));
   } catch (err) {
-    log.error({ err, machineId }, 'Error removing machine');
+    log.error({ err, assetId }, 'Error removing asset');
   }
 }
 
 /**
- * Update team members and machines relations
+ * Update team members and assets relations
  */
 export async function updateTeamRelations(
   teamId: number,
   newMemberIds: number[],
-  newMachineIds: number[],
+  newAssetIds: number[],
   isEditMode: boolean,
 ): Promise<void> {
   let currentMembers: number[] = [];
-  let currentMachines: number[] = [];
+  let currentAssets: number[] = [];
 
   if (isEditMode) {
-    // Fetch current members and machines from separate endpoints
-    const [members, machines] = await Promise.all([
+    // Fetch current members and assets from separate endpoints
+    const [members, assets] = await Promise.all([
       fetchTeamMembers(teamId),
-      fetchTeamMachines(teamId),
+      fetchTeamAssets(teamId),
     ]);
     currentMembers = members.map((m) => m.id);
-    currentMachines = machines.map((m) => m.id);
+    currentAssets = assets.map((m) => m.id);
   }
 
   // Update members
@@ -305,19 +305,17 @@ export async function updateTeamRelations(
     await removeTeamMember(teamId, userId);
   }
 
-  // Update machines
-  const machinesToAdd = newMachineIds.filter(
-    (id) => !currentMachines.includes(id),
-  );
-  const machinesToRemove = currentMachines.filter(
-    (id) => !newMachineIds.includes(id),
+  // Update assets
+  const assetsToAdd = newAssetIds.filter((id) => !currentAssets.includes(id));
+  const assetsToRemove = currentAssets.filter(
+    (id) => !newAssetIds.includes(id),
   );
 
-  for (const machineId of machinesToAdd) {
-    await addTeamMachine(teamId, machineId);
+  for (const assetId of assetsToAdd) {
+    await addTeamAsset(teamId, assetId);
   }
-  for (const machineId of machinesToRemove) {
-    await removeTeamMachine(teamId, machineId);
+  for (const assetId of assetsToRemove) {
+    await removeTeamAsset(teamId, assetId);
   }
 }
 

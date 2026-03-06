@@ -8,6 +8,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { RotationHistoryService } from './rotation-history.service.js';
 
@@ -33,6 +34,13 @@ function createMockDb() {
 // RotationHistoryService
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('RotationHistoryService', () => {
   let service: RotationHistoryService;
   let mockDb: ReturnType<typeof createMockDb>;
@@ -40,7 +48,10 @@ describe('RotationHistoryService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new RotationHistoryService(mockDb as unknown as DatabaseService);
+    service = new RotationHistoryService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -111,7 +122,7 @@ describe('RotationHistoryService', () => {
       // COMMIT
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.deleteRotationHistory(10, 5);
+      const result = await service.deleteRotationHistory(10, 5, 1);
 
       expect(result.shifts).toBe(5);
       expect(result.history).toBe(10);
@@ -131,7 +142,7 @@ describe('RotationHistoryService', () => {
       // COMMIT (no plans delete)
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.deleteRotationHistory(10, 5, 1);
+      const result = await service.deleteRotationHistory(10, 5, 1, 1);
 
       expect(result.plans).toBe(0);
       // 6 calls: BEGIN + 4 deletes + COMMIT (no plans)
@@ -145,7 +156,7 @@ describe('RotationHistoryService', () => {
       // ROLLBACK should be called
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteRotationHistory(10, 5)).rejects.toThrow(
+      await expect(service.deleteRotationHistory(10, 5, 1)).rejects.toThrow(
         'DB error',
       );
     });
@@ -162,6 +173,7 @@ describe('RotationHistoryService', () => {
       const result = await service.deleteRotationHistoryByDateRange(
         10,
         5,
+        1,
         '2025-01-01',
         '2025-06-30',
       );
@@ -180,15 +192,15 @@ describe('RotationHistoryService', () => {
     it('should throw NotFoundException when entry not found', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
 
-      await expect(service.deleteRotationHistoryEntry(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.deleteRotationHistoryEntry(999, 10, 1),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should delete single entry', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
 
-      await service.deleteRotationHistoryEntry(1, 10);
+      await service.deleteRotationHistoryEntry(1, 10, 1);
 
       expect(mockDb.query).toHaveBeenCalledTimes(1);
     });

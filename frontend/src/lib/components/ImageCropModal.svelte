@@ -8,6 +8,10 @@
    */
   import Cropper from 'svelte-easy-crop';
 
+  import { createLogger } from '$lib/utils/logger';
+
+  const log = createLogger('ImageCropModal');
+
   interface CropArea {
     x: number;
     y: number;
@@ -125,7 +129,7 @@
       const croppedBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
       onsave(croppedBlob);
     } catch (err) {
-      console.error('Error cropping image:', err);
+      log.error({ err }, 'Error cropping image');
     } finally {
       saving = false;
     }
@@ -328,13 +332,13 @@
     padding: var(--spacing-3, 12px) var(--spacing-6, 24px);
     margin: 0;
     color: var(--color-text-secondary, #9ca3af);
-    font-size: 0.8125rem;
+    font-size: 0.813rem;
     text-align: center;
     background: rgb(0 0 0 / 10%);
   }
 
   /* Responsive */
-  @media (max-width: 480px) {
+  @media (width <= 480px) {
     .crop-container {
       height: 280px;
     }

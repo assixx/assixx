@@ -14,6 +14,7 @@ import type {
   DeletionStatusResponse,
   RootUsersResponse,
   JwtPayload,
+  ShiftTimeData,
 } from './types';
 
 const log = createLogger('AccountSettingsApi');
@@ -117,4 +118,36 @@ export async function deleteTenant(
   return await apiClient.delete('/root/tenants/current', {
     reason: reason !== '' ? reason : MESSAGES.defaultReason,
   });
+}
+
+// =============================================================================
+// Shift Times API
+// =============================================================================
+
+/** Load shift times for current tenant */
+export async function loadShiftTimes(): Promise<ShiftTimeData[]> {
+  try {
+    const result = await apiClient.get<ShiftTimeData[]>('/shift-times');
+    return Array.isArray(result) ? result : [];
+  } catch (err: unknown) {
+    log.error({ err }, 'Error fetching shift times');
+    return [];
+  }
+}
+
+/** Save all shift times at once */
+export async function saveShiftTimes(
+  shiftTimes: {
+    shiftKey: string;
+    label: string;
+    startTime: string;
+    endTime: string;
+  }[],
+): Promise<ShiftTimeData[]> {
+  return await apiClient.put<ShiftTimeData[]>('/shift-times', { shiftTimes });
+}
+
+/** Reset shift times to system defaults */
+export async function resetShiftTimes(): Promise<ShiftTimeData[]> {
+  return await apiClient.post<ShiftTimeData[]>('/shift-times/reset', {});
 }

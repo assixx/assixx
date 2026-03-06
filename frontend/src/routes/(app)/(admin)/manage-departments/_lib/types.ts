@@ -28,7 +28,7 @@ export interface Department {
   employeeNames?: string;
   teamCount?: number;
   teamNames?: string;
-  machineCount?: number;
+  assetCount?: number;
   budget?: number;
   costCenter?: string;
   foundedDate?: string;
@@ -104,7 +104,7 @@ export interface DependencyDetails {
   totalDependencies?: number;
   users?: number;
   teams?: number;
-  machines?: number;
+  assets?: number;
   shifts?: number;
   shiftPlans?: number;
   kvpSuggestions?: number;

@@ -5,7 +5,7 @@
  * Handles shift calculation, assignment creation, and history generation.
  *
  * Note: This service exceeds the 400-line sub-service guideline because the
- * shift generation algorithm is a tightly coupled state machine. Splitting it
+ * shift generation algorithm is a tightly coupled state asset. Splitting it
  * would scatter related logic across files and harm readability.
  */
 import {
@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { GenerateRotationShiftsDto } from './dto/generate-rotation-shifts.dto.js';
 import type { GenerateRotationFromConfigDto } from './dto/rotation-config.dto.js';
@@ -30,7 +31,10 @@ import type {
 export class RotationGeneratorService {
   private readonly logger = new Logger(RotationGeneratorService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   // ============================================================
   // SHIFT TYPE DETERMINATION
@@ -160,6 +164,7 @@ export class RotationGeneratorService {
     pattern: RotationPatternResponse,
     dto: GenerateRotationShiftsDto,
     tenantId: number,
+    userId: number,
   ): Promise<GeneratedShiftsResponse> {
     this.logger.debug(`Generating rotation shifts for tenant ${tenantId}`);
 
@@ -191,6 +196,15 @@ export class RotationGeneratorService {
         pattern.id,
         assignments,
         tenantId,
+      );
+
+      void this.activityLogger.logCreate(
+        tenantId,
+        userId,
+        'rotation_pattern',
+        dto.patternId,
+        `Rotationsschichten generiert: ${generatedShifts.length} Schichten`,
+        { patternId: dto.patternId, shiftCount: generatedShifts.length },
       );
     }
 
@@ -577,6 +591,16 @@ export class RotationGeneratorService {
       }
 
       await this.databaseService.query('COMMIT', []);
+
+      void this.activityLogger.logCreate(
+        tenantId,
+        userId,
+        'rotation_pattern',
+        patternId,
+        `Rotation generiert: ${totalShifts} Schichten`,
+        { patternId, shiftsCreated: totalShifts, startDate, endDate },
+      );
+
       return { success: true, shiftsCreated: totalShifts, patternId };
     } catch (error) {
       await this.databaseService.query('ROLLBACK', []);

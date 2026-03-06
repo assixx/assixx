@@ -34,12 +34,54 @@ const TRANSIENT_TABLES = [
   'notification_read_status',
   'notifications',
 
-  // Audit/Logs: grow on every run
+  // Blackboard: entries + children accumulate from blackboard API tests
+  // Order: confirmations → comments → entries (FK CASCADE exists, but explicit is safer)
+  'blackboard_confirmations',
+  'blackboard_comments',
+  'blackboard_entries',
+
+  // Audit/Logs: grow on every run (partitioned tables — DELETE routes to correct partitions)
+  'audit_trail',
+  'root_logs',
+  'deletion_audit_trail',
   'admin_logs',
   'admin_permission_logs',
 
   // Refresh tokens: created on every login
   'refresh_tokens',
+
+  // Vacation: requests + children accumulate from vacation API tests
+  // Order: status_log → requests → staffing_rules → holidays → blackouts
+  'vacation_request_status_log',
+  'vacation_requests',
+  'vacation_staffing_rules',
+  'vacation_holidays',
+  'vacation_blackouts',
+
+  // TPM: plans, cards, executions accumulate across test runs
+  // Order: deepest children first (execution_photos → executions → cards → rest)
+  'tpm_card_execution_photos',
+  'tpm_card_executions',
+  'tpm_time_estimates',
+  'tpm_cards',
+  'tpm_maintenance_plans',
+
+  // Work Orders: photos → comments → assignees → work_orders (FK CASCADE safe)
+  'work_order_photos',
+  'work_order_comments',
+  'work_order_assignees',
+  'work_orders',
+
+  // Org structure: departments, teams, assets accumulate ~2-3 rows/run.
+  // Order: assets first (tpm_cards already cleaned above), then teams
+  // (FK CASCADE handles user_teams, asset_teams, etc.), then departments last.
+  // RESTRICT FKs: shifts + document_permissions reference departments/teams
+  // with RESTRICT — currently 0 rows for apitest tenant, but if they ever
+  // accumulate, add them BEFORE these three tables.
+  // Seed data from 00-auth.api.test.ts is auto-recreated via WHERE NOT EXISTS.
+  'assets',
+  'teams',
+  'departments',
 ] as const;
 
 const CLEANUP_SQL = `

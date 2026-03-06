@@ -15,6 +15,7 @@ import type {
   Department,
   Team,
   Area,
+  Asset,
   PaginatedComments,
 } from './_lib/types';
 
@@ -67,68 +68,65 @@ async function apiFetch<T>(
   }
 }
 
+const EMPTY_COMMENTS: PaginatedComments = {
+  comments: [],
+  total: 0,
+  hasMore: false,
+};
+
+/** Parallel fetch: comments, attachments, and org data for share modal */
+async function fetchPageData(
+  idOrUuid: string,
+  token: string,
+  fetchFn: typeof fetch,
+) {
+  const [commentsData, attachmentsData, depts, teams, areas, assets] =
+    await Promise.all([
+      apiFetch<PaginatedComments>(
+        `/kvp/${idOrUuid}/comments?limit=20&offset=0`,
+        token,
+        fetchFn,
+      ),
+      apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetchFn),
+      apiFetch<Department[]>('/departments', token, fetchFn),
+      apiFetch<Team[]>('/teams', token, fetchFn),
+      apiFetch<Area[]>('/areas', token, fetchFn),
+      apiFetch<Asset[]>('/assets', token, fetchFn),
+    ]);
+
+  return {
+    comments: commentsData ?? EMPTY_COMMENTS,
+    attachments: ensureArray(attachmentsData),
+    departments: ensureArray(depts),
+    teams: ensureArray(teams),
+    areas: ensureArray(areas),
+    assets: ensureArray(assets),
+  };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  // Get UUID or ID from URL search params
-  const uuid = url.searchParams.get('uuid');
-  const legacyId = url.searchParams.get('id');
-  const idOrUuid = uuid ?? legacyId;
-
+  const idOrUuid = url.searchParams.get('uuid') ?? url.searchParams.get('id');
   if (idOrUuid === null || idOrUuid === '') {
     error(400, 'Ungueltige Vorschlags-ID');
   }
 
-  // Get user from parent layout
   const parentData = await parent();
 
-  // First fetch the suggestion to check if it exists
   const suggestion = await apiFetch<KvpSuggestion>(
     `/kvp/${idOrUuid}`,
     token,
     fetch,
   );
-
   if (!suggestion) {
     error(404, 'Vorschlag nicht gefunden');
   }
 
-  const defaultComments: PaginatedComments = {
-    comments: [],
-    total: 0,
-    hasMore: false,
-  };
+  const pageData = await fetchPageData(idOrUuid, token, fetch);
 
-  // Parallel fetch: comments (paginated), attachments, and org data (for share modal)
-  const [commentsData, attachmentsData, departmentsData, teamsData, areasData] =
-    await Promise.all([
-      apiFetch<PaginatedComments>(
-        `/kvp/${idOrUuid}/comments?limit=20&offset=0`,
-        token,
-        fetch,
-      ),
-      apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetch),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Team[]>('/teams', token, fetch),
-      apiFetch<Area[]>('/areas', token, fetch),
-    ]);
-
-  const comments = commentsData ?? defaultComments;
-  const attachments = ensureArray(attachmentsData);
-  const departments = ensureArray(departmentsData);
-  const teams = ensureArray(teamsData);
-  const areas = ensureArray(areasData);
-
-  return {
-    suggestion,
-    comments,
-    attachments,
-    departments,
-    teams,
-    areas,
-    currentUser: parentData.user,
-  };
+  return { suggestion, ...pageData, currentUser: parentData.user };
 };

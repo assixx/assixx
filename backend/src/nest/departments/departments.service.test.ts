@@ -562,7 +562,7 @@ describe('DepartmentsService', () => {
       const deps = {
         userDepartments: 1,
         teams: 2,
-        machines: 0,
+        assets: 0,
         shifts: 0,
         shiftPlans: 0,
         shiftFavorites: 3,

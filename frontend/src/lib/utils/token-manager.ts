@@ -152,9 +152,9 @@ export class TokenManager {
   /**
    * Set tokens after login or refresh.
    *
-   * @deprecated _refresh parameter is ignored. Refresh token is now stored in HttpOnly cookie by backend.
+   * NOTE: Refresh token is stored in HttpOnly cookie by backend (not managed here).
    */
-  public setTokens(access: string, _refresh?: string): void {
+  public setTokens(access: string): void {
     if (!isBrowser()) return;
 
     // SECURITY: Clear API cache from previous user before setting new tokens

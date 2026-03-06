@@ -73,7 +73,7 @@
 
 /* Active/Checked state - when input is checked */
 .choice-card:has(.choice-card__input:checked) {
-  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+  box-shadow: 0 0 20px rgb(33 149 243 / 5.3%);
   border-color: rgb(33 150 243 / 50%);
   background: rgb(33 150 243 / 10%);
 }

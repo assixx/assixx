@@ -8,6 +8,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { ShiftPlansService } from './shift-plans.service.js';
 
@@ -43,6 +44,15 @@ function createMockDb() {
   return { query: vi.fn() };
 }
 
+function createMockActivityLogger() {
+  return {
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+    log: vi.fn(),
+  };
+}
+
 /** Standard DB shift plan row */
 function makePlanRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -52,7 +62,7 @@ function makePlanRow(overrides: Record<string, unknown> = {}) {
     area_id: null,
     department_id: 5,
     team_id: null,
-    machine_id: null,
+    asset_id: null,
     name: 'Week Plan',
     start_date: '2025-06-01',
     end_date: '2025-06-07',
@@ -75,7 +85,11 @@ describe('ShiftPlansService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new ShiftPlansService(mockDb as unknown as DatabaseService);
+    const mockActivityLogger = createMockActivityLogger();
+    service = new ShiftPlansService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -124,6 +138,44 @@ describe('ShiftPlansService', () => {
       expect(result.planId).toBe(1);
       expect(result.shiftIds).toEqual([]);
       expect(result.message).toBe('Shift plan created successfully');
+    });
+
+    it('should pass isTpmMode to INSERT query', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+
+      await service.createShiftPlan(
+        {
+          departmentId: 5,
+          startDate: '2025-06-01',
+          endDate: '2025-06-07',
+          isTpmMode: true,
+          shifts: [],
+        } as never,
+        10,
+        1,
+      );
+
+      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      // is_tpm_mode is the 11th param (index 10) in the INSERT
+      expect(insertParams?.[10]).toBe(true);
+    });
+
+    it('should default isTpmMode to false when not provided', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+
+      await service.createShiftPlan(
+        {
+          departmentId: 5,
+          startDate: '2025-06-01',
+          endDate: '2025-06-07',
+          shifts: [],
+        } as never,
+        10,
+        1,
+      );
+
+      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(insertParams?.[10]).toBe(false);
     });
 
     it('should create plan with shifts', async () => {
@@ -176,6 +228,22 @@ describe('ShiftPlansService', () => {
       await expect(
         service.updateShiftPlan(999, { shifts: [] } as never, 10, 1),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should include is_tpm_mode in UPDATE when provided', async () => {
+      // find plan
+      mockDb.query.mockResolvedValueOnce([makePlanRow()]);
+      // applyShiftPlanUpdates → UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+      // deleteOrphanedPlanShifts skipped (no shifts)
+
+      await service.updateShiftPlan(1, { isTpmMode: true } as never, 10, 1);
+
+      // Second call is the UPDATE query
+      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      expect(updateSql).toContain('is_tpm_mode');
+      expect(updateParams?.[0]).toBe(true);
     });
 
     it('should update plan metadata and upsert shifts', async () => {
@@ -241,7 +309,7 @@ describe('ShiftPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteShiftPlan(999, 10)).rejects.toThrow(
+      await expect(service.deleteShiftPlan(999, 10, 1)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -254,7 +322,7 @@ describe('ShiftPlansService', () => {
       // DELETE plan
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.deleteShiftPlan(1, 10);
+      await service.deleteShiftPlan(1, 10, 1);
 
       expect(mockDb.query).toHaveBeenCalledTimes(3);
     });
@@ -275,7 +343,7 @@ describe('ShiftPlansService', () => {
       // DELETE plan
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.deleteShiftPlanByUuid('plan-uuid-1', 10);
+      await service.deleteShiftPlanByUuid('plan-uuid-1', 10, 1);
 
       expect(mockDb.query).toHaveBeenCalledTimes(4);
     });

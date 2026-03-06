@@ -7,7 +7,7 @@ import { getApiClient } from '$lib/utils/api-client';
 import type {
   CreateBlackoutPayload,
   CreateStaffingRulePayload,
-  OrgMachine,
+  OrgAsset,
   UpdateBlackoutPayload,
   UpdateSettingsPayload,
   UpdateStaffingRulePayload,
@@ -80,12 +80,12 @@ export async function deleteStaffingRule(id: string): Promise<void> {
 
 // ─── Organization Hierarchy (for cascade dropdowns) ─────────────────
 
-/** Fetch machines filtered by department (for staffing rule creation cascade). */
-export async function fetchMachinesByDepartment(
+/** Fetch assets filtered by department (for staffing rule creation cascade). */
+export async function fetchAssetsByDepartment(
   departmentId: number,
-): Promise<OrgMachine[]> {
-  const response = await apiClient.get<OrgMachine[] | { data: OrgMachine[] }>(
-    `/machines?departmentId=${departmentId}`,
+): Promise<OrgAsset[]> {
+  const response = await apiClient.get<OrgAsset[] | { data: OrgAsset[] }>(
+    `/assets?departmentId=${departmentId}`,
   );
   if (Array.isArray(response)) return response;
   return response.data;

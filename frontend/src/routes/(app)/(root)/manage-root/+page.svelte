@@ -85,7 +85,6 @@
   // Modal States
   let showRootModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showAvailabilityModal = $state(false);
 
   // Availability Modal State
@@ -237,7 +236,7 @@
       const result = await apiDeleteRootUser(userIdToDelete);
       if (result.success) {
         showSuccessAlert(MESSAGES.SUCCESS_DELETED);
-        closeDeleteConfirmModal();
+        closeDeleteModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else {
@@ -368,16 +367,6 @@
     deleteUserId = null;
   }
 
-  function proceedToDeleteConfirm(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
-  function closeDeleteConfirmModal(): void {
-    showDeleteConfirmModal = false;
-    deleteUserId = null;
-  }
-
   // =============================================================================
   // UI HANDLERS
   // =============================================================================
@@ -413,7 +402,6 @@
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showAvailabilityModal) closeAvailabilityModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showRootModal) closeRootModal();
     }
@@ -740,12 +728,9 @@
 />
 
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
-  onCloseDelete={closeDeleteModal}
-  onCloseDeleteConfirm={closeDeleteConfirmModal}
-  onProceedToConfirm={proceedToDeleteConfirm}
-  onConfirmDelete={deleteUser}
+  show={showDeleteModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteUser}
 />
 
 <!-- Availability Modal Component -->

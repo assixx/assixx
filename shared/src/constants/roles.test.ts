@@ -11,14 +11,15 @@ describe('ROLE_LABELS', () => {
     }
   });
 
-  it('should have exactly 3 entries', () => {
-    expect(Object.keys(ROLE_LABELS)).toHaveLength(3);
+  it('should have exactly 4 entries', () => {
+    expect(Object.keys(ROLE_LABELS)).toHaveLength(4);
   });
 
   it('should contain correct German labels', () => {
     expect(ROLE_LABELS.root).toBe('Root');
     expect(ROLE_LABELS.admin).toBe('Administrator');
     expect(ROLE_LABELS.employee).toBe('Mitarbeiter');
+    expect(ROLE_LABELS.dummy).toBe('Dummy');
   });
 
   it('should cover exactly the USER_ROLES array values', () => {
@@ -35,14 +36,15 @@ describe('EXTENDED_ROLE_LABELS', () => {
     }
   });
 
-  it('should have exactly 5 entries', () => {
-    expect(Object.keys(EXTENDED_ROLE_LABELS)).toHaveLength(5);
+  it('should have exactly 6 entries', () => {
+    expect(Object.keys(EXTENDED_ROLE_LABELS)).toHaveLength(6);
   });
 
   it('should contain correct German labels', () => {
     expect(EXTENDED_ROLE_LABELS.root).toBe('Root');
     expect(EXTENDED_ROLE_LABELS.admin).toBe('Administrator');
     expect(EXTENDED_ROLE_LABELS.employee).toBe('Mitarbeiter');
+    expect(EXTENDED_ROLE_LABELS.dummy).toBe('Dummy');
     expect(EXTENDED_ROLE_LABELS.team_lead).toBe('Teamleiter');
     expect(EXTENDED_ROLE_LABELS.manager).toBe('Manager');
   });

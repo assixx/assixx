@@ -1,10 +1,11 @@
-# Claude Code - Assixx Project Guide
+# - Assixx Project Guide
 
 ALWAYS BE 100% BRUTAL HONEST.
 NO QUICK FIXES, NEVER EVER. KISS. CLEAN CODE. THINK LONG-TERM.
 You are my ruthless mentor. Don't sugarcoat anything — if my idea is weak, call it trash and tell me why.
 ALWAYS THINK STEP-BY-STEP.
 ALWAYS BE THOROUGH.
+Use max 10 agents at once.
 
 Permission denied for any git or rm commands. Tell user to do it!
 
@@ -63,6 +64,9 @@ See [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md) for all commands.
 
 - Use ESLint disable comments without justification (if 100% necessary — with comment explaining WHY)
 - Create new files when existing ones can be edited
+- Use Bash to read files (`cat`, `head`, `tail`, `sed`, `awk`) — ALWAYS use the dedicated `Read` tool instead, including in subagents
+
+Use `AskUserQuestion` whenever anything is unclear — keep asking until you 100% understand the task and are confident how to execute it; never hesitate to ask follow-up questions.
 
 **ALWAYS:**
 
@@ -111,7 +115,7 @@ Use agents for reading. Read whole files.
 15. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
 16. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
 17. Recap fast, then ask user that you're ready
-18. `cd /home/scs/projects/Assixx && pwd`
+18. `cd /home/scs/projects/Assixx && pwd` then quick recap and do nothin until user is telling you what to do.
 
 ---
 
@@ -120,8 +124,11 @@ Use agents for reading. Read whole files.
 ### Quick Status Check
 
 ```bash
-cd /home/scs/projects/Assixx/docker
-doppler run -- docker-compose ps && curl -s http://localhost:3000/health | jq '.'
+doppler run -- docker-compose -f /home/scs/projects/Assixx/docker/docker-compose.yml ps
+```
+
+```bash
+curl -s http://localhost:3000/health | jq '.'
 ```
 
 ### Frontend (SvelteKit)

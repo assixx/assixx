@@ -141,6 +141,15 @@
       "rules": {
         "max-nesting-depth": null
       }
+    },
+    {
+      "files": [
+        "**/design-system/primitives/**/*.css",
+        "**/styles/tailwind/utilities.css"
+      ],
+      "rules": {
+        "no-unknown-animations": null
+      }
     }
   ]
 }

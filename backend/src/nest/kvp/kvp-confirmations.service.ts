@@ -7,6 +7,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { ERROR_SUGGESTION_NOT_FOUND } from './kvp.constants.js';
 import { buildVisibilityClause } from './kvp.helpers.js';
@@ -16,7 +17,10 @@ import type { ExtendedUserOrgInfo } from './kvp.types.js';
 export class KvpConfirmationsService {
   private readonly logger = new Logger(KvpConfirmationsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get count of unconfirmed KVP suggestions for notification badge.
@@ -88,6 +92,14 @@ export class KvpConfirmationsService {
       [tenantId, suggestion.id, userId],
     );
 
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'kvp',
+      suggestion.id,
+      `KVP-Vorschlag bestätigt: ${uuid}`,
+    );
+
     return { success: true };
   }
 
@@ -119,6 +131,14 @@ export class KvpConfirmationsService {
        SET is_confirmed = false, confirmed_at = NULL
        WHERE tenant_id = $1 AND suggestion_id = $2 AND user_id = $3`,
       [tenantId, suggestion.id, userId],
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'kvp',
+      suggestion.id,
+      `KVP-Vorschlag als ungelesen markiert: ${uuid}`,
     );
 
     return { success: true };

@@ -401,9 +401,11 @@
     <div class="profile-card">
       <h2 class="card-title">Persönliche Informationen</h2>
 
-      <div class="info-box">
-        <i class="fas fa-info-circle"></i>
-        {READONLY_INFO_TEXT}
+      <div class="alert alert--info alert--sm mb-6">
+        <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
+        <div class="alert__content">
+          <div class="alert__message">{READONLY_INFO_TEXT}</div>
+        </div>
       </div>
 
       <form id="profile-form">
@@ -682,22 +684,6 @@
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: var(--spacing-6);
     margin-bottom: var(--spacing-6);
-  }
-
-  /* ===== INFO BOX (Admin-specific: readonly fields info) ===== */
-  .info-box {
-    margin-bottom: var(--spacing-6);
-    border: 1px solid rgb(33 150 243 / 20%);
-    border-radius: var(--radius-xl);
-    background: rgb(33 150 243 / 5%);
-    padding: var(--spacing-3);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .info-box i {
-    margin-right: var(--spacing-1);
-    color: #2196f3;
   }
 
   /* Non-editable fields styling */

@@ -4,7 +4,9 @@
    * Uses Design System alert primitives for consistent theming (light/dark)
    */
 
-  import { toasts, type ToastType } from '$lib/stores/toast';
+  import { goto } from '$app/navigation';
+
+  import { dismissToast, toasts, type ToastType } from '$lib/stores/toast';
 
   /** Map toast type to FontAwesome icon class */
   function getIconClass(type: ToastType): string {
@@ -43,6 +45,19 @@
           `: ${toast.message}`
         : ''}
       </span>
+      {#if toast.action !== undefined}
+        <button
+          type="button"
+          class="btn btn-primary btn--sm"
+          onclick={() => {
+            dismissToast(toast.id);
+            void goto(toast.action?.href ?? '/');
+          }}
+        >
+          {toast.action.label}
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      {/if}
     </div>
   {/each}
 </div>

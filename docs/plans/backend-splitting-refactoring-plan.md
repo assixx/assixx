@@ -318,7 +318,7 @@ Note: Tenant deletion methods already delegate to `tenantDeletion.service.ts` (s
 
 **Current Domains:** Pattern CRUD, Assignments, Shift Generation, Shift Calculation, History
 
-**New files: 4** | The generator at ~550 lines exceeds the 400-line guideline but the shift generation algorithm is a tightly coupled state machine. Splitting it would scatter related logic across files and harm readability. This is the correct trade-off.
+**New files: 4** | The generator at ~550 lines exceeds the 400-line guideline but the shift generation algorithm is a tightly coupled state asset. Splitting it would scatter related logic across files and harm readability. This is the correct trade-off.
 
 ```
 shifts/
@@ -625,14 +625,14 @@ machines/
     - activateMachine()
     - deactivateMachine()
     delegates to:
-  machine-maintenance.service.ts       Maintenance (~250 lines)
+  asset-maintenance.service.ts       Maintenance (~250 lines)
     - getMaintenanceHistory()
     - addMaintenanceRecord()
     - updateMachineAfterMaintenance()
     - getUpcomingMaintenance()
     - getStatistics()
     - getCategories()
-  machine-team.service.ts              Team associations (~150 lines)
+  asset-team.service.ts              Team associations (~150 lines)
     - setMachineTeams()
     - getMachineTeams()
   machines.helpers.ts                  Mappers, transforms & query builders (~350 lines)
@@ -877,7 +877,7 @@ teams/
     - ensureLeaderInTeam()             ← absorbed from v1 team-leadership.service.ts
     - validateLeader()                 ← absorbed from v1 team-leadership.service.ts
     - validateDepartment()             ← absorbed from v1 team-leadership.service.ts
-  team-machine.service.ts              Machine associations (~140 lines)
+  team-asset.service.ts              Machine associations (~140 lines)
     - getTeamMachines()
     - addTeamMachine()
     - removeTeamMachine()

@@ -92,7 +92,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d user_teams" | g
 4. `vacation_requests` — the core requests table (UUID PK, RLS, 5 constraints)
 5. `vacation_request_status_log` — audit per request (UUID PK, RLS)
 6. `vacation_blackouts` — blackout periods (UUID PK, RLS, `is_global` + junction table `vacation_blackout_scopes`)
-7. `vacation_staffing_rules` — min staffing per machine (UUID PK, RLS, UNIQUE tenant_id+machine_id)
+7. `vacation_staffing_rules` — min staffing per asset (UUID PK, RLS, UNIQUE tenant_id+asset_id)
 8. `vacation_settings` — tenant-wide config (UUID PK, RLS, UNIQUE tenant_id)
 
 **For EVERY table (mandatory checklist):**
@@ -383,7 +383,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
 - `createStaffingRule(tenantId, userId, dto)` — UNIQUE violation → ConflictException
 - `updateStaffingRule(tenantId, id, dto)`
 - `deleteStaffingRule(tenantId, id)` — soft-delete `is_active = 4`
-- `getForMachines(tenantId, machineIds[])` — bulk query, returns `Map<machineId, minStaffCount>`
+- `getForMachines(tenantId, machineIds[])` — bulk query, returns `Map<asset_Id, minStaffCount>`
 
 ### Step 2.7: Capacity Service (Heart of the system)
 
@@ -398,10 +398,10 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
 3. For EVERY workday in range:
    a. Count total team members
    b. Count absent members (approved vacations + user_availability != 'available')
-   c. For each machine: check `min_staff_count` from staffing rules
+   c. For each asset: check `min_staff_count` from staffing rules
    d. `availableAfterApproval = available - 1` (requester leaves)
    e. Determine status: ok / warning / critical
-4. Return worst-case day per machine
+4. Return worst-case day per asset
 5. Check blackout conflicts
 6. Check entitlement balance
 7. Return `VacationCapacityAnalysis` with `overallStatus`

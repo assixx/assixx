@@ -85,6 +85,12 @@ export const kvpState = {
   get searchQuery() {
     return filterState.searchQuery;
   },
+  get teamFilter() {
+    return filterState.teamFilter;
+  },
+  get assetFilter() {
+    return filterState.assetFilter;
+  },
   get badgeCounts() {
     return badgeCounts;
   },
@@ -92,6 +98,8 @@ export const kvpState = {
   setStatusFilter: filterState.setStatusFilter,
   setCategoryFilter: filterState.setCategoryFilter,
   setDepartmentFilter: filterState.setDepartmentFilter,
+  setTeamFilter: filterState.setTeamFilter,
+  setAssetFilter: filterState.setAssetFilter,
   setSearchQuery: filterState.setSearchQuery,
 
   // UI

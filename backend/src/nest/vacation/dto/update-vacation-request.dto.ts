@@ -33,9 +33,9 @@ export const UpdateVacationRequestSchema = BaseSchema.refine(
   (data: BaseInput) => {
     if (data.startDate !== undefined) {
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       const start = new Date(data.startDate);
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       return start >= today;
     }
     return true;

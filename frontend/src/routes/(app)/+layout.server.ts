@@ -70,6 +70,10 @@ interface DashboardCounts {
   kvp: { count: number };
   /** Pending surveys count (active surveys not yet responded to by user) */
   surveys: { count: number };
+  /** Unread vacation notifications (new requests for approvers, responses for requesters) */
+  vacation: { count: number };
+  /** Unread TPM notifications (maintenance due, overdue, approval required) */
+  tpm: { count: number };
   fetchedAt: string;
 }
 

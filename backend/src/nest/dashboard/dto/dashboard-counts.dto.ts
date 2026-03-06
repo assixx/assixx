@@ -53,6 +53,10 @@ export const DashboardCountsSchema = z.object({
   surveys: CountItemSchema,
   /** Unread vacation notifications (new requests for approvers, responses for requesters) */
   vacation: CountItemSchema,
+  /** Unread TPM notifications (maintenance due, overdue, approval required) */
+  tpm: CountItemSchema,
+  /** Unread work order notifications (assignments, verifications) */
+  workOrders: CountItemSchema,
   /** Timestamp when counts were fetched */
   fetchedAt: z.string(),
 });

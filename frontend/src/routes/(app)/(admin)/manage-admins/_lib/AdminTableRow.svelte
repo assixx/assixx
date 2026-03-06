@@ -49,7 +49,7 @@
 </script>
 
 <tr>
-  <td>{admin.id}</td>
+  <td><code class="text-muted">{admin.id}</code></td>
   <td>
     <div class="flex items-center gap-2">
       <div

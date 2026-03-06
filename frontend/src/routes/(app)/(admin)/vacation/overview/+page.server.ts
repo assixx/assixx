@@ -2,8 +2,7 @@
  * Vacation Overview — Server-Side Data Loading
  * @module vacation/overview/+page.server
  *
- * SSR: Loads machines, blackouts, and staffing rules.
- * Teams are loaded client-side after machine selection (cascade).
+ * SSR: Loads teams and blackouts.
  * Admin/root only (enforced by (admin) layout guard).
  */
 import { redirect } from '@sveltejs/kit';
@@ -12,11 +11,7 @@ import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type {
-  BlackoutPeriod,
-  MachineListItem,
-  StaffingRule,
-} from './_lib/types';
+import type { BlackoutPeriod, TeamListItem } from './_lib/types';
 
 const log = createLogger('VacationOverview');
 
@@ -27,10 +22,10 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-interface RawMachine {
+interface RawTeam {
   id: number;
   name: string;
-  isActive: boolean;
+  isActive?: boolean | number;
 }
 
 interface RawBlackout {
@@ -39,13 +34,6 @@ interface RawBlackout {
   startDate: string;
   endDate: string;
   isGlobal: boolean;
-}
-
-interface RawStaffingRule {
-  id: string;
-  machineId: number;
-  machineName: string;
-  minStaffCount: number;
 }
 
 /** Extract data from API response envelope. */
@@ -79,7 +67,7 @@ async function apiFetch<T>(
 
     const json = (await response.json()) as ApiResponse<T>;
     return extractResponseData(json);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }
@@ -98,21 +86,20 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  /** Fetch machines, blackouts, and staffing rules in parallel */
-  const [machinesData, blackoutsData, staffingData] = await Promise.all([
-    apiFetch<RawMachine[]>('/machines', token, fetch),
+  const [teamsData, blackoutsData] = await Promise.all([
+    apiFetch<RawTeam[]>('/teams', token, fetch),
     apiFetch<RawBlackout[]>('/vacation/blackouts', token, fetch),
-    apiFetch<RawStaffingRule[]>('/vacation/staffing-rules', token, fetch),
   ]);
 
-  const machines: MachineListItem[] =
-    machinesData
-      ?.filter((m) => m.isActive || m.isActive === (1 as unknown as boolean))
-      .map((m) => ({ id: m.id, name: m.name }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'de')) ?? [];
+  const teams: TeamListItem[] =
+    teamsData
+      ?.map((t: RawTeam) => ({ id: t.id, name: t.name }))
+      .sort((a: TeamListItem, b: TeamListItem) =>
+        a.name.localeCompare(b.name, 'de'),
+      ) ?? [];
 
   const blackouts: BlackoutPeriod[] =
-    blackoutsData?.map((b) => ({
+    blackoutsData?.map((b: RawBlackout) => ({
       id: b.id,
       name: b.name,
       startDate: b.startDate,
@@ -120,18 +107,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
       isGlobal: b.isGlobal,
     })) ?? [];
 
-  const staffingRules: StaffingRule[] =
-    staffingData?.map((r) => ({
-      id: r.id,
-      machineId: r.machineId,
-      machineName: r.machineName,
-      minStaffCount: r.minStaffCount,
-    })) ?? [];
-
   return {
-    machines,
+    teams,
     blackouts,
-    staffingRules,
     currentYear,
     currentMonth,
   };

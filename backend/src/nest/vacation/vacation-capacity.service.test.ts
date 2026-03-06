@@ -4,7 +4,7 @@
  * THE HEART OF THE SYSTEM — analyzeCapacity() orchestrates:
  * 1. Team context gathering (DB queries)
  * 2. Sub-service queries (holidays, blackouts, staffing)
- * 3. Per-day capacity computation (team + machines)
+ * 3. Per-day capacity computation (team + assets)
  * 4. Entitlement check, substitute check, overall status
  *
  * Mocked dependencies: DatabaseService, VacationHolidaysService,
@@ -76,7 +76,7 @@ function createMockStaffingRulesService() {
     createStaffingRule: vi.fn(),
     updateStaffingRule: vi.fn(),
     deleteStaffingRule: vi.fn(),
-    getForMachines: vi.fn(),
+    getForAssets: vi.fn(),
   };
 }
 
@@ -116,7 +116,7 @@ describe('VacationCapacityService', () => {
   function setupGatherTeamContext(opts?: {
     teamRow?: object;
     members?: object[];
-    machines?: object[];
+    assets?: object[];
     approvedAbsences?: object[];
     availabilityAbsences?: object[];
   }): void {
@@ -131,9 +131,7 @@ describe('VacationCapacityService', () => {
       { user_id: 7, first_name: 'Ben', last_name: 'Weber' },
       { user_id: 8, first_name: 'Clara', last_name: 'Fischer' },
     ];
-    const machines = opts?.machines ?? [
-      { machine_id: 100, machine_name: 'CNC Mill' },
-    ];
+    const assets = opts?.assets ?? [{ asset_id: 100, asset_name: 'CNC Mill' }];
     const approvedAbsences = opts?.approvedAbsences ?? [];
     const availabilityAbsences = opts?.availabilityAbsences ?? [];
 
@@ -143,8 +141,8 @@ describe('VacationCapacityService', () => {
     contextClient.query.mockResolvedValueOnce({ rows: [teamRow] });
     // Query 2: loadTeamMembers
     contextClient.query.mockResolvedValueOnce({ rows: members });
-    // Query 3: loadTeamMachines
-    contextClient.query.mockResolvedValueOnce({ rows: machines });
+    // Query 3: loadTeamAssets
+    contextClient.query.mockResolvedValueOnce({ rows: assets });
     // Query 4: loadApprovedAbsences
     contextClient.query.mockResolvedValueOnce({ rows: approvedAbsences });
     // Query 5: loadAvailabilityAbsences
@@ -191,7 +189,7 @@ describe('VacationCapacityService', () => {
     // Default sub-service responses
     mockHolidays.countWorkdays.mockResolvedValue(5);
     mockBlackouts.getConflicts.mockResolvedValue([]);
-    mockStaffingRules.getForMachines.mockResolvedValue(new Map());
+    mockStaffingRules.getForAssets.mockResolvedValue(new Map());
     mockEntitlements.getBalance.mockResolvedValue({
       year: 2026,
       totalDays: 30,
@@ -380,28 +378,28 @@ describe('VacationCapacityService', () => {
   });
 
   // -----------------------------------------------------------
-  // analyzeCapacity — machine capacity
+  // analyzeCapacity — asset capacity
   // -----------------------------------------------------------
 
-  describe('analyzeCapacity() — machine capacity', () => {
-    it('should compute machine analysis with staffing rules', async () => {
+  describe('analyzeCapacity() — asset capacity', () => {
+    it('should compute asset analysis with staffing rules', async () => {
       setupGatherTeamContext();
-      // Machine 100 (CNC Mill) requires min 2 staff
-      mockStaffingRules.getForMachines.mockResolvedValue(new Map([[100, 2]]));
+      // Asset 100 (CNC Mill) requires min 2 staff
+      mockStaffingRules.getForAssets.mockResolvedValue(new Map([[100, 2]]));
 
       const result = await service.analyzeCapacity(createBaseParams());
 
-      expect(result.machineAnalysis).toHaveLength(1);
-      const machine = result.machineAnalysis[0];
-      expect(machine?.machineId).toBe(100);
-      expect(machine?.machineName).toBe('CNC Mill');
-      expect(machine?.minStaffRequired).toBe(2);
+      expect(result.assetAnalysis).toHaveLength(1);
+      const asset = result.assetAnalysis[0];
+      expect(asset?.assetId).toBe(100);
+      expect(asset?.assetName).toBe('CNC Mill');
+      expect(asset?.minStaffRequired).toBe(2);
       // 4 members - 0 absent = 4 available, - 1 requester = 3 after approval
-      expect(machine?.availableAfterApproval).toBe(3);
-      expect(machine?.status).toBe('ok'); // 3 > 2
+      expect(asset?.availableAfterApproval).toBe(3);
+      expect(asset?.status).toBe('ok'); // 3 > 2
     });
 
-    it('should return critical when machine falls below min staff', async () => {
+    it('should return critical when asset falls below min staff', async () => {
       setupGatherTeamContext({
         members: [
           { user_id: 5, first_name: 'Max', last_name: 'M' },
@@ -419,17 +417,17 @@ describe('VacationCapacityService', () => {
         ],
       });
       // min 2 staff, but only 3 members - 1 absent - 1 requester = 1 available
-      mockStaffingRules.getForMachines.mockResolvedValue(new Map([[100, 2]]));
+      mockStaffingRules.getForAssets.mockResolvedValue(new Map([[100, 2]]));
 
       const result = await service.analyzeCapacity(createBaseParams());
 
-      const machine = result.machineAnalysis[0];
-      expect(machine?.availableAfterApproval).toBe(1);
-      expect(machine?.status).toBe('critical'); // 1 < 2
-      expect(result.overallStatus).toBe('blocked'); // critical machine → blocked
+      const asset = result.assetAnalysis[0];
+      expect(asset?.availableAfterApproval).toBe(1);
+      expect(asset?.status).toBe('critical'); // 1 < 2
+      expect(result.overallStatus).toBe('blocked'); // critical asset → blocked
     });
 
-    it('should return warning when machine equals min staff', async () => {
+    it('should return warning when asset equals min staff', async () => {
       setupGatherTeamContext({
         members: [
           { user_id: 5, first_name: 'Max', last_name: 'M' },
@@ -438,23 +436,23 @@ describe('VacationCapacityService', () => {
         ],
       });
       // min 2 staff, 3 members - 0 absent - 1 requester = 2 available = min
-      mockStaffingRules.getForMachines.mockResolvedValue(new Map([[100, 2]]));
+      mockStaffingRules.getForAssets.mockResolvedValue(new Map([[100, 2]]));
 
       const result = await service.analyzeCapacity(createBaseParams());
 
-      const machine = result.machineAnalysis[0];
-      expect(machine?.availableAfterApproval).toBe(2);
-      expect(machine?.status).toBe('warning'); // 2 === 2
+      const asset = result.assetAnalysis[0];
+      expect(asset?.availableAfterApproval).toBe(2);
+      expect(asset?.status).toBe('warning'); // 2 === 2
       expect(result.overallStatus).toBe('warning');
     });
 
-    it('should skip machines without staffing rules', async () => {
-      setupGatherTeamContext(); // Has machine 100
-      mockStaffingRules.getForMachines.mockResolvedValue(new Map()); // No rules
+    it('should skip assets without staffing rules', async () => {
+      setupGatherTeamContext(); // Has asset 100
+      mockStaffingRules.getForAssets.mockResolvedValue(new Map()); // No rules
 
       const result = await service.analyzeCapacity(createBaseParams());
 
-      expect(result.machineAnalysis).toHaveLength(0);
+      expect(result.assetAnalysis).toHaveLength(0);
     });
   });
 
@@ -527,15 +525,15 @@ describe('VacationCapacityService', () => {
 
       expect(result.workdays).toBe(0);
       expect(result.teamAnalysis).toHaveLength(0);
-      expect(result.machineAnalysis).toHaveLength(0);
+      expect(result.assetAnalysis).toHaveLength(0);
     });
 
-    it('should handle team with no machines', async () => {
-      setupGatherTeamContext({ machines: [] });
+    it('should handle team with no assets', async () => {
+      setupGatherTeamContext({ assets: [] });
 
       const result = await service.analyzeCapacity(createBaseParams());
 
-      expect(result.machineAnalysis).toHaveLength(0);
+      expect(result.assetAnalysis).toHaveLength(0);
       expect(result.overallStatus).toBe('ok');
     });
   });

@@ -404,7 +404,7 @@ echo "API:      http://localhost/api/v2/"
 
 | Component  | Version     | Notes                       |
 | ---------- | ----------- | --------------------------- |
-| Node.js    | 24.13.1 LTS | Alpine image                |
+| Node.js    | 24.14.0 LTS | Alpine image                |
 | PostgreSQL | 17.7        | Alpine image                |
 | Nginx      | 1.29.4      | Alpine image                |
 | Redis      | 7.4.7       | Alpine image                |
@@ -489,5 +489,5 @@ This allows `pnpm deploy` without the `--legacy` flag for cleaner production bui
 ---
 
 **Last Updated:** 2026-01-06
-**Author:** Claude Code
+**Author:** Assixx
 **Version:** 1.1.0 (Added version info, pnpm config section, modern deploy)

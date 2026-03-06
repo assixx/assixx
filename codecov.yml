@@ -1,0 +1,53 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+# Validate: curl -X POST --data-binary @codecov.yml https://codecov.io/validate
+
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "50...90"
+
+  status:
+    project:
+      default:
+        target: 65%
+        threshold: 2%
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+
+  # Flag definitions — separate backend/shared from frontend
+  flags:
+    backend:
+      paths:
+        - backend/src/
+        - shared/src/
+      carryforward: true
+    frontend:
+      paths:
+        - frontend/src/
+      carryforward: true
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+  require_base: false
+  require_head: true
+
+ignore:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.module.ts"
+  - "**/*.d.ts"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+  - "database/**"
+  - "docker/**"
+  - "docs/**"
+  - "scripts/**"

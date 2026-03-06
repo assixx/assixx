@@ -3,7 +3,7 @@
  *
  * Phase 11: Service tests — mocked dependencies.
  * Focus: CLS context validation, scheduled message CRUD,
- *        time validation, cancel state machine.
+ *        time validation, cancel state asset.
  */
 import {
   BadRequestException,

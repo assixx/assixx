@@ -27,6 +27,7 @@
 
 /* Stat Value (Big Number) */
 .card-stat__value {
+  display: block;
   margin-bottom: var(--spacing-1);
   color: var(--color-primary);
   font-weight: 700;
@@ -35,6 +36,7 @@
 
 /* Stat Label */
 .card-stat__label {
+  display: block;
   color: var(--color-text-secondary);
   font-size: 0.875rem; /* 14px */
 }
@@ -47,6 +49,21 @@
   ); /* #a9d9ff - Consistent light blue for all icons */
 
   font-size: 2rem; /* 40px */
+}
+
+/* Size Variant — Compact */
+.card-stat--sm {
+  padding: 0.75rem 1rem;
+}
+
+.card-stat--sm .card-stat__icon {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.card-stat--sm .card-stat__value {
+  font-size: 1.125rem;
+  margin-bottom: var(--spacing-1);
 }
 
 /* Color Variants - Only for values, icons stay consistent */

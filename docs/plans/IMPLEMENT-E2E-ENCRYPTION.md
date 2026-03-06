@@ -4,9 +4,10 @@
 > **Created:** 2026-02-10
 > **Updated:** 2026-02-11
 > **Status:** PHASE 0 DONE, PHASE 1 DONE — 14/14 DoD items complete + 3 post-testing bugfixes
-> **Author:** Claude Code + SCS
-> **Branch:** `e2e`
-> **Replaces:** v3.5 (3 critical bugfixes: user-scoped IndexedDB, ensureKeyOnServer, toast notifications)
+>
+> - SCS
+>   **Branch:** `e2e`
+>   **Replaces:** v3.5 (3 critical bugfixes: user-scoped IndexedDB, ensureKeyOnServer, toast notifications)
 
 ---
 

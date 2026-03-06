@@ -14,6 +14,7 @@ import bcryptjs from 'bcryptjs';
 import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -49,6 +50,15 @@ function createMockDb() {
 function createMockUserRepository() {
   return {
     getPasswordHash: vi.fn(),
+  };
+}
+
+function createMockActivityLogger() {
+  return {
+    log: vi.fn(),
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
   };
 }
 
@@ -93,9 +103,11 @@ describe('UserProfileService', () => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockUserRepo = createMockUserRepository();
+    const mockActivityLogger = createMockActivityLogger();
     service = new UserProfileService(
       mockDb as unknown as DatabaseService,
       mockUserRepo as unknown as UserRepository,
+      mockActivityLogger as unknown as ActivityLoggerService,
     );
   });
 

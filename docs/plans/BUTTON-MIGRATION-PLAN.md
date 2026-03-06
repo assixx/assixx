@@ -34,7 +34,7 @@ TOTAL: 253 button instances across 41 HTML files
 2. `root-features.html` - 14 occurrences
 3. `calendar.html` - 13 occurrences
 4. `kvp.html` - 10 occurrences
-5. `manage-machines.html` - 10 occurrences
+5. `manage-assets.html` - 10 occurrences
 
 ---
 
@@ -428,7 +428,7 @@ HIGH IMPACT (10+ buttons):
   - root-features.html: 14
   - calendar.html: 13
   - kvp.html: 10
-  - manage-machines.html: 10
+  - manage-assets.html: 10
 
 MEDIUM IMPACT (5-9 buttons):
   - manage-teams.html: 9

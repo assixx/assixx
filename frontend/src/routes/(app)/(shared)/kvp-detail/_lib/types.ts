@@ -6,7 +6,7 @@
 /**
  * User roles
  */
-export type UserRole = 'root' | 'admin' | 'employee';
+export type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
 /**
  * KVP Suggestion status
@@ -28,7 +28,7 @@ export type KvpPriority = 'low' | 'normal' | 'high' | 'urgent';
 /**
  * Organization level
  */
-export type OrgLevel = 'company' | 'department' | 'area' | 'team';
+export type OrgLevel = 'company' | 'department' | 'area' | 'team' | 'asset';
 
 /**
  * Current user
@@ -86,6 +86,17 @@ export interface KvpSuggestion {
   isConfirmed?: boolean;
   /** When the user confirmed (read) this suggestion */
   confirmedAt?: string;
+  /** Organization assignments from junction table (teams and/or assets) */
+  organizations?: KvpOrgAssignment[];
+}
+
+/** Organization assignment on a KVP suggestion */
+export interface KvpOrgAssignment {
+  orgType: 'team' | 'asset';
+  orgId: number;
+  orgName?: string;
+  /** For assets: team IDs that own this asset (from asset_teams) */
+  relatedTeamIds?: number[];
 }
 
 /**
@@ -146,6 +157,14 @@ export interface Team {
  * Area
  */
 export interface Area {
+  id: number;
+  name: string;
+}
+
+/**
+ * Asset
+ */
+export interface Asset {
   id: number;
   name: string;
 }

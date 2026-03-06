@@ -4,6 +4,8 @@
    * Extracted from +layout.svelte for modularity (max-lines)
    * @module (app)/_lib/AppSidebar
    */
+  import { SvelteSet } from 'svelte/reactivity';
+
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
 
@@ -29,7 +31,7 @@
     firstName?: string;
     lastName?: string;
     email?: string;
-    role?: 'root' | 'admin' | 'employee';
+    role?: 'root' | 'admin' | 'employee' | 'dummy';
     employeeNumber?: string;
     profilePicture?: string;
     position?: string;
@@ -38,7 +40,7 @@
   interface Props {
     collapsed: boolean;
     menuItems: NavItem[];
-    currentRole: 'root' | 'admin' | 'employee';
+    currentRole: 'root' | 'admin' | 'employee' | 'dummy';
     user: UserInfo | null;
     tenant: { id?: number; companyName?: string } | null;
     mobileMenuOpen?: boolean;
@@ -58,14 +60,33 @@
   }: Props = $props();
 
   // --- INTERNAL STATE ---
-  let openSubmenu = $state<string | null>(null);
-  let openSubSubmenu = $state<string | null>(null);
+  const openSubmenus = new SvelteSet<string>();
+  const openSubSubmenus = new SvelteSet<string>();
 
   // Close all submenus when sidebar collapses
   $effect(() => {
     if (collapsed) {
-      openSubmenu = null;
-      openSubSubmenu = null;
+      openSubmenus.clear();
+      openSubSubmenus.clear();
+    }
+  });
+
+  // Auto-open submenu for the currently active page
+  $effect(() => {
+    if (collapsed) return;
+
+    const activeParent = menuItems.find(
+      (item: NavItem) => item.submenu !== undefined && isActive(item),
+    );
+    if (activeParent === undefined) return;
+
+    openSubmenus.add(activeParent.id);
+
+    const activeSubParent = activeParent.submenu?.find(
+      (sub: NavItem) => sub.submenu !== undefined && isActive(sub),
+    );
+    if (activeSubParent !== undefined) {
+      openSubSubmenus.add(activeSubParent.id);
     }
   });
 
@@ -107,14 +128,21 @@
   /** Toggle submenu */
   function toggleSubmenu(itemId: string): void {
     if (collapsed) return;
-    openSubmenu = openSubmenu === itemId ? null : itemId;
-    openSubSubmenu = null;
+    if (openSubmenus.has(itemId)) {
+      openSubmenus.delete(itemId);
+    } else {
+      openSubmenus.add(itemId);
+    }
   }
 
   /** Toggle nested sub-submenu */
   function toggleSubSubmenu(itemId: string): void {
     if (collapsed) return;
-    openSubSubmenu = openSubSubmenu === itemId ? null : itemId;
+    if (openSubSubmenus.has(itemId)) {
+      openSubSubmenus.delete(itemId);
+    } else {
+      openSubSubmenus.add(itemId);
+    }
   }
 
   /** Calculate aggregated badge count for all submenu items (recursive) */
@@ -145,7 +173,7 @@
           <li
             class="sidebar-item has-submenu"
             class:active={isActive(item)}
-            class:open={openSubmenu === item.id}
+            class:open={openSubmenus.has(item.id)}
           >
             <button
               type="button"
@@ -160,7 +188,7 @@
               >
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- Icons are hardcoded ICONS object, safe -->
                 {@html item.icon}
-                {#if openSubmenu !== item.id}
+                {#if !openSubmenus.has(item.id)}
                   <NotificationBadge
                     count={getSubmenuBadgeCount(item.submenu)}
                     size="sm"
@@ -179,98 +207,102 @@
                 </svg>
               </span>
             </button>
-            <ul
-              class="submenu"
-              class:u-hidden={openSubmenu !== item.id}
+            <div
+              class="submenu-wrapper"
+              class:open={openSubmenus.has(item.id)}
             >
-              {#each item.submenu as subItem (subItem.id)}
-                {#if subItem.submenu !== undefined}
-                  <li
-                    class="submenu-item has-submenu"
-                    class:active={isActive(subItem)}
-                    class:open={openSubSubmenu === subItem.id}
-                  >
-                    <button
-                      type="button"
-                      class="submenu-link submenu-link--toggle"
+              <ul class="submenu">
+                {#each item.submenu as subItem (subItem.id)}
+                  {#if subItem.submenu !== undefined}
+                    <li
+                      class="submenu-item has-submenu"
                       class:active={isActive(subItem)}
-                      onclick={() => {
-                        toggleSubSubmenu(subItem.id);
-                      }}
+                      class:open={openSubSubmenus.has(subItem.id)}
                     >
-                      <span>{subItem.label}</span>
-                      {#if openSubSubmenu !== subItem.id}
-                        <NotificationBadge
-                          count={getSubmenuBadgeCount(subItem.submenu)}
-                          size="sm"
-                          position="inline"
-                        />
-                      {/if}
-                      <span class="submenu-arrow">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M7 10l5 5 5-5z" />
-                        </svg>
-                      </span>
-                    </button>
-                    <ul
-                      class="submenu submenu--nested"
-                      class:u-hidden={openSubSubmenu !== subItem.id}
-                    >
-                      {#each subItem.submenu as nestedItem (nestedItem.id)}
-                        <li
-                          class="submenu-item"
-                          class:active={isActive(nestedItem)}
-                        >
-                          <a
-                            href={resolveDynamicPath(nestedItem.url ?? '')}
-                            class="submenu-link"
-                            class:active={isActive(nestedItem)}
-                            onclick={handleLinkClick}
+                      <button
+                        type="button"
+                        class="submenu-link submenu-link--toggle"
+                        class:active={isActive(subItem)}
+                        onclick={() => {
+                          toggleSubSubmenu(subItem.id);
+                        }}
+                      >
+                        <span>{subItem.label}</span>
+                        {#if !openSubSubmenus.has(subItem.id)}
+                          <NotificationBadge
+                            count={getSubmenuBadgeCount(subItem.submenu)}
+                            size="sm"
+                            position="inline"
+                          />
+                        {/if}
+                        <span class="submenu-arrow">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
                           >
-                            <span>{nestedItem.label}</span>
-                            {#if nestedItem.badgeType && openSubSubmenu === subItem.id}
-                              <NotificationBadge
-                                count={notificationStore.counts[
-                                  nestedItem.badgeType
-                                ]}
-                                size="sm"
-                                position="inline"
-                              />
-                            {/if}
-                          </a>
-                        </li>
-                      {/each}
-                    </ul>
-                  </li>
-                {:else}
-                  <li
-                    class="submenu-item"
-                    class:active={isActive(subItem)}
-                  >
-                    <a
-                      href={resolveDynamicPath(subItem.url ?? '')}
-                      class="submenu-link"
+                            <path d="M7 10l5 5 5-5z" />
+                          </svg>
+                        </span>
+                      </button>
+                      <div
+                        class="submenu-wrapper"
+                        class:open={openSubSubmenus.has(subItem.id)}
+                      >
+                        <ul class="submenu submenu--nested">
+                          {#each subItem.submenu as nestedItem (nestedItem.id)}
+                            <li
+                              class="submenu-item"
+                              class:active={isActive(nestedItem)}
+                            >
+                              <a
+                                href={resolveDynamicPath(nestedItem.url ?? '')}
+                                class="submenu-link"
+                                class:active={isActive(nestedItem)}
+                                onclick={handleLinkClick}
+                              >
+                                <span>{nestedItem.label}</span>
+                                {#if nestedItem.badgeType && openSubSubmenus.has(subItem.id)}
+                                  <NotificationBadge
+                                    count={notificationStore.counts[
+                                      nestedItem.badgeType
+                                    ]}
+                                    size="sm"
+                                    position="inline"
+                                  />
+                                {/if}
+                              </a>
+                            </li>
+                          {/each}
+                        </ul>
+                      </div>
+                    </li>
+                  {:else}
+                    <li
+                      class="submenu-item"
                       class:active={isActive(subItem)}
-                      onclick={handleLinkClick}
                     >
-                      <span>{subItem.label}</span>
-                      {#if subItem.badgeType && openSubmenu === item.id}
-                        <NotificationBadge
-                          count={notificationStore.counts[subItem.badgeType]}
-                          size="sm"
-                          position="inline"
-                        />
-                      {/if}
-                    </a>
-                  </li>
-                {/if}
-              {/each}
-            </ul>
+                      <a
+                        href={resolveDynamicPath(subItem.url ?? '')}
+                        class="submenu-link"
+                        class:active={isActive(subItem)}
+                        onclick={handleLinkClick}
+                      >
+                        <span>{subItem.label}</span>
+                        {#if subItem.badgeType && openSubmenus.has(item.id)}
+                          <NotificationBadge
+                            count={notificationStore.counts[subItem.badgeType]}
+                            size="sm"
+                            position="inline"
+                          />
+                        {/if}
+                      </a>
+                    </li>
+                  {/if}
+                {/each}
+              </ul>
+            </div>
           </li>
         {:else}
           <li
@@ -303,26 +335,29 @@
     </ul>
   </nav>
 
-  <!-- User Info Card (Extracted Component) -->
-  <SidebarUserCard
-    {user}
-    {tenant}
-    {roleBadgeClass}
-    {roleBadgeText}
-  />
-
-  <!-- Storage Widget (Root only, Extracted Component) -->
-  {#if currentRole === 'root'}
-    <SidebarStorageWidget />
-  {/if}
+  <!-- Sidebar Footer Area — pinned to bottom via flex -->
+  <div class="sidebar-footer-area">
+    {#if currentRole === 'root'}
+      <SidebarStorageWidget />
+    {/if}
+    <SidebarUserCard
+      {user}
+      {tenant}
+      {roleBadgeClass}
+      {roleBadgeText}
+      {collapsed}
+    />
+  </div>
 </aside>
 
 <style>
-  /* Base sidebar */
+  /* Base sidebar — flex column so footer stays pinned at bottom */
   .sidebar {
+    display: flex;
     position: sticky;
     top: 80px;
     left: 0;
+    flex-direction: column;
     flex-shrink: 0;
     align-self: flex-start;
     backdrop-filter: blur(20px);
@@ -336,32 +371,28 @@
     min-width: 260px;
     height: calc(100vh - 80px);
     max-height: calc(100vh - 80px);
-    overflow: hidden auto;
+    overflow: hidden;
   }
 
-  .sidebar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .sidebar::-webkit-scrollbar-track {
-    background: var(--glass-bg-hover);
-  }
-
-  .sidebar::-webkit-scrollbar-thumb {
-    border-radius: 3px;
-    background: var(--color-glass-border-hover);
-  }
-
-  .sidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-  }
-
+  /* Nav scrolls independently, footer stays visible */
   .sidebar-nav {
     display: flex;
     position: relative;
+    flex: 1;
     flex-direction: column;
-    padding: var(--spacing-4);
-    overflow: visible;
+    padding-left: var(--spacing-4);
+    min-height: 0;
+    overflow: hidden auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(0 0 0 / 25%) transparent;
+  }
+
+  :global(html.dark) .sidebar-nav {
+    scrollbar-color: var(--glass-border-sidebar-tree) transparent;
+  }
+
+  .sidebar-footer-area {
+    flex-shrink: 0;
   }
 
   /* Collapsed sidebar */
@@ -369,19 +400,6 @@
     margin-left: 10px;
     width: 4.5rem !important;
     min-width: 4.5rem !important;
-  }
-
-  .sidebar.collapsed :global(.user-info-card) {
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 9rem;
-    margin-left: 4px;
-    padding: 0.9rem 0.7rem 0.7rem;
-    min-height: auto;
-  }
-
-  .sidebar.collapsed :global(.user-details) {
-    display: none;
   }
 
   .sidebar.collapsed .sidebar-link .label {
@@ -487,6 +505,7 @@
   .sidebar-item {
     margin: 0;
     padding: 0;
+    margin-right: 10px;
   }
 
   .sidebar-item.has-submenu .sidebar-link {
@@ -512,6 +531,7 @@
   .submenu-arrow {
     opacity: 60%;
     margin-left: auto;
+    transition: transform 0.25s ease;
   }
 
   .sidebar.collapsed .submenu-arrow {
@@ -526,17 +546,40 @@
     transform: rotate(180deg);
   }
 
-  .submenu {
-    margin-top: 0.25rem;
-    margin-bottom: 0.313rem;
-    margin-left: 3rem;
-    padding: 0;
+  /* Smooth expand/collapse via CSS grid trick */
+  .submenu-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
     overflow: hidden;
+    transition:
+      grid-template-rows 0.25s ease,
+      max-height 0s 0.25s;
+    max-height: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .submenu-wrapper.open {
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 0.25s ease,
+      visibility 0s 0s,
+      max-height 0s 0s;
+    max-height: none;
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  .submenu {
+    min-height: 0; /* required for grid-template-rows: 0fr to work */
+    overflow: hidden; /* required for grid item to fully collapse below its padding */
+    margin: 0 0 0 1.5rem;
+    padding: 0.25rem 0 0.313rem 1rem;
     list-style: none;
   }
 
   .submenu--nested {
-    margin-left: 0.75rem;
+    margin-left: 0.5rem;
   }
 
   .submenu-link--toggle {
@@ -548,12 +591,38 @@
     font-family: inherit;
   }
 
-  .sidebar.collapsed .submenu {
+  .sidebar.collapsed .submenu-wrapper {
     display: none !important;
   }
 
   .submenu-item {
+    position: relative;
     margin-bottom: 0.125rem;
+  }
+
+  .submenu-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -1rem;
+    width: 0.625rem;
+    height: 50%;
+    border-left: var(--glass-border-sidebar-tree);
+    border-bottom: var(--glass-border-sidebar-tree);
+    border-bottom-left-radius: 6px;
+  }
+
+  .submenu-item::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -1rem;
+    height: calc(50% + 0.125rem);
+    border-left: var(--glass-border-sidebar-tree);
+  }
+
+  .submenu-item:last-child::after {
+    display: none;
   }
 
   .submenu-link {
@@ -698,10 +767,6 @@
       display: flex;
     }
 
-    .sidebar.mobile-open .submenu {
-      display: block;
-    }
-
     .sidebar :global(.storage-widget) {
       position: relative;
       right: auto;
@@ -726,12 +791,8 @@
       display: none;
     }
 
-    .sidebar .submenu {
+    .sidebar .submenu-wrapper {
       display: none !important;
-    }
-
-    .sidebar :global(.user-details) {
-      display: none;
     }
 
     .sidebar :global(.storage-widget) {
@@ -743,15 +804,6 @@
       gap: 0;
       padding: 0.5rem;
       overflow: visible !important;
-    }
-
-    .sidebar :global(.user-info-card) {
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 9rem;
-      margin-left: 4px;
-      padding: 0.7rem;
-      min-height: auto;
     }
 
     /* Override expanded active style on tablet */

@@ -100,7 +100,7 @@ describe('ActivityLoggerService', () => {
         tenantId: 10,
         userId: 5,
         action: 'update',
-        entityType: 'machine',
+        entityType: 'asset',
         oldValues: { status: 'operational' },
         newValues: { status: 'maintenance' },
       });
@@ -176,7 +176,7 @@ describe('ActivityLoggerService', () => {
     it('should delegate to log with update action', async () => {
       setupLogMocks(mockDb);
 
-      await service.logUpdate(10, 5, 'machine', 1, 'Status changed');
+      await service.logUpdate(10, 5, 'asset', 1, 'Status changed');
 
       const insertParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
       expect(insertParams?.[2]).toBe('update');

@@ -25,7 +25,7 @@ import {
 } from './admin-actions';
 import {
   fetchDepartments,
-  fetchMachines,
+  fetchAssets,
   fetchTeams,
   fetchTeamMembers,
   generateRotationFromConfig,
@@ -38,7 +38,11 @@ import { loadShiftPlan, navigateToWeekContainingDate } from './plan-loader';
 import { buildAlgorithmConfig, buildRotationAssignments } from './rotation';
 import { shiftsState } from './state.svelte';
 
-import type { ShiftFavorite, CustomRotationConfig } from './types';
+import type {
+  ShiftTimesMap,
+  ShiftFavorite,
+  CustomRotationConfig,
+} from './types';
 
 const log = createLogger('ShiftsActions');
 
@@ -57,7 +61,9 @@ export async function handleResetSchedule(): Promise<void> {
 }
 
 /** Save the current shift schedule */
-export async function handleSaveSchedule(): Promise<void> {
+export async function handleSaveSchedule(
+  shiftTimesMap?: ShiftTimesMap,
+): Promise<void> {
   shiftsState.setIsLoading(true);
   try {
     const result = await saveSchedule({
@@ -67,6 +73,8 @@ export async function handleSaveSchedule(): Promise<void> {
       currentPlanId: shiftsState.currentPlanId,
       selectedContext: shiftsState.selectedContext,
       teams: shiftsState.teams,
+      shiftTimesMap,
+      isTpmMode: shiftsState.showTpmEvents,
     });
     if (shiftsState.currentPlanId === null && result.planId !== undefined)
       shiftsState.setCurrentPlanId(result.planId);
@@ -225,7 +233,7 @@ export async function handleAddToFavorites(): Promise<void> {
       selectedContext: shiftsState.selectedContext,
       areas: shiftsState.areas,
       departments: shiftsState.departments,
-      machines: shiftsState.machines,
+      assets: shiftsState.assets,
       teams: shiftsState.teams,
     });
     if (newFavorite !== null) {
@@ -247,13 +255,13 @@ export async function handleFavoriteClick(
 
   const [depts, machs, tms, members] = await Promise.all([
     fetchDepartments(favorite.areaId),
-    fetchMachines(favorite.departmentId, favorite.areaId),
+    fetchAssets(favorite.teamId),
     fetchTeams(favorite.departmentId),
     fetchTeamMembers(favorite.teamId, startDate, endDate),
   ]);
 
   shiftsState.setDepartments(depts);
-  shiftsState.setMachines(machs);
+  shiftsState.setAssets(machs);
   shiftsState.setTeams(tms);
 
   const teamLeaderId =
@@ -261,7 +269,7 @@ export async function handleFavoriteClick(
   shiftsState.setSelectedContext({
     areaId: favorite.areaId,
     departmentId: favorite.departmentId,
-    machineId: favorite.machineId,
+    assetId: favorite.assetId,
     teamId: favorite.teamId,
     teamLeaderId,
   });

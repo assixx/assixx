@@ -19,7 +19,7 @@
   // =============================================================================
 
   // Props
-  type RoleType = 'root' | 'admin' | 'employee';
+  type RoleType = 'root' | 'admin' | 'employee' | 'dummy';
 
   interface Props {
     userRole: RoleType;
@@ -40,18 +40,21 @@
     root: 'manage_accounts',
     admin: 'supervisor_account',
     employee: 'person_apron',
+    dummy: 'desktop_windows',
   };
 
   const roleLabels: Record<RoleType, string> = {
     root: 'Root-Ansicht',
     admin: 'Admin-Ansicht',
     employee: 'Mitarbeiter-Ansicht',
+    dummy: 'Dummy-Ansicht',
   };
 
   const roleDisplayNames: Record<RoleType, string> = {
     root: 'Root',
     admin: 'Admin',
     employee: 'Mitarbeiter',
+    dummy: 'Dummy',
   };
 
   // =============================================================================
@@ -137,6 +140,7 @@
     root: '/root-dashboard',
     admin: '/admin-dashboard',
     employee: '/employee-dashboard',
+    dummy: '/blackboard',
   };
 
   function getDashboardUrl(role: RoleType): string {

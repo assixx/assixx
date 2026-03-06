@@ -71,12 +71,9 @@ export const HALF_DAY_LABELS: Record<string, string> = {
 // ─── Cascade dropdown placeholders ──────────────────────────────
 
 export const DROPDOWN_PLACEHOLDERS = {
-  MACHINE: 'Maschine wählen...',
   TEAM: 'Team wählen...',
   YEAR: 'Jahr wählen...',
   MONTH: 'Monat wählen...',
-  AWAIT_MACHINE: 'Erst Maschine wählen...',
   AWAIT_TEAM: 'Erst Team wählen...',
   AWAIT_YEAR: 'Erst Jahr wählen...',
-  LOADING_TEAMS: 'Laden...',
 } as const;

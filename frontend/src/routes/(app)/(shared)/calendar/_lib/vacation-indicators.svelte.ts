@@ -31,18 +31,18 @@ function expandRangesToDays(
   const result = new Map<string, { vacationType: string }>();
 
   for (const entry of entries) {
-    const start = new Date(entry.startDate + 'T00:00:00');
-    const end = new Date(entry.endDate + 'T00:00:00');
+    const start = new Date(entry.startDate + 'T00:00:00Z');
+    const end = new Date(entry.endDate + 'T00:00:00Z');
     const cursor = new Date(start);
 
     while (cursor <= end) {
-      const dayOfWeek = cursor.getDay();
+      const dayOfWeek = cursor.getUTCDay();
       // Skip weekends
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         const dateStr = cursor.toISOString().slice(0, 10);
         result.set(dateStr, { vacationType: entry.vacationType });
       }
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
   }
 

@@ -166,6 +166,9 @@ export function buildUserListWhereClause(
     conditions.push(`role = $${paramIndex}`);
     params.push(query.role);
     paramIndex++;
+  } else {
+    // Default: exclude dummy users from employee/user lists
+    conditions.push("role != 'dummy'");
   }
 
   if (query.isActive !== undefined) {

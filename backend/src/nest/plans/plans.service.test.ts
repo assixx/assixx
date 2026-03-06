@@ -9,12 +9,22 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { PlansService } from './plans.service.js';
 
 // ============================================================
 // Setup
 // ============================================================
+
+function createMockActivityLogger() {
+  return {
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+    log: vi.fn(),
+  };
+}
 
 function createServiceWithMock(): {
   service: PlansService;
@@ -29,7 +39,11 @@ function createServiceWithMock(): {
     queryOne: vi.fn(),
     generateInPlaceholders: vi.fn().mockReturnValue({ placeholders: '$2, $3' }),
   };
-  const service = new PlansService(mockDb as unknown as DatabaseService);
+  const mockActivityLogger = createMockActivityLogger();
+  const service = new PlansService(
+    mockDb as unknown as DatabaseService,
+    mockActivityLogger as unknown as ActivityLoggerService,
+  );
   return { service, mockDb };
 }
 

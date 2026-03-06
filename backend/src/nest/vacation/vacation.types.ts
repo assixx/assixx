@@ -123,7 +123,7 @@ export interface VacationBlackoutScopeRow {
 export interface VacationStaffingRuleRow {
   id: string;
   tenant_id: number;
-  machine_id: number;
+  asset_id: number;
   min_staff_count: number;
   is_active: number;
   created_by: number;
@@ -247,8 +247,8 @@ export interface VacationBlackout {
 /** Staffing rule as returned by the API */
 export interface VacationStaffingRule {
   id: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   minStaffCount: number;
   createdBy: number;
   createdAt: string;
@@ -277,7 +277,7 @@ export interface VacationSettings {
 export interface VacationCapacityAnalysis {
   workdays: number;
   teamAnalysis: TeamCapacityItem[];
-  machineAnalysis: MachineCapacityItem[];
+  assetAnalysis: AssetCapacityItem[];
   blackoutConflicts: BlackoutConflict[];
   entitlementCheck: EntitlementCheckResult;
   substituteCheck?: SubstituteCheckResult;
@@ -294,10 +294,10 @@ export interface TeamCapacityItem {
   status: CapacityStatus;
 }
 
-/** Machine capacity for a specific date range */
-export interface MachineCapacityItem {
-  machineId: number;
-  machineName: string;
+/** Asset capacity for a specific date range */
+export interface AssetCapacityItem {
+  assetId: number;
+  assetName: string;
   minStaffRequired: number;
   currentlyAvailable: number;
   availableAfterApproval: number;

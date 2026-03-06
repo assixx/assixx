@@ -668,6 +668,6 @@ Die `message_attachments` Junction-Tabelle war **DEPRECATED** und wurde nie verw
 
 ---
 
-**Maintainer:** Claude Code
+**Maintainer:** Assixx
 **Letzte Aktualisierung:** 2026-01-13
 **Review Status:** P0 Done, P1 Done, P2/P3 DB+Service Done - Controller-Endpunkte für P3 optional

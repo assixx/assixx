@@ -9,18 +9,18 @@
 
 ## Quick Reference
 
-| Setting            | Value                                |
-| ------------------ | ------------------------------------ |
-| **Container**      | `assixx-postgres`                    |
-| **Port**           | `5432`                               |
-| **Database**       | `assixx`                             |
-| **App User**       | `app_user` (RLS enforced)            |
-| **Admin User**     | `assixx_user` (superuser, BYPASSRLS) |
-| **Tables**         | 109 total (84 with RLS, 25 global)   |
-| **RLS Policies**   | 89                                   |
-| **Migration Tool** | `node-pg-migrate` 8.x                |
-| **Tracking Table** | `pgmigrations`                       |
-| **GUI Tool**       | DBeaver (Windows)                    |
+| Setting            | Value                                           |
+| ------------------ | ----------------------------------------------- |
+| **Container**      | `assixx-postgres`                               |
+| **Port**           | `5432`                                          |
+| **Database**       | `assixx`                                        |
+| **App User**       | `app_user` (RLS enforced)                       |
+| **Admin User**     | `assixx_user` (superuser, BYPASSRLS)            |
+| **Tables**         | 128 base (109 with RLS, 19 global) + partitions |
+| **RLS Policies**   | 114                                             |
+| **Migration Tool** | `node-pg-migrate` 8.x                           |
+| **Tracking Table** | `pgmigrations`                                  |
+| **GUI Tool**       | DBeaver (Windows)                               |
 
 ---
 
@@ -263,13 +263,13 @@ truncated or converted first.
 
 Seeds are **global configuration data** without tenant_id:
 
-| Table                | Rows | Description                                          |
-| -------------------- | ---- | ---------------------------------------------------- |
-| `plans`              | 3    | Subscription plans (Basic, Professional, Enterprise) |
-| `features`           | 12   | Available features                                   |
-| `plan_features`      | 36   | Plan-to-feature mapping                              |
-| `kvp_categories`     | 6    | KVP proposal categories                              |
-| `machine_categories` | 11   | Machine categories                                   |
+| Table              | Rows | Description                                          |
+| ------------------ | ---- | ---------------------------------------------------- |
+| `plans`            | 3    | Subscription plans (Basic, Professional, Enterprise) |
+| `features`         | 12   | Available features                                   |
+| `plan_features`    | 36   | Plan-to-feature mapping                              |
+| `kvp_categories`   | 6    | KVP proposal categories                              |
+| `asset_categories` | 11   | Asset categories (Anlagen)                           |
 
 ```bash
 # Apply seeds (idempotent — safe to run multiple times)
@@ -310,23 +310,23 @@ doppler run -- pnpm run db:seed
 
 ## Migration Files Overview
 
-| File                                                       | Content                              |
-| ---------------------------------------------------------- | ------------------------------------ |
-| `20260127000000_baseline.ts`                               | Complete schema (109 tables, 89 RLS) |
-| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed             |
-| `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS      |
-| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id      |
-| `20260127000004_audit-log-partitioning.ts`                 | Monthly partitioning                 |
-| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration            |
-| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"       |
-| `20260127000007_audit-trail-request-id.ts`                 | UUID request correlation             |
-| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger           |
-| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                |
-| `20260127000010_kvp-confirmations.ts`                      | Read tracking with RLS               |
-| `20260127000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status            |
-| `20260127000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                 |
-| `20260127000013_kvp-status-restored.ts`                    | ENUM value "restored" added          |
-| `20260127000014_remove-deprecated-availability-columns.ts` | Data migration + column drop         |
+| File                                                       | Content                                                |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
+| `20260127000000_baseline.ts`                               | Complete schema (baseline, 89 RLS at time of creation) |
+| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed                               |
+| `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS                        |
+| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id                        |
+| `20260127000004_audit-log-partitioning.ts`                 | Monthly partitioning                                   |
+| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration                              |
+| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"                         |
+| `20260127000007_audit-trail-request-id.ts`                 | UUID request correlation                               |
+| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger                             |
+| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                                  |
+| `20260127000010_kvp-confirmations.ts`                      | Read tracking with RLS                                 |
+| `20260127000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status                              |
+| `20260127000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                                   |
+| `20260127000013_kvp-status-restored.ts`                    | ENUM value "restored" added                            |
+| `20260127000014_remove-deprecated-availability-columns.ts` | Data migration + column drop                           |
 
 ---
 
@@ -406,6 +406,48 @@ Password: see docker/.env
 - [ ] RLS policies checked (`pg_policies`)
 - [ ] Backend restarted
 - [ ] Customer fresh-install updated
+
+---
+
+## Migration Quality Standards (Verbindlich)
+
+> **Jede neue Migration MUSS diese Regeln einhalten. Verstöße blockieren den PR.**
+
+### Verbotene Patterns (NEVER)
+
+| Pattern                                        | Warum verboten                                                   | Richtige Alternative                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `TRUNCATE` in Migrations                       | Löscht Produktionsdaten unwiderruflich                           | `UPDATE ... SET` zum Remappen, oder separate Data-Migration                             |
+| `IF NOT EXISTS` im `up()`                      | Maskiert fehlgeschlagene Partial-Applies statt laut zu scheitern | Nur `CREATE TABLE` / `ADD COLUMN` ohne Guard — Migration-Runner garantiert Einmaligkeit |
+| Stille Data-Fixes (`UPDATE` vor Schema-Change) | Versteckt Datenprobleme statt sie zu lösen                       | `RAISE EXCEPTION` wenn Daten nicht passen (Vorbild: Migration 028)                      |
+| `RAISE NOTICE` bei Datenverlust                | Warnt aber löscht trotzdem — schlimmer als nichts                | `RAISE EXCEPTION` — Migration MUSS abbrechen                                            |
+| Schema + Data in einer Migration               | Partial Failure zerstört Daten ohne Rollback-Möglichkeit         | Separate Migrations: (1) Schema-DDL, (2) Data-Backfill, (3) Cleanup                     |
+| Hardcoded Year-Ranges (Partitionen)            | Zeitbombe — INSERTs scheitern nach Ablauf                        | Mindestens 5 Jahre voraus + Kommentar wann nächste Erweiterung nötig                    |
+| `ON CONFLICT DO NOTHING` ohne Kommentar        | Schluckt Duplikate still — maskiert Korruptionsrisiko            | Expliziter Kommentar WARUM, oder `ON CONFLICT DO UPDATE`                                |
+| MySQL-Legacy-Namen (`idx_19037_*`, `_ibfk_*`)  | Fragile OID-basierte Namen brechen in anderen Umgebungen         | Aussagekräftige Namen: `idx_tablename_column`                                           |
+
+### Pflicht-Patterns (ALWAYS)
+
+- **FAIL LOUD**: Wenn bestehende Daten die Migration blockieren könnten → `DO $$ ... RAISE EXCEPTION` Pre-Check (Vorbild: Migration 028 `teams-deputy-lead`)
+- **`IF EXISTS` nur in `down()`**: Rollbacks dürfen defensiv sein, `up()` nicht
+- **Enum-Addition**: `ADD VALUE IF NOT EXISTS` ist erlaubt (PostgreSQL Enum-Sonderfall, keine Transaktion möglich)
+- **Feature-Flag-Inserts**: `ON CONFLICT (code) DO NOTHING` ist erlaubt für Seed-Daten — mit Kommentar
+- **Lossy Rollback dokumentieren**: Wenn `down()` Daten nicht wiederherstellen kann → Kommentar im Header: `WARNING: One-way migration. Rollback does NOT restore converted data.`
+- **Partitionen**: Bei Erstellung immer ≥5 Jahre voraus + Kommentar: `Next action required: Before YYYY, create migration for YYYY-YYYY+4`
+
+### Pre-Commit Checklist für neue Migrations
+
+```
+- [ ] Kein TRUNCATE
+- [ ] Kein IF NOT EXISTS im up() (außer ENUM ADD VALUE)
+- [ ] Kein stiller UPDATE vor Schema-Change (RAISE EXCEPTION stattdessen)
+- [ ] Schema und Data sind getrennte Migrations (wenn beides nötig)
+- [ ] down() dokumentiert wenn lossy
+- [ ] Keine hardcoded IDs, OIDs, oder environment-spezifische Werte
+- [ ] Keine MySQL-Legacy-Namen (idx_NNNNN_*, _ibfk_*)
+- [ ] RLS Policy + GRANTs vorhanden (für tenant-isolierte Tabellen)
+- [ ] Kein IF EXISTS im up() (Ausnahme: DROP vor REPLACE bei Triggern)
+```
 
 ---
 

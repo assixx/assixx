@@ -233,6 +233,26 @@
         <i class="fas fa-shield-alt mr-2"></i>
         Berechtigungen
       </h2>
+      <div class="perm-bulk-actions">
+        <button
+          type="button"
+          class="btn btn-success"
+          title="Alle Berechtigungen aktivieren"
+          onclick={selectAll}
+        >
+          <i class="fas fa-check-double mr-1"></i>
+          Alle
+        </button>
+        <button
+          type="button"
+          class="btn btn-warning"
+          title="Alle Berechtigungen deaktivieren"
+          onclick={deselectAll}
+        >
+          <i class="fas fa-times mr-1"></i>
+          Keine
+        </button>
+      </div>
     </div>
 
     <div class="card__body">
@@ -275,26 +295,6 @@
                   {employee.lastName}
                 </span>
               {/if}
-              <div class="perm-bulk-actions">
-                <button
-                  type="button"
-                  class="btn btn-success"
-                  title="Alle Berechtigungen aktivieren"
-                  onclick={selectAll}
-                >
-                  <i class="fas fa-check-double mr-1"></i>
-                  Alle
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-warning"
-                  title="Alle Berechtigungen deaktivieren"
-                  onclick={deselectAll}
-                >
-                  <i class="fas fa-times mr-1"></i>
-                  Keine
-                </button>
-              </div>
             </div>
             <div class="perm-cols">
               {#each PERMISSION_COLUMNS as col, colIdx (col.key)}
@@ -404,6 +404,15 @@
 </div>
 
 <style>
+  /* ================================================================
+     Card Header with Actions
+     ================================================================ */
+  .card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   /* ================================================================
      Permission Matrix Grid Layout
      ================================================================ */

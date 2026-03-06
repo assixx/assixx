@@ -365,7 +365,7 @@ class UserPermissionsService {
   async hasAccess(
     userId: number,
     tenantId: number,
-    resourceType: 'area' | 'department' | 'team' | 'machine',
+    resourceType: 'area' | 'department' | 'team' | 'asset',
     resourceId: number,
     permission: 'read' | 'write' | 'delete',
   ): Promise<boolean> {
@@ -385,7 +385,7 @@ class UserPermissionsService {
         return this.checkDepartmentAccess(userId, resourceId, permission, tenantId);
       case 'team':
         return this.checkTeamAccess(userId, resourceId, permission, tenantId);
-      case 'machine':
+      case 'asset':
         return this.checkMachineAccess(userId, resourceId, permission, tenantId);
     }
   }

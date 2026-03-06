@@ -19,8 +19,8 @@ export const CreateFavoriteSchema = z.object({
   areaName: z.string().trim().min(1, 'Area name is required'),
   departmentId: z.number().int().positive('Department ID is required'),
   departmentName: z.string().trim().min(1, 'Department name is required'),
-  machineId: z.number().int().positive('Machine ID is required'),
-  machineName: z.string().trim().min(1, 'Machine name is required'),
+  assetId: z.number().int().positive('Asset ID is required'),
+  assetName: z.string().trim().min(1, 'Asset name is required'),
   teamId: z.number().int().positive('Team ID is required'),
   teamName: z.string().trim().min(1, 'Team name is required'),
 });

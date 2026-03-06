@@ -82,9 +82,9 @@ export interface DayCapacity {
   status: CapacityStatus;
 }
 
-export interface MachineCapacity {
-  machineId: number;
-  machineName: string;
+export interface AssetCapacity {
+  assetId: number;
+  assetName: string;
   minStaffCount: number;
   worstDay: DayCapacity | null;
   status: CapacityStatus;
@@ -108,7 +108,7 @@ export interface EntitlementCheck {
 export interface VacationCapacityAnalysis {
   workdays: number;
   teamAnalysis: DayCapacity[];
-  machineAnalysis: MachineCapacity[];
+  assetAnalysis: AssetCapacity[];
   blackoutConflicts: BlackoutConflict[];
   entitlementCheck: EntitlementCheck;
   overallStatus: OverallCapacityStatus;

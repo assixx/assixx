@@ -24,7 +24,7 @@
 
 9. **✅ Datenbank-Migration:**
    - Datei: `/database/migrations/004-shift-plans-fix.sql`
-   - shift_plans erweitert um: `machine_id INT`, `area_id INT`
+   - shift_plans erweitert um: `asset_id INT`, `area_id INT`
    - Foreign Keys und Indizes hinzugefügt
    - Backup erstellt: `quick_backup_20250820_150543_before_shift_plans_migration`
 
@@ -72,7 +72,7 @@
 #### Datenbank (20.08.2025):
 
 - ✅ `/database/migrations/004-shift-plans-fix.sql` - Migration erstellt
-- ✅ `shift_plans` Tabelle erweitert (machine_id, area_id)
+- ✅ `shift_plans` Tabelle erweitert (asset_id, area_id)
 - ✅ Build erfolgreich, Backend neugestartet
 
 ## ✅ GELÖSTE PROBLEME (Stand: 19.08.2025)
@@ -92,9 +92,9 @@ areas (id, name, tenant_id)
 departments (id, name, area_id) -- Hat area_id!
 machines (id, name, department_id, area_id) -- Hat beide!
 teams (id, name, department_id)
-machine_teams (machine_id, team_id) -- Junction Table
+machine_teams (asset_id, team_id) -- Junction Table
 user_teams (user_id, team_id) -- Junction Table
-shifts (department_id, team_id, machine_id, user_id)
+shifts (department_id, team_id, asset_id, user_id)
 ```
 
 ### 🚨 KRITISCHES PROBLEM (Stand: 20.08.2025) - GELÖST! ✅
@@ -102,13 +102,13 @@ shifts (department_id, team_id, machine_id, user_id)
 **Das war das Problem:** Shifts wurden OHNE plan_id direkt gespeichert!
 
 - ❌ Keine Editierbarkeit möglich
-- ❌ machine_id wurde nicht gespeichert (immer NULL)
+- ❌ asset_id wurde nicht gespeichert (immer NULL)
 - ❌ Notizen redundant (10x statt 1x)
 - ❌ Kein Zusammenhang zwischen Schichten
 
 **Das ist die Lösung (VOLLSTÄNDIG IMPLEMENTIERT):**
 
-1. ✅ shift_plans erweitert mit machine_id, area_id
+1. ✅ shift_plans erweitert mit asset_id, area_id
 2. ✅ Backend API /shifts/plan mit Transactions
 3. ✅ Frontend saveSchedule() nutzt Plan-basierte Speicherung
 
@@ -116,7 +116,7 @@ shifts (department_id, team_id, machine_id, user_id)
 
 ### Was wurde erreicht:
 
-1. **Datenbank-Migration:** shift_plans Tabelle erweitert (machine_id, area_id)
+1. **Datenbank-Migration:** shift_plans Tabelle erweitert (asset_id, area_id)
 2. **Backend API v2:** Plan-Endpoints implementiert (POST & GET /api/v2/shifts/plan)
 3. **Frontend:** saveSchedule() auf Plan-basierte Speicherung umgestellt
 4. **Transaction-Support:** Alle Shifts werden atomisch mit Plan gespeichert
@@ -151,7 +151,7 @@ shifts (department_id, team_id, machine_id, user_id)
    ↓ filtert
 2. DEPARTMENT (Abteilung)
    ↓ filtert
-3. MACHINE (Maschine)
+3. MACHINE (Anlage)
    ↓ filtert via machine_teams
 4. TEAM (Team)
    ↓ zeigt via user_teams
@@ -206,9 +206,9 @@ shifts (department_id, team_id, machine_id, user_id)
 
   <!-- 3. Machine Filter (VOR Team!) -->
   <div class="info-item">
-    <div class="info-label">Maschine</div>
+    <div class="info-label">Anlage</div>
     <select id="machineSelect">
-      <option value="">Maschine wählen...</option>
+      <option value="">Anlage wählen...</option>
     </select>
   </div>
 
@@ -228,7 +228,7 @@ shifts (department_id, team_id, machine_id, user_id)
 interface SelectedContext {
   areaId: number | null;        // NEU!
   departmentId: number | null;
-  machineId: number | null;
+  asset_Id: number | null;
   teamId: number | null;
   teamLeaderId: number | null;
 }
@@ -246,7 +246,7 @@ async onAreaSelected(areaId: number): Promise<void> {
   await this.loadDepartments(areaId);
   // Reset downstream selections
   this.selectedContext.departmentId = null;
-  this.selectedContext.machineId = null;
+  this.selectedContext.asset_Id = null;
   this.selectedContext.teamId = null;
 }
 
@@ -257,15 +257,15 @@ async loadDepartments(areaId?: number): Promise<void> {
   this.updateDepartmentDropdown();
 }
 
-async onMachineSelected(machineId: number): Promise<void> {
-  this.selectedContext.machineId = machineId;
+async onMachineSelected(asset_Id: number): Promise<void> {
+  this.selectedContext.asset_Id = asset_Id;
   // Lade Teams die dieser Machine zugewiesen sind
-  await this.loadTeamsForMachine(machineId);
+  await this.loadTeamsForMachine(asset_Id);
 }
 
-async loadTeamsForMachine(machineId: number): Promise<void> {
+async loadTeamsForMachine(asset_Id: number): Promise<void> {
   // Nutze machine_teams Junction Table!
-  const response = await apiClient.get(`/api/v2/machines/${machineId}/teams`);
+  const response = await apiClient.get(`/api/v2/machines/${asset_Id}/teams`);
   this.teams = response.data;
   this.updateTeamDropdown();
 }
@@ -275,14 +275,14 @@ async loadTeamsForMachine(machineId: number): Promise<void> {
 
 ```typescript
 // Neuer Endpoint: Teams einer Machine
-router.get('/api/v2/machines/:machineId/teams', async (req, res) => {
+router.get('/api/v2/machines/:asset_Id/teams', async (req, res) => {
   const query = `
     SELECT t.*
     FROM teams t
     JOIN machine_teams mt ON t.id = mt.team_id
-    WHERE mt.machine_id = ? AND mt.tenant_id = ?
+    WHERE mt.asset_id = ? AND mt.tenant_id = ?
   `;
-  const teams = await db.query(query, [req.params.machineId, req.tenantId]);
+  const teams = await db.query(query, [req.params.asset_Id, req.tenantId]);
   res.json(teams);
 });
 
@@ -315,7 +315,7 @@ async createShift(data: ShiftCreateData): Promise<void> {
     // Hierarchie-IDs
     area_id: this.selectedContext.areaId,          // NEU!
     department_id: this.selectedContext.departmentId,
-    machine_id: this.selectedContext.machineId,
+    asset_id: this.selectedContext.asset_Id,
     team_id: this.selectedContext.teamId,
     // Shift-Details
     user_id: data.userId,
@@ -334,10 +334,10 @@ validateHierarchy(): boolean {
   // Stelle sicher dass alle Selections zusammenpassen
   if (!this.selectedContext.departmentId) return false;
 
-  if (this.selectedContext.machineId) {
+  if (this.selectedContext.asset_Id) {
     // Machine muss zum Department gehören
-    const machine = this.machines.find(m => m.id === this.selectedContext.machineId);
-    if (machine?.department_id !== this.selectedContext.departmentId) return false;
+    const asset = this.machines.find(m => m.id === this.selectedContext.asset_Id);
+    if (asset?.department_id !== this.selectedContext.departmentId) return false;
   }
 
   if (this.selectedContext.teamId) {
@@ -346,10 +346,10 @@ validateHierarchy(): boolean {
     if (team?.department_id !== this.selectedContext.departmentId) return false;
 
     // Wenn Machine gewählt, muss Team zur Machine passen
-    if (this.selectedContext.machineId) {
+    if (this.selectedContext.asset_Id) {
       // Check machine_teams junction
       const teamMachineLink = this.machineTeams.find(
-        mt => mt.machine_id === this.selectedContext.machineId &&
+        mt => mt.asset_id === this.selectedContext.asset_Id &&
               mt.team_id === this.selectedContext.teamId
       );
       if (!teamMachineLink) return false;
@@ -392,7 +392,7 @@ WHERE s.area_id IS NULL;
    - Area-Department Beziehung wird respektiert
 
 3. **Shifts werden korrekt gespeichert:**
-   - Alle IDs (area, department, machine, team, user) vorhanden
+   - Alle IDs (area, department, asset, team, user) vorhanden
    - Hierarchie in DB nachvollziehbar
    - Reports können nach Area/Department/Machine gefiltert werden
 
@@ -448,9 +448,9 @@ WHERE s.area_id IS NULL;
 
 ```typescript
 // Erweiterte Interfaces:
-- ShiftFilters: + areaId, machineId
-- ShiftCreateData: + areaId, machineId
-- ShiftUpdateData: + areaId, machineId
+- ShiftFilters: + areaId, asset_Id
+- ShiftCreateData: + areaId, asset_Id
+- ShiftUpdateData: + areaId, asset_Id
 ```
 
 ### Datenbank

@@ -11,32 +11,16 @@
   import { invalidateAll, goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showErrorAlert, showWarningAlert } from '$lib/utils';
+  import { showErrorAlert } from '$lib/utils';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
-  const log = createLogger('KvpPage');
-  const apiClient = getApiClient();
-
-  import { fetchSuggestions, findUserTeamAsLead } from './_lib/api';
-  import { FILTER_OPTIONS, STATUS_FILTER_OPTIONS } from './_lib/constants';
+  import { fetchSuggestions } from './_lib/api';
   import KvpCreateModal from './_lib/KvpCreateModal.svelte';
+  import KvpFilterBar from './_lib/KvpFilterBar.svelte';
+  import KvpSuggestionCard from './_lib/KvpSuggestionCard.svelte';
   import { kvpState } from './_lib/state.svelte';
-  import {
-    getStatusBadgeClass,
-    getStatusText,
-    getPriorityBadgeClass,
-    getPriorityText,
-    getVisibilityBadgeClass,
-    getVisibilityInfo,
-    formatDate,
-    getSharedByInfo,
-    getAttachmentText,
-    debounce,
-    isFaIcon,
-  } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -45,7 +29,11 @@
     KvpSuggestion,
     KvpStats,
     CurrentUser,
+    UserTeamWithAssets,
   } from './_lib/types';
+
+  const log = createLogger('KvpPage');
+  const apiClient = getApiClient();
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -60,6 +48,9 @@
   const ssrSuggestions = $derived<KvpSuggestion[]>(data.suggestions);
   const ssrStatistics = $derived<KvpStats | null>(data.statistics);
   const ssrCurrentUser = $derived<CurrentUser | null>(data.currentUser);
+  const ssrUserOrganizations = $derived<UserTeamWithAssets[]>(
+    data.userOrganizations,
+  );
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole
@@ -87,24 +78,6 @@
     });
   });
 
-  // =============================================================================
-  // UI STATE - Client-side only
-  // =============================================================================
-
-  // Modal state
-  let currentTeamId = $state<number | null>(null);
-
-  // Dropdown state (filters)
-  let activeDropdown = $state<string | null>(null);
-  let statusDisplayText = $state('Alle Status');
-  let categoryDisplayText = $state('Alle Kategorien');
-  let departmentDisplayText = $state('Alle Abteilungen');
-
-  // Debounced search
-  const debouncedSearch = debounce(() => {
-    void loadSuggestionsData();
-  }, 300);
-
   // ==========================================================================
   // DATA LOADING
   // ==========================================================================
@@ -116,6 +89,8 @@
         kvpState.statusFilter,
         kvpState.categoryFilter,
         kvpState.departmentFilter,
+        kvpState.teamFilter,
+        kvpState.assetFilter,
         kvpState.searchQuery,
       );
       kvpState.setSuggestions(suggestions);
@@ -125,63 +100,10 @@
   }
 
   // ==========================================================================
-  // FILTER HANDLERS
-  // ==========================================================================
-
-  function handleFilterChange(filter: string) {
-    kvpState.setFilter(filter as typeof kvpState.currentFilter);
-    void loadSuggestionsData();
-  }
-
-  function toggleDropdown(dropdownId: string) {
-    activeDropdown = activeDropdown === dropdownId ? null : dropdownId;
-  }
-
-  function closeAllDropdowns() {
-    activeDropdown = null;
-  }
-
-  function handleStatusSelect(value: string, label: string) {
-    kvpState.setStatusFilter(value);
-    statusDisplayText = label;
-    closeAllDropdowns();
-    void loadSuggestionsData();
-  }
-
-  function handleCategorySelect(value: string, label: string) {
-    kvpState.setCategoryFilter(value);
-    categoryDisplayText = label;
-    closeAllDropdowns();
-    void loadSuggestionsData();
-  }
-
-  function handleDepartmentSelect(value: string, label: string) {
-    kvpState.setDepartmentFilter(value);
-    departmentDisplayText = label;
-    closeAllDropdowns();
-    void loadSuggestionsData();
-  }
-
-  function handleSearchInput(event: Event) {
-    const target = event.target as HTMLInputElement;
-    kvpState.setSearchQuery(target.value);
-    debouncedSearch();
-  }
-
-  // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
-  $effect(() => {
-    return onClickOutsideDropdown(closeAllDropdowns);
-  });
-
-  // ==========================================================================
   // SUGGESTION ACTIONS
   // ==========================================================================
 
-  /**
-   * View suggestion detail and auto-confirm if not yet read
-   */
   function viewSuggestion(uuid: string, isConfirmed: boolean) {
-    // Auto-confirm if not yet read (non-blocking)
     if (!isConfirmed) {
       void apiClient.post(`/kvp/${uuid}/confirm`, {}).then(() => {
         notificationStore.decrementCount('kvp');
@@ -194,52 +116,25 @@
   // CREATE MODAL
   // ==========================================================================
 
-  /** Resolve team ID for current user (direct assignment or team lead) */
-  async function resolveTeamId(user: CurrentUser): Promise<number | undefined> {
-    if (user.teamId !== undefined && user.teamId !== 0) return user.teamId;
-    const leadTeam = await findUserTeamAsLead(user.id);
-    return leadTeam?.id;
-  }
-
-  async function handleOpenCreateModal() {
+  function handleOpenCreateModal() {
     const user = kvpState.currentUser;
     if (user === null) return;
 
-    // Employees: can always create (need team assignment)
-    if (user.role === 'employee') {
-      const teamId = await resolveTeamId(user);
-      if (teamId === undefined) {
-        showErrorAlert(
-          'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
-        );
-        return;
-      }
-      currentTeamId = teamId;
-      kvpState.openCreateModal();
+    if (ssrUserOrganizations.length === 0) {
+      showErrorAlert(
+        'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+      );
       return;
     }
 
-    // Admin/Root (only remaining after employee early return): must be team leads
-    const leadTeam = await findUserTeamAsLead(user.id);
-    if (leadTeam !== null) {
-      currentTeamId = leadTeam.id;
-      kvpState.openCreateModal();
-      return;
-    }
-
-    // Not authorized
-    showWarningAlert(
-      'Sie sind nicht berechtigt, KVP-Vorschläge zu erstellen. Nur Mitarbeiter und Teamleiter dürfen Vorschläge einreichen.',
-    );
+    kvpState.openCreateModal();
   }
 
   function handleCloseCreateModal(): void {
     kvpState.closeCreateModal();
-    currentTeamId = null;
   }
 
   async function handleModalSuccess(): Promise<void> {
-    // Level 3: Trigger SSR refetch after creating new suggestion
     await invalidateAll();
   }
 </script>
@@ -322,199 +217,13 @@
     </div>
 
     <div class="card-body">
-      <!-- Filter Card (wie Calendar) -->
-      <div class="card mb-6">
-        <div class="card__header">
-          <h3 class="card__title">
-            <i class="fas fa-filter mr-2"></i>
-            Filter & Anzeige
-          </h3>
-          <!-- Alle Filter in einer Zeile -->
-          <div class="kvp-filter-row mt-6">
-            <!-- Ansichts-Filter -->
-            <div class="form-field">
-              <span class="form-field__label">Ansicht</span>
-              <div
-                class="toggle-group mt-2"
-                id="kvpFilter"
-              >
-                {#each FILTER_OPTIONS as option (option.value)}
-                  <button
-                    type="button"
-                    class="toggle-group__btn"
-                    class:active={kvpState.currentFilter === option.value}
-                    data-value={option.value}
-                    onclick={() => {
-                      handleFilterChange(option.value);
-                    }}
-                    title={option.title}
-                  >
-                    <i class="fas {option.icon}"></i>
-                    {option.label}
-                  </button>
-                {/each}
-              </div>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="form-field">
-              <span class="form-field__label">Status</span>
-              <div
-                class="dropdown mt-2"
-                data-dropdown="status"
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={activeDropdown === 'status'}
-                  onclick={() => {
-                    toggleDropdown('status');
-                  }}
-                >
-                  <span>{statusDisplayText}</span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={activeDropdown === 'status'}
-                >
-                  {#each STATUS_FILTER_OPTIONS as option (option.value)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      data-action="select-status"
-                      data-value={option.value}
-                      onclick={() => {
-                        handleStatusSelect(option.value, option.label);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            </div>
-
-            <!-- Category Filter -->
-            <div class="form-field">
-              <span class="form-field__label">Kategorie</span>
-              <div
-                class="dropdown mt-2"
-                data-dropdown="category"
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={activeDropdown === 'category'}
-                  onclick={() => {
-                    toggleDropdown('category');
-                  }}
-                >
-                  <span>{categoryDisplayText}</span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={activeDropdown === 'category'}
-                >
-                  <button
-                    type="button"
-                    class="dropdown__option"
-                    data-action="select-category"
-                    data-value=""
-                    onclick={() => {
-                      handleCategorySelect('', 'Alle Kategorien');
-                    }}
-                  >
-                    Alle Kategorien
-                  </button>
-                  {#each kvpState.categories as category (`${category.source}:${String(category.id)}`)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      data-action="select-category"
-                      data-value={`${category.source}:${String(category.id)}`}
-                      onclick={() => {
-                        handleCategorySelect(
-                          `${category.source}:${category.id}`,
-                          category.name,
-                        );
-                      }}
-                    >
-                      {category.name}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            </div>
-
-            <!-- Department Filter -->
-            <div class="form-field">
-              <span class="form-field__label">Abteilung</span>
-              <div
-                class="dropdown mt-2"
-                data-dropdown="department"
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={activeDropdown === 'department'}
-                  onclick={() => {
-                    toggleDropdown('department');
-                  }}
-                >
-                  <span>{departmentDisplayText}</span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={activeDropdown === 'department'}
-                >
-                  <button
-                    type="button"
-                    class="dropdown__option"
-                    data-action="select-department"
-                    data-value=""
-                    onclick={() => {
-                      handleDepartmentSelect('', 'Alle Abteilungen');
-                    }}
-                  >
-                    Alle Abteilungen
-                  </button>
-                  {#each kvpState.departments as dept (dept.id)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      data-action="select-department"
-                      data-value={dept.id.toString()}
-                      onclick={() => {
-                        handleDepartmentSelect(dept.id.toString(), dept.name);
-                      }}
-                    >
-                      {dept.name}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            </div>
-
-            <!-- Suche -->
-            <div class="form-field kvp-search-field">
-              <span class="form-field__label">Suche</span>
-              <div class="search-input mt-2">
-                <i class="search-input__icon fas fa-search"></i>
-                <input
-                  type="search"
-                  class="search-input__field"
-                  placeholder="Vorschläge durchsuchen..."
-                  value={kvpState.searchQuery}
-                  oninput={handleSearchInput}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Filter Bar -->
+      <KvpFilterBar
+        userOrganizations={ssrUserOrganizations}
+        onfilterchange={() => {
+          void loadSuggestionsData();
+        }}
+      />
 
       <!-- Suggestions Grid -->
       {#if kvpState.suggestions.length === 0}
@@ -532,106 +241,15 @@
           class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))]"
         >
           {#each kvpState.suggestions as suggestion (suggestion.id)}
-            {@const visibilityInfo = getVisibilityInfo(suggestion)}
-            {@const isRead = suggestion.isConfirmed === true}
-            {@const isNew =
-              suggestion.firstSeenAt === null ||
-              suggestion.firstSeenAt === undefined}
-            <div
-              class="card kvp-card w-full cursor-pointer text-left"
-              role="button"
-              tabindex="0"
+            <KvpSuggestionCard
+              {suggestion}
               onclick={() => {
-                viewSuggestion(suggestion.uuid, isRead);
+                viewSuggestion(
+                  suggestion.uuid,
+                  suggestion.isConfirmed === true,
+                );
               }}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') viewSuggestion(suggestion.uuid, isRead);
-              }}
-            >
-              <!-- Status container: Eye icon (left) + Badges (right) -->
-              <div class="kvp-status-container">
-                <!-- Read confirmation status (Pattern 2: Individual tracking) -->
-                <span
-                  class="kvp-read-status"
-                  class:kvp-read-status--read={isRead}
-                  class:kvp-read-status--unread={!isRead}
-                  title={isRead ? 'Gelesen' : 'Ungelesen'}
-                >
-                  <i class="fas {isRead ? 'fa-eye' : 'fa-eye-slash'}"></i>
-                </span>
-
-                <div class="flex items-center gap-2">
-                  {#if isNew}
-                    <span class="badge badge--sm badge--success">Neu</span>
-                  {/if}
-                  <span class="badge {getStatusBadgeClass(suggestion.status)}">
-                    {getStatusText(suggestion.status)}
-                  </span>
-                </div>
-              </div>
-
-              <div class="mb-4">
-                <h3 class="suggestion-title">{suggestion.title}</h3>
-                <div class="suggestion-meta">
-                  <span>
-                    <i class="fas fa-user"></i>
-                    {suggestion.submittedByName}
-                    {suggestion.submittedByLastname}
-                  </span>
-                  <span>
-                    <i class="fas fa-calendar"></i>
-                    {formatDate(suggestion.createdAt)}
-                  </span>
-                  {#if suggestion.attachmentCount !== undefined && suggestion.attachmentCount > 0}
-                    <span>
-                      <i class="fas fa-camera"></i>
-                      {getAttachmentText(suggestion.attachmentCount)}
-                    </span>
-                  {/if}
-                </div>
-                <div class="share-info">
-                  <i class="fas fa-share-alt"></i>
-                  <span
-                    class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
-                  >
-                    <i class="fas {visibilityInfo.icon}"></i>
-                    <span
-                      >{visibilityInfo.text}{getSharedByInfo(suggestion)}</span
-                    >
-                  </span>
-                </div>
-              </div>
-
-              <div class="suggestion-description">{suggestion.description}</div>
-
-              <div class="suggestion-footer">
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    class="badge {getPriorityBadgeClass(suggestion.priority)}"
-                  >
-                    {getPriorityText(suggestion.priority)}
-                  </span>
-                  <div
-                    class="category-tag"
-                    class:category-tag--deleted={suggestion.categoryIsDeleted ===
-                      true}
-                    style:background="{suggestion.categoryColor}20"
-                    style:color={suggestion.categoryColor}
-                    style:border="1px solid {suggestion.categoryColor}"
-                  >
-                    {#if isFaIcon(suggestion.categoryIcon)}
-                      <i
-                        class="fas fa-{suggestion.categoryIcon}"
-                        style:margin-right="0.1em"
-                      ></i>
-                    {:else}
-                      {suggestion.categoryIcon}
-                    {/if}
-                    {suggestion.categoryName}
-                  </div>
-                </div>
-              </div>
-            </div>
+            />
           {/each}
         </div>
       {/if}
@@ -652,176 +270,8 @@
 <!-- Create KVP Modal -->
 {#if kvpState.showCreateModal}
   <KvpCreateModal
-    {currentTeamId}
+    userOrganizations={ssrUserOrganizations}
     onclose={handleCloseCreateModal}
     onsuccess={handleModalSuccess}
   />
 {/if}
-
-<style>
-  /* KVP Suggestion Cards */
-  [data-dropdown='status'] .dropdown__trigger {
-    width: auto;
-    min-width: 180px;
-  }
-
-  [data-dropdown='status'] .dropdown__menu {
-    min-width: 180px;
-    left: auto;
-    right: auto;
-  }
-
-  .kvp-card {
-    position: relative;
-    cursor: pointer;
-  }
-
-  .kvp-card:hover {
-    transform: translateY(-4px);
-    border-color: rgb(0 142 255 / 50%);
-  }
-
-  /* Status Container */
-  .kvp-status-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    position: absolute;
-    top: var(--spacing-4);
-    right: var(--spacing-4);
-  }
-
-  /* Read Confirmation Status */
-  .kvp-read-status {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-size: 0.9rem;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .kvp-read-status--read {
-    background: rgb(16 185 129 / 20%);
-    color: rgb(16 185 129);
-  }
-
-  .kvp-read-status--unread {
-    background: rgb(245 158 11 / 20%);
-    color: rgb(245 158 11);
-  }
-
-  .kvp-read-status:hover {
-    transform: scale(1.1);
-  }
-
-  /* Suggestion Card Content */
-  .suggestion-title {
-    margin-bottom: var(--spacing-2);
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.1rem;
-  }
-
-  .suggestion-meta {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-4);
-    color: var(--text-muted);
-    padding-bottom: 10px;
-
-    font-size: 0.85rem;
-  }
-
-  .suggestion-meta span {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-2);
-  }
-
-  .suggestion-meta i {
-    color: var(--primary-color);
-  }
-
-  .suggestion-description {
-    position: relative;
-    margin: var(--spacing-4) 0;
-
-    max-height: 4.8em;
-
-    overflow: hidden;
-    color: var(--color-text-secondary);
-
-    font-size: 0.9rem;
-    line-height: 1.6;
-  }
-
-  .suggestion-description::after {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-
-    padding-left: 20px;
-    content: '...';
-  }
-
-  .suggestion-footer {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-3);
-    align-items: flex-start;
-
-    margin-top: var(--spacing-6);
-    border-top: 1px solid var(--color-glass-border);
-    padding-top: var(--spacing-4);
-  }
-
-  .category-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border: var(--glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg-active);
-
-    padding: 4px 12px;
-
-    font-size: 0.8rem;
-  }
-
-  /* Soft-deleted category: strikethrough + dimmed opacity */
-  .category-tag--deleted {
-    text-decoration: line-through;
-    opacity: 55%;
-  }
-
-  /* Share Info */
-  .share-info {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .share-info > i {
-    color: #666;
-    font-size: 0.875rem;
-  }
-
-  /* KVP Filter Layout */
-  .kvp-filter-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-4);
-    align-items: flex-end;
-  }
-
-  .kvp-search-field {
-    width: 220px;
-  }
-</style>

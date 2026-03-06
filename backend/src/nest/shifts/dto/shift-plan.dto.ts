@@ -28,7 +28,7 @@ export const CreateShiftPlanSchema = z.object({
   departmentId: z.number().int().positive('Department ID is required'),
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
-  machineId: z.number().int().positive().optional(),
+  assetId: z.number().int().positive().optional(),
   name: z
     .string()
     .trim()
@@ -39,6 +39,7 @@ export const CreateShiftPlanSchema = z.object({
     .trim()
     .max(2000, 'Notes cannot exceed 2000 characters')
     .optional(),
+  isTpmMode: z.boolean().optional(),
   shifts: z
     .array(ShiftPlanItemSchema)
     .min(1, 'Mindestens eine Schicht muss eingetragen sein'),

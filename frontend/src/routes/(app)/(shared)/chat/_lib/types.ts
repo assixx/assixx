@@ -10,7 +10,7 @@ export type UserStatus = 'online' | 'offline' | 'away';
 /**
  * User role types
  */
-export type UserRole = 'root' | 'admin' | 'employee';
+export type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
 /**
  * Notification types for UI feedback

@@ -4,33 +4,10 @@
    * Rows = employees, columns = months (Jan–Dez) + total.
    * Click on a month column to drill into the monthly detail view.
    */
-  import {
-    MACHINE_AVAILABILITY_LABELS,
-    type MachineAvailabilityStatus,
-  } from '$lib/machine-availability/constants';
-
   import { MONTH_SHORT, TYPE_COLORS, TYPE_LABELS } from './constants';
   import { overviewState } from './state.svelte';
 
   import type { YearMonthCell } from './types';
-
-  /** Machine availability statuses shown in the legend */
-  const AVAIL_LEGEND: MachineAvailabilityStatus[] = [
-    'maintenance',
-    'repair',
-    'standby',
-    'cleaning',
-    'other',
-  ];
-
-  /** CSS color per availability status (matches CalendarGrid + shifts page) */
-  const AVAIL_COLORS: Record<string, string> = {
-    maintenance: '#ffc107',
-    repair: '#dc3545',
-    standby: '#3498db',
-    cleaning: '#20c997',
-    other: '#6f42c1',
-  };
 
   interface Props {
     onSelectMonth: (month: number) => void;
@@ -190,24 +167,6 @@
             <span class="calendar-legend__label">Urlaubssperre</span>
           </div>
         {/if}
-      </div>
-
-      <!-- Machine Availability Legend -->
-      <div class="calendar-legend calendar-legend--machine-avail">
-        <span class="calendar-legend__section-title">
-          <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
-        </span>
-        {#each AVAIL_LEGEND as status (status)}
-          <div class="calendar-legend__item">
-            <span
-              class="calendar-legend__dot"
-              style="background: {AVAIL_COLORS[status]};"
-            ></span>
-            <span class="calendar-legend__label">
-              {MACHINE_AVAILABILITY_LABELS[status]}
-            </span>
-          </div>
-        {/each}
       </div>
 
       <p class="year-grid__hint">
@@ -434,26 +393,6 @@
   .calendar-legend__label {
     font-size: 0.75rem;
     color: var(--text-muted);
-  }
-
-  /* ─── Machine Availability Legend ──────── */
-
-  .calendar-legend--machine-avail {
-    margin-top: var(--spacing-2);
-    padding-top: var(--spacing-2);
-    border-top: 1px dashed var(--color-glass-border);
-  }
-
-  .calendar-legend--machine-avail .calendar-legend__dot {
-    border-radius: 50%;
-  }
-
-  .calendar-legend__section-title {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
   }
 
   /* ─── Hint ──────── */

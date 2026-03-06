@@ -8,6 +8,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 
@@ -17,6 +18,15 @@ import { KvpCommentsService } from './kvp-comments.service.js';
 
 function createMockDb() {
   return { query: vi.fn() };
+}
+
+function createMockActivityLogger() {
+  return {
+    log: vi.fn(),
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+  };
 }
 
 function makeDbComment(overrides: Record<string, unknown> = {}) {
@@ -42,11 +52,16 @@ function makeDbComment(overrides: Record<string, unknown> = {}) {
 describe('KvpCommentsService', () => {
   let service: KvpCommentsService;
   let mockDb: ReturnType<typeof createMockDb>;
+  let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new KvpCommentsService(mockDb as unknown as DatabaseService);
+    mockActivityLogger = createMockActivityLogger();
+    service = new KvpCommentsService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================

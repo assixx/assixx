@@ -47,7 +47,7 @@
 - [x] Schichtplanung (Wochenansicht, Rotation, Drag & Drop)
 - [x] Chat-System (Echtzeit WebSocket, Gruppen, Dateien, Read Receipts)
 - [x] Umfrage-Tool (Templates, Statistiken, Antworten, Export)
-- [x] Maschinen-Verwaltung (CRUD, Kategorien, Basic Wartung)
+- [x] Anlagen-Verwaltung (CRUD, Kategorien, Basic Wartung)
 - [x] Abteilungen, Teams, Bereiche (CRUD, Hierarchie, Stats)
 
 ### Infrastruktur
@@ -75,11 +75,11 @@
 
 ### TPM-System -- Total Productive Maintenance (nicht begonnen)
 
-- [ ] Wartungsplanung fuer Maschinen (Intervalle, Checklisten)
+- [ ] Wartungsplanung fuer Anlagen (Intervalle, Checklisten)
 - [ ] Digitale Checklisten mit Foto-Dokumentation
 - [ ] Automatische Erinnerungen (Faelligkeiten)
 - [ ] Wartungshistorie und Reports
-- [ ] QR-Code Integration (Maschine scannen -> Wartungsprotokoll)
+- [ ] QR-Code Integration (Anlage scannen -> Wartungsprotokoll)
 
 ### Schichttausch-Antrag (nicht implementiert)
 
@@ -117,7 +117,7 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 
 - [ ] Alle 11 bestehenden Features durchklicken und verifizieren
 - [ ] Neue Features (Urlaub, TPM, Schichttausch) vollstaendig testen
-- [ ] Cross-Feature-Tests (z.B. Urlaub im Kalender sichtbar, TPM in Maschinen)
+- [ ] Cross-Feature-Tests (z.B. Urlaub im Kalender sichtbar, TPM in Anlagen)
 
 ### Signup + Payment + Feature-Aktivierung (kritischer Pfad)
 
@@ -256,7 +256,7 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 ### Erweiterte Automatisierung
 
 - Workflow-Engine
-- IoT-Anbindung fuer Maschinenanbindung
+- IoT-Anbindung fuer Anlagenanbindung
 - Echtzeit-Dashboards
 
 ---

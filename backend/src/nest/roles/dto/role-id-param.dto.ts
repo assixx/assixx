@@ -9,8 +9,8 @@ import { z } from 'zod';
 /**
  * Valid role enum
  */
-export const RoleEnumSchema = z.enum(['admin', 'employee', 'root'], {
-  message: 'Invalid role. Must be admin, employee, or root',
+export const RoleEnumSchema = z.enum(['admin', 'employee', 'root', 'dummy'], {
+  message: 'Invalid role. Must be admin, employee, root, or dummy',
 });
 
 /**

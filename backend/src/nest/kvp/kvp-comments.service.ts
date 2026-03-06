@@ -11,6 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   DbComment,
@@ -53,7 +54,10 @@ function mapComment(row: DbComment): KVPComment {
 export class KvpCommentsService {
   private readonly logger = new Logger(KvpCommentsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get top-level comments for a suggestion with pagination.
@@ -175,6 +179,15 @@ export class KvpCommentsService {
     if (rows[0] === undefined) {
       throw new Error('Failed to add comment');
     }
+
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'kvp',
+      numericId,
+      `KVP-Kommentar erstellt: Vorschlag ${String(numericId)}`,
+      { suggestionId: numericId, commentId: rows[0].id },
+    );
 
     return {
       id: rows[0].id,

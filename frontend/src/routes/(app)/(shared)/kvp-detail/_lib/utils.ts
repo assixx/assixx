@@ -57,21 +57,62 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
 
 /**
  * Get visibility info (icon + text) for suggestion
+ * Shows org names from junction table when available, falls back to orgLevel
  */
 export function getVisibilityInfo(suggestion: KvpSuggestion): {
   icon: string;
   text: string;
 } {
-  // If not shared (private)
+  // Junction table organizations take priority (new multi-team/asset flow)
+  if (
+    suggestion.organizations !== undefined &&
+    suggestion.organizations.length > 0
+  ) {
+    return getOrganizationsVisibility(suggestion);
+  }
+
+  // Legacy fallback: single orgLevel/orgId
+  return getLegacyVisibility(suggestion);
+}
+
+/** Visibility from junction table organizations */
+function getOrganizationsVisibility(suggestion: KvpSuggestion): {
+  icon: string;
+  text: string;
+} {
+  const orgs = suggestion.organizations ?? [];
+  const teams = orgs.filter((o) => o.orgType === 'team');
+  const assets = orgs.filter((o) => o.orgType === 'asset');
+
+  const parts: string[] = [];
+  for (const t of teams) {
+    parts.push(t.orgName ?? `Team ${t.orgId}`);
+  }
+  for (const m of assets) {
+    parts.push(m.orgName ?? `Anlage ${m.orgId}`);
+  }
+
+  if (parts.length > 0) {
+    const icon =
+      assets.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
+    return { icon, text: parts.join(', ') };
+  }
+
+  return { icon: 'fa-lock', text: 'Keine Zuordnung' };
+}
+
+/** Legacy visibility from single orgLevel field */
+function getLegacyVisibility(suggestion: KvpSuggestion): {
+  icon: string;
+  text: string;
+} {
   if (!suggestion.isShared) {
     return { icon: 'fa-lock', text: 'Nur Team' };
   }
 
-  // If shared, show org level info
   const info = VISIBILITY_INFO[suggestion.orgLevel];
-
-  // Use specific name if available (check for empty string)
   let text = info.text;
+
   if (
     suggestion.orgLevel === 'department' &&
     suggestion.departmentName !== ''
@@ -239,7 +280,7 @@ export function canShareSuggestion(
 
 /**
  * Check if user can unshare suggestion
- * Allows unsharing for any shared suggestion (department, area, company)
+ * Allows unsharing for any shared suggestion (team, department, area, company)
  * - Admin/Root can always unshare
  * - Original sharer can unshare their own shares
  */
@@ -248,8 +289,7 @@ export function canUnshareSuggestion(
   userRole: string,
   userId: number | undefined,
 ): boolean {
-  // Must be shared and not at team level (team is default, not "shared")
-  if (!suggestion.isShared || suggestion.orgLevel === 'team') {
+  if (!suggestion.isShared) {
     return false;
   }
 

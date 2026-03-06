@@ -13,7 +13,7 @@ export {
   DeleteTeamQuerySchema,
 } from './delete-team.dto.js';
 export { AddMemberDto, AddMemberSchema } from './add-member.dto.js';
-export { AddMachineDto, AddMachineSchema } from './add-machine.dto.js';
+export { AddAssetDto, AddAssetSchema } from './add-asset.dto.js';
 export {
   TeamMembersQueryDto,
   TeamMembersQuerySchema,

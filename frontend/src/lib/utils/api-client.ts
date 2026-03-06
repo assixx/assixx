@@ -45,7 +45,7 @@ const log = createLogger('ApiClient');
  */
 export class ApiClient {
   private static instance: ApiClient | undefined;
-  private baseUrl = '';
+  private readonly baseUrl: string = '';
   private isRedirectingToRateLimit = false;
   private readonly apiCache = new ApiCache();
   private authProvider: AuthTokenProvider | null = null;
@@ -111,9 +111,9 @@ export class ApiClient {
    * Set tokens (delegates to TokenManager)
    * @deprecated Use getTokenManager().setTokens() directly
    */
-  setTokens(accessToken: string, refreshToken: string): void {
+  setTokens(accessToken: string): void {
     if (!browser) return;
-    getTokenManager().setTokens(accessToken, refreshToken);
+    getTokenManager().setTokens(accessToken);
   }
 
   // =============================================================================
@@ -193,11 +193,11 @@ export class ApiClient {
 
     // Retry with new token
     const newToken = authProvider.getAccessToken();
-    if (newToken !== null) {
-      headers.Authorization = `Bearer ${newToken}`;
-    } else {
+    if (newToken === null) {
       // Don't send invalid "Bearer " header - remove it entirely
       delete headers.Authorization;
+    } else {
+      headers.Authorization = `Bearer ${newToken}`;
     }
 
     const retryResponse = await fetch(url, {
@@ -554,10 +554,12 @@ export class ApiClient {
     data?: unknown,
     config?: ApiConfig,
   ): Promise<T> {
-    const body =
-      data === undefined || data === null ? null
-      : data instanceof FormData ? data
-      : JSON.stringify(data);
+    let body: FormData | string | null = null;
+    if (data instanceof FormData) {
+      body = data;
+    } else if (data !== undefined && data !== null) {
+      body = JSON.stringify(data);
+    }
 
     const result = await this.request<T>(
       endpoint,

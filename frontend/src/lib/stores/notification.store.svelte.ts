@@ -28,6 +28,8 @@ export interface NotificationCounts {
   blackboard: number;
   calendar: number;
   vacation: number;
+  tpm: number;
+  workOrders: number;
 }
 
 interface NotificationState {
@@ -53,6 +55,8 @@ function createInitialCounts(): NotificationCounts {
     blackboard: 0,
     calendar: 0,
     vacation: 0,
+    tpm: 0,
+    workOrders: 0,
   };
 }
 
@@ -79,6 +83,14 @@ const SSE_EVENT_TO_COUNT = new Map<string, CountType>([
   ['VACATION_REQUEST_RESPONDED', 'vacation'],
   ['VACATION_REQUEST_WITHDRAWN', 'vacation'],
   ['VACATION_REQUEST_CANCELLED', 'vacation'],
+  ['TPM_CARD_STATUS_RED', 'tpm'],
+  ['TPM_CARD_STATUS_YELLOW', 'tpm'],
+  ['TPM_CARD_OVERDUE', 'tpm'],
+  ['TPM_EXECUTION_PENDING', 'tpm'],
+  ['WORK_ORDER_ASSIGNED', 'workOrders'],
+  ['WORK_ORDER_STATUS_CHANGED', 'workOrders'],
+  ['WORK_ORDER_DUE_SOON', 'workOrders'],
+  ['WORK_ORDER_VERIFIED', 'workOrders'],
 ]);
 
 function handleSSEEvent(
@@ -116,20 +128,17 @@ function setCountsMut(
   state: NotificationState,
   counts: Partial<NotificationCounts>,
 ): void {
-  state.counts = {
-    total: counts.total ?? 0,
-    surveys: counts.surveys ?? 0,
-    documents: counts.documents ?? 0,
-    kvp: counts.kvp ?? 0,
-    chat: counts.chat ?? 0,
-    blackboard: counts.blackboard ?? 0,
-    calendar: counts.calendar ?? 0,
-    vacation: counts.vacation ?? 0,
-  };
+  state.counts = { ...createInitialCounts(), ...counts };
   state.lastUpdate = new Date();
 }
 
-export type FeatureType = 'survey' | 'document' | 'kvp' | 'vacation';
+export type FeatureType =
+  | 'survey'
+  | 'document'
+  | 'kvp'
+  | 'vacation'
+  | 'tpm'
+  | 'work_orders';
 
 /** Map feature type to store count key */
 const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
@@ -137,6 +146,8 @@ const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
   document: 'documents',
   kvp: 'kvp',
   vacation: 'vacation',
+  tpm: 'tpm',
+  work_orders: 'workOrders',
 };
 
 /** Rollback count after failed API call */
@@ -181,6 +192,34 @@ async function markFeatureTypeAsRead(
 }
 
 /**
+ * Mark notifications for a specific entity as read (e.g., one work order).
+ * Decrements count by the number of actually marked notifications.
+ */
+async function markFeatureEntityAsRead(
+  state: NotificationState,
+  featureType: FeatureType,
+  entityUuid: string,
+): Promise<void> {
+  try {
+    const response = await fetch(
+      `/api/v2/notifications/mark-read/${featureType}/${entityUuid}`,
+      { method: 'POST', credentials: 'include' },
+    );
+
+    if (!response.ok) return;
+
+    const json = (await response.json()) as { marked: number };
+    const countKey = FEATURE_TO_COUNT_KEY[featureType];
+
+    for (let i = 0; i < json.marked; i++) {
+      decrementCountMut(state, countKey);
+    }
+  } catch {
+    // Silent — notification dismiss is non-critical
+  }
+}
+
+/**
  * Dashboard counts response from /api/v2/dashboard/counts
  * Single endpoint that combines all notification counts
  */
@@ -202,6 +241,10 @@ interface DashboardCountsResponse {
     surveys?: { count: number };
     /** Unread vacation notifications */
     vacation?: { count: number };
+    /** Unread TPM notifications */
+    tpm?: { count: number };
+    /** Unread work order notifications */
+    workOrders?: { count: number };
     fetchedAt?: string;
   };
 }
@@ -281,6 +324,10 @@ interface SSRCounts {
   surveys?: { count: number };
   /** Unread vacation notifications */
   vacation?: { count: number };
+  /** Unread TPM notifications */
+  tpm?: { count: number };
+  /** Unread work order notifications */
+  workOrders?: { count: number };
 }
 
 /** Safely extract count from an optional API field (defensive against missing data) */
@@ -297,9 +344,20 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const calendar = safeCount(counts.calendar);
   const documents = safeCount(counts.documents);
   const vacation = safeCount(counts.vacation);
+  const tpm = safeCount(counts.tpm);
+  const workOrders = safeCount(counts.workOrders);
 
   state.counts = {
-    total: chat + surveys + documents + kvp + blackboard + calendar + vacation,
+    total:
+      chat +
+      surveys +
+      documents +
+      kvp +
+      blackboard +
+      calendar +
+      vacation +
+      tpm +
+      workOrders,
     chat,
     surveys,
     documents,
@@ -307,6 +365,8 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
     blackboard,
     calendar,
     vacation,
+    tpm,
+    workOrders,
   };
   state.lastUpdate = new Date();
 
@@ -367,6 +427,10 @@ function buildStoreActions(
     },
     markTypeAsRead: async (featureType: FeatureType) => {
       if (browser) await markFeatureTypeAsRead(state, featureType);
+    },
+    markEntityAsRead: async (featureType: FeatureType, entityUuid: string) => {
+      if (browser)
+        await markFeatureEntityAsRead(state, featureType, entityUuid);
     },
     /**
      * Suppress an SSE event type from auto-incrementing badge counts.

@@ -107,7 +107,7 @@ winget install dbeaver.dbeaver
 │                                                             │
 │  global (2 Tabellen)                                        │
 │  ├── kvp_categories (KVP Kategorien)                       │
-│  └── machine_categories (Maschinenkategorien)              │
+│  └── machine_categories (Anlagenkategorien)              │
 │                                                             │
 │  [main_db] → GELÖSCHT (war leer/legacy)                    │
 │                                                             │
@@ -129,10 +129,10 @@ PostgreSQL Zielstruktur:
 
 ### Tabellen in `global` DB
 
-| Tabelle              | Spalten                                            | Beschreibung                          |
-| -------------------- | -------------------------------------------------- | ------------------------------------- |
-| `kvp_categories`     | id, name, description, color, icon, created_at     | KVP Kategorien                        |
-| `machine_categories` | id, name, description, icon, sort_order, is_active | Maschinenkategorien (seit 2025-11-30) |
+| Tabelle              | Spalten                                            | Beschreibung                        |
+| -------------------- | -------------------------------------------------- | ----------------------------------- |
+| `kvp_categories`     | id, name, description, color, icon, created_at     | KVP Kategorien                      |
+| `machine_categories` | id, name, description, icon, sort_order, is_active | Anlagenkategorien (seit 2025-11-30) |
 
 ---
 
@@ -453,7 +453,7 @@ AFTER LOAD DO
     $$ GRANT ALL ON TABLE kvp_categories TO assixx_user; $$,
     $$ GRANT ALL ON TABLE machine_categories TO assixx_user; $$,
     $$ COMMENT ON TABLE kvp_categories IS 'Global KVP categories - NO RLS (shared across all tenants)'; $$,
-    $$ COMMENT ON TABLE machine_categories IS 'Global machine categories - NO RLS (shared across all tenants)'; $$;
+    $$ COMMENT ON TABLE machine_categories IS 'Global asset categories - NO RLS (shared across all tenants)'; $$;
 ```
 
 ### 1.3 Migration ausführen

@@ -25,7 +25,7 @@
 | 10  | ~~`(admin)/vacation/overview/+page.svelte`~~   | ~~802~~ → **495**                 | ~~+102~~ → **0** | ~~🟡 Mittel~~   | ✅ **ERLEDIGT** |
 | 11  | ~~`(shared)/kvp/+page.svelte`~~                | ~~795~~ → **825** (effektiv <700) | ~~+95~~ → **0**  | ~~🟡 Mittel~~   | ✅ **ERLEDIGT** |
 | 12  | ~~`(admin)/features/+page.svelte`~~            | ~~757~~ → **605**                 | ~~+57~~ → **0**  | ~~🟢 Leicht~~   | ✅ **ERLEDIGT** |
-| 13  | ~~`(admin)/manage-machines/+page.svelte`~~     | ~~744~~ → **810** (effektiv <700) | ~~+44~~ → **0**  | ~~🟢 Leicht~~   | ✅ **ERLEDIGT** |
+| 13  | ~~`(admin)/manage-assets/+page.svelte`~~       | ~~744~~ → **810** (effektiv <700) | ~~+44~~ → **0**  | ~~🟢 Leicht~~   | ✅ **ERLEDIGT** |
 | 14  | ~~`(shared)/survey-employee/+page.svelte`~~    | ~~734~~ → **736** (effektiv <700) | ~~+34~~ → **0**  | ~~🟢 Leicht~~   | ✅ **ERLEDIGT** |
 | 15  | ~~`(root)/root-profile/+page.svelte`~~         | ~~720~~ → **702**                 | ~~+20~~ → **0**  | ~~🟢 Leicht~~   | ✅ **ERLEDIGT** |
 
@@ -326,7 +326,7 @@ Gesamte Kalender-Sektion (Template + CSS + Helfer-Funktionen) in CalendarGrid.sv
 
 ---
 
-### 13. `(admin)/manage-machines/+page.svelte` — ✅ ERLEDIGT (2026-02-16)
+### 13. `(admin)/manage-assets/+page.svelte` — ✅ ERLEDIGT (2026-02-16)
 
 **Was wurde gemacht:**
 
@@ -413,7 +413,7 @@ Während des Refactorings wurden tote CSS-Selektoren identifiziert und entfernt:
 10. ~~**vacation/overview** — CalendarGrid.svelte extrahiert (Kalender-Template + CSS + Helfer)~~ ✅ ERLEDIGT
 11. ~~**kvp** — `:global()` Anti-Pattern aufgelöst + Dead CSS entfernt (upload-box → KvpCreateModal)~~ ✅ ERLEDIGT
 12. ~~**features** — AddonResources.svelte extrahiert (3 Addon-Cards + $bindable + adjustAddon)~~ ✅ ERLEDIGT
-13. ~~**manage-machines** — Dropdown-CSS → MachineFormModal + :global() → scoped + Code-Konsolidierung~~ ✅ ERLEDIGT
+13. ~~**manage-assets** — Dropdown-CSS → MachineFormModal + :global() → scoped + Code-Konsolidierung~~ ✅ ERLEDIGT
 14. ~~**survey-employee** — ResponseModal.svelte extrahiert (Antwort-Viewing-Modal + CSS)~~ ✅ ERLEDIGT
 15. ~~**root-profile** — ApprovalSection.svelte extrahiert (Approval-Template + CSS + Funktionen) + Dead CSS entfernt~~ ✅ ERLEDIGT
 
@@ -438,7 +438,7 @@ Während des Refactorings wurden tote CSS-Selektoren identifiziert und entfernt:
 - [x] `vacation/overview/+page.svelte` < 700 Zeilen (ESLint) — **495 Zeilen, 0 ESLint Errors** ✅
 - [x] `kvp/+page.svelte` < 700 Zeilen (ESLint) — **825 raw / <700 effektiv, 0 ESLint Errors** ✅
 - [x] `features/+page.svelte` < 700 Zeilen (ESLint) — **605 Zeilen, 0 ESLint Errors** ✅
-- [x] `manage-machines/+page.svelte` < 700 Zeilen (ESLint) — **810 raw / <700 effektiv, 0 ESLint Errors** ✅
+- [x] `manage-assets/+page.svelte` < 700 Zeilen (ESLint) — **810 raw / <700 effektiv, 0 ESLint Errors** ✅
 - [x] `survey-employee/+page.svelte` < 700 Zeilen (ESLint) — **736 raw / <700 effektiv, 0 ESLint Errors** ✅
 - [x] `root-profile/+page.svelte` < 700 Zeilen (ESLint) — **702 Zeilen, 0 ESLint Errors** ✅
 - [x] KEINE separaten CSS-Dateien erstellt ✅

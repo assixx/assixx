@@ -9,7 +9,7 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { DeletionStatusData } from './_lib/types';
+import type { DeletionStatusData, ShiftTimeData } from './_lib/types';
 
 const log = createLogger('AccountSettings');
 
@@ -90,14 +90,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/dashboard');
   }
 
-  // Load pending deletion status
-  const deletionStatus = await apiFetch<DeletionStatusData>(
-    '/root/tenant/deletion-status',
-    token,
-    fetch,
-  );
+  // Load pending deletion status and shift times in parallel
+  const [deletionStatus, shiftTimes] = await Promise.all([
+    apiFetch<DeletionStatusData>('/root/tenant/deletion-status', token, fetch),
+    apiFetch<ShiftTimeData[]>('/shift-times', token, fetch),
+  ]);
 
   return {
     pendingDeletion: deletionStatus,
+    shiftTimes: shiftTimes ?? [],
   };
 };

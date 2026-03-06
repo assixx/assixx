@@ -91,12 +91,14 @@ export class RotationService {
     dto: UpdateRotationPatternDto,
     tenantId: number,
     userRole: string,
+    userId: number,
   ): Promise<RotationPatternResponse> {
     this.assertAdminRole(userRole, 'update rotation patterns');
     return await this.patternService.updateRotationPattern(
       patternId,
       dto,
       tenantId,
+      userId,
     );
   }
 
@@ -105,9 +107,14 @@ export class RotationService {
     patternId: number,
     tenantId: number,
     userRole: string,
+    userId: number,
   ): Promise<void> {
     this.assertAdminRole(userRole, 'delete rotation patterns');
-    await this.patternService.deleteRotationPattern(patternId, tenantId);
+    await this.patternService.deleteRotationPattern(
+      patternId,
+      tenantId,
+      userId,
+    );
   }
 
   // ============================================================
@@ -128,12 +135,14 @@ export class RotationService {
     dto: UpdateRotationPatternDto,
     tenantId: number,
     userRole: string,
+    userId: number,
   ): Promise<RotationPatternResponse> {
     this.assertAdminRole(userRole, 'update rotation patterns');
     return await this.patternService.updateRotationPatternByUuid(
       uuid,
       dto,
       tenantId,
+      userId,
     );
   }
 
@@ -142,9 +151,14 @@ export class RotationService {
     uuid: string,
     tenantId: number,
     userRole: string,
+    userId: number,
   ): Promise<void> {
     this.assertAdminRole(userRole, 'delete rotation patterns');
-    await this.patternService.deleteRotationPatternByUuid(uuid, tenantId);
+    await this.patternService.deleteRotationPatternByUuid(
+      uuid,
+      tenantId,
+      userId,
+    );
   }
 
   // ============================================================
@@ -174,7 +188,7 @@ export class RotationService {
   async generateRotationShifts(
     dto: GenerateRotationShiftsDto,
     tenantId: number,
-    _userId: number,
+    userId: number,
     userRole: string,
   ): Promise<GeneratedShiftsResponse> {
     this.assertAdminRole(userRole, 'generate rotation shifts');
@@ -186,6 +200,7 @@ export class RotationService {
       pattern,
       dto,
       tenantId,
+      userId,
     );
   }
 
@@ -226,12 +241,14 @@ export class RotationService {
     tenantId: number,
     teamId: number,
     userRole: string,
+    userId: number,
     patternId?: number,
   ): Promise<DeleteHistoryCountsResponse> {
     this.assertAdminRole(userRole, 'delete rotation history');
     return await this.historyService.deleteRotationHistory(
       tenantId,
       teamId,
+      userId,
       patternId,
     );
   }
@@ -240,14 +257,16 @@ export class RotationService {
   async deleteRotationHistoryByDateRange(
     tenantId: number,
     teamId: number,
+    userRole: string,
+    userId: number,
     startDate: string,
     endDate: string,
-    userRole: string,
   ): Promise<DeleteHistoryCountsResponse> {
     this.assertAdminRole(userRole, 'delete rotation history');
     return await this.historyService.deleteRotationHistoryByDateRange(
       tenantId,
       teamId,
+      userId,
       startDate,
       endDate,
     );
@@ -258,9 +277,14 @@ export class RotationService {
     historyId: number,
     tenantId: number,
     userRole: string,
+    userId: number,
   ): Promise<void> {
     this.assertAdminRole(userRole, 'delete rotation history entries');
-    await this.historyService.deleteRotationHistoryEntry(historyId, tenantId);
+    await this.historyService.deleteRotationHistoryEntry(
+      historyId,
+      tenantId,
+      userId,
+    );
   }
 
   // ============================================================

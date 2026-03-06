@@ -91,7 +91,7 @@ export const UsernameSchema = z
 /**
  * Role enum - matches database ENUM
  */
-export const RoleSchema = z.enum(['admin', 'employee', 'root']);
+export const RoleSchema = z.enum(['admin', 'employee', 'root', 'dummy']);
 
 /**
  * Status enum for active/inactive states

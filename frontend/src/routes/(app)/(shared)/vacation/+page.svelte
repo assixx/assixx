@@ -25,6 +25,7 @@
   import IncomingRequestCard from './_lib/IncomingRequestCard.svelte';
   import RequestCard from './_lib/RequestCard.svelte';
   import RespondModal from './_lib/RespondModal.svelte';
+  import RevokeModal from './_lib/RevokeModal.svelte';
   import { vacationState } from './_lib/state.svelte';
 
   import type { PageData } from './$types';
@@ -122,7 +123,9 @@
 
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (showRespondModal) {
+      if (showRevokeModal) {
+        closeRevokeModal();
+      } else if (showRespondModal) {
         closeRespondModal();
       } else if (vacationState.showEditModal) {
         vacationState.closeEditModal();
@@ -352,6 +355,37 @@
   }
 
   // ==========================================================================
+  // REVOKE (cancel approved request — approver/admin/root)
+  // ==========================================================================
+
+  let showRevokeModal = $state(false);
+  let revokingRequest = $state<VacationRequest | null>(null);
+
+  function openRevokeModal(request: VacationRequest) {
+    revokingRequest = request;
+    showRevokeModal = true;
+  }
+
+  function closeRevokeModal() {
+    showRevokeModal = false;
+    revokingRequest = null;
+  }
+
+  async function handleRevokeSubmit(reason: string) {
+    if (revokingRequest === null) return;
+
+    try {
+      await api.cancelRequest(revokingRequest.id, reason);
+      closeRevokeModal();
+      showSuccessAlert('Antrag widerrufen — Urlaubstage wurden zurückgebucht');
+      await invalidateAll();
+    } catch (err) {
+      log.error({ err }, 'Revoke failed');
+      showErrorAlert('Fehler beim Widerrufen des Antrags');
+    }
+  }
+
+  // ==========================================================================
   // PAGINATION
   // ==========================================================================
 
@@ -400,19 +434,11 @@
   }
 </script>
 
-<!-- ========================================================================
-     HEAD + GLOBAL HANDLERS
-     ======================================================================== -->
-
 <svelte:head>
   <title>Urlaubsverwaltung - Assixx</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeyDown} />
-
-<!-- ========================================================================
-     MAIN CONTENT
-     ======================================================================== -->
 
 <div class="container">
   <!-- Header -->
@@ -672,6 +698,7 @@
                 openRespondModal(r, 'deny');
               }}
               onDetail={handleDetail}
+              onRevoke={openRevokeModal}
             />
           {/each}
         </div>
@@ -693,10 +720,6 @@
     </div>
   </div>
 </div>
-
-<!-- ========================================================================
-     MODALS (extracted into _lib/ components)
-     ======================================================================== -->
 
 {#if showCreateModal}
   <CreateModal
@@ -736,6 +759,14 @@
     action={respondAction}
     onclose={closeRespondModal}
     onsubmit={handleRespondSubmit}
+  />
+{/if}
+
+{#if showRevokeModal && revokingRequest !== null}
+  <RevokeModal
+    request={revokingRequest}
+    onclose={closeRevokeModal}
+    onsubmit={handleRevokeSubmit}
   />
 {/if}
 

@@ -6,7 +6,7 @@ import { createDataState, createOrgState } from './state-data.svelte';
 import { createUIState } from './state-ui.svelte';
 import { createUserState } from './state-user.svelte';
 
-import type { Attachment, OrgLevel } from './types';
+import type { OrgLevel } from './types';
 
 /**
  * KVP Detail State Factory
@@ -40,16 +40,6 @@ function createKvpDetailState() {
     ui.setShowRejectionModal(false);
   };
 
-  const openPreviewModal = (attachment: Attachment) => {
-    ui.setPreviewAttachment(attachment);
-    ui.setShowPreviewModal(true);
-  };
-
-  const closePreviewModal = () => {
-    ui.setShowPreviewModal(false);
-    ui.setPreviewAttachment(null);
-  };
-
   const setSelectedShareLevel = (level: OrgLevel | null) => {
     ui.setSelectedShareLevel(level);
     ui.setSelectedOrgId(null);
@@ -73,16 +63,15 @@ function createKvpDetailState() {
     org.setDepartments([]);
     org.setTeams([]);
     org.setAreas([]);
+    org.setAssets([]);
     ui.setLoading(true);
     ui.setUpdatingStatus(false);
     ui.setAddingComment(false);
     ui.setSharing(false);
     ui.setShowShareModal(false);
     ui.setShowRejectionModal(false);
-    ui.setShowPreviewModal(false);
     ui.setSelectedShareLevel(null);
     ui.setSelectedOrgId(null);
-    ui.setPreviewAttachment(null);
     ui.setActiveDropdown(null);
   };
 
@@ -125,6 +114,9 @@ function createKvpDetailState() {
     get areas() {
       return org.areas;
     },
+    get assets() {
+      return org.assets;
+    },
     get photoAttachments() {
       return data.photoAttachments;
     },
@@ -138,6 +130,7 @@ function createKvpDetailState() {
     setDepartments: org.setDepartments,
     setTeams: org.setTeams,
     setAreas: org.setAreas,
+    setAssets: org.setAssets,
 
     // UI state - Loading
     get isLoading() {
@@ -164,17 +157,11 @@ function createKvpDetailState() {
     get showRejectionModal() {
       return ui.showRejectionModal;
     },
-    get showPreviewModal() {
-      return ui.showPreviewModal;
-    },
     get selectedShareLevel() {
       return ui.selectedShareLevel;
     },
     get selectedOrgId() {
       return ui.selectedOrgId;
-    },
-    get previewAttachment() {
-      return ui.previewAttachment;
     },
     setSelectedOrgId: ui.setSelectedOrgId,
 
@@ -188,8 +175,6 @@ function createKvpDetailState() {
     closeShareModal,
     openRejectionModal,
     closeRejectionModal,
-    openPreviewModal,
-    closePreviewModal,
     setSelectedShareLevel,
 
     // Dropdown methods

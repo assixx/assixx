@@ -417,11 +417,26 @@ export class NotificationsService {
 
   /** Mark feature type as read (delegates to feature sub-service) */
   async markFeatureTypeAsRead(
-    type: 'survey' | 'document' | 'kvp' | 'vacation',
+    type: 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm' | 'work_orders',
     userId: number,
     tenantId: number,
   ): Promise<number> {
     return await this.feature.markFeatureTypeAsRead(type, userId, tenantId);
+  }
+
+  /** Mark notifications for a specific entity as read (e.g., one work order) */
+  async markFeatureEntityAsRead(
+    type: 'work_orders',
+    entityUuid: string,
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
+    return await this.feature.markFeatureEntityAsRead(
+      type,
+      entityUuid,
+      userId,
+      tenantId,
+    );
   }
 
   // ==========================================================================

@@ -55,7 +55,7 @@ Each layout:
 ### To `(admin)/` — 13 routes:
 
 - `admin-dashboard/`, `admin-profile/`
-- `manage-employees/`, `manage-admins/`, `manage-teams/`, `manage-departments/`, `manage-areas/`, `manage-machines/`
+- `manage-employees/`, `manage-admins/`, `manage-teams/`, `manage-departments/`, `manage-areas/`, `manage-assets/`
 - `features/`, `survey-admin/`, `survey-results/`
 - `storage-upgrade/`, `tenant-deletion-status/`
 

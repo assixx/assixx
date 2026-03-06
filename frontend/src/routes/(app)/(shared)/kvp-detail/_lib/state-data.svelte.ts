@@ -2,6 +2,8 @@
 // KVP-DETAIL - DATA STATE MODULE
 // =============================================================================
 
+import { IMAGE_FILE_TYPES } from './constants';
+
 import type {
   KvpSuggestion,
   Comment,
@@ -9,15 +11,17 @@ import type {
   Department,
   Team,
   Area,
+  Asset,
 } from './types';
 
-const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+type ImageFileType = (typeof IMAGE_FILE_TYPES)[number];
 
 /** Creates org lookup state (departments, teams, areas) */
 export function createOrgState() {
   let departments = $state<Department[]>([]);
   let teams = $state<Team[]>([]);
   let areas = $state<Area[]>([]);
+  let assets = $state<Asset[]>([]);
 
   return {
     get departments() {
@@ -29,6 +33,9 @@ export function createOrgState() {
     get areas() {
       return areas;
     },
+    get assets() {
+      return assets;
+    },
     setDepartments: (data: Department[]) => {
       departments = data;
     },
@@ -37,6 +44,9 @@ export function createOrgState() {
     },
     setAreas: (data: Area[]) => {
       areas = data;
+    },
+    setAssets: (data: Asset[]) => {
+      assets = data;
     },
   };
 }
@@ -50,10 +60,14 @@ export function createDataState() {
   let attachments = $state<Attachment[]>([]);
 
   const photoAttachments = $derived(
-    attachments.filter((att) => IMAGE_TYPES.includes(att.fileType)),
+    attachments.filter((att) =>
+      IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType),
+    ),
   );
   const otherAttachments = $derived(
-    attachments.filter((att) => !IMAGE_TYPES.includes(att.fileType)),
+    attachments.filter(
+      (att) => !IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType),
+    ),
   );
 
   return {

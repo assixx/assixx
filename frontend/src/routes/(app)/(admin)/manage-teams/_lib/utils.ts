@@ -16,7 +16,7 @@ import type {
   IsActiveStatus,
   FormIsActiveStatus,
   TeamMember,
-  Machine,
+  Asset,
   Admin,
   Department,
   BadgeInfo,
@@ -87,7 +87,7 @@ export function getDepartmentBadge(
 
 /** Get members badge info for team table (count with tooltip listing names) */
 export function getMembersBadge(team: Team): BadgeInfo {
-  const count = team.memberCount ?? 0;
+  const count = Number(team.memberCount ?? 0);
   const names = team.memberNames ?? '';
 
   if (count === 0) {
@@ -106,24 +106,24 @@ export function getMembersBadge(team: Team): BadgeInfo {
   };
 }
 
-/** Get machines badge info for team table (count with tooltip listing names) */
-export function getMachinesBadge(team: Team): BadgeInfo {
-  const count = team.machineCount ?? 0;
-  const names = team.machineNames ?? '';
+/** Get assets badge info for team table (count with tooltip listing names) */
+export function getAssetsBadge(team: Team): BadgeInfo {
+  const count = Number(team.assetCount ?? 0);
+  const names = team.assetNames ?? '';
 
   if (count === 0) {
     return {
       class: BADGE_CLASS_SECONDARY,
       text: 'Keine',
-      title: 'Keine Maschinen zugewiesen',
+      title: 'Keine Anlagen zugewiesen',
     };
   }
 
   // SECURITY FIX: Escape user-provided names to prevent XSS
   const safeNames = escapeHtml(names);
-  const label = count === 1 ? 'Maschine' : 'Maschinen';
+  const label = count === 1 ? 'Anlage' : 'Anlagen';
 
-  // Show names directly for 1-2 machines, count for 3+
+  // Show names directly for 1-2 assets, count for 3+
   if (count <= 2) {
     return {
       class: BADGE_CLASS_INFO,
@@ -175,22 +175,22 @@ export function getMembersDisplayText(
   return `${names.length} Mitglieder ausgewählt`;
 }
 
-/** Get selected machines display text for dropdown */
-export function getMachinesDisplayText(
-  machineIds: number[],
-  allMachines: Machine[],
+/** Get selected assets display text for dropdown */
+export function getAssetsDisplayText(
+  assetIds: number[],
+  allAssets: Asset[],
 ): string {
-  if (machineIds.length === 0) return MESSAGES.NO_MACHINES;
+  if (assetIds.length === 0) return MESSAGES.NO_MACHINES;
 
-  const names = machineIds
+  const names = assetIds
     .map((id) => {
-      const machine = allMachines.find((m) => m.id === id);
-      return machine?.name ?? '';
+      const asset = allAssets.find((m) => m.id === id);
+      return asset?.name ?? '';
     })
     .filter(Boolean);
 
   if (names.length <= 2) return names.join(', ');
-  return `${names.length} Maschinen ausgewählt`;
+  return `${names.length} Anlagen ausgewählt`;
 }
 
 /** Get department display text */
@@ -224,7 +224,7 @@ export function populateFormFromTeam(team: Team): {
   departmentId: number | null;
   leaderId: number | null;
   memberIds: number[];
-  machineIds: number[];
+  assetIds: number[];
   isActive: FormIsActiveStatus;
 } {
   return {
@@ -233,7 +233,7 @@ export function populateFormFromTeam(team: Team): {
     departmentId: team.departmentId ?? null,
     leaderId: team.leaderId ?? null,
     memberIds: team.members?.map((m) => m.id) ?? [],
-    machineIds: team.machines?.map((m) => m.id) ?? [],
+    assetIds: team.assets?.map((m) => m.id) ?? [],
     isActive: (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus,
   };
 }
@@ -245,7 +245,7 @@ export function getDefaultFormValues(): {
   departmentId: null;
   leaderId: null;
   memberIds: number[];
-  machineIds: number[];
+  assetIds: number[];
   isActive: FormIsActiveStatus;
 } {
   return { ...FORM_DEFAULTS };

@@ -155,7 +155,7 @@ backend/src/nest/common/
 | /manage-teams           | Team CRUD         | Table, Form Modal        |
 | /manage-departments     | Dept CRUD         | Table, Form Modal        |
 | /manage-areas           | Area CRUD         | Table, Form Modal        |
-| /manage-machines        | Machine CRUD      | Table, Form Modal        |
+| /manage-assets          | Machine CRUD      | Table, Form Modal        |
 | /manage-root            | Root User CRUD    | Table, Form Modal        |
 | /blackboard             | Announcements     | List, Entry Modal        |
 | /blackboard/[uuid]      | Entry Detail      | Comments, Reactions      |

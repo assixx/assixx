@@ -13,6 +13,7 @@ import {
 import { v7 as uuidv7 } from 'uuid';
 
 import { dbToApi } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { AssignUsersToPatternDto } from './dto/assign-users-to-pattern.dto.js';
 import type {
@@ -24,7 +25,10 @@ import type {
 export class RotationAssignmentService {
   private readonly logger = new Logger(RotationAssignmentService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Get active assignments for a pattern
@@ -107,6 +111,16 @@ export class RotationAssignmentService {
         );
       }
     }
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'rotation_assignment',
+      dto.patternId,
+      `Rotationsmuster-Zuweisung: ${dto.assignments.length} Benutzer zugewiesen`,
+      undefined,
+      { patternId: dto.patternId, assignmentCount: dto.assignments.length },
+    );
 
     return await this.getPatternAssignments(dto.patternId, tenantId);
   }

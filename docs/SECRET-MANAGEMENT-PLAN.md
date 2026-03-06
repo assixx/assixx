@@ -526,7 +526,7 @@ All information from official sources only:
 
 ---
 
-**Author:** Claude Code
+**Author:** Assixx
 **Reviewed:** Pending
 **Next Review:** Q2 2026
 

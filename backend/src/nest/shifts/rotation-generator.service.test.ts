@@ -9,6 +9,7 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { GenerateRotationFromConfigDto } from './dto/rotation-config.dto.js';
 import { RotationGeneratorService } from './rotation-generator.service.js';
@@ -117,6 +118,13 @@ function setupConfigDbMock(
 // Tests
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('RotationGeneratorService', () => {
   let service: RotationGeneratorService;
   let mockDb: ReturnType<typeof createMockDb>;
@@ -127,6 +135,7 @@ describe('RotationGeneratorService', () => {
     mockDb = createMockDb();
     service = new RotationGeneratorService(
       mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
     );
   });
 
@@ -154,6 +163,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         expect(result.shifts.length).toBeGreaterThan(0);
@@ -172,6 +182,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-06',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -192,6 +203,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-08',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -218,6 +230,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         expect(result.shifts.every((s) => s.shiftType === 'N')).toBe(true);
@@ -237,6 +250,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-04',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -258,6 +272,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         const user10 = result.shifts.filter((s) => s.userId === 10);
@@ -277,6 +292,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-02',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -305,6 +321,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         const week0 = result.shifts.filter((s) => s.date < '2026-02-09');
@@ -330,6 +347,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         const week0 = result.shifts.filter((s) => s.date < '2026-02-09');
@@ -350,6 +368,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-22',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -376,6 +395,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         const week3 = result.shifts.filter((s) => s.date >= '2026-02-23');
@@ -400,6 +420,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         expect(result.shifts.every((s) => s.shiftType === 'S')).toBe(true);
@@ -422,6 +443,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-15',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -448,6 +470,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         expect(result.shifts.every((s) => s.shiftType === 'N')).toBe(true);
@@ -471,6 +494,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-03',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -497,6 +521,7 @@ describe('RotationGeneratorService', () => {
             preview: true,
           },
           1,
+          1,
         );
 
         const dates = result.shifts.map((s) => s.date);
@@ -519,6 +544,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-08',
             preview: true,
           },
+          1,
           1,
         );
 
@@ -551,6 +577,7 @@ describe('RotationGeneratorService', () => {
             preview: false,
           },
           1,
+          1,
         );
 
         expect(result.shifts).toHaveLength(2);
@@ -577,6 +604,7 @@ describe('RotationGeneratorService', () => {
             preview: false,
           },
           1,
+          1,
         );
 
         // 6 calls: assignments, BEGIN, SELECT(exists), SELECT, INSERT, COMMIT
@@ -601,6 +629,7 @@ describe('RotationGeneratorService', () => {
               preview: false,
             },
             1,
+            1,
           ),
         ).rejects.toThrow('DB write error');
 
@@ -620,6 +649,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-03',
             preview: false,
           },
+          1,
           1,
         );
 
@@ -643,6 +673,7 @@ describe('RotationGeneratorService', () => {
             endDate: '2026-02-02',
             preview: false,
           },
+          1,
           1,
         );
 

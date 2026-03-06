@@ -2,9 +2,9 @@ name: Code Quality Checks
 
 on:
   push:
-    branches: [main, main]
+    branches: [main]
   pull_request:
-    branches: [main, main]
+    branches: [main]
 
 permissions:
   contents: read
@@ -22,12 +22,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.29.3
+          version: 10.30.3
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "24.13.1"
+          node-version: "24.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -60,12 +60,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.29.3
+          version: 10.30.3
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "24.13.1"
+          node-version: "24.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -95,12 +95,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.29.3
+          version: 10.30.3
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "24.13.1"
+          node-version: "24.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -112,9 +112,18 @@ jobs:
       - name: Run Unit Tests with Coverage
         run: pnpm vitest run --project unit --project frontend-unit --coverage
 
-      - name: Upload Coverage Report
+      - name: Upload Coverage to Codecov
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: backend
+          fail_ci_if_error: false
+
+      - name: Upload Coverage Report (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage/

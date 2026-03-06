@@ -27,7 +27,7 @@ const STORAGE_KEYS = {
   ACTIVE_ROLE: 'activeRole',
 } as const;
 
-export type { UserRole };
+export type { UserRole } from '@assixx/shared';
 
 // =============================================================================
 // SSR SAFETY HELPER
@@ -72,10 +72,8 @@ export function getRefreshToken(): string | null {
  *
  * NOTE: Only stores accessToken. The refreshToken is now stored as an HttpOnly cookie
  * by the backend - it cannot and should not be stored via JavaScript.
- *
- * @deprecated _refreshToken parameter is ignored. Refresh token is set as HttpOnly cookie by backend.
  */
-export function setAuthToken(token: string, _refreshToken?: string): void {
+export function setAuthToken(token: string): void {
   if (!isBrowser()) return;
   // Primary: accessToken
   localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);

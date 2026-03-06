@@ -28,7 +28,7 @@ export const UpdateShiftPlanSchema = z.object({
   departmentId: z.number().int().positive().optional(),
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
-  machineId: z.number().int().positive().optional(),
+  assetId: z.number().int().positive().optional(),
   name: z
     .string()
     .trim()
@@ -39,6 +39,7 @@ export const UpdateShiftPlanSchema = z.object({
     .trim()
     .max(2000, 'Notes cannot exceed 2000 characters')
     .optional(),
+  isTpmMode: z.boolean().optional(),
   shifts: z.array(ShiftPlanUpdateItemSchema).optional(),
 });
 

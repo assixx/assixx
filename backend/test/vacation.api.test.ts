@@ -15,6 +15,7 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  createDepartmentAndTeam,
   loginApitest,
 } from './helpers.js';
 
@@ -23,14 +24,25 @@ let auth: AuthState;
 /** IDs of resources created during tests, used for cleanup and chaining. */
 let holidayId: string | undefined;
 let blackoutId: string | undefined;
-let machineId: number | undefined;
+let assetId: number | undefined;
 let staffingRuleId: string | undefined;
 let requestId: string | undefined;
+
+/** Department + team created for this suite (self-sufficient). */
+let ownDepartmentId: number | undefined;
+let ownTeamId: number | undefined;
 
 const VACATION_URL = `${BASE_URL}/vacation`;
 
 beforeAll(async () => {
   auth = await loginApitest();
+
+  // Create own department + team (vacation requires team membership)
+  const { departmentId, teamId } = await createDepartmentAndTeam(
+    auth.authToken,
+  );
+  ownDepartmentId = departmentId;
+  ownTeamId = teamId;
 });
 
 // ── seq: 0 — Auth: Unauthenticated ──────────────────────────────────────────
@@ -240,39 +252,39 @@ describe('Vacation: Delete Blackout', () => {
   });
 });
 
-// ── seq: 9 — Setup: Create Machine (for staffing rules) ────────────────────
+// ── seq: 9 — Setup: Create Asset (for staffing rules) ────────────────────
 
-describe('Vacation: Setup Machine for Staffing Rules', () => {
-  it('should create or find a machine', async () => {
-    // Try to create a machine
-    const createRes = await fetch(`${BASE_URL}/machines`, {
+describe('Vacation: Setup Asset for Staffing Rules', () => {
+  it('should create or find a asset', async () => {
+    // Try to create a asset
+    const createRes = await fetch(`${BASE_URL}/assets`, {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        name: `Vacation SR Machine ${Date.now()}`,
+        name: `Vacation SR Asset ${Date.now()}`,
       }),
     });
     const createBody = (await createRes.json()) as JsonBody;
 
     if (createRes.status === 201 && createBody.data?.id) {
-      machineId = createBody.data.id as number;
+      assetId = createBody.data.id as number;
       // eslint-disable-next-line vitest/no-conditional-expect -- Integration: create vs fallback
       expect(createRes.status).toBe(201);
       return;
     }
 
-    // Fallback: fetch list (machines returns flat array, not paginated)
-    const listRes = await fetch(`${BASE_URL}/machines`, {
+    // Fallback: fetch list (assets returns flat array, not paginated)
+    const listRes = await fetch(`${BASE_URL}/assets`, {
       headers: authOnly(auth.authToken),
     });
     const listBody = (await listRes.json()) as JsonBody;
-    const machines = listBody.data as Array<{ id: number }>;
+    const assets = listBody.data as Array<{ id: number }>;
 
-    if (Array.isArray(machines) && machines.length > 0) {
-      machineId = machines[0]!.id;
+    if (Array.isArray(assets) && assets.length > 0) {
+      assetId = assets[0]!.id;
     }
 
-    expect(machineId).toBeDefined();
+    expect(assetId).toBeDefined();
   });
 });
 
@@ -287,7 +299,7 @@ describe('Vacation: Create Staffing Rule', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        machineId: machineId,
+        assetId: assetId,
         minStaffCount: 2,
       }),
     });
@@ -372,6 +384,23 @@ describe('Vacation: Get My Balance', () => {
   });
 });
 
+// ── seq: 13b — Setup: Ensure user is in a team (vacation requires team membership)
+
+describe('Vacation: Setup Team Assignment', () => {
+  it('should ensure the user belongs to a team', async () => {
+    expect(ownTeamId).toBeDefined();
+
+    // Add current user to team (ignore 409 if already a member)
+    const addRes = await fetch(`${BASE_URL}/teams/${ownTeamId}/members`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ userId: auth.userId }),
+    });
+
+    expect([201, 409]).toContain(addRes.status);
+  });
+});
+
 // ── seq: 14 — Requests: POST create (root → auto-approved) ─────────────────
 
 describe('Vacation: Create Request (auto-approved for root)', () => {
@@ -379,8 +408,15 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    // Random offset (30-400 days from now) to avoid overlap with previous runs
-    const randomOffset = 30 + Math.floor(Math.random() * 370);
+    // Stay in CURRENT year (cancel endpoint only allows current-year requests).
+    // Use first third of remaining days to avoid overlap with seq 14b.
+    const now = new Date();
+    const yearEnd = new Date(now.getFullYear(), 11, 31);
+    const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
+    const minOffset = Math.max(14, Math.floor(daysLeft * 0.15));
+    const maxOffset = Math.floor(daysLeft * 0.45);
+    const randomOffset =
+      minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -393,6 +429,18 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
     }
 
     const fmt = (d: Date): string => d.toISOString().slice(0, 10);
+
+    // Ensure sufficient entitlement (prevents balance exhaustion from previous runs)
+    const targetYear = startDate.getFullYear();
+    await fetch(`${VACATION_URL}/entitlements/${auth.userId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        userId: auth.userId,
+        year: targetYear,
+        totalDays: 365,
+      }),
+    });
 
     res = await fetch(`${VACATION_URL}/requests`, {
       method: 'POST',
@@ -432,8 +480,15 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
   let defaultsRequestId: string | undefined;
 
   beforeAll(async () => {
-    // Random offset (450-800 days from now) to avoid overlap with seq 14
-    const randomOffset = 450 + Math.floor(Math.random() * 350);
+    // Stay in CURRENT year (cancel endpoint only allows current-year requests).
+    // Use last third of remaining days to avoid overlap with seq 14.
+    const now = new Date();
+    const yearEnd = new Date(now.getFullYear(), 11, 31);
+    const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
+    const minOffset = Math.floor(daysLeft * 0.55);
+    const maxOffset = Math.floor(daysLeft * 0.85);
+    const randomOffset =
+      minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -446,6 +501,18 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
     }
 
     const fmt = (d: Date): string => d.toISOString().slice(0, 10);
+
+    // Ensure sufficient entitlement (prevents balance exhaustion from previous runs)
+    const targetYear = startDate.getFullYear();
+    await fetch(`${VACATION_URL}/entitlements/${auth.userId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        userId: auth.userId,
+        year: targetYear,
+        totalDays: 365,
+      }),
+    });
 
     // Intentionally omit halfDayStart, halfDayEnd, vacationType
     // Zod schema defines defaults: halfDayStart='none', halfDayEnd='none', vacationType='regular'
@@ -628,4 +695,23 @@ describe('Vacation: Notification created after cancel', () => {
     expect(body.data.vacation).toHaveProperty('count');
     expect(typeof body.data.vacation.count).toBe('number');
   });
+});
+
+// ── Cleanup: delete department + team created for this suite ──────────────────
+
+afterAll(async () => {
+  // Delete team first (FK: teams → departments)
+  if (ownTeamId !== undefined) {
+    await fetch(`${BASE_URL}/teams/${ownTeamId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  }
+
+  if (ownDepartmentId !== undefined) {
+    await fetch(`${BASE_URL}/departments/${ownDepartmentId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  }
 });

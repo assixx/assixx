@@ -5,12 +5,16 @@
   Used by availability history pages across all management sections.
 -->
 <script lang="ts">
+  import { createLogger } from '$lib/utils/logger';
+
   import {
     formatDate,
     getStatusClass,
     getStatusIcon,
     getStatusText,
   } from './helpers';
+
+  const log = createLogger('DeleteConfirmationModal');
 
   // =============================================================================
   // TYPES
@@ -82,9 +86,7 @@
       handleClose();
       await onSuccess();
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error('Error deleting entry:', errorMessage);
+      log.error({ err }, 'Error deleting entry');
     } finally {
       submitting = false;
     }

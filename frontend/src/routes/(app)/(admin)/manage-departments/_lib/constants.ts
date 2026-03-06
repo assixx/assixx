@@ -12,7 +12,7 @@ export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 export const DEPENDENCY_LABELS: Record<string, string> = {
   users: 'Benutzer',
   teams: 'Teams',
-  machines: 'Maschinen',
+  assets: 'Anlagen',
   shifts: 'Schichten',
   shiftPlans: 'Schichtpläne',
   kvpSuggestions: 'KVP-Vorschläge',

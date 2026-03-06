@@ -6,35 +6,62 @@
 <script lang="ts">
   import {
     MACHINE_AVAILABILITY_LABELS,
-    type MachineAvailabilityStatus,
-  } from '$lib/machine-availability/constants';
+    type AssetAvailabilityStatus,
+  } from '$lib/asset-availability/constants';
 
-  import { FULL_DAY_NAMES, SHIFT_TYPES, SHIFT_TIMES } from './constants';
-  import { formatDate, getEmployeeDisplayName } from './utils';
+  import {
+    FULL_DAY_NAMES,
+    INTERVAL_COLORS,
+    INTERVAL_LABELS,
+    INTERVAL_SHORT_LABELS,
+    SHIFT_TYPES,
+  } from './constants';
+  import ShiftScheduleLegend from './ShiftScheduleLegend.svelte';
+  import {
+    formatDate,
+    getEmployeeDisplayName,
+    getShiftTimeInfo,
+    getVisibleTpmIntervals,
+  } from './utils';
 
-  import type { Employee, ShiftDetailData } from './types';
-
-  /** Machine availability statuses that should be shown in the legend */
-  const LEGEND_STATUSES: MachineAvailabilityStatus[] = [
-    'maintenance',
-    'repair',
-    'standby',
-    'cleaning',
-    'other',
-  ];
+  import type {
+    Employee,
+    IntervalColorEntry,
+    ShiftDetailData,
+    ShiftTimesMap,
+    TpmMaintenanceEvent,
+  } from './types';
+  import type { Snippet } from 'svelte';
 
   /**
    * Props interface for ShiftScheduleGrid
    */
   interface Props {
+    /** Optional snippet rendered directly after the legend bar */
+    afterLegend?: Snippet | undefined;
     weekDates: Date[];
     weeklyNotes: string;
     canEditShifts: boolean;
     isEditMode: boolean;
     currentPlanId: number | null;
 
-    /** Machine availability: date (YYYY-MM-DD) → status string */
-    machineAvailabilityMap: Map<string, string>;
+    /** Tenant-configurable shift times from API */
+    shiftTimesMap: ShiftTimesMap;
+
+    /** Precomputed shift minute ranges for TPM overlap */
+    shiftMinutes: Record<string, [number, number][]>;
+
+    /** Asset availability: date (YYYY-MM-DD) → status string */
+    assetAvailabilityMap: Map<string, string>;
+
+    /** TPM maintenance events: date (YYYY-MM-DD) → events for that day */
+    tpmEventsMap: Map<string, TpmMaintenanceEvent[]>;
+
+    /** Tenant-configurable TPM interval colors from API */
+    intervalColors: IntervalColorEntry[];
+
+    /** Whether TPM events toggle is active */
+    showTpmEvents: boolean;
 
     // Data access callbacks
     getShiftEmployees: (dateKey: string, shiftType: string) => number[];
@@ -56,12 +83,18 @@
   }
 
   const {
+    afterLegend,
     weekDates,
     weeklyNotes,
     canEditShifts,
     isEditMode,
     currentPlanId,
-    machineAvailabilityMap,
+    shiftTimesMap,
+    shiftMinutes,
+    assetAvailabilityMap,
+    tpmEventsMap,
+    intervalColors,
+    showTpmEvents,
     getShiftEmployees,
     getEmployeeById,
     getShiftDetail,
@@ -73,6 +106,15 @@
     onremoveEmployee,
     onnotesChange,
   }: Props = $props();
+
+  /** Merge tenant DB colors over hardcoded defaults (same pattern as SlotAssistant) */
+  const colorMap = $derived.by((): Record<string, string> => {
+    const base: Record<string, string> = { ...INTERVAL_COLORS };
+    for (const entry of intervalColors) {
+      base[entry.statusKey] = entry.colorHex;
+    }
+    return base;
+  });
 
   // Day names for data attributes
   const dayNames = [
@@ -112,31 +154,24 @@
     return !hasRotationShift(`${dateKey}_${shiftType}_${empId}`);
   }
 
-  /** Get machine availability CSS class for a date (empty string if operational/none) */
-  function getMachineAvailClass(dateKey: string): string {
-    const status = machineAvailabilityMap.get(dateKey);
+  /** Get asset availability CSS class for a date (empty string if operational/none) */
+  function getAssetAvailClass(dateKey: string): string {
+    const status = assetAvailabilityMap.get(dateKey);
     if (status === undefined) return '';
-    return `machine-avail-${status}`;
+    return `asset-avail-${status}`;
   }
 </script>
 
 <div class="week-schedule">
-  <!-- Machine Availability Legend (always visible) -->
-  <div class="machine-avail-legend">
-    <span class="machine-avail-legend-title">
-      <i class="fas fa-cogs"></i> Maschinenverfügbarkeit
-    </span>
-    <div class="machine-avail-legend-items">
-      {#each LEGEND_STATUSES as status (status)}
-        <div class="machine-avail-legend-item">
-          <div class="machine-avail-legend-swatch legend-{status}"></div>
-          <span class="machine-avail-legend-label"
-            >{MACHINE_AVAILABILITY_LABELS[status]}</span
-          >
-        </div>
-      {/each}
-    </div>
-  </div>
+  <!-- Asset Availability Legend + TPM Toggle -->
+  <ShiftScheduleLegend
+    {colorMap}
+    {showTpmEvents}
+  />
+
+  {#if afterLegend}
+    {@render afterLegend()}
+  {/if}
 
   <!-- Schedule Header -->
   <div class="schedule-header">
@@ -153,20 +188,20 @@
 
   <!-- Shift Rows -->
   {#each SHIFT_TYPES as shiftType (shiftType)}
+    {@const shiftInfo = getShiftTimeInfo(shiftType, shiftTimesMap)}
     <div class="shift-row">
       <div class="shift-label shift-type-{shiftType}">
-        {SHIFT_TIMES[shiftType].label}<br />
-        <span class="u-fs-11"
-          >{SHIFT_TIMES[shiftType].start}-{SHIFT_TIMES[shiftType].end}</span
-        >
+        {shiftInfo.label}<br />
+        <span class="u-fs-11">{shiftInfo.start}-{shiftInfo.end}</span>
       </div>
 
       {#each weekDates as date, dayIndex (formatDate(date))}
         {@const dateKey = formatDate(date)}
         {@const employeeIds = getShiftEmployees(dateKey, shiftType)}
-        {@const availStatus = machineAvailabilityMap.get(dateKey)}
+        {@const availStatus = assetAvailabilityMap.get(dateKey)}
         <div
-          class="shift-cell {getMachineAvailClass(dateKey)}"
+          class="shift-cell {getAssetAvailClass(dateKey)}"
+          class:tpm-active={showTpmEvents}
           class:locked={isCellLocked(dateKey, shiftType, employeeIds)}
           data-day={dayNames[dayIndex]}
           data-shift={shiftType}
@@ -180,13 +215,42 @@
           role="gridcell"
           tabindex="0"
         >
-          <!-- Machine availability dot -->
+          <!-- Asset availability dot -->
           {#if availStatus !== undefined}
-            {@const statusKey = availStatus as MachineAvailabilityStatus}
+            {@const statusKey = availStatus as AssetAvailabilityStatus}
             <span
-              class="machine-avail-dot avail-{availStatus}"
+              class="asset-avail-dot avail-{availStatus}"
               title={MACHINE_AVAILABILITY_LABELS[statusKey]}
             ></span>
+          {/if}
+
+          <!-- TPM maintenance badges -->
+          {#if showTpmEvents}
+            {@const tpmEvents = tpmEventsMap.get(dateKey)}
+            {#if tpmEvents !== undefined}
+              {#each tpmEvents as event (event.planUuid)}
+                {@const visibleIntervals = getVisibleTpmIntervals(
+                  event,
+                  shiftType,
+                  shiftMinutes,
+                )}
+                {#if visibleIntervals.length > 0}
+                  <div
+                    class="tpm-badges"
+                    title="{event.planName} — {event.assetName}"
+                  >
+                    {#each visibleIntervals as interval (interval)}
+                      <span
+                        class="tpm-badge"
+                        style="background: {colorMap[interval]}"
+                        title="{INTERVAL_LABELS[interval]} — {event.assetName}"
+                        >{INTERVAL_SHORT_LABELS[interval]}</span
+                      >
+                    {/each}
+                  </div>
+                {/if}
+              {/each}
+            {/if}
           {/if}
 
           <div class="employee-assignment">
@@ -374,6 +438,8 @@ Beispiele:
   }
 
   .shift-cell {
+    display: flex;
+    flex-direction: column;
     position: relative;
     backdrop-filter: blur(5px);
     cursor: pointer;
@@ -383,6 +449,10 @@ Beispiele:
     background: var(--glass-bg);
 
     min-height: 85px;
+  }
+
+  .shift-cell.tpm-active {
+    padding-top: 18px;
   }
 
   .shift-cell:hover {
@@ -427,27 +497,27 @@ Beispiele:
     pointer-events: none;
   }
 
-  .shift-cell.machine-avail-maintenance {
+  .shift-cell.asset-avail-maintenance {
     border-top: 3px solid #ffc107;
   }
 
-  .shift-cell.machine-avail-repair {
+  .shift-cell.asset-avail-repair {
     border-top: 3px solid #dc3545;
   }
 
-  .shift-cell.machine-avail-standby {
+  .shift-cell.asset-avail-standby {
     border-top: 3px solid #3498db;
   }
 
-  .shift-cell.machine-avail-cleaning {
+  .shift-cell.asset-avail-cleaning {
     border-top: 3px solid #20c997;
   }
 
-  .shift-cell.machine-avail-other {
+  .shift-cell.asset-avail-other {
     border-top: 3px solid #6f42c1;
   }
 
-  .machine-avail-dot {
+  .asset-avail-dot {
     position: absolute;
     top: 3px;
     right: 3px;
@@ -456,111 +526,46 @@ Beispiele:
     border-radius: 50%;
   }
 
-  .machine-avail-legend {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-2);
-    backdrop-filter: blur(10px);
-
-    margin-bottom: var(--spacing-4);
-    border: var(--glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg);
-    padding: var(--spacing-3) var(--spacing-4);
-  }
-
-  .machine-avail-legend-title {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-
-    color: var(--text-secondary);
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-  }
-
-  .machine-avail-legend-title i {
-    color: var(--text-tertiary);
-    font-size: 16px;
-  }
-
-  .machine-avail-legend-items {
+  /* TPM Badges — absolute top-left, out of flow */
+  .tpm-badges {
     display: flex;
     flex-wrap: wrap;
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    z-index: 1;
+    gap: 2px;
+  }
+
+  .tpm-badge {
+    display: inline-flex;
     align-items: center;
-    gap: var(--spacing-4);
-  }
+    justify-content: center;
+    padding: 1px 3px;
+    border-radius: 2px;
 
-  .machine-avail-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    font-size: 14px;
-  }
-
-  .machine-avail-legend-swatch {
-    border-radius: 50%;
-    width: 14px;
-    height: 14px;
-
-    box-shadow: 0 0 4px rgb(0 0 0 / 20%);
-  }
-
-  .machine-avail-legend-swatch.legend-maintenance {
-    background: #ffc107;
-  }
-
-  .machine-avail-legend-swatch.legend-repair {
-    background: #dc3545;
-  }
-
-  .machine-avail-legend-swatch.legend-standby {
-    background: #3498db;
-  }
-
-  .machine-avail-legend-swatch.legend-cleaning {
-    background: #20c997;
-  }
-
-  .machine-avail-legend-swatch.legend-other {
-    background: #6f42c1;
-  }
-
-  .machine-avail-legend-label {
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .shift-cell.week-2-cell {
-    backdrop-filter: blur(5px);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg);
-    min-height: 85px;
+    min-width: 14px;
+    color: #000;
+    font-weight: 700;
+    font-size: 0.65rem;
+    line-height: 1;
   }
 
   .employee-assignment {
     display: flex;
+    flex: 1;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: var(--spacing-1);
-
-    height: 100%;
+    padding: 2px;
 
     text-align: center;
   }
 
   .employee-name {
-    padding: 5px;
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .empty-slot {
@@ -630,15 +635,15 @@ Beispiele:
   .employee-card {
     display: flex;
     position: relative;
-    flex-direction: column;
+    align-items: center;
     gap: 2px;
 
-    margin: 2px 0;
+    margin: 1px 0;
     border: 1px solid rgb(33 150 243 / 30%);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
 
     background: rgb(33 150 243 / 15%);
-    padding: 6px 8px;
+    padding: 3px 6px;
   }
 
   .employee-card:hover {
@@ -647,10 +652,10 @@ Beispiele:
   }
 
   .employee-card .employee-name {
-    padding: 5px;
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
+    line-height: 1.3;
   }
 
   .employee-card .employee-position {
@@ -663,22 +668,22 @@ Beispiele:
     display: flex;
 
     position: absolute;
-    top: -10px;
-    right: -3px;
+    top: -6px;
+    right: -4px;
     z-index: 10;
     justify-content: center;
     align-items: center;
 
     opacity: 0%;
     cursor: pointer;
-    border: 2px solid rgb(244 67 54);
-    border-radius: 50px;
+    border: 1.5px solid rgb(244 67 54);
+    border-radius: 50%;
     background: rgb(244 67 54 / 10%);
     padding: 0;
     pointer-events: auto;
 
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
 
     color: rgb(244 67 54);
   }
@@ -694,7 +699,7 @@ Beispiele:
   }
 
   .employee-card .remove-btn i {
-    font-size: 10px;
+    font-size: 7px;
   }
 
   .shift-name {

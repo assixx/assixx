@@ -106,7 +106,7 @@ export type SortOption = 'newest' | 'oldest' | 'name' | 'size';
 /**
  * User role types
  */
-export type UserRole = 'root' | 'admin' | 'employee';
+export type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
 /**
  * Folder item for sidebar display

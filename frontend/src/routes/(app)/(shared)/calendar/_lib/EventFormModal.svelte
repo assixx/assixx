@@ -348,7 +348,7 @@
           <select
             id="event-area-select"
             multiple
-            class="form-field__control min-h-[100px]"
+            class="multi-select multi-select--compact"
             value={formData.areaIds}
             disabled={isCompanyWide}
             onchange={handleAreaChange}
@@ -387,7 +387,7 @@
           <select
             id="event-department-select"
             multiple
-            class="form-field__control min-h-[100px]"
+            class="multi-select multi-select--compact"
             value={formData.departmentIds}
             disabled={isCompanyWide}
             onchange={handleDepartmentChange}
@@ -426,7 +426,7 @@
           <select
             id="event-team-select"
             multiple
-            class="form-field__control min-h-[100px]"
+            class="multi-select multi-select--compact"
             bind:value={formData.teamIds}
             disabled={isCompanyWide}
           >

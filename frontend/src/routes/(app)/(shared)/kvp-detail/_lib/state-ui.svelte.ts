@@ -2,7 +2,7 @@
 // KVP-DETAIL - UI STATE MODULE
 // =============================================================================
 
-import type { OrgLevel, Attachment } from './types';
+import type { OrgLevel } from './types';
 
 /** Creates loading-related state */
 function createLoadingState() {
@@ -43,10 +43,8 @@ function createLoadingState() {
 function createModalState() {
   let showShareModal = $state(false);
   let showRejectionModal = $state(false);
-  let showPreviewModal = $state(false);
   let selectedShareLevel = $state<OrgLevel | null>(null);
   let selectedOrgId = $state<number | null>(null);
-  let previewAttachment = $state<Attachment | null>(null);
 
   return {
     get showShareModal() {
@@ -55,17 +53,11 @@ function createModalState() {
     get showRejectionModal() {
       return showRejectionModal;
     },
-    get showPreviewModal() {
-      return showPreviewModal;
-    },
     get selectedShareLevel() {
       return selectedShareLevel;
     },
     get selectedOrgId() {
       return selectedOrgId;
-    },
-    get previewAttachment() {
-      return previewAttachment;
     },
     setShowShareModal: (val: boolean) => {
       showShareModal = val;
@@ -73,17 +65,11 @@ function createModalState() {
     setShowRejectionModal: (val: boolean) => {
       showRejectionModal = val;
     },
-    setShowPreviewModal: (val: boolean) => {
-      showPreviewModal = val;
-    },
     setSelectedShareLevel: (level: OrgLevel | null) => {
       selectedShareLevel = level;
     },
     setSelectedOrgId: (id: number | null) => {
       selectedOrgId = id;
-    },
-    setPreviewAttachment: (att: Attachment | null) => {
-      previewAttachment = att;
     },
   };
 }
@@ -137,24 +123,16 @@ export function createUIState() {
     get showRejectionModal() {
       return modal.showRejectionModal;
     },
-    get showPreviewModal() {
-      return modal.showPreviewModal;
-    },
     get selectedShareLevel() {
       return modal.selectedShareLevel;
     },
     get selectedOrgId() {
       return modal.selectedOrgId;
     },
-    get previewAttachment() {
-      return modal.previewAttachment;
-    },
     setShowShareModal: modal.setShowShareModal,
     setShowRejectionModal: modal.setShowRejectionModal,
-    setShowPreviewModal: modal.setShowPreviewModal,
     setSelectedShareLevel: modal.setSelectedShareLevel,
     setSelectedOrgId: modal.setSelectedOrgId,
-    setPreviewAttachment: modal.setPreviewAttachment,
 
     // Dropdown state - explicit getters preserve reactivity
     get activeDropdown() {

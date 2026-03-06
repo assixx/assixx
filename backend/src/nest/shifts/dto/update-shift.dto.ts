@@ -29,7 +29,7 @@ export const UpdateShiftSchema = z.object({
   templateId: z.number().int().positive().optional(),
   areaId: z.number().int().positive().optional(),
   teamId: z.number().int().positive().optional(),
-  machineId: z.number().int().positive().optional(),
+  assetId: z.number().int().positive().optional(),
   title: z
     .string()
     .trim()

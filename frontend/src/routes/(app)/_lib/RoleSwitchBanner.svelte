@@ -6,17 +6,21 @@
 <script lang="ts">
   interface Props {
     isVisible: boolean;
-    userRole: 'root' | 'admin' | 'employee';
-    activeRole: 'root' | 'admin' | 'employee';
+    userRole: 'root' | 'admin' | 'employee' | 'dummy';
+    activeRole: 'root' | 'admin' | 'employee' | 'dummy';
     onDismiss: () => void;
   }
 
   const { isVisible, userRole, activeRole, onDismiss }: Props = $props();
 
-  const roleDisplayNames: Record<'root' | 'admin' | 'employee', string> = {
+  const roleDisplayNames: Record<
+    'root' | 'admin' | 'employee' | 'dummy',
+    string
+  > = {
     root: 'Root',
     admin: 'Administrator',
     employee: 'Mitarbeiter',
+    dummy: 'Dummy',
   };
 </script>
 

@@ -61,6 +61,18 @@ export interface CalendarShiftResponse {
 }
 
 /**
+ * Assignment count per employee (week, month, year)
+ */
+export interface AssignmentCountResponse {
+  employeeId: number;
+  firstName: string;
+  lastName: string;
+  weekCount: number;
+  monthCount: number;
+  yearCount: number;
+}
+
+/**
  * Favorite response
  */
 export interface FavoriteResponse {
@@ -70,8 +82,8 @@ export interface FavoriteResponse {
   areaName: string;
   departmentId: number;
   departmentName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   teamId: number;
   teamName: string;
   [key: string]: unknown;
@@ -108,7 +120,7 @@ export interface ShiftPlanFilters {
   areaId?: number | undefined;
   departmentId?: number | undefined;
   teamId?: number | undefined;
-  machineId?: number | undefined;
+  assetId?: number | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
 }
@@ -164,7 +176,7 @@ export interface DbShiftRow {
   area_id: number | null;
   department_id: number;
   team_id: number | null;
-  machine_id: number | null;
+  asset_id: number | null;
   created_by: number | null;
   created_at: Date;
   updated_at: Date;
@@ -198,8 +210,8 @@ export interface DbFavoriteRow {
   area_name: string;
   department_id: number;
   department_name: string;
-  machine_id: number;
-  machine_name: string;
+  asset_id: number;
+  asset_name: string;
   team_id: number;
   team_name: string;
   created_at: Date;
@@ -211,12 +223,13 @@ export interface DbShiftPlanRow {
   area_id: number | null;
   department_id: number;
   team_id: number | null;
-  machine_id: number | null;
+  asset_id: number | null;
   name: string | null;
   start_date: string;
   end_date: string;
   shift_notes: string | null;
   custom_rotation_pattern: string | null;
+  is_tpm_mode: boolean;
   created_by: number;
   created_at: Date;
   updated_at: Date;

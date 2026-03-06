@@ -85,7 +85,7 @@ type ActivityEntityType =
   | 'blackboard'
   | 'survey'
   | 'document'
-  | 'machine'
+  | 'asset'
   | 'notification'
   | 'auth'
   | 'tenant'

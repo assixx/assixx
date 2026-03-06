@@ -19,7 +19,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Headers,
   HttpCode,
@@ -104,6 +103,14 @@ interface NotificationEventData {
     requesterName?: string | undefined;
     approverName?: string | undefined;
   };
+  workOrder?: {
+    uuid: string;
+    title: string;
+    status: string;
+    priority: string;
+    assigneeUserIds: number[];
+  };
+  changedByUserId?: number;
 }
 
 /**
@@ -127,6 +134,15 @@ const SSE_EVENTS = {
   VACATION_REQUEST_RESPONDED: 'vacation.request.responded',
   VACATION_REQUEST_WITHDRAWN: 'vacation.request.withdrawn',
   VACATION_REQUEST_CANCELLED: 'vacation.request.cancelled',
+  TPM_MAINTENANCE_DUE: 'tpm.maintenance.due',
+  TPM_MAINTENANCE_OVERDUE: 'tpm.maintenance.overdue',
+  TPM_MAINTENANCE_COMPLETED: 'tpm.maintenance.completed',
+  TPM_APPROVAL_REQUIRED: 'tpm.approval.required',
+  TPM_APPROVAL_RESULT: 'tpm.approval.result',
+  WORKORDER_ASSIGNED: 'workorder.assigned',
+  WORKORDER_STATUS_CHANGED: 'workorder.status.changed',
+  WORKORDER_DUE_SOON: 'workorder.due.soon',
+  WORKORDER_VERIFIED: 'workorder.verified',
 } as const;
 
 /**
@@ -282,6 +298,126 @@ function registerVacationHandlers(
 }
 
 /**
+ * Create work order SSE handler — targeted to assignees + admins.
+ * Employees only see events for work orders they are assigned to.
+ * Admins/root see all work orders in their tenant.
+ */
+function createWorkOrderHandler(
+  messageType: string,
+  userId: number,
+  role: string,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): (eventData: NotificationEventData) => void {
+  return (eventData: NotificationEventData): void => {
+    const { workOrder } = eventData;
+    if (eventData.tenantId !== tenantId || workOrder === undefined) return;
+
+    // Employees only see their own assignments
+    const isAdmin = role === 'admin' || role === 'root';
+    if (!isAdmin && !workOrder.assigneeUserIds.includes(userId)) return;
+
+    eventSubject.next({
+      data: {
+        type: messageType,
+        workOrder: {
+          uuid: workOrder.uuid,
+          title: workOrder.title,
+          status: workOrder.status,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+}
+
+/** Register work order SSE event handlers — targeted to assignees + admins */
+function registerWorkOrderHandlers(
+  handlers: EventHandler[],
+  userId: number,
+  role: string,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): void {
+  const woEvents = [
+    { event: SSE_EVENTS.WORKORDER_ASSIGNED, type: 'WORK_ORDER_ASSIGNED' },
+    {
+      event: SSE_EVENTS.WORKORDER_STATUS_CHANGED,
+      type: 'WORK_ORDER_STATUS_CHANGED',
+    },
+    { event: SSE_EVENTS.WORKORDER_DUE_SOON, type: 'WORK_ORDER_DUE_SOON' },
+    { event: SSE_EVENTS.WORKORDER_VERIFIED, type: 'WORK_ORDER_VERIFIED' },
+  ] as const;
+
+  for (const { event, type } of woEvents) {
+    registerHandler(
+      handlers,
+      event,
+      createWorkOrderHandler(type, userId, role, tenantId, eventSubject),
+    );
+  }
+}
+
+/** Register TPM-related SSE event handlers — broadcast to all users in tenant */
+function registerTpmHandlers(
+  handlers: EventHandler[],
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): void {
+  const tpmEvents = [
+    { event: SSE_EVENTS.TPM_MAINTENANCE_DUE, type: 'TPM_MAINTENANCE_DUE' },
+    {
+      event: SSE_EVENTS.TPM_MAINTENANCE_OVERDUE,
+      type: 'TPM_MAINTENANCE_OVERDUE',
+    },
+    {
+      event: SSE_EVENTS.TPM_MAINTENANCE_COMPLETED,
+      type: 'TPM_MAINTENANCE_COMPLETED',
+    },
+    {
+      event: SSE_EVENTS.TPM_APPROVAL_REQUIRED,
+      type: 'TPM_APPROVAL_REQUIRED',
+    },
+    { event: SSE_EVENTS.TPM_APPROVAL_RESULT, type: 'TPM_APPROVAL_RESULT' },
+  ] as const;
+
+  for (const { event, type } of tpmEvents) {
+    registerHandler(
+      handlers,
+      event,
+      createSSEHandler(type, 'card', tenantId, eventSubject),
+    );
+  }
+}
+
+/** Register survey SSE handlers (split by role) */
+function registerSurveyHandlers(
+  handlers: EventHandler[],
+  role: string,
+  make: (type: string, key: string) => (e: NotificationEventData) => void,
+): void {
+  if (role === 'employee') {
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_CREATED,
+      make('NEW_SURVEY', 'survey'),
+    );
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_UPDATED,
+      make('SURVEY_UPDATED', 'survey'),
+    );
+  }
+  if (role === 'admin' || role === 'root') {
+    registerHandler(
+      handlers,
+      SSE_EVENTS.SURVEY_CREATED,
+      make('NEW_SURVEY_CREATED', 'survey'),
+    );
+  }
+}
+
+/**
  * Register SSE handlers based on user role AND feature permissions (ADR-020).
  * Only registers handlers for features the user has read access to.
  * Root and admin with fullAccess: readableFeatures is null → all features.
@@ -301,6 +437,7 @@ function registerSSEHandlers(
     createSSEHandler(type, key, tenantId, eventSubject);
   const canAccess = (code: string): boolean =>
     readableFeatures === null || readableFeatures.has(code);
+  const isAdmin = role === 'admin' || role === 'root';
 
   if (canAccess('documents')) {
     registerHandler(
@@ -316,30 +453,20 @@ function registerSSEHandlers(
       createMessageHandler(userId, tenantId, eventSubject),
     );
   }
-  if (role === 'employee' && canAccess('surveys')) {
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_CREATED,
-      make('NEW_SURVEY', 'survey'),
-    );
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_UPDATED,
-      make('SURVEY_UPDATED', 'survey'),
-    );
+  if (canAccess('surveys')) {
+    registerSurveyHandlers(handlers, role, make);
   }
   if (canAccess('vacation')) {
     registerVacationHandlers(handlers, userId, tenantId, eventSubject);
   }
-  if ((role === 'admin' || role === 'root') && canAccess('kvp')) {
+  if (isAdmin && canAccess('kvp')) {
     registerHandler(handlers, SSE_EVENTS.KVP_SUBMITTED, make('NEW_KVP', 'kvp'));
   }
-  if ((role === 'admin' || role === 'root') && canAccess('surveys')) {
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_CREATED,
-      make('NEW_SURVEY_CREATED', 'survey'),
-    );
+  if (canAccess('tpm')) {
+    registerTpmHandlers(handlers, tenantId, eventSubject);
+  }
+  if (canAccess('work_orders')) {
+    registerWorkOrderHandlers(handlers, userId, role, tenantId, eventSubject);
   }
 
   return handlers;
@@ -480,7 +607,14 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<{ marked: number; message: string }> {
     // Validate type
-    const validTypes = ['survey', 'document', 'kvp', 'vacation'];
+    const validTypes = [
+      'survey',
+      'document',
+      'kvp',
+      'vacation',
+      'tpm',
+      'work_orders',
+    ];
     if (!validTypes.includes(type)) {
       throw new BadRequestException(
         `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
@@ -488,7 +622,13 @@ export class NotificationsController {
     }
 
     const marked = await this.notificationsService.markFeatureTypeAsRead(
-      type as 'survey' | 'document' | 'kvp' | 'vacation',
+      type as
+        | 'survey'
+        | 'document'
+        | 'kvp'
+        | 'vacation'
+        | 'tpm'
+        | 'work_orders',
       user.id,
       tenantId,
     );
@@ -496,6 +636,38 @@ export class NotificationsController {
     return {
       marked,
       message: `${marked} ${type} notifications marked as read`,
+    };
+  }
+
+  /**
+   * POST /notifications/mark-read/:type/:entityUuid
+   * Mark notifications for a specific entity as read (e.g., one work order)
+   */
+  @Post('mark-read/:type/:entityUuid')
+  @HttpCode(HttpStatus.OK)
+  async markFeatureEntityAsRead(
+    @Param('type') type: string,
+    @Param('entityUuid') entityUuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ marked: number; message: string }> {
+    const validTypes = ['work_orders'];
+    if (!validTypes.includes(type)) {
+      throw new BadRequestException(
+        `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
+      );
+    }
+
+    const marked = await this.notificationsService.markFeatureEntityAsRead(
+      type as 'work_orders',
+      entityUuid,
+      user.id,
+      tenantId,
+    );
+
+    return {
+      marked,
+      message: `${marked} ${type} notifications for entity ${entityUuid} marked as read`,
     };
   }
 
@@ -676,47 +848,21 @@ export class NotificationsController {
    * Get SSE connection statistics
    */
   @Get('stream/stats')
-  getStreamStats(@CurrentUser() user: NestAuthUser): {
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  getStreamStats(): {
     activeEvents: string[];
     listenerCounts: Record<string, number>;
     timestamp: string;
   } {
-    // Check admin permission
-    if (user.role !== 'admin' && user.role !== 'root') {
-      throw new ForbiddenException('Only admins can view SSE statistics');
+    const listenerCounts: Record<string, number> = {};
+    for (const eventName of Object.values(SSE_EVENTS)) {
+      listenerCounts[eventName] = eventBus.getListenerCount(eventName);
     }
 
     return {
       activeEvents: eventBus.getActiveEvents(),
-      listenerCounts: {
-        [SSE_EVENTS.SURVEY_CREATED]: eventBus.getListenerCount(
-          SSE_EVENTS.SURVEY_CREATED,
-        ),
-        [SSE_EVENTS.SURVEY_UPDATED]: eventBus.getListenerCount(
-          SSE_EVENTS.SURVEY_UPDATED,
-        ),
-        [SSE_EVENTS.DOCUMENT_UPLOADED]: eventBus.getListenerCount(
-          SSE_EVENTS.DOCUMENT_UPLOADED,
-        ),
-        [SSE_EVENTS.KVP_SUBMITTED]: eventBus.getListenerCount(
-          SSE_EVENTS.KVP_SUBMITTED,
-        ),
-        [SSE_EVENTS.MESSAGE_CREATED]: eventBus.getListenerCount(
-          SSE_EVENTS.MESSAGE_CREATED,
-        ),
-        [SSE_EVENTS.VACATION_REQUEST_CREATED]: eventBus.getListenerCount(
-          SSE_EVENTS.VACATION_REQUEST_CREATED,
-        ),
-        [SSE_EVENTS.VACATION_REQUEST_RESPONDED]: eventBus.getListenerCount(
-          SSE_EVENTS.VACATION_REQUEST_RESPONDED,
-        ),
-        [SSE_EVENTS.VACATION_REQUEST_WITHDRAWN]: eventBus.getListenerCount(
-          SSE_EVENTS.VACATION_REQUEST_WITHDRAWN,
-        ),
-        [SSE_EVENTS.VACATION_REQUEST_CANCELLED]: eventBus.getListenerCount(
-          SSE_EVENTS.VACATION_REQUEST_CANCELLED,
-        ),
-      },
+      listenerCounts,
       timestamp: new Date().toISOString(),
     };
   }

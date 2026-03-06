@@ -30,7 +30,7 @@ export const INFO_BADGE_CLASS = 'badge--info';
  */
 export const POSITION_OPTIONS: readonly string[] = [
   'Produktionsmitarbeiter',
-  'Maschinenbediener',
+  'Anlagenbediener',
   'Lagerarbeiter',
   'Qualitätsprüfer',
   'Schichtleiter',

@@ -92,15 +92,7 @@
   animation: fade-in 0.2s ease;
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0%;
-  }
-
-  to {
-    opacity: 100%;
-  }
-}
+/* @keyframes fade-in defined in tokens/animations.css */
 
 /* ========== GLASS VARIANT ========== */
 

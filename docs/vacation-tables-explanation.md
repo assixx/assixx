@@ -140,7 +140,7 @@ Zeitraeume, in denen kein Urlaub genommen werden darf. Z.B. "Inventur 15.-20. M�
 
 ---
 
-## 6. `vacation_staffing_rules` — Mindestbesetzung pro Maschine
+## 6. `vacation_staffing_rules` — Mindestbesetzung pro Anlage
 
 Sagt: "CNC-Fraese 1 braucht mindestens 3 Bediener." Wenn jemand Urlaub beantragt und danach nur noch 2 uebrig waeren, zeigt das System dem Lead eine Warnung (critical). Blockiert nicht automatisch — der Lead entscheidet.
 
@@ -148,12 +148,12 @@ Sagt: "CNC-Fraese 1 braucht mindestens 3 Bediener." Wenn jemand Urlaub beantragt
 | ----------------- | ------- | -------------------------------------- |
 | `id`              | UUID    | Primaerschluessel (UUIDv7)             |
 | `tenant_id`       | INTEGER | Welche Firma                           |
-| `machine_id`      | INTEGER | Welche Maschine (FK auf `machines`)    |
+| `asset_id`        | INTEGER | Welche Anlage (FK auf `machines`)      |
 | `min_staff_count` | INTEGER | Mindestanzahl Bediener (muss > 0 sein) |
 | `is_active`       | INTEGER | 0=inaktiv, 1=aktiv, 4=geloescht        |
 | `created_by`      | INTEGER | Wer die Regel erstellt hat             |
 
-**Unique:** Pro Maschine nur eine Regel (`tenant_id + machine_id`).
+**Unique:** Pro Anlage nur eine Regel (`tenant_id + asset_id`).
 
 **Kapazität s-Ampel:**
 
@@ -197,7 +197,7 @@ Mitarbeiter stellt Antrag
 [blackouts] ──→ Urlaubssperre im Zeitraum?
     |
     v
-[staffing_rules] ──→ Mindestbesetzung pro Maschine ok?
+[staffing_rules] ──→ Mindestbesetzung pro Anlage ok?
     |
     v
 [settings] ──→ Vorlaufzeit eingehalten? Max. Tage ok?

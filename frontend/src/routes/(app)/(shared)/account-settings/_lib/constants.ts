@@ -48,6 +48,25 @@ export const MESSAGES = {
   characterCount: (length: number): string => `${length} Zeichen`,
 } as const;
 
+/** Shift time configuration messages */
+export const SHIFT_MESSAGES = {
+  saved: 'Schichtzeiten erfolgreich gespeichert!',
+  saveError: 'Fehler beim Speichern der Schichtzeiten',
+  reset: 'Schichtzeiten auf Standardwerte zurückgesetzt!',
+  resetError: 'Fehler beim Zurücksetzen der Schichtzeiten',
+  loadError: 'Fehler beim Laden der Schichtzeiten',
+} as const;
+
+/** Shift key display info */
+export const SHIFT_KEY_INFO: Record<
+  string,
+  { icon: string; colorClass: string }
+> = {
+  early: { icon: 'fa-sun', colorClass: 'shift-early' },
+  late: { icon: 'fa-cloud-sun', colorClass: 'shift-late' },
+  night: { icon: 'fa-moon', colorClass: 'shift-night' },
+} as const;
+
 /** LocalStorage keys */
 export const STORAGE_KEYS = {
   accessToken: 'accessToken',
