@@ -51,7 +51,6 @@ export interface TpmCard {
   planUuid?: string;
   assetId: number;
   assetName?: string;
-  templateUuid?: string | null;
   cardCode: string;
   cardRole: CardRole;
   intervalType: IntervalType;

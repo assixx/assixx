@@ -99,13 +99,11 @@ export class TpmCardCascadeService {
       `SELECT c.*,
          p.uuid AS plan_uuid,
          m.name AS asset_name,
-         t.uuid AS template_uuid,
          u_created.username AS created_by_name,
          u_completed.username AS last_completed_by_name
        FROM tpm_cards c
        LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
        LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
-       LEFT JOIN tpm_card_templates t ON c.template_id = t.id
        LEFT JOIN users u_created ON c.created_by = u_created.id
        LEFT JOIN users u_completed ON c.last_completed_by = u_completed.id
        WHERE c.asset_id = $1

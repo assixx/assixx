@@ -64,7 +64,6 @@ const TRANSIENT_TABLES = [
   'tpm_card_executions',
   'tpm_time_estimates',
   'tpm_cards',
-  'tpm_card_templates',
   'tpm_maintenance_plans',
 
   // Work Orders: photos → comments → assignees → work_orders (FK CASCADE safe)

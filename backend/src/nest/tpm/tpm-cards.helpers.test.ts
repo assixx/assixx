@@ -20,7 +20,6 @@ function createMinimalRow(
     tenant_id: 1,
     plan_id: 1,
     asset_id: 100,
-    template_id: null,
     card_code: 'B-W-001',
     card_role: 'operator',
     interval_type: 'weekly',

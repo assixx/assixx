@@ -35,7 +35,6 @@ function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
     tenant_id: 10,
     plan_id: 100,
     asset_id: 42,
-    template_id: null,
     card_code: 'BT1',
     card_role: 'operator',
     interval_type: 'weekly',

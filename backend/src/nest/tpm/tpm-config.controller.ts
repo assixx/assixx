@@ -16,10 +16,6 @@
  * - PATCH  /tpm/config/category-colors       — Update single category color
  * - POST   /tpm/config/category-colors/reset — Reset category colors (remove all)
  * - DELETE /tpm/config/category-colors/:categoryKey — Reset single category color
- * - GET    /tpm/config/templates        — List card templates
- * - POST   /tpm/config/templates        — Create template
- * - PATCH  /tpm/config/templates/:uuid  — Update template
- * - DELETE /tpm/config/templates/:uuid  — Delete template
  */
 import {
   BadRequestException,
@@ -44,17 +40,13 @@ import {
   TpmCardStatusSchema,
   TpmIntervalTypeSchema,
 } from './dto/common.dto.js';
-import { CreateTemplateDto } from './dto/create-template.dto.js';
 import { UpdateCategoryColorConfigDto } from './dto/update-category-color-config.dto.js';
 import { UpdateColorConfigDto } from './dto/update-color-config.dto.js';
 import { UpdateEscalationConfigDto } from './dto/update-escalation-config.dto.js';
 import { UpdateIntervalColorConfigDto } from './dto/update-interval-color-config.dto.js';
-import { UpdateTemplateDto } from './dto/update-template.dto.js';
 import { TpmColorConfigService } from './tpm-color-config.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
-import { TpmTemplatesService } from './tpm-templates.service.js';
 import type {
-  TpmCardTemplate,
   TpmCategoryColorConfigEntry,
   TpmColorConfigEntry,
   TpmEscalationConfig,
@@ -71,7 +63,6 @@ export class TpmConfigController {
   constructor(
     private readonly escalationService: TpmEscalationService,
     private readonly colorConfigService: TpmColorConfigService,
-    private readonly templatesService: TpmTemplatesService,
   ) {}
 
   // ============================================================================
@@ -269,59 +260,5 @@ export class TpmConfigController {
       user.id,
       parsed.data,
     );
-  }
-
-  // ============================================================================
-  // TEMPLATES
-  // ============================================================================
-
-  /** GET /tpm/config/templates — List all card templates */
-  @Get('templates')
-  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
-  async listTemplates(
-    @TenantId() tenantId: number,
-  ): Promise<TpmCardTemplate[]> {
-    return await this.templatesService.listTemplates(tenantId);
-  }
-
-  /** POST /tpm/config/templates — Create a card template */
-  @Post('templates')
-  @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
-  async createTemplate(
-    @Body() dto: CreateTemplateDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): Promise<TpmCardTemplate> {
-    return await this.templatesService.createTemplate(tenantId, user.id, dto);
-  }
-
-  /** PATCH /tpm/config/templates/:uuid — Update a card template */
-  @Patch('templates/:uuid')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
-  async updateTemplate(
-    @Param('uuid') uuid: string,
-    @Body() dto: UpdateTemplateDto,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): Promise<TpmCardTemplate> {
-    return await this.templatesService.updateTemplate(
-      tenantId,
-      user.id,
-      uuid,
-      dto,
-    );
-  }
-
-  /** DELETE /tpm/config/templates/:uuid — Soft-delete a card template */
-  @Delete('templates/:uuid')
-  @RequirePermission(FEAT, MOD_CARDS, 'canDelete')
-  async deleteTemplate(
-    @Param('uuid') uuid: string,
-    @CurrentUser() user: NestAuthUser,
-    @TenantId() tenantId: number,
-  ): Promise<{ message: string }> {
-    await this.templatesService.deleteTemplate(tenantId, user.id, uuid);
-    return { message: 'Kartenvorlage gelöscht' };
   }
 }

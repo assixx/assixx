@@ -18,10 +18,6 @@ export {
   CreateMaintenancePlanSchema,
 } from './create-maintenance-plan.dto.js';
 export {
-  CreateTemplateDto,
-  CreateTemplateSchema,
-} from './create-template.dto.js';
-export {
   CreateTimeEstimateDto,
   CreateTimeEstimateSchema,
 } from './create-time-estimate.dto.js';
@@ -46,11 +42,6 @@ export {
   UpdateMaintenancePlanDto,
   UpdateMaintenancePlanSchema,
 } from './update-maintenance-plan.dto.js';
-export {
-  UpdateTemplateDto,
-  UpdateTemplateSchema,
-} from './update-template.dto.js';
-
 // Query DTOs (controller-specific, 1 class per file)
 export {
   AvailableSlotsQueryDto,

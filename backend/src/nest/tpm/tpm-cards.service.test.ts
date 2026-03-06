@@ -48,7 +48,6 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     tenant_id: 10,
     plan_id: 100,
     asset_id: 42,
-    template_id: null,
     card_code: 'BT1',
     card_role: 'operator',
     interval_type: 'weekly',
@@ -144,7 +143,6 @@ describe('TpmCardsService', () => {
         createCardRow({
           plan_uuid: undefined,
           asset_name: undefined,
-          template_uuid: undefined,
           created_by_name: undefined,
           last_completed_by_name: undefined,
         }),
@@ -154,7 +152,6 @@ describe('TpmCardsService', () => {
 
       expect(result.planUuid).toBeUndefined();
       expect(result.assetName).toBeUndefined();
-      expect(result.templateUuid).toBeUndefined();
       expect(result.createdByName).toBeUndefined();
       expect(result.lastCompletedByName).toBeUndefined();
     });

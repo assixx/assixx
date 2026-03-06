@@ -57,7 +57,6 @@ export interface TpmCard {
   planUuid?: string;
   assetId: number;
   assetName?: string;
-  templateUuid?: string | null;
   cardCode: string;
   cardRole: CardRole;
   intervalType: IntervalType;
@@ -125,18 +124,6 @@ export interface TpmTimeEstimate {
   executionMinutes: number;
   followupMinutes: number;
   totalMinutes: number;
-  isActive: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/** TPM Card Template */
-export interface TpmCardTemplate {
-  uuid: string;
-  name: string;
-  description: string | null;
-  defaultFields: Record<string, unknown>;
-  isDefault: boolean;
   isActive: number;
   createdAt: string;
   updatedAt: string;
@@ -392,22 +379,6 @@ export interface UpdateEscalationPayload {
   escalationAfterHours: number;
   notifyTeamLead?: boolean;
   notifyDepartmentLead?: boolean;
-}
-
-/** Payload for creating a card template */
-export interface CreateTemplatePayload {
-  name: string;
-  description?: string | null;
-  defaultFields?: Record<string, unknown>;
-  isDefault?: boolean;
-}
-
-/** Payload for updating a card template */
-export interface UpdateTemplatePayload {
-  name?: string;
-  description?: string | null;
-  defaultFields?: Record<string, unknown>;
-  isDefault?: boolean;
 }
 
 // =============================================================================

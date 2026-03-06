@@ -71,20 +71,6 @@ export interface TpmTimeEstimateRow {
   updated_at: string;
 }
 
-/** Row type for `tpm_card_templates` table (migration 042) */
-export interface TpmCardTemplateRow {
-  id: number;
-  uuid: string;
-  tenant_id: number;
-  name: string;
-  description: string | null;
-  default_fields: Record<string, unknown>;
-  is_default: boolean;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
-}
-
 /** Row type for `tpm_cards` table (migration 042) */
 export interface TpmCardRow {
   id: number;
@@ -92,7 +78,6 @@ export interface TpmCardRow {
   tenant_id: number;
   plan_id: number;
   asset_id: number;
-  template_id: number | null;
   card_code: string;
   card_role: TpmCardRole;
   interval_type: TpmIntervalType;
@@ -270,25 +255,12 @@ export interface TpmTimeEstimate {
   updatedAt: string;
 }
 
-/** Card template as returned by the API */
-export interface TpmCardTemplate {
-  uuid: string;
-  name: string;
-  description: string | null;
-  defaultFields: Record<string, unknown>;
-  isDefault: boolean;
-  isActive: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 /** Card as returned by the API */
 export interface TpmCard {
   uuid: string;
   planUuid?: string;
   assetId: number;
   assetName?: string;
-  templateUuid?: string | null;
   cardCode: string;
   cardRole: TpmCardRole;
   intervalType: TpmIntervalType;

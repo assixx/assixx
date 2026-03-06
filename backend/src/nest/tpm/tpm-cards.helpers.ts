@@ -25,7 +25,6 @@ function parsePgCategoryArray(value: unknown): TpmCardCategory[] {
 export interface TpmCardJoinRow extends TpmCardRow {
   asset_name?: string;
   plan_uuid?: string;
-  template_uuid?: string | null;
   created_by_name?: string;
   last_completed_by_name?: string;
 }
@@ -69,10 +68,6 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
   // Optional properties: only set when JOIN data is present
   if (row.plan_uuid !== undefined) card.planUuid = row.plan_uuid.trim();
   if (row.asset_name !== undefined) card.assetName = row.asset_name;
-  if (row.template_uuid !== undefined) {
-    card.templateUuid =
-      row.template_uuid !== null ? row.template_uuid.trim() : null;
-  }
   if (row.created_by_name !== undefined)
     card.createdByName = row.created_by_name;
   if (row.last_completed_by_name !== undefined) {

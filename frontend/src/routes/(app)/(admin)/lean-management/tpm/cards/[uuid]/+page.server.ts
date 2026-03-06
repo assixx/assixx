@@ -10,12 +10,7 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type {
-  TpmPlan,
-  TpmCard,
-  TpmCardTemplate,
-  PaginatedResponse,
-} from '../../_lib/types';
+import type { TpmPlan, TpmCard, PaginatedResponse } from '../../_lib/types';
 
 /** Subset of TpmLocation needed for card form dropdown */
 interface LocationOption {
@@ -86,37 +81,32 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 
   const planUuid = params.uuid;
 
-  // Load plan + cards + templates + locations in parallel
-  const [planData, cardsData, templatesData, locationsData] = await Promise.all(
-    [
-      apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
-      apiFetch<PaginatedResponse<TpmCard>>(
-        `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
-        token,
-        fetch,
-      ),
-      apiFetch<TpmCardTemplate[]>('/tpm/config/templates', token, fetch),
-      apiFetch<LocationOption[]>(
-        `/tpm/locations?planUuid=${planUuid}`,
-        token,
-        fetch,
-      ),
-    ],
-  );
+  // Load plan + cards + locations in parallel
+  const [planData, cardsData, locationsData] = await Promise.all([
+    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+    apiFetch<PaginatedResponse<TpmCard>>(
+      `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
+      token,
+      fetch,
+    ),
+    apiFetch<LocationOption[]>(
+      `/tpm/locations?planUuid=${planUuid}`,
+      token,
+      fetch,
+    ),
+  ]);
 
   if (planData === null) {
     redirect(302, '/lean-management/tpm');
   }
 
   const { cards, totalCards } = extractCards(cardsData);
-  const templates = Array.isArray(templatesData) ? templatesData : [];
   const locations = Array.isArray(locationsData) ? locationsData : [];
 
   return {
     plan: planData,
     cards,
     totalCards,
-    templates,
     locations,
     planUuid,
   };

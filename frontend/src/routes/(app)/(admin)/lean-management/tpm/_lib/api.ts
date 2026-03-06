@@ -11,7 +11,6 @@ import type {
   PaginatedResponse,
   TpmColorConfigEntry,
   TpmEscalationConfig,
-  TpmCardTemplate,
   TpmCardExecution,
   TpmTimeEstimate,
   Asset,
@@ -31,8 +30,6 @@ import type {
   CategoryColorConfigEntry,
   UpdateCategoryColorPayload,
   UpdateEscalationPayload,
-  CreateTemplatePayload,
-  UpdateTemplatePayload,
 } from './types';
 
 const log = createLogger('TpmApi');
@@ -352,12 +349,6 @@ export async function fetchEscalationConfig(): Promise<TpmEscalationConfig> {
   return await apiClient.get<TpmEscalationConfig>('/tpm/config/escalation');
 }
 
-/** Fetch card templates */
-export async function fetchTemplates(): Promise<TpmCardTemplate[]> {
-  const result: unknown = await apiClient.get('/tpm/config/templates');
-  return extractArray<TpmCardTemplate>(result);
-}
-
 /** Update a single color config entry */
 export async function updateColor(
   payload: UpdateColorPayload,
@@ -470,36 +461,6 @@ export async function updateEscalation(
   return await apiClient.patch<TpmEscalationConfig>(
     '/tpm/config/escalation',
     payload,
-  );
-}
-
-/** Create a card template */
-export async function createTemplate(
-  payload: CreateTemplatePayload,
-): Promise<TpmCardTemplate> {
-  return await apiClient.post<TpmCardTemplate>(
-    '/tpm/config/templates',
-    payload,
-  );
-}
-
-/** Update a card template */
-export async function updateTemplate(
-  templateUuid: string,
-  payload: UpdateTemplatePayload,
-): Promise<TpmCardTemplate> {
-  return await apiClient.patch<TpmCardTemplate>(
-    `/tpm/config/templates/${templateUuid}`,
-    payload,
-  );
-}
-
-/** Delete a card template (soft-delete) */
-export async function deleteTemplate(
-  templateUuid: string,
-): Promise<{ message: string }> {
-  return await apiClient.delete<{ message: string }>(
-    `/tpm/config/templates/${templateUuid}`,
   );
 }
 

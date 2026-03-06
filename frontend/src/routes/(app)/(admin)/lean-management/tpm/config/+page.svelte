@@ -3,10 +3,9 @@
    * TPM Config Page
    * @module lean-management/tpm/config/+page
    *
-   * Tab-based layout with 3 sections:
+   * Tab-based layout with 2 sections:
    * 1. ColorConfig — status color customization
    * 2. EscalationConfig — escalation thresholds
-   * 3. TemplateManager — card template CRUD
    */
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -17,7 +16,6 @@
   import ColorConfig from './_lib/ColorConfig.svelte';
   import EscalationConfig from './_lib/EscalationConfig.svelte';
   import IntervalColorConfig from './_lib/IntervalColorConfig.svelte';
-  import TemplateManager from './_lib/TemplateManager.svelte';
 
   import type { PageData } from './$types';
 
@@ -31,7 +29,7 @@
   // TAB STATE
   // ===========================================================================
 
-  type ConfigTab = 'colors' | 'escalation' | 'templates';
+  type ConfigTab = 'colors' | 'escalation';
 
   const TABS: { key: ConfigTab; label: string; icon: string }[] = [
     { key: 'colors', label: MESSAGES.CONFIG_TAB_COLORS, icon: 'fa-palette' },
@@ -40,7 +38,6 @@
       label: MESSAGES.CONFIG_TAB_ESCALATION,
       icon: 'fa-exclamation-triangle',
     },
-    { key: 'templates', label: MESSAGES.CONFIG_TAB_TEMPLATES, icon: 'fa-copy' },
   ];
 
   let activeTab = $state<ConfigTab>('colors');
@@ -124,8 +121,6 @@
         />
       {:else if activeTab === 'escalation'}
         <EscalationConfig escalation={data.escalation} />
-      {:else if activeTab === 'templates'}
-        <TemplateManager templates={data.templates} />
       {/if}
     </div>
   </div>

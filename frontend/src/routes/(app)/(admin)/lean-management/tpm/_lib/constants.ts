@@ -373,12 +373,11 @@ export const MESSAGES = {
   // Config page
   CONFIG_PAGE_TITLE: 'TPM Konfiguration - Assixx',
   CONFIG_PAGE_HEADING: 'TPM Konfiguration',
-  CONFIG_PAGE_DESCRIPTION: 'Farben, Eskalation und Vorlagen konfigurieren',
+  CONFIG_PAGE_DESCRIPTION: 'Farben und Eskalation konfigurieren',
 
   // Config tabs
   CONFIG_TAB_COLORS: 'Farben',
   CONFIG_TAB_ESCALATION: 'Eskalation',
-  CONFIG_TAB_TEMPLATES: 'Vorlagen',
 
   // Card status color config
   COLOR_TITLE: 'Status-Farben',
@@ -444,35 +443,6 @@ export const MESSAGES = {
   ERROR_ESCALATION_UPDATE:
     'Fehler beim Aktualisieren der Eskalations-Konfiguration',
   ERROR_ESCALATION_HOURS_RANGE: 'Stunden müssen zwischen 1 und 720 liegen',
-
-  // Template manager
-  TEMPLATE_TITLE: 'Kartenvorlagen',
-  TEMPLATE_DESCRIPTION:
-    'Vorlagen für die schnelle Erstellung von Wartungskarten',
-  TEMPLATE_NAME: 'Name',
-  TEMPLATE_DESC: 'Beschreibung',
-  TEMPLATE_IS_DEFAULT: 'Standard-Vorlage',
-  TEMPLATE_EMPTY: 'Keine Vorlagen vorhanden',
-  TEMPLATE_EMPTY_DESC:
-    'Erstellen Sie eine Vorlage, um die Kartenerstellung zu beschleunigen.',
-  BTN_NEW_TEMPLATE: 'Neue Vorlage',
-  BTN_CREATE_TEMPLATE: 'Vorlage erstellen',
-  BTN_UPDATE_TEMPLATE: 'Vorlage aktualisieren',
-  TEMPLATE_CREATE_TITLE: 'Neue Vorlage erstellen',
-  TEMPLATE_EDIT_TITLE: 'Vorlage bearbeiten',
-  TEMPLATE_DELETE_TITLE: 'Vorlage löschen',
-  TEMPLATE_DELETE_MESSAGE: 'Möchten Sie diese Vorlage wirklich löschen?',
-  SUCCESS_TEMPLATE_CREATED: 'Vorlage erstellt',
-  SUCCESS_TEMPLATE_UPDATED: 'Vorlage aktualisiert',
-  SUCCESS_TEMPLATE_DELETED: 'Vorlage gelöscht',
-  ERROR_TEMPLATE_CREATE: 'Fehler beim Erstellen der Vorlage',
-  ERROR_TEMPLATE_UPDATE: 'Fehler beim Aktualisieren der Vorlage',
-  ERROR_TEMPLATE_DELETE: 'Fehler beim Löschen der Vorlage',
-  ERROR_TEMPLATE_NAME_REQUIRED: 'Name ist erforderlich',
-
-  // Placeholders
-  PH_TEMPLATE_NAME: 'z.B. Hydraulik-Prüfung',
-  PH_TEMPLATE_DESC: 'Optionale Beschreibung der Vorlage...',
 
   // Gesamtansicht (matrix overview)
   BTN_GESAMTANSICHT: 'Gesamtansicht',
