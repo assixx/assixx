@@ -84,11 +84,12 @@ export interface EventFilters {
 
 /**
  * User role info with full access flag
+ * Uses arrays because a user can belong to multiple teams/departments
  */
 export interface UserRoleInfo {
   role: string | null;
-  department_id: number | null;
-  team_id: number | null;
+  department_ids: number[];
+  team_ids: number[];
   has_full_access: boolean;
 }
 

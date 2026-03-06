@@ -44,7 +44,7 @@ const ACCESS_TOKEN_MAX_AGE = 30 * 60;
 /** Refresh token expiry: 7 days */
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
 
-type UserRole = 'root' | 'admin' | 'employee';
+type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
 interface LoginResponseData {
   accessToken: string;
@@ -101,6 +101,7 @@ function getRedirectPath(role: UserRole): string {
     root: '/root-dashboard',
     admin: '/admin-dashboard',
     employee: '/employee-dashboard',
+    dummy: '/blackboard',
   };
   return paths[role];
 }

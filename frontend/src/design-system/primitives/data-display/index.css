@@ -17,8 +17,7 @@
 @import './table.borderless.css';
 @import './table.compact.css';
 
-/* Empty States */
-@import './empty-state.css';
+/* Empty States — moved to primitives/empty-states/empty-state.css (single source of truth) */
 
 /* Data Lists */
 @import './data-list.css';

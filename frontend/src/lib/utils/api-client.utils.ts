@@ -40,7 +40,7 @@ const FEATURE_LABELS: Record<string, string> = {
   users: 'Benutzerverwaltung',
   settings: 'Einstellungen',
   features: 'Features',
-  'machine-status': 'Maschinenstatus',
+  'asset-status': 'Anlagenstatus',
 };
 
 /**

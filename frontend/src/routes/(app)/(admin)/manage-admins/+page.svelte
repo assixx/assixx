@@ -12,6 +12,7 @@
     showSuccessAlert,
     showWarningAlert,
     showErrorAlert,
+    showToast,
   } from '$lib/stores/toast';
   import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
@@ -80,7 +81,6 @@
   // Modal States
   let showAdminModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showUpgradeConfirmModal = $state(false);
   let upgradeAdminId = $state<number | null>(null);
   let upgradeLoading = $state(false);
@@ -206,16 +206,27 @@
         isEditMode,
       );
 
-      await saveAdminWithPermissions(formData, currentEditId);
-
-      // Show success message based on mode
-      showSuccessAlert(
-        isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
-      );
+      const result = await saveAdminWithPermissions(formData, currentEditId);
 
       closeAdminModal();
-      // Level 3: Trigger SSR refetch
       await invalidateAll();
+
+      if (!isEditMode && result.uuid !== null) {
+        showToast({
+          type: 'success',
+          title: 'Admin erstellt',
+          message: 'Berechtigungen jetzt zuweisen?',
+          duration: 8000,
+          action: {
+            label: 'Berechtigungen',
+            href: `/manage-admins/permission/${result.uuid}`,
+          },
+        });
+      } else {
+        showSuccessAlert(
+          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+        );
+      }
     } catch (err) {
       log.error({ err }, 'Error saving admin');
       showErrorAlert(
@@ -317,7 +328,7 @@
     if (adminId === null) return;
 
     // Reset state before async operations to avoid race conditions
-    showDeleteConfirmModal = false;
+    showDeleteModal = false;
     deleteAdminId = null;
 
     try {
@@ -441,11 +452,6 @@
     showDeleteModal = true;
   }
 
-  function proceedToDeleteConfirm() {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   function closeAdminModal() {
     showAdminModal = false;
     currentEditId = null;
@@ -454,11 +460,6 @@
 
   function closeDeleteModal() {
     showDeleteModal = false;
-    deleteAdminId = null;
-  }
-
-  function closeDeleteConfirmModal() {
-    showDeleteConfirmModal = false;
     deleteAdminId = null;
   }
 
@@ -550,7 +551,6 @@
       if (showAvailabilityModal) closeAvailabilityModal();
       else if (showDowngradeConfirmModal) closeDowngradeConfirmModal();
       else if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showAdminModal) closeAdminModal();
     }
@@ -802,12 +802,9 @@
 
 <!-- Delete Modals Component -->
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  onconfirmDelete={deleteAdmin}
+  show={showDeleteModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteAdmin}
 />
 
 <!-- Role Change Confirm Modals (Upgrade/Downgrade) -->

@@ -185,33 +185,53 @@ export async function updateDepartmentPermissions(
   });
 }
 
+/** Result from save operation */
+export interface SaveAdminResult {
+  id: number | null;
+  uuid: string | null;
+}
+
+/** Apply permission settings for an admin */
+async function applyPermissions(
+  adminId: number,
+  data: AdminFormData,
+): Promise<void> {
+  await setFullAccess(adminId, data.hasFullAccess);
+
+  if (!data.hasFullAccess) {
+    await updateAreaPermissions(adminId, data.areaIds);
+    await updateDepartmentPermissions(adminId, data.departmentIds);
+  }
+}
+
+/** Extract id + uuid from API response */
+function extractAdminResult(
+  response: AdminApiResponse,
+  editId: number | null,
+): SaveAdminResult {
+  const id =
+    editId ?? response.adminId ?? response.id ?? response.data?.id ?? null;
+  const uuid = response.uuid ?? response.data?.uuid ?? null;
+  return { id, uuid };
+}
+
 /**
  * Save admin (create or update) with permissions
- * Returns the admin ID
  */
 export async function saveAdminWithPermissions(
   data: AdminFormData,
   editId: number | null,
-): Promise<number | null> {
-  // Create or update admin
-  const result =
+): Promise<SaveAdminResult> {
+  const response =
     editId !== null ? await updateAdmin(editId, data) : await createAdmin(data);
 
-  const adminId =
-    editId ?? result.adminId ?? result.id ?? result.data?.id ?? null;
+  const result = extractAdminResult(response, editId);
 
-  if (adminId !== null) {
-    // Set full access
-    await setFullAccess(adminId, data.hasFullAccess);
-
-    // Update area/department permissions (if not full access)
-    if (!data.hasFullAccess) {
-      await updateAreaPermissions(adminId, data.areaIds);
-      await updateDepartmentPermissions(adminId, data.departmentIds);
-    }
+  if (result.id !== null) {
+    await applyPermissions(result.id, data);
   }
 
-  return adminId;
+  return result;
 }
 
 // =============================================================================

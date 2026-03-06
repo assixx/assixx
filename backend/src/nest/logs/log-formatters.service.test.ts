@@ -262,6 +262,37 @@ describe('LogFormattersService', () => {
 
       expect(result).toContain('[root_logs]');
     });
+
+    it('should include changed fields summary for update action', () => {
+      const entry = createMinimalEntry({
+        action: 'update',
+        changes: { updated: { name: 'New', status: 'active' }, _http: {} },
+      });
+
+      const result = service.formatLogAsTxt(entry);
+
+      expect(result).toContain('[changed: name, status]');
+    });
+
+    it('should include deleted-fields summary for delete action', () => {
+      const entry = createMinimalEntry({
+        action: 'delete',
+        changes: { deleted: { id: 1, name: 'Gone', email: 'x@y.de' }, _http: {} },
+      });
+
+      const result = service.formatLogAsTxt(entry);
+
+      expect(result).toContain('[deleted-fields: id, name, email]');
+    });
+
+    it('should not include change summary when no changes', () => {
+      const entry = createMinimalEntry({ action: 'create' });
+
+      const result = service.formatLogAsTxt(entry);
+
+      expect(result).not.toContain('[changed:');
+      expect(result).not.toContain('[deleted-fields:');
+    });
   });
 
   // =============================================================

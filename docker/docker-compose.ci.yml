@@ -26,7 +26,12 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     image: assixx-backend:ci
-    # No user override needed - prod Dockerfile uses nodejs:1001 user
+    # Override base compose user (${UID:-1000}) to match production Dockerfile's nodejs:1001
+    user: "1001:1001"
+    # Production image must run in production mode (devDependencies like pino-pretty
+    # are not installed — NODE_ENV=development would crash the logger on startup)
+    environment:
+      NODE_ENV: production
     # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
     # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
     volumes: !reset
@@ -49,6 +54,10 @@ services:
     # Having a duplicate build section with the same image tag causes a Buildx race condition:
     # both services finish in parallel and the second one fails with "already exists".
     image: assixx-backend:ci
+    # Override base compose user (${UID:-1000}) to match production Dockerfile's nodejs:1001
+    user: "1001:1001"
+    environment:
+      NODE_ENV: production
     # CRITICAL: !reset clears inherited volumes from base docker-compose.yml
     # Without this, ../backend:/app/backend mount overwrites the built dist/ folder!
     volumes: !reset

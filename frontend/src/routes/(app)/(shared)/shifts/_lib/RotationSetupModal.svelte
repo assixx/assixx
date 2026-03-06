@@ -6,7 +6,11 @@
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
-  import { showSuccessAlert, showErrorAlert } from '$lib/utils/alerts';
+  import {
+    showSuccessAlert,
+    showErrorAlert,
+    showConfirmWarning,
+  } from '$lib/utils/alerts';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('RotationSetupModal');
@@ -15,10 +19,12 @@
     createRotationPattern,
     assignRotation,
     generateRotationShifts,
+    deleteRotationHistoryByTeam,
   } from './api';
   import {
     validateRotationForm,
     buildRotationPatternData,
+    loadExistingPattern,
     type RotationFormValues,
     type ShiftGroups,
   } from './rotation';
@@ -224,12 +230,71 @@
     return error instanceof Error ? error.message : defaultMsg;
   }
 
+  /**
+   * Check for existing rotation pattern and handle overwrite confirmation.
+   * Returns true if we can proceed with creation, false to abort.
+   */
+  async function handleExistingPatternOverwrite(
+    teamId: number,
+  ): Promise<boolean> {
+    const existing = await loadExistingPattern(teamId);
+    if (existing === null) return true;
+
+    const confirmed = await showConfirmWarning(
+      `Es existiert bereits ein Rotationsmuster für dieses Team ("${existing.name}"). Möchten Sie es überschreiben?`,
+      'Bestehendes Muster überschreiben?',
+    );
+
+    if (!confirmed) return false;
+
+    await deleteRotationHistoryByTeam(teamId, existing.id);
+    return true;
+  }
+
+  /** Create pattern, assign employees, and generate shifts */
+  async function executeRotationCreation(
+    teamId: number,
+    formValues: RotationFormValues,
+    shiftGroups: ShiftGroups,
+    employeeAssignments: { userId: number; group: 'F' | 'S' | 'N' }[],
+  ): Promise<void> {
+    const patternData = buildRotationPatternData(
+      teamId,
+      formValues,
+      shiftGroups,
+    );
+    const patternResult = await createRotationPattern(patternData);
+
+    await assignRotation({
+      patternId: patternResult.id,
+      assignments: employeeAssignments,
+      startsAt: formValues.startDate,
+      endsAt: formValues.endDate !== '' ? formValues.endDate : undefined,
+      teamId,
+    });
+
+    const generateEndDate =
+      formValues.endDate !== '' ?
+        formValues.endDate
+      : calculateDefaultEndDate(formValues.startDate, 4);
+
+    const generateResult = await generateRotationShifts({
+      patternId: patternResult.id,
+      startDate: formValues.startDate,
+      endDate: generateEndDate,
+    });
+
+    showSuccessAlert(
+      `Rotation erfolgreich erstellt! ${generateResult.shiftsGenerated} Schichten generiert.`,
+    );
+    oncomplete(formValues.startDate);
+  }
+
   async function handleSave(): Promise<void> {
     if (saving) return;
     saving = true;
 
     try {
-      // 1. Collect form values
       const formValues: RotationFormValues = {
         pattern: selectedPattern as 'weekly' | 'biweekly' | 'monthly' | '',
         startDate,
@@ -239,21 +304,18 @@
         nightShiftStatic: nightStatic,
       };
 
-      // 2. Validate form
       const validation = validateRotationForm(formValues);
       if (!validation.valid) {
         showErrorAlert(validation.error ?? 'Validierungsfehler');
         return;
       }
 
-      // 3. Check team selection
       const teamId = selectedContext.teamId;
       if (teamId === null || teamId === 0) {
         showErrorAlert('Bitte wählen Sie zuerst ein Team aus');
         return;
       }
 
-      // 4. Collect employees from assignments
       const { list: employeeAssignments, groups: shiftGroups } =
         collectEmployeeAssignments(assignments);
 
@@ -264,43 +326,15 @@
         return;
       }
 
-      // 5. Build pattern data
-      const patternData = buildRotationPatternData(
+      const canProceed = await handleExistingPatternOverwrite(teamId);
+      if (!canProceed) return;
+
+      await executeRotationCreation(
         teamId,
         formValues,
         shiftGroups,
+        employeeAssignments,
       );
-
-      // 6. Create pattern
-      const patternResult = await createRotationPattern(patternData);
-
-      // 7. Assign employees to pattern
-      const assignData = {
-        patternId: patternResult.id,
-        assignments: employeeAssignments,
-        startsAt: formValues.startDate,
-        endsAt: formValues.endDate !== '' ? formValues.endDate : undefined,
-        teamId,
-      };
-      await assignRotation(assignData);
-
-      // 8. Generate rotation shifts
-      const generateEndDate =
-        formValues.endDate !== '' ?
-          formValues.endDate
-        : calculateDefaultEndDate(formValues.startDate, 4);
-
-      const generateResult = await generateRotationShifts({
-        patternId: patternResult.id,
-        startDate: formValues.startDate,
-        endDate: generateEndDate,
-      });
-
-      // 9. Success
-      showSuccessAlert(
-        `Rotation erfolgreich erstellt! ${generateResult.shiftsGenerated} Schichten generiert.`,
-      );
-      oncomplete(formValues.startDate);
     } catch (error) {
       log.error({ err: error }, 'Rotation error');
       showErrorAlert(
@@ -501,10 +535,8 @@
           <h4 class="form-field__label mb-4">Mitarbeiter Schichtzuweisung</h4>
 
           <!-- Available Employees -->
-          <div class="glass-card mb-4 p-4">
-            <h4 class="mb-2 font-medium text-(--color-text-secondary)">
-              Verfügbare Mitarbeiter
-            </h4>
+          <div class="card card--compact card--no-margin">
+            <h4 class="card__title">Verfügbare Mitarbeiter</h4>
             <div class="employee-list">
               {#each availableEmployees as employee (employee.id)}
                 <div
@@ -534,24 +566,19 @@
           </div>
 
           <!-- Shift Assignment Drop Zones -->
-          <div class="glass-card p-4">
-            <h4 class="mb-2 font-medium text-(--color-text-secondary)">
-              Schichtzuweisung (Startschicht)
-            </h4>
+          <div class="card card--compact card--no-margin">
+            <h4 class="card__title">Schichtzuweisung (Startschicht)</h4>
             {#snippet shiftDropColumn(
               label: string,
               shiftType: 'F' | 'S' | 'N',
               assignedIds: number[],
-              colorClass: string,
             )}
               <div class="shift-column">
-                <div
-                  class="column-header mb-2 text-center font-medium {colorClass}"
-                >
+                <div class="column-header column-header-{shiftType}">
                   {label}
                 </div>
                 <div
-                  class="drop-zone min-h-25 rounded border border-dashed border-black/20 p-2 dark:border-white/20"
+                  class="drop-zone"
                   data-shift={shiftType}
                   ondragover={handleDragOver}
                   ondragleave={handleDragLeave}
@@ -587,24 +614,9 @@
 
             <!-- eslint-disable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- {@render} false positive -->
             <div class="shift-assignment-table grid grid-cols-3 gap-4">
-              {@render shiftDropColumn(
-                'F (Früh)',
-                'F',
-                assignments.F,
-                'text-blue-700 dark:text-blue-400',
-              )}
-              {@render shiftDropColumn(
-                'S (Spät)',
-                'S',
-                assignments.S,
-                'text-yellow-700 dark:text-yellow-400',
-              )}
-              {@render shiftDropColumn(
-                'N (Nacht)',
-                'N',
-                assignments.N,
-                'text-purple-700 dark:text-purple-400',
-              )}
+              {@render shiftDropColumn('F (Früh)', 'F', assignments.F)}
+              {@render shiftDropColumn('S (Spät)', 'S', assignments.S)}
+              {@render shiftDropColumn('N (Nacht)', 'N', assignments.N)}
             </div>
             <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
             <small class="form-field__hint mt-2 block">
@@ -701,12 +713,23 @@
   .column-header {
     border-radius: 4px 4px 0 0;
 
-    background: var(--primary);
+    background: var(--glass-form-bg-focus);
     padding: 10px;
-    color: #fff;
 
     font-weight: 500;
     text-align: center;
+  }
+
+  .column-header-F {
+    color: rgb(255 193 7);
+  }
+
+  .column-header-S {
+    color: rgb(33 150 243);
+  }
+
+  .column-header-N {
+    color: rgb(156 39 176);
   }
 
   .drop-zone {
@@ -714,7 +737,7 @@
     border-top: none;
     border-radius: 0 0 4px 4px;
 
-    background: rgb(0 0 0 / 30%);
+    background: var(--glass-bg);
     padding: 10px;
 
     min-height: 150px;

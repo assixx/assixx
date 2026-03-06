@@ -10,6 +10,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { dbToApi } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateSwapRequestDto } from './dto/create-swap-request.dto.js';
 import type { UpdateSwapRequestStatusDto } from './dto/swap-request-status.dto.js';
@@ -23,7 +24,10 @@ import type {
 export class ShiftSwapService {
   private readonly logger = new Logger(ShiftSwapService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   async listSwapRequests(
     tenantId: number,
@@ -83,6 +87,15 @@ export class ShiftSwapService {
 
     const requestId = result[0]?.id ?? 0;
 
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'shift_swap',
+      requestId,
+      `Schichttausch-Anfrage erstellt: Schicht ${dto.shiftId}`,
+      { shiftId: dto.shiftId, requestedWith: dto.requestedWithUserId },
+    );
+
     return {
       id: requestId,
       shiftId: dto.shiftId,
@@ -117,6 +130,16 @@ export class ShiftSwapService {
       `UPDATE shift_swap_requests SET status = $1, reviewed_by = $2, reviewed_at = NOW()
        WHERE id = $3 AND tenant_id = $4`,
       [dto.status, userId, id, tenantId],
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'shift_swap',
+      id,
+      `Schichttausch-Status aktualisiert: ${dto.status}`,
+      undefined,
+      { status: dto.status },
     );
 
     return { message: `Swap request ${dto.status} successfully` };

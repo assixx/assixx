@@ -1,7 +1,7 @@
 # VERIFIKATIONSBERICHT: NestJS Migration
 
 > **Datum**: 2025-12-17
-> **Verifiziert von**: Claude Code
+> **Verifiziert von**: Assixx
 > **Branch**: feature/nestjs-migration
 
 ---
@@ -116,4 +116,4 @@ und der Code kompiliert ohne TypeScript- oder ESLint-Fehler.
 
 ---
 
-_Generiert mit Claude Code am 2025-12-17_
+_Generiert mit am 2025-12-17_

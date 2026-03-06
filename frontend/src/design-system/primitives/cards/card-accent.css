@@ -29,7 +29,6 @@
 
 .card-accent:hover {
   border-color: var(--color-border-hover);
-  background: var(--glass-bg-hover);
 }
 
 /* Header */

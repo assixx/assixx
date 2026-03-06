@@ -8,6 +8,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { RotationPatternService } from './rotation-pattern.service.js';
 import type { DbPatternRow } from './rotation.types.js';
@@ -18,6 +19,15 @@ import type { DbPatternRow } from './rotation.types.js';
 
 function createMockDb() {
   return { query: vi.fn() };
+}
+
+function createMockActivityLogger() {
+  return {
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+    log: vi.fn(),
+  };
 }
 
 /** Full DB row with all fields populated */
@@ -52,7 +62,11 @@ describe('RotationPatternService', () => {
 
   beforeEach(() => {
     mockDb = createMockDb();
-    service = new RotationPatternService(mockDb as unknown as DatabaseService);
+    const mockActivityLogger = createMockActivityLogger();
+    service = new RotationPatternService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================
@@ -240,6 +254,59 @@ describe('RotationPatternService', () => {
       const insertParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
       expect(insertParams?.[9]).toBe(0);
     });
+
+    it('should allow creating pattern when same name exists but is soft-deleted', async () => {
+      // Conflict check returns empty (is_active=1 filter excludes soft-deleted)
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 20 }]);
+      // getRotationPattern (re-fetch)
+      mockDb.query.mockResolvedValueOnce([createPatternRow({ id: 20 })]);
+
+      await expect(
+        service.createRotationPattern(
+          {
+            name: 'Previously Deleted',
+            patternType: 'alternate_fs',
+            patternConfig: {},
+            cycleLengthWeeks: 2,
+            startsAt: '2026-03-01',
+            isActive: true,
+          },
+          42,
+          1,
+        ),
+      ).resolves.toBeDefined();
+
+      // Verify the conflict check query filters by is_active = 1
+      const conflictSql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(conflictSql).toContain('is_active = 1');
+    });
+
+    it('should only check active patterns for name conflict', async () => {
+      // Simulate: no active pattern with same name found
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([{ id: 30 }]);
+      mockDb.query.mockResolvedValueOnce([createPatternRow({ id: 30 })]);
+
+      await service.createRotationPattern(
+        {
+          name: 'Team-Rotation 3',
+          patternType: 'alternate_fs',
+          patternConfig: {},
+          cycleLengthWeeks: 1,
+          startsAt: '2026-04-01',
+          isActive: true,
+        },
+        42,
+        1,
+      );
+
+      // Conflict check must pass tenant_id and filter is_active
+      const conflictParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(conflictParams?.[0]).toBe('Team-Rotation 3');
+      expect(conflictParams?.[1]).toBe(42);
+    });
   });
 
   // =============================================================
@@ -261,6 +328,7 @@ describe('RotationPatternService', () => {
         1,
         { name: 'Updated', cycleLengthWeeks: 3 },
         42,
+        1,
       );
 
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
@@ -278,7 +346,7 @@ describe('RotationPatternService', () => {
       mockDb.query.mockResolvedValueOnce([createPatternRow()]);
 
       // Even empty DTO adds description=null, team_id=null, ends_at=null
-      await service.updateRotationPattern(1, {}, 42);
+      await service.updateRotationPattern(1, {}, 42, 1);
 
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain('description');
@@ -295,7 +363,7 @@ describe('RotationPatternService', () => {
     it('should throw NotFoundException for non-existent pattern', async () => {
       mockDb.query.mockResolvedValueOnce([]); // pattern not found
 
-      await expect(service.deleteRotationPattern(999, 42)).rejects.toThrow(
+      await expect(service.deleteRotationPattern(999, 42, 1)).rejects.toThrow(
         NotFoundException,
       );
     });

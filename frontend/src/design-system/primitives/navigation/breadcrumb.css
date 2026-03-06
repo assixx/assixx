@@ -27,7 +27,7 @@
   align-items: center;
   gap: var(--spacing-2, 8px);
 
-  padding: var(--spacing-0, 6px) var(--spacing-5, 20px);
+  padding: var(--spacing-0, 6px) var(--spacing-4, 20px);
 
   font-size: 14px;
   list-style: none;
@@ -37,7 +37,6 @@
    ITEMS (Links & Active)
    ============================================================================= */
 
-/* Higher specificity + !important to override @layer base a { color: primary } */
 .breadcrumb .breadcrumb__item,
 .breadcrumb a.breadcrumb__item {
   display: inline-flex;

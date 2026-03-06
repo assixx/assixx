@@ -4,16 +4,16 @@
  * THE HEART OF THE SYSTEM.
  *
  * Answers the question: "Can this employee take vacation on these dates?"
- * by analyzing team staffing, machine coverage, blackout conflicts,
+ * by analyzing team staffing, asset coverage, blackout conflicts,
  * and entitlement balance.
  *
  * Single public method: `analyzeCapacity()`
  *
  * Algorithm:
  * 1. Find requester's team via `user_teams`
- * 2. Find all machines for that team via `machine_teams`
+ * 2. Find all assets for that team via `asset_teams`
  * 3. For each workday: count absent members, compute available staff
- * 4. Return worst-case day per team and per machine
+ * 4. Return worst-case day per team and per asset
  * 5. Check blackout conflicts
  * 6. Check entitlement balance
  * 7. Determine overall status (ok / warning / blocked)
@@ -30,10 +30,10 @@ import { VacationHolidaysService } from './vacation-holidays.service.js';
 import { VacationStaffingRulesService } from './vacation-staffing-rules.service.js';
 import type {
   AbsentMemberInfo,
+  AssetCapacityItem,
   BlackoutConflict,
   CapacityStatus,
   EntitlementCheckResult,
-  MachineCapacityItem,
   OverallCapacityStatus,
   SubstituteCheckResult,
   TeamCapacityItem,
@@ -52,10 +52,10 @@ interface TeamMemberRow {
   last_name: string;
 }
 
-/** Machine assigned to a team from machine_teams + machines JOIN */
-interface TeamMachineRow {
-  machine_id: number;
-  machine_name: string;
+/** Asset assigned to a team from asset_teams + assets JOIN */
+interface TeamAssetRow {
+  asset_id: number;
+  asset_name: string;
 }
 
 /** Approved vacation request overlapping the analysis range */
@@ -86,7 +86,7 @@ interface CapacityContext {
   teamName: string;
   departmentId: number | null;
   members: TeamMemberRow[];
-  machines: TeamMachineRow[];
+  assets: TeamAssetRow[];
   approvedAbsences: ApprovedAbsenceRow[];
   availabilityAbsences: AvailabilityAbsenceRow[];
 }
@@ -123,7 +123,7 @@ export class VacationCapacityService {
 
   /**
    * Analyze whether a vacation request can be approved.
-   * Returns a comprehensive analysis covering team, machines,
+   * Returns a comprehensive analysis covering team, assets,
    * blackouts, entitlements, and substitute availability.
    */
   async analyzeCapacity(
@@ -143,7 +143,7 @@ export class VacationCapacityService {
     const subServiceData = await this.runSubServiceQueries(params, ctx);
 
     // Phase 3: Per-day capacity computation
-    const { teamAnalysis, machineAnalysis } = await this.runCapacityComputation(
+    const { teamAnalysis, assetAnalysis } = await this.runCapacityComputation(
       tenantId,
       startDate,
       endDate,
@@ -157,7 +157,7 @@ export class VacationCapacityService {
       params,
       subServiceData,
       teamAnalysis,
-      machineAnalysis,
+      assetAnalysis,
     );
   }
 
@@ -178,9 +178,7 @@ export class VacationCapacityService {
       halfDayEnd = 'none',
     } = params;
 
-    const machineIds: number[] = ctx.machines.map(
-      (m: TeamMachineRow) => m.machine_id,
-    );
+    const assetIds: number[] = ctx.assets.map((m: TeamAssetRow) => m.asset_id);
 
     const [workdays, blackoutConflicts, staffingMap] = await Promise.all([
       this.holidaysService.countWorkdays(
@@ -197,13 +195,13 @@ export class VacationCapacityService {
         ctx.teamId,
         ctx.departmentId ?? undefined,
       ),
-      this.staffingRulesService.getForMachines(tenantId, machineIds),
+      this.staffingRulesService.getForAssets(tenantId, assetIds),
     ]);
 
     return { workdays, blackoutConflicts, staffingMap };
   }
 
-  /** Run per-day capacity computation for team and machines. */
+  /** Run per-day capacity computation for team and assets. */
   private async runCapacityComputation(
     tenantId: number,
     startDate: string,
@@ -213,7 +211,7 @@ export class VacationCapacityService {
     staffingMap: Map<number, number>,
   ): Promise<{
     teamAnalysis: TeamCapacityItem[];
-    machineAnalysis: MachineCapacityItem[];
+    assetAnalysis: AssetCapacityItem[];
   }> {
     const workdayDates: Date[] = await this.getWorkdayDates(
       tenantId,
@@ -223,7 +221,7 @@ export class VacationCapacityService {
 
     return {
       teamAnalysis: this.computeTeamCapacity(ctx, workdayDates, requesterId),
-      machineAnalysis: this.computeMachineCapacity(
+      assetAnalysis: this.computeAssetCapacity(
         ctx,
         workdayDates,
         requesterId,
@@ -240,7 +238,7 @@ export class VacationCapacityService {
       blackoutConflicts: BlackoutConflict[];
     },
     teamAnalysis: TeamCapacityItem[],
-    machineAnalysis: MachineCapacityItem[],
+    assetAnalysis: AssetCapacityItem[],
   ): Promise<VacationCapacityAnalysis> {
     const { tenantId, startDate, endDate, requesterId } = params;
     const { workdays, blackoutConflicts } = subServiceData;
@@ -259,7 +257,7 @@ export class VacationCapacityService {
       : undefined;
 
     const overallStatus: OverallCapacityStatus = this.determineOverallStatus(
-      machineAnalysis,
+      assetAnalysis,
       blackoutConflicts,
       entitlementCheck,
     );
@@ -271,7 +269,7 @@ export class VacationCapacityService {
     const result: VacationCapacityAnalysis = {
       workdays,
       teamAnalysis,
-      machineAnalysis,
+      assetAnalysis,
       blackoutConflicts,
       entitlementCheck,
       overallStatus,
@@ -289,7 +287,7 @@ export class VacationCapacityService {
   // ==========================================================================
 
   /**
-   * Load requester's team, all team members, assigned machines,
+   * Load requester's team, all team members, assigned assets,
    * and absence data in a single transaction.
    */
   private async gatherTeamContext(
@@ -320,10 +318,10 @@ export class VacationCapacityService {
         }
 
         // 2-5. Parallel queries within the same transaction
-        const [members, machines, approvedAbsences, availabilityAbsences] =
+        const [members, assets, approvedAbsences, availabilityAbsences] =
           await Promise.all([
             this.loadTeamMembers(client, tenantId, teamRow.team_id),
-            this.loadTeamMachines(client, tenantId, teamRow.team_id),
+            this.loadTeamAssets(client, tenantId, teamRow.team_id),
             this.loadApprovedAbsences(
               client,
               tenantId,
@@ -345,7 +343,7 @@ export class VacationCapacityService {
           teamName: teamRow.team_name,
           departmentId: teamRow.department_id,
           members,
-          machines,
+          assets,
           approvedAbsences,
           availabilityAbsences,
         };
@@ -395,16 +393,16 @@ export class VacationCapacityService {
     return result.rows;
   }
 
-  /** Load all machines assigned to a team via machine_teams. */
-  private async loadTeamMachines(
+  /** Load all assets assigned to a team via asset_teams. */
+  private async loadTeamAssets(
     client: PoolClient,
     tenantId: number,
     teamId: number,
-  ): Promise<TeamMachineRow[]> {
-    const result = await client.query<TeamMachineRow>(
-      `SELECT m.id AS machine_id, m.name AS machine_name
-       FROM machine_teams mt
-       JOIN machines m ON mt.machine_id = m.id
+  ): Promise<TeamAssetRow[]> {
+    const result = await client.query<TeamAssetRow>(
+      `SELECT m.id AS asset_id, m.name AS asset_name
+       FROM asset_teams mt
+       JOIN assets m ON mt.asset_id = m.id
        WHERE mt.team_id = $1 AND mt.tenant_id = $2 AND m.is_active = 1
        ORDER BY m.name`,
       [teamId, tenantId],
@@ -563,38 +561,38 @@ export class VacationCapacityService {
     ];
   }
 
-  /** Compute worst-case machine capacity across all workdays. */
-  private computeMachineCapacity(
+  /** Compute worst-case asset capacity across all workdays. */
+  private computeAssetCapacity(
     ctx: CapacityContext,
     workdayDates: Date[],
     requesterId: number,
     staffingMap: Map<number, number>,
-  ): MachineCapacityItem[] {
-    if (workdayDates.length === 0 || ctx.machines.length === 0) {
+  ): AssetCapacityItem[] {
+    if (workdayDates.length === 0 || ctx.assets.length === 0) {
       return [];
     }
 
-    return ctx.machines
-      .filter((m: TeamMachineRow) => staffingMap.has(m.machine_id))
-      .map((machine: TeamMachineRow) =>
-        this.computeSingleMachineCapacity(
+    return ctx.assets
+      .filter((m: TeamAssetRow) => staffingMap.has(m.asset_id))
+      .map((asset: TeamAssetRow) =>
+        this.computeSingleAssetCapacity(
           ctx,
           workdayDates,
           requesterId,
-          machine,
-          staffingMap.get(machine.machine_id) ?? 1,
+          asset,
+          staffingMap.get(asset.asset_id) ?? 1,
         ),
       );
   }
 
-  /** Compute worst-case capacity for a single machine. */
-  private computeSingleMachineCapacity(
+  /** Compute worst-case capacity for a single asset. */
+  private computeSingleAssetCapacity(
     ctx: CapacityContext,
     workdayDates: Date[],
     requesterId: number,
-    machine: TeamMachineRow,
+    asset: TeamAssetRow,
     minStaff: number,
-  ): MachineCapacityItem {
+  ): AssetCapacityItem {
     let worstAvailable: number = ctx.members.length;
     let worstAvailableAfter: number = ctx.members.length;
     const absentUserIds: Set<number> = new Set<number>();
@@ -625,13 +623,13 @@ export class VacationCapacityService {
     const availableAfterApproval: number = Math.max(0, worstAvailableAfter);
 
     return {
-      machineId: machine.machine_id,
-      machineName: machine.machine_name,
+      assetId: asset.asset_id,
+      assetName: asset.asset_name,
       minStaffRequired: minStaff,
       currentlyAvailable: Math.max(0, worstAvailable),
       availableAfterApproval,
       absentMembers,
-      status: this.computeMachineStatus(availableAfterApproval, minStaff),
+      status: this.computeAssetStatus(availableAfterApproval, minStaff),
     };
   }
 
@@ -811,27 +809,23 @@ export class VacationCapacityService {
 
   /** Determine the overall capacity status. */
   private determineOverallStatus(
-    machineAnalysis: MachineCapacityItem[],
+    assetAnalysis: AssetCapacityItem[],
     blackoutConflicts: BlackoutConflict[],
     entitlementCheck: EntitlementCheckResult,
   ): OverallCapacityStatus {
-    // Blocked if: blackout conflict, insufficient entitlement, or critical machine
+    // Blocked if: blackout conflict, insufficient entitlement, or critical asset
     if (blackoutConflicts.length > 0) {
       return 'blocked';
     }
     if (!entitlementCheck.sufficient) {
       return 'blocked';
     }
-    if (
-      machineAnalysis.some((m: MachineCapacityItem) => m.status === 'critical')
-    ) {
+    if (assetAnalysis.some((m: AssetCapacityItem) => m.status === 'critical')) {
       return 'blocked';
     }
 
-    // Warning if: any machine at warning level
-    if (
-      machineAnalysis.some((m: MachineCapacityItem) => m.status === 'warning')
-    ) {
+    // Warning if: any asset at warning level
+    if (assetAnalysis.some((m: AssetCapacityItem) => m.status === 'warning')) {
       return 'warning';
     }
 
@@ -915,8 +909,8 @@ export class VacationCapacityService {
     return 'ok';
   }
 
-  /** Compute machine capacity status based on min staff requirement. */
-  private computeMachineStatus(
+  /** Compute asset capacity status based on min staff requirement. */
+  private computeAssetStatus(
     availableAfterApproval: number,
     minStaffRequired: number,
   ): CapacityStatus {

@@ -123,11 +123,12 @@ describe('RotationService', () => {
 
   describe('deleteRotationPattern', () => {
     it('should check admin role then delegate', async () => {
-      await service.deleteRotationPattern(1, 10, 'admin');
+      await service.deleteRotationPattern(1, 10, 'admin', 5);
 
       expect(mockPatternService.deleteRotationPattern).toHaveBeenCalledWith(
         1,
         10,
+        5,
       );
     });
   });
@@ -194,11 +195,12 @@ describe('RotationService', () => {
 
   describe('deleteRotationHistory', () => {
     it('should check admin role then delegate', async () => {
-      await service.deleteRotationHistory(10, 5, 'admin');
+      await service.deleteRotationHistory(10, 5, 'admin', 1);
 
       expect(mockHistoryService.deleteRotationHistory).toHaveBeenCalledWith(
         10,
         5,
+        1,
         undefined,
       );
     });

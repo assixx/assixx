@@ -31,9 +31,9 @@ export interface BadgeInfo {
 }
 
 /**
- * Machine interface
+ * Asset interface
  */
-export interface Machine {
+export interface Asset {
   id: number;
   name: string;
   departmentId?: number;
@@ -76,15 +76,15 @@ export interface Team {
   leaderName?: string;
   departmentId?: number;
   departmentName?: string;
-  memberCount?: number;
+  memberCount?: number | string;
   memberNames?: string;
-  machineCount?: number;
-  machineNames?: string;
+  assetCount?: number | string;
+  assetNames?: string;
   isActive: IsActiveStatus;
   createdAt: string;
   updatedAt: string;
   members?: TeamMember[];
-  machines?: Machine[];
+  assets?: Asset[];
 }
 
 /**
@@ -96,7 +96,7 @@ export interface TeamFormData {
   departmentId: number | null;
   leaderId: number | null;
   memberIds: number[];
-  machineIds: number[];
+  assetIds: number[];
   isActive: FormIsActiveStatus;
 }
 
@@ -116,7 +116,7 @@ export interface TeamPayload {
  */
 export interface TeamDetails {
   members?: { id: number }[];
-  machines?: { id: number }[];
+  assets?: { id: number }[];
 }
 
 /**

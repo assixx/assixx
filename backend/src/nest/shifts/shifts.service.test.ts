@@ -87,7 +87,7 @@ function createMockDbShift(overrides?: Record<string, unknown>) {
     area_id: null,
     department_id: 10,
     team_id: null,
-    machine_id: null,
+    asset_id: null,
     created_by: 5,
     created_at: new Date('2025-06-15'),
     updated_at: new Date('2025-06-15'),
@@ -111,8 +111,8 @@ function createMockDbFavorite(overrides?: Record<string, unknown>) {
     area_name: 'Area 1',
     department_id: 10,
     department_name: 'Engineering',
-    machine_id: 0,
-    machine_name: '',
+    asset_id: 0,
+    asset_name: '',
     team_id: 3,
     team_name: 'Team Alpha',
     created_at: new Date('2025-06-15'),
@@ -678,8 +678,8 @@ describe('ShiftsService – DB-mocked methods', () => {
           areaName: 'Area 1',
           departmentId: 10,
           departmentName: 'Engineering',
-          machineId: 0,
-          machineName: '',
+          assetId: 0,
+          assetName: '',
           teamId: 3,
           teamName: 'Team Alpha',
         } as never,
@@ -706,8 +706,8 @@ describe('ShiftsService – DB-mocked methods', () => {
             areaName: 'Area 1',
             departmentId: 10,
             departmentName: 'Engineering',
-            machineId: 0,
-            machineName: '',
+            assetId: 0,
+            assetName: '',
             teamId: 3,
             teamName: 'Team Alpha',
           } as never,
@@ -728,8 +728,8 @@ describe('ShiftsService – DB-mocked methods', () => {
             areaName: 'Area 1',
             departmentId: 10,
             departmentName: 'Engineering',
-            machineId: 0,
-            machineName: '',
+            assetId: 0,
+            assetName: '',
             teamId: 3,
             teamName: 'Team Alpha',
           } as never,
@@ -925,11 +925,12 @@ describe('ShiftsService – delegation methods', () => {
     it('delegates to shiftPlansService', async () => {
       mockPlansService.deleteShiftPlanByUuid.mockResolvedValueOnce(undefined);
 
-      await service.deleteShiftPlanByUuid('plan-uuid', 42);
+      await service.deleteShiftPlanByUuid('plan-uuid', 42, 5);
 
       expect(mockPlansService.deleteShiftPlanByUuid).toHaveBeenCalledWith(
         'plan-uuid',
         42,
+        5,
       );
     });
   });
@@ -938,9 +939,9 @@ describe('ShiftsService – delegation methods', () => {
     it('delegates to shiftPlansService', async () => {
       mockPlansService.deleteShiftPlan.mockResolvedValueOnce(undefined);
 
-      await service.deleteShiftPlan(1, 42);
+      await service.deleteShiftPlan(1, 42, 5);
 
-      expect(mockPlansService.deleteShiftPlan).toHaveBeenCalledWith(1, 42);
+      expect(mockPlansService.deleteShiftPlan).toHaveBeenCalledWith(1, 42, 5);
     });
   });
 

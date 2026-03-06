@@ -52,6 +52,22 @@ interface MessagesReadEvent {
   entries: ReadReceiptEntry[];
 }
 
+export interface TpmEvent {
+  tenantId: number;
+  card: {
+    uuid: string;
+    cardCode: string;
+    title: string;
+    assetId: number;
+    assetName?: string;
+    intervalType: string;
+    status: string;
+  };
+  executionUuid?: string;
+  userId?: number;
+  userName?: string;
+}
+
 export interface VacationRequestEvent {
   tenantId: number;
   request: {
@@ -66,6 +82,19 @@ export interface VacationRequestEvent {
     requesterName?: string | undefined;
     approverName?: string | undefined;
   };
+}
+
+export interface WorkOrderEvent {
+  tenantId: number;
+  workOrder: {
+    uuid: string;
+    title: string;
+    status: string;
+    priority: string;
+    assigneeUserIds: number[];
+  };
+  changedByUserId?: number;
+  changedByName?: string;
 }
 
 class NotificationEventBus extends EventEmitter {
@@ -154,6 +183,111 @@ class NotificationEventBus extends EventEmitter {
       `[EventBus] Emitting vacation.request.cancelled for tenant ${tenantId}`,
     );
     this.emit('vacation.request.cancelled', { tenantId, request });
+  }
+
+  // TPM events
+  emitTpmMaintenanceDue(tenantId: number, card: TpmEvent['card']): void {
+    logger.info(
+      `[EventBus] Emitting tpm.maintenance.due for tenant ${tenantId}`,
+    );
+    this.emit('tpm.maintenance.due', { tenantId, card });
+  }
+
+  emitTpmMaintenanceOverdue(tenantId: number, card: TpmEvent['card']): void {
+    logger.info(
+      `[EventBus] Emitting tpm.maintenance.overdue for tenant ${tenantId}`,
+    );
+    this.emit('tpm.maintenance.overdue', { tenantId, card });
+  }
+
+  emitTpmMaintenanceCompleted(
+    tenantId: number,
+    card: TpmEvent['card'],
+    userId: number,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting tpm.maintenance.completed for tenant ${tenantId}`,
+    );
+    this.emit('tpm.maintenance.completed', { tenantId, card, userId });
+  }
+
+  emitTpmApprovalRequired(
+    tenantId: number,
+    card: TpmEvent['card'],
+    executionUuid: string,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting tpm.approval.required for tenant ${tenantId}`,
+    );
+    this.emit('tpm.approval.required', { tenantId, card, executionUuid });
+  }
+
+  emitTpmApprovalResult(
+    tenantId: number,
+    card: TpmEvent['card'],
+    executionUuid: string,
+    approved: boolean,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting tpm.approval.result for tenant ${tenantId}`,
+    );
+    this.emit('tpm.approval.result', {
+      tenantId,
+      card,
+      executionUuid,
+      approved,
+    });
+  }
+
+  // Work Order events
+  emitWorkOrderAssigned(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.assigned for tenant ${tenantId}`,
+    );
+    this.emit('workorder.assigned', { tenantId, workOrder });
+  }
+
+  emitWorkOrderStatusChanged(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+    changedByUserId: number,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.status.changed for tenant ${tenantId}`,
+    );
+    this.emit('workorder.status.changed', {
+      tenantId,
+      workOrder,
+      changedByUserId,
+    });
+  }
+
+  emitWorkOrderDueSoon(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.due.soon for tenant ${tenantId}`,
+    );
+    this.emit('workorder.due.soon', { tenantId, workOrder });
+  }
+
+  emitWorkOrderVerified(
+    tenantId: number,
+    workOrder: WorkOrderEvent['workOrder'],
+    changedByUserId: number,
+  ): void {
+    logger.info(
+      `[EventBus] Emitting workorder.verified for tenant ${tenantId}`,
+    );
+    this.emit('workorder.verified', {
+      tenantId,
+      workOrder,
+      changedByUserId,
+    });
   }
 
   // Get active listener count for monitoring

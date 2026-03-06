@@ -19,9 +19,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -36,6 +37,16 @@ const ERROR_MESSAGES = {
   INVALID_PASSWORD: 'Invalid current password',
 } as const;
 
+/** DTO field → DB column mapping for profile updates */
+const PROFILE_FIELD_MAP = [
+  ['firstName', 'first_name'],
+  ['lastName', 'last_name'],
+  ['phone', 'phone'],
+  ['address', 'address'],
+  ['emergencyContact', 'emergency_contact'],
+  ['employeeNumber', 'employee_number'],
+] as const;
+
 @Injectable()
 export class UserProfileService {
   private readonly logger = new Logger(UserProfileService.name);
@@ -43,6 +54,7 @@ export class UserProfileService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly userRepository: UserRepository,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ============================================
@@ -57,42 +69,10 @@ export class UserProfileService {
     dto: UpdateProfileDto,
     tenantId: number,
   ): Promise<SafeUserResponse> {
-    const updates: string[] = ['updated_at = NOW()'];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    if (dto.firstName !== undefined) {
-      updates.push(`first_name = $${paramIndex}`);
-      params.push(dto.firstName);
-      paramIndex++;
-    }
-    if (dto.lastName !== undefined) {
-      updates.push(`last_name = $${paramIndex}`);
-      params.push(dto.lastName);
-      paramIndex++;
-    }
-    if (dto.phone !== undefined) {
-      updates.push(`phone = $${paramIndex}`);
-      params.push(dto.phone);
-      paramIndex++;
-    }
-    if (dto.address !== undefined) {
-      updates.push(`address = $${paramIndex}`);
-      params.push(dto.address);
-      paramIndex++;
-    }
-    if (dto.emergencyContact !== undefined) {
-      updates.push(`emergency_contact = $${paramIndex}`);
-      params.push(dto.emergencyContact);
-      paramIndex++;
-    }
-    if (dto.employeeNumber !== undefined) {
-      updates.push(`employee_number = $${paramIndex}`);
-      params.push(dto.employeeNumber);
-      paramIndex++;
-    }
+    const { updates, params } = this.buildProfileUpdates(dto);
 
     if (params.length > 0) {
+      const paramIndex = params.length + 1;
       params.push(userId, tenantId);
       await this.databaseService.query(
         `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
@@ -104,6 +84,20 @@ export class UserProfileService {
     if (updatedUser === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'user_profile',
+      userId,
+      'Profil aktualisiert',
+      undefined,
+      {
+        updatedFields: Object.keys(dto).filter(
+          (k: string) => (dto as Record<string, unknown>)[k] !== undefined,
+        ),
+      },
+    );
 
     return toSafeUserResponse(updatedUser);
   }
@@ -155,6 +149,14 @@ export class UserProfileService {
     const revokedCount = Number.parseInt(result[0]?.count ?? '0', 10);
     this.logger.log(
       `Password changed for user ${userId}: revoked ${revokedCount} refresh tokens`,
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'user_profile',
+      userId,
+      'Passwort geändert',
     );
 
     return { message: 'Password changed successfully' };
@@ -213,6 +215,14 @@ export class UserProfileService {
       [relativePath, userId, tenantId],
     );
 
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'user_profile',
+      userId,
+      'Profilbild aktualisiert',
+    );
+
     // Fetch and return updated user
     const updatedUser = await this.findUserById(userId, tenantId);
     if (updatedUser === null) {
@@ -263,12 +273,41 @@ export class UserProfileService {
       [userId, tenantId],
     );
 
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'user_profile',
+      userId,
+      'Profilbild gelöscht',
+    );
+
     return { message: 'Profile picture deleted successfully' };
   }
 
   // ============================================
   // Private Helper Methods
   // ============================================
+
+  /** Build parameterized SET clauses from profile DTO */
+  private buildProfileUpdates(dto: UpdateProfileDto): {
+    updates: string[];
+    params: unknown[];
+  } {
+    const updates: string[] = ['updated_at = NOW()'];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+    const dtoRecord = dto as Record<string, unknown>;
+
+    for (const [dtoKey, dbColumn] of PROFILE_FIELD_MAP) {
+      if (dtoRecord[dtoKey] !== undefined) {
+        updates.push(`${dbColumn} = $${paramIndex}`);
+        params.push(dtoRecord[dtoKey]);
+        paramIndex++;
+      }
+    }
+
+    return { updates, params };
+  }
 
   /**
    * Find user by ID

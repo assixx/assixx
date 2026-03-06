@@ -16,27 +16,6 @@
 
   import type { ActionData } from './$types';
 
-  // API Response types for login endpoint
-  interface LoginUser {
-    id: number;
-    role: 'root' | 'admin' | 'employee';
-    email: string;
-    tenantId?: number;
-  }
-
-  interface LoginApiResponse {
-    success: boolean;
-    data?: {
-      accessToken: string;
-      refreshToken: string;
-      user: LoginUser;
-    };
-    error?: {
-      message: string;
-      code?: string;
-    };
-  }
-
   const { form }: { form: ActionData } = $props();
 
   // =============================================================================
@@ -151,65 +130,6 @@
   // =============================================================================
   // Event Handlers
   // =============================================================================
-
-  // Note: _handleSubmit is kept for potential future use (currently form uses enhance)
-  async function _handleSubmit(e: Event): Promise<void> {
-    e.preventDefault();
-    dismissToast(); // Clear any existing toast
-    loading = true;
-
-    try {
-      const response = await fetch('/api/v2/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const result: LoginApiResponse =
-        (await response.json()) as LoginApiResponse;
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error?.message ?? 'Login fehlgeschlagen');
-      }
-
-      // Token speichern - CRITICAL: Use TokenManager to update BOTH memory AND localStorage!
-      // Direct localStorage writes don't update the TokenManager singleton's in-memory state
-      if (result.data !== undefined) {
-        // Use TokenManager to properly set tokens (updates singleton memory + localStorage)
-        getTokenManager().setTokens(
-          result.data.accessToken,
-          result.data.refreshToken,
-        );
-        // Legacy: token (backward compatibility for old code)
-        localStorage.setItem('token', result.data.accessToken);
-
-        // Store user role - Required for permission checks across pages
-        const role = result.data.user.role;
-        localStorage.setItem('userRole', role);
-        localStorage.setItem('activeRole', role); // Legacy compatibility
-
-        // Store user object - Full user data for pages that need more than just role
-        localStorage.setItem('user', JSON.stringify(result.data.user));
-
-        // Redirect zum Dashboard basierend auf Rolle
-        if (role === 'root') {
-          await goto(resolve('/root-dashboard', {}));
-        } else if (role === 'admin') {
-          await goto(resolve('/admin-dashboard', {}));
-        } else {
-          await goto(resolve('/employee-dashboard', {}));
-        }
-      }
-    } catch (err) {
-      showError(
-        err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten',
-      );
-    } finally {
-      loading = false;
-    }
-  }
 
   function handlePasswordReset(e: Event): void {
     e.preventDefault();
@@ -355,10 +275,10 @@
           loading = false;
 
           if (result.type === 'success' && isSuccessResultData(result.data)) {
-            const { accessToken, refreshToken, user, redirectTo } = result.data;
+            const { accessToken, user, redirectTo } = result.data;
 
             // Store tokens for client-side API calls
-            getTokenManager().setTokens(accessToken, refreshToken);
+            getTokenManager().setTokens(accessToken);
             localStorage.setItem('token', accessToken); // Legacy compatibility
 
             // Store user data

@@ -19,29 +19,45 @@ export class CalendarPermissionService {
   constructor(private readonly databaseService: DatabaseService) {}
 
   /**
-   * Get user role info with department and team
+   * Get user role info with ALL departments and teams
+   * A user can belong to multiple teams/departments — must check all of them
    */
   async getUserRole(userId: number, tenantId: number): Promise<UserRoleInfo> {
-    const rows = await this.databaseService.query<UserRoleInfo>(
+    const rows = await this.databaseService.query<{
+      role: string | null;
+      has_full_access: boolean;
+      department_ids: number[] | null;
+      team_ids: number[] | null;
+    }>(
       `SELECT u.role,
               u.has_full_access,
-              ud.department_id,
-              ut.team_id
+              (SELECT ARRAY_AGG(DISTINCT ud.department_id)
+               FROM user_departments ud
+               WHERE ud.user_id = u.id AND ud.tenant_id = u.tenant_id) AS department_ids,
+              (SELECT ARRAY_AGG(DISTINCT ut.team_id)
+               FROM user_teams ut
+               WHERE ut.user_id = u.id AND ut.tenant_id = u.tenant_id) AS team_ids
        FROM users u
-       LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-       WHERE u.id = $1 AND u.tenant_id = $2
-       LIMIT 1`,
+       WHERE u.id = $1 AND u.tenant_id = $2`,
       [userId, tenantId],
     );
-    return (
-      rows[0] ?? {
+
+    const row = rows[0];
+    if (row === undefined) {
+      return {
         role: null,
-        department_id: null,
-        team_id: null,
+        department_ids: [],
+        team_ids: [],
         has_full_access: false,
-      }
-    );
+      };
+    }
+
+    return {
+      role: row.role,
+      has_full_access: row.has_full_access,
+      department_ids: row.department_ids ?? [],
+      team_ids: row.team_ids ?? [],
+    };
   }
 
   /**
@@ -70,13 +86,18 @@ export class CalendarPermissionService {
     // Department events visible to department members
     if (
       event.org_level === 'department' &&
-      event.department_id === userRole.department_id
+      event.department_id !== null &&
+      userRole.department_ids.includes(event.department_id)
     ) {
       return true;
     }
 
     // Team events visible to team members
-    if (event.org_level === 'team' && event.team_id === userRole.team_id) {
+    if (
+      event.org_level === 'team' &&
+      event.team_id !== null &&
+      userRole.team_ids.includes(event.team_id)
+    ) {
       return true;
     }
 

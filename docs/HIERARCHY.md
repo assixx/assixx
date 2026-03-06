@@ -259,11 +259,11 @@ Department: "IT"
 
 ---
 
-### 6️⃣ **MACHINES** - Maschinen
+### 6️⃣ **MACHINES** - Anlagen
 
 **Tabelle:** `machines`
 
-**Bedeutung:** Produktionsmaschinen, Geräte, Assets.
+**Bedeutung:** ProduktionsAnlagen, Geräte, Assets.
 
 **Doppelte Zuordnung:**
 
@@ -373,7 +373,7 @@ User: "Max Mustermann"
 
 - Gebäude, Hallen, Etagen, Räume
 - Hat `parent_id` → Verschachtelbar (Gebäude → Halle → Raum)
-- Maschinen und Departments werden physisch zugeordnet
+- Anlagen und Departments werden physisch zugeordnet
 - **Beispiel:** "Produktionshalle Nord, Raum 204"
 
 **DEPARTMENT GROUPS** = **Logisch** ("Wer gehört organisatorisch zusammen?")
@@ -492,7 +492,7 @@ ALTER TABLE machines
 
 -- Machine Teams (N:M Join)
 ALTER TABLE machine_teams
-  ADD FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE,
+  ADD FOREIGN KEY (asset_id) REFERENCES machines(id) ON DELETE CASCADE,
   ADD FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE;
 
 -- User Teams (N:M Join)
@@ -534,7 +534,7 @@ TENANT: testfirma.de (tenant_id = 5601)
 │   │   │       ├─ employeedrei@testfirma.de (role=member)
 │   │   │       └─ employeevier@testfirma.de (role=member)
 │   │   │
-│   │   └─ 🏭 MACHINE: "Testmaschine" (id=169, type=production, status=operational)
+│   │   └─ 🏭 MACHINE: "TestAnlage" (id=169, type=production, status=operational)
 │   │       │
 │   │       └─ Machine Teams (via machine_teams):
 │   │           └─ Testteam (id=2083)
@@ -606,9 +606,9 @@ Ebene 1: TENANT (Firma/Mandant)
 - **Department** = Hauptabteilung (Gehalt, Urlaubsanträge)
 - **Teams** = Projektgruppen (flexibel, wechselnd)
 
-### 4. **Maschinen-Zuordnung**
+### 4. **Anlagen-Zuordnung**
 
-- `area_id` = "Wo steht die Maschine?"
+- `area_id` = "Wo steht die Anlage?"
 - `department_id` = "Wer ist verantwortlich?"
 - Teams über `machine_teams` = "Wer arbeitet damit?"
 
@@ -713,5 +713,5 @@ Department Group "IT-Untergruppe"
 ---
 
 **Letzte Aktualisierung:** 2025-10-23
-**Analysiert von:** Claude Code
+**Analysiert von:** Assixx
 **Basierend auf:** Live-Datenbank (Tenant 5601 "testfirma.de")

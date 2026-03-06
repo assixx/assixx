@@ -79,7 +79,7 @@
   --main-bg-gradient: #f6f8fc;
 
   /* Backgrounds */
-  --color-surface: var(--color-white);
+  --color-surface: #dadada;
   --header-bg: #f6f8fc;
 
   /* Text */
@@ -88,20 +88,32 @@
   --color-text-tertiary: var(--color-gray-600);
   --color-text-muted: #6b7280;
   --color-text-disabled: var(--color-gray-400);
-  --color-text-placeholder: rgb(0 0 0 / 80%);
+  --color-text-placeholder: rgb(0 0 0 / 45%);
   --color-icon-primary: var(--color-primary);
   --color-accent-bg: #a9d9ff;
 
+  /* Stacked section background (Kamishibai board collapsed sections) */
+  --color-section-stacked-bg: #f6f8fc;
+  --color-section-header-bg: #eceef2;
+  --section-dim-filter: saturate(0.1) opacity(0.9);
+
   /* Glass Backgrounds (dark overlays on light surfaces) */
-  --glass-bg: rgb(0 0 0 / 1%);
-  --glass-bg-hover: rgb(0 0 0 / 3%);
-  --glass-bg-active: rgb(0 0 0 / 5%);
+  --glass-bg: rgb(0 0 0 / 2%);
+  --glass-bg-hover: rgb(0 0 0 / 5%);
+  --glass-bg-active: rgb(0 0 0 / 6%);
   --glass-border: 1px solid rgb(0 0 0 / 20%);
+  --glass-border-sidebar-tree: 1px solid rgb(0 0 0 / 35%);
+
+  /* Borders (theme-dependent — from colors.css refactor) */
+  --color-border: var(--color-gray-300);
+  --color-border-hover: rgb(33 150 243 / 55%);
+  --color-glass-border: rgb(0 0 0 / 8%);
+  --color-glass-border-hover: rgb(0 0 0 / 15%);
 
   /* Glass Form (light mode) */
-  --glass-form-bg: rgb(255 255 255 / 1%);
+  --glass-form-bg: rgb(0 0 0 / 2%);
   --glass-form-bg-hover: rgb(0 0 0 / 4%);
-  --glass-form-bg-focus: rgb(0 0 0 / 5%);
+  --glass-form-bg-focus: rgb(0 0 0 / 6%);
   --glass-form-border: 1px solid rgb(0 0 0 / 32%);
 
   /* Legacy Tokens (light mode values) */
@@ -116,8 +128,8 @@
   /* ========== BUTTON SHADOWS (light mode) ========== */
 
   /* Primary Button - Blue glow (softer on light surfaces) */
-  --shadow-btn-primary: 0 1px 3px rgb(0 123 224 / 65.1%);
-  --shadow-btn-primary-hover: 0 6px 20px rgb(33 150 243 / 25%);
+  --shadow-btn-primary: 0 2px 4px rgb(33 150 243 / 18%);
+  --shadow-btn-primary-hover: 0 4px 12px rgb(33 150 243 / 28%);
 
   /* Danger Button - Red glow */
   --shadow-btn-danger: 0 2px 4px rgb(220 53 69 / 12%);

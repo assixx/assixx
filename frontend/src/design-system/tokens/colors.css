@@ -55,21 +55,5 @@
 
   /* ========== NEUTRALS (Grayscale Semantics) ========== */
   /* NOTE: --color-text-primary/secondary are defined in variables-light/dark.css */
-  --color-border: var(--color-gray-300); /* Borders (light) */
-  --color-border-hover: rgb(33 150 243 / 25%); /* Blue tint hover borders */
-
-  /* ========== SURFACE (Glassmorphism) ========== */
-  /* Light mode: dark overlays on light surfaces */
-  --color-glass-border: rgb(0 0 0 / 8%); /* Glass border */
-  --color-glass-border-hover: rgb(0 0 0 / 15%); /* Hover border */
-}
-
-/* ========== DARK MODE OVERRIDES ========== */
-html.dark {
-  --color-border: var(--color-gray-800); /* #424242 - Borders */
-  --color-border-hover: #a9d9ff54; /* Blue tint ~33% opacity */
-
-  /* Glassmorphism: white overlays on dark surfaces */
-  --color-glass-border: rgb(255 255 255 / 10%);
-  --color-glass-border-hover: rgb(255 255 255 / 20%);
+  /* NOTE: --color-border and --color-glass-border are theme-dependent → variables-light/dark.css */
 }

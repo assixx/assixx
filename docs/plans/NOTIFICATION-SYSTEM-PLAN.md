@@ -677,5 +677,5 @@ Siehe **[ADR-003: Notification System Architecture](./adr/ADR-003-notification-s
 
 **Erstellt:** 2026-01-08
 **Aktualisiert:** 2026-01-11
-**Autor:** Claude Code
+**Autor:** Assixx
 **Status:** ✅ PHASE 1 VOLLSTÄNDIG IMPLEMENTIERT

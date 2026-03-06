@@ -233,6 +233,8 @@ export class UserRepository {
     if (role !== undefined) {
       params.push(role);
       whereClause += ` AND role = $${params.length}`;
+    } else {
+      whereClause += " AND role != 'dummy'";
     }
 
     params.push(limit, offset);

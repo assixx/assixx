@@ -15,6 +15,11 @@ const log = createLogger('Toast');
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+export interface ToastAction {
+  label: string;
+  href: string;
+}
+
 export interface Toast {
   id: string;
   type: ToastType;
@@ -22,6 +27,7 @@ export interface Toast {
   message?: string;
   duration?: number;
   dismissing?: boolean;
+  action?: ToastAction;
 }
 
 // =============================================================================
@@ -70,6 +76,7 @@ export function showToast(toast: Omit<Toast, 'id'>): string {
     message: toast.message,
     duration,
     dismissing: false,
+    action: toast.action,
   };
 
   toasts.update((t: Toast[]) => [...t, fullToast]);

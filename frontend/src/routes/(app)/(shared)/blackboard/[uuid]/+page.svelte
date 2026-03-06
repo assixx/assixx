@@ -110,9 +110,8 @@
   // Confirmation State
   let confirming = $state(false);
 
-  // Delete Modal State (two-step via DeleteConfirmModal)
-  let showDeleteStep1 = $state(false);
-  let showDeleteStep2 = $state(false);
+  // Delete Modal State
+  let showDeleteModal = $state(false);
   let deleting = $state(false);
 
   // Preview Modal State
@@ -204,8 +203,7 @@
       showErrorAlert(result.error);
     }
     deleting = false;
-    showDeleteStep1 = false;
-    showDeleteStep2 = false;
+    showDeleteModal = false;
   }
 
   /** Open edit modal */
@@ -247,13 +245,7 @@
   }
 
   function cancelDelete(): void {
-    showDeleteStep1 = false;
-    showDeleteStep2 = false;
-  }
-
-  function proceedToDeleteStep2(): void {
-    showDeleteStep1 = false;
-    showDeleteStep2 = true;
+    showDeleteModal = false;
   }
 
   function goBack(): void {
@@ -266,7 +258,7 @@
 
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
-      if (showDeleteStep1 || showDeleteStep2) cancelDelete();
+      if (showDeleteModal) cancelDelete();
       else if (showEditModal) showEditModal = false;
       else if (showPreviewModal) closePreview();
     } else if (showPreviewModal) {
@@ -498,7 +490,7 @@
               <button
                 type="button"
                 class="btn btn-danger"
-                onclick={() => (showDeleteStep1 = true)}
+                onclick={() => (showDeleteModal = true)}
                 ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
               >
             {/if}
@@ -544,13 +536,11 @@
   totalCount={attachments.length}
 />
 
-<!-- Delete Confirmation Modal (two-step via parent component) -->
+<!-- Delete Confirmation Modal -->
 <DeleteConfirmModal
-  showStep1={showDeleteStep1}
-  showStep2={showDeleteStep2}
+  show={showDeleteModal}
   loading={deleting}
   oncancel={cancelDelete}
-  onproceed={proceedToDeleteStep2}
   onconfirm={handleDeleteEntry}
 />
 

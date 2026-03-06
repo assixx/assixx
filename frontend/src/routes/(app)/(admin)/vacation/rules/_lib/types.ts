@@ -22,8 +22,8 @@ export interface VacationBlackout {
 
 export interface VacationStaffingRule {
   id: string;
-  machineId: number;
-  machineName?: string;
+  assetId: number;
+  assetName?: string;
   minStaffCount: number;
   createdBy: number;
   createdAt: string;
@@ -68,7 +68,7 @@ export interface UpdateBlackoutPayload {
 }
 
 export interface CreateStaffingRulePayload {
-  machineId: number;
+  assetId: number;
   minStaffCount: number;
 }
 
@@ -106,7 +106,7 @@ export interface OrgTeam {
   departmentId?: number;
 }
 
-export interface OrgMachine {
+export interface OrgAsset {
   id: number;
   name: string;
   departmentId?: number;

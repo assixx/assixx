@@ -62,7 +62,7 @@ Browser Request → hooks.server.ts → (app)/+layout.server.ts → +page.server
 - `/manage-teams` ❌ KEIN CHECK (vermutlich)
 - `/manage-departments` ❌ KEIN CHECK (vermutlich)
 - `/manage-areas` ❌ KEIN CHECK (vermutlich)
-- `/manage-machines` ❌ KEIN CHECK (vermutlich)
+- `/manage-assets` ❌ KEIN CHECK (vermutlich)
 - `/features` ❌ KEIN CHECK (vermutlich)
 - `/survey-admin` ❌ KEIN CHECK (vermutlich)
 - `/survey-results` ❌ KEIN CHECK (vermutlich)
@@ -115,7 +115,7 @@ const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/manage-teams': ['admin', 'root'],
   '/manage-departments': ['admin', 'root'],
   '/manage-areas': ['admin', 'root'],
-  '/manage-machines': ['admin', 'root'],
+  '/manage-assets': ['admin', 'root'],
   '/features': ['admin', 'root'],
   '/survey-admin': ['admin', 'root'],
   '/survey-results': ['admin', 'root'],

@@ -76,7 +76,7 @@
   /* Browser workaround: linear-gradient overrides browser !important defaults */
   background: rgb(0 221 255 / 10%)
     linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
-  color: #0df; /* Cyan blue */
+  color: #0087ff; /* Cyan blue */
   font-weight: 500;
 }
 
@@ -84,7 +84,7 @@
 .multi-select:focus option:checked {
   background: rgb(0 221 255 / 10%)
     linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
-  color: #0df;
+  color: #0087ff;
 }
 
 /* Hover on option (Firefox/Chrome) */

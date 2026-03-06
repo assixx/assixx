@@ -43,19 +43,20 @@ describe('SECURITY: RolesService', () => {
   // =============================================================
 
   describe('getAllRoles', () => {
-    it('should return exactly 3 roles', () => {
+    it('should return exactly 4 roles', () => {
       const roles = service.getAllRoles();
 
-      expect(roles).toHaveLength(3);
+      expect(roles).toHaveLength(4);
     });
 
-    it('should include root, admin, and employee', () => {
+    it('should include root, admin, employee, and dummy', () => {
       const roles = service.getAllRoles();
       const ids = roles.map((r) => r.id);
 
       expect(ids).toContain('root');
       expect(ids).toContain('admin');
       expect(ids).toContain('employee');
+      expect(ids).toContain('dummy');
     });
 
     it('should have complete properties on each role', () => {

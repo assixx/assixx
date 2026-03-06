@@ -80,8 +80,9 @@
   const employeeDepartment = $derived(
     getDisplayValue(user?.teamDepartmentName),
   );
-  // teamNames is array - take first team name
-  const employeeTeam = $derived(getDisplayValue(user?.teamNames?.[0]));
+  const employeeTeams = $derived(
+    (user?.teamNames?.length ?? 0) > 0 ? (user?.teamNames ?? null) : null,
+  );
   const employeePosition = $derived(
     getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee),
   );
@@ -116,8 +117,18 @@
       <div class="card-stat__icon">
         <i class="fas fa-users"></i>
       </div>
-      <div class="card-stat__value">{employeeTeam}</div>
-      <div class="card-stat__label">Team</div>
+      <div class="card-stat__value">
+        {#if employeeTeams !== null}
+          {#each employeeTeams as team (team)}
+            <div>{team}</div>
+          {/each}
+        {:else}
+          {PLACEHOLDER_TEXT.notAssigned}
+        {/if}
+      </div>
+      <div class="card-stat__label">
+        {employeeTeams !== null && employeeTeams.length > 1 ? 'Teams' : 'Team'}
+      </div>
     </div>
     <div class="card-stat">
       <div class="card-stat__icon">

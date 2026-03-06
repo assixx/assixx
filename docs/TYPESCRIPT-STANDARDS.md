@@ -727,7 +727,6 @@ pnpm run format:check  # check without fixing
 | `eslint-plugin-promise`        | Promise best practices, no floating        |
 | `eslint-plugin-sonarjs`        | Code smell detection, cognitive complexity |
 | `eslint-plugin-unicorn`        | Modern JavaScript patterns                 |
-| `eslint-plugin-no-secrets`     | Prevents hardcoded secrets/API keys        |
 | `eslint-plugin-no-unsanitized` | XSS prevention (innerHTML, etc.)           |
 
 ### 12.4 Test File Exceptions

@@ -44,6 +44,16 @@ interface UserRoleRow {
   role: string;
 }
 
+/** Computed/resolved values for inserting a vacation request */
+interface InsertRequestParams {
+  id: string;
+  tenantId: number;
+  requesterId: number;
+  approverId: number | null;
+  computedDays: number;
+  status: VacationRequestStatus;
+}
+
 /** Team info with lead/deputy */
 interface UserTeamInfoRow {
   team_id: number;
@@ -269,9 +279,9 @@ export class VacationService {
     );
   }
 
-  /** Cancel an approved vacation request (admin/root only). */
+  /** Cancel an approved vacation request (admin/root/approver). */
   async cancelRequest(
-    adminId: number,
+    userId: number,
     tenantId: number,
     requestId: string,
     reason: string,
@@ -280,37 +290,22 @@ export class VacationService {
 
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
-        const user = await this.getUserRole(client, tenantId, adminId);
-        if (user.role !== 'admin' && user.role !== 'root') {
-          throw new ForbiddenException(
-            'Only admins or root users can cancel approved requests',
-          );
-        }
+        const user = await this.getUserRole(client, tenantId, userId);
         const row = await this.lockRequestById(client, tenantId, requestId);
-        if (row.status !== 'approved') {
-          throw new ConflictException(
-            `Can only cancel approved requests. Current: '${row.status}'`,
-          );
-        }
+
+        this.assertCancelPermission(user, row, userId);
+
         requesterId = row.requester_id;
-        await this.transitionStatus(
+        await this.persistCancellation(
           client,
           tenantId,
           requestId,
-          'approved',
-          'cancelled',
-          adminId,
+          row,
+          userId,
           reason,
         );
-        await this.deactivateAvailability(
-          client,
-          tenantId,
-          row.requester_id,
-          row.start_date,
-          row.end_date,
-        );
         this.logger.log(
-          `Request ${requestId} cancelled by admin ${String(adminId)}`,
+          `Request ${requestId} cancelled by user ${String(userId)} (role: ${user.role})`,
         );
       },
     );
@@ -318,16 +313,15 @@ export class VacationService {
       tenantId,
       requestId,
       requesterId,
-      adminId,
+      userId,
       reason,
     );
-
     void this.activityLogger.log({
       tenantId,
-      userId: adminId,
+      userId,
       action: 'update',
       entityType: 'vacation',
-      details: `Urlaubsantrag storniert: ${requestId} (Grund: ${reason})`,
+      details: `Urlaubsantrag widerrufen: ${requestId} (Grund: ${reason})`,
       oldValues: { status: 'approved' },
       newValues: { requestId, status: 'cancelled', reason },
     });
@@ -404,13 +398,15 @@ export class VacationService {
     const id: string = uuidv7();
     const row = await this.insertRequest(
       client,
-      id,
-      tenantId,
-      userId,
-      approver.approverId,
+      {
+        id,
+        tenantId,
+        requesterId: userId,
+        approverId: approver.approverId,
+        computedDays,
+        status,
+      },
       dto,
-      computedDays,
-      status,
     );
     await this.insertStatusLog(
       client,
@@ -622,6 +618,65 @@ export class VacationService {
     return row;
   }
 
+  private assertCancelPermission(
+    user: UserRoleRow,
+    row: VacationRequestRow,
+    userId: number,
+  ): void {
+    const isAdminOrRoot = user.role === 'admin' || user.role === 'root';
+    const isApprover = row.approver_id === userId;
+
+    if (!isAdminOrRoot && !isApprover) {
+      throw new ForbiddenException(
+        'Nur Admins oder der genehmigende Vorgesetzte dürfen Anträge widerrufen',
+      );
+    }
+    if (row.status !== 'approved') {
+      throw new ConflictException(
+        `Nur genehmigte Anträge können widerrufen werden. Aktuell: '${row.status}'`,
+      );
+    }
+    const requestYear = new Date(row.start_date).getFullYear();
+    const currentYear = new Date().getFullYear();
+    if (requestYear !== currentYear) {
+      throw new ConflictException(
+        `Widerruf nur für das aktuelle Jahr (${String(currentYear)}) möglich`,
+      );
+    }
+  }
+
+  private async persistCancellation(
+    client: PoolClient,
+    tenantId: number,
+    requestId: string,
+    row: VacationRequestRow,
+    userId: number,
+    reason: string,
+  ): Promise<void> {
+    await this.transitionStatus(
+      client,
+      tenantId,
+      requestId,
+      'approved',
+      'cancelled',
+      userId,
+      reason,
+    );
+    await client.query(
+      `UPDATE vacation_requests
+       SET response_note = $1, responded_by = $2, responded_at = NOW()
+       WHERE id = $3 AND tenant_id = $4`,
+      [reason, userId, requestId, tenantId],
+    );
+    await this.deactivateAvailability(
+      client,
+      tenantId,
+      row.requester_id,
+      row.start_date,
+      row.end_date,
+    );
+  }
+
   private async getUserRole(
     client: PoolClient,
     tenantId: number,
@@ -639,13 +694,8 @@ export class VacationService {
 
   private async insertRequest(
     client: PoolClient,
-    id: string,
-    tenantId: number,
-    requesterId: number,
-    approverId: number | null,
+    params: InsertRequestParams,
     dto: CreateVacationRequestDto,
-    computedDays: number,
-    status: VacationRequestStatus,
   ): Promise<VacationRequestRow> {
     const result = await client.query<VacationRequestRow>(
       `INSERT INTO vacation_requests
@@ -654,18 +704,18 @@ export class VacationService {
           vacation_type, status, computed_days, is_special_leave, request_note)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
       [
-        id,
-        tenantId,
-        requesterId,
-        approverId,
+        params.id,
+        params.tenantId,
+        params.requesterId,
+        params.approverId,
         dto.substituteId ?? null,
         dto.startDate,
         dto.endDate,
         dto.halfDayStart,
         dto.halfDayEnd,
         dto.vacationType,
-        status,
-        computedDays,
+        params.status,
+        params.computedDays,
         false,
         dto.requestNote ?? null,
       ],

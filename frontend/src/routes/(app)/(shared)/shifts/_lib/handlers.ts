@@ -224,7 +224,7 @@ export function prepareSaveData(
   planData: {
     departmentId: number | null;
     teamId: number | null;
-    machineId: number | null;
+    assetId: number | null;
     areaId: number | null;
     notes: string;
     shifts: { date: string; shiftType: string; userIds: number[] }[];
@@ -249,7 +249,7 @@ export function prepareSaveData(
     planData: {
       departmentId: context.departmentId,
       teamId: context.teamId,
-      machineId: context.machineId,
+      assetId: context.assetId,
       areaId: context.areaId,
       notes,
       shifts,

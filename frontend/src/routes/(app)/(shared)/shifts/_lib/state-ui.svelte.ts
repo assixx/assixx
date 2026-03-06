@@ -3,24 +3,26 @@
 // Loading, dragging, edit mode, planning UI flags
 // =============================================================================
 
+let isLoading = $state(true); // true to prevent FOUC
+let isDragging = $state(false);
+let isEditMode = $state(false);
+let isPlanLocked = $state(false);
+let showPlanningUI = $state(false);
+let showTpmEvents = $state(false);
+let currentWeek = $state<Date>(new Date());
+
+/** Reset all UI flags to their default values */
+function resetUiDefaults(): void {
+  isLoading = false;
+  isDragging = false;
+  isEditMode = false;
+  isPlanLocked = false;
+  showPlanningUI = false;
+  showTpmEvents = false;
+  currentWeek = new Date();
+}
+
 function createUiState() {
-  // Start with true to prevent FOUC - initial render shows loading
-  let isLoading = $state(true);
-  let isDragging = $state(false);
-  let isEditMode = $state(false);
-  let isPlanLocked = $state(false);
-  let showPlanningUI = $state(false);
-  let currentWeek = $state<Date>(new Date());
-
-  const reset = (): void => {
-    isLoading = false;
-    isDragging = false;
-    isEditMode = false;
-    isPlanLocked = false;
-    showPlanningUI = false;
-    currentWeek = new Date();
-  };
-
   return {
     get isLoading() {
       return isLoading;
@@ -37,28 +39,34 @@ function createUiState() {
     get showPlanningUI() {
       return showPlanningUI;
     },
+    get showTpmEvents() {
+      return showTpmEvents;
+    },
     get currentWeek() {
       return currentWeek;
     },
-    setIsLoading: (loading: boolean) => {
-      isLoading = loading;
+    setIsLoading: (v: boolean) => {
+      isLoading = v;
     },
-    setIsDragging: (dragging: boolean) => {
-      isDragging = dragging;
+    setIsDragging: (v: boolean) => {
+      isDragging = v;
     },
-    setIsEditMode: (editMode: boolean) => {
-      isEditMode = editMode;
+    setIsEditMode: (v: boolean) => {
+      isEditMode = v;
     },
-    setIsPlanLocked: (locked: boolean) => {
-      isPlanLocked = locked;
+    setIsPlanLocked: (v: boolean) => {
+      isPlanLocked = v;
     },
-    setShowPlanningUI: (show: boolean) => {
-      showPlanningUI = show;
+    setShowPlanningUI: (v: boolean) => {
+      showPlanningUI = v;
     },
-    setCurrentWeek: (week: Date) => {
-      currentWeek = week;
+    setShowTpmEvents: (v: boolean) => {
+      showTpmEvents = v;
     },
-    reset,
+    setCurrentWeek: (v: Date) => {
+      currentWeek = v;
+    },
+    reset: resetUiDefaults,
   };
 }
 

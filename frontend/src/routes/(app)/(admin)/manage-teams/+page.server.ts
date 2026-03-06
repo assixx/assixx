@@ -2,20 +2,14 @@
  * Manage Teams - Server-Side Data Loading
  * @module manage-teams/+page.server
  *
- * SSR: Loads teams + reference data (departments, admins, employees, machines) in parallel.
+ * SSR: Loads teams + reference data (departments, admins, employees, assets) in parallel.
  */
 import { redirect } from '@sveltejs/kit';
 
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type {
-  Team,
-  Department,
-  Admin,
-  TeamMember,
-  Machine,
-} from './_lib/types';
+import type { Team, Department, Admin, TeamMember, Asset } from './_lib/types';
 
 const log = createLogger('ManageTeams');
 
@@ -71,14 +65,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     adminsData,
     rootsData,
     employeesData,
-    machinesData,
+    assetsData,
   ] = await Promise.all([
     apiFetch<Team[]>('/teams', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<Admin[]>('/users?role=admin', token, fetch),
     apiFetch<Admin[]>('/users?role=root', token, fetch),
     apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
-    apiFetch<Machine[]>('/machines', token, fetch),
+    apiFetch<Asset[]>('/assets', token, fetch),
   ]);
 
   const teams = Array.isArray(teamsData) ? teamsData : [];
@@ -88,13 +82,13 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     ...(Array.isArray(rootsData) ? rootsData : []),
   ];
   const employees = Array.isArray(employeesData) ? employeesData : [];
-  const machines = Array.isArray(machinesData) ? machinesData : [];
+  const assets = Array.isArray(assetsData) ? assetsData : [];
 
   return {
     teams,
     departments,
     admins,
     employees,
-    machines,
+    assets,
   };
 };

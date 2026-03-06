@@ -7,6 +7,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { ShiftSwapService } from './shift-swap.service.js';
 
@@ -30,6 +31,13 @@ function createMockDb() {
 // ShiftSwapService
 // =============================================================
 
+const mockActivityLogger = {
+  logCreate: vi.fn().mockResolvedValue(undefined),
+  logUpdate: vi.fn().mockResolvedValue(undefined),
+  logDelete: vi.fn().mockResolvedValue(undefined),
+  log: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('ShiftSwapService', () => {
   let service: ShiftSwapService;
   let mockDb: ReturnType<typeof createMockDb>;
@@ -37,7 +45,10 @@ describe('ShiftSwapService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new ShiftSwapService(mockDb as unknown as DatabaseService);
+    service = new ShiftSwapService(
+      mockDb as unknown as DatabaseService,
+      mockActivityLogger as unknown as ActivityLoggerService,
+    );
   });
 
   // =============================================================

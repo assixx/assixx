@@ -335,7 +335,7 @@ export const TeamsColumnExamples = {
 /**
  * Machines Column Examples (for Teams table)
  *
- * Badge states for the "Maschinen" (Machines) column.
+ * Badge states for the "Anlagen" (Machines) column.
  */
 export const MachinesColumnExamples = {
   render: () => {
@@ -343,7 +343,7 @@ export const MachinesColumnExamples = {
     container.style.padding = '24px';
 
     container.innerHTML = `
-      <h3 style="color: #fff; margin-bottom: 24px;">Maschinen (Machines) Column</h3>
+      <h3 style="color: #fff; margin-bottom: 24px;">Anlagen (Machines) Column</h3>
       <table class="data-table data-table--striped" style="width: 100%;">
         <thead>
           <tr>
@@ -360,12 +360,12 @@ export const MachinesColumnExamples = {
           </tr>
           <tr>
             <td style="color: var(--color-text-secondary);">1 Machine</td>
-            <td><span class="badge badge--info" title="CNC-Fräse A1">1 Maschine</span></td>
+            <td><span class="badge badge--info" title="CNC-Fräse A1">1 Anlage</span></td>
             <td style="color: var(--color-text-secondary); font-size: 13px;">"CNC-Fräse A1"</td>
           </tr>
           <tr>
             <td style="color: var(--color-text-secondary);">5 Machines</td>
-            <td><span class="badge badge--info" title="CNC-Fräse A1, Drehbank B2, Schweißroboter C3, Laser D4, Presse E5">5 Maschinen</span></td>
+            <td><span class="badge badge--info" title="CNC-Fräse A1, Drehbank B2, Schweißroboter C3, Laser D4, Presse E5">5 Anlagen</span></td>
             <td style="color: var(--color-text-secondary); font-size: 13px;">"CNC-Fräse A1, Drehbank B2, ..."</td>
           </tr>
         </tbody>

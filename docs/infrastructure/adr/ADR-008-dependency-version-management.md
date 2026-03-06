@@ -31,7 +31,7 @@ During the development of Assixx, the question arose of how dependency versions 
 | Risk                       | Impact                                  |
 | -------------------------- | --------------------------------------- |
 | Dev dependencies in prod   | Larger images, security vulnerabilities |
-| Different package versions | "Works on my machine" bugs              |
+| Different package versions | "Works on my asset" bugs                |
 | Uncontrolled updates       | Breaking changes in production          |
 | Version drift              | Non-reproducible builds                 |
 
@@ -45,7 +45,7 @@ During the development of Assixx, the question arose of how dependency versions 
 
 ```dockerfile
 # Dockerfile.frontend / Dockerfile.dev
-ARG NODE_VERSION=24.13.1-alpine3.22
+ARG NODE_VERSION=24.14.0-alpine3.22
 FROM node:${NODE_VERSION}
 ```
 
@@ -72,7 +72,7 @@ pnpm-lock.yaml  \u2190 Single Source of Truth
 
 - Testing integrity: What is tested = what is deployed
 - Reproducible builds: Identical versions everywhere
-- No "works on my machine" bugs
+- No "works on my asset" bugs
 
 ### 3. Which Packages Are Installed: dependencies vs devDependencies
 
@@ -124,12 +124,12 @@ Branch: main (stable)          Branch: testing/svelte-upgrade
 
 ### 1. Separate Lock Files per Environment
 
-| Pros                        | Cons                             |
-| --------------------------- | -------------------------------- |
-| Different versions possible | Version drift                    |
-| Flexibility                 | Not reproducible                 |
-|                             | Maintenance effort doubled       |
-|                             | "Works on my machine" guaranteed |
+| Pros                        | Cons                           |
+| --------------------------- | ------------------------------ |
+| Different versions possible | Version drift                  |
+| Flexibility                 | Not reproducible               |
+|                             | Maintenance effort doubled     |
+|                             | "Works on my asset" guaranteed |
 
 **Decision**: Rejected - Violates reproducibility.
 
@@ -210,8 +210,8 @@ Branch: main (stable)          Branch: testing/svelte-upgrade
 
 ```bash
 # docker/.env
-NODE_VERSION_PROD=24.13.1-alpine3.22  # Production: LTS
-NODE_VERSION_DEV=24.13.1-alpine3.22   # Development: can be set to a newer version
+NODE_VERSION_PROD=24.14.0-alpine3.22  # Production: LTS
+NODE_VERSION_DEV=24.14.0-alpine3.22   # Development: can be set to a newer version
 PNPM_VERSION=10.28.0                   # Both environments
 ```
 
@@ -223,11 +223,11 @@ PNPM_VERSION=10.28.0                   # Both environments
 # docker/.env
 
 # BEFORE (both the same):
-NODE_VERSION_PROD=24.13.1-alpine3.22
-NODE_VERSION_DEV=24.13.1-alpine3.22
+NODE_VERSION_PROD=24.14.0-alpine3.22
+NODE_VERSION_DEV=24.14.0-alpine3.22
 
 # AFTER (only DEV changed):
-NODE_VERSION_PROD=24.13.1-alpine3.22      # \u2190 stays
+NODE_VERSION_PROD=24.14.0-alpine3.22      # \u2190 stays
 NODE_VERSION_DEV=26.0.0-alpine3.22        # \u2190 NEW
 ```
 
@@ -243,7 +243,7 @@ docker-compose build backend
 ```
 \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
 \u2502                                                                 \u2502
-\u2502  Production (Frontend + Nginx):  Node 24.13.1 LTS  \u2190 unchanged  \u2502
+\u2502  Production (Frontend + Nginx):  Node 24.14.0 LTS  \u2190 unchanged  \u2502
 \u2502  Development (Backend):          Node 26.0.0 LTS   \u2190 NEW       \u2502
 \u2502                                                                 \u2502
 \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518

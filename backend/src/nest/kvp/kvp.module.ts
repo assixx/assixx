@@ -9,6 +9,7 @@
  * - KvpCommentsService — Comment CRUD (kvp_comments table)
  * - KvpAttachmentsService — Attachment CRUD (kvp_attachments table)
  * - KvpConfirmationsService — Read confirmation tracking (kvp_confirmations table)
+ * - KvpLifecycleService — Share/unshare + archive/unarchive state transitions
  */
 import { Module } from '@nestjs/common';
 
@@ -17,6 +18,7 @@ import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
+import { KvpLifecycleService } from './kvp-lifecycle.service.js';
 import { KvpPermissionRegistrar } from './kvp-permission.registrar.js';
 import { KvpController } from './kvp.controller.js';
 import { KvpService } from './kvp.service.js';
@@ -30,6 +32,7 @@ import { KvpService } from './kvp.service.js';
     KvpCommentsService,
     KvpAttachmentsService,
     KvpConfirmationsService,
+    KvpLifecycleService,
     // Permission registration (ADR-020)
     KvpPermissionRegistrar,
   ],

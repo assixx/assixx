@@ -6,41 +6,41 @@
 function createDropdownState() {
   let areaDropdownOpen = $state(false);
   let departmentDropdownOpen = $state(false);
-  let machineDropdownOpen = $state(false);
+  let assetDropdownOpen = $state(false);
   let teamDropdownOpen = $state(false);
 
   function toggleAreaDropdown() {
     departmentDropdownOpen = false;
-    machineDropdownOpen = false;
+    assetDropdownOpen = false;
     teamDropdownOpen = false;
     areaDropdownOpen = !areaDropdownOpen;
   }
 
   function toggleDepartmentDropdown() {
     areaDropdownOpen = false;
-    machineDropdownOpen = false;
+    assetDropdownOpen = false;
     teamDropdownOpen = false;
     departmentDropdownOpen = !departmentDropdownOpen;
   }
 
-  function toggleMachineDropdown() {
+  function toggleAssetDropdown() {
     areaDropdownOpen = false;
     departmentDropdownOpen = false;
     teamDropdownOpen = false;
-    machineDropdownOpen = !machineDropdownOpen;
+    assetDropdownOpen = !assetDropdownOpen;
   }
 
   function toggleTeamDropdown() {
     areaDropdownOpen = false;
     departmentDropdownOpen = false;
-    machineDropdownOpen = false;
+    assetDropdownOpen = false;
     teamDropdownOpen = !teamDropdownOpen;
   }
 
   function closeAllDropdowns() {
     areaDropdownOpen = false;
     departmentDropdownOpen = false;
-    machineDropdownOpen = false;
+    assetDropdownOpen = false;
     teamDropdownOpen = false;
   }
 
@@ -55,15 +55,15 @@ function createDropdownState() {
     get departmentDropdownOpen() {
       return departmentDropdownOpen;
     },
-    get machineDropdownOpen() {
-      return machineDropdownOpen;
+    get assetDropdownOpen() {
+      return assetDropdownOpen;
     },
     get teamDropdownOpen() {
       return teamDropdownOpen;
     },
     toggleAreaDropdown,
     toggleDepartmentDropdown,
-    toggleMachineDropdown,
+    toggleAssetDropdown,
     toggleTeamDropdown,
     closeAllDropdowns,
     reset,

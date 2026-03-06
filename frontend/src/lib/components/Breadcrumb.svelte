@@ -17,7 +17,7 @@
 
   // Props
   interface Props {
-    userRole?: 'root' | 'admin' | 'employee';
+    userRole?: 'root' | 'admin' | 'employee' | 'dummy';
   }
   const { userRole = 'employee' }: Props = $props();
 
@@ -62,7 +62,7 @@
       },
       '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-building' },
       '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
-      '/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-cogs' },
+      '/manage-assets': { label: 'Anlagen verwalten', icon: 'fa-cogs' },
       '/manage-root': { label: 'Root User Verwaltung', icon: 'fa-shield-alt' },
       '/blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
       '/blackboard-detail': {
@@ -102,9 +102,30 @@
         icon: ICON_CALENDAR,
       },
       '/logs': { label: 'Logs', icon: 'fa-list-alt' },
+      '/lean-management/tpm': { label: 'TPM Wartung', icon: 'fa-tools' },
+      '/lean-management/tpm/config': {
+        label: 'TPM Konfiguration',
+        icon: 'fa-cog',
+      },
+      '/lean-management/tpm/overview': {
+        label: 'TPM Übersicht',
+        icon: 'fa-tools',
+      },
       '/tenant-deletion-status': {
         label: 'Tenant Löschstatus',
         icon: 'fa-trash-alt',
+      },
+      '/work-orders': {
+        label: 'Meine Arbeitsaufträge',
+        icon: 'fa-clipboard-check',
+      },
+      '/work-orders/admin': {
+        label: 'Alle Aufträge',
+        icon: 'fa-clipboard-check',
+      },
+      '/manage-dummies': {
+        label: 'Dummy-Benutzer verwalten',
+        icon: 'fa-desktop',
       },
     };
 
@@ -135,8 +156,8 @@
       icon: ICON_CALENDAR,
     },
     {
-      pattern: /^\/manage-machines\/availability\/[^/]+$/,
-      label: 'Machine Name Placeholder',
+      pattern: /^\/manage-assets\/availability\/[^/]+$/,
+      label: 'Asset Name Placeholder',
       icon: ICON_CALENDAR,
     },
     {
@@ -148,6 +169,46 @@
       pattern: /^\/manage-admins\/permission\/[^/]+$/,
       label: 'Employee Name Placeholder',
       icon: 'fa-shield-alt',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
+      label: 'Wartungsplan',
+      icon: 'fa-clipboard-list',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/cards\/[^/]+$/,
+      label: 'Karten',
+      icon: 'fa-th',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/board\/[^/]+$/,
+      label: 'Kamishibai Board',
+      icon: 'fa-columns',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+$/,
+      label: 'Kartendetails',
+      icon: 'fa-id-card',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/history$/,
+      label: 'Wartungsverlauf',
+      icon: 'fa-history',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/defects$/,
+      label: 'Mängelliste',
+      icon: 'fa-exclamation-triangle',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/locations\/[^/]+$/,
+      label: 'Standorte',
+      icon: 'fa-map-marker-alt',
+    },
+    {
+      pattern: /^\/work-orders\/[0-9a-f-]+$/,
+      label: 'Auftragsdetail',
+      icon: 'fa-info-circle',
     },
   ];
 
@@ -179,6 +240,11 @@
       label: 'Schwarzes Brett',
       href: '/blackboard',
       icon: 'fa-clipboard',
+    },
+    '/work-orders/admin': {
+      label: 'Arbeitsaufträge',
+      href: '/work-orders',
+      icon: 'fa-clipboard-check',
     },
   };
 
@@ -223,10 +289,58 @@
       icon: 'fa-user-shield',
     },
     {
-      pattern: /^\/manage-machines\/availability\/[^/]+$/,
-      label: 'Maschinen verwalten',
-      href: '/manage-machines',
+      pattern: /^\/manage-assets\/availability\/[^/]+$/,
+      label: 'Anlagen verwalten',
+      href: '/manage-assets',
       icon: 'fa-cogs',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
+      label: 'TPM Wartung',
+      href: '/lean-management/tpm',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/cards\/[^/]+$/,
+      label: 'TPM Wartung',
+      href: '/lean-management/tpm',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/board\/[^/]+$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/history$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/card\/[^/]+\/defects$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/lean-management\/tpm\/locations\/[^/]+$/,
+      label: 'TPM Übersicht',
+      href: '/lean-management/tpm/overview',
+      icon: 'fa-tools',
+    },
+    {
+      pattern: /^\/work-orders\/[0-9a-f-]+$/,
+      label: 'Arbeitsaufträge',
+      href: '/work-orders',
+      icon: 'fa-clipboard-check',
     },
   ];
 
@@ -238,6 +352,7 @@
   function getHomeUrl(): string {
     if (userRole === 'root') return '/root-dashboard';
     if (userRole === 'admin') return '/admin-dashboard';
+    if (userRole === 'dummy') return '/blackboard';
     return '/employee-dashboard';
   }
 
@@ -260,16 +375,16 @@
     return 'Mitarbeiter';
   }
 
-  /** Resolve machine name from page data for machine availability breadcrumb */
-  function getMachineNameFromPageData(): string {
+  /** Resolve asset name from page data for asset availability breadcrumb */
+  function getAssetNameFromPageData(): string {
     const pageData = $page.data as {
-      machine?: { name?: string };
+      asset?: { name?: string };
     };
-    const machine = pageData.machine;
-    if (machine?.name !== undefined) {
-      return machine.name;
+    const asset = pageData.asset;
+    if (asset?.name !== undefined) {
+      return asset.name;
     }
-    return 'Maschine';
+    return 'Anlage';
   }
 
   /** Build breadcrumb items for a matched dynamic route */
@@ -292,19 +407,19 @@
       });
     }
 
-    // Special handling for availability routes (employee vs machine)
+    // Special handling for availability routes (employee vs asset)
     const isAvailabilityRoute = currentPath.includes('/availability/');
-    const isMachineAvailabilityRoute = currentPath.startsWith(
-      '/manage-machines/availability/',
+    const isAssetAvailabilityRoute = currentPath.startsWith(
+      '/manage-assets/availability/',
     );
 
     // Special handling for permission routes (employees, admins, root)
     const isPermissionRoute = currentPath.includes('/permission/');
 
-    if (isMachineAvailabilityRoute) {
+    if (isAssetAvailabilityRoute) {
       items.push({ label: 'Verfügbarkeit', icon: ICON_CALENDAR });
       items.push({
-        label: getMachineNameFromPageData(),
+        label: getAssetNameFromPageData(),
         icon: 'fa-cog',
         current: true,
       });

@@ -352,7 +352,7 @@
             id="area-departments"
             name="departmentIds"
             multiple
-            class="form-field__control min-h-[120px]"
+            class="multi-select"
             bind:value={formDepartmentIds}
           >
             {#each allDepartments as dept (dept.id)}

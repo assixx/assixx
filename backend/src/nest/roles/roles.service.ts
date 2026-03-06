@@ -99,6 +99,14 @@ export class RolesService {
         'surveys.respond',
       ],
     },
+    dummy: {
+      id: 'dummy',
+      name: 'Dummy',
+      description:
+        'Anonymous display account for factory TVs and screens. Read-only access to blackboard, calendar, and TPM.',
+      level: 1,
+      permissions: ['blackboard.view', 'calendar.view', 'tpm.view'],
+    },
   };
 
   /**

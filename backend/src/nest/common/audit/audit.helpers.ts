@@ -147,14 +147,17 @@ function addListChanges(changes: AuditChanges, request: FastifyRequest): void {
   }
 }
 
-/** Add changes for view action (resource ID accessed) */
+/** Add changes for view action (resource ID/UUID accessed) */
 function addViewChanges(changes: AuditChanges, request: FastifyRequest): void {
-  const resourceId = extractResourceId(
-    request.url,
-    request.params as Record<string, string>,
-  );
+  const params = request.params as Record<string, string>;
+  const resourceId = extractResourceId(request.url, params);
   if (resourceId !== null) {
     changes.resource_id = resourceId;
+  } else {
+    const uuid = extractResourceUuid(request.url, params);
+    if (uuid !== null) {
+      changes.resource_id = uuid;
+    }
   }
 }
 
@@ -355,33 +358,85 @@ export function extractResourceType(url: string): string {
   return singularize(firstSegment);
 }
 
+/** UUID v4/v7 pattern: 8-4-4-4-12 hex characters */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
- * Extract resource ID from URL or params.
+ * Extract numeric resource ID from URL or params.
+ * Skips UUID-looking segments to avoid false positives (e.g., "019c..." → 19).
  */
 export function extractResourceId(
   url: string,
   params: Record<string, string> | undefined,
 ): number | null {
   // Try to get from params first
+  const fromParams = parseNumericParam(params);
+  if (fromParams !== null) {
+    return fromParams;
+  }
+
+  // Try to extract from URL path segments
+  return findNumericSegment(url);
+}
+
+/** Parse numeric ID from params['id'], skipping UUIDs */
+function parseNumericParam(
+  params: Record<string, string> | undefined,
+): number | null {
+  if (params === undefined) {
+    return null;
+  }
+  const id = params['id'];
+  if (id === undefined || UUID_PATTERN.test(id)) {
+    return null;
+  }
+  const parsed = Number.parseInt(id, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+/** Find first numeric (non-UUID) segment in a URL path */
+function findNumericSegment(url: string): number | null {
+  const path = url.split('?')[0] ?? url;
+  const segments = path.split('/').filter(Boolean);
+
+  for (const segment of segments) {
+    if (UUID_PATTERN.test(segment)) {
+      continue;
+    }
+    const parsed = Number.parseInt(segment, 10);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract UUID from URL path or params.
+ * Returns null if no UUID found.
+ */
+export function extractResourceUuid(
+  url: string,
+  params: Record<string, string> | undefined,
+): string | null {
+  // Try params first (common param names for UUID)
   if (params !== undefined) {
-    const id = params['id'];
-    if (id !== undefined) {
-      const parsed = Number.parseInt(id, 10);
-      if (!Number.isNaN(parsed)) {
-        return parsed;
+    for (const key of ['uuid', 'id']) {
+      const value = params[key];
+      if (value !== undefined && UUID_PATTERN.test(value)) {
+        return value;
       }
     }
   }
 
-  // Try to extract from URL path
+  // Try URL segments
   const path = url.split('?')[0] ?? url;
   const segments = path.split('/').filter(Boolean);
 
-  // Look for numeric segment (likely an ID)
   for (const segment of segments) {
-    const parsed = Number.parseInt(segment, 10);
-    if (!Number.isNaN(parsed) && parsed > 0) {
-      return parsed;
+    if (UUID_PATTERN.test(segment)) {
+      return segment;
     }
   }
 

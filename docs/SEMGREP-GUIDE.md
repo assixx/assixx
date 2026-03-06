@@ -156,7 +156,7 @@ backend/src/nest/chat/chat.service.ts
 | Format   | Datei                   | Verwendung                               |
 | -------- | ----------------------- | ---------------------------------------- |
 | SARIF    | `semgrep-results.sarif` | Standard Security Format, IDE-kompatibel |
-| JSON     | `semgrep-results.json`  | Maschinenlesbar, für Scripting           |
+| JSON     | `semgrep-results.json`  | Anlagenlesbar, für Scripting             |
 | Terminal | stdout                  | Menschenlesbar                           |
 
 ---

@@ -96,16 +96,7 @@
     left: 0;
     width: 0;
     height: 0;
-    box-shadow:
-      21px 24px 0 0.6px rgb(200 220 255),
-      14px 6px 0 0.7px rgb(170 200 255),
-      33px 21px 0 0.8px rgb(190 215 255),
-      40px 8px 0 0.6px rgb(180 210 255),
-      26px 15px 0 0.5px rgb(200 225 255),
-      10px 19px 0 0.6px rgb(185 215 255),
-      45px 25px 0 0.7px rgb(195 220 255),
-      38px 14px 0 0.5px rgb(175 205 255);
-    opacity: 1;
+    opacity: 100%;
     transition: opacity 400ms ease;
     pointer-events: none;
   }
@@ -119,11 +110,6 @@
     width: 21px;
     height: 21px;
     border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgb(80 140 255 / 47%) 0%,
-      transparent 30%
-    );
     z-index: 0;
     pointer-events: none;
     transition: opacity 400ms ease;
@@ -139,12 +125,12 @@
 
   .theme-toggle__sun {
     color: rgb(255 255 255 / 35%);
-    opacity: 0;
+    opacity: 0%;
   }
 
   .theme-toggle__moon {
     color: rgb(210 225 255 / 90%);
-    opacity: 1;
+    opacity: 100%;
   }
 
   .theme-toggle__knob {
@@ -178,16 +164,16 @@
 
   .theme-toggle.is-light .theme-toggle__track::before,
   .theme-toggle.is-light .theme-toggle__track::after {
-    opacity: 0;
+    opacity: 0%;
   }
 
   .theme-toggle.is-light .theme-toggle__sun {
     color: #000;
-    opacity: 1;
+    opacity: 100%;
   }
 
   .theme-toggle.is-light .theme-toggle__moon {
-    opacity: 0;
+    opacity: 0%;
   }
 
   .theme-toggle.is-light .theme-toggle__knob {

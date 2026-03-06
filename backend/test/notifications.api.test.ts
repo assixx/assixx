@@ -175,6 +175,32 @@ describe('Mark Feature Type as Read (vacation)', () => {
   });
 });
 
+// ─── Mark Feature Entity as Read: work_orders (seq: 6c) ─────────────────────
+
+describe('Mark Feature Entity as Read (work_orders)', () => {
+  it('should return 200 OK for valid type + entityUuid', async () => {
+    const res = await fetch(
+      `${BASE_URL}/notifications/mark-read/work_orders/019cb994-0000-0000-0000-000000000000`,
+      { method: 'POST', headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('marked');
+    expect(typeof body.data.marked).toBe('number');
+  });
+
+  it('should reject invalid type', async () => {
+    const res = await fetch(
+      `${BASE_URL}/notifications/mark-read/invalid/some-uuid`,
+      { method: 'POST', headers: authOnly(auth.authToken) },
+    );
+
+    expect(res.status).toBe(400);
+  });
+});
+
 // ─── Get Notification Statistics (seq: 7) ───────────────────────────────────
 
 describe('Get Notification Statistics (Admin)', () => {

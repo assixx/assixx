@@ -98,15 +98,15 @@
    BLACKBOARD-SPECIFIC COMPONENTS
    ======================================== */
 
-/* Sticky Notes Container (used by widget) */
+/* Sticky Notes Container (used by widget) — matches blackboard page pinboard-grid */
 .sticky-notes-container {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 1rem;
   padding: 0.5rem 0;
 
   min-height: 200px; /* Prevent layout shift */
-  overflow-x: auto;
 }
 
 /* Prevent layout shift during load */
@@ -131,7 +131,9 @@
 
 @media (width < 768px) {
   .sticky-notes-container {
+    flex-wrap: nowrap;
     gap: 0.75rem;
+    overflow-x: auto;
   }
 }
 

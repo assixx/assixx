@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AddMachineSchema } from './add-machine.dto.js';
+import { AddAssetSchema } from './add-asset.dto.js';
 import { AddMemberSchema } from './add-member.dto.js';
 import { CreateTeamSchema } from './create-team.dto.js';
 import { DeleteTeamQuerySchema } from './delete-team.dto.js';
@@ -121,7 +121,7 @@ describe('TeamIdParamSchema', () => {
 });
 
 // =============================================================
-// AddMemberSchema / AddMachineSchema
+// AddMemberSchema / AddAssetSchema
 // =============================================================
 
 describe('AddMemberSchema', () => {
@@ -136,15 +136,15 @@ describe('AddMemberSchema', () => {
   });
 });
 
-describe('AddMachineSchema', () => {
-  it('should coerce machineId from string', () => {
-    const data = AddMachineSchema.parse({ machineId: '99' });
+describe('AddAssetSchema', () => {
+  it('should coerce assetId from string', () => {
+    const data = AddAssetSchema.parse({ assetId: '99' });
 
-    expect(data.machineId).toBe(99);
+    expect(data.assetId).toBe(99);
   });
 
-  it('should reject non-positive machineId', () => {
-    expect(AddMachineSchema.safeParse({ machineId: '-5' }).success).toBe(false);
+  it('should reject non-positive assetId', () => {
+    expect(AddAssetSchema.safeParse({ assetId: '-5' }).success).toBe(false);
   });
 });
 

@@ -352,13 +352,13 @@ describe('AreasService', () => {
     it('should force-delete area removing dependencies first', async () => {
       // getAreaById
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
-      // checkAreaDependencies -> departments=2, machines=1, rest empty
+      // checkAreaDependencies -> departments=2, assets=1, rest empty
       mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
       mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
-      // removeAreaDependencies -> UPDATE departments, UPDATE machines (2 calls)
+      // removeAreaDependencies -> UPDATE departments, UPDATE assets (2 calls)
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
       // DELETE FROM areas
@@ -375,7 +375,7 @@ describe('AreasService', () => {
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
       // checkAreaDependencies -> only shiftFavorites=1
       mockDb.query.mockResolvedValueOnce([]); // departments
-      mockDb.query.mockResolvedValueOnce([]); // machines
+      mockDb.query.mockResolvedValueOnce([]); // assets
       mockDb.query.mockResolvedValueOnce([]); // shifts
       mockDb.query.mockResolvedValueOnce([]); // shift_plans
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // shift_favorites

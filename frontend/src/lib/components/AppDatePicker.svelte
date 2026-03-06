@@ -295,7 +295,7 @@
 
   /* Chevron icon (right) */
   .app-date-picker__chevron {
-    margin-left: auto;
+    margin-left: var(--spacing-4);
     color: var(--color-text-secondary);
     font-size: 12px;
     transition: color var(--duration-fast) var(--ease-standard);
@@ -479,7 +479,7 @@
      ============================================================ */
 
   .app-date-picker--sm .app-date-picker__field {
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-2);
     padding-left: calc(var(--spacing-3) * 2 + 14px);
     font-size: 13px;
   }

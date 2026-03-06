@@ -6,7 +6,7 @@
 /**
  * User roles
  */
-export type UserRole = 'root' | 'admin' | 'employee';
+export type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
 /**
  * Survey status

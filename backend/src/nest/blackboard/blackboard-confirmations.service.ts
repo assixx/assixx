@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { dbToApi } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { ERROR_ENTRY_NOT_FOUND } from './blackboard.constants.js';
 import type { DbConfirmationUser } from './blackboard.types.js';
@@ -20,7 +21,10 @@ import type { DbConfirmationUser } from './blackboard.types.js';
 export class BlackboardConfirmationsService {
   private readonly logger = new Logger(BlackboardConfirmationsService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Confirm reading a blackboard entry.
@@ -56,6 +60,14 @@ export class BlackboardConfirmationsService {
       [tenantId, numericId, userId],
     );
 
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Eintrag bestätigt: ${String(id)}`,
+    );
+
     return { message: 'Entry confirmed successfully' };
   }
 
@@ -88,6 +100,14 @@ export class BlackboardConfirmationsService {
        SET is_confirmed = false, confirmed_at = NULL
        WHERE entry_id = $1 AND user_id = $2`,
       [numericId, userId],
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'blackboard',
+      numericId,
+      `Blackboard-Eintrag als ungelesen markiert: ${String(id)}`,
     );
 
     return { message: 'Entry marked as unread successfully' };
@@ -125,7 +145,7 @@ export class BlackboardConfirmationsService {
              c.confirmed_at
       FROM users u
       LEFT JOIN blackboard_confirmations c ON u.id = c.user_id AND c.entry_id = $1
-      WHERE u.tenant_id = $2
+      WHERE u.tenant_id = $2 AND u.role != 'dummy' AND u.is_active = 1
     `;
     const queryParams: unknown[] = [numericId, tenantId];
 

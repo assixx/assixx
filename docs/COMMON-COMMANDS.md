@@ -6,7 +6,7 @@
 
 # npx Befehle könnne unter umständen genau so gut sein ( eventuell kein Unterschied)
 
-> **Projekt:** Assixx | **Stand:** 2026-02-16
+> **Projekt:** Assixx | **Stand:** 2026-02-18
 > Alle Befehle, die wir regelmäßig nutzen — kategorisch sortiert.
 
 ---
@@ -175,7 +175,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT id, name, r
 
 ## 9. PostgreSQL-Abfragen (Diagnose)
 
-> **Bevorzugt:** `docker exec assixx-postgres psql` (Claude Code arbeitet besser damit).
+> **Bevorzugt:** `docker exec assixx-postgres psql` (arbeitet besser damit).
 > **Alternative für Menschen:** `psql -h localhost` (wenn psql lokal installiert → `export PGPASSWORD=$(docker exec assixx-postgres printenv POSTGRES_PASSWORD)`).
 > **Details:** [HOW-TO-POSTGRESQL-CLI.md](./HOW-TO-POSTGRESQL-CLI.md)
 
@@ -310,12 +310,94 @@ doppler run -- pnpm run db:seed                              # Seeds mit Credent
 
 ---
 
-## 15. Skripte
+## 15. Changesets (Versionierung & Changelog)
+
+```bash
+# Changeset erstellen (nach relevanter Änderung, vor PR)
+pnpm changeset                                              # Interaktiver Prompt: Bump-Typ + Beschreibung
+
+# Status prüfen (welche Changesets liegen bereit?)
+pnpm changeset:status                                       # Zeigt ausstehende Changesets
+
+# Version bumpen (vor Release — bumpt alle package.json + generiert CHANGELOG.md)
+pnpm changeset:version                                      # Konsumiert Changesets, bumpt Versionen
+
+# Git-Tags erstellen (nach Version-Bump)
+pnpm changeset:tag                                          # Erstellt v0.x.x Tags basierend auf Versionen
+
+# Leeres Changeset (wenn CI eins verlangt, aber nichts versionswürdiges geändert wurde)
+pnpm changeset --empty                                      # Erstellt Changeset ohne Package-Zuordnung
+```
+
+**Workflow:** `pnpm changeset` → PR mergen → `pnpm changeset:version` → committen → `pnpm changeset:tag` → pushen mit Tags
+
+---
+
+## 16. Skripte
 
 ```bash
 /home/scs/projects/Assixx/scripts/check-production.sh        # Production Health-Check
 /home/scs/projects/Assixx/scripts/sync-customer-migrations.sh # Customer Fresh-Install synchronisieren
 ```
+
+---
+
+## 17. Headless Mode (`claude -p`)
+
+> **Was ist das?** ohne interaktive Session — du gibst einen Befehl, Claude arbeitet ihn ab, fertig.
+> Kein Chat, kein Bestätigen, kein Warten. Ideal für mechanische, repetitive Aufgaben.
+>
+> **Wann sinnvoll:** Lint-Fixes, Type-Error-Fixes, Import-Sortierung, Formatting — alles wo keine kreative Entscheidung nötig ist.
+> **Wann NICHT:** Feature-Entwicklung, Architektur-Entscheidungen, Debugging mit Kontext.
+
+```bash
+# ═══════════════════════════════════════════════════════════════
+# Alle Lint-Errors fixen (Backend + Frontend)
+# ═══════════════════════════════════════════════════════════════
+claude -p "Fix all ESLint errors in the project.
+1. Run 'docker exec assixx-backend pnpm run lint' to identify backend errors
+2. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run lint' to identify frontend errors
+3. Fix all errors
+4. Verify: 'docker exec assixx-backend pnpm run lint' must pass with 0 errors
+5. Verify: 'cd /home/scs/projects/Assixx/frontend && pnpm run lint' must pass with 0 errors" \
+  --allowedTools "Edit" "Read" "Bash(docker exec *)" "Bash(cd /home/scs/projects/Assixx/frontend && pnpm run lint*)" "Grep" "Glob"
+
+# ═══════════════════════════════════════════════════════════════
+# TypeScript-Errors fixen (Backend + Frontend)
+# ═══════════════════════════════════════════════════════════════
+claude -p "Fix all TypeScript errors in the project.
+1. Run 'docker exec assixx-backend pnpm run type-check' to find backend TS errors
+2. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run check' to find frontend errors
+3. Fix all errors
+4. Verify both commands pass with 0 errors" \
+  --allowedTools "Edit" "Read" "Bash(docker exec *)" "Bash(cd /home/scs/projects/Assixx/frontend && pnpm run check*)" "Grep" "Glob"
+
+# ═══════════════════════════════════════════════════════════════
+# Alles auf einmal: Format + Lint + Type-Check
+# ═══════════════════════════════════════════════════════════════
+claude -p "Fix all code quality issues in the Assixx project.
+1. Run 'docker exec assixx-backend pnpm run format' to auto-format backend
+2. Run 'docker exec assixx-backend pnpm run lint:fix' to auto-fix backend lint
+3. Run 'docker exec assixx-backend pnpm run type-check' to check backend types
+4. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run lint:fix' to auto-fix frontend lint
+5. Run 'cd /home/scs/projects/Assixx/frontend && pnpm run check' to check frontend types
+6. Fix any remaining errors manually
+7. Re-run all checks — all must pass with 0 errors" \
+  --allowedTools "Edit" "Read" "Bash(docker exec *)" "Bash(cd /home/scs/projects/Assixx/frontend && pnpm run *)" "Grep" "Glob"
+
+# ═══════════════════════════════════════════════════════════════
+# Nützliche Flags
+# ═══════════════════════════════════════════════════════════════
+# --output-format json          # Anlagenlesbare Ausgabe (für Skripte)
+# --output-format stream-json   # Streaming JSON (für Live-Monitoring)
+# --max-turns 20                # Maximale Anzahl Durchläufe begrenzen
+# --max-budget-usd 2.00         # Budget-Limit setzen (Kostenkontrolle)
+# --model sonnet                # Günstigeres Modell für einfache Aufgaben
+# --verbose                     # Detaillierte Ausgabe zum Debuggen
+# -c -p "query"                 # Letzte Session fortsetzen (headless)
+```
+
+**Workflow:** Befehl starten → Kaffee holen → Ergebnis prüfen. Kein Babysitten nötig.
 
 ---
 

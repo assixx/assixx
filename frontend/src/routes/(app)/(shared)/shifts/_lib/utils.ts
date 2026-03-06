@@ -4,7 +4,7 @@
 // =============================================================================
 
 import {
-  SHIFT_TIMES,
+  DEFAULT_SHIFT_TIMES,
   SHIFT_TYPE_TO_API,
   SHIFT_TYPE_FROM_API,
 } from './constants';
@@ -14,6 +14,9 @@ import type {
   Employee,
   AvailabilityStatus,
   ShiftType,
+  ShiftTimeApiResponse,
+  ShiftTimesMap,
+  TpmMaintenanceEvent,
 } from './types';
 
 // =============================================================================
@@ -76,7 +79,7 @@ export function getWeekNumber(date: Date): number {
   const d = new Date(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
   );
-  const dayNum = d.getUTCDay() !== 0 ? d.getUTCDay() : 7;
+  const dayNum = d.getUTCDay() === 0 ? 7 : d.getUTCDay();
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
@@ -156,19 +159,60 @@ export function parseDate(dateString: string): Date {
 }
 
 // =============================================================================
+// SHIFT TIMES MAP (API → display format conversion)
+// =============================================================================
+
+/**
+ * Build a ShiftTimesMap from API response.
+ * Creates entries for both canonical keys (early/late/night) AND
+ * legacy API keys (F/S/N) for backwards compatibility.
+ */
+export function buildShiftTimesMap(
+  apiResponse: ShiftTimeApiResponse[],
+): ShiftTimesMap {
+  const map: ShiftTimesMap = {};
+  const keyToLegacy: Partial<Record<string, string>> = {
+    early: 'F',
+    late: 'S',
+    night: 'N',
+  };
+
+  for (const entry of apiResponse) {
+    const info = {
+      start: entry.startTime,
+      end: entry.endTime,
+      label: entry.label,
+    };
+    map[entry.shiftKey] = info;
+    const legacy = keyToLegacy[entry.shiftKey];
+    if (legacy !== undefined) {
+      map[legacy] = info;
+    }
+  }
+
+  return map;
+}
+
+// =============================================================================
 // SHIFT TYPE UTILITIES
 // =============================================================================
 
 /**
- * Get shift time info by type
+ * Get shift time info by type. Uses dynamic map if provided, falls back to defaults.
  */
-export function getShiftTimeInfo(shiftType: string): {
+export function getShiftTimeInfo(
+  shiftType: string,
+  shiftTimesMap?: ShiftTimesMap,
+): {
   start: string;
   end: string;
   label: string;
 } {
-  if (shiftType in SHIFT_TIMES) {
-    return SHIFT_TIMES[shiftType as keyof typeof SHIFT_TIMES];
+  if (shiftTimesMap !== undefined && shiftType in shiftTimesMap) {
+    return shiftTimesMap[shiftType];
+  }
+  if (shiftType in DEFAULT_SHIFT_TIMES) {
+    return DEFAULT_SHIFT_TIMES[shiftType as keyof typeof DEFAULT_SHIFT_TIMES];
   }
   return { start: '08:00', end: '17:00', label: shiftType };
 }
@@ -176,30 +220,42 @@ export function getShiftTimeInfo(shiftType: string): {
 /**
  * Get the start time for a shift type
  */
-export function getShiftStartTime(shiftType: string): string {
-  return getShiftTimeInfo(shiftType).start;
+export function getShiftStartTime(
+  shiftType: string,
+  shiftTimesMap?: ShiftTimesMap,
+): string {
+  return getShiftTimeInfo(shiftType, shiftTimesMap).start;
 }
 
 /**
  * Get the end time for a shift type
  */
-export function getShiftEndTime(shiftType: string): string {
-  return getShiftTimeInfo(shiftType).end;
+export function getShiftEndTime(
+  shiftType: string,
+  shiftTimesMap?: ShiftTimesMap,
+): string {
+  return getShiftTimeInfo(shiftType, shiftTimesMap).end;
 }
 
 /**
  * Get the display string for a shift time (e.g., "06:00 - 14:00")
  */
-export function getShiftTimeDisplay(shiftType: string): string {
-  const info = getShiftTimeInfo(shiftType);
+export function getShiftTimeDisplay(
+  shiftType: string,
+  shiftTimesMap?: ShiftTimesMap,
+): string {
+  const info = getShiftTimeInfo(shiftType, shiftTimesMap);
   return `${info.start} - ${info.end}`;
 }
 
 /**
  * Get shift label by type
  */
-export function getShiftLabel(shiftType: string): string {
-  return getShiftTimeInfo(shiftType).label;
+export function getShiftLabel(
+  shiftType: string,
+  shiftTimesMap?: ShiftTimesMap,
+): string {
+  return getShiftTimeInfo(shiftType, shiftTimesMap).label;
 }
 
 /**
@@ -235,7 +291,7 @@ export function getEmployeeDisplayName(employee: Employee): string {
   const firstName = employee.firstName ?? '';
   const lastName = employee.lastName ?? '';
   const fullName = `${firstName} ${lastName}`.trim();
-  return fullName !== '' ? fullName : employee.username;
+  return fullName === '' ? employee.username : fullName;
 }
 
 /**
@@ -250,13 +306,13 @@ function isDateInAvailabilityEntry(
   }
 
   const checkDate = new Date(date);
-  checkDate.setHours(0, 0, 0, 0);
+  checkDate.setUTCHours(0, 0, 0, 0);
 
   const startDate = new Date(entry.startDate);
-  startDate.setHours(0, 0, 0, 0);
+  startDate.setUTCHours(0, 0, 0, 0);
 
   const endDate = new Date(entry.endDate);
-  endDate.setHours(23, 59, 59, 999);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   return checkDate >= startDate && checkDate <= endDate;
 }
@@ -391,4 +447,87 @@ export function capitalize(str: string): string {
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 3) + '...';
+}
+
+// =============================================================================
+// TPM SHIFT VISIBILITY
+// =============================================================================
+
+/** Convert HH:MM to minutes from midnight */
+function timeToMinutes(time: string): number {
+  const parts = time.split(':');
+  return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+/** Compute shift minute ranges from a ShiftTimesMap. Night shift wraps past midnight → two ranges. */
+export function computeShiftMinutes(
+  shiftTimesMap?: ShiftTimesMap,
+): Record<string, [number, number][]> {
+  const map: Partial<ShiftTimesMap> = shiftTimesMap ?? DEFAULT_SHIFT_TIMES;
+  const result: Record<string, [number, number][]> = {};
+
+  for (const key of ['early', 'late', 'night'] as const) {
+    const info = map[key];
+    if (info === undefined) continue;
+    const startMin = timeToMinutes(info.start);
+    const endMin = timeToMinutes(info.end);
+    if (endMin > startMin) {
+      result[key] = [[startMin, endMin]];
+    } else {
+      // Wraps past midnight (e.g. night: 22:00→06:00)
+      result[key] = [
+        [startMin, 1440],
+        [0, endMin],
+      ];
+    }
+  }
+
+  return result;
+}
+
+/** Check if a maintenance time window overlaps a shift */
+function maintenanceOverlapsShift(
+  baseTime: string,
+  bufferHours: number,
+  shiftType: string,
+  shiftMinutes: Record<string, [number, number][]>,
+): boolean {
+  const start = timeToMinutes(baseTime);
+  const end = start + bufferHours * 60;
+  const windows: [number, number][] =
+    end > 1440 ?
+      [
+        [start, 1440],
+        [0, end - 1440],
+      ]
+    : [[start, end]];
+  const ranges = shiftMinutes[shiftType] ?? [];
+  return windows.some(([ws, we]: [number, number]) =>
+    ranges.some(([rs, re]: [number, number]) => ws < re && rs < we),
+  );
+}
+
+/**
+ * Get visible TPM intervals for a specific shift cell.
+ * - daily/weekly: only in early shift
+ * - monthly+: all-day (baseTime null) → every shift; timed → only overlapping shift
+ */
+export function getVisibleTpmIntervals(
+  event: TpmMaintenanceEvent,
+  shiftType: string,
+  shiftMinutes?: Record<string, [number, number][]>,
+): TpmMaintenanceEvent['intervalTypes'] {
+  const minutes = shiftMinutes ?? computeShiftMinutes();
+  return event.intervalTypes.filter((interval) => {
+    if (interval === 'daily' || interval === 'weekly') {
+      return shiftType === 'early';
+    }
+    if (event.baseTime === null) return true;
+    return maintenanceOverlapsShift(
+      event.baseTime,
+      event.bufferHours,
+      shiftType,
+      minutes,
+    );
+  });
 }

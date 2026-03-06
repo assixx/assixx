@@ -28,7 +28,7 @@ Before this feature, Assixx had no vacation management. Industrial companies use
 
 | Problem                     | Impact                                             |
 | --------------------------- | -------------------------------------------------- |
-| No capacity pre-check       | Approved vacations violate machine staffing rules  |
+| No capacity pre-check       | Approved vacations violate asset staffing rules    |
 | No blackout enforcement     | Employees book during mandatory production windows |
 | No cross-team calendar      | Managers discover conflicts after approval         |
 | Manual entitlement tracking | Carry-over errors, incorrect remaining day counts  |
@@ -36,13 +36,13 @@ Before this feature, Assixx had no vacation management. Industrial companies use
 
 ### Requirements
 
-- Pre-approval capacity analysis: team headcount + machine staffing + blackout conflict + entitlement check
+- Pre-approval capacity analysis: team headcount + asset staffing + blackout conflict + entitlement check
 - Multi-level approval chain with self-approval prevention
 - Paginated request lists with year/status/type filtering
 - Admin CRUD for blackouts, staffing rules, holidays, entitlements, settings
 - Team calendar view (approved vacations per member per day)
 - Half-day support (morning/afternoon at start/end of range)
-- Status machine: `pending → approved | denied`, `pending → withdrawn`, `approved → cancelled`
+- Status asset: `pending → approved | denied`, `pending → withdrawn`, `approved → cancelled`
 - Real-time notifications via SSE (ADR-003 EventBus pattern)
 - Full RLS isolation (ADR-019) — no cross-tenant data leaks
 - Per-user permissions (ADR-020) — vacation-requests, vacation-rules, vacation-entitlements, vacation-holidays, vacation-overview
@@ -69,12 +69,12 @@ Each migration is independently reversible. If migration 30 (availability rebuil
 **7 Core Tables:**
 
 ```
-vacation_requests          — the main request entity (UUID PK, status machine)
+vacation_requests          — the main request entity (UUID PK, status asset)
 vacation_request_status_log — append-only audit trail (who changed what, when)
 vacation_entitlements      — per-user, per-year day allocation
 vacation_blackouts         — company/department/team blackout periods
 vacation_blackout_scopes   — junction table for multi-scope blackouts
-vacation_staffing_rules    — per-machine minimum headcount
+vacation_staffing_rules    — per-asset minimum headcount
 vacation_settings          — tenant-wide defaults (annual days, carry-over, notice period)
 vacation_holidays          — tenant holidays (excluded from workday count)
 ```
@@ -107,7 +107,7 @@ vacation-permission.registrar.ts      — OnModuleInit registration (ADR-020)
 ├── vacation-entitlements.service.ts  — balance calculation (getBalance, createOrUpdate, addDays)
 ├── vacation-holidays.service.ts      — CRUD + countWorkdays() (excludes weekends + holidays)
 ├── vacation-blackouts.service.ts     — CRUD + conflict check
-├── vacation-staffing-rules.service.ts — CRUD for machine staffing minimums
+├── vacation-staffing-rules.service.ts — CRUD for asset staffing minimums
 ├── vacation-settings.service.ts      — tenant-wide settings (get + update)
 └── vacation-notification.service.ts  — SSE + persistent DB notifications (ADR-004) + email stub
 ```
@@ -138,7 +138,7 @@ analyzeCapacity(tenantId, startDate, endDate, requesterId)
   │     - Status: ok | warning | critical
   │
   ├── Machine Analysis
-  │   → For each machine with a staffing rule:
+  │   → For each asset with a staffing rule:
   │     - Get minStaffRequired
   │     - Count currently available operators
   │     - Check if approval would violate minimum
@@ -274,7 +274,7 @@ Store every status change as an event, derive current status from event stream.
 
 **Rejected:**
 
-- Over-engineering for a simple state machine (5 states, 5 transitions)
+- Over-engineering for a simple state asset (5 states, 5 transitions)
 - The `vacation_request_status_log` table provides the same audit trail without CQRS complexity
 - Status is written directly to `vacation_requests.status` for fast reads
 - Status log is append-only and captures `old_status → new_status + changed_by + note`

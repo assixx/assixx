@@ -38,30 +38,39 @@ function toOptional(value: string): string | undefined {
   return value !== '' ? value : undefined;
 }
 
+/** Result shape from save operation */
+export interface SaveResult {
+  id: number;
+  uuid: string | null;
+}
+
+/** Extract id + uuid from a record (top-level or nested data) */
+function extractFields(obj: Record<string, unknown>): SaveResult | null {
+  if (typeof obj.id !== 'number') return null;
+  return {
+    id: obj.id,
+    uuid: typeof obj.uuid === 'string' ? obj.uuid : null,
+  };
+}
+
 /**
- * Extract created resource ID from API response
+ * Extract created resource ID + UUID from API response
  */
-function extractCreatedId(result: unknown): number {
+function extractCreatedResult(result: unknown): SaveResult {
   if (result === null || typeof result !== 'object') {
-    return 0;
+    return { id: 0, uuid: null };
   }
 
   const resultObj = result as Record<string, unknown>;
+  const topLevel = extractFields(resultObj);
+  if (topLevel !== null) return topLevel;
 
-  // Check top-level id
-  if (typeof resultObj.id === 'number') {
-    return resultObj.id;
-  }
-
-  // Check nested data.id
   if (resultObj.data !== null && typeof resultObj.data === 'object') {
-    const dataObj = resultObj.data as Record<string, unknown>;
-    if (typeof dataObj.id === 'number') {
-      return dataObj.id;
-    }
+    const nested = extractFields(resultObj.data as Record<string, unknown>);
+    if (nested !== null) return nested;
   }
 
-  return 0;
+  return { id: 0, uuid: null };
 }
 
 // =============================================================================
@@ -133,7 +142,7 @@ export function generateUsernameFromEmail(email: string): string {
 export async function saveEmployee(
   payload: EmployeePayload,
   editId: number | null,
-): Promise<number> {
+): Promise<SaveResult> {
   if (!checkAuth()) throw new Error('Not authenticated');
 
   const isEdit = editId !== null;
@@ -141,11 +150,11 @@ export async function saveEmployee(
 
   if (isEdit) {
     await apiClient.put(endpoint, payload);
-    return editId;
+    return { id: editId, uuid: null };
   }
 
   const result = await apiClient.post(endpoint, payload);
-  return extractCreatedId(result);
+  return extractCreatedResult(result);
 }
 
 /** Assign employee to team */

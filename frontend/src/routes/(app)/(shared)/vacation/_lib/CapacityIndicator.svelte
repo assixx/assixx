@@ -23,8 +23,8 @@
     analysis !== null && !analysis.entitlementCheck.sufficient,
   );
 
-  const hasMachineCritical = $derived(
-    analysis?.machineAnalysis.some((m) => m.status === 'critical') ?? false,
+  const hasAssetCritical = $derived(
+    analysis?.assetAnalysis.some((m) => m.status === 'critical') ?? false,
   );
 
   /**
@@ -39,7 +39,7 @@
     // Blocked — show the specific reason
     if (insufficientBalance) return 'Urlaubskontingent erschöpft';
     if (hasConflicts) return 'Sperrzeitraum-Konflikt';
-    if (hasMachineCritical) return 'Maschinenbesetzung kritisch';
+    if (hasAssetCritical) return 'Anlagenbesetzung kritisch';
     return CAPACITY_STATUS_LABELS.blocked;
   });
 </script>
@@ -94,12 +94,12 @@
       </div>
     {/if}
 
-    <!-- Machine Warnings -->
-    {#if analysis.machineAnalysis.length > 0}
-      {#each analysis.machineAnalysis.filter((m) => m.status !== 'ok') as machine (machine.machineId)}
+    <!-- Asset Warnings -->
+    {#if analysis.assetAnalysis.length > 0}
+      {#each analysis.assetAnalysis.filter((m) => m.status !== 'ok') as asset (asset.assetId)}
         <div class="capacity-indicator__warning">
           <i class="fas fa-cog mr-1"></i>
-          {machine.machineName}: Min. {machine.minStaffCount} Mitarbeiter erforderlich
+          {asset.assetName}: Min. {asset.minStaffCount} Mitarbeiter erforderlich
         </div>
       {/each}
     {/if}

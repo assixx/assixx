@@ -112,7 +112,7 @@
   }
 
   .dropdown__option:hover {
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     background: rgb(33 150 243 / 20%);
     padding-left: 20px;
     color: var(--color-text-primary);

@@ -1,8 +1,8 @@
 # Assixx Features & Overview
 
-> **Last Updated:** 2026-02-15
-> **Version:** 1.2.0
-> **Status:** Production Ready (10 of 11 main features live)
+> **Last Updated:** 2026-03-04
+> **Version:** 1.5.0
+> **Status:** Production Ready (13 of 14 main features live)
 
 ## Table of Contents
 
@@ -88,13 +88,13 @@
 #### 9. **Vacation Management** (NEW)
 
 - Vacation Request Workflow (create, edit, respond, withdraw, cancel)
-- Pre-Approval Capacity Analysis (team headcount, machine staffing, blackout conflicts, entitlement check)
+- Pre-Approval Capacity Analysis (team headcount, asset staffing, blackout conflicts, entitlement check)
 - Multi-Level Approver Chain (team lead → deputy → area lead → admin)
 - Half-Day Support (morning/afternoon at start/end of range)
 - 7 Vacation Types (regular, doctor, bereavement, birth, wedding, move, unpaid)
 - Entitlement Management (per-employee, per-year, carry-over, additional days)
 - Blackout Periods (global, department, team, area scoped)
-- Machine Staffing Rules (minimum headcount per machine)
+- Machine Staffing Rules (minimum headcount per asset)
 - Holiday Management (recurring + one-time, per-tenant)
 - Team Calendar Overview (approved vacations per member per day)
 - Tenant-Wide Settings (default days, carry-over limits, notice period)
@@ -114,9 +114,56 @@
 - Core-Features (Dashboard, Profil, Settings) werden NIE gefiltert
 - Architektur: ADR-024
 
+#### 11. **TPM — Total Productive Maintenance** (NEW)
+
+- Kamishibai Board (visual card management per asset per interval)
+- Plan Management (create/edit/delete maintenance plans with intervals)
+- 7 Interval Types (daily, weekly, monthly, quarterly, semi-annual, annual, custom)
+- 4-State Card Status Machine (green → red → yellow → overdue)
+- Execution Workflow (employee marks card as done, optional photo upload)
+- Approval Workflow (team lead approves/rejects, card transitions accordingly)
+- Escalation System (cron-based overdue detection with configurable threshold)
+- Slot Availability Assistant (optimal maintenance time slot suggestions)
+- Real-Time Notifications via SSE (due, overdue, approval required/result)
+- Shift Grid Integration (TPM maintenance dates as overlay toggle)
+- Machine History Bridge (approved executions → maintenance history)
+- Configuration UI (escalation settings, card colors, card templates)
+- Per-Tenant Color Customization (green/yellow/red/overdue colors)
+- Card Templates with JSONB Custom Fields
+- Time Estimates per Interval Type
+- 364 Tests (278 unit + 86 API)
+- Architecture: ADR-026
+
+#### 12. **Arbeitsaufträge (Work Orders)** (NEW)
+
+- Modulübergreifendes Arbeitsauftrag-System (TPM-Mängel, manuell)
+- 4-Stufen-Lebenszyklus: Offen -> In Bearbeitung -> Erledigt -> Verifiziert
+- N:M Mitarbeiter-Zuweisung (gefiltert nach Anlagen-Team)
+- Foto-Dokumentation + Kommentarsystem
+- Prioritäten (Hoch/Mittel/Niedrig) + Fälligkeitsdatum
+- Real-time SSE-Benachrichtigungen (Zuweisung, Status, Fälligkeit, Verifizierung)
+- Täglicher Fälligkeits-Cron (24h Vorwarnung)
+- Employee-View (eigene Aufträge) + Admin-View (alle Aufträge)
+- TPM-Integration: "Zuweisen" Button auf Mängelliste
+- Audit-Logging für alle Mutationen
+
+#### 13. **Dummy-Benutzer (Kiosk Accounts)** (NEW)
+
+- Anonyme Display-Accounts für Firmen-TVs und Hallendisplays
+- Auto-generierte Email + Personalnummer (kein manueller Aufwand)
+- Manuelle Bezeichnung (z.B. "Halle 1 Display")
+- Passwort mit Stärke-Indikator (zxcvbn)
+- Team-Zuordnung (Multi-Select)
+- Whitelist-Zugriff: Nur Schwarzes Brett, Kalender, TPM-Boards
+- Automatischer Redirect zu /blackboard bei unerlaubtem Zugriff
+- Verwaltet als Submenu unter Mitarbeiter (Admin) bzw. Administratoren (Root)
+- 2-Stufen-Löschbestätigung (Soft-Delete)
+- Activity Logging für alle Mutationen
+- 89 Unit Tests + 18 API-Integrationstests
+
 ### In Development
 
-#### 10. **Survey Tool** (80% complete)
+#### 14. **Survey Tool** (80% complete)
 
 - Admin can Create Surveys
 - Multiple Choice and Free Text
@@ -138,6 +185,9 @@
 | Backup System       | Yes      | Yes       | Yes          | Live            |
 | Vacation Management | No       | Yes       | Yes          | Live            |
 | Feature-Gating      | Yes      | Yes       | Yes          | Live            |
+| TPM Wartung         | No       | Yes       | Yes          | Live            |
+| Arbeitsaufträge     | No       | Yes       | Yes          | Live            |
+| Dummy-Benutzer      | Yes      | Yes       | Yes          | Live            |
 | Survey Tool         | No       | Yes       | Yes          | In Development  |
 | Mobile App          | No       | No        | Yes          | Planned Q2/2025 |
 
@@ -233,7 +283,7 @@
 
 ### Q3 2025
 
-- [ ] TPM Calendar
+- [x] TPM Calendar → **Live als "TPM Wartung" (2026-02-19, ADR-026)**
 - [ ] QA Checklists
 - [ ] Extended Analytics
 - [ ] API v2

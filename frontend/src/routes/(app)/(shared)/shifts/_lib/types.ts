@@ -3,12 +3,36 @@
 // Based on: frontend/src/scripts/shifts/types.ts
 // =============================================================================
 
+import type { TpmIntervalType } from './constants';
 import type {
   ExtendedUserRole as UserRole,
   AvailabilityStatus,
 } from '@assixx/shared';
 
 export type { UserRole, AvailabilityStatus };
+
+/**
+ * Shift time info for display and save operations.
+ * Matches the structure used in SHIFT_TIMES constant.
+ */
+export interface ShiftTimeInfo {
+  start: string;
+  end: string;
+  label: string;
+}
+
+/** Map of shift key → time info (e.g. early → {start:'06:00', end:'14:00', label:'Frühschicht'}) */
+export type ShiftTimesMap = Record<string, ShiftTimeInfo>;
+
+/** API response for a single shift time definition */
+export interface ShiftTimeApiResponse {
+  shiftKey: string;
+  label: string;
+  startTime: string;
+  endTime: string;
+  sortOrder: number;
+  isActive: number;
+}
 
 /**
  * Single availability entry (one period of unavailability)
@@ -97,9 +121,9 @@ export interface Department {
 }
 
 /**
- * Machine
+ * Asset
  */
-export interface Machine {
+export interface Asset {
   id: number;
   name: string;
   departmentId: number;
@@ -159,7 +183,7 @@ export interface ShiftAssignment {
   date: string;
   shiftType: ShiftType;
   departmentId?: number;
-  machineId?: number;
+  assetId?: number;
   teamLeaderId?: number;
   notes?: string;
   createdAt: string;
@@ -172,7 +196,7 @@ export interface ShiftAssignment {
 export interface SelectedContext {
   areaId: number | null;
   departmentId: number | null;
-  machineId: number | null;
+  assetId: number | null;
   teamId: number | null;
   teamLeaderId: number | null;
 }
@@ -200,6 +224,7 @@ export interface ShiftPlanResponse {
     shiftNotes?: string;
     startDate: string;
     endDate: string;
+    isTpmMode?: boolean;
   };
   shifts: {
     id?: number;
@@ -227,9 +252,10 @@ export interface CreateShiftPlanRequest {
   areaId?: number;
   departmentId?: number;
   teamId?: number;
-  machineId?: number;
+  assetId?: number;
   name: string;
   shiftNotes?: string;
+  isTpmMode?: boolean;
   shifts: {
     userId: number;
     date: string;
@@ -250,8 +276,8 @@ export interface ShiftFavorite {
   areaName: string;
   departmentId: number;
   departmentName: string;
-  machineId: number;
-  machineName: string;
+  assetId: number;
+  assetName: string;
   teamId: number;
   teamName: string;
   createdAt: string;
@@ -352,9 +378,21 @@ export interface EmployeeTeamInfo {
   departmentName: string;
   areaId: number;
   areaName: string;
-  machineId?: number;
-  machineName?: string;
+  assetId?: number;
+  assetName?: string;
   teamLeaderId?: number | null; // For permission checks (SSR)
+}
+
+/**
+ * Shift assignment count per employee (week, month, year)
+ */
+export interface AssignmentCount {
+  employeeId: number;
+  firstName: string;
+  lastName: string;
+  weekCount: number;
+  monthCount: number;
+  yearCount: number;
 }
 
 /**
@@ -366,14 +404,38 @@ export interface DropdownOption {
 }
 
 /**
- * Machine availability entry (from GET /machines/:id/availability)
- * Used by shift planning to visually mark cells where a machine is unavailable.
+ * Asset availability entry (from GET /assets/:id/availability)
+ * Used by shift planning to visually mark cells where a asset is unavailable.
  */
-export interface MachineAvailabilityEntry {
+export interface AssetAvailabilityEntry {
   id: number;
-  machineId: number;
+  assetId: number;
   status: string;
   startDate: string;
   endDate: string;
   notes: string | null;
+}
+
+/**
+ * TPM interval color entry from API (tenant-configurable).
+ * Local mirror to avoid fragile cross-route imports (same reason as TpmIntervalType).
+ */
+export interface IntervalColorEntry {
+  statusKey: TpmIntervalType;
+  colorHex: string;
+  label: string;
+}
+
+/**
+ * TPM maintenance event for shift grid overlay.
+ * One entry per plan×date (a plan's baseWeekday matches a day in the week).
+ */
+export interface TpmMaintenanceEvent {
+  planUuid: string;
+  planName: string;
+  assetName: string;
+  baseTime: string | null;
+  bufferHours: number;
+  /** Interval types due on this date (e.g. ['weekly', 'monthly', 'quarterly']) */
+  intervalTypes: TpmIntervalType[];
 }

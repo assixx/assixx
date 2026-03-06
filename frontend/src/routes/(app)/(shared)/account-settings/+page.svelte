@@ -4,6 +4,7 @@
    * @module account-settings/+page
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
+   * Sections: Shift Times Configuration + Danger Zone (Tenant Deletion)
    */
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -13,17 +14,24 @@
   const log = createLogger('AccountSettingsPage');
 
   // Module imports
-  import { getRootUserCount, deleteTenant } from './_lib/api';
+  import {
+    getRootUserCount,
+    deleteTenant,
+    saveShiftTimes,
+    resetShiftTimes,
+  } from './_lib/api';
   import {
     DELETE_CONFIRMATION_TEXT,
     MIN_REASON_LENGTH,
     MIN_ROOT_USERS,
     MESSAGES,
+    SHIFT_MESSAGES,
+    SHIFT_KEY_INFO,
   } from './_lib/constants';
   import { formatDate, getStatusLabel, showToast } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { DeletionStatusData } from './_lib/types';
+  import type { DeletionStatusData, ShiftTimeData } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -36,6 +44,7 @@
     data.pendingDeletion ?? null,
   );
   const hasPendingDeletion = $derived(pendingDeletion !== null);
+  const ssrShiftTimes = $derived<ShiftTimeData[]>(data.shiftTimes);
 
   // =============================================================================
   // UI STATE - Client-side only
@@ -47,6 +56,30 @@
   let deleteReason = $state('');
   let deleteLoading = $state(false);
 
+  // Shift Times State
+  let shiftTimesEdits = $state<
+    {
+      shiftKey: string;
+      label: string;
+      startTime: string;
+      endTime: string;
+    }[]
+  >([]);
+  let shiftSaving = $state(false);
+  let shiftResetting = $state(false);
+
+  // Initialize edits from SSR data
+  $effect(() => {
+    if (ssrShiftTimes.length > 0 && shiftTimesEdits.length === 0) {
+      shiftTimesEdits = ssrShiftTimes.map((st: ShiftTimeData) => ({
+        shiftKey: st.shiftKey,
+        label: st.label,
+        startTime: st.startTime,
+        endTime: st.endTime,
+      }));
+    }
+  });
+
   // =============================================================================
   // DERIVED STATE
   // =============================================================================
@@ -57,14 +90,78 @@
   const isReasonValid = $derived(deleteReason.length >= MIN_REASON_LENGTH);
   const canDelete = $derived(isDeleteConfirmationValid && isReasonValid);
 
+  /** Check if shift times have been modified from SSR state */
+  const shiftTimesChanged = $derived(() => {
+    if (shiftTimesEdits.length !== ssrShiftTimes.length) return true;
+    for (let i = 0; i < shiftTimesEdits.length; i++) {
+      const edit = shiftTimesEdits[i];
+      const ssr = ssrShiftTimes[i];
+      if (
+        edit.label !== ssr.label ||
+        edit.startTime !== ssr.startTime ||
+        edit.endTime !== ssr.endTime
+      ) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  /** Validate all shift time inputs */
+  const shiftTimesValid = $derived(() => {
+    const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    return shiftTimesEdits.every(
+      (st) =>
+        st.label.length > 0 &&
+        st.label.length <= 100 &&
+        timePattern.test(st.startTime) &&
+        timePattern.test(st.endTime),
+    );
+  });
+
   // =============================================================================
-  // HANDLERS
+  // SHIFT TIMES HANDLERS
   // =============================================================================
 
-  /**
-   * Handle show delete modal button click
-   * Checks for minimum 2 root users before showing modal
-   */
+  async function handleSaveShiftTimes(): Promise<void> {
+    if (shiftSaving || !shiftTimesValid()) return;
+
+    shiftSaving = true;
+    try {
+      const editsToSave = shiftTimesEdits;
+      shiftTimesEdits = [];
+      await saveShiftTimes(editsToSave);
+      showToast(SHIFT_MESSAGES.saved, 'success');
+      await invalidateAll();
+    } catch (err: unknown) {
+      log.error({ err }, 'Error saving shift times');
+      showToast(SHIFT_MESSAGES.saveError, 'error');
+    }
+    // eslint-disable-next-line require-atomic-updates -- Unconditional reset after sync guard
+    shiftSaving = false;
+  }
+
+  async function handleResetShiftTimes(): Promise<void> {
+    if (shiftResetting) return;
+
+    shiftResetting = true;
+    try {
+      await resetShiftTimes();
+      showToast(SHIFT_MESSAGES.reset, 'success');
+      await invalidateAll();
+      shiftTimesEdits = [];
+    } catch (err: unknown) {
+      log.error({ err }, 'Error resetting shift times');
+      showToast(SHIFT_MESSAGES.resetError, 'error');
+    }
+    // eslint-disable-next-line require-atomic-updates -- Unconditional reset after sync guard
+    shiftResetting = false;
+  }
+
+  // =============================================================================
+  // DELETE HANDLERS
+  // =============================================================================
+
   async function handleShowDeleteModal() {
     try {
       const rootUserCount = await getRootUserCount();
@@ -75,22 +172,17 @@
         return;
       }
 
-      // Reset form and show modal
       deleteConfirmation = '';
       deleteReason = '';
       showDeleteModal = true;
     } catch (err) {
       log.error({ err }, 'Error checking root users');
-      // Show modal anyway if check fails
       deleteConfirmation = '';
       deleteReason = '';
       showDeleteModal = true;
     }
   }
 
-  /**
-   * Handle delete tenant confirmation
-   */
   async function handleDeleteTenant(): Promise<void> {
     if (!canDelete || deleteLoading) return;
 
@@ -100,7 +192,6 @@
       await deleteTenant(deleteReason);
       showToast(MESSAGES.deletionRequested, 'success');
 
-      // Close modal and trigger SSR refetch
       showDeleteModal = false;
       await invalidateAll();
     } catch (err) {
@@ -114,27 +205,18 @@
     deleteLoading = false;
   }
 
-  /**
-   * Close delete modal
-   */
   function closeDeleteModal() {
     showDeleteModal = false;
     deleteConfirmation = '';
     deleteReason = '';
   }
 
-  /**
-   * Handle keyboard events for modals
-   */
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && showDeleteModal) {
       closeDeleteModal();
     }
   }
 
-  /**
-   * Handle backdrop click
-   */
   function handleBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget && showDeleteModal) {
       closeDeleteModal();
@@ -145,12 +227,113 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="container">
+  <!-- ================================================================= -->
+  <!-- SECTION 1: Shift Times Configuration                              -->
+  <!-- ================================================================= -->
+  <div class="card mb-8">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-clock mr-2"></i>
+        Schichtzeiten
+      </h2>
+      <p class="mt-2 text-(--color-text-secondary)">
+        Schichtzeiten für die Schichtplanung.
+      </p>
+    </div>
+
+    <div class="card__body">
+      {#if shiftTimesEdits.length > 0}
+        <!-- Column headers -->
+        <div
+          class="st-header"
+          aria-hidden="true"
+        >
+          <span></span>
+          <span>Bezeichnung</span>
+          <span>Beginn</span>
+          <span>Ende</span>
+        </div>
+
+        <!-- Shift rows -->
+        <div class="st-grid">
+          {#each shiftTimesEdits as shiftTime, index (shiftTime.shiftKey)}
+            {@const info = SHIFT_KEY_INFO[shiftTime.shiftKey]}
+            <div class="st-row {info.colorClass}">
+              <i class="fas {info.icon} st-icon"></i>
+              <input
+                type="text"
+                id="shift-label-{shiftTime.shiftKey}"
+                class="form-field__control"
+                aria-label="Bezeichnung {shiftTime.shiftKey}"
+                maxlength={100}
+                bind:value={shiftTimesEdits[index].label}
+              />
+              <input
+                type="time"
+                id="shift-start-{shiftTime.shiftKey}"
+                class="form-field__control"
+                aria-label="Beginn {shiftTime.shiftKey}"
+                bind:value={shiftTimesEdits[index].startTime}
+              />
+              <input
+                type="time"
+                id="shift-end-{shiftTime.shiftKey}"
+                class="form-field__control"
+                aria-label="Ende {shiftTime.shiftKey}"
+                bind:value={shiftTimesEdits[index].endTime}
+              />
+            </div>
+          {/each}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-4 flex gap-3">
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={handleSaveShiftTimes}
+            disabled={shiftSaving || !shiftTimesChanged() || !shiftTimesValid()}
+          >
+            {#if shiftSaving}
+              <span class="spinner-ring spinner-ring--sm"></span>
+              Speichere...
+            {:else}
+              <i class="fas fa-save"></i>
+              Speichern
+            {/if}
+          </button>
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={handleResetShiftTimes}
+            disabled={shiftResetting}
+          >
+            {#if shiftResetting}
+              <span class="spinner-ring spinner-ring--sm"></span>
+              Zurücksetzen...
+            {:else}
+              <i class="fas fa-undo"></i>
+              Standardwerte
+            {/if}
+          </button>
+        </div>
+      {:else}
+        <div class="flex items-center gap-3 text-(--color-text-secondary)">
+          <span class="spinner-ring spinner-ring--sm"></span>
+          Schichtzeiten werden geladen...
+        </div>
+      {/if}
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 2: Danger Zone (Tenant Deletion)                          -->
+  <!-- ================================================================= -->
   <div class="card card--danger-border">
-    <!-- Card Header -->
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-exclamation-triangle mr-2"></i>
-        Kontoeinstellungen
+        Gefahrenzone
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
         Tenant-Verwaltung und Löschoptionen (Zwei-Personen-Prinzip)
@@ -158,7 +341,6 @@
     </div>
 
     <div class="card__body">
-      <!-- Pending Deletion Banner -->
       {#if hasPendingDeletion && pendingDeletion}
         <div class="alert alert--warning mb-6">
           <div class="alert__icon">
@@ -183,7 +365,6 @@
         </div>
       {/if}
 
-      <!-- Danger Zone Warning Alert -->
       <div class="alert alert--danger mb-6">
         <div class="alert__icon">
           <i class="fas fa-exclamation-triangle"></i>
@@ -206,7 +387,6 @@
         </div>
       </div>
 
-      <!-- Action Button -->
       {#if !hasPendingDeletion}
         <div class="flex gap-3">
           <button
@@ -249,7 +429,6 @@
       </div>
 
       <div class="ds-modal__body">
-        <!-- Final Warning Box -->
         <div class="alert alert--danger mb-6">
           <div class="alert__icon">
             <i class="fas fa-skull-crossbones"></i>
@@ -268,14 +447,13 @@
           </div>
         </div>
 
-        <!-- Two-Person-Principle Info Box -->
-        <div class="info-box mb-6">
-          <div class="flex items-start gap-3">
-            <i class="fas fa-shield-alt mt-1 text-blue-500"></i>
-            <div>
-              <p class="mb-2 font-semibold">
-                Zwei-Personen-Prinzip (4-Augen-Prinzip)
-              </p>
+        <div class="alert alert--info mb-6">
+          <div class="alert__icon"><i class="fas fa-shield-alt"></i></div>
+          <div class="alert__content">
+            <div class="alert__title">
+              Zwei-Personen-Prinzip (4-Augen-Prinzip)
+            </div>
+            <div class="alert__message">
               <p class="mb-2">
                 Die Löschung wird <strong>nicht sofort</strong> durchgeführt,
                 sondern muss zuerst von einem zweiten Root-Benutzer genehmigt
@@ -292,7 +470,6 @@
           </div>
         </div>
 
-        <!-- Confirmation Input -->
         <div class="form-field mb-6">
           <label
             class="form-field__label"
@@ -311,7 +488,6 @@
           />
         </div>
 
-        <!-- Delete Reason -->
         <div class="form-field">
           <label
             for="deleteReason"
@@ -370,7 +546,7 @@
 {/if}
 
 <style>
-  /* Danger Border Variant - Visual indicator for dangerous operations */
+  /* Danger Border Variant */
   .card--danger-border {
     border-color: rgb(244 67 54 / 30%);
   }
@@ -379,14 +555,89 @@
     border-color: rgb(244 67 54 / 50%);
   }
 
-  /* Info Box - Two-person-principle information */
-  .info-box {
-    margin-bottom: var(--spacing-6);
-    border: 1px solid rgb(33 150 243 / 20%);
-    border-radius: var(--radius-xl);
-    background: rgb(33 150 243 / 5%);
-    padding: var(--spacing-3);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+  /* Shift Times — Compact Grid */
+  .st-header {
+    display: grid;
+    grid-template-columns: 2rem 1fr 7.5rem 7.5rem;
+    gap: 0.5rem;
+    padding: 0 0.75rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .st-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .st-row {
+    display: grid;
+    grid-template-columns: 2rem 1fr 7.5rem 7.5rem;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md, 0.5rem);
+    border-left: 3px solid transparent;
+    transition: background-color 0.15s ease;
+  }
+
+  .st-row:hover {
+    background: rgb(255 255 255 / 3%);
+  }
+
+  .st-icon {
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  /* Color accents */
+  .st-row.shift-early {
+    border-left-color: rgb(255 193 7 / 70%);
+  }
+
+  .st-row.shift-early .st-icon {
+    color: rgb(255 193 7);
+  }
+
+  .st-row.shift-late {
+    border-left-color: rgb(33 150 243 / 70%);
+  }
+
+  .st-row.shift-late .st-icon {
+    color: rgb(33 150 243);
+  }
+
+  .st-row.shift-night {
+    border-left-color: rgb(156 39 176 / 70%);
+  }
+
+  .st-row.shift-night .st-icon {
+    color: rgb(156 39 176);
+  }
+
+  @media (width <= 640px) {
+    .st-header {
+      display: none;
+    }
+
+    .st-row {
+      grid-template-columns: 2rem 1fr;
+      grid-template-rows: auto auto;
+      gap: 0.375rem;
+    }
+
+    .st-icon {
+      grid-row: 1 / -1;
+      align-self: start;
+      padding-top: 0.5rem;
+    }
+
+    .st-row input[type='time'] {
+      grid-column: 2;
+    }
   }
 </style>

@@ -43,9 +43,9 @@ export interface TeamRow {
   department_area_name: string | undefined;
   team_lead_name: string | undefined;
   member_count: number | undefined;
-  machine_count: number | undefined;
+  asset_count: number | undefined;
   member_names: string | null;
-  machine_names: string | null;
+  asset_names: string | null;
 }
 
 /**
@@ -66,9 +66,9 @@ export interface TeamResponse {
   departmentAreaName: string | undefined;
   leaderName: string | undefined;
   memberCount: number | undefined;
-  machineCount: number | undefined;
+  assetCount: number | undefined;
   memberNames: string | undefined;
-  machineNames: string | undefined;
+  assetNames: string | undefined;
 }
 
 /**
@@ -90,9 +90,9 @@ export interface TeamMember {
 }
 
 /**
- * Team machine type
+ * Team asset type
  */
-export interface TeamMachine {
+export interface TeamAsset {
   id: number;
   name: string;
   serialNumber: string | undefined;
@@ -146,7 +146,7 @@ const TEAM_MEMBERS_DATE_RANGE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND ea.start_date <= $2::date AND ea.end_date >= $3::date
-  WHERE ut.team_id = $1`;
+  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = 1`;
 
 /**
  * SQL query for team members with current date availability
@@ -159,7 +159,7 @@ const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
-  WHERE ut.team_id = $1`;
+  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = 1`;
 
 @Injectable()
 export class TeamsService {
@@ -173,7 +173,7 @@ export class TeamsService {
   /**
    * SQL query for fetching teams with extended info
    * Includes area name via department→area join for badge tooltips
-   * Includes aggregated member/machine names for tooltips
+   * Includes aggregated member/asset names for tooltips
    */
   private readonly FIND_ALL_TEAMS_QUERY = `
     SELECT t.*,
@@ -181,15 +181,15 @@ export class TeamsService {
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
       (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
-      (SELECT COUNT(*) FROM machine_teams mt WHERE mt.team_id = t.id) as machine_count,
+      (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
       (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
        FROM user_teams mut
        JOIN users mu ON mut.user_id = mu.id
        WHERE mut.team_id = t.id) as member_names,
       (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
-       FROM machine_teams mmt
-       JOIN machines mm ON mmt.machine_id = mm.id
-       WHERE mmt.team_id = t.id) as machine_names
+       FROM asset_teams mmt
+       JOIN assets mm ON mmt.asset_id = mm.id
+       WHERE mmt.team_id = t.id) as asset_names
     FROM teams t
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
@@ -216,9 +216,9 @@ export class TeamsService {
       departmentAreaName: team.department_area_name,
       leaderName: team.team_lead_name,
       memberCount: team.member_count,
-      machineCount: team.machine_count,
+      assetCount: team.asset_count,
       memberNames: team.member_names ?? undefined,
-      machineNames: team.machine_names ?? undefined,
+      assetNames: team.asset_names ?? undefined,
     };
   }
 
@@ -267,15 +267,15 @@ export class TeamsService {
         a.name as department_area_name,
         CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
         (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
-        (SELECT COUNT(*) FROM machine_teams mt WHERE mt.team_id = t.id) as machine_count,
+        (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
         (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
          FROM user_teams mut
          JOIN users mu ON mut.user_id = mu.id
          WHERE mut.team_id = t.id) as member_names,
         (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
-         FROM machine_teams mmt
-         JOIN machines mm ON mmt.machine_id = mm.id
-         WHERE mmt.team_id = t.id) as machine_names
+         FROM asset_teams mmt
+         JOIN assets mm ON mmt.asset_id = mm.id
+         WHERE mmt.team_id = t.id) as asset_names
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN areas a ON d.area_id = a.id
@@ -763,15 +763,12 @@ export class TeamsService {
   }
 
   /**
-   * Get team machines
+   * Get team assets
    */
-  async getTeamMachines(
-    teamId: number,
-    tenantId: number,
-  ): Promise<TeamMachine[]> {
-    this.logger.debug(`Fetching machines for team ${teamId}`);
+  async getTeamAssets(teamId: number, tenantId: number): Promise<TeamAsset[]> {
+    this.logger.debug(`Fetching assets for team ${teamId}`);
 
-    interface MachineRow {
+    interface AssetRow {
       id: number;
       name: string;
       serial_number: string | null;
@@ -781,91 +778,91 @@ export class TeamsService {
       notes: string | null;
     }
 
-    const machines = await this.db.query<MachineRow>(
+    const assets = await this.db.query<AssetRow>(
       `SELECT m.id, m.name, m.serial_number, m.status, mt.is_primary, mt.assigned_at, mt.notes
-       FROM machine_teams mt
-       JOIN machines m ON mt.machine_id = m.id
+       FROM asset_teams mt
+       JOIN assets m ON mt.asset_id = m.id
        WHERE mt.team_id = $1 AND mt.tenant_id = $2`,
       [teamId, tenantId],
     );
 
-    return machines.map((machine: MachineRow) => ({
-      id: machine.id,
-      name: machine.name,
-      serialNumber: machine.serial_number ?? undefined,
-      status: machine.status ?? undefined,
-      isPrimary: machine.is_primary,
-      assignedAt: machine.assigned_at?.toISOString(),
-      notes: machine.notes ?? undefined,
+    return assets.map((asset: AssetRow) => ({
+      id: asset.id,
+      name: asset.name,
+      serialNumber: asset.serial_number ?? undefined,
+      status: asset.status ?? undefined,
+      isPrimary: asset.is_primary,
+      assignedAt: asset.assigned_at?.toISOString(),
+      notes: asset.notes ?? undefined,
     }));
   }
 
   /**
-   * Add machine to team
+   * Add asset to team
    */
-  async addTeamMachine(
+  async addTeamAsset(
     teamId: number,
-    machineId: number,
+    assetId: number,
     tenantId: number,
     assignedBy: number,
   ): Promise<{ id: number; message: string }> {
-    this.logger.log(`Adding machine ${machineId} to team ${teamId}`);
+    this.logger.log(`Adding asset ${assetId} to team ${teamId}`);
 
-    const machineRows = await this.db.query<{ id: number }>(
-      'SELECT id FROM machines WHERE id = $1 AND tenant_id = $2',
-      [machineId, tenantId],
+    const assetRows = await this.db.query<{ id: number }>(
+      'SELECT id FROM assets WHERE id = $1 AND tenant_id = $2',
+      [assetId, tenantId],
     );
 
-    if (machineRows.length === 0) {
-      throw new NotFoundException('Machine not found');
+    if (assetRows.length === 0) {
+      throw new NotFoundException('Asset not found');
     }
 
     const existing = await this.db.query<{ id: number }>(
-      'SELECT id FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
-      [machineId, teamId, tenantId],
+      'SELECT id FROM asset_teams WHERE asset_id = $1 AND team_id = $2 AND tenant_id = $3',
+      [assetId, teamId, tenantId],
     );
 
     if (existing.length > 0) {
-      throw new ConflictException('Machine already assigned to this team');
+      throw new ConflictException('Asset already assigned to this team');
     }
 
     const rows = await this.db.query<{ id: number }>(
-      `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, assigned_at, is_primary)
+      `INSERT INTO asset_teams (tenant_id, asset_id, team_id, assigned_by, assigned_at, is_primary)
        VALUES ($1, $2, $3, $4, NOW(), false)
        RETURNING id`,
-      [tenantId, machineId, teamId, assignedBy],
+      [tenantId, assetId, teamId, assignedBy],
     );
 
     return {
       id: rows[0]?.id ?? 0,
-      message: 'Machine added to team successfully',
+      message: 'Asset added to team successfully',
     };
   }
 
   /**
-   * Remove machine from team
+   * Remove asset from team
    */
-  async removeTeamMachine(
+  async removeTeamAsset(
     teamId: number,
-    machineId: number,
+    assetId: number,
     tenantId: number,
   ): Promise<{ message: string }> {
-    this.logger.log(`Removing machine ${machineId} from team ${teamId}`);
+    this.logger.log(`Removing asset ${assetId} from team ${teamId}`);
 
     const existing = await this.db.query<{ id: number }>(
-      'SELECT id FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
-      [machineId, teamId, tenantId],
+      'SELECT id FROM asset_teams WHERE asset_id = $1 AND team_id = $2 AND tenant_id = $3',
+      [assetId, teamId, tenantId],
     );
 
     if (existing.length === 0) {
-      throw new NotFoundException('Machine not assigned to this team');
+      throw new NotFoundException('Asset not assigned to this team');
     }
 
     await this.db.query(
-      'DELETE FROM machine_teams WHERE machine_id = $1 AND team_id = $2 AND tenant_id = $3',
-      [machineId, teamId, tenantId],
+      'DELETE FROM asset_teams WHERE asset_id = $1 AND team_id = $2 AND tenant_id = $3',
+      [assetId, teamId, tenantId],
     );
 
-    return { message: 'Machine removed from team successfully' };
+    return { message: 'Asset removed from team successfully' };
   }
 }

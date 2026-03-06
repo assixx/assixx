@@ -2,7 +2,7 @@
  * Vacation Staffing Rules Service – Unit Tests (Phase 3, Session 14)
  *
  * Mocked dependency: DatabaseService (tenantTransaction).
- * Tests: CRUD, getForMachines (bulk query), ConflictException on duplicate.
+ * Tests: CRUD, getForAssets (bulk query), ConflictException on duplicate.
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
@@ -29,24 +29,24 @@ function createMockActivityLogger() {
   return { log: vi.fn().mockResolvedValue(undefined) };
 }
 
-/** Extended row with machine_name from JOIN */
-interface StaffingRuleWithMachineRow extends VacationStaffingRuleRow {
-  machine_name: string | null;
+/** Extended row with asset_name from JOIN */
+interface StaffingRuleWithAssetRow extends VacationStaffingRuleRow {
+  asset_name: string | null;
 }
 
 function createMockStaffingRuleRow(
-  overrides?: Partial<StaffingRuleWithMachineRow>,
-): StaffingRuleWithMachineRow {
+  overrides?: Partial<StaffingRuleWithAssetRow>,
+): StaffingRuleWithAssetRow {
   return {
     id: 'sr-001',
     tenant_id: 1,
-    machine_id: 100,
+    asset_id: 100,
     min_staff_count: 2,
     is_active: 1,
     created_by: 10,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
-    machine_name: 'CNC Mill',
+    asset_name: 'CNC Mill',
     ...overrides,
   };
 }
@@ -91,9 +91,9 @@ describe('VacationStaffingRulesService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]?.id).toBe('sr-001');
-      expect(result[0]?.machineId).toBe(100);
+      expect(result[0]?.assetId).toBe(100);
       expect(result[0]?.minStaffCount).toBe(2);
-      expect(result[0]?.machineName).toBe('CNC Mill');
+      expect(result[0]?.assetName).toBe('CNC Mill');
     });
 
     it('should return empty array when no rules exist', async () => {
@@ -116,23 +116,23 @@ describe('VacationStaffingRulesService', () => {
       });
 
       const result = await service.createStaffingRule(1, 10, {
-        machineId: 100,
+        assetId: 100,
         minStaffCount: 2,
       });
 
-      expect(result.machineId).toBe(100);
+      expect(result.assetId).toBe(100);
       expect(result.minStaffCount).toBe(2);
-      expect(result.machineName).toBe('CNC Mill');
+      expect(result.assetName).toBe('CNC Mill');
     });
 
-    it('should throw ConflictException on duplicate machine (23505)', async () => {
+    it('should throw ConflictException on duplicate asset (23505)', async () => {
       const pgError = new Error('unique_violation');
       (pgError as unknown as { code: string }).code = '23505';
       mockClient.query.mockRejectedValueOnce(pgError);
 
       await expect(
         service.createStaffingRule(1, 10, {
-          machineId: 100,
+          assetId: 100,
           minStaffCount: 2,
         }),
       ).rejects.toThrow(ConflictException);
@@ -172,7 +172,7 @@ describe('VacationStaffingRulesService', () => {
   describe('deleteStaffingRule()', () => {
     it('should soft-delete successfully', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 'sr-001', machine_id: 100, min_staff_count: 2 }],
+        rows: [{ id: 'sr-001', asset_id: 100, min_staff_count: 2 }],
       });
 
       await expect(
@@ -190,19 +190,19 @@ describe('VacationStaffingRulesService', () => {
   });
 
   // -----------------------------------------------------------
-  // getForMachines — bulk query
+  // getForAssets — bulk query
   // -----------------------------------------------------------
 
-  describe('getForMachines()', () => {
-    it('should return Map of machineId → minStaffCount', async () => {
+  describe('getForAssets()', () => {
+    it('should return Map of assetId → minStaffCount', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
-          { machine_id: 100, min_staff_count: 2 },
-          { machine_id: 200, min_staff_count: 3 },
+          { asset_id: 100, min_staff_count: 2 },
+          { asset_id: 200, min_staff_count: 3 },
         ],
       });
 
-      const result = await service.getForMachines(1, [100, 200]);
+      const result = await service.getForAssets(1, [100, 200]);
 
       expect(result).toBeInstanceOf(Map);
       expect(result.get(100)).toBe(2);
@@ -210,17 +210,17 @@ describe('VacationStaffingRulesService', () => {
       expect(result.size).toBe(2);
     });
 
-    it('should return empty Map for empty machineIds array', async () => {
-      const result = await service.getForMachines(1, []);
+    it('should return empty Map for empty assetIds array', async () => {
+      const result = await service.getForAssets(1, []);
 
       expect(result.size).toBe(0);
       expect(mockDb.tenantTransaction).not.toHaveBeenCalled();
     });
 
-    it('should build parameterized IN clause for multiple machines', async () => {
+    it('should build parameterized IN clause for multiple assets', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await service.getForMachines(1, [100, 200, 300]);
+      await service.getForAssets(1, [100, 200, 300]);
 
       expect(mockClient.query).toHaveBeenCalledWith(
         expect.stringContaining('$2, $3, $4'),
@@ -228,12 +228,12 @@ describe('VacationStaffingRulesService', () => {
       );
     });
 
-    it('should return partial Map when some machines have no rules', async () => {
+    it('should return partial Map when some assets have no rules', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ machine_id: 100, min_staff_count: 2 }],
+        rows: [{ asset_id: 100, min_staff_count: 2 }],
       });
 
-      const result = await service.getForMachines(1, [100, 200]);
+      const result = await service.getForAssets(1, [100, 200]);
 
       expect(result.size).toBe(1);
       expect(result.has(100)).toBe(true);

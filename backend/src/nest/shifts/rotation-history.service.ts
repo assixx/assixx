@@ -6,6 +6,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { dbToApi } from '../../utils/fieldMapper.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   DbHistoryRow,
@@ -18,7 +19,10 @@ import type {
 export class RotationHistoryService {
   private readonly logger = new Logger(RotationHistoryService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   async getRotationHistory(
     tenantId: number,
@@ -115,6 +119,7 @@ export class RotationHistoryService {
   async deleteRotationHistory(
     tenantId: number,
     teamId: number,
+    userId: number,
     patternId?: number,
   ): Promise<DeleteHistoryCountsResponse> {
     const hasPatternId = patternId !== undefined;
@@ -161,6 +166,20 @@ export class RotationHistoryService {
       }
 
       await this.databaseService.query('COMMIT', []);
+
+      void this.activityLogger.logDelete(
+        tenantId,
+        userId,
+        'rotation_history',
+        teamId,
+        `Rotationshistorie gelöscht: Team ${teamId}${hasPatternId ? `, Muster ${String(patternId)}` : ''}`,
+        {
+          teamId,
+          patternId,
+          deletedCounts: { patterns, assignments, history, shifts, plans },
+        },
+      );
+
       return { patterns, assignments, history, shifts, plans };
     } catch (error) {
       await this.databaseService.query('ROLLBACK', []);
@@ -171,6 +190,7 @@ export class RotationHistoryService {
   async deleteRotationHistoryByDateRange(
     tenantId: number,
     teamId: number,
+    userId: number,
     startDate: string,
     endDate: string,
   ): Promise<DeleteHistoryCountsResponse> {
@@ -189,6 +209,15 @@ export class RotationHistoryService {
 
     const historyDeleted = Number.parseInt(result[0]?.count ?? '0', 10);
 
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'rotation_history',
+      teamId,
+      `Rotationshistorie (Zeitraum) gelöscht: ${startDate} bis ${endDate}`,
+      { teamId, startDate, endDate, historyDeleted },
+    );
+
     return {
       patterns: 0,
       assignments: 0,
@@ -199,6 +228,7 @@ export class RotationHistoryService {
   async deleteRotationHistoryEntry(
     historyId: number,
     tenantId: number,
+    userId: number,
   ): Promise<void> {
     this.logger.debug(
       `Deleting rotation history entry ${historyId} for tenant ${tenantId}`,
@@ -218,5 +248,13 @@ export class RotationHistoryService {
         `Rotation history entry ${historyId} not found`,
       );
     }
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'rotation_history',
+      historyId,
+      `Rotationshistorie-Eintrag gelöscht: ${historyId}`,
+    );
   }
 }

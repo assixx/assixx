@@ -63,7 +63,7 @@ Trivy was split into two steps:
 
 - CRITICAL blocks the PR
 - HIGH/MEDIUM are informational in the CI logs but do not block (Docker base images almost always have HIGH findings that are not actionable)
-- Both steps use `scanners: "vuln"` -- secret scanning is disabled (ESLint `no-secrets` plugin already covers this)
+- Both steps use `scanners: "vuln"` -- secret scanning is disabled (Semgrep `p/security-audit` + `p/owasp-top-ten` already covers this)
 - GHCR login is required since the Trivy job runs on its own runner and needs to pull the private image
 
 **Amendment 2026-02-05:** SARIF upload and GitHub Security Tab integration removed. GitHub Code Security / Advanced Security is not enabled for the repository (paid feature for private repos). Table format in CI logs is sufficient for the visibility of HIGH/MEDIUM findings. Also removed `sleep 30` workaround -- `needs: build-and-push-image` already guarantees image availability.
@@ -73,7 +73,7 @@ Trivy was split into two steps:
 `codeql-analysis.yml` and `codeql-config.yml` were deleted:
 
 - CodeQL SARIF upload requires GitHub Code Security / Advanced Security -- not enabled for this repository
-- ESLint security plugins (`eslint-plugin-security`, `eslint-plugin-no-secrets`, `eslint-plugin-no-unsanitized`) already cover the relevant findings
+- Semgrep (`p/security-audit`, `p/owasp-top-ten`) and ESLint security plugins (`eslint-plugin-no-unsanitized`) already cover the relevant findings
 - CodeQL scan ran successfully (731/731 TS files), but the result could not be uploaded → CI failed
 
 ### Fix 3: Cache re-enabled

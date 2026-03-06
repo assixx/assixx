@@ -1,14 +1,14 @@
 // =============================================================================
 // SHIFTS STATE - HIERARCHY MODULE
-// Areas, departments, machines, teams, team leaders
+// Areas, departments, assets, teams, team leaders
 // =============================================================================
 
-import type { Area, Department, Machine, Team, TeamLeader } from './types';
+import type { Area, Department, Asset, Team, TeamLeader } from './types';
 
 export function createHierarchyState() {
   let areas = $state<Area[]>([]);
   let departments = $state<Department[]>([]);
-  let machines = $state<Machine[]>([]);
+  let assets = $state<Asset[]>([]);
   let teams = $state<Team[]>([]);
   let teamLeaders = $state<TeamLeader[]>([]);
 
@@ -19,8 +19,8 @@ export function createHierarchyState() {
     get departments() {
       return departments;
     },
-    get machines() {
-      return machines;
+    get assets() {
+      return assets;
     },
     get teams() {
       return teams;
@@ -34,8 +34,8 @@ export function createHierarchyState() {
     setDepartments: (data: Department[]) => {
       departments = data;
     },
-    setMachines: (data: Machine[]) => {
-      machines = data;
+    setAssets: (data: Asset[]) => {
+      assets = data;
     },
     setTeams: (data: Team[]) => {
       teams = data;
@@ -45,12 +45,12 @@ export function createHierarchyState() {
     },
     getAreaById: (id: number) => areas.find((a) => a.id === id),
     getDepartmentById: (id: number) => departments.find((d) => d.id === id),
-    getMachineById: (id: number) => machines.find((m) => m.id === id),
+    getAssetById: (id: number) => assets.find((m) => m.id === id),
     getTeamById: (id: number) => teams.find((t) => t.id === id),
     reset: () => {
       areas = [];
       departments = [];
-      machines = [];
+      assets = [];
       teams = [];
       teamLeaders = [];
     },

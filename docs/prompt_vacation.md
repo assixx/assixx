@@ -25,7 +25,7 @@
 
 ## Executive Summary
 
-Build a vacation request system where employees submit leave requests to their direct supervisor (team_lead or deputy_lead). The system provides real-time capacity warnings based on machine staffing requirements, blackout periods, and entitlement balances. Root users and area leads are self-approving. Feature-flagged under `vacation` (basic package).
+Build a vacation request system where employees submit leave requests to their direct supervisor (team_lead or deputy_lead). The system provides real-time capacity warnings based on asset staffing requirements, blackout periods, and entitlement balances. Root users and area leads are self-approving. Feature-flagged under `vacation` (basic package).
 
 ---
 
@@ -357,26 +357,26 @@ CREATE POLICY tenant_isolation ON vacation_blackouts FOR ALL USING (
 GRANT SELECT, INSERT, UPDATE, DELETE ON vacation_blackouts TO app_user;
 ```
 
-#### Table 6: `vacation_staffing_rules` (Mindestbesetzung pro Maschine)
+#### Table 6: `vacation_staffing_rules` (Mindestbesetzung pro Anlage)
 
 ```sql
 CREATE TABLE vacation_staffing_rules (
     id                  UUID PRIMARY KEY,
     tenant_id           INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    machine_id          INTEGER NOT NULL REFERENCES machines(id) ON DELETE CASCADE,
+    asset_id          INTEGER NOT NULL REFERENCES machines(id) ON DELETE CASCADE,
     min_staff_count     INTEGER NOT NULL,
     is_active           INTEGER NOT NULL DEFAULT 1,
     created_by          INTEGER NOT NULL REFERENCES users(id),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE(tenant_id, machine_id),
+    UNIQUE(tenant_id, asset_id),
     CONSTRAINT positive_staff CHECK (min_staff_count > 0)
 );
 
--- Immer pro Maschine (nicht pro Team). Brainstorming-Entscheidung 4.1.
+-- Immer pro Anlage (nicht pro Team). Brainstorming-Entscheidung 4.1.
 
-CREATE INDEX idx_vsr_machine ON vacation_staffing_rules(tenant_id, machine_id) WHERE is_active = 1;
+CREATE INDEX idx_vsr_machine ON vacation_staffing_rules(tenant_id, asset_id) WHERE is_active = 1;
 
 ALTER TABLE vacation_staffing_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vacation_staffing_rules FORCE ROW LEVEL SECURITY;
@@ -711,7 +711,7 @@ Rueckgabe-Typ:
 interface VacationCapacityAnalysis {
     workdays: number;                           // Berechnete Arbeitstage
     teamAnalysis: TeamCapacityItem[];           // Pro Team des Requesters
-    machineAnalysis: MachineCapacityItem[];     // Pro Maschine des Teams
+    machineAnalysis: MachineCapacityItem[];     // Pro Anlage des Teams
     blackoutConflicts: BlackoutConflict[];      // Ueberlappende Sperren
     entitlementCheck: EntitlementCheckResult;   // Balance-Pruefung
     substituteCheck?: SubstituteCheckResult;    // Stellvertreter-Verfuegbarkeit
@@ -719,8 +719,8 @@ interface VacationCapacityAnalysis {
 }
 
 interface MachineCapacityItem {
-    machineId: number;
-    machineName: string;
+    asset_Id: number;
+    assetName: string;
     minStaffRequired: number;
     currentlyAvailable: number;
     availableAfterApproval: number;
@@ -731,9 +731,9 @@ interface MachineCapacityItem {
 Algorithmus fuer machineAnalysis:
     1. Finde Team des Requesters:
        SELECT team_id FROM user_teams WHERE user_id = $requesterId AND tenant_id = $tenantId
-    2. Finde alle Maschinen dieses Teams:
+    2. Finde alle Anlagen dieses Teams:
        SELECT m.id, m.name FROM machines m
-       JOIN machine_teams mt ON m.id = mt.machine_id
+       JOIN machine_teams mt ON m.id = mt.asset_id
        WHERE mt.team_id = $teamId AND m.is_active = 1
     3. Fuer JEDEN Tag im Zeitraum (start_date..end_date, nur Arbeitstage):
        a. Zaehle Team-Mitglieder: SELECT COUNT(*) FROM user_teams WHERE team_id = $teamId
@@ -743,7 +743,7 @@ Algorithmus fuer machineAnalysis:
           UNION
           SELECT user_id FROM user_availability
           WHERE status != 'available' AND start_date <= $day AND end_date >= $day
-       c. Hole min_staff_count aus vacation_staffing_rules WHERE machine_id = $machineId
+       c. Hole min_staff_count aus vacation_staffing_rules WHERE asset_id = $asset_Id
        d. available = total - absent
        e. afterApproval = available - 1 (Requester faellt weg)
        f. Status: afterApproval > min → 'ok', afterApproval = min → 'warning', afterApproval < min → 'critical'
@@ -879,9 +879,9 @@ getStaffingRules(tenantId: number): Promise<VacationStaffingRule[]>
     → Alle aktiven Regeln mit JOIN auf machines.name
 
 createStaffingRule(tenantId: number, userId: number, dto: CreateStaffingRuleDto): Promise<VacationStaffingRule>
-    1. Pruefe: machine_id existiert und ist aktiv
+    1. Pruefe: asset_id existiert und ist aktiv
     2. INSERT mit id = uuidv7()
-    3. Bei UNIQUE violation (tenant_id, machine_id) → ConflictException
+    3. Bei UNIQUE violation (tenant_id, asset_id) → ConflictException
     4. RETURN created rule
 
 updateStaffingRule(tenantId: number, id: UUID, dto: UpdateStaffingRuleDto): Promise<VacationStaffingRule>
@@ -892,8 +892,8 @@ deleteStaffingRule(tenantId: number, id: UUID): Promise<void>
     → Soft-Delete: UPDATE SET is_active = 4
 
 getForMachines(tenantId: number, machineIds: number[]): Promise<Map<number, number>>
-    → Bulk-Query: SELECT machine_id, min_staff_count WHERE machine_id = ANY($1)
-    → Return Map<machineId, minStaffCount>
+    → Bulk-Query: SELECT asset_id, min_staff_count WHERE asset_id = ANY($1)
+    → Return Map<asset_Id, minStaffCount>
 ```
 
 ### 2.9 vacation-settings.service.ts
@@ -1202,7 +1202,7 @@ frontend/src/routes/(app)/
                 types.ts
                 BlackoutForm.svelte          # Urlaubssperre erstellen/bearbeiten
                 BlackoutCard.svelte          # Einzelne Sperre
-                StaffingRuleForm.svelte      # Mindestbesetzung pro Maschine
+                StaffingRuleForm.svelte      # Mindestbesetzung pro Anlage
                 StaffingRuleCard.svelte      # Mindestbesetzung Anzeige
                 SettingsForm.svelte          # Tenant-weite Einstellungen
 
@@ -1286,7 +1286,7 @@ Employee waehlt Datum:
      [INFO] Arbeitstage: 6 (exkl. Wochenende + Feiertage)
      [OK]   Restanspruch: 18 Tage reichen
      [OK]   Keine Urlaubssperre
-     [WARN] Maschine CNC-1: Mindestbesetzung 3, nach Genehmigung nur 3
+     [WARN] Anlage CNC-1: Mindestbesetzung 3, nach Genehmigung nur 3
      [OK]   Team: 1 von 8 im Urlaub
      [BLOCKED] Urlaubssperre "Inventur" 15-20 März → Antrag nicht moeglich
 
@@ -1294,7 +1294,7 @@ Lead oeffnet eingehenden Antrag:
   → Automatischer API-Call an GET /vacation/capacity?startDate=X&endDate=Y&requesterId=Z
   → Detaillierte Analyse:
      - Namentliche Auflistung wer im Zeitraum fehlt
-     - Pro Maschine: Wer genau ist verfuegbar vs. Mindestbesetzung
+     - Pro Anlage: Wer genau ist verfuegbar vs. Mindestbesetzung
      - Stellvertreter-Verfuegbarkeit (wenn angegeben)
      - Resturlaub des Antragstellers
 ```
@@ -1440,7 +1440,7 @@ backend/src/nest/vacation/__tests__/
       - analyzeCapacity: Entitlement insufficient → insufficient ✓
       - analyzeCapacity: Substitute available → shows in result ✓
       - analyzeCapacity: Substitute on vacation → shows unavailable ✓
-      - analyzeCapacity: Multiple machines affected → worst-case per machine ✓
+      - analyzeCapacity: Multiple machines affected → worst-case per asset ✓
 
     vacation-holidays.service.test.ts
       - countWorkdays: Normal Mon-Fri → 5 ✓
@@ -1474,7 +1474,7 @@ backend/src/nest/vacation/__tests__/
 
     vacation-staffing-rules.service.test.ts
       - CRUD operations ✓
-      - Unique (tenant, machine) → ConflictException ✓
+      - Unique (tenant, asset) → ConflictException ✓
       - min_staff_count validation ✓
 ```
 
@@ -1539,7 +1539,7 @@ backend/test/vacation.api.test.ts
 - [ ] Genehmigungskette korrekt (Employee→Lead/Deputy, Admin→AreaLead, Root→Auto, AreaLead→Auto)
 - [ ] Self-Approval Prevention: Team-Lead kann sich nicht selbst genehmigen → Eskalation an Area-Lead
 - [ ] Deputy-Lead kann sich nicht selbst genehmigen (deputy_lead_id !== userId Check)
-- [ ] Kapazität sberechnung funktioniert (Maschinen, Teams, Blackouts, Entitlements)
+- [ ] Kapazität sberechnung funktioniert (Anlagen, Teams, Blackouts, Entitlements)
 - [ ] Tagesberechnung server-seitig (exkl. Wochenenden + Feiertage + halbe Tage)
 - [ ] Balance berechnet (NICHT aus Counter, sondern aus approved Requests)
 - [ ] Cross-Year Splitting korrekt

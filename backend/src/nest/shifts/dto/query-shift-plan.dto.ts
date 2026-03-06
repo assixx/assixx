@@ -15,7 +15,7 @@ export const QueryShiftPlanSchema = z.object({
   areaId: z.coerce.number().int().positive().optional(),
   departmentId: z.coerce.number().int().positive().optional(),
   teamId: z.coerce.number().int().positive().optional(),
-  machineId: z.coerce.number().int().positive().optional(),
+  assetId: z.coerce.number().int().positive().optional(),
   startDate: ShiftDateSchema.optional(),
   endDate: ShiftDateSchema.optional(),
 });

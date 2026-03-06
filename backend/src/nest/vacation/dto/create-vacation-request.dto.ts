@@ -32,9 +32,9 @@ type BaseInput = z.infer<typeof BaseSchema>;
 export const CreateVacationRequestSchema = BaseSchema.refine(
   (data: BaseInput) => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     const start = new Date(data.startDate);
-    start.setHours(0, 0, 0, 0);
+    start.setUTCHours(0, 0, 0, 0);
     return start >= today;
   },
   {

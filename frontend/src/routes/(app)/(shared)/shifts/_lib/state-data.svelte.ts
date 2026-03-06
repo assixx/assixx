@@ -18,8 +18,8 @@ function createDataState() {
     get departments() {
       return hierarchy.departments;
     },
-    get machines() {
-      return hierarchy.machines;
+    get assets() {
+      return hierarchy.assets;
     },
     get teams() {
       return hierarchy.teams;
@@ -29,12 +29,12 @@ function createDataState() {
     },
     setAreas: hierarchy.setAreas,
     setDepartments: hierarchy.setDepartments,
-    setMachines: hierarchy.setMachines,
+    setAssets: hierarchy.setAssets,
     setTeams: hierarchy.setTeams,
     setTeamLeaders: hierarchy.setTeamLeaders,
     getAreaById: hierarchy.getAreaById,
     getDepartmentById: hierarchy.getDepartmentById,
-    getMachineById: hierarchy.getMachineById,
+    getAssetById: hierarchy.getAssetById,
     getTeamById: hierarchy.getTeamById,
 
     // Employee state

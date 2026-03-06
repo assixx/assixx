@@ -21,7 +21,7 @@
     updateTeamRelations,
     buildTeamPayload,
     fetchTeamMembers,
-    fetchTeamMachines,
+    fetchTeamAssets,
   } from './_lib/api';
   import { MESSAGES } from './_lib/constants';
   import { applyAllFilters } from './_lib/filters';
@@ -34,7 +34,7 @@
     getDefaultFormValues,
     getDepartmentBadge,
     getMembersBadge,
-    getMachinesBadge,
+    getAssetsBadge,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -43,7 +43,7 @@
     Department,
     Admin,
     TeamMember,
-    Machine,
+    Asset,
     StatusFilter,
     FormIsActiveStatus,
   } from './_lib/types';
@@ -59,7 +59,7 @@
   const allDepartments = $derived<Department[]>(data.departments);
   const allAdmins = $derived<Admin[]>(data.admins);
   const allEmployees = $derived<TeamMember[]>(data.employees);
-  const allMachines = $derived<Machine[]>(data.machines);
+  const allAssets = $derived<Asset[]>(data.assets);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -78,7 +78,6 @@
   // Modal States
   let showTeamModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showForceDeleteModal = $state(false);
 
   // Edit State
@@ -92,7 +91,7 @@
   let formDepartmentId = $state<number | null>(null);
   let formLeaderId = $state<number | null>(null);
   let formMemberIds = $state<number[]>([]);
-  let formMachineIds = $state<number[]>([]);
+  let formAssetIds = $state<number[]>([]);
   let formIsActive = $state<FormIsActiveStatus>(1);
 
   // Form Submit Loading
@@ -122,7 +121,7 @@
     departmentId: number | null;
     leaderId: number | null;
     memberIds: number[];
-    machineIds: number[];
+    assetIds: number[];
     isActive: FormIsActiveStatus;
   }): Promise<void> {
     submitting = true;
@@ -142,7 +141,7 @@
         await updateTeamRelations(
           teamId,
           formData.memberIds,
-          formData.machineIds,
+          formData.assetIds,
           isEditMode,
         );
       }
@@ -169,7 +168,7 @@
       const result = await apiDeleteTeam(teamId);
 
       if (result.success) {
-        showDeleteConfirmModal = false;
+        showDeleteModal = false;
         // Only reset if unchanged during async operation
         if (deleteTeamId === teamId) deleteTeamId = null;
         // Level 3: Trigger SSR refetch
@@ -177,7 +176,7 @@
         showSuccessAlert('Team gelöscht');
       } else if (result.hasMembers) {
         forceDeleteMemberCount = result.memberCount;
-        showDeleteConfirmModal = false;
+        showDeleteModal = false;
         showForceDeleteModal = true;
       }
     } catch (err) {
@@ -215,10 +214,10 @@
   }
 
   /**
-   * Open edit modal - fetches members and machines from separate endpoints
+   * Open edit modal - fetches members and assets from separate endpoints
    * The /teams list endpoint only returns summary data (memberCount, memberNames)
-   * but NOT the full members[] and machines[] arrays needed for form population.
-   * Backend exposes separate endpoints: /teams/:id/members and /teams/:id/machines
+   * but NOT the full members[] and assets[] arrays needed for form population.
+   * Backend exposes separate endpoints: /teams/:id/members and /teams/:id/assets
    */
   async function openEditModal(teamId: number): Promise<void> {
     const team = allTeams.find((t) => t.id === teamId);
@@ -226,10 +225,10 @@
 
     currentEditId = teamId;
 
-    // Fetch members and machines from separate endpoints in parallel
-    const [members, machines] = await Promise.all([
+    // Fetch members and assets from separate endpoints in parallel
+    const [members, assets] = await Promise.all([
       fetchTeamMembers(teamId),
-      fetchTeamMachines(teamId),
+      fetchTeamAssets(teamId),
     ]);
 
     // Populate form from basic team data
@@ -242,9 +241,9 @@
         0
       : team.isActive) as FormIsActiveStatus;
 
-    // Set member and machine IDs from fetched data
+    // Set member and asset IDs from fetched data
     formMemberIds = members.map((m) => m.id);
-    formMachineIds = machines.map((m) => m.id);
+    formAssetIds = assets.map((m) => m.id);
 
     showTeamModal = true;
   }
@@ -252,11 +251,6 @@
   function openDeleteModal(teamId: number): void {
     deleteTeamId = teamId;
     showDeleteModal = true;
-  }
-
-  function proceedToDeleteConfirm(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
   }
 
   function closeTeamModal(): void {
@@ -267,11 +261,6 @@
 
   function closeDeleteModal(): void {
     showDeleteModal = false;
-    deleteTeamId = null;
-  }
-
-  function closeDeleteConfirmModal(): void {
-    showDeleteConfirmModal = false;
     deleteTeamId = null;
   }
 
@@ -288,7 +277,7 @@
     formDepartmentId = defaults.departmentId;
     formLeaderId = defaults.leaderId;
     formMemberIds = defaults.memberIds;
-    formMachineIds = defaults.machineIds;
+    formAssetIds = defaults.assetIds;
     formIsActive = defaults.isActive;
   }
 
@@ -350,7 +339,6 @@
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showForceDeleteModal) closeForceDeleteModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showTeamModal) closeTeamModal();
     }
@@ -537,11 +525,12 @@
             >
               <thead>
                 <tr>
+                  <th scope="col">ID</th>
                   <th scope="col">Name</th>
                   <th scope="col">Abteilung</th>
                   <th scope="col">Team-Lead</th>
                   <th scope="col">Mitglieder</th>
-                  <th scope="col">Maschinen</th>
+                  <th scope="col">Anlagen</th>
                   <th scope="col">Status</th>
                   <th scope="col">Erstellt am</th>
                   <th scope="col">Aktionen</th>
@@ -551,8 +540,9 @@
                 {#each filteredTeams as team (team.id)}
                   {@const deptBadge = getDepartmentBadge(team, allDepartments)}
                   {@const membersBadge = getMembersBadge(team)}
-                  {@const machinesBadge = getMachinesBadge(team)}
+                  {@const assetsBadge = getAssetsBadge(team)}
                   <tr>
+                    <td><code class="text-muted">{team.id}</code></td>
                     <td>
                       <div class="flex items-center gap-2">
                         <i class="fas fa-users text-blue-500"></i>
@@ -580,11 +570,11 @@
                     </td>
                     <td>
                       <span
-                        class="badge {machinesBadge.class}"
-                        title={machinesBadge.title}
+                        class="badge {assetsBadge.class}"
+                        title={assetsBadge.title}
                       >
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
-                        {@html machinesBadge.text}
+                        {@html assetsBadge.text}
                       </span>
                     </td>
                     <td>
@@ -648,12 +638,12 @@
     {formDepartmentId}
     {formLeaderId}
     {formMemberIds}
-    {formMachineIds}
+    {formAssetIds}
     {formIsActive}
     {allDepartments}
     {allAdmins}
     {allEmployees}
-    {allMachines}
+    {allAssets}
     {submitting}
     onclose={closeTeamModal}
     onsubmit={handleFormSubmit}
@@ -662,14 +652,11 @@
 
 <!-- Delete Modals -->
 <TeamDeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
+  show={showDeleteModal}
   {showForceDeleteModal}
   {forceDeleteMemberCount}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteTeam}
   oncloseForceDelete={closeForceDeleteModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  onconfirmDelete={deleteTeam}
   onforceDelete={forceDeleteTeam}
 />

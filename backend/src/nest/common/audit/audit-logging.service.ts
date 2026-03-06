@@ -11,6 +11,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { DatabaseService } from '../../database/database.service.js';
 import type { NestAuthUser } from '../interfaces/auth.interface.js';
+import { AuditMetadataService } from './audit-metadata.service.js';
 import {
   type AuditLogParams,
   type AuditRequestMetadata,
@@ -29,7 +30,10 @@ import {
 export class AuditLoggingService {
   private readonly logger = new Logger(AuditLoggingService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly metadataService: AuditMetadataService,
+  ) {}
 
   /**
    * Log successful request to audit_trail.
@@ -59,20 +63,14 @@ export class AuditLoggingService {
       preMutationData,
     );
 
-    // For DELETE, try to extract resource_name from pre-fetched data
-    let resourceName = extractResourceName(request);
-    if (
-      metadata.action === 'delete' &&
-      preMutationData !== null &&
-      resourceName === null
-    ) {
-      resourceName = extractNameFromData(
-        preMutationData,
-        metadata.resourceType,
-      );
-    }
+    const resourceName = this.resolveResourceName(
+      request,
+      metadata,
+      preMutationData,
+    );
+    const resourceId = this.resolveResourceId(metadata, preMutationData);
 
-    void this.logToAuditTrail({
+    const params: AuditLogParams = {
       tenantId: user?.tenantId ?? 0,
       userId: user?.id ?? 0,
       userName:
@@ -80,7 +78,7 @@ export class AuditLoggingService {
       userRole: user?.activeRole ?? null,
       action: metadata.action,
       resourceType: metadata.resourceType,
-      resourceId: metadata.resourceId,
+      resourceId,
       resourceName,
       changes,
       ipAddress: metadata.ipAddress,
@@ -88,13 +86,23 @@ export class AuditLoggingService {
       status: 'success',
       errorMessage: null,
       requestId: metadata.requestId,
-    });
+    };
+
+    // For VIEW with missing resource_name, enrich asynchronously
+    if (
+      metadata.action === 'view' &&
+      resourceName === null &&
+      user !== undefined &&
+      (metadata.resourceId !== null || metadata.resourceUuid !== null)
+    ) {
+      void this.logWithNameEnrichment(params, metadata, user.tenantId);
+    } else {
+      void this.logToAuditTrail(params);
+    }
   }
 
   /**
    * Log failed request to audit_trail.
-   * Uses buildAuditChanges to create structured changes based on action type.
-   * Returns the error message for the caller to use.
    */
   logFailure(
     user: NestAuthUser | undefined,
@@ -123,18 +131,12 @@ export class AuditLoggingService {
       preMutationData,
     );
 
-    // For DELETE, try to extract resource_name from pre-fetched data
-    let resourceName = extractResourceName(request);
-    if (
-      metadata.action === 'delete' &&
-      preMutationData !== null &&
-      resourceName === null
-    ) {
-      resourceName = extractNameFromData(
-        preMutationData,
-        metadata.resourceType,
-      );
-    }
+    const resourceName = this.resolveResourceName(
+      request,
+      metadata,
+      preMutationData,
+    );
+    const resourceId = this.resolveResourceId(metadata, preMutationData);
 
     void this.logToAuditTrail({
       tenantId: user?.tenantId ?? 0,
@@ -144,7 +146,7 @@ export class AuditLoggingService {
       userRole: user?.activeRole ?? null,
       action: metadata.action,
       resourceType: metadata.resourceType,
-      resourceId: metadata.resourceId,
+      resourceId,
       resourceName,
       changes,
       ipAddress: metadata.ipAddress,
@@ -155,6 +157,74 @@ export class AuditLoggingService {
     });
 
     return errorMessage;
+  }
+
+  /**
+   * Extract resource name: body first, then pre-fetched data for mutations.
+   */
+  private resolveResourceName(
+    request: FastifyRequest,
+    metadata: AuditRequestMetadata,
+    preMutationData: Record<string, unknown> | null,
+  ): string | null {
+    const name = extractResourceName(request);
+    if (name !== null) {
+      return name;
+    }
+
+    if (
+      (metadata.action === 'delete' || metadata.action === 'update') &&
+      preMutationData !== null
+    ) {
+      return extractNameFromData(preMutationData, metadata.resourceType);
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolve numeric resource_id for audit_trail column.
+   * When UUID was used, extract numeric id from pre-fetched data.
+   */
+  private resolveResourceId(
+    metadata: AuditRequestMetadata,
+    preMutationData: Record<string, unknown> | null,
+  ): number | null {
+    if (metadata.resourceId !== null) {
+      return metadata.resourceId;
+    }
+
+    // Extract numeric id from pre-fetched data (UUID lookup returns full row)
+    if (preMutationData !== null) {
+      const id = preMutationData['id'];
+      if (typeof id === 'number') {
+        return id;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Enrich VIEW log entry with resource name from DB, then persist.
+   */
+  private async logWithNameEnrichment(
+    params: AuditLogParams,
+    metadata: AuditRequestMetadata,
+    tenantId: number,
+  ): Promise<void> {
+    const name = await this.metadataService.fetchResourceName(
+      metadata.resourceType,
+      metadata.resourceId,
+      metadata.resourceUuid,
+      tenantId,
+    );
+
+    if (name !== null) {
+      params.resourceName = name;
+    }
+
+    await this.logToAuditTrail(params);
   }
 
   /**
@@ -185,9 +255,6 @@ export class AuditLoggingService {
           params.requestId,
         ],
       );
-
-      // Note: No console log for success - the DB insert IS the audit trail.
-      // Use LOG_LEVEL=debug + add temporary logging only when troubleshooting.
     } catch (error: unknown) {
       // NEVER throw - logging failures should not break main operations
       this.logger.warn(

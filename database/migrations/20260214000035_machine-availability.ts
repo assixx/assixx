@@ -39,7 +39,7 @@ export function up(pgm: MigrationBuilder): void {
 
     CREATE TABLE machine_availability (
       id            SERIAL PRIMARY KEY,
-      machine_id    INTEGER NOT NULL,
+      asset_id    INTEGER NOT NULL,
       tenant_id     INTEGER NOT NULL,
       status        machine_availability_status NOT NULL DEFAULT 'operational',
       start_date    DATE NOT NULL,
@@ -51,7 +51,7 @@ export function up(pgm: MigrationBuilder): void {
       updated_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
       CONSTRAINT fk_ma_machine
-        FOREIGN KEY (machine_id)
+        FOREIGN KEY (asset_id)
         REFERENCES machines(id)
         ON UPDATE RESTRICT
         ON DELETE CASCADE,
@@ -76,7 +76,7 @@ export function up(pgm: MigrationBuilder): void {
     -- Step 3: Create indexes
     -- ==========================================================================
 
-    CREATE INDEX idx_ma_machine    ON machine_availability(machine_id);
+    CREATE INDEX idx_ma_machine    ON machine_availability(asset_id);
     CREATE INDEX idx_ma_tenant     ON machine_availability(tenant_id);
     CREATE INDEX idx_ma_dates      ON machine_availability(start_date, end_date);
     CREATE INDEX idx_ma_status     ON machine_availability(status);

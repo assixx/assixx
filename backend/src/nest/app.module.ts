@@ -17,6 +17,7 @@ import { randomUUID } from 'node:crypto';
 
 import { AdminPermissionsModule } from './admin-permissions/admin-permissions.module.js';
 import { AreasModule } from './areas/areas.module.js';
+import { AssetsModule } from './assets/assets.module.js';
 import { AuditTrailModule } from './audit-trail/audit-trail.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BlackboardModule } from './blackboard/blackboard.module.js';
@@ -38,6 +39,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
+import { DummyUsersModule } from './dummy-users/dummy-users.module.js';
 import { E2eEscrowModule } from './e2e-escrow/e2e-escrow.module.js';
 import { E2eKeysModule } from './e2e-keys/e2e-keys.module.js';
 import { FeatureCheckModule } from './feature-check/feature-check.module.js';
@@ -45,7 +47,6 @@ import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { FeaturesModule } from './features/features.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
-import { MachinesModule } from './machines/machines.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PlansModule } from './plans/plans.module.js';
@@ -59,9 +60,11 @@ import { SignupModule } from './signup/signup.module.js';
 import { SurveysModule } from './surveys/surveys.module.js';
 import { TeamsModule } from './teams/teams.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
+import { TpmModule } from './tpm/tpm.module.js';
 import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VacationModule } from './vacation/vacation.module.js';
+import { WorkOrdersModule } from './work-orders/work-orders.module.js';
 
 @Module({
   imports: [
@@ -149,6 +152,7 @@ import { VacationModule } from './vacation/vacation.module.js';
     UsersModule,
     DashboardModule,
     DepartmentsModule,
+    DummyUsersModule,
     TeamsModule,
     CalendarModule,
     DocumentsModule,
@@ -160,7 +164,7 @@ import { VacationModule } from './vacation/vacation.module.js';
     FeaturesModule,
     KvpModule,
     LogsModule,
-    MachinesModule,
+    AssetsModule,
     SurveysModule,
     NotificationsModule,
     PlansModule,
@@ -172,6 +176,8 @@ import { VacationModule } from './vacation/vacation.module.js';
     ShiftsModule,
     SignupModule,
     VacationModule,
+    WorkOrdersModule,
+    TpmModule,
     ChatModule,
     UserPermissionsModule,
   ],

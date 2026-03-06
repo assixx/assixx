@@ -55,3 +55,13 @@ export interface JwtPayload {
   role: string;
   [key: string]: unknown;
 }
+
+/** Shift time definition from API */
+export interface ShiftTimeData {
+  shiftKey: string;
+  label: string;
+  startTime: string;
+  endTime: string;
+  sortOrder: number;
+  isActive: number;
+}

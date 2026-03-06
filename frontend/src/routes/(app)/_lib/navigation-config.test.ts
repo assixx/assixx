@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type NavItem,
   adminMenuItems,
+  dummyMenuItems,
   employeeMenuItems,
   filterMenuByAccess,
   filterMenuByFeatures,
@@ -326,7 +327,7 @@ describe('filterMenuByFeatures: real adminMenuItems', () => {
     expect(ids).toContain('dashboard');
     expect(ids).toContain('employees');
     expect(ids).toContain('teams');
-    expect(ids).toContain('machines');
+    expect(ids).toContain('assets');
     expect(ids).toContain('settings');
     expect(ids).toContain('profile');
   });
@@ -436,6 +437,10 @@ describe('getMenuItemsForRole', () => {
 
   it('should return employeeMenuItems for employee', () => {
     expect(getMenuItemsForRole('employee')).toBe(employeeMenuItems);
+  });
+
+  it('should return dummyMenuItems for dummy', () => {
+    expect(getMenuItemsForRole('dummy')).toBe(dummyMenuItems);
   });
 });
 

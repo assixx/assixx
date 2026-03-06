@@ -241,7 +241,7 @@ export const ValidationStates = {
       container.appendChild(
         createField({
           id: 'error',
-          label: 'Maschinen-ID',
+          label: 'Anlagen-ID',
           message: 'ID existiert bereits.',
           helperVariant: 'error',
           control: (id) => {

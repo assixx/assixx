@@ -36,6 +36,7 @@ import {
   dbShiftToApi,
 } from './shifts.helpers.js';
 import type {
+  AssignmentCountResponse,
   CalendarShiftResponse,
   DbFavoriteRow,
   DbShiftRow,
@@ -52,6 +53,7 @@ import type {
 
 // Re-export types for backward compatibility (controller and index.ts import from here)
 export type {
+  AssignmentCountResponse,
   CalendarShiftResponse,
   ExportFilters,
   FavoriteResponse,
@@ -63,6 +65,68 @@ export type {
   SwapRequestFilters,
   SwapRequestResponse,
 } from './shifts.types.js';
+
+/** DB row shape for assignment count query */
+interface DbAssignmentCountRow {
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  week_count: string;
+  month_count: string;
+  year_count: string;
+}
+
+/** UNION ALL query: shifts + shift_rotation_history with period FILTER */
+const ASSIGNMENT_COUNTS_SQL = `
+  WITH team_employees AS (
+    SELECT DISTINCT ut.user_id
+    FROM user_teams ut
+    JOIN users u ON u.id = ut.user_id
+    WHERE ut.team_id = $2 AND ut.tenant_id = $1 AND u.role = 'employee'
+  ),
+  all_shifts AS (
+    SELECT s.user_id, s.date
+    FROM shifts s
+    WHERE s.tenant_id = $1
+      AND s.user_id IN (SELECT user_id FROM team_employees)
+    UNION ALL
+    SELECT h.user_id, h.shift_date AS date
+    FROM shift_rotation_history h
+    WHERE h.tenant_id = $1
+      AND h.user_id IN (SELECT user_id FROM team_employees)
+  )
+  SELECT
+    te.user_id, u.first_name, u.last_name,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('week', $3::date)
+        AND a.date < DATE_TRUNC('week', $3::date) + INTERVAL '7 days'
+    ) AS week_count,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('month', $3::date)
+        AND a.date < DATE_TRUNC('month', $3::date) + INTERVAL '1 month'
+    ) AS month_count,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('year', $3::date)
+        AND a.date < DATE_TRUNC('year', $3::date) + INTERVAL '1 year'
+    ) AS year_count
+  FROM team_employees te
+  JOIN users u ON u.id = te.user_id
+  LEFT JOIN all_shifts a ON a.user_id = te.user_id
+  GROUP BY te.user_id, u.first_name, u.last_name
+  ORDER BY u.last_name, u.first_name`;
+
+function mapAssignmentCountRow(
+  r: DbAssignmentCountRow,
+): AssignmentCountResponse {
+  return {
+    employeeId: r.user_id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    weekCount: Number.parseInt(r.week_count, 10),
+    monthCount: Number.parseInt(r.month_count, 10),
+    yearCount: Number.parseInt(r.year_count, 10),
+  };
+}
 
 @Injectable()
 export class ShiftsService {
@@ -211,7 +275,7 @@ export class ShiftsService {
       `INSERT INTO shifts (
         tenant_id, plan_id, user_id, date, start_time, end_time,
         title, required_employees, break_minutes, status, type, notes,
-        area_id, department_id, team_id, machine_id, created_by
+        area_id, department_id, team_id, asset_id, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id`,
       [
@@ -230,7 +294,7 @@ export class ShiftsService {
         dbData['area_id'] ?? null,
         dbData['department_id'],
         dbData['team_id'] ?? null,
-        dbData['machine_id'] ?? null,
+        dbData['asset_id'] ?? null,
         userId,
       ],
     );
@@ -475,12 +539,20 @@ export class ShiftsService {
     );
   }
 
-  async deleteShiftPlanByUuid(uuid: string, tenantId: number): Promise<void> {
-    await this.shiftPlansService.deleteShiftPlanByUuid(uuid, tenantId);
+  async deleteShiftPlanByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    await this.shiftPlansService.deleteShiftPlanByUuid(uuid, tenantId, userId);
   }
 
-  async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
-    await this.shiftPlansService.deleteShiftPlan(planId, tenantId);
+  async deleteShiftPlan(
+    planId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
+    await this.shiftPlansService.deleteShiftPlan(planId, tenantId, userId);
   }
 
   // ============================================================
@@ -678,6 +750,31 @@ export class ShiftsService {
   }
 
   // ============================================================
+  // ASSIGNMENT COUNTS
+  // ============================================================
+
+  /**
+   * Counts shift assignments per employee across both data sources
+   * (shifts + shift_rotation_history) for week, month, and year.
+   */
+  async getAssignmentCounts(
+    tenantId: number,
+    teamId: number,
+    referenceDate: string,
+  ): Promise<AssignmentCountResponse[]> {
+    this.logger.debug(
+      `Getting assignment counts for team ${teamId}, ref ${referenceDate}`,
+    );
+
+    const rows = await this.databaseService.query<DbAssignmentCountRow>(
+      ASSIGNMENT_COUNTS_SQL,
+      [tenantId, teamId, referenceDate],
+    );
+
+    return rows.map((r: DbAssignmentCountRow) => mapAssignmentCountRow(r));
+  }
+
+  // ============================================================
   // FAVORITES
   // ============================================================
 
@@ -714,7 +811,7 @@ export class ShiftsService {
       result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shift_favorites (
           tenant_id, user_id, name, area_id, area_name, department_id, department_name,
-          machine_id, machine_name, team_id, team_name
+          asset_id, asset_name, team_id, team_name
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id`,
         [
@@ -725,8 +822,8 @@ export class ShiftsService {
           dto.areaName,
           dto.departmentId,
           dto.departmentName,
-          dto.machineId,
-          dto.machineName,
+          dto.assetId,
+          dto.assetName,
           dto.teamId,
           dto.teamName,
         ],

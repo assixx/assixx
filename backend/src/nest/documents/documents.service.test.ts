@@ -14,7 +14,20 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { DocumentAccessService } from './document-access.service.js';
 import type { DocumentNotificationService } from './document-notification.service.js';
 import type { DocumentStorageService } from './document-storage.service.js';
+import type { DocumentCreateInput } from './documents.service.js';
 import { DocumentsService } from './documents.service.js';
+
+// =============================================================
+// Module Mocks
+// =============================================================
+
+const mockEventBus = vi.hoisted(() => ({
+  emitDocumentUploaded: vi.fn(),
+}));
+
+vi.mock('../../utils/eventBus.js', () => ({
+  eventBus: mockEventBus,
+}));
 
 // =============================================================
 // Mocks
@@ -363,6 +376,408 @@ describe('DocumentsService', () => {
       await expect(
         service.getDocumentByUuid('unknown-uuid', 42, 1),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // updateDocument
+  // =============================================================
+
+  describe('updateDocument', () => {
+    it('should throw NotFoundException when document not found', async () => {
+      // getDocumentRow → empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.updateDocument(999, { filename: 'x' } as never, 42, 1),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when user not found', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      // getUserById → empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(
+        service.updateDocument(1, { filename: 'x' } as never, 42, 999),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException for non-admin non-creator', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
+      // getUserById → employee (not creator)
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+
+      await expect(
+        service.updateDocument(1, { filename: 'x' } as never, 42, 99),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow admin to update any document', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.updateDocument(
+        1,
+        { filename: 'Updated.pdf' } as never,
+        42,
+        2,
+      );
+
+      expect(result.message).toBe('Document updated successfully');
+    });
+
+    it('should allow creator to update own document', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      // UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.updateDocument(
+        1,
+        { description: 'New desc' } as never,
+        42,
+        10,
+      );
+
+      expect(result.message).toBe('Document updated successfully');
+    });
+  });
+
+  // =============================================================
+  // markDocumentAsRead
+  // =============================================================
+
+  describe('markDocumentAsRead', () => {
+    it('should upsert read status and return success', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.markDocumentAsRead(1, 42, 10);
+
+      expect(result.success).toBe(true);
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('ON CONFLICT'),
+        [1, 10, 42],
+      );
+    });
+  });
+
+  // =============================================================
+  // getChatFolders
+  // =============================================================
+
+  describe('getChatFolders', () => {
+    it('should return folders with total count', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversationId: 1,
+          conversationUuid: 'conv-uuid',
+          participantName: 'Lisa',
+          participantId: 2,
+          attachmentCount: 3,
+          isGroup: false,
+          groupName: null,
+        },
+      ]);
+
+      const result = await service.getChatFolders(42, 10);
+
+      expect(result.folders).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.folders[0]?.participantName).toBe('Lisa');
+    });
+
+    it('should return empty when no chat folders', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getChatFolders(42, 10);
+
+      expect(result.folders).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+  });
+
+  // =============================================================
+  // getDocumentContent — success path
+  // =============================================================
+
+  describe('getDocumentContent — success', () => {
+    it('should return content from storage service', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
+      mockStorage.getDocumentContent.mockResolvedValueOnce({
+        content: Buffer.from('PDF data'),
+        originalName: 'Report.pdf',
+        mimeType: 'application/pdf',
+        fileSize: 1024,
+      });
+
+      const result = await service.getDocumentContent(1, 42, 10);
+
+      expect(result.originalName).toBe('Report.pdf');
+      expect(result.mimeType).toBe('application/pdf');
+      expect(mockStorage.getDocumentContent).toHaveBeenCalledOnce();
+    });
+
+    it('should throw NotFoundException when document missing', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.getDocumentContent(999, 42, 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  // =============================================================
+  // getDocumentByFileUuid — success path
+  // =============================================================
+
+  describe('getDocumentByFileUuid — success', () => {
+    it('should return enriched document when found and accessible', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
+      mockAccess.isDocumentRead.mockResolvedValueOnce(true);
+
+      const result = await service.getDocumentByFileUuid('test-uuid', 42, 10);
+
+      expect(result).not.toBeNull();
+    });
+  });
+
+  // =============================================================
+  // listDocuments
+  // =============================================================
+
+  describe('listDocuments', () => {
+    it('should throw NotFoundException when user not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // getUserById → empty
+
+      await expect(
+        service.listDocuments(42, 999, {
+          page: 1,
+          limit: 10,
+          isActive: 1,
+        } as never),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return paginated documents for admin', async () => {
+      // getUserById → admin
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockAccess.buildDocumentQuery.mockReturnValueOnce({
+        baseQuery:
+          "SELECT d.*, u.username as uploaded_by_name FROM documents d LEFT JOIN users u ON d.created_by = u.id WHERE d.tenant_id = $1 AND d.is_active = $2 AND d.access_scope != 'chat'",
+        params: [42, 1],
+        paramIndex: 3,
+      });
+      // getDocumentsCount → count query
+      mockDb.query.mockResolvedValueOnce([{ count: '25' }]);
+      // paginated query → 2 docs
+      mockDb.query.mockResolvedValueOnce([
+        createDocRow({ id: 1 }),
+        createDocRow({ id: 2 }),
+      ]);
+      // isDocumentRead for each doc
+      mockAccess.isDocumentRead
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+
+      const result = await service.listDocuments(42, 1, {
+        page: 1,
+        limit: 10,
+        isActive: 1,
+      } as never);
+
+      expect(result.documents).toHaveLength(2);
+      expect(result.pagination.total).toBe(25);
+      expect(result.pagination.totalPages).toBe(3);
+    });
+  });
+
+  // =============================================================
+  // createDocument
+  // =============================================================
+
+  describe('createDocument', () => {
+    const validInput: DocumentCreateInput = {
+      filename: 'report.pdf',
+      originalName: 'Quarterly Report.pdf',
+      fileSize: 2048,
+      fileContent: Buffer.from('PDF content'),
+      mimeType: 'application/pdf',
+      category: 'general',
+      accessScope: 'company',
+    };
+
+    it('should create document and emit event', async () => {
+      // insertDocumentRecord → INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      // getDocumentById → SELECT doc
+      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 42 })]);
+      mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
+      // markAsRead
+      mockDb.query.mockResolvedValueOnce([]);
+      mockAccess.isDocumentRead.mockResolvedValueOnce(true);
+
+      const result = await service.createDocument(validInput, 10, 1);
+
+      expect(result).toBeDefined();
+      expect(mockEventBus.emitDocumentUploaded).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ id: 42 }),
+      );
+    });
+
+    it('should write to disk when storageType is filesystem', async () => {
+      const input: DocumentCreateInput = {
+        ...validInput,
+        storageType: 'filesystem',
+        filePath: '/uploads/test.pdf',
+      };
+
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 42 })]);
+      mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockAccess.isDocumentRead.mockResolvedValueOnce(true);
+
+      await service.createDocument(input, 10, 1);
+
+      expect(mockStorage.writeFileToDisk).toHaveBeenCalledWith(
+        '/uploads/test.pdf',
+        input.fileContent,
+      );
+    });
+  });
+
+  // =============================================================
+  // UUID-based wrappers
+  // =============================================================
+
+  describe('UUID wrappers', () => {
+    it('updateDocumentByUuid should resolve UUID and update', async () => {
+      // resolveDocumentIdByUuid → SELECT id
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      // getDocumentRow
+      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 5 })]);
+      // getUserById
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.updateDocumentByUuid(
+        'doc-uuid',
+        { filename: 'New.pdf' } as never,
+        42,
+        1,
+      );
+
+      expect(result.message).toBe('Document updated successfully');
+    });
+
+    it('deleteDocumentByUuid should resolve UUID and delete', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 5 })]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.deleteDocumentByUuid('doc-uuid', 42, 1);
+
+      expect(result.message).toBe('Document deleted successfully');
+    });
+
+    it('archiveDocumentByUuid should resolve UUID and archive', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.archiveDocumentByUuid('doc-uuid', 42, 1);
+
+      expect(result.message).toBe('Document archived successfully');
+    });
+
+    it('unarchiveDocumentByUuid should resolve UUID and unarchive', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.unarchiveDocumentByUuid('doc-uuid', 42, 1);
+
+      expect(result.message).toBe('Document unarchived successfully');
+    });
+
+    it('getDocumentContentByUuid should resolve UUID and get content', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 5 })]);
+      mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
+      mockStorage.getDocumentContent.mockResolvedValueOnce({
+        content: Buffer.from('data'),
+        originalName: 'file.pdf',
+        mimeType: 'application/pdf',
+        fileSize: 512,
+      });
+
+      const result = await service.getDocumentContentByUuid('doc-uuid', 42, 1);
+
+      expect(result.originalName).toBe('file.pdf');
+    });
+
+    it('markDocumentAsReadByUuid should resolve UUID and mark read', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.markDocumentAsReadByUuid('doc-uuid', 42, 1);
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  // =============================================================
+  // Edge cases: user not found
+  // =============================================================
+
+  describe('edge cases — user not found', () => {
+    it('archiveDocument should throw when user not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.archiveDocument(1, 42, 999)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('unarchiveDocument should throw when user not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.unarchiveDocument(1, 42, 999)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('deleteDocument should throw when user not found', async () => {
+      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.query.mockResolvedValueOnce([]); // getUserById → empty
+
+      await expect(service.deleteDocument(1, 42, 999)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  // =============================================================
+  // getUnreadCount — root role
+  // =============================================================
+
+  describe('getUnreadCount — root', () => {
+    it('should not add scope filter for root user', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '7' }]);
+
+      const result = await service.getUnreadCount(42, 1, 'root');
+
+      expect(result.count).toBe(7);
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain("d.access_scope = 'company'");
     });
   });
 });

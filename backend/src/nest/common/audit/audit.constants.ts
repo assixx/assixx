@@ -78,7 +78,7 @@ export const RESOURCE_TABLE_MAP: Record<
   department: { table: 'departments', nameField: 'name' },
   team: { table: 'teams', nameField: 'name' },
   area: { table: 'areas', nameField: 'name' },
-  machine: { table: 'machines', nameField: 'name' },
+  asset: { table: 'assets', nameField: 'name' },
   blackboard: { table: 'blackboard_entries', nameField: 'title' },
   calendar: { table: 'calendar_events', nameField: 'title' },
   document: { table: 'documents', nameField: 'original_filename' },
@@ -100,6 +100,10 @@ export const RESOURCE_TABLE_MAP: Record<
   holiday: { table: 'vacation_holidays', nameField: 'name' },
   'staffing-rule': { table: 'vacation_staffing_rules', nameField: 'id' },
   entitlement: { table: 'vacation_entitlements', nameField: 'id' },
+  // TPM module resources (ADR-026)
+  'tpm-plan': { table: 'tpm_maintenance_plans', nameField: 'name' },
+  'tpm-card': { table: 'tpm_cards', nameField: 'title' },
+  'tpm-execution': { table: 'tpm_card_executions', nameField: 'id' },
 };
 
 /**
@@ -114,6 +118,12 @@ export const EXCLUDED_PATHS: readonly string[] = [
   '/notifications/stream',
   '/api/v2/notifications/stream',
   '/favicon.ico',
+  // SSE connection tickets — high-frequency, not user actions
+  '/auth/connection-ticket',
+  '/api/v2/auth/connection-ticket',
+  // Theme toggles — cosmetic UI preference, not business-relevant
+  '/settings/user/theme',
+  '/api/v2/settings/user/theme',
 ] as const;
 
 /**
@@ -162,6 +172,12 @@ export const SKIPPED_GET_SUFFIXES: readonly string[] = [
   '/summary',
   '/overview',
   '-count', // Catch-all for any *-count endpoints
+  // Sub-resource data endpoints (loaded alongside main resource)
+  '/board',
+  '/time-estimates',
+  '/interval-matrix',
+  '/schedule-projection',
+  '/eligible-participants',
 ] as const;
 
 /**
@@ -190,6 +206,17 @@ export const REFERENCE_DATA_ENDPOINTS: readonly string[] = [
   '/teams',
   '/roles',
   '/users',
+  // TPM config/reference data (loaded on every TPM page for UI rendering)
+  '/api/v2/tpm/config/colors',
+  '/api/v2/tpm/config/interval-colors',
+  '/api/v2/tpm/config/category-colors',
+  '/api/v2/tpm/config/templates',
+  '/api/v2/tpm/locations',
+  '/tpm/config/colors',
+  '/tpm/config/interval-colors',
+  '/tpm/config/category-colors',
+  '/tpm/config/templates',
+  '/tpm/locations',
 ] as const;
 
 /**
@@ -211,6 +238,11 @@ export const PAGE_INIT_ENDPOINTS: readonly string[] = [
   '/features/my-features',
   '/api/v2/plans/current',
   '/plans/current',
+  // E2E encryption key checks (loaded on every page for message decryption)
+  '/api/v2/e2e/keys/me',
+  '/e2e/keys/me',
+  '/api/v2/e2e/escrow',
+  '/e2e/escrow',
 ] as const;
 
 /**
@@ -284,6 +316,8 @@ export interface AuditRequestMetadata {
   action: AuditAction;
   resourceType: string;
   resourceId: number | null;
+  /** UUID extracted from URL for UUID-based resources (e.g., TPM plans) */
+  resourceUuid: string | null;
   endpoint: string;
   httpMethod: string;
   ipAddress: string;

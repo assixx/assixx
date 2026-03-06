@@ -2,7 +2,7 @@
  * Unit tests for TeamsService
  *
  * Phase 11: Service tests -- mocked dependencies.
- * Focus: CRUD operations, member/machine management, validation guards,
+ * Focus: CRUD operations, member/asset management, validation guards,
  *        duplicate name checks, leader role enforcement.
  *
  * Uses DatabaseService DI with mocked query method.
@@ -68,9 +68,9 @@ function makeTeamRow(overrides: Partial<TeamRow> = {}): TeamRow {
     department_area_name: undefined,
     team_lead_name: undefined,
     member_count: undefined,
-    machine_count: undefined,
+    asset_count: undefined,
     member_names: null,
-    machine_names: null,
+    asset_names: null,
     ...overrides,
   } as TeamRow;
 }
@@ -142,6 +142,59 @@ describe('TeamsService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]?.name).toBe('Alpha Team');
+    });
+
+    it('should find teams by description search', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ name: 'Team A', description: 'Engineering team' }),
+        makeTeamRow({ id: 2, name: 'Team B', description: null }),
+      ]);
+
+      const result = await service.listTeams(10, {
+        departmentId: undefined,
+        search: 'engineering',
+        includeMembers: undefined,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.description).toBe('Engineering team');
+    });
+
+    it('should not filter when search is empty string', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow(),
+        makeTeamRow({ id: 2, name: 'Beta' }),
+      ]);
+
+      const result = await service.listTeams(10, {
+        departmentId: undefined,
+        search: '',
+        includeMembers: undefined,
+      });
+
+      expect(result).toHaveLength(2);
+    });
+
+    it('should map member_names and asset_names', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({
+          member_names: 'Max, Anna',
+          asset_names: 'CNC-1, Drill-2',
+        }),
+      ]);
+
+      const result = await service.listTeams(10);
+
+      expect(result[0]?.memberNames).toBe('Max, Anna');
+      expect(result[0]?.assetNames).toBe('CNC-1, Drill-2');
+    });
+
+    it('should map inactive status correctly', async () => {
+      mockDb.query.mockResolvedValueOnce([makeTeamRow({ is_active: 0 })]);
+
+      const result = await service.listTeams(10);
+
+      expect(result[0]?.status).toBe('inactive');
     });
   });
 
@@ -219,6 +272,125 @@ describe('TeamsService', () => {
         ConflictException,
       );
     });
+
+    it('should create team with leader and call ensureLeaderInTeam', async () => {
+      const dto = {
+        name: 'Lead Team',
+        description: null,
+        departmentId: 5,
+        leaderId: 42,
+      } as unknown as CreateTeamDto;
+
+      // validateDepartment: SELECT departments → found
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      // validateLeader: SELECT users → found with admin role
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // checkDuplicateName: no duplicate
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT team RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 7 }]);
+      // ensureLeaderInTeam: SELECT user_teams → not existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // ensureLeaderInTeam: INSERT user_teams
+      mockDb.query.mockResolvedValueOnce([]);
+      // getTeamById
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({
+          id: 7,
+          name: 'Lead Team',
+          department_id: 5,
+          team_lead_id: 42,
+        }),
+      ]);
+
+      const result = await service.createTeam(dto, 1, 10);
+
+      expect(result.id).toBe(7);
+      expect(result.leaderId).toBe(42);
+    });
+
+    it('should throw BadRequestException for invalid department', async () => {
+      const dto = {
+        name: 'Bad Dept',
+        description: null,
+        departmentId: 999,
+        leaderId: undefined,
+      } as unknown as CreateTeamDto;
+
+      // validateDepartment: SELECT departments → not found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createTeam(dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException for invalid leader', async () => {
+      const dto = {
+        name: 'Bad Lead',
+        description: null,
+        departmentId: null,
+        leaderId: 999,
+      } as unknown as CreateTeamDto;
+
+      // validateLeader: SELECT users → not found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createTeam(dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException when leader is not admin/root', async () => {
+      const dto = {
+        name: 'Bad Role',
+        description: null,
+        departmentId: null,
+        leaderId: 5,
+      } as unknown as CreateTeamDto;
+
+      // validateLeader: SELECT users → found with employee role
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+
+      await expect(service.createTeam(dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when INSERT returns no rows', async () => {
+      // checkDuplicateName: no duplicate
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT RETURNING id → empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createTeam(createDto, 1, 10)).rejects.toThrow(Error);
+    });
+
+    it('should handle ensureLeaderInTeam error gracefully', async () => {
+      const dto = {
+        name: 'Team Err',
+        description: null,
+        departmentId: null,
+        leaderId: 42,
+      } as unknown as CreateTeamDto;
+
+      // validateLeader: found with admin role
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // checkDuplicateName: no duplicate
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT team RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+      // ensureLeaderInTeam: SELECT user_teams → error
+      mockDb.query.mockRejectedValueOnce(new Error('DB error in ensureLeader'));
+      // getTeamById
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ id: 8, name: 'Team Err' }),
+      ]);
+
+      const result = await service.createTeam(dto, 1, 10);
+
+      expect(result.id).toBe(8);
+    });
   });
 
   // =============================================================
@@ -234,6 +406,68 @@ describe('TeamsService', () => {
       await expect(service.updateTeam(999, dto, 1, 10)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should update team name and log activity', async () => {
+      const dto = { name: 'Updated Name' } as unknown as UpdateTeamDto;
+
+      // find existing team
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // validateDepartment: skip (undefined)
+      // validateLeader: skip (undefined)
+      // checkDuplicateName
+      mockDb.query.mockResolvedValueOnce([]);
+      // UPDATE teams
+      mockDb.query.mockResolvedValueOnce([]);
+      // handleLeaderChange: skip (dto.leaderId undefined)
+      // getTeamById
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ name: 'Updated Name' }),
+      ]);
+
+      const result = await service.updateTeam(1, dto, 1, 10);
+
+      expect(result.name).toBe('Updated Name');
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
+    });
+
+    it('should demote old leader and promote new leader', async () => {
+      const dto = { leaderId: 5 } as unknown as UpdateTeamDto;
+
+      // find existing team (has old leader)
+      mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 3 })]);
+      // validateLeader: SELECT users → found with root role
+      mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
+      // UPDATE teams (team_lead_id)
+      mockDb.query.mockResolvedValueOnce([]);
+      // handleLeaderChange: demote old leader
+      mockDb.query.mockResolvedValueOnce([]);
+      // ensureLeaderInTeam: SELECT user_teams → existing
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // ensureLeaderInTeam: UPDATE user_teams role='lead'
+      mockDb.query.mockResolvedValueOnce([]);
+      // getTeamById
+      mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 5 })]);
+
+      const result = await service.updateTeam(1, dto, 1, 10);
+
+      expect(result.leaderId).toBe(5);
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
+    });
+
+    it('should handle update with no fields', async () => {
+      const dto = {} as unknown as UpdateTeamDto;
+
+      // find existing team
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // no fields → skip UPDATE, skip checkDuplicateName
+      // getTeamById
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+
+      const result = await service.updateTeam(1, dto, 1, 10);
+
+      expect(result.id).toBe(1);
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
     });
   });
 
@@ -272,6 +506,20 @@ describe('TeamsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.deleteTeam(1, 1, 10, true);
+
+      expect(result.message).toBe('Team deleted successfully');
+      expect(mockActivityLogger.logDelete).toHaveBeenCalled();
+    });
+
+    it('should delete team without members', async () => {
+      // find team
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // check members -> no members
+      mockDb.query.mockResolvedValueOnce([]);
+      // DELETE FROM teams
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.deleteTeam(1, 1, 10);
 
       expect(result.message).toBe('Team deleted successfully');
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
@@ -318,6 +566,38 @@ describe('TeamsService', () => {
       expect(result[0]?.firstName).toBe('Max');
       expect(result[0]?.lastName).toBe('Mustermann');
     });
+
+    it('should use date range query when dates provided', async () => {
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          username: 'user1',
+          email: 'user1@test.de',
+          first_name: 'Test',
+          last_name: 'User',
+          position: 'Dev',
+          employee_id: 'EMP001',
+          role: 'member',
+          user_role: 'employee',
+          availability_status: 'available',
+          availability_start: new Date('2025-03-01'),
+          availability_end: new Date('2025-03-15'),
+        },
+      ]);
+
+      const result = await service.getTeamMembers(
+        1,
+        10,
+        '2025-03-01',
+        '2025-03-15',
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.availabilityStatus).toBe('available');
+      expect(result[0]?.position).toBe('Dev');
+      expect(result[0]?.employeeId).toBe('EMP001');
+    });
   });
 
   // =============================================================
@@ -360,6 +640,17 @@ describe('TeamsService', () => {
 
       expect(result.message).toBe('Team member added successfully');
     });
+
+    it('should throw BadRequestException when user not found', async () => {
+      // find team
+      mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
+      // find user → not found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.addTeamMember(1, 999, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   // =============================================================
@@ -393,52 +684,114 @@ describe('TeamsService', () => {
   });
 
   // =============================================================
-  // addTeamMachine
+  // addTeamAsset
   // =============================================================
 
-  describe('addTeamMachine', () => {
-    it('should throw NotFoundException when machine not found', async () => {
+  describe('addTeamAsset', () => {
+    it('should throw NotFoundException when asset not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.addTeamMachine(1, 999, 10, 1)).rejects.toThrow(
+      await expect(service.addTeamAsset(1, 999, 10, 1)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should throw ConflictException when machine already assigned', async () => {
-      // find machine
+    it('should throw ConflictException when asset already assigned', async () => {
+      // find asset
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // check existing -> already assigned
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
-      await expect(service.addTeamMachine(1, 1, 10, 1)).rejects.toThrow(
+      await expect(service.addTeamAsset(1, 1, 10, 1)).rejects.toThrow(
         ConflictException,
       );
+    });
+
+    it('should add asset successfully', async () => {
+      // find asset
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // check existing -> not assigned
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+
+      const result = await service.addTeamAsset(1, 1, 10, 1);
+
+      expect(result.id).toBe(42);
+      expect(result.message).toBe('Asset added to team successfully');
     });
   });
 
   // =============================================================
-  // removeTeamMachine
+  // getTeamAssets
   // =============================================================
 
-  describe('removeTeamMachine', () => {
-    it('should throw NotFoundException when machine not assigned', async () => {
+  describe('getTeamAssets', () => {
+    it('should return mapped assets', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          name: 'CNC-500',
+          serial_number: 'SN-001',
+          status: 'operational',
+          is_primary: true,
+          assigned_at: new Date('2025-01-01'),
+          notes: 'Primary asset',
+        },
+      ]);
+
+      const result = await service.getTeamAssets(1, 10);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.name).toBe('CNC-500');
+      expect(result[0]?.serialNumber).toBe('SN-001');
+      expect(result[0]?.isPrimary).toBe(true);
+      expect(result[0]?.notes).toBe('Primary asset');
+    });
+
+    it('should handle null optional fields', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 2,
+          name: 'Drill-100',
+          serial_number: null,
+          status: null,
+          is_primary: false,
+          assigned_at: null,
+          notes: null,
+        },
+      ]);
+
+      const result = await service.getTeamAssets(1, 10);
+
+      expect(result[0]?.serialNumber).toBeUndefined();
+      expect(result[0]?.status).toBeUndefined();
+      expect(result[0]?.notes).toBeUndefined();
+    });
+  });
+
+  // =============================================================
+  // removeTeamAsset
+  // =============================================================
+
+  describe('removeTeamAsset', () => {
+    it('should throw NotFoundException when asset not assigned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.removeTeamMachine(1, 999, 10)).rejects.toThrow(
+      await expect(service.removeTeamAsset(1, 999, 10)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should remove machine successfully', async () => {
+    it('should remove asset successfully', async () => {
       // check existing -> is assigned
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // DELETE
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.removeTeamMachine(1, 1, 10);
+      const result = await service.removeTeamAsset(1, 1, 10);
 
-      expect(result.message).toBe('Machine removed from team successfully');
+      expect(result.message).toBe('Asset removed from team successfully');
     });
   });
 });

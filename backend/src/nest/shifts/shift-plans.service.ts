@@ -8,6 +8,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateShiftPlanDto } from './dto/shift-plan.dto.js';
 import type { UpdateShiftPlanDto } from './dto/update-shift-plan.dto.js';
@@ -22,7 +23,10 @@ import type {
 export class ShiftPlansService {
   private readonly logger = new Logger(ShiftPlansService.name);
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly activityLogger: ActivityLoggerService,
+  ) {}
 
   /**
    * Finds the most recent shift plan matching the given filters.
@@ -69,9 +73,9 @@ export class ShiftPlansService {
     const planUuid = uuidv7();
     const planResult = await this.databaseService.query<{ id: number }>(
       `INSERT INTO shift_plans (
-        uuid, tenant_id, area_id, department_id, team_id, machine_id,
-        name, start_date, end_date, shift_notes, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        uuid, tenant_id, area_id, department_id, team_id, asset_id,
+        name, start_date, end_date, shift_notes, is_tpm_mode, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id`,
       [
         planUuid,
@@ -79,11 +83,12 @@ export class ShiftPlansService {
         dto.areaId ?? null,
         dto.departmentId,
         dto.teamId ?? null,
-        dto.machineId ?? null,
+        dto.assetId ?? null,
         dto.name ?? `Shift Plan ${dto.startDate}`,
         dto.startDate,
         dto.endDate,
         dto.shiftNotes ?? null,
+        dto.isTpmMode ?? false,
         userId,
       ],
     );
@@ -93,6 +98,20 @@ export class ShiftPlansService {
       dto.shifts.length > 0 ?
         await this.insertPlanShifts(dto.shifts, planId, tenantId, dto, userId)
       : [];
+
+    void this.activityLogger.logCreate(
+      tenantId,
+      userId,
+      'shift_plan',
+      planId,
+      `Schichtplan erstellt: ${dto.name ?? dto.startDate}`,
+      {
+        name: dto.name,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        shiftCount: dto.shifts.length,
+      },
+    );
 
     return { planId, shiftIds, message: 'Shift plan created successfully' };
   }
@@ -130,7 +149,7 @@ export class ShiftPlansService {
             departmentId: dto.departmentId ?? plan?.department_id,
             teamId: dto.teamId ?? plan?.team_id,
             areaId: dto.areaId ?? plan?.area_id,
-            machineId: dto.machineId ?? plan?.machine_id,
+            assetId: dto.assetId ?? plan?.asset_id,
           },
           userId,
         )
@@ -147,6 +166,20 @@ export class ShiftPlansService {
     if (teamId !== null && dto.shifts !== undefined) {
       await this.cleanupOrphanedRotationHistory(tenantId, teamId, dto.shifts);
     }
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'shift_plan',
+      planId,
+      `Schichtplan aktualisiert: ${dto.name ?? plan?.name ?? planId}`,
+      undefined,
+      {
+        name: dto.name,
+        shiftNotes: dto.shiftNotes,
+        shiftCount: dto.shifts?.length,
+      },
+    );
 
     return { planId, shiftIds, message: 'Shift plan updated successfully' };
   }
@@ -185,12 +218,20 @@ export class ShiftPlansService {
   /**
    * Delete shift plan by UUID (wrapper for UUID-based API)
    */
-  async deleteShiftPlanByUuid(uuid: string, tenantId: number): Promise<void> {
+  async deleteShiftPlanByUuid(
+    uuid: string,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     const planId = await this.resolveShiftPlanIdByUuid(uuid, tenantId);
-    await this.deleteShiftPlan(planId, tenantId);
+    await this.deleteShiftPlan(planId, tenantId, userId);
   }
 
-  async deleteShiftPlan(planId: number, tenantId: number): Promise<void> {
+  async deleteShiftPlan(
+    planId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<void> {
     this.logger.debug(`Deleting shift plan ${planId} for tenant ${tenantId}`);
 
     const plans = await this.databaseService.query<DbShiftPlanRow>(
@@ -202,6 +243,8 @@ export class ShiftPlansService {
       throw new NotFoundException(`Shift plan ${planId} not found`);
     }
 
+    const plan = plans[0];
+
     // Delete associated shifts first
     await this.databaseService.query(
       `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
@@ -212,6 +255,19 @@ export class ShiftPlansService {
     await this.databaseService.query(
       `DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
       [planId, tenantId],
+    );
+
+    void this.activityLogger.logDelete(
+      tenantId,
+      userId,
+      'shift_plan',
+      planId,
+      `Schichtplan gelöscht: ${plan?.name ?? planId}`,
+      {
+        name: plan?.name,
+        startDate: plan?.start_date,
+        endDate: plan?.end_date,
+      },
     );
   }
 
@@ -228,7 +284,7 @@ export class ShiftPlansService {
     tenantId: number,
     context: Pick<
       CreateShiftPlanDto,
-      'areaId' | 'departmentId' | 'teamId' | 'machineId'
+      'areaId' | 'departmentId' | 'teamId' | 'assetId'
     >,
     createdBy: number,
   ): Promise<number[]> {
@@ -239,7 +295,7 @@ export class ShiftPlansService {
       const result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, start_time, end_time, type,
-          area_id, department_id, team_id, machine_id, created_by
+          area_id, department_id, team_id, asset_id, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id`,
         [
@@ -253,7 +309,7 @@ export class ShiftPlansService {
           context.areaId ?? null,
           context.departmentId,
           context.teamId ?? null,
-          context.machineId ?? null,
+          context.assetId ?? null,
           createdBy,
         ],
       );
@@ -281,7 +337,7 @@ export class ShiftPlansService {
       departmentId: number | undefined;
       teamId: number | null | undefined;
       areaId: number | null | undefined;
-      machineId: number | null | undefined;
+      assetId: number | null | undefined;
     },
     createdBy: number,
   ): Promise<number[]> {
@@ -298,7 +354,7 @@ export class ShiftPlansService {
       const result = await this.databaseService.query<{ id: number }>(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, start_time, end_time, type,
-          area_id, department_id, team_id, machine_id, created_by
+          area_id, department_id, team_id, asset_id, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (tenant_id, plan_id, user_id, date) DO UPDATE SET
            start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, type = EXCLUDED.type
@@ -314,7 +370,7 @@ export class ShiftPlansService {
           context.areaId ?? null,
           context.departmentId,
           context.teamId ?? null,
-          context.machineId ?? null,
+          context.assetId ?? null,
           createdBy,
         ],
       );
@@ -343,6 +399,10 @@ export class ShiftPlansService {
     if (dto.shiftNotes !== undefined) {
       updates.push(`shift_notes = $${idx++}`);
       params.push(dto.shiftNotes);
+    }
+    if (dto.isTpmMode !== undefined) {
+      updates.push(`is_tpm_mode = $${idx++}`);
+      params.push(dto.isTpmMode);
     }
     if (updates.length > 0) {
       params.push(planId, tenantId);

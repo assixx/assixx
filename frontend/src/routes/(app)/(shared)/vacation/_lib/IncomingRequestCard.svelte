@@ -18,6 +18,7 @@
     onApprove,
     onDeny,
     onDetail,
+    onRevoke,
   }: {
     request: VacationRequest;
     /** Show "Neu" badge when there's an unread notification for this request */
@@ -25,9 +26,15 @@
     onApprove: (req: VacationRequest) => void;
     onDeny: (req: VacationRequest) => void;
     onDetail: (req: VacationRequest) => void;
+    onRevoke: (req: VacationRequest) => void;
   } = $props();
 
   const isPending = $derived(request.status === 'pending');
+  const currentYear = new Date().getFullYear();
+  const isRevokable = $derived(
+    request.status === 'approved' &&
+      new Date(request.startDate).getFullYear() === currentYear,
+  );
 
   function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString('de-DE', {
@@ -139,6 +146,17 @@
       >
         <i class="fas fa-times mr-1"></i>
         Ablehnen
+      </button>
+    {:else if isRevokable}
+      <button
+        type="button"
+        class="btn btn-warning"
+        onclick={() => {
+          onRevoke(request);
+        }}
+      >
+        <i class="fas fa-undo mr-1"></i>
+        Widerrufen
       </button>
     {/if}
   </div>

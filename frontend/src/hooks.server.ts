@@ -175,6 +175,26 @@ const authHandle: Handle = async ({ event, resolve }) => {
     // Store user in locals — group layouts access via parent()
     locals.user = userData;
 
+    // Dummy-User Whitelist — restrict to read-only display pages
+    if (userData.role === 'dummy') {
+      const DUMMY_ALLOWED_PREFIXES = [
+        '/blackboard',
+        '/calendar',
+        '/lean-management/tpm',
+      ] as const;
+
+      const isAllowed = DUMMY_ALLOWED_PREFIXES.some((prefix: string) =>
+        pathname.startsWith(prefix),
+      );
+      if (!isAllowed) {
+        log.warn(
+          { pathname },
+          'Auth: Dummy blocked, redirecting to /blackboard',
+        );
+        redirect(302, '/blackboard');
+      }
+    }
+
     log.debug(
       { pathname, userRole: userData.role },
       'Auth: User authenticated',

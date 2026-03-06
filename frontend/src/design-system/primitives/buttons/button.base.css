@@ -129,14 +129,7 @@ a.btn {
   content: '';
 }
 
-/* ========== LOADING ANIMATION ========== */
-
-/* Spin animation for loading spinner */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* Loading animation: @keyframes spin defined in tokens/animations.css */
 
 /**
  * WHY THIS STRUCTURE?

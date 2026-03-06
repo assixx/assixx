@@ -203,7 +203,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 | manage-employees   | 568   | `+page.server.ts`   | 2 parallel                 |
 | manage-teams       | 619   | `+page.server.ts`   | 5 parallel                 |
 | manage-departments | 592   | `+page.server.ts`   | 4 parallel                 |
-| manage-machines    | 583   | `+page.server.ts`   | 4 parallel                 |
+| manage-assets      | 583   | `+page.server.ts`   | 4 parallel                 |
 | manage-areas       | 579   | `+page.server.ts`   | 4 parallel                 |
 | manage-admins      | 566   | `+page.server.ts`   | 3 parallel                 |
 | manage-root        | 540   | `+page.server.ts`   | 1 call                     |

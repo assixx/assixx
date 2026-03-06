@@ -8,6 +8,7 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
+  import { showToast } from '$lib/stores/toast';
   import {
     showSuccessAlert,
     showErrorAlert,
@@ -88,7 +89,6 @@
   // Modal States
   let showEmployeeModal = $state(false);
   let showDeleteModal = $state(false);
-  let showDeleteConfirmModal = $state(false);
   let showAvailabilityModal = $state(false);
   let showUpgradeConfirmModal = $state(false);
   let upgradeEmployeeId = $state<number | null>(null);
@@ -187,20 +187,33 @@
         isEditMode,
       );
 
-      const userId = await apiSaveEmployee(payload, currentEditId);
+      const result = await apiSaveEmployee(payload, currentEditId);
       await syncTeamMemberships(
-        userId,
+        result.id,
         formTeamIds,
         originalTeamIds,
         isEditMode,
       );
 
       closeEmployeeModal();
-      // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
-      );
+
+      if (!isEditMode && result.uuid !== null) {
+        showToast({
+          type: 'success',
+          title: 'Mitarbeiter erstellt',
+          message: 'Berechtigungen jetzt zuweisen?',
+          duration: 8000,
+          action: {
+            label: 'Berechtigungen',
+            href: `/manage-employees/permission/${result.uuid}`,
+          },
+        });
+      } else {
+        showSuccessAlert(
+          isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
+        );
+      }
     } catch (err) {
       log.error({ err }, 'Error saving employee');
       showErrorAlert(
@@ -260,7 +273,7 @@
 
     // Reset state immediately to prevent double-clicks
     deleteEmployeeId = null;
-    showDeleteConfirmModal = false;
+    showDeleteModal = false;
 
     try {
       await apiDeleteEmployee(idToDelete);
@@ -314,11 +327,6 @@
     showDeleteModal = true;
   }
 
-  function proceedToDeleteConfirm(): void {
-    showDeleteModal = false;
-    showDeleteConfirmModal = true;
-  }
-
   function closeEmployeeModal(): void {
     showEmployeeModal = false;
     currentEditId = null;
@@ -327,11 +335,6 @@
 
   function closeDeleteModal(): void {
     showDeleteModal = false;
-    deleteEmployeeId = null;
-  }
-
-  function closeDeleteConfirmModal(): void {
-    showDeleteConfirmModal = false;
     deleteEmployeeId = null;
   }
 
@@ -474,7 +477,6 @@
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteConfirmModal) closeDeleteConfirmModal();
       else if (showDeleteModal) closeDeleteModal();
       else if (showEmployeeModal) closeEmployeeModal();
     }
@@ -731,12 +733,9 @@
 
 <!-- Delete Modals Component -->
 <DeleteModals
-  {showDeleteModal}
-  {showDeleteConfirmModal}
-  oncloseDelete={closeDeleteModal}
-  oncloseDeleteConfirm={closeDeleteConfirmModal}
-  onproceedToConfirm={proceedToDeleteConfirm}
-  ondeleteConfirm={deleteEmployee}
+  show={showDeleteModal}
+  oncancel={closeDeleteModal}
+  onconfirm={deleteEmployee}
 />
 
 <!-- Availability Modal Component -->

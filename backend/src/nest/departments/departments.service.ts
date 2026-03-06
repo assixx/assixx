@@ -88,7 +88,7 @@ export interface DepartmentStats {
 interface DepartmentDependencies {
   userDepartments: number;
   teams: number;
-  machines: number;
+  assets: number;
   shifts: number;
   shiftPlans: number;
   shiftFavorites: number;
@@ -505,7 +505,7 @@ export class DepartmentsService {
     const tables = [
       'user_departments',
       'teams',
-      'machines',
+      'assets',
       'shifts',
       'shift_plans',
       'shift_favorites',
@@ -525,7 +525,7 @@ export class DepartmentsService {
     return {
       userDepartments: counts[0] ?? 0,
       teams: counts[1] ?? 0,
-      machines: counts[2] ?? 0,
+      assets: counts[2] ?? 0,
       shifts: counts[3] ?? 0,
       shiftPlans: counts[4] ?? 0,
       shiftFavorites: counts[5] ?? 0,
@@ -590,7 +590,7 @@ export class DepartmentsService {
         count: deps.userDepartments,
       },
       { table: 'teams', operation: 'UPDATE', count: deps.teams },
-      { table: 'machines', operation: 'UPDATE', count: deps.machines },
+      { table: 'assets', operation: 'UPDATE', count: deps.assets },
       { table: 'shifts', operation: 'UPDATE', count: deps.shifts },
       { table: 'shift_plans', operation: 'UPDATE', count: deps.shiftPlans },
       {
@@ -660,7 +660,7 @@ export class DepartmentsService {
               userDepartments: deps.userDepartments,
             }),
             ...(deps.teams > 0 && { teams: deps.teams }),
-            ...(deps.machines > 0 && { machines: deps.machines }),
+            ...(deps.assets > 0 && { assets: deps.assets }),
             ...(deps.shifts > 0 && { shifts: deps.shifts }),
             ...(deps.shiftPlans > 0 && { shiftPlans: deps.shiftPlans }),
           },
@@ -724,7 +724,7 @@ export class DepartmentsService {
       `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id, u.role, u.is_active
        FROM users u
        JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id
-       WHERE ud.department_id = $1`,
+       WHERE ud.department_id = $1 AND u.role != 'dummy' AND u.is_active = 1`,
       [id],
     );
 
