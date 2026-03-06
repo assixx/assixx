@@ -235,7 +235,6 @@ jobs:
         uses: aquasecurity/trivy-action@0.34.1
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
-          version: "v0.69.0"
           format: "table"
           exit-code: "1"
           severity: "CRITICAL"
@@ -246,7 +245,6 @@ jobs:
         if: always()
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
-          version: "v0.69.0"
           format: "table"
           exit-code: "0"
           severity: "HIGH,MEDIUM"
