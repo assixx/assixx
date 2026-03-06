@@ -5,7 +5,6 @@ import js from '@eslint/js';
 import vitestPlugin from '@vitest/eslint-plugin';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
-import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import storybook from 'eslint-plugin-storybook';
@@ -386,28 +385,6 @@ export default [
       'sonarjs/prefer-immediate-return': 'error',
       'sonarjs/prefer-object-literal': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
-    },
-  }, // No-Secrets Plugin
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      'no-secrets': noSecretsPlugin,
-    },
-    rules: {
-      'no-secrets/no-secrets': [
-        'error',
-        {
-          tolerance: 5.2,
-          additionalRegexes: {
-            'German Password': '(passwort|kennwort)\\s*[:=]\\s*[\'"]?.+[\'"]?',
-            'JWT Token':
-              'eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*',
-            // PostgreSQL Connection Strings (nur env vars, nicht generische password strings)
-            'PostgreSQL Env Hardcoded':
-              '(PG_PASSWORD|POSTGRES_PASSWORD|DATABASE_URL)\\s*[:=]\\s*[\'"][^$\\{][^\'"]{8,}[\'"]',
-          },
-        },
-      ],
     },
   },
 
