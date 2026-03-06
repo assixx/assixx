@@ -29,8 +29,10 @@
     isSectionExpanded?: boolean;
     isPreviousExpanded?: boolean;
     overlapFactor?: number;
+    dimmed?: boolean;
     highlightedUuids?: ReadonlySet<string>;
     onCardFlip?: (uuid: string, isFlipped: boolean) => void;
+    onStackedCardHover?: (hovering: boolean) => void;
     onHeaderClick?: () => void;
   }
 
@@ -48,8 +50,10 @@
     isSectionExpanded = false,
     isPreviousExpanded = false,
     overlapFactor = -0.7,
+    dimmed = false,
     highlightedUuids = new Set<string>(),
     onCardFlip,
+    onStackedCardHover,
     onHeaderClick,
   }: Props = $props();
 
@@ -70,7 +74,8 @@
   class="kamishibai-section"
   class:kamishibai-section--clipped={isClipped}
   class:kamishibai-section--stacked={isStacked}
-  style:z-index={isCollapsed ? sectionIndex + 1 : 'auto'}
+  style:--section-z={isCollapsed ? sectionIndex + 1 : 0}
+  style:filter={dimmed ? 'var(--section-dim-filter)' : undefined}
   style:margin-top={isStacked ?
     `calc(${overlapFactor} * var(--section-overlap))`
   : undefined}
@@ -107,7 +112,17 @@
     </div>
   {:else if isCollapsed && !isSectionExpanded}
     <div class="kamishibai-section__role-group">
-      <div class="kamishibai-section__cards kamishibai-section__cards--stacked">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="kamishibai-section__cards kamishibai-section__cards--stacked"
+        onmouseover={(e: MouseEvent) => {
+          const card = (e.target as HTMLElement).closest('.kamishibai-card');
+          onStackedCardHover?.(card !== null);
+        }}
+        onmouseleave={() => onStackedCardHover?.(false)}
+        onfocus={() => onStackedCardHover?.(true)}
+        onblur={() => onStackedCardHover?.(false)}
+      >
         {#each [...operatorCards, ...maintenanceCards] as card (card.uuid)}
           <KamishibaiCard
             {card}
@@ -175,13 +190,15 @@
     --section-overlap: 200px;
 
     position: relative;
+    z-index: var(--section-z, auto);
     border: var(--glass-border);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
     transition:
       max-height 150ms ease-out,
-      box-shadow 200ms ease-out;
+      box-shadow 200ms ease-out,
+      filter 200ms ease-out;
   }
 
   /* Collapsed sections (clipped OR stacked) → opaque, no shadow/border */
@@ -191,6 +208,19 @@
     box-shadow: none;
     border: none;
     border-radius: 0;
+  }
+
+  /* Stacked: allow hovered cards to escape section bounds */
+  .kamishibai-section--stacked {
+    overflow: visible;
+  }
+
+  /* Any section with stacked cards: pop above all others on card hover */
+  .kamishibai-section:has(
+    .kamishibai-section__cards--stacked :global(.kamishibai-card:hover)
+  ) {
+    z-index: 100;
+    overflow: visible;
   }
 
   :is(.kamishibai-section--clipped, .kamishibai-section--stacked)
@@ -363,6 +393,11 @@
   .kamishibai-section__cards--stacked :global(.kamishibai-card) {
     margin-right: -100px;
     margin-top: -160px;
+    transition:
+      transform 250ms ease-out,
+      z-index 0ms,
+      margin-right 200ms ease-out,
+      margin-top 200ms ease-out;
   }
 
   .kamishibai-section__cards--stacked :global(.kamishibai-card:last-child) {
@@ -370,7 +405,9 @@
   }
 
   .kamishibai-section__cards--stacked :global(.kamishibai-card:hover) {
-    transform: translateY(-6px);
+    transform: translateY(-20px) scale(1.08);
+    z-index: 50;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 50%);
   }
 
   .kamishibai-section__empty {

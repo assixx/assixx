@@ -124,9 +124,25 @@
       toggle();
     }
   }
+
+  let cardEl: HTMLDivElement | undefined = $state();
+
+  /** Scroll highlighted card into view after section expansion */
+  $effect(() => {
+    if (highlighted && cardEl !== undefined) {
+      const el = cardEl;
+      const timer = setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  });
 </script>
 
 <div
+  bind:this={cardEl}
   class="kamishibai-card"
   class:kamishibai-card--flipped={isFlipped}
   class:kamishibai-card--highlighted={highlighted}
@@ -296,7 +312,47 @@
   }
 
   @keyframes card-locate {
-    0%,
+    0% {
+      outline-color: color-mix(
+        in srgb,
+        var(--color-text-primary) 60%,
+        transparent
+      );
+      transform: rotate(0deg);
+    }
+
+    3% {
+      transform: rotate(-2.5deg);
+    }
+
+    6% {
+      transform: rotate(2.5deg);
+    }
+
+    9% {
+      transform: rotate(-2deg);
+    }
+
+    12% {
+      transform: rotate(2deg);
+    }
+
+    15% {
+      transform: rotate(-1.2deg);
+    }
+
+    18% {
+      transform: rotate(1.2deg);
+    }
+
+    21% {
+      transform: rotate(-0.5deg);
+    }
+
+    23% {
+      transform: rotate(0deg);
+    }
+
     40% {
       outline-color: color-mix(
         in srgb,
@@ -307,6 +363,7 @@
 
     100% {
       outline-color: transparent;
+      transform: rotate(0deg);
     }
   }
 

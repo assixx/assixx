@@ -10,7 +10,12 @@
  *   - card_code is auto-generated: prefix (BT/IV) + sequential number per plan+role
  *   - sort_order is auto-incremented per plan
  */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -32,7 +37,11 @@ import type {
   TpmCardStatus,
   TpmIntervalType,
 } from './tpm.types.js';
-import { CARD_CODE_PREFIX, INTERVAL_ORDER_MAP } from './tpm.types.js';
+import {
+  CARD_CODE_PREFIX,
+  INTERVAL_ORDER_MAP,
+  MAX_CARDS_PER_PLAN_INTERVAL,
+} from './tpm.types.js';
 
 /** Filters for card list queries */
 export interface CardListFilter {
@@ -284,6 +293,14 @@ export class TpmCardsService {
       tenantId,
       dto.planUuid,
     );
+
+    await this.assertCardLimitNotReached(
+      client,
+      tenantId,
+      planCtx.planId,
+      dto.intervalType,
+    );
+
     const cardCode = await this.generateCardCode(
       client,
       tenantId,
@@ -296,25 +313,16 @@ export class TpmCardsService {
       planCtx.planId,
     );
 
-    const { id: cardId, card } = await this.executeCardInsert(client, {
+    const insertData = buildCardInsertData(dto, planCtx, {
       tenantId,
-      planId: planCtx.planId,
-      assetId: planCtx.assetId,
       cardCode,
       sortOrder,
       createdBy,
-      cardRole: dto.cardRole,
-      intervalType: dto.intervalType,
-      intervalOrder: INTERVAL_ORDER_MAP[dto.intervalType],
-      title: dto.title,
-      description: dto.description ?? null,
-      locationDescription: dto.locationDescription ?? null,
-      requiresApproval: dto.requiresApproval,
-      customIntervalDays: dto.customIntervalDays ?? null,
-      weekdayOverride: dto.weekdayOverride ?? null,
-      estimatedExecutionMinutes: dto.estimatedExecutionMinutes ?? null,
-      cardCategories: dto.cardCategories,
     });
+    const { id: cardId, card } = await this.executeCardInsert(
+      client,
+      insertData,
+    );
 
     const effectiveWeekday =
       dto.intervalType === 'weekly' && dto.weekdayOverride != null ?
@@ -465,6 +473,29 @@ export class TpmCardsService {
     return maxSort + 1;
   }
 
+  /** Guard: max cards per interval type per plan (spam protection) */
+  private async assertCardLimitNotReached(
+    client: PoolClient,
+    tenantId: number,
+    planId: number,
+    intervalType: TpmIntervalType,
+  ): Promise<void> {
+    const result = await client.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM tpm_cards
+       WHERE plan_id = $1 AND tenant_id = $2
+         AND interval_type = $3 AND is_active = 1`,
+      [planId, tenantId, intervalType],
+    );
+    const count = Number.parseInt(result.rows[0]?.count ?? '0', 10);
+
+    if (count >= MAX_CARDS_PER_PLAN_INTERVAL) {
+      throw new ConflictException(
+        `Maximale Kartenanzahl (${MAX_CARDS_PER_PLAN_INTERVAL}) für dieses Intervall erreicht. ` +
+          'Bitte kontaktieren Sie Ihren Admin.',
+      );
+    }
+  }
+
   /** Lock a card row by UUID (SELECT ... FOR UPDATE) */
   private async lockCardByUuid(
     client: PoolClient,
@@ -519,6 +550,38 @@ export class TpmCardsService {
       pageSize,
     };
   }
+}
+
+/** Map DTO + plan context → INSERT data object (pure function) */
+function buildCardInsertData(
+  dto: CreateCardDto,
+  planCtx: { planId: number; assetId: number },
+  meta: {
+    tenantId: number;
+    cardCode: string;
+    sortOrder: number;
+    createdBy: number;
+  },
+): Parameters<TpmCardsService['executeCardInsert']>[1] {
+  return {
+    tenantId: meta.tenantId,
+    planId: planCtx.planId,
+    assetId: planCtx.assetId,
+    cardCode: meta.cardCode,
+    sortOrder: meta.sortOrder,
+    createdBy: meta.createdBy,
+    cardRole: dto.cardRole,
+    intervalType: dto.intervalType,
+    intervalOrder: INTERVAL_ORDER_MAP[dto.intervalType],
+    title: dto.title,
+    description: dto.description ?? null,
+    locationDescription: dto.locationDescription ?? null,
+    requiresApproval: dto.requiresApproval,
+    customIntervalDays: dto.customIntervalDays ?? null,
+    weekdayOverride: dto.weekdayOverride ?? null,
+    estimatedExecutionMinutes: dto.estimatedExecutionMinutes ?? null,
+    cardCategories: dto.cardCategories,
+  };
 }
 
 /** Build dynamic WHERE clauses from filters (pure function) */

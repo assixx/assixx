@@ -113,12 +113,19 @@
   /** Tracks which cards are currently flipped — drives section expansion */
   const flippedCards = new SvelteSet<string>();
 
+  /** Cards flipped from stacked mode — get locate animation + scroll */
+  const locateCards = new SvelteSet<string>();
+
   /** Tracks sections manually expanded via header click */
   const expandedSections = new SvelteSet<IntervalType>();
+
+  /** Index of section with a hovered stacked card — dims siblings */
+  let hoveredSectionIdx = $state<number | null>(null);
 
   function handleToggle(): void {
     globalCollapsed = !globalCollapsed;
     flippedCards.clear();
+    locateCards.clear();
     expandedSections.clear();
   }
 
@@ -138,6 +145,7 @@
           ...section.maintenanceCards,
         ]) {
           flippedCards.delete(c.uuid);
+          locateCards.delete(c.uuid);
         }
       }
     } else {
@@ -147,19 +155,29 @@
 
   function handleCardFlip(uuid: string, isFlipped: boolean): void {
     if (isFlipped) {
-      flippedCards.add(uuid);
-
-      /** Pin the section open so it stays expanded after un-flip */
       const section = sections.find((s: SectionData) =>
         [...s.operatorCards, ...s.maintenanceCards].some(
           (c: TpmCard) => c.uuid === uuid,
         ),
       );
+
+      /** Flipped from stacked mode → locate animation + scroll */
+      const wasStacked =
+        globalCollapsed &&
+        section !== undefined &&
+        !expandedSections.has(section.intervalType) &&
+        !sectionHasFlippedCards(section);
+
+      flippedCards.add(uuid);
+      if (wasStacked) locateCards.add(uuid);
+
+      /** Pin the section open so it stays expanded after un-flip */
       if (section !== undefined) {
         expandedSections.add(section.intervalType);
       }
     } else {
       flippedCards.delete(uuid);
+      locateCards.delete(uuid);
     }
   }
 
@@ -172,9 +190,9 @@
 
   /** Dynamic overlap factor based on previous section's card count */
   function getOverlapFactor(cardCount: number): number {
-    if (cardCount <= 20) return -0.9;
-    if (cardCount <= 40) return -0.5;
-    if (cardCount <= 60) return -0.2;
+    if (cardCount <= 20) return -0.91;
+    if (cardCount <= 40) return -0.51;
+    if (cardCount <= 60) return -0.21;
     return 0;
   }
 
@@ -291,8 +309,12 @@
         isPreviousExpanded={idx > 0 &&
           (sectionHasFlippedCards(visibleSections[idx - 1]) ||
             expandedSections.has(visibleSections[idx - 1].intervalType))}
-        highlightedUuids={flippedCards}
+        dimmed={hoveredSectionIdx !== null && hoveredSectionIdx !== idx}
+        highlightedUuids={locateCards}
         onCardFlip={handleCardFlip}
+        onStackedCardHover={(hovering: boolean) => {
+          hoveredSectionIdx = hovering ? idx : null;
+        }}
         onHeaderClick={() => {
           handleSectionHeaderClick(section.intervalType);
         }}

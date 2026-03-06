@@ -551,6 +551,9 @@ export interface TpmDefectPhoto {
   createdAt: string;
 }
 
+/** Max cards per interval type per plan (spam protection) */
+export const MAX_CARDS_PER_PLAN_INTERVAL = 60;
+
 /** Max photos per execution (enforced in service layer) */
 export const MAX_PHOTOS_PER_EXECUTION = 5;
 
