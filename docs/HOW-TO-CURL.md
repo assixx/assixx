@@ -75,12 +75,10 @@ done
 
 ## Credentials
 
-| Tenant    | Email              | Passwort       |
-|-----------|--------------------|----------------|
-| apitest   | admin@apitest.de   | ApiTest12345!  |
-| testfirma | admin@tesfirma.de  | ApiTest12345!  |
-
-
+| Tenant    | Email             | Passwort      |
+| --------- | ----------------- | ------------- |
+| apitest   | admin@apitest.de  | ApiTest12345! |
+| testfirma | admin@tesfirma.de | ApiTest12345! |
 
 thats the right bash :
 ● Bash(curl -s http://localhost:3000/api/v2/features/my-features -H "Authorization: Bearer

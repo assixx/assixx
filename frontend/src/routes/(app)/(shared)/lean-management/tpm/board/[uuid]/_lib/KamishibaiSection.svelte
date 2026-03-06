@@ -28,6 +28,8 @@
     isCollapsed?: boolean;
     isSectionExpanded?: boolean;
     isPreviousExpanded?: boolean;
+    overlapFactor?: number;
+    highlightedUuids?: ReadonlySet<string>;
     onCardFlip?: (uuid: string, isFlipped: boolean) => void;
     onHeaderClick?: () => void;
   }
@@ -45,6 +47,8 @@
     isCollapsed = false,
     isSectionExpanded = false,
     isPreviousExpanded = false,
+    overlapFactor = -0.7,
+    highlightedUuids = new Set<string>(),
     onCardFlip,
     onHeaderClick,
   }: Props = $props();
@@ -67,6 +71,9 @@
   class:kamishibai-section--clipped={isClipped}
   class:kamishibai-section--stacked={isStacked}
   style:z-index={isCollapsed ? sectionIndex + 1 : 'auto'}
+  style:margin-top={isStacked ?
+    `calc(${overlapFactor} * var(--section-overlap))`
+  : undefined}
 >
   <button
     type="button"
@@ -107,6 +114,7 @@
             {colors}
             {intervalColors}
             {categoryColors}
+            highlighted={highlightedUuids.has(card.uuid)}
             onFlipChange={onCardFlip}
           />
         {/each}
@@ -127,6 +135,7 @@
               {colors}
               {intervalColors}
               {categoryColors}
+              highlighted={highlightedUuids.has(card.uuid)}
               onFlipChange={onCardFlip}
             />
           {/each}
@@ -150,6 +159,7 @@
               {colors}
               {intervalColors}
               {categoryColors}
+              highlighted={highlightedUuids.has(card.uuid)}
               onFlipChange={onCardFlip}
             />
           {/each}
@@ -165,19 +175,22 @@
     --section-overlap: 200px;
 
     position: relative;
-    background: var(--glass-bg-hover);
     border: var(--glass-border);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
-    transition: margin-top 250ms
-      var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+    transition:
+      max-height 150ms ease-out,
+      box-shadow 200ms ease-out;
   }
 
-  /* Collapsed sections (clipped OR stacked) → opaque backgrounds */
+  /* Collapsed sections (clipped OR stacked) → opaque, no shadow/border */
   .kamishibai-section--clipped,
   .kamishibai-section--stacked {
     background: var(--color-section-stacked-bg);
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
   }
 
   :is(.kamishibai-section--clipped, .kamishibai-section--stacked)
@@ -188,6 +201,8 @@
   /* Clipped: collapsed + not last → height limit + fade overlay */
   .kamishibai-section--clipped {
     max-height: var(--section-max-height);
+    border: var(--glass-border);
+    border-radius: 12px 12px 0 0;
   }
 
   .kamishibai-section::after {
@@ -203,17 +218,11 @@
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     pointer-events: none;
     opacity: 0%;
-    transition: opacity 250ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+    transition: opacity 200ms ease-out;
   }
 
   .kamishibai-section--clipped::after {
-    opacity: 100%;
-  }
-
-  /* Stacked: collapsed + not first → pull up + depth shadow */
-  .kamishibai-section--stacked {
-    margin-top: calc(-0.8 * var(--section-overlap));
-    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 10%));
+    display: none;
   }
 
   .kamishibai-section__header {
@@ -239,8 +248,8 @@
   .kamishibai-section__chevron {
     font-size: 0.75rem;
     color: var(--color-text-muted);
-    transition: transform 250ms
-      var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+    will-change: transform;
+    transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .kamishibai-section__chevron--expanded {
@@ -333,27 +342,35 @@
     gap: 0.75rem;
     min-height: 180px;
     align-items: flex-start;
-    transition: gap 300ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+    transition: gap 500ms ease-out;
   }
 
   .kamishibai-section__cards :global(.kamishibai-card) {
-    transition: margin-left 300ms
-      var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+    transition:
+      margin-right 200ms ease-out,
+      margin-top 200ms ease-out;
   }
 
-  /* Stacked cards — horizontal overlap like a fanned deck */
+  /* Stacked cards — 2D overlap: horizontal (-100px) + vertical (-160px) */
   .kamishibai-section__cards--stacked {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 0;
     min-height: auto;
+    padding-top: 170px;
+    padding-right: 100px;
   }
 
   .kamishibai-section__cards--stacked :global(.kamishibai-card) {
-    margin-left: -100px;
+    margin-right: -100px;
+    margin-top: -160px;
   }
 
-  .kamishibai-section__cards--stacked :global(.kamishibai-card:first-child) {
-    margin-left: 0;
+  .kamishibai-section__cards--stacked :global(.kamishibai-card:last-child) {
+    margin-right: 0;
+  }
+
+  .kamishibai-section__cards--stacked :global(.kamishibai-card:hover) {
+    transform: translateY(-6px);
   }
 
   .kamishibai-section__empty {

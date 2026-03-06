@@ -13,7 +13,12 @@
   import KamishibaiBoard from './_lib/KamishibaiBoard.svelte';
 
   import type { PageData } from './$types';
-  import type { CardCategory, TpmCard } from '../../_lib/types';
+  import type {
+    CardCategory,
+    TpmCard,
+    IntervalColorConfigEntry,
+    CategoryColorConfigEntry,
+  } from '../../_lib/types';
 
   type FilterType = 'all' | 'operator' | 'maintenance' | 'open_only';
   type CategoryFilterType = 'all' | CardCategory;
@@ -83,6 +88,18 @@
     cards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue')
       .length,
   );
+
+  /** Legend: interval colors that are included on cards */
+  const legendIntervalColors = $derived(
+    intervalColors.filter((ic: IntervalColorConfigEntry) => ic.includeInCard),
+  );
+
+  /** Legend: category colors that are configured (non-null) */
+  const legendCategoryColors = $derived(
+    categoryColors.filter(
+      (cc: CategoryColorConfigEntry) => cc.colorHex !== null,
+    ),
+  );
 </script>
 
 <svelte:head>
@@ -129,7 +146,7 @@
           {/if}
           <button
             type="button"
-            class="btn btn-light"
+            class="btn btn-primary"
             onclick={() => {
               void goto(
                 resolvePath(`/lean-management/tpm/locations/${data.planUuid}`),
@@ -154,6 +171,46 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="board-legend">
+    <span class="board-legend__group-label">Status</span>
+    {#each colors as c (c.statusKey)}
+      <span class="board-legend__item">
+        <span
+          class="board-legend__dot"
+          style="background-color: {c.colorHex}"
+        ></span>
+        {c.label}
+      </span>
+    {/each}
+    {#if legendIntervalColors.length > 0}
+      <span class="board-legend__divider"></span>
+      <span class="board-legend__group-label">Intervall</span>
+      {#each legendIntervalColors as ic (ic.statusKey)}
+        <span class="board-legend__item">
+          <span
+            class="board-legend__dot"
+            style="background-color: {ic.colorHex}"
+          ></span>
+          {ic.label}
+        </span>
+      {/each}
+    {/if}
+    {#if legendCategoryColors.length > 0}
+      <span class="board-legend__divider"></span>
+      <span class="board-legend__group-label">Kategorie</span>
+      {#each legendCategoryColors as cc (cc.categoryKey)}
+        <span class="board-legend__item">
+          <span
+            class="board-legend__dot"
+            style="background-color: {cc.colorHex}"
+          ></span>
+          {cc.label}
+        </span>
+      {/each}
+    {/if}
   </div>
 
   <!-- Filter Bar -->
@@ -200,3 +257,48 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .board-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-top: 1rem;
+    padding: 0.625rem 1rem;
+    background: var(--glass-bg);
+    border: var(--glass-border);
+    border-radius: var(--radius-lg);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .board-legend__group-label {
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-tertiary);
+  }
+
+  .board-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    white-space: nowrap;
+  }
+
+  .board-legend__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  }
+
+  .board-legend__divider {
+    width: 1px;
+    height: 1rem;
+    background: var(--color-glass-border);
+  }
+</style>

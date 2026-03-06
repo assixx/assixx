@@ -123,8 +123,23 @@
   }
 
   function handleSectionHeaderClick(intervalType: IntervalType): void {
-    if (expandedSections.has(intervalType)) {
+    const section = visibleSections.find(
+      (s: SectionData) => s.intervalType === intervalType,
+    );
+    const isExpanded =
+      expandedSections.has(intervalType) ||
+      (section !== undefined && sectionHasFlippedCards(section));
+
+    if (isExpanded) {
       expandedSections.delete(intervalType);
+      if (section !== undefined) {
+        for (const c of [
+          ...section.operatorCards,
+          ...section.maintenanceCards,
+        ]) {
+          flippedCards.delete(c.uuid);
+        }
+      }
     } else {
       expandedSections.add(intervalType);
     }
@@ -133,6 +148,16 @@
   function handleCardFlip(uuid: string, isFlipped: boolean): void {
     if (isFlipped) {
       flippedCards.add(uuid);
+
+      /** Pin the section open so it stays expanded after un-flip */
+      const section = sections.find((s: SectionData) =>
+        [...s.operatorCards, ...s.maintenanceCards].some(
+          (c: TpmCard) => c.uuid === uuid,
+        ),
+      );
+      if (section !== undefined) {
+        expandedSections.add(section.intervalType);
+      }
     } else {
       flippedCards.delete(uuid);
     }
@@ -143,6 +168,14 @@
     return [...section.operatorCards, ...section.maintenanceCards].some(
       (c: TpmCard) => flippedCards.has(c.uuid),
     );
+  }
+
+  /** Dynamic overlap factor based on previous section's card count */
+  function getOverlapFactor(cardCount: number): number {
+    if (cardCount <= 20) return -0.9;
+    if (cardCount <= 40) return -0.5;
+    if (cardCount <= 60) return -0.2;
+    return 0;
   }
 
   const toggleLabel = $derived(
@@ -249,9 +282,16 @@
         isCollapsed={globalCollapsed}
         isSectionExpanded={sectionHasFlippedCards(section) ||
           expandedSections.has(section.intervalType)}
+        overlapFactor={idx > 0 ?
+          getOverlapFactor(
+            visibleSections[idx - 1].operatorCards.length +
+              visibleSections[idx - 1].maintenanceCards.length,
+          )
+        : -0.7}
         isPreviousExpanded={idx > 0 &&
           (sectionHasFlippedCards(visibleSections[idx - 1]) ||
             expandedSections.has(visibleSections[idx - 1].intervalType))}
+        highlightedUuids={flippedCards}
         onCardFlip={handleCardFlip}
         onHeaderClick={() => {
           handleSectionHeaderClick(section.intervalType);
@@ -272,7 +312,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    transition: gap 300ms var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .kamishibai-board__sections--collapsed {

@@ -29,6 +29,7 @@
     colors: TpmColorConfigEntry[];
     intervalColors: IntervalColorConfigEntry[];
     categoryColors?: CategoryColorConfigEntry[];
+    highlighted?: boolean;
     onFlipChange?: (uuid: string, isFlipped: boolean) => void;
   }
 
@@ -37,6 +38,7 @@
     colors,
     intervalColors,
     categoryColors = [],
+    highlighted = false,
     onFlipChange,
   }: Props = $props();
 
@@ -86,7 +88,6 @@
   );
 
   const statusColor = $derived(getCardColor(card.status));
-  const isUrgent = $derived(card.status === 'red' || card.status === 'overdue');
 
   const intervalDotColor = $derived.by((): string | null => {
     if (card.status === 'green') return null;
@@ -127,7 +128,8 @@
 
 <div
   class="kamishibai-card"
-  class:kamishibai-card--urgent={isUrgent}
+  class:kamishibai-card--flipped={isFlipped}
+  class:kamishibai-card--highlighted={highlighted}
   onclick={toggle}
   onkeydown={handleKeydown}
   role="button"
@@ -178,6 +180,15 @@
             <span class="kamishibai-card__time">
               <i class="fas fa-clock"></i>
               {card.estimatedExecutionMinutes} Min.
+            </span>
+          {/if}
+          {#if card.status === 'overdue'}
+            <span class="kamishibai-card__overdue-badge">
+              <i class="fas fa-exclamation-triangle"></i> Überfällig
+            </span>
+          {:else if card.status === 'red'}
+            <span class="kamishibai-card__overdue-badge">
+              <i class="fas fa-exclamation-triangle"></i> Fällig
             </span>
           {/if}
         </div>
@@ -234,31 +245,124 @@
 
 <style>
   .kamishibai-card {
-    --card-radius: var(--radius-xs);
+    --card-radius: var(--radius-sm, 6px);
+    --card-edge: 4px;
 
     position: relative;
     isolation: isolate;
     width: 160px;
     height: 210px;
-    border-left: 2px solid rgb(0 0 0 / 60%);
     border-radius: var(--card-radius);
     cursor: pointer;
     flex-shrink: 0;
     outline: none;
+
+    /* 5-layer realistic shadow: contact → near → medium → ambient → far */
+    box-shadow:
+      0 1px 1px rgb(0 0 0 / 35%),
+      0 2px 4px rgb(0 0 0 / 25%),
+      0 4px 8px rgb(0 0 0 / 18%),
+      0 8px 16px rgb(0 0 0 / 12%),
+      0 16px 32px rgb(0 0 0 / 6%);
+    transition:
+      transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .kamishibai-card:hover {
+    box-shadow:
+      0 4px 4px rgb(0 0 0 / 20%),
+      0 8px 12px rgb(0 0 0 / 16%),
+      0 16px 24px rgb(0 0 0 / 12%),
+      0 24px 48px rgb(0 0 0 / 8%),
+      0 36px 64px rgb(0 0 0 / 5%);
+  }
+
+  /* Lifted shadow when card is flipped */
+  .kamishibai-card--flipped {
+    box-shadow:
+      0 4px 4px rgb(0 0 0 / 18%),
+      0 8px 16px rgb(0 0 0 / 14%),
+      0 16px 32px rgb(0 0 0 / 10%),
+      0 24px 48px rgb(0 0 0 / 6%);
+  }
+
+  /* Locate pulse — draws the eye to the clicked card after section expansion */
+  .kamishibai-card--highlighted {
+    outline: 2px solid
+      color-mix(in srgb, var(--color-text-primary) 60%, transparent);
+    outline-offset: 3px;
+    animation: card-locate 6.5s ease-out forwards;
+  }
+
+  @keyframes card-locate {
+    0%,
+    40% {
+      outline-color: color-mix(
+        in srgb,
+        var(--color-text-primary) 60%,
+        transparent
+      );
+    }
+
+    100% {
+      outline-color: transparent;
+    }
   }
 
   .kamishibai-card:focus-visible {
-    box-shadow: 0 0 0 3px var(--color-primary);
+    box-shadow:
+      0 0 0 3px var(--color-primary),
+      0 4px 8px rgb(0 0 0 / 18%),
+      0 8px 16px rgb(0 0 0 / 12%);
   }
 
   /* Front face — 3-zone layout: header | body | footer */
   .kamishibai-card__front {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     padding: 0.625rem;
     color: #fff;
     border-radius: var(--card-radius);
+
+    /* Simulated card edges — light top/left, dark bottom/right */
+    border-top: 1px solid rgb(255 255 255 / 22%);
+    border-left: 1px solid rgb(255 255 255 / 10%);
+    border-right: 1px solid rgb(0 0 0 / 10%);
+    border-bottom: var(--card-edge) solid rgb(0 0 0 / 30%);
+
+    /* Embossed inner edges for thickness illusion */
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 25%),
+      inset 0 -1px 0 rgb(0 0 0 / 15%),
+      inset 1px 0 0 rgb(255 255 255 / 6%),
+      inset -1px 0 0 rgb(0 0 0 / 6%);
+  }
+
+  /* Glossy lamination — specular hotspot + reflection line + ambient light */
+  .kamishibai-card__front::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      /* Soft specular hotspot — gentle top-left light reflection */
+      radial-gradient(
+        ellipse 80% 60% at 30% 25%,
+        rgb(255 255 255 / 8%) 0%,
+        transparent 60%
+      ),
+      /* Directional overhead ambient light */
+      linear-gradient(
+          155deg,
+          rgb(255 255 255 / 6%) 0%,
+          transparent 45%,
+          rgb(0 0 0 / 8%) 100%
+        );
+    pointer-events: none;
+    z-index: 1;
   }
 
   /* Zone 1: Header — code left, icons right */
@@ -328,6 +432,20 @@
     opacity: 80%;
   }
 
+  .kamishibai-card__overdue-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgb(0 0 0 / 25%);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-xs, 4px);
+  }
+
   .kamishibai-card__category-label {
     font-size: 0.625rem;
     font-weight: 600;
@@ -338,7 +456,7 @@
     white-space: nowrap;
   }
 
-  /* Back face */
+  /* Back face — same physical edges as front */
   .kamishibai-card__back {
     display: flex;
     flex-direction: column;
@@ -347,6 +465,13 @@
     padding: 0.75rem;
     background: var(--color-gray-800, #1f2937);
     border-radius: var(--card-radius);
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-left: 1px solid rgb(255 255 255 / 5%);
+    border-right: 1px solid rgb(0 0 0 / 10%);
+    border-bottom: var(--card-edge) solid rgb(0 0 0 / 35%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 10%),
+      inset 0 -1px 0 rgb(0 0 0 / 20%);
     color: var(--color-gray-100, #f3f4f6);
     font-size: 0.75rem;
     overflow: hidden;
@@ -424,5 +549,15 @@
     font-size: 0.625rem;
     color: var(--color-gray-500, #6b7280);
     text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kamishibai-card {
+      transition: none;
+    }
+
+    .kamishibai-card--highlighted {
+      animation: none;
+    }
   }
 </style>
