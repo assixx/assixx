@@ -169,6 +169,32 @@ export class TpmPlansController {
     );
   }
 
+  /** POST /tpm/plans/:uuid/archive — Archive plan (is_active=3) */
+  @Post(':uuid/archive')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  async archivePlan(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ message: string; plan: TpmPlan }> {
+    const plan = await this.plansService.archivePlan(tenantId, user.id, uuid);
+    return { message: 'Wartungsplan archiviert', plan };
+  }
+
+  /** POST /tpm/plans/:uuid/unarchive — Restore archived plan (is_active=1) */
+  @Post(':uuid/unarchive')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  async unarchivePlan(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ message: string; plan: TpmPlan }> {
+    const plan = await this.plansService.unarchivePlan(tenantId, user.id, uuid);
+    return { message: 'Wartungsplan wiederhergestellt', plan };
+  }
+
   /** GET /tpm/plans/:uuid — Get single plan by UUID */
   @Get(':uuid')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')

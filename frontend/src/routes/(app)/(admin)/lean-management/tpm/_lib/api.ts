@@ -117,6 +117,26 @@ export async function deletePlan(
   return await apiClient.delete<{ message: string }>(`/tpm/plans/${planUuid}`);
 }
 
+/** Archive a maintenance plan (is_active = 3) */
+export async function archivePlan(planUuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/tpm/plans/${planUuid}/archive`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Unarchive/restore a maintenance plan (is_active = 1) */
+export async function unarchivePlan(planUuid: string): Promise<boolean> {
+  try {
+    await apiClient.post(`/tpm/plans/${planUuid}/unarchive`, {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // =============================================================================
 // MACHINES
 // =============================================================================

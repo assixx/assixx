@@ -65,7 +65,7 @@ export class TpmPlansService {
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
+       WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active IN (1, 3)`,
       [planUuid, tenantId],
     );
 
@@ -87,7 +87,7 @@ export class TpmPlansService {
     const countResult = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_maintenance_plans
-       WHERE tenant_id = $1 AND is_active = 1`,
+       WHERE tenant_id = $1 AND is_active IN (1, 3)`,
       [tenantId],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
@@ -98,8 +98,8 @@ export class TpmPlansService {
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.tenant_id = $1 AND p.is_active = 1
-       ORDER BY p.name ASC
+       WHERE p.tenant_id = $1 AND p.is_active IN (1, 3)
+       ORDER BY p.is_active ASC, p.name ASC
        LIMIT $2 OFFSET $3`,
       [tenantId, pageSize, offset],
     );
@@ -321,6 +321,87 @@ export class TpmPlansService {
     );
   }
 
+  /** Archive a maintenance plan (is_active = 3) */
+  async archivePlan(
+    tenantId: number,
+    userId: number,
+    planUuid: string,
+  ): Promise<TpmPlan> {
+    const plan = await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<TpmPlan> => {
+        const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
+
+        await client.query(
+          `UPDATE tpm_maintenance_plans
+           SET is_active = 3, updated_at = NOW()
+           WHERE uuid = $1 AND tenant_id = $2`,
+          [planUuid, tenantId],
+        );
+
+        return mapPlanRowToApi(existing);
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_plan',
+      plan.assetId,
+      `TPM-Wartungsplan archiviert: ${plan.name}`,
+      { planUuid, assetName: plan.assetName },
+      { isActive: 3 },
+    );
+
+    return plan;
+  }
+
+  /** Unarchive a maintenance plan (is_active = 1) */
+  async unarchivePlan(
+    tenantId: number,
+    userId: number,
+    planUuid: string,
+  ): Promise<TpmPlan> {
+    const plan = await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<TpmPlan> => {
+        const existing = await this.lockPlanByUuidAnyStatus(
+          client,
+          tenantId,
+          planUuid,
+        );
+
+        if (existing.is_active !== 3) {
+          throw new ConflictException(
+            'Nur archivierte Pläne können wiederhergestellt werden',
+          );
+        }
+
+        // Ensure no other active plan exists for the same asset
+        await this.ensureNoPlanForAsset(client, tenantId, existing.asset_id);
+
+        await client.query(
+          `UPDATE tpm_maintenance_plans
+           SET is_active = 1, updated_at = NOW()
+           WHERE uuid = $1 AND tenant_id = $2`,
+          [planUuid, tenantId],
+        );
+
+        return mapPlanRowToApi(existing);
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'tpm_plan',
+      plan.assetId,
+      `TPM-Wartungsplan wiederhergestellt: ${plan.name}`,
+      { planUuid, assetName: plan.assetName },
+      { isActive: 1 },
+    );
+
+    return plan;
+  }
+
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
@@ -369,6 +450,25 @@ export class TpmPlansService {
     const result = await client.query<TpmPlanJoinRow>(
       `SELECT * FROM tpm_maintenance_plans
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       FOR UPDATE`,
+      [planUuid, tenantId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) {
+      throw new NotFoundException(`Wartungsplan ${planUuid} nicht gefunden`);
+    }
+    return row;
+  }
+
+  /** Lock a plan row regardless of is_active status (for unarchive) */
+  private async lockPlanByUuidAnyStatus(
+    client: PoolClient,
+    tenantId: number,
+    planUuid: string,
+  ): Promise<TpmPlanJoinRow> {
+    const result = await client.query<TpmPlanJoinRow>(
+      `SELECT * FROM tpm_maintenance_plans
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active IN (1, 3)
        FOR UPDATE`,
       [planUuid, tenantId],
     );

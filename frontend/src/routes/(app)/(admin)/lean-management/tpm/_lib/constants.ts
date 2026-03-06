@@ -223,6 +223,17 @@ export const MESSAGES = {
   BTN_CREATE_PLAN: 'Plan erstellen',
   BTN_CANCEL: 'Abbrechen',
   BTN_BACK_TO_OVERVIEW: 'Zurück zur Übersicht',
+  BTN_ARCHIVE: 'Archivieren',
+  BTN_RESTORE: 'Wiederherstellen',
+
+  // Archive
+  ARCHIVE_CONFIRM: 'Möchten Sie diesen Wartungsplan wirklich archivieren?',
+  RESTORE_CONFIRM: 'Möchten Sie diesen Wartungsplan wiederherstellen?',
+  SUCCESS_ARCHIVED: 'Wartungsplan wurde archiviert',
+  SUCCESS_RESTORED: 'Wartungsplan wurde wiederhergestellt',
+  ERROR_ARCHIVE: 'Fehler beim Archivieren',
+  ERROR_RESTORE: 'Fehler beim Wiederherstellen',
+  ARCHIVED_NOTICE: 'Dieser Wartungsplan ist archiviert',
 
   // Plan form success/error
   SUCCESS_PLAN_CREATED: 'Wartungsplan erfolgreich erstellt',

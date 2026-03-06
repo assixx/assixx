@@ -9,12 +9,14 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+  import { showSuccessAlert, showErrorAlert, showConfirm } from '$lib/utils';
 
   import {
     createPlan as apiCreatePlan,
     updatePlan as apiUpdatePlan,
     setTimeEstimate as apiSetTimeEstimate,
+    archivePlan as apiArchivePlan,
+    unarchivePlan as apiUnarchivePlan,
     logApiError,
   } from '../../_lib/api';
   import { MESSAGES } from '../../_lib/constants';
@@ -50,6 +52,7 @@
   // STATE
   // =============================================================================
 
+  const isArchived = $derived(data.plan !== null && data.plan.isActive === 3);
   let submitting = $state(false);
 
   // Create mode: track asset + shiftPlanRequired for SlotAssistant
@@ -110,6 +113,32 @@
     }
   }
 
+  async function handleArchive(): Promise<void> {
+    if (data.plan === null) return;
+    const confirmed = await showConfirm(MESSAGES.ARCHIVE_CONFIRM);
+    if (!confirmed) return;
+    const success = await apiArchivePlan(data.plan.uuid);
+    if (success) {
+      showSuccessAlert(MESSAGES.SUCCESS_ARCHIVED);
+      await goto(resolvePath('/lean-management/tpm'));
+    } else {
+      showErrorAlert(MESSAGES.ERROR_ARCHIVE);
+    }
+  }
+
+  async function handleRestore(): Promise<void> {
+    if (data.plan === null) return;
+    const confirmed = await showConfirm(MESSAGES.RESTORE_CONFIRM);
+    if (!confirmed) return;
+    const success = await apiUnarchivePlan(data.plan.uuid);
+    if (success) {
+      showSuccessAlert(MESSAGES.SUCCESS_RESTORED);
+      await invalidateAll();
+    } else {
+      showErrorAlert(MESSAGES.ERROR_RESTORE);
+    }
+  }
+
   function handleCancel(): void {
     void goto(resolvePath('/lean-management/tpm'));
   }
@@ -146,8 +175,8 @@
     {/if}
   </div>
 
-  <!-- Slot Assistant: full width above form -->
-  {#if !isCreateMode && data.plan !== null}
+  <!-- Slot Assistant: full width above form (hidden for archived plans) -->
+  {#if !isCreateMode && data.plan !== null && !isArchived}
     <div class="mb-6">
       <SlotAssistant
         planUuid={data.plan.uuid}
@@ -184,7 +213,7 @@
             assetUuidsWithPlans={data.assetUuidsWithPlans ?? []}
             timeEstimates={data.timeEstimates}
             {isCreateMode}
-            {submitting}
+            submitting={submitting || isArchived}
             oncreate={handleCreate}
             onupdate={handleUpdate}
             oncancel={handleCancel}
@@ -199,9 +228,50 @@
       </div>
     </div>
 
-    <!-- Sidebar: Employee Assignment (edit mode only) -->
+    <!-- Sidebar: Employee Assignment + Actions (edit mode only) -->
     {#if !isCreateMode && data.plan !== null}
-      <EmployeeAssignment planUuid={data.plan.uuid} />
+      <div class="flex flex-col gap-6">
+        {#if !isArchived}
+          <EmployeeAssignment planUuid={data.plan.uuid} />
+        {/if}
+
+        <!-- Archive / Restore Actions -->
+        {#if isArchived}
+          <div class="card">
+            <div class="card__body p-4 text-center">
+              <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"
+              ></i>
+              <p class="mb-4 text-(--color-text-secondary)">
+                {MESSAGES.ARCHIVED_NOTICE}
+              </p>
+              <button
+                type="button"
+                class="btn btn-light"
+                onclick={handleRestore}
+              >
+                <i class="fas fa-undo mr-2"></i>{MESSAGES.BTN_RESTORE}
+              </button>
+            </div>
+          </div>
+        {:else}
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-cog"></i> Aktionen
+              </h2>
+            </div>
+            <div class="card__body">
+              <button
+                type="button"
+                class="btn btn-light w-full"
+                onclick={handleArchive}
+              >
+                <i class="fas fa-archive mr-2"></i>{MESSAGES.BTN_ARCHIVE}
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 </div>

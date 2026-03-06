@@ -9,7 +9,7 @@ import type { PlanStatusFilter } from './types';
 export function createUIState() {
   let loading = $state(true);
   let error = $state<string | null>(null);
-  let statusFilter = $state<PlanStatusFilter>('all');
+  let statusFilter = $state<PlanStatusFilter>('active');
   let searchQuery = $state('');
   let searchOpen = $state(false);
   let showDeleteModal = $state(false);

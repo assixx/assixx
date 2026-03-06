@@ -587,7 +587,104 @@ describe('TPM: Create Maintenance Card', () => {
   });
 });
 
-// ---- seq: 18 -- Cleanup: Delete Card -------------------------------------------
+// ---- seq: 18 -- Archive Plan ---------------------------------------------------
+
+describe('TPM: Archive Plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/archive`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return success message', () => {
+    expect(body.data.message).toBe('Wartungsplan archiviert');
+  });
+
+  it('should return plan in response', () => {
+    expect(body.data.plan).toBeDefined();
+    expect(body.data.plan.uuid).toBe(planUuid);
+  });
+});
+
+// ---- seq: 19 -- Verify archived plan is still accessible via GET ---------------
+
+describe('TPM: Get Archived Plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK (archived plans are readable)', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should have isActive = 3', () => {
+    expect(body.data.isActive).toBe(3);
+  });
+});
+
+// ---- seq: 20 -- Unarchive Plan -------------------------------------------------
+
+describe('TPM: Unarchive Plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/unarchive`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return success message', () => {
+    expect(body.data.message).toBe('Wartungsplan wiederhergestellt');
+  });
+});
+
+// ---- seq: 21 -- Verify unarchived plan is active again -------------------------
+
+describe('TPM: Verify Plan Restored', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should have isActive = 1', () => {
+    expect(body.data.isActive).toBe(1);
+  });
+});
+
+// ---- seq: 22 -- Cleanup: Delete Card -------------------------------------------
 
 describe('TPM: Delete Card', () => {
   let res: Response;

@@ -278,12 +278,14 @@ describe('TpmCardsService', () => {
 
   describe('createCard()', () => {
     it('should resolve plan IDs, generate card code, and INSERT', async () => {
-      // resolvePlanIds
+      // resolvePlanContext
       mockClient.query.mockResolvedValueOnce({
         rows: [
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached (COUNT)
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       // generateCardCode (COUNT)
       mockClient.query.mockResolvedValueOnce({
         rows: [{ count: '0' }],
@@ -318,6 +320,8 @@ describe('TpmCardsService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 100, asset_id: 99 }],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -337,7 +341,7 @@ describe('TpmCardsService', () => {
       );
 
       // INSERT params: asset_id is at index 3 (0-based)
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       expect(insertParams?.[3]).toBe(99);
       expect(result.assetId).toBe(99);
     });
@@ -348,6 +352,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '4' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '3' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -367,7 +373,7 @@ describe('TpmCardsService', () => {
       );
 
       // card_code is at index 4 in INSERT params
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       expect(insertParams?.[4]).toBe('BT5');
     });
 
@@ -377,6 +383,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '2' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -395,7 +403,7 @@ describe('TpmCardsService', () => {
         5,
       );
 
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       expect(insertParams?.[4]).toBe('IV3');
     });
 
@@ -405,6 +413,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -426,7 +436,7 @@ describe('TpmCardsService', () => {
       );
 
       // interval_order is at index 7 in INSERT params
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       expect(insertParams?.[7]).toBe(4); // quarterly = 4
     });
 
@@ -436,6 +446,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '7' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -455,7 +467,7 @@ describe('TpmCardsService', () => {
       );
 
       // sort_order is at index 12 in INSERT params
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       expect(insertParams?.[12]).toBe(8); // 7 + 1
     });
 
@@ -483,6 +495,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -508,6 +522,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -532,7 +548,7 @@ describe('TpmCardsService', () => {
         5,
       );
 
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       // description=9, locationDescription=10, customIntervalDays=13,
       // weekdayOverride=14, estimatedExecutionMinutes=15
       expect(insertParams?.[9]).toBeNull();
@@ -548,6 +564,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -568,7 +586,7 @@ describe('TpmCardsService', () => {
       );
 
       // estimatedExecutionMinutes is at index 15 in INSERT params
-      const insertParams = mockClient.query.mock.calls[3]?.[1] as unknown[];
+      const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
       expect(insertParams?.[15]).toBe(45);
       expect(result.estimatedExecutionMinutes).toBe(45);
     });
@@ -579,6 +597,8 @@ describe('TpmCardsService', () => {
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
         ],
       });
+      // assertCardLimitNotReached
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
