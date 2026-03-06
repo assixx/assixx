@@ -232,7 +232,7 @@ jobs:
           fi
 
       - name: Check for critical vulnerabilities (blocks PR)
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@0.34.2
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
           version: "v0.69.0"
@@ -242,7 +242,7 @@ jobs:
           scanners: "vuln"
 
       - name: Report HIGH and MEDIUM vulnerabilities (informational)
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@0.34.2
         if: always()
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
