@@ -1,6 +1,6 @@
 {
   "name": "assixx",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
@@ -159,6 +159,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-css-order": "^2.2.0",
     "prettier-plugin-svelte": "^3.5.1",
+    "prettier-plugin-tailwindcss": "0.7.2",
     "purgecss": "8.0.0",
     "storybook": "^10.2.15",
     "stylelint": "^17.4.0",
