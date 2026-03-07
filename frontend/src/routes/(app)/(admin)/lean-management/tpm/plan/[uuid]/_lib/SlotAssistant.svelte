@@ -23,7 +23,6 @@
   } from '../../../_lib/api';
   import {
     INTERVAL_LABELS,
-    INTERVAL_SHORT_LABELS,
     INTERVAL_COLORS,
     MESSAGES,
   } from '../../../_lib/constants';
@@ -34,6 +33,7 @@
     MAX_RANGE_365_MS,
   } from '../../../_lib/date-helpers';
 
+  import SlotDayContent from './SlotDayContent.svelte';
   import TimelineDayView from './TimelineDayView.svelte';
 
   import type {
@@ -527,30 +527,10 @@
               <span class="slot-day__date"
                 >{formatDayMonth(day.date, true)}</span
               >
-              {#each projSlots as slot (slot.planUuid)}
-                <span class="slot-day__asset">{slot.assetName}</span>
-                <div class="slot-day__intervals">
-                  {#each slot.intervalTypes as interval (interval)}
-                    <span
-                      class="slot-day__badge"
-                      style="background: {colorMap[interval]}"
-                      title={INTERVAL_LABELS[interval]}
-                      >{INTERVAL_SHORT_LABELS[interval]}</span
-                    >
-                  {/each}
-                </div>
-                {#if !slot.isFullDay && slot.startTime !== null && slot.endTime !== null}
-                  <span class="slot-day__time">
-                    <i class="fas fa-clock"></i>
-                    {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
-                  </span>
-                {:else if slot.isFullDay}
-                  <span class="slot-day__time">
-                    <i class="fas fa-clock"></i>
-                    Ganztägig
-                  </span>
-                {/if}
-              {/each}
+              <SlotDayContent
+                slots={projSlots}
+                {colorMap}
+              />
             </div>
           {/each}
         </div>
@@ -610,30 +590,10 @@
                 <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
               {:else if isScheduled}
                 {@const projSlots = getSlotsForDate(day.date)}
-                {#each projSlots as slot (slot.planUuid)}
-                  <span class="slot-day__asset">{slot.assetName}</span>
-                  <div class="slot-day__intervals">
-                    {#each slot.intervalTypes as interval (interval)}
-                      <span
-                        class="slot-day__badge"
-                        style="background: {colorMap[interval]}"
-                        title={INTERVAL_LABELS[interval]}
-                        >{INTERVAL_SHORT_LABELS[interval]}</span
-                      >
-                    {/each}
-                  </div>
-                  {#if !slot.isFullDay && slot.startTime !== null && slot.endTime !== null}
-                    <span class="slot-day__time">
-                      <i class="fas fa-clock"></i>
-                      {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
-                    </span>
-                  {:else if slot.isFullDay}
-                    <span class="slot-day__time">
-                      <i class="fas fa-clock"></i>
-                      Ganztägig
-                    </span>
-                  {/if}
-                {/each}
+                <SlotDayContent
+                  slots={projSlots}
+                  {colorMap}
+                />
               {:else if day.conflicts.length > 0}
                 <i
                   class="fas {getConflictIcon(
@@ -781,14 +741,6 @@
     color: var(--color-text-secondary);
   }
 
-  .slot-day__time {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.688rem;
-    color: var(--color-text-muted);
-  }
-
   .slot-day__icon {
     font-size: 0.625rem;
   }
@@ -806,39 +758,5 @@
     color: var(--color-danger);
     text-align: center;
     line-height: 1.2;
-  }
-
-  /* ---- Scheduled day: asset name + interval badges ---- */
-
-  .slot-day__asset {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    text-align: center;
-    line-height: 1.1;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .slot-day__intervals {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 3px;
-  }
-
-  .slot-day__badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #000;
-    padding: 2px 4px;
-    border-radius: 2px;
-    line-height: 1;
-    min-width: 14px;
   }
 </style>

@@ -25,11 +25,5 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
       icon: 'fa-comments',
       allowedPermissions: ['canRead', 'canWrite'],
     },
-    {
-      code: 'kvp-reviews',
-      label: 'Bewertungen',
-      icon: 'fa-star',
-      allowedPermissions: ['canRead', 'canWrite'],
-    },
   ],
 };

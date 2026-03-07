@@ -7,6 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -74,11 +75,19 @@ function extractCards(raw: unknown): { cards: TpmCard[]; totalCards: number } {
   };
 }
 
-export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
+export const load: PageServerLoad = async ({
+  params,
+  cookies,
+  fetch,
+  parent,
+}) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
+
+  const { activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'tpm');
 
   const planUuid = params.uuid;
 

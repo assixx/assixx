@@ -6,6 +6,7 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -116,6 +117,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   }
 
   const parentData = await parent();
+  requireFeature(parentData.activeFeatures, 'kvp');
 
   const suggestion = await apiFetch<KvpSuggestion>(
     `/kvp/${idOrUuid}`,
