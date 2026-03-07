@@ -35,6 +35,9 @@ import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js'
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import type { ReadTrackingConfig } from '../common/services/read-tracking.service.js';
+import { ReadTrackingService } from '../common/services/read-tracking.service.js';
 import { AssignUsersDto } from './dto/assign-users.dto.js';
 import { CreateCommentDto } from './dto/create-comment.dto.js';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto.js';
@@ -65,6 +68,14 @@ const FEAT = 'work_orders';
 const MOD_MANAGE = 'work-orders-manage';
 const MOD_EXEC = 'work-orders-execute';
 
+/** Read-tracking config for work orders */
+const WORK_ORDER_READ_CONFIG: ReadTrackingConfig = {
+  tableName: 'work_order_read_status',
+  entityColumn: 'work_order_id',
+  entityTable: 'work_orders',
+  entityUuidColumn: 'uuid',
+};
+
 /** Multer options for work order attachments (max 10 MB, single file) */
 const photoUploadOptions = {
   storage: memoryStorage(),
@@ -81,6 +92,8 @@ export class WorkOrdersController {
     private readonly commentsService: WorkOrderCommentsService,
     private readonly photosService: WorkOrderPhotosService,
     private readonly notifications: WorkOrderNotificationService,
+    private readonly readTracking: ReadTrackingService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   // ==========================================================================
@@ -91,9 +104,10 @@ export class WorkOrdersController {
   @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async listAll(
     @Query() query: ListWorkOrdersQueryDto,
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<ReturnType<WorkOrdersService['listWorkOrders']>> {
-    return await this.service.listWorkOrders(tenantId, query);
+    return await this.service.listWorkOrders(tenantId, user.id, query);
   }
 
   @Get('my')
@@ -160,6 +174,32 @@ export class WorkOrdersController {
     }
 
     return result;
+  }
+
+  @Post(':uuid/read')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async markAsRead(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ success: boolean }> {
+    await this.readTracking.markAsReadByUuid(
+      WORK_ORDER_READ_CONFIG,
+      uuid,
+      user.id,
+      tenantId,
+    );
+
+    void this.activityLogger.logCreate(
+      tenantId,
+      user.id,
+      'work_order',
+      0,
+      `Arbeitsauftrag gelesen: ${uuid}`,
+    );
+
+    return { success: true };
   }
 
   @Get(':uuid')

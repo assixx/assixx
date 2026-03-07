@@ -74,6 +74,7 @@ export function mapWorkOrderRowToListItem(
     assigneeNames: row.assignee_names ?? '',
     commentCount: Number(row.comment_count),
     photoCount: Number(row.photo_count),
+    isRead: (row.is_read ?? 0) !== 0,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };

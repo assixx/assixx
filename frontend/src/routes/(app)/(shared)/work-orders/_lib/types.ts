@@ -112,6 +112,7 @@ export interface WorkOrderListItem {
   assigneeNames: string;
   commentCount: number;
   photoCount: number;
+  isRead: boolean;
   createdAt: string;
   updatedAt: string;
 }

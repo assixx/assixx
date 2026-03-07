@@ -223,6 +223,7 @@ export interface WorkOrderListItem {
   assigneeNames: string;
   commentCount: number;
   photoCount: number;
+  isRead: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -271,6 +272,8 @@ export interface WorkOrderWithCountsRow extends WorkOrderRow {
   comment_count: string;
   /** COUNT returns string via pg driver */
   photo_count: string;
+  /** LEFT JOIN result: NULL = not read, non-null = read */
+  is_read: number | null;
 }
 
 export interface WorkOrderAssigneeWithNameRow extends WorkOrderAssigneeRow {

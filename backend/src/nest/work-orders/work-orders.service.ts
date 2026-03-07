@@ -42,6 +42,21 @@ const ORDER_SELECT_SQL = `
   FROM work_orders wo
   JOIN users u ON wo.created_by = u.id`;
 
+/** Extended SELECT with is_read column (requires LEFT JOIN on rs) */
+const ORDER_SELECT_WITH_READ_SQL = `
+  SELECT wo.*,
+    CONCAT(u.first_name, ' ', u.last_name) AS created_by_name,
+    (SELECT COUNT(*) FROM work_order_assignees a WHERE a.work_order_id = wo.id) AS assignee_count,
+    (SELECT STRING_AGG(CONCAT(au.first_name, ' ', au.last_name), ', ' ORDER BY au.last_name)
+       FROM work_order_assignees wa
+       JOIN users au ON wa.user_id = au.id
+       WHERE wa.work_order_id = wo.id) AS assignee_names,
+    (SELECT COUNT(*) FROM work_order_comments c WHERE c.work_order_id = wo.id AND c.is_active = ${IS_ACTIVE.ACTIVE}) AS comment_count,
+    (SELECT COUNT(*) FROM work_order_photos p WHERE p.work_order_id = wo.id) AS photo_count,
+    CASE WHEN rs.id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+  FROM work_orders wo
+  JOIN users u ON wo.created_by = u.id`;
+
 // ============================================================================
 // Exported types
 // ============================================================================
@@ -203,9 +218,10 @@ export class WorkOrdersService {
   /** List all work orders (admin view) with filters and pagination */
   async listWorkOrders(
     tenantId: number,
+    currentUserId: number,
     query: ListQuery,
   ): Promise<PaginatedWorkOrders> {
-    return await this.buildPaginatedList(tenantId, null, query);
+    return await this.buildPaginatedList(tenantId, null, currentUserId, query);
   }
 
   /** List only work orders assigned to a specific user */
@@ -214,7 +230,7 @@ export class WorkOrdersService {
     userId: number,
     query: ListQuery,
   ): Promise<PaginatedWorkOrders> {
-    return await this.buildPaginatedList(tenantId, userId, query);
+    return await this.buildPaginatedList(tenantId, userId, userId, query);
   }
 
   /** Update work order fields (admin only) */
@@ -458,10 +474,11 @@ export class WorkOrdersService {
     return result.rows[0];
   }
 
-  /** Build paginated list with dynamic WHERE clause */
+  /** Build paginated list with dynamic WHERE clause + read-status LEFT JOIN */
   private async buildPaginatedList(
     tenantId: number,
     forUserId: number | null,
+    currentUserId: number,
     query: ListQuery,
   ): Promise<PaginatedWorkOrders> {
     const { whereClause, params, nextIdx } = buildWhereClause(
@@ -481,16 +498,20 @@ export class WorkOrdersService {
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
-    const limitIdx = nextIdx;
-    const offsetIdx = nextIdx + 1;
+    const readUserIdx = nextIdx;
+    const readTenantIdx = nextIdx + 1;
+    const limitIdx = nextIdx + 2;
+    const offsetIdx = nextIdx + 3;
     const rows = await this.db.query<WorkOrderWithCountsRow>(
-      `${ORDER_SELECT_SQL}
+      `${ORDER_SELECT_WITH_READ_SQL}
+       LEFT JOIN work_order_read_status rs
+         ON rs.work_order_id = wo.id AND rs.user_id = $${readUserIdx} AND rs.tenant_id = $${readTenantIdx}
        WHERE ${whereClause}
        ORDER BY
          CASE wo.priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END,
          wo.created_at DESC
        LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
-      [...params, pageSize, offset],
+      [...params, currentUserId, tenantId, pageSize, offset],
     );
 
     return {
