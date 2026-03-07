@@ -12,6 +12,7 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { AppConfigService } from '../config/config.service.js';
 import { PG_POOL } from './database.constants.js';
 import { DatabaseService } from './database.service.js';
+import { PartitionHealthService } from './partition-health.service.js';
 import { UserRepository } from './repositories/user.repository.js';
 
 export { PG_POOL } from './database.constants.js';
@@ -60,10 +61,17 @@ export { PG_POOL } from './database.constants.js';
       inject: [AppConfigService],
     },
     DatabaseService,
+    PartitionHealthService,
     ActivityLoggerService,
     UserRepository,
   ],
-  exports: [PG_POOL, DatabaseService, ActivityLoggerService, UserRepository],
+  exports: [
+    PG_POOL,
+    DatabaseService,
+    PartitionHealthService,
+    ActivityLoggerService,
+    UserRepository,
+  ],
 })
 export class DatabaseModule implements OnModuleDestroy {
   private readonly logger = new Logger(DatabaseModule.name);

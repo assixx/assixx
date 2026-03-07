@@ -146,6 +146,11 @@ jobs:
           cd docker
           docker build -f Dockerfile -t assixx-backend-test:latest ..
 
+      - name: Build PostgreSQL Docker Image (pg_partman)
+        run: |
+          cd docker
+          docker build -f Dockerfile.pg-partman -t assixx-postgres-test:latest ..
+
       - name: Test Docker Compose Config
         run: |
           cd docker

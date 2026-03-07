@@ -819,6 +819,54 @@ ORDER BY calls DESC LIMIT 10;
 
 ---
 
+## Partition Management (pg_partman)
+
+Partitionen für `audit_trail` und `root_logs` werden automatisch von pg_partman v5.4.3 verwaltet.
+
+**KEINE manuellen Partition-Migrations mehr nötig.**
+
+pg_partman Background Worker läuft täglich und erstellt fehlende Partitionen 12 Monate im Voraus.
+
+### Monitoring
+
+```bash
+# pg_partman Config prüfen
+docker exec assixx-postgres psql -U assixx_user -d assixx \
+  -c "SELECT parent_table, premake, retention FROM partman.part_config;"
+
+# DEFAULT Partitionen prüfen (sollten leer sein)
+docker exec assixx-postgres psql -U assixx_user -d assixx \
+  -c "SELECT * FROM partman.check_default(p_exact_count := true);"
+
+# Maintenance manuell auslösen (normalerweise automatisch via BGW)
+docker exec assixx-postgres psql -U assixx_user -d assixx \
+  -c "CALL partman.run_maintenance_proc();"
+
+# Lücken prüfen
+docker exec assixx-postgres psql -U assixx_user -d assixx \
+  -c "SELECT * FROM partman.partition_gap_fill('public.audit_trail');"
+```
+
+### Konfiguration
+
+| Parameter            | Wert            | Beschreibung                      |
+| -------------------- | --------------- | --------------------------------- |
+| `p_interval`         | `1 month`       | Monatliche Partitionen            |
+| `p_premake`          | `12`            | 12 Monate im Voraus               |
+| `p_default_table`    | `true`          | Catch-all für unerwartete Daten   |
+| `inherit_privileges` | `true`          | GRANTs werden automatisch vererbt |
+| BGW Interval         | `86400` (1 Tag) | Maintenance-Frequenz              |
+
+### Voraussetzungen
+
+- Custom Docker Image: `docker/Dockerfile.pg-partman` (PostgreSQL 17 + pg_partman)
+- `shared_preload_libraries` muss `pg_partman_bgw` enthalten
+- `max_locks_per_transaction=128` empfohlen
+
+Siehe ADR-029 für Architekturentscheidungen.
+
+---
+
 ## is_active Convention
 
 Consistent status values for all tables:

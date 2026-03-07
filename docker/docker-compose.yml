@@ -20,7 +20,10 @@ services:
   # PostgreSQL - Primary Database
   # =============================================
   postgres:
-    image: postgres:17-alpine
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.pg-partman
+    image: assixx-postgres:17-partman
     container_name: assixx-postgres
     restart: unless-stopped
     deploy:
@@ -33,18 +36,31 @@ services:
           memory: 1G
     # PostgreSQL Performance Configuration
     # pg_stat_statements: Query performance tracking (essential for optimization)
+    # pg_partman_bgw: Automatic partition maintenance (daily)
     # track_io_timing: I/O statistics per query
     # Reference: https://www.postgresql.org/docs/17/pgstatstatements.html
     command:
       - "postgres"
       - "-c"
-      - "shared_preload_libraries=pg_stat_statements"
+      - "shared_preload_libraries=pg_stat_statements,pg_partman_bgw"
       - "-c"
       - "pg_stat_statements.track=all"
       - "-c"
       - "pg_stat_statements.max=10000"
       - "-c"
       - "track_io_timing=on"
+      # pg_partman Background Worker — daily partition maintenance
+      - "-c"
+      - "pg_partman_bgw.dbname=assixx"
+      - "-c"
+      - "pg_partman_bgw.interval=86400"
+      - "-c"
+      - "pg_partman_bgw.role=assixx_user"
+      - "-c"
+      - "pg_partman_bgw.jobmon=off"
+      # pg_partman recommendation (default: 64, raised for partition DDL)
+      - "-c"
+      - "max_locks_per_transaction=128"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - use doppler run}
