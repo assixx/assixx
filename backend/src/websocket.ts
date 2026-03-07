@@ -2,6 +2,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { IncomingMessage, Server } from 'http';
 import { Redis } from 'ioredis';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
+import { z } from 'zod';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
 import type { PresenceStore } from './nest/chat/presence.store.js';
@@ -12,6 +13,7 @@ import {
   type E2eFields,
   type ProcessedMessageResult,
   type SendMessageData,
+  SendMessageDataSchema,
   WebSocketMessageHandler,
 } from './websocket-message-handler.js';
 
@@ -19,14 +21,15 @@ import {
 // Connection & Transport Types
 // ============================================================================
 
-interface ConnectionTicketData {
-  userId: number;
-  tenantId: number;
-  role: string;
-  activeRole: string;
-  purpose: 'websocket' | 'sse';
-  createdAt: number;
-}
+const ConnectionTicketDataSchema = z.object({
+  userId: z.number(),
+  tenantId: z.number(),
+  role: z.string(),
+  activeRole: z.string(),
+  purpose: z.enum(['websocket', 'sse']),
+  createdAt: z.number(),
+});
+type ConnectionTicketData = z.infer<typeof ConnectionTicketDataSchema>;
 
 interface ExtendedWebSocket extends WebSocket {
   userId?: number;
@@ -35,18 +38,21 @@ interface ExtendedWebSocket extends WebSocket {
   isAlive?: boolean;
 }
 
-interface WebSocketMessage {
-  type: string;
-  data: unknown;
-}
+const WebSocketMessageSchema = z.object({
+  type: z.string(),
+  data: z.unknown(),
+});
+type WebSocketMessage = z.infer<typeof WebSocketMessageSchema>;
 
-interface TypingData {
-  conversationId: number;
-}
+const TypingDataSchema = z.object({
+  conversationId: z.number(),
+});
+type TypingData = z.infer<typeof TypingDataSchema>;
 
-interface MarkReadData {
-  messageId: number;
-}
+const MarkReadDataSchema = z.object({
+  messageId: z.number(),
+});
+type MarkReadData = z.infer<typeof MarkReadDataSchema>;
 
 // ============================================================================
 // ChatWebSocketServer - Connection management, routing, presence, heartbeat
@@ -182,7 +188,7 @@ export class ChatWebSocketServer {
         return null;
       }
 
-      const data = JSON.parse(result) as ConnectionTicketData;
+      const data = ConnectionTicketDataSchema.parse(JSON.parse(result));
 
       // Verify purpose is websocket
       if (data.purpose !== 'websocket') {
@@ -325,20 +331,31 @@ export class ChatWebSocketServer {
         typeof data === 'string' ? data
         : Buffer.isBuffer(data) ? data.toString()
         : JSON.stringify(data);
-      const message = JSON.parse(dataString) as WebSocketMessage;
+      const message = WebSocketMessageSchema.parse(JSON.parse(dataString));
 
       switch (message.type) {
         case 'send_message':
-          await this.handleSendMessage(ws, message.data as SendMessageData);
+          await this.handleSendMessage(
+            ws,
+            SendMessageDataSchema.parse(message.data),
+          );
           break;
         case 'typing_start':
-          await this.handleTyping(ws, message.data as TypingData, true);
+          await this.handleTyping(
+            ws,
+            TypingDataSchema.parse(message.data),
+            true,
+          );
           break;
         case 'typing_stop':
-          await this.handleTyping(ws, message.data as TypingData, false);
+          await this.handleTyping(
+            ws,
+            TypingDataSchema.parse(message.data),
+            false,
+          );
           break;
         case 'mark_read':
-          await this.handleMarkRead(ws, message.data as MarkReadData);
+          await this.handleMarkRead(ws, MarkReadDataSchema.parse(message.data));
           break;
         case 'ping':
           this.sendMessage(ws, {
@@ -463,20 +480,22 @@ export class ChatWebSocketServer {
     data: TypingData,
     isTyping: boolean,
   ): Promise<void> {
+    const { userId, tenantId } = ws;
+    if (userId === undefined || tenantId === undefined) return;
     const { conversationId } = data;
 
     try {
       const participantIds = await this.messageHandler.getOtherParticipantIds(
         conversationId,
-        ws.tenantId as number,
-        ws.userId as number,
+        tenantId,
+        userId,
       );
       this.broadcastToParticipants(
         participantIds,
         isTyping ? 'user_typing' : 'user_stopped_typing',
         {
           conversationId,
-          userId: ws.userId,
+          userId,
           timestamp: new Date().toISOString(),
         },
       );
@@ -489,13 +508,15 @@ export class ChatWebSocketServer {
     ws: ExtendedWebSocket,
     data: MarkReadData,
   ): Promise<void> {
+    const { userId, tenantId } = ws;
+    if (userId === undefined || tenantId === undefined) return;
     const { messageId } = data;
 
     try {
       const result = await this.messageHandler.markAsRead(
         messageId,
-        ws.tenantId as number,
-        ws.userId as number,
+        tenantId,
+        userId,
       );
 
       // Notify sender about the read receipt
@@ -506,7 +527,7 @@ export class ChatWebSocketServer {
             type: 'message_read',
             data: {
               messageId,
-              readBy: ws.userId,
+              readBy: userId,
               timestamp: new Date().toISOString(),
             },
           });
@@ -528,6 +549,9 @@ export class ChatWebSocketServer {
     conversationId: number,
     result: ProcessedMessageResult,
   ): void {
+    const { userId, tenantId } = ws;
+    if (userId === undefined || tenantId === undefined) return;
+
     this.broadcastToParticipants(
       participantIds,
       'new_message',
@@ -535,14 +559,12 @@ export class ChatWebSocketServer {
     );
 
     // Emit SSE event so sidebar badges update for users NOT on the chat page
-    const recipientIds = participantIds.filter(
-      (id: number) => id !== ws.userId,
-    );
-    eventBus.emitNewMessage(ws.tenantId as number, {
+    const recipientIds = participantIds.filter((id: number) => id !== userId);
+    eventBus.emitNewMessage(tenantId, {
       id: result.messageId,
       uuid: result.messageUuid,
       conversationId,
-      senderId: ws.userId as number,
+      senderId: userId,
       recipientIds,
       preview: result.preview,
     });
@@ -614,10 +636,13 @@ export class ChatWebSocketServer {
    * Triggered by 'request_presence' from the chat page after it upgrades callbacks.
    */
   private async sendPresenceSnapshot(ws: ExtendedWebSocket): Promise<void> {
+    const { userId, tenantId } = ws;
+    if (userId === undefined || tenantId === undefined) return;
+
     try {
       const partnerIds = await this.messageHandler.getConversationPartnerIds(
-        ws.userId as number,
-        ws.tenantId as number,
+        userId,
+        tenantId,
       );
 
       const onlineUserIds: number[] = [];
@@ -629,7 +654,7 @@ export class ChatWebSocketServer {
       }
 
       logger.debug(
-        { userId: ws.userId, onlinePartners: onlineUserIds.length },
+        { userId, onlinePartners: onlineUserIds.length },
         'Sending presence snapshot',
       );
 

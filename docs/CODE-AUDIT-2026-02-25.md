@@ -9,6 +9,7 @@
 **Fixes v7:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #9: SlotAssistant Grid-Extraktion + Kalender-Navigation
 **Fixes v8:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #10: SKIPPED (premature abstraction) + Maßnahme #15: kebab-case Rename (7+5 Dateien, 100% Konsistenz)
 **Fixes v9:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #11: Frontend catch-Blöcke typisiert (298 Stellen, 127 Dateien) + zentraler `getErrorMessage` Helper
+**Fixes v10:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #12: WebSocket Zod-Validierung (13 `as`-Casts → 0, 5 Zod-Schemas)
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -17,16 +18,16 @@
 
 ## Zusammenfassung
 
-| Kategorie                 | v1 (25.02.) | v2 (06.03.) | Trend | Begründung                                                                 |
-| ------------------------- | ----------- | ----------- | ----- | -------------------------------------------------------------------------- |
-| **Gesamtbewertung**       | 8/10        | **8/10**    | **↑** | v5: +Availability-Loader generisch, v4: `is_active`, Session-Expired       |
-| Architektur & Modularität | 8/10        | **8/10**    | →     | Work Orders sauber modularisiert                                           |
-| Type Safety               | 7/10        | **9/10**    | **↑** | v9: Frontend+Backend catch-Blöcke KOMPLETT (0 untypisiert) + 14 Arch-Tests |
-| Code-Duplikation          | 5/10        | **6/10**    | **↑** | v5: +Availability-Loader (4→1), v4: `is_active` (466→0)                    |
-| Dateigrößen-Compliance    | 9/10        | **7/10**    | ↓     | Mehrere Frontend-Dateien überschreiten jetzt Limits                        |
-| ESLint-Disziplin          | 9/10        | **10/10**   | **↑** | v3: eslint-disable begründet → **100% Compliance** (179/179)               |
-| Test-Abdeckung            | 9/10        | **9/10**    | →     | +465 Tests, Work Orders Coverage ungeprüft                                 |
-| Dokumentation             | 10/10       | **10/10**   | →     | +6 ADRs, pg_partman Masterplan                                             |
+| Kategorie                 | v1 (25.02.) | v2 (06.03.) | Trend | Begründung                                                           |
+| ------------------------- | ----------- | ----------- | ----- | -------------------------------------------------------------------- |
+| **Gesamtbewertung**       | 8/10        | **8/10**    | **↑** | v5: +Availability-Loader generisch, v4: `is_active`, Session-Expired |
+| Architektur & Modularität | 8/10        | **8/10**    | →     | Work Orders sauber modularisiert                                     |
+| Type Safety               | 7/10        | **9/10**    | **↑** | v10: WebSocket Zod-Validierung (13→0 `as`-Casts) + 15 Arch-Tests     |
+| Code-Duplikation          | 5/10        | **6/10**    | **↑** | v5: +Availability-Loader (4→1), v4: `is_active` (466→0)              |
+| Dateigrößen-Compliance    | 9/10        | **7/10**    | ↓     | Mehrere Frontend-Dateien überschreiten jetzt Limits                  |
+| ESLint-Disziplin          | 9/10        | **10/10**   | **↑** | v3: eslint-disable begründet → **100% Compliance** (179/179)         |
+| Test-Abdeckung            | 9/10        | **9/10**    | →     | +465 Tests, Work Orders Coverage ungeprüft                           |
+| Dokumentation             | 10/10       | **10/10**   | →     | +6 ADRs, pg_partman Masterplan                                       |
 
 ---
 
@@ -133,13 +134,13 @@ Limit: 700 Code-Zeilen für `.svelte`.
 
 Limit: 800 Code-Zeilen für `.ts`.
 
-| Datei                                 | Total (v1) | Total (v2) | Delta   | Code (v1) | Code (v2 geschätzt) | Status                                                               |
-| ------------------------------------- | ---------- | ---------- | ------- | --------- | ------------------- | -------------------------------------------------------------------- |
-| `shifts/_lib/api.ts`                  | 1.002      | **1.029**  | **+27** | 706       | **~726**            | BESTANDEN — ~74 frei                                                 |
-| `chat/_lib/chat-page-state.svelte.ts` | 967        | **967**    | 0       | 827       | 827                 | **eslint-disable OHNE Begründung** (v1 identifiziert, nicht behoben) |
-| `crypto-worker.ts`                    | 815        | **816**    | +1      | 636       | ~636                | BESTANDEN                                                            |
+| Datei                                 | Total (v1) | Total (v2) | Delta   | Code (v1) | Code (v2 geschätzt) | Status                                                         |
+| ------------------------------------- | ---------- | ---------- | ------- | --------- | ------------------- | -------------------------------------------------------------- |
+| `shifts/_lib/api.ts`                  | 1.002      | **1.029**  | **+27** | 706       | **~726**            | BESTANDEN — ~74 frei                                           |
+| `chat/_lib/chat-page-state.svelte.ts` | 967        | **967**    | 0       | 827       | 827                 | BESTANDEN — 23 frei (Limit 850), alle eslint-disable begründet |
+| `crypto-worker.ts`                    | 815        | **816**    | +1      | 636       | ~636                | BESTANDEN                                                      |
 
-**`chat-page-state.svelte.ts`** bleibt einziger Verstoß — eslint-disable ohne Begründung seit v1 nicht behoben.
+**v10-Korrektur:** `chat-page-state.svelte.ts` war **kein Verstoß** — das Frontend `.ts`-Limit ist 850 (nicht 800), 827 Code-Zeilen = 23 frei. Alle 3 eslint-disable-Comments haben Begründungen. v1-Finding war falsch.
 
 ---
 
@@ -336,11 +337,20 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 ## 4. MITTEL — Technische Schulden
 
-### 4.1 websocket.ts — Type-Safety-Lücken (unverändert)
+### ~~4.1 websocket.ts — Type-Safety-Lücken~~ — BEHOBEN (2026-03-08)
 
-- **13 `as`-Casts** für `JSON.parse()`-Ergebnisse (v1 sagte 14+, tatsächlich 13)
-- **Keine Zod-Validierung** für eingehende WebSocket-Messages (`WebSocketMessage`, `SendMessageData`, `TypingData`, `MarkReadData`)
-- Optional Chaining ist korrekt abgesichert (v1-Behauptung "ohne Fallback" war **falsch** — alle haben explizite Vergleiche)
+**Status:** Alle 13 `as`-Casts eliminiert. 5 Zod-Schemas validieren eingehende WebSocket-Messages + Redis-Ticketdaten zur Laufzeit. 8 `as number`-Casts durch Guard-Clauses mit destructured Locals ersetzt.
+
+| Vorher                                                         | Nachher                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------ |
+| `JSON.parse(result) as ConnectionTicketData`                   | `ConnectionTicketDataSchema.parse(JSON.parse(result))` |
+| `JSON.parse(dataString) as WebSocketMessage`                   | `WebSocketMessageSchema.parse(JSON.parse(dataString))` |
+| `message.data as SendMessageData/TypingData/MarkReadData` (4×) | `SendMessageDataSchema.parse(message.data)` etc.       |
+| `ws.tenantId as number` / `ws.userId as number` (8×)           | Guard clause + destructured locals                     |
+
+**Regressions-Schutz:** Architektur-Test in `shared/src/architectural.test.ts` prüft via CI:
+
+- Keine `as`-Casts in `websocket.ts` oder `websocket-message-handler.ts` (Import-Aliases ausgenommen)
 
 ### ~~4.2 ID-Param-DTOs — 3 Patterns, keine Factory~~ — BEHOBEN (2026-03-07)
 
@@ -483,7 +493,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | #   | Maßnahme                                       | Aufwand | Impact                    | v1-Status                 |
 | --- | ---------------------------------------------- | ------- | ------------------------- | ------------------------- |
 | 11  | Frontend catch-Blöcke typisieren (298 Stellen) | 15 min  | 127 Dateien typisiert     | **ERLEDIGT** (2026-03-08) |
-| 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren | **OFFEN**                 |
+| 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren | **ERLEDIGT** (2026-03-08) |
 | 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert  | **NEU**                   |
 | 14  | UI-State-Factory generisch machen              | 3h      | 20+ Dateien konsolidiert  | **OFFEN**                 |
 | 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz         | **ERLEDIGT** (2026-03-07) |
@@ -528,7 +538,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | `any` in Production-Code               | 5             | **3**                  | **3**                     | **3**                      | **3**                      | →           |
 | `any` in Test-Code                     | 5             | ~5                     | ~5                        | ~5                         | ~5                         | →           |
 | `== null`/`!= null` (intentional)      | 14            | ~14                    | ~14                       | ~14                        | ~14                        | →           |
-| WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **13**                     | →           |
+| WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **0 (BEHOBEN)**            | **BEHOBEN** |
 | ID-Param DTOs (Factory-Nutzung)        | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **29/35 (83%)**            | **BEHOBEN** |
 | Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **18+**                    | →           |
 | Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.103 (+2 Arch)**        | **+35**     |
@@ -538,7 +548,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Migrations                             | 61            | **73**                 | **73**                    | **73**                     | **73**                     | →           |
 | camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | **7**                      | **7**                      | →           |
 | Backend-Module                         | —             | +Work Orders, +Assets  | —                         | —                          | —                          | →           |
-| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **14 Tests (CI-enforced)** | **+2**      |
+| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **15 Tests (CI-enforced)** | **+1**      |
 
 ---
 
@@ -668,3 +678,29 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Dokument/Test                      | Was geändert                                                  | Zweck                                               |
 | ---------------------------------- | ------------------------------------------------------------- | --------------------------------------------------- |
 | `shared/src/architectural.test.ts` | +2 grep-basierte Tests (untyped catch, local getErrorMessage) | CI verhindert Rückfall in untypisierte catch-Blöcke |
+
+---
+
+## Anhang: v10 Fix-Log (2026-03-08)
+
+### Geänderter Code (Maßnahme #12: WebSocket Zod-Validierung)
+
+| Schritt                                   | Dateien geändert               | Neue Dateien | LOC Effekt                                                               |
+| ----------------------------------------- | ------------------------------ | ------------ | ------------------------------------------------------------------------ |
+| `SendMessageData` Interface → Zod Schema  | `websocket-message-handler.ts` | —            | Interface → `SendMessageDataSchema` + `z.infer`                          |
+| 4 Interfaces → Zod Schemas                | `websocket.ts`                 | —            | `ConnectionTicketData`, `WebSocketMessage`, `TypingData`, `MarkReadData` |
+| 2× `JSON.parse() as` → `.parse()`         | `websocket.ts`                 | —            | Runtime-Validierung statt Cast                                           |
+| 4× `message.data as` → Schema `.parse()`  | `websocket.ts`                 | —            | Runtime-Validierung statt Cast                                           |
+| 8× `ws.userId/tenantId as number` → Guard | `websocket.ts`                 | —            | Destructured locals + undefined-Check                                    |
+
+### Korrekturen
+
+| v1/v2 Behauptung                                           | Korrektur                                                                                                          |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `chat-page-state.svelte.ts` eslint-disable OHNE Begründung | **Falsch** — alle 3 eslint-disable haben Begründungen. `.ts`-Limit ist 850 (nicht 800), 827 Code-Zeilen = 23 frei. |
+
+### Regressions-Schutz (Enforcement)
+
+| Dokument/Test                      | Was geändert                                  | Zweck                                               |
+| ---------------------------------- | --------------------------------------------- | --------------------------------------------------- |
+| `shared/src/architectural.test.ts` | +1 grep-basierter Test (WebSocket `as`-Casts) | CI verhindert Rückfall in unsichere Type-Assertions |

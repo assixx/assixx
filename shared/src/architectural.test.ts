@@ -13,6 +13,7 @@
  *   - docs/TYPESCRIPT-STANDARDS.md Section 7.5 (ID Param DTO Factory)
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Session-Expired Handling)
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Frontend catch-block typing)
+ *   - docs/CODE-AUDIT-2026-02-25.md Maßnahme #12 (WebSocket Zod validation)
  */
 import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
@@ -127,6 +128,33 @@ describe('Backend: is_active Magic Number Prevention', () => {
     expect(
       violations,
       `Found local IS_ACTIVE constant definition. Import from @assixx/shared/constants instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+// =============================================================================
+// BACKEND: WebSocket Type Safety (Zod validation)
+// =============================================================================
+
+describe('Backend: WebSocket Type Safety', () => {
+  it('should not use unsafe type assertions in websocket files (use Zod .parse() instead)', () => {
+    const wsFiles = [
+      `${ROOT}/backend/src/websocket.ts`,
+      `${ROOT}/backend/src/websocket-message-handler.ts`,
+    ];
+    const cmd = `rg -n -e ' as ' ${wsFiles.join(' ')} 2>/dev/null || true`;
+    const output = execSync(cmd, { encoding: 'utf-8' }).trim();
+    if (output === '') return;
+
+    const violations = output
+      .split('\n')
+      .filter(
+        (line) => !line.includes('import ') && !line.includes('as const'),
+      );
+
+    expect(
+      violations,
+      `Found unsafe type assertions in websocket files. Use Zod schemas for runtime validation instead of \`as\` casts:\n${violations.join('\n')}`,
     ).toEqual([]);
   });
 });

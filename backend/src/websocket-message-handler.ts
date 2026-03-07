@@ -1,5 +1,6 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
 
 import { DatabaseService } from './nest/database/database.service.js';
 import { logger } from './utils/logger.js';
@@ -8,19 +9,21 @@ import { logger } from './utils/logger.js';
 // Shared Types (used by both handler and ChatWebSocketServer)
 // ============================================================================
 
-export interface SendMessageData {
-  conversationId: number;
-  content?: string;
-  attachments?: number[]; // Document IDs from frontend upload
+export const SendMessageDataSchema = z.object({
+  conversationId: z.number(),
+  content: z.string().optional(),
+  /** Document IDs from frontend upload */
+  attachments: z.array(z.number()).optional(),
   /** E2E: base64-encoded ciphertext */
-  encryptedContent?: string;
+  encryptedContent: z.string().optional(),
   /** E2E: base64-encoded XChaCha20-Poly1305 nonce */
-  e2eNonce?: string;
+  e2eNonce: z.string().optional(),
   /** E2E: sender's key version at time of encryption */
-  e2eKeyVersion?: number;
+  e2eKeyVersion: z.number().optional(),
   /** E2E: HKDF epoch for decryption key derivation */
-  e2eKeyEpoch?: number;
-}
+  e2eKeyEpoch: z.number().optional(),
+});
+export type SendMessageData = z.infer<typeof SendMessageDataSchema>;
 
 export interface E2eFields {
   encryptedContent: string;
