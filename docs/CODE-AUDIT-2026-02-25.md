@@ -4,6 +4,7 @@
 **Update v2:** 6. März 2026 (Branch `feat/pg-partman`)
 **Fixes v3:** 7. März 2026 (Branch `refactor/code-audit`) — 5 Sofort-Maßnahmen + Regressions-Schutz
 **Fixes v4:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #6: `is_active` Magic Numbers zentralisiert
+**Fixes v5:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #7: Availability-History-Loader generisch
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -14,10 +15,10 @@
 
 | Kategorie                 | v1 (25.02.) | v2 (06.03.) | Trend | Begründung                                                           |
 | ------------------------- | ----------- | ----------- | ----- | -------------------------------------------------------------------- |
-| **Gesamtbewertung**       | 8/10        | **8/10**    | **↑** | v4: `is_active` zentralisiert (466→0), Session-Expired, catch-Typing |
+| **Gesamtbewertung**       | 8/10        | **8/10**    | **↑** | v5: +Availability-Loader generisch, v4: `is_active`, Session-Expired |
 | Architektur & Modularität | 8/10        | **8/10**    | →     | Work Orders sauber modularisiert                                     |
 | Type Safety               | 7/10        | **8/10**    | **↑** | v3: Backend catch-Blöcke BEHOBEN + Architektur-Test enforced         |
-| Code-Duplikation          | 5/10        | **6/10**    | **↑** | v4: `is_active` zentralisiert (466→0), Session-Expired (16→1)        |
+| Code-Duplikation          | 5/10        | **6/10**    | **↑** | v5: +Availability-Loader (4→1), v4: `is_active` (466→0)              |
 | Dateigrößen-Compliance    | 9/10        | **7/10**    | ↓     | Mehrere Frontend-Dateien überschreiten jetzt Limits                  |
 | ESLint-Disziplin          | 9/10        | **10/10**   | **↑** | v3: eslint-disable begründet → **100% Compliance** (179/179)         |
 | Test-Abdeckung            | 9/10        | **9/10**    | →     | +465 Tests, Work Orders Coverage ungeprüft                           |
@@ -142,19 +143,19 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 ### 2.1 Code-Duplikation (~12.000+ Zeilen geschätzt)
 
-**v4-Update:** Geschätzte Gesamtduplikation von ~12.000+ auf ~6.300 Zeilen reduziert — `is_active` Magic Numbers (466×, ~5.000 LOC) und Session-Expired (16 Dateien, ~675 LOC) vollständig eliminiert.
+**v5-Update:** Geschätzte Gesamtduplikation von ~6.300 auf ~5.900 Zeilen reduziert — Availability-History-Loader generisch (~400 LOC → 1 Shared Loader + 4 Slim Consumer, ~288 LOC eliminiert).
 
-| Duplikat                                    | v1 Instanzen | v2 Instanzen       | Geschätzte Zeilen | Verifiziert | Trend          |
-| ------------------------------------------- | ------------ | ------------------ | ----------------- | ----------- | -------------- |
-| ~~SQL `is_active` Magic Numbers (alle)~~    | 158 Stellen  | ~~**466 Stellen**~~| ~~**5.000+**~~    | Ja          | **BEHOBEN v4** |
-| ~~Session-Expired-Handling (Frontend)~~     | 15 Dateien   | ~~**15 Dateien**~~ | ~~~675~~          | Ja          | **BEHOBEN v3** |
-| Availability-History-Loader (Frontend)  | 4 Dateien    | **4 Dateien**      | 400+              | Ja          | →              |
-| Row-Mapper-Helpers                      | 12+ Services | **18+ Helpers**    | 700+              | Ja          | **↓**          |
-| UI-State-Factories (Frontend)           | 20+ Dateien  | 20+ Dateien        | 1.000+            | Nein        | →              |
-| ID-Param-DTOs (Backend)                 | 30+ Dateien  | **36 DTOs**        | 400+              | Ja          | **↓**          |
-| Pagination-Schemas (Backend)            | 20+ DTOs     | **15-20 DTOs**     | 300+              | Ja          | **↑**          |
-| Error-Handling try/catch                | 51+ Services | 51+ Services       | 1.500+            | Nein        | →              |
-| Constants/Types verstreut               | 73+ Dateien  | **50-70 Dateien**  | 1.500+            | Teilweise   | **↑**          |
+| Duplikat                                   | v1 Instanzen | v2 Instanzen        | Geschätzte Zeilen | Verifiziert | Trend          |
+| ------------------------------------------ | ------------ | ------------------- | ----------------- | ----------- | -------------- |
+| ~~SQL `is_active` Magic Numbers (alle)~~   | 158 Stellen  | ~~**466 Stellen**~~ | ~~**5.000+**~~    | Ja          | **BEHOBEN v4** |
+| ~~Session-Expired-Handling (Frontend)~~    | 15 Dateien   | ~~**15 Dateien**~~  | ~~~675~~          | Ja          | **BEHOBEN v3** |
+| ~~Availability-History-Loader (Frontend)~~ | 4 Dateien    | ~~**4 Dateien**~~   | ~~400+~~          | Ja          | **BEHOBEN v5** |
+| Row-Mapper-Helpers                         | 12+ Services | **18+ Helpers**     | 700+              | Ja          | **↓**          |
+| UI-State-Factories (Frontend)              | 20+ Dateien  | 20+ Dateien         | 1.000+            | Nein        | →              |
+| ID-Param-DTOs (Backend)                    | 30+ Dateien  | **36 DTOs**         | 400+              | Ja          | **↓**          |
+| Pagination-Schemas (Backend)               | 20+ DTOs     | **15-20 DTOs**      | 300+              | Ja          | **↑**          |
+| Error-Handling try/catch                   | 51+ Services | 51+ Services        | 1.500+            | Nein        | →              |
+| Constants/Types verstreut                  | 73+ Dateien  | **50-70 Dateien**   | 1.500+            | Teilweise   | **↑**          |
 
 ---
 
@@ -162,17 +163,17 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 **Status:** Alle 466 Magic Numbers in 134 Dateien (133 per Migrations-Skript + 1 manuell) durch `IS_ACTIVE`-Konstanten aus `@assixx/shared/constants` ersetzt. ~5.000 LOC Duplikation eliminiert.
 
-| Pattern          | Vorher  | Nachher | Ersetzt durch                            |
-| ---------------- | ------- | ------- | ---------------------------------------- |
-| `is_active = 1`  | 325     | **0**   | `is_active = ${IS_ACTIVE.ACTIVE}`        |
-| `is_active = 4`  | 73      | **0**   | `is_active = ${IS_ACTIVE.DELETED}`       |
-| `is_active = $N` | 22      | **0**   | `is_active = ${IS_ACTIVE.*}`             |
-| `is_active != N` | 19      | **0**   | `is_active != ${IS_ACTIVE.*}`            |
-| `is_active = 3`  | 11      | **0**   | `is_active = ${IS_ACTIVE.ARCHIVED}`      |
-| `is_active = 0`  | 8       | **0**   | `is_active = ${IS_ACTIVE.INACTIVE}`      |
-| `is_active IN`   | 8       | **0**   | `is_active IN (${IS_ACTIVE.*}, ...)`     |
-| `is_active === 1`| 1       | **0**   | `is_active === IS_ACTIVE.ACTIVE` (manuell)|
-| **Gesamt**       | **466** | **0**   | **134 Dateien migriert**                 |
+| Pattern           | Vorher  | Nachher | Ersetzt durch                              |
+| ----------------- | ------- | ------- | ------------------------------------------ |
+| `is_active = 1`   | 325     | **0**   | `is_active = ${IS_ACTIVE.ACTIVE}`          |
+| `is_active = 4`   | 73      | **0**   | `is_active = ${IS_ACTIVE.DELETED}`         |
+| `is_active = $N`  | 22      | **0**   | `is_active = ${IS_ACTIVE.*}`               |
+| `is_active != N`  | 19      | **0**   | `is_active != ${IS_ACTIVE.*}`              |
+| `is_active = 3`   | 11      | **0**   | `is_active = ${IS_ACTIVE.ARCHIVED}`        |
+| `is_active = 0`   | 8       | **0**   | `is_active = ${IS_ACTIVE.INACTIVE}`        |
+| `is_active IN`    | 8       | **0**   | `is_active IN (${IS_ACTIVE.*}, ...)`       |
+| `is_active === 1` | 1       | **0**   | `is_active === IS_ACTIVE.ACTIVE` (manuell) |
+| **Gesamt**        | **466** | **0**   | **134 Dateien migriert**                   |
 
 **Regressions-Schutz:** 4 Architektur-Tests in `shared/src/architectural.test.ts` prüfen via CI:
 
@@ -198,18 +199,15 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 ---
 
-#### Dritter Offender: Availability-History-Loader (4 Dateien, unverändert)
+#### ~~Dritter Offender: Availability-History-Loader~~ — BEHOBEN (2026-03-07)
 
-4 `+page.server.ts` Dateien mit 90%+ identischem Code (~136 Zeilen je):
+**Status:** Generischer Loader `loadAvailabilityHistory<TEntity>()` in `frontend/src/lib/server/availability-history-loader.ts`. 4 Dateien von je ~136 Zeilen auf je 24 Zeilen reduziert (~288 LOC eliminiert).
 
-- `manage-assets/availability/[uuid]/+page.server.ts`
-- `manage-employees/availability/[uuid]/+page.server.ts`
-- `manage-admins/availability/[uuid]/+page.server.ts`
-- `manage-root/availability/[uuid]/+page.server.ts`
-
-Einzige Unterschiede: Logger-Name, Entity-Feld (`assetId` vs `userId`), API-Endpoint, Fehlermeldungen.
-
-**Empfehlung:** → `frontend/src/lib/server/availability-history-loader.ts` als generische Loader-Factory
+- Generics für typsichere Entity-Keys (`UserAvailabilityEntity` / `AssetAvailabilityEntity`)
+- `AvailabilityEntryBase` Interface für gemeinsame Entry-Felder
+- Consumer: Destructuring `{ entity, ...rest }` → spezifischer Key (`employee`/`asset`)
+- 0 Änderungen an `+page.svelte` Dateien — rückwärtskompatibel
+- ESLint ✅, svelte-check ✅, 6.068 Tests ✅
 
 ---
 
@@ -416,27 +414,27 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 ### Kurzfristig (1–3 Tage)
 
-| #   | Maßnahme                                                   | Aufwand | Impact                                                        | v1-Status |
-| --- | ---------------------------------------------------------- | ------- | ------------------------------------------------------------- | --------- |
-| 6   | `is_active`-Konstante zentralisieren (Details siehe unten) | 4-6h    | **466 Stellen** (134 Dateien) → `IS_ACTIVE` aus `shared/`     | **ERLEDIGT** (2026-03-07) |
-| 7   | Availability-History-Loader generisch machen               | 1h      | 4 Dateien → 1                                                 | **OFFEN** |
-| 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                            | **OFFEN** |
-| 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | ~6 Zeilen Puffer → entspannt                                  | **NEU**   |
-| 10  | manage-\* Shared Composable extrahieren                    | 3h      | 3 Pages proaktiv entlasten                                    | **OFFEN** |
+| #   | Maßnahme                                                   | Aufwand | Impact                                                    | v1-Status                 |
+| --- | ---------------------------------------------------------- | ------- | --------------------------------------------------------- | ------------------------- |
+| 6   | `is_active`-Konstante zentralisieren (Details siehe unten) | 4-6h    | **466 Stellen** (134 Dateien) → `IS_ACTIVE` aus `shared/` | **ERLEDIGT** (2026-03-07) |
+| 7   | Availability-History-Loader generisch machen               | 1h      | 4 Dateien → 1 Shared + 4 Slim Consumer, ~288 LOC          | **ERLEDIGT** (2026-03-07) |
+| 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                        | **OFFEN**                 |
+| 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | ~6 Zeilen Puffer → entspannt                              | **NEU**                   |
+| 10  | manage-\* Shared Composable extrahieren                    | 3h      | 3 Pages proaktiv entlasten                                | **OFFEN**                 |
 
 #### Maßnahme #6 — ~~Umsetzungsplan~~ `is_active`-Zentralisierung — ERLEDIGT (2026-03-07)
 
 Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expired (Maßnahme #1): Code-Fix + Docs + Regressions-Schutz.
 
-| #   | Unter-Schritt                                         | Aufwand | Details                                                                                              | Status                    |
-| --- | ----------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------- | ------------------------- |
-| 6.1 | Production-Code: Magic Numbers → `IS_ACTIVE.*`        | 3-4h    | 112 Prod-Dateien migriert, Import aus `@assixx/shared/constants`                                     | **ERLEDIGT** (2026-03-07) |
-| 6.2 | Test-Code: Magic Numbers → `IS_ACTIVE.*`              | 1h      | 22 Test-Dateien migriert, gleicher Import                                                            | **ERLEDIGT** (2026-03-07) |
-| 6.3 | Lokale Kopie entfernen (`blackboard-archive.service`) | 5 min   | Lokale `IS_ACTIVE`-Konstante entfernt → Import aus `shared/`                                         | **ERLEDIGT** (2026-03-07) |
-| 6.4 | Architektur-Test erstellen (Regressions-Schutz)       | 30 min  | 4 Tests in `shared/src/architectural.test.ts` (=N, !=N, IN, lokale Const)                            | **ERLEDIGT** (2026-03-07) |
-| 6.5 | `TYPESCRIPT-STANDARDS.md` aktualisieren               | 15 min  | Section 7.4 + No-Go #16 hinzugefügt (v4.2.0)                                                        | **ERLEDIGT** (2026-03-07) |
-| 6.6 | ADRs prüfen und ggf. Hinweis ergänzen                 | 15 min  | ADR-023 + ADR-026 referenzieren `IS_ACTIVE`-Konstante                                                | **ERLEDIGT** (2026-03-07) |
-| 6.7 | Vitest-Aliases für Subpath-Exports fixen              | 15 min  | `vitest.config.ts`: `@assixx/shared/constants` Alias in unit + permission Projekten                  | **ERLEDIGT** (2026-03-07) |
+| #   | Unter-Schritt                                         | Aufwand | Details                                                                             | Status                    |
+| --- | ----------------------------------------------------- | ------- | ----------------------------------------------------------------------------------- | ------------------------- |
+| 6.1 | Production-Code: Magic Numbers → `IS_ACTIVE.*`        | 3-4h    | 112 Prod-Dateien migriert, Import aus `@assixx/shared/constants`                    | **ERLEDIGT** (2026-03-07) |
+| 6.2 | Test-Code: Magic Numbers → `IS_ACTIVE.*`              | 1h      | 22 Test-Dateien migriert, gleicher Import                                           | **ERLEDIGT** (2026-03-07) |
+| 6.3 | Lokale Kopie entfernen (`blackboard-archive.service`) | 5 min   | Lokale `IS_ACTIVE`-Konstante entfernt → Import aus `shared/`                        | **ERLEDIGT** (2026-03-07) |
+| 6.4 | Architektur-Test erstellen (Regressions-Schutz)       | 30 min  | 4 Tests in `shared/src/architectural.test.ts` (=N, !=N, IN, lokale Const)           | **ERLEDIGT** (2026-03-07) |
+| 6.5 | `TYPESCRIPT-STANDARDS.md` aktualisieren               | 15 min  | Section 7.4 + No-Go #16 hinzugefügt (v4.2.0)                                        | **ERLEDIGT** (2026-03-07) |
+| 6.6 | ADRs prüfen und ggf. Hinweis ergänzen                 | 15 min  | ADR-023 + ADR-026 referenzieren `IS_ACTIVE`-Konstante                               | **ERLEDIGT** (2026-03-07) |
+| 6.7 | Vitest-Aliases für Subpath-Exports fixen              | 15 min  | `vitest.config.ts`: `@assixx/shared/constants` Alias in unit + permission Projekten | **ERLEDIGT** (2026-03-07) |
 
 **Definition of Done für Maßnahme #6:**
 
@@ -478,34 +476,35 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 
 ## Anhang: Metriken
 
-| Metrik                                 | v1 (25.02.)   | v2 (06.03.)            | v3 (07.03.)               | v4 (07.03.)                    | Delta v3→v4  |
-| -------------------------------------- | ------------- | ---------------------- | ------------------------- | ------------------------------ | ------------ |
-| ESLint `max-lines` Verstöße            | 0             | **0**                  | **0**                     | **0**                          | →            |
-| eslint-disable gesamt                  | 186           | **179**                | **179**                   | **179**                        | →            |
-| eslint-disable ohne Begründung         | 2             | **1**                  | **0 (100%)**              | **0 (100%)**                   | →            |
-| Backend-Services nahe Limit (>850/900) | 2             | **2**                  | **2**                     | **2**                          | →            |
-| Frontend-Komponenten nahe Limit        | 5             | **5** (andere Dateien) | **5**                     | **5**                          | →            |
-| Duplizierter Code (geschätzt)          | ~9.000 Zeilen | **~12.000+ Zeilen**    | **~11.300 Zeilen**        | **~6.300 Zeilen**              | **-5.000**   |
-| `is_active` Magic Numbers (alle)       | 158           | **466**                | **466**                   | **0 (BEHOBEN)**                | **-466**     |
-| Session-Expired Duplikation            | 15 Dateien    | **15 Dateien**         | **1 Datei (zentral)**     | **1 Datei (zentral)**          | →            |
-| Untypisierte catch-Blöcke (Backend)    | 25            | **25**                 | **0 (BEHOBEN)**           | **0 (BEHOBEN)**                | →            |
-| Untypisierte catch-Blöcke (Frontend)   | ~290          | **302**                | **302**                   | **302**                        | →            |
-| Unsichere `as Error` Casts             | 17            | **17**                 | **0 (BEHOBEN)**           | **0 (BEHOBEN)**                | →            |
-| TODO-Kommentare                        | 6             | **5**                  | **4**                     | **4**                          | →            |
-| `any` in Production-Code               | 5             | **3**                  | **3**                     | **3**                          | →            |
-| `any` in Test-Code                     | 5             | ~5                     | ~5                        | ~5                             | →            |
-| `== null`/`!= null` (intentional)      | 14            | ~14                    | ~14                       | ~14                            | →            |
-| WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                         | →            |
-| ID-Param DTOs (IdSchema-Nutzung)       | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**                 | →            |
-| Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                        | →            |
-| Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**            | **+4**       |
-| RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | **109**                        | →            |
-| RLS-Policies                           | 114           | **173**                | **173**                   | **173**                        | →            |
-| ADRs                                   | 26            | **32**                 | **32**                    | **32**                         | →            |
-| Migrations                             | 61            | **73**                 | **73**                    | **73**                         | →            |
-| camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | **7**                          | →            |
-| Backend-Module                         | —             | +Work Orders, +Assets  | —                         | —                              | →            |
-| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)**     | **+4**       |
+| Metrik                                 | v1 (25.02.)   | v2 (06.03.)            | v3 (07.03.)               | v4 (07.03.)                | v5 (07.03.)                | Delta v4→v5 |
+| -------------------------------------- | ------------- | ---------------------- | ------------------------- | -------------------------- | -------------------------- | ----------- |
+| ESLint `max-lines` Verstöße            | 0             | **0**                  | **0**                     | **0**                      | **0**                      | →           |
+| eslint-disable gesamt                  | 186           | **179**                | **179**                   | **179**                    | **179**                    | →           |
+| eslint-disable ohne Begründung         | 2             | **1**                  | **0 (100%)**              | **0 (100%)**               | **0 (100%)**               | →           |
+| Backend-Services nahe Limit (>850/900) | 2             | **2**                  | **2**                     | **2**                      | **2**                      | →           |
+| Frontend-Komponenten nahe Limit        | 5             | **5** (andere Dateien) | **5**                     | **5**                      | **5**                      | →           |
+| Duplizierter Code (geschätzt)          | ~9.000 Zeilen | **~12.000+ Zeilen**    | **~11.300 Zeilen**        | **~6.300 Zeilen**          | **~5.900 Zeilen**          | **-400**    |
+| `is_active` Magic Numbers (alle)       | 158           | **466**                | **466**                   | **0 (BEHOBEN)**            | **0 (BEHOBEN)**            | →           |
+| Session-Expired Duplikation            | 15 Dateien    | **15 Dateien**         | **1 Datei (zentral)**     | **1 Datei (zentral)**      | **1 Datei (zentral)**      | →           |
+| Availability-History-Loader            | 4 Dateien     | **4 Dateien**          | **4 Dateien**             | **4 Dateien**              | **1 Shared + 4 Slim**      | **BEHOBEN** |
+| Untypisierte catch-Blöcke (Backend)    | 25            | **25**                 | **0 (BEHOBEN)**           | **0 (BEHOBEN)**            | **0 (BEHOBEN)**            | →           |
+| Untypisierte catch-Blöcke (Frontend)   | ~290          | **302**                | **302**                   | **302**                    | **302**                    | →           |
+| Unsichere `as Error` Casts             | 17            | **17**                 | **0 (BEHOBEN)**           | **0 (BEHOBEN)**            | **0 (BEHOBEN)**            | →           |
+| TODO-Kommentare                        | 6             | **5**                  | **4**                     | **4**                      | **4**                      | →           |
+| `any` in Production-Code               | 5             | **3**                  | **3**                     | **3**                      | **3**                      | →           |
+| `any` in Test-Code                     | 5             | ~5                     | ~5                        | ~5                         | ~5                         | →           |
+| `== null`/`!= null` (intentional)      | 14            | ~14                    | ~14                       | ~14                        | ~14                        | →           |
+| WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **13**                     | →           |
+| ID-Param DTOs (IdSchema-Nutzung)       | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **4/36 (11%)**             | →           |
+| Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **18+**                    | →           |
+| Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.068**                  | →           |
+| RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | **109**                    | **109**                    | →           |
+| RLS-Policies                           | 114           | **173**                | **173**                   | **173**                    | **173**                    | →           |
+| ADRs                                   | 26            | **32**                 | **32**                    | **32**                     | **32**                     | →           |
+| Migrations                             | 61            | **73**                 | **73**                    | **73**                     | **73**                     | →           |
+| camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | **7**                      | **7**                      | →           |
+| Backend-Module                         | —             | +Work Orders, +Assets  | —                         | —                          | —                          | →           |
+| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | →           |
 
 ---
 
@@ -537,22 +536,33 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 
 ### Geänderter Code (Maßnahme #6: `is_active`-Zentralisierung)
 
-| Schritt                             | Dateien geändert                                                       | Neue Dateien | LOC Effekt                          |
-| ----------------------------------- | ---------------------------------------------------------------------- | ------------ | ----------------------------------- |
-| Magic Numbers → `IS_ACTIVE.*`       | 133 Dateien (Backend + Frontend, per Migrations-Skript)                | —            | 466 Magic Numbers → 0              |
-| `websocket.ts` manueller Fix        | 1 Datei (`is_active === 1` → `IS_ACTIVE.ACTIVE`)                      | —            | 1 Stelle manuell gefixt            |
-| Lokale Konstante entfernen          | `blackboard-archive.service.ts` (lokale `IS_ACTIVE` → Import)         | —            | ~4 LOC entfernt                    |
-| Frontend-Konstanten refactored      | `manage-dummies/_lib/constants.ts`, `manage-areas/_lib/utils.ts`       | —            | Re-Export + computed property names |
-| Vitest-Aliases fixen                | `vitest.config.ts` (Subpath-Aliases für unit + permission Projekte)    | —            | 6 Alias-Einträge hinzugefügt       |
+| Schritt                        | Dateien geändert                                                    | Neue Dateien | LOC Effekt                          |
+| ------------------------------ | ------------------------------------------------------------------- | ------------ | ----------------------------------- |
+| Magic Numbers → `IS_ACTIVE.*`  | 133 Dateien (Backend + Frontend, per Migrations-Skript)             | —            | 466 Magic Numbers → 0               |
+| `websocket.ts` manueller Fix   | 1 Datei (`is_active === 1` → `IS_ACTIVE.ACTIVE`)                    | —            | 1 Stelle manuell gefixt             |
+| Lokale Konstante entfernen     | `blackboard-archive.service.ts` (lokale `IS_ACTIVE` → Import)       | —            | ~4 LOC entfernt                     |
+| Frontend-Konstanten refactored | `manage-dummies/_lib/constants.ts`, `manage-areas/_lib/utils.ts`    | —            | Re-Export + computed property names |
+| Vitest-Aliases fixen           | `vitest.config.ts` (Subpath-Aliases für unit + permission Projekte) | —            | 6 Alias-Einträge hinzugefügt        |
 
 ### Regressions-Schutz (Enforcement)
 
-| Dokument/Test                          | Was geändert                                           | Zweck                                             |
-| -------------------------------------- | ------------------------------------------------------ | ------------------------------------------------- |
-| `shared/src/architectural.test.ts`     | +4 grep-basierte Tests (is_active Patterns)            | CI verhindert Rückfall in Magic Numbers           |
-| `docs/TYPESCRIPT-STANDARDS.md`         | Section 7.4 + No-Go #16 hinzugefügt (v4.2.0)          | `IS_ACTIVE`-Konstante als Standard dokumentiert   |
-| `docs/infrastructure/adr/ADR-023-*.md` | Hinweis auf `IS_ACTIVE`-Konstante ergänzt              | Vacation-Architektur referenziert zentrale Const   |
-| `docs/infrastructure/adr/ADR-026-*.md` | Hinweis auf `IS_ACTIVE`-Konstante ergänzt              | TPM-Architektur referenziert zentrale Const        |
+| Dokument/Test                          | Was geändert                                 | Zweck                                            |
+| -------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| `shared/src/architectural.test.ts`     | +4 grep-basierte Tests (is_active Patterns)  | CI verhindert Rückfall in Magic Numbers          |
+| `docs/TYPESCRIPT-STANDARDS.md`         | Section 7.4 + No-Go #16 hinzugefügt (v4.2.0) | `IS_ACTIVE`-Konstante als Standard dokumentiert  |
+| `docs/infrastructure/adr/ADR-023-*.md` | Hinweis auf `IS_ACTIVE`-Konstante ergänzt    | Vacation-Architektur referenziert zentrale Const |
+| `docs/infrastructure/adr/ADR-026-*.md` | Hinweis auf `IS_ACTIVE`-Konstante ergänzt    | TPM-Architektur referenziert zentrale Const      |
+
+---
+
+## Anhang: v5 Fix-Log (2026-03-07)
+
+### Geänderter Code (Maßnahme #7: Availability-History-Loader)
+
+| Schritt                               | Dateien geändert                                      | Neue Dateien                                             | LOC Effekt                |
+| ------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- | ------------------------- |
+| Generischer Loader erstellt           | —                                                     | `frontend/src/lib/server/availability-history-loader.ts` | 158 Zeilen (shared Logic) |
+| 4 Consumer-Dateien auf Slim reduziert | 4 `+page.server.ts` (employees, admins, root, assets) | —                                                        | 4×136 → 4×24 = ~288 LOC   |
 
 ---
 

@@ -95,9 +95,18 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
-            '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
-            '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
-            '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            '@assixx/shared/constants': resolve(
+              rootDir,
+              './shared/src/constants/index.ts',
+            ),
+            '@assixx/shared/helpers': resolve(
+              rootDir,
+              './shared/src/helpers/index.ts',
+            ),
+            '@assixx/shared/types': resolve(
+              rootDir,
+              './shared/src/types/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -132,9 +141,18 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
-            '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
-            '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
-            '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            '@assixx/shared/constants': resolve(
+              rootDir,
+              './shared/src/constants/index.ts',
+            ),
+            '@assixx/shared/helpers': resolve(
+              rootDir,
+              './shared/src/helpers/index.ts',
+            ),
+            '@assixx/shared/types': resolve(
+              rootDir,
+              './shared/src/types/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
