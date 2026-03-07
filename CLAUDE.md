@@ -40,7 +40,7 @@ READ FIRST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
 - **Production:** Nginx as reverse proxy (Port 80 to SvelteKit:3001 + Backend:3000)
 - API V2 (no V1 fallback)
 - `uuid` v13.0.0 (UUIDv7 everywhere — DB records AND files)
-- `is_active` INTEGER: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete)
+- IS_ACTIVE constants from @assixx/shared/constants
 
 ---
 

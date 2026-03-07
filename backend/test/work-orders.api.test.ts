@@ -164,6 +164,162 @@ describe('Work Orders: Update (PATCH)', () => {
 });
 
 // ============================================================================
+// seq: 4.5 -- Photo Upload (before status transitions lock it)
+// ============================================================================
+
+let photoWorkOrderUuid: string;
+let uploadedPhotoUuid: string;
+
+describe('Work Orders: Photo Test Setup', () => {
+  it('should create a separate work order for photo tests (201)', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        title: `Photo-Test WO ${Date.now()}`,
+        sourceType: 'manual',
+      }),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(201);
+    expect(body.data.uuid).toBeDefined();
+    photoWorkOrderUuid = body.data.uuid;
+  });
+});
+
+describe('Work Orders: Upload Image (201)', () => {
+  let res: Response;
+  beforeAll(async () => {
+    const formData = new FormData();
+    const blob = new Blob([new Uint8Array(1024)], { type: 'image/jpeg' });
+    formData.append('file', blob, 'test-photo.jpg');
+    res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.authToken}` },
+      body: formData,
+    });
+  });
+
+  it('should return 201', () => {
+    expect(res.status).toBe(201);
+  });
+
+  it('should return photo with uuid and mimeType', async () => {
+    const body = (await res.json()) as JsonBody;
+    expect(body.data.uuid).toBeDefined();
+    expect(body.data.mimeType).toBe('image/jpeg');
+    uploadedPhotoUuid = body.data.uuid;
+  });
+});
+
+describe('Work Orders: Upload PDF (201)', () => {
+  let res: Response;
+  beforeAll(async () => {
+    const formData = new FormData();
+    const blob = new Blob(['%PDF-1.4 fake content'], {
+      type: 'application/pdf',
+    });
+    formData.append('file', blob, 'test-dokument.pdf');
+    res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.authToken}` },
+      body: formData,
+    });
+  });
+
+  it('should return 201', () => {
+    expect(res.status).toBe(201);
+  });
+
+  it('should return photo with pdf mimeType', async () => {
+    const body = (await res.json()) as JsonBody;
+    expect(body.data.mimeType).toBe('application/pdf');
+    expect(body.data.fileName).toBe('test-dokument.pdf');
+  });
+});
+
+describe('Work Orders: Reject Invalid MIME (400)', () => {
+  let res: Response;
+  beforeAll(async () => {
+    const formData = new FormData();
+    const blob = new Blob(['<script>alert(1)</script>'], {
+      type: 'text/html',
+    });
+    formData.append('file', blob, 'hack.html');
+    res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.authToken}` },
+      body: formData,
+    });
+  });
+
+  it('should return 400 for text/html', () => {
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('Work Orders: List Photos', () => {
+  let res: Response;
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos`, {
+      headers: authOnly(auth.authToken),
+    });
+  });
+
+  it('should return 200', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should contain uploaded image + PDF', async () => {
+    const body = (await res.json()) as JsonBody;
+    expect(body.data.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('Work Orders: Serve Photo File', () => {
+  let res: Response;
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos/${uploadedPhotoUuid}/file`,
+      { headers: authOnly(auth.authToken) },
+    );
+  });
+
+  it('should return 200 with image Content-Type', () => {
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('image/jpeg');
+  });
+});
+
+describe('Work Orders: Delete Photo (204)', () => {
+  let res: Response;
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos/${uploadedPhotoUuid}`,
+      {
+        method: 'DELETE',
+        headers: authOnly(auth.authToken),
+      },
+    );
+  });
+
+  it('should return 204', () => {
+    expect(res.status).toBe(204);
+  });
+});
+
+describe('Work Orders: Photo Test Cleanup', () => {
+  it('should soft-delete the photo test work order (204)', async () => {
+    const res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(204);
+  });
+});
+
+// ============================================================================
 // seq: 5 -- Status Transition
 // ============================================================================
 

@@ -15,6 +15,7 @@
     deleteWorkOrder,
     assignUsers,
     fetchStats,
+    uploadPhoto,
     logApiError,
   } from '../_lib/api';
   import {
@@ -63,6 +64,7 @@
   let assigningItem = $state<WorkOrderListItem | null>(null);
   let deletingItem = $state<WorkOrderListItem | null>(null);
   let submitting = $state(false);
+  let pendingFiles = $state<File[] | null>(null);
 
   // =============================================================================
   // DERIVED
@@ -154,6 +156,20 @@
     editingItem = null;
     assigningItem = null;
     deletingItem = null;
+    pendingFiles = null;
+  }
+
+  async function uploadPendingFiles(woUuid: string): Promise<void> {
+    if (pendingFiles === null || pendingFiles.length === 0) return;
+
+    for (const file of pendingFiles) {
+      try {
+        await uploadPhoto(woUuid, file);
+      } catch (err: unknown) {
+        logApiError('uploadPhoto', err);
+        showErrorAlert(`Fehler beim Hochladen von ${file.name}`);
+      }
+    }
   }
 
   async function handleSaveWorkOrder(
@@ -161,16 +177,24 @@
   ): Promise<void> {
     submitting = true;
     try {
+      let woUuid: string;
+
       if (editingItem !== null) {
         await updateWorkOrder(
           editingItem.uuid,
           payload as UpdateWorkOrderPayload,
         );
+        woUuid = editingItem.uuid;
         showSuccessAlert(MESSAGES.SUCCESS_UPDATED);
       } else {
-        await createWorkOrder(payload as CreateWorkOrderPayload);
+        const created = await createWorkOrder(
+          payload as CreateWorkOrderPayload,
+        );
+        woUuid = created.uuid;
         showSuccessAlert(MESSAGES.SUCCESS_CREATED);
       }
+
+      await uploadPendingFiles(woUuid);
       closeAllModals();
       await refreshAll();
     } catch (err: unknown) {
@@ -419,8 +443,12 @@
   workOrder={editingItem}
   {eligibleUsers}
   {submitting}
+  attachmentFiles={pendingFiles}
   onclose={closeAllModals}
   onsave={handleSaveWorkOrder}
+  onfileschange={(files: File[] | null) => {
+    pendingFiles = files;
+  }}
 />
 
 <!-- Assign Users Modal -->

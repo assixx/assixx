@@ -201,17 +201,16 @@
       filter 200ms ease-out;
   }
 
-  /* Collapsed sections (clipped OR stacked) → opaque, no shadow/border */
+  /* Collapsed sections (clipped OR stacked) → opaque, no shadow */
   .kamishibai-section--clipped,
   .kamishibai-section--stacked {
     background: var(--color-section-stacked-bg);
     box-shadow: none;
-    border: none;
-    border-radius: 0;
   }
 
-  /* Stacked: allow hovered cards to escape section bounds */
   .kamishibai-section--stacked {
+    border: var(--glass-border);
+    border-radius: 12px 12px 0 0;
     overflow: visible;
   }
 
@@ -232,7 +231,7 @@
   .kamishibai-section--clipped {
     max-height: var(--section-max-height);
     border: var(--glass-border);
-    border-radius: 12px 12px 0 0;
+    border-radius: var(--radius-xl);
   }
 
   .kamishibai-section::after {
@@ -263,7 +262,7 @@
     padding: 0.875rem 1.25rem;
     border: none;
     border-bottom: 1px solid var(--color-glass-border);
-    border-radius: 0;
+    border-radius: 12px 12px 0 0;
     background: var(--color-section-header-bg);
     cursor: pointer;
     font-family: inherit;

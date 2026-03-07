@@ -20,9 +20,17 @@ export type WorkOrderSourceType = 'tpm_defect' | 'manual';
 // ============================================================================
 
 export const MAX_PHOTOS_PER_WORK_ORDER = 10;
-export const MAX_PHOTO_FILE_SIZE = 5_242_880; // 5 MB
+export const MAX_PHOTO_FILE_SIZE = 10_485_760; // 10 MB (consistent with blackboard)
 export const MAX_ASSIGNEES_PER_WORK_ORDER = 10;
 export const WORK_ORDER_UPLOAD_DIR = 'uploads/work-orders';
+
+/** Backend MIME-type whitelist for work order attachments (images + PDF) */
+export const ALLOWED_UPLOAD_MIME_TYPES: readonly string[] = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+];
 
 /** German labels for status display */
 export const STATUS_LABELS: Record<WorkOrderStatus, string> = {

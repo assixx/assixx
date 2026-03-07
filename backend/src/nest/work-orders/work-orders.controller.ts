@@ -65,7 +65,7 @@ const FEAT = 'work_orders';
 const MOD_MANAGE = 'work-orders-manage';
 const MOD_EXEC = 'work-orders-execute';
 
-/** Multer options for work order photos (max 5MB, single file) */
+/** Multer options for work order attachments (max 10 MB, single file) */
 const photoUploadOptions = {
   storage: memoryStorage(),
   limits: { fileSize: MAX_PHOTO_FILE_SIZE, files: 1 },
@@ -380,10 +380,18 @@ export class WorkOrdersController {
       uuid,
       photoUuid,
     );
-    await reply
+    const headers = reply
       .header('Content-Type', photo.mimeType)
-      .header('Cache-Control', 'private, max-age=3600')
-      .send(createReadStream(photo.filePath));
+      .header('Cache-Control', 'private, max-age=3600');
+
+    if (photo.mimeType === 'application/pdf') {
+      headers.header(
+        'Content-Disposition',
+        `inline; filename="${photo.fileName}"`,
+      );
+    }
+
+    await headers.send(createReadStream(photo.filePath));
   }
 
   @Delete(':uuid/photos/:photoUuid')

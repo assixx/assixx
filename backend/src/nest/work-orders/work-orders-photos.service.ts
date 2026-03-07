@@ -30,6 +30,7 @@ import type {
   WorkOrderPhotoWithNameRow,
 } from './work-orders.types.js';
 import {
+  ALLOWED_UPLOAD_MIME_TYPES,
   MAX_PHOTOS_PER_WORK_ORDER,
   WORK_ORDER_UPLOAD_DIR,
 } from './work-orders.types.js';
@@ -58,6 +59,12 @@ export class WorkOrderPhotosService {
     if (wo.status === 'completed' || wo.status === 'verified') {
       throw new BadRequestException(
         'Fotos können bei abgeschlossenen Aufträgen nicht hochgeladen werden',
+      );
+    }
+
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Dateityp '${file.mimetype}' nicht erlaubt. Erlaubt: JPG, PNG, WebP, PDF`,
       );
     }
 
@@ -92,12 +99,13 @@ export class WorkOrderPhotosService {
       throw new BadRequestException('Foto konnte nicht gespeichert werden');
     }
 
+    const label = file.mimetype === 'application/pdf' ? 'Datei' : 'Foto';
     void this.activityLogger.logCreate(
       tenantId,
       userId,
       'work_order_photo',
       wo.id,
-      `Foto zu "${wo.title}" hochgeladen`,
+      `${label} zu "${wo.title}" hochgeladen`,
       { fileName: file.originalname },
     );
 
