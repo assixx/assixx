@@ -1,11 +1,11 @@
 # ADR-031: Centralized Read-Tracking Architecture
 
-| Metadata                | Value                                                                    |
-| ----------------------- | ------------------------------------------------------------------------ |
-| **Status**              | Accepted                                                                 |
-| **Date**                | 2026-03-07                                                               |
-| **Decision Makers**     | SCS Technik                                                              |
-| **Affected Components** | backend/src/nest/common/services/, database/migrations/, work-orders     |
+| Metadata                | Value                                                                |
+| ----------------------- | -------------------------------------------------------------------- |
+| **Status**              | Accepted                                                             |
+| **Date**                | 2026-03-07                                                           |
+| **Decision Makers**     | SCS Technik                                                          |
+| **Affected Components** | backend/src/nest/common/services/, database/migrations/, work-orders |
 
 ---
 
@@ -15,11 +15,11 @@
 
 Multiple features (Blackboard, Document Explorer, Work Orders) need per-user "read status" tracking to show a "Neu" (New) badge on unseen items. Each feature had evolved its own approach:
 
-| Feature           | Pattern               | Problem                                        |
-| ----------------- | --------------------- | ---------------------------------------------- |
-| Document Explorer | N+1 queries per item  | O(N) lookups — performance degrades with scale  |
-| Blackboard        | Inline confirmation   | Tightly coupled to blackboard logic             |
-| Work Orders       | (missing)             | No read tracking at all                         |
+| Feature           | Pattern              | Problem                                        |
+| ----------------- | -------------------- | ---------------------------------------------- |
+| Document Explorer | N+1 queries per item | O(N) lookups — performance degrades with scale |
+| Blackboard        | Inline confirmation  | Tightly coupled to blackboard logic            |
+| Work Orders       | (missing)            | No read tracking at all                        |
 
 ### Requirements
 
@@ -39,9 +39,9 @@ A generic, config-driven `ReadTrackingService` registered in the `@Global()` `Da
 
 ```typescript
 export interface ReadTrackingConfig {
-  tableName: string;       // e.g. 'work_order_read_status'
-  entityColumn: string;    // e.g. 'work_order_id'
-  entityTable: string;     // e.g. 'work_orders'
+  tableName: string; // e.g. 'work_order_read_status'
+  entityColumn: string; // e.g. 'work_order_id'
+  entityTable: string; // e.g. 'work_orders'
   entityUuidColumn: string; // e.g. 'uuid'
 }
 ```
@@ -96,12 +96,12 @@ The service uses `INSERT ... ON CONFLICT DO UPDATE SET read_at = NOW()` — safe
 
 ## Alternatives Considered
 
-| Alternative                     | Rejected Because                                                     |
-| ------------------------------- | -------------------------------------------------------------------- |
-| N+1 queries per item            | O(N) performance — unacceptable for paginated lists                  |
-| Single shared `entity_reads`    | Polymorphic FK — violates referential integrity, complicates indexes |
-| Redis-based read tracking       | Not persistent across restarts, no audit trail                       |
-| Notification system reuse       | Different semantics: notification-read (sidebar badge) vs entity-read ("Neu" badge) are independent concepts |
+| Alternative                  | Rejected Because                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| N+1 queries per item         | O(N) performance — unacceptable for paginated lists                                                          |
+| Single shared `entity_reads` | Polymorphic FK — violates referential integrity, complicates indexes                                         |
+| Redis-based read tracking    | Not persistent across restarts, no audit trail                                                               |
+| Notification system reuse    | Different semantics: notification-read (sidebar badge) vs entity-read ("Neu" badge) are independent concepts |
 
 ---
 

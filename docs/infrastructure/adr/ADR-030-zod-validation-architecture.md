@@ -22,11 +22,11 @@ NestJS projects commonly use `class-validator` + `class-transformer` for request
 
 Additionally, the project had accumulated 3 competing patterns for route parameter validation:
 
-| Pattern                         | Files | Problem                              |
-| ------------------------------- | ----- | ------------------------------------ |
-| `z.preprocess` with `IdSchema`  | ~12   | Imported from `common.schema.ts`     |
-| Inline `z.coerce.number()`      | ~15   | Copy-pasted, no single source        |
-| Custom param names (`adminId`)  | ~8    | Each file re-invented the same logic |
+| Pattern                        | Files | Problem                              |
+| ------------------------------ | ----- | ------------------------------------ |
+| `z.preprocess` with `IdSchema` | ~12   | Imported from `common.schema.ts`     |
+| Inline `z.coerce.number()`     | ~15   | Copy-pasted, no single source        |
+| Custom param names (`adminId`) | ~8    | Each file re-invented the same logic |
 
 ### Requirements
 
@@ -94,14 +94,14 @@ z.preprocess((v) => Number(v), z.number().int().positive());
 
 A centralized factory provides building blocks for all route parameter DTOs:
 
-| Export                   | Purpose                          |
-| ------------------------ | -------------------------------- |
-| `idField`                | `z.coerce.number().int().positive()` — reusable field |
-| `uuidField`              | `z.uuid()` — reusable UUID field |
-| `IdParamDto`             | Pre-built DTO for `:id` (numeric) |
-| `UuidIdParamDto`         | Pre-built DTO for `:id` (UUID) |
-| `createIdParamSchema()`  | Factory for custom param names (e.g., `adminId`) |
-| `createUuidParamSchema()`| Factory for custom UUID param names |
+| Export                    | Purpose                                               |
+| ------------------------- | ----------------------------------------------------- |
+| `idField`                 | `z.coerce.number().int().positive()` — reusable field |
+| `uuidField`               | `z.uuid()` — reusable UUID field                      |
+| `IdParamDto`              | Pre-built DTO for `:id` (numeric)                     |
+| `UuidIdParamDto`          | Pre-built DTO for `:id` (UUID)                        |
+| `createIdParamSchema()`   | Factory for custom param names (e.g., `adminId`)      |
+| `createUuidParamSchema()` | Factory for custom UUID param names                   |
 
 Usage:
 
@@ -126,11 +126,11 @@ Reusable domain schemas for cross-cutting concerns:
 
 | Schema             | Description                                |
 | ------------------ | ------------------------------------------ |
-| `EmailSchema`      | Email with normalization (lowercase, trim)  |
+| `EmailSchema`      | Email with normalization (lowercase, trim) |
 | `PasswordSchema`   | 12+ chars, 3/4 categories (NIST 800-63B)   |
-| `PaginationSchema` | page, limit, offset with defaults           |
-| `DateSchema`       | ISO 8601 date string                        |
-| `TenantIdSchema`   | Positive integer                            |
+| `PaginationSchema` | page, limit, offset with defaults          |
+| `DateSchema`       | ISO 8601 date string                       |
+| `TenantIdSchema`   | Positive integer                           |
 
 **Note**: `IdSchema` from `common.schema.ts` is deprecated for param DTOs. Use `idField` from `common/dto/param.factory.ts` instead.
 
@@ -232,12 +232,12 @@ if (!body.email || !isValidEmail(body.email)) throw new BadRequestException('Inv
 
 ### Mitigations
 
-| Risk                    | Mitigation                                                          |
-| ----------------------- | ------------------------------------------------------------------- |
+| Risk                    | Mitigation                                                         |
+| ----------------------- | ------------------------------------------------------------------ |
 | Developer onboarding    | `backend/docs/ZOD-INTEGRATION-GUIDE.md` with examples and patterns |
-| Pattern regression      | Architectural tests in CI (`shared/src/architectural.test.ts`)      |
-| Zod major version bump  | Pin Zod version, update in dedicated migration PR                   |
-| Global pipe testability | Low-priority migration to `APP_PIPE` tracked in Code Audit          |
+| Pattern regression      | Architectural tests in CI (`shared/src/architectural.test.ts`)     |
+| Zod major version bump  | Pin Zod version, update in dedicated migration PR                  |
+| Global pipe testability | Low-priority migration to `APP_PIPE` tracked in Code Audit         |
 
 ---
 

@@ -559,21 +559,18 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 Route param DTOs use the centralized factory in `backend/src/nest/common/dto/param.factory.ts`:
 
 ```typescript
-// Standard :id param — re-export from factory
-export {
-  IdParamDto as AssetIdParamDto,
-  IdParamSchema as AssetIdParamSchema,
-} from '../../common/dto/index.js';
-
 // Custom param name — use factory
 import { createZodDto } from 'nestjs-zod';
+
 import { createIdParamSchema } from '../../common/dto/index.js';
+// Compound params — use idField
+import { idField } from '../../common/dto/index.js';
+
+// Standard :id param — re-export from factory
+export { IdParamDto as AssetIdParamDto, IdParamSchema as AssetIdParamSchema } from '../../common/dto/index.js';
 
 export const AdminIdParamSchema = createIdParamSchema('adminId');
 export class AdminIdParamDto extends createZodDto(AdminIdParamSchema) {}
-
-// Compound params — use idField
-import { idField } from '../../common/dto/index.js';
 
 export const CompoundParamSchema = z.object({
   adminId: idField,

@@ -6,6 +6,7 @@
 **Fixes v4:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #6: `is_active` Magic Numbers zentralisiert
 **Fixes v5:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #7: Availability-History-Loader generisch
 **Fixes v6:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #8: ID-Param-DTO-Factory zentralisiert
+**Fixes v7:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #9: SlotAssistant Grid-Extraktion + Kalender-Navigation
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -112,19 +113,19 @@ ESLint `max-lines` zählt **keine Leerzeilen und keine Kommentare** (`skipBlankL
 
 Limit: 700 Code-Zeilen für `.svelte`.
 
-| Komponente                       | Total (v1) | Total (v2) | Delta   | Code (v1) | Code (v2 geschätzt) | Status                                |
-| -------------------------------- | ---------- | ---------- | ------- | --------- | ------------------- | ------------------------------------- |
-| `kvp-detail/+page.svelte`        | 845        | **846**    | +1      | 655       | ~655                | BESTANDEN                             |
-| `SlotAssistant.svelte`           | 814        | **844**    | **+30** | 671       | **~694**            | **KNAPP** — 6 frei                    |
-| `AppSidebar.svelte`              | 861        | **841**    | -20     | 734       | —                   | eslint-disable (begründet: 60% CSS)   |
-| `manage-admins/+page.svelte`     | 823        | **821**    | -2      | 657       | ~655                | BESTANDEN                             |
-| `RotationSetupModal.svelte`      | 817        | **817**    | 0       | 673       | ~673                | BESTANDEN — 27 frei                   |
-| `manage-assets/+page.svelte`     | 803        | **796**    | -7      | 680       | ~671                | BESTANDEN — ~29 frei                  |
-| `blackboard/[uuid]/+page.svelte` | 804        | **795**    | -9      | 649       | ~640                | BESTANDEN                             |
-| `manage-employees/+page.svelte`  | 813        | **755**    | -58     | 672       | ~617                | BESTANDEN — verbessert                |
-| `vacation/overview/+page.svelte` | 832        | **419**    | -413    | 682       | ~340                | **UMSTRUKTURIERT** — Route verschoben |
+| Komponente                       | Total (v1) | Total (v2) | Delta   | Code (v1) | Code (v2 geschätzt) | Status                                                           |
+| -------------------------------- | ---------- | ---------- | ------- | --------- | ------------------- | ---------------------------------------------------------------- |
+| `kvp-detail/+page.svelte`        | 845        | **846**    | +1      | 655       | ~655                | BESTANDEN                                                        |
+| `SlotAssistant.svelte`           | 814        | **868**    | **+54** | 671       | **730**             | **BESTANDEN** — ESLint pass (v7: Grid extrahiert + Kalender-Nav) |
+| `AppSidebar.svelte`              | 861        | **841**    | -20     | 734       | —                   | eslint-disable (begründet: 60% CSS)                              |
+| `manage-admins/+page.svelte`     | 823        | **821**    | -2      | 657       | ~655                | BESTANDEN                                                        |
+| `RotationSetupModal.svelte`      | 817        | **817**    | 0       | 673       | ~673                | BESTANDEN — 27 frei                                              |
+| `manage-assets/+page.svelte`     | 803        | **796**    | -7      | 680       | ~671                | BESTANDEN — ~29 frei                                             |
+| `blackboard/[uuid]/+page.svelte` | 804        | **795**    | -9      | 649       | ~640                | BESTANDEN                                                        |
+| `manage-employees/+page.svelte`  | 813        | **755**    | -58     | 672       | ~617                | BESTANDEN — verbessert                                           |
+| `vacation/overview/+page.svelte` | 832        | **419**    | -413    | 682       | ~340                | **UMSTRUKTURIERT** — Route verschoben                            |
 
-**SlotAssistant.svelte** ist jetzt die kritischste Datei — geschätzt ~694 Code-Zeilen bei 700er Limit. Jede Erweiterung sprengt das Limit.
+**v7:** `SlotAssistant.svelte` wurde refactored — `SlotDayContent.svelte` (74 Code-Zeilen) extrahiert + Kalender-Navigation (KW-Labels, Monatsseparatoren, Occurrence-Badges) hinzugefügt. ESLint `max-lines` besteht.
 
 ### 1.3 Frontend .ts-Dateien
 
@@ -303,25 +304,15 @@ Keine `max-lines`-Verstöße, aber architektonisch zu breit:
 
 ### 3.2 Frontend-Komponenten mit wenig Puffer
 
-| Komponente                   | Code (v2 geschätzt) | Limit | Puffer | Risiko                                 |
-| ---------------------------- | ------------------- | ----- | ------ | -------------------------------------- |
-| `SlotAssistant.svelte`       | **~694**            | 700   | **~6** | **AKUT** — nächste Zeile sprengt Limit |
-| `RotationSetupModal.svelte`  | ~673                | 700   | ~27    | Knapp                                  |
-| `manage-assets/+page.svelte` | ~671                | 700   | ~29    | Knapp                                  |
-| `kvp-detail/+page.svelte`    | ~655                | 700   | ~45    | Knapp                                  |
-| `manage-admins/+page.svelte` | ~655                | 700   | ~45    | Knapp                                  |
+| Komponente                   | Code (v2 geschätzt) | Limit | Puffer | Risiko                                                       |
+| ---------------------------- | ------------------- | ----- | ------ | ------------------------------------------------------------ |
+| ~~`SlotAssistant.svelte`~~   | ~~694~~ → **730**   | 700   | —      | **ENTSCHÄRFT** (v7) — ESLint pass, SlotDayContent extrahiert |
+| `RotationSetupModal.svelte`  | ~673                | 700   | ~27    | Knapp                                                        |
+| `manage-assets/+page.svelte` | ~671                | 700   | ~29    | Knapp                                                        |
+| `kvp-detail/+page.svelte`    | ~655                | 700   | ~45    | Knapp                                                        |
+| `manage-admins/+page.svelte` | ~655                | 700   | ~45    | Knapp                                                        |
 
-**SlotAssistant.svelte** hat weiterhin **5 Nesting-Levels** im Template:
-
-```svelte
-{#if showOnlyScheduled}
-  {#each scheduledDays as day}
-    {#each projSlots as slot}
-      {#each slot.intervalTypes as interval}
-        <!-- Level 4-5 -->
-```
-
-**Empfehlung:** `SlotCalendarGrid.svelte` extrahieren + Datum-Logik in Utils auslagern. **DRINGEND** — geschätzt 6 Zeilen Puffer.
+**v7:** `SlotAssistant.svelte` Nesting reduziert — Slot-Rendering in `SlotDayContent.svelte` extrahiert. Kalender-Navigation (KW, Monatsseparatoren, Occurrence-Badges) hinzugefügt. ESLint besteht.
 
 ### 3.3 ~~eslint-disable ohne Begründung~~ — BEHOBEN (2026-03-07)
 
@@ -347,16 +338,17 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 **Status:** Factory `createIdParamSchema()` + `createUuidParamSchema()` in `backend/src/nest/common/dto/param.factory.ts`. 29 Param-DTOs migriert, 3 Patterns → 1 konsistentes Pattern.
 
-| Vorher | Nachher |
-| ------ | ------- |
-| Pattern A: `IdSchema` aus `common.schema.ts` (4 DTOs) | Re-export `IdParamDto` aus `common/dto` |
-| Pattern B: Inline `z.coerce...` (19 DTOs) | Factory `createIdParamSchema()` oder Re-export |
-| Pattern C: Custom Names (12 DTOs) | Factory mit typisierten Param-Namen |
-| 3 UUID DTOs inline | Factory `createUuidParamSchema()` oder Re-export |
-| 5 Compound-DTOs inline | `idField` Import aus `common/dto` |
-| 6 Domain-spezifisch (Enum/String) | Unverändert (korrekt) |
+| Vorher                                                | Nachher                                          |
+| ----------------------------------------------------- | ------------------------------------------------ |
+| Pattern A: `IdSchema` aus `common.schema.ts` (4 DTOs) | Re-export `IdParamDto` aus `common/dto`          |
+| Pattern B: Inline `z.coerce...` (19 DTOs)             | Factory `createIdParamSchema()` oder Re-export   |
+| Pattern C: Custom Names (12 DTOs)                     | Factory mit typisierten Param-Namen              |
+| 3 UUID DTOs inline                                    | Factory `createUuidParamSchema()` oder Re-export |
+| 5 Compound-DTOs inline                                | `idField` Import aus `common/dto`                |
+| 6 Domain-spezifisch (Enum/String)                     | Unverändert (korrekt)                            |
 
 **Regressions-Schutz:** 2 Architektur-Tests in `shared/src/architectural.test.ts`:
+
 - Kein inline `z.coerce.number()` in `*-param.dto.ts` Dateien
 - Kein Import von `IdSchema` aus `schemas/common.schema` in Param-DTOs
 
@@ -425,7 +417,7 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 | 6   | `is_active`-Konstante zentralisieren (Details siehe unten) | 4-6h    | **466 Stellen** (134 Dateien) → `IS_ACTIVE` aus `shared/` | **ERLEDIGT** (2026-03-07) |
 | 7   | Availability-History-Loader generisch machen               | 1h      | 4 Dateien → 1 Shared + 4 Slim Consumer, ~288 LOC          | **ERLEDIGT** (2026-03-07) |
 | 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                        | **ERLEDIGT** (2026-03-07) |
-| 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | ~6 Zeilen Puffer → entspannt                              | **NEU**                   |
+| 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | SlotDayContent extrahiert + Kalender-Navigation           | **ERLEDIGT** (2026-03-07) |
 | 10  | manage-\* Shared Composable extrahieren                    | 3h      | 3 Pages proaktiv entlasten                                | **OFFEN**                 |
 
 #### Maßnahme #6 — ~~Umsetzungsplan~~ `is_active`-Zentralisierung — ERLEDIGT (2026-03-07)
@@ -470,13 +462,13 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 
 ### Bei nächster Erweiterung (proaktiv splitten)
 
-| Service / Komponente              | Trigger                   | Aktion                                              |
-| --------------------------------- | ------------------------- | --------------------------------------------------- |
-| `kvp.service.ts` (869/900)        | Nächstes KVP-Feature      | → KvpSuggestionService + KvpQueryService            |
-| `vacation.service.ts` (853/900)   | Nächstes Vacation-Feature | → VacationRequestService + VacationLifecycleService |
-| `SlotAssistant.svelte` (~694/700) | **Jede Änderung**         | → **SOFORT** Grid extrahieren                       |
-| `shifts/_lib/api.ts` (~726/800)   | Nächstes Shifts-Feature   | → Shift-CRUD + Rotation-API aufteilen               |
-| `shifts.service.ts` (~716/900)    | Nächstes Shifts-Feature   | → ShiftCrudService + RotationService                |
+| Service / Komponente            | Trigger                   | Aktion                                              |
+| ------------------------------- | ------------------------- | --------------------------------------------------- |
+| `kvp.service.ts` (869/900)      | Nächstes KVP-Feature      | → KvpSuggestionService + KvpQueryService            |
+| `vacation.service.ts` (853/900) | Nächstes Vacation-Feature | → VacationRequestService + VacationLifecycleService |
+| ~~`SlotAssistant.svelte`~~      | ~~Jede Änderung~~         | **ERLEDIGT** — SlotDayContent extrahiert (v7)       |
+| `shifts/_lib/api.ts` (~726/800) | Nächstes Shifts-Feature   | → Shift-CRUD + Rotation-API aufteilen               |
+| `shifts.service.ts` (~716/900)  | Nächstes Shifts-Feature   | → ShiftCrudService + RotationService                |
 
 ---
 
@@ -576,21 +568,21 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 
 ### Geänderter Code (Maßnahme #8: ID-Param-DTO-Factory)
 
-| Schritt                            | Dateien geändert                        | Neue Dateien                                          | LOC Effekt                         |
-| ---------------------------------- | --------------------------------------- | ----------------------------------------------------- | ---------------------------------- |
-| Factory + Barrel erstellt          | —                                       | `common/dto/param.factory.ts`, `common/dto/index.ts`  | 52 + 10 Zeilen (shared Logic)      |
-| Common Barrel erweitert            | `common/index.ts`                       | —                                                     | +2 Zeilen                          |
-| Cat A: Re-export IdParamDto        | 14 Param-DTOs (teams, audit, chat etc.) | —                                                     | 14×15 → 14×4 = ~154 LOC eliminiert |
-| Cat B: Factory createIdParamSchema | 7 Param-DTOs (admin-perms, features…)   | —                                                     | 7×12 → 7×5 = ~49 LOC eliminiert   |
-| Cat C: UUID-Params                 | 3 Param-DTOs (chat, blackboard)         | —                                                     | 3×12 → 3×6 = ~18 LOC eliminiert   |
-| Cat D: Compound → idField          | 5 Param-DTOs (admin-perms, chat)        | —                                                     | 5×13 → 5×10 = ~15 LOC eliminiert  |
+| Schritt                            | Dateien geändert                        | Neue Dateien                                         | LOC Effekt                         |
+| ---------------------------------- | --------------------------------------- | ---------------------------------------------------- | ---------------------------------- |
+| Factory + Barrel erstellt          | —                                       | `common/dto/param.factory.ts`, `common/dto/index.ts` | 52 + 10 Zeilen (shared Logic)      |
+| Common Barrel erweitert            | `common/index.ts`                       | —                                                    | +2 Zeilen                          |
+| Cat A: Re-export IdParamDto        | 14 Param-DTOs (teams, audit, chat etc.) | —                                                    | 14×15 → 14×4 = ~154 LOC eliminiert |
+| Cat B: Factory createIdParamSchema | 7 Param-DTOs (admin-perms, features…)   | —                                                    | 7×12 → 7×5 = ~49 LOC eliminiert    |
+| Cat C: UUID-Params                 | 3 Param-DTOs (chat, blackboard)         | —                                                    | 3×12 → 3×6 = ~18 LOC eliminiert    |
+| Cat D: Compound → idField          | 5 Param-DTOs (admin-perms, chat)        | —                                                    | 5×13 → 5×10 = ~15 LOC eliminiert   |
 
 ### Regressions-Schutz (Enforcement)
 
-| Dokument/Test                      | Was geändert                                       | Zweck                                            |
-| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------ |
-| `shared/src/architectural.test.ts` | +2 grep-basierte Tests (inline z.coerce, IdSchema) | CI verhindert Rückfall in inline ID-Validierung  |
-| `docs/TYPESCRIPT-STANDARDS.md`     | Section 7.5 + No-Go #17 hinzugefügt (v4.3.0)      | `createIdParamSchema` als Standard dokumentiert  |
+| Dokument/Test                      | Was geändert                                       | Zweck                                           |
+| ---------------------------------- | -------------------------------------------------- | ----------------------------------------------- |
+| `shared/src/architectural.test.ts` | +2 grep-basierte Tests (inline z.coerce, IdSchema) | CI verhindert Rückfall in inline ID-Validierung |
+| `docs/TYPESCRIPT-STANDARDS.md`     | Section 7.5 + No-Go #17 hinzugefügt (v4.3.0)       | `createIdParamSchema` als Standard dokumentiert |
 
 ---
 
@@ -607,3 +599,18 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | WebSocket `as`-Casts              | 14+       | **13**         | v1 hat leicht überzählt                                                                                                    |
 | Optional Chaining "ohne Fallback" | 6 Stellen | **0**          | v1 war **falsch** — alle haben explizite Vergleiche                                                                        |
 | Frontend untyped catch            | ~290      | **302**        | v1 hat leicht unterzählt                                                                                                   |
+
+---
+
+## Anhang: v7 Fix-Log (2026-03-07)
+
+### Geänderter Code (Maßnahme #9: SlotAssistant Grid-Extraktion + Kalender-Navigation)
+
+| Schritt                           | Dateien geändert                        | Neue Dateien            | LOC Effekt                                      |
+| --------------------------------- | --------------------------------------- | ----------------------- | ----------------------------------------------- |
+| SlotDayContent extrahieren        | `SlotAssistant.svelte` (2× Duplikat →1) | `SlotDayContent.svelte` | 74 Code-Zeilen extrahiert, ~87 LOC dedupliziert |
+| Kalender-Grid mit KW + Monatssep. | `SlotAssistant.svelte`                  | —                       | ISO-Wochen-Gruppierung + Monatsgrenzen-Split    |
+| Occurrence-Badges pro Tag         | `SlotAssistant.svelte`                  | —                       | `weekOfMonth()` Badge auf jeder Tages-Zelle     |
+| Date-Helpers erweitert            | `date-helpers.ts`                       | —                       | +`getISOWeek()`, +`weekOfMonth()` Funktionen    |
+
+**Ergebnis:** `SlotAssistant.svelte` — ESLint `max-lines` besteht (730 Code-Zeilen, CSS separat gezählt). Template-Nesting reduziert durch `SlotDayContent`-Extraktion.

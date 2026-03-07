@@ -28,6 +28,8 @@
   } from '../../../_lib/constants';
   import {
     timestampToISO,
+    getISOWeek,
+    weekOfMonth,
     NINETY_DAYS_MS,
     MAX_RANGE_MS,
     MAX_RANGE_365_MS,
@@ -191,10 +193,73 @@
     visibleCalendarDays.filter((d: DayAvailability) => d.isAvailable).length,
   );
 
-  // Number of empty cells before first day (Mon=0, Fri=4 or Sun=6)
-  const leadingPadding = $derived.by(() => {
-    if (visibleCalendarDays.length === 0) return 0;
-    return isoWeekday(visibleCalendarDays[0].date);
+  // =========================================================================
+  // CALENDAR ROWS (grouped by ISO week, with month separators)
+  // =========================================================================
+
+  interface CalendarRow {
+    kw: number;
+    monthLabel: string;
+    cells: (DayAvailability | null)[];
+  }
+
+  function buildCalendarRow(
+    days: DayAvailability[],
+    kw: number,
+    cols: number,
+  ): CalendarRow {
+    const wd = isoWeekday(days[0].date);
+    const cells: (DayAvailability | null)[] = [
+      ...(Array(wd).fill(null) as null[]),
+      ...days,
+    ];
+    while (cells.length < cols) cells.push(null);
+    return { kw, monthLabel: '', cells };
+  }
+
+  function applyMonthLabels(rows: CalendarRow[]): void {
+    let lastMonthKey = -1;
+    for (const row of rows) {
+      const firstDay = row.cells.find((c): c is DayAvailability => c !== null);
+      if (firstDay === undefined) continue;
+      const d = new Date(firstDay.date);
+      const monthKey = d.getFullYear() * 12 + d.getMonth();
+      if (monthKey !== lastMonthKey) {
+        row.monthLabel = d.toLocaleDateString('de-DE', {
+          month: 'long',
+          year: 'numeric',
+        });
+        lastMonthKey = monthKey;
+      }
+    }
+  }
+
+  const calendarRows = $derived.by((): CalendarRow[] => {
+    const days = visibleCalendarDays;
+    if (days.length === 0) return [];
+    const cols = visibleHeaders.length;
+    const rows: CalendarRow[] = [];
+    let batch: DayAvailability[] = [];
+    let batchKw = getISOWeek(days[0].date);
+    let batchMonth = new Date(days[0].date).getMonth();
+
+    for (const day of days) {
+      const kw = getISOWeek(day.date);
+      const month = new Date(day.date).getMonth();
+      if ((kw !== batchKw || month !== batchMonth) && batch.length > 0) {
+        rows.push(buildCalendarRow(batch, batchKw, cols));
+        batch = [];
+      }
+      batchKw = kw;
+      batchMonth = month;
+      batch.push(day);
+    }
+    if (batch.length > 0) {
+      rows.push(buildCalendarRow(batch, batchKw, cols));
+    }
+
+    applyMonthLabels(rows);
+    return rows;
   });
 
   // =========================================================================
@@ -535,12 +600,13 @@
           {/each}
         </div>
       {:else}
-        <!-- Calendar grid -->
+        <!-- Calendar grid with WM/KW labels + month separators -->
         <div
           class="slot-calendar"
           class:slot-calendar--weekdays-only={!showWeekends}
         >
-          <!-- Weekday headers -->
+          <!-- Header row: KW label + weekday headers -->
+          <div class="slot-row-label slot-header">KW</div>
           {#each visibleHeaders as header, i (i)}
             <div
               class="slot-header"
@@ -550,61 +616,68 @@
             </div>
           {/each}
 
-          <!-- Leading empty cells -->
-          {#each Array(leadingPadding) as _, i (i)}
-            <div class="slot-empty"></div>
-          {/each}
-
-          <!-- Day cells -->
-          {#each visibleCalendarDays as day (day.date)}
-            {@const available = day.isAvailable}
-            {@const isWeekend = isoWeekday(day.date) >= 5}
-            {@const isScheduled =
-              hasTpmScheduleConflict(day) ||
-              getSlotsForDate(day.date).length > 0}
-            <div
-              class="slot-day"
-              class:slot-day--available={available && !isScheduled}
-              class:slot-day--unavailable={!available && !isScheduled}
-              class:slot-day--scheduled={isScheduled}
-              class:slot-day--hidden={showOnlyScheduled && !isScheduled}
-              class:slot-day--weekend={isWeekend}
-              class:slot-day--selected={selectedDay === day.date}
-              title={buildDayTooltip(day)}
-              role="button"
-              tabindex="0"
-              onclick={() => {
-                handleDayClick(day);
-              }}
-              onkeydown={(e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleDayClick(day);
-                }
-              }}
-            >
-              <span class="slot-day__date"
-                >{formatDayMonth(day.date, showOnlyScheduled)}</span
-              >
-              {#if available && !isScheduled}
-                <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
-              {:else if isScheduled}
-                {@const projSlots = getSlotsForDate(day.date)}
-                <SlotDayContent
-                  slots={projSlots}
-                  {colorMap}
-                />
-              {:else if day.conflicts.length > 0}
-                <i
-                  class="fas {getConflictIcon(
-                    day.conflicts[0]?.type ?? '',
-                  )} slot-day__icon slot-day__icon--conflict"
-                ></i>
-                <span class="slot-day__conflict">
-                  {getConflictLabel(day.conflicts[0]?.type ?? '')}
-                </span>
+          {#each calendarRows as row, rowIdx (rowIdx)}
+            {#if row.monthLabel.length > 0}
+              <div class="slot-month-sep">{row.monthLabel}</div>
+            {/if}
+            <div class="slot-row-label slot-row-label--kw">{row.kw}</div>
+            {#each row.cells as cell, ci (ci)}
+              {#if cell === null}
+                <div class="slot-empty"></div>
+              {:else}
+                {@const day = cell}
+                {@const available = day.isAvailable}
+                {@const isWeekend = isoWeekday(day.date) >= 5}
+                {@const isScheduled =
+                  hasTpmScheduleConflict(day) ||
+                  getSlotsForDate(day.date).length > 0}
+                <div
+                  class="slot-day"
+                  class:slot-day--available={available && !isScheduled}
+                  class:slot-day--unavailable={!available && !isScheduled}
+                  class:slot-day--scheduled={isScheduled}
+                  class:slot-day--hidden={showOnlyScheduled && !isScheduled}
+                  class:slot-day--weekend={isWeekend}
+                  class:slot-day--selected={selectedDay === day.date}
+                  title={buildDayTooltip(day)}
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
+                    handleDayClick(day);
+                  }}
+                  onkeydown={(e: KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleDayClick(day);
+                    }
+                  }}
+                >
+                  <span class="slot-day__date">
+                    <sup class="slot-day__occ">{weekOfMonth(day.date)}</sup>
+                    {formatDayMonth(day.date, showOnlyScheduled)}
+                  </span>
+                  {#if available && !isScheduled}
+                    <i class="fas fa-check slot-day__icon slot-day__icon--ok"
+                    ></i>
+                  {:else if isScheduled}
+                    {@const projSlots = getSlotsForDate(day.date)}
+                    <SlotDayContent
+                      slots={projSlots}
+                      {colorMap}
+                    />
+                  {:else if day.conflicts.length > 0}
+                    <i
+                      class="fas {getConflictIcon(
+                        day.conflicts[0]?.type ?? '',
+                      )} slot-day__icon slot-day__icon--conflict"
+                    ></i>
+                    <span class="slot-day__conflict">
+                      {getConflictLabel(day.conflicts[0]?.type ?? '')}
+                    </span>
+                  {/if}
+                </div>
               {/if}
-            </div>
+            {/each}
           {/each}
         </div>
       {/if}
@@ -655,12 +728,38 @@
 
   .slot-calendar {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: auto repeat(7, 1fr);
     gap: 4px;
   }
 
   .slot-calendar--weekdays-only {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: auto repeat(5, 1fr);
+  }
+
+  .slot-month-sep {
+    grid-column: 1 / -1;
+    font-size: 0.813rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    padding: 0.5rem 0 0.25rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--color-text-muted) 25%, transparent);
+    text-align: center;
+  }
+
+  .slot-row-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+    padding: 0 0.125rem;
+    min-width: 20px;
+  }
+
+  .slot-row-label--kw {
+    font-size: 0.563rem;
+    white-space: nowrap;
   }
 
   /* Weekend toggle — compact sizing override for choice-card */
@@ -739,6 +838,13 @@
     font-size: 0.813rem;
     font-weight: 600;
     color: var(--color-text-secondary);
+  }
+
+  .slot-day__occ {
+    font-size: 0.563rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    margin-right: 1px;
   }
 
   .slot-day__icon {

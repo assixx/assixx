@@ -228,7 +228,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '5' });
     mockDb.query.mockResolvedValueOnce([createWorkOrderRow()]);
 
-    const result = await service.listWorkOrders(1, {});
+    const result = await service.listWorkOrders(1, 5, {});
 
     expect(result.total).toBe(5);
     expect(result.page).toBe(1);
@@ -240,7 +240,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '100' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.listWorkOrders(1, { page: 3, limit: 10 });
+    const result = await service.listWorkOrders(1, 5, { page: 3, limit: 10 });
 
     expect(result.page).toBe(3);
     expect(result.pageSize).toBe(10);
@@ -250,7 +250,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '2' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { status: 'open' });
+    await service.listWorkOrders(1, 5, { status: 'open' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
     expect(countSql).toContain('wo.status = $');
@@ -260,7 +260,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { priority: 'high' });
+    await service.listWorkOrders(1, 5, { priority: 'high' });
 
     const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
     expect(params).toContain('high');
@@ -270,7 +270,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { sourceType: 'tpm_defect' });
+    await service.listWorkOrders(1, 5, { sourceType: 'tpm_defect' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
     expect(countSql).toContain('wo.source_type = $');
@@ -280,7 +280,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { assigneeUuid: 'user-uuid' });
+    await service.listWorkOrders(1, 5, { assigneeUuid: 'user-uuid' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
     expect(countSql).toContain('work_order_assignees');
@@ -290,7 +290,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.listWorkOrders(1, {});
+    const result = await service.listWorkOrders(1, 5, {});
 
     expect(result.total).toBe(0);
     expect(result.items).toEqual([]);
@@ -300,7 +300,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce(null);
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.listWorkOrders(1, {});
+    const result = await service.listWorkOrders(1, 5, {});
     expect(result.total).toBe(0);
   });
 });

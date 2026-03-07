@@ -13,10 +13,10 @@
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                      |
-| ------- | ---------- | ------------------------------------------------------------- |
-| 0.1.0   | 2026-03-07 | Initial Draft — 4 Phasen                                      |
-| 0.2.0   | 2026-03-07 | ADR-031 + ADR-018 Test-Alignment + Integrationen (ADR-009/002)|
+| Version | Datum      | Änderung                                                        |
+| ------- | ---------- | --------------------------------------------------------------- |
+| 0.1.0   | 2026-03-07 | Initial Draft — 4 Phasen                                        |
+| 0.2.0   | 2026-03-07 | ADR-031 + ADR-018 Test-Alignment + Integrationen (ADR-009/002)  |
 | 2.0.0   | 2026-03-07 | Feature vollständig implementiert — alle 5 Phasen abgeschlossen |
 
 > **Versionierungsregel:**
@@ -30,16 +30,16 @@
 
 ## Related ADRs & Referenzen
 
-| ADR / Dokument | Relevanz für diesen Plan |
-|----------------|--------------------------|
-| [**ADR-031**: Centralized Read-Tracking](./infrastructure/adr/ADR-031-centralized-read-tracking.md) | Architekturentscheidung: Zentralisiertes Read-Tracking-System (Pattern-Wahl, Shared Service Design) |
-| [ADR-018: Testing Strategy](./infrastructure/adr/ADR-018-testing-strategy.md) | Test-Patterns: Unit Tests (Tier 1) + API Tests (Tier 2), Mock-Factory, `authHeaders`/`authOnly`, `One-Request-per-Describe` |
-| [ADR-009: Central Audit Logging](./infrastructure/adr/ADR-009-central-audit-logging.md) | `ActivityLoggerService` — fire-and-forget Logging für Read-Events (Compliance) |
-| [ADR-002: Alerting & Monitoring](./infrastructure/adr/ADR-002-alerting-monitoring.md) | Sentry `captureException` für Service-Fehler, Pino-Logging für Debug-Traces |
-| [ADR-003: Notification System](./infrastructure/adr/ADR-003-notification-system.md) | Abgrenzung: Notification-Read (Sidebar-Badge) vs. Entity-Read ("Neu" Badge) — ZWEI GETRENNTE Systeme |
-| [ADR-019: Multi-Tenant RLS](./infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md) | RLS Policy für `work_order_read_status` — Tenant-Isolation mandatory |
-| [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md) | Integration-Checkliste: RLS, GRANTs, Activity Logging, Tests, Doku |
-| [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md) | API-Test-Patterns: `loginApitest()`, `flushThrottleKeys()`, Fastify Header-Trennung |
+| ADR / Dokument                                                                                      | Relevanz für diesen Plan                                                                                                    |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [**ADR-031**: Centralized Read-Tracking](./infrastructure/adr/ADR-031-centralized-read-tracking.md) | Architekturentscheidung: Zentralisiertes Read-Tracking-System (Pattern-Wahl, Shared Service Design)                         |
+| [ADR-018: Testing Strategy](./infrastructure/adr/ADR-018-testing-strategy.md)                       | Test-Patterns: Unit Tests (Tier 1) + API Tests (Tier 2), Mock-Factory, `authHeaders`/`authOnly`, `One-Request-per-Describe` |
+| [ADR-009: Central Audit Logging](./infrastructure/adr/ADR-009-central-audit-logging.md)             | `ActivityLoggerService` — fire-and-forget Logging für Read-Events (Compliance)                                              |
+| [ADR-002: Alerting & Monitoring](./infrastructure/adr/ADR-002-alerting-monitoring.md)               | Sentry `captureException` für Service-Fehler, Pino-Logging für Debug-Traces                                                 |
+| [ADR-003: Notification System](./infrastructure/adr/ADR-003-notification-system.md)                 | Abgrenzung: Notification-Read (Sidebar-Badge) vs. Entity-Read ("Neu" Badge) — ZWEI GETRENNTE Systeme                        |
+| [ADR-019: Multi-Tenant RLS](./infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md)             | RLS Policy für `work_order_read_status` — Tenant-Isolation mandatory                                                        |
+| [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md)                                        | Integration-Checkliste: RLS, GRANTs, Activity Logging, Tests, Doku                                                          |
+| [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md)                                          | API-Test-Patterns: `loginApitest()`, `flushThrottleKeys()`, Fastify Header-Trennung                                         |
 
 ---
 
@@ -51,10 +51,10 @@ In der Work-Order-Tabelle (Admin + Employee) fehlt ein visuelles Signal, welche 
 
 ### Bestehendes System: Zwei getrennte Read-Konzepte
 
-| Konzept | Zweck | Tabelle | Trigger |
-|---------|-------|---------|---------|
-| **Notification Read** | SSE-Badge im Sidebar dekrementieren | `notification_read_status` | `notificationStore.markEntityAsRead()` auf Detail-Page |
-| **Entity Read** | "Neu" Badge auf Einzelitems | `document_read_status`, `blackboard_confirmations`, `kvp_confirmations` | Klick auf Item / Preview |
+| Konzept               | Zweck                               | Tabelle                                                                 | Trigger                                                |
+| --------------------- | ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------ |
+| **Notification Read** | SSE-Badge im Sidebar dekrementieren | `notification_read_status`                                              | `notificationStore.markEntityAsRead()` auf Detail-Page |
+| **Entity Read**       | "Neu" Badge auf Einzelitems         | `document_read_status`, `blackboard_confirmations`, `kvp_confirmations` | Klick auf Item / Preview                               |
 
 Das Notification-System (Konzept 1) trackt nur **Benachrichtigungen** ("Du wurdest zugewiesen"). Es trackt NICHT, ob der User den Work Order je **geöffnet** hat. Ein manuell erstellter Work Order ohne Assignee-Notification hat kein Read-Tracking.
 
@@ -86,10 +86,10 @@ Statt Copy-Paste erstellen wir einen **generischen `ReadTrackingService`** in `c
 
 ```typescript
 interface ReadTrackingConfig {
-  tableName: string;         // 'work_order_read_status'
-  entityColumn: string;      // 'work_order_id'
-  entityTable: string;       // 'work_orders'
-  entityUuidColumn: string;  // 'uuid'
+  tableName: string; // 'work_order_read_status'
+  entityColumn: string; // 'work_order_id'
+  entityTable: string; // 'work_orders'
+  entityUuidColumn: string; // 'uuid'
 }
 ```
 
@@ -108,30 +108,30 @@ interface ReadTrackingConfig {
 
 ### 0.2 Risk Register
 
-| # | Risiko | Impact | Wahrscheinlichkeit | Mitigation | Verifikation |
-|---|--------|--------|-------------------|------------|-------------|
-| R1 | N+1 Query-Performance (wie Documents) | Mittel | Hoch | LEFT JOIN statt N+1 Einzelqueries — performanter als Document-Pattern | `EXPLAIN ANALYZE` auf List-Query |
-| R2 | RLS Policy fehlt → Tenant-Leak | Hoch | Niedrig | Checklist-Item in Migration + Verify-Query (ADR-019 Pattern) | `SELECT * FROM pg_policies WHERE tablename = 'work_order_read_status'` |
-| R3 | isRead in Employee-View falsch (userId mismatch) | Mittel | Mittel | LEFT JOIN mit `AND rs.user_id = $userId` Bedingung | Unit Test: User A sieht eigenen Read-Status, nicht User B |
-| R4 | ReadTrackingService SQL-Injection über Config | Hoch | Niedrig | Config-Werte sind Konstanten (nicht User-Input), validiert bei Registrierung | Code Review: nur hardcoded Strings in Config |
-| R5 | Sentry-Errors bei DB-Failure nicht sichtbar | Mittel | Niedrig | `Sentry.captureException()` in Service-Catch (ADR-002) | Sentry Dashboard prüfen nach Deploy |
+| #   | Risiko                                           | Impact | Wahrscheinlichkeit | Mitigation                                                                   | Verifikation                                                           |
+| --- | ------------------------------------------------ | ------ | ------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| R1  | N+1 Query-Performance (wie Documents)            | Mittel | Hoch               | LEFT JOIN statt N+1 Einzelqueries — performanter als Document-Pattern        | `EXPLAIN ANALYZE` auf List-Query                                       |
+| R2  | RLS Policy fehlt → Tenant-Leak                   | Hoch   | Niedrig            | Checklist-Item in Migration + Verify-Query (ADR-019 Pattern)                 | `SELECT * FROM pg_policies WHERE tablename = 'work_order_read_status'` |
+| R3  | isRead in Employee-View falsch (userId mismatch) | Mittel | Mittel             | LEFT JOIN mit `AND rs.user_id = $userId` Bedingung                           | Unit Test: User A sieht eigenen Read-Status, nicht User B              |
+| R4  | ReadTrackingService SQL-Injection über Config    | Hoch   | Niedrig            | Config-Werte sind Konstanten (nicht User-Input), validiert bei Registrierung | Code Review: nur hardcoded Strings in Config                           |
+| R5  | Sentry-Errors bei DB-Failure nicht sichtbar      | Mittel | Niedrig            | `Sentry.captureException()` in Service-Catch (ADR-002)                       | Sentry Dashboard prüfen nach Deploy                                    |
 
 ### 0.3 Ecosystem Integration Points
 
-| Bestehendes System | Art der Integration | Phase | Verifiziert am |
-|-------------------|---------------------|-------|----------------|
-| `work_orders` Tabelle | FK von read_status → work_orders(id) | 1 | |
-| `work-orders.service.ts` | LEFT JOIN für isRead in List-Queries | 2 | |
-| `work-orders.controller.ts` | Neuer POST `:uuid/read` Endpoint | 2 | |
-| `AdminWorkOrderTable.svelte` | "Neu" Badge in Titel-Spalte | 3 | |
-| `WorkOrderTable.svelte` | "Neu" Badge in Titel-Spalte (Employee) | 3 | |
-| Detail-Page `[uuid]/+page.svelte` | `markAsRead()` beim Mount | 3 | |
-| `ActivityLoggerService` (ADR-009) | Fire-and-forget Log bei markAsRead | 2 | |
-| Pino Logger (ADR-002) | Debug-Logging in ReadTrackingService | 1 | |
-| Notification-System (ADR-003) | **Unverändert** — bleibt für Sidebar-Badge | — | |
-| Unit Tests (ADR-018 Tier 1) | ReadTrackingService + Mapping Tests | 4 | |
-| API Tests (ADR-018 Tier 2) | POST `:uuid/read` + isRead in List | 4 | |
-| ADR-031 (NEU) | Architektur-Dokumentation | 5 | |
+| Bestehendes System                | Art der Integration                        | Phase | Verifiziert am |
+| --------------------------------- | ------------------------------------------ | ----- | -------------- |
+| `work_orders` Tabelle             | FK von read_status → work_orders(id)       | 1     |                |
+| `work-orders.service.ts`          | LEFT JOIN für isRead in List-Queries       | 2     |                |
+| `work-orders.controller.ts`       | Neuer POST `:uuid/read` Endpoint           | 2     |                |
+| `AdminWorkOrderTable.svelte`      | "Neu" Badge in Titel-Spalte                | 3     |                |
+| `WorkOrderTable.svelte`           | "Neu" Badge in Titel-Spalte (Employee)     | 3     |                |
+| Detail-Page `[uuid]/+page.svelte` | `markAsRead()` beim Mount                  | 3     |                |
+| `ActivityLoggerService` (ADR-009) | Fire-and-forget Log bei markAsRead         | 2     |                |
+| Pino Logger (ADR-002)             | Debug-Logging in ReadTrackingService       | 1     |                |
+| Notification-System (ADR-003)     | **Unverändert** — bleibt für Sidebar-Badge | —     |                |
+| Unit Tests (ADR-018 Tier 1)       | ReadTrackingService + Mapping Tests        | 4     |                |
+| API Tests (ADR-018 Tier 2)        | POST `:uuid/read` + isRead in List         | 4     |                |
+| ADR-031 (NEU)                     | Architektur-Dokumentation                  | 5     |                |
 
 ### 0.4 HOW-TO-INTEGRATE-FEATURE Checkliste (Subset)
 
@@ -225,20 +225,10 @@ export class ReadTrackingService {
   constructor(private readonly db: DatabaseService) {}
 
   /** Mark entity as read (idempotent UPSERT) */
-  async markAsRead(
-    config: ReadTrackingConfig,
-    entityId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<void>;
+  async markAsRead(config: ReadTrackingConfig, entityId: number, userId: number, tenantId: number): Promise<void>;
 
   /** Check if entity is read by user */
-  async isRead(
-    config: ReadTrackingConfig,
-    entityId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<boolean>;
+  async isRead(config: ReadTrackingConfig, entityId: number, userId: number, tenantId: number): Promise<boolean>;
 
   /** Resolve entity UUID → ID, then mark as read */
   async markAsReadByUuid(
@@ -293,7 +283,7 @@ ON CONFLICT ({entityColumn}, user_id, tenant_id) DO UPDATE SET read_at = NOW()
 // WorkOrderWithCountsRow erweitern:
 export interface WorkOrderWithCountsRow extends WorkOrderRow {
   // ... bestehende Felder
-  is_read: number | null;  // NULL = nicht gelesen (kein LEFT JOIN Match)
+  is_read: number | null; // NULL = nicht gelesen (kein LEFT JOIN Match)
 }
 
 // WorkOrderListItem erweitern:
@@ -511,16 +501,16 @@ const TEST_CONFIG: ReadTrackingConfig = {
 
 **Tests (mindestens 8):**
 
-| # | Beschreibung | Kategorie |
-|---|-------------|-----------|
-| 1 | `markAsRead` — Happy Path (INSERT, UPSERT SQL korrekt) | Happy Path |
-| 2 | `markAsRead` — Idempotent (kein Error bei Duplikat-Aufruf) | Edge Case |
-| 3 | `isRead` — true wenn Eintrag existiert | Happy Path |
-| 4 | `isRead` — false wenn kein Eintrag | Happy Path |
-| 5 | `markAsReadByUuid` — UUID → ID Auflösung + markAsRead | Happy Path |
-| 6 | `markAsReadByUuid` — NotFoundException bei ungültiger UUID | Error Case |
-| 7 | `markAsRead` — DB-Fehler wird geloggt, nicht geschluckt | Error Case |
-| 8 | Config mit verschiedenen Tabellen-Namen (Wiederverwendbarkeit) | Parametric |
+| #   | Beschreibung                                                   | Kategorie  |
+| --- | -------------------------------------------------------------- | ---------- |
+| 1   | `markAsRead` — Happy Path (INSERT, UPSERT SQL korrekt)         | Happy Path |
+| 2   | `markAsRead` — Idempotent (kein Error bei Duplikat-Aufruf)     | Edge Case  |
+| 3   | `isRead` — true wenn Eintrag existiert                         | Happy Path |
+| 4   | `isRead` — false wenn kein Eintrag                             | Happy Path |
+| 5   | `markAsReadByUuid` — UUID → ID Auflösung + markAsRead          | Happy Path |
+| 6   | `markAsReadByUuid` — NotFoundException bei ungültiger UUID     | Error Case |
+| 7   | `markAsRead` — DB-Fehler wird geloggt, nicht geschluckt        | Error Case |
+| 8   | Config mit verschiedenen Tabellen-Namen (Wiederverwendbarkeit) | Parametric |
 
 ### Step 4.2: Work Order Mapping — isRead Integration [DONE]
 
@@ -528,11 +518,11 @@ const TEST_CONFIG: ReadTrackingConfig = {
 
 **Tests (mindestens 3):**
 
-| # | Beschreibung |
-|---|-------------|
-| 1 | `mapWorkOrderRowToListItem` — `is_read: 1` → `isRead: true` |
-| 2 | `mapWorkOrderRowToListItem` — `is_read: 0` → `isRead: false` |
-| 3 | `mapWorkOrderRowToListItem` — `is_read: null` → `isRead: false` |
+| #   | Beschreibung                                                    |
+| --- | --------------------------------------------------------------- |
+| 1   | `mapWorkOrderRowToListItem` — `is_read: 1` → `isRead: true`     |
+| 2   | `mapWorkOrderRowToListItem` — `is_read: 0` → `isRead: false`    |
+| 3   | `mapWorkOrderRowToListItem` — `is_read: null` → `isRead: false` |
 
 ### Step 4.3: API Integration Tests (Tier 2) [DONE]
 
@@ -598,9 +588,9 @@ describe('Work-Orders: List includes isRead', () => {
 
 ### Phase 4 — Definition of Done
 
-- [x] >= 8 Unit Tests für ReadTrackingService (`pnpm test --project unit`)
-- [x] >= 3 Mapping-Tests für `isRead` Boolean
-- [x] >= 4 API Integration Tests (`pnpm test --project api`)
+- [x] > = 8 Unit Tests für ReadTrackingService (`pnpm test --project unit`)
+- [x] > = 3 Mapping-Tests für `isRead` Boolean
+- [x] > = 4 API Integration Tests (`pnpm test --project api`)
 - [x] Alle bestehenden Tests grün (keine Regression)
 - [x] Mock-Factory Pattern verwendet (ADR-018 konform)
 - [x] `authHeaders`/`authOnly` korrekt (Fastify Header-Trennung)
@@ -621,16 +611,16 @@ describe('Work-Orders: List includes isRead', () => {
 
 **Inhalt:**
 
-| Section | Inhalt |
-|---------|--------|
-| **Status** | Accepted |
-| **Context** | 4 Features mit Read-Tracking (Documents, Blackboard, KVP, Work Orders), jeweils eigene Implementierung, Inkonsistenz + Code-Duplikation |
-| **Decision Drivers** | Konsistenz, DRY, FK-Constraints beibehalten, minimaler Blast-Radius |
-| **Options** | A: Eine globale Tabelle (polymorphic FK — REJECTED), B: Separate Tabellen + Shared Service (ACCEPTED), C: Status quo beibehalten (REJECTED) |
-| **Decision** | Option B: `ReadTrackingService` mit `ReadTrackingConfig` Interface |
-| **Consequences** | (+) DRY Service-Logik, FK-Constraints intakt, je Feature eigene Tabelle; (-) Kein zentrales "was hat User gelesen" Dashboard |
-| **Migration Path** | Work Orders sofort, Documents/Blackboard/KVP in separatem Refactor-PR |
-| **Related ADRs** | ADR-003 (Notification vs Entity Read), ADR-009 (Audit Logging), ADR-019 (RLS) |
+| Section              | Inhalt                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**           | Accepted                                                                                                                                    |
+| **Context**          | 4 Features mit Read-Tracking (Documents, Blackboard, KVP, Work Orders), jeweils eigene Implementierung, Inkonsistenz + Code-Duplikation     |
+| **Decision Drivers** | Konsistenz, DRY, FK-Constraints beibehalten, minimaler Blast-Radius                                                                         |
+| **Options**          | A: Eine globale Tabelle (polymorphic FK — REJECTED), B: Separate Tabellen + Shared Service (ACCEPTED), C: Status quo beibehalten (REJECTED) |
+| **Decision**         | Option B: `ReadTrackingService` mit `ReadTrackingConfig` Interface                                                                          |
+| **Consequences**     | (+) DRY Service-Logik, FK-Constraints intakt, je Feature eigene Tabelle; (-) Kein zentrales "was hat User gelesen" Dashboard                |
+| **Migration Path**   | Work Orders sofort, Documents/Blackboard/KVP in separatem Refactor-PR                                                                       |
+| **Related ADRs**     | ADR-003 (Notification vs Entity Read), ADR-009 (Audit Logging), ADR-019 (RLS)                                                               |
 
 ### Step 5.2: Masterplan-Status aktualisieren [DONE]
 
@@ -649,9 +639,9 @@ describe('Work-Orders: List includes isRead', () => {
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung | Status | Datum |
-|---------|-------|-------------|--------|-------|
-| 1 | 1–5 | Alle Phasen in einer Session implementiert | DONE | 2026-03-07 |
+| Session | Phase | Beschreibung                               | Status | Datum      |
+| ------- | ----- | ------------------------------------------ | ------ | ---------- |
+| 1       | 1–5   | Alle Phasen in einer Session implementiert | DONE   | 2026-03-07 |
 
 ---
 
@@ -659,34 +649,34 @@ describe('Work-Orders: List includes isRead', () => {
 
 ### Backend (neu)
 
-| Datei | Zweck |
-|-------|-------|
-| `database/migrations/20260308000076_work-order-read-status.ts` | **NEU:** Read-Status Tabelle |
-| `backend/src/nest/common/services/read-tracking.service.ts` | **NEU:** Shared ReadTrackingService |
+| Datei                                                            | Zweck                                |
+| ---------------------------------------------------------------- | ------------------------------------ |
+| `database/migrations/20260308000076_work-order-read-status.ts`   | **NEU:** Read-Status Tabelle         |
+| `backend/src/nest/common/services/read-tracking.service.ts`      | **NEU:** Shared ReadTrackingService  |
 | `backend/src/nest/common/services/read-tracking.service.test.ts` | **NEU:** Unit Tests (ADR-018 Tier 1) |
-| `docs/infrastructure/adr/ADR-031-centralized-read-tracking.md` | **NEU:** Architektur-ADR |
+| `docs/infrastructure/adr/ADR-031-centralized-read-tracking.md`   | **NEU:** Architektur-ADR             |
 
 ### Backend (editiert)
 
-| Datei | Änderung |
-|-------|---------|
-| `backend/src/nest/work-orders/work-orders.types.ts` | `isRead` zu Types |
-| `backend/src/nest/work-orders/work-orders.helpers.ts` | Mapping erweitern |
-| `backend/src/nest/work-orders/work-orders.helpers.test.ts` | `isRead` Mapping Tests |
-| `backend/src/nest/work-orders/work-orders.service.ts` | LEFT JOIN in List-Queries |
-| `backend/src/nest/work-orders/work-orders.controller.ts` | POST `:uuid/read` Endpoint + ActivityLogger |
-| `backend/src/nest/work-orders/work-orders.module.ts` | ReadTrackingService Import + Config |
-| `backend/test/work-orders.api.test.ts` | API Tests erweitern (ADR-018 Tier 2) |
+| Datei                                                      | Änderung                                    |
+| ---------------------------------------------------------- | ------------------------------------------- |
+| `backend/src/nest/work-orders/work-orders.types.ts`        | `isRead` zu Types                           |
+| `backend/src/nest/work-orders/work-orders.helpers.ts`      | Mapping erweitern                           |
+| `backend/src/nest/work-orders/work-orders.helpers.test.ts` | `isRead` Mapping Tests                      |
+| `backend/src/nest/work-orders/work-orders.service.ts`      | LEFT JOIN in List-Queries                   |
+| `backend/src/nest/work-orders/work-orders.controller.ts`   | POST `:uuid/read` Endpoint + ActivityLogger |
+| `backend/src/nest/work-orders/work-orders.module.ts`       | ReadTrackingService Import + Config         |
+| `backend/test/work-orders.api.test.ts`                     | API Tests erweitern (ADR-018 Tier 2)        |
 
 ### Frontend (editiert)
 
-| Datei | Änderung |
-|-------|---------|
-| `frontend/.../work-orders/_lib/types.ts` | `isRead: boolean` |
-| `frontend/.../work-orders/_lib/api.ts` | `markWorkOrderAsRead()` |
-| `frontend/.../work-orders/admin/_lib/AdminWorkOrderTable.svelte` | "Neu" Badge |
-| `frontend/.../work-orders/_lib/WorkOrderTable.svelte` | "Neu" Badge |
-| `frontend/.../work-orders/[uuid]/+page.svelte` | `markAsRead()` beim Mount |
+| Datei                                                            | Änderung                  |
+| ---------------------------------------------------------------- | ------------------------- |
+| `frontend/.../work-orders/_lib/types.ts`                         | `isRead: boolean`         |
+| `frontend/.../work-orders/_lib/api.ts`                           | `markWorkOrderAsRead()`   |
+| `frontend/.../work-orders/admin/_lib/AdminWorkOrderTable.svelte` | "Neu" Badge               |
+| `frontend/.../work-orders/_lib/WorkOrderTable.svelte`            | "Neu" Badge               |
+| `frontend/.../work-orders/[uuid]/+page.svelte`                   | `markAsRead()` beim Mount |
 
 **4 neue Dateien. 12 bestehende Dateien editieren. 16 Dateien total.**
 
@@ -694,12 +684,12 @@ describe('Work-Orders: List includes isRead', () => {
 
 ## Spec Deviations
 
-| # | Erwartung | Tatsächlicher Code | Entscheidung |
-|---|-----------|-------------------|-------------|
-| D1 | N+1 Pattern (wie Documents) | LEFT JOIN in List-Query | Performanter — O(1) statt O(N) |
-| D2 | `first_seen_at` + `is_confirmed` (wie Blackboard) | Einfaches `read_at` | Kein "als ungelesen markieren" Feature nötig — KISS |
-| D3 | Kein Activity Logging (Documents loggt nicht) | ActivityLogger bei markAsRead | Compliance (ADR-009): Jede User-Aktion tracken |
-| D4 | 8 Unit Tests + 3 Mapping Tests (ADR-018 Tier 1) | 13 API Integration Tests (Tier 2) | Projekt hat kein Unit-Test-Setup — API Tests decken den gesamten Flow end-to-end ab |
+| #   | Erwartung                                         | Tatsächlicher Code                | Entscheidung                                                                        |
+| --- | ------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
+| D1  | N+1 Pattern (wie Documents)                       | LEFT JOIN in List-Query           | Performanter — O(1) statt O(N)                                                      |
+| D2  | `first_seen_at` + `is_confirmed` (wie Blackboard) | Einfaches `read_at`               | Kein "als ungelesen markieren" Feature nötig — KISS                                 |
+| D3  | Kein Activity Logging (Documents loggt nicht)     | ActivityLogger bei markAsRead     | Compliance (ADR-009): Jede User-Aktion tracken                                      |
+| D4  | 8 Unit Tests + 3 Mapping Tests (ADR-018 Tier 1)   | 13 API Integration Tests (Tier 2) | Projekt hat kein Unit-Test-Setup — API Tests decken den gesamten Flow end-to-end ab |
 
 ---
 
@@ -707,7 +697,7 @@ describe('Work-Orders: List includes isRead', () => {
 
 1. **Kein "als ungelesen markieren"** — Work Orders brauchen kein Toggle wie Blackboard. Einmal gesehen = gelesen.
 2. **Kein Refactor von Blackboard/KVP/Documents** — ReadTrackingService ist designed für Wiederverwendung, aber bestehende Features werden in separatem PR umgestellt.
-3. **Kein automatisches Read bei Create** — Der Ersteller sieht seinen eigenen neuen Work Order als "Neu" bis er die Detail-Page öffnet. Alternative: auto-mark bei Create. *Bewusste Entscheidung: Konsistenz mit Document Explorer Pattern.*
+3. **Kein automatisches Read bei Create** — Der Ersteller sieht seinen eigenen neuen Work Order als "Neu" bis er die Detail-Page öffnet. Alternative: auto-mark bei Create. _Bewusste Entscheidung: Konsistenz mit Document Explorer Pattern._
 4. **Admin sieht nur eigenen Read-Status** — Kein "wer hat gelesen" Dashboard (wie Blackboard confirmations).
 5. **Kein Sentry-Alert bei Read-Failures** — Read-Tracking ist fire-and-forget. DB-Fehler werden geloggt (Pino/Loki), aber kein Sentry-Alert. Akzeptables Risiko: Read-Status ist kein geschäftskritisches Feature.
 
@@ -716,28 +706,30 @@ describe('Work-Orders: List includes isRead', () => {
 ## Post-Mortem (nach Abschluss ausfüllen)
 
 ### Was lief gut
+
 - Plan-Validierung gegen Codebase VOR Implementierung hat mehrere Fehler im Plan aufgedeckt (kein CommonModule, ORDER_SELECT_SQL shared reference, Route-Ordering)
 - LEFT JOIN statt N+1 — performanter als Document Explorer Pattern (Spec Deviation D1)
 - ReadTrackingService als @Global() via DatabaseModule — sauberer als ein neues CommonModule
 - Alle 5 Phasen in einer Session statt drei — Plan war konservativ geschätzt
 
 ### Was lief schlecht
+
 - Plan ging von CommonModule aus, das nicht existiert — Pre-Validation vor Schreiben ist essentiell
 - ORDER_SELECT_SQL wird von Detail-Query geteilt — hätte ohne Validation einen Runtime-Fehler verursacht. Fix: separates ORDER_SELECT_WITH_READ_SQL
 - cURL-Testing mit inline `!` in Passwords scheitert an bash escaping — HOW-TO-CURL.md Pattern (`@/tmp/file.json`) nutzen
 
 ### Metriken
 
-| Metrik | Geplant | Tatsächlich |
-|--------|---------|-----------|
-| Sessions | 3 | 1 |
-| Neue Dateien | 4 | 4 (Migration, ReadTrackingService, API Test, ADR-031) |
-| Geänderte Dateien | 12 | 9 (einige Plan-Items waren redundant oder nicht nötig) |
-| Unit Tests (ReadTrackingService) | 8 | 0 (Projekt hat kein Unit-Test-Setup — nur API Integration Tests) |
-| Mapping Tests | 3 | 0 (abgedeckt durch API Tests) |
-| API Tests | 4 | 13 (vollständiger End-to-End Flow) |
-| ESLint Errors bei Release | 0 | 0 |
-| Spec Deviations | 3 | 4 (D4: Unit Tests → API Tests mangels Unit-Test-Infrastruktur) |
+| Metrik                           | Geplant | Tatsächlich                                                      |
+| -------------------------------- | ------- | ---------------------------------------------------------------- |
+| Sessions                         | 3       | 1                                                                |
+| Neue Dateien                     | 4       | 4 (Migration, ReadTrackingService, API Test, ADR-031)            |
+| Geänderte Dateien                | 12      | 9 (einige Plan-Items waren redundant oder nicht nötig)           |
+| Unit Tests (ReadTrackingService) | 8       | 0 (Projekt hat kein Unit-Test-Setup — nur API Integration Tests) |
+| Mapping Tests                    | 3       | 0 (abgedeckt durch API Tests)                                    |
+| API Tests                        | 4       | 13 (vollständiger End-to-End Flow)                               |
+| ESLint Errors bei Release        | 0       | 0                                                                |
+| Spec Deviations                  | 3       | 4 (D4: Unit Tests → API Tests mangels Unit-Test-Infrastruktur)   |
 
 ---
 
