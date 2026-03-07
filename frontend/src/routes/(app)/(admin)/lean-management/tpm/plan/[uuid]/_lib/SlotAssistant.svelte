@@ -183,22 +183,77 @@
     ),
   );
 
-  // Preview: which dates match the form's weekday + repeat pattern
-  const previewDates = $derived.by(() => {
-    if (previewWeekday === undefined || previewRepeatEvery === undefined) {
-      return new SvelteSet<string>();
-    }
-    const dates = new SvelteSet<string>();
-    for (const day of visibleCalendarDays) {
-      if (
-        isoWeekday(day.date) === previewWeekday &&
-        weekOfMonth(day.date) === previewRepeatEvery
-      ) {
-        dates.add(day.date);
+  /** Month period for multi-month intervals (absent = fires every month) */
+  const INTERVAL_MONTH_PERIOD: Partial<Record<IntervalType, number>> = {
+    quarterly: 3,
+    semi_annual: 6,
+    annual: 12,
+  };
+
+  /** Extract interval reference months from projection data for the current plan */
+  function extractIntervalRefs(
+    proj: ScheduleProjectionResult,
+    uuid: string,
+  ): SvelteMap<IntervalType, number> {
+    const refs = new SvelteMap<IntervalType, number>();
+    for (const slot of proj.slots) {
+      if (slot.planUuid !== uuid) continue;
+      const m = new Date(slot.date).getMonth();
+      for (const t of slot.intervalTypes) {
+        if (!refs.has(t)) refs.set(t, m);
       }
     }
-    return dates;
+    return refs;
+  }
+
+  /** Compute which intervals fire for a given month based on reference months */
+  function computeIntervalsForMonth(
+    month: number,
+    refs: SvelteMap<IntervalType, number>,
+  ): IntervalType[] {
+    const result: IntervalType[] = [];
+    for (const [interval, refMonth] of refs) {
+      const period = INTERVAL_MONTH_PERIOD[interval] ?? 1;
+      if ((((month - refMonth) % period) + period) % period === 0) {
+        result.push(interval);
+      }
+    }
+    return result;
+  }
+
+  /** Preview: matching dates + their interval badges */
+  const previewData = $derived.by(() => {
+    const dates = new SvelteSet<string>();
+    const intervals = new SvelteMap<string, IntervalType[]>();
+
+    if (previewWeekday === undefined || previewRepeatEvery === undefined) {
+      return { dates, intervals };
+    }
+
+    const refs =
+      projectionData !== null && planUuid !== undefined ?
+        extractIntervalRefs(projectionData, planUuid)
+      : new SvelteMap<IntervalType, number>();
+
+    for (const day of visibleCalendarDays) {
+      if (
+        isoWeekday(day.date) !== previewWeekday ||
+        weekOfMonth(day.date) !== previewRepeatEvery
+      ) {
+        continue;
+      }
+      dates.add(day.date);
+      if (refs.size > 0) {
+        const month = new Date(day.date).getMonth();
+        intervals.set(day.date, computeIntervalsForMonth(month, refs));
+      }
+    }
+
+    return { dates, intervals };
   });
+
+  const previewDates = $derived(previewData.dates);
+  const previewIntervals = $derived(previewData.intervals);
 
   // Compact view: only scheduled days + preview days (no grid gaps)
   const scheduledDays = $derived(
@@ -579,6 +634,17 @@
             {INTERVAL_LABELS[key as IntervalType]}
           </span>
         {/each}
+        {#if previewDates.size > 0}
+          <span
+            class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+          >
+            <span
+              class="slot-dot"
+              style="background: #9333ea"
+            ></span>
+            Vorschau
+          </span>
+        {/if}
       </div>
     </div>
 
@@ -601,8 +667,8 @@
               hasTpmScheduleConflict(day) || projSlots.length > 0}
             <div
               class="slot-day"
-              class:slot-day--scheduled={isScheduled}
-              class:slot-day--preview={isPreview && !isScheduled}
+              class:slot-day--scheduled={isScheduled && !isPreview}
+              class:slot-day--preview={isPreview}
               class:slot-day--selected={selectedDay === day.date}
               title={buildDayTooltip(day)}
               role="button"
@@ -626,10 +692,16 @@
                   {colorMap}
                 />
                 {#if isPreview}
-                  <SlotPreviewBadge />
+                  <SlotPreviewBadge
+                    intervalTypes={previewIntervals.get(day.date) ?? []}
+                    {colorMap}
+                  />
                 {/if}
               {:else if isPreview}
-                <SlotPreviewBadge />
+                <SlotPreviewBadge
+                  intervalTypes={previewIntervals.get(day.date) ?? []}
+                  {colorMap}
+                />
               {/if}
             </div>
           {/each}
@@ -675,8 +747,8 @@
                   class:slot-day--unavailable={!available &&
                     !isScheduled &&
                     !isPreview}
-                  class:slot-day--scheduled={isScheduled}
-                  class:slot-day--preview={isPreview && !isScheduled}
+                  class:slot-day--scheduled={isScheduled && !isPreview}
+                  class:slot-day--preview={isPreview}
                   class:slot-day--hidden={showOnlyScheduled &&
                     !isScheduled &&
                     !isPreview}
@@ -706,10 +778,16 @@
                       {colorMap}
                     />
                     {#if isPreview}
-                      <SlotPreviewBadge />
+                      <SlotPreviewBadge
+                        intervalTypes={previewIntervals.get(day.date) ?? []}
+                        {colorMap}
+                      />
                     {/if}
                   {:else if isPreview}
-                    <SlotPreviewBadge />
+                    <SlotPreviewBadge
+                      intervalTypes={previewIntervals.get(day.date) ?? []}
+                      {colorMap}
+                    />
                   {:else if available}
                     <i class="fas fa-check slot-day__icon slot-day__icon--ok"
                     ></i>
