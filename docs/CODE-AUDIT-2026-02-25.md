@@ -5,6 +5,7 @@
 **Fixes v3:** 7. März 2026 (Branch `refactor/code-audit`) — 5 Sofort-Maßnahmen + Regressions-Schutz
 **Fixes v4:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #6: `is_active` Magic Numbers zentralisiert
 **Fixes v5:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #7: Availability-History-Loader generisch
+**Fixes v6:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #8: ID-Param-DTO-Factory zentralisiert
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -143,7 +144,7 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 ### 2.1 Code-Duplikation (~12.000+ Zeilen geschätzt)
 
-**v5-Update:** Geschätzte Gesamtduplikation von ~6.300 auf ~5.900 Zeilen reduziert — Availability-History-Loader generisch (~400 LOC → 1 Shared Loader + 4 Slim Consumer, ~288 LOC eliminiert).
+**v6-Update:** Geschätzte Gesamtduplikation von ~5.900 auf ~5.500 Zeilen reduziert — ID-Param-DTO-Factory (~400 LOC Duplikation → Factory + Slim Re-Exports, ~236 LOC eliminiert).
 
 | Duplikat                                   | v1 Instanzen | v2 Instanzen        | Geschätzte Zeilen | Verifiziert | Trend          |
 | ------------------------------------------ | ------------ | ------------------- | ----------------- | ----------- | -------------- |
@@ -152,7 +153,7 @@ Limit: 800 Code-Zeilen für `.ts`.
 | ~~Availability-History-Loader (Frontend)~~ | 4 Dateien    | ~~**4 Dateien**~~   | ~~400+~~          | Ja          | **BEHOBEN v5** |
 | Row-Mapper-Helpers                         | 12+ Services | **18+ Helpers**     | 700+              | Ja          | **↓**          |
 | UI-State-Factories (Frontend)              | 20+ Dateien  | 20+ Dateien         | 1.000+            | Nein        | →              |
-| ID-Param-DTOs (Backend)                    | 30+ Dateien  | **36 DTOs**         | 400+              | Ja          | **↓**          |
+| ~~ID-Param-DTOs (Backend)~~                | 30+ Dateien  | ~~**36 DTOs**~~     | ~~400+~~          | Ja          | **BEHOBEN v6** |
 | Pagination-Schemas (Backend)               | 20+ DTOs     | **15-20 DTOs**      | 300+              | Ja          | **↑**          |
 | Error-Handling try/catch                   | 51+ Services | 51+ Services        | 1.500+            | Nein        | →              |
 | Constants/Types verstreut                  | 73+ Dateien  | **50-70 Dateien**   | 1.500+            | Teilweise   | **↑**          |
@@ -342,19 +343,24 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 - **Keine Zod-Validierung** für eingehende WebSocket-Messages (`WebSocketMessage`, `SendMessageData`, `TypingData`, `MarkReadData`)
 - Optional Chaining ist korrekt abgesichert (v1-Behauptung "ohne Fallback" war **falsch** — alle haben explizite Vergleiche)
 
-### 4.2 ID-Param-DTOs — 3 Patterns, keine Factory (verschlechtert)
+### ~~4.2 ID-Param-DTOs — 3 Patterns, keine Factory~~ — BEHOBEN (2026-03-07)
 
-**36 Param-DTOs** gefunden, 3 verschiedene Patterns:
+**Status:** Factory `createIdParamSchema()` + `createUuidParamSchema()` in `backend/src/nest/common/dto/param.factory.ts`. 29 Param-DTOs migriert, 3 Patterns → 1 konsistentes Pattern.
 
-| Pattern                   | Beschreibung                                         | Anzahl       | Beispiel                                                    |
-| ------------------------- | ---------------------------------------------------- | ------------ | ----------------------------------------------------------- |
-| **A: IdSchema** (korrekt) | Shared Schema aus `common.schema.ts`                 | **4** (11%)  | `users`, `departments`, `audit-trail`, `teams`              |
-| **B: Hardcoded**          | `z.coerce.number().int().positive()` inline          | **7** (19%)  | `assets`, `areas`, `plans`, `root`, `blackboard`, `chat`    |
-| **C: Custom Name**        | Verschiedene Param-Namen (`adminId`, `userId`, etc.) | **25** (70%) | `admin-permissions` (7), `chat` (6), `features`, `settings` |
+| Vorher | Nachher |
+| ------ | ------- |
+| Pattern A: `IdSchema` aus `common.schema.ts` (4 DTOs) | Re-export `IdParamDto` aus `common/dto` |
+| Pattern B: Inline `z.coerce...` (19 DTOs) | Factory `createIdParamSchema()` oder Re-export |
+| Pattern C: Custom Names (12 DTOs) | Factory mit typisierten Param-Namen |
+| 3 UUID DTOs inline | Factory `createUuidParamSchema()` oder Re-export |
+| 5 Compound-DTOs inline | `idField` Import aus `common/dto` |
+| 6 Domain-spezifisch (Enum/String) | Unverändert (korrekt) |
 
-**Keine Factory** (`createIdParamDto`) existiert. Inkonsistenz hat sich durch Work Orders und Assets-Module **vergrößert**.
+**Regressions-Schutz:** 2 Architektur-Tests in `shared/src/architectural.test.ts`:
+- Kein inline `z.coerce.number()` in `*-param.dto.ts` Dateien
+- Kein Import von `IdSchema` aus `schemas/common.schema` in Param-DTOs
 
-**Empfehlung:** Generic Factory `createIdParamDto(paramName, entityLabel)` in `backend/src/nest/common/dto/`
+**Dokumentiert in:** `docs/TYPESCRIPT-STANDARDS.md` Section 7.5 + No-Go #17
 
 ### 4.3 Dateinamen-Inkonsistenz (7 Legacy-Dateien, unverändert)
 
@@ -418,7 +424,7 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 | --- | ---------------------------------------------------------- | ------- | --------------------------------------------------------- | ------------------------- |
 | 6   | `is_active`-Konstante zentralisieren (Details siehe unten) | 4-6h    | **466 Stellen** (134 Dateien) → `IS_ACTIVE` aus `shared/` | **ERLEDIGT** (2026-03-07) |
 | 7   | Availability-History-Loader generisch machen               | 1h      | 4 Dateien → 1 Shared + 4 Slim Consumer, ~288 LOC          | **ERLEDIGT** (2026-03-07) |
-| 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                        | **OFFEN**                 |
+| 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                        | **ERLEDIGT** (2026-03-07) |
 | 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | ~6 Zeilen Puffer → entspannt                              | **NEU**                   |
 | 10  | manage-\* Shared Composable extrahieren                    | 3h      | 3 Pages proaktiv entlasten                                | **OFFEN**                 |
 
@@ -495,7 +501,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | `any` in Test-Code                     | 5             | ~5                     | ~5                        | ~5                         | ~5                         | →           |
 | `== null`/`!= null` (intentional)      | 14            | ~14                    | ~14                       | ~14                        | ~14                        | →           |
 | WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **13**                     | →           |
-| ID-Param DTOs (IdSchema-Nutzung)       | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **4/36 (11%)**             | →           |
+| ID-Param DTOs (Factory-Nutzung)        | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **29/35 (83%)**            | **BEHOBEN** |
 | Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **18+**                    | →           |
 | Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.068**                  | →           |
 | RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | **109**                    | **109**                    | →           |
@@ -504,7 +510,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Migrations                             | 61            | **73**                 | **73**                    | **73**                     | **73**                     | →           |
 | camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | **7**                      | **7**                      | →           |
 | Backend-Module                         | —             | +Work Orders, +Assets  | —                         | —                          | —                          | →           |
-| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | →           |
+| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **12 Tests (CI-enforced)** | **+2**      |
 
 ---
 
@@ -563,6 +569,28 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | ------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- | ------------------------- |
 | Generischer Loader erstellt           | —                                                     | `frontend/src/lib/server/availability-history-loader.ts` | 158 Zeilen (shared Logic) |
 | 4 Consumer-Dateien auf Slim reduziert | 4 `+page.server.ts` (employees, admins, root, assets) | —                                                        | 4×136 → 4×24 = ~288 LOC   |
+
+---
+
+## Anhang: v6 Fix-Log (2026-03-07)
+
+### Geänderter Code (Maßnahme #8: ID-Param-DTO-Factory)
+
+| Schritt                            | Dateien geändert                        | Neue Dateien                                          | LOC Effekt                         |
+| ---------------------------------- | --------------------------------------- | ----------------------------------------------------- | ---------------------------------- |
+| Factory + Barrel erstellt          | —                                       | `common/dto/param.factory.ts`, `common/dto/index.ts`  | 52 + 10 Zeilen (shared Logic)      |
+| Common Barrel erweitert            | `common/index.ts`                       | —                                                     | +2 Zeilen                          |
+| Cat A: Re-export IdParamDto        | 14 Param-DTOs (teams, audit, chat etc.) | —                                                     | 14×15 → 14×4 = ~154 LOC eliminiert |
+| Cat B: Factory createIdParamSchema | 7 Param-DTOs (admin-perms, features…)   | —                                                     | 7×12 → 7×5 = ~49 LOC eliminiert   |
+| Cat C: UUID-Params                 | 3 Param-DTOs (chat, blackboard)         | —                                                     | 3×12 → 3×6 = ~18 LOC eliminiert   |
+| Cat D: Compound → idField          | 5 Param-DTOs (admin-perms, chat)        | —                                                     | 5×13 → 5×10 = ~15 LOC eliminiert  |
+
+### Regressions-Schutz (Enforcement)
+
+| Dokument/Test                      | Was geändert                                       | Zweck                                            |
+| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| `shared/src/architectural.test.ts` | +2 grep-basierte Tests (inline z.coerce, IdSchema) | CI verhindert Rückfall in inline ID-Validierung  |
+| `docs/TYPESCRIPT-STANDARDS.md`     | Section 7.5 + No-Go #17 hinzugefügt (v4.3.0)      | `createIdParamSchema` als Standard dokumentiert  |
 
 ---
 

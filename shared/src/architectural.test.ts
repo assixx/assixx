@@ -10,6 +10,7 @@
  * References:
  *   - docs/TYPESCRIPT-STANDARDS.md Section 7.3 (getErrorMessage)
  *   - docs/TYPESCRIPT-STANDARDS.md Section 7.4 (IS_ACTIVE constants)
+ *   - docs/TYPESCRIPT-STANDARDS.md Section 7.5 (ID Param DTO Factory)
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Session-Expired Handling)
  */
 import { execSync } from 'node:child_process';
@@ -125,6 +126,38 @@ describe('Backend: is_active Magic Number Prevention', () => {
     expect(
       violations,
       `Found local IS_ACTIVE constant definition. Import from @assixx/shared/constants instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+// =============================================================================
+// BACKEND: ID Param DTO Factory Enforcement
+// =============================================================================
+
+describe('Backend: ID Param DTO Factory', () => {
+  it('should not use inline z.coerce.number().int().positive() in param DTO files (use idField from common/dto)', () => {
+    const violations = grepFiles(
+      'z\\.coerce\\.number\\(\\)',
+      'backend/src/nest',
+      '*-param.dto.ts',
+    );
+
+    expect(
+      violations,
+      `Found inline z.coerce.number() in param DTOs. Use idField from common/dto/param.factory instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not import IdSchema from common.schema.ts in param DTO files (use idField from common/dto)', () => {
+    const violations = grepFiles(
+      'schemas/common\\.schema',
+      'backend/src/nest',
+      '*-param.dto.ts',
+    );
+
+    expect(
+      violations,
+      `Found import from schemas/common.schema in param DTOs. Use idField/createIdParamSchema from common/dto instead:\n${violations.join('\n')}`,
     ).toEqual([]);
   });
 });

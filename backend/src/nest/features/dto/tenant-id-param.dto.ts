@@ -1,14 +1,6 @@
-/**
- * Tenant ID Param DTO
- */
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const TenantIdParamSchema = z.object({
-  tenantId: z.coerce
-    .number()
-    .int()
-    .positive('Tenant ID must be a positive integer'),
-});
+import { createIdParamSchema } from '../../common/dto/index.js';
 
+export const TenantIdParamSchema = createIdParamSchema('tenantId');
 export class TenantIdParamDto extends createZodDto(TenantIdParamSchema) {}

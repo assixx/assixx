@@ -1,11 +1,6 @@
-/**
- * Queue ID Param DTO
- */
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const QueueIdParamSchema = z.object({
-  queueId: z.coerce.number().int().positive('Queue ID must be positive'),
-});
+import { createIdParamSchema } from '../../common/dto/index.js';
 
+export const QueueIdParamSchema = createIdParamSchema('queueId');
 export class QueueIdParamDto extends createZodDto(QueueIdParamSchema) {}

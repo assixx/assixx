@@ -1,15 +1,8 @@
-/**
- * Attachment ID Param DTO
- *
- * Validates attachmentId path parameter.
- */
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const AttachmentIdParamSchema = z.object({
-  attachmentId: z.coerce.number().int().positive(),
-});
+import { createIdParamSchema } from '../../common/dto/index.js';
 
+export const AttachmentIdParamSchema = createIdParamSchema('attachmentId');
 export class AttachmentIdParamDto extends createZodDto(
   AttachmentIdParamSchema,
 ) {}

@@ -1,7 +1,7 @@
 # Assixx TypeScript Standards
 
-> **Version:** 4.0.0
-> **Updated:** 2026-02-17
+> **Version:** 4.3.0
+> **Updated:** 2026-03-07
 > **Stack:** NestJS 11 + Fastify | SvelteKit 5 | PostgreSQL 17 + `pg`
 > **Based on:** ESLint + Prettier configs, Power of Ten Rules (NASA/JPL)
 > **Validation:** Zod schemas via `nestjs-zod` (NOT class-validator)
@@ -554,7 +554,38 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 
 **Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on hardcoded `is_active = N` in production code.
 
-### 7.5 No `alert`/`confirm`
+### 7.5 ID Param DTOs — Always Use Factory
+
+Route param DTOs use the centralized factory in `backend/src/nest/common/dto/param.factory.ts`:
+
+```typescript
+// Standard :id param — re-export from factory
+export {
+  IdParamDto as AssetIdParamDto,
+  IdParamSchema as AssetIdParamSchema,
+} from '../../common/dto/index.js';
+
+// Custom param name — use factory
+import { createZodDto } from 'nestjs-zod';
+import { createIdParamSchema } from '../../common/dto/index.js';
+
+export const AdminIdParamSchema = createIdParamSchema('adminId');
+export class AdminIdParamDto extends createZodDto(AdminIdParamSchema) {}
+
+// Compound params — use idField
+import { idField } from '../../common/dto/index.js';
+
+export const CompoundParamSchema = z.object({
+  adminId: idField,
+  departmentId: idField,
+});
+```
+
+**Never:** Inline `z.coerce.number().int().positive()` in param DTOs. Never import `IdSchema` from `common.schema.ts` in param DTOs.
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on inline ID validation in `*-param.dto.ts` files.
+
+### 7.6 No `alert`/`confirm`
 
 ```typescript
 // CORRECT -- custom UI
@@ -811,6 +842,7 @@ Immediate rejection in code review:
 14. Type assertions (`as`) without `| null` for DOM elements
 15. Dataset values without validation
 16. Hardcoded `is_active = 0/1/3/4` magic numbers — use `IS_ACTIVE` from `@assixx/shared/constants`
+17. Inline `z.coerce.number().int().positive()` in param DTOs — use `idField`/`createIdParamSchema` from `common/dto`
 
 ---
 
@@ -882,6 +914,7 @@ Immediate rejection in code review:
 
 | Version | Date       | Changes                                                                                                                            |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                       |
 | 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                       |
 | 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                       |
 | 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog |

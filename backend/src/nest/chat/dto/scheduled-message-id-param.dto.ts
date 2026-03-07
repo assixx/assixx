@@ -1,18 +1,7 @@
-/**
- * Scheduled Message ID Param DTO
- */
-import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
+import type { z } from 'zod';
 
-export const ScheduledMessageIdParamSchema = z.object({
-  id: z.uuid({ message: 'Invalid UUID format' }),
-});
+import { UuidIdParamDto, UuidIdParamSchema } from '../../common/dto/index.js';
 
-export class ScheduledMessageIdParamDto extends createZodDto(
-  ScheduledMessageIdParamSchema,
-) {}
-
-// Type export
-export type ScheduledMessageIdParam = z.infer<
-  typeof ScheduledMessageIdParamSchema
->;
+export { UuidIdParamDto as ScheduledMessageIdParamDto };
+export { UuidIdParamSchema as ScheduledMessageIdParamSchema };
+export type ScheduledMessageIdParam = z.infer<typeof UuidIdParamSchema>;
