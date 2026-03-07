@@ -9,6 +9,7 @@ import path from 'path';
 
 import featureCheck from './featureCheck.js';
 import { logger } from './logger.js';
+import { getErrorMessage } from '../nest/common/utils/error.utils.js';
 
 // Type definition for attachment (from nodemailer)
 interface Attachment {
@@ -307,7 +308,7 @@ async function loadTemplate(
     return templateContent;
   } catch (error: unknown) {
     logger.error(
-      `Fehler beim Laden des E-Mail-Templates '${templateName}': ${(error as Error).message}`,
+      `Fehler beim Laden des E-Mail-Templates '${templateName}': ${getErrorMessage(error)}`,
     );
     // Fallback-Template
     const safeMessage = escapeHtmlTemplate(
@@ -403,8 +404,8 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     logger.info(`E-Mail gesendet: ${messageId}`);
     return { success: true, messageId };
   } catch (error: unknown) {
-    logger.error(`Fehler beim Senden der E-Mail: ${(error as Error).message}`);
-    return { success: false, error: (error as Error).message };
+    logger.error(`Fehler beim Senden der E-Mail: ${getErrorMessage(error)}`);
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -459,7 +460,7 @@ async function processQueue(): Promise<void> {
     }
   } catch (error: unknown) {
     logger.error(
-      `Fehler bei der Verarbeitung der E-Mail-Queue: ${(error as Error).message}`,
+      `Fehler bei der Verarbeitung der E-Mail-Queue: ${getErrorMessage(error)}`,
     );
   } finally {
     isProcessingQueue = false;
@@ -506,9 +507,9 @@ async function sendNewDocumentNotification(
     });
   } catch (error: unknown) {
     logger.error(
-      `Fehler beim Senden der Dokumentenbenachrichtigung: ${(error as Error).message}`,
+      `Fehler beim Senden der Dokumentenbenachrichtigung: ${getErrorMessage(error)}`,
     );
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -538,9 +539,9 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
     });
   } catch (error: unknown) {
     logger.error(
-      `Fehler beim Senden der Willkommens-E-Mail: ${(error as Error).message}`,
+      `Fehler beim Senden der Willkommens-E-Mail: ${getErrorMessage(error)}`,
     );
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -637,9 +638,9 @@ async function sendBulkNotification(
     };
   } catch (error: unknown) {
     logger.error(
-      `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${(error as Error).message}`,
+      `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${getErrorMessage(error)}`,
     );
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 

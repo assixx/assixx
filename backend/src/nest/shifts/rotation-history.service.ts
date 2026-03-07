@@ -181,7 +181,7 @@ export class RotationHistoryService {
       );
 
       return { patterns, assignments, history, shifts, plans };
-    } catch (error) {
+    } catch (error: unknown) {
       await this.databaseService.query('ROLLBACK', []);
       throw error;
     }

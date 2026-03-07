@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { getErrorMessage } from '../common/index.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateTeamDto } from './dto/create-team.dto.js';
@@ -392,7 +393,7 @@ export class TeamsService {
       }
     } catch (error: unknown) {
       this.logger.error(
-        `Error ensuring leader in team: ${(error as Error).message}`,
+        `Error ensuring leader in team: ${getErrorMessage(error)}`,
       );
     }
   }

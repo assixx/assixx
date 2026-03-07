@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
 
 /**
@@ -149,7 +150,7 @@ export class RoleSwitchService {
     } catch (error: unknown) {
       // Don't fail the operation if audit logging fails
       this.logger.warn(
-        `Failed to log role switch: ${(error as Error).message}`,
+        `Failed to log role switch: ${getErrorMessage(error)}`,
       );
     }
   }

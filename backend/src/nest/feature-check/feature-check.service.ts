@@ -6,6 +6,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 
+import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
 
 interface DbFeature {
@@ -37,7 +38,7 @@ export class FeatureCheckService {
       return rows.length > 0;
     } catch (error: unknown) {
       this.logger.error(
-        `Error checking feature access: ${(error as Error).message}`,
+        `Error checking feature access: ${getErrorMessage(error)}`,
       );
       return false;
     }
@@ -75,7 +76,7 @@ export class FeatureCheckService {
       return true;
     } catch (error: unknown) {
       this.logger.error(
-        `Error logging feature usage: ${(error as Error).message}`,
+        `Error logging feature usage: ${getErrorMessage(error)}`,
       );
       return false;
     }

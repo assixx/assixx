@@ -264,7 +264,7 @@ export class RotationGeneratorService {
       }
 
       await this.databaseService.query('COMMIT', []);
-    } catch (error) {
+    } catch (error: unknown) {
       await this.databaseService.query('ROLLBACK', []);
       throw error;
     }
@@ -602,7 +602,7 @@ export class RotationGeneratorService {
       );
 
       return { success: true, shiftsCreated: totalShifts, patternId };
-    } catch (error) {
+    } catch (error: unknown) {
       await this.databaseService.query('ROLLBACK', []);
       this.logger.error('Failed to generate rotation from config', error);
       throw new InternalServerErrorException(

@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import type { PoolClient } from 'pg';
 
+import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
 import { TenantDeletionAnalyzer } from './tenant-deletion-analyzer.service.js';
 import { TenantDeletionAudit } from './tenant-deletion-audit.service.js';
@@ -98,9 +99,9 @@ export class TenantDeletionService implements OnModuleDestroy {
         await this.clearRedisCache(tenantId);
         await this.analyzer.verifyCompleteDeletion(tenantId, client);
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error(
-          `DELETION FAILED for tenant ${tenantId}: ${error instanceof Error ? error.message : 'Unknown'}`,
+          `DELETION FAILED for tenant ${tenantId}: ${getErrorMessage(error)}`,
         );
 
         try {
@@ -108,13 +109,13 @@ export class TenantDeletionService implements OnModuleDestroy {
             'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
             [
               'failed',
-              error instanceof Error ? error.message : 'Unknown error',
+              getErrorMessage(error),
               queueId,
             ],
           );
-        } catch (updateError) {
+        } catch (updateError: unknown) {
           this.logger.debug(
-            `Could not update queue status: ${updateError instanceof Error ? updateError.message : 'Unknown'}`,
+            `Could not update queue status: ${getErrorMessage(updateError)}`,
           );
         }
         throw error;

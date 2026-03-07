@@ -165,7 +165,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
   if (chatWsInstance !== null) {
     try {
       await chatWsInstance.shutdown();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during WebSocket shutdown:', error);
     }
   }
@@ -174,7 +174,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
     try {
       await appInstance.close();
       logger.log('NestJS application closed successfully. Port released.');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during shutdown:', error);
     }
   }

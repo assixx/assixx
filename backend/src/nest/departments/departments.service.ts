@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { getErrorMessage } from '../common/index.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateDepartmentDto } from './dto/create-department.dto.js';
@@ -206,7 +207,7 @@ export class DepartmentsService {
       );
     } catch (error: unknown) {
       this.logger.warn(
-        `Extended query failed, using simple query: ${(error as Error).message}`,
+        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
       );
 
       const rows = await this.db.query<DepartmentRow>(
@@ -272,7 +273,7 @@ export class DepartmentsService {
         throw error;
       }
       this.logger.warn(
-        `Extended query failed, using simple query: ${(error as Error).message}`,
+        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
       );
 
       const rows = await this.db.query<DepartmentRow>(
@@ -317,7 +318,7 @@ export class DepartmentsService {
       this.logger.log(`Added leader ${leaderId} to department ${departmentId}`);
     } catch (error: unknown) {
       this.logger.error(
-        `Error ensuring leader in department: ${(error as Error).message}`,
+        `Error ensuring leader in department: ${getErrorMessage(error)}`,
       );
     }
   }

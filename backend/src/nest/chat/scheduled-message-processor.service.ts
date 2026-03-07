@@ -136,7 +136,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
         try {
           await this.sendScheduledMessage(scheduled);
           successCount++;
-        } catch (error) {
+        } catch (error: unknown) {
           errorCount++;
           this.logger.error(
             { error, scheduledId: scheduled.id },
@@ -148,7 +148,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
       this.logger.log(
         `Processed ${dueMessages.length} messages: ${successCount} sent, ${errorCount} failed`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error({ error }, 'Error processing scheduled messages');
     } finally {
       this.isProcessing = false;
@@ -246,7 +246,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
         preview:
           scheduled.is_e2e ? '' : (scheduled.content ?? '').substring(0, 50),
       });
-    } catch (error) {
+    } catch (error: unknown) {
       // Non-critical - log but don't fail the message send
       this.logger.warn({ error }, 'Failed to emit message event');
     }

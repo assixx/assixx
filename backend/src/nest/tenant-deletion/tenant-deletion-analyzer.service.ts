@@ -14,6 +14,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
+import { getErrorMessage } from '../common/index.js';
+
 import { DatabaseService } from '../database/database.service.js';
 import {
   getTablesWithTenantId,
@@ -91,9 +93,9 @@ export class TenantDeletionAnalyzer {
           });
           report.totalRecords += count;
           report.estimatedDuration += count * 0.001;
-        } catch (error) {
+        } catch (error: unknown) {
           report.warnings.push(
-            `Could not estimate ${tableName}: ${error instanceof Error ? error.message : String(error)}`,
+            `Could not estimate ${tableName}: ${getErrorMessage(error)}`,
           );
         }
       }

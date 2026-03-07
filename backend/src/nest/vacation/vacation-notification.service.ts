@@ -218,7 +218,7 @@ export class VacationNotificationService {
       this.logger.log(
         `Created persistent vacation notification for user ${String(recipientId)}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       // Log but don't fail — notification is secondary to the business operation
       this.logger.error(
         `Failed to create persistent vacation notification: ${String(error)}`,

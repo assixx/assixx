@@ -15,6 +15,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { PoolClient } from 'pg';
 
+import { getErrorMessage } from '../common/index.js';
 import { getTablesWithTenantId } from './tenant-deletion.helpers.js';
 import type { TableNameRow, TenantInfoRow } from './tenant-deletion.types.js';
 
@@ -146,8 +147,8 @@ export class TenantDeletionExporter {
           }
           sqlContent += '\n';
         }
-      } catch (error) {
-        sqlContent += `-- ERROR exporting ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}\n`;
+      } catch (error: unknown) {
+        sqlContent += `-- ERROR exporting ${tableName}: ${getErrorMessage(error)}\n`;
       }
     }
 
@@ -180,9 +181,9 @@ export class TenantDeletionExporter {
           totalRecords += data.length;
           this.logger.log(`Exported ${data.length} records from ${tableName}`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(
-          `Could not export ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
+          `Could not export ${tableName}: ${getErrorMessage(error)}`,
         );
       }
     }

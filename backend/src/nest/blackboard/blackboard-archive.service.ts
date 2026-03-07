@@ -87,7 +87,7 @@ export class BlackboardArchiveService implements OnModuleInit {
         this.logger.log(`Archived ${archivedCount} expired blackboard entries`);
       }
       // No log when nothing to archive - reduces noise
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Failed to archive expired entries', error);
     }
   }

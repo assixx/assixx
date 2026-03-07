@@ -213,7 +213,7 @@ export class TpmNotificationService {
           notificationUuid,
         ],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to create persistent TPM notification: ${String(error)}`,
       );
