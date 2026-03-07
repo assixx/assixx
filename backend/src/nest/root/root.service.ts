@@ -485,12 +485,14 @@ export class RootService {
   async approveDeletion(
     queueId: number,
     userId: number,
+    tenantId: number,
     password: string,
     comment?: string,
   ): Promise<void> {
     await this.deletionService.approveDeletion(
       queueId,
       userId,
+      tenantId,
       password,
       comment,
     );

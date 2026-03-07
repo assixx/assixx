@@ -207,9 +207,14 @@ Einzige Unterschiede: Logger-Name, Entity-Feld (`assetId` vs `userId`), API-Endp
 
 ### 2.2 Untypisierte catch-Blöcke (327+ Stellen)
 
-**v2-Status: UNVERÄNDERT — kein Fix seit v1.**
+**v3-Status (2026-03-07): Backend ERLEDIGT. 25 Stellen + 17 unsichere Casts behoben.**
 
-**Backend (25 Stellen — verifiziert, exakt wie v1):**
+- `getErrorMessage(error: unknown)` Helper erstellt in `backend/src/nest/common/utils/error.utils.ts`
+- Alle 25 Backend catch-Blöcke explizit `: unknown` typisiert
+- Alle 17 `(error as Error).message` Casts durch `getErrorMessage(error)` ersetzt
+- Frontend (302 Stellen) bleibt OFFEN (Maßnahme #11)
+
+**Backend (25 Stellen — ~~verifiziert, exakt wie v1~~ BEHOBEN 2026-03-07):**
 
 | Datei                                    | Anzahl |
 | ---------------------------------------- | ------ |
@@ -234,7 +239,7 @@ Einzige Unterschiede: Logger-Name, Entity-Feld (`assetId` vs `userId`), API-Endp
 - `catch (error)` — 19 Instanzen
 - `catch (e)` — 1 Instanz (sentry-example-page)
 
-**Zusätzlich: 17× unsicherer `(error as Error).message` Cast (verifiziert, exakt wie v1):**
+**Zusätzlich: 17× unsicherer `(error as Error).message` Cast (~~verifiziert, exakt wie v1~~ BEHOBEN 2026-03-07):**
 
 | Datei                      | Anzahl |
 | -------------------------- | ------ |
@@ -246,19 +251,19 @@ Einzige Unterschiede: Logger-Name, Entity-Feld (`assetId` vs `userId`), API-Endp
 
 ---
 
-### 2.3 TODO-Kommentare (5 Stück)
+### 2.3 TODO-Kommentare (~~5~~ 4 Stück)
 
 Per Kaizen-Manifest: _"About to type `// TODO:` — Implement IMMEDIATELY"_
 
-**v2: 5 statt 6 — `vacation.controller.test.ts` TODO wurde behoben.**
+**v3 (2026-03-07): 4 statt 5 — `root-deletion.service.ts` TODO implementiert (tenantId + UserRepository).**
 
-| Datei                             | Zeile | Inhalt                            | Priorität      |
-| --------------------------------- | ----- | --------------------------------- | -------------- |
-| `root-deletion.service.ts`        | 257   | `TODO: Add tenantId parameter`    | Sofort beheben |
-| `main.ts`                         | 83    | `TODO: Implement nonce-based CSP` | Pre-Production |
-| `storage-upgrade/+page.svelte`    | 151   | `TODO: Get actual used storage`   | Pre-Production |
-| `storage-upgrade/+page.server.ts` | 85    | `TODO: Get actual used storage`   | Pre-Production |
-| `survey-results/+page.svelte`     | 104   | `TODO: Implement PDF export`      | Pre-Production |
+| Datei                             | Zeile   | Inhalt                             | Priorität                 |
+| --------------------------------- | ------- | ---------------------------------- | ------------------------- |
+| ~~`root-deletion.service.ts`~~    | ~~257~~ | ~~`TODO: Add tenantId parameter`~~ | **ERLEDIGT** (2026-03-07) |
+| `main.ts`                         | 83      | `TODO: Implement nonce-based CSP`  | Pre-Production            |
+| `storage-upgrade/+page.svelte`    | 151     | `TODO: Get actual used storage`    | Pre-Production            |
+| `storage-upgrade/+page.server.ts` | 85      | `TODO: Get actual used storage`    | Pre-Production            |
+| `survey-results/+page.svelte`     | 104     | `TODO: Implement PDF export`       | Pre-Production            |
 
 ---
 
@@ -387,13 +392,13 @@ Alle anderen **178** `eslint-disable`-Comments haben korrekte Begründungen (179
 
 ### Sofort (< 1 Tag)
 
-| #   | Maßnahme                                                   | Aufwand | Impact                          | v1-Status      |
-| --- | ---------------------------------------------------------- | ------- | ------------------------------- | -------------- |
-| 1   | Session-Expired → `$lib/utils/session-expired.ts`          | 30 min  | 15 Dateien bereinigt, ~675 LOC  | **OFFEN**      |
-| 2   | `root-deletion.service.ts` TODO beheben (Zeile 257)        | 15 min  | Kaizen-Compliance               | **OFFEN**      |
-| 3   | Backend catch-Blöcke typisieren (25 Stellen)               | 1h      | Type Safety                     | **OFFEN**      |
-| 4   | Shared `getErrorMessage(error: unknown)` Helper erstellen  | 15 min  | Grundlage für catch-Bereinigung | **OFFEN**      |
-| 5   | 1× eslint-disable begründen (`admin-profile/+page.svelte`) | 5 min   | Konsistenz (99,4% → 100%)       | Teilw. behoben |
+| #   | Maßnahme                                                   | Aufwand | Impact                               | Status                    |
+| --- | ---------------------------------------------------------- | ------- | ------------------------------------ | ------------------------- |
+| 1   | Session-Expired → `$lib/utils/session-expired.ts`          | 30 min  | 16 Dateien bereinigt, ~675 LOC       | **ERLEDIGT** (2026-03-07) |
+| 2   | `root-deletion.service.ts` TODO beheben (Zeile 257)        | 15 min  | Kaizen-Compliance + Tenant-Isolation | **ERLEDIGT** (2026-03-07) |
+| 3   | Backend catch-Blöcke typisieren (25 Stellen)               | 1h      | Type Safety                          | **ERLEDIGT** (2026-03-07) |
+| 4   | Shared `getErrorMessage(error: unknown)` Helper erstellen  | 15 min  | Grundlage für catch-Bereinigung      | **ERLEDIGT** (2026-03-07) |
+| 5   | 1× eslint-disable begründen (`admin-profile/+page.svelte`) | 5 min   | Konsistenz (99,4% → 100%)            | **ERLEDIGT** (2026-03-07) |
 
 ### Kurzfristig (1–3 Tage)
 

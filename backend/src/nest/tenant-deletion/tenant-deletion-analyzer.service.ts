@@ -15,7 +15,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { getErrorMessage } from '../common/index.js';
-
 import { DatabaseService } from '../database/database.service.js';
 import {
   getTablesWithTenantId,

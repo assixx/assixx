@@ -2,8 +2,6 @@
 // MANAGE TEAMS - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
@@ -71,25 +69,6 @@ function extractIdFromResponse(result: unknown): number | null {
   }
 
   return null;
-}
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error - navigates to login page
- */
-export function handleSessionExpired(): void {
-  void goto('/login?session=expired');
 }
 
 // =============================================================================
@@ -357,17 +336,6 @@ export async function deleteTeam(teamId: number): Promise<DeleteTeamResult> {
  */
 export async function forceDeleteTeam(teamId: number): Promise<void> {
   await apiClient.delete(`${API_ENDPOINTS.team(teamId)}?force=true`);
-}
-
-/**
- * Check for session expired and redirect
- */
-export function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
 }
 
 /**

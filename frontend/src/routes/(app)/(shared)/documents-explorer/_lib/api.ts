@@ -320,19 +320,3 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const result = await fetchSharedUser();
   return result.user as CurrentUser | null;
 }
-
-// =============================================================================
-// ERROR HANDLING
-// =============================================================================
-
-/**
- * Check if error has SESSION_EXPIRED code
- */
-export function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}

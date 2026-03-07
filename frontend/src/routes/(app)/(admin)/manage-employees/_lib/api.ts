@@ -7,6 +7,7 @@ import { resolve } from '$app/paths';
 
 import { getApiClient, ApiError } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { handleSessionExpired } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -78,13 +79,6 @@ function extractCreatedResult(result: unknown): SaveResult {
 // =============================================================================
 
 /**
- * Handle unauthorized response - redirect to login
- */
-function handleUnauthorized(): void {
-  void goto(`${resolve('/login', {})}?session=expired`);
-}
-
-/**
  * Check if user is authenticated
  */
 export function checkAuth(): boolean {
@@ -113,7 +107,7 @@ export async function loadEmployees(): Promise<Employee[]> {
     return employees.filter((u) => u.role === 'employee');
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
-      handleUnauthorized();
+      handleSessionExpired();
       return [];
     }
     throw err;

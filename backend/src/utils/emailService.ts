@@ -7,9 +7,9 @@ import jwt from 'jsonwebtoken';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
 import path from 'path';
 
+import { getErrorMessage } from '../nest/common/utils/error.utils.js';
 import featureCheck from './featureCheck.js';
 import { logger } from './logger.js';
-import { getErrorMessage } from '../nest/common/utils/error.utils.js';
 
 // Type definition for attachment (from nodemailer)
 interface Attachment {

@@ -272,9 +272,7 @@ export class TenantDeletionExecutor {
       } catch {
         // Savepoint might not exist, ignore
       }
-      this.logger.warn(
-        `Skipped ${tableName}: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Skipped ${tableName}: ${getErrorMessage(error)}`);
       return null;
     }
   }

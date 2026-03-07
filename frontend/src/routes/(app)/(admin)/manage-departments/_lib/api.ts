@@ -7,6 +7,10 @@ import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import {
+  handleSessionExpired,
+  isSessionExpiredError,
+} from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS, DEPENDENCY_LABELS } from './constants';
 
@@ -58,14 +62,6 @@ function parseApiError(err: unknown): ParsedApiError {
 }
 
 /**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  const { code } = parseApiError(err);
-  return code === 'SESSION_EXPIRED';
-}
-
-/**
  * Check if error indicates department has dependencies
  */
 function isDependencyError(parsed: ParsedApiError): boolean {
@@ -74,13 +70,6 @@ function isDependencyError(parsed: ParsedApiError): boolean {
     parsed.message.includes('dependencies') ||
     parsed.message.includes('Abhängigkeiten')
   );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
 }
 
 /**

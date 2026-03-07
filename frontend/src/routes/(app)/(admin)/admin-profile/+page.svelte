@@ -269,7 +269,7 @@
       showToast(MESSAGES.passwordChanged, 'success');
 
       // Reset form - using direct assignment (not based on previous values)
-      /* eslint-disable require-atomic-updates */
+      /* eslint-disable require-atomic-updates -- Sequential assignments after async, no shared state race condition */
       currentPassword = '';
       newPassword = '';
       confirmPassword = '';

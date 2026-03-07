@@ -205,19 +205,3 @@ export async function updateAssetAvailability(
 ): Promise<{ message: string }> {
   return await apiClient.put(`/assets/uuid/${uuid}/availability`, payload);
 }
-
-// =============================================================================
-// HELPER TYPES FOR ERROR HANDLING
-// =============================================================================
-
-/**
- * Check if error has SESSION_EXPIRED code
- */
-export function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}

@@ -116,7 +116,7 @@ export class TenantDeletionExporter {
   /**
    * Create SQL backup file with INSERT statements for all tenant data
    */
-  // eslint-disable-next-line sonarjs/cognitive-complexity -- SQL backup iterates all tenant tables with per-table error handling
+   
   private async createSqlBackup(
     tenantId: number,
     companyName: string,

@@ -2,11 +2,12 @@
 // MANAGE AREAS - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import {
+  handleSessionExpired,
+  isSessionExpiredError,
+} from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -23,29 +24,6 @@ import type {
 const log = createLogger('ManageAreasApi');
 
 const apiClient = getApiClient();
-
-// =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
 
 // =============================================================================
 // HELPER FUNCTIONS

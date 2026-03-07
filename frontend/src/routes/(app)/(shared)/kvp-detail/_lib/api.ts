@@ -2,11 +2,9 @@
 // KVP-DETAIL - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired.js';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { API_ENDPOINTS, SHARE_LEVEL_TEXT } from './constants';
@@ -27,31 +25,6 @@ import type {
 const log = createLogger('KvpDetailApi');
 
 const apiClient = getApiClient();
-
-// =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
-
-function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
 
 // =============================================================================
 // USER DATA

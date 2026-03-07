@@ -510,7 +510,29 @@ class ValidationError extends Error {
 }
 ```
 
-### 7.3 No `alert`/`confirm`
+### 7.3 Safe Error Message Extraction
+
+`catch` variables are `unknown` (enforced by `useUnknownInCatchVariables`). Never cast with `(error as Error).message` — use the shared utility:
+
+```typescript
+import { getErrorMessage } from '../common/index.js';
+
+// WRONG -- unsafe cast bypasses unknown typing
+try { ... } catch (error: unknown) {
+  this.logger.error(`Failed: ${(error as Error).message}`);
+}
+
+// CORRECT -- safe extraction
+try { ... } catch (error: unknown) {
+  this.logger.error(`Failed: ${getErrorMessage(error)}`);
+}
+```
+
+`getErrorMessage()` lives in `backend/src/nest/common/utils/error.utils.ts` and handles `Error`, `string`, and unknown types safely.
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on `(error as Error)` usage.
+
+### 7.4 No `alert`/`confirm`
 
 ```typescript
 // CORRECT -- custom UI
@@ -762,9 +784,10 @@ Immediate rejection in code review:
 9. String/number in boolean conditions without explicit checks
 10. Commits with ESLint errors
 11. Catch callbacks without `: unknown`
-12. localStorage/sessionStorage with truthy checks instead of `!== null`
-13. Type assertions (`as`) without `| null` for DOM elements
-14. Dataset values without validation
+12. `(error as Error).message` — use `getErrorMessage(error)` instead
+13. localStorage/sessionStorage with truthy checks instead of `!== null`
+14. Type assertions (`as`) without `| null` for DOM elements
+15. Dataset values without validation
 
 ---
 
@@ -836,6 +859,7 @@ Immediate rejection in code review:
 
 | Version | Date       | Changes                                                                                                                            |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                       |
 | 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog |
 | 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                               |
 | 3.0.0   | 2025-10-xx | PostgreSQL migration, NestJS DI patterns, Zod validation                                                                           |

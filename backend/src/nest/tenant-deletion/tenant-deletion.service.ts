@@ -107,11 +107,7 @@ export class TenantDeletionService implements OnModuleDestroy {
         try {
           await client.query(
             'UPDATE tenant_deletion_queue SET status = $1, error_message = $2 WHERE id = $3',
-            [
-              'failed',
-              getErrorMessage(error),
-              queueId,
-            ],
+            ['failed', getErrorMessage(error), queueId],
           );
         } catch (updateError: unknown) {
           this.logger.debug(
