@@ -6,6 +6,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -336,7 +337,7 @@ export class SignupService {
     tenantId: number,
   ): Promise<void> {
     const planRows = await client.query<DbPlanResult>(
-      'SELECT id FROM plans WHERE code = $1 AND is_active = 1',
+      `SELECT id FROM plans WHERE code = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       ['basic'],
     );
 

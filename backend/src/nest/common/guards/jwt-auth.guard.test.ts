@@ -7,6 +7,7 @@
  *
  * @see docs/USER-PERMISSIONS-UNIT-TEST-PLAN.md
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -97,7 +98,7 @@ function validUserRow(overrides?: Record<string, unknown>) {
     tenant_id: 42,
     first_name: 'Test',
     last_name: 'User',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     has_full_access: false,
     ...overrides,
   };
@@ -289,7 +290,9 @@ describe('SECURITY: JwtAuthGuard', () => {
     it('should throw UnauthorizedException when user is inactive', async () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
       mockJwtService.verifyAsync.mockResolvedValue(validJwtPayload());
-      mockDb.query.mockResolvedValue([validUserRow({ is_active: 0 })]);
+      mockDb.query.mockResolvedValue([
+        validUserRow({ is_active: IS_ACTIVE.INACTIVE }),
+      ]);
 
       const context = createMockExecutionContext({
         authorization: 'Bearer valid-token',

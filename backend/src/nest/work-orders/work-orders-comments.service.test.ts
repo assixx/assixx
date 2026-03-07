@@ -4,6 +4,7 @@
  * Tests addComment, listComments, listReplies, deleteComment with mocked DB + ActivityLogger.
  * Covers happy paths, NotFoundException, ForbiddenException, and threading validation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -78,7 +79,7 @@ function createCommentRow(
     old_status: null,
     new_status: null,
     parent_id: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-02T10:00:00.000Z',
     updated_at: '2026-03-02T10:00:00.000Z',
     first_name: 'Anna',
@@ -297,7 +298,7 @@ describe('deleteComment', () => {
   it('should soft-delete own comment successfully', async () => {
     const comment = { id: 20, user_id: USER_ID, work_order_id: 10 };
     mockDb.queryOne.mockResolvedValueOnce(comment);
-    mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = 4
+    mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.DELETED}
 
     await service.deleteComment(TENANT_ID, USER_ID, COMMENT_UUID, false);
 

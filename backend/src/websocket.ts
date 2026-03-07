@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { IncomingMessage, Server } from 'http';
 import { Redis } from 'ioredis';
 import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
@@ -211,7 +212,7 @@ export class ChatWebSocketServer {
       'SELECT is_active FROM users WHERE id = $1 AND tenant_id = $2',
       [userId, tenantId],
     );
-    return userRows[0]?.is_active === 1;
+    return userRows[0]?.is_active === IS_ACTIVE.ACTIVE;
   }
 
   /** Setup WebSocket client with event handlers */

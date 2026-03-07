@@ -6,6 +6,7 @@
  *
  * Uses a `due_soon_notified_at` flag to prevent duplicate notifications.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
@@ -47,7 +48,7 @@ export class WorkOrderDueCronService {
     try {
       const rows = await this.db.query<DueSoonRow>(
         `SELECT uuid, tenant_id FROM work_orders
-         WHERE is_active = 1
+         WHERE is_active = ${IS_ACTIVE.ACTIVE}
            AND status IN ('open', 'in_progress')
            AND due_date IS NOT NULL
            AND due_date <= NOW() + INTERVAL '24 hours'

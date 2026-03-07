@@ -14,6 +14,7 @@
  * Mocked: PoolClient with query() mock.
  * Every method receives a client for transaction composability.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,7 +52,7 @@ function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
     sort_order: 1,
     custom_fields: {},
     custom_interval_days: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 5,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',

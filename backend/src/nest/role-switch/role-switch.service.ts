@@ -4,6 +4,7 @@
  * Business logic for role switching with strict security checks.
  * Allows admin/root users to temporarily view the app as employee.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -74,7 +75,7 @@ export class RoleSwitchService {
     tenantId: number,
   ): Promise<UserRow> {
     const rows = await this.db.query<UserRow>(
-      'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 

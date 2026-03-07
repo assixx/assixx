@@ -4,6 +4,7 @@
  * Handles conversation CRUD operations.
  * Sub-service of ChatService facade.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -149,7 +150,7 @@ export class ChatConversationsService {
     const conversations = await this.databaseService.query<ConversationRow>(
       `SELECT id, uuid, name, is_group, created_at, updated_at
        FROM chat_conversations
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [conversationId, tenantId],
     );
 
@@ -370,7 +371,7 @@ export class ChatConversationsService {
       `SELECT COUNT(DISTINCT c.id) as count
        FROM chat_conversations c
        INNER JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
-       WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = 1
+       WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = ${IS_ACTIVE.ACTIVE}
          AND (
            cp.deleted_at IS NULL
            OR EXISTS (
@@ -409,7 +410,7 @@ export class ChatConversationsService {
          ORDER BY m.created_at DESC LIMIT 1) as last_message_is_e2e
        FROM chat_conversations c
        INNER JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
-       WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = 1
+       WHERE c.tenant_id = $1 AND cp.user_id = $2 AND c.is_active = ${IS_ACTIVE.ACTIVE}
          AND (
            cp.deleted_at IS NULL
            OR EXISTS (
@@ -554,7 +555,7 @@ export class ChatConversationsService {
     }
 
     const validationResult = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM users WHERE id = ANY($1::int[]) AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM users WHERE id = ANY($1::int[]) AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [participantIds, tenantId],
     );
 
@@ -630,7 +631,7 @@ export class ChatConversationsService {
        FROM chat_conversations c
        WHERE c.tenant_id = $1
        AND c.is_group = false
-       AND c.is_active = 1
+       AND c.is_active = ${IS_ACTIVE.ACTIVE}
        AND EXISTS (
          SELECT 1 FROM chat_conversation_participants cp1
          WHERE cp1.conversation_id = c.id AND cp1.user_id = $2

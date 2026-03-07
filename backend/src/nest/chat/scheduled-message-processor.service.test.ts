@@ -5,6 +5,7 @@
  * Focus: Message processing loop, concurrency guard, send flow,
  *        error handling (per-message + global), event emission.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -48,7 +49,7 @@ function makeScheduledRow(overrides: Record<string, unknown> = {}) {
     attachment_type: null,
     attachment_size: null,
     scheduled_for: new Date('2025-06-01T10:00:00Z'),
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: new Date('2025-06-01T09:00:00Z'),
     sent_at: null,
     ...overrides,

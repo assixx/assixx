@@ -8,6 +8,7 @@
  * All queries use tenant-scoped parameterized SQL (ADR-019).
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -82,7 +83,7 @@ function buildListWhere(tenantId: number, query: ListQuery): WhereResult {
     conditions.push(`u.is_active = $${nextIdx++}`);
     params.push(query.isActive);
   } else {
-    conditions.push('u.is_active != 4');
+    conditions.push(`u.is_active != ${IS_ACTIVE.DELETED}`);
   }
 
   if (query.search !== undefined && query.search !== '') {
@@ -210,7 +211,7 @@ export class DummyUsersService {
   async getByUuid(tenantId: number, uuid: string): Promise<DummyUser> {
     const rows = await this.db.query<DummyUserWithTeamsRow>(
       `${DUMMY_SELECT_SQL}
-       WHERE u.tenant_id = $1 AND u.uuid = $2 AND u.role = 'dummy' AND u.is_active != 4
+       WHERE u.tenant_id = $1 AND u.uuid = $2 AND u.role = 'dummy' AND u.is_active != ${IS_ACTIVE.DELETED}
        ${DUMMY_GROUP_BY}`,
       [tenantId, uuid],
     );
@@ -241,7 +242,7 @@ export class DummyUsersService {
     // Verify exists
     const [existing] = await this.db.query<{ id: number }>(
       `SELECT id FROM users
-       WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != 4`,
+       WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}`,
       [tenantId, uuid],
     );
 
@@ -303,8 +304,8 @@ export class DummyUsersService {
     actingUserId: number,
   ): Promise<void> {
     const rows = await this.db.query<{ id: number }>(
-      `UPDATE users SET is_active = 4, updated_at = NOW()
-       WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != 4
+      `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+       WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}
        RETURNING id`,
       [tenantId, uuid],
     );

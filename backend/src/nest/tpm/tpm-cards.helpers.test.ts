@@ -5,6 +5,7 @@
  *        buildCardUpdateFields (cardCategories → card_categories)
  * Pattern: ADR-018 — Pure function tests, no DI, no DB.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
 import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
@@ -39,7 +40,7 @@ function createMinimalRow(
     weekday_override: null,
     estimated_execution_minutes: null,
     card_categories: [],
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 1,
     created_at: '2026-03-01T00:00:00.000Z',
     updated_at: '2026-03-01T00:00:00.000Z',

@@ -7,6 +7,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -155,7 +156,7 @@ export class RootService {
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       WHERE u.role = 'root' AND u.tenant_id = $1 AND u.is_active = 1
+       WHERE u.role = 'root' AND u.tenant_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY u.created_at DESC`,
       [tenantId],
     );
@@ -177,7 +178,7 @@ export class RootService {
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
-       WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2 AND u.is_active = 1`,
+       WHERE u.id = $1 AND u.role = 'root' AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
 
@@ -339,7 +340,7 @@ export class RootService {
 
     // SECURITY: Check if at least one ACTIVE root user will remain (is_active = 1)
     const rootCount = await this.db.query<DbCountRow>(
-      "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2 AND is_active = 1",
+      `SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, id],
     );
 
@@ -408,7 +409,7 @@ export class RootService {
         this.db.query<DbFeatureCodeRow>(
           `SELECT f.code FROM tenant_features tf
          JOIN features f ON tf.feature_id = f.id
-         WHERE tf.tenant_id = $1 AND tf.is_active = 1`,
+         WHERE tf.tenant_id = $1 AND tf.is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId],
         ),
       ]);

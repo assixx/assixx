@@ -6,6 +6,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -40,7 +41,7 @@ function createMockBlackoutRow(
     start_date: '2026-07-15',
     end_date: '2026-07-31',
     is_global: true,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 10,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',

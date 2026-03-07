@@ -8,6 +8,7 @@
  * - All metrics, overview, shift, kvp, employee, custom, and export
  *   reports consolidated into one service for maintainability.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
 import { dbToApi } from '../../utils/fieldMapper.js';
@@ -267,10 +268,10 @@ export class ReportsService {
         COUNT(*) as total,
         COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
         COUNT(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN 1 END) as new_this_month,
-        (SELECT COUNT(*) FROM departments WHERE tenant_id = $1 AND is_active = 1) as department_count,
+        (SELECT COUNT(*) FROM departments WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}) as department_count,
         CASE
-          WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = $2 AND is_active = 1) > 0
-          THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = $3 AND is_active = 1)
+          WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}) > 0
+          THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = $3 AND is_active = ${IS_ACTIVE.ACTIVE})
           ELSE 0
         END as avg_per_department
       FROM users
@@ -411,9 +412,9 @@ export class ReportsService {
         SELECT
           survey_id,
           COUNT(DISTINCT user_id) / (
-            -- SECURITY: Only count ACTIVE employees (is_active = 1)
+            -- SECURITY: Only count ACTIVE employees (is_active = ${IS_ACTIVE.ACTIVE})
             SELECT COUNT(*) FROM users
-            WHERE tenant_id = $1 AND role = 'employee' AND is_active = 1
+            WHERE tenant_id = $1 AND role = 'employee' AND is_active = ${IS_ACTIVE.ACTIVE}
           ) as response_rate
         FROM survey_responses
         WHERE started_at BETWEEN $2 AND $3
@@ -449,7 +450,7 @@ export class ReportsService {
       `
       SELECT
         COUNT(DISTINCT submitted_by) as participants,
-        (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee' AND is_active = 1) as total_employees
+        (SELECT COUNT(*) FROM users WHERE tenant_id = $1 AND role = 'employee' AND is_active = ${IS_ACTIVE.ACTIVE}) as total_employees
       FROM kvp_suggestions
       WHERE tenant_id = $2
         AND created_at BETWEEN $3 AND $4
@@ -583,7 +584,7 @@ export class ReportsService {
         COUNT(DISTINCT k.id) as kvp_suggestions
       FROM departments d
       LEFT JOIN user_departments ud ON ud.department_id = d.id AND ud.tenant_id = d.tenant_id
-      LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = 1
+      LEFT JOIN users u ON ud.user_id = u.id AND u.is_active = ${IS_ACTIVE.ACTIVE}
       LEFT JOIN teams t ON t.department_id = d.id
       LEFT JOIN kvp_suggestions k ON k.org_id = d.id
         AND k.org_level = 'department'

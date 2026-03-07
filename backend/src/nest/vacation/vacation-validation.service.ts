@@ -8,6 +8,7 @@
  * Extracted from VacationService to respect max-lines limit.
  * All queries via db.tenantTransaction() (ADR-019).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -291,7 +292,7 @@ export class VacationValidationService {
     let sql = `SELECT 1 FROM vacation_requests
       WHERE tenant_id = $1 AND requester_id = $2
         AND status IN ('pending','approved')
-        AND is_active = 1 AND start_date <= $4 AND end_date >= $3`;
+        AND is_active = ${IS_ACTIVE.ACTIVE} AND start_date <= $4 AND end_date >= $3`;
     const params: unknown[] = [tenantId, userId, startDate, endDate];
     if (excludeId !== undefined) {
       sql += ` AND id != $5`;

@@ -5,6 +5,7 @@
  * of work orders. All queries use tenant-scoped transactions (ADR-019).
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -36,7 +37,7 @@ const ORDER_SELECT_SQL = `
        FROM work_order_assignees wa
        JOIN users au ON wa.user_id = au.id
        WHERE wa.work_order_id = wo.id) AS assignee_names,
-    (SELECT COUNT(*) FROM work_order_comments c WHERE c.work_order_id = wo.id AND c.is_active = 1) AS comment_count,
+    (SELECT COUNT(*) FROM work_order_comments c WHERE c.work_order_id = wo.id AND c.is_active = ${IS_ACTIVE.ACTIVE}) AS comment_count,
     (SELECT COUNT(*) FROM work_order_photos p WHERE p.work_order_id = wo.id) AS photo_count
   FROM work_orders wo
   JOIN users u ON wo.created_by = u.id`;
@@ -77,7 +78,10 @@ function buildWhereClause(
   forUserId: number | null,
   query: ListQuery,
 ): WhereResult {
-  const conditions: string[] = ['wo.tenant_id = $1', 'wo.is_active = 1'];
+  const conditions: string[] = [
+    'wo.tenant_id = $1',
+    `wo.is_active = ${IS_ACTIVE.ACTIVE}`,
+  ];
   const params: unknown[] = [tenantId];
   let idx = 2;
 
@@ -177,7 +181,7 @@ export class WorkOrdersService {
   async getWorkOrder(tenantId: number, uuid: string): Promise<WorkOrder> {
     const row = await this.db.queryOne<WorkOrderWithCountsRow>(
       `${ORDER_SELECT_SQL}
-       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1`,
+       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
 
@@ -249,7 +253,7 @@ export class WorkOrdersService {
 
         await client.query(
           `UPDATE work_orders SET ${sets.join(', ')}
-           WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+           WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [uuid, tenantId, ...params],
         );
 
@@ -278,7 +282,7 @@ export class WorkOrdersService {
   ): Promise<void> {
     const row = await this.db.queryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
 
@@ -289,7 +293,7 @@ export class WorkOrdersService {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         await client.query(
-          `UPDATE work_orders SET is_active = 4
+          `UPDATE work_orders SET is_active = ${IS_ACTIVE.DELETED}
            WHERE uuid = $1 AND tenant_id = $2`,
           [uuid, tenantId],
         );
@@ -310,7 +314,7 @@ export class WorkOrdersService {
   async getStats(tenantId: number): Promise<WorkOrderStats> {
     return await this.queryStats(
       `FROM work_orders
-       WHERE tenant_id = $1 AND is_active = 1`,
+       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
   }
@@ -320,7 +324,7 @@ export class WorkOrdersService {
     return await this.queryStats(
       `FROM work_orders wo
        JOIN work_order_assignees woa ON woa.work_order_id = wo.id
-       WHERE wo.tenant_id = $1 AND wo.is_active = 1 AND woa.user_id = $2`,
+       WHERE wo.tenant_id = $1 AND wo.is_active = ${IS_ACTIVE.ACTIVE} AND woa.user_id = $2`,
       [tenantId, userId],
     );
   }
@@ -417,7 +421,7 @@ export class WorkOrdersService {
         `INSERT INTO work_order_assignees (uuid, tenant_id, work_order_id, user_id, assigned_by)
          SELECT $1, $2, $3, u.id, $5
          FROM users u
-         WHERE u.uuid = $4 AND u.tenant_id = $2 AND u.is_active = 1
+         WHERE u.uuid = $4 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}
          RETURNING *, (SELECT first_name FROM users WHERE id = user_id) AS first_name,
                       (SELECT last_name FROM users WHERE id = user_id) AS last_name,
                       (SELECT profile_picture FROM users WHERE id = user_id) AS profile_picture`,
@@ -442,7 +446,7 @@ export class WorkOrdersService {
       priority: string;
     }>(
       `SELECT id, title, priority FROM work_orders
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [uuid, tenantId],
     );

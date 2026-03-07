@@ -4,6 +4,7 @@
  * Phase 6: Pure function tests — 1 test per function.
  * Phase 13 Batch D: Deepened — edge cases, DB helpers, all branches.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -42,7 +43,7 @@ function createMockDbDocument(overrides?: Partial<DbDocument>): DbDocument {
     blackboard_entry_id: null,
     conversation_id: null,
     tags: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 5,
     created_at: new Date('2025-01-01'),
     updated_at: new Date('2025-01-02'),

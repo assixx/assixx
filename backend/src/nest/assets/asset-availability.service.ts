@@ -10,6 +10,7 @@
  * Mirrors UserAvailabilityService pattern for consistency.
  * Works with asset_availability table.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -449,7 +450,7 @@ export class AssetAvailabilityService {
     tenantId: number,
   ): Promise<boolean> {
     const rows = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM assets WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM assets WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetId, tenantId],
     );
     return rows.length > 0;
@@ -461,7 +462,7 @@ export class AssetAvailabilityService {
     tenantId: number,
   ): Promise<number> {
     const rows = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
     const row = rows[0];
@@ -481,7 +482,7 @@ export class AssetAvailabilityService {
       uuid: string;
       name: string;
     }>(
-      `SELECT id, uuid, name FROM assets WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id, uuid, name FROM assets WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
     const row = rows[0];

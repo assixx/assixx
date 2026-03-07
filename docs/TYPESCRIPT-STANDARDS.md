@@ -532,7 +532,29 @@ try { ... } catch (error: unknown) {
 
 **Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on `(error as Error)` usage.
 
-### 7.4 No `alert`/`confirm`
+### 7.4 `is_active` — Always Use `IS_ACTIVE` Constants
+
+The `is_active` column uses integer codes: `0` = inactive, `1` = active, `3` = archived, `4` = deleted.
+
+**Never** use hardcoded magic numbers. Always import from `@assixx/shared/constants`:
+
+```typescript
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
+// CORRECT — readable, centralized, type-safe
+`SELECT * FROM users WHERE is_active = ${IS_ACTIVE.ACTIVE}`;
+`UPDATE users SET is_active = ${IS_ACTIVE.DELETED} WHERE id = $1`;
+`WHERE is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`;
+`WHERE is_active != ${IS_ACTIVE.DELETED}`;
+
+// WRONG — magic numbers
+`SELECT * FROM users WHERE is_active = 1`;
+`UPDATE users SET is_active = 4 WHERE id = $1`;
+```
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on hardcoded `is_active = N` in production code.
+
+### 7.5 No `alert`/`confirm`
 
 ```typescript
 // CORRECT -- custom UI
@@ -788,6 +810,7 @@ Immediate rejection in code review:
 13. localStorage/sessionStorage with truthy checks instead of `!== null`
 14. Type assertions (`as`) without `| null` for DOM elements
 15. Dataset values without validation
+16. Hardcoded `is_active = 0/1/3/4` magic numbers — use `IS_ACTIVE` from `@assixx/shared/constants`
 
 ---
 
@@ -859,6 +882,7 @@ Immediate rejection in code review:
 
 | Version | Date       | Changes                                                                                                                            |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                       |
 | 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                       |
 | 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog |
 | 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                               |

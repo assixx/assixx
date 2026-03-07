@@ -10,6 +10,7 @@
  *   completed → verified | in_progress
  *   verified → completed
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -131,7 +132,7 @@ export class WorkOrderStatusService {
       title: string;
     }>(
       `SELECT id, status, title FROM work_orders
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [uuid, tenantId],
     );

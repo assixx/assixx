@@ -8,6 +8,7 @@
  *
  * Pure functions live in documents.helpers.ts.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -430,7 +431,7 @@ export class DocumentsService {
 
     // Soft delete (is_active = 4)
     await this.databaseService.query(
-      `UPDATE documents SET is_active = 4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE documents SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
     );
 
@@ -470,7 +471,7 @@ export class DocumentsService {
     }
 
     await this.databaseService.query(
-      `UPDATE documents SET is_active = 3, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE documents SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
     );
 
@@ -496,7 +497,7 @@ export class DocumentsService {
     }
 
     await this.databaseService.query(
-      `UPDATE documents SET is_active = 1, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE documents SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
     );
 
@@ -637,7 +638,7 @@ export class DocumentsService {
     // Get unread count
     const unreadResult = await this.databaseService.query<{ count: string }>(
       `SELECT COUNT(*) as count FROM documents d
-       WHERE d.tenant_id = $1 AND d.is_active = 1
+       WHERE d.tenant_id = $1 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        AND NOT EXISTS (
          SELECT 1 FROM document_read_status rs
          WHERE rs.document_id = d.id AND rs.user_id = $2
@@ -650,7 +651,7 @@ export class DocumentsService {
     let storageUsed = 0;
     if (user.role === 'admin' || user.role === 'root') {
       const storageResult = await this.databaseService.query<{ total: string }>(
-        `SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1 AND is_active = 1`,
+        `SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId],
       );
       storageUsed = Number.parseInt(storageResult[0]?.total ?? '0', 10);
@@ -662,7 +663,7 @@ export class DocumentsService {
       count: string;
     }>(
       `SELECT category, COUNT(*) as count FROM documents
-       WHERE tenant_id = $1 AND is_active = 1
+       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
        GROUP BY category`,
       [tenantId],
     );
@@ -688,7 +689,7 @@ export class DocumentsService {
     // Build query with same access scope filter as listDocuments
     let query = `
       SELECT COUNT(*) as count FROM documents d
-      WHERE d.tenant_id = $1 AND d.is_active = 1
+      WHERE d.tenant_id = $1 AND d.is_active = ${IS_ACTIVE.ACTIVE}
       AND NOT EXISTS (
         SELECT 1 FROM document_read_status rs
         WHERE rs.document_id = d.id AND rs.user_id = $2
@@ -745,9 +746,9 @@ export class DocumentsService {
        JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
        JOIN chat_conversation_participants cp2 ON c.id = cp2.conversation_id AND cp2.user_id != $1
        JOIN users u ON cp2.user_id = u.id
-       LEFT JOIN documents d ON d.conversation_id = c.id AND d.is_active = 1
+       LEFT JOIN documents d ON d.conversation_id = c.id AND d.is_active = ${IS_ACTIVE.ACTIVE}
        WHERE cp.user_id = $1 AND c.tenant_id = $2
-       AND EXISTS (SELECT 1 FROM documents WHERE conversation_id = c.id AND is_active = 1)
+       AND EXISTS (SELECT 1 FROM documents WHERE conversation_id = c.id AND is_active = ${IS_ACTIVE.ACTIVE})
        ORDER BY c.id, c.updated_at DESC`,
       [userId, tenantId],
     );
@@ -846,7 +847,7 @@ export class DocumentsService {
     tenantId: number,
   ): Promise<{ role: string } | null> {
     const rows = await this.databaseService.query<{ role: string }>(
-      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     return rows[0] ?? null;

@@ -7,6 +7,7 @@
  * Called exclusively through the AssetsService facade.
  * Caller is responsible for validating asset existence before calling.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   Injectable,
   InternalServerErrorException,
@@ -167,7 +168,7 @@ export class AssetMaintenanceService {
       FROM assets m
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
       WHERE m.tenant_id = $1
-        AND m.is_active = 1
+        AND m.is_active = ${IS_ACTIVE.ACTIVE}
         AND m.next_maintenance <= CURRENT_DATE + ($2 * INTERVAL '1 day')
         AND m.status != 'decommissioned'
       ORDER BY m.next_maintenance ASC
@@ -195,7 +196,7 @@ export class AssetMaintenanceService {
         SUM(CASE WHEN status = 'decommissioned' THEN 1 ELSE 0 END) as decommissioned,
         SUM(CASE WHEN next_maintenance <= CURRENT_DATE + INTERVAL '30 days' AND status != 'decommissioned' THEN 1 ELSE 0 END) as needs_maintenance_soon
       FROM assets
-      WHERE tenant_id = $1 AND is_active = 1
+      WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
       `,
       [tenantId],
     );
@@ -261,7 +262,7 @@ export class AssetMaintenanceService {
     const rows = await this.db.query<DbCategoryRow>(
       `
       SELECT * FROM asset_categories
-      WHERE is_active = 1
+      WHERE is_active = ${IS_ACTIVE.ACTIVE}
       ORDER BY sort_order ASC, name ASC
       `,
     );

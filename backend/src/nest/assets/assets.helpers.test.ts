@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -60,7 +61,7 @@ function createMockAssetRow(overrides?: Partial<DbAssetRow>): DbAssetRow {
     updated_at: new Date('2025-01-20T14:30:00Z'),
     created_by: null,
     updated_by: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     ...overrides,
   };
 }
@@ -356,8 +357,8 @@ describe('mapDbAssetToApi', () => {
   });
 
   it('should convert is_active number to boolean', () => {
-    const rowActive = createMockAssetRow({ is_active: 1 });
-    const rowInactive = createMockAssetRow({ is_active: 0 });
+    const rowActive = createMockAssetRow({ is_active: IS_ACTIVE.ACTIVE });
+    const rowInactive = createMockAssetRow({ is_active: IS_ACTIVE.INACTIVE });
 
     expect(mapDbAssetToApi(rowActive).isActive).toBe(true);
     expect(mapDbAssetToApi(rowInactive).isActive).toBe(false);

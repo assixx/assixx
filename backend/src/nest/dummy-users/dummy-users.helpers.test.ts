@@ -4,6 +4,7 @@
  * Tests: mapDummyUserRowToApi, buildDummyEmail, buildDummyEmployeeNumber
  * Pattern: ADR-018 — Pure function tests, no DI, no DB.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -25,7 +26,7 @@ function createMinimalRow(
     display_name: 'Halle 1 Display',
     employee_number: 'DUMMY-001',
     role: 'dummy',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     has_full_access: false,
     created_at: '2026-03-03T10:00:00.000Z',
     updated_at: '2026-03-03T10:00:00.000Z',

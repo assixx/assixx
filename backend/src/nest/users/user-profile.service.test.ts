@@ -4,6 +4,7 @@
  * Self-service operations: profile update, password change, profile pictures.
  * Extracted from users.service.test.ts during service split.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   InternalServerErrorException,
@@ -74,7 +75,7 @@ function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
     username: 'maxm',
     first_name: 'Max',
     last_name: 'Mustermann',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     last_login: null,
     created_at: new Date('2025-01-01'),
     updated_at: null,

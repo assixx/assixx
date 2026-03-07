@@ -5,6 +5,7 @@
  * Focus: CLS context validation, scheduled message CRUD,
  *        time validation, cancel state asset.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -69,7 +70,7 @@ function makeScheduledRow(overrides: Record<string, unknown> = {}) {
     attachment_type: null,
     attachment_size: null,
     scheduled_for: new Date('2025-06-15T10:00:00Z'),
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: new Date(),
     sent_at: null,
     ...overrides,
@@ -226,7 +227,9 @@ describe('ChatScheduledService', () => {
     });
 
     it('should throw BadRequestException when already sent', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow({ is_active: 4 })]);
+      mockDb.query.mockResolvedValueOnce([
+        makeScheduledRow({ is_active: IS_ACTIVE.DELETED }),
+      ]);
 
       await expect(service.cancelScheduledMessage('1')).rejects.toThrow(
         BadRequestException,
@@ -234,7 +237,9 @@ describe('ChatScheduledService', () => {
     });
 
     it('should throw BadRequestException when already cancelled', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow({ is_active: 0 })]);
+      mockDb.query.mockResolvedValueOnce([
+        makeScheduledRow({ is_active: IS_ACTIVE.INACTIVE }),
+      ]);
 
       await expect(service.cancelScheduledMessage('1')).rejects.toThrow(
         BadRequestException,

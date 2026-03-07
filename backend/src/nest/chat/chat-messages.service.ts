@@ -4,6 +4,7 @@
  * Handles message operations including send, read tracking, and search.
  * Sub-service of ChatService facade.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -360,7 +361,7 @@ export class ChatMessagesService {
        INNER JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
        LEFT JOIN chat_messages m ON m.conversation_id = c.id
        WHERE c.tenant_id = $2
-       AND c.is_active = 1
+       AND c.is_active = ${IS_ACTIVE.ACTIVE}
        AND cp.user_id = $1
        AND cp.tenant_id = $2
        GROUP BY c.id, c.name
@@ -600,7 +601,7 @@ export class ChatMessagesService {
        FROM documents
        WHERE message_id IN (${placeholders})
        AND tenant_id = $1
-       AND is_active = 1
+       AND is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY id ASC`,
       [tenantId, ...messageIds],
     );
@@ -673,7 +674,7 @@ export class ChatMessagesService {
     tenantId: number,
   ): Promise<SenderInfo> {
     const senderInfo = await this.databaseService.query<SenderInfo>(
-      `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [senderId, tenantId],
     );
     const sender = senderInfo[0];

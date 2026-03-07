@@ -7,6 +7,7 @@
  * Approver tests are in vacation-approver.service.test.ts.
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   ForbiddenException,
@@ -95,7 +96,7 @@ function createMockRequestRow(
     response_note: null,
     responded_at: null,
     responded_by: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
     ...overrides,

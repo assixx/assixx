@@ -5,6 +5,7 @@
  * Status-change comments are created automatically by WorkOrderStatusService.
  * Supports one-level-deep reply threading (parent_id).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -90,7 +91,7 @@ export class WorkOrderCommentsService {
 
     const countResult = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM work_order_comments
-       WHERE work_order_id = $1 AND is_active = 1 AND parent_id IS NULL`,
+       WHERE work_order_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} AND parent_id IS NULL`,
       [wo.id],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
@@ -98,10 +99,10 @@ export class WorkOrderCommentsService {
     const rows = await this.db.query<WorkOrderCommentWithNameRow>(
       `SELECT c.*, u.first_name, u.last_name, u.profile_picture,
               (SELECT COUNT(*)::text FROM work_order_comments r
-               WHERE r.parent_id = c.id AND r.is_active = 1) AS reply_count
+               WHERE r.parent_id = c.id AND r.is_active = ${IS_ACTIVE.ACTIVE}) AS reply_count
        FROM work_order_comments c
        JOIN users u ON c.user_id = u.id
-       WHERE c.work_order_id = $1 AND c.is_active = 1 AND c.parent_id IS NULL
+       WHERE c.work_order_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND c.parent_id IS NULL
        ORDER BY c.created_at ASC
        LIMIT $2 OFFSET $3`,
       [wo.id, limit, offset],
@@ -128,7 +129,7 @@ export class WorkOrderCommentsService {
               '0' AS reply_count
        FROM work_order_comments c
        JOIN users u ON c.user_id = u.id
-       WHERE c.work_order_id = $1 AND c.parent_id = $2 AND c.is_active = 1
+       WHERE c.work_order_id = $1 AND c.parent_id = $2 AND c.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY c.created_at ASC`,
       [wo.id, commentId],
     );
@@ -149,7 +150,7 @@ export class WorkOrderCommentsService {
       work_order_id: number;
     }>(
       `SELECT id, user_id, work_order_id FROM work_order_comments
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [commentUuid, tenantId],
     );
 
@@ -164,7 +165,7 @@ export class WorkOrderCommentsService {
     }
 
     await this.db.query(
-      `UPDATE work_order_comments SET is_active = 4
+      `UPDATE work_order_comments SET is_active = ${IS_ACTIVE.DELETED}
        WHERE id = $1`,
       [comment.id],
     );
@@ -189,7 +190,7 @@ export class WorkOrderCommentsService {
   ): Promise<{ id: number; title: string }> {
     const row = await this.db.queryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
     if (row === null) {
@@ -208,7 +209,7 @@ export class WorkOrderCommentsService {
       parent_id: number | null;
     }>(
       `SELECT id, parent_id FROM work_order_comments
-       WHERE id = $1 AND work_order_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND work_order_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [parentId, workOrderId],
     );
 

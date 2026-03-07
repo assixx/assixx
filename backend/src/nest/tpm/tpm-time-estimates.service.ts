@@ -5,6 +5,7 @@
  * One estimate per (plan, interval_type) combination.
  * Uses UPSERT pattern — setEstimate creates or updates in one operation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -73,7 +74,7 @@ export class TpmTimeEstimatesService {
              (uuid, tenant_id, plan_id, interval_type, staff_count,
               preparation_minutes, execution_minutes, followup_minutes, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1)
-           ON CONFLICT (plan_id, interval_type) WHERE is_active = 1
+           ON CONFLICT (plan_id, interval_type) WHERE is_active = ${IS_ACTIVE.ACTIVE}
            DO UPDATE SET
              staff_count = EXCLUDED.staff_count,
              preparation_minutes = EXCLUDED.preparation_minutes,
@@ -124,7 +125,7 @@ export class TpmTimeEstimatesService {
       `SELECT te.*
        FROM tpm_time_estimates te
        JOIN tpm_maintenance_plans p ON te.plan_id = p.id
-       WHERE p.uuid = $1 AND te.tenant_id = $2 AND te.is_active = 1
+       WHERE p.uuid = $1 AND te.tenant_id = $2 AND te.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY te.interval_type`,
       [planUuid, tenantId],
     );
@@ -143,7 +144,7 @@ export class TpmTimeEstimatesService {
        FROM tpm_time_estimates te
        JOIN tpm_maintenance_plans p ON te.plan_id = p.id
        WHERE p.uuid = $1 AND te.tenant_id = $2
-         AND te.interval_type = $3 AND te.is_active = 1`,
+         AND te.interval_type = $3 AND te.is_active = ${IS_ACTIVE.ACTIVE}`,
       [planUuid, tenantId, intervalType],
     );
 
@@ -162,8 +163,8 @@ export class TpmTimeEstimatesService {
       async (client: PoolClient): Promise<void> => {
         const result = await client.query<{ id: number }>(
           `UPDATE tpm_time_estimates
-         SET is_active = 4, updated_at = NOW()
-         WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+         SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+         WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
          RETURNING id`,
           [estimateUuid, tenantId],
         );
@@ -194,7 +195,7 @@ export class TpmTimeEstimatesService {
   ): Promise<number> {
     const result = await client.query<{ id: number }>(
       `SELECT id FROM tpm_maintenance_plans
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [planUuid, tenantId],
     );
     const row = result.rows[0];

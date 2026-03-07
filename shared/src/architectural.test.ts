@@ -9,6 +9,7 @@
  *
  * References:
  *   - docs/TYPESCRIPT-STANDARDS.md Section 7.3 (getErrorMessage)
+ *   - docs/TYPESCRIPT-STANDARDS.md Section 7.4 (IS_ACTIVE constants)
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Session-Expired Handling)
  */
 import { execSync } from 'node:child_process';
@@ -60,6 +61,70 @@ describe('Backend: Error Handling Patterns', () => {
     expect(
       violations,
       `Found unsafe (err as Error) casts. Use getErrorMessage(err) from common/utils instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+// =============================================================================
+// BACKEND + SHARED: is_active Magic Number Prevention
+// =============================================================================
+
+describe('Backend: is_active Magic Number Prevention', () => {
+  it('should not use hardcoded is_active = N in production .ts files (use IS_ACTIVE constants)', () => {
+    const violations = grepFiles(
+      'is_active\\s*=\\s*[0134](?![0-9])',
+      'backend/src',
+      '*.ts',
+    )
+      .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
+      .filter((f) => !f.includes('/migrations/'));
+
+    expect(
+      violations,
+      `Found hardcoded is_active magic numbers. Use IS_ACTIVE.ACTIVE/DELETED/ARCHIVED/INACTIVE from @assixx/shared/constants:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not use hardcoded is_active != N in production .ts files', () => {
+    const violations = grepFiles(
+      'is_active\\s*!=\\s*[0134](?![0-9])',
+      'backend/src',
+      '*.ts',
+    )
+      .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
+      .filter((f) => !f.includes('/migrations/'));
+
+    expect(
+      violations,
+      `Found hardcoded is_active != N. Use IS_ACTIVE constants from @assixx/shared/constants:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not use hardcoded is_active IN (N, ...) in production .ts files', () => {
+    const violations = grepFiles(
+      'is_active\\s+IN\\s*\\([0134]',
+      'backend/src',
+      '*.ts',
+    )
+      .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
+      .filter((f) => !f.includes('/migrations/'));
+
+    expect(
+      violations,
+      `Found hardcoded is_active IN (...). Use IS_ACTIVE constants from @assixx/shared/constants:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not define local IS_ACTIVE constants (import from @assixx/shared/constants)', () => {
+    const violations = grepFiles(
+      'const IS_ACTIVE\\s*=',
+      'backend/src',
+      '*.ts',
+    ).filter((f) => !f.includes('.test.') && !f.includes('.spec.'));
+
+    expect(
+      violations,
+      `Found local IS_ACTIVE constant definition. Import from @assixx/shared/constants instead:\n${violations.join('\n')}`,
     ).toEqual([]);
   });
 });

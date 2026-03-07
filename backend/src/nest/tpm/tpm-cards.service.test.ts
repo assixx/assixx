@@ -11,6 +11,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -66,7 +67,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     custom_interval_days: null,
     weekday_override: null,
     estimated_execution_minutes: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 5,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
@@ -742,7 +743,7 @@ describe('TpmCardsService', () => {
   // =============================================================
 
   describe('deleteCard()', () => {
-    it('should soft-delete a card (is_active = 4)', async () => {
+    it(`should soft-delete a card (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [createCardRow()],
       });
@@ -753,7 +754,7 @@ describe('TpmCardsService', () => {
       ).resolves.toBeUndefined();
 
       const deleteSql = mockClient.query.mock.calls[1]?.[0] as string;
-      expect(deleteSql).toContain('is_active = 4');
+      expect(deleteSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
     });
 
     it('should throw NotFoundException when card not found', async () => {

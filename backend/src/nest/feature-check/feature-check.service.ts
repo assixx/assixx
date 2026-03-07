@@ -4,6 +4,7 @@
  * Checks feature access for tenants and logs feature usage.
  * Replaces legacy utils/featureCheck.ts with proper NestJS DI.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { getErrorMessage } from '../common/index.js';
@@ -31,7 +32,7 @@ export class FeatureCheckService {
          JOIN features f ON tf.feature_id = f.id
          WHERE tf.tenant_id = $1
          AND f.code = $2
-         AND tf.is_active = 1
+         AND tf.is_active = ${IS_ACTIVE.ACTIVE}
          AND (tf.expires_at IS NULL OR tf.expires_at > NOW())`,
         [tenantId, featureCode],
       );

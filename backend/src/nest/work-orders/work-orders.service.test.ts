@@ -4,6 +4,7 @@
  * Tests Core CRUD: create, get, list, listMy, update, delete, getStats.
  * Mock DatabaseService (query, queryOne, tenantTransaction) + ActivityLoggerService.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -59,7 +60,7 @@ function createWorkOrderRow(
     completed_at: null,
     verified_at: null,
     verified_by: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-01T08:00:00.000Z',
     updated_at: '2026-03-01T08:00:00.000Z',
     created_by_name: 'Max Müller',
@@ -420,14 +421,14 @@ describe('updateWorkOrder', () => {
 // ============================================================================
 
 describe('deleteWorkOrder', () => {
-  it('should soft-delete a work order (is_active = 4)', async () => {
+  it(`should soft-delete a work order (is_active = ${IS_ACTIVE.DELETED})`, async () => {
     mockDb.queryOne.mockResolvedValueOnce({ id: 1, title: 'Test' });
     mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
     await service.deleteWorkOrder(1, 5, 'test-uuid');
 
     const sql = mockClient.query.mock.calls[0]?.[0] as string;
-    expect(sql).toContain('is_active = 4');
+    expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
   });
 
   it('should throw NotFoundException when work order not found', async () => {

@@ -7,6 +7,7 @@
  *
  * Uses DatabaseService DI with mocked query method.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -60,7 +61,7 @@ function makeTeamRow(overrides: Partial<TeamRow> = {}): TeamRow {
     description: null,
     department_id: null,
     team_lead_id: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     tenant_id: 10,
     created_at: new Date('2025-01-01'),
     updated_at: new Date('2025-01-01'),
@@ -190,7 +191,9 @@ describe('TeamsService', () => {
     });
 
     it('should map inactive status correctly', async () => {
-      mockDb.query.mockResolvedValueOnce([makeTeamRow({ is_active: 0 })]);
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ is_active: IS_ACTIVE.INACTIVE }),
+      ]);
 
       const result = await service.listTeams(10);
 

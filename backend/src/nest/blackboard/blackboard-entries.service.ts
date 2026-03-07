@@ -4,6 +4,7 @@
  * Core CRUD operations for blackboard entries.
  * Handles listing, creation, updates, deletion, and dashboard queries.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -728,7 +729,7 @@ export class BlackboardEntriesService {
       FROM blackboard_entries e
       LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
-      WHERE e.tenant_id = $2 AND e.is_active = 1
+      WHERE e.tenant_id = $2 AND e.is_active = ${IS_ACTIVE.ACTIVE}
     `;
     const params: unknown[] = [userId, tenantId];
 

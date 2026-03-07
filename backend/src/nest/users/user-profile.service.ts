@@ -10,6 +10,7 @@
  * - UsersService: Admin CRUD operations (list, create, update, delete, archive)
  * - UserProfileService: Self-service operations (profile, password, pictures)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -324,7 +325,7 @@ export class UserProfileService {
               emergency_contact, date_of_birth,
               has_full_access
        FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 

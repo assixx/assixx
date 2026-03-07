@@ -4,6 +4,7 @@
  * Handles admin user CRUD and admin logs.
  * Extracted from root.service.ts — bounded context: admin management.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -55,7 +56,7 @@ export class RootAdminService {
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
-       WHERE u.role = 'admin' AND u.tenant_id = $1 AND u.is_active = 1
+       WHERE u.role = 'admin' AND u.tenant_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY u.created_at DESC`,
       [tenantId],
     );
@@ -74,7 +75,7 @@ export class RootAdminService {
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
-       WHERE u.id = $1 AND u.role = 'admin' AND u.tenant_id = $2 AND u.is_active = 1`,
+       WHERE u.id = $1 AND u.role = 'admin' AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
 

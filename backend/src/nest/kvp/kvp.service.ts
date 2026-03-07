@@ -12,6 +12,7 @@
  * @see kvp.helpers.ts — Pure functions (transforms, query builders, visibility)
  * @see kvp.constants.ts — SQL queries, error messages, defaults
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -146,12 +147,12 @@ export class KvpService {
          COALESCE(
            (SELECT json_agg(json_build_object('id', m.id, 'name', m.name) ORDER BY m.name)
             FROM asset_teams mt
-            JOIN assets m ON mt.asset_id = m.id AND m.is_active = 1
+            JOIN assets m ON mt.asset_id = m.id AND m.is_active = ${IS_ACTIVE.ACTIVE}
             WHERE mt.team_id = t.id AND mt.tenant_id = $2),
            '[]'
          ) AS assets
        FROM user_teams ut
-       JOIN teams t ON ut.team_id = t.id AND t.is_active = 1
+       JOIN teams t ON ut.team_id = t.id AND t.is_active = ${IS_ACTIVE.ACTIVE}
        WHERE ut.user_id = $1 AND ut.tenant_id = $2
        ORDER BY t.name`,
       [userId, tenantId],
@@ -252,7 +253,7 @@ export class KvpService {
       FROM kvp_categories_custom kcc
       WHERE kcc.tenant_id = $1
         AND kcc.category_id IS NULL
-        AND kcc.is_active = 1
+        AND kcc.is_active = ${IS_ACTIVE.ACTIVE}
 
       ORDER BY name ASC
     `;

@@ -4,6 +4,7 @@
  * Business logic for subscription plans.
  * Uses DatabaseService directly - NO Express delegation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -333,7 +334,7 @@ export class PlansService {
       FROM plan_features pf
       JOIN features f ON pf.feature_id = f.id
       WHERE pf.plan_id = $1
-      AND f.is_active = 1
+      AND f.is_active = ${IS_ACTIVE.ACTIVE}
       ORDER BY f.category, f.name
       `,
       [planId],
@@ -352,7 +353,8 @@ export class PlansService {
       `Getting all plans (includeInactive: ${includeInactive})`,
     );
 
-    const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
+    const whereClause =
+      includeInactive ? '' : `WHERE is_active = ${IS_ACTIVE.ACTIVE}`;
     const rows = await this.db.query<DbPlanRow>(
       `SELECT * FROM plans ${whereClause} ORDER BY sort_order ASC`,
     );
@@ -407,7 +409,7 @@ export class PlansService {
    */
   private async getPlanByCode(code: string): Promise<DbPlanRow | null> {
     return await this.db.queryOne<DbPlanRow>(
-      'SELECT * FROM plans WHERE code = $1 AND is_active = 1',
+      `SELECT * FROM plans WHERE code = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [code],
     );
   }
@@ -726,7 +728,7 @@ export class PlansService {
       );
       await this.db.query(
         `UPDATE tenant_features
-         SET is_active = 0
+         SET is_active = ${IS_ACTIVE.INACTIVE}
          WHERE tenant_id = $1
          AND feature_id NOT IN (${placeholders})`,
         [tenantId, ...includedFeatureIds],

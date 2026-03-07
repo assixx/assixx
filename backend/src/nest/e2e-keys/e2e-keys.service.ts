@@ -7,6 +7,7 @@
  * All tenant-scoped queries use tenantTransaction() for RLS compliance (ADR-019).
  * Fingerprints are computed server-side as SHA-256 hex of the raw public key bytes.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   Injectable,
@@ -44,7 +45,7 @@ export class E2eKeysService {
         // Check if an active key already exists
         const existing = await client.query<{ id: string }>(
           `SELECT id FROM e2e_user_keys
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -99,7 +100,7 @@ export class E2eKeysService {
         const result = await client.query<E2eUserKeyRow>(
           `SELECT id, public_key, fingerprint, key_version, created_at
            FROM e2e_user_keys
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -132,7 +133,7 @@ export class E2eKeysService {
         const result = await client.query<E2eUserKeyRow>(
           `SELECT public_key, fingerprint, key_version
            FROM e2e_user_keys
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -159,7 +160,7 @@ export class E2eKeysService {
         const result = await client.query<{ exists: boolean }>(
           `SELECT EXISTS(
              SELECT 1 FROM e2e_user_keys
-             WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1
+             WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            ) AS exists`,
           [tenantId, userId],
         );
@@ -182,7 +183,7 @@ export class E2eKeysService {
       async (client: PoolClient): Promise<boolean> => {
         const result = await client.query<{ key_version: number }>(
           `SELECT key_version FROM e2e_user_keys
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -211,8 +212,8 @@ export class E2eKeysService {
         // Deactivate any existing active key
         await client.query(
           `UPDATE e2e_user_keys
-           SET is_active = 0
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           SET is_active = ${IS_ACTIVE.INACTIVE}
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -266,8 +267,8 @@ export class E2eKeysService {
       async (client: PoolClient): Promise<void> => {
         const result = await client.query(
           `UPDATE e2e_user_keys
-           SET is_active = 4
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           SET is_active = ${IS_ACTIVE.DELETED}
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 

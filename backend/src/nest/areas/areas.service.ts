@@ -8,6 +8,7 @@
  * Side-effect: When area_lead_id changes, pending vacation requests
  * whose approver was the old area_lead get cascaded to the new lead.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -118,7 +119,7 @@ export class AreasService {
     LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
     LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
-    WHERE a.tenant_id = $1 AND a.is_active != 4
+    WHERE a.tenant_id = $1 AND a.is_active != ${IS_ACTIVE.DELETED}
   `;
 
   /**
@@ -231,7 +232,7 @@ export class AreasService {
       this.db.query<StatsRow>(
         `SELECT
           COUNT(*) as total_areas,
-          SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_areas,
+          SUM(CASE WHEN is_active = ${IS_ACTIVE.ACTIVE} THEN 1 ELSE 0 END) as active_areas,
           SUM(capacity) as total_capacity
         FROM areas
         WHERE tenant_id = $1`,
@@ -240,7 +241,7 @@ export class AreasService {
       this.db.query<TypeStatsRow>(
         `SELECT type, COUNT(*) as count
         FROM areas
-        WHERE tenant_id = $1 AND is_active = 1
+        WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
         GROUP BY type`,
         [tenantId],
       ),
@@ -292,7 +293,7 @@ export class AreasService {
         dto.capacity ?? null,
         dto.address ?? null,
         userId,
-        1, // is_active = 1 (active)
+        1, // is_active = ${IS_ACTIVE.ACTIVE} (active)
         areaUuid,
       ],
     );

@@ -5,6 +5,7 @@
  * Each location has a position number (1-200), title, description, and optional photo.
  * Replaces the free-text locationDescription on cards with reusable, photo-documented references.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -82,7 +83,7 @@ export class TpmLocationsService {
        FROM tpm_locations l
        JOIN tpm_maintenance_plans p ON l.plan_id = p.id
        LEFT JOIN users u ON l.created_by = u.id
-       WHERE p.uuid = $1 AND l.tenant_id = $2 AND l.is_active = 1
+       WHERE p.uuid = $1 AND l.tenant_id = $2 AND l.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY l.position_number ASC`,
       [planUuid, tenantId],
     );
@@ -105,7 +106,7 @@ export class TpmLocationsService {
        FROM tpm_locations l
        JOIN tpm_maintenance_plans p ON l.plan_id = p.id
        LEFT JOIN users u ON l.created_by = u.id
-       WHERE l.uuid = $1 AND l.tenant_id = $2 AND l.is_active = 1`,
+       WHERE l.uuid = $1 AND l.tenant_id = $2 AND l.is_active = ${IS_ACTIVE.ACTIVE}`,
       [locationUuid, tenantId],
     );
 
@@ -204,7 +205,7 @@ export class TpmLocationsService {
         params.push(locationUuid, tenantId);
         const sql = `UPDATE tpm_locations
                      SET ${setClauses.join(', ')}, updated_at = NOW()
-                     WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = 1
+                     WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
         const result = await client.query<TpmLocationRow>(sql, params);
@@ -243,8 +244,8 @@ export class TpmLocationsService {
       async (client: PoolClient): Promise<void> => {
         const result = await client.query<{ id: number }>(
           `UPDATE tpm_locations
-           SET is_active = 4, updated_at = NOW()
-           WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+           WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id`,
           [locationUuid, tenantId],
         );
@@ -282,7 +283,7 @@ export class TpmLocationsService {
           `UPDATE tpm_locations
            SET photo_path = $1, photo_file_name = $2, photo_file_size = $3,
                photo_mime_type = $4, updated_at = NOW()
-           WHERE uuid = $5 AND tenant_id = $6 AND is_active = 1
+           WHERE uuid = $5 AND tenant_id = $6 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING *`,
           [
             photo.filePath,
@@ -330,7 +331,7 @@ export class TpmLocationsService {
           `UPDATE tpm_locations
            SET photo_path = NULL, photo_file_name = NULL, photo_file_size = NULL,
                photo_mime_type = NULL, updated_at = NOW()
-           WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+           WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING *`,
           [locationUuid, tenantId],
         );
@@ -369,7 +370,7 @@ export class TpmLocationsService {
   ): Promise<number> {
     const result = await client.query<{ id: number }>(
       `SELECT id FROM tpm_maintenance_plans
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [planUuid, tenantId],
     );
 
@@ -388,7 +389,7 @@ export class TpmLocationsService {
   ): Promise<TpmLocationRow> {
     const result = await client.query<TpmLocationRow>(
       `SELECT * FROM tpm_locations
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [locationUuid, tenantId],
     );

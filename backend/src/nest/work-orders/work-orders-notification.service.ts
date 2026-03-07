@@ -5,6 +5,7 @@
  * AND creates persistent DB notifications for assignment + verification.
  * Fire-and-forget pattern — errors are logged, never thrown.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -190,7 +191,7 @@ export class WorkOrderNotificationService {
         priority: string;
       }>(
         `SELECT uuid, title, status, priority FROM work_orders
-         WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+         WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [uuid, tenantId],
       );
 

@@ -4,6 +4,7 @@
  * Business logic for team management.
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -147,7 +148,7 @@ const TEAM_MEMBERS_DATE_RANGE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND ea.start_date <= $2::date AND ea.end_date >= $3::date
-  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = 1`;
+  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
 
 /**
  * SQL query for team members with current date availability
@@ -160,7 +161,7 @@ const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
-  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = 1`;
+  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
 
 @Injectable()
 export class TeamsService {
@@ -195,7 +196,7 @@ export class TeamsService {
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
-    WHERE t.tenant_id = $1 AND t.is_active != 4
+    WHERE t.tenant_id = $1 AND t.is_active != ${IS_ACTIVE.DELETED}
     ORDER BY t.name`;
 
   /**
@@ -345,7 +346,7 @@ export class TeamsService {
 
     // SECURITY: Only allow ACTIVE users (is_active = 1) as team leaders
     const rows = await this.db.query<UserRow>(
-      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [leaderId, tenantId],
     );
 
@@ -701,7 +702,7 @@ export class TeamsService {
     }
 
     const userRows = await this.db.query<{ id: number }>(
-      'SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 

@@ -4,6 +4,7 @@
  * Handles user assignment to work orders: bulk-assign, remove,
  * list assignees, and get eligible users (team-filtered).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -116,7 +117,7 @@ export class WorkOrderAssigneesService {
        FROM work_order_assignees a
        JOIN users u ON a.user_id = u.id
        JOIN work_orders wo ON a.work_order_id = wo.id
-       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1`,
+       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = ${IS_ACTIVE.ACTIVE}`,
       [workOrderUuid, tenantId],
     );
     return rows.map(mapAssigneeRowToApi);
@@ -144,7 +145,7 @@ export class WorkOrderAssigneesService {
   ): Promise<{ id: number; title: string }> {
     const result = await client.query<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [uuid, tenantId],
     );
@@ -178,7 +179,7 @@ export class WorkOrderAssigneesService {
       const result = await client.query<WorkOrderAssigneeWithNameRow>(
         `INSERT INTO work_order_assignees (uuid, tenant_id, work_order_id, user_id, assigned_by)
          SELECT $1, $2, $3, u.id, $5
-         FROM users u WHERE u.uuid = $4 AND u.tenant_id = $2 AND u.is_active = 1
+         FROM users u WHERE u.uuid = $4 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}
          ON CONFLICT (work_order_id, user_id) DO NOTHING
          RETURNING *, (SELECT first_name FROM users WHERE id = user_id) AS first_name,
                       (SELECT last_name FROM users WHERE id = user_id) AS last_name,
@@ -209,7 +210,7 @@ export class WorkOrderAssigneesService {
        FROM users u
        JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
        JOIN asset_teams mt ON ut.team_id = mt.team_id AND mt.tenant_id = ut.tenant_id
-       WHERE mt.asset_id = $1 AND u.tenant_id = $2 AND u.is_active = 1 AND u.role = 'employee'
+       WHERE mt.asset_id = $1 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE} AND u.role = 'employee'
        ORDER BY u.last_name, u.first_name`,
       [assetId, tenantId],
     );
@@ -228,7 +229,7 @@ export class WorkOrderAssigneesService {
     }>(
       `SELECT u.id, u.uuid, u.first_name, u.last_name, u.email, u.employee_number
        FROM users u
-       WHERE u.tenant_id = $1 AND u.is_active = 1 AND u.role = 'employee'
+       WHERE u.tenant_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE} AND u.role = 'employee'
        ORDER BY u.last_name, u.first_name`,
       [tenantId],
     );

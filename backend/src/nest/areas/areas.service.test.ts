@@ -8,6 +8,7 @@
  *
  * Uses DatabaseService mock (migrated from legacy execute pattern).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -60,7 +61,7 @@ function makeAreaRow(overrides: Partial<AreaRow> = {}): AreaRow {
     type: 'building',
     capacity: null,
     address: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 1,
     created_at: new Date('2025-01-01'),
     updated_at: new Date('2025-01-01'),

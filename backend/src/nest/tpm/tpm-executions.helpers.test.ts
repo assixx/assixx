@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -44,7 +45,7 @@ describe('mapDefectRowToApi', () => {
     title: 'Leckage am Ventil',
     description: 'Ölaustritt an Position 3',
     position_number: 1,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-01T10:00:00.000Z',
     updated_at: '2026-03-01T10:00:00.000Z',
   };

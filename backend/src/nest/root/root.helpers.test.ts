@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 
@@ -32,7 +33,7 @@ function createMockDbUserRow(overrides?: Partial<DbUserRow>): DbUserRow {
     notes: null,
     employee_number: '',
     employee_id: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     tenant_id: 10,
     created_at: new Date('2025-01-15'),
     updated_at: new Date('2025-01-20'),

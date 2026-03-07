@@ -8,6 +8,7 @@
  * shift generation algorithm is a tightly coupled state asset. Splitting it
  * would scatter related logic across files and harm readability.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   Injectable,
   InternalServerErrorException,
@@ -172,7 +173,7 @@ export class RotationGeneratorService {
     const assignments = await this.databaseService.query<DbAssignmentRow>(
       `SELECT * FROM shift_rotation_assignments
        WHERE pattern_id = $1 AND tenant_id = $2
-       AND is_active = 1
+       AND is_active = ${IS_ACTIVE.ACTIVE}
        AND starts_at <= $3
        AND (ends_at IS NULL OR ends_at >= $4)`,
       [dto.patternId, tenantId, dto.endDate, dto.startDate],

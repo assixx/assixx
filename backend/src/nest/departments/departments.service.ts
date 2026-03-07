@@ -4,6 +4,7 @@
  * Business logic for department management.
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -131,7 +132,7 @@ export class DepartmentsService {
           E'\\n' ORDER BY u.last_name, u.first_name) as names
       FROM user_departments ud
       JOIN users u ON ud.user_id = u.id AND ud.tenant_id = u.tenant_id
-      WHERE ud.tenant_id = $1 AND u.is_active IN (0, 1)
+      WHERE ud.tenant_id = $1 AND u.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE})
       GROUP BY ud.department_id
     ),
     team_counts AS (
@@ -147,7 +148,7 @@ export class DepartmentsService {
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
-    WHERE d.tenant_id = $2 AND d.is_active IN (0, 1, 3)
+    WHERE d.tenant_id = $2 AND d.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
     ORDER BY d.name`;
 
   /**
@@ -211,7 +212,7 @@ export class DepartmentsService {
       );
 
       const rows = await this.db.query<DepartmentRow>(
-        'SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (0, 1, 3) ORDER BY name',
+        `SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED}) ORDER BY name`,
         [tenantId],
       );
 
@@ -229,7 +230,7 @@ export class DepartmentsService {
           E'\\n' ORDER BY u.last_name, u.first_name) as names
       FROM user_departments ud
       JOIN users u ON ud.user_id = u.id AND ud.tenant_id = u.tenant_id
-      WHERE ud.tenant_id = $1 AND u.is_active IN (0, 1)
+      WHERE ud.tenant_id = $1 AND u.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE})
       GROUP BY ud.department_id
     ),
     team_counts AS (
@@ -725,7 +726,7 @@ export class DepartmentsService {
       `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id, u.role, u.is_active
        FROM users u
        JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id
-       WHERE ud.department_id = $1 AND u.role != 'dummy' AND u.is_active = 1`,
+       WHERE ud.department_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`,
       [id],
     );
 

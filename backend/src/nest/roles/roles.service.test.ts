@@ -9,6 +9,7 @@
  * DB methods (checkUserRole):
  *   `execute` from utils/db.js is mocked via vi.mock().
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -217,7 +218,7 @@ describe('SECURITY: RolesService', () => {
       await service.checkUserRole(42, 7, 'employee');
 
       expect(mockDb.query).toHaveBeenCalledWith(
-        'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+        `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [42, 7],
       );
     });

@@ -4,6 +4,7 @@
  * Mocked dependencies: DatabaseService (query).
  * Tests: getShiftAssignments — query execution, response mapping, empty results.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -152,7 +153,7 @@ describe('TpmShiftAssignmentsService', () => {
       await service.getShiftAssignments(10, '2026-03-01', '2026-03-31');
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('mp.is_active = 1');
+      expect(sql).toContain(`mp.is_active = ${IS_ACTIVE.ACTIVE}`);
     });
 
     it('should use DISTINCT to avoid duplicate rows', async () => {

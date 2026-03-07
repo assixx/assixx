@@ -4,6 +4,7 @@
  * Handles document access control, query building with access scope filtering,
  * and read-status checks.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -199,7 +200,7 @@ export class DocumentAccessService {
     tenantId: number,
   ): Promise<{ role: string } | null> {
     const rows = await this.databaseService.query<{ role: string }>(
-      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     return rows[0] ?? null;

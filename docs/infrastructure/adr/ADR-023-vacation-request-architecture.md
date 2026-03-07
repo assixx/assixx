@@ -82,7 +82,7 @@ vacation_holidays          — tenant holidays (excluded from workday count)
 **Design choices:**
 
 - All tables have `tenant_id` + RLS policy (ADR-019) — zero cross-tenant access
-- `is_active INTEGER` convention: 0=inactive, 1=active, 3=archive, 4=deleted (soft delete)
+- `is_active INTEGER` convention: 0=inactive, 1=active, 3=archive, 4=deleted (soft delete). Use `IS_ACTIVE` constants from `@assixx/shared/constants` — never hardcode magic numbers.
 - `NUMERIC(5,1)` for day counts — supports half-day precision (e.g., 12.5 days)
 - `vacation_request_status_log` is append-only — immutable audit trail
 - UUIDv7 primary keys on all vacation tables — consistent with project-wide convention

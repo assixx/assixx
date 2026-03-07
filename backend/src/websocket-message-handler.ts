@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from './nest/database/database.service.js';
@@ -289,7 +290,7 @@ export class WebSocketMessageHandler {
     }
     const rows = await this.db.query<KeyVersionRow>(
       `SELECT key_version FROM e2e_user_keys
-       WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+       WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, userId],
     );
     return rows[0]?.key_version === claimedVersion;

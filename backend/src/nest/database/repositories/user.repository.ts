@@ -10,6 +10,7 @@
  *
  * @see docs/plans/USER-REPOSITORY-REFACTOR-PLAN.md
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database.service.js';
@@ -115,7 +116,7 @@ export class UserRepository {
        FROM users
        WHERE id = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
   }
@@ -127,7 +128,7 @@ export class UserRepository {
        FROM users
        WHERE uuid = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
   }
@@ -139,7 +140,7 @@ export class UserRepository {
        FROM users
        WHERE LOWER(email) = LOWER($1)
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [email, tenantId],
     );
   }
@@ -154,7 +155,7 @@ export class UserRepository {
        FROM users
        WHERE uuid = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
   }
@@ -169,7 +170,7 @@ export class UserRepository {
        FROM users
        WHERE id = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
   }
@@ -181,7 +182,7 @@ export class UserRepository {
        FROM users
        WHERE role = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [role, tenantId],
     );
     return Number.parseInt(result?.count ?? '0', 10);
@@ -193,7 +194,7 @@ export class UserRepository {
       `SELECT COUNT(*) as count
        FROM users
        WHERE tenant_id = $1
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
     return Number.parseInt(result?.count ?? '0', 10);
@@ -228,7 +229,7 @@ export class UserRepository {
     const safeOrderDir = orderDir === 'ASC' ? 'ASC' : 'DESC';
 
     const params: unknown[] = [tenantId];
-    let whereClause = 'WHERE tenant_id = $1 AND is_active = 1';
+    let whereClause = `WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`;
 
     if (role !== undefined) {
       params.push(role);
@@ -254,7 +255,7 @@ export class UserRepository {
     const result = await this.db.queryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
-         WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+         WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        ) as exists`,
       [id, tenantId],
     );
@@ -266,7 +267,7 @@ export class UserRepository {
     const result = await this.db.queryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
-         WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+         WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        ) as exists`,
       [uuid, tenantId],
     );
@@ -286,7 +287,7 @@ export class UserRepository {
       `SELECT id FROM users
        WHERE id = ANY($1::int[])
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [ids, tenantId],
     );
 
@@ -297,7 +298,7 @@ export class UserRepository {
   async getRole(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ role: string }>(
       `SELECT role FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
     return result?.role ?? null;
@@ -346,7 +347,7 @@ export class UserRepository {
   async getPasswordHash(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ password: string }>(
       `SELECT password FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
     return result?.password ?? null;
@@ -420,7 +421,7 @@ export class UserRepository {
   ): Promise<number | null> {
     const result = await this.db.queryOne<{ id: number }>(
       `SELECT id FROM users
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
     return result?.id ?? null;
@@ -430,7 +431,7 @@ export class UserRepository {
   async resolveIdToUuid(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ uuid: string }>(
       `SELECT uuid FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
     return result?.uuid ?? null;
@@ -458,7 +459,7 @@ export class UserRepository {
          SELECT 1 FROM users
          WHERE LOWER(email) = $1
            AND tenant_id = $2
-           AND is_active = 1
+           AND is_active = ${IS_ACTIVE.ACTIVE}
            ${excludeClause}
        ) as exists`,
       params,

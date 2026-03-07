@@ -8,6 +8,7 @@
  * Performance test: Simulates cascade with 2400 cards to verify
  * batch SQL approach completes within acceptable time (R1 mitigation).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -54,7 +55,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     sort_order: 1,
     custom_fields: {},
     custom_interval_days: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 5,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
@@ -191,7 +192,7 @@ describe('TpmCardCascadeService', () => {
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("status = 'green'");
-      expect(sql).toContain('is_active = 1');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       expect(sql).toContain('last_completed_at');
     });
 
@@ -258,7 +259,7 @@ describe('TpmCardCascadeService', () => {
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("c.status = 'green'");
-      expect(sql).toContain('c.is_active = 1');
+      expect(sql).toContain(`c.is_active = ${IS_ACTIVE.ACTIVE}`);
     });
 
     it('should filter by asset_id and interval_order', async () => {
