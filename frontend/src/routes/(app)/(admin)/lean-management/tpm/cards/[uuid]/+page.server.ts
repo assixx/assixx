@@ -12,11 +12,12 @@ import { createLogger } from '$lib/utils/logger';
 import type { PageServerLoad } from './$types';
 import type { TpmPlan, TpmCard, PaginatedResponse } from '../../_lib/types';
 
-/** Subset of TpmLocation needed for card form dropdown */
+/** Subset of TpmLocation needed for card form dropdown + photo preview */
 interface LocationOption {
   uuid: string;
   positionNumber: number;
   title: string;
+  photoPath: string | null;
 }
 
 const log = createLogger('TpmCardManagement');

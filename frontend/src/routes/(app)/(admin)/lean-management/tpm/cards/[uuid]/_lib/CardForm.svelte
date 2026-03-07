@@ -26,11 +26,12 @@
     UpdateCardPayload,
   } from '../../../_lib/types';
 
-  /** Subset of TpmLocation for dropdown */
+  /** Subset of TpmLocation for dropdown + photo preview */
   interface LocationOption {
     uuid: string;
     positionNumber: number;
     title: string;
+    photoPath: string | null;
   }
 
   interface Props {
@@ -144,6 +145,32 @@
       document.removeEventListener('click', handleClickOutside, true);
     };
   });
+
+  // =========================================================================
+  // LOCATION PHOTO PREVIEW
+  // =========================================================================
+
+  const selectedLocation = $derived(
+    locationDescription.trim().length > 0 ?
+      (locations.find(
+        (l: LocationOption) => l.title === locationDescription.trim(),
+      ) ?? null)
+    : null,
+  );
+
+  const selectedLocationHasPhoto = $derived(
+    selectedLocation !== null && selectedLocation.photoPath !== null,
+  );
+
+  let showPhotoPreview = $state(false);
+
+  function openPhotoPreview(): void {
+    showPhotoPreview = true;
+  }
+
+  function closePhotoPreview(): void {
+    showPhotoPreview = false;
+  }
 
   // =========================================================================
   // DERIVED DISPLAY TEXT
@@ -530,6 +557,25 @@
         maxlength={1000}
       />
     {/if}
+    {#if selectedLocationHasPhoto && selectedLocation !== null}
+      <button
+        type="button"
+        class="loc-photo-preview"
+        onclick={openPhotoPreview}
+        aria-label="Standort-Foto anzeigen"
+      >
+        <img
+          src="/{selectedLocation.photoPath}"
+          alt="Standort {selectedLocation.title}"
+          class="loc-photo-preview__img"
+        />
+        <span class="loc-photo-preview__label">
+          <i class="fas fa-search-plus"></i>
+          #{selectedLocation.positionNumber}
+          {selectedLocation.title}
+        </span>
+      </button>
+    {/if}
   </div>
 
   <!-- Estimated Execution Minutes (optional) -->
@@ -593,6 +639,63 @@
     </button>
   </div>
 </form>
+
+<!-- Location Photo Preview Modal -->
+{#if showPhotoPreview && selectedLocation !== null && selectedLocation.photoPath !== null}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="modal-overlay modal-overlay--active"
+    onclick={closePhotoPreview}
+    onkeydown={(e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePhotoPreview();
+    }}
+  >
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="ds-modal ds-modal--lg"
+      style="max-height: 95vh;"
+      onclick={(e: MouseEvent) => {
+        e.stopPropagation();
+      }}
+      onkeydown={(e: KeyboardEvent) => {
+        e.stopPropagation();
+      }}
+    >
+      <div class="ds-modal__header">
+        <h3 class="ds-modal__title">
+          <i class="fas fa-image text-success-500 mr-2"></i>
+          #{selectedLocation.positionNumber}
+          {selectedLocation.title}
+        </h3>
+        <button
+          type="button"
+          class="ds-modal__close"
+          onclick={closePhotoPreview}
+          aria-label="Schließen"><i class="fas fa-times"></i></button
+        >
+      </div>
+      <div class="ds-modal__body p-0">
+        <div
+          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+        >
+          <img
+            src="/{selectedLocation.photoPath}"
+            alt="Standort {selectedLocation.title}"
+            class="max-h-full max-w-full object-contain"
+          />
+        </div>
+      </div>
+      <div class="ds-modal__footer">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          onclick={closePhotoPreview}
+          ><i class="fas fa-times mr-2"></i>Schließen</button
+        >
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .card-form {
@@ -680,8 +783,8 @@
     align-items: center;
     justify-content: center;
     width: 2.5rem;
-    background: var(--glass-bg);
-    border: 1px solid var(--color-glass-border);
+    background: var(--glass-bg-hover);
+    border: var(--form-field-border);
     border-left: none;
     border-top-right-radius: var(--radius-md);
     border-bottom-right-radius: var(--radius-md);
@@ -700,6 +803,42 @@
   .location-combobox__toggle:disabled {
     cursor: not-allowed;
     opacity: 50%;
+  }
+
+  .loc-photo-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .loc-photo-preview:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  .loc-photo-preview__img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+
+  .loc-photo-preview__label {
+    font-size: 0.813rem;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .card-form__categories {

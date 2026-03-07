@@ -313,6 +313,13 @@
       <!-- Main: Location List -->
       <div class="flex flex-col gap-4">
         {#if canWrite && showForm}
+          {#if !isEditing}
+            <div class="alert alert--info alert--sm mb-6">
+              <i class="fas fa-info-circle"></i>
+              Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt
+              werden.
+            </div>
+          {/if}
           <!-- Create/Edit Form Section -->
           <div class="card">
             <div class="card__body">
