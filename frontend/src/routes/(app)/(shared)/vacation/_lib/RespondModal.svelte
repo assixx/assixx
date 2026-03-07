@@ -49,7 +49,7 @@
         request.endDate,
         request.requesterId,
       );
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Capacity fetch failed');
     } finally {
       isLoadingCapacity = false;

@@ -141,7 +141,7 @@
       assetState.closeAssetModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving asset');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED,
@@ -160,7 +160,7 @@
       assetState.closeDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting asset');
       showErrorAlert(MESSAGES.ERROR_DELETE_FAILED);
     }
@@ -311,7 +311,7 @@
       showSuccessAlert('Anlagenverfügbarkeit aktualisiert');
       closeAvailabilityModal();
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving asset availability');
       const errorMsg =
         err instanceof Error ? err.message : 'Fehler beim Speichern';

@@ -136,7 +136,7 @@ export async function loadDepartments(): Promise<{
     const data = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
     const departments = extractArray<Department>(data);
     return { departments, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
 
     if (isSessionExpiredError(err)) {
@@ -162,7 +162,7 @@ export async function loadAreas(): Promise<{
     const data = await apiClient.get(API_ENDPOINTS.AREAS);
     const areas = extractArray<Area>(data);
     return { areas, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
     return {
       areas: [],
@@ -196,7 +196,7 @@ export async function loadDepartmentLeads(): Promise<{
     );
 
     return { users, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading department leads');
     return {
       users: [],
@@ -241,7 +241,7 @@ export async function saveDepartment(
       await apiClient.post(API_ENDPOINTS.DEPARTMENTS, payload);
     }
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving department');
     return {
       success: false,
@@ -259,7 +259,7 @@ export async function deleteDepartment(
   try {
     await apiClient.delete(API_ENDPOINTS.department(departmentId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting department');
 
     const parsed = parseApiError(err);
@@ -289,7 +289,7 @@ export async function forceDeleteDepartment(
   try {
     await apiClient.delete(API_ENDPOINTS.departmentForceDelete(departmentId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error force deleting department');
     return {
       success: false,

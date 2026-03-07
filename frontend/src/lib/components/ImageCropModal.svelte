@@ -128,7 +128,7 @@
     try {
       const croppedBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
       onsave(croppedBlob);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error cropping image');
     } finally {
       saving = false;

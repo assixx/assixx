@@ -132,7 +132,7 @@
       });
       logs = result.logs;
       pagination = result.pagination;
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading logs');
       error = MESSAGES.ERROR_LOADING;
       logs = [];
@@ -157,7 +157,7 @@
       currentOffset = 0;
       await invalidateAll();
       await loadLogs();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting logs');
       error = MESSAGES.ERROR_DELETING;
     }

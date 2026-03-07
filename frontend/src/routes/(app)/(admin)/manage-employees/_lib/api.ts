@@ -105,7 +105,7 @@ export async function loadEmployees(): Promise<Employee[]> {
 
     // Filter to only employees (in case API returns mixed roles)
     return employees.filter((u) => u.role === 'employee');
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof ApiError && err.status === 401) {
       handleSessionExpired();
       return [];
@@ -119,7 +119,7 @@ export async function loadTeams(): Promise<Team[]> {
   try {
     const result = await apiClient.get<Team[]>(API_ENDPOINTS.TEAMS);
     return extractArray<Team>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
     return [];
   }
@@ -158,7 +158,7 @@ export async function assignTeamMember(
 ): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
-  } catch (err) {
+  } catch (err: unknown) {
     // 409 Conflict is OK - user is already a member
     if (err instanceof ApiError && err.status === 409) {
       return;
@@ -174,7 +174,7 @@ export async function removeTeamMember(
 ): Promise<void> {
   try {
     await apiClient.delete(`${API_ENDPOINTS.teamMembers(teamId)}/${userId}`);
-  } catch (err) {
+  } catch (err: unknown) {
     // 404 Not Found is OK - user was not a member
     if (err instanceof ApiError && err.status === 404) {
       return;

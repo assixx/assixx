@@ -96,7 +96,7 @@ async function confirmDeleteDocument(): Promise<void> {
     uiState.closeDeleteConfirmModal();
     await invalidateAll();
     await dataState.loadDocuments();
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Delete failed');
     showErrorAlert(
       err instanceof Error ? err.message : 'Löschen fehlgeschlagen',
@@ -137,7 +137,7 @@ async function handleEditSubmit(data: EditData): Promise<void> {
     uiState.closeEditModal();
     await invalidateAll();
     await dataState.loadDocuments();
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Update failed');
     showErrorAlert(
       err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen',
@@ -192,7 +192,7 @@ async function handleUploadSubmit(data: UploadData): Promise<void> {
     uiState.closeUploadModal();
     await invalidateAll();
     await dataState.loadDocuments();
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Upload failed');
     showErrorAlert(
       err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED,

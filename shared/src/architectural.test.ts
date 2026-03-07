@@ -12,6 +12,7 @@
  *   - docs/TYPESCRIPT-STANDARDS.md Section 7.4 (IS_ACTIVE constants)
  *   - docs/TYPESCRIPT-STANDARDS.md Section 7.5 (ID Param DTO Factory)
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Session-Expired Handling)
+ *   - docs/CODE-OF-CONDUCT-SVELTE.md (Frontend catch-block typing)
  */
 import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
@@ -165,6 +166,33 @@ describe('Backend: ID Param DTO Factory', () => {
 // =============================================================================
 // FRONTEND PATTERNS
 // =============================================================================
+
+describe('Frontend: Catch-Block Typing', () => {
+  it('should not have untyped catch (err) blocks — use catch (err: unknown)', () => {
+    const violations = grepFiles(
+      'catch \\((err|error|e)\\) \\{',
+      'frontend/src',
+    );
+
+    expect(
+      violations,
+      `Found untyped catch blocks. Use catch (err: unknown) instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not define local getErrorMessage functions — import from $lib/utils/error', () => {
+    const ALLOWED_FILE = 'frontend/src/lib/utils/error.ts';
+    const violations = grepFiles(
+      'function getErrorMessage',
+      'frontend/src',
+    ).filter((f) => f !== ALLOWED_FILE);
+
+    expect(
+      violations,
+      `Found local getErrorMessage definition. Import from $lib/utils/error instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+});
 
 describe('Frontend: Session-Expired Centralization', () => {
   const ALLOWED_FILE = 'frontend/src/lib/utils/session-expired.ts';

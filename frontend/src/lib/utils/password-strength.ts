@@ -58,7 +58,7 @@ async function initPasswordStrength(): Promise<void> {
 
       zxcvbnOptions.setOptions(options);
       zxcvbnInstance = zxcvbn;
-    } catch (error) {
+    } catch (error: unknown) {
       loadPromise = null;
       log.error({ err: error }, 'Failed to load modules');
       throw error;
@@ -103,7 +103,7 @@ async function checkPasswordStrength(
 
   try {
     return zxcvbnInstance(password, context);
-  } catch (error) {
+  } catch (error: unknown) {
     log.error({ err: error }, 'Error analyzing password');
     return null;
   }

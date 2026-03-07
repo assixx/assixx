@@ -201,7 +201,7 @@
       rulesState.closeDeleteBlackout();
       showSuccessAlert('Sperrzeit geloescht');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Blackout delete failed');
       showErrorAlert('Fehler beim Loeschen der Sperrzeit');
     }

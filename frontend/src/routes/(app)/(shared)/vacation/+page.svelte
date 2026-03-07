@@ -211,7 +211,7 @@
         );
         vacationState.setIncomingRequests(result);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error reloading data');
       showErrorAlert('Fehler beim Laden der Daten');
     } finally {
@@ -255,7 +255,7 @@
   ): Promise<VacationCapacityAnalysis | null> {
     try {
       return await api.analyzeCapacity(startDate, endDate);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Capacity check failed');
       return null;
     }
@@ -274,7 +274,7 @@
       vacationState.closeEditModal();
       showSuccessAlert('Antrag aktualisiert');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Edit request failed');
       showErrorAlert('Fehler beim Aktualisieren des Antrags');
     }
@@ -304,7 +304,7 @@
       if (vacationState.selectedRequest?.id === targetId) {
         editCapacity = result;
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Edit capacity pre-fetch failed');
     }
   }
@@ -314,7 +314,7 @@
       await api.withdrawRequest(request.id);
       showSuccessAlert('Antrag zurueckgezogen');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Withdraw failed');
       showErrorAlert('Fehler beim Zurückziehen');
     }
@@ -343,7 +343,7 @@
         payload.action === 'approve' ? 'Antrag genehmigt' : 'Antrag abgelehnt',
       );
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Respond failed');
       showErrorAlert('Fehler bei der Bearbeitung');
     }
@@ -379,7 +379,7 @@
       closeRevokeModal();
       showSuccessAlert('Antrag widerrufen — Urlaubstage wurden zurückgebucht');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Revoke failed');
       showErrorAlert('Fehler beim Widerrufen des Antrags');
     }
@@ -425,7 +425,7 @@
         );
         vacationState.setIncomingRequests(result);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Pagination error');
       showErrorAlert('Fehler beim Laden weiterer Eintraege');
     } finally {

@@ -24,7 +24,7 @@ export async function registerUser(
     return await apiClient.post<RegisterResponse>('/signup', payload, {
       useAuth: false,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     // Re-throw with user-friendly message
     const message =
       err instanceof Error && err.message !== '' ?

@@ -39,7 +39,7 @@ export async function fetchUserData(): Promise<User | null> {
   try {
     const result = await fetchSharedUser();
     return result.user as User | null;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching user');
     checkSessionExpired(err);
     return null;
@@ -56,7 +56,7 @@ export async function fetchUserData(): Promise<User | null> {
 export async function loadCategories(): Promise<KvpCategory[]> {
   try {
     return await apiClient.get<KvpCategory[]>(API_ENDPOINTS.KVP_CATEGORIES);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading categories');
     return [];
   }
@@ -75,7 +75,7 @@ export async function loadDepartments(): Promise<Department[]> {
       PaginatedResponse<Department> | Department[]
     >(API_ENDPOINTS.DEPARTMENTS);
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return [];
   }
@@ -90,7 +90,7 @@ export async function loadTeams(): Promise<Team[]> {
       API_ENDPOINTS.TEAMS,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
     return [];
   }
@@ -182,7 +182,7 @@ export async function fetchSuggestions(
     );
 
     return response.suggestions;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching suggestions');
     checkSessionExpired(err);
     throw err;
@@ -201,7 +201,7 @@ export async function createSuggestion(
       data,
     );
     return { success: true, id: response.id };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error creating suggestion');
     checkSessionExpired(err);
 
@@ -232,7 +232,7 @@ export async function uploadPhotos(
     );
 
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error uploading photos');
     const message =
       err instanceof Error ? err.message : 'Fehler beim Hochladen der Fotos';
@@ -249,7 +249,7 @@ export async function shareSuggestion(
   try {
     await apiClient.post(API_ENDPOINTS.kvpShare(id), {});
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error sharing suggestion');
     checkSessionExpired(err);
 
@@ -268,7 +268,7 @@ export async function unshareSuggestion(
   try {
     await apiClient.post(API_ENDPOINTS.kvpUnshare(id), {});
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
 
@@ -288,7 +288,7 @@ export async function unshareSuggestion(
 export async function fetchStatistics(): Promise<KvpStats | null> {
   try {
     return await apiClient.get<KvpStats>(API_ENDPOINTS.KVP_STATS);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching statistics');
     checkSessionExpired(err);
     return null;
@@ -307,7 +307,7 @@ export async function loadMyOrganizations(): Promise<UserTeamWithAssets[]> {
     return await apiClient.get<UserTeamWithAssets[]>(
       API_ENDPOINTS.KVP_MY_ORGANIZATIONS,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading user organizations');
     checkSessionExpired(err);
     return [];
@@ -331,7 +331,7 @@ export async function findUserTeamAsLead(userId: number): Promise<Team | null> {
         team.leaderId === userId,
     );
     return userTeam ?? null;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error finding user team');
     return null;
   }

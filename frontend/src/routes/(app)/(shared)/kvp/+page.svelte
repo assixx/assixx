@@ -94,7 +94,7 @@
         kvpState.searchQuery,
       );
       kvpState.setSuggestions(suggestions);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading suggestions');
     }
   }

@@ -90,7 +90,7 @@ export async function loadDepartments(): Promise<Department[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
     return extractArrayFromResponse<Department>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return [];
   }
@@ -108,7 +108,7 @@ export async function loadAdmins(): Promise<Admin[]> {
     const admins = extractArrayFromResponse<Admin>(adminsResult);
     const roots = extractArrayFromResponse<Admin>(rootsResult);
     return [...admins, ...roots];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading team leaders');
     return [];
   }
@@ -122,7 +122,7 @@ export async function loadEmployees(): Promise<TeamMember[]> {
     const result: unknown = await apiClient.get(API_ENDPOINTS.EMPLOYEES);
     const data = extractArrayFromResponse<TeamMember>(result);
     return data.filter((u) => u.role === 'employee');
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading employees');
     return [];
   }
@@ -135,7 +135,7 @@ export async function loadAssets(): Promise<Asset[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.MACHINES);
     return extractArrayFromResponse<Asset>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading assets');
     return [];
   }
@@ -153,7 +153,7 @@ export async function fetchTeamMembers(
       API_ENDPOINTS.teamMembers(teamId),
     );
     return extractArrayFromResponse<{ id: number }>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching team members');
     return [];
   }
@@ -171,7 +171,7 @@ export async function fetchTeamAssets(
       API_ENDPOINTS.teamAssets(teamId),
     );
     return extractArrayFromResponse<{ id: number }>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching team assets');
     return [];
   }
@@ -200,7 +200,7 @@ export async function addTeamMember(
 ): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, userId }, 'Error adding member');
   }
 }
@@ -214,7 +214,7 @@ export async function removeTeamMember(
 ): Promise<void> {
   try {
     await apiClient.delete(API_ENDPOINTS.teamMember(teamId, userId));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, userId }, 'Error removing member');
   }
 }
@@ -228,7 +228,7 @@ export async function addTeamAsset(
 ): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamAssets(teamId), { assetId });
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, assetId }, 'Error adding asset');
   }
 }
@@ -242,7 +242,7 @@ export async function removeTeamAsset(
 ): Promise<void> {
   try {
     await apiClient.delete(API_ENDPOINTS.teamAsset(teamId, assetId));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, assetId }, 'Error removing asset');
   }
 }
@@ -314,7 +314,7 @@ export async function deleteTeam(teamId: number): Promise<DeleteTeamResult> {
   try {
     await apiClient.delete(API_ENDPOINTS.team(teamId));
     return { success: true, hasMembers: false, memberCount: 0 };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting team');
 
     // Check if team has members

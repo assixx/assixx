@@ -93,7 +93,7 @@ export async function loadAreas(): Promise<{
         (data as Area[])
       : ((data as { data?: Area[] }).data ?? []);
     return { areas, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
 
     if (isSessionExpiredError(err)) {
@@ -132,7 +132,7 @@ export async function loadAreaLeads(): Promise<{
     );
 
     return { users, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading area leads');
     return {
       users: [],
@@ -158,7 +158,7 @@ export async function loadDepartments(): Promise<{
         (data as Department[])
       : ((data as { data?: Department[] }).data ?? []);
     return { departments, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return {
       departments: [],
@@ -209,7 +209,7 @@ export async function saveArea(
       await apiClient.post(API_ENDPOINTS.AREAS, payload);
     }
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving area');
     return {
       success: false,
@@ -225,7 +225,7 @@ export async function deleteArea(areaId: number): Promise<DeleteAreaResult> {
   try {
     await apiClient.delete(API_ENDPOINTS.area(areaId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting area');
 
     const errorInfo = parseDeleteError(err);
@@ -255,7 +255,7 @@ export async function forceDeleteArea(
   try {
     await apiClient.delete(API_ENDPOINTS.areaForceDelete(areaId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error force deleting area');
     return {
       success: false,

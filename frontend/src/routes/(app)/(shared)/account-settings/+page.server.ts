@@ -72,7 +72,7 @@ async function apiFetch<T>(
     }
 
     return data as T | null;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }

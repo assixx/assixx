@@ -69,7 +69,7 @@ export async function loadProfile(): Promise<{
   try {
     const result = await fetchSharedUser();
     return { user: result.user as UserProfile | null, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading profile');
     return {
       user: null,
@@ -98,7 +98,7 @@ export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
       '/root/deletion-approvals/pending',
     );
     return extractArrayFromResponse<ApprovalItem>(result, 'approvals');
-  } catch (err) {
+  } catch (err: unknown) {
     log.warn({ err }, 'Could not load approvals');
     return [];
   }

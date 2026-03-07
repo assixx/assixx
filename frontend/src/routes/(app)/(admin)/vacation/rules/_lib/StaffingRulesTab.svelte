@@ -208,7 +208,7 @@
       rulesState.closeDeleteStaffingRule();
       showSuccessAlert('Besetzungsregel geloescht');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Staffing rule delete failed');
       showErrorAlert('Fehler beim Loeschen der Besetzungsregel');
     }

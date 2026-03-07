@@ -76,7 +76,7 @@ export async function loadAssets(
 export async function getAssetById(assetId: number): Promise<Asset | null> {
   try {
     return await apiClient.get(`/assets/${assetId}`);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, assetId }, 'Error loading asset');
     return null;
   }
@@ -113,7 +113,7 @@ export async function getAssetTeams(assetId: number): Promise<AssetTeam[]> {
   try {
     const result: unknown = await apiClient.get(`/assets/${assetId}/teams`);
     return extractArrayFromResponse<AssetTeam>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, assetId }, 'Error loading teams for asset');
     return [];
   }

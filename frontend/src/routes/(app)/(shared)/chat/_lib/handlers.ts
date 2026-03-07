@@ -304,7 +304,7 @@ export async function uploadFiles(
         type: result.mimeType,
         size: result.fileSize,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error uploading file');
     }
   }
@@ -428,7 +428,7 @@ function handleRawMessage(
     }
     const message = JSON.parse(rawData) as { type: string; data: unknown };
     handleWebSocketMessage(message, callbacks);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error parsing WebSocket message');
   }
 }
@@ -516,7 +516,7 @@ export async function connectWebSocket(
     // eslint-disable-next-line require-atomic-updates -- Safe: ws is set to null before async, and JS is single-threaded
     ws = newWs;
     return ws;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error creating WebSocket');
     return null;
   }

@@ -323,7 +323,7 @@ export async function handleCustomRotationGenerate(
     );
     navigateToWeekContainingDate(config.startDate);
     void loadShiftPlan();
-  } catch (error) {
+  } catch (error: unknown) {
     log.error({ err: error }, 'Custom rotation error');
     showErrorAlert(
       error instanceof Error ? error.message : 'Fehler bei der Custom Rotation',

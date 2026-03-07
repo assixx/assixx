@@ -419,7 +419,7 @@ export function createChatPageState(deps: ChatPageDeps) {
       );
       updateSidebarPreviewFromMessages(activeConversation.id, messages);
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error(
         { err: error },
         'Failed to reload messages after SSE notification',
@@ -486,7 +486,7 @@ export function createChatPageState(deps: ChatPageDeps) {
         conv.unreadCount = 0;
       }
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Error loading messages');
       showNotification(MESSAGES.errorLoadMessages, 'error');
     } finally {

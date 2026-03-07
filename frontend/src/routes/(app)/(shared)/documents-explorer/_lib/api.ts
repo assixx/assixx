@@ -131,7 +131,7 @@ export async function fetchChatFolders(): Promise<ChatFolder[]> {
       }
     }
     return [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Failed to fetch chat folders');
     return [];
   }
@@ -219,7 +219,7 @@ export async function fetchChatAttachments(
     );
     const rawDocs = extractDocumentsFromResponse(result);
     return rawDocs.map(mapApiDocument);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Failed to fetch chat attachments');
     return [];
   }

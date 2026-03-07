@@ -55,7 +55,7 @@ async function apiFetch<T>(
 
     // Direct response (no wrapper)
     return json as unknown as T;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }

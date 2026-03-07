@@ -99,7 +99,7 @@
       } else {
         showErrorAlert(MESSAGES.UPDATE_ERROR);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error updating custom category');
       showErrorAlert(MESSAGES.UPDATE_ERROR);
     } finally {

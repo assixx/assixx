@@ -100,7 +100,7 @@ export async function scheduleMessage(
     );
     notify(MESSAGES.successScheduled, 'success');
     return result;
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof E2eError) {
       log.error(
         { code: err.code, message: err.message },
@@ -157,7 +157,7 @@ async function encryptForScheduledMessage(
       e2eKeyVersion: e2e.state.keyVersion ?? 1,
       e2eKeyEpoch: encrypted.keyEpoch,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'E2E encryption failed for scheduled message');
     throw new E2eError('Encryption failed', 'encrypt_failed');
   }
@@ -223,7 +223,7 @@ export async function sendImmediateMessage(
       log.info('Message sent via WebSocket successfully');
     }
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof E2eError) {
       log.error(
         { code: err.code, message: err.message },

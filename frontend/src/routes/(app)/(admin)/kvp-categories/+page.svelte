@@ -151,7 +151,7 @@
         showSuccessAlert(MESSAGES.SAVE_SUCCESS);
         await invalidateAll();
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving overrides');
       showErrorAlert(MESSAGES.SAVE_ERROR);
     } finally {
@@ -212,7 +212,7 @@
       } else {
         showErrorAlert(MESSAGES.CREATE_ERROR);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error creating custom category');
       showErrorAlert(MESSAGES.CREATE_ERROR);
     } finally {

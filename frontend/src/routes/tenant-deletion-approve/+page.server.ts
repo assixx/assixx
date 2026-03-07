@@ -143,7 +143,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 
   try {
     return await fetchDeletionStatus(fetch, token, queueId);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint: '/root/tenant/deletion-status' }, 'Fetch error');
     return errorResult(queueId, 'Fehler beim Laden der Löschanfrage');
   }

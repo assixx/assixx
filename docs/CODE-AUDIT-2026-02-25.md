@@ -8,6 +8,7 @@
 **Fixes v6:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #8: ID-Param-DTO-Factory zentralisiert
 **Fixes v7:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #9: SlotAssistant Grid-Extraktion + Kalender-Navigation
 **Fixes v8:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #10: SKIPPED (premature abstraction) + Maßnahme #15: kebab-case Rename (7+5 Dateien, 100% Konsistenz)
+**Fixes v9:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #11: Frontend catch-Blöcke typisiert (298 Stellen, 127 Dateien) + zentraler `getErrorMessage` Helper
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -16,16 +17,16 @@
 
 ## Zusammenfassung
 
-| Kategorie                 | v1 (25.02.) | v2 (06.03.) | Trend | Begründung                                                           |
-| ------------------------- | ----------- | ----------- | ----- | -------------------------------------------------------------------- |
-| **Gesamtbewertung**       | 8/10        | **8/10**    | **↑** | v5: +Availability-Loader generisch, v4: `is_active`, Session-Expired |
-| Architektur & Modularität | 8/10        | **8/10**    | →     | Work Orders sauber modularisiert                                     |
-| Type Safety               | 7/10        | **8/10**    | **↑** | v3: Backend catch-Blöcke BEHOBEN + Architektur-Test enforced         |
-| Code-Duplikation          | 5/10        | **6/10**    | **↑** | v5: +Availability-Loader (4→1), v4: `is_active` (466→0)              |
-| Dateigrößen-Compliance    | 9/10        | **7/10**    | ↓     | Mehrere Frontend-Dateien überschreiten jetzt Limits                  |
-| ESLint-Disziplin          | 9/10        | **10/10**   | **↑** | v3: eslint-disable begründet → **100% Compliance** (179/179)         |
-| Test-Abdeckung            | 9/10        | **9/10**    | →     | +465 Tests, Work Orders Coverage ungeprüft                           |
-| Dokumentation             | 10/10       | **10/10**   | →     | +6 ADRs, pg_partman Masterplan                                       |
+| Kategorie                 | v1 (25.02.) | v2 (06.03.) | Trend | Begründung                                                                 |
+| ------------------------- | ----------- | ----------- | ----- | -------------------------------------------------------------------------- |
+| **Gesamtbewertung**       | 8/10        | **8/10**    | **↑** | v5: +Availability-Loader generisch, v4: `is_active`, Session-Expired       |
+| Architektur & Modularität | 8/10        | **8/10**    | →     | Work Orders sauber modularisiert                                           |
+| Type Safety               | 7/10        | **9/10**    | **↑** | v9: Frontend+Backend catch-Blöcke KOMPLETT (0 untypisiert) + 14 Arch-Tests |
+| Code-Duplikation          | 5/10        | **6/10**    | **↑** | v5: +Availability-Loader (4→1), v4: `is_active` (466→0)                    |
+| Dateigrößen-Compliance    | 9/10        | **7/10**    | ↓     | Mehrere Frontend-Dateien überschreiten jetzt Limits                        |
+| ESLint-Disziplin          | 9/10        | **10/10**   | **↑** | v3: eslint-disable begründet → **100% Compliance** (179/179)               |
+| Test-Abdeckung            | 9/10        | **9/10**    | →     | +465 Tests, Work Orders Coverage ungeprüft                                 |
+| Dokumentation             | 10/10       | **10/10**   | →     | +6 ADRs, pg_partman Masterplan                                             |
 
 ---
 
@@ -217,15 +218,21 @@ Limit: 800 Code-Zeilen für `.ts`.
 ### 2.2 Untypisierte catch-Blöcke (327+ Stellen)
 
 **v3-Status (2026-03-07): Backend ERLEDIGT. 25 Stellen + 17 unsichere Casts behoben.**
+**v9-Status (2026-03-08): Frontend ERLEDIGT. 298 Stellen in 127 Dateien typisiert + 3 lokale getErrorMessage-Kopien zentralisiert.**
 
 - `getErrorMessage(error: unknown)` Helper erstellt in `backend/src/nest/common/utils/error.utils.ts`
+- `getErrorMessage(error: unknown, fallback?)` Helper erstellt in `frontend/src/lib/utils/error.ts`
 - Alle 25 Backend catch-Blöcke explizit `: unknown` typisiert
+- Alle 298 Frontend catch-Blöcke explizit `: unknown` typisiert (127 Dateien)
 - Alle 17 `(error as Error).message` Casts durch `getErrorMessage(error)` ersetzt
-- Frontend (302 Stellen) bleibt OFFEN (Maßnahme #11)
+- 3 lokale `getErrorMessage`-Kopien entfernt (RoleSwitch, tenant-deletion-status, RotationSetupModal) → Import aus `$lib/utils/error`
+- ~~Frontend (302 Stellen) bleibt OFFEN (Maßnahme #11)~~ **ERLEDIGT** (2026-03-08)
 
-**Regressions-Schutz:** Architektur-Test in `shared/src/architectural.test.ts` prüft via CI:
+**Regressions-Schutz:** Architektur-Tests in `shared/src/architectural.test.ts` prüfen via CI:
 
 - Kein `(error as Error)` oder `(err as Error)` im Backend-Produktionscode
+- Kein untypisierter `catch (err) {` im Frontend-Code
+- Keine lokalen `getErrorMessage`-Definitionen im Frontend (Import aus `$lib/utils/error`)
 
 **Dokumentiert in:** `docs/TYPESCRIPT-STANDARDS.md` Section 7.3 + No-Go #12
 
@@ -248,11 +255,11 @@ Limit: 800 Code-Zeilen für `.ts`.
 | `blackboard-archive.service.ts`          | 1      |
 | `rotation-history.service.ts`            | 1      |
 
-**Frontend (302 Stellen — verifiziert):**
+**Frontend (~~302 Stellen — verifiziert~~ BEHOBEN 2026-03-08):**
 
-- `catch (err)` — 282 Instanzen in 117 Dateien
-- `catch (error)` — 19 Instanzen
-- `catch (e)` — 1 Instanz (sentry-example-page)
+- ~~`catch (err)` — 282 Instanzen in 117 Dateien~~ → alle `catch (err: unknown)`
+- ~~`catch (error)` — 19 Instanzen~~ → alle `catch (error: unknown)`
+- ~~`catch (e)` — 1 Instanz (sentry-example-page)~~ → `catch (e: unknown)`
 
 **Zusätzlich: 17× unsicherer `(error as Error).message` Cast (~~verifiziert, exakt wie v1~~ BEHOBEN 2026-03-07):**
 
@@ -429,14 +436,14 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 **Analyse (alle 3 Pages komplett gelesen):** Die Ähnlichkeit ist rein strukturell (Search/Filter/Modal-Boilerplate), nicht inhaltlich. Die Domain-Logik ist fundamental verschieden:
 
-| Aspekt              | manage-assets                    | manage-admins                     | manage-employees                   |
-| ------------------- | -------------------------------- | --------------------------------- | ---------------------------------- |
-| State-Architektur   | Externer `assetState` Store      | Lokale `$state()`                 | Lokale `$state()`                  |
-| Form-Felder         | model, manufacturer, assetType   | hasFullAccess, areaIds, deptIds   | phone, dateOfBirth, teamIds        |
-| Rollenänderung      | Keine                            | Upgrade + Downgrade (2 Flows)     | Nur Upgrade (1 Flow)               |
-| Status-Filter       | 7 Typen (operational, repair...) | 4 Typen (active, inactive...)     | 4 Typen (gleich wie Admins)        |
-| Availability API    | UUID-basiert, Asset-Status-Enum  | ID-basiert, User-Status-Enum      | ID-basiert, User-Status-Enum       |
-| Dropdown-Handling   | 5 konfigurierte Dropdowns        | 1 (nur Search)                    | 1 (nur Search)                     |
+| Aspekt            | manage-assets                    | manage-admins                   | manage-employees             |
+| ----------------- | -------------------------------- | ------------------------------- | ---------------------------- |
+| State-Architektur | Externer `assetState` Store      | Lokale `$state()`               | Lokale `$state()`            |
+| Form-Felder       | model, manufacturer, assetType   | hasFullAccess, areaIds, deptIds | phone, dateOfBirth, teamIds  |
+| Rollenänderung    | Keine                            | Upgrade + Downgrade (2 Flows)   | Nur Upgrade (1 Flow)         |
+| Status-Filter     | 7 Typen (operational, repair...) | 4 Typen (active, inactive...)   | 4 Typen (gleich wie Admins)  |
+| Availability API  | UUID-basiert, Asset-Status-Enum  | ID-basiert, User-Status-Enum    | ID-basiert, User-Status-Enum |
+| Dropdown-Handling | 5 konfigurierte Dropdowns        | 1 (nur Search)                  | 1 (nur Search)               |
 
 **Warum Skip korrekt ist:**
 
@@ -473,13 +480,13 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 
 ### Mittelfristig (Sprint-Planung)
 
-| #   | Maßnahme                                       | Aufwand | Impact                      | v1-Status |
-| --- | ---------------------------------------------- | ------- | --------------------------- | --------- |
-| 11  | Frontend catch-Blöcke typisieren (302 Stellen) | 4h      | Mechanisch aber umfangreich | **OFFEN** |
-| 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren   | **OFFEN** |
-| 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert    | **NEU**   |
-| 14  | UI-State-Factory generisch machen              | 3h      | 20+ Dateien konsolidiert    | **OFFEN** |
-| 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz           | **ERLEDIGT** (2026-03-07) |
+| #   | Maßnahme                                       | Aufwand | Impact                    | v1-Status                 |
+| --- | ---------------------------------------------- | ------- | ------------------------- | ------------------------- |
+| 11  | Frontend catch-Blöcke typisieren (298 Stellen) | 15 min  | 127 Dateien typisiert     | **ERLEDIGT** (2026-03-08) |
+| 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren | **OFFEN**                 |
+| 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert  | **NEU**                   |
+| 14  | UI-State-Factory generisch machen              | 3h      | 20+ Dateien konsolidiert  | **OFFEN**                 |
+| 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz         | **ERLEDIGT** (2026-03-07) |
 
 ### Pre-Production
 
@@ -515,7 +522,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Session-Expired Duplikation            | 15 Dateien    | **15 Dateien**         | **1 Datei (zentral)**     | **1 Datei (zentral)**      | **1 Datei (zentral)**      | →           |
 | Availability-History-Loader            | 4 Dateien     | **4 Dateien**          | **4 Dateien**             | **4 Dateien**              | **1 Shared + 4 Slim**      | **BEHOBEN** |
 | Untypisierte catch-Blöcke (Backend)    | 25            | **25**                 | **0 (BEHOBEN)**           | **0 (BEHOBEN)**            | **0 (BEHOBEN)**            | →           |
-| Untypisierte catch-Blöcke (Frontend)   | ~290          | **302**                | **302**                   | **302**                    | **302**                    | →           |
+| Untypisierte catch-Blöcke (Frontend)   | ~290          | **302**                | **302**                   | **302**                    | **0 (BEHOBEN)**            | **BEHOBEN** |
 | Unsichere `as Error` Casts             | 17            | **17**                 | **0 (BEHOBEN)**           | **0 (BEHOBEN)**            | **0 (BEHOBEN)**            | →           |
 | TODO-Kommentare                        | 6             | **5**                  | **4**                     | **4**                      | **4**                      | →           |
 | `any` in Production-Code               | 5             | **3**                  | **3**                     | **3**                      | **3**                      | →           |
@@ -524,14 +531,14 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **13**                     | →           |
 | ID-Param DTOs (Factory-Nutzung)        | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **29/35 (83%)**            | **BEHOBEN** |
 | Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **18+**                    | →           |
-| Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.068**                  | →           |
+| Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.103 (+2 Arch)**        | **+35**     |
 | RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | **109**                    | **109**                    | →           |
 | RLS-Policies                           | 114           | **173**                | **173**                   | **173**                    | **173**                    | →           |
 | ADRs                                   | 26            | **32**                 | **32**                    | **32**                     | **32**                     | →           |
 | Migrations                             | 61            | **73**                 | **73**                    | **73**                     | **73**                     | →           |
 | camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | **7**                      | **7**                      | →           |
 | Backend-Module                         | —             | +Work Orders, +Assets  | —                         | —                          | —                          | →           |
-| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **12 Tests (CI-enforced)** | **+2**      |
+| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **14 Tests (CI-enforced)** | **+2**      |
 
 ---
 
@@ -643,3 +650,21 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Date-Helpers erweitert            | `date-helpers.ts`                       | —                       | +`getISOWeek()`, +`weekOfMonth()` Funktionen    |
 
 **Ergebnis:** `SlotAssistant.svelte` — ESLint `max-lines` besteht (730 Code-Zeilen, CSS separat gezählt). Template-Nesting reduziert durch `SlotDayContent`-Extraktion.
+
+---
+
+## Anhang: v9 Fix-Log (2026-03-08)
+
+### Geänderter Code (Maßnahme #11: Frontend catch-Blöcke typisieren)
+
+| Schritt                                    | Dateien geändert                                       | Neue Dateien                      | LOC Effekt                              |
+| ------------------------------------------ | ------------------------------------------------------ | --------------------------------- | --------------------------------------- |
+| Zentraler `getErrorMessage` Helper         | —                                                      | `frontend/src/lib/utils/error.ts` | 17 Zeilen (shared Logic)                |
+| Alle catch-Blöcke typisiert                | 127 Frontend-Dateien                                   | —                                 | 298× `catch (x)` → `catch (x: unknown)` |
+| 3 lokale `getErrorMessage`-Kopien entfernt | RoleSwitch, tenant-deletion-status, RotationSetupModal | —                                 | 3 lokale Funktionen → 1 Import          |
+
+### Regressions-Schutz (Enforcement)
+
+| Dokument/Test                      | Was geändert                                                  | Zweck                                               |
+| ---------------------------------- | ------------------------------------------------------------- | --------------------------------------------------- |
+| `shared/src/architectural.test.ts` | +2 grep-basierte Tests (untyped catch, local getErrorMessage) | CI verhindert Rückfall in untypisierte catch-Blöcke |

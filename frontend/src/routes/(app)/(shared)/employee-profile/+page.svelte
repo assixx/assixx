@@ -173,7 +173,7 @@
         // Trigger SSR refetch to update sidebar/header avatars
         await invalidateAll();
       }
-    } catch (err) {
+    } catch (err: unknown) {
       showToast(getUploadErrorMessage(err), 'error');
     } finally {
       pictureUploading = false;
@@ -297,7 +297,7 @@
       // Re-encrypt escrow blob with new password before logout (ADR-022)
       void e2e.reEncryptEscrow(newPwd);
       onPasswordChangeSuccess();
-    } catch (err) {
+    } catch (err: unknown) {
       handlePasswordChangeError(err);
     } finally {
       passwordSaving = false;

@@ -447,7 +447,7 @@ export class SessionManager {
       document.body.append(warningModal);
       this.attachWarningModalHandlers(warningModal);
       this.startModalCountdown();
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'ERROR creating warning modal');
     }
   }

@@ -156,7 +156,7 @@ function createDocExplorerDataState() {
     try {
       allDocuments = await apiFetchDocuments();
       applyFilters();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading documents');
       if (isSessionExpiredError(err)) {
         handleSessionExpired();
@@ -173,7 +173,7 @@ function createDocExplorerDataState() {
     chatFoldersLoaded = true; // Set before await to prevent race condition
     try {
       chatFolders = await apiFetchChatFolders();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading chat folders');
     }
   }
@@ -220,7 +220,7 @@ function createDocExplorerDataState() {
         conversationId,
       );
       applyFilters();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err, conversationId }, 'Error loading chat attachments');
       error = MESSAGES.ERROR_LOAD_FAILED;
     } finally {
@@ -240,7 +240,7 @@ function createDocExplorerDataState() {
         doc.id === documentId ? { ...doc, isRead: true } : doc,
       );
       applyFilters();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error marking as read');
     }
   }

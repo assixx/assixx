@@ -34,7 +34,7 @@ export async function loadSurveyDetails(
 ): Promise<Survey | null> {
   try {
     return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading survey');
     checkSessionExpired(err);
     return null;
@@ -51,7 +51,7 @@ export async function loadSurveyQuestions(
     return await apiClient.get<SurveyQuestion[]>(
       API_ENDPOINTS.surveyQuestions(surveyId),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading questions');
     checkSessionExpired(err);
     return [];
@@ -68,7 +68,7 @@ export async function loadSurveyStatistics(
     return await apiClient.get<SurveyStatistics>(
       API_ENDPOINTS.surveyStatistics(surveyId),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading statistics');
     checkSessionExpired(err);
     return null;
@@ -85,7 +85,7 @@ export async function loadSurveyResponses(
     return await apiClient.get<ResponsesData>(
       API_ENDPOINTS.surveyResponses(surveyId),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.warn(
       { err, surveyId },
       'Could not load individual responses (might not have permission)',
@@ -129,7 +129,7 @@ export async function exportToExcel(surveyId: string): Promise<boolean> {
     document.body.removeChild(a);
 
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error exporting to Excel');
     return false;
   }

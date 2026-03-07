@@ -219,7 +219,7 @@
       } else {
         showErrorAlert(result.error ?? MESSAGES.ERROR_SAVING);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving user');
       showErrorAlert(MESSAGES.ERROR_SAVING);
     } finally {
@@ -242,7 +242,7 @@
       } else {
         showErrorAlert(result.error ?? MESSAGES.ERROR_DELETING);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting user');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
@@ -304,7 +304,7 @@
       closeAvailabilityModal();
       await invalidateAll();
       showSuccessAlert('Verfügbarkeit aktualisiert');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error updating availability');
       const message =
         err instanceof ApiError ?

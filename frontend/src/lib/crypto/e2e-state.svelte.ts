@@ -98,7 +98,7 @@ export const e2e = {
         persisted,
         error: null,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'E2E initialization failed';
       setE2eState({
@@ -134,7 +134,7 @@ export const e2e = {
       const apiClient = getApiClient();
       await apiClient.put('/e2e/escrow', wrapped);
       log.info('Escrow blob re-encrypted with new password');
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn(
         { err: err instanceof Error ? err.message : 'unknown' },
         'Failed to re-encrypt escrow — old escrow may become unusable after password change',
@@ -413,7 +413,7 @@ async function tryRecoverFromEscrow(password: string): Promise<boolean> {
       'Private key RECOVERED from escrow',
     );
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error(
       { err: err instanceof Error ? err.message : 'unknown' },
       'Escrow recovery error — non-fatal, will generate new key',
@@ -432,7 +432,7 @@ async function tryCreateEscrow(password: string): Promise<void> {
     const apiClient = getApiClient();
     await apiClient.post('/e2e/escrow', wrapped, { silent: true });
     log.info('Escrow blob created on server');
-  } catch (err) {
+  } catch (err: unknown) {
     if (isConflictError(err)) {
       log.info('Escrow already exists — skipping creation');
       return;
@@ -456,7 +456,7 @@ async function tryCreateEscrowIfMissing(password: string): Promise<void> {
       return; // Already has escrow — nothing to do
     }
     await tryCreateEscrow(password);
-  } catch (err) {
+  } catch (err: unknown) {
     log.warn(
       { err: err instanceof Error ? err.message : 'unknown' },
       'Escrow backfill check failed — non-fatal',

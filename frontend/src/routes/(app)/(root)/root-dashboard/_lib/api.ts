@@ -30,7 +30,7 @@ export async function loadDashboardData(): Promise<{
   try {
     const data = await apiClient.get<DashboardData>(API_ENDPOINTS.dashboard);
     return { data, error: null, unauthorized: false };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading dashboard');
 
     // Handle session expired / unauthorized
@@ -51,7 +51,7 @@ export async function loadActivityLogs(): Promise<ActivityLog[]> {
   try {
     const result = await apiClient.get<LogsApiResponse>(API_ENDPOINTS.logs);
     return result.data?.logs ?? result.logs ?? [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading logs');
     return [];
   }
@@ -77,7 +77,7 @@ export async function checkEmployeeNumber(): Promise<{
     const showModal = isTemporaryEmployeeNumber(employeeNumber);
 
     return { userData, showModal };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error checking employee number');
     return { userData: null, showModal: false };
   }
@@ -91,7 +91,7 @@ export async function saveEmployeeNumber(employeeNumber: string): Promise<{
   try {
     await apiClient.patch(API_ENDPOINTS.userMe, { employeeNumber });
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving employee number');
     return {
       success: false,

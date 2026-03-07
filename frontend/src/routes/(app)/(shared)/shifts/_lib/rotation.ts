@@ -93,7 +93,7 @@ export async function loadExistingPattern(
       response.patterns?.find((p: RotationPattern) => p.teamId === teamId) ??
       null
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, teamId }, 'Error loading existing pattern');
     return null;
   }
@@ -110,7 +110,7 @@ export async function loadPatternById(
       `/shifts/rotation/patterns/${patternId}`,
     );
     return response.pattern ?? null;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, patternId }, 'Error loading pattern by ID');
     return null;
   }
@@ -134,7 +134,7 @@ export async function loadRotationHistory(
       history?: RotationHistoryEntryAPI[];
     }>(url);
     return response.history ?? [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading rotation history');
     return [];
   }

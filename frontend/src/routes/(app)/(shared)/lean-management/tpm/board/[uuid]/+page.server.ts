@@ -46,7 +46,7 @@ async function apiFetch<T>(
     if ('success' in json && json.success === true) return json.data ?? null;
     if ('data' in json && json.data !== undefined) return json.data;
     return json as unknown as T;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }

@@ -150,7 +150,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert(isEditMode ? 'Team aktualisiert' : 'Team erstellt');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving team');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.ERROR_SAVING,
@@ -179,7 +179,7 @@
         showDeleteModal = false;
         showForceDeleteModal = true;
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting team');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
@@ -197,7 +197,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Team gelöscht');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error force deleting team');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
