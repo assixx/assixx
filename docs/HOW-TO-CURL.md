@@ -80,7 +80,7 @@ done
 | apitest   | admin@apitest.de  | ApiTest12345! |
 | testfirma | admin@tesfirma.de | ApiTest12345! |
 
-thats the right bash :
+thats the right bash : USe this to test API!!
 ● Bash(curl -s http://localhost:3000/api/v2/features/my-features -H "Authorization: Bearer
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJhZG1pbkB0ZXNmaXJ…)
 ⎿ Running…

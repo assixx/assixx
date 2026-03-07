@@ -1,13 +1,15 @@
 /**
  * Migration: Extend Audit Log Partitions (2028-2032)
  *
+ * NOTE: Superseded by pg_partman setup (Migration 20260306000074).
+ * pg_partman now automatically manages all future partitions.
+ * This migration remains for historical completeness.
+ *
  * Fixes time bomb from migration 004: partitions were only created for 2025-2027.
  * Without this migration, INSERTs into audit_trail and root_logs fail after 2027-12-31.
  *
  * Creates 60 monthly partitions per table (120 total) for years 2028-2032.
  * PostgreSQL automatically inherits RLS policies, indexes, and GRANTs from parent.
- *
- * Next action required: Before 2033, create another migration for 2033-2037.
  */
 import type { MigrationBuilder } from 'node-pg-migrate';
 
