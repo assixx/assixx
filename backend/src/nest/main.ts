@@ -37,14 +37,18 @@ import {
 } from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 import { DatabaseService } from './database/database.service.js';
+import { PartitionHealthService } from './database/partition-health.service.js';
 
 /** Get uploads directory path (Docker: /app/uploads, volume mounted) */
 function getUploadsPath(): string {
   return path.join(process.cwd(), 'uploads');
 }
 
-/** Setup health check endpoint for Docker health checks */
-function setupHealthCheck(fastify: FastifyInstance): void {
+/** Setup health check endpoints for Docker health checks and monitoring */
+function setupHealthCheck(
+  fastify: FastifyInstance,
+  partitionHealth: PartitionHealthService,
+): void {
   fastify.get('/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -52,6 +56,17 @@ function setupHealthCheck(fastify: FastifyInstance): void {
     environment: process.env['NODE_ENV'] ?? 'development',
     framework: 'NestJS+Fastify',
   }));
+
+  fastify.get(
+    '/health/partitions',
+    async (
+      _request: unknown,
+      reply: { code: (n: number) => { send: (d: unknown) => unknown } },
+    ) => {
+      const result = await partitionHealth.check();
+      return await reply.code(result.healthy ? 200 : 503).send(result);
+    },
+  );
 
   // Debug route for testing Sentry - ONLY in development
   // Access: GET /debug-sentry
@@ -236,7 +251,8 @@ async function bootstrap(): Promise<void> {
   const uploadsPath = getUploadsPath();
 
   // Setup in order
-  setupHealthCheck(fastify);
+  const partitionHealth = app.get(PartitionHealthService);
+  setupHealthCheck(fastify, partitionHealth);
   await setupUploadsServing(app, uploadsPath);
   bootstrapLogger.log(`Uploads serving configured: ${uploadsPath}`);
 
