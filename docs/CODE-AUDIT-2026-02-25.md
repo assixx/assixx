@@ -1,7 +1,8 @@
-# Code Audit — 6. März 2026 (v2)
+# Code Audit — 6. März 2026 (v2) + Fixes v3 (7. März 2026)
 
 **Originalaudit:** 25. Februar 2026 (Branch `feature/TPM`)
 **Update v2:** 6. März 2026 (Branch `feat/pg-partman`)
+**Fixes v3:** 7. März 2026 (Branch `refactor/code-audit`) — 5 Sofort-Maßnahmen + Regressions-Schutz
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -14,10 +15,10 @@
 | ------------------------- | ----------- | ----------- | ----- | -------------------------------------------------------------------- |
 | **Gesamtbewertung**       | 8/10        | **7/10**    | ↓     | Neue Module nicht auditiert, `is_active` verdoppelt, Limits gerissen |
 | Architektur & Modularität | 8/10        | **8/10**    | →     | Work Orders sauber modularisiert                                     |
-| Type Safety               | 7/10        | **7/10**    | →     | Catch-Blöcke + WebSocket weiterhin untypisiert                       |
-| Code-Duplikation          | 5/10        | **4/10**    | ↓     | `is_active` 327×, Session-Expired immer noch 15×, nichts behoben     |
+| Type Safety               | 7/10        | **8/10**    | **↑** | v3: Backend catch-Blöcke BEHOBEN + Architektur-Test enforced         |
+| Code-Duplikation          | 5/10        | **5/10**    | **↑** | v3: Session-Expired zentralisiert (16→1), `is_active` 466× bleibt    |
 | Dateigrößen-Compliance    | 9/10        | **7/10**    | ↓     | Mehrere Frontend-Dateien überschreiten jetzt Limits                  |
-| ESLint-Disziplin          | 9/10        | **9/10**    | →     | Sogar verbessert (179 statt 186, 1 statt 2 ohne Begründung)          |
+| ESLint-Disziplin          | 9/10        | **10/10**   | **↑** | v3: eslint-disable begründet → **100% Compliance** (179/179)         |
 | Test-Abdeckung            | 9/10        | **9/10**    | →     | +465 Tests, Work Orders Coverage ungeprüft                           |
 | Dokumentation             | 10/10       | **10/10**   | →     | +6 ADRs, pg_partman Masterplan                                       |
 
@@ -142,51 +143,57 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 **v2-Update:** Geschätzte Gesamtduplikation von ~9.000 auf ~12.000+ Zeilen gestiegen — hauptsächlich durch `is_active`-Verdopplung und neue Module.
 
-| Duplikat                               | v1 Instanzen | v2 Instanzen      | Geschätzte Zeilen | Verifiziert | Trend  |
-| -------------------------------------- | ------------ | ----------------- | ----------------- | ----------- | ------ |
-| SQL `WHERE is_active = 1` Patterns     | 158 Stellen  | **327 Stellen**   | **5.000+**        | Ja          | **↓↓** |
-| Session-Expired-Handling (Frontend)    | 15 Dateien   | **15 Dateien**    | ~675              | Ja          | →      |
-| Availability-History-Loader (Frontend) | 4 Dateien    | **4 Dateien**     | 400+              | Ja          | →      |
-| Row-Mapper-Helpers                     | 12+ Services | **18+ Helpers**   | 700+              | Ja          | **↓**  |
-| UI-State-Factories (Frontend)          | 20+ Dateien  | 20+ Dateien       | 1.000+            | Nein        | →      |
-| ID-Param-DTOs (Backend)                | 30+ Dateien  | **36 DTOs**       | 400+              | Ja          | **↓**  |
-| Pagination-Schemas (Backend)           | 20+ DTOs     | **15-20 DTOs**    | 300+              | Ja          | **↑**  |
-| Error-Handling try/catch               | 51+ Services | 51+ Services      | 1.500+            | Nein        | →      |
-| Constants/Types verstreut              | 73+ Dateien  | **50-70 Dateien** | 1.500+            | Teilweise   | **↑**  |
+| Duplikat                                | v1 Instanzen | v2 Instanzen       | Geschätzte Zeilen | Verifiziert | Trend          |
+| --------------------------------------- | ------------ | ------------------ | ----------------- | ----------- | -------------- |
+| SQL `is_active` Magic Numbers (alle)    | 158 Stellen  | **466 Stellen**    | **5.000+**        | Ja          | **↓↓**         |
+| ~~Session-Expired-Handling (Frontend)~~ | 15 Dateien   | ~~**15 Dateien**~~ | ~~~675~~          | Ja          | **BEHOBEN v3** |
+| Availability-History-Loader (Frontend)  | 4 Dateien    | **4 Dateien**      | 400+              | Ja          | →              |
+| Row-Mapper-Helpers                      | 12+ Services | **18+ Helpers**    | 700+              | Ja          | **↓**          |
+| UI-State-Factories (Frontend)           | 20+ Dateien  | 20+ Dateien        | 1.000+            | Nein        | →              |
+| ID-Param-DTOs (Backend)                 | 30+ Dateien  | **36 DTOs**        | 400+              | Ja          | **↓**          |
+| Pagination-Schemas (Backend)            | 20+ DTOs     | **15-20 DTOs**     | 300+              | Ja          | **↑**          |
+| Error-Handling try/catch                | 51+ Services | 51+ Services       | 1.500+            | Nein        | →              |
+| Constants/Types verstreut               | 73+ Dateien  | **50-70 Dateien**  | 1.500+            | Teilweise   | **↑**          |
 
 ---
 
-#### Schlimmster Offender: `is_active = 1` Hardcoding (327×)
+#### Schlimmster Offender: `is_active` Magic Numbers (466×)
 
-**v1 behauptete 158 — tatsächlich 327.** Mehr als verdoppelt, hauptsächlich durch neue Module (Work Orders, Assets, TPM-Erweiterungen).
+**v1 behauptete 158, v2 behauptete 327 — tatsächlich 466.** v2 zählte nur `= 1`, ignorierte aber `= 4`, `= 0`, `= 3`, `!=`, `IN` und parametrisierte Patterns.
 
-- **327× hardcoded** `is_active = 1` in 88 Service-Dateien
-- **15× parametrisiert** `is_active = $n` in 8 Dateien
-- **1 teilweise zentralisiert:** `USER_STATUS`-Konstante existiert nur in `user.repository.ts`
+| Pattern          | Anzahl  | Beschreibung                        |
+| ---------------- | ------- | ----------------------------------- |
+| `is_active = 1`  | 325     | Aktiv-Check (häufigstes Pattern)    |
+| `is_active = 4`  | 73      | Soft-Delete-Check                   |
+| `is_active = $N` | 22      | Parametrisiert (aber verstreut)     |
+| `is_active != N` | 19      | Negierte Checks (`!= 4` etc.)       |
+| `is_active = 3`  | 11      | Archiv-Check                        |
+| `is_active = 0`  | 8       | Inaktiv-Check                       |
+| `is_active IN`   | 8       | Multi-Status-Abfragen               |
+| **Gesamt**       | **466** | **114 Dateien (92 Prod + 22 Test)** |
 
-**Empfehlung:** Globale Konstante `ACTIVE_STATUS` in `backend/src/nest/common/constants/` mit Wiederverwendung in allen Services. Langfristig: Query-Builder-Pattern das `is_active`-Checks automatisch injiziert.
+**Zentrale Konstante existiert bereits — wird aber nicht genutzt:**
+
+- `shared/src/constants/is-active.ts` exportiert `IS_ACTIVE = { INACTIVE: 0, ACTIVE: 1, ARCHIVED: 3, DELETED: 4 }`
+- **0× importiert** in Production-Code
+- `blackboard-archive.service.ts` hat eine **lokale Kopie** statt Import (2 Nutzungen)
+
+**Empfehlung:** Bestehende `IS_ACTIVE`-Konstante aus `shared/` in allen 92 Production-Dateien + 22 Test-Dateien einsetzen. Langfristig: Query-Builder-Pattern das `is_active`-Checks automatisch injiziert.
+
+**Regressions-Schutz (geplant):** Architektur-Test in `shared/src/architectural.test.ts` (analog zu `getErrorMessage`/`session-expired`-Enforcement) + `TYPESCRIPT-STANDARDS.md` No-Go + ADR-Verweise. Vollständiger Umsetzungsplan: siehe Maßnahme #6 in Abschnitt 5.
 
 ---
 
-#### Zweiter Offender: Session-Expired-Handling (15 Dateien, unverändert)
+#### ~~Zweiter Offender: Session-Expired-Handling~~ — BEHOBEN (2026-03-07)
 
-Identische Logik in **15 Frontend-API-Dateien** kopiert. **Kein Fix seit v1.**
+**Status:** Zentralisiert in `frontend/src/lib/utils/session-expired.ts`. 16 Dateien refactored, ~675 LOC eliminiert, 3 goto-Varianten → 1 konsistentes Pattern.
 
-Drei Funktionen werden reimplementiert:
+**Regressions-Schutz:** Architektur-Test in `shared/src/architectural.test.ts` prüft via CI:
 
-- `isSessionExpiredError()` — 15× definiert (identischer 10-Zeilen-Body)
-- `handleSessionExpired()` — 10× definiert (identischer 1-Zeiler)
-- `checkSessionExpired()` — 8× definiert (identischer 3-Zeilen-Wrapper)
+- Keine lokalen `isSessionExpiredError`/`handleSessionExpired`/`handleUnauthorized`-Definitionen in Route-Dateien
+- `goto('/login?session=expired')` nur in der zentralen Util erlaubt
 
-**Zusätzlich inkonsistent:** 3 verschiedene `goto`-Varianten für Login-Redirect:
-
-- Variante A (7×): `void goto(resolve('/login?session=expired', {}));`
-- Variante B (2×): `void goto(\`${resolve('/login', {})}?session=expired\`);`
-- Variante C (1×): `void goto('/login?session=expired');` — **kein `resolve()`**, hardcoded Pfad
-
-**Root Cause:** `api-client.ts`, `token-manager.ts` und `session-manager.ts` existieren als zentrale Utilities, aber behandeln nur HTTP 401 Status bzw. Inaktivitäts-Timeouts — **nicht** den `SESSION_EXPIRED` Error-Code im Response-Body.
-
-**Empfehlung:** → `frontend/src/lib/utils/session-expired.ts` (30 Minuten Aufwand, 15 Dateien bereinigt)
+**Dokumentiert in:** `docs/CODE-OF-CONDUCT-SVELTE.md` (Session-Expired Handling Sektion)
 
 ---
 
@@ -213,6 +220,12 @@ Einzige Unterschiede: Logger-Name, Entity-Feld (`assetId` vs `userId`), API-Endp
 - Alle 25 Backend catch-Blöcke explizit `: unknown` typisiert
 - Alle 17 `(error as Error).message` Casts durch `getErrorMessage(error)` ersetzt
 - Frontend (302 Stellen) bleibt OFFEN (Maßnahme #11)
+
+**Regressions-Schutz:** Architektur-Test in `shared/src/architectural.test.ts` prüft via CI:
+
+- Kein `(error as Error)` oder `(err as Error)` im Backend-Produktionscode
+
+**Dokumentiert in:** `docs/TYPESCRIPT-STANDARDS.md` Section 7.3 + No-Go #12
 
 **Backend (25 Stellen — ~~verifiziert, exakt wie v1~~ BEHOBEN 2026-03-07):**
 
@@ -310,15 +323,15 @@ Keine `max-lines`-Verstöße, aber architektonisch zu breit:
 
 **Empfehlung:** `SlotCalendarGrid.svelte` extrahieren + Datum-Logik in Utils auslagern. **DRINGEND** — geschätzt 6 Zeilen Puffer.
 
-### 3.3 eslint-disable ohne Begründung (1 Stelle)
+### 3.3 ~~eslint-disable ohne Begründung~~ — BEHOBEN (2026-03-07)
 
-**v2: Verbessert von 2 auf 1.** `chat-page-state.svelte.ts` hat jetzt offenbar eine Begründung (oder wurde gezählt als begründet). Nur noch:
+**v3: 100% Compliance.** Die letzte unbegründete Stelle wurde behoben:
 
-| Datei                        | Zeile | Regel                    | Problem                     |
-| ---------------------------- | ----- | ------------------------ | --------------------------- |
-| `admin-profile/+page.svelte` | 272   | `require-atomic-updates` | Kein ` -- reason` Kommentar |
+| Datei                        | Zeile | Regel                    | Status                    |
+| ---------------------------- | ----- | ------------------------ | ------------------------- |
+| `admin-profile/+page.svelte` | 272   | `require-atomic-updates` | **ERLEDIGT** (2026-03-07) |
 
-Alle anderen **178** `eslint-disable`-Comments haben korrekte Begründungen (179 gesamt, **99,4% Compliance**).
+Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100% Compliance**).
 
 ---
 
@@ -402,13 +415,40 @@ Alle anderen **178** `eslint-disable`-Comments haben korrekte Begründungen (179
 
 ### Kurzfristig (1–3 Tage)
 
-| #   | Maßnahme                                             | Aufwand | Impact                        | v1-Status |
-| --- | ---------------------------------------------------- | ------- | ----------------------------- | --------- |
-| 6   | `is_active`-Konstante zentralisieren                 | 2h      | **327 hardcoded Stellen** → 1 | **NEU**   |
-| 7   | Availability-History-Loader generisch machen         | 1h      | 4 Dateien → 1                 | **OFFEN** |
-| 8   | ID-Param-DTO-Factory erstellen                       | 1h      | 36 DTOs konsistent            | **OFFEN** |
-| 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren | 1h      | ~6 Zeilen Puffer → entspannt  | **NEU**   |
-| 10  | manage-\* Shared Composable extrahieren              | 3h      | 3 Pages proaktiv entlasten    | **OFFEN** |
+| #   | Maßnahme                                                   | Aufwand | Impact                                                        | v1-Status |
+| --- | ---------------------------------------------------------- | ------- | ------------------------------------------------------------- | --------- |
+| 6   | `is_active`-Konstante zentralisieren (Details siehe unten) | 4-6h    | **466 Stellen** (92 Prod-Dateien) → `IS_ACTIVE` aus `shared/` | **NEU**   |
+| 7   | Availability-History-Loader generisch machen               | 1h      | 4 Dateien → 1                                                 | **OFFEN** |
+| 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                            | **OFFEN** |
+| 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | ~6 Zeilen Puffer → entspannt                                  | **NEU**   |
+| 10  | manage-\* Shared Composable extrahieren                    | 3h      | 3 Pages proaktiv entlasten                                    | **OFFEN** |
+
+#### Maßnahme #6 — Umsetzungsplan `is_active`-Zentralisierung
+
+Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expired (Maßnahme #1): Code-Fix + Docs + Regressions-Schutz.
+
+| #   | Unter-Schritt                                         | Aufwand | Details                                                                                                                                                                      |
+| --- | ----------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6.1 | Production-Code: Magic Numbers → `IS_ACTIVE.*`        | 3-4h    | 92 Prod-Dateien, Import aus `@assixx/shared/constants`                                                                                                                       |
+| 6.2 | Test-Code: Magic Numbers → `IS_ACTIVE.*`              | 1h      | 22 Test-Dateien, gleicher Import                                                                                                                                             |
+| 6.3 | Lokale Kopie entfernen (`blackboard-archive.service`) | 5 min   | Lokale `IS_ACTIVE`-Konstante → Import aus `shared/`                                                                                                                          |
+| 6.4 | Architektur-Test erstellen (Regressions-Schutz)       | 30 min  | `shared/src/architectural.test.ts` erweitern: `is_active\s*=\s*[0-9]` in `.ts`-Dateien verbieten (Allowlist für SQL-Migrations)                                              |
+| 6.5 | `TYPESCRIPT-STANDARDS.md` aktualisieren               | 15 min  | Neuen Abschnitt 7.4 (oder No-Go) für `is_active` Magic Numbers                                                                                                               |
+| 6.6 | ADRs prüfen und ggf. Hinweis ergänzen                 | 15 min  | ADR-018, ADR-023, ADR-026 referenzieren `IS_ACTIVE`-Konstante. ADR-Code-Beispiele sind historisch korrekt — kein Rewrite nötig, aber Hinweis auf zentrale Konstante ergänzen |
+| 6.7 | ESLint prüfen: `no-restricted-syntax` Regel           | 15 min  | Optional: Custom ESLint-Regel für Template-Literals mit `is_active = N` als zusätzliche Absicherung neben Architektur-Test                                                   |
+
+**Betroffene ADRs (mit `is_active` Magic Numbers in Code-Beispielen):**
+
+- ADR-005 (auth flow), ADR-009-impl (audit), ADR-019 (RLS), ADR-020 (permissions), ADR-021 (E2E), ADR-022 (escrow)
+- Diese enthalten historisch korrekte Beispiele — **kein Rewrite**, aber ADR-023 und ADR-026 sollten auf `IS_ACTIVE`-Konstante verweisen
+
+**Definition of Done für Maßnahme #6:**
+
+- [ ] 0 hardcoded `is_active = N` in `.ts`-Dateien (außer Migrations)
+- [ ] Architektur-Test in CI grün (analog zu `getErrorMessage`-Enforcement)
+- [ ] `TYPESCRIPT-STANDARDS.md` dokumentiert das Pattern
+- [ ] Bestehende Tests laufen grün mit `IS_ACTIVE`-Konstante
+- [ ] ADR-023/026 referenzieren die zentrale Konstante
 
 ### Mittelfristig (Sprint-Planung)
 
@@ -442,46 +482,71 @@ Alle anderen **178** `eslint-disable`-Comments haben korrekte Begründungen (179
 
 ## Anhang: Metriken
 
-| Metrik                                 | v1 (25.02.)   | v2 (06.03.)            | Delta      |
-| -------------------------------------- | ------------- | ---------------------- | ---------- |
-| ESLint `max-lines` Verstöße            | 0             | **0**                  | →          |
-| eslint-disable gesamt                  | 186           | **179**                | -7         |
-| eslint-disable ohne Begründung         | 2             | **1**                  | -1         |
-| Backend-Services nahe Limit (>850/900) | 2             | **2**                  | →          |
-| Frontend-Komponenten nahe Limit        | 5             | **5** (andere Dateien) | →          |
-| Duplizierter Code (geschätzt)          | ~9.000 Zeilen | **~12.000+ Zeilen**    | **+3.000** |
-| `is_active = 1` hardcoded              | 158           | **327**                | **+169**   |
-| Session-Expired Duplikation            | 15 Dateien    | **15 Dateien**         | →          |
-| Untypisierte catch-Blöcke (Backend)    | 25            | **25**                 | →          |
-| Untypisierte catch-Blöcke (Frontend)   | ~290          | **302**                | +12        |
-| Unsichere `as Error` Casts             | 17            | **17**                 | →          |
-| TODO-Kommentare                        | 6             | **5**                  | -1         |
-| `any` in Production-Code               | 5             | **3**                  | -2         |
-| `any` in Test-Code                     | 5             | ~5                     | →          |
-| `== null`/`!= null` (intentional)      | 14            | ~14                    | →          |
-| WebSocket `as`-Casts                   | 14+           | **13**                 | -1         |
-| ID-Param DTOs (IdSchema-Nutzung)       | —             | **4/36 (11%)**         | NEU        |
-| Row-Mapper Helpers                     | 12+           | **18+**                | +6         |
-| Tests gesamt                           | 4.614         | **5.079**              | **+465**   |
-| RLS-Tabellen                           | 103           | **109** (128 total)    | +6         |
-| RLS-Policies                           | 114           | **173**                | +59        |
-| ADRs                                   | 26            | **32**                 | +6         |
-| Migrations                             | 61            | **73**                 | +12        |
-| camelCase Legacy-Dateien               | 7             | **7**                  | →          |
-| Backend-Module                         | —             | +Work Orders, +Assets  | NEU        |
+| Metrik                                 | v1 (25.02.)   | v2 (06.03.)            | v3 (07.03.)               | Delta v2→v3 |
+| -------------------------------------- | ------------- | ---------------------- | ------------------------- | ----------- |
+| ESLint `max-lines` Verstöße            | 0             | **0**                  | **0**                     | →           |
+| eslint-disable gesamt                  | 186           | **179**                | **179**                   | →           |
+| eslint-disable ohne Begründung         | 2             | **1**                  | **0 (100%)**              | **-1**      |
+| Backend-Services nahe Limit (>850/900) | 2             | **2**                  | **2**                     | →           |
+| Frontend-Komponenten nahe Limit        | 5             | **5** (andere Dateien) | **5**                     | →           |
+| Duplizierter Code (geschätzt)          | ~9.000 Zeilen | **~12.000+ Zeilen**    | **~11.300 Zeilen**        | **-675**    |
+| `is_active` Magic Numbers (alle)       | 158           | **466**                | **466**                   | →           |
+| Session-Expired Duplikation            | 15 Dateien    | **15 Dateien**         | **1 Datei (zentral)**     | **-14**     |
+| Untypisierte catch-Blöcke (Backend)    | 25            | **25**                 | **0 (BEHOBEN)**           | **-25**     |
+| Untypisierte catch-Blöcke (Frontend)   | ~290          | **302**                | **302**                   | →           |
+| Unsichere `as Error` Casts             | 17            | **17**                 | **0 (BEHOBEN)**           | **-17**     |
+| TODO-Kommentare                        | 6             | **5**                  | **4**                     | **-1**      |
+| `any` in Production-Code               | 5             | **3**                  | **3**                     | →           |
+| `any` in Test-Code                     | 5             | ~5                     | ~5                        | →           |
+| `== null`/`!= null` (intentional)      | 14            | ~14                    | ~14                       | →           |
+| WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | →           |
+| ID-Param DTOs (IdSchema-Nutzung)       | —             | **4/36 (11%)**         | **4/36 (11%)**            | →           |
+| Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | →           |
+| Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **+6**      |
+| RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | →           |
+| RLS-Policies                           | 114           | **173**                | **173**                   | →           |
+| ADRs                                   | 26            | **32**                 | **32**                    | →           |
+| Migrations                             | 61            | **73**                 | **73**                    | →           |
+| camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | →           |
+| Backend-Module                         | —             | +Work Orders, +Assets  | —                         | →           |
+| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **NEU**     |
 
 ---
 
-## Anhang: Korrekturen gegenüber v1
+## Anhang: v3 Fix-Log (2026-03-07)
 
-| v1 Behauptung                     | v1 Wert   | v2 verifiziert | Korrektur                                           |
-| --------------------------------- | --------- | -------------- | --------------------------------------------------- |
-| `is_active = 1` Stellen           | 158       | **327**        | v1 hat massiv unterzählt                            |
-| `any` in Production               | 5         | **3**          | v1 hat 2 Stellen gezählt die nicht mehr existieren  |
-| eslint-disable gesamt             | 186       | **179**        | v1 hat überzählt                                    |
-| eslint-disable ohne Begründung    | 2         | **1**          | 1 wurde behoben                                     |
-| Tests gesamt                      | 4.614     | **5.079**      | v1 war zum Zeitpunkt korrekt, seitdem +465          |
-| TODO-Kommentare                   | 6         | **5**          | 1 wurde behoben (`vacation.controller.test.ts`)     |
-| WebSocket `as`-Casts              | 14+       | **13**         | v1 hat leicht überzählt                             |
-| Optional Chaining "ohne Fallback" | 6 Stellen | **0**          | v1 war **falsch** — alle haben explizite Vergleiche |
-| Frontend untyped catch            | ~290      | **302**        | v1 hat leicht unterzählt                            |
+### Geänderter Code (5 Sofort-Maßnahmen)
+
+| Maßnahme                       | Dateien geändert                               | Neue Dateien                                               | LOC Effekt                   |
+| ------------------------------ | ---------------------------------------------- | ---------------------------------------------------------- | ---------------------------- |
+| Session-Expired zentralisieren | 16 Frontend-Dateien refactored                 | `frontend/src/lib/utils/session-expired.ts`                | ~675 LOC eliminiert          |
+| Backend catch-Typing           | 19 Backend-Dateien                             | —                                                          | 25 catches + 17 casts gefixt |
+| `getErrorMessage()` Helper     | —                                              | `backend/src/nest/common/utils/error.utils.ts`, `index.ts` | Neuer shared Utility         |
+| root-deletion TODO             | 3 Dateien (service, facade, controller) + Test | —                                                          | UserRepository statt raw SQL |
+| eslint-disable begründen       | 1 Datei                                        | —                                                          | Kommentar hinzugefügt        |
+
+### Regressions-Schutz (Enforcement)
+
+| Dokument/Test                                              | Was geändert                                 | Zweck                                          |
+| ---------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------- |
+| `shared/src/architectural.test.ts`                         | **NEU** — 6 grep-basierte Tests              | CI verhindert Rückfall in alte Patterns        |
+| `docs/TYPESCRIPT-STANDARDS.md`                             | Section 7.3 + No-Go #12 hinzugefügt (v4.1.0) | `getErrorMessage()` als Standard dokumentiert  |
+| `docs/CODE-OF-CONDUCT-SVELTE.md`                           | Session-Expired Handling Sektion hinzugefügt | Frontend-Pattern dokumentiert                  |
+| `docs/infrastructure/adr/ADR-009-central-audit-logging.md` | Code-Beispiel gefixt                         | `catch (error: unknown)` + `getErrorMessage()` |
+| `docs/HOW-TO-ENABLE-DEBUG-LOGGING.md`                      | Code-Beispiel gefixt                         | `getErrorMessage(error)` statt `error.message` |
+
+---
+
+## Anhang: Korrekturen gegenüber v1/v2
+
+| v1 Behauptung                     | v1 Wert   | v2 verifiziert | Korrektur                                                                                                                  |
+| --------------------------------- | --------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `is_active` Magic Numbers         | 158       | **466**        | v1+v2 zählten nur `=1` (325). Tatsächlich 7 Patterns: `=1`(325), `=4`(73), `=$N`(22), `!=`(19), `=3`(11), `=0`(8), `IN`(8) |
+| `any` in Production               | 5         | **3**          | v1 hat 2 Stellen gezählt die nicht mehr existieren                                                                         |
+| eslint-disable gesamt             | 186       | **179**        | v1 hat überzählt                                                                                                           |
+| eslint-disable ohne Begründung    | 2         | **1**          | 1 wurde behoben                                                                                                            |
+| Tests gesamt                      | 4.614     | **5.079**      | v1 war zum Zeitpunkt korrekt, seitdem +465                                                                                 |
+| TODO-Kommentare                   | 6         | **5**          | 1 wurde behoben (`vacation.controller.test.ts`)                                                                            |
+| WebSocket `as`-Casts              | 14+       | **13**         | v1 hat leicht überzählt                                                                                                    |
+| Optional Chaining "ohne Fallback" | 6 Stellen | **0**          | v1 war **falsch** — alle haben explizite Vergleiche                                                                        |
+| Frontend untyped catch            | ~290      | **302**        | v1 hat leicht unterzählt                                                                                                   |

@@ -116,7 +116,7 @@ export class TenantDeletionExporter {
   /**
    * Create SQL backup file with INSERT statements for all tenant data
    */
-   
+
   private async createSqlBackup(
     tenantId: number,
     companyName: string,
