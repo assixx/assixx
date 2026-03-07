@@ -5,7 +5,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {

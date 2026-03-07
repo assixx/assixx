@@ -6,7 +6,7 @@ import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
 import type { PresenceStore } from './nest/chat/presence.store.js';
 import { DatabaseService } from './nest/database/database.service.js';
-import { type ReadReceiptEntry, eventBus } from './utils/eventBus.js';
+import { type ReadReceiptEntry, eventBus } from './utils/event-bus.js';
 import { logger } from './utils/logger.js';
 import {
   type E2eFields,

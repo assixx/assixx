@@ -28,7 +28,7 @@ const { mockEventBus } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: mockEventBus,
 }));
 

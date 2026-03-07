@@ -9,7 +9,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { eventBus } from '../../utils/eventBus.js';
+import { eventBus } from '../../utils/event-bus.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { WorkOrderStatus } from './work-orders.types.js';
 

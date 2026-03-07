@@ -7,6 +7,7 @@
 **Fixes v5:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #7: Availability-History-Loader generisch
 **Fixes v6:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #8: ID-Param-DTO-Factory zentralisiert
 **Fixes v7:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #9: SlotAssistant Grid-Extraktion + Kalender-Navigation
+**Fixes v8:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #10: SKIPPED (premature abstraction) + Maßnahme #15: kebab-case Rename (7+5 Dateien, 100% Konsistenz)
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -354,19 +355,21 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 **Dokumentiert in:** `docs/TYPESCRIPT-STANDARDS.md` Section 7.5 + No-Go #17
 
-### 4.3 Dateinamen-Inkonsistenz (7 Legacy-Dateien, unverändert)
+### ~~4.3 Dateinamen-Inkonsistenz (7 Legacy-Dateien)~~ — BEHOBEN (2026-03-07)
 
-**Kein Fix seit v1.** Alle 7 camelCase-Dateien existieren noch:
+**Status:** Alle 7 camelCase-Dateien + 5 zugehörige Test-Dateien in kebab-case umbenannt. 35+ Import-Pfade + 14 vi.mock-Pfade aktualisiert. Config-Dateien (vitest.config.ts, knip.json, docker-compose.yml) angepasst. 5.341 Tests grün (4.963 unit + 378 permission).
 
-| Datei                    | Pfad                   | Ist       | Soll                       |
-| ------------------------ | ---------------------- | --------- | -------------------------- |
-| `deletionWorker.ts`      | `backend/src/workers/` | camelCase | `deletion-worker.ts`       |
-| `emailService.ts`        | `backend/src/utils/`   | camelCase | `email-service.ts`         |
-| `employeeIdGenerator.ts` | `backend/src/utils/`   | camelCase | `employee-id-generator.ts` |
-| `fieldMapper.ts`         | `backend/src/utils/`   | camelCase | `field-mapper.ts`          |
-| `eventBus.ts`            | `backend/src/utils/`   | camelCase | `event-bus.ts`             |
-| `pathSecurity.ts`        | `backend/src/utils/`   | camelCase | `path-security.ts`         |
-| `featureCheck.ts`        | `backend/src/utils/`   | camelCase | `feature-check.ts`         |
+| Datei (vorher)           | Datei (nachher)            | Imports aktualisiert |
+| ------------------------ | -------------------------- | -------------------- |
+| `deletionWorker.ts`      | `deletion-worker.ts`       | 0 + 3 Configs        |
+| `emailService.ts`        | `email-service.ts`         | 2 + 1 vi.mock        |
+| `employeeIdGenerator.ts` | `employee-id-generator.ts` | 2 + 1 vi.mock        |
+| `fieldMapper.ts`         | `field-mapper.ts`          | 14 + 6 vi.mock       |
+| `eventBus.ts`            | `event-bus.ts`             | 11 + 8 vi.mock       |
+| `pathSecurity.ts`        | `path-security.ts`         | 2                    |
+| `featureCheck.ts`        | `feature-check.ts`         | 2                    |
+
+**Naming-Konsistenz:** 99% → **100%**. Keine camelCase-Dateinamen mehr in der Codebase.
 
 ### 4.4 Row-Mapper Duplikation (NEU in v2 — verifiziert)
 
@@ -418,7 +421,33 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 | 7   | Availability-History-Loader generisch machen               | 1h      | 4 Dateien → 1 Shared + 4 Slim Consumer, ~288 LOC          | **ERLEDIGT** (2026-03-07) |
 | 8   | ID-Param-DTO-Factory erstellen                             | 1h      | 36 DTOs konsistent                                        | **ERLEDIGT** (2026-03-07) |
 | 9   | `SlotAssistant.svelte` → Grid-Komponente extrahieren       | 1h      | SlotDayContent extrahiert + Kalender-Navigation           | **ERLEDIGT** (2026-03-07) |
-| 10  | manage-\* Shared Composable extrahieren                    | 3h      | 3 Pages proaktiv entlasten                                | **OFFEN**                 |
+| 10  | ~~manage-\* Shared Composable extrahieren~~                | 3h      | ~~3 Pages proaktiv entlasten~~                            | **SKIPPED** (2026-03-07)  |
+
+#### Maßnahme #10 — manage-\* Shared Composable — SKIPPED (2026-03-07)
+
+**Entscheidung:** Bewusst übersprungen — **premature abstraction**.
+
+**Analyse (alle 3 Pages komplett gelesen):** Die Ähnlichkeit ist rein strukturell (Search/Filter/Modal-Boilerplate), nicht inhaltlich. Die Domain-Logik ist fundamental verschieden:
+
+| Aspekt              | manage-assets                    | manage-admins                     | manage-employees                   |
+| ------------------- | -------------------------------- | --------------------------------- | ---------------------------------- |
+| State-Architektur   | Externer `assetState` Store      | Lokale `$state()`                 | Lokale `$state()`                  |
+| Form-Felder         | model, manufacturer, assetType   | hasFullAccess, areaIds, deptIds   | phone, dateOfBirth, teamIds        |
+| Rollenänderung      | Keine                            | Upgrade + Downgrade (2 Flows)     | Nur Upgrade (1 Flow)               |
+| Status-Filter       | 7 Typen (operational, repair...) | 4 Typen (active, inactive...)     | 4 Typen (gleich wie Admins)        |
+| Availability API    | UUID-basiert, Asset-Status-Enum  | ID-basiert, User-Status-Enum      | ID-basiert, User-Status-Enum       |
+| Dropdown-Handling   | 5 konfigurierte Dropdowns        | 1 (nur Search)                    | 1 (nur Search)                     |
+
+**Warum Skip korrekt ist:**
+
+1. Ein Shared Composable bräuchte so viele Generics und Konfigurationsoptionen, dass es **komplexer wäre als die Duplikation**
+2. Die Pages können sich in Zukunft weiter auseinanderentwickeln (z.B. Assets bekommt QR-Codes, Admins bekommt 2FA)
+3. Jede Page hat ihre Domain-Logik bereits sauber in `_lib/` extrahiert (api, filters, utils, constants, types, Sub-Components)
+4. CLAUDE.md: _"Three similar lines of code is better than a premature abstraction"_
+
+**Kein Handlungsbedarf.** Die aktuelle Struktur ist langfristig die richtige.
+
+---
 
 #### Maßnahme #6 — ~~Umsetzungsplan~~ `is_active`-Zentralisierung — ERLEDIGT (2026-03-07)
 
@@ -450,7 +479,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren   | **OFFEN** |
 | 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert    | **NEU**   |
 | 14  | UI-State-Factory generisch machen              | 3h      | 20+ Dateien konsolidiert    | **OFFEN** |
-| 15  | `utils/` Dateien in kebab-case umbenennen      | 30 min  | Naming-Konsistenz           | **OFFEN** |
+| 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz           | **ERLEDIGT** (2026-03-07) |
 
 ### Pre-Production
 

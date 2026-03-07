@@ -4,7 +4,7 @@
  * Pure functions for survey data transformation.
  * No DI, no DB calls, no side effects.
  */
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import type {
   AssignmentDbPayload,
   AssignmentInput,

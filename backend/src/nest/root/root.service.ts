@@ -18,7 +18,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { v7 as uuidv7 } from 'uuid';
 
-import { generateEmployeeId } from '../../utils/employeeIdGenerator.js';
+import { generateEmployeeId } from '../../utils/employee-id-generator.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';

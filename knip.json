@@ -17,7 +17,7 @@
     "backend": {
       "entry": [
         "src/nest/main.ts",
-        "src/workers/deletionWorker.ts",
+        "src/workers/deletion-worker.ts",
         "src/**/*.module.ts",
         "src/**/*.controller.ts",
         "src/**/*.service.ts",

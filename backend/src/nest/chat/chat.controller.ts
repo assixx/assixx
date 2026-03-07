@@ -32,7 +32,7 @@ import {
   getUploadDirectory,
   sanitizeFilename,
   validatePath,
-} from '../../utils/pathSecurity.js';
+} from '../../utils/path-security.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';

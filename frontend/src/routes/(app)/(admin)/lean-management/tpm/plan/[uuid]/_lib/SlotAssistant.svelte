@@ -11,7 +11,7 @@
    * For the first 90 days: full slot data with projection overlay.
    * Beyond 90 days: only projected TPM schedules shown.
    */
-  import { SvelteMap } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
@@ -36,6 +36,7 @@
   } from '../../../_lib/date-helpers';
 
   import SlotDayContent from './SlotDayContent.svelte';
+  import SlotPreviewBadge from './SlotPreviewBadge.svelte';
   import TimelineDayView from './TimelineDayView.svelte';
 
   import type {
@@ -53,6 +54,8 @@
     shiftPlanRequired?: boolean;
     cardsHref?: string;
     intervalColors?: IntervalColorConfigEntry[];
+    previewWeekday?: number;
+    previewRepeatEvery?: number;
   }
 
   const {
@@ -61,6 +64,8 @@
     shiftPlanRequired,
     cardsHref,
     intervalColors = [],
+    previewWeekday,
+    previewRepeatEvery,
   }: Props = $props();
 
   // Build color lookup: custom API colors override hardcoded defaults
@@ -178,12 +183,30 @@
     ),
   );
 
-  // Compact view: only scheduled days (no grid gaps)
+  // Preview: which dates match the form's weekday + repeat pattern
+  const previewDates = $derived.by(() => {
+    if (previewWeekday === undefined || previewRepeatEvery === undefined) {
+      return new SvelteSet<string>();
+    }
+    const dates = new SvelteSet<string>();
+    for (const day of visibleCalendarDays) {
+      if (
+        isoWeekday(day.date) === previewWeekday &&
+        weekOfMonth(day.date) === previewRepeatEvery
+      ) {
+        dates.add(day.date);
+      }
+    }
+    return dates;
+  });
+
+  // Compact view: only scheduled days + preview days (no grid gaps)
   const scheduledDays = $derived(
     visibleCalendarDays.filter(
       (d: DayAvailability) =>
         hasTpmScheduleConflict(d) ||
-        (projectionByDate.get(d.date)?.length ?? 0) > 0,
+        (projectionByDate.get(d.date)?.length ?? 0) > 0 ||
+        previewDates.has(d.date),
     ),
   );
 
@@ -573,8 +596,13 @@
         <div class="slot-compact">
           {#each scheduledDays as day (day.date)}
             {@const projSlots = getSlotsForDate(day.date)}
+            {@const isPreview = previewDates.has(day.date)}
+            {@const isScheduled =
+              hasTpmScheduleConflict(day) || projSlots.length > 0}
             <div
-              class="slot-day slot-day--scheduled"
+              class="slot-day"
+              class:slot-day--scheduled={isScheduled}
+              class:slot-day--preview={isPreview && !isScheduled}
               class:slot-day--selected={selectedDay === day.date}
               title={buildDayTooltip(day)}
               role="button"
@@ -592,10 +620,17 @@
               <span class="slot-day__date"
                 >{formatDayMonth(day.date, true)}</span
               >
-              <SlotDayContent
-                slots={projSlots}
-                {colorMap}
-              />
+              {#if isScheduled}
+                <SlotDayContent
+                  slots={projSlots}
+                  {colorMap}
+                />
+                {#if isPreview}
+                  <SlotPreviewBadge />
+                {/if}
+              {:else if isPreview}
+                <SlotPreviewBadge />
+              {/if}
             </div>
           {/each}
         </div>
@@ -631,12 +666,20 @@
                 {@const isScheduled =
                   hasTpmScheduleConflict(day) ||
                   getSlotsForDate(day.date).length > 0}
+                {@const isPreview = previewDates.has(day.date)}
                 <div
                   class="slot-day"
-                  class:slot-day--available={available && !isScheduled}
-                  class:slot-day--unavailable={!available && !isScheduled}
+                  class:slot-day--available={available &&
+                    !isScheduled &&
+                    !isPreview}
+                  class:slot-day--unavailable={!available &&
+                    !isScheduled &&
+                    !isPreview}
                   class:slot-day--scheduled={isScheduled}
-                  class:slot-day--hidden={showOnlyScheduled && !isScheduled}
+                  class:slot-day--preview={isPreview && !isScheduled}
+                  class:slot-day--hidden={showOnlyScheduled &&
+                    !isScheduled &&
+                    !isPreview}
                   class:slot-day--weekend={isWeekend}
                   class:slot-day--selected={selectedDay === day.date}
                   title={buildDayTooltip(day)}
@@ -656,15 +699,20 @@
                     <sup class="slot-day__occ">{weekOfMonth(day.date)}</sup>
                     {formatDayMonth(day.date, showOnlyScheduled)}
                   </span>
-                  {#if available && !isScheduled}
-                    <i class="fas fa-check slot-day__icon slot-day__icon--ok"
-                    ></i>
-                  {:else if isScheduled}
+                  {#if isScheduled}
                     {@const projSlots = getSlotsForDate(day.date)}
                     <SlotDayContent
                       slots={projSlots}
                       {colorMap}
                     />
+                    {#if isPreview}
+                      <SlotPreviewBadge />
+                    {/if}
+                  {:else if isPreview}
+                    <SlotPreviewBadge />
+                  {:else if available}
+                    <i class="fas fa-check slot-day__icon slot-day__icon--ok"
+                    ></i>
                   {:else if day.conflicts.length > 0}
                     <i
                       class="fas {getConflictIcon(
@@ -827,6 +875,11 @@
     background: color-mix(in srgb, var(--color-info, #3b82f6) 10%, transparent);
     border: 1px solid
       color-mix(in srgb, var(--color-info, #3b82f6) 30%, transparent);
+  }
+
+  .slot-day--preview {
+    background: color-mix(in srgb, #9333ea 12%, transparent);
+    border: 1px solid color-mix(in srgb, #9333ea 35%, transparent);
   }
 
   .slot-day--weekend.slot-day--available {

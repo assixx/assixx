@@ -67,9 +67,9 @@ export default defineConfig({
         // Infrastructure (transport/bootstrap, not unit-testable)
         'backend/src/websocket.ts',
         'backend/src/nest/instrument.ts',
-        'backend/src/utils/emailService.ts',
-        'backend/src/utils/eventBus.ts',
-        'backend/src/workers/deletionWorker.ts',
+        'backend/src/utils/email-service.ts',
+        'backend/src/utils/event-bus.ts',
+        'backend/src/workers/deletion-worker.ts',
       ],
       thresholds: {
         lines: 83,

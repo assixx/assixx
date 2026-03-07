@@ -8,7 +8,7 @@ import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
 import path from 'path';
 
 import { getErrorMessage } from '../nest/common/utils/error.utils.js';
-import featureCheck from './featureCheck.js';
+import featureCheck from './feature-check.js';
 import { logger } from './logger.js';
 
 // Type definition for attachment (from nodemailer)

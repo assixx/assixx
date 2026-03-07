@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { generateEmployeeId } from './employeeIdGenerator.js';
+import { generateEmployeeId } from './employee-id-generator.js';
 
 describe('generateEmployeeId', () => {
   beforeEach(() => {

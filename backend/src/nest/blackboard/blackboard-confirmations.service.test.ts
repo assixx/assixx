@@ -16,7 +16,7 @@ import { BlackboardConfirmationsService } from './blackboard-confirmations.servi
 // Module mocks
 // =============================================================
 
-vi.mock('../../utils/fieldMapper.js', () => ({
+vi.mock('../../utils/field-mapper.js', () => ({
   dbToApi: vi.fn((row: Record<string, unknown>) => ({ ...row })),
 }));
 

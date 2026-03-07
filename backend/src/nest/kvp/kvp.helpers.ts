@@ -5,7 +5,7 @@
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
 import type {

@@ -16,7 +16,7 @@ import { ClsService } from 'nestjs-cls';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
-import { eventBus } from '../../utils/eventBus.js';
+import { eventBus } from '../../utils/event-bus.js';
 import { DatabaseService } from '../database/database.service.js';
 import { E2eKeysService } from '../e2e-keys/e2e-keys.service.js';
 import {

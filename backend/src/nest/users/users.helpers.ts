@@ -6,7 +6,7 @@
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type {
   SafeUserResponse,

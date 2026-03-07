@@ -26,7 +26,7 @@ vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-notification-uuid'),
 }));
 
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: mockEventBus,
 }));
 

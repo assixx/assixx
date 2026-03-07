@@ -26,7 +26,7 @@ const mockEventBus = vi.hoisted(() => ({
   emitDocumentUploaded: vi.fn(),
 }));
 
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: mockEventBus,
 }));
 

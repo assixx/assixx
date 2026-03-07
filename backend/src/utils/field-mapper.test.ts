@@ -1,7 +1,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
-import { apiToDb, dbToApi } from './fieldMapper.js';
+import { apiToDb, dbToApi } from './field-mapper.js';
 
 describe('dbToApi', () => {
   it('should convert snake_case keys to camelCase', () => {

@@ -59,6 +59,10 @@
   let createAssetUuid = $state('');
   let createShiftPlanRequired = $state(false);
 
+  // Schedule preview: track weekday + repeat for SlotAssistant grid preview
+  let previewWeekday = $state<number | undefined>(undefined);
+  let previewRepeatEvery = $state<number | undefined>(undefined);
+
   // =============================================================================
   // HANDLERS
   // =============================================================================
@@ -182,6 +186,8 @@
         planUuid={data.plan.uuid}
         cardsHref={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
         intervalColors={data.intervalColors}
+        {previewWeekday}
+        {previewRepeatEvery}
       />
     </div>
   {:else if isCreateMode && createAssetUuid.length > 0}
@@ -190,6 +196,8 @@
         assetUuid={createAssetUuid}
         shiftPlanRequired={createShiftPlanRequired}
         intervalColors={data.intervalColors}
+        {previewWeekday}
+        {previewRepeatEvery}
       />
     </div>
   {/if}
@@ -222,6 +230,13 @@
             }}
             onshiftplanchange={(val: boolean) => {
               createShiftPlanRequired = val;
+            }}
+            onschedulepreview={(
+              weekday: number | undefined,
+              repeatEvery: number | undefined,
+            ) => {
+              previewWeekday = weekday;
+              previewRepeatEvery = repeatEvery;
             }}
           />
         </div>

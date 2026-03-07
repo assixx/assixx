@@ -4,7 +4,7 @@
  * Pure functions for data transformation and validation.
  * No dependencies on NestJS or database - stateless utilities.
  */
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { ALLOWED_SORT_COLUMNS } from './blackboard.constants.js';
 import type {
   BlackboardComment,

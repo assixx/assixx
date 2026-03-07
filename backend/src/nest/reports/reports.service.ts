@@ -11,7 +11,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { DatabaseService } from '../database/database.service.js';
 
 // ============================================================

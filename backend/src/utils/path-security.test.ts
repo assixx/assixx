@@ -5,7 +5,7 @@ import {
   getUploadDirectory,
   sanitizeFilename,
   validatePath,
-} from './pathSecurity.js';
+} from './path-security.js';
 
 vi.mock('./logger.js', () => ({
   logger: {

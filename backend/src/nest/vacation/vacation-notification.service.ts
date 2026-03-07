@@ -14,7 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { type VacationRequestEvent, eventBus } from '../../utils/eventBus.js';
+import { type VacationRequestEvent, eventBus } from '../../utils/event-bus.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { VacationRequest } from './vacation.types.js';
 

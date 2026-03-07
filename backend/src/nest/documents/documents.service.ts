@@ -16,7 +16,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { eventBus } from '../../utils/eventBus.js';
+import { eventBus } from '../../utils/event-bus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { DocumentAccessService } from './document-access.service.js';

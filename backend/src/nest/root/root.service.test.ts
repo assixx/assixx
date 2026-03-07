@@ -36,7 +36,7 @@ vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
 }));
 
-vi.mock('../../utils/employeeIdGenerator.js', () => ({
+vi.mock('../../utils/employee-id-generator.js', () => ({
   generateEmployeeId: vi.fn().mockReturnValue('ROOT-001'),
 }));
 
