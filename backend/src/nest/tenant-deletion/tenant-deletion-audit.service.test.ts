@@ -13,11 +13,11 @@
 import type { PoolClient } from 'pg';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import emailService from '../../utils/emailService.js';
+import emailService from '../../utils/email-service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { TenantDeletionAudit } from './tenant-deletion-audit.service.js';
 
-vi.mock('../../utils/emailService.js', () => ({
+vi.mock('../../utils/email-service.js', () => ({
   default: { sendEmail: vi.fn() },
 }));
 

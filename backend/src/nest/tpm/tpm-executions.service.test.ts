@@ -10,6 +10,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -83,7 +84,7 @@ function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
     sort_order: 1,
     custom_fields: {},
     custom_interval_days: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 5,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
@@ -149,7 +150,7 @@ function createDefectRow(
     title: 'Leckage am Ventil',
     description: null,
     position_number: 1,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-02T10:00:00.000Z',
     updated_at: '2026-03-02T10:00:00.000Z',
     ...overrides,

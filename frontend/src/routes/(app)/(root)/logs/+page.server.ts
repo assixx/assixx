@@ -91,7 +91,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
     const json = (await response.json()) as LogsApiResponse;
     return parseLogsResponse(json);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint: '/logs' }, 'Fetch error');
     return getEmptyResponse();
   }

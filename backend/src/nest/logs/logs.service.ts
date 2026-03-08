@@ -22,6 +22,7 @@ import type {
   LogsListResponseData,
   LogsStatsResponseData,
 } from './dto/index.js';
+import { IS_ACTIVE } from '@assixx/shared/constants';
 
 // ============================================================
 // DATABASE ROW TYPES
@@ -232,7 +233,7 @@ export class LogsService {
     const params: unknown[] = [];
 
     // Always filter out soft-deleted logs (is_active = 4)
-    conditions.push('(rl.is_active IS NULL OR rl.is_active != 4)');
+    conditions.push(`(rl.is_active IS NULL OR rl.is_active != ${IS_ACTIVE.DELETED})`);
 
     // Add filter conditions
     const filterFields: { value: unknown; field: string; operator?: string }[] = [
@@ -449,19 +450,19 @@ export class LogsService {
         `SELECT COUNT(*) as total_logs, COUNT(DISTINCT user_id) as unique_users,
          COUNT(DISTINCT tenant_id) as unique_tenants,
          SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as today_logs
-         FROM root_logs WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != 4)`,
+         FROM root_logs WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != ${IS_ACTIVE.DELETED})`,
         [tenantId],
       ),
       this.databaseService.query<TopActionResult>(
         `SELECT action, COUNT(*) as count FROM root_logs
-         WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != 4)
+         WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != ${IS_ACTIVE.DELETED})
          GROUP BY action ORDER BY count DESC LIMIT 10`,
         [tenantId],
       ),
       this.databaseService.query<TopUserResult>(
         `SELECT rl.user_id, rl.user_name, COUNT(*) as count
          FROM root_logs rl
-         WHERE rl.tenant_id = $1 AND (rl.is_active IS NULL OR rl.is_active != 4)
+         WHERE rl.tenant_id = $1 AND (rl.is_active IS NULL OR rl.is_active != ${IS_ACTIVE.DELETED})
          GROUP BY rl.user_id, rl.user_name ORDER BY count DESC LIMIT 10`,
         [tenantId],
       ),
@@ -564,10 +565,10 @@ export class LogsService {
     }
 
     // Only soft-delete logs that are not already deleted
-    conditions.push('(rl.is_active IS NULL OR rl.is_active != 4)');
+    conditions.push(`(rl.is_active IS NULL OR rl.is_active != ${IS_ACTIVE.DELETED})`);
 
     const whereClause = conditions.join(' AND ');
-    const deleteQuery = `UPDATE root_logs SET is_active = 4 WHERE id IN (
+    const deleteQuery = `UPDATE root_logs SET is_active = ${IS_ACTIVE.DELETED} WHERE id IN (
       SELECT rl.id FROM root_logs rl
       WHERE ${whereClause})`;
 
@@ -624,10 +625,10 @@ export class LogsService {
     }
 
     // Only soft-delete logs that are not already deleted
-    conditions.push('(is_active IS NULL OR is_active != 4)');
+    conditions.push(`(is_active IS NULL OR is_active != ${IS_ACTIVE.DELETED})`);
 
     const result = await this.databaseService.query<{ rowCount: number }>(
-      `UPDATE root_logs SET is_active = 4 WHERE ${conditions.join(' AND ')}`,
+      `UPDATE root_logs SET is_active = ${IS_ACTIVE.DELETED} WHERE ${conditions.join(' AND ')}`,
       params,
     );
 

@@ -10,27 +10,11 @@
  *
  * @see docs/plans/USER-REPOSITORY-REFACTOR-PLAN.md
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
+import type { IsActiveStatus } from '@assixx/shared/types';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database.service.js';
-
-/**
- * User status codes for is_active field
- *
- * Check if user is active: user.is_active === USER_STATUS.ACTIVE
- */
-export const USER_STATUS = {
-  /** User is inactive (disabled by admin) */
-  INACTIVE: 0,
-  /** User is active and can login */
-  ACTIVE: 1,
-  /** User is archived (historical data preserved) */
-  ARCHIVED: 3,
-  /** User is soft-deleted (should never appear in queries) */
-  DELETED: 4,
-} as const;
-
-export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
 /**
  * Base user fields returned by most queries
@@ -45,7 +29,7 @@ export interface UserBase {
   first_name: string | null;
   last_name: string | null;
   role: string;
-  is_active: UserStatus;
+  is_active: IsActiveStatus;
   position: string | null;
   profile_picture: string | null;
   created_at: Date;
@@ -115,7 +99,7 @@ export class UserRepository {
        FROM users
        WHERE id = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
   }
@@ -127,7 +111,7 @@ export class UserRepository {
        FROM users
        WHERE uuid = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
   }
@@ -139,7 +123,7 @@ export class UserRepository {
        FROM users
        WHERE LOWER(email) = LOWER($1)
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [email, tenantId],
     );
   }
@@ -154,7 +138,7 @@ export class UserRepository {
        FROM users
        WHERE uuid = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
   }
@@ -169,7 +153,7 @@ export class UserRepository {
        FROM users
        WHERE id = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
   }
@@ -181,7 +165,7 @@ export class UserRepository {
        FROM users
        WHERE role = $1
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [role, tenantId],
     );
     return Number.parseInt(result?.count ?? '0', 10);
@@ -193,7 +177,7 @@ export class UserRepository {
       `SELECT COUNT(*) as count
        FROM users
        WHERE tenant_id = $1
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
     return Number.parseInt(result?.count ?? '0', 10);
@@ -228,7 +212,7 @@ export class UserRepository {
     const safeOrderDir = orderDir === 'ASC' ? 'ASC' : 'DESC';
 
     const params: unknown[] = [tenantId];
-    let whereClause = 'WHERE tenant_id = $1 AND is_active = 1';
+    let whereClause = `WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`;
 
     if (role !== undefined) {
       params.push(role);
@@ -254,7 +238,7 @@ export class UserRepository {
     const result = await this.db.queryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
-         WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+         WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        ) as exists`,
       [id, tenantId],
     );
@@ -266,7 +250,7 @@ export class UserRepository {
     const result = await this.db.queryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
-         WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+         WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        ) as exists`,
       [uuid, tenantId],
     );
@@ -286,7 +270,7 @@ export class UserRepository {
       `SELECT id FROM users
        WHERE id = ANY($1::int[])
          AND tenant_id = $2
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [ids, tenantId],
     );
 
@@ -297,7 +281,7 @@ export class UserRepository {
   async getRole(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ role: string }>(
       `SELECT role FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
     return result?.role ?? null;
@@ -346,7 +330,7 @@ export class UserRepository {
   async getPasswordHash(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ password: string }>(
       `SELECT password FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
     return result?.password ?? null;
@@ -382,7 +366,10 @@ export class UserRepository {
   }
 
   /** Count users by status (for admin dashboard) */
-  async countByStatus(status: UserStatus, tenantId: number): Promise<number> {
+  async countByStatus(
+    status: IsActiveStatus,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM users
@@ -393,7 +380,9 @@ export class UserRepository {
   }
 
   /** Get all user statuses with counts (for admin dashboard) */
-  async getStatusCounts(tenantId: number): Promise<Map<UserStatus, number>> {
+  async getStatusCounts(
+    tenantId: number,
+  ): Promise<Map<IsActiveStatus, number>> {
     const result = await this.db.query<{ is_active: number; count: string }>(
       `SELECT is_active, COUNT(*) as count
        FROM users
@@ -402,9 +391,12 @@ export class UserRepository {
       [tenantId],
     );
 
-    const counts = new Map<UserStatus, number>();
+    const counts = new Map<IsActiveStatus, number>();
     for (const row of result as { is_active: number; count: string }[]) {
-      counts.set(row.is_active as UserStatus, Number.parseInt(row.count, 10));
+      counts.set(
+        row.is_active as IsActiveStatus,
+        Number.parseInt(row.count, 10),
+      );
     }
     return counts;
   }
@@ -420,7 +412,7 @@ export class UserRepository {
   ): Promise<number | null> {
     const result = await this.db.queryOne<{ id: number }>(
       `SELECT id FROM users
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
     return result?.id ?? null;
@@ -430,7 +422,7 @@ export class UserRepository {
   async resolveIdToUuid(id: number, tenantId: number): Promise<string | null> {
     const result = await this.db.queryOne<{ uuid: string }>(
       `SELECT uuid FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
     return result?.uuid ?? null;
@@ -458,7 +450,7 @@ export class UserRepository {
          SELECT 1 FROM users
          WHERE LOWER(email) = $1
            AND tenant_id = $2
-           AND is_active = 1
+           AND is_active = ${IS_ACTIVE.ACTIVE}
            ${excludeClause}
        ) as exists`,
       params,

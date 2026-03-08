@@ -9,6 +9,7 @@
  *
  * Dependencies: TpmCardStatusService (status transitions), DatabaseService
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -18,6 +19,7 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { toIsoString } from '../../utils/db-helpers.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CompleteCardDto } from './dto/complete-card.dto.js';
@@ -28,7 +30,6 @@ import {
   mapDefectRowToApi,
   mapExecutionRowToApi,
   mapPhotoRowToApi,
-  toIsoString,
 } from './tpm-executions.helpers.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
@@ -59,7 +60,7 @@ const EXECUTION_SELECT = `
     COALESCE(NULLIF(CONCAT(u_exec.first_name, ' ', u_exec.last_name), ' '), u_exec.username) AS executed_by_name,
     COALESCE(NULLIF(CONCAT(u_appr.first_name, ' ', u_appr.last_name), ' '), u_appr.username) AS approved_by_name,
     (SELECT COUNT(*)::int FROM tpm_card_execution_photos p WHERE p.execution_id = e.id) AS photo_count,
-    (SELECT COUNT(*)::int FROM tpm_execution_defects d WHERE d.execution_id = e.id AND d.is_active = 1) AS defect_count,
+    (SELECT COUNT(*)::int FROM tpm_execution_defects d WHERE d.execution_id = e.id AND d.is_active = ${IS_ACTIVE.ACTIVE}) AS defect_count,
     COALESCE(
       (SELECT json_agg(json_build_object(
         'uuid', TRIM(u_part.uuid),
@@ -165,7 +166,7 @@ const DEFECT_WITH_CONTEXT_SELECT = `
     WHERE wo_inner.source_type = 'tpm_defect'
       AND wo_inner.source_uuid = d.uuid
       AND wo_inner.tenant_id = d.tenant_id
-      AND wo_inner.is_active = 1
+      AND wo_inner.is_active = ${IS_ACTIVE.ACTIVE}
     ORDER BY wo_inner.created_at DESC
     LIMIT 1
   ) wo ON true
@@ -544,7 +545,7 @@ export class TpmExecutionsService {
       `SELECT d.*
        FROM tpm_execution_defects d
        JOIN tpm_card_executions e ON d.execution_id = e.id
-       WHERE e.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
+       WHERE e.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY d.position_number ASC`,
       [executionUuid, tenantId],
     );
@@ -564,7 +565,7 @@ export class TpmExecutionsService {
        FROM tpm_execution_defects d
        JOIN tpm_card_executions e ON d.execution_id = e.id
        JOIN tpm_cards c ON e.card_id = c.id
-       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1`,
+       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}`,
       [cardUuid, tenantId],
     );
 
@@ -573,7 +574,7 @@ export class TpmExecutionsService {
 
     const rows = await this.db.query<DefectWithContextRow>(
       `${DEFECT_WITH_CONTEXT_SELECT}
-       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = 1
+       WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY e.execution_date DESC, d.position_number ASC
        LIMIT $3 OFFSET $4`,
       [cardUuid, tenantId, pageSize, offset],
@@ -619,7 +620,7 @@ export class TpmExecutionsService {
     const row = await this.db.queryOne<TpmExecutionDefectRow>(
       `UPDATE tpm_execution_defects
        SET ${setClauses.join(', ')}
-       WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = 1
+       WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
        RETURNING *`,
       values,
     );
@@ -652,7 +653,7 @@ export class TpmExecutionsService {
   ): Promise<TpmCardRow> {
     const result = await client.query<TpmCardRow>(
       `SELECT * FROM tpm_cards
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [cardUuid, tenantId],
     );
@@ -692,7 +693,7 @@ export class TpmExecutionsService {
   ): Promise<TpmExecutionDefectRow> {
     const result = await client.query<TpmExecutionDefectRow>(
       `SELECT * FROM tpm_execution_defects
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [defectUuid, tenantId],
     );
@@ -840,7 +841,7 @@ export class TpmExecutionsService {
       last_name: string;
     }>(
       `SELECT id, uuid, first_name, last_name FROM users
-       WHERE uuid = ANY($1) AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = ANY($1) AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [participantUuids, tenantId],
     );
 
@@ -965,7 +966,7 @@ export class TpmExecutionsService {
     }>(
       `SELECT id, uuid, first_name, last_name, email, employee_number, position
        FROM users
-       WHERE tenant_id = $1 AND is_active = 1 AND role = 'employee'
+       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} AND role = 'employee'
        ORDER BY last_name, first_name`,
       [tenantId],
     );
@@ -993,10 +994,10 @@ export class TpmExecutionsService {
        FROM teams t
        JOIN asset_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
        WHERE mt.asset_id = $1 AND mt.tenant_id = $2
-         AND t.team_lead_id IS NOT NULL AND t.is_active = 1
+         AND t.team_lead_id IS NOT NULL AND t.is_active = ${IS_ACTIVE.ACTIVE}
        UNION
        SELECT id AS user_id FROM users
-       WHERE tenant_id = $2 AND has_full_access = true AND is_active = 1`,
+       WHERE tenant_id = $2 AND has_full_access = true AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetId, tenantId],
     );
     return rows.map((r: { user_id: number }) => r.user_id);

@@ -64,7 +64,7 @@ export class LogRetentionService implements OnModuleInit {
       );
 
       return result.rows[0]?.relkind === 'p';
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Failed to check partitioning status', error);
       return false;
     }
@@ -84,7 +84,7 @@ export class LogRetentionService implements OnModuleInit {
         `Retention cleanup completed: ${stats.totalDeleted} logs deleted ` +
           `across ${stats.tenantsProcessed} tenants`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Retention cleanup failed', error);
     }
   }
@@ -112,7 +112,7 @@ export class LogRetentionService implements OnModuleInit {
         const deleted = await this.cleanupTenantLogs(config);
         stats.totalDeleted += deleted;
         stats.tenantsProcessed++;
-      } catch (error) {
+      } catch (error: unknown) {
         stats.errors++;
         this.logger.error(`Cleanup failed for tenant ${config.tenantId}`, error);
       }
@@ -328,7 +328,7 @@ export class LogRetentionService implements OnModuleInit {
       await this.pool.query(`ALTER TABLE ${tableName} DETACH PARTITION ${partitionName}`);
       await this.pool.query(`DROP TABLE IF EXISTS ${partitionName}`);
       this.logger.log(`Dropped old partition: ${partitionName}`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Failed to drop partition ${partitionName}`, error);
     }
   }

@@ -96,7 +96,7 @@
       }
 
       surveyEmployeeState.openSurveyModal(survey);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Error loading survey');
       showErrorAlert('Fehler beim Laden der Umfrage');
     } finally {
@@ -126,7 +126,7 @@
       }
 
       surveyEmployeeState.openResponseModal(survey, responseData.response);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Error viewing response');
       showErrorAlert('Fehler beim Abrufen Ihrer Antworten');
     } finally {
@@ -238,7 +238,7 @@
       } else {
         showErrorAlert(result.error ?? 'Fehler beim Absenden der Antworten');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Error submitting survey');
       showErrorAlert('Fehler beim Absenden der Antworten');
     } finally {

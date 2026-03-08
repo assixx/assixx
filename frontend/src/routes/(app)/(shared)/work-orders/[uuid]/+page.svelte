@@ -13,6 +13,7 @@
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
+  import { markWorkOrderAsRead } from '../_lib/api';
   import { MESSAGES, STATUS_LABELS } from '../_lib/constants';
 
   import AssigneeList from './_lib/AssigneeList.svelte';
@@ -94,6 +95,7 @@
 
   onMount(() => {
     void notificationStore.markEntityAsRead('work_orders', workOrder.uuid);
+    void markWorkOrderAsRead(workOrder.uuid);
   });
 
   const statusLogs = $derived(

@@ -4,6 +4,7 @@
  * Phase 12: Deep service tests covering private helpers + DB-mocked operations.
  * Private methods tested via bracket notation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -74,7 +75,7 @@ function createMockDbEntry(
     expires_at: null,
     priority: 'medium',
     color: 'blue',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
     author_name: 'testuser',
@@ -1274,7 +1275,7 @@ describe('BlackboardEntriesService – public methods', () => {
 
   describe('unarchiveEntry', () => {
     it('delegates to updateEntry with isActive=1', async () => {
-      const entry = createMockDbEntry({ is_active: 3 });
+      const entry = createMockDbEntry({ is_active: IS_ACTIVE.ARCHIVED });
       mockAccessService.getUserAccessInfo.mockResolvedValue(
         DEFAULT_USER_ACCESS,
       );

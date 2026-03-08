@@ -2,11 +2,9 @@
 // KVP-DETAIL - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired.js';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { API_ENDPOINTS, SHARE_LEVEL_TEXT } from './constants';
@@ -29,31 +27,6 @@ const log = createLogger('KvpDetailApi');
 const apiClient = getApiClient();
 
 // =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
-
-function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
-
-// =============================================================================
 // USER DATA
 // =============================================================================
 
@@ -65,7 +38,7 @@ export async function fetchUserData(): Promise<User | null> {
   try {
     const result = await fetchSharedUser();
     return result.user as User | null;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching user');
     checkSessionExpired(err);
     return null;
@@ -81,7 +54,7 @@ export async function fetchSuggestion(
 ): Promise<KvpSuggestion | null> {
   try {
     return await apiClient.get<KvpSuggestion>(API_ENDPOINTS.kvpById(idOrUuid));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching suggestion');
     checkSessionExpired(err);
     return null;
@@ -105,7 +78,7 @@ export async function updateSuggestionStatus(
       data,
     );
     return { success: true, suggestion };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error updating status');
     checkSessionExpired(err);
     const message =
@@ -122,7 +95,7 @@ export async function archiveSuggestion(
   try {
     await apiClient.post(API_ENDPOINTS.kvpArchive(idOrUuid), {});
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error archiving suggestion');
     checkSessionExpired(err);
     const message =
@@ -140,7 +113,7 @@ export async function unarchiveSuggestion(
   try {
     await apiClient.post(API_ENDPOINTS.kvpUnarchive(idOrUuid), {});
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error unarchiving suggestion');
     checkSessionExpired(err);
     const message =
@@ -161,7 +134,7 @@ export async function shareSuggestion(
   try {
     await apiClient.put(API_ENDPOINTS.kvpShare(idOrUuid), { orgLevel, orgId });
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error sharing suggestion');
     checkSessionExpired(err);
     const message = err instanceof Error ? err.message : 'Fehler beim Teilen';
@@ -175,7 +148,7 @@ export async function unshareSuggestion(
   try {
     await apiClient.post(API_ENDPOINTS.kvpUnshare(idOrUuid), {});
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
     const message =
@@ -201,7 +174,7 @@ export async function fetchComments(
     return await apiClient.get<PaginatedComments>(
       `${API_ENDPOINTS.kvpComments(idOrUuid)}?limit=${limit}&offset=${offset}`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching comments');
     return { comments: [], total: 0, hasMore: false };
   }
@@ -210,7 +183,7 @@ export async function fetchComments(
 export async function fetchReplies(commentId: number): Promise<Comment[]> {
   try {
     return await apiClient.get<Comment[]>(`/kvp/comments/${commentId}/replies`);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching replies');
     return [];
   }
@@ -227,7 +200,7 @@ export async function addComment(
       ...(parentId !== undefined ? { parentId } : {}),
     });
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error adding comment');
     checkSessionExpired(err);
     const message =
@@ -249,7 +222,7 @@ export async function fetchAttachments(
     return await apiClient.get<Attachment[]>(
       API_ENDPOINTS.kvpAttachments(idOrUuid),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching attachments');
     return [];
   }
@@ -280,7 +253,7 @@ export async function confirmSuggestion(
   try {
     await apiClient.post(API_ENDPOINTS.kvpConfirm(uuid), {});
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error confirming suggestion');
     checkSessionExpired(err);
     const message =
@@ -298,7 +271,7 @@ export async function unconfirmSuggestion(
   try {
     await apiClient.delete(API_ENDPOINTS.kvpConfirm(uuid));
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error unconfirming suggestion');
     checkSessionExpired(err);
     const message =
@@ -319,7 +292,7 @@ export async function fetchDepartments(): Promise<Department[]> {
       API_ENDPOINTS.departments,
     );
     return Array.isArray(departments) ? departments : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching departments');
     return [];
   }
@@ -329,7 +302,7 @@ export async function fetchTeams(): Promise<Team[]> {
   try {
     const teams = await apiClient.get<Team[]>(API_ENDPOINTS.teams);
     return Array.isArray(teams) ? teams : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching teams');
     return [];
   }
@@ -339,7 +312,7 @@ export async function fetchAreas(): Promise<Area[]> {
   try {
     const areas = await apiClient.get<Area[]>(API_ENDPOINTS.areas);
     return Array.isArray(areas) ? areas : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching areas');
     return [];
   }

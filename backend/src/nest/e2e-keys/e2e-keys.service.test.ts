@@ -6,6 +6,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -247,7 +248,7 @@ describe('E2eKeysService', () => {
   // -----------------------------------------------------------
 
   describe('resetKeys()', () => {
-    it('should mark active key as deleted (is_active=4)', async () => {
+    it(`should mark active key as deleted (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
       await service.resetKeys(1, 42, 1);
@@ -256,7 +257,7 @@ describe('E2eKeysService', () => {
         string,
         unknown[],
       ];
-      expect(sql).toContain('is_active = 4');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(params).toEqual([1, 42]);
     });
 

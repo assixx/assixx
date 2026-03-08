@@ -360,7 +360,7 @@ export class TokenManager {
       });
 
       return this.processRefreshResponse(data);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Token refresh failed');
       return false;
     } finally {

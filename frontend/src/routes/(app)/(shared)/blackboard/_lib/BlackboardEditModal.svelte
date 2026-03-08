@@ -109,7 +109,7 @@
       departments = Array.isArray(deptData) ? deptData : (deptData.data ?? []);
       teams = Array.isArray(teamData) ? teamData : (teamData.data ?? []);
       areas = Array.isArray(areaData) ? areaData : (areaData.data ?? []);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Failed to load organization data');
       showErrorAlert('Fehler beim Laden der Organisationsdaten');
     } finally {
@@ -168,7 +168,7 @@
       showSuccessAlert('Eintrag aktualisiert');
       onsaved();
       onclose();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving entry');
       showErrorAlert(
         err instanceof Error ? err.message : 'Fehler beim Speichern',

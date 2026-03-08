@@ -8,6 +8,7 @@
  *
  * Uses DatabaseService mock pattern (no legacy execute).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -57,7 +58,7 @@ function makeDeptRow(overrides: Partial<DepartmentRow> = {}): DepartmentRow {
     description: null,
     department_lead_id: null,
     area_id: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     tenant_id: 10,
     created_at: new Date('2025-01-01'),
     updated_at: new Date('2025-01-01'),
@@ -426,7 +427,7 @@ describe('DepartmentsService', () => {
           position: null,
           employee_id: null,
           role: 'employee',
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
         },
       ]);
 
@@ -449,7 +450,7 @@ describe('DepartmentsService', () => {
           position: null,
           employee_id: null,
           role: null,
-          is_active: 0,
+          is_active: IS_ACTIVE.INACTIVE,
         },
       ]);
 

@@ -16,7 +16,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
-import emailService from '../../utils/emailService.js';
+import emailService from '../../utils/email-service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   CountResult,

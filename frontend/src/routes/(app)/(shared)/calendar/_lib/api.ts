@@ -2,11 +2,9 @@
 // CALENDAR - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired.js';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
 import { API_ENDPOINTS, ORG_LEVEL_COLORS } from './constants';
@@ -26,40 +24,6 @@ import type {
 const log = createLogger('CalendarApi');
 
 const apiClient = getApiClient();
-
-// =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
-
-/**
- * Check for session expired and redirect
- */
-export function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
 
 // =============================================================================
 // USER DATA
@@ -192,7 +156,7 @@ export async function loadCalendarEvents(
     return events
       .map(formatEventForCalendar)
       .filter((e): e is EventInput => e !== null);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading events');
     checkSessionExpired(err);
     return [];
@@ -210,7 +174,7 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
 
     // Handle response: api-client unwraps { success, data } → returns { events: [...] } or array directly
     return Array.isArray(response) ? response : response.events;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading upcoming events');
     checkSessionExpired(err);
     return [];
@@ -233,7 +197,7 @@ export async function fetchEventData(
       return response.event;
     }
     return response;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching event');
     checkSessionExpired(err);
     return null;
@@ -299,7 +263,7 @@ export async function saveEvent(
     : apiClient.post<{ id?: number }>(API_ENDPOINTS.EVENTS, payload));
 
     return { success: true, id: response.id ?? eventId };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving event');
     checkSessionExpired(err);
 
@@ -318,7 +282,7 @@ export async function deleteEvent(
   try {
     await apiClient.delete(API_ENDPOINTS.event(eventId));
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting event');
     checkSessionExpired(err);
 
@@ -363,7 +327,7 @@ export async function loadUserShifts(
       Array.isArray(response) ? response : response.data;
 
     return shifts;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading user shifts');
     return [];
   }
@@ -405,7 +369,7 @@ export async function loadUserVacations(
     );
 
     return Array.isArray(response) ? response : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading user vacations');
     return [];
   }
@@ -424,7 +388,7 @@ export async function loadDepartments(): Promise<Department[]> {
       PaginatedResponse<Department> | Department[]
     >(API_ENDPOINTS.DEPARTMENTS);
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return [];
   }
@@ -439,7 +403,7 @@ export async function loadTeams(): Promise<Team[]> {
       API_ENDPOINTS.TEAMS,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
     return [];
   }
@@ -454,7 +418,7 @@ export async function loadAreas(): Promise<Area[]> {
       API_ENDPOINTS.AREAS,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
     return [];
   }
@@ -469,7 +433,7 @@ export async function loadUsers(): Promise<User[]> {
       API_ENDPOINTS.USERS,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading users');
     return [];
   }
@@ -506,7 +470,7 @@ export async function markCalendarVisited(): Promise<void> {
   try {
     await apiClient.post('/feature-visits/mark', { feature: 'calendar' });
     log.debug('Calendar marked as visited');
-  } catch (err) {
+  } catch (err: unknown) {
     // Non-critical error - don't break the page
     log.warn({ err }, 'Failed to mark calendar as visited');
   }

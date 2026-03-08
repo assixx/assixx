@@ -202,7 +202,7 @@
       setTimeout(() => {
         void goto(resolvePath('/login'));
       }, SUCCESS_REDIRECT_DELAY);
-    } catch (err) {
+    } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
       showErrorAlert(message);

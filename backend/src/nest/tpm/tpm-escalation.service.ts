@@ -11,6 +11,7 @@
  *
  * Startup recovery via OnModuleInit catches cards that expired while offline.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import type { PoolClient } from 'pg';
@@ -181,7 +182,7 @@ export class TpmEscalationService implements OnModuleInit {
        LEFT JOIN assets m
          ON c.asset_id = m.id AND c.tenant_id = m.tenant_id
        WHERE c.status = 'red'
-         AND c.is_active = 1
+         AND c.is_active = ${IS_ACTIVE.ACTIVE}
          AND c.current_due_date IS NOT NULL
          AND c.current_due_date < NOW() - make_interval(
            hours => COALESCE(ec.escalation_after_hours, $1)
@@ -204,7 +205,7 @@ export class TpmEscalationService implements OnModuleInit {
           const result = await client.query<{ id: number }>(
             `SELECT id FROM tpm_cards
              WHERE id = $1 AND tenant_id = $2
-               AND status = 'red' AND is_active = 1
+               AND status = 'red' AND is_active = ${IS_ACTIVE.ACTIVE}
              FOR UPDATE SKIP LOCKED`,
             [candidate.id, candidate.tenant_id],
           );
@@ -271,7 +272,7 @@ export class TpmEscalationService implements OnModuleInit {
        JOIN asset_teams mt
          ON t.id = mt.team_id AND t.tenant_id = mt.tenant_id
        WHERE mt.asset_id = $1 AND mt.tenant_id = $2
-         AND t.is_active = 1 AND t.team_lead_id IS NOT NULL
+         AND t.is_active = ${IS_ACTIVE.ACTIVE} AND t.team_lead_id IS NOT NULL
        LIMIT 1`,
       [assetId, tenantId],
     );

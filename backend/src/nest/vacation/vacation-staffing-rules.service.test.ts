@@ -6,6 +6,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -42,7 +43,7 @@ function createMockStaffingRuleRow(
     tenant_id: 1,
     asset_id: 100,
     min_staff_count: 2,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 10,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',

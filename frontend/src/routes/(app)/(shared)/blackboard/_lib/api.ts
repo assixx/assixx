@@ -90,7 +90,7 @@ export async function fetchEntryByUuid(
     return await apiClient.get<BlackboardEntry>(
       `/blackboard/entries/${encodeURIComponent(uuid)}`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     // Return null for 404
     if (
       err !== null &&

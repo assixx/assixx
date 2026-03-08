@@ -168,7 +168,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
     log.debug({ role }, 'User already logged in, redirecting to dashboard');
     redirect(302, getRedirectPath(role));
-  } catch (err) {
+  } catch (err: unknown) {
     if (isRedirectError(err)) throw err;
     log.error({ err }, 'Error checking auth status');
     return {};
@@ -242,7 +242,7 @@ export const actions: Actions = {
         user: result.data.user,
         redirectTo: getRedirectPath(result.data.user.role),
       };
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Server error');
       return fail(500, { error: 'Ein Serverfehler ist aufgetreten', email });
     }

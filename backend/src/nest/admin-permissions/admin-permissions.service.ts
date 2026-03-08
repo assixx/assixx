@@ -6,6 +6,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -642,7 +643,7 @@ export class AdminPermissionsService {
     tenantId: number,
   ): Promise<{ role: string; isRoot: boolean; hasFullAccess: boolean }> {
     const rows = await this.db.query<DbRoleResult>(
-      'SELECT role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 
@@ -719,7 +720,7 @@ export class AdminPermissionsService {
       JOIN departments d ON adp.department_id = d.id
       WHERE adp.admin_user_id = $1
         AND adp.tenant_id = $2
-        AND d.is_active = 1
+        AND d.is_active = ${IS_ACTIVE.ACTIVE}
       ORDER BY d.name`,
       [adminId, tenantId],
     );
@@ -757,7 +758,7 @@ export class AdminPermissionsService {
 
   private async getTotalDepartments(tenantId: number): Promise<number> {
     const rows = await this.db.query<DbCountResult>(
-      'SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1 AND is_active = 1',
+      `SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
     return Number(rows[0]?.total ?? 0);

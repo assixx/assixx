@@ -4,6 +4,7 @@
  * Tests: CRUD operations, auto-generation, permission assignment, edge cases.
  * Pattern: ADR-018 — Mock DatabaseService + ActivityLoggerService.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,7 +47,7 @@ function createDummyRow(
     display_name: 'Halle 1 Display',
     employee_number: 'DUMMY-001',
     role: 'dummy',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     has_full_access: false,
     created_at: '2026-03-03T10:00:00.000Z',
     updated_at: '2026-03-03T10:00:00.000Z',
@@ -319,7 +320,7 @@ describe('DummyUsersService', () => {
       await service.list(10, {});
 
       const countSql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(countSql).toContain('u.is_active != 4');
+      expect(countSql).toContain(`u.is_active != ${IS_ACTIVE.DELETED}`);
     });
 
     it('should filter by search term', async () => {
@@ -385,7 +386,7 @@ describe('DummyUsersService', () => {
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("u.role = 'dummy'");
       expect(sql).toContain('u.tenant_id = $1');
-      expect(sql).toContain('u.is_active != 4');
+      expect(sql).toContain(`u.is_active != ${IS_ACTIVE.DELETED}`);
     });
   });
 
@@ -530,13 +531,13 @@ describe('DummyUsersService', () => {
       );
     });
 
-    it('should set is_active = 4 in SQL', async () => {
+    it(`should set is_active = ${IS_ACTIVE.DELETED} in SQL`, async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
       await service.delete(10, DUMMY_UUID, 1);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('is_active = 4');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(sql).toContain("role = 'dummy'");
     });
   });

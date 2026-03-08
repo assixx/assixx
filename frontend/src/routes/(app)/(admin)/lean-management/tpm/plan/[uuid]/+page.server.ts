@@ -7,6 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -49,6 +50,34 @@ function extractAssetUuids(plansData: PlanListData | null): string[] {
   );
 }
 
+/** Load shared org data (assets, areas, departments, interval colors) */
+async function loadOrgData(
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<{
+  assets: Asset[];
+  areas: TpmArea[];
+  departments: TpmDepartment[];
+  intervalColors: IntervalColorConfigEntry[];
+}> {
+  const [a, ar, d, ic] = await Promise.all([
+    apiFetch<Asset[]>('/assets', token, fetchFn),
+    apiFetch<TpmArea[]>('/areas', token, fetchFn),
+    apiFetch<TpmDepartment[]>('/departments', token, fetchFn),
+    apiFetch<IntervalColorConfigEntry[]>(
+      '/tpm/config/interval-colors',
+      token,
+      fetchFn,
+    ),
+  ]);
+  return {
+    assets: safeArray(a),
+    areas: safeArray(ar),
+    departments: safeArray(d),
+    intervalColors: safeArray(ic),
+  };
+}
+
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -81,52 +110,38 @@ async function apiFetch<T>(
   }
 }
 
-export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
+export const load: PageServerLoad = async ({
+  params,
+  cookies,
+  fetch,
+  parent,
+}) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  const isCreateMode = params.uuid === 'new';
+  const { activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'tpm');
 
-  // Load assets + areas + departments + interval colors in parallel
-  const [assetsData, areasData, departmentsData, intervalColorsData] =
-    await Promise.all([
-      apiFetch<Asset[]>('/assets', token, fetch),
-      apiFetch<TpmArea[]>('/areas', token, fetch),
-      apiFetch<TpmDepartment[]>('/departments', token, fetch),
-      apiFetch<IntervalColorConfigEntry[]>(
-        '/tpm/config/interval-colors',
-        token,
-        fetch,
-      ),
-    ]);
-  const assets = safeArray(assetsData);
-  const areas = safeArray(areasData);
-  const departments = safeArray(departmentsData);
+  const isCreateMode = params.uuid === 'new';
+  const shared = await loadOrgData(token, fetch);
 
   if (isCreateMode) {
-    // Fetch active plans to determine which assets already have a TPM plan
     const plansData = await apiFetch<PlanListData>(
       '/tpm/plans?page=1&limit=500',
       token,
       fetch,
     );
-    const assetUuidsWithPlans = extractAssetUuids(plansData);
-
     return {
       isCreateMode: true,
       plan: null,
       timeEstimates: [],
-      assets,
-      areas,
-      departments,
-      assetUuidsWithPlans,
-      intervalColors: safeArray(intervalColorsData),
+      ...shared,
+      assetUuidsWithPlans: extractAssetUuids(plansData),
     };
   }
 
-  // Edit mode: load plan + time estimates in parallel
   const [planData, estimatesData] = await Promise.all([
     apiFetch<TpmPlan>(`/tpm/plans/${params.uuid}`, token, fetch),
     apiFetch<TpmTimeEstimate[]>(
@@ -135,20 +150,12 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
       fetch,
     ),
   ]);
-
-  if (planData === null) {
-    redirect(302, '/lean-management/tpm');
-  }
-
-  const timeEstimates = safeArray(estimatesData);
+  if (planData === null) redirect(302, '/lean-management/tpm');
 
   return {
     isCreateMode: false,
     plan: planData,
-    timeEstimates,
-    assets,
-    areas,
-    departments,
-    intervalColors: safeArray(intervalColorsData),
+    timeEstimates: safeArray(estimatesData),
+    ...shared,
   };
 };

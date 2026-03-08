@@ -14,6 +14,7 @@
  * - DELETE /admin-permissions/:userId/areas/:areaId                - Remove area permission (root only)
  * - PATCH  /admin-permissions/:userId/full-access                  - Set full access flag (root only)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   Body,
   Controller,
@@ -55,10 +56,8 @@ interface MessageResponse {
  * Get admin tenant query
  * SECURITY: Only return tenant for ACTIVE users (is_active = 1)
  */
-const GET_ADMIN_TENANT_QUERY =
-  "SELECT tenant_id FROM users WHERE id = $1 AND role = 'admin' AND is_active = 1";
-const GET_USER_TENANT_QUERY =
-  'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1';
+const GET_ADMIN_TENANT_QUERY = `SELECT tenant_id FROM users WHERE id = $1 AND role = 'admin' AND is_active = ${IS_ACTIVE.ACTIVE}`;
+const GET_USER_TENANT_QUERY = `SELECT tenant_id FROM users WHERE id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`;
 const ERROR_ADMIN_NOT_FOUND = 'Admin not found or inactive';
 const ERROR_USER_NOT_FOUND = 'User not found or inactive';
 

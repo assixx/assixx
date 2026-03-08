@@ -48,6 +48,10 @@
     oncancel: () => void;
     onassetchange?: (assetUuid: string) => void;
     onshiftplanchange?: (shiftPlanRequired: boolean) => void;
+    onschedulepreview?: (
+      weekday: number | undefined,
+      repeatEvery: number | undefined,
+    ) => void;
   }
 
   const {
@@ -64,6 +68,7 @@
     oncancel,
     onassetchange,
     onshiftplanchange,
+    onschedulepreview,
   }: Props = $props();
 
   // =========================================================================
@@ -159,6 +164,16 @@
   // Notify parent when shiftPlanRequired changes
   $effect(() => {
     onshiftplanchange?.(shiftPlanRequired);
+  });
+
+  // Schedule preview toggle (only sends values when active)
+  let showPreview = $state<boolean>(false);
+
+  $effect(() => {
+    onschedulepreview?.(
+      showPreview ? baseWeekday : undefined,
+      showPreview ? baseRepeatEvery : undefined,
+    );
   });
 
   // =========================================================================
@@ -373,6 +388,17 @@
       <span class="form-field__message">{MESSAGES.HELP_REPEAT}</span>
     </div>
   </div>
+
+  <!-- Schedule preview toggle -->
+  <label class="choice-card plan-form__all-day-card">
+    <input
+      type="checkbox"
+      class="choice-card__input"
+      bind:checked={showPreview}
+      disabled={submitting}
+    />
+    <span class="choice-card__text">Vorschau im Kalender</span>
+  </label>
 
   <!-- All-day toggle -->
   <label class="choice-card plan-form__all-day-card">

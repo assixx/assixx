@@ -11,6 +11,7 @@
  * All queries via db.tenantTransaction() (ADR-019).
  * Returns raw data — ResponseInterceptor wraps (ADR-007).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
@@ -91,7 +92,7 @@ export class VacationQueriesService {
            LEFT JOIN users req ON vr.requester_id = req.id
            LEFT JOIN users app ON vr.approver_id = app.id
            LEFT JOIN users sub ON vr.substitute_id = sub.id
-           WHERE vr.id = $1 AND vr.tenant_id = $2 AND vr.is_active = 1`,
+           WHERE vr.id = $1 AND vr.tenant_id = $2 AND vr.is_active = ${IS_ACTIVE.ACTIVE}`,
           [requestId, tenantId],
         );
         const row = result.rows[0];
@@ -206,7 +207,7 @@ export class VacationQueriesService {
            WHERE vr.tenant_id = $1
              AND vr.requester_id = $2
              AND vr.status = 'approved'
-             AND vr.is_active = 1
+             AND vr.is_active = ${IS_ACTIVE.ACTIVE}
              AND vr.start_date <= $4
              AND vr.end_date >= $3
            ORDER BY vr.start_date ASC`,
@@ -266,7 +267,10 @@ export class VacationQueriesService {
     tenantId: number,
     query: VacationQueryDto,
   ): { whereClauses: string[]; params: unknown[] } {
-    const whereClauses: string[] = [`vr.tenant_id = $1`, `vr.is_active = 1`];
+    const whereClauses: string[] = [
+      `vr.tenant_id = $1`,
+      `vr.is_active = ${IS_ACTIVE.ACTIVE}`,
+    ];
     const params: unknown[] = [tenantId];
     if (query.year !== undefined) {
       whereClauses.push(
@@ -328,7 +332,7 @@ export class VacationQueriesService {
     teamId: number,
   ): Promise<string> {
     const result = await client.query<{ name: string }>(
-      `SELECT name FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT name FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [teamId, tenantId],
     );
     const row = result.rows[0];
@@ -366,7 +370,7 @@ export class VacationQueriesService {
        JOIN user_teams ut ON vr.requester_id = ut.user_id
        JOIN users u ON vr.requester_id = u.id
        WHERE vr.tenant_id = $1 AND ut.team_id = $2 AND vr.status = 'approved'
-         AND vr.is_active = 1 AND vr.start_date <= $4 AND vr.end_date >= $3
+         AND vr.is_active = ${IS_ACTIVE.ACTIVE} AND vr.start_date <= $4 AND vr.end_date >= $3
        ORDER BY vr.start_date ASC, u.last_name ASC`,
       [tenantId, teamId, monthStart, monthEnd],
     );

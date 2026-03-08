@@ -20,6 +20,7 @@
  *
  * Dependencies: holidays, entitlements, blackouts, staffing rules
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
@@ -368,7 +369,7 @@ export class VacationCapacityService {
       `SELECT ut.team_id, t.name AS team_name, t.department_id
        FROM user_teams ut
        JOIN teams t ON ut.team_id = t.id
-       WHERE ut.user_id = $1 AND ut.tenant_id = $2 AND t.is_active = 1`,
+       WHERE ut.user_id = $1 AND ut.tenant_id = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
       [requesterId, tenantId],
     );
 
@@ -385,7 +386,7 @@ export class VacationCapacityService {
       `SELECT u.id AS user_id, u.first_name, u.last_name
        FROM user_teams ut
        JOIN users u ON ut.user_id = u.id
-       WHERE ut.team_id = $1 AND ut.tenant_id = $2 AND u.is_active = 1
+       WHERE ut.team_id = $1 AND ut.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY u.last_name, u.first_name`,
       [teamId, tenantId],
     );
@@ -403,7 +404,7 @@ export class VacationCapacityService {
       `SELECT m.id AS asset_id, m.name AS asset_name
        FROM asset_teams mt
        JOIN assets m ON mt.asset_id = m.id
-       WHERE mt.team_id = $1 AND mt.tenant_id = $2 AND m.is_active = 1
+       WHERE mt.team_id = $1 AND mt.tenant_id = $2 AND m.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY m.name`,
       [teamId, tenantId],
     );
@@ -427,7 +428,7 @@ export class VacationCapacityService {
        WHERE vr.tenant_id = $1
          AND ut.team_id = $2
          AND vr.status = 'approved'
-         AND vr.is_active = 1
+         AND vr.is_active = ${IS_ACTIVE.ACTIVE}
          AND vr.start_date <= $4
          AND vr.end_date >= $3`,
       [tenantId, teamId, startDate, endDate],
@@ -481,7 +482,7 @@ export class VacationCapacityService {
         }>(
           `SELECT holiday_date, recurring
            FROM vacation_holidays
-           WHERE tenant_id = $1 AND is_active = 1
+           WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
              AND (
                (recurring = false AND holiday_date >= $2 AND holiday_date <= $3)
                OR recurring = true
@@ -762,7 +763,7 @@ export class VacationCapacityService {
           last_name: string;
         }>(
           `SELECT first_name, last_name FROM users
-           WHERE id = $1 AND is_active = 1`,
+           WHERE id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [substituteId],
         );
 
@@ -778,7 +779,7 @@ export class VacationCapacityService {
            WHERE tenant_id = $1
              AND requester_id = $2
              AND status = 'approved'
-             AND is_active = 1
+             AND is_active = ${IS_ACTIVE.ACTIVE}
              AND start_date <= $4
              AND end_date >= $3
            ORDER BY start_date`,

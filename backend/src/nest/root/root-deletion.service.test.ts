@@ -227,35 +227,35 @@ describe('RootDeletionService', () => {
   // =============================================================
 
   describe('approveDeletion', () => {
-    it('should throw Error when user not found or inactive', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+    it('should throw Error when user not found or has no password', async () => {
+      mockUserRepo.getPasswordHash.mockResolvedValueOnce(null);
 
-      await expect(service.approveDeletion(1, 99, 'password')).rejects.toThrow(
-        'User not found or inactive',
-      );
+      await expect(
+        service.approveDeletion(1, 99, 10, 'password'),
+      ).rejects.toThrow('User password not configured');
     });
 
-    it('should throw Error when user has no password', async () => {
-      mockDb.query.mockResolvedValueOnce([{ password: null }]);
+    it('should throw Error when user has empty password', async () => {
+      mockUserRepo.getPasswordHash.mockResolvedValueOnce('');
 
-      await expect(service.approveDeletion(1, 5, 'password')).rejects.toThrow(
-        'User password not configured',
-      );
+      await expect(
+        service.approveDeletion(1, 5, 10, 'password'),
+      ).rejects.toThrow('User password not configured');
     });
 
     it('should throw Error on wrong password', async () => {
-      mockDb.query.mockResolvedValueOnce([{ password: 'stored-hash' }]);
+      mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(false as never);
 
-      await expect(service.approveDeletion(1, 5, 'wrong')).rejects.toThrow(
+      await expect(service.approveDeletion(1, 5, 10, 'wrong')).rejects.toThrow(
         'Ungültiges Passwort',
       );
     });
 
     it('should approve on correct password', async () => {
-      mockDb.query.mockResolvedValueOnce([{ password: 'stored-hash' }]);
+      mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
 
-      await service.approveDeletion(1, 5, 'correct', 'Approved');
+      await service.approveDeletion(1, 5, 10, 'correct', 'Approved');
 
       expect(mockTenantDeletion.approveDeletion).toHaveBeenCalledWith(
         1,

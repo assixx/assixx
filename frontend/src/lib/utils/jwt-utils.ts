@@ -32,7 +32,7 @@ export function parseJwt(token: string): JWTPayload | null {
     }
     const jsonPayload = decodeURIComponent(percentEncoded);
     return JSON.parse(jsonPayload) as JWTPayload;
-  } catch (error) {
+  } catch (error: unknown) {
     log.error({ err: error }, 'Error parsing JWT');
     return null;
   }

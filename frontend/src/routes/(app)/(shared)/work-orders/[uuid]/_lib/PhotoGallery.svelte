@@ -13,13 +13,11 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   import { deletePhoto, uploadPhoto, logApiError } from '../../_lib/api';
-  import { MESSAGES } from '../../_lib/constants';
+  import { FILE_UPLOAD_CONFIG, MESSAGES } from '../../_lib/constants';
 
   import type { WorkOrderPhoto, WorkOrderStatus } from '../../_lib/types';
 
   const MAX_PHOTOS = 10;
-  const MAX_FILE_SIZE = 5_242_880;
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
   interface Props {
     photos: WorkOrderPhoto[];
@@ -107,11 +105,11 @@
     const file = target.files?.[0];
     if (file === undefined) return;
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!FILE_UPLOAD_CONFIG.ACCEPTED_MIME_TYPES.includes(file.type)) {
       showErrorAlert(MESSAGES.PHOTOS_INVALID_TYPE);
       return;
     }
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > FILE_UPLOAD_CONFIG.MAX_SIZE_BYTES) {
       showErrorAlert(MESSAGES.PHOTOS_TOO_LARGE);
       return;
     }
@@ -152,7 +150,7 @@
 
 <div class="photo-section">
   <h4 class="section-title">
-    <i class="fas fa-camera mr-2"></i>
+    <i class="fas fa-paperclip mr-2"></i>
     {MESSAGES.PHOTOS_HEADING}
     {#if photos.length > 0}
       <span class="badge badge--count ml-2">{photos.length}</span>
@@ -178,7 +176,7 @@
     <input
       bind:this={fileInput}
       type="file"
-      accept="image/jpeg,image/png,image/webp"
+      accept={FILE_UPLOAD_CONFIG.ACCEPTED_TYPES}
       class="hidden"
       onchange={handleFileSelect}
     />
@@ -204,11 +202,18 @@
               if (e.key === 'Enter') openPreview(index);
             }}
           >
-            <img
-              src={buildPhotoUrl(photo.uuid)}
-              alt={photo.fileName}
-              loading="lazy"
-            />
+            {#if photo.mimeType === 'application/pdf'}
+              <div class="pdf-thumbnail">
+                <i class="fas fa-file-pdf"></i>
+                <span class="pdf-thumbnail__name">{photo.fileName}</span>
+              </div>
+            {:else}
+              <img
+                src={buildPhotoUrl(photo.uuid)}
+                alt={photo.fileName}
+                loading="lazy"
+              />
+            {/if}
           </div>
           {#if canDeletePhoto(photo)}
             <button
@@ -252,7 +257,11 @@
     >
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
-          <i class="fas fa-image text-success-500 mr-2"></i>
+          {#if currentPhoto.mimeType === 'application/pdf'}
+            <i class="fas fa-file-pdf text-error-500 mr-2"></i>
+          {:else}
+            <i class="fas fa-image text-success-500 mr-2"></i>
+          {/if}
           {currentPhoto.fileName}
         </h3>
         <button
@@ -263,15 +272,23 @@
         >
       </div>
       <div class="ds-modal__body p-0">
-        <div
-          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
-        >
-          <img
+        {#if currentPhoto.mimeType === 'application/pdf'}
+          <iframe
             src={buildPhotoUrl(currentPhoto.uuid)}
-            alt={currentPhoto.fileName}
-            class="max-h-full max-w-full object-contain"
-          />
-        </div>
+            title="PDF Vorschau"
+            class="block h-[80vh] min-h-[600px] w-full border-none"
+          ></iframe>
+        {:else}
+          <div
+            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+          >
+            <img
+              src={buildPhotoUrl(currentPhoto.uuid)}
+              alt={currentPhoto.fileName}
+              class="max-h-full max-w-full object-contain"
+            />
+          </div>
+        {/if}
         <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
           <div
             class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
@@ -391,6 +408,32 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .pdf-thumbnail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    gap: 0.5rem;
+    color: var(--color-text-secondary);
+  }
+
+  .pdf-thumbnail :global(i) {
+    font-size: 2.5rem;
+    color: #ef4444;
+  }
+
+  .pdf-thumbnail__name {
+    font-size: 0.65rem;
+    text-align: center;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
   }
 
   .photo-delete-btn {

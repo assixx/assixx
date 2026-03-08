@@ -107,6 +107,25 @@ export const PRIORITY_FILTER_OPTIONS: { value: string; label: string }[] = [
 ];
 
 // =============================================================================
+// FILE UPLOAD CONFIG (consistent with Blackboard pattern)
+// =============================================================================
+
+/** Upload constraints for work order attachments (modal + gallery) */
+export const FILE_UPLOAD_CONFIG = {
+  MAX_FILES: 5,
+  MAX_SIZE_MB: 10,
+  MAX_SIZE_BYTES: 10_485_760,
+  ACCEPTED_TYPES: '.pdf,.jpg,.jpeg,.png,.webp',
+  /** Use `readonly string[]` (not `as const`) so `.includes(file.type)` compiles */
+  ACCEPTED_MIME_TYPES: [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ] as readonly string[],
+} as const;
+
+// =============================================================================
 // UI MESSAGES (German)
 // =============================================================================
 
@@ -194,19 +213,19 @@ export const MESSAGES = {
   COMMENTS_REPLY_CANCEL: 'Abbrechen',
   COMMENTS_LOADING_MORE: 'Weitere Kommentare laden...',
 
-  // Photos
-  PHOTOS_HEADING: 'Fotos',
-  PHOTOS_EMPTY: 'Keine Fotos vorhanden',
-  PHOTOS_ADD: 'Foto hinzufügen',
-  PHOTOS_MAX_REACHED: 'Maximum von 10 Fotos erreicht',
-  PHOTOS_MAX_SIZE: 'Max. 5 MB pro Foto',
+  // Photos & Dokumente
+  PHOTOS_HEADING: 'Fotos & Dokumente',
+  PHOTOS_EMPTY: 'Keine Dateien vorhanden',
+  PHOTOS_ADD: 'Datei hinzufügen',
+  PHOTOS_MAX_REACHED: 'Maximum von 10 Dateien erreicht',
+  PHOTOS_MAX_SIZE: 'Max. 10 MB pro Datei',
   PHOTOS_UPLOADING: 'Wird hochgeladen...',
-  PHOTOS_SUCCESS: 'Foto erfolgreich hochgeladen',
+  PHOTOS_SUCCESS: 'Datei erfolgreich hochgeladen',
   PHOTOS_ERROR: 'Fehler beim Hochladen',
-  PHOTOS_TOO_LARGE: 'Datei ist größer als 5 MB',
-  PHOTOS_INVALID_TYPE: 'Nur Bilder (JPG, PNG, WebP) erlaubt',
-  PHOTOS_DELETE_CONFIRM: 'Foto wirklich löschen?',
-  PHOTOS_DELETE_SUCCESS: 'Foto gelöscht',
+  PHOTOS_TOO_LARGE: 'Datei ist größer als 10 MB',
+  PHOTOS_INVALID_TYPE: 'Nur Bilder (JPG, PNG, WebP) und PDF erlaubt',
+  PHOTOS_DELETE_CONFIRM: 'Datei wirklich löschen?',
+  PHOTOS_DELETE_SUCCESS: 'Datei gelöscht',
   PHOTOS_DELETE_ERROR: 'Fehler beim Löschen',
   PHOTOS_DELETING: 'Wird gelöscht...',
 
@@ -220,6 +239,8 @@ export const MESSAGES = {
   MODAL_FIELD_PRIORITY: 'Priorität',
   MODAL_FIELD_DUE_DATE: 'Fälligkeitsdatum',
   MODAL_FIELD_ASSIGNEES: 'Zugewiesene Mitarbeiter',
+  MODAL_FIELD_ATTACHMENTS: 'Anhänge (optional)',
+  MODAL_ATTACHMENTS_HINT: 'PDF, JPG, PNG, WebP — max. 10 MB pro Datei',
   MODAL_SAVING: 'Wird gespeichert...',
 
   // Delete confirmation

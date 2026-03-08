@@ -150,7 +150,7 @@
       try {
         const dataUrl = await readFileAsDataUrl(file);
         photoPreviews = [...photoPreviews, dataUrl];
-      } catch (err) {
+      } catch (err: unknown) {
         log.error({ err }, 'Error reading file for preview');
       }
     }
@@ -261,7 +261,7 @@
       showSuccessAlert('Vorschlag wurde erfolgreich eingereicht');
       handleClose();
       onsuccess();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error creating suggestion');
       showErrorAlert('Fehler beim Erstellen des Vorschlags');
     } finally {

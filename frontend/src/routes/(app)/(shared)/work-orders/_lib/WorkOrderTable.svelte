@@ -68,6 +68,9 @@
             >
               {item.title}
             </a>
+            {#if !item.isRead}
+              <span class="badge badge--sm badge--success ml-2">Neu</span>
+            {/if}
           </td>
           <td>
             <span class="badge {STATUS_BADGE_CLASSES[item.status]}">

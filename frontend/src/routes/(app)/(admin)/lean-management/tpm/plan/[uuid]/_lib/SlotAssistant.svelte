@@ -11,7 +11,7 @@
    * For the first 90 days: full slot data with projection overlay.
    * Beyond 90 days: only projected TPM schedules shown.
    */
-  import { SvelteMap } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
@@ -23,17 +23,20 @@
   } from '../../../_lib/api';
   import {
     INTERVAL_LABELS,
-    INTERVAL_SHORT_LABELS,
     INTERVAL_COLORS,
     MESSAGES,
   } from '../../../_lib/constants';
   import {
     timestampToISO,
+    getISOWeek,
+    weekOfMonth,
     NINETY_DAYS_MS,
     MAX_RANGE_MS,
     MAX_RANGE_365_MS,
   } from '../../../_lib/date-helpers';
 
+  import SlotDayContent from './SlotDayContent.svelte';
+  import SlotPreviewBadge from './SlotPreviewBadge.svelte';
   import TimelineDayView from './TimelineDayView.svelte';
 
   import type {
@@ -51,6 +54,8 @@
     shiftPlanRequired?: boolean;
     cardsHref?: string;
     intervalColors?: IntervalColorConfigEntry[];
+    previewWeekday?: number;
+    previewRepeatEvery?: number;
   }
 
   const {
@@ -59,6 +64,8 @@
     shiftPlanRequired,
     cardsHref,
     intervalColors = [],
+    previewWeekday,
+    previewRepeatEvery,
   }: Props = $props();
 
   // Build color lookup: custom API colors override hardcoded defaults
@@ -176,12 +183,85 @@
     ),
   );
 
-  // Compact view: only scheduled days (no grid gaps)
+  /** Month period for multi-month intervals (absent = fires every month) */
+  const INTERVAL_MONTH_PERIOD: Partial<Record<IntervalType, number>> = {
+    quarterly: 3,
+    semi_annual: 6,
+    annual: 12,
+  };
+
+  /** Extract interval reference months from projection data for the current plan */
+  function extractIntervalRefs(
+    proj: ScheduleProjectionResult,
+    uuid: string,
+  ): SvelteMap<IntervalType, number> {
+    const refs = new SvelteMap<IntervalType, number>();
+    for (const slot of proj.slots) {
+      if (slot.planUuid !== uuid) continue;
+      const m = new Date(slot.date).getMonth();
+      for (const t of slot.intervalTypes) {
+        if (!refs.has(t)) refs.set(t, m);
+      }
+    }
+    return refs;
+  }
+
+  /** Compute which intervals fire for a given month based on reference months */
+  function computeIntervalsForMonth(
+    month: number,
+    refs: SvelteMap<IntervalType, number>,
+  ): IntervalType[] {
+    const result: IntervalType[] = [];
+    for (const [interval, refMonth] of refs) {
+      const period = INTERVAL_MONTH_PERIOD[interval] ?? 1;
+      if ((((month - refMonth) % period) + period) % period === 0) {
+        result.push(interval);
+      }
+    }
+    return result;
+  }
+
+  /** Preview: matching dates + their interval badges */
+  const previewData = $derived.by(() => {
+    const dates = new SvelteSet<string>();
+    const intervals = new SvelteMap<string, IntervalType[]>();
+
+    if (previewWeekday === undefined || previewRepeatEvery === undefined) {
+      return { dates, intervals };
+    }
+
+    const refs =
+      projectionData !== null && planUuid !== undefined ?
+        extractIntervalRefs(projectionData, planUuid)
+      : new SvelteMap<IntervalType, number>();
+
+    for (const day of visibleCalendarDays) {
+      if (
+        isoWeekday(day.date) !== previewWeekday ||
+        weekOfMonth(day.date) !== previewRepeatEvery
+      ) {
+        continue;
+      }
+      dates.add(day.date);
+      if (refs.size > 0) {
+        const month = new Date(day.date).getMonth();
+        intervals.set(day.date, computeIntervalsForMonth(month, refs));
+      }
+    }
+
+    return { dates, intervals };
+  });
+
+  const previewDates = $derived(previewData.dates);
+  const previewIntervals = $derived(previewData.intervals);
+
+  // Compact view: only scheduled days + preview days (no grid gaps)
   const scheduledDays = $derived(
     visibleCalendarDays.filter(
       (d: DayAvailability) =>
         hasTpmScheduleConflict(d) ||
-        (projectionByDate.get(d.date)?.length ?? 0) > 0,
+        (projectionByDate.get(d.date)?.length ?? 0) > 0 ||
+        previewDates.has(d.date),
     ),
   );
 
@@ -191,10 +271,73 @@
     visibleCalendarDays.filter((d: DayAvailability) => d.isAvailable).length,
   );
 
-  // Number of empty cells before first day (Mon=0, Fri=4 or Sun=6)
-  const leadingPadding = $derived.by(() => {
-    if (visibleCalendarDays.length === 0) return 0;
-    return isoWeekday(visibleCalendarDays[0].date);
+  // =========================================================================
+  // CALENDAR ROWS (grouped by ISO week, with month separators)
+  // =========================================================================
+
+  interface CalendarRow {
+    kw: number;
+    monthLabel: string;
+    cells: (DayAvailability | null)[];
+  }
+
+  function buildCalendarRow(
+    days: DayAvailability[],
+    kw: number,
+    cols: number,
+  ): CalendarRow {
+    const wd = isoWeekday(days[0].date);
+    const cells: (DayAvailability | null)[] = [
+      ...(Array(wd).fill(null) as null[]),
+      ...days,
+    ];
+    while (cells.length < cols) cells.push(null);
+    return { kw, monthLabel: '', cells };
+  }
+
+  function applyMonthLabels(rows: CalendarRow[]): void {
+    let lastMonthKey = -1;
+    for (const row of rows) {
+      const firstDay = row.cells.find((c): c is DayAvailability => c !== null);
+      if (firstDay === undefined) continue;
+      const d = new Date(firstDay.date);
+      const monthKey = d.getFullYear() * 12 + d.getMonth();
+      if (monthKey !== lastMonthKey) {
+        row.monthLabel = d.toLocaleDateString('de-DE', {
+          month: 'long',
+          year: 'numeric',
+        });
+        lastMonthKey = monthKey;
+      }
+    }
+  }
+
+  const calendarRows = $derived.by((): CalendarRow[] => {
+    const days = visibleCalendarDays;
+    if (days.length === 0) return [];
+    const cols = visibleHeaders.length;
+    const rows: CalendarRow[] = [];
+    let batch: DayAvailability[] = [];
+    let batchKw = getISOWeek(days[0].date);
+    let batchMonth = new Date(days[0].date).getMonth();
+
+    for (const day of days) {
+      const kw = getISOWeek(day.date);
+      const month = new Date(day.date).getMonth();
+      if ((kw !== batchKw || month !== batchMonth) && batch.length > 0) {
+        rows.push(buildCalendarRow(batch, batchKw, cols));
+        batch = [];
+      }
+      batchKw = kw;
+      batchMonth = month;
+      batch.push(day);
+    }
+    if (batch.length > 0) {
+      rows.push(buildCalendarRow(batch, batchKw, cols));
+    }
+
+    applyMonthLabels(rows);
+    return rows;
   });
 
   // =========================================================================
@@ -491,6 +634,17 @@
             {INTERVAL_LABELS[key as IntervalType]}
           </span>
         {/each}
+        {#if previewDates.size > 0}
+          <span
+            class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+          >
+            <span
+              class="slot-dot"
+              style="background: #9333ea"
+            ></span>
+            Vorschau
+          </span>
+        {/if}
       </div>
     </div>
 
@@ -508,8 +662,13 @@
         <div class="slot-compact">
           {#each scheduledDays as day (day.date)}
             {@const projSlots = getSlotsForDate(day.date)}
+            {@const isPreview = previewDates.has(day.date)}
+            {@const isScheduled =
+              hasTpmScheduleConflict(day) || projSlots.length > 0}
             <div
-              class="slot-day slot-day--scheduled"
+              class="slot-day"
+              class:slot-day--scheduled={isScheduled && !isPreview}
+              class:slot-day--preview={isPreview}
               class:slot-day--selected={selectedDay === day.date}
               title={buildDayTooltip(day)}
               role="button"
@@ -527,40 +686,34 @@
               <span class="slot-day__date"
                 >{formatDayMonth(day.date, true)}</span
               >
-              {#each projSlots as slot (slot.planUuid)}
-                <span class="slot-day__asset">{slot.assetName}</span>
-                <div class="slot-day__intervals">
-                  {#each slot.intervalTypes as interval (interval)}
-                    <span
-                      class="slot-day__badge"
-                      style="background: {colorMap[interval]}"
-                      title={INTERVAL_LABELS[interval]}
-                      >{INTERVAL_SHORT_LABELS[interval]}</span
-                    >
-                  {/each}
-                </div>
-                {#if !slot.isFullDay && slot.startTime !== null && slot.endTime !== null}
-                  <span class="slot-day__time">
-                    <i class="fas fa-clock"></i>
-                    {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
-                  </span>
-                {:else if slot.isFullDay}
-                  <span class="slot-day__time">
-                    <i class="fas fa-clock"></i>
-                    Ganztägig
-                  </span>
+              {#if isScheduled}
+                <SlotDayContent
+                  slots={projSlots}
+                  {colorMap}
+                />
+                {#if isPreview}
+                  <SlotPreviewBadge
+                    intervalTypes={previewIntervals.get(day.date) ?? []}
+                    {colorMap}
+                  />
                 {/if}
-              {/each}
+              {:else if isPreview}
+                <SlotPreviewBadge
+                  intervalTypes={previewIntervals.get(day.date) ?? []}
+                  {colorMap}
+                />
+              {/if}
             </div>
           {/each}
         </div>
       {:else}
-        <!-- Calendar grid -->
+        <!-- Calendar grid with WM/KW labels + month separators -->
         <div
           class="slot-calendar"
           class:slot-calendar--weekdays-only={!showWeekends}
         >
-          <!-- Weekday headers -->
+          <!-- Header row: KW label + weekday headers -->
+          <div class="slot-row-label slot-header">KW</div>
           {#each visibleHeaders as header, i (i)}
             <div
               class="slot-header"
@@ -570,81 +723,87 @@
             </div>
           {/each}
 
-          <!-- Leading empty cells -->
-          {#each Array(leadingPadding) as _, i (i)}
-            <div class="slot-empty"></div>
-          {/each}
-
-          <!-- Day cells -->
-          {#each visibleCalendarDays as day (day.date)}
-            {@const available = day.isAvailable}
-            {@const isWeekend = isoWeekday(day.date) >= 5}
-            {@const isScheduled =
-              hasTpmScheduleConflict(day) ||
-              getSlotsForDate(day.date).length > 0}
-            <div
-              class="slot-day"
-              class:slot-day--available={available && !isScheduled}
-              class:slot-day--unavailable={!available && !isScheduled}
-              class:slot-day--scheduled={isScheduled}
-              class:slot-day--hidden={showOnlyScheduled && !isScheduled}
-              class:slot-day--weekend={isWeekend}
-              class:slot-day--selected={selectedDay === day.date}
-              title={buildDayTooltip(day)}
-              role="button"
-              tabindex="0"
-              onclick={() => {
-                handleDayClick(day);
-              }}
-              onkeydown={(e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleDayClick(day);
-                }
-              }}
-            >
-              <span class="slot-day__date"
-                >{formatDayMonth(day.date, showOnlyScheduled)}</span
-              >
-              {#if available && !isScheduled}
-                <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
-              {:else if isScheduled}
-                {@const projSlots = getSlotsForDate(day.date)}
-                {#each projSlots as slot (slot.planUuid)}
-                  <span class="slot-day__asset">{slot.assetName}</span>
-                  <div class="slot-day__intervals">
-                    {#each slot.intervalTypes as interval (interval)}
-                      <span
-                        class="slot-day__badge"
-                        style="background: {colorMap[interval]}"
-                        title={INTERVAL_LABELS[interval]}
-                        >{INTERVAL_SHORT_LABELS[interval]}</span
-                      >
-                    {/each}
-                  </div>
-                  {#if !slot.isFullDay && slot.startTime !== null && slot.endTime !== null}
-                    <span class="slot-day__time">
-                      <i class="fas fa-clock"></i>
-                      {slot.startTime.slice(0, 5)} – {slot.endTime.slice(0, 5)}
-                    </span>
-                  {:else if slot.isFullDay}
-                    <span class="slot-day__time">
-                      <i class="fas fa-clock"></i>
-                      Ganztägig
+          {#each calendarRows as row, rowIdx (rowIdx)}
+            {#if row.monthLabel.length > 0}
+              <div class="slot-month-sep">{row.monthLabel}</div>
+            {/if}
+            <div class="slot-row-label slot-row-label--kw">{row.kw}</div>
+            {#each row.cells as cell, ci (ci)}
+              {#if cell === null}
+                <div class="slot-empty"></div>
+              {:else}
+                {@const day = cell}
+                {@const available = day.isAvailable}
+                {@const isWeekend = isoWeekday(day.date) >= 5}
+                {@const isScheduled =
+                  hasTpmScheduleConflict(day) ||
+                  getSlotsForDate(day.date).length > 0}
+                {@const isPreview = previewDates.has(day.date)}
+                <div
+                  class="slot-day"
+                  class:slot-day--available={available &&
+                    !isScheduled &&
+                    !isPreview}
+                  class:slot-day--unavailable={!available &&
+                    !isScheduled &&
+                    !isPreview}
+                  class:slot-day--scheduled={isScheduled && !isPreview}
+                  class:slot-day--preview={isPreview}
+                  class:slot-day--hidden={showOnlyScheduled &&
+                    !isScheduled &&
+                    !isPreview}
+                  class:slot-day--weekend={isWeekend}
+                  class:slot-day--selected={selectedDay === day.date}
+                  title={buildDayTooltip(day)}
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
+                    handleDayClick(day);
+                  }}
+                  onkeydown={(e: KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleDayClick(day);
+                    }
+                  }}
+                >
+                  <span class="slot-day__date">
+                    <sup class="slot-day__occ">{weekOfMonth(day.date)}</sup>
+                    {formatDayMonth(day.date, showOnlyScheduled)}
+                  </span>
+                  {#if isScheduled}
+                    {@const projSlots = getSlotsForDate(day.date)}
+                    <SlotDayContent
+                      slots={projSlots}
+                      {colorMap}
+                    />
+                    {#if isPreview}
+                      <SlotPreviewBadge
+                        intervalTypes={previewIntervals.get(day.date) ?? []}
+                        {colorMap}
+                      />
+                    {/if}
+                  {:else if isPreview}
+                    <SlotPreviewBadge
+                      intervalTypes={previewIntervals.get(day.date) ?? []}
+                      {colorMap}
+                    />
+                  {:else if available}
+                    <i class="fas fa-check slot-day__icon slot-day__icon--ok"
+                    ></i>
+                  {:else if day.conflicts.length > 0}
+                    <i
+                      class="fas {getConflictIcon(
+                        day.conflicts[0]?.type ?? '',
+                      )} slot-day__icon slot-day__icon--conflict"
+                    ></i>
+                    <span class="slot-day__conflict">
+                      {getConflictLabel(day.conflicts[0]?.type ?? '')}
                     </span>
                   {/if}
-                {/each}
-              {:else if day.conflicts.length > 0}
-                <i
-                  class="fas {getConflictIcon(
-                    day.conflicts[0]?.type ?? '',
-                  )} slot-day__icon slot-day__icon--conflict"
-                ></i>
-                <span class="slot-day__conflict">
-                  {getConflictLabel(day.conflicts[0]?.type ?? '')}
-                </span>
+                </div>
               {/if}
-            </div>
+            {/each}
           {/each}
         </div>
       {/if}
@@ -695,12 +854,38 @@
 
   .slot-calendar {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: auto repeat(7, 1fr);
     gap: 4px;
   }
 
   .slot-calendar--weekdays-only {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: auto repeat(5, 1fr);
+  }
+
+  .slot-month-sep {
+    grid-column: 1 / -1;
+    font-size: 0.813rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    padding: 0.5rem 0 0.25rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--color-text-muted) 25%, transparent);
+    text-align: center;
+  }
+
+  .slot-row-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+    padding: 0 0.125rem;
+    min-width: 20px;
+  }
+
+  .slot-row-label--kw {
+    font-size: 0.563rem;
+    white-space: nowrap;
   }
 
   /* Weekend toggle — compact sizing override for choice-card */
@@ -770,6 +955,11 @@
       color-mix(in srgb, var(--color-info, #3b82f6) 30%, transparent);
   }
 
+  .slot-day--preview {
+    background: color-mix(in srgb, #9333ea 12%, transparent);
+    border: 1px solid color-mix(in srgb, #9333ea 35%, transparent);
+  }
+
   .slot-day--weekend.slot-day--available {
     background: color-mix(in srgb, var(--color-success) 5%, transparent);
     border-color: color-mix(in srgb, var(--color-success) 15%, transparent);
@@ -781,12 +971,11 @@
     color: var(--color-text-secondary);
   }
 
-  .slot-day__time {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.688rem;
+  .slot-day__occ {
+    font-size: 0.563rem;
+    font-weight: 700;
     color: var(--color-text-muted);
+    margin-right: 1px;
   }
 
   .slot-day__icon {
@@ -806,39 +995,5 @@
     color: var(--color-danger);
     text-align: center;
     line-height: 1.2;
-  }
-
-  /* ---- Scheduled day: asset name + interval badges ---- */
-
-  .slot-day__asset {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    text-align: center;
-    line-height: 1.1;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .slot-day__intervals {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 3px;
-  }
-
-  .slot-day__badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #000;
-    padding: 2px 4px;
-    border-radius: 2px;
-    line-height: 1;
-    min-width: 14px;
   }
 </style>

@@ -152,7 +152,7 @@ export async function fetchCurrentUser(): Promise<{
       userCache.timestamp = Date.now();
 
       return { user, tenant };
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error fetching user');
       return { user: null, tenant: null };
     } finally {

@@ -335,7 +335,7 @@ class CryptoBridge {
   ): Promise<WorkerResponse> {
     try {
       return await this.sendOnce(message);
-    } catch (err) {
+    } catch (err: unknown) {
       // On crash, retry once (Worker restarts from IndexedDB)
       if (
         !retried &&

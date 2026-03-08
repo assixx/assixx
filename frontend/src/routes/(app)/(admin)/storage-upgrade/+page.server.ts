@@ -55,7 +55,7 @@ async function apiFetch<T>(
     return 'success' in json && json.success ?
         (json.data ?? null)
       : (json as unknown as T);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }

@@ -131,7 +131,7 @@ export async function fetchChatFolders(): Promise<ChatFolder[]> {
       }
     }
     return [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Failed to fetch chat folders');
     return [];
   }
@@ -219,7 +219,7 @@ export async function fetchChatAttachments(
     );
     const rawDocs = extractDocumentsFromResponse(result);
     return rawDocs.map(mapApiDocument);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Failed to fetch chat attachments');
     return [];
   }
@@ -319,20 +319,4 @@ export async function uploadDocument(
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const result = await fetchSharedUser();
   return result.user as CurrentUser | null;
-}
-
-// =============================================================================
-// ERROR HANDLING
-// =============================================================================
-
-/**
- * Check if error has SESSION_EXPIRED code
- */
-export function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
 }

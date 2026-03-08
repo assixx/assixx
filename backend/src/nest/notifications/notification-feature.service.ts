@@ -57,7 +57,7 @@ export class NotificationFeatureService {
         ],
       );
       this.logger.log(`Created ${type} notification for feature ${featureId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       // Log but don't fail - notification is secondary to feature creation
       this.logger.error(
         `Failed to create ${type} notification: ${String(error)}`,

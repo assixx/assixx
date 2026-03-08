@@ -101,6 +101,17 @@ describe('SECURITY: RoleSwitchService', () => {
         }),
       );
     });
+
+    it('should succeed even when audit logging fails', async () => {
+      // verifyUserTenant
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]);
+      // logRoleSwitch — fails
+      mockDb.query.mockRejectedValueOnce(new Error('Audit DB error'));
+
+      const result = await service.switchToEmployee(1, 10);
+
+      expect(result.token).toBe('mock-jwt-token');
+    });
   });
 
   // =============================================================

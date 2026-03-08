@@ -12,6 +12,7 @@
  *
  * All queries via db.tenantTransaction() (ADR-019).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -152,7 +153,7 @@ export class VacationApproverService {
       `SELECT t.id AS team_id, t.name AS team_name,
               t.team_lead_id, t.deputy_lead_id, t.department_id
        FROM teams t JOIN user_teams ut ON t.id = ut.team_id
-       WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = 1`,
+       WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     const row = result.rows[0];
@@ -170,7 +171,7 @@ export class VacationApproverService {
     userId: number,
   ): Promise<UserRoleRow> {
     const result = await client.query<UserRoleRow>(
-      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     const row = result.rows[0];

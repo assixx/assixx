@@ -31,7 +31,7 @@
           if (!response.ok) {
             result = `API Error: ${response.status}`;
           }
-        } catch (e) {
+        } catch (e: unknown) {
           result = `Network Error: ${e instanceof Error ? e.message : String(e)}`;
         }
 

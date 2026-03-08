@@ -17,6 +17,7 @@
  *
  * Pattern: mirrors TpmEscalationService cron structure.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import type { PoolClient } from 'pg';
@@ -107,7 +108,7 @@ export class TpmDueDateCronService implements OnModuleInit {
               MAX(interval_order) AS max_interval_order
        FROM tpm_cards
        WHERE status = 'green'
-         AND is_active = 1
+         AND is_active = ${IS_ACTIVE.ACTIVE}
          AND current_due_date IS NOT NULL
          AND current_due_date <= CURRENT_DATE
        GROUP BY tenant_id, asset_id`,

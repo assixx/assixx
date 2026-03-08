@@ -4,6 +4,7 @@
  * Business logic for role switching with strict security checks.
  * Allows admin/root users to temporarily view the app as employee.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -12,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
 
 /**
@@ -73,7 +75,7 @@ export class RoleSwitchService {
     tenantId: number,
   ): Promise<UserRow> {
     const rows = await this.db.query<UserRow>(
-      'SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 
@@ -148,9 +150,7 @@ export class RoleSwitchService {
       );
     } catch (error: unknown) {
       // Don't fail the operation if audit logging fails
-      this.logger.warn(
-        `Failed to log role switch: ${(error as Error).message}`,
-      );
+      this.logger.warn(`Failed to log role switch: ${getErrorMessage(error)}`);
     }
   }
 

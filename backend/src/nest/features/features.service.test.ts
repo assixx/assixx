@@ -8,6 +8,7 @@
  *   - mapDbFeatureToApi → via getAllFeatures
  *   - mapTenantFeatureRow + parseCustomConfig → via getTenantFeatures
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,7 +34,7 @@ function createDbFeatureRow(overrides: Record<string, unknown> = {}) {
     description: null as string | null,
     category: 'core',
     base_price: null as string | number | null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     sort_order: 1,
     created_at: new Date('2025-01-01T00:00:00Z'),
     updated_at: new Date('2025-01-15T00:00:00Z'),
@@ -51,7 +52,7 @@ function createDbTenantFeatureRow(overrides: Record<string, unknown> = {}) {
     feature_name: 'Shift Management',
     category: 'core',
     default_price: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     activated_at: new Date('2025-01-01T00:00:00Z'),
     expires_at: null as Date | null,
     activated_by: null as number | null,
@@ -136,7 +137,7 @@ describe('FeaturesService', () => {
 
     it('should convert is_active 0 to false', async () => {
       mockDb.query.mockResolvedValueOnce([
-        createDbFeatureRow({ is_active: 0 }),
+        createDbFeatureRow({ is_active: IS_ACTIVE.INACTIVE }),
       ]);
 
       const result = await service.getAllFeatures();
@@ -146,7 +147,7 @@ describe('FeaturesService', () => {
 
     it('should convert is_active 1 to true', async () => {
       mockDb.query.mockResolvedValueOnce([
-        createDbFeatureRow({ is_active: 1 }),
+        createDbFeatureRow({ is_active: IS_ACTIVE.ACTIVE }),
       ]);
 
       const result = await service.getAllFeatures();
@@ -160,7 +161,7 @@ describe('FeaturesService', () => {
       await service.getAllFeatures();
 
       expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE is_active = 1'),
+        expect.stringContaining(`WHERE is_active = ${IS_ACTIVE.ACTIVE}`),
       );
     });
 
@@ -170,7 +171,7 @@ describe('FeaturesService', () => {
       await service.getAllFeatures(true);
 
       expect(mockDb.query).toHaveBeenCalledWith(
-        expect.not.stringContaining('WHERE is_active = 1'),
+        expect.not.stringContaining(`WHERE is_active = ${IS_ACTIVE.ACTIVE}`),
       );
     });
   });
@@ -195,7 +196,7 @@ describe('FeaturesService', () => {
 
       mockDb.query.mockResolvedValueOnce([
         createDbTenantFeatureRow({
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
           expires_at: new Date('2025-06-01T00:00:00Z'),
         }),
       ]);
@@ -211,7 +212,7 @@ describe('FeaturesService', () => {
 
       mockDb.query.mockResolvedValueOnce([
         createDbTenantFeatureRow({
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
           expires_at: new Date('2025-12-31T23:59:59Z'),
         }),
       ]);
@@ -223,7 +224,7 @@ describe('FeaturesService', () => {
 
     it('should set status to disabled for inactive feature', async () => {
       mockDb.query.mockResolvedValueOnce([
-        createDbTenantFeatureRow({ is_active: 0 }),
+        createDbTenantFeatureRow({ is_active: IS_ACTIVE.INACTIVE }),
       ]);
 
       const result = await service.getTenantFeatures(10);
@@ -404,7 +405,9 @@ describe('FeaturesService', () => {
       await service.activateFeature(baseRequest, activatedBy);
 
       expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
-        expect.stringContaining('UPDATE tenant_features SET is_active = 1'),
+        expect.stringContaining(
+          `UPDATE tenant_features SET is_active = ${IS_ACTIVE.ACTIVE}`,
+        ),
         [null, 42, null, 10, 13],
       );
     });

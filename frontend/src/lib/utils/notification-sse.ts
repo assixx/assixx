@@ -196,7 +196,7 @@ class NotificationSSEClient implements INotificationSSE {
         this.eventSource?.close();
       };
       window.addEventListener('beforeunload', this.boundBeforeUnload);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Failed to create EventSource');
       this.isConnecting = false;
     }
@@ -209,7 +209,7 @@ class NotificationSSEClient implements INotificationSSE {
     try {
       const data = JSON.parse(event.data) as NotificationEvent;
       this.notifyHandlers(data);
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error, data: event.data }, 'Failed to parse message');
     }
   }
@@ -268,7 +268,7 @@ class NotificationSSEClient implements INotificationSSE {
     this.handlers.forEach((handler) => {
       try {
         handler(event);
-      } catch (error) {
+      } catch (error: unknown) {
         log.error({ err: error }, 'Handler error');
       }
     });

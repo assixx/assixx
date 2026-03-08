@@ -6,6 +6,7 @@
  * Profile self-service tests moved to user-profile.service.test.ts.
  * Pure functions already tested in users.helpers.test.ts.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -86,7 +87,7 @@ function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
     username: 'maxm',
     first_name: 'Max',
     last_name: 'Mustermann',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     last_login: null,
     created_at: new Date('2025-01-01'),
     updated_at: null,
@@ -679,7 +680,7 @@ describe('UsersService', () => {
       );
     });
 
-    it('should soft-delete user (is_active=4)', async () => {
+    it(`should soft-delete user (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       const userRow = makeUserRow();
       // findUserById
       mockDb.query.mockResolvedValueOnce([userRow]);
@@ -690,7 +691,7 @@ describe('UsersService', () => {
 
       expect(result.message).toBe('User deleted successfully');
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('is_active = 4');
+      expect(updateSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
     });
   });
@@ -716,7 +717,7 @@ describe('UsersService', () => {
 
       expect(result.message).toBe('User archived successfully');
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('is_active = 3');
+      expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
     });
   });
 
@@ -734,14 +735,16 @@ describe('UsersService', () => {
     });
 
     it('should set is_active to 1', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ is_active: 3 })]);
+      mockDb.query.mockResolvedValueOnce([
+        makeUserRow({ is_active: IS_ACTIVE.ARCHIVED }),
+      ]);
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.unarchiveUser(1, 10);
 
       expect(result.message).toBe('User unarchived successfully');
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('is_active = 1');
+      expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
   });
 
@@ -818,7 +821,7 @@ describe('UsersService', () => {
     it('should resolve UUID and delegate to archiveUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
       mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = 3
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ARCHIVED}
 
       const result = await service.archiveUserByUuid('some-uuid', 10);
 
@@ -834,9 +837,9 @@ describe('UsersService', () => {
     it('should resolve UUID and delegate to unarchiveUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
       mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 5, is_active: 3 }),
+        makeUserRow({ id: 5, is_active: IS_ACTIVE.ARCHIVED }),
       ]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = 1
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ACTIVE}
 
       const result = await service.unarchiveUserByUuid('some-uuid', 10);
 

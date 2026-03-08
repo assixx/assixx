@@ -4,6 +4,7 @@
  * Pure functions for mapping and transforming chat data.
  * No DI dependencies - stateless transformations only.
  */
+import { buildFullName } from '../../utils/db-helpers.js';
 import type {
   ChatUser,
   ChatUserRow,
@@ -106,13 +107,11 @@ export function mapConversationToApiFormat(
  * Transform database message row to API response format
  */
 export function transformMessage(msg: MessageRow): Message {
-  const fullName =
-    `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim();
   return {
     id: msg.id,
     conversationId: msg.conversation_id,
     senderId: msg.sender_id,
-    senderName: fullName !== '' ? fullName : 'Unknown',
+    senderName: buildFullName(msg.sender_first_name, msg.sender_last_name),
     senderUsername:
       msg.sender_username !== '' ? msg.sender_username : 'unknown',
     senderProfilePicture: msg.sender_profile_picture,
@@ -162,13 +161,11 @@ export function buildSentMessage(
   attachment?: MessageAttachmentInput,
   e2eFields?: SentMessageE2eFields,
 ): Message {
-  const fullName =
-    `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim();
   return {
     id: messageId,
     conversationId,
     senderId,
-    senderName: fullName !== '' ? fullName : 'Unknown',
+    senderName: buildFullName(sender.first_name, sender.last_name),
     senderUsername: sender.username,
     senderProfilePicture: sender.profile_picture,
     content,
@@ -384,12 +381,12 @@ export function filterUsersBySearch(
   }
   const searchLower = search.toLowerCase();
   return users.filter((user: ChatUserRow) => {
-    const fullName =
-      `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
     return (
       user.username.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
-      fullName.includes(searchLower)
+      buildFullName(user.first_name, user.last_name, '')
+        .toLowerCase()
+        .includes(searchLower)
     );
   });
 }

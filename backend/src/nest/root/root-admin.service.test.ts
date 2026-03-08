@@ -5,6 +5,7 @@
  * Focus: Admin CRUD, duplicate email guard, password hashing,
  *        activity logging, NotFoundException guards.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -82,7 +83,7 @@ function makeAdminRow(overrides: Record<string, unknown> = {}) {
     first_name: 'Admin',
     last_name: 'User',
     role: 'admin',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     tenant_id: 10,
     created_at: new Date('2025-01-01'),
     updated_at: null,

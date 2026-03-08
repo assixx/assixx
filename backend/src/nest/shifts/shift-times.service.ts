@@ -5,6 +5,7 @@
  * Provides CRUD operations and lazy-initialization of defaults
  * for tenants that don't have custom shift times yet.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -79,7 +80,7 @@ export class ShiftTimesService {
     const rows = await this.db.query<DbShiftTimeRow>(
       `SELECT shift_key, label, start_time::TEXT, end_time::TEXT, sort_order, is_active
        FROM shift_times
-       WHERE tenant_id = $1 AND is_active = 1
+       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY sort_order ASC`,
       [tenantId],
     );
@@ -89,7 +90,7 @@ export class ShiftTimesService {
       const defaultRows = await this.db.query<DbShiftTimeRow>(
         `SELECT shift_key, label, start_time::TEXT, end_time::TEXT, sort_order, is_active
          FROM shift_times
-         WHERE tenant_id = $1 AND is_active = 1
+         WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY sort_order ASC`,
         [tenantId],
       );
@@ -162,7 +163,7 @@ export class ShiftTimesService {
     for (const def of DEFAULT_SHIFT_TIMES) {
       await this.db.query(
         `UPDATE shift_times
-         SET label = $1, start_time = $2::TIME, end_time = $3::TIME, is_active = 1
+         SET label = $1, start_time = $2::TIME, end_time = $3::TIME, is_active = ${IS_ACTIVE.ACTIVE}
          WHERE tenant_id = $4 AND shift_key = $5`,
         [def.label, def.startTime, def.endTime, tenantId, def.shiftKey],
       );

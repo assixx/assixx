@@ -18,6 +18,7 @@ import Cursor from 'pg-cursor';
 
 import { PG_POOL } from '../database/database.constants.js';
 import type { ExportMetadata, UnifiedLogEntry } from './dto/export-logs.dto.js';
+import { IS_ACTIVE } from '@assixx/shared/constants';
 
 /** Batch size for cursor reads - 1000 rows at a time */
 const CURSOR_BATCH_SIZE = 1000;
@@ -353,7 +354,7 @@ export class UnifiedLogsService {
   } {
     const conditions: string[] = [
       'r.tenant_id = $1',
-      '(r.is_active IS NULL OR r.is_active != 4)', // Exclude soft-deleted
+      `(r.is_active IS NULL OR r.is_active != ${IS_ACTIVE.DELETED})`, // Exclude soft-deleted
     ];
     const params: unknown[] = [filter.tenantId];
     let paramIndex = 2;

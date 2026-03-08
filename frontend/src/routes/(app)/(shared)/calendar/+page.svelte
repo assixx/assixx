@@ -212,7 +212,7 @@
         calendarState.currentFilter,
         calendarState.currentSearch,
       );
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading events');
       return [];
     }
@@ -381,7 +381,7 @@
     if (!isFullscreen) {
       try {
         await document.documentElement.requestFullscreen();
-      } catch (err) {
+      } catch (err: unknown) {
         log.error({ err }, 'Fullscreen error');
       }
     } else {

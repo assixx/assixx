@@ -76,7 +76,7 @@ export async function loadAssets(
 export async function getAssetById(assetId: number): Promise<Asset | null> {
   try {
     return await apiClient.get(`/assets/${assetId}`);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, assetId }, 'Error loading asset');
     return null;
   }
@@ -113,7 +113,7 @@ export async function getAssetTeams(assetId: number): Promise<AssetTeam[]> {
   try {
     const result: unknown = await apiClient.get(`/assets/${assetId}/teams`);
     return extractArrayFromResponse<AssetTeam>(result);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, assetId }, 'Error loading teams for asset');
     return [];
   }
@@ -204,20 +204,4 @@ export async function updateAssetAvailability(
   payload: AssetAvailabilityPayload,
 ): Promise<{ message: string }> {
   return await apiClient.put(`/assets/uuid/${uuid}/availability`, payload);
-}
-
-// =============================================================================
-// HELPER TYPES FOR ERROR HANDLING
-// =============================================================================
-
-/**
- * Check if error has SESSION_EXPIRED code
- */
-export function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
 }

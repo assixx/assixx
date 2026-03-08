@@ -53,7 +53,7 @@ export async function getConnectionTicket(
 
     const data = (await response.json()) as { data: ConnectionTicketResponse };
     return data.data.ticket;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error({ error }, 'Error fetching connection ticket');
     return null;
   }

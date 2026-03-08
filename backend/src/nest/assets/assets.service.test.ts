@@ -4,6 +4,7 @@
  * Tests for DB-mocked public methods + delegation checks.
  * Private methods tested via bracket notation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   InternalServerErrorException,
@@ -230,7 +231,7 @@ describe('AssetsService – DB-mocked methods', () => {
         location: null,
         asset_type: 'cnc',
         status: 'operational',
-        is_active: 1,
+        is_active: IS_ACTIVE.ACTIVE,
         created_at: new Date('2025-01-01'),
         updated_at: new Date('2025-01-01'),
         created_by: null,

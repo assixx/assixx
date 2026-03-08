@@ -59,7 +59,7 @@ export async function fetchFullEntry(uuid: string): Promise<{
       },
       attachments: result.data.attachments ?? [],
     };
-  } catch (err) {
+  } catch (err: unknown) {
     if (isNotFoundError(err)) {
       return null;
     }
@@ -201,7 +201,7 @@ export async function deleteEntry(
   try {
     await apiClient.delete(`/blackboard/entries/${uuid}`);
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     const errorMessage =
       err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
     return { success: false, error: errorMessage };

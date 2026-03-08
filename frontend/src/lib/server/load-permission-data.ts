@@ -128,7 +128,7 @@ export async function loadPermissionData({
       permissions,
       error: null,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching data for permission page');
     return {
       employee: null,

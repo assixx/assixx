@@ -7,6 +7,7 @@
  *
  * All methods are read-only (no mutations).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -60,7 +61,7 @@ export class TpmCardDuplicateService {
          AND c.tenant_id = $2
          AND c.title ILIKE $3
          AND c.interval_order <= $4
-         AND c.is_active = 1
+         AND c.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY c.interval_order ASC
        LIMIT $5`,
       [assetId, tenantId, searchPattern, intervalOrder, MAX_SIMILAR_RESULTS],
@@ -102,7 +103,7 @@ export class TpmCardDuplicateService {
        WHERE c.asset_id = $1
          AND c.tenant_id = $2
          AND (c.title ILIKE $3 OR c.description ILIKE $3)
-         AND c.is_active = 1
+         AND c.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY c.interval_order ASC, c.sort_order ASC
        LIMIT $4`,
       [assetId, tenantId, searchPattern, MAX_SIMILAR_RESULTS],

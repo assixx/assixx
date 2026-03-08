@@ -214,7 +214,7 @@
           isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving employee');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.ERROR_SAVING,
@@ -252,7 +252,7 @@
       await apiUpgradeToAdmin(userId);
       await invalidateAll();
       showSuccessAlert(MESSAGES.UPGRADE_SUCCESS);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error upgrading employee to admin');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.UPGRADE_ERROR,
@@ -280,7 +280,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Mitarbeiter wurde gelöscht');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting employee');
       showErrorAlert(MESSAGES.ERROR_DELETING);
     }
@@ -392,7 +392,7 @@
       closeAvailabilityModal();
       await invalidateAll();
       showSuccessAlert('Verfügbarkeit aktualisiert');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error updating availability');
       const message =
         err instanceof ApiError ?

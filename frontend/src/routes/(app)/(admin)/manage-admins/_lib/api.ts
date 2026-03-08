@@ -276,19 +276,3 @@ export async function updateAdminAvailability(
 export async function deleteAdmin(adminId: number): Promise<void> {
   await apiClient.delete(`/root/admins/${adminId}`);
 }
-
-// =============================================================================
-// HELPER TYPES FOR ERROR HANDLING
-// =============================================================================
-
-/**
- * Check if error has SESSION_EXPIRED code
- */
-export function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}

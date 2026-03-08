@@ -6,6 +6,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -667,7 +668,7 @@ export class AuditTrailService {
     try {
       // Get user details
       const userRows = await this.db.query<DbUserInfo>(
-        `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+        `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [userId, tenantId],
       );
 

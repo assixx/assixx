@@ -529,7 +529,7 @@ async function saveSurveyCore(
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Speichern der Umfrage');
     }
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving survey');
     showErrorAlert('Fehler beim Speichern der Umfrage');
   } finally {
@@ -654,7 +654,7 @@ export async function loadSurveyForEdit(
       typeof surveyId === 'number' ? surveyId : Number.parseInt(surveyId, 10),
     );
     return formState;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading survey');
     showErrorAlert('Fehler beim Laden der Umfrage');
     return null;

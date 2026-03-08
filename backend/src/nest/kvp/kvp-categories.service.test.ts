@@ -5,6 +5,7 @@
  * Focus: Access control (root/admin-full-access), overlay pattern
  *        (defaults + custom), category limit, conflict checks.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -232,7 +233,7 @@ describe('KvpCategoriesService', () => {
       expect(result.affectedSuggestions).toBe(3);
       expect(mockDb.query).toHaveBeenCalledTimes(2);
       expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('SET is_active = 4'),
+        expect.stringContaining(`SET is_active = ${IS_ACTIVE.DELETED}`),
         [100, 10],
       );
     });

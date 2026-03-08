@@ -184,7 +184,7 @@ export async function decryptIncomingMessage(
       message.decryptionFailed = true;
     }
     callbacks.onNewMessage(message);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, messageId: message.id }, 'E2E decryption failed');
 
     message.decryptionFailed = true;
@@ -299,7 +299,7 @@ async function encryptForRecipient(
       e2eKeyVersion: e2e.state.keyVersion ?? 1,
       e2eKeyEpoch: encrypted.keyEpoch,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'E2E encryption failed');
     throw new E2eError('Encryption failed', 'encrypt_failed');
   }

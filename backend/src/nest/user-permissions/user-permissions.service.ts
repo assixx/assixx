@@ -9,6 +9,7 @@
  * @see docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -261,7 +262,7 @@ export class UserPermissionsService {
     tenantId: number,
   ): Promise<number> {
     const result = await this.db.queryOne<DbUserIdRow>(
-      `SELECT id FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userUuid, tenantId],
     );
 
@@ -280,7 +281,7 @@ export class UserPermissionsService {
       `SELECT f.code
        FROM tenant_features tf
        JOIN features f ON f.id = tf.feature_id
-       WHERE tf.is_active = 1`,
+       WHERE tf.is_active = ${IS_ACTIVE.ACTIVE}`,
     );
 
     return new Set(result.rows.map((row: DbTenantFeatureRow) => row.code));

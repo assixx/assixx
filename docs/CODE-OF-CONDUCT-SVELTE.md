@@ -1048,4 +1048,43 @@ props.value = x;
 
 ---
 
+## Session-Expired Handling (Centralized)
+
+**All session-expired logic is centralized in `$lib/utils/session-expired.ts`.** Never re-implement locally.
+
+```typescript
+// $lib/utils/session-expired.ts — THE single source of truth
+import { checkSessionExpired, handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
+
+// Pattern 1: Quick check + redirect (most common)
+} catch (err) {
+  if (checkSessionExpired(err)) return;
+  // handle other errors...
+}
+
+// Pattern 2: Separate check and redirect
+if (isSessionExpiredError(err)) {
+  handleSessionExpired();
+  return;
+}
+```
+
+**NEVER do this:**
+
+```typescript
+// WRONG -- local re-implementation
+function isSessionExpiredError(err: unknown): boolean { ... }
+function handleSessionExpired(): void { ... }
+
+// WRONG -- direct goto
+void goto(resolve('/login?session=expired', {}));
+
+// WRONG -- inconsistent URL
+goto('/login?expired=true');
+```
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on local re-implementations.
+
+---
+
 **References:** [svelte.dev/docs](https://svelte.dev/docs) | [learn.svelte.dev](https://learn.svelte.dev)

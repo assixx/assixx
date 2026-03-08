@@ -5,6 +5,7 @@
  * Focus: User access info retrieval, role-based access control SQL builders,
  *        entry access checks (root, admin, employee), org permission validation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,7 +42,7 @@ function makeEntry(
     org_level: 'company',
     org_id: null,
     created_by: 1,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: new Date('2025-01-01'),
     updated_at: null,
     ...overrides,

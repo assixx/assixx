@@ -4,6 +4,7 @@
  * Handles read confirmations for blackboard entries.
  * Tracks which users have confirmed reading entries.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -11,7 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { ERROR_ENTRY_NOT_FOUND } from './blackboard.constants.js';
@@ -38,7 +39,7 @@ export class BlackboardConfirmationsService {
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
     const users = await this.db.query<{ tenant_id: number }>(
-      'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1',
+      `SELECT tenant_id FROM users WHERE id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId],
     );
     if (users[0] === undefined) {
@@ -83,7 +84,7 @@ export class BlackboardConfirmationsService {
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
     const users = await this.db.query<{ tenant_id: number }>(
-      'SELECT tenant_id FROM users WHERE id = $1 AND is_active = 1',
+      `SELECT tenant_id FROM users WHERE id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId],
     );
     if (users[0] === undefined) {
@@ -145,7 +146,7 @@ export class BlackboardConfirmationsService {
              c.confirmed_at
       FROM users u
       LEFT JOIN blackboard_confirmations c ON u.id = c.user_id AND c.entry_id = $1
-      WHERE u.tenant_id = $2 AND u.role != 'dummy' AND u.is_active = 1
+      WHERE u.tenant_id = $2 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}
     `;
     const queryParams: unknown[] = [numericId, tenantId];
 
@@ -201,7 +202,7 @@ export class BlackboardConfirmationsService {
       FROM blackboard_entries e
       LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = $1
       WHERE e.tenant_id = $2
-        AND e.is_active = 1
+        AND e.is_active = ${IS_ACTIVE.ACTIVE}
         AND c.id IS NULL
     `;
     const params: unknown[] = [userId, tenantId];

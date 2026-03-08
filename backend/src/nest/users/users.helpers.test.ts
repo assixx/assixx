@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -31,7 +32,7 @@ function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
     username: 'maxm',
     first_name: 'Max',
     last_name: 'Mustermann',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     last_login: null,
     created_at: new Date('2025-01-01'),
     updated_at: null,
@@ -99,7 +100,7 @@ describe('toSafeUserResponse', () => {
   });
 
   it('preserves is_active as number (not boolean)', () => {
-    const row = makeUserRow({ is_active: 3 });
+    const row = makeUserRow({ is_active: IS_ACTIVE.ARCHIVED });
     const result = toSafeUserResponse(row);
 
     expect(result.isActive).toBe(3);
@@ -300,7 +301,7 @@ describe('buildUserListWhereClause', () => {
     );
 
     expect(whereClause).toContain('tenant_id = $1');
-    expect(whereClause).toContain('is_active != 4');
+    expect(whereClause).toContain(`is_active != ${IS_ACTIVE.DELETED}`);
     expect(params[0]).toBe(42);
   });
 
@@ -323,7 +324,7 @@ describe('buildUserListWhereClause', () => {
     const { whereClause } = buildUserListWhereClause(1, query);
 
     expect(whereClause).toContain('is_active = $2');
-    expect(whereClause).not.toContain('is_active != 4');
+    expect(whereClause).not.toContain(`is_active != ${IS_ACTIVE.DELETED}`);
   });
 
   it('should add ILIKE search across name and email', () => {

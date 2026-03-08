@@ -4,10 +4,12 @@
 // Manages: documents, user, navigation, filtering, API operations
 // =============================================================================
 
-import { goto } from '$app/navigation';
-
 import { notificationStore } from '$lib/stores/notification.store.svelte';
 import { createLogger } from '$lib/utils/logger';
+import {
+  handleSessionExpired,
+  isSessionExpiredError,
+} from '$lib/utils/session-expired.js';
 
 import {
   fetchDocuments as apiFetchDocuments,
@@ -15,7 +17,6 @@ import {
   fetchChatFolders as apiFetchChatFolders,
   fetchChatAttachments as apiFetchChatAttachments,
   getCurrentUser as apiGetCurrentUser,
-  isSessionExpiredError,
 } from './api';
 import { SORT_LABELS, CATEGORY_LABELS, MESSAGES } from './constants';
 import {
@@ -155,10 +156,11 @@ function createDocExplorerDataState() {
     try {
       allDocuments = await apiFetchDocuments();
       applyFilters();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading documents');
       if (isSessionExpiredError(err)) {
-        return void goto('/login?session=expired');
+        handleSessionExpired();
+        return;
       }
       error = err instanceof Error ? err.message : MESSAGES.ERROR_LOAD_FAILED;
     } finally {
@@ -171,7 +173,7 @@ function createDocExplorerDataState() {
     chatFoldersLoaded = true; // Set before await to prevent race condition
     try {
       chatFolders = await apiFetchChatFolders();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading chat folders');
     }
   }
@@ -218,7 +220,7 @@ function createDocExplorerDataState() {
         conversationId,
       );
       applyFilters();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err, conversationId }, 'Error loading chat attachments');
       error = MESSAGES.ERROR_LOAD_FAILED;
     } finally {
@@ -238,7 +240,7 @@ function createDocExplorerDataState() {
         doc.id === documentId ? { ...doc, isRead: true } : doc,
       );
       applyFilters();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error marking as read');
     }
   }

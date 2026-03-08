@@ -9,6 +9,7 @@
  * IMPORTANT: process.env must have valid JWT secrets BEFORE auth.service.js
  * is imported, because getJwtSecrets() runs at module evaluation time.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   ForbiddenException,
@@ -94,7 +95,7 @@ function createMockUserRow(
     username: 'admin',
     first_name: 'Test',
     last_name: 'Admin',
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     last_login: null,
     created_at: new Date('2026-01-01'),
     ...overrides,

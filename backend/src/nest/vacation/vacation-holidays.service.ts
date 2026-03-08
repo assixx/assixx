@@ -9,6 +9,7 @@
  * - `recurring` flag — if true, matched by month+day across years
  * - RLS enforced via `db.tenantTransaction()` (ADR-019)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   Injectable,
@@ -51,7 +52,7 @@ export class VacationHolidaysService {
           SELECT id, tenant_id, holiday_date, name, recurring,
                  created_by, created_at, updated_at
           FROM vacation_holidays
-          WHERE tenant_id = $1 AND is_active = 1`;
+          WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`;
         const params: unknown[] = [tenantId];
 
         if (year !== undefined) {
@@ -159,7 +160,7 @@ export class VacationHolidaysService {
           const result = await client.query<VacationHolidayRow>(
             `UPDATE vacation_holidays
              SET ${setClauses.join(', ')}
-             WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = 1
+             WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = ${IS_ACTIVE.ACTIVE}
              RETURNING id, tenant_id, holiday_date, name, recurring,
                        created_by, created_at, updated_at`,
             params,
@@ -215,8 +216,8 @@ export class VacationHolidaysService {
       async (client: PoolClient): Promise<void> => {
         const result = await client.query<{ id: string; name: string }>(
           `UPDATE vacation_holidays
-           SET is_active = 4, updated_at = NOW()
-           WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+           WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, name`,
           [id, tenantId],
         );
@@ -255,7 +256,7 @@ export class VacationHolidaysService {
           `SELECT EXISTS (
             SELECT 1 FROM vacation_holidays
             WHERE tenant_id = $1
-              AND is_active = 1
+              AND is_active = ${IS_ACTIVE.ACTIVE}
               AND (
                 (recurring = false AND holiday_date = $2)
                 OR (recurring = true AND EXTRACT(MONTH FROM holiday_date) = $3
@@ -354,7 +355,7 @@ export class VacationHolidaysService {
       `SELECT holiday_date, recurring
        FROM vacation_holidays
        WHERE tenant_id = $1
-         AND is_active = 1
+         AND is_active = ${IS_ACTIVE.ACTIVE}
          AND (
            (recurring = false AND holiday_date >= $2 AND holiday_date <= $3)
            OR recurring = true
@@ -466,7 +467,7 @@ export class VacationHolidaysService {
       `SELECT id, tenant_id, holiday_date, name, recurring,
               created_by, created_at, updated_at
        FROM vacation_holidays
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
 

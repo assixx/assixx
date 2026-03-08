@@ -6,6 +6,7 @@
  *        unread count with scope filtering, UUID resolution.
  * Pure functions already tested in documents.helpers.test.ts.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,7 +26,7 @@ const mockEventBus = vi.hoisted(() => ({
   emitDocumentUploaded: vi.fn(),
 }));
 
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: mockEventBus,
 }));
 
@@ -84,7 +85,7 @@ function createDocRow(overrides?: Record<string, unknown>) {
     blackboard_entry_id: null,
     conversation_id: null,
     tags: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 10,
     created_at: new Date('2026-01-15'),
     updated_at: new Date('2026-01-15'),
@@ -217,7 +218,7 @@ describe('DocumentsService', () => {
 
       expect(result.message).toBe('Document deleted successfully');
       const updateSql = mockDb.query.mock.calls[2]?.[0] as string;
-      expect(updateSql).toContain('is_active = 4');
+      expect(updateSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
     });
   });
 
@@ -234,7 +235,7 @@ describe('DocumentsService', () => {
       );
     });
 
-    it('should set is_active=3 for admin', async () => {
+    it(`should set is_active = ${IS_ACTIVE.ARCHIVED} for admin`, async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -242,7 +243,7 @@ describe('DocumentsService', () => {
 
       expect(result.message).toBe('Document archived successfully');
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('is_active = 3');
+      expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
     });
   });
 
@@ -255,7 +256,7 @@ describe('DocumentsService', () => {
       );
     });
 
-    it('should set is_active=1 for root', async () => {
+    it(`should set is_active = ${IS_ACTIVE.ACTIVE} for root`, async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -263,7 +264,7 @@ describe('DocumentsService', () => {
 
       expect(result.message).toBe('Document unarchived successfully');
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(updateSql).toContain('is_active = 1');
+      expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
   });
 

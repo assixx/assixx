@@ -90,8 +90,8 @@ this.logger.log(`Creating department: ${dto.name}`);
 // WARN - Concerning situations
 this.logger.warn(`Extended query failed, using fallback`);
 
-// ERROR - Something broke
-this.logger.error(`Failed to create department: ${error.message}`);
+// ERROR - Something broke (use getErrorMessage for safe extraction)
+this.logger.error(`Failed to create department: ${getErrorMessage(error)}`);
 ```
 
 ## Verifying Log Level

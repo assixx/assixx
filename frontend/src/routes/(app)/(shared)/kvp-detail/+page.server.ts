@@ -6,6 +6,7 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -62,7 +63,7 @@ async function apiFetch<T>(
       return json.data;
     }
     return json as unknown as T;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }
@@ -116,6 +117,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   }
 
   const parentData = await parent();
+  requireFeature(parentData.activeFeatures, 'kvp');
 
   const suggestion = await apiFetch<KvpSuggestion>(
     `/kvp/${idOrUuid}`,

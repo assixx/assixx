@@ -13,6 +13,7 @@
  *
  * Used by: Capacity service (asset availability analysis)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   Injectable,
@@ -60,7 +61,7 @@ export class VacationStaffingRulesService {
                   m.name AS asset_name
            FROM vacation_staffing_rules vsr
            LEFT JOIN assets m ON vsr.asset_id = m.id
-           WHERE vsr.tenant_id = $1 AND vsr.is_active = 1
+           WHERE vsr.tenant_id = $1 AND vsr.is_active = ${IS_ACTIVE.ACTIVE}
            ORDER BY m.name ASC NULLS LAST`,
           [tenantId],
         );
@@ -154,7 +155,7 @@ export class VacationStaffingRulesService {
           `WITH updated AS (
             UPDATE vacation_staffing_rules
             SET min_staff_count = $1, updated_at = NOW()
-            WHERE id = $2 AND tenant_id = $3 AND is_active = 1
+            WHERE id = $2 AND tenant_id = $3 AND is_active = ${IS_ACTIVE.ACTIVE}
             RETURNING *
           )
           SELECT upd.id, upd.tenant_id, upd.asset_id, upd.min_staff_count,
@@ -209,8 +210,8 @@ export class VacationStaffingRulesService {
           min_staff_count: number;
         }>(
           `UPDATE vacation_staffing_rules
-           SET is_active = 4, updated_at = NOW()
-           WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+           WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, asset_id, min_staff_count`,
           [id, tenantId],
         );
@@ -268,7 +269,7 @@ export class VacationStaffingRulesService {
           `SELECT asset_id, min_staff_count
            FROM vacation_staffing_rules
            WHERE tenant_id = $1
-             AND is_active = 1
+             AND is_active = ${IS_ACTIVE.ACTIVE}
              AND asset_id IN (${placeholders})`,
           [tenantId, ...assetIds],
         );

@@ -15,6 +15,7 @@
  *   overdue → green   (markCardCompleted, Flow A)
  *   overdue → yellow  (markCardCompleted, Flow B)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -196,7 +197,7 @@ export class TpmCardStatusService {
   ): Promise<TpmCardRow> {
     const result = await client.query<TpmCardRow>(
       `SELECT * FROM tpm_cards
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [cardId, tenantId],
     );

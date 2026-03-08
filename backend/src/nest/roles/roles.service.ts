@@ -4,6 +4,7 @@
  * Business logic for role management.
  * Roles are statically defined - only checkUserRole requires database access.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -186,7 +187,7 @@ export class RolesService {
 
     // SECURITY: Only check roles for ACTIVE users (is_active = 1)
     const rows = await this.db.query<UserRoleRow>(
-      'SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 

@@ -29,11 +29,5 @@ export const TPM_PERMISSIONS: PermissionCategoryDef = {
       icon: 'fa-check-circle',
       allowedPermissions: ['canRead', 'canWrite'],
     },
-    {
-      code: 'tpm-reports',
-      label: 'Berichte',
-      icon: 'fa-chart-bar',
-      allowedPermissions: ['canRead'],
-    },
   ],
 };

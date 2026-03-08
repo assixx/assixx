@@ -420,6 +420,7 @@ export class RootController {
     await this.rootService.approveDeletion(
       params.queueId,
       user.id,
+      user.tenantId,
       dto.password,
       dto.comment,
     );

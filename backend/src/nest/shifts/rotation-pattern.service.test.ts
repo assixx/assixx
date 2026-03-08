@@ -5,6 +5,7 @@
  * Focus: row mapper (patternRowToResponse), config parsing, date formatting,
  *        is_active → boolean conversion, CRUD error paths, UUID resolution.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,7 +44,7 @@ function createPatternRow(overrides?: Partial<DbPatternRow>): DbPatternRow {
     cycle_length_weeks: 2,
     starts_at: new Date('2026-03-01T00:00:00Z'),
     ends_at: new Date('2026-12-31T00:00:00Z'),
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 10,
     created_by_name: 'Admin User',
     created_at: '2026-01-15T10:00:00Z',
@@ -104,8 +105,10 @@ describe('RotationPatternService', () => {
       });
     });
 
-    it('should map is_active=0 to isActive=false', async () => {
-      mockDb.query.mockResolvedValueOnce([createPatternRow({ is_active: 0 })]);
+    it(`should map is_active = ${IS_ACTIVE.INACTIVE} to isActive=false`, async () => {
+      mockDb.query.mockResolvedValueOnce([
+        createPatternRow({ is_active: IS_ACTIVE.INACTIVE }),
+      ]);
 
       const result = await service.getRotationPattern(1, 42);
 
@@ -154,7 +157,7 @@ describe('RotationPatternService', () => {
       await service.getRotationPatterns(42, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('is_active = 1');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
 
     it('should not add is_active filter when activeOnly is false', async () => {
@@ -163,13 +166,17 @@ describe('RotationPatternService', () => {
       await service.getRotationPatterns(42, false);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(sql).not.toContain('is_active = 1');
+      expect(sql).not.toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
 
     it('should map multiple rows to responses', async () => {
       mockDb.query.mockResolvedValueOnce([
         createPatternRow({ id: 1, name: 'Pattern A' }),
-        createPatternRow({ id: 2, name: 'Pattern B', is_active: 0 }),
+        createPatternRow({
+          id: 2,
+          name: 'Pattern B',
+          is_active: IS_ACTIVE.INACTIVE,
+        }),
       ]);
 
       const result = await service.getRotationPatterns(42, false);
@@ -205,7 +212,7 @@ describe('RotationPatternService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should insert with is_active=1 when isActive is true', async () => {
+    it(`should insert with is_active = ${IS_ACTIVE.ACTIVE} when isActive is true`, async () => {
       // No existing pattern
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT RETURNING id
@@ -231,11 +238,11 @@ describe('RotationPatternService', () => {
       expect(insertParams?.[9]).toBe(1);
     });
 
-    it('should insert with is_active=0 when isActive is false', async () => {
+    it(`should insert with is_active = ${IS_ACTIVE.INACTIVE} when isActive is false`, async () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([{ id: 11 }]);
       mockDb.query.mockResolvedValueOnce([
-        createPatternRow({ id: 11, is_active: 0 }),
+        createPatternRow({ id: 11, is_active: IS_ACTIVE.INACTIVE }),
       ]);
 
       await service.createRotationPattern(
@@ -280,7 +287,7 @@ describe('RotationPatternService', () => {
 
       // Verify the conflict check query filters by is_active = 1
       const conflictSql = mockDb.query.mock.calls[0]?.[0] as string;
-      expect(conflictSql).toContain('is_active = 1');
+      expect(conflictSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
 
     it('should only check active patterns for name conflict', async () => {

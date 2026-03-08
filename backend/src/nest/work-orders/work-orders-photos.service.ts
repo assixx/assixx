@@ -6,6 +6,7 @@
  * Path: uploads/work-orders/{tenantId}/{workOrderUuid}/{fileUuid}.ext
  */
 import type { UserRole } from '@assixx/shared';
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -29,6 +30,7 @@ import type {
   WorkOrderPhotoWithNameRow,
 } from './work-orders.types.js';
 import {
+  ALLOWED_UPLOAD_MIME_TYPES,
   MAX_PHOTOS_PER_WORK_ORDER,
   WORK_ORDER_UPLOAD_DIR,
 } from './work-orders.types.js';
@@ -57,6 +59,12 @@ export class WorkOrderPhotosService {
     if (wo.status === 'completed' || wo.status === 'verified') {
       throw new BadRequestException(
         'Fotos können bei abgeschlossenen Aufträgen nicht hochgeladen werden',
+      );
+    }
+
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Dateityp '${file.mimetype}' nicht erlaubt. Erlaubt: JPG, PNG, WebP, PDF`,
       );
     }
 
@@ -91,12 +99,13 @@ export class WorkOrderPhotosService {
       throw new BadRequestException('Foto konnte nicht gespeichert werden');
     }
 
+    const label = file.mimetype === 'application/pdf' ? 'Datei' : 'Foto';
     void this.activityLogger.logCreate(
       tenantId,
       userId,
       'work_order_photo',
       wo.id,
-      `Foto zu "${wo.title}" hochgeladen`,
+      `${label} zu "${wo.title}" hochgeladen`,
       { fileName: file.originalname },
     );
 
@@ -113,7 +122,7 @@ export class WorkOrderPhotosService {
        FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
        JOIN users u ON p.uploaded_by = u.id
-       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1
+       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY p.sort_order ASC`,
       [workOrderUuid, tenantId],
     );
@@ -137,7 +146,7 @@ export class WorkOrderPhotosService {
       `SELECT p.id, p.file_path, p.work_order_id, p.uploaded_by, wo.status AS wo_status
        FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
-       WHERE p.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = 1`,
+       WHERE p.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = ${IS_ACTIVE.ACTIVE}`,
       [photoUuid, tenantId],
     );
 
@@ -188,7 +197,7 @@ export class WorkOrderPhotosService {
        FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
        WHERE p.uuid = $1 AND wo.uuid = $2
-         AND wo.tenant_id = $3 AND wo.is_active = 1`,
+         AND wo.tenant_id = $3 AND wo.is_active = ${IS_ACTIVE.ACTIVE}`,
       [photoUuid, workOrderUuid, tenantId],
     );
 
@@ -215,7 +224,7 @@ export class WorkOrderPhotosService {
        JOIN tpm_execution_defects d ON dp.defect_id = d.id
        JOIN work_orders wo ON wo.source_uuid = d.uuid
        WHERE wo.uuid = $1 AND wo.tenant_id = $2
-         AND wo.is_active = 1 AND wo.source_type = 'tpm_defect'
+         AND wo.is_active = ${IS_ACTIVE.ACTIVE} AND wo.source_type = 'tpm_defect'
        ORDER BY dp.sort_order ASC`,
       [workOrderUuid, tenantId],
     );
@@ -236,7 +245,7 @@ export class WorkOrderPhotosService {
       status: string;
     }>(
       `SELECT id, title, status FROM work_orders
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
     if (row === null) {

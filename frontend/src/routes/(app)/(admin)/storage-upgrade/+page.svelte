@@ -153,7 +153,7 @@
         percentage: 0,
         plan: plan.plan?.code ?? 'basic',
       };
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error loading storage info');
       showErrorAlert('Fehler beim Laden der Speicherinformationen');
     }
@@ -191,7 +191,7 @@
         'Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.',
       );
       await loadStorageInfo();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error upgrading plan');
       showErrorAlert(
         'Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.',

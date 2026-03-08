@@ -12,6 +12,7 @@
  * Returns raw data — ResponseInterceptor wraps (ADR-007).
  * FOR UPDATE lock on status transitions (Race condition R6).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -533,7 +534,7 @@ export class VacationService {
   ): Promise<VacationRequestRow> {
     const result = await client.query<VacationRequestRow>(
       `SELECT * FROM vacation_requests
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1 FOR UPDATE`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE} FOR UPDATE`,
       [requestId, tenantId],
     );
     const row = result.rows[0];
@@ -563,7 +564,7 @@ export class VacationService {
   ): Promise<void> {
     if (request.approver_id === responderId) return;
     const result = await client.query<{ has_full_access: number | null }>(
-      `SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [responderId, tenantId],
     );
     if (result.rows[0]?.has_full_access !== 1) {
@@ -606,7 +607,7 @@ export class VacationService {
       `SELECT t.id AS team_id, t.name AS team_name,
               t.team_lead_id, t.deputy_lead_id, t.department_id
        FROM teams t JOIN user_teams ut ON t.id = ut.team_id
-       WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = 1`,
+       WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     const row = result.rows[0];
@@ -683,7 +684,7 @@ export class VacationService {
     userId: number,
   ): Promise<UserRoleRow> {
     const result = await client.query<UserRoleRow>(
-      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     const row = result.rows[0];
@@ -786,7 +787,7 @@ export class VacationService {
       `UPDATE vacation_requests
        SET status = $1, is_special_leave = $2, response_note = $3,
            responded_at = NOW(), responded_by = $4, updated_at = NOW()
-       WHERE id = $5 AND tenant_id = $6 AND is_active = 1 RETURNING *`,
+       WHERE id = $5 AND tenant_id = $6 AND is_active = ${IS_ACTIVE.ACTIVE} RETURNING *`,
       [
         status,
         status === 'approved' ? dto.isSpecialLeave : false,
@@ -813,7 +814,7 @@ export class VacationService {
   ): Promise<void> {
     await client.query(
       `UPDATE vacation_requests SET status = $1, updated_at = NOW()
-       WHERE id = $2 AND tenant_id = $3 AND is_active = 1`,
+       WHERE id = $2 AND tenant_id = $3 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [newStatus, requestId, tenantId],
     );
     await this.insertStatusLog(
@@ -857,7 +858,7 @@ export class VacationService {
        SET start_date=$1, end_date=$2, half_day_start=$3, half_day_end=$4,
            vacation_type=$5, computed_days=$6, substitute_id=$7,
            request_note=$8, updated_at=NOW()
-       WHERE id=$9 AND tenant_id=$10 AND is_active=1 RETURNING *`,
+       WHERE id=$9 AND tenant_id=$10 AND is_active = ${IS_ACTIVE.ACTIVE} RETURNING *`,
       [
         merged.startDate,
         merged.endDate,

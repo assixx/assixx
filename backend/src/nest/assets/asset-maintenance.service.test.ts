@@ -5,6 +5,7 @@
  * Focus: Maintenance history, add record (+ asset status update),
  *        upcoming maintenance, statistics aggregation, categories.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { InternalServerErrorException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -203,7 +204,7 @@ describe('AssetMaintenanceService', () => {
           id: 1,
           name: 'CNC Assets',
           sort_order: 1,
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
           description: 'Computer numerically controlled',
           icon: 'cnc',
         },

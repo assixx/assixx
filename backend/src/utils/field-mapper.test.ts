@@ -1,6 +1,7 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
-import { apiToDb, dbToApi } from './fieldMapper.js';
+import { apiToDb, dbToApi } from './field-mapper.js';
 
 describe('dbToApi', () => {
   it('should convert snake_case keys to camelCase', () => {
@@ -27,10 +28,10 @@ describe('dbToApi', () => {
   });
 
   it('should NOT convert is_active to boolean (multi-state: 0/1/3/4)', () => {
-    expect(dbToApi({ is_active: 0 })).toEqual({ isActive: 0 });
-    expect(dbToApi({ is_active: 1 })).toEqual({ isActive: 1 });
-    expect(dbToApi({ is_active: 3 })).toEqual({ isActive: 3 });
-    expect(dbToApi({ is_active: 4 })).toEqual({ isActive: 4 });
+    expect(dbToApi({ is_active: IS_ACTIVE.INACTIVE })).toEqual({ isActive: 0 });
+    expect(dbToApi({ is_active: IS_ACTIVE.ACTIVE })).toEqual({ isActive: 1 });
+    expect(dbToApi({ is_active: IS_ACTIVE.ARCHIVED })).toEqual({ isActive: 3 });
+    expect(dbToApi({ is_active: IS_ACTIVE.DELETED })).toEqual({ isActive: 4 });
   });
 
   it('should convert Date objects to ISO string', () => {

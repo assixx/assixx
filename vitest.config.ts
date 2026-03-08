@@ -67,9 +67,9 @@ export default defineConfig({
         // Infrastructure (transport/bootstrap, not unit-testable)
         'backend/src/websocket.ts',
         'backend/src/nest/instrument.ts',
-        'backend/src/utils/emailService.ts',
-        'backend/src/utils/eventBus.ts',
-        'backend/src/workers/deletionWorker.ts',
+        'backend/src/utils/email-service.ts',
+        'backend/src/utils/event-bus.ts',
+        'backend/src/workers/deletion-worker.ts',
       ],
       thresholds: {
         lines: 83,
@@ -95,6 +95,18 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
+            '@assixx/shared/constants': resolve(
+              rootDir,
+              './shared/src/constants/index.ts',
+            ),
+            '@assixx/shared/helpers': resolve(
+              rootDir,
+              './shared/src/helpers/index.ts',
+            ),
+            '@assixx/shared/types': resolve(
+              rootDir,
+              './shared/src/types/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -129,6 +141,18 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
+            '@assixx/shared/constants': resolve(
+              rootDir,
+              './shared/src/constants/index.ts',
+            ),
+            '@assixx/shared/helpers': resolve(
+              rootDir,
+              './shared/src/helpers/index.ts',
+            ),
+            '@assixx/shared/types': resolve(
+              rootDir,
+              './shared/src/types/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },

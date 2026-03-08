@@ -50,6 +50,9 @@ ADRs document important architectural decisions:
 | [ADR-025](./ADR-025-pg-stat-statements-query-monitoring.md) | pg_stat_statements Query Monitoring  | Accepted | 2026-02-16 |
 | [ADR-026](./ADR-026-tpm-architecture.md)                    | TPM Architecture                     | Accepted | 2026-02-19 |
 | [ADR-027](./ADR-027-dockerfile-hardening.md)                | Dockerfile Hardening                 | Accepted | 2026-02-28 |
+| [ADR-028](./ADR-028-work-orders-architecture.md)            | Work Orders Architecture             | Accepted | 2026-03-03 |
+| [ADR-029](./ADR-029-pg-partman-partition-management.md)     | pg_partman Partition Management      | Accepted | 2026-03-06 |
+| [ADR-030](./ADR-030-zod-validation-architecture.md)         | Zod Validation Architecture          | Accepted | 2026-03-07 |
 
 ## Template
 

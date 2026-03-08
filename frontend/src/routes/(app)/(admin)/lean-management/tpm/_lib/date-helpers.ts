@@ -18,3 +18,20 @@ export const MAX_RANGE_365_MS = 364 * 24 * 60 * 60 * 1000;
 export function timestampToISO(ms: number): string {
   return new Date(ms).toISOString().split('T')[0] ?? '';
 }
+
+/** ISO 8601 week number (Kalenderwoche) */
+export function getISOWeek(dateStr: string): number {
+  const d = new Date(dateStr);
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil(
+    ((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+}
+
+/** Nth occurrence of this weekday in its month (1–5) */
+export function weekOfMonth(dateStr: string): number {
+  return Math.ceil(new Date(dateStr).getDate() / 7);
+}

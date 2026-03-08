@@ -93,31 +93,11 @@ async function setupUploadsServing(
 
 /** Register security plugins */
 async function setupSecurity(app: NestFastifyApplication): Promise<void> {
-  // Helmet with Content Security Policy
-  // Note: 'unsafe-inline' for scripts/styles is needed for SvelteKit
-  // TODO: Implement nonce-based CSP for stricter security
+  // CSP is handled by SvelteKit (nonce-based, see frontend/svelte.config.js)
+  // Backend only serves JSON API responses — CSP is irrelevant for non-HTML responses
+  // Helmet still sets other security headers (X-Content-Type-Options, HSTS, etc.)
   await app.register(fastifyHelmet, {
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // SvelteKit needs inline scripts
-        styleSrc: ["'self'", "'unsafe-inline'"], // SvelteKit needs inline styles
-        imgSrc: ["'self'", 'data:', 'blob:'],
-        fontSrc: ["'self'"],
-        connectSrc: [
-          "'self'",
-          'wss:',
-          'ws:',
-          'https://*.ingest.sentry.io', // Sentry telemetry (global)
-          'https://*.ingest.de.sentry.io', // Sentry telemetry (EU region)
-        ],
-        objectSrc: ["'none'"], // Disable plugins/embeds
-        frameAncestors: ["'self'"], // Allow same-origin iframe for PDF preview
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        upgradeInsecureRequests: [], // Upgrade HTTP to HTTPS
-      },
-    },
+    contentSecurityPolicy: false,
   });
 
   // Cookie parser
@@ -165,7 +145,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
   if (chatWsInstance !== null) {
     try {
       await chatWsInstance.shutdown();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during WebSocket shutdown:', error);
     }
   }
@@ -174,7 +154,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
     try {
       await appInstance.close();
       logger.log('NestJS application closed successfully. Port released.');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during shutdown:', error);
     }
   }

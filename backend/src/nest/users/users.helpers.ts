@@ -4,7 +4,9 @@
  * Pure functions for user data transformation and query building.
  * No DI, no side effects, no database calls.
  */
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
+import { dbToApi } from '../../utils/field-mapper.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type {
   SafeUserResponse,
@@ -178,7 +180,7 @@ export function buildUserListWhereClause(
     paramIndex++;
   } else {
     // Default: exclude soft-deleted users (is_active = 4)
-    conditions.push('is_active != 4');
+    conditions.push(`is_active != ${IS_ACTIVE.DELETED}`);
   }
 
   if (query.search !== undefined && query.search !== '') {

@@ -4,11 +4,10 @@
 // =============================================================================
 
 import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -24,40 +23,6 @@ const log = createLogger('SurveyResultsApi');
 const apiClient = getApiClient();
 
 // =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
-
-/**
- * Check for session expired and redirect
- */
-export function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
-
-// =============================================================================
 // SURVEY DATA
 // =============================================================================
 
@@ -69,7 +34,7 @@ export async function loadSurveyDetails(
 ): Promise<Survey | null> {
   try {
     return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading survey');
     checkSessionExpired(err);
     return null;
@@ -86,7 +51,7 @@ export async function loadSurveyQuestions(
     return await apiClient.get<SurveyQuestion[]>(
       API_ENDPOINTS.surveyQuestions(surveyId),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading questions');
     checkSessionExpired(err);
     return [];
@@ -103,7 +68,7 @@ export async function loadSurveyStatistics(
     return await apiClient.get<SurveyStatistics>(
       API_ENDPOINTS.surveyStatistics(surveyId),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading statistics');
     checkSessionExpired(err);
     return null;
@@ -120,7 +85,7 @@ export async function loadSurveyResponses(
     return await apiClient.get<ResponsesData>(
       API_ENDPOINTS.surveyResponses(surveyId),
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.warn(
       { err, surveyId },
       'Could not load individual responses (might not have permission)',
@@ -164,7 +129,7 @@ export async function exportToExcel(surveyId: string): Promise<boolean> {
     document.body.removeChild(a);
 
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error exporting to Excel');
     return false;
   }
