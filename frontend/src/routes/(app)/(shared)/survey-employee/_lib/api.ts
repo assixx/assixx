@@ -3,11 +3,9 @@
 // Based on: frontend/src/scripts/survey/employee/data.ts
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -16,40 +14,6 @@ import type { Survey, ResponseCheck, SurveyResponse, Answer } from './types';
 const log = createLogger('SurveyEmployeeApi');
 
 const apiClient = getApiClient();
-
-// =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
-
-/**
- * Check for session expired and redirect
- */
-export function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
 
 // =============================================================================
 // SURVEYS
@@ -66,7 +30,7 @@ export async function loadSurveys(): Promise<Survey[]> {
     return surveys.filter(
       (s: Survey): boolean => s.status === 'active' || s.status === 'completed',
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading surveys');
     checkSessionExpired(err);
     return [];
@@ -79,7 +43,7 @@ export async function loadSurveys(): Promise<Survey[]> {
 export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
   try {
     return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading survey');
     checkSessionExpired(err);
     return null;
@@ -105,7 +69,7 @@ export async function checkUserResponse(
     }
 
     return { responded: false };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error checking response for survey');
     checkSessionExpired(err);
     return { responded: false };
@@ -130,7 +94,7 @@ export async function fetchUserResponse(
     }
 
     return { responded: false };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching user response');
     checkSessionExpired(err);
     return null;
@@ -147,7 +111,7 @@ export async function submitResponse(
   try {
     await apiClient.post(API_ENDPOINTS.submitResponse(surveyId), { answers });
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error submitting survey');
     checkSessionExpired(err);
     const message =

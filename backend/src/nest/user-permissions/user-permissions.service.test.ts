@@ -10,6 +10,7 @@
  *
  * @see docs/USER-PERMISSIONS-UNIT-TEST-PLAN.md — Test-Datei 3
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -423,7 +424,7 @@ describe('SECURITY: UserPermissionsService', () => {
         // First client.query call is for tenant_features
         const firstCallSql = mockClient.query.mock.calls[0]?.[0] as string;
         expect(firstCallSql).toContain('tenant_features');
-        expect(firstCallSql).toContain('is_active = 1');
+        expect(firstCallSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       });
     });
   });
@@ -827,7 +828,7 @@ describe('SECURITY: UserPermissionsService', () => {
   // -----------------------------------------------------------
 
   describe('getActiveFeaturesForTenant() — indirect', () => {
-    it('should return only is_active = 1 features', async () => {
+    it(`should return only is_active = ${IS_ACTIVE.ACTIVE} features`, async () => {
       const categories = [
         createCategory({ code: 'blackboard' }),
         createCategory({ code: 'calendar' }),

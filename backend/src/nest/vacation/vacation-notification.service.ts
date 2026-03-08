@@ -14,7 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { type VacationRequestEvent, eventBus } from '../../utils/eventBus.js';
+import { type VacationRequestEvent, eventBus } from '../../utils/event-bus.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { VacationRequest } from './vacation.types.js';
 
@@ -218,7 +218,7 @@ export class VacationNotificationService {
       this.logger.log(
         `Created persistent vacation notification for user ${String(recipientId)}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       // Log but don't fail — notification is secondary to the business operation
       this.logger.error(
         `Failed to create persistent vacation notification: ${String(error)}`,

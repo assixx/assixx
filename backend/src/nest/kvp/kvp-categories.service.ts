@@ -9,6 +9,7 @@
  *
  * @see docs/plans/KVP-CATEGORIES-CUSTOM-PLAN.md
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -106,7 +107,7 @@ export class KvpCategoriesService {
                0
              ) AS suggestion_count
       FROM kvp_categories_custom kcc
-      WHERE kcc.tenant_id = $1 AND kcc.category_id IS NULL AND kcc.is_active = 1
+      WHERE kcc.tenant_id = $1 AND kcc.category_id IS NULL AND kcc.is_active = ${IS_ACTIVE.ACTIVE}
       ORDER BY kcc.custom_name ASC
     `;
 
@@ -329,8 +330,8 @@ export class KvpCategoriesService {
 
     const query = `
       UPDATE kvp_categories_custom
-      SET is_active = 4, updated_at = NOW()
-      WHERE id = $1 AND tenant_id = $2 AND category_id IS NULL AND is_active = 1
+      SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2 AND category_id IS NULL AND is_active = ${IS_ACTIVE.ACTIVE}
       RETURNING id
     `;
 
@@ -381,7 +382,7 @@ export class KvpCategoriesService {
     const rows = await this.db.query<{ cnt: number }>(
       `SELECT
         (SELECT COUNT(*) FROM kvp_categories) +
-        (SELECT COUNT(*) FROM kvp_categories_custom WHERE tenant_id = $1 AND category_id IS NULL AND is_active = 1)
+        (SELECT COUNT(*) FROM kvp_categories_custom WHERE tenant_id = $1 AND category_id IS NULL AND is_active = ${IS_ACTIVE.ACTIVE})
        AS cnt`,
       [tenantId],
     );

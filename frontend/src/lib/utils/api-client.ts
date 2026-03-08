@@ -302,7 +302,7 @@ export class ApiClient {
       const result = await this.handleResponse<T>(response);
       endPerf();
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       endPerf();
       this.handleRequestError(error, timeoutMs, config.silent);
     } finally {

@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LogFilterParams } from './unified-logs.service.js';
 import { UnifiedLogsService } from './unified-logs.service.js';
+import { IS_ACTIVE } from '@assixx/shared/constants';
 
 // =============================================================
 // Module mocks
@@ -101,7 +102,7 @@ function makeRootLogsRow(overrides: Record<string, unknown> = {}): Record<string
     ip_address: '10.0.0.1',
     user_agent: 'Chrome/120',
     was_role_switched: false,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: new Date('2025-06-15T08:30:00Z'),
     ...overrides,
   };
@@ -426,7 +427,7 @@ describe('UnifiedLogsService – DB-mocked methods', () => {
             ip_address: '10.0.0.1',
             user_agent: 'Chrome',
             was_role_switched: false,
-            is_active: 1,
+            is_active: IS_ACTIVE.ACTIVE,
             created_at: new Date('2025-06-15'),
           },
         ])

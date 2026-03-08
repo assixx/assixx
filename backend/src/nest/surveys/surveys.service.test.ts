@@ -33,7 +33,7 @@ import type { DbSurvey } from './surveys.types.js';
 // Mock eventBus (imported statically in service)
 // =============================================================
 
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: {
     emitSurveyCreated: vi.fn(),
     emitSurveyUpdated: vi.fn(),

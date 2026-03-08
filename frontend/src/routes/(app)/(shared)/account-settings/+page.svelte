@@ -175,7 +175,7 @@
       deleteConfirmation = '';
       deleteReason = '';
       showDeleteModal = true;
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error checking root users');
       deleteConfirmation = '';
       deleteReason = '';
@@ -194,7 +194,7 @@
 
       showDeleteModal = false;
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting tenant');
       const message =
         err instanceof Error ? err.message : MESSAGES.deletionError;

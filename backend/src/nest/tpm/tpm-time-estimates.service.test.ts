@@ -5,6 +5,7 @@
  * Tests: setEstimate (UPSERT, plan resolution, totalMinutes),
  * getEstimatesForPlan, getEstimateForInterval, deleteEstimate (soft-delete).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -39,7 +40,7 @@ function createEstimateRow(
     preparation_minutes: 10,
     execution_minutes: 30,
     followup_minutes: 5,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
     ...overrides,
@@ -230,7 +231,7 @@ describe('TpmTimeEstimatesService', () => {
   // =============================================================
 
   describe('deleteEstimate()', () => {
-    it('should soft-delete an estimate (is_active = 4)', async () => {
+    it(`should soft-delete an estimate (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 1 }],
       });
@@ -240,7 +241,7 @@ describe('TpmTimeEstimatesService', () => {
       ).resolves.toBeUndefined();
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('is_active = 4');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
     });
 
     it('should throw NotFoundException when estimate not found', async () => {

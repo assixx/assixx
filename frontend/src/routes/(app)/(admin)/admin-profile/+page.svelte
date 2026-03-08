@@ -176,7 +176,7 @@
         // Trigger SSR refetch to update sidebar/header avatars
         await invalidateAll();
       }
-    } catch (err) {
+    } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'INVALID_TYPE') showToast(MESSAGES.invalidImageType, 'error');
       else if (msg === 'FILE_TOO_LARGE')
@@ -269,7 +269,7 @@
       showToast(MESSAGES.passwordChanged, 'success');
 
       // Reset form - using direct assignment (not based on previous values)
-      /* eslint-disable require-atomic-updates */
+      /* eslint-disable require-atomic-updates -- Sequential assignments after async, no shared state race condition */
       currentPassword = '';
       newPassword = '';
       confirmPassword = '';
@@ -278,7 +278,7 @@
 
       // SECURITY: Logout after 3s to force re-login with new password
       setTimeout(() => void performSecurityLogout(), 1500);
-    } catch (err) {
+    } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (isCurrentPasswordError(msg)) {
         currentPasswordError = true;

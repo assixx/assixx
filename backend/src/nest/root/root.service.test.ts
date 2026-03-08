@@ -5,6 +5,7 @@
  * Focus: Root user CRUD (self-delete prevention, last-root-user guard),
  *        dashboard stats, delegation to sub-services.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -35,7 +36,7 @@ vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
 }));
 
-vi.mock('../../utils/employeeIdGenerator.js', () => ({
+vi.mock('../../utils/employee-id-generator.js', () => ({
   generateEmployeeId: vi.fn().mockReturnValue('ROOT-001'),
 }));
 
@@ -105,7 +106,7 @@ function makeDbUserRow(overrides: Record<string, unknown> = {}) {
     last_name: 'User',
     role: 'root',
     position: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     has_full_access: true,
     last_login: null,
     created_at: new Date('2025-01-01'),

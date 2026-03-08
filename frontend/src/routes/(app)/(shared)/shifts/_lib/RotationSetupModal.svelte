@@ -11,6 +11,7 @@
     showErrorAlert,
     showConfirmWarning,
   } from '$lib/utils/alerts';
+  import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('RotationSetupModal');
@@ -225,11 +226,6 @@
     return { list, groups };
   }
 
-  /** Get error message from unknown error */
-  function getErrorMessage(error: unknown, defaultMsg: string): string {
-    return error instanceof Error ? error.message : defaultMsg;
-  }
-
   /**
    * Check for existing rotation pattern and handle overwrite confirmation.
    * Returns true if we can proceed with creation, false to abort.
@@ -335,7 +331,7 @@
         shiftGroups,
         employeeAssignments,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Rotation error');
       showErrorAlert(
         getErrorMessage(error, 'Fehler beim Speichern der Rotation'),

@@ -1,18 +1,12 @@
-/**
- * Attachment File UUID Param DTO
- */
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
+import type { z } from 'zod';
 
-export const AttachmentFileUuidParamSchema = z.object({
-  fileUuid: z.uuid({ message: 'Invalid file UUID format' }),
-});
+import { createUuidParamSchema } from '../../common/dto/index.js';
 
+export const AttachmentFileUuidParamSchema = createUuidParamSchema('fileUuid');
 export class AttachmentFileUuidParamDto extends createZodDto(
   AttachmentFileUuidParamSchema,
 ) {}
-
-// Type export
 export type AttachmentFileUuidParam = z.infer<
   typeof AttachmentFileUuidParamSchema
 >;

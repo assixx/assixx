@@ -11,7 +11,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { type TpmEvent, eventBus } from '../../utils/eventBus.js';
+import { type TpmEvent, eventBus } from '../../utils/event-bus.js';
 import { DatabaseService } from '../database/database.service.js';
 
 /** Card info needed for notification display */
@@ -213,7 +213,7 @@ export class TpmNotificationService {
           notificationUuid,
         ],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to create persistent TPM notification: ${String(error)}`,
       );

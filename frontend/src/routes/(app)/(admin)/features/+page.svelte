@@ -141,7 +141,7 @@
     try {
       await apiChangePlan(currentTenantId, pendingPlanCode);
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error changing plan');
       showErrorAlert('Fehler beim Plan-Wechsel');
     }
@@ -155,7 +155,7 @@
       await apiToggleFeature(currentTenantId, featureCode, activate);
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error toggling feature');
       showErrorAlert('Fehler beim Ändern des Features');
     }
@@ -167,7 +167,7 @@
       showSuccessAlert('Änderungen erfolgreich gespeichert!');
       // Level 3: Trigger SSR refetch to sync saved values
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving changes');
       showErrorAlert('Fehler beim Speichern der Änderungen');
     }

@@ -6,6 +6,7 @@
  *
  * Key areas: auto-default creation, dynamic buildSetClauses, NUMERIC→Number mapping.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -52,7 +53,7 @@ function createSettingsRow(
     carry_over_deadline_day: 31,
     advance_notice_days: 0,
     max_consecutive_days: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',

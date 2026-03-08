@@ -3,6 +3,12 @@
  *
  * Stateless helper functions. No DI, no DB calls, no side effects.
  */
+import {
+  type FieldMapping,
+  type SetClauseResult,
+  buildSetClause,
+  toIsoString,
+} from '../../utils/db-helpers.js';
 import type { TpmMaintenancePlanRow, TpmPlan } from './tpm.types.js';
 
 /** Extended row type including JOIN columns from related tables */
@@ -27,14 +33,8 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
     notes: row.notes,
     createdBy: row.created_by,
     isActive: row.is_active,
-    createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
-    updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
   };
 
   // Optional properties: only set when JOIN data is present
@@ -49,7 +49,7 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
 }
 
 /** Field mappings for plan update: [apiField, dbColumn] */
-const PLAN_UPDATE_MAPPINGS: readonly [string, string][] = [
+const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
   ['name', 'name'],
   ['baseWeekday', 'base_weekday'],
   ['baseRepeatEvery', 'base_repeat_every'],
@@ -57,25 +57,11 @@ const PLAN_UPDATE_MAPPINGS: readonly [string, string][] = [
   ['bufferHours', 'buffer_hours'],
   ['shiftPlanRequired', 'shift_plan_required'],
   ['notes', 'notes'],
-] as const;
+];
 
 /** Build SET clause for plan update — only includes provided fields */
-export function buildPlanUpdateFields(dto: Record<string, unknown>): {
-  setClauses: string[];
-  params: unknown[];
-  nextParamIndex: number;
-} {
-  const setClauses: string[] = [];
-  const params: unknown[] = [];
-  let paramIndex = 1;
-
-  for (const [apiField, dbColumn] of PLAN_UPDATE_MAPPINGS) {
-    if (dto[apiField] !== undefined) {
-      setClauses.push(`${dbColumn} = $${paramIndex}`);
-      params.push(dto[apiField]);
-      paramIndex++;
-    }
-  }
-
-  return { setClauses, params, nextParamIndex: paramIndex };
+export function buildPlanUpdateFields(
+  dto: Record<string, unknown>,
+): SetClauseResult {
+  return buildSetClause(dto, PLAN_UPDATE_MAPPINGS);
 }

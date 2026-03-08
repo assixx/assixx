@@ -20,6 +20,7 @@
  *
  * Dependencies: DatabaseService, TpmPlansIntervalService
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -137,7 +138,7 @@ export class TpmScheduleProjectionService {
          p.created_at AS plan_created_at
        FROM tpm_maintenance_plans p
        JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
-       WHERE p.tenant_id = $1 AND p.is_active = 1 ${excludeClause}
+       WHERE p.tenant_id = $1 AND p.is_active = ${IS_ACTIVE.ACTIVE} ${excludeClause}
        ORDER BY p.name`,
       params,
     );

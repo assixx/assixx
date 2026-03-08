@@ -8,6 +8,7 @@
  * Pure helper functions are in assets.helpers.ts
  * Types are in assets.types.ts
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -84,7 +85,7 @@ export class AssetsService {
       LEFT JOIN areas a ON m.area_id = a.id AND a.tenant_id = m.tenant_id
       LEFT JOIN users u1 ON m.created_by = u1.id
       LEFT JOIN users u2 ON m.updated_by = u2.id
-      WHERE m.tenant_id = $1 AND m.is_active != 4`;
+      WHERE m.tenant_id = $1 AND m.is_active != ${IS_ACTIVE.DELETED}`;
 
     const { clauses, params } = buildAssetFilterClauses(filters, 2);
     const sql = `${baseSql} ${clauses} ORDER BY m.name ASC`;
@@ -288,7 +289,7 @@ export class AssetsService {
     this.logger.log(`Deactivating asset ${id}`);
     await this.getAssetById(id, tenantId);
     await this.db.query(
-      'UPDATE assets SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2',
+      `UPDATE assets SET is_active = ${IS_ACTIVE.INACTIVE}, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
   }
@@ -306,7 +307,7 @@ export class AssetsService {
     this.logger.log(`Activating asset ${id}`);
     await this.getAssetById(id, tenantId);
     await this.db.query(
-      'UPDATE assets SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2',
+      `UPDATE assets SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
   }

@@ -8,6 +8,7 @@
  *
  * @see ADR-022 (E2E Key Escrow)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -41,7 +42,7 @@ export class E2eEscrowService {
       async (client: PoolClient): Promise<E2eEscrowResponse> => {
         const existing = await client.query<{ id: string }>(
           `SELECT id FROM e2e_key_escrow
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -97,7 +98,7 @@ export class E2eEscrowService {
         const result = await client.query<E2eEscrowRow>(
           `SELECT encrypted_blob, argon2_salt, xchacha_nonce, argon2_params, blob_version
            FROM e2e_key_escrow
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1`,
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [tenantId, userId],
         );
 
@@ -134,7 +135,7 @@ export class E2eEscrowService {
                argon2_params = $6,
                blob_version = blob_version + 1,
                updated_at = NOW()
-           WHERE tenant_id = $1 AND user_id = $2 AND is_active = 1
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING encrypted_blob, argon2_salt, xchacha_nonce, argon2_params, blob_version`,
           [
             tenantId,

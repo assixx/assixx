@@ -4,7 +4,7 @@
  * Pure functions for shift data transformation.
  * No dependency injection, no database calls.
  */
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import type { DbShiftRow, ShiftResponse } from './shifts.types.js';
 
 /**

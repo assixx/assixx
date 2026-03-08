@@ -97,7 +97,7 @@
       setTimeout(() => {
         window.location.href = resolvePath('/tenant-deletion-status');
       }, 2000);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error approving');
       errorMessage =
         err instanceof Error ? err.message : 'Fehler bei der Genehmigung';

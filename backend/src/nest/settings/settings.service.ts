@@ -6,6 +6,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   Injectable,
@@ -758,7 +759,7 @@ export class SettingsService {
 
     // SECURITY: Only return settings for ACTIVE users (is_active = 1)
     const userRows = await this.db.query<DbIdResult>(
-      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [targetUserId, tenantId],
     );
 

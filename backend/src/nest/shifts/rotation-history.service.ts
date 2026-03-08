@@ -5,7 +5,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
@@ -181,7 +181,7 @@ export class RotationHistoryService {
       );
 
       return { patterns, assignments, history, shifts, plans };
-    } catch (error) {
+    } catch (error: unknown) {
       await this.databaseService.query('ROLLBACK', []);
       throw error;
     }

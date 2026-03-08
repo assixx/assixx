@@ -229,7 +229,7 @@ export async function addToFavorites(
       favorites: [...favorites, savedFavorite],
       favorite: savedFavorite,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving favorite');
     return {
       success: false,
@@ -274,7 +274,7 @@ export async function removeFavorite(
       success: true,
       favorites: updatedFavorites,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting favorite');
     return {
       success: false,

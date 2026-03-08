@@ -4,6 +4,7 @@
  * Handles CRUD operations for shift rotation patterns
  * and UUID-based pattern resolution.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -14,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateRotationPatternDto } from './dto/create-rotation-pattern.dto.js';
@@ -98,7 +99,7 @@ export class RotationPatternService {
     const params: (number | string)[] = [tenantId];
 
     if (activeOnly) {
-      query += ' AND p.is_active = 1';
+      query += ` AND p.is_active = ${IS_ACTIVE.ACTIVE}`;
     }
 
     query += ' ORDER BY p.created_at DESC';
@@ -147,7 +148,7 @@ export class RotationPatternService {
     tenantId: number,
   ): Promise<void> {
     const existing = await this.databaseService.query<{ id: number }>(
-      'SELECT id FROM shift_rotation_patterns WHERE name = $1 AND tenant_id = $2 AND is_active = 1',
+      `SELECT id FROM shift_rotation_patterns WHERE name = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [name, tenantId],
     );
     if (existing.length > 0 && existing[0] !== undefined) {

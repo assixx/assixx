@@ -10,6 +10,7 @@
  *   - card_code is auto-generated: prefix (BT/IV) + sequential number per plan+role
  *   - sort_order is auto-incremented per plan
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   Injectable,
@@ -90,7 +91,7 @@ export class TpmCardsService {
   async getCard(tenantId: number, cardUuid: string): Promise<TpmCard> {
     const row = await this.db.queryOne<TpmCardJoinRow>(
       `${CARD_SELECT_SQL}
-       WHERE c.uuid = $1 AND c.tenant_id = $2 AND c.is_active = 1`,
+       WHERE c.uuid = $1 AND c.tenant_id = $2 AND c.is_active = ${IS_ACTIVE.ACTIVE}`,
       [cardUuid, tenantId],
     );
 
@@ -110,7 +111,7 @@ export class TpmCardsService {
     filters: CardListFilter = {},
   ): Promise<PaginatedCards> {
     const { whereClauses, params } = buildFilterClauses(filters, 3);
-    const baseWhere = `c.tenant_id = $1 AND c.is_active = 1 AND m.uuid = $2`;
+    const baseWhere = `c.tenant_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND m.uuid = $2`;
     const fullWhere = [baseWhere, ...whereClauses].join(' AND ');
 
     return await this.executePaginatedQuery(
@@ -130,7 +131,7 @@ export class TpmCardsService {
     filters: CardListFilter = {},
   ): Promise<PaginatedCards> {
     const { whereClauses, params } = buildFilterClauses(filters, 3);
-    const baseWhere = `c.tenant_id = $1 AND c.is_active = 1 AND p.uuid = $2`;
+    const baseWhere = `c.tenant_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND p.uuid = $2`;
     const fullWhere = [baseWhere, ...whereClauses].join(' AND ');
 
     return await this.executePaginatedQuery(
@@ -148,7 +149,7 @@ export class TpmCardsService {
     page: number = 1,
     pageSize: number = 20,
   ): Promise<PaginatedCards> {
-    const fullWhere = `c.tenant_id = $1 AND c.is_active = 1 AND c.status = $2`;
+    const fullWhere = `c.tenant_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND c.status = $2`;
 
     return await this.executePaginatedQuery(
       fullWhere,
@@ -220,7 +221,7 @@ export class TpmCardsService {
         params.push(cardUuid, tenantId);
         const sql = `UPDATE tpm_cards
                      SET ${setClauses.join(', ')}, updated_at = NOW()
-                     WHERE uuid = $${paramIdx} AND tenant_id = $${paramIdx + 1} AND is_active = 1
+                     WHERE uuid = $${paramIdx} AND tenant_id = $${paramIdx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
         const result = await client.query<TpmCardJoinRow>(sql, params);
@@ -258,7 +259,7 @@ export class TpmCardsService {
 
         await client.query(
           `UPDATE tpm_cards
-           SET is_active = 4, updated_at = NOW()
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
           [cardUuid, tenantId],
         );
@@ -363,7 +364,7 @@ export class TpmCardsService {
     }>(
       `SELECT id, asset_id, base_weekday, base_repeat_every
        FROM tpm_maintenance_plans
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [planUuid, tenantId],
     );
     const row = result.rows[0];
@@ -466,7 +467,7 @@ export class TpmCardsService {
   ): Promise<number> {
     const result = await client.query<{ max_sort: string | null }>(
       `SELECT MAX(sort_order) AS max_sort FROM tpm_cards
-       WHERE plan_id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE plan_id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [planId, tenantId],
     );
     const maxSort = Number.parseInt(result.rows[0]?.max_sort ?? '0', 10);
@@ -483,7 +484,7 @@ export class TpmCardsService {
     const result = await client.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM tpm_cards
        WHERE plan_id = $1 AND tenant_id = $2
-         AND interval_type = $3 AND is_active = 1`,
+         AND interval_type = $3 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [planId, tenantId, intervalType],
     );
     const count = Number.parseInt(result.rows[0]?.count ?? '0', 10);
@@ -504,7 +505,7 @@ export class TpmCardsService {
   ): Promise<TpmCardRow> {
     const result = await client.query<TpmCardRow>(
       `SELECT * FROM tpm_cards
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [cardUuid, tenantId],
     );

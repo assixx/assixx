@@ -266,7 +266,7 @@
 
       closeEntryModal();
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving entry');
       showErrorAlert(err instanceof Error ? err.message : MESSAGES.SAVE_ERROR);
     } finally {
@@ -287,7 +287,7 @@
       await apiClient.delete(`/blackboard/entries/${entryIdToDelete}`);
       showSuccessAlert('Eintrag gelöscht');
       await invalidateAll(); // Level 3: Server refetches data
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting entry');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.DELETE_ERROR,
@@ -313,7 +313,7 @@
     try {
       document.body.classList.add('fullscreen-mode');
       await document.documentElement.requestFullscreen();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error entering fullscreen');
       document.body.classList.remove('fullscreen-mode');
     }

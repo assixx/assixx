@@ -103,7 +103,7 @@
       setTimeout(() => {
         exportSuccess = '';
       }, 5000);
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof RateLimitError) {
         rateLimitedUntil = new Date(Date.now() + err.retryAfter * 1000);
         exportError = `${MESSAGES.EXPORT_RATE_LIMITED} (${err.retryAfter}s)`;

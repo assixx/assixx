@@ -13,6 +13,7 @@
  *
  * Used by: Capacity service (conflict detection), Vacation service (request validation)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -54,7 +55,7 @@ export class VacationBlackoutsService {
                  vb.start_date, vb.end_date, vb.is_global,
                  vb.is_active, vb.created_by, vb.created_at, vb.updated_at
           FROM vacation_blackouts vb
-          WHERE vb.tenant_id = $1 AND vb.is_active = 1`;
+          WHERE vb.tenant_id = $1 AND vb.is_active = ${IS_ACTIVE.ACTIVE}`;
         const params: unknown[] = [tenantId];
 
         if (year !== undefined) {
@@ -167,7 +168,7 @@ export class VacationBlackoutsService {
           const result = await client.query<VacationBlackoutRow>(
             `UPDATE vacation_blackouts
              SET ${setClauses.join(', ')}
-             WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = 1
+             WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = ${IS_ACTIVE.ACTIVE}
              RETURNING *`,
             params,
           );
@@ -223,8 +224,8 @@ export class VacationBlackoutsService {
       async (client: PoolClient): Promise<void> => {
         const result = await client.query<{ id: string; name: string }>(
           `UPDATE vacation_blackouts
-           SET is_active = 4, updated_at = NOW()
-           WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+           WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, name`,
           [id, tenantId],
         );
@@ -275,7 +276,7 @@ export class VacationBlackoutsService {
           `SELECT vb.id, vb.name, vb.start_date, vb.end_date, vb.is_global
            FROM vacation_blackouts vb
            WHERE vb.tenant_id = $1
-             AND vb.is_active = 1
+             AND vb.is_active = ${IS_ACTIVE.ACTIVE}
              AND vb.start_date <= $3
              AND vb.end_date >= $2
              AND (
@@ -415,7 +416,7 @@ export class VacationBlackoutsService {
       `SELECT id, tenant_id, name, reason, start_date, end_date,
               is_global, is_active, created_by, created_at, updated_at
        FROM vacation_blackouts
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
 

@@ -13,6 +13,7 @@
  * Pattern: transaction callback receives mockClient with query() mock.
  * Escalation is system-level (no RLS) — uses db.transaction not tenantTransaction.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -260,7 +261,7 @@ describe('TpmEscalationService', () => {
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("status = 'red'");
-      expect(sql).toContain('is_active = 1');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       expect(sql).toContain('current_due_date');
       expect(sql).toContain('make_interval');
     });
@@ -491,7 +492,7 @@ describe('TpmEscalationService', () => {
       await service.handleEscalation();
 
       const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('is_active = 1');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
   });
 });

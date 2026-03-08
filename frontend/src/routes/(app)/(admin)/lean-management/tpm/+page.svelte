@@ -81,7 +81,7 @@
       showSuccessAlert(MESSAGES.SUCCESS_DELETED);
       tpmState.closeDeleteModal();
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       logApiError('confirmDelete', err);
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.ERROR_DELETE_FAILED,

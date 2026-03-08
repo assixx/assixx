@@ -9,6 +9,7 @@
  * Persistent methods use this.db.transaction({ tenantId }) for RLS context.
  * Fire-and-forget pattern — errors logged, never thrown.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -27,7 +28,7 @@ const { mockEventBus } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: mockEventBus,
 }));
 
@@ -533,13 +534,13 @@ describe('WorkOrderNotificationService', () => {
       );
     });
 
-    it('should filter by is_active = 1', async () => {
+    it(`should filter by is_active = ${IS_ACTIVE.ACTIVE}`, async () => {
       setupPayloadSuccess(mockDb);
 
       await service.notifyAssigned(TENANT_ID, WO_UUID, ASSIGNEE_IDS);
 
       const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('is_active = 1');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
 
     it('should trim uuid from DB row', async () => {

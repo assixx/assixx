@@ -2,11 +2,12 @@
 // MANAGE AREAS - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import {
+  handleSessionExpired,
+  isSessionExpiredError,
+} from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -23,29 +24,6 @@ import type {
 const log = createLogger('ManageAreasApi');
 
 const apiClient = getApiClient();
-
-// =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
-}
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -115,7 +93,7 @@ export async function loadAreas(): Promise<{
         (data as Area[])
       : ((data as { data?: Area[] }).data ?? []);
     return { areas, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
 
     if (isSessionExpiredError(err)) {
@@ -154,7 +132,7 @@ export async function loadAreaLeads(): Promise<{
     );
 
     return { users, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading area leads');
     return {
       users: [],
@@ -180,7 +158,7 @@ export async function loadDepartments(): Promise<{
         (data as Department[])
       : ((data as { data?: Department[] }).data ?? []);
     return { departments, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return {
       departments: [],
@@ -231,7 +209,7 @@ export async function saveArea(
       await apiClient.post(API_ENDPOINTS.AREAS, payload);
     }
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving area');
     return {
       success: false,
@@ -247,7 +225,7 @@ export async function deleteArea(areaId: number): Promise<DeleteAreaResult> {
   try {
     await apiClient.delete(API_ENDPOINTS.area(areaId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting area');
 
     const errorInfo = parseDeleteError(err);
@@ -277,7 +255,7 @@ export async function forceDeleteArea(
   try {
     await apiClient.delete(API_ENDPOINTS.areaForceDelete(areaId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error force deleting area');
     return {
       success: false,

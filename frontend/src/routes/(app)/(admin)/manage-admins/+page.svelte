@@ -227,7 +227,7 @@
           isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error saving admin');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED,
@@ -265,7 +265,7 @@
       await apiUpgradeToRoot(adminId);
       await invalidateAll();
       showSuccessAlert(MESSAGES.UPGRADE_SUCCESS);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error upgrading admin to root');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.UPGRADE_ERROR,
@@ -308,7 +308,7 @@
       await apiDowngradeToEmployee(adminId);
       await invalidateAll();
       showSuccessAlert(MESSAGES.DOWNGRADE_SUCCESS);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error downgrading admin to employee');
       showErrorAlert(
         err instanceof Error ? err.message : MESSAGES.DOWNGRADE_ERROR,
@@ -336,7 +336,7 @@
       showSuccessAlert(MESSAGES.SUCCESS_DELETED);
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error deleting admin');
       showErrorAlert(MESSAGES.ERROR_DELETE_FAILED);
     }
@@ -398,7 +398,7 @@
       closeAvailabilityModal();
       await invalidateAll();
       showSuccessAlert('Verfügbarkeit aktualisiert');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error updating availability');
       const message =
         err instanceof ApiError ?

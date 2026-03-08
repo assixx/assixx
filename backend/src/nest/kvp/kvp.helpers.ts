@@ -3,7 +3,9 @@
  *
  * Pure functions for the KVP module: transforms, query builders, visibility checks.
  */
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
+import { dbToApi } from '../../utils/field-mapper.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
 import type {
@@ -249,7 +251,7 @@ export function buildListBaseQuery(userIdPlaceholder: string): string {
       COALESCE(kcc_new.custom_name, kcc_override.custom_name, c.name) as category_name,
       COALESCE(kcc_new.color, c.color) as category_color,
       COALESCE(kcc_new.icon, c.icon) as category_icon,
-      CASE WHEN kcc_new.is_active = 4 THEN true ELSE false END as category_is_deleted,
+      CASE WHEN kcc_new.is_active = ${IS_ACTIVE.DELETED} THEN true ELSE false END as category_is_deleted,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
       a.name as area_name,
@@ -288,7 +290,7 @@ export function buildDetailBaseQuery(userIdPlaceholder: string): string {
       COALESCE(kcc_new.custom_name, kcc_override.custom_name, c.name) as category_name,
       COALESCE(kcc_new.color, c.color) as category_color,
       COALESCE(kcc_new.icon, c.icon) as category_icon,
-      CASE WHEN kcc_new.is_active = 4 THEN true ELSE false END as category_is_deleted,
+      CASE WHEN kcc_new.is_active = ${IS_ACTIVE.DELETED} THEN true ELSE false END as category_is_deleted,
       COALESCE(d.name, td.name) as department_name,
       t.name as team_name,
       a.name as area_name,

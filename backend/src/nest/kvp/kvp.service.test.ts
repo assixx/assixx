@@ -24,7 +24,7 @@ vi.mock('uuid', () => ({
 }));
 
 // Mock eventBus (imported statically in kvp.service.ts)
-vi.mock('../../utils/eventBus.js', () => ({
+vi.mock('../../utils/event-bus.js', () => ({
   eventBus: {
     emitKvpSubmitted: vi.fn(),
   },

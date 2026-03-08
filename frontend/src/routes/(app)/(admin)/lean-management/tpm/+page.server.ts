@@ -6,6 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -51,7 +52,7 @@ async function apiFetch<T>(
       return json.data;
     }
     return json as unknown as T;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }
@@ -71,11 +72,14 @@ function extractPlans(raw: Record<string, unknown> | null): {
   return { plans, total };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
+
+  const { activeFeatures } = await parent();
+  requireFeature(activeFeatures, 'tpm');
 
   const [plansData, colorsData, matrixData] = await Promise.all([
     apiFetch<PaginatedResponse<TpmPlan>>(

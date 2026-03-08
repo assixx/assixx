@@ -2,26 +2,23 @@
 // Manage Dummies — CONSTANTS
 // =============================================================================
 
+import { IS_ACTIVE, STATUS_LABELS } from '@assixx/shared/constants';
+
 import type { DummyFormData } from './types';
 
 // =============================================================================
 // STATUS LABELS & STYLING
 // =============================================================================
 
-/** is_active value → German label */
-export const IS_ACTIVE_LABELS: Record<number, string> = {
-  0: 'Inaktiv',
-  1: 'Aktiv',
-  3: 'Archiviert',
-  4: 'Gelöscht',
-};
+/** is_active value → German label (re-export from shared) */
+export const IS_ACTIVE_LABELS: Record<number, string> = STATUS_LABELS;
 
-/** is_active value → badge CSS class */
+/** is_active value → badge CSS class (dummies use custom styling) */
 export const IS_ACTIVE_BADGE_CLASSES: Record<number, string> = {
-  0: 'badge--secondary',
-  1: 'badge--success',
-  3: 'badge--warning',
-  4: 'badge--danger',
+  [IS_ACTIVE.INACTIVE]: 'badge--secondary',
+  [IS_ACTIVE.ACTIVE]: 'badge--success',
+  [IS_ACTIVE.ARCHIVED]: 'badge--warning',
+  [IS_ACTIVE.DELETED]: 'badge--danger',
 };
 
 // =============================================================================
@@ -35,9 +32,9 @@ export const STATUS_FILTER_OPTIONS: {
   icon: string;
 }[] = [
   { value: 'all', label: 'Alle', icon: 'fa-list' },
-  { value: 1, label: 'Aktiv', icon: 'fa-check-circle' },
-  { value: 0, label: 'Inaktiv', icon: 'fa-times-circle' },
-  { value: 3, label: 'Archiviert', icon: 'fa-archive' },
+  { value: IS_ACTIVE.ACTIVE, label: 'Aktiv', icon: 'fa-check-circle' },
+  { value: IS_ACTIVE.INACTIVE, label: 'Inaktiv', icon: 'fa-times-circle' },
+  { value: IS_ACTIVE.ARCHIVED, label: 'Archiviert', icon: 'fa-archive' },
 ];
 
 // =============================================================================
@@ -50,7 +47,7 @@ export const FORM_DEFAULTS: DummyFormData = {
   password: '',
   passwordConfirm: '',
   teamIds: [],
-  isActive: 1,
+  isActive: IS_ACTIVE.ACTIVE,
 };
 
 // =============================================================================

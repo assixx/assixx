@@ -4,6 +4,7 @@
  * Handles user assignments to rotation patterns
  * and assignment validation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -12,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
-import { dbToApi } from '../../utils/fieldMapper.js';
+import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { AssignUsersToPatternDto } from './dto/assign-users-to-pattern.dto.js';
@@ -41,7 +42,7 @@ export class RotationAssignmentService {
       `SELECT a.*, u.username, u.first_name, u.last_name
        FROM shift_rotation_assignments a
        JOIN users u ON a.user_id = u.id
-       WHERE a.pattern_id = $1 AND a.tenant_id = $2 AND a.is_active = 1`,
+       WHERE a.pattern_id = $1 AND a.tenant_id = $2 AND a.is_active = ${IS_ACTIVE.ACTIVE}`,
       [patternId, tenantId],
     );
 
@@ -150,7 +151,7 @@ export class RotationAssignmentService {
   ): Promise<void> {
     if (teamId === undefined || teamId === null) return;
     const teamResult = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [teamId, tenantId],
     );
     if (teamResult.length === 0) {
@@ -170,7 +171,7 @@ export class RotationAssignmentService {
     if (assignments.length === 0) return;
     const userIds = assignments.map((a: { userId: number }) => a.userId);
     const userResult = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM users WHERE id = ANY($1::int[]) AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM users WHERE id = ANY($1::int[]) AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userIds, tenantId],
     );
     const validUserIds = new Set(userResult.map((r: { id: number }) => r.id));

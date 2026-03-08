@@ -195,7 +195,7 @@ tpm_escalation_config      — per-tenant escalation threshold
 tpm_notification_config    — notification preferences (reserved for V2)
 ```
 
-All tables have: `tenant_id` (RLS), `is_active` (soft delete: 0/1/3/4), `created_at`, `updated_at`.
+All tables have: `tenant_id` (RLS), `is_active` (soft delete: 0/1/3/4, use `IS_ACTIVE` constants from `@assixx/shared/constants`), `created_at`, `updated_at`.
 
 ### 7. Employee Frontend (Kamishibai Board)
 

@@ -4,8 +4,10 @@
  * Tests all pure mapper functions and the status transition matrix.
  * No DI, no DB, no mocks — pure input/output assertions.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
+import { toIsoString, toIsoStringOrNull } from '../../utils/db-helpers.js';
 import {
   type SourcePhotoRow,
   isValidStatusTransition,
@@ -15,8 +17,6 @@ import {
   mapSourcePhotoRowToApi,
   mapWorkOrderRowToApi,
   mapWorkOrderRowToListItem,
-  toIsoString,
-  toIsoStringOrNull,
 } from './work-orders.helpers.js';
 import type {
   WorkOrderAssigneeWithNameRow,
@@ -48,7 +48,7 @@ function createWorkOrderRow(
     completed_at: null,
     verified_at: null,
     verified_by: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-01T08:00:00.000Z',
     updated_at: '2026-03-01T08:00:00.000Z',
     created_by_name: 'Max Müller',
@@ -92,7 +92,7 @@ function createCommentRow(
     old_status: null,
     new_status: null,
     parent_id: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-02T10:00:00.000Z',
     updated_at: '2026-03-02T10:00:00.000Z',
     first_name: 'Anna',

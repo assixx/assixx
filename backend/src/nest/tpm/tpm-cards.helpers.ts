@@ -3,6 +3,12 @@
  *
  * Stateless helper functions. No DI, no DB calls, no side effects.
  */
+import {
+  type FieldMapping,
+  type SetClauseResult,
+  buildSetClause,
+  toIsoString,
+} from '../../utils/db-helpers.js';
 import type { TpmCard, TpmCardCategory, TpmCardRow } from './tpm.types.js';
 
 /**
@@ -55,14 +61,8 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
     cardCategories: parsePgCategoryArray(row.card_categories),
     isActive: row.is_active,
     createdBy: row.created_by,
-    createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
-    updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
   };
 
   // Optional properties: only set when JOIN data is present
@@ -78,7 +78,7 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
 }
 
 /** Field mappings for card update: [apiField, dbColumn] */
-const CARD_UPDATE_MAPPINGS: readonly [string, string][] = [
+const CARD_UPDATE_MAPPINGS: readonly FieldMapping[] = [
   ['cardRole', 'card_role'],
   ['intervalType', 'interval_type'],
   ['title', 'title'],
@@ -89,25 +89,11 @@ const CARD_UPDATE_MAPPINGS: readonly [string, string][] = [
   ['weekdayOverride', 'weekday_override'],
   ['estimatedExecutionMinutes', 'estimated_execution_minutes'],
   ['cardCategories', 'card_categories'],
-] as const;
+];
 
 /** Build SET clause for card update — only includes provided fields */
-export function buildCardUpdateFields(dto: Record<string, unknown>): {
-  setClauses: string[];
-  params: unknown[];
-  nextParamIndex: number;
-} {
-  const setClauses: string[] = [];
-  const params: unknown[] = [];
-  let paramIndex = 1;
-
-  for (const [apiField, dbColumn] of CARD_UPDATE_MAPPINGS) {
-    if (dto[apiField] !== undefined) {
-      setClauses.push(`${dbColumn} = $${paramIndex}`);
-      params.push(dto[apiField]);
-      paramIndex++;
-    }
-  }
-
-  return { setClauses, params, nextParamIndex: paramIndex };
+export function buildCardUpdateFields(
+  dto: Record<string, unknown>,
+): SetClauseResult {
+  return buildSetClause(dto, CARD_UPDATE_MAPPINGS);
 }

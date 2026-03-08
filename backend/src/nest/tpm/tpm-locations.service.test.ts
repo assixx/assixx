@@ -6,6 +6,7 @@
  * Tests: listLocations, getLocation, createLocation, updateLocation,
  * deleteLocation, setPhoto, removePhoto.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -47,7 +48,7 @@ function createLocationRow(
     photo_file_name: null,
     photo_file_size: null,
     photo_mime_type: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_by: 42,
     created_at: '2026-02-25T00:00:00.000Z',
     updated_at: '2026-02-25T00:00:00.000Z',
@@ -440,7 +441,7 @@ describe('TpmLocationsService', () => {
   // =============================================================
 
   describe('deleteLocation()', () => {
-    it('should soft-delete a location (is_active = 4)', async () => {
+    it(`should soft-delete a location (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 1 }],
       });
@@ -450,7 +451,7 @@ describe('TpmLocationsService', () => {
       ).resolves.toBeUndefined();
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
-      expect(sql).toContain('is_active = 4');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
     });
 
     it('should throw NotFoundException when location not found', async () => {

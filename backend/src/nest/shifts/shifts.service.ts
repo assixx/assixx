@@ -17,7 +17,7 @@ import {
   NotImplementedException,
 } from '@nestjs/common';
 
-import { apiToDb, dbToApi } from '../../utils/fieldMapper.js';
+import { apiToDb, dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateShiftDto } from './dto/create-shift.dto.js';

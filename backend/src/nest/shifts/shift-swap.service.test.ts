@@ -15,7 +15,7 @@ import { ShiftSwapService } from './shift-swap.service.js';
 // Module mocks
 // =============================================================
 
-vi.mock('../../utils/fieldMapper.js', () => ({
+vi.mock('../../utils/field-mapper.js', () => ({
   dbToApi: vi.fn((row: Record<string, unknown>) => ({ ...row })),
 }));
 

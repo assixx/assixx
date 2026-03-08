@@ -82,7 +82,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
       statusData: parseStatusResponse(json),
       currentUserId: userId,
     };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint: '/root/tenant/deletion-status' }, 'Fetch error');
     return { statusData: [], currentUserId: userId };
   }

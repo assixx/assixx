@@ -33,7 +33,7 @@ import {
 } from '@nestjs/common';
 import { Observable, Subject, interval, map, merge, takeUntil } from 'rxjs';
 
-import { eventBus } from '../../utils/eventBus.js';
+import { eventBus } from '../../utils/event-bus.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';

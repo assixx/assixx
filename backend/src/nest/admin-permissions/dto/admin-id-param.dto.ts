@@ -1,16 +1,6 @@
-/**
- * Admin ID Param DTO
- *
- * Validates adminId path parameter.
- */
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const AdminIdParamSchema = z.object({
-  adminId: z.coerce
-    .number()
-    .int()
-    .positive('Admin ID must be a positive integer'),
-});
+import { createIdParamSchema } from '../../common/dto/index.js';
 
+export const AdminIdParamSchema = createIdParamSchema('adminId');
 export class AdminIdParamDto extends createZodDto(AdminIdParamSchema) {}

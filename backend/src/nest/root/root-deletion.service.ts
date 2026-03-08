@@ -247,31 +247,22 @@ export class RootDeletionService {
   async approveDeletion(
     queueId: number,
     userId: number,
+    tenantId: number,
     password: string,
     comment?: string,
   ): Promise<void> {
     this.logger.log(`Approving deletion ${queueId} - verifying user password`);
 
-    // SECURITY: Get user's password hash for verification
-    // IMPORTANT: Only allow ACTIVE users (is_active = 1) to approve deletions
-    // TODO: Add tenantId parameter to use UserRepository.getPasswordHash() for full isolation
-    const users = await this.db.query<{ password: string | null }>(
-      'SELECT password FROM users WHERE id = $1 AND is_active = 1',
-      [userId],
+    // SECURITY: Get user's password hash via repository for full tenant isolation
+    const storedHash = await this.userRepository.getPasswordHash(
+      userId,
+      tenantId,
     );
 
-    const userRecord = users[0];
-    if (userRecord === undefined) {
-      this.logger.error(
-        `User ${userId} not found or inactive for deletion approval`,
-      );
-      throw new Error('User not found or inactive');
-    }
-
-    // SECURITY: Verify the password matches
-    const storedHash = userRecord.password;
     if (storedHash === null || storedHash === '') {
-      this.logger.error(`User ${userId} has no password set`);
+      this.logger.error(
+        `User ${userId} not found, inactive, or has no password for deletion approval`,
+      );
       throw new Error('User password not configured');
     }
 

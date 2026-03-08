@@ -10,6 +10,7 @@
  * Extracted from UsersService for better separation of concerns.
  * Works with user_availability table (not user columns).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -529,7 +530,7 @@ export class UserAvailabilityService {
   /** Check if user exists and is active */
   private async userExists(userId: number, tenantId: number): Promise<boolean> {
     const rows = await this.databaseService.query<{ id: number }>(
-      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
     return rows.length > 0;
@@ -572,7 +573,7 @@ export class UserAvailabilityService {
       last_name: string | null;
       email: string;
     }>(
-      `SELECT id, uuid, first_name, last_name, email FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id, uuid, first_name, last_name, email FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
 

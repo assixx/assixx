@@ -17,7 +17,7 @@ export async function fetchCustomizable(): Promise<CustomizableCategoriesData | 
     return await apiClient.get<CustomizableCategoriesData>(
       `${BASE}/customizable`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching customizable categories');
     return null;
   }
@@ -31,7 +31,7 @@ export async function upsertOverride(
   try {
     await apiClient.put(`${BASE}/override/${categoryId}`, { customName });
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error upserting override');
     return false;
   }
@@ -42,7 +42,7 @@ export async function deleteOverride(categoryId: number): Promise<boolean> {
   try {
     await apiClient.delete(`${BASE}/override/${categoryId}`);
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting override');
     return false;
   }
@@ -57,7 +57,7 @@ export async function createCustomCategory(data: {
 }): Promise<{ id: number } | null> {
   try {
     return await apiClient.post<{ id: number }>(`${BASE}/custom`, data);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error creating custom category');
     return null;
   }
@@ -76,7 +76,7 @@ export async function updateCustomCategory(
   try {
     await apiClient.put(`${BASE}/custom/${id}`, data);
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error updating custom category');
     return false;
   }
@@ -90,7 +90,7 @@ export async function deleteCustomCategory(
     return await apiClient.delete<{ affectedSuggestions: number }>(
       `${BASE}/custom/${id}`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting custom category');
     return null;
   }

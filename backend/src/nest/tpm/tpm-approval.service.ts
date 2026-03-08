@@ -13,6 +13,7 @@
  *   - SSE notification to executor (fire-and-forget)
  *   - Bridge: approved execution → asset_maintenance_history (Step 2.11)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   ForbiddenException,
@@ -200,11 +201,11 @@ export class TpmApprovalService {
         WHERE c.id = $1
           AND c.tenant_id = $2
           AND t.team_lead_id = $3
-          AND t.is_active = 1
+          AND t.is_active = ${IS_ACTIVE.ACTIVE}
       ) OR EXISTS (
         SELECT 1 FROM users
         WHERE id = $3 AND tenant_id = $2
-          AND has_full_access = true AND is_active = 1
+          AND has_full_access = true AND is_active = ${IS_ACTIVE.ACTIVE}
       ) AS can_approve`,
       [cardId, tenantId, userId],
     );
@@ -349,11 +350,11 @@ export class TpmApprovalService {
         WHERE c.id = $1
           AND c.tenant_id = $2
           AND t.team_lead_id = $3
-          AND t.is_active = 1
+          AND t.is_active = ${IS_ACTIVE.ACTIVE}
       ) OR EXISTS (
         SELECT 1 FROM users
         WHERE id = $3 AND tenant_id = $2
-          AND has_full_access = true AND is_active = 1
+          AND has_full_access = true AND is_active = ${IS_ACTIVE.ACTIVE}
       ) AS can_approve`,
       [cardId, tenantId, approverId],
     );

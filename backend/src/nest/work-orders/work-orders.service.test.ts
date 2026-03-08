@@ -4,6 +4,7 @@
  * Tests Core CRUD: create, get, list, listMy, update, delete, getStats.
  * Mock DatabaseService (query, queryOne, tenantTransaction) + ActivityLoggerService.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -59,7 +60,7 @@ function createWorkOrderRow(
     completed_at: null,
     verified_at: null,
     verified_by: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-01T08:00:00.000Z',
     updated_at: '2026-03-01T08:00:00.000Z',
     created_by_name: 'Max Müller',
@@ -227,7 +228,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '5' });
     mockDb.query.mockResolvedValueOnce([createWorkOrderRow()]);
 
-    const result = await service.listWorkOrders(1, {});
+    const result = await service.listWorkOrders(1, 5, {});
 
     expect(result.total).toBe(5);
     expect(result.page).toBe(1);
@@ -239,7 +240,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '100' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.listWorkOrders(1, { page: 3, limit: 10 });
+    const result = await service.listWorkOrders(1, 5, { page: 3, limit: 10 });
 
     expect(result.page).toBe(3);
     expect(result.pageSize).toBe(10);
@@ -249,7 +250,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '2' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { status: 'open' });
+    await service.listWorkOrders(1, 5, { status: 'open' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
     expect(countSql).toContain('wo.status = $');
@@ -259,7 +260,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { priority: 'high' });
+    await service.listWorkOrders(1, 5, { priority: 'high' });
 
     const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
     expect(params).toContain('high');
@@ -269,7 +270,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { sourceType: 'tpm_defect' });
+    await service.listWorkOrders(1, 5, { sourceType: 'tpm_defect' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
     expect(countSql).toContain('wo.source_type = $');
@@ -279,7 +280,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.listWorkOrders(1, { assigneeUuid: 'user-uuid' });
+    await service.listWorkOrders(1, 5, { assigneeUuid: 'user-uuid' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
     expect(countSql).toContain('work_order_assignees');
@@ -289,7 +290,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.listWorkOrders(1, {});
+    const result = await service.listWorkOrders(1, 5, {});
 
     expect(result.total).toBe(0);
     expect(result.items).toEqual([]);
@@ -299,7 +300,7 @@ describe('listWorkOrders', () => {
     mockDb.queryOne.mockResolvedValueOnce(null);
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.listWorkOrders(1, {});
+    const result = await service.listWorkOrders(1, 5, {});
     expect(result.total).toBe(0);
   });
 });
@@ -420,14 +421,14 @@ describe('updateWorkOrder', () => {
 // ============================================================================
 
 describe('deleteWorkOrder', () => {
-  it('should soft-delete a work order (is_active = 4)', async () => {
+  it(`should soft-delete a work order (is_active = ${IS_ACTIVE.DELETED})`, async () => {
     mockDb.queryOne.mockResolvedValueOnce({ id: 1, title: 'Test' });
     mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
     await service.deleteWorkOrder(1, 5, 'test-uuid');
 
     const sql = mockClient.query.mock.calls[0]?.[0] as string;
-    expect(sql).toContain('is_active = 4');
+    expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
   });
 
   it('should throw NotFoundException when work order not found', async () => {

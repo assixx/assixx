@@ -10,6 +10,7 @@
  *
  * All mutation methods accept a PoolClient for transaction composability.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
@@ -64,7 +65,7 @@ export class TpmCardCascadeService {
           AND tenant_id = $2
           AND interval_order <= $3
           AND status = 'green'
-          AND is_active = 1
+          AND is_active = ${IS_ACTIVE.ACTIVE}
           AND (last_completed_at IS NULL OR last_completed_at::date < $4::date)
         RETURNING id
       )
@@ -110,7 +111,7 @@ export class TpmCardCascadeService {
          AND c.tenant_id = $2
          AND c.interval_order <= $3
          AND c.status = 'green'
-         AND c.is_active = 1
+         AND c.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY c.interval_order ASC, c.sort_order ASC`,
       [assetId, tenantId, triggerIntervalOrder],
     );

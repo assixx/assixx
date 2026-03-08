@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { eventBus } from './eventBus.js';
+import { eventBus } from './event-bus.js';
 
 vi.mock('./logger.js', () => ({
   logger: {
@@ -11,7 +11,7 @@ vi.mock('./logger.js', () => ({
 describe('eventBus', () => {
   it('should be a singleton instance', async () => {
     // Re-import to verify same instance
-    const { eventBus: eventBus2 } = await import('./eventBus.js');
+    const { eventBus: eventBus2 } = await import('./event-bus.js');
     expect(eventBus).toBe(eventBus2);
   });
 

@@ -72,7 +72,7 @@
     try {
       const holidays = await api.getHolidays(year);
       holidaysState.setHolidays(holidays);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Holiday reload failed');
       showErrorAlert('Fehler beim Laden der Feiertage');
     } finally {
@@ -158,7 +158,7 @@
       holidaysState.closeDeleteHoliday();
       showSuccessAlert('Feiertag geloescht');
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Holiday delete failed');
       showErrorAlert('Fehler beim Loeschen des Feiertags');
     }

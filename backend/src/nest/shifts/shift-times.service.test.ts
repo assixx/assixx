@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -30,7 +31,7 @@ function createDefaultDbRows(): Array<{
       start_time: '06:00:00',
       end_time: '14:00:00',
       sort_order: 1,
-      is_active: 1,
+      is_active: IS_ACTIVE.ACTIVE,
     },
     {
       shift_key: 'late',
@@ -38,7 +39,7 @@ function createDefaultDbRows(): Array<{
       start_time: '14:00:00',
       end_time: '22:00:00',
       sort_order: 2,
-      is_active: 1,
+      is_active: IS_ACTIVE.ACTIVE,
     },
     {
       shift_key: 'night',
@@ -46,7 +47,7 @@ function createDefaultDbRows(): Array<{
       start_time: '22:00:00',
       end_time: '06:00:00',
       sort_order: 3,
-      is_active: 1,
+      is_active: IS_ACTIVE.ACTIVE,
     },
   ];
 }
@@ -94,7 +95,7 @@ describe('ShiftTimesService', () => {
           start_time: '05:30:00',
           end_time: '13:30:00',
           sort_order: 1,
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
         },
       ];
       vi.mocked(mockDb.query).mockResolvedValueOnce(rows);
@@ -151,7 +152,7 @@ describe('ShiftTimesService', () => {
           start_time: '05:00:00',
           end_time: '13:00:00',
           sort_order: 1,
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
         },
       ]);
 
@@ -175,7 +176,7 @@ describe('ShiftTimesService', () => {
           start_time: '15:00:00',
           end_time: '23:00:00',
           sort_order: 2,
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
         },
       ]);
 
@@ -233,7 +234,7 @@ describe('ShiftTimesService', () => {
           start_time: '05:00:00',
           end_time: '13:00:00',
           sort_order: 1,
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
         },
       ]);
       // ensureDefaults for second update
@@ -245,7 +246,7 @@ describe('ShiftTimesService', () => {
           start_time: '13:00:00',
           end_time: '21:00:00',
           sort_order: 2,
-          is_active: 1,
+          is_active: IS_ACTIVE.ACTIVE,
         },
       ]);
 

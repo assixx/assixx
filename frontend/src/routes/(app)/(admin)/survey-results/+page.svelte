@@ -90,7 +90,7 @@
       } else {
         showErrorAlert('Fehler beim Exportieren');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       log.error({ err: error }, 'Export error');
       const message =
         error instanceof Error ? error.message : 'Unbekannter Fehler';

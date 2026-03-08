@@ -106,7 +106,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
     log.warn({ json }, 'No entries found or invalid response structure');
     return { entries: [] as ArchivedEntry[], error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error fetching archived entries');
     return { entries: [], error: 'Verbindungsfehler' };
   }

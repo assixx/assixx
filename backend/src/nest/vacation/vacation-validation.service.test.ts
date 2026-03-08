@@ -7,6 +7,7 @@
  *
  * Uses vi.useFakeTimers() pinned to 2026-03-15 for deterministic date logic.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -106,7 +107,7 @@ function createExistingRequest(
     computed_days: 5,
     reason: 'Existing request',
     response_note: null,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-03-01T00:00:00.000Z',
     updated_at: '2026-03-01T00:00:00.000Z',
     ...overrides,

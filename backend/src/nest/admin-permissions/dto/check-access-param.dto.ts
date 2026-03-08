@@ -1,20 +1,11 @@
-/**
- * Check Access Param DTO
- *
- * Validates adminId, departmentId and permissionLevel parameters.
- */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { idField } from '../../common/dto/index.js';
+
 export const CheckAccessParamSchema = z.object({
-  adminId: z.coerce
-    .number()
-    .int()
-    .positive('Admin ID must be a positive integer'),
-  departmentId: z.coerce
-    .number()
-    .int()
-    .positive('Department ID must be a positive integer'),
+  adminId: idField,
+  departmentId: idField,
   permissionLevel: z
     .enum(['read', 'write', 'delete'])
     .optional()

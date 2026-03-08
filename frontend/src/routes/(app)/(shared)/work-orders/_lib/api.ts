@@ -148,6 +148,19 @@ export async function deleteWorkOrder(uuid: string): Promise<void> {
 }
 
 // =============================================================================
+// READ TRACKING
+// =============================================================================
+
+/** Mark a work order as read (idempotent — safe to call multiple times) */
+export async function markWorkOrderAsRead(uuid: string): Promise<void> {
+  try {
+    await apiClient.post(`/work-orders/${uuid}/read`, {});
+  } catch (err: unknown) {
+    logApiError('markWorkOrderAsRead', err);
+  }
+}
+
+// =============================================================================
 // STATUS
 // =============================================================================
 

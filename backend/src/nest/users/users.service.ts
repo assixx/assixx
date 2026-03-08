@@ -10,6 +10,7 @@
  * NOTE: Availability logic extracted to UserAvailabilityService
  * NOTE: Types extracted to users.types.ts, pure helpers to users.helpers.ts
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
@@ -483,7 +484,7 @@ export class UsersService {
 
     // Soft delete (is_active = 4 = deleted)
     await this.databaseService.query(
-      `UPDATE users SET is_active = 4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
 
@@ -516,7 +517,7 @@ export class UsersService {
     }
 
     await this.databaseService.query(
-      `UPDATE users SET is_active = 3, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE users SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
 
@@ -534,7 +535,7 @@ export class UsersService {
     }
 
     await this.databaseService.query(
-      `UPDATE users SET is_active = 1, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      `UPDATE users SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
 
@@ -599,7 +600,7 @@ export class UsersService {
               emergency_contact, date_of_birth,
               has_full_access
        FROM users
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
 
@@ -615,7 +616,7 @@ export class UsersService {
     tenantId: number,
   ): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
-      `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2 AND is_active = 1`,
+      `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [email.toLowerCase(), tenantId],
     );
 

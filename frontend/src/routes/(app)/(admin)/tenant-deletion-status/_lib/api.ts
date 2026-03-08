@@ -4,6 +4,7 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { getErrorMessage } from '$lib/utils/error';
 import { createLogger } from '$lib/utils/logger';
 
 import type { DeletionStatusItem, ApiError } from './types';
@@ -50,11 +51,6 @@ function parseApiResponse(result: unknown): DeletionStatusItem[] {
   return [];
 }
 
-/** Format error message for display */
-function getErrorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Fehler beim Laden des Status';
-}
-
 // =============================================================================
 // API FUNCTIONS
 // =============================================================================
@@ -67,7 +63,7 @@ export async function loadDeletionStatus(): Promise<{
   try {
     const result = await apiClient.get('/root/tenant/deletion-status');
     return { data: parseApiResponse(result), error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     if (isNotFoundError(err)) {
       return { data: [], error: null };
     }

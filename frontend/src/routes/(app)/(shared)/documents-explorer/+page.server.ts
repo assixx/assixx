@@ -81,7 +81,7 @@ async function apiFetch<T>(
 
     const json = (await response.json()) as ApiResponse<T>;
     return unwrapApiResponse(json);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
   }

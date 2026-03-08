@@ -216,10 +216,10 @@
         type="button"
         class="btn btn-light"
         onclick={() => {
-          void goto(resolvePath('/lean-management/tpm'));
+          void goto(resolvePath(`/lean-management/tpm/board/${data.planUuid}`));
         }}
       >
-        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.BTN_BACK_TO_OVERVIEW}
+        <i class="fas fa-arrow-left mr-2"></i>Zurück zum Board
       </button>
     </div>
     <div class="flex flex-wrap items-start justify-between gap-4">

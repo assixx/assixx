@@ -242,7 +242,7 @@ export class RoleSyncManager {
       try {
         this.broadcastChannel.postMessage(message);
         log.debug({ newRole }, 'Broadcast sent via BroadcastChannel');
-      } catch (error) {
+      } catch (error: unknown) {
         log.warn({ err: error }, 'BroadcastChannel send failed');
       }
     }

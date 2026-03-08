@@ -9,6 +9,7 @@
  *
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,7 +52,7 @@ function createPlanRow(overrides?: Partial<TpmPlanJoinRow>): TpmPlanJoinRow {
     shift_plan_required: true,
     notes: 'Wöchentliche Kontrolle',
     created_by: 5,
-    is_active: 1,
+    is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-02-18T00:00:00.000Z',
     updated_at: '2026-02-18T00:00:00.000Z',
     asset_name: 'CNC-001',
@@ -471,7 +472,7 @@ describe('TpmPlansService', () => {
   // =============================================================
 
   describe('deletePlan()', () => {
-    it('should soft-delete a plan (is_active = 4)', async () => {
+    it(`should soft-delete a plan (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       // lockPlanByUuid
       mockClient.query.mockResolvedValueOnce({
         rows: [createPlanRow()],
@@ -484,7 +485,7 @@ describe('TpmPlansService', () => {
       ).resolves.toBeUndefined();
 
       const deleteSql = mockClient.query.mock.calls[1]?.[0] as string;
-      expect(deleteSql).toContain('is_active = 4');
+      expect(deleteSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
     });
 
     it('should throw NotFoundException when plan not found', async () => {

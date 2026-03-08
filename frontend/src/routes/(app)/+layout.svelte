@@ -244,7 +244,7 @@
     try {
       // Call logout API first (while we still have a valid token)
       await apiClient.post('/auth/logout');
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Logout API error (continuing with logout)');
     }
 

@@ -3,11 +3,9 @@
 // Based on: frontend/src/scripts/survey/admin/data.ts
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -27,40 +25,6 @@ const log = createLogger('SurveyAdminApi');
 const apiClient = getApiClient();
 
 // =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(`${resolve('/login', {})}?session=expired`);
-}
-
-/**
- * Check for session expired and redirect
- */
-export function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
-
-// =============================================================================
 // SURVEYS
 // =============================================================================
 
@@ -70,7 +34,7 @@ export function checkSessionExpired(err: unknown): boolean {
 export async function loadSurveys(): Promise<Survey[]> {
   try {
     return await apiClient.get<Survey[]>(API_ENDPOINTS.SURVEYS);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading surveys');
     checkSessionExpired(err);
     return [];
@@ -85,7 +49,7 @@ export async function loadSurveyById(
 ): Promise<Survey | null> {
   try {
     return await apiClient.get<Survey>(API_ENDPOINTS.surveyById(surveyId));
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error loading survey');
     checkSessionExpired(err);
     return null;
@@ -105,7 +69,7 @@ export async function createSurvey(
     );
     const surveyId = response.surveyId ?? response.id;
     return { success: true, id: surveyId };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error creating survey');
     checkSessionExpired(err);
     const message =
@@ -124,7 +88,7 @@ export async function updateSurvey(
   try {
     await apiClient.put(API_ENDPOINTS.surveyById(surveyId), data);
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error updating survey');
     checkSessionExpired(err);
     const message =
@@ -147,7 +111,7 @@ export async function completeSurvey(
       status: 'completed',
     });
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error completing survey');
     checkSessionExpired(err);
     const message =
@@ -165,7 +129,7 @@ export async function deleteSurvey(
   try {
     await apiClient.delete(API_ENDPOINTS.surveyById(surveyId));
     return { success: true };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, surveyId }, 'Error deleting survey');
     checkSessionExpired(err);
     const message =
@@ -184,7 +148,7 @@ export async function deleteSurvey(
 export async function loadTemplates(): Promise<SurveyTemplate[]> {
   try {
     return await apiClient.get<SurveyTemplate[]>(API_ENDPOINTS.TEMPLATES);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading templates');
     return [];
   }
@@ -202,7 +166,7 @@ export async function createFromTemplate(
       {},
     );
     return { success: true, survey };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, templateId }, 'Error creating from template');
     checkSessionExpired(err);
     const message =
@@ -224,7 +188,7 @@ export async function loadDepartments(): Promise<Department[]> {
       PaginatedResponse<Department> | Department[]
     >(API_ENDPOINTS.DEPARTMENTS);
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return [];
   }
@@ -239,7 +203,7 @@ export async function loadTeams(): Promise<Team[]> {
       API_ENDPOINTS.TEAMS,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
     return [];
   }
@@ -254,7 +218,7 @@ export async function loadAreas(): Promise<Area[]> {
       API_ENDPOINTS.AREAS,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
     return [];
   }

@@ -323,7 +323,7 @@ services:
       start_interval: 5s
     # Worker command - run compiled JS (tsx can't handle parameter decorators like @Inject)
     # Backend build (via service_healthy dependency) populates dist/ on shared volume
-    command: ["node", "backend/dist/workers/deletionWorker.js"]
+    command: ["node", "backend/dist/workers/deletion-worker.js"]
 
   # ===========================================================================
   # SvelteKit Frontend (Production)

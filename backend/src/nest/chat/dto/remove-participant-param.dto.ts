@@ -1,25 +1,16 @@
-/**
- * Remove Participant Param DTO
- */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { idField } from '../../common/dto/index.js';
+
 export const RemoveParticipantParamsSchema = z.object({
-  id: z.coerce
-    .number()
-    .int('Conversation ID must be an integer')
-    .min(1, 'Invalid conversation ID'),
-  userId: z.coerce
-    .number()
-    .int('User ID must be an integer')
-    .min(1, 'Invalid user ID'),
+  id: idField,
+  userId: idField,
 });
 
 export class RemoveParticipantParamsDto extends createZodDto(
   RemoveParticipantParamsSchema,
 ) {}
-
-// Type export
 export type RemoveParticipantParams = z.infer<
   typeof RemoveParticipantParamsSchema
 >;

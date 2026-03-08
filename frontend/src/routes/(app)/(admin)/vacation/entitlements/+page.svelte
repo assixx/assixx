@@ -59,7 +59,7 @@
         entitlementsState.selectedYear,
       );
       entitlementsState.setBalance(bal);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err, userId: employee.id }, 'Balance load failed');
       showErrorAlert('Fehler beim Laden des Urlaubskontos');
       entitlementsState.setBalance(null);
@@ -220,7 +220,7 @@
       showSuccessAlert(`${Math.abs(days)} Tage ${label}`);
       entitlementsState.closeAddDaysModal();
       await loadBalance(emp);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Add days failed');
       showErrorAlert('Fehler beim Hinzufuegen');
     }

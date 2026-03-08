@@ -4,6 +4,7 @@
  * Business logic for feature management.
  * Uses DatabaseService directly - NO Express delegation.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -319,7 +320,8 @@ export class FeaturesService {
       `Getting all features (includeInactive: ${includeInactive})`,
     );
 
-    const whereClause = includeInactive ? '' : 'WHERE is_active = 1';
+    const whereClause =
+      includeInactive ? '' : `WHERE is_active = ${IS_ACTIVE.ACTIVE}`;
     const rows = await this.db.query<DbFeatureRow>(
       `SELECT * FROM features ${whereClause} ORDER BY category, sort_order, name`,
     );
@@ -417,14 +419,14 @@ export class FeaturesService {
         tf.activated_at,
         tf.expires_at,
         CASE
-          WHEN tf.is_active = 1 AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
-          WHEN tf.is_active = 1 AND tf.expires_at < NOW() THEN 'expired'
-          WHEN tf.is_active = 0 THEN 'disabled'
+          WHEN tf.is_active = ${IS_ACTIVE.ACTIVE} AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
+          WHEN tf.is_active = ${IS_ACTIVE.ACTIVE} AND tf.expires_at < NOW() THEN 'expired'
+          WHEN tf.is_active = ${IS_ACTIVE.INACTIVE} THEN 'disabled'
           ELSE 'not_activated'
         END as status
       FROM features f
       LEFT JOIN tenant_features tf ON f.id = tf.feature_id AND tf.tenant_id = $1
-      WHERE f.is_active = 1
+      WHERE f.is_active = ${IS_ACTIVE.ACTIVE}
       ORDER BY f.category, f.sort_order, f.name
       `,
       [tenantId],
@@ -504,7 +506,7 @@ export class FeaturesService {
     if (existing !== null) {
       // Update existing
       await this.db.query(
-        `UPDATE tenant_features SET is_active = 1, activated_at = NOW(), expires_at = $1,
+        `UPDATE tenant_features SET is_active = ${IS_ACTIVE.ACTIVE}, activated_at = NOW(), expires_at = $1,
          activated_by = $2, custom_config = $3, updated_at = NOW()
          WHERE tenant_id = $4 AND feature_id = $5`,
         [expiresAt, activatedBy, customConfig, request.tenantId, feature.id],
@@ -550,7 +552,7 @@ export class FeaturesService {
 
     const rows = await this.db.query(
       `UPDATE tenant_features
-       SET is_active = 0, updated_at = NOW()
+       SET is_active = ${IS_ACTIVE.INACTIVE}, updated_at = NOW()
        WHERE tenant_id = $1 AND feature_id = $2
        RETURNING id`,
       [tenantId, feature.id],
@@ -635,7 +637,7 @@ export class FeaturesService {
       JOIN features f ON tf.feature_id = f.id
       WHERE tf.tenant_id = $1
       AND f.code = $2
-      AND tf.is_active = 1
+      AND tf.is_active = ${IS_ACTIVE.ACTIVE}
       AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `,
       [tenantId, featureCode],

@@ -3,9 +3,6 @@
 // Based on: frontend/src/scripts/shifts/api.ts
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
@@ -65,40 +62,6 @@ const API_ENDPOINTS = {
 } as const;
 
 // =============================================================================
-// SESSION HANDLING
-// =============================================================================
-
-/**
- * Check if error is a session expired error
- */
-function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
-/**
- * Handle session expired error
- */
-export function handleSessionExpired(): void {
-  void goto(`${resolve('/login', {})}?session=expired`);
-}
-
-/**
- * Check for session expired and redirect
- */
-export function checkSessionExpired(err: unknown): boolean {
-  if (isSessionExpiredError(err)) {
-    handleSessionExpired();
-    return true;
-  }
-  return false;
-}
-
-// =============================================================================
 // USER DATA (delegates to shared user service - prevents duplicate /users/me calls)
 // =============================================================================
 
@@ -124,7 +87,7 @@ export async function fetchAreas(): Promise<Area[]> {
   try {
     const areas = await apiClient.get<Area[]>(API_ENDPOINTS.AREAS);
     return Array.isArray(areas) ? areas : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
     return [];
   }
@@ -146,7 +109,7 @@ export async function fetchDepartments(
       url,
     );
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return [];
   }
@@ -185,7 +148,7 @@ export async function fetchAssets(
 
     const response = await apiClient.get<Asset[] | { data: Asset[] }>(url);
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading assets');
     return [];
   }
@@ -209,7 +172,7 @@ export async function fetchTeams(
 
     const response = await apiClient.get<Team[] | { data: Team[] }>(url);
     return Array.isArray(response) ? response : response.data;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
     return [];
   }
@@ -296,7 +259,7 @@ export async function fetchTeamMembers(
     );
 
     return members;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading team members');
     return [];
   }
@@ -320,7 +283,7 @@ export async function fetchAssetAvailability(
       `${API_ENDPOINTS.MACHINES}/${assetId}/availability?startDate=${startDate}&endDate=${endDate}`,
     );
     return Array.isArray(response) ? response : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading asset availability');
     return [];
   }
@@ -551,7 +514,7 @@ export async function fetchTpmMaintenanceDates(
 
     const seedDates = buildSeedDates(plans);
     return buildEventsMap(plans, seedDates, startDate, endDate);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading TPM maintenance dates');
     return new Map();
   }
@@ -588,7 +551,7 @@ export async function fetchEmployees(
 
     const response = await apiClient.get<Employee[]>(url);
     return Array.isArray(response) ? response : [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading employees');
     return [];
   }
@@ -630,7 +593,7 @@ export async function fetchShiftPlan(
     return await apiClient.get<ShiftPlanResponse>(
       `${API_ENDPOINTS.SHIFTS_PLAN}?${params.toString()}`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading shift plan');
     return null;
   }
@@ -700,7 +663,7 @@ export async function fetchAssignmentCounts(
     return await apiClient.get<AssignmentCount[]>(
       `${API_ENDPOINTS.SHIFTS}/assignment-counts?teamId=${teamId}&referenceDate=${referenceDate}`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading assignment counts');
     return [];
   }
@@ -717,7 +680,7 @@ export async function fetchFavorites(): Promise<ShiftFavorite[]> {
   try {
     // apiClient.get extracts response.data automatically via handleV2Response
     return await apiClient.get<ShiftFavorite[]>(API_ENDPOINTS.FAVORITES);
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading favorites');
     return [];
   }
@@ -743,7 +706,7 @@ export async function saveFavorite(favoriteData: {
       API_ENDPOINTS.FAVORITES,
       favoriteData,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving favorite');
     throw err;
   }
@@ -780,7 +743,7 @@ export async function fetchRotationHistory(
       history?: RotationHistoryEntryAPI[];
     }>(url);
     return response.history ?? [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading rotation history');
     return [];
   }
@@ -797,7 +760,7 @@ export async function fetchActiveRotationPatterns(): Promise<
       `${API_ENDPOINTS.ROTATION_PATTERNS}?active=true`,
     );
     return response.patterns ?? [];
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error loading rotation patterns');
     return [];
   }
@@ -815,7 +778,7 @@ export async function fetchRotationPatternById(
       `${API_ENDPOINTS.ROTATION_PATTERNS}/${patternId}`,
     );
     return response.pattern ?? null;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err, patternId }, 'Error loading rotation pattern');
     return null;
   }

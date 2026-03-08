@@ -488,16 +488,6 @@ export async function updateEscalation(
 // ERROR HELPERS
 // =============================================================================
 
-/** Check if error indicates session expired */
-export function isSessionExpiredError(err: unknown): boolean {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'code' in err &&
-    (err as { code: string }).code === 'SESSION_EXPIRED'
-  );
-}
-
 /** Log API error with context */
 export function logApiError(context: string, err: unknown): void {
   log.error({ err }, `TPM API error: ${context}`);

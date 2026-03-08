@@ -1,13 +1,6 @@
-/**
- * File UUID Param DTO
- *
- * Validates fileUuid path parameter for secure download URLs.
- */
 import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
 
-export const FileUuidParamSchema = z.object({
-  fileUuid: z.uuid(),
-});
+import { createUuidParamSchema } from '../../common/dto/index.js';
 
+export const FileUuidParamSchema = createUuidParamSchema('fileUuid');
 export class FileUuidParamDto extends createZodDto(FileUuidParamSchema) {}

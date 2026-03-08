@@ -66,7 +66,7 @@ export class PartitionManagerService implements OnModuleInit {
 
       // 'p' = partitioned table, 'r' = regular table
       return result.rows[0]?.relkind === 'p';
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Failed to check partitioning status', error);
       return false;
     }
@@ -134,7 +134,7 @@ export class PartitionManagerService implements OnModuleInit {
         `);
 
         this.logger.log(`Created partition: ${partitionName}`);
-      } catch (error) {
+      } catch (error: unknown) {
         // Ignore "already exists" errors (race condition safe)
         if (error instanceof Error && error.message.includes('already exists')) {
           this.logger.debug(`Partition ${partitionName} already exists (concurrent creation)`);

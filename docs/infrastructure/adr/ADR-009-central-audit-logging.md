@@ -342,8 +342,8 @@ export class SecurityLogsService {
         `INSERT INTO security_logs (...) VALUES (...)`,
         [...]
       );
-    } catch (error) {
-      this.logger.warn('Failed to log security event', error);
+    } catch (error: unknown) {
+      this.logger.warn(`Failed to log security event: ${getErrorMessage(error)}`);
     }
   }
 }

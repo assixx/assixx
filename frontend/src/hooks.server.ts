@@ -199,7 +199,7 @@ const authHandle: Handle = async ({ event, resolve }) => {
       { pathname, userRole: userData.role },
       'Auth: User authenticated',
     );
-  } catch (err) {
+  } catch (err: unknown) {
     if (isRedirectError(err)) {
       throw err;
     }
@@ -247,7 +247,7 @@ const requestLoggingHandle: Handle = async ({ event, resolve }) => {
     );
 
     return response;
-  } catch (err) {
+  } catch (err: unknown) {
     const duration = Date.now() - start;
     log.error(
       { method, pathname, duration, err },

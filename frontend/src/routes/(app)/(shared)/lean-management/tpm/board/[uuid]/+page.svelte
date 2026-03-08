@@ -107,6 +107,20 @@
 </svelte:head>
 
 <div class="container">
+  <!-- Back Navigation -->
+  <div class="mb-4">
+    <button
+      type="button"
+      class="btn btn-light"
+      onclick={() => {
+        void goto(resolvePath('/lean-management/tpm'));
+      }}
+    >
+      <i class="fas fa-arrow-left mr-2"></i>
+      {MESSAGES.BTN_BACK_TO_OVERVIEW}
+    </button>
+  </div>
+
   <!-- Page Header -->
   <div class="card">
     <div class="card__header">

@@ -275,7 +275,7 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
       { counts: state.counts },
       `✅ Initial counts loaded: total=${state.counts.total}`,
     );
-  } catch (err) {
+  } catch (err: unknown) {
     log.warn(
       { err },
       'Failed to fetch dashboard counts - SSE will update when connected',

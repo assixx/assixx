@@ -14,6 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
+import { getErrorMessage } from '../common/index.js';
 import {
   getTablesWithTenantId,
   getUserRelatedTables,
@@ -265,15 +266,13 @@ export class TenantDeletionExecutor {
         this.logger.log(`Deleted ${deleted} rows from ${tableName}`);
       }
       return { table: tableName, deleted };
-    } catch (error) {
+    } catch (error: unknown) {
       try {
         await client.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
       } catch {
         // Savepoint might not exist, ignore
       }
-      this.logger.warn(
-        `Skipped ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
-      );
+      this.logger.warn(`Skipped ${tableName}: ${getErrorMessage(error)}`);
       return null;
     }
   }
@@ -336,9 +335,9 @@ export class TenantDeletionExecutor {
         this.logger.log(`Deleted ${deleted} rows from ${tableName}`);
       }
       return { table: tableName, deleted };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Failed to delete from ${tableName}: ${error instanceof Error ? error.message : 'Unknown'}`,
+        `Failed to delete from ${tableName}: ${getErrorMessage(error)}`,
       );
       throw error;
     }
@@ -365,14 +364,14 @@ export class TenantDeletionExecutor {
         await client.query(`RELEASE SAVEPOINT ${savepointName}`);
         this.logger.log(`Cleared user references in ${tableName}`);
         return true;
-      } catch (error) {
+      } catch (error: unknown) {
         try {
           await client.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
         } catch {
           // Ignore rollback errors
         }
         this.logger.warn(
-          `Could not clear ${tableName} user refs: ${error instanceof Error ? error.message : 'Unknown'}`,
+          `Could not clear ${tableName} user refs: ${getErrorMessage(error)}`,
         );
         return false;
       }

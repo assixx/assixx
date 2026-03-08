@@ -5,6 +5,7 @@
  * Each plan belongs to exactly one asset (UNIQUE constraint).
  * Uses tenantTransaction() for mutations, direct queries for reads.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   Injectable,
@@ -65,7 +66,7 @@ export class TpmPlansService {
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active IN (1, 3)`,
+       WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
       [planUuid, tenantId],
     );
 
@@ -87,7 +88,7 @@ export class TpmPlansService {
     const countResult = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_maintenance_plans
-       WHERE tenant_id = $1 AND is_active IN (1, 3)`,
+       WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
       [tenantId],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
@@ -98,7 +99,7 @@ export class TpmPlansService {
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.tenant_id = $1 AND p.is_active IN (1, 3)
+       WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
        ORDER BY p.is_active ASC, p.name ASC
        LIMIT $2 OFFSET $3`,
       [tenantId, pageSize, offset],
@@ -134,7 +135,7 @@ export class TpmPlansService {
               COUNT(*) FILTER (WHERE c.status = 'overdue')::text AS overdue_count
        FROM tpm_cards c
        JOIN tpm_maintenance_plans p ON c.plan_id = p.id
-       WHERE c.tenant_id = $1 AND c.is_active = 1 AND p.is_active = 1
+       WHERE c.tenant_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND p.is_active = ${IS_ACTIVE.ACTIVE}
        GROUP BY p.uuid, c.interval_type
        ORDER BY p.uuid, c.interval_type`,
       [tenantId],
@@ -162,7 +163,7 @@ export class TpmPlansService {
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.asset_id = $1 AND p.tenant_id = $2 AND p.is_active = 1`,
+       WHERE p.asset_id = $1 AND p.tenant_id = $2 AND p.is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetId, tenantId],
     );
 
@@ -264,7 +265,7 @@ export class TpmPlansService {
         params.push(planUuid, tenantId);
         const sql = `UPDATE tpm_maintenance_plans
                      SET ${setClauses.join(', ')}, updated_at = NOW()
-                     WHERE uuid = $${nextParamIndex} AND tenant_id = $${nextParamIndex + 1} AND is_active = 1
+                     WHERE uuid = $${nextParamIndex} AND tenant_id = $${nextParamIndex + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
         const result = await client.query<TpmPlanJoinRow>(sql, params);
@@ -302,7 +303,7 @@ export class TpmPlansService {
 
         await client.query(
           `UPDATE tpm_maintenance_plans
-           SET is_active = 4, updated_at = NOW()
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
           [planUuid, tenantId],
         );
@@ -333,7 +334,7 @@ export class TpmPlansService {
 
         await client.query(
           `UPDATE tpm_maintenance_plans
-           SET is_active = 3, updated_at = NOW()
+           SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
           [planUuid, tenantId],
         );
@@ -380,7 +381,7 @@ export class TpmPlansService {
 
         await client.query(
           `UPDATE tpm_maintenance_plans
-           SET is_active = 1, updated_at = NOW()
+           SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
           [planUuid, tenantId],
         );
@@ -431,7 +432,7 @@ export class TpmPlansService {
   ): Promise<void> {
     const result = await client.query<{ uuid: string }>(
       `SELECT uuid FROM tpm_maintenance_plans
-       WHERE tenant_id = $1 AND asset_id = $2 AND is_active = 1`,
+       WHERE tenant_id = $1 AND asset_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, assetId],
     );
     if (result.rows[0] !== undefined) {
@@ -449,7 +450,7 @@ export class TpmPlansService {
   ): Promise<TpmPlanJoinRow> {
     const result = await client.query<TpmPlanJoinRow>(
       `SELECT * FROM tpm_maintenance_plans
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
        FOR UPDATE`,
       [planUuid, tenantId],
     );
@@ -468,7 +469,7 @@ export class TpmPlansService {
   ): Promise<TpmPlanJoinRow> {
     const result = await client.query<TpmPlanJoinRow>(
       `SELECT * FROM tpm_maintenance_plans
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active IN (1, 3)
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
        FOR UPDATE`,
       [planUuid, tenantId],
     );

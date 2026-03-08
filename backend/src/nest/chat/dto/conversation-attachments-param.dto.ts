@@ -1,18 +1,7 @@
-/**
- * Conversation Attachments Param DTO
- */
-import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
+import type { z } from 'zod';
 
-export const ConversationAttachmentsParamSchema = z.object({
-  id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
-});
+import { IdParamDto, IdParamSchema } from '../../common/dto/index.js';
 
-export class ConversationAttachmentsParamDto extends createZodDto(
-  ConversationAttachmentsParamSchema,
-) {}
-
-// Type export
-export type ConversationAttachmentsParam = z.infer<
-  typeof ConversationAttachmentsParamSchema
->;
+export { IdParamDto as ConversationAttachmentsParamDto };
+export { IdParamSchema as ConversationAttachmentsParamSchema };
+export type ConversationAttachmentsParam = z.infer<typeof IdParamSchema>;

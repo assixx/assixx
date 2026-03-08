@@ -2,132 +2,23 @@
  * Asset Availability History - Server-Side Data Loading
  * @module manage-assets/availability/[uuid]/+page.server
  */
-import { redirect } from '@sveltejs/kit';
-
-import { createLogger } from '$lib/utils/logger';
+import {
+  loadAvailabilityHistory,
+  type AssetAvailabilityEntity,
+} from '$lib/server/availability-history-loader';
 
 import type { PageServerLoad } from './$types';
 
-const log = createLogger('AssetAvailabilityHistory');
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface AssetAvailabilityEntry {
-  id: number;
-  assetId: number;
-  status: string;
-  startDate: string;
-  endDate: string;
-  reason: string | null;
-  notes: string | null;
-  createdBy: number | null;
-  createdByName: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ApiResponseData {
-  asset?: {
-    id: number;
-    uuid: string;
-    name: string;
-  };
-  entries?: AssetAvailabilityEntry[];
-}
-
-interface ApiResponse {
-  success: boolean;
-  data: ApiResponseData;
-}
-
-/** Build API URL with optional year/month filters */
-function buildApiUrl(
-  uuid: string,
-  year: string | null,
-  month: string | null,
-): string {
-  const params = new URLSearchParams();
-  if (year !== null && year !== '') params.set('year', year);
-  if (month !== null && month !== '') params.set('month', month);
-  const query = params.toString();
-  return `${API_BASE}/assets/uuid/${uuid}/availability/history${query !== '' ? `?${query}` : ''}`;
-}
-
-/** Create error response object */
-function errorResponse(
-  error: string,
-  year: string | null,
-  month: string | null,
-) {
-  return {
-    asset: null,
-    entries: [],
-    error,
-    currentYear: year,
-    currentMonth: month,
-  };
-}
-
-/** Map entry to plain serializable object */
-function serializeEntry(e: AssetAvailabilityEntry) {
-  return {
-    id: e.id,
-    assetId: e.assetId,
-    status: e.status,
-    startDate: e.startDate,
-    endDate: e.endDate,
-    reason: e.reason,
-    notes: e.notes,
-    createdBy: e.createdBy,
-    createdByName: e.createdByName,
-    createdAt: e.createdAt,
-    updatedAt: e.updatedAt,
-  };
-}
-
-export const load: PageServerLoad = async ({ cookies, fetch, params, url }) => {
-  const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
-
-  const { uuid } = params;
-  const year = url.searchParams.get('year');
-  const month = url.searchParams.get('month');
-
-  try {
-    const response = await fetch(buildApiUrl(uuid, year, month), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+export const load: PageServerLoad = async (event) => {
+  const { entity, ...rest } =
+    await loadAvailabilityHistory<AssetAvailabilityEntity>(
+      {
+        loggerName: 'AssetAvailabilityHistory',
+        apiPathSegment: 'assets',
+        entityKey: 'asset',
+        errorMessage: 'Fehler beim Laden der Anlagenverfügbarkeitshistorie',
       },
-    });
-
-    if (!response.ok) {
-      log.error(
-        { status: response.status },
-        'Failed to fetch asset availability history',
-      );
-      return errorResponse(
-        'Fehler beim Laden der Anlagenverfügbarkeitshistorie',
-        year,
-        month,
-      );
-    }
-
-    const json = (await response.json()) as ApiResponse;
-    const { data } = json;
-    log.info(
-      { count: data.entries?.length ?? 0 },
-      'Asset availability history loaded',
+      event,
     );
-
-    return {
-      asset: data.asset ?? null,
-      entries: (data.entries ?? []).map(serializeEntry),
-      error: null,
-      currentYear: year,
-      currentMonth: month,
-    };
-  } catch (err) {
-    log.error({ err }, 'Error fetching asset availability history');
-    return errorResponse('Verbindungsfehler', year, month);
-  }
+  return { asset: entity, ...rest };
 };

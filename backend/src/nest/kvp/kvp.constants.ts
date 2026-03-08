@@ -3,6 +3,8 @@
  *
  * Error messages, SQL queries, and static defaults for the KVP module.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
 import type { ExtendedUserOrgInfo } from './kvp.types.js';
 
 export const ERROR_SUGGESTION_NOT_FOUND = 'Suggestion not found';
@@ -26,7 +28,7 @@ export const EMPTY_ORG_INFO: ExtendedUserOrgInfo = {
  */
 export const EXTENDED_ORG_INFO_QUERY = `
   WITH user_data AS (
-    SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = 1
+    SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
   ),
   user_team_ids AS (
     SELECT DISTINCT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2

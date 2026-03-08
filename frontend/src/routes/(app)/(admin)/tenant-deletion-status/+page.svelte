@@ -146,7 +146,7 @@
       await executeModalAction();
       closeConfirmModal();
       await invalidateAll();
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Error in modal action');
       const errorMessage =
         err instanceof Error ? err.message : MESSAGES.genericError;

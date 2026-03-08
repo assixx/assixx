@@ -145,6 +145,131 @@ describe('WorkOrderPhotosService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should accept application/pdf', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.queryOne.mockResolvedValueOnce(
+        makePhotoRow({ mime_type: 'application/pdf', file_name: 'report.pdf' }),
+      );
+
+      const result = await service.addPhoto(10, 5, 'wo-uuid', {
+        ...MOCK_FILE,
+        originalname: 'report.pdf',
+        mimetype: 'application/pdf',
+      });
+
+      expect(result.mimeType).toBe('application/pdf');
+      expect(result.fileName).toBe('report.pdf');
+    });
+
+    it('should accept image/png (regression)', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.queryOne.mockResolvedValueOnce(
+        makePhotoRow({ mime_type: 'image/png', file_name: 'screenshot.png' }),
+      );
+
+      const result = await service.addPhoto(10, 5, 'wo-uuid', {
+        ...MOCK_FILE,
+        originalname: 'screenshot.png',
+        mimetype: 'image/png',
+      });
+
+      expect(result.mimeType).toBe('image/png');
+    });
+
+    it('should accept image/webp (regression)', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.queryOne.mockResolvedValueOnce(
+        makePhotoRow({ mime_type: 'image/webp', file_name: 'photo.webp' }),
+      );
+
+      const result = await service.addPhoto(10, 5, 'wo-uuid', {
+        ...MOCK_FILE,
+        originalname: 'photo.webp',
+        mimetype: 'image/webp',
+      });
+
+      expect(result.mimeType).toBe('image/webp');
+    });
+
+    it('should reject text/html with BadRequestException', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+
+      await expect(
+        service.addPhoto(10, 5, 'wo-uuid', {
+          ...MOCK_FILE,
+          originalname: 'hack.html',
+          mimetype: 'text/html',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject application/zip with BadRequestException', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+
+      await expect(
+        service.addPhoto(10, 5, 'wo-uuid', {
+          ...MOCK_FILE,
+          originalname: 'archive.zip',
+          mimetype: 'application/zip',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject application/javascript with BadRequestException', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+
+      await expect(
+        service.addPhoto(10, 5, 'wo-uuid', {
+          ...MOCK_FILE,
+          originalname: 'script.js',
+          mimetype: 'application/javascript',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject image/svg+xml with BadRequestException', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 42,
+        title: 'Pumpe prüfen',
+        status: 'open',
+      });
+
+      await expect(
+        service.addPhoto(10, 5, 'wo-uuid', {
+          ...MOCK_FILE,
+          originalname: 'icon.svg',
+          mimetype: 'image/svg+xml',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw BadRequestException when photo limit is reached', async () => {
       // resolveWorkOrder
       mockDb.queryOne.mockResolvedValueOnce({

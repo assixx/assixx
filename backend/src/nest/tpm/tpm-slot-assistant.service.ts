@@ -11,6 +11,7 @@
  * All methods are read-only. Uses DatabaseService directly to avoid
  * cross-module coupling (no ShiftsModule/AssetsModule/UsersModule imports).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   Injectable,
@@ -376,7 +377,7 @@ export class TpmSlotAssistantService {
   ): Promise<number> {
     const row = await this.db.queryOne<{ id: number }>(
       `SELECT id FROM assets
-       WHERE uuid = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetUuid, tenantId],
     );
     if (row === null) {
@@ -419,7 +420,7 @@ export class TpmSlotAssistantService {
        WHERE srp.tenant_id = $2
          AND srp.team_id IN (SELECT team_id FROM mt)
          AND srp.starts_at <= $4::date AND srp.ends_at >= $3::date
-         AND srp.is_active = 1
+         AND srp.is_active = ${IS_ACTIVE.ACTIVE}
        UNION ALL
        SELECT s.date::text AS range_start, s.date::text AS range_end
        FROM shifts s
@@ -462,7 +463,7 @@ export class TpmSlotAssistantService {
            WHERE tenant_id = $2
              AND team_id IN (SELECT team_id FROM mt)
              AND starts_at <= $4::date AND ends_at >= $3::date
-             AND is_active = 1
+             AND is_active = ${IS_ACTIVE.ACTIVE}
          ) OR EXISTS (
            SELECT 1 FROM shifts
            WHERE tenant_id = $2
@@ -490,7 +491,7 @@ export class TpmSlotAssistantService {
          AND current_due_date BETWEEN $3::date AND $4::date
          AND status IN ('red', 'overdue')
          AND interval_type NOT IN ('daily', 'weekly')
-         AND is_active = 1
+         AND is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY current_due_date ASC`,
       [assetId, tenantId, startDate, endDate],
     );
@@ -507,7 +508,7 @@ export class TpmSlotAssistantService {
        JOIN users u ON ut.user_id = u.id AND u.tenant_id = ut.tenant_id
        WHERE ut.team_id = $1
          AND ut.tenant_id = $2
-         AND u.is_active = 1
+         AND u.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY u.username ASC`,
       [teamId, tenantId],
     );

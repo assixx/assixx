@@ -1,20 +1,11 @@
-/**
- * User Area Param DTO
- *
- * Validates userId and areaId path parameters.
- */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { idField } from '../../common/dto/index.js';
+
 export const UserAreaParamSchema = z.object({
-  userId: z.coerce
-    .number()
-    .int()
-    .positive('User ID must be a positive integer'),
-  areaId: z.coerce
-    .number()
-    .int()
-    .positive('Area ID must be a positive integer'),
+  userId: idField,
+  areaId: idField,
 });
 
 export class UserAreaParamDto extends createZodDto(UserAreaParamSchema) {}

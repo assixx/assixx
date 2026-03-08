@@ -71,7 +71,7 @@ export async function saveRootUser(
       await apiClient.post(API_ENDPOINTS.USERS, payload);
     }
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error saving user');
     return {
       success: false,
@@ -107,7 +107,7 @@ export async function deleteRootUser(
   try {
     await apiClient.delete(API_ENDPOINTS.user(userId));
     return { success: true, error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ err }, 'Error deleting user');
     return {
       success: false,

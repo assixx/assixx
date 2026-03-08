@@ -9,6 +9,7 @@ import { Global, Logger, Module, type OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
+import { ReadTrackingService } from '../common/services/read-tracking.service.js';
 import { AppConfigService } from '../config/config.service.js';
 import { PG_POOL } from './database.constants.js';
 import { DatabaseService } from './database.service.js';
@@ -63,6 +64,7 @@ export { PG_POOL } from './database.constants.js';
     DatabaseService,
     PartitionHealthService,
     ActivityLoggerService,
+    ReadTrackingService,
     UserRepository,
   ],
   exports: [
@@ -70,6 +72,7 @@ export { PG_POOL } from './database.constants.js';
     DatabaseService,
     PartitionHealthService,
     ActivityLoggerService,
+    ReadTrackingService,
     UserRepository,
   ],
 })

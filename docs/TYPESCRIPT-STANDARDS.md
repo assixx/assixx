@@ -1,7 +1,7 @@
 # Assixx TypeScript Standards
 
-> **Version:** 4.0.0
-> **Updated:** 2026-02-17
+> **Version:** 4.3.0
+> **Updated:** 2026-03-07
 > **Stack:** NestJS 11 + Fastify | SvelteKit 5 | PostgreSQL 17 + `pg`
 > **Based on:** ESLint + Prettier configs, Power of Ten Rules (NASA/JPL)
 > **Validation:** Zod schemas via `nestjs-zod` (NOT class-validator)
@@ -510,7 +510,79 @@ class ValidationError extends Error {
 }
 ```
 
-### 7.3 No `alert`/`confirm`
+### 7.3 Safe Error Message Extraction
+
+`catch` variables are `unknown` (enforced by `useUnknownInCatchVariables`). Never cast with `(error as Error).message` — use the shared utility:
+
+```typescript
+import { getErrorMessage } from '../common/index.js';
+
+// WRONG -- unsafe cast bypasses unknown typing
+try { ... } catch (error: unknown) {
+  this.logger.error(`Failed: ${(error as Error).message}`);
+}
+
+// CORRECT -- safe extraction
+try { ... } catch (error: unknown) {
+  this.logger.error(`Failed: ${getErrorMessage(error)}`);
+}
+```
+
+`getErrorMessage()` lives in `backend/src/nest/common/utils/error.utils.ts` and handles `Error`, `string`, and unknown types safely.
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on `(error as Error)` usage.
+
+### 7.4 `is_active` — Always Use `IS_ACTIVE` Constants
+
+The `is_active` column uses integer codes: `0` = inactive, `1` = active, `3` = archived, `4` = deleted.
+
+**Never** use hardcoded magic numbers. Always import from `@assixx/shared/constants`:
+
+```typescript
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
+// CORRECT — readable, centralized, type-safe
+`SELECT * FROM users WHERE is_active = ${IS_ACTIVE.ACTIVE}`;
+`UPDATE users SET is_active = ${IS_ACTIVE.DELETED} WHERE id = $1`;
+`WHERE is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`;
+`WHERE is_active != ${IS_ACTIVE.DELETED}`;
+
+// WRONG — magic numbers
+`SELECT * FROM users WHERE is_active = 1`;
+`UPDATE users SET is_active = 4 WHERE id = $1`;
+```
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on hardcoded `is_active = N` in production code.
+
+### 7.5 ID Param DTOs — Always Use Factory
+
+Route param DTOs use the centralized factory in `backend/src/nest/common/dto/param.factory.ts`:
+
+```typescript
+// Custom param name — use factory
+import { createZodDto } from 'nestjs-zod';
+
+import { createIdParamSchema } from '../../common/dto/index.js';
+// Compound params — use idField
+import { idField } from '../../common/dto/index.js';
+
+// Standard :id param — re-export from factory
+export { IdParamDto as AssetIdParamDto, IdParamSchema as AssetIdParamSchema } from '../../common/dto/index.js';
+
+export const AdminIdParamSchema = createIdParamSchema('adminId');
+export class AdminIdParamDto extends createZodDto(AdminIdParamSchema) {}
+
+export const CompoundParamSchema = z.object({
+  adminId: idField,
+  departmentId: idField,
+});
+```
+
+**Never:** Inline `z.coerce.number().int().positive()` in param DTOs. Never import `IdSchema` from `common.schema.ts` in param DTOs.
+
+**Enforced by:** Architectural test (`shared/src/architectural.test.ts`) — CI fails on inline ID validation in `*-param.dto.ts` files.
+
+### 7.6 No `alert`/`confirm`
 
 ```typescript
 // CORRECT -- custom UI
@@ -762,9 +834,12 @@ Immediate rejection in code review:
 9. String/number in boolean conditions without explicit checks
 10. Commits with ESLint errors
 11. Catch callbacks without `: unknown`
-12. localStorage/sessionStorage with truthy checks instead of `!== null`
-13. Type assertions (`as`) without `| null` for DOM elements
-14. Dataset values without validation
+12. `(error as Error).message` — use `getErrorMessage(error)` instead
+13. localStorage/sessionStorage with truthy checks instead of `!== null`
+14. Type assertions (`as`) without `| null` for DOM elements
+15. Dataset values without validation
+16. Hardcoded `is_active = 0/1/3/4` magic numbers — use `IS_ACTIVE` from `@assixx/shared/constants`
+17. Inline `z.coerce.number().int().positive()` in param DTOs — use `idField`/`createIdParamSchema` from `common/dto`
 
 ---
 
@@ -836,6 +911,9 @@ Immediate rejection in code review:
 
 | Version | Date       | Changes                                                                                                                            |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                       |
+| 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                       |
+| 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                       |
 | 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog |
 | 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                               |
 | 3.0.0   | 2025-10-xx | PostgreSQL migration, NestJS DI patterns, Zod validation                                                                           |

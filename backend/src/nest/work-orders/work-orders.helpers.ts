@@ -4,6 +4,11 @@
  * Stateless helper functions. No DI, no DB calls, no side effects.
  * Maps DB Row types (snake_case) to API types (camelCase).
  */
+import {
+  buildFullName,
+  toIsoString,
+  toIsoStringOrNull,
+} from '../../utils/db-helpers.js';
 import type {
   SourcePhoto,
   WorkOrder,
@@ -18,16 +23,6 @@ import type {
   WorkOrderWithCountsRow,
 } from './work-orders.types.js';
 import { VALID_STATUS_TRANSITIONS } from './work-orders.types.js';
-
-/** Coerce a Date|string DB value to ISO string */
-export function toIsoString(value: Date | string): string {
-  return typeof value === 'string' ? value : new Date(value).toISOString();
-}
-
-/** Coerce a nullable Date|string DB value to ISO string or null */
-export function toIsoStringOrNull(value: Date | string | null): string | null {
-  return value === null ? null : toIsoString(value);
-}
 
 /** Map work order DB row (with JOINs) to full API response */
 export function mapWorkOrderRowToApi(
@@ -74,6 +69,7 @@ export function mapWorkOrderRowToListItem(
     assigneeNames: row.assignee_names ?? '',
     commentCount: Number(row.comment_count),
     photoCount: Number(row.photo_count),
+    isRead: (row.is_read ?? 0) !== 0,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
   };
@@ -86,7 +82,7 @@ export function mapAssigneeRowToApi(
   return {
     uuid: row.uuid.trim(),
     userId: row.user_id,
-    userName: `${row.first_name} ${row.last_name}`.trim(),
+    userName: buildFullName(row.first_name, row.last_name),
     profilePicture: row.profile_picture ?? null,
     assignedAt: toIsoString(row.assigned_at),
   };
@@ -120,7 +116,7 @@ export function mapPhotoRowToApi(
   return {
     uuid: row.uuid.trim(),
     uploadedBy: row.uploaded_by,
-    uploaderName: `${row.first_name} ${row.last_name}`.trim(),
+    uploaderName: buildFullName(row.first_name, row.last_name),
     filePath: row.file_path,
     fileName: row.file_name,
     fileSize: row.file_size,

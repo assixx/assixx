@@ -10,6 +10,7 @@
  * projected schedule slots and cross-references employee dates against those
  * to determine which intervals each employee covers.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -79,7 +80,7 @@ export class TpmShiftAssignmentsService {
       JOIN tpm_maintenance_plans mp
         ON mp.asset_id = sp.asset_id
        AND mp.tenant_id = sp.tenant_id
-       AND mp.is_active = 1
+       AND mp.is_active = ${IS_ACTIVE.ACTIVE}
       JOIN users u
         ON u.id = s.user_id
        AND u.tenant_id = sp.tenant_id

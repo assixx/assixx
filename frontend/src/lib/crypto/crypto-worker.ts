@@ -479,7 +479,7 @@ function handleEncrypt(
       keyEpoch,
     );
     respond({ requestId, type: 'encrypted', ...encrypted });
-  } catch (err) {
+  } catch (err: unknown) {
     respond({
       requestId,
       type: 'encryptFailed',
@@ -515,7 +515,7 @@ function handleDecrypt(
       keyEpoch,
     );
     respond({ requestId, type: 'decrypted', plaintext });
-  } catch (err) {
+  } catch (err: unknown) {
     respond({
       requestId,
       type: 'decryptFailed',
@@ -592,7 +592,7 @@ async function handleWrapPrivateKey(
         parallelism: DEFAULT_ARGON2_PARAMS.parallelism,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     respond({
       requestId,
       type: 'error',
@@ -662,7 +662,7 @@ async function handleUnwrapPrivateKey(
       publicKey: recoveredPublicKeyB64,
       fingerprint: computeFingerprint(recoveredPublicKeyB64),
     });
-  } catch (err) {
+  } catch (err: unknown) {
     const reason =
       err instanceof Error ? err.message : 'Failed to unwrap private key';
     // "invalid tag" from XChaCha20 = wrong password

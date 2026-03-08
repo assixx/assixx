@@ -6,18 +6,11 @@
  * - Backup: Runs every 6 hours as fallback
  * - Startup: Runs on server start to catch missed jobs
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
 import { DatabaseService } from '../database/database.service.js';
-
-/** Status constants for is_active field */
-const IS_ACTIVE = {
-  INACTIVE: 0,
-  ACTIVE: 1,
-  ARCHIVED: 3,
-  DELETED: 4,
-} as const;
 
 @Injectable()
 export class BlackboardArchiveService implements OnModuleInit {
@@ -87,7 +80,7 @@ export class BlackboardArchiveService implements OnModuleInit {
         this.logger.log(`Archived ${archivedCount} expired blackboard entries`);
       }
       // No log when nothing to archive - reduces noise
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Failed to archive expired entries', error);
     }
   }

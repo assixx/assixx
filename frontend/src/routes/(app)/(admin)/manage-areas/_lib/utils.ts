@@ -2,6 +2,8 @@
 // MANAGE AREAS - UTILITY FUNCTIONS
 // =============================================================================
 
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
 import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
@@ -105,7 +107,9 @@ export function populateFormFromArea(
     capacity: area.capacity ?? null,
     address: area.address ?? '',
     departmentIds: getDepartmentIdsForArea(area.id, departments),
-    isActive: (area.isActive === 4 ? 0 : area.isActive) as FormIsActiveStatus,
+    isActive: (area.isActive === IS_ACTIVE.DELETED ?
+      IS_ACTIVE.INACTIVE
+    : area.isActive) as FormIsActiveStatus,
   };
 }
 

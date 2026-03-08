@@ -12,6 +12,7 @@
  * Depends on: VacationHolidaysService (for cross-year workday splitting)
  * Depends on: VacationSettingsService (for default_annual_days, max_carry_over)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ConflictException,
   Injectable,
@@ -240,7 +241,7 @@ export class VacationEntitlementsService {
         const result = await client.query<VacationEntitlementRow>(
           `UPDATE vacation_entitlements
            SET additional_days = additional_days + $1, updated_at = NOW()
-           WHERE tenant_id = $2 AND user_id = $3 AND year = $4 AND is_active = 1
+           WHERE tenant_id = $2 AND user_id = $3 AND year = $4 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, tenant_id, user_id, year, total_days,
                      carried_over_days, additional_days,
                      carry_over_expires_at, is_active,
@@ -316,7 +317,7 @@ export class VacationEntitlementsService {
         const result = await client.query<VacationEntitlementRow>(
           `UPDATE vacation_entitlements
            SET carried_over_days = $1, carry_over_expires_at = $2, updated_at = NOW()
-           WHERE tenant_id = $3 AND user_id = $4 AND year = $5 AND is_active = 1
+           WHERE tenant_id = $3 AND user_id = $4 AND year = $5 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, tenant_id, user_id, year, total_days,
                      carried_over_days, additional_days,
                      carry_over_expires_at, is_active,
@@ -378,7 +379,7 @@ export class VacationEntitlementsService {
         const result = await client.query<VacationEntitlementRow>(
           `UPDATE vacation_entitlements
            SET ${setClauses.join(', ')}
-           WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = 1
+           WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, tenant_id, user_id, year, total_days,
                      carried_over_days, additional_days,
                      carry_over_expires_at, is_active,
@@ -460,7 +461,7 @@ export class VacationEntitlementsService {
          AND requester_id = $2
          AND status = $3
          AND is_special_leave = false
-         AND is_active = 1
+         AND is_active = ${IS_ACTIVE.ACTIVE}
          AND EXTRACT(YEAR FROM start_date) = $4
          AND EXTRACT(YEAR FROM end_date) = $4`,
       [tenantId, userId, status, year],
@@ -506,7 +507,7 @@ export class VacationEntitlementsService {
          AND requester_id = $2
          AND status = $3
          AND is_special_leave = false
-         AND is_active = 1
+         AND is_active = ${IS_ACTIVE.ACTIVE}
          AND EXTRACT(YEAR FROM start_date) <> EXTRACT(YEAR FROM end_date)
          AND start_date <= $4
          AND end_date >= $5`,
@@ -577,7 +578,7 @@ export class VacationEntitlementsService {
               carry_over_expires_at, is_active,
               created_by, created_at, updated_at
        FROM vacation_entitlements
-       WHERE tenant_id = $1 AND user_id = $2 AND year = $3 AND is_active = 1`,
+       WHERE tenant_id = $1 AND user_id = $2 AND year = $3 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, userId, year],
     );
 
@@ -596,7 +597,7 @@ export class VacationEntitlementsService {
               carry_over_expires_at, is_active,
               created_by, created_at, updated_at
        FROM vacation_entitlements
-       WHERE id = $1 AND tenant_id = $2 AND is_active = 1`,
+       WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
     );
 

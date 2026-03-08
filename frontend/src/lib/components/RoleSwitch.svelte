@@ -7,6 +7,7 @@
     showWarningAlert,
     showErrorAlert,
   } from '$lib/stores/toast';
+  import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
   import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
 
@@ -207,10 +208,6 @@
     return json.data ?? json;
   }
 
-  function getErrorMessage(err: unknown): string {
-    return err instanceof Error ? err.message : 'Fehler beim Rollenwechsel';
-  }
-
   // =============================================================================
   // EVENT HANDLERS
   // =============================================================================
@@ -254,7 +251,7 @@
       const result = await executeRoleSwitch(endpoint, token);
       updateStorageAfterSwitch(result);
       redirectToDashboard(result.user?.activeRole ?? targetRole);
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, 'Role switch error');
       showErrorAlert(getErrorMessage(err));
       isSwitching = false;

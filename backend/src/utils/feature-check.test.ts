@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
-import { FeatureCheck } from './featureCheck.js';
+import { FeatureCheck } from './feature-check.js';
 
 vi.mock('./logger.js', () => ({
   logger: {

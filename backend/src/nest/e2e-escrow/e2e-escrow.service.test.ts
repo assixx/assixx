@@ -8,6 +8,7 @@
  *
  * @see ADR-022 (E2E Key Escrow)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,7 +44,7 @@ const SAMPLE_ROW = {
   blob_version: 1,
   created_at: new Date('2026-02-11T10:00:00Z'),
   updated_at: new Date('2026-02-11T10:00:00Z'),
-  is_active: 1,
+  is_active: IS_ACTIVE.ACTIVE,
 };
 
 // =============================================================
@@ -172,7 +173,7 @@ describe('E2eEscrowService', () => {
         string,
         unknown[],
       ];
-      expect(sql).toContain('is_active = 1');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       expect(params).toEqual([7, 99]);
     });
   });

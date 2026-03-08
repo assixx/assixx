@@ -14,6 +14,7 @@
  * - Entitlements: `max_carry_over_days` + deadline for carry-over calculation
  * - Vacation: `advance_notice_days`, `max_consecutive_days` for request validation
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -113,7 +114,7 @@ export class VacationSettingsService {
               advance_notice_days, max_consecutive_days,
               is_active, created_by, created_at, updated_at
        FROM vacation_settings
-       WHERE tenant_id = $1 AND is_active = 1`,
+       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
 
@@ -185,7 +186,7 @@ export class VacationSettingsService {
     const result = await client.query<VacationSettingsRow>(
       `UPDATE vacation_settings
        SET ${setClauses.join(', ')}
-       WHERE tenant_id = $${tenantParam} AND is_active = 1
+       WHERE tenant_id = $${tenantParam} AND is_active = ${IS_ACTIVE.ACTIVE}
        RETURNING id, tenant_id, default_annual_days, max_carry_over_days,
                  carry_over_deadline_month, carry_over_deadline_day,
                  advance_notice_days, max_consecutive_days,
