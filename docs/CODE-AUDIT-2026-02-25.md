@@ -11,6 +11,7 @@
 **Fixes v9:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #11: Frontend catch-Blöcke typisiert (298 Stellen, 127 Dateien) + zentraler `getErrorMessage` Helper
 **Fixes v10:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #12: WebSocket Zod-Validierung (13 `as`-Casts → 0, 5 Zod-Schemas)
 **Fixes v11:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #13: Shared `db-helpers.ts` Utility (toIsoString, buildFullName, buildSetClause — 11 Dateien refactored)
+**Fixes v12:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #14: SKIPPED (premature abstraction — verifiziert: ~640 LOC statt 1.000+, ~8 LOC/Datei Ersparnis)
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -157,7 +158,7 @@ Limit: 800 Code-Zeilen für `.ts`.
 | ~~Session-Expired-Handling (Frontend)~~    | 15 Dateien   | ~~**15 Dateien**~~  | ~~~675~~          | Ja          | **BEHOBEN v3** |
 | ~~Availability-History-Loader (Frontend)~~ | 4 Dateien    | ~~**4 Dateien**~~   | ~~400+~~          | Ja          | **BEHOBEN v5** |
 | Row-Mapper-Helpers                         | 12+ Services | **18+ Helpers**     | 700+              | Ja          | **↓**          |
-| UI-State-Factories (Frontend)              | 20+ Dateien  | 20+ Dateien         | 1.000+            | Nein        | →              |
+| ~~UI-State-Factories (Frontend)~~          | 20+ Dateien  | ~~**48+ Dateien**~~ | ~~**~640**~~      | **Ja**      | **SKIPPED v12** |
 | ~~ID-Param-DTOs (Backend)~~                | 30+ Dateien  | ~~**36 DTOs**~~     | ~~400+~~          | Ja          | **BEHOBEN v6** |
 | Pagination-Schemas (Backend)               | 20+ DTOs     | **15-20 DTOs**      | 300+              | Ja          | **↑**          |
 | Error-Handling try/catch                   | 51+ Services | 51+ Services        | 1.500+            | Nein        | →              |
@@ -477,6 +478,46 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 ---
 
+#### Maßnahme #14 — UI-State-Factory generisch machen — SKIPPED (2026-03-08)
+
+**Entscheidung:** Bewusst übersprungen — **premature abstraction** (verifiziert).
+
+**Verifikation (5 parallele Analyse-Agents):** Die Duplikation wurde erstmals vollständig verifiziert. Audit-Schätzung war **~40% zu hoch**.
+
+| Audit-Behauptung | Verifiziert |
+|---|---|
+| "20+ Dateien" | **48+ State-Dateien** — mehr als geschätzt, aber gut organisiert |
+| "1.000+ LOC Duplikation" | **~640 LOC** — überschätzt |
+
+**Tatsächliche Duplikation (aufgeschlüsselt):**
+
+| Pattern | Dateien | LOC pro Datei | Total |
+|---------|---------|---------------|-------|
+| Modal State (`show*Modal = $state(false)`) | 42 | 3-8 | ~200 |
+| Loading/Submitting (`try/finally`) | 50+ | 3-5 | ~200 |
+| Search/Filter State | 11-17 | 5-8 | ~100 |
+| CRUD-Handlers (open/close/reset) | 7 manage-* | ~20 | ~140 |
+| **Total abstrahierbarer Boilerplate** | | | **~640** |
+
+**Was eine Abstraktion kosten würde:**
+- Generics für Item-Type, Form-Type, Filter-Type (~30 LOC)
+- Konfigurationsinterface (~40 LOC)
+- Core-Implementation mit Getter/Setter (~80 LOC)
+- Dokumentation + Tests (~100 LOC)
+- **Total: ~250 LOC** → **Netto-Ersparnis: ~390 LOC** auf 50+ Dateien = **~8 Zeilen pro Datei**
+
+**Warum Skip korrekt ist:**
+
+1. **~8 Zeilen Ersparnis pro Datei** rechtfertigt keine generische Abstraktion
+2. **Bestehende Architektur ist bereits die richtige Lösung** — 48 organisierte State-Files mit Composition-Pattern (`state-data`, `state-ui`, `state-form`, `state-dropdowns`)
+3. **Domäne-Varianz ist hoch** — manage-teams hat 3 Form-Felder, manage-assets hat 12+ mit 5 Dropdowns und externer Factory
+4. **Pages müssen sich unabhängig weiterentwickeln** (Assets → QR-Codes, Admins → 2FA)
+5. CLAUDE.md: _"Three similar lines of code is better than a premature abstraction"_
+
+**Kein Handlungsbedarf.** Die bestehende State-Architektur ist bewusst domänenspezifisch und langfristig korrekt.
+
+---
+
 #### Maßnahme #6 — ~~Umsetzungsplan~~ `is_active`-Zentralisierung — ERLEDIGT (2026-03-07)
 
 Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expired (Maßnahme #1): Code-Fix + Docs + Regressions-Schutz.
@@ -506,7 +547,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | 11  | Frontend catch-Blöcke typisieren (298 Stellen) | 15 min  | 127 Dateien typisiert     | **ERLEDIGT** (2026-03-08) |
 | 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren | **ERLEDIGT** (2026-03-08) |
 | 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert  | **ERLEDIGT** (2026-03-08) |
-| 14  | UI-State-Factory generisch machen              | 3h      | 20+ Dateien konsolidiert  | **OFFEN**                 |
+| 14  | ~~UI-State-Factory generisch machen~~          | 3h      | ~~20+ Dateien konsolidiert~~ | **SKIPPED** (2026-03-08)  |
 | 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz         | **ERLEDIGT** (2026-03-07) |
 
 ### Pre-Production
@@ -552,6 +593,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **0 (BEHOBEN)**            | **BEHOBEN** |
 | ID-Param DTOs (Factory-Nutzung)        | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **29/35 (83%)**            | **BEHOBEN** |
 | Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **Shared Utility**         | **BEHOBEN** |
+| UI-State-Factories (Frontend)          | —             | **20+ Dateien**        | —                         | —                          | **SKIPPED (~640 LOC)**     | **SKIPPED** |
 | Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.103 (+2 Arch)**        | **+35**     |
 | RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | **109**                    | **109**                    | →           |
 | RLS-Policies                           | 114           | **173**                | **173**                   | **173**                    | **173**                    | →           |

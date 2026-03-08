@@ -11,27 +11,21 @@
  * @see docs/plans/USER-REPOSITORY-REFACTOR-PLAN.md
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
+import type { IsActiveStatus } from '@assixx/shared/types';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database.service.js';
 
 /**
- * User status codes for is_active field
- *
- * Check if user is active: user.is_active === USER_STATUS.ACTIVE
+ * @deprecated Use `IS_ACTIVE` from `@assixx/shared/constants` directly.
+ * Kept as re-export for backward compatibility with existing consumers.
  */
-export const USER_STATUS = {
-  /** User is inactive (disabled by admin) */
-  INACTIVE: 0,
-  /** User is active and can login */
-  ACTIVE: 1,
-  /** User is archived (historical data preserved) */
-  ARCHIVED: 3,
-  /** User is soft-deleted (should never appear in queries) */
-  DELETED: 4,
-} as const;
+export const USER_STATUS = IS_ACTIVE;
 
-export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
+/**
+ * @deprecated Use `IsActiveStatus` from `@assixx/shared/types` directly.
+ */
+export type UserStatus = IsActiveStatus;
 
 /**
  * Base user fields returned by most queries
@@ -46,7 +40,7 @@ export interface UserBase {
   first_name: string | null;
   last_name: string | null;
   role: string;
-  is_active: UserStatus;
+  is_active: IsActiveStatus;
   position: string | null;
   profile_picture: string | null;
   created_at: Date;
@@ -383,7 +377,10 @@ export class UserRepository {
   }
 
   /** Count users by status (for admin dashboard) */
-  async countByStatus(status: UserStatus, tenantId: number): Promise<number> {
+  async countByStatus(
+    status: IsActiveStatus,
+    tenantId: number,
+  ): Promise<number> {
     const result = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM users
@@ -394,7 +391,9 @@ export class UserRepository {
   }
 
   /** Get all user statuses with counts (for admin dashboard) */
-  async getStatusCounts(tenantId: number): Promise<Map<UserStatus, number>> {
+  async getStatusCounts(
+    tenantId: number,
+  ): Promise<Map<IsActiveStatus, number>> {
     const result = await this.db.query<{ is_active: number; count: string }>(
       `SELECT is_active, COUNT(*) as count
        FROM users
@@ -403,9 +402,12 @@ export class UserRepository {
       [tenantId],
     );
 
-    const counts = new Map<UserStatus, number>();
+    const counts = new Map<IsActiveStatus, number>();
     for (const row of result as { is_active: number; count: string }[]) {
-      counts.set(row.is_active as UserStatus, Number.parseInt(row.count, 10));
+      counts.set(
+        row.is_active as IsActiveStatus,
+        Number.parseInt(row.count, 10),
+      );
     }
     return counts;
   }
