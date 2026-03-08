@@ -212,23 +212,49 @@ export class WorkOrderPhotosService {
     };
   }
 
-  /** Get photos from the source entity (e.g. TPM defect) — read-only */
+  /** Get photos/attachments from the source entity (TPM defect or KVP suggestion) — read-only */
   async getSourcePhotos(
     tenantId: number,
     workOrderUuid: string,
   ): Promise<SourcePhoto[]> {
-    const rows = await this.db.query<SourcePhotoRow>(
-      `SELECT dp.uuid, dp.file_path, dp.file_name,
-              dp.file_size, dp.mime_type, dp.created_at
-       FROM tpm_defect_photos dp
-       JOIN tpm_execution_defects d ON dp.defect_id = d.id
-       JOIN work_orders wo ON wo.source_uuid = d.uuid
-       WHERE wo.uuid = $1 AND wo.tenant_id = $2
-         AND wo.is_active = ${IS_ACTIVE.ACTIVE} AND wo.source_type = 'tpm_defect'
-       ORDER BY dp.sort_order ASC`,
+    const wo = await this.db.queryOne<{
+      source_type: string;
+      source_uuid: string | null;
+    }>(
+      `SELECT source_type, source_uuid FROM work_orders
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [workOrderUuid, tenantId],
     );
-    return rows.map(mapSourcePhotoRowToApi);
+
+    if (wo?.source_uuid === null || wo?.source_uuid === undefined) return [];
+
+    if (wo.source_type === 'tpm_defect') {
+      const rows = await this.db.query<SourcePhotoRow>(
+        `SELECT dp.uuid, dp.file_path, dp.file_name,
+                dp.file_size, dp.mime_type, dp.created_at
+         FROM tpm_defect_photos dp
+         JOIN tpm_execution_defects d ON dp.defect_id = d.id
+         WHERE d.uuid = $1 AND d.tenant_id = $2
+         ORDER BY dp.sort_order ASC`,
+        [wo.source_uuid.trim(), tenantId],
+      );
+      return rows.map(mapSourcePhotoRowToApi);
+    }
+
+    if (wo.source_type === 'kvp_proposal') {
+      const rows = await this.db.query<SourcePhotoRow>(
+        `SELECT ka.file_uuid AS uuid, ka.file_path, ka.file_name,
+                ka.file_size, ka.file_type AS mime_type, ka.uploaded_at AS created_at
+         FROM kvp_attachments ka
+         JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
+         WHERE ks.uuid = $1 AND ks.tenant_id = $2
+         ORDER BY ka.uploaded_at ASC`,
+        [wo.source_uuid.trim(), tenantId],
+      );
+      return rows.map(mapSourcePhotoRowToApi);
+    }
+
+    return [];
   }
 
   // ==========================================================================

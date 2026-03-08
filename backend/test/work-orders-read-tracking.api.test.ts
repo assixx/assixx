@@ -183,14 +183,18 @@ describe('Mark as Read — non-existent UUID', () => {
   });
 });
 
-// ─── Cleanup: Delete Work Order (seq: 7) ────────────────────────────────────
+// ─── Cleanup: Archive Work Order (seq: 7) ────────────────────────────────────
 
-describe('Cleanup: Delete Work Order', () => {
+describe('Cleanup: Archive Work Order', () => {
   it('should return 204 No Content', async () => {
-    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
-      method: 'DELETE',
-      headers: authOnly(auth.authToken),
-    });
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${workOrderUuid}/archive`,
+      {
+        method: 'PATCH',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({}),
+      },
+    );
 
     expect(res.status).toBe(204);
   });

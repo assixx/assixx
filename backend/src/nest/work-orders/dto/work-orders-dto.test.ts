@@ -94,7 +94,7 @@ describe('WorkOrderPrioritySchema', () => {
 // =============================================================
 
 describe('WorkOrderSourceTypeSchema', () => {
-  it.each(['tpm_defect', 'manual'] as const)(
+  it.each(['tpm_defect', 'kvp_proposal', 'manual'] as const)(
     'should accept sourceType=%s',
     (value) => {
       expect(WorkOrderSourceTypeSchema.safeParse(value).success).toBe(true);
@@ -381,6 +381,25 @@ describe('CreateWorkOrderSchema', () => {
         sourceType: 'manual',
       }).success,
     ).toBe(true);
+  });
+
+  it('should accept kvp_proposal with sourceUuid', () => {
+    expect(
+      CreateWorkOrderSchema.safeParse({
+        title: 'KVP: Verbesserung Linie 4',
+        sourceType: 'kvp_proposal',
+        sourceUuid: VALID_UUID,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('should reject kvp_proposal without sourceUuid', () => {
+    expect(
+      CreateWorkOrderSchema.safeParse({
+        title: 'KVP: Verbesserung Linie 4',
+        sourceType: 'kvp_proposal',
+      }).success,
+    ).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -748,7 +767,21 @@ describe('ListWorkOrdersQuerySchema', () => {
     expect(result.status).toBeUndefined();
     expect(result.priority).toBeUndefined();
     expect(result.sourceType).toBeUndefined();
+    expect(result.sourceUuid).toBeUndefined();
     expect(result.assigneeUuid).toBeUndefined();
+  });
+
+  it('should accept sourceUuid filter', () => {
+    const result = ListWorkOrdersQuerySchema.parse({
+      sourceUuid: VALID_UUID,
+    });
+    expect(result.sourceUuid).toBe(VALID_UUID);
+  });
+
+  it('should reject invalid sourceUuid', () => {
+    expect(
+      ListWorkOrdersQuerySchema.safeParse({ sourceUuid: 'not-a-uuid' }).success,
+    ).toBe(false);
   });
 
   it('should accept full query with all filters', () => {
@@ -810,7 +843,7 @@ describe('ListWorkOrdersQuerySchema', () => {
   // sourceType filter
   // -----------------------------------------------------------
 
-  it.each(['tpm_defect', 'manual'] as const)(
+  it.each(['tpm_defect', 'kvp_proposal', 'manual'] as const)(
     'should accept sourceType=%s',
     (sourceType) => {
       expect(ListWorkOrdersQuerySchema.safeParse({ sourceType }).success).toBe(

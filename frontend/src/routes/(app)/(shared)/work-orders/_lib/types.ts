@@ -13,7 +13,7 @@ export type WorkOrderStatus = 'open' | 'in_progress' | 'completed' | 'verified';
 export type WorkOrderPriority = 'low' | 'medium' | 'high';
 
 /** Source that triggered the work order creation */
-export type WorkOrderSourceType = 'tpm_defect' | 'manual';
+export type WorkOrderSourceType = 'tpm_defect' | 'kvp_proposal' | 'manual';
 
 // =============================================================================
 // DOMAIN ENTITIES
@@ -85,12 +85,14 @@ export interface WorkOrder {
   sourceType: WorkOrderSourceType;
   sourceUuid: string | null;
   sourceTitle: string | null;
+  sourceExpectedBenefit: string | null;
   dueDate: string | null;
   createdBy: number;
   createdByName: string;
   assignees: WorkOrderAssignee[];
   commentCount: number;
   photoCount: number;
+  isActive: number;
   completedAt: string | null;
   verifiedAt: string | null;
   verifiedBy: number | null;
@@ -112,6 +114,7 @@ export interface WorkOrderListItem {
   assigneeNames: string;
   commentCount: number;
   photoCount: number;
+  isActive: number;
   isRead: boolean;
   createdAt: string;
   updatedAt: string;

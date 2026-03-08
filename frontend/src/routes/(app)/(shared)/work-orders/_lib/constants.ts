@@ -68,6 +68,7 @@ export const PRIORITY_ICONS: Record<WorkOrderPriority, string> = {
 /** Source type display labels (German) */
 export const SOURCE_TYPE_LABELS: Record<WorkOrderSourceType, string> = {
   tpm_defect: 'TPM-Mangel',
+  kvp_proposal: 'KVP-Vorschlag',
   manual: 'Manuell',
 };
 
@@ -152,7 +153,8 @@ export const MESSAGES = {
   // Buttons
   BTN_CREATE: 'Auftrag erstellen',
   BTN_EDIT: 'Bearbeiten',
-  BTN_DELETE: 'Löschen',
+  BTN_ARCHIVE: 'Archivieren',
+  BTN_RESTORE: 'Wiederherstellen',
   BTN_SAVE: 'Speichern',
   BTN_CANCEL: 'Abbrechen',
   BTN_BACK: 'Zurück',
@@ -243,12 +245,24 @@ export const MESSAGES = {
   MODAL_ATTACHMENTS_HINT: 'PDF, JPG, PNG, WebP — max. 10 MB pro Datei',
   MODAL_SAVING: 'Wird gespeichert...',
 
-  // Delete confirmation
-  DELETE_CONFIRM_TITLE: 'Arbeitsauftrag löschen?',
-  DELETE_CONFIRM_TEXT:
-    'Möchten Sie diesen Arbeitsauftrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
-  DELETE_SUCCESS: 'Arbeitsauftrag erfolgreich gelöscht',
-  DELETE_ERROR: 'Fehler beim Löschen',
+  // Archive confirmation
+  ARCHIVE_CONFIRM_TITLE: 'Arbeitsauftrag archivieren?',
+  ARCHIVE_CONFIRM_TEXT:
+    'Der Arbeitsauftrag wird archiviert und aus der aktiven Ansicht entfernt. Er kann jederzeit wiederhergestellt werden.',
+  ARCHIVE_SUCCESS: 'Arbeitsauftrag erfolgreich archiviert',
+  ARCHIVE_ERROR: 'Fehler beim Archivieren',
+
+  // Restore
+  RESTORE_SUCCESS: 'Arbeitsauftrag erfolgreich wiederhergestellt',
+  RESTORE_ERROR: 'Fehler beim Wiederherstellen',
+
+  // Is-Active filter
+  FILTER_ACTIVE: 'Aktive',
+  FILTER_ARCHIVED: 'Archiviert',
+  FILTER_ALL: 'Alle',
+
+  // Is-Active badge
+  BADGE_ARCHIVED: 'Archiviert',
 
   // Success messages
   SUCCESS_CREATED: 'Arbeitsauftrag erfolgreich erstellt',

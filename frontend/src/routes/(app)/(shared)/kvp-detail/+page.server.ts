@@ -17,6 +17,7 @@ import type {
   Team,
   Area,
   Asset,
+  LinkedWorkOrder,
   PaginatedComments,
 } from './_lib/types';
 
@@ -105,6 +106,39 @@ async function fetchPageData(
   };
 }
 
+interface WorkOrderListItem {
+  uuid: string;
+  title: string;
+  status: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+interface PaginatedWorkOrders {
+  items: WorkOrderListItem[];
+  total: number;
+}
+
+async function fetchLinkedWorkOrders(
+  kvpUuid: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<LinkedWorkOrder[]> {
+  const data = await apiFetch<PaginatedWorkOrders>(
+    `/work-orders?sourceType=kvp_proposal&sourceUuid=${kvpUuid}&limit=10`,
+    token,
+    fetchFn,
+  );
+  if (data === null || !Array.isArray(data.items)) return [];
+  return data.items.map((wo: WorkOrderListItem) => ({
+    uuid: wo.uuid,
+    title: wo.title,
+    status: wo.status,
+    createdByName: wo.createdByName,
+    createdAt: wo.createdAt,
+  }));
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -128,7 +162,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     error(404, 'Vorschlag nicht gefunden');
   }
 
-  const pageData = await fetchPageData(idOrUuid, token, fetch);
+  const [pageData, linkedWorkOrders] = await Promise.all([
+    fetchPageData(idOrUuid, token, fetch),
+    fetchLinkedWorkOrders(suggestion.uuid, token, fetch),
+  ]);
 
-  return { suggestion, ...pageData, currentUser: parentData.user };
+  return {
+    suggestion,
+    ...pageData,
+    linkedWorkOrders,
+    currentUser: parentData.user,
+  };
 };

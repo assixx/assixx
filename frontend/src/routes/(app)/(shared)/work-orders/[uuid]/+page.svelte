@@ -131,6 +131,12 @@
         <h2 class="card__title">{workOrder.title}</h2>
         <div class="detail-header__badges">
           <StatusBadge status={workOrder.status} />
+          {#if workOrder.isActive === 3}
+            <span class="badge badge--secondary">
+              <i class="fas fa-archive"></i>
+              {MESSAGES.BADGE_ARCHIVED}
+            </span>
+          {/if}
         </div>
       </div>
     </div>
@@ -186,13 +192,30 @@
         </div>
       </div>
 
-      <!-- Source Photos (TPM Defect) -->
+      <!-- Expected Benefit (KVP) -->
+      {#if workOrder.sourceExpectedBenefit !== null && workOrder.sourceExpectedBenefit !== ''}
+        <div class="card mb-6">
+          <div class="card__header">
+            <h3 class="card__title">
+              <i class="fas fa-lightbulb mr-2"></i>
+              Erwarteter Nutzen
+            </h3>
+          </div>
+          <div class="card__body">
+            <p class="description-text">{workOrder.sourceExpectedBenefit}</p>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Source Photos / Attachments -->
       {#if sourcePhotos.length > 0}
         <div class="card mb-6">
           <div class="card__header">
             <h3 class="card__title">
               <i class="fas fa-camera mr-2"></i>
-              Quell-Fotos (TPM-Mangel)
+              {workOrder.sourceType === 'kvp_proposal' ?
+                'Quell-Anhänge (KVP-Vorschlag)'
+              : 'Quell-Fotos (TPM-Mangel)'}
               <span class="badge badge--count ml-2">{sourcePhotos.length}</span>
             </h3>
           </div>

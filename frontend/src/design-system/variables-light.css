@@ -94,7 +94,8 @@
 
   /* Stacked section background (Kamishibai board collapsed sections) */
   --color-section-stacked-bg: #f6f8fc;
-  --color-section-header-bg: #eceef2;
+  --color-section-header-bg: #e0e0e0;
+  --color-section-header-bg-hover: #e4e6ea;
   --section-dim-filter: saturate(0.1) opacity(0.9);
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
