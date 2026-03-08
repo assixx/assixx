@@ -21,11 +21,12 @@
   interface Props {
     items: WorkOrderListItem[];
     onedit: (item: WorkOrderListItem) => void;
-    ondelete: (item: WorkOrderListItem) => void;
+    onarchive: (item: WorkOrderListItem) => void;
+    onrestore: (item: WorkOrderListItem) => void;
     onassign: (item: WorkOrderListItem) => void;
   }
 
-  const { items, onedit, ondelete, onassign }: Props = $props();
+  const { items, onedit, onarchive, onrestore, onassign }: Props = $props();
 
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
@@ -70,7 +71,11 @@
             >
               {item.title}
             </a>
-            {#if !item.isRead}
+            {#if item.isActive === 3}
+              <span class="badge badge--sm badge--secondary ml-2"
+                >{MESSAGES.BADGE_ARCHIVED}</span
+              >
+            {:else if !item.isRead}
               <span class="badge badge--sm badge--success ml-2">Neu</span>
             {/if}
           </td>
@@ -140,16 +145,29 @@
               >
                 <i class="fas fa-user-plus"></i>
               </button>
-              <button
-                type="button"
-                class="action-icon action-icon--delete"
-                title={MESSAGES.BTN_DELETE}
-                onclick={() => {
-                  ondelete(item);
-                }}
-              >
-                <i class="fas fa-trash"></i>
-              </button>
+              {#if item.isActive === 3}
+                <button
+                  type="button"
+                  class="action-icon action-icon--success"
+                  title={MESSAGES.BTN_RESTORE}
+                  onclick={() => {
+                    onrestore(item);
+                  }}
+                >
+                  <i class="fas fa-undo"></i>
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  class="action-icon action-icon--warning"
+                  title={MESSAGES.BTN_ARCHIVE}
+                  onclick={() => {
+                    onarchive(item);
+                  }}
+                >
+                  <i class="fas fa-archive"></i>
+                </button>
+              {/if}
             </div>
           </td>
         </tr>

@@ -35,15 +35,18 @@ const BaseSchema = z.object({
 
 type BaseInput = z.output<typeof BaseSchema>;
 
+/** Source types that require a linked entity (sourceUuid) */
+const LINKED_SOURCE_TYPES = new Set(['tpm_defect', 'kvp_proposal']);
+
 export const CreateWorkOrderSchema = BaseSchema.refine(
   (data: BaseInput): boolean => {
-    if (data.sourceType === 'tpm_defect') {
+    if (LINKED_SOURCE_TYPES.has(data.sourceType)) {
       return data.sourceUuid != null;
     }
     return true;
   },
   {
-    message: 'sourceUuid ist erforderlich wenn sourceType "tpm_defect" ist',
+    message: 'sourceUuid ist erforderlich bei verlinkten Quellentypen',
     path: ['sourceUuid'],
   },
 ).refine(
@@ -54,7 +57,7 @@ export const CreateWorkOrderSchema = BaseSchema.refine(
     return true;
   },
   {
-    message: 'sourceUuid darf nur bei sourceType "tpm_defect" gesetzt werden',
+    message: 'sourceUuid darf nur bei verlinkten Quellentypen gesetzt werden',
     path: ['sourceUuid'],
   },
 );

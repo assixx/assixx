@@ -30,6 +30,7 @@
   import AttachmentPreviewModal from './_lib/AttachmentPreviewModal.svelte';
   import CommentsSection from './_lib/CommentsSection.svelte';
   import { STATUS_OPTIONS } from './_lib/constants';
+  import CreateWorkOrderFromKvp from './_lib/CreateWorkOrderFromKvp.svelte';
   import DetailSidebar from './_lib/DetailSidebar.svelte';
   import PhotoGallery from './_lib/PhotoGallery.svelte';
   import RejectionModal from './_lib/RejectionModal.svelte';
@@ -80,6 +81,7 @@
   const areas = $derived(data.areas);
   const assets = $derived(data.assets);
   const currentUser = $derived(data.currentUser);
+  const linkedWorkOrders = $derived(data.linkedWorkOrders);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
   const photoAttachments = $derived(
@@ -437,6 +439,25 @@
   }
 
   // ==========================================================================
+  // WORK ORDER MODAL HANDLERS
+  // ==========================================================================
+
+  let showWoModal = $state(false);
+
+  function handleOpenWoModal(): void {
+    showWoModal = true;
+  }
+
+  function handleCloseWoModal(): void {
+    showWoModal = false;
+  }
+
+  function handleWoSaved(): void {
+    showWoModal = false;
+    void invalidateAll();
+  }
+
+  // ==========================================================================
   // DROPDOWN HANDLERS
   // ==========================================================================
 
@@ -680,6 +701,7 @@
     <!-- Sidebar -->
     <DetailSidebar
       {suggestion}
+      {linkedWorkOrders}
       onopensharemodal={handleOpenShareModal}
       onunshare={handleUnshare}
       onarchive={handleArchive}
@@ -687,11 +709,20 @@
       onconfirm={handleConfirm}
       onunconfirm={handleUnconfirm}
       onopenpreview={openPreview}
+      onopenworkordermodal={handleOpenWoModal}
     />
   </div>
 </div>
 
 <!-- Modal Components -->
+{#if kvpDetailState.isAdmin}
+  <CreateWorkOrderFromKvp
+    show={showWoModal}
+    {suggestion}
+    onclose={handleCloseWoModal}
+    onsaved={handleWoSaved}
+  />
+{/if}
 <ShareModal onconfirm={handleConfirmShare} />
 <RejectionModal
   bind:rejectionReason

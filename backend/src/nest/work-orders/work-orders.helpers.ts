@@ -38,12 +38,14 @@ export function mapWorkOrderRowToApi(
     sourceType: row.source_type,
     sourceUuid: row.source_uuid?.trim() ?? null,
     sourceTitle: null,
+    sourceExpectedBenefit: null,
     dueDate: row.due_date,
     createdBy: row.created_by,
     createdByName: row.created_by_name,
     assignees,
     commentCount: Number(row.comment_count),
     photoCount: Number(row.photo_count),
+    isActive: row.is_active,
     completedAt: toIsoStringOrNull(row.completed_at),
     verifiedAt: toIsoStringOrNull(row.verified_at),
     verifiedBy: row.verified_by,
@@ -69,6 +71,7 @@ export function mapWorkOrderRowToListItem(
     assigneeNames: row.assignee_names ?? '',
     commentCount: Number(row.comment_count),
     photoCount: Number(row.photo_count),
+    isActive: row.is_active,
     isRead: (row.is_read ?? 0) !== 0,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
@@ -136,11 +139,17 @@ export interface SourcePhotoRow {
   created_at: string | Date;
 }
 
+/** Normalize file_path to relative `uploads/...` format for static serving */
+function normalizeFilePath(filePath: string): string {
+  const idx = filePath.indexOf('uploads/');
+  return idx >= 0 ? filePath.slice(idx) : filePath;
+}
+
 /** Map a source photo DB row to API response */
 export function mapSourcePhotoRowToApi(row: SourcePhotoRow): SourcePhoto {
   return {
     uuid: row.uuid.trim(),
-    filePath: row.file_path,
+    filePath: normalizeFilePath(row.file_path),
     fileName: row.file_name,
     fileSize: row.file_size,
     mimeType: row.mime_type,

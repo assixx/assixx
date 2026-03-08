@@ -24,6 +24,14 @@
   const priorityIcon = $derived(PRIORITY_ICONS[workOrder.priority]);
   const sourceLabel = $derived(SOURCE_TYPE_LABELS[workOrder.sourceType]);
 
+  /** URL to the original source entity (only for linked source types with known URL pattern) */
+  const sourceUrl = $derived.by((): string | null => {
+    if (workOrder.sourceUuid === null) return null;
+    if (workOrder.sourceType === 'kvp_proposal')
+      return `/kvp-detail?uuid=${workOrder.sourceUuid}`;
+    return null;
+  });
+
   function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString('de-DE', {
       day: '2-digit',
@@ -58,7 +66,18 @@
   <!-- Quelle -->
   <div class="data-list__item">
     <span class="data-list__label">{MESSAGES.DETAIL_SOURCE}</span>
-    <span class="data-list__value">{sourceLabel}</span>
+    <span class="data-list__value">
+      {sourceLabel}
+      {#if sourceUrl !== null}
+        <a
+          href={sourceUrl}
+          class="source-link"
+        >
+          <i class="fas fa-external-link-alt"></i>
+          Original anzeigen
+        </a>
+      {/if}
+    </span>
   </div>
 
   <!-- Fälligkeitsdatum -->
@@ -109,3 +128,19 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .source-link {
+    display: inline-flex;
+    gap: 0.375rem;
+    align-items: center;
+    margin-left: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+
+  .source-link:hover {
+    text-decoration: underline;
+  }
+</style>

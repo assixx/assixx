@@ -343,6 +343,10 @@ describe('WorkOrderPhotosService', () => {
 
   describe('getSourcePhotos', () => {
     it('should return mapped source photos for tpm_defect', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        source_type: 'tpm_defect',
+        source_uuid: 'defect-uuid-123',
+      });
       mockDb.query.mockResolvedValueOnce([
         {
           uuid: '019caf7b-be0f-70c4-b4e1-6b14d55c5bcd',
@@ -364,7 +368,34 @@ describe('WorkOrderPhotosService', () => {
       expect(result[0]?.mimeType).toBe('image/jpeg');
     });
 
+    it('should return mapped source attachments for kvp_proposal', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        source_type: 'kvp_proposal',
+        source_uuid: 'kvp-uuid-456',
+      });
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: '019c8b73-e82a-7489-8eb3-3824d80c734b',
+          file_path: '/app/backend/uploads/kvp/2/187/photo.jpg',
+          file_name: 'kvp-attachment.jpg',
+          file_size: 14_499,
+          mime_type: 'image/jpeg',
+          created_at: '2026-03-08T14:00:00.000Z',
+        },
+      ]);
+
+      const result = await service.getSourcePhotos(10, 'wo-uuid');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.uuid).toBe('019c8b73-e82a-7489-8eb3-3824d80c734b');
+      expect(result[0]?.fileName).toBe('kvp-attachment.jpg');
+    });
+
     it('should return empty array when no source photos exist', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        source_type: 'tpm_defect',
+        source_uuid: 'defect-uuid-123',
+      });
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.getSourcePhotos(10, 'wo-uuid');
@@ -372,13 +403,24 @@ describe('WorkOrderPhotosService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return empty array for manual work order (no tpm_defect match)', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+    it('should return empty array for manual work order', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        source_type: 'manual',
+        source_uuid: null,
+      });
 
       const result = await service.getSourcePhotos(10, 'manual-wo-uuid');
 
       expect(result).toEqual([]);
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should return empty array when work order not found', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      const result = await service.getSourcePhotos(10, 'nonexistent-uuid');
+
+      expect(result).toEqual([]);
     });
   });
 

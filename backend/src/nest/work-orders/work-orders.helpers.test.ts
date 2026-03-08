@@ -178,12 +178,14 @@ describe('mapWorkOrderRowToApi', () => {
     expect(result.sourceType).toBe('tpm_defect');
     expect(result.sourceUuid).toBe('019c9547-aaaa-771a-b022-111111111111');
     expect(result.sourceTitle).toBeNull();
+    expect(result.sourceExpectedBenefit).toBeNull();
     expect(result.dueDate).toBe('2026-03-10');
     expect(result.createdBy).toBe(5);
     expect(result.createdByName).toBe('Max Müller');
     expect(result.assignees).toHaveLength(1);
     expect(result.commentCount).toBe(3);
     expect(result.photoCount).toBe(1);
+    expect(result.isActive).toBe(IS_ACTIVE.ACTIVE);
     expect(result.completedAt).toBeNull();
     expect(result.verifiedAt).toBeNull();
     expect(result.verifiedBy).toBeNull();
@@ -456,6 +458,45 @@ describe('mapSourcePhotoRowToApi', () => {
     });
     expect(result.mimeType).toBe('image/png');
     expect(result.fileName).toBe('screenshot.png');
+  });
+});
+
+// ============================================================================
+// normalizeFilePath (via mapSourcePhotoRowToApi)
+// ============================================================================
+
+describe('normalizeFilePath (via mapSourcePhotoRowToApi)', () => {
+  const baseRow: SourcePhotoRow = {
+    uuid: 'test-uuid',
+    file_path: '',
+    file_name: 'photo.jpg',
+    file_size: 1000,
+    mime_type: 'image/jpeg',
+    created_at: '2026-03-01T00:00:00.000Z',
+  };
+
+  it('should keep already-relative path unchanged', () => {
+    const result = mapSourcePhotoRowToApi({
+      ...baseRow,
+      file_path: 'uploads/tpm/2/defects/abc/photo.jpg',
+    });
+    expect(result.filePath).toBe('uploads/tpm/2/defects/abc/photo.jpg');
+  });
+
+  it('should strip absolute Docker prefix from KVP path', () => {
+    const result = mapSourcePhotoRowToApi({
+      ...baseRow,
+      file_path: '/app/backend/uploads/kvp/1/abc/photo.jpg',
+    });
+    expect(result.filePath).toBe('uploads/kvp/1/abc/photo.jpg');
+  });
+
+  it('should handle path without uploads/ prefix', () => {
+    const result = mapSourcePhotoRowToApi({
+      ...baseRow,
+      file_path: '/some/other/path/photo.jpg',
+    });
+    expect(result.filePath).toBe('/some/other/path/photo.jpg');
   });
 });
 

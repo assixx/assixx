@@ -101,6 +101,7 @@ export async function fetchWorkOrders(
     priority?: string;
     sourceType?: string;
     assigneeUuid?: string;
+    isActive?: string;
   } = {},
 ): Promise<PaginatedResponse<WorkOrderListItem>> {
   const params = new URLSearchParams();
@@ -142,9 +143,14 @@ export async function updateWorkOrder(
   return await apiClient.patch<WorkOrder>(`/work-orders/${uuid}`, payload);
 }
 
-/** Soft-delete a work order (admin only) */
-export async function deleteWorkOrder(uuid: string): Promise<void> {
-  await apiClient.delete(`/work-orders/${uuid}`);
+/** Archive a work order (admin only) — work orders are never deleted */
+export async function archiveWorkOrder(uuid: string): Promise<void> {
+  await apiClient.patch(`/work-orders/${uuid}/archive`, {});
+}
+
+/** Restore an archived work order back to active (admin only) */
+export async function restoreWorkOrder(uuid: string): Promise<void> {
+  await apiClient.patch(`/work-orders/${uuid}/restore`, {});
 }
 
 // =============================================================================

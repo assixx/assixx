@@ -15,11 +15,18 @@ import {
   WorkOrderStatusSchema,
 } from './common.dto.js';
 
+/** Accepted values for the isActive filter query parameter */
+const IsActiveFilterSchema = z.enum(['active', 'archived', 'all'], {
+  message: 'Ungültiger is_active Filter (active | archived | all)',
+});
+
 export const ListWorkOrdersQuerySchema = z.object({
   status: WorkOrderStatusSchema.optional(),
   priority: WorkOrderPrioritySchema.optional(),
   sourceType: WorkOrderSourceTypeSchema.optional(),
+  sourceUuid: z.uuid().optional(),
   assigneeUuid: z.uuid().optional(),
+  isActive: IsActiveFilterSchema.optional(),
   page: PageSchema,
   limit: LimitSchema,
 });

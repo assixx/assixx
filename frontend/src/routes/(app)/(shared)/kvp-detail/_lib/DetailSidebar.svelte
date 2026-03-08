@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { resolve } from '$app/paths';
+
   import { kvpDetailState } from './state.svelte';
   import {
     getFileIconClass,
@@ -10,10 +12,11 @@
     canUnarchiveSuggestion,
   } from './utils';
 
-  import type { Attachment, KvpSuggestion } from './types';
+  import type { Attachment, KvpSuggestion, LinkedWorkOrder } from './types';
 
   interface Props {
     suggestion: KvpSuggestion;
+    linkedWorkOrders: LinkedWorkOrder[];
     onopensharemodal: () => void;
     onunshare: () => void;
     onarchive: () => void;
@@ -21,10 +24,12 @@
     onconfirm: () => Promise<void>;
     onunconfirm: () => Promise<void>;
     onopenpreview: (attachment: Attachment) => void;
+    onopenworkordermodal: () => void;
   }
 
   const {
     suggestion,
+    linkedWorkOrders,
     onopensharemodal,
     onunshare,
     onarchive,
@@ -32,7 +37,14 @@
     onconfirm,
     onunconfirm,
     onopenpreview,
+    onopenworkordermodal,
   }: Props = $props();
+
+  /** Active (non-verified) work order blocks new creation */
+  const activeWorkOrder = $derived(
+    linkedWorkOrders.find((wo: LinkedWorkOrder) => wo.status !== 'verified') ??
+      null,
+  );
 
   // Loading state for confirm/unconfirm
   let confirming = $state(false);
@@ -130,6 +142,30 @@
     </div>
   {/if}
 
+  <!-- Linked Work Orders -->
+  {#if linkedWorkOrders.length > 0}
+    <div class="sidebar-card card">
+      <h3 class="section-title">
+        <i class="fas fa-clipboard-check"></i>
+        Arbeitsaufträge
+      </h3>
+      <div class="linked-wo-list">
+        {#each linkedWorkOrders as wo (wo.uuid)}
+          <a
+            href={(resolve as (p: string) => string)(`/work-orders/${wo.uuid}`)}
+            class="linked-wo-item"
+          >
+            <div class="linked-wo-item__title truncate">{wo.title}</div>
+            <div class="linked-wo-item__meta">
+              <span>{wo.createdByName}</span>
+              <span>{formatDateTime(wo.createdAt)}</span>
+            </div>
+          </a>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   <!-- Actions (Admin Only) -->
   {#if kvpDetailState.isAdmin}
     <div class="sidebar-card card">
@@ -138,6 +174,22 @@
         Aktionen
       </h3>
       <div class="action-buttons">
+        {#if activeWorkOrder !== null}
+          <div class="alert alert--info alert--sm mb-0">
+            <i class="fas fa-info-circle mr-2"></i>
+            Es existiert bereits ein aktiver Arbeitsauftrag. Erst nach Verifizierung
+            kann ein neuer erstellt werden.
+          </div>
+        {:else}
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={onopenworkordermodal}
+          >
+            <i class="fas fa-clipboard-check"></i>
+            Arbeitsauftrag generieren
+          </button>
+        {/if}
         {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole)}
           <button
             type="button"
@@ -230,6 +282,43 @@
   .attachment-item:hover {
     border-color: var(--primary-color);
     background: var(--glass-bg-active);
+  }
+
+  .linked-wo-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .linked-wo-item {
+    display: block;
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    text-decoration: none;
+    color: inherit;
+    transition:
+      border-color 0.2s,
+      background 0.2s;
+  }
+
+  .linked-wo-item:hover {
+    border-color: var(--primary-color);
+    background: var(--glass-bg-active);
+  }
+
+  .linked-wo-item__title {
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .linked-wo-item__meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
   }
 
   .action-buttons {

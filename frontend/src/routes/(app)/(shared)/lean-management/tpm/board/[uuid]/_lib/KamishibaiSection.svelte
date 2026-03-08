@@ -270,8 +270,7 @@
   }
 
   .kamishibai-section__header:hover {
-    background: var(--color-section-header-bg);
-    filter: brightness(1.03);
+    background: var(--color-section-header-bg-hover);
   }
 
   .kamishibai-section__chevron {
@@ -395,8 +394,7 @@
     transition:
       transform 250ms ease-out,
       z-index 0ms,
-      margin-right 200ms ease-out,
-      margin-top 200ms ease-out;
+      margin-right 200ms ease-out;
   }
 
   .kamishibai-section__cards--stacked :global(.kamishibai-card:last-child) {

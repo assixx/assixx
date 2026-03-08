@@ -1,7 +1,7 @@
 /**
  * Work Orders Service — Unit Tests
  *
- * Tests Core CRUD: create, get, list, listMy, update, delete, getStats.
+ * Tests Core CRUD: create, get, list, listMy, update, archive, restore, getStats.
  * Mock DatabaseService (query, queryOne, tenantTransaction) + ActivityLoggerService.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
@@ -182,6 +182,50 @@ describe('createWorkOrder', () => {
       expect.any(Object),
     );
   });
+
+  it('should reject kvp_proposal when active work order exists for same source', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({
+      uuid: 'existing-wo',
+      status: 'open',
+    });
+
+    await expect(
+      service.createWorkOrder(1, 5, {
+        title: 'KVP: Doppelt',
+        sourceType: 'kvp_proposal',
+        sourceUuid: 'kvp-uuid-123',
+      }),
+    ).rejects.toThrow('Es existiert bereits ein aktiver Arbeitsauftrag');
+  });
+
+  it('should allow kvp_proposal when all linked work orders are verified', async () => {
+    // ensureNoActiveLinkedWorkOrder: no active WO found
+    mockDb.queryOne.mockResolvedValueOnce(null);
+    // createWorkOrder transaction
+    const row = createWorkOrderRow({
+      source_type: 'kvp_proposal',
+      source_uuid: 'kvp-uuid-123',
+    });
+    mockClient.query.mockResolvedValueOnce({ rows: [row] });
+
+    const result = await service.createWorkOrder(1, 5, {
+      title: 'KVP: Neu',
+      sourceType: 'kvp_proposal',
+      sourceUuid: 'kvp-uuid-123',
+    });
+
+    expect(result.uuid).toBeDefined();
+  });
+
+  it('should skip duplicate check for manual work orders', async () => {
+    const row = createWorkOrderRow();
+    mockClient.query.mockResolvedValueOnce({ rows: [row] });
+
+    await service.createWorkOrder(1, 5, { title: 'Manuell' });
+
+    // queryOne should NOT have been called (no ensureNoActiveLinkedWorkOrder)
+    expect(mockDb.queryOne).not.toHaveBeenCalled();
+  });
 });
 
 // ============================================================================
@@ -216,6 +260,37 @@ describe('getWorkOrder', () => {
 
     const result = await service.getWorkOrder(1, 'test-uuid');
     expect(result.assignees).toEqual([]);
+  });
+
+  it('should enrich sourceExpectedBenefit for kvp_proposal', async () => {
+    const row = createWorkOrderRow({
+      source_type: 'kvp_proposal',
+      source_uuid: 'kvp-uuid-123',
+    });
+    // 1st queryOne: work order row
+    mockDb.queryOne.mockResolvedValueOnce(row);
+    // query: assignees
+    mockDb.query.mockResolvedValueOnce([]);
+    // 2nd queryOne: KVP expected_benefit
+    mockDb.queryOne.mockResolvedValueOnce({
+      expected_benefit: 'Reduziert Ausfallzeiten um 20%',
+    });
+
+    const result = await service.getWorkOrder(1, 'test-uuid');
+
+    expect(result.sourceExpectedBenefit).toBe('Reduziert Ausfallzeiten um 20%');
+  });
+
+  it('should not enrich sourceExpectedBenefit for manual work orders', async () => {
+    const row = createWorkOrderRow({ source_type: 'manual' });
+    mockDb.queryOne.mockResolvedValueOnce(row);
+    mockDb.query.mockResolvedValueOnce([]);
+
+    const result = await service.getWorkOrder(1, 'test-uuid');
+
+    expect(result.sourceExpectedBenefit).toBeNull();
+    // Only 1 queryOne call (the WO itself), no KVP enrichment
+    expect(mockDb.queryOne).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -302,6 +377,23 @@ describe('listWorkOrders', () => {
 
     const result = await service.listWorkOrders(1, 5, {});
     expect(result.total).toBe(0);
+  });
+
+  it('should apply sourceUuid filter', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+    mockDb.query.mockResolvedValueOnce([
+      createWorkOrderRow({
+        source_type: 'kvp_proposal',
+        source_uuid: 'kvp-uuid-456',
+      }),
+    ]);
+
+    await service.listWorkOrders(1, 5, { sourceUuid: 'kvp-uuid-456' });
+
+    const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+    expect(countSql).toContain('wo.source_uuid = $');
+    const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+    expect(params).toContain('kvp-uuid-456');
   });
 });
 
@@ -417,42 +509,68 @@ describe('updateWorkOrder', () => {
 });
 
 // ============================================================================
-// deleteWorkOrder
+// archiveWorkOrder
 // ============================================================================
 
-describe('deleteWorkOrder', () => {
-  it(`should soft-delete a work order (is_active = ${IS_ACTIVE.DELETED})`, async () => {
+describe('archiveWorkOrder', () => {
+  it(`should archive a work order (is_active = ${IS_ACTIVE.ARCHIVED})`, async () => {
     mockDb.queryOne.mockResolvedValueOnce({ id: 1, title: 'Test' });
     mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
-    await service.deleteWorkOrder(1, 5, 'test-uuid');
+    await service.archiveWorkOrder(1, 5, 'test-uuid');
 
     const sql = mockClient.query.mock.calls[0]?.[0] as string;
-    expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
+    expect(sql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
   });
 
   it('should throw NotFoundException when work order not found', async () => {
     mockDb.queryOne.mockResolvedValueOnce(null);
 
-    await expect(service.deleteWorkOrder(1, 5, 'unknown')).rejects.toThrow(
+    await expect(service.archiveWorkOrder(1, 5, 'unknown')).rejects.toThrow(
       'Arbeitsauftrag nicht gefunden',
     );
   });
 
-  it('should log activity after deletion', async () => {
+  it('should log activity after archiving', async () => {
     mockDb.queryOne.mockResolvedValueOnce({ id: 1, title: 'Test' });
     mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
-    await service.deleteWorkOrder(1, 5, 'test-uuid');
+    await service.archiveWorkOrder(1, 5, 'test-uuid');
 
-    expect(mockActivityLogger.logDelete).toHaveBeenCalledExactlyOnceWith(
-      1,
-      5,
-      'work_order',
-      1,
-      expect.stringContaining('Test'),
-      expect.objectContaining({ uuid: 'test-uuid' }),
+    expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
+  });
+});
+
+// ============================================================================
+// restoreWorkOrder
+// ============================================================================
+
+describe('restoreWorkOrder', () => {
+  it(`should restore an archived work order (is_active = ${IS_ACTIVE.ACTIVE})`, async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ id: 1, title: 'Test' });
+    mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    await service.restoreWorkOrder(1, 5, 'test-uuid');
+
+    const sql = mockClient.query.mock.calls[0]?.[0] as string;
+    expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
+  });
+
+  it('should throw NotFoundException when archived work order not found', async () => {
+    mockDb.queryOne.mockResolvedValueOnce(null);
+
+    await expect(service.restoreWorkOrder(1, 5, 'unknown')).rejects.toThrow(
+      'Archivierter Arbeitsauftrag nicht gefunden',
     );
+  });
+
+  it('should log activity after restoring', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ id: 1, title: 'Test' });
+    mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    await service.restoreWorkOrder(1, 5, 'test-uuid');
+
+    expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
   });
 });
 
