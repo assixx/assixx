@@ -2,7 +2,7 @@
  * Work Orders Controller
  *
  * REST endpoints for the Arbeitsauftrag-System:
- * - CRUD operations (admin: manage)
+ * - CRUD + archive/restore operations (admin: manage)
  * - Employee view (execute: my orders)
  * - Status transitions, comments, photos, assignees
  *
@@ -222,15 +222,26 @@ export class WorkOrdersController {
     return await this.service.updateWorkOrder(tenantId, user.id, uuid, dto);
   }
 
-  @Delete(':uuid')
+  @Patch(':uuid/archive')
   @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(
+  async archive(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<void> {
-    await this.service.deleteWorkOrder(tenantId, user.id, uuid);
+    await this.service.archiveWorkOrder(tenantId, user.id, uuid);
+  }
+
+  @Patch(':uuid/restore')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async restore(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<void> {
+    await this.service.restoreWorkOrder(tenantId, user.id, uuid);
   }
 
   // ==========================================================================

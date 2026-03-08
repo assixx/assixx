@@ -99,6 +99,21 @@ const TPM_ADMIN_SUBMENU: NavItem[] = [
   },
 ];
 
+/** Work orders submenu for root/admin */
+const WORK_ORDERS_ADMIN_SUBMENU: NavItem[] = [
+  {
+    id: 'work-orders-my',
+    label: 'Meine Arbeitsaufträge',
+    url: '/work-orders',
+    badgeType: 'workOrders',
+  },
+  {
+    id: 'work-orders-admin',
+    label: 'Verwaltung',
+    url: '/work-orders/admin',
+  },
+];
+
 /** KVP + Surveys + TPM submenu for root/admin (includes category management) */
 const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
@@ -266,9 +281,8 @@ export const rootMenuItems: NavItem[] = [
     id: 'work-orders',
     icon: ICONS['clipboard-check'],
     label: 'Arbeitsaufträge',
-    url: '/work-orders/admin',
-    badgeType: 'workOrders',
     featureCode: 'work_orders',
+    submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
     id: 'chat',
@@ -376,9 +390,8 @@ export const adminMenuItems: NavItem[] = [
     id: 'work-orders',
     icon: ICONS['clipboard-check'],
     label: 'Arbeitsaufträge',
-    url: '/work-orders/admin',
-    badgeType: 'workOrders',
     featureCode: 'work_orders',
+    submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
     id: 'shifts',

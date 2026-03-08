@@ -1,12 +1,16 @@
 /**
  * Work Orders Service — Core CRUD
  *
- * Handles creation, retrieval, listing, updating, and soft-deletion
+ * Handles creation, retrieval, listing, updating, and archiving
  * of work orders. All queries use tenant-scoped transactions (ADR-019).
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -73,7 +77,9 @@ interface ListQuery {
   status?: string | undefined;
   priority?: string | undefined;
   sourceType?: string | undefined;
+  sourceUuid?: string | undefined;
   assigneeUuid?: string | undefined;
+  isActive?: string | undefined;
   page?: number | undefined;
   limit?: number | undefined;
 }
@@ -93,10 +99,13 @@ function buildWhereClause(
   forUserId: number | null,
   query: ListQuery,
 ): WhereResult {
-  const conditions: string[] = [
-    'wo.tenant_id = $1',
-    `wo.is_active = ${IS_ACTIVE.ACTIVE}`,
-  ];
+  const isActiveCondition =
+    query.isActive === 'archived' ? `wo.is_active = ${IS_ACTIVE.ARCHIVED}`
+    : query.isActive === 'all' ?
+      `wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`
+    : `wo.is_active = ${IS_ACTIVE.ACTIVE}`;
+
+  const conditions: string[] = ['wo.tenant_id = $1', isActiveCondition];
   const params: unknown[] = [tenantId];
   let idx = 2;
 
@@ -118,6 +127,10 @@ function buildWhereClause(
   if (query.sourceType !== undefined) {
     conditions.push(`wo.source_type = $${idx++}`);
     params.push(query.sourceType);
+  }
+  if (query.sourceUuid !== undefined) {
+    conditions.push(`wo.source_uuid = $${idx++}`);
+    params.push(query.sourceUuid);
   }
   if (query.assigneeUuid !== undefined) {
     conditions.push(
@@ -167,6 +180,10 @@ export class WorkOrdersService {
     userId: number,
     dto: CreateDto,
   ): Promise<WorkOrder> {
+    if (dto.sourceUuid != null && dto.sourceType !== 'manual') {
+      await this.ensureNoActiveLinkedWorkOrder(tenantId, dto.sourceUuid);
+    }
+
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<WorkOrder> => {
         const order = await this.insertWorkOrder(client, tenantId, userId, dto);
@@ -196,7 +213,8 @@ export class WorkOrdersService {
   async getWorkOrder(tenantId: number, uuid: string): Promise<WorkOrder> {
     const row = await this.db.queryOne<WorkOrderWithCountsRow>(
       `${ORDER_SELECT_SQL}
-       WHERE wo.uuid = $1 AND wo.tenant_id = $2 AND wo.is_active = ${IS_ACTIVE.ACTIVE}`,
+       WHERE wo.uuid = $1 AND wo.tenant_id = $2
+         AND wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
       [uuid, tenantId],
     );
 
@@ -212,7 +230,21 @@ export class WorkOrdersService {
       [row.id],
     );
 
-    return mapWorkOrderRowToApi(row, assigneeRows.map(mapAssigneeRowToApi));
+    const workOrder = mapWorkOrderRowToApi(
+      row,
+      assigneeRows.map(mapAssigneeRowToApi),
+    );
+
+    if (row.source_type === 'kvp_proposal' && row.source_uuid !== null) {
+      const kvp = await this.db.queryOne<{ expected_benefit: string | null }>(
+        `SELECT expected_benefit FROM kvp_suggestions
+         WHERE uuid = $1 AND tenant_id = $2`,
+        [row.source_uuid.trim(), tenantId],
+      );
+      workOrder.sourceExpectedBenefit = kvp?.expected_benefit ?? null;
+    }
+
+    return workOrder;
   }
 
   /** List all work orders (admin view) with filters and pagination */
@@ -290,8 +322,8 @@ export class WorkOrdersService {
     return await this.getWorkOrder(tenantId, uuid);
   }
 
-  /** Soft-delete a work order (is_active = 4) */
-  async deleteWorkOrder(
+  /** Archive a work order (is_active = 3) — work orders are never deleted */
+  async archiveWorkOrder(
     tenantId: number,
     userId: number,
     uuid: string,
@@ -309,20 +341,58 @@ export class WorkOrdersService {
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         await client.query(
-          `UPDATE work_orders SET is_active = ${IS_ACTIVE.DELETED}
+          `UPDATE work_orders SET is_active = ${IS_ACTIVE.ARCHIVED}
            WHERE uuid = $1 AND tenant_id = $2`,
           [uuid, tenantId],
         );
       },
     );
 
-    void this.activityLogger.logDelete(
+    void this.activityLogger.logUpdate(
       tenantId,
       userId,
       'work_order',
       row.id,
-      `Arbeitsauftrag "${row.title}" gelöscht`,
+      `Arbeitsauftrag "${row.title}" archiviert`,
       { uuid, title: row.title },
+      { isActive: IS_ACTIVE.ARCHIVED },
+    );
+  }
+
+  /** Restore an archived work order back to active (is_active = 1) */
+  async restoreWorkOrder(
+    tenantId: number,
+    userId: number,
+    uuid: string,
+  ): Promise<void> {
+    const row = await this.db.queryOne<{ id: number; title: string }>(
+      `SELECT id, title FROM work_orders
+       WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ARCHIVED}`,
+      [uuid, tenantId],
+    );
+
+    if (row === null) {
+      throw new NotFoundException('Archivierter Arbeitsauftrag nicht gefunden');
+    }
+
+    await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<void> => {
+        await client.query(
+          `UPDATE work_orders SET is_active = ${IS_ACTIVE.ACTIVE}
+           WHERE uuid = $1 AND tenant_id = $2`,
+          [uuid, tenantId],
+        );
+      },
+    );
+
+    void this.activityLogger.logUpdate(
+      tenantId,
+      userId,
+      'work_order',
+      row.id,
+      `Arbeitsauftrag "${row.title}" wiederhergestellt`,
+      { uuid, title: row.title },
+      { isActive: IS_ACTIVE.ACTIVE },
     );
   }
 
@@ -448,6 +518,26 @@ export class WorkOrdersService {
       }
     }
     return rows;
+  }
+
+  /** Reject creation if an active (non-verified) work order already exists for this source */
+  private async ensureNoActiveLinkedWorkOrder(
+    tenantId: number,
+    sourceUuid: string,
+  ): Promise<void> {
+    const existing = await this.db.queryOne<{ uuid: string; status: string }>(
+      `SELECT uuid, status FROM work_orders
+       WHERE source_uuid = $1 AND tenant_id = $2
+         AND is_active = ${IS_ACTIVE.ACTIVE} AND status != 'verified'
+       LIMIT 1`,
+      [sourceUuid, tenantId],
+    );
+    if (existing !== null) {
+      throw new ConflictException(
+        'Es existiert bereits ein aktiver Arbeitsauftrag für diese Quelle. ' +
+          'Erst nach Verifizierung kann ein neuer erstellt werden.',
+      );
+    }
   }
 
   /** Lock a work order row FOR UPDATE and return it */

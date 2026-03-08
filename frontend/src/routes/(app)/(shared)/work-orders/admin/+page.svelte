@@ -12,7 +12,8 @@
     fetchWorkOrders,
     createWorkOrder,
     updateWorkOrder,
-    deleteWorkOrder,
+    archiveWorkOrder,
+    restoreWorkOrder,
     assignUsers,
     fetchStats,
     uploadPhoto,
@@ -53,16 +54,17 @@
   let clientStats = $state<WorkOrderStats | null>(null);
   let statusFilter = $state('');
   let priorityFilter = $state('');
+  let isActiveFilter = $state('active');
   let currentPage = $state(1);
   let loading = $state(false);
 
   // Modal state
   let showEditModal = $state(false);
   let showAssignModal = $state(false);
-  let showDeleteConfirm = $state(false);
+  let showArchiveConfirm = $state(false);
   let editingItem = $state<WorkOrderListItem | null>(null);
   let assigningItem = $state<WorkOrderListItem | null>(null);
-  let deletingItem = $state<WorkOrderListItem | null>(null);
+  let archivingItem = $state<WorkOrderListItem | null>(null);
   let submitting = $state(false);
   let pendingFiles = $state<File[] | null>(null);
 
@@ -85,9 +87,14 @@
   async function loadWorkOrders(): Promise<void> {
     loading = true;
     try {
-      const filters: { status?: string; priority?: string } = {};
+      const filters: {
+        status?: string;
+        priority?: string;
+        isActive?: string;
+      } = {};
       if (statusFilter !== '') filters.status = statusFilter;
       if (priorityFilter !== '') filters.priority = priorityFilter;
+      if (isActiveFilter !== 'active') filters.isActive = isActiveFilter;
       clientWorkOrders = await fetchWorkOrders(currentPage, 20, filters);
     } catch (err: unknown) {
       logApiError('loadWorkOrders', err);
@@ -120,6 +127,12 @@
     void loadWorkOrders();
   }
 
+  function handleIsActiveFilterChange(value: string): void {
+    isActiveFilter = value;
+    currentPage = 1;
+    void loadWorkOrders();
+  }
+
   function handlePageChange(page: number): void {
     currentPage = page;
     void loadWorkOrders();
@@ -144,18 +157,18 @@
     showAssignModal = true;
   }
 
-  function openDeleteConfirm(item: WorkOrderListItem): void {
-    deletingItem = item;
-    showDeleteConfirm = true;
+  function openArchiveConfirm(item: WorkOrderListItem): void {
+    archivingItem = item;
+    showArchiveConfirm = true;
   }
 
   function closeAllModals(): void {
     showEditModal = false;
     showAssignModal = false;
-    showDeleteConfirm = false;
+    showArchiveConfirm = false;
     editingItem = null;
     assigningItem = null;
-    deletingItem = null;
+    archivingItem = null;
     pendingFiles = null;
   }
 
@@ -223,17 +236,31 @@
     }
   }
 
-  async function handleDelete(): Promise<void> {
-    if (deletingItem === null) return;
+  async function handleArchive(): Promise<void> {
+    if (archivingItem === null) return;
     submitting = true;
     try {
-      await deleteWorkOrder(deletingItem.uuid);
-      showSuccessAlert(MESSAGES.DELETE_SUCCESS);
+      await archiveWorkOrder(archivingItem.uuid);
+      showSuccessAlert(MESSAGES.ARCHIVE_SUCCESS);
       closeAllModals();
       await refreshAll();
     } catch (err: unknown) {
-      logApiError('deleteWorkOrder', err);
-      showErrorAlert(MESSAGES.DELETE_ERROR);
+      logApiError('archiveWorkOrder', err);
+      showErrorAlert(MESSAGES.ARCHIVE_ERROR);
+    } finally {
+      submitting = false;
+    }
+  }
+
+  async function handleRestore(item: WorkOrderListItem): Promise<void> {
+    submitting = true;
+    try {
+      await restoreWorkOrder(item.uuid);
+      showSuccessAlert(MESSAGES.RESTORE_SUCCESS);
+      await refreshAll();
+    } catch (err: unknown) {
+      logApiError('restoreWorkOrder', err);
+      showErrorAlert(MESSAGES.RESTORE_ERROR);
     } finally {
       submitting = false;
     }
@@ -241,9 +268,9 @@
 
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key !== 'Escape') return;
-    if (showDeleteConfirm) {
-      showDeleteConfirm = false;
-      deletingItem = null;
+    if (showArchiveConfirm) {
+      showArchiveConfirm = false;
+      archivingItem = null;
     } else if (showAssignModal) {
       showAssignModal = false;
       assigningItem = null;
@@ -311,6 +338,43 @@
   <div class="card">
     <div class="card__header">
       <div class="filter-bar">
+        <!-- Is-Active toggle (Aktive / Archiviert / Alle) -->
+        <div class="toggle-group">
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={isActiveFilter === 'active'}
+            onclick={() => {
+              handleIsActiveFilterChange('active');
+            }}
+          >
+            <i class="fas fa-clipboard-check"></i>
+            {MESSAGES.FILTER_ACTIVE}
+          </button>
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={isActiveFilter === 'archived'}
+            onclick={() => {
+              handleIsActiveFilterChange('archived');
+            }}
+          >
+            <i class="fas fa-archive"></i>
+            {MESSAGES.FILTER_ARCHIVED}
+          </button>
+          <button
+            type="button"
+            class="toggle-group__btn"
+            class:active={isActiveFilter === 'all'}
+            onclick={() => {
+              handleIsActiveFilterChange('all');
+            }}
+          >
+            <i class="fas fa-list"></i>
+            {MESSAGES.FILTER_ALL}
+          </button>
+        </div>
+
         <!-- Status filter -->
         <div class="toggle-group">
           {#each STATUS_FILTER_OPTIONS as opt (opt.value)}
@@ -367,7 +431,8 @@
         <AdminWorkOrderTable
           items={workOrders.items}
           onedit={openEditModal}
-          ondelete={openDeleteConfirm}
+          onarchive={openArchiveConfirm}
+          onrestore={handleRestore}
           onassign={openAssignModal}
         />
 
@@ -461,28 +526,28 @@
   onsave={handleAssignUsers}
 />
 
-<!-- Delete Confirmation -->
-{#if showDeleteConfirm && deletingItem !== null}
+<!-- Archive Confirmation -->
+{#if showArchiveConfirm && archivingItem !== null}
   <div
-    id="work-order-delete-confirm-modal"
+    id="work-order-archive-confirm-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
     tabindex="-1"
     onclick={() => {
-      showDeleteConfirm = false;
-      deletingItem = null;
+      showArchiveConfirm = false;
+      archivingItem = null;
     }}
     onkeydown={(e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        showDeleteConfirm = false;
-        deletingItem = null;
+        showArchiveConfirm = false;
+        archivingItem = null;
       }
     }}
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
-      class="confirm-modal confirm-modal--danger"
+      class="confirm-modal confirm-modal--warning"
       role="document"
       onclick={(e: MouseEvent) => {
         e.stopPropagation();
@@ -492,36 +557,36 @@
       }}
     >
       <div class="confirm-modal__icon">
-        <i class="fas fa-trash-alt"></i>
+        <i class="fas fa-archive"></i>
       </div>
-      <h3 class="confirm-modal__title">{MESSAGES.DELETE_CONFIRM_TITLE}</h3>
+      <h3 class="confirm-modal__title">{MESSAGES.ARCHIVE_CONFIRM_TITLE}</h3>
       <p class="confirm-modal__message">
-        <strong>{deletingItem.title}</strong><br />
-        {MESSAGES.DELETE_CONFIRM_TEXT}
+        <strong>{archivingItem.title}</strong><br />
+        {MESSAGES.ARCHIVE_CONFIRM_TEXT}
       </p>
       <div class="confirm-modal__actions">
         <button
           type="button"
           class="confirm-modal__btn confirm-modal__btn--cancel"
           onclick={() => {
-            showDeleteConfirm = false;
-            deletingItem = null;
+            showArchiveConfirm = false;
+            archivingItem = null;
           }}
         >
           {MESSAGES.BTN_CANCEL}
         </button>
         <button
           type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
+          class="confirm-modal__btn confirm-modal__btn--warning"
           disabled={submitting}
           onclick={() => {
-            void handleDelete();
+            void handleArchive();
           }}
         >
           {#if submitting}
             <span class="spinner-ring spinner-ring--sm mr-2"></span>
           {/if}
-          {MESSAGES.BTN_DELETE}
+          {MESSAGES.BTN_ARCHIVE}
         </button>
       </div>
     </div>

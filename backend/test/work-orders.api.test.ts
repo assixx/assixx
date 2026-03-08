@@ -310,11 +310,15 @@ describe('Work Orders: Delete Photo (204)', () => {
 });
 
 describe('Work Orders: Photo Test Cleanup', () => {
-  it('should soft-delete the photo test work order (204)', async () => {
-    const res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}`, {
-      method: 'DELETE',
-      headers: authOnly(auth.authToken),
-    });
+  it('should archive the photo test work order (204)', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${photoWorkOrderUuid}/archive`,
+      {
+        method: 'PATCH',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({}),
+      },
+    );
     expect(res.status).toBe(204);
   });
 });
@@ -508,24 +512,30 @@ describe('Work Orders: My Work Orders', () => {
 });
 
 // ============================================================================
-// seq: 10 -- Delete Work Order (last — cleans up test data)
+// seq: 10 -- Archive Work Order (last — cleans up test data)
 // ============================================================================
 
-describe('Work Orders: Delete', () => {
-  it('should soft-delete the work order (204)', async () => {
-    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
-      method: 'DELETE',
-      headers: authOnly(auth.authToken),
-    });
+describe('Work Orders: Archive', () => {
+  it('should archive the work order (204)', async () => {
+    const res = await fetch(
+      `${BASE_URL}/work-orders/${workOrderUuid}/archive`,
+      {
+        method: 'PATCH',
+        headers: authHeaders(auth.authToken),
+        body: JSON.stringify({}),
+      },
+    );
 
     expect(res.status).toBe(204);
   });
 
-  it('should return 404 after deletion', async () => {
+  it('should still be accessible after archiving (isActive=3)', async () => {
     const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}`, {
       headers: authOnly(auth.authToken),
     });
+    const body = (await res.json()) as { data: { isActive: number } };
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(body.data.isActive).toBe(3);
   });
 });

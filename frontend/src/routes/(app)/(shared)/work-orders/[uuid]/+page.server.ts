@@ -70,9 +70,11 @@ async function fetchSourcePhotos(
   token: string,
   fetchFn: typeof fetch,
 ): Promise<SourcePhoto[]> {
-  if (workOrder.sourceType !== 'tpm_defect' || workOrder.sourceUuid === null) {
-    return [];
-  }
+  const hasSourcePhotos =
+    workOrder.sourceUuid !== null &&
+    (workOrder.sourceType === 'tpm_defect' ||
+      workOrder.sourceType === 'kvp_proposal');
+  if (!hasSourcePhotos) return [];
   const result = await apiFetch<SourcePhoto[]>(
     `/work-orders/${uuid}/source-photos`,
     token,

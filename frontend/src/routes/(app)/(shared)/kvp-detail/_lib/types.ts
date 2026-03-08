@@ -170,6 +170,17 @@ export interface Asset {
 }
 
 /**
+ * Linked work order summary (shown on KVP detail page)
+ */
+export interface LinkedWorkOrder {
+  uuid: string;
+  title: string;
+  status: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+/**
  * Share request data
  */
 export interface ShareRequest {

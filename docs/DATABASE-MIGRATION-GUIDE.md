@@ -1,6 +1,6 @@
 # Database Migration Guide - PostgreSQL
 
-> **Last Update:** 2026-01-27
+> **Last Update:** 2026-03-08
 > **Database:** PostgreSQL 17 with Row Level Security (RLS)
 > **Migration Tool:** `node-pg-migrate` 8.x (TypeScript)
 > **Previous Version:** See `DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md` for MySQL guide
@@ -121,6 +121,11 @@ export DB_PORT=5432
 ## Workflow: Creating a New Migration
 
 ### 1. Generate Migration File
+
+> **WICHTIG:** Migrationsdateien IMMER mit dem Generator erstellen — NIEMALS manuell anlegen!
+> Manuelle Dateinamen verwenden kein korrektes UTC-Timestamp-Format (`YYYYMMDDHHmmss`),
+> was zu `Can't determine timestamp` Warnungen bei `node-pg-migrate` führt.
+> Der Generator erzeugt den Timestamp automatisch korrekt.
 
 ```bash
 doppler run -- pnpm run db:migrate:create add-employee-skills
@@ -869,14 +874,66 @@ Siehe ADR-029 für Architekturentscheidungen.
 
 ## is_active Convention
 
-Consistent status values for all tables:
+Soft-delete status system used across all tenant-scoped tables.
 
-| Value | Meaning  | Description                       |
-| ----- | -------- | --------------------------------- |
-| `0`   | inactive | Deactivated, not visible          |
-| `1`   | active   | Active, normally visible          |
-| `3`   | archive  | Archived, only visible via filter |
-| `4`   | deleted  | Soft delete, not visible          |
+### Values
+
+| Value | Constant             | Type             | Description                       |
+| ----- | -------------------- | ---------------- | --------------------------------- |
+| `0`   | `IS_ACTIVE.INACTIVE` | `IsActiveStatus` | Deactivated, not visible          |
+| `1`   | `IS_ACTIVE.ACTIVE`   | `IsActiveStatus` | Active, normally visible          |
+| `3`   | `IS_ACTIVE.ARCHIVED` | `IsActiveStatus` | Archived, only visible via filter |
+| `4`   | `IS_ACTIVE.DELETED`  | `IsActiveStatus` | Soft delete, not visible          |
+
+### Usage — Single Source of Truth
+
+Constants, Types und Labels leben in `@assixx/shared`:
+
+```typescript
+// Constants — IMMER diese verwenden, NIEMALS Magic Numbers
+import { IS_ACTIVE } from '@assixx/shared/constants';
+
+// ✅ Korrekt
+WHERE is_active = ${IS_ACTIVE.ACTIVE}
+WHERE is_active != ${IS_ACTIVE.DELETED}
+
+// ❌ Verboten — Architectural Tests blocken das
+WHERE is_active = 1
+WHERE is_active != 4
+```
+
+```typescript
+// Types
+import type { FormIsActiveStatus, IsActiveStatus } from '@assixx/shared/types';
+
+IsActiveStatus; // 0 | 1 | 3 | 4 — alle DB-Werte
+FormIsActiveStatus; // 0 | 1 | 3     — ohne "deleted" (nie via Formular setzbar)
+StatusFilter; // 'active' | 'inactive' | 'archived' | 'all' — UI-Dropdowns
+```
+
+```typescript
+// UI-Helfer für Labels und Badge-Klassen
+import { FORM_STATUS_OPTIONS, STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
+
+STATUS_LABELS[IS_ACTIVE.ACTIVE]; // → 'Aktiv'
+STATUS_BADGE_CLASSES[IS_ACTIVE.DELETED]; // → 'badge--error'
+```
+
+### Enforcement
+
+Architectural Tests in `shared/src/architectural.test.ts` verhindern:
+
+- Hardcoded `is_active = 0/1/3/4` in Production-Code
+- Hardcoded `is_active != N` und `is_active IN (N, ...)`
+- Lokale `const IS_ACTIVE = ...` Definitionen (Import aus `@assixx/shared` erzwungen)
+
+### Dateien
+
+| Datei                                  | Inhalt                                                                      |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| `shared/src/types/is-active-status.ts` | `IsActiveStatus`, `FormIsActiveStatus`, `StatusFilter`                      |
+| `shared/src/constants/is-active.ts`    | `IS_ACTIVE`, `STATUS_LABELS`, `STATUS_BADGE_CLASSES`, `FORM_STATUS_OPTIONS` |
+| `shared/src/architectural.test.ts`     | Magic-Number-Prevention Tests                                               |
 
 ---
 
@@ -889,3 +946,12 @@ Consistent status values for all tables:
 ---
 
 **Remember:** PostgreSQL with RLS = Watertight multi-tenant isolation at the database level!
+
+---
+
+## Changelog
+
+| Version | Datum      | Änderung                                                                                             |
+| ------- | ---------- | ---------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-27 | Initiale Version — PostgreSQL-Migration von MySQL, kompletter Guide                                  |
+| 1.1     | 2026-03-08 | Best-Practice-Hinweis: Migrationen IMMER via `db:migrate:create` generieren (kein manuelles Anlegen) |
