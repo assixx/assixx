@@ -10,6 +10,7 @@
 **Fixes v8:** 7. März 2026 (Branch `refactor/code-audit`) — Maßnahme #10: SKIPPED (premature abstraction) + Maßnahme #15: kebab-case Rename (7+5 Dateien, 100% Konsistenz)
 **Fixes v9:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #11: Frontend catch-Blöcke typisiert (298 Stellen, 127 Dateien) + zentraler `getErrorMessage` Helper
 **Fixes v10:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #12: WebSocket Zod-Validierung (13 `as`-Casts → 0, 5 Zod-Schemas)
+**Fixes v11:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #13: Shared `db-helpers.ts` Utility (toIsoString, buildFullName, buildSetClause — 11 Dateien refactored)
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -388,13 +389,23 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 **Naming-Konsistenz:** 99% → **100%**. Keine camelCase-Dateinamen mehr in der Codebase.
 
-### 4.4 Row-Mapper Duplikation (NEU in v2 — verifiziert)
+### ~~4.4 Row-Mapper Duplikation~~ — BEHOBEN (2026-03-08)
 
-**18+ Helper-Dateien** mit systematischer Duplikation:
+**Status:** Shared `db-helpers.ts` Utility erstellt. 3 duplizierte Funktionsdefinitionen (`toIsoString`, `toIsoStringOrNull`, `parseIds`/`parseNames`) eliminiert, 2 identische `buildUpdateFields`-Implementierungen durch `buildSetClause` ersetzt, 5 inline fullName-Patterns durch `buildFullName` ersetzt, 8 `new Date(x).toISOString()` durch `toIsoString(x)` ersetzt.
 
-- Jedes Modul hat eigene Helpers: `chat.helpers.ts`, `users.helpers.ts`, `tpm-cards.helpers.ts`, `work-orders.helpers.ts`, etc.
-- Wiederkehrende Patterns: Snake_case → camelCase Conversion (12+×), Null-Safe Concatenation (10+×), Pagination Metadata Builder (7+×)
-- **Kein shared `RowMapper` Utility** vorhanden
+| Vorher                                          | Nachher                                                           |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| 3× lokale `toIsoString` Definitionen            | 1× in `utils/db-helpers.ts`                                       |
+| 3× lokale `toIsoStringOrNull` Definitionen      | 1× in `utils/db-helpers.ts`                                       |
+| 2× lokale `parseIds`/`parseNames` Definitionen  | `parseStringAgg`/`parseStringAggNumbers` in `utils/db-helpers.ts` |
+| 2× identische `buildUpdateFields` (13 LOC each) | `buildSetClause` in `utils/db-helpers.ts`                         |
+| 5× inline fullName-Concatenation                | `buildFullName` in `utils/db-helpers.ts`                          |
+
+**Regressions-Schutz:** 3 Architektur-Tests in `shared/src/architectural.test.ts` prüfen via CI:
+
+- Keine lokalen `toIsoString` Definitionen in `*.helpers.ts`
+- Keine lokalen `toIsoStringOrNull` Definitionen in `*.helpers.ts`
+- Keine lokalen `parseIds`/`parseNames` STRING_AGG Parser in `*.helpers.ts`
 
 ---
 
@@ -494,7 +505,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | --- | ---------------------------------------------- | ------- | ------------------------- | ------------------------- |
 | 11  | Frontend catch-Blöcke typisieren (298 Stellen) | 15 min  | 127 Dateien typisiert     | **ERLEDIGT** (2026-03-08) |
 | 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren | **ERLEDIGT** (2026-03-08) |
-| 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert  | **NEU**                   |
+| 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert  | **ERLEDIGT** (2026-03-08) |
 | 14  | UI-State-Factory generisch machen              | 3h      | 20+ Dateien konsolidiert  | **OFFEN**                 |
 | 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz         | **ERLEDIGT** (2026-03-07) |
 
@@ -540,7 +551,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | `== null`/`!= null` (intentional)      | 14            | ~14                    | ~14                       | ~14                        | ~14                        | →           |
 | WebSocket `as`-Casts                   | 14+           | **13**                 | **13**                    | **13**                     | **0 (BEHOBEN)**            | **BEHOBEN** |
 | ID-Param DTOs (Factory-Nutzung)        | —             | **4/36 (11%)**         | **4/36 (11%)**            | **4/36 (11%)**             | **29/35 (83%)**            | **BEHOBEN** |
-| Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **18+**                    | →           |
+| Row-Mapper Helpers                     | 12+           | **18+**                | **18+**                   | **18+**                    | **Shared Utility**         | **BEHOBEN** |
 | Tests gesamt                           | 4.614         | **5.079**              | **5.085 (+6 Arch)**       | **5.089 (+4 Arch)**        | **6.103 (+2 Arch)**        | **+35**     |
 | RLS-Tabellen                           | 103           | **109** (128 total)    | **109**                   | **109**                    | **109**                    | →           |
 | RLS-Policies                           | 114           | **173**                | **173**                   | **173**                    | **173**                    | →           |
@@ -548,7 +559,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Migrations                             | 61            | **73**                 | **73**                    | **73**                     | **73**                     | →           |
 | camelCase Legacy-Dateien               | 7             | **7**                  | **7**                     | **7**                      | **7**                      | →           |
 | Backend-Module                         | —             | +Work Orders, +Assets  | —                         | —                          | —                          | →           |
-| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **15 Tests (CI-enforced)** | **+1**      |
+| **Architektur-Tests (NEU)**            | —             | —                      | **6 Tests (CI-enforced)** | **10 Tests (CI-enforced)** | **18 Tests (CI-enforced)** | **+3**      |
 
 ---
 
@@ -704,3 +715,28 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | Dokument/Test                      | Was geändert                                  | Zweck                                               |
 | ---------------------------------- | --------------------------------------------- | --------------------------------------------------- |
 | `shared/src/architectural.test.ts` | +1 grep-basierter Test (WebSocket `as`-Casts) | CI verhindert Rückfall in unsichere Type-Assertions |
+
+---
+
+## Anhang: v11 Fix-Log (2026-03-08)
+
+### Geänderter Code (Maßnahme #13: Shared db-helpers Utility)
+
+| Schritt                                   | Dateien geändert                                                     | Neue Dateien                           | LOC Effekt                                            |
+| ----------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------- |
+| Shared Utility erstellt                   | —                                                                    | `backend/src/utils/db-helpers.ts`      | 70 Zeilen (6 Funktionen + 2 Typen)                    |
+| Unit Tests erstellt                       | —                                                                    | `backend/src/utils/db-helpers.test.ts` | 25 Tests                                              |
+| tpm-executions: toIsoString entfernt      | `tpm-executions.helpers.ts`, `.test.ts`, `tpm-executions.service.ts` | —                                      | -8 LOC (3 lokale Funktionszeilen + Import-Änderungen) |
+| work-orders: toIsoString + buildFullName  | `work-orders.helpers.ts`, `.test.ts`                                 | —                                      | -10 LOC (Funktionen + 2 inline Patterns)              |
+| dummy-users: toIsoString + parseIds/Names | `dummy-users.helpers.ts`                                             | —                                      | -12 LOC (3 Funktionsdefinitionen)                     |
+| tpm-plans: toIsoString + buildSetClause   | `tpm-plans.helpers.ts`                                               | —                                      | -16 LOC (inline Ternaries + Update-Builder-Body)      |
+| tpm-cards: toIsoString + buildSetClause   | `tpm-cards.helpers.ts`                                               | —                                      | -16 LOC (inline Ternaries + Update-Builder-Body)      |
+| assets: toIsoString für 8 Date-Felder     | `assets.helpers.ts`                                                  | —                                      | 8× `new Date(x).toISOString()` → `toIsoString(x)`     |
+| chat: buildFullName für 3 Stellen         | `chat.helpers.ts`                                                    | —                                      | 3× inline fullName Pattern eliminiert                 |
+| survey-responses: buildFullName           | `survey-responses.service.ts`                                        | —                                      | 1× inline fullName Pattern eliminiert                 |
+
+### Regressions-Schutz (Enforcement)
+
+| Dokument/Test                      | Was geändert                                                                 | Zweck                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `shared/src/architectural.test.ts` | +3 grep-basierte Tests (toIsoString, toIsoStringOrNull, parseIds/parseNames) | CI verhindert Rückfall in lokale Helper-Definitionen |

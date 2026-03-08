@@ -1,13 +1,13 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
+import { toIsoString } from '../../utils/db-helpers.js';
 import {
   type TpmExecutionJoinRow,
   mapDefectPhotoRowToApi,
   mapDefectRowToApi,
   mapExecutionRowToApi,
   mapPhotoRowToApi,
-  toIsoString,
 } from './tpm-executions.helpers.js';
 import type {
   TpmCardExecutionPhotoRow,

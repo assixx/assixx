@@ -4,6 +4,7 @@
  * Stateless helper functions extracted from AssetsService.
  * No DI, no DB calls, no side effects.
  */
+import { toIsoString } from '../../utils/db-helpers.js';
 import type {
   AssetCreateRequest,
   AssetFilters,
@@ -117,15 +118,15 @@ export function buildAssetStringFields(
 export function buildAssetDateFields(row: DbAssetRow): Partial<AssetResponse> {
   const fields: Partial<AssetResponse> = {};
   if (row.purchase_date !== null)
-    fields.purchaseDate = new Date(row.purchase_date).toISOString();
+    fields.purchaseDate = toIsoString(row.purchase_date);
   if (row.installation_date !== null)
-    fields.installationDate = new Date(row.installation_date).toISOString();
+    fields.installationDate = toIsoString(row.installation_date);
   if (row.warranty_until !== null)
-    fields.warrantyUntil = new Date(row.warranty_until).toISOString();
+    fields.warrantyUntil = toIsoString(row.warranty_until);
   if (row.last_maintenance !== null)
-    fields.lastMaintenance = new Date(row.last_maintenance).toISOString();
+    fields.lastMaintenance = toIsoString(row.last_maintenance);
   if (row.next_maintenance !== null)
-    fields.nextMaintenance = new Date(row.next_maintenance).toISOString();
+    fields.nextMaintenance = toIsoString(row.next_maintenance);
   return fields;
 }
 
@@ -177,8 +178,8 @@ export function mapDbAssetToApi(row: DbAssetRow): AssetResponse {
     name: row.name,
     assetType: row.asset_type,
     status: row.status,
-    createdAt: new Date(row.created_at).toISOString(),
-    updatedAt: new Date(row.updated_at).toISOString(),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
     isActive: Boolean(row.is_active),
     // Availability defaults — overwritten by controller via addAvailabilityInfo()
     availabilityStatus: null,
@@ -212,9 +213,7 @@ export function buildMaintenanceDetailFields(
   if (row.created_by_name !== undefined)
     fields.createdByName = row.created_by_name;
   if (row.next_maintenance_date !== null)
-    fields.nextMaintenanceDate = new Date(
-      row.next_maintenance_date,
-    ).toISOString();
+    fields.nextMaintenanceDate = toIsoString(row.next_maintenance_date);
   return fields;
 }
 
@@ -243,9 +242,9 @@ export function mapMaintenanceToApi(
     tenantId: row.tenant_id,
     assetId: row.asset_id,
     maintenanceType: row.maintenance_type,
-    performedDate: new Date(row.performed_date).toISOString(),
+    performedDate: toIsoString(row.performed_date),
     statusAfter: row.status_after,
-    createdAt: new Date(row.created_at).toISOString(),
+    createdAt: toIsoString(row.created_at),
     ...buildMaintenanceDetailFields(row),
     ...buildMaintenanceNumericFields(row),
   };

@@ -7,6 +7,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { describe, expect, it } from 'vitest';
 
+import { toIsoString, toIsoStringOrNull } from '../../utils/db-helpers.js';
 import {
   type SourcePhotoRow,
   isValidStatusTransition,
@@ -16,8 +17,6 @@ import {
   mapSourcePhotoRowToApi,
   mapWorkOrderRowToApi,
   mapWorkOrderRowToListItem,
-  toIsoString,
-  toIsoStringOrNull,
 } from './work-orders.helpers.js';
 import type {
   WorkOrderAssigneeWithNameRow,

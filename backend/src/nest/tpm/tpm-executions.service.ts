@@ -19,6 +19,7 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { toIsoString } from '../../utils/db-helpers.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CompleteCardDto } from './dto/complete-card.dto.js';
@@ -29,7 +30,6 @@ import {
   mapDefectRowToApi,
   mapExecutionRowToApi,
   mapPhotoRowToApi,
-  toIsoString,
 } from './tpm-executions.helpers.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';

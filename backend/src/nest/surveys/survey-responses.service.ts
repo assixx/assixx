@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
+import { buildFullName } from '../../utils/db-helpers.js';
 import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -499,8 +500,11 @@ export class SurveyResponsesService {
 
   /** Transforms export rows to CSV string array format */
   private transformExportRow(row: ExportRow): string[] {
-    const fullName = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim();
-    const userName = fullName !== '' ? fullName : (row.username ?? '');
+    const userName = buildFullName(
+      row.first_name,
+      row.last_name,
+      row.username ?? '',
+    );
     const completed = row.completed_at !== null ? String(row.completed_at) : '';
     const answer = String(
       row.answer_text ??

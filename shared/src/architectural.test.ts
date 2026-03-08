@@ -14,6 +14,7 @@
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Session-Expired Handling)
  *   - docs/CODE-OF-CONDUCT-SVELTE.md (Frontend catch-block typing)
  *   - docs/CODE-AUDIT-2026-02-25.md Maßnahme #12 (WebSocket Zod validation)
+ *   - docs/CODE-AUDIT-2026-02-25.md Maßnahme #13 (Shared db-helpers utility)
  */
 import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
@@ -273,6 +274,47 @@ describe('Frontend: Session-Expired Centralization', () => {
     expect(
       violations,
       `Found direct goto('/login?session=expired') outside centralized utility. Use handleSessionExpired() from $lib/utils/session-expired.js instead:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+describe('Backend: Shared db-helpers (Maßnahme #13)', () => {
+  it('should not define local toIsoString functions in helper files', () => {
+    const matches = grepFiles(
+      'function toIsoString',
+      'backend/src/nest',
+      '*.helpers.ts',
+    );
+
+    expect(
+      matches,
+      `Found local toIsoString definition. Import from utils/db-helpers.js instead:\n${matches.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not define local toIsoStringOrNull functions in helper files', () => {
+    const matches = grepFiles(
+      'function toIsoStringOrNull',
+      'backend/src/nest',
+      '*.helpers.ts',
+    );
+
+    expect(
+      matches,
+      `Found local toIsoStringOrNull definition. Import from utils/db-helpers.js instead:\n${matches.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('should not define local parseIds/parseNames STRING_AGG parsers in helper files', () => {
+    const matches = grepFiles(
+      'function parseIds|function parseNames',
+      'backend/src/nest',
+      '*.helpers.ts',
+    );
+
+    expect(
+      matches,
+      `Found local STRING_AGG parser. Import parseStringAgg/parseStringAggNumbers from utils/db-helpers.js instead:\n${matches.join('\n')}`,
     ).toEqual([]);
   });
 });

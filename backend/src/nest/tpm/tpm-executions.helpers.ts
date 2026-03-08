@@ -4,6 +4,7 @@
  * Stateless helper functions. No DI, no DB calls, no side effects.
  * Follows tpm-plans.helpers.ts / tpm-cards.helpers.ts pattern.
  */
+import { toIsoString, toIsoStringOrNull } from '../../utils/db-helpers.js';
 import type {
   TpmCardExecution,
   TpmCardExecutionPhotoRow,
@@ -15,16 +16,6 @@ import type {
   TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
-
-/** Coerce a Date|string DB value to ISO string */
-export function toIsoString(value: Date | string): string {
-  return typeof value === 'string' ? value : new Date(value).toISOString();
-}
-
-/** Coerce a nullable Date|string DB value to ISO string or null */
-function toIsoStringOrNull(value: Date | string | null): string | null {
-  return value === null ? null : toIsoString(value);
-}
 
 /** Extended row type including JOIN columns from related tables */
 export interface TpmExecutionJoinRow extends TpmCardExecutionRow {
