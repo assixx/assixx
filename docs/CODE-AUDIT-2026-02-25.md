@@ -11,7 +11,7 @@
 **Fixes v9:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #11: Frontend catch-Blöcke typisiert (298 Stellen, 127 Dateien) + zentraler `getErrorMessage` Helper
 **Fixes v10:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #12: WebSocket Zod-Validierung (13 `as`-Casts → 0, 5 Zod-Schemas)
 **Fixes v11:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #13: Shared `db-helpers.ts` Utility (toIsoString, buildFullName, buildSetClause — 11 Dateien refactored)
-**Fixes v12:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #14: SKIPPED (premature abstraction — verifiziert: ~640 LOC statt 1.000+, ~8 LOC/Datei Ersparnis)
+**Fixes v12:** 8. März 2026 (Branch `refactor/code-audit`) — Maßnahme #14: SKIPPED (premature abstraction) + Maßnahme #16: CSP war bereits nonce-basiert in SvelteKit (redundante `unsafe-inline` aus Backend entfernt)
 **Auditor:** Claude Opus 4.6 (10 parallele Verifikations-Agents)
 **Scope:** Gesamte Codebase (`backend/src/`, `frontend/src/`)
 **Verifiziert:** Unabhängige Gegenprüfung aller Metriken gegen aktuelle Codebase
@@ -152,17 +152,17 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 **v6-Update:** Geschätzte Gesamtduplikation von ~5.900 auf ~5.500 Zeilen reduziert — ID-Param-DTO-Factory (~400 LOC Duplikation → Factory + Slim Re-Exports, ~236 LOC eliminiert).
 
-| Duplikat                                   | v1 Instanzen | v2 Instanzen        | Geschätzte Zeilen | Verifiziert | Trend          |
-| ------------------------------------------ | ------------ | ------------------- | ----------------- | ----------- | -------------- |
-| ~~SQL `is_active` Magic Numbers (alle)~~   | 158 Stellen  | ~~**466 Stellen**~~ | ~~**5.000+**~~    | Ja          | **BEHOBEN v4** |
-| ~~Session-Expired-Handling (Frontend)~~    | 15 Dateien   | ~~**15 Dateien**~~  | ~~~675~~          | Ja          | **BEHOBEN v3** |
-| ~~Availability-History-Loader (Frontend)~~ | 4 Dateien    | ~~**4 Dateien**~~   | ~~400+~~          | Ja          | **BEHOBEN v5** |
-| Row-Mapper-Helpers                         | 12+ Services | **18+ Helpers**     | 700+              | Ja          | **↓**          |
+| Duplikat                                   | v1 Instanzen | v2 Instanzen        | Geschätzte Zeilen | Verifiziert | Trend           |
+| ------------------------------------------ | ------------ | ------------------- | ----------------- | ----------- | --------------- |
+| ~~SQL `is_active` Magic Numbers (alle)~~   | 158 Stellen  | ~~**466 Stellen**~~ | ~~**5.000+**~~    | Ja          | **BEHOBEN v4**  |
+| ~~Session-Expired-Handling (Frontend)~~    | 15 Dateien   | ~~**15 Dateien**~~  | ~~~675~~          | Ja          | **BEHOBEN v3**  |
+| ~~Availability-History-Loader (Frontend)~~ | 4 Dateien    | ~~**4 Dateien**~~   | ~~400+~~          | Ja          | **BEHOBEN v5**  |
+| Row-Mapper-Helpers                         | 12+ Services | **18+ Helpers**     | 700+              | Ja          | **↓**           |
 | ~~UI-State-Factories (Frontend)~~          | 20+ Dateien  | ~~**48+ Dateien**~~ | ~~**~640**~~      | **Ja**      | **SKIPPED v12** |
-| ~~ID-Param-DTOs (Backend)~~                | 30+ Dateien  | ~~**36 DTOs**~~     | ~~400+~~          | Ja          | **BEHOBEN v6** |
-| Pagination-Schemas (Backend)               | 20+ DTOs     | **15-20 DTOs**      | 300+              | Ja          | **↑**          |
-| Error-Handling try/catch                   | 51+ Services | 51+ Services        | 1.500+            | Nein        | →              |
-| Constants/Types verstreut                  | 73+ Dateien  | **50-70 Dateien**   | 1.500+            | Teilweise   | **↑**          |
+| ~~ID-Param-DTOs (Backend)~~                | 30+ Dateien  | ~~**36 DTOs**~~     | ~~400+~~          | Ja          | **BEHOBEN v6**  |
+| Pagination-Schemas (Backend)               | 20+ DTOs     | **15-20 DTOs**      | 300+              | Ja          | **↑**           |
+| Error-Handling try/catch                   | 51+ Services | 51+ Services        | 1.500+            | Nein        | →               |
+| Constants/Types verstreut                  | 73+ Dateien  | **50-70 Dateien**   | 1.500+            | Teilweise   | **↑**           |
 
 ---
 
@@ -276,19 +276,20 @@ Limit: 800 Code-Zeilen für `.ts`.
 
 ---
 
-### 2.3 TODO-Kommentare (~~5~~ 4 Stück)
+### 2.3 TODO-Kommentare (~~5~~ ~~4~~ 3 Stück)
 
 Per Kaizen-Manifest: _"About to type `// TODO:` — Implement IMMEDIATELY"_
 
 **v3 (2026-03-07): 4 statt 5 — `root-deletion.service.ts` TODO implementiert (tenantId + UserRepository).**
+**v12 (2026-03-08): 3 statt 4 — `main.ts` CSP-TODO entfernt (war bereits nonce-basiert in SvelteKit).**
 
-| Datei                             | Zeile   | Inhalt                             | Priorität                 |
-| --------------------------------- | ------- | ---------------------------------- | ------------------------- |
-| ~~`root-deletion.service.ts`~~    | ~~257~~ | ~~`TODO: Add tenantId parameter`~~ | **ERLEDIGT** (2026-03-07) |
-| `main.ts`                         | 83      | `TODO: Implement nonce-based CSP`  | Pre-Production            |
-| `storage-upgrade/+page.svelte`    | 151     | `TODO: Get actual used storage`    | Pre-Production            |
-| `storage-upgrade/+page.server.ts` | 85      | `TODO: Get actual used storage`    | Pre-Production            |
-| `survey-results/+page.svelte`     | 104     | `TODO: Implement PDF export`       | Pre-Production            |
+| Datei                             | Zeile   | Inhalt                                | Priorität                                                          |
+| --------------------------------- | ------- | ------------------------------------- | ------------------------------------------------------------------ |
+| ~~`root-deletion.service.ts`~~    | ~~257~~ | ~~`TODO: Add tenantId parameter`~~    | **ERLEDIGT** (2026-03-07)                                          |
+| ~~`main.ts`~~                     | ~~83~~  | ~~`TODO: Implement nonce-based CSP`~~ | **ERLEDIGT** (2026-03-08) — war bereits in SvelteKit implementiert |
+| `storage-upgrade/+page.svelte`    | 151     | `TODO: Get actual used storage`       | → `docs/PRE-PRODUCTION-TODO.md` #17                                |
+| `storage-upgrade/+page.server.ts` | 85      | `TODO: Get actual used storage`       | → `docs/PRE-PRODUCTION-TODO.md` #17                                |
+| `survey-results/+page.svelte`     | 104     | `TODO: Implement PDF export`          | → `docs/PRE-PRODUCTION-TODO.md` #18                                |
 
 ---
 
@@ -484,22 +485,23 @@ Alle **179** `eslint-disable`-Comments haben jetzt korrekte Begründungen (**100
 
 **Verifikation (5 parallele Analyse-Agents):** Die Duplikation wurde erstmals vollständig verifiziert. Audit-Schätzung war **~40% zu hoch**.
 
-| Audit-Behauptung | Verifiziert |
-|---|---|
-| "20+ Dateien" | **48+ State-Dateien** — mehr als geschätzt, aber gut organisiert |
-| "1.000+ LOC Duplikation" | **~640 LOC** — überschätzt |
+| Audit-Behauptung         | Verifiziert                                                      |
+| ------------------------ | ---------------------------------------------------------------- |
+| "20+ Dateien"            | **48+ State-Dateien** — mehr als geschätzt, aber gut organisiert |
+| "1.000+ LOC Duplikation" | **~640 LOC** — überschätzt                                       |
 
 **Tatsächliche Duplikation (aufgeschlüsselt):**
 
-| Pattern | Dateien | LOC pro Datei | Total |
-|---------|---------|---------------|-------|
-| Modal State (`show*Modal = $state(false)`) | 42 | 3-8 | ~200 |
-| Loading/Submitting (`try/finally`) | 50+ | 3-5 | ~200 |
-| Search/Filter State | 11-17 | 5-8 | ~100 |
-| CRUD-Handlers (open/close/reset) | 7 manage-* | ~20 | ~140 |
-| **Total abstrahierbarer Boilerplate** | | | **~640** |
+| Pattern                                    | Dateien     | LOC pro Datei | Total    |
+| ------------------------------------------ | ----------- | ------------- | -------- |
+| Modal State (`show*Modal = $state(false)`) | 42          | 3-8           | ~200     |
+| Loading/Submitting (`try/finally`)         | 50+         | 3-5           | ~200     |
+| Search/Filter State                        | 11-17       | 5-8           | ~100     |
+| CRUD-Handlers (open/close/reset)           | 7 manage-\* | ~20           | ~140     |
+| **Total abstrahierbarer Boilerplate**      |             |               | **~640** |
 
 **Was eine Abstraktion kosten würde:**
+
 - Generics für Item-Type, Form-Type, Filter-Type (~30 LOC)
 - Konfigurationsinterface (~40 LOC)
 - Core-Implementation mit Getter/Setter (~80 LOC)
@@ -542,21 +544,21 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 
 ### Mittelfristig (Sprint-Planung)
 
-| #   | Maßnahme                                       | Aufwand | Impact                    | v1-Status                 |
-| --- | ---------------------------------------------- | ------- | ------------------------- | ------------------------- |
-| 11  | Frontend catch-Blöcke typisieren (298 Stellen) | 15 min  | 127 Dateien typisiert     | **ERLEDIGT** (2026-03-08) |
-| 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren | **ERLEDIGT** (2026-03-08) |
-| 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert  | **ERLEDIGT** (2026-03-08) |
+| #   | Maßnahme                                       | Aufwand | Impact                       | v1-Status                 |
+| --- | ---------------------------------------------- | ------- | ---------------------------- | ------------------------- |
+| 11  | Frontend catch-Blöcke typisieren (298 Stellen) | 15 min  | 127 Dateien typisiert        | **ERLEDIGT** (2026-03-08) |
+| 12  | `websocket.ts` Zod-Validierung hinzufügen      | 2h      | 13 `as`-Casts eliminieren    | **ERLEDIGT** (2026-03-08) |
+| 13  | Row-Mapper Shared Utility erstellen            | 2h      | 18+ Helpers konsolidiert     | **ERLEDIGT** (2026-03-08) |
 | 14  | ~~UI-State-Factory generisch machen~~          | 3h      | ~~20+ Dateien konsolidiert~~ | **SKIPPED** (2026-03-08)  |
-| 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz         | **ERLEDIGT** (2026-03-07) |
+| 15  | ~~`utils/` Dateien in kebab-case umbenennen~~  | 30 min  | Naming-Konsistenz            | **ERLEDIGT** (2026-03-07) |
 
-### Pre-Production
+### Pre-Production → extrahiert nach `docs/PRE-PRODUCTION-TODO.md`
 
-| #   | Maßnahme                                           | Aufwand | Impact                    | v1-Status |
-| --- | -------------------------------------------------- | ------- | ------------------------- | --------- |
-| 16  | Nonce-based CSP implementieren (`main.ts` TODO)    | 2–4h    | Security Hardening        | **OFFEN** |
-| 17  | Storage-Upgrade: echte Speichernutzung vom Backend | 1–2h    | Feature-Vervollständigung | **OFFEN** |
-| 18  | Survey-Results: PDF-Export implementieren          | 3–4h    | Feature-Vervollständigung | **OFFEN** |
+| #   | Maßnahme                                            | Aufwand | Impact                    | Status                                                             |
+| --- | --------------------------------------------------- | ------- | ------------------------- | ------------------------------------------------------------------ |
+| 16  | ~~Nonce-based CSP implementieren (`main.ts` TODO)~~ | 2–4h    | Security Hardening        | **ERLEDIGT** (2026-03-08) — war bereits nonce-basiert in SvelteKit |
+| 17  | Storage-Upgrade: echte Speichernutzung vom Backend  | 1–2h    | Feature-Vervollständigung | → `PRE-PRODUCTION-TODO.md` (OFFEN)                                 |
+| 18  | Survey-Results: PDF-Export implementieren           | 3–4h    | Feature-Vervollständigung | → `PRE-PRODUCTION-TODO.md` (OFFEN)                                 |
 
 ### Bei nächster Erweiterung (proaktiv splitten)
 

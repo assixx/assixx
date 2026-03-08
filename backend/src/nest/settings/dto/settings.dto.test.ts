@@ -9,6 +9,7 @@ import {
   ValueTypeEnum,
 } from './setting-schemas.js';
 import { SettingsFilterQuerySchema } from './settings-filter-query.dto.js';
+import { UserIdParamSchema } from './user-id-param.dto.js';
 
 // =============================================================
 // Setting Schemas (shared)
@@ -142,6 +143,28 @@ describe('SettingsFilterQuerySchema', () => {
     expect(
       SettingsFilterQuerySchema.safeParse({ search: 'theme' }).success,
     ).toBe(true);
+  });
+});
+
+// =============================================================
+// UserIdParamSchema
+// =============================================================
+
+describe('UserIdParamSchema', () => {
+  it('should accept { userId: "5" } and coerce to number', () => {
+    expect(UserIdParamSchema.parse({ userId: '5' }).userId).toBe(5);
+  });
+
+  it('should reject { id: "5" } (wrong param name)', () => {
+    expect(UserIdParamSchema.safeParse({ id: '5' }).success).toBe(false);
+  });
+
+  it('should reject userId = 0', () => {
+    expect(UserIdParamSchema.safeParse({ userId: '0' }).success).toBe(false);
+  });
+
+  it('should reject missing userId', () => {
+    expect(UserIdParamSchema.safeParse({}).success).toBe(false);
   });
 });
 

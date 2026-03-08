@@ -17,17 +17,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../database.service.js';
 
 /**
- * @deprecated Use `IS_ACTIVE` from `@assixx/shared/constants` directly.
- * Kept as re-export for backward compatibility with existing consumers.
- */
-export const USER_STATUS = IS_ACTIVE;
-
-/**
- * @deprecated Use `IsActiveStatus` from `@assixx/shared/types` directly.
- */
-export type UserStatus = IsActiveStatus;
-
-/**
  * Base user fields returned by most queries
  * Does NOT include sensitive fields like password
  */

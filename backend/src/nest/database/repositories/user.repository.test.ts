@@ -7,10 +7,11 @@
  * - Admin methods (include deleted users)
  * - Utility methods (UUID/ID resolution, email uniqueness)
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database.service.js';
-import { USER_STATUS, UserRepository } from './user.repository.js';
+import { UserRepository } from './user.repository.js';
 
 // =============================================================
 // Constants & Helpers
@@ -504,7 +505,7 @@ describe('UserRepository – admin methods', () => {
     it('should count users with specific status', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
 
-      const result = await repo.countByStatus(USER_STATUS.DELETED, TENANT_ID);
+      const result = await repo.countByStatus(IS_ACTIVE.DELETED, TENANT_ID);
 
       expect(result).toBe(3);
       const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
@@ -514,7 +515,7 @@ describe('UserRepository – admin methods', () => {
     it('should return 0 when null result', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      const result = await repo.countByStatus(USER_STATUS.ACTIVE, TENANT_ID);
+      const result = await repo.countByStatus(IS_ACTIVE.ACTIVE, TENANT_ID);
 
       expect(result).toBe(0);
     });
@@ -532,10 +533,10 @@ describe('UserRepository – admin methods', () => {
       const result = await repo.getStatusCounts(TENANT_ID);
 
       expect(result).toBeInstanceOf(Map);
-      expect(result.get(USER_STATUS.ACTIVE)).toBe(50);
-      expect(result.get(USER_STATUS.INACTIVE)).toBe(2);
-      expect(result.get(USER_STATUS.ARCHIVED)).toBe(5);
-      expect(result.get(USER_STATUS.DELETED)).toBe(10);
+      expect(result.get(IS_ACTIVE.ACTIVE)).toBe(50);
+      expect(result.get(IS_ACTIVE.INACTIVE)).toBe(2);
+      expect(result.get(IS_ACTIVE.ARCHIVED)).toBe(5);
+      expect(result.get(IS_ACTIVE.DELETED)).toBe(10);
     });
 
     it('should return empty Map when no users', async () => {
@@ -655,14 +656,14 @@ describe('UserRepository – utility methods', () => {
 });
 
 // =============================================================
-// USER_STATUS constant
+// IS_ACTIVE constant (from @assixx/shared/constants)
 // =============================================================
 
-describe('USER_STATUS', () => {
+describe('IS_ACTIVE', () => {
   it('should have correct values', () => {
-    expect(USER_STATUS.INACTIVE).toBe(0);
-    expect(USER_STATUS.ACTIVE).toBe(1);
-    expect(USER_STATUS.ARCHIVED).toBe(3);
-    expect(USER_STATUS.DELETED).toBe(4);
+    expect(IS_ACTIVE.INACTIVE).toBe(0);
+    expect(IS_ACTIVE.ACTIVE).toBe(1);
+    expect(IS_ACTIVE.ARCHIVED).toBe(3);
+    expect(IS_ACTIVE.DELETED).toBe(4);
   });
 });
