@@ -7,7 +7,6 @@ import { tick } from 'svelte';
 
 import {
   fetchAssetAvailability,
-  fetchTpmMaintenanceDates,
   fetchShiftPlan,
   fetchRotationHistory,
   fetchRotationPatternById,
@@ -94,21 +93,14 @@ async function fetchAndProcessShiftData(startDate: string, endDate: string) {
   return { planResponse, rotationHistory, planData, rotationData };
 }
 
-/** Apply optional fetch results (asset availability + TPM events) to state */
-function applyOptionalFetchResults(
+/** Apply asset availability result to state */
+function applyAssetAvailability(
   assetAvail: Awaited<ReturnType<typeof fetchAssetAvailability>> | null,
-  tpmEvents: Awaited<ReturnType<typeof fetchTpmMaintenanceDates>> | null,
 ): void {
   if (assetAvail !== null) {
     shiftsState.setAssetAvailability(assetAvail);
   } else {
     shiftsState.clearAssetAvailability();
-  }
-
-  if (tpmEvents !== null) {
-    shiftsState.setTpmEvents(tpmEvents);
-  } else {
-    shiftsState.clearTpmEvents();
   }
 }
 
@@ -118,7 +110,6 @@ function applyShiftPlanState(
   rotationData: ProcessedRotationData,
   patternId: number | null,
   patternType: RotationPatternType | null,
-  preserveTpmToggle: boolean,
 ): void {
   const hasAnyShiftData = rotationData.weeklyShifts.size > 0;
   const shouldLock = hasAnyShiftData && !shiftsState.isEditMode;
@@ -126,9 +117,6 @@ function applyShiftPlanState(
   shiftsState.setCurrentPlanId(planData.planId);
   shiftsState.setCurrentShiftNotes(planData.shiftNotes);
   shiftsState.setWeeklyNotes(planData.shiftNotes);
-  if (!preserveTpmToggle) {
-    shiftsState.setShowTpmEvents(planData.isTpmMode);
-  }
   shiftsState.setWeeklyShifts(rotationData.weeklyShifts);
   shiftsState.setShiftDetails(rotationData.shiftDetails);
   shiftsState.setRotationHistoryMap(rotationData.rotationHistoryMap);
@@ -147,12 +135,8 @@ function applyShiftPlanState(
 /**
  * Load the full shift plan for the current week and context.
  * All independent API calls run in parallel to prevent FOUC.
- *
- * @param preserveTpmToggle - When true, keeps the current TPM toggle state
- *   instead of overwriting it from the saved plan. Used when the user
- *   explicitly toggles TPM mode ON (the plan may not have been saved yet).
  */
-export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
+export async function loadShiftPlan(): Promise<void> {
   if (shiftsState.selectedContext.teamId === null) return;
 
   shiftsState.setIsLoading(true);
@@ -164,20 +148,13 @@ export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
     const teamId = shiftsState.selectedContext.teamId;
     const assetId = shiftsState.selectedContext.assetId;
     const hasAsset = assetId !== null && assetId !== 0;
-    // On fresh load (!preserveTpmToggle), always fetch TPM data because
-    // the saved plan may have isTpmMode=true — we don't know yet.
-    // On week navigation (preserveTpmToggle=true), respect the current toggle.
-    const wantTpm = preserveTpmToggle ? shiftsState.showTpmEvents : true;
 
     // ALL independent fetches in parallel — no waterfall
-    const [members, shiftResult, assetAvail, tpmEvents] = await Promise.all([
+    const [members, shiftResult, assetAvail] = await Promise.all([
       fetchTeamMembers(teamId, startDate, endDate),
       fetchAndProcessShiftData(startDate, endDate),
       hasAsset ?
         fetchAssetAvailability(assetId, startDate, endDate)
-      : Promise.resolve(null),
-      wantTpm ?
-        fetchTpmMaintenanceDates(assetId, startDate, endDate)
       : Promise.resolve(null),
     ]);
 
@@ -192,15 +169,9 @@ export async function loadShiftPlan(preserveTpmToggle = false): Promise<void> {
 
     // --- Batch all state updates in one render frame ---
     shiftsState.setEmployees(convertTeamMembersToEmployees(members));
-    applyOptionalFetchResults(assetAvail, tpmEvents);
+    applyAssetAvailability(assetAvail);
 
-    applyShiftPlanState(
-      planData,
-      rotationData,
-      patternId,
-      patternType,
-      preserveTpmToggle,
-    );
+    applyShiftPlanState(planData, rotationData, patternId, patternType);
 
     // Clear if nothing loaded
     if (planResponse === null && rotationHistory.length === 0) {

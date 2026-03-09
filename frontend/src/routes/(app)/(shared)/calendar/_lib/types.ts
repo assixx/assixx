@@ -202,6 +202,19 @@ export interface CalendarWorkOrder {
 }
 
 /**
+ * TPM shift assignment for calendar display (from GET /tpm/plans/shift-assignments/calendar)
+ */
+export interface CalendarTpmAssignment {
+  planUuid: string;
+  shiftDate: string;
+  assetName: string;
+  planName: string;
+  intervalTypes: string[];
+  shiftType: string;
+  colorHex: string;
+}
+
+/**
  * Event hover info for tooltip handlers
  */
 export interface EventHoverInfo {

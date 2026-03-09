@@ -9,28 +9,15 @@
     type AssetAvailabilityStatus,
   } from '$lib/asset-availability/constants';
 
-  import {
-    FULL_DAY_NAMES,
-    INTERVAL_COLORS,
-    INTERVAL_LABELS,
-    INTERVAL_SHORT_LABELS,
-    SHIFT_TYPES,
-  } from './constants';
+  import { FULL_DAY_NAMES, SHIFT_TYPES } from './constants';
   import ShiftScheduleLegend from './ShiftScheduleLegend.svelte';
   import {
     formatDate,
     getEmployeeDisplayName,
     getShiftTimeInfo,
-    getVisibleTpmIntervals,
   } from './utils';
 
-  import type {
-    Employee,
-    IntervalColorEntry,
-    ShiftDetailData,
-    ShiftTimesMap,
-    TpmMaintenanceEvent,
-  } from './types';
+  import type { Employee, ShiftDetailData, ShiftTimesMap } from './types';
   import type { Snippet } from 'svelte';
 
   /**
@@ -48,20 +35,8 @@
     /** Tenant-configurable shift times from API */
     shiftTimesMap: ShiftTimesMap;
 
-    /** Precomputed shift minute ranges for TPM overlap */
-    shiftMinutes: Record<string, [number, number][]>;
-
     /** Asset availability: date (YYYY-MM-DD) → status string */
     assetAvailabilityMap: Map<string, string>;
-
-    /** TPM maintenance events: date (YYYY-MM-DD) → events for that day */
-    tpmEventsMap: Map<string, TpmMaintenanceEvent[]>;
-
-    /** Tenant-configurable TPM interval colors from API */
-    intervalColors: IntervalColorEntry[];
-
-    /** Whether TPM events toggle is active */
-    showTpmEvents: boolean;
 
     // Data access callbacks
     getShiftEmployees: (dateKey: string, shiftType: string) => number[];
@@ -90,11 +65,7 @@
     isEditMode,
     currentPlanId,
     shiftTimesMap,
-    shiftMinutes,
     assetAvailabilityMap,
-    tpmEventsMap,
-    intervalColors,
-    showTpmEvents,
     getShiftEmployees,
     getEmployeeById,
     getShiftDetail,
@@ -106,15 +77,6 @@
     onremoveEmployee,
     onnotesChange,
   }: Props = $props();
-
-  /** Merge tenant DB colors over hardcoded defaults (same pattern as SlotAssistant) */
-  const colorMap = $derived.by((): Record<string, string> => {
-    const base: Record<string, string> = { ...INTERVAL_COLORS };
-    for (const entry of intervalColors) {
-      base[entry.statusKey] = entry.colorHex;
-    }
-    return base;
-  });
 
   // Day names for data attributes
   const dayNames = [
@@ -163,11 +125,8 @@
 </script>
 
 <div class="week-schedule">
-  <!-- Asset Availability Legend + TPM Toggle -->
-  <ShiftScheduleLegend
-    {colorMap}
-    {showTpmEvents}
-  />
+  <!-- Asset Availability Legend -->
+  <ShiftScheduleLegend />
 
   {#if afterLegend}
     {@render afterLegend()}
@@ -201,7 +160,6 @@
         {@const availStatus = assetAvailabilityMap.get(dateKey)}
         <div
           class="shift-cell {getAssetAvailClass(dateKey)}"
-          class:tpm-active={showTpmEvents}
           class:locked={isCellLocked(dateKey, shiftType, employeeIds)}
           data-day={dayNames[dayIndex]}
           data-shift={shiftType}
@@ -222,35 +180,6 @@
               class="asset-avail-dot avail-{availStatus}"
               title={MACHINE_AVAILABILITY_LABELS[statusKey]}
             ></span>
-          {/if}
-
-          <!-- TPM maintenance badges -->
-          {#if showTpmEvents}
-            {@const tpmEvents = tpmEventsMap.get(dateKey)}
-            {#if tpmEvents !== undefined}
-              {#each tpmEvents as event (event.planUuid)}
-                {@const visibleIntervals = getVisibleTpmIntervals(
-                  event,
-                  shiftType,
-                  shiftMinutes,
-                )}
-                {#if visibleIntervals.length > 0}
-                  <div
-                    class="tpm-badges"
-                    title="{event.planName} — {event.assetName}"
-                  >
-                    {#each visibleIntervals as interval (interval)}
-                      <span
-                        class="tpm-badge"
-                        style="background: {colorMap[interval]}"
-                        title="{INTERVAL_LABELS[interval]} — {event.assetName}"
-                        >{INTERVAL_SHORT_LABELS[interval]}</span
-                      >
-                    {/each}
-                  </div>
-                {/if}
-              {/each}
-            {/if}
           {/if}
 
           <div class="employee-assignment">
@@ -451,10 +380,6 @@ Beispiele:
     min-height: 85px;
   }
 
-  .shift-cell.tpm-active {
-    padding-top: 18px;
-  }
-
   .shift-cell:hover {
     border-color: var(--primary-color);
     background: color-mix(in oklch, var(--color-primary) 10%, transparent);
@@ -525,31 +450,6 @@ Beispiele:
     width: 6px;
     height: 6px;
     border-radius: 50%;
-  }
-
-  /* TPM Badges — absolute top-left, out of flow */
-  .tpm-badges {
-    display: flex;
-    flex-wrap: wrap;
-    position: absolute;
-    top: 3px;
-    left: 4px;
-    z-index: 1;
-    gap: 2px;
-  }
-
-  .tpm-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 3px;
-    border-radius: 2px;
-
-    min-width: 14px;
-    color: var(--color-black);
-    font-weight: 700;
-    font-size: 0.65rem;
-    line-height: 1;
   }
 
   .employee-assignment {

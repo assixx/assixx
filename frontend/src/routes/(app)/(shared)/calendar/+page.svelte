@@ -74,6 +74,18 @@
     return showWorkOrders;
   }
 
+  let showTpmAssignments = $state(
+    browser ? localStorage.getItem('showTpmInCalendar') === 'true' : false,
+  );
+
+  function toggleTpmAssignments(): boolean {
+    showTpmAssignments = !showTpmAssignments;
+    if (browser) {
+      localStorage.setItem('showTpmInCalendar', String(showTpmAssignments));
+    }
+    return showTpmAssignments;
+  }
+
   interface CalendarViewRef {
     refetchEvents(): void;
   }
@@ -219,8 +231,8 @@
         );
       }
 
-      // Fetch calendar events + work orders in parallel
-      const [calendarEvents, workOrderEvents] = await Promise.all([
+      // Fetch calendar events + work orders + TPM assignments in parallel
+      const [calendarEvents, workOrderEvents, tpmEvents] = await Promise.all([
         api.loadCalendarEvents(
           fetchInfo.startStr,
           fetchInfo.endStr,
@@ -230,9 +242,15 @@
         showWorkOrders ?
           api.loadWorkOrdersForCalendar(fetchInfo.startStr, fetchInfo.endStr)
         : Promise.resolve([]),
+        showTpmAssignments ?
+          api.loadTpmAssignmentsForCalendar(
+            fetchInfo.startStr,
+            fetchInfo.endStr,
+          )
+        : Promise.resolve([]),
       ]);
 
-      return [...calendarEvents, ...workOrderEvents];
+      return [...calendarEvents, ...workOrderEvents, ...tpmEvents];
     } catch (err: unknown) {
       log.error({ err }, 'Error loading events');
       return [];
@@ -249,6 +267,13 @@
     if (info.event.id.startsWith('wo:')) {
       const uuid = info.event.id.slice(3);
       void goto(`/work-orders/${uuid}`);
+      return;
+    }
+
+    // TPM assignment events: navigate to TPM board
+    if (info.event.id.startsWith('tpm:')) {
+      const planUuid = info.event.id.split(':')[1];
+      void goto(`/lean-management/tpm/board/${planUuid}`);
       return;
     }
 
@@ -518,6 +543,22 @@
               <i class="fas fa-wrench"></i>
               Aufträge
             </button>
+            <!-- TPM Toggle -->
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={showTpmAssignments}
+              id="showTpmToggle"
+              title="TPM-Wartungstermine anzeigen/ausblenden"
+              data-action="toggle-tpm"
+              onclick={() => {
+                toggleTpmAssignments();
+                refetchCalendarEvents();
+              }}
+            >
+              <i class="fas fa-tools"></i>
+              TPM
+            </button>
           </div>
         </div>
 
@@ -552,6 +593,10 @@
             <div class="legend-item">
               <span class="legend-color legend-work-order"></span>
               <span class="legend-label">Aufträge</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color legend-tpm"></span>
+              <span class="legend-label">TPM</span>
             </div>
           </div>
         </div>
@@ -684,5 +729,9 @@
 
   .legend-work-order {
     background-color: var(--color-slate);
+  }
+
+  .legend-tpm {
+    background-color: #5bb5f5;
   }
 </style>

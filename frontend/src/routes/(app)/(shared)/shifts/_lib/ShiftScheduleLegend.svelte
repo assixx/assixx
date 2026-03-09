@@ -1,6 +1,6 @@
 <!--
   ShiftScheduleLegend.svelte
-  Legend bar for asset availability statuses and TPM maintenance interval badges.
+  Legend bar for asset availability statuses.
   Extracted from ShiftScheduleGrid.svelte for maintainability.
 -->
 <script lang="ts">
@@ -8,8 +8,6 @@
     MACHINE_AVAILABILITY_LABELS,
     type AssetAvailabilityStatus,
   } from '$lib/asset-availability/constants';
-
-  import { INTERVAL_LABELS, type TpmIntervalType } from './constants';
 
   /** Asset availability statuses shown in the legend */
   const LEGEND_STATUSES: AssetAvailabilityStatus[] = [
@@ -19,16 +17,6 @@
     'cleaning',
     'other',
   ];
-
-  /** Interval keys for legend iteration (type-safe) */
-  const TPM_LEGEND_KEYS = Object.keys(INTERVAL_LABELS) as TpmIntervalType[];
-
-  interface Props {
-    colorMap: Record<string, string>;
-    showTpmEvents: boolean;
-  }
-
-  const { colorMap, showTpmEvents }: Props = $props();
 </script>
 
 <div class="legend-bar">
@@ -44,27 +32,6 @@
       </div>
     {/each}
   </div>
-
-  <!-- Row 2: TPM Intervall-Legende (nur sichtbar wenn TPM-Modus aktiv) -->
-  {#if showTpmEvents}
-    <div class="legend-row">
-      <span class="legend-row__title">
-        <i class="fas fa-wrench"></i> TPM-Intervalle
-      </span>
-      {#each TPM_LEGEND_KEYS as key (key)}
-        <span
-          class="tpm-legend-item"
-          title={INTERVAL_LABELS[key]}
-        >
-          <span
-            class="tpm-legend-dot"
-            style="background: {colorMap[key]}"
-          ></span>
-          {INTERVAL_LABELS[key]}
-        </span>
-      {/each}
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -87,11 +54,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--spacing-4);
-  }
-
-  .legend-row + .legend-row {
-    border-top: 1px solid var(--color-glass-border);
-    padding-top: var(--spacing-3);
   }
 
   .legend-row__title {
@@ -150,22 +112,5 @@
   .legend-label {
     color: var(--text-secondary);
     font-weight: 500;
-  }
-
-  .tpm-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-
-    color: var(--color-text-secondary);
-    font-weight: 500;
-    font-size: 12px;
-  }
-
-  .tpm-legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
   }
 </style>

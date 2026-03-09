@@ -10,6 +10,8 @@ import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 import {
   API_ENDPOINTS,
   ORG_LEVEL_COLORS,
+  TPM_INTERVAL_TYPE_LABELS,
+  TPM_SHIFT_TYPE_LABELS,
   WORK_ORDER_EVENT_COLOR,
   WORK_ORDER_PRIORITY_LABELS,
   WORK_ORDER_STATUS_LABELS,
@@ -17,6 +19,7 @@ import {
 
 import type {
   CalendarEvent,
+  CalendarTpmAssignment,
   CalendarWorkOrder,
   EventInput,
   EventFormData,
@@ -346,6 +349,70 @@ export async function loadWorkOrdersForCalendar(
     return items.map(formatWorkOrderForCalendar);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading work orders for calendar');
+    return [];
+  }
+}
+
+// =============================================================================
+// TPM ASSIGNMENTS (Calendar Integration — proper EventCalendar events)
+// =============================================================================
+
+/** Convert a CalendarTpmAssignment to an EventCalendar EventInput */
+function formatTpmAssignmentForCalendar(
+  assignment: CalendarTpmAssignment,
+): EventInput {
+  const shiftLabel =
+    TPM_SHIFT_TYPE_LABELS[assignment.shiftType] ?? assignment.shiftType;
+  const intervalLabels = assignment.intervalTypes
+    .map((t: string) => TPM_INTERVAL_TYPE_LABELS[t] ?? t)
+    .join(', ');
+
+  // allDay event needs explicit end (start + 1 day) to span exactly 1 cell
+  const nextDay = new Date(assignment.shiftDate + 'T00:00:00');
+  nextDay.setDate(nextDay.getDate() + 1);
+  const endDate = nextDay.toISOString().slice(0, 10);
+
+  return {
+    id: `tpm:${assignment.planUuid}:${assignment.shiftDate}`,
+    title: `TPM: ${assignment.assetName}`,
+    start: assignment.shiftDate,
+    end: endDate,
+    allDay: true,
+    backgroundColor: assignment.colorHex,
+    borderColor: assignment.colorHex,
+    textColor: '#ffffff',
+    classNames: ['ec-event-tpm'],
+    extendedProps: {
+      description: `${shiftLabel} · ${intervalLabels !== '' ? intervalLabels : 'Wartung'}`,
+      isTpmAssignment: true,
+      planUuid: assignment.planUuid,
+    },
+  };
+}
+
+/**
+ * Load TPM shift assignments for calendar display
+ * API: GET /api/v2/tpm/plans/shift-assignments/calendar
+ */
+export async function loadTpmAssignmentsForCalendar(
+  startDate: string,
+  endDate: string,
+): Promise<EventInput[]> {
+  try {
+    const params = new URLSearchParams({
+      startDate: startDate.slice(0, 10),
+      endDate: endDate.slice(0, 10),
+    });
+
+    const response = await apiClient.get<CalendarTpmAssignment[]>(
+      `/tpm/plans/shift-assignments/calendar?${params}`,
+    );
+
+    const items: CalendarTpmAssignment[] =
+      Array.isArray(response) ? response : [];
+    return items.map(formatTpmAssignmentForCalendar);
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading TPM assignments for calendar');
     return [];
   }
 }

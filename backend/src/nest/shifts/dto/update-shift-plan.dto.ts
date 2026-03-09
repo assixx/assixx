@@ -39,7 +39,6 @@ export const UpdateShiftPlanSchema = z.object({
     .trim()
     .max(2000, 'Notes cannot exceed 2000 characters')
     .optional(),
-  isTpmMode: z.boolean().optional(),
   shifts: z.array(ShiftPlanUpdateItemSchema).optional(),
 });
 

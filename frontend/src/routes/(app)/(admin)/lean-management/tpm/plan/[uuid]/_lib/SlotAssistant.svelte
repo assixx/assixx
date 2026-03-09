@@ -10,9 +10,9 @@
    *
    * For the first 90 days: full slot data with projection overlay.
    * Beyond 90 days: only projected TPM schedules shown.
+   *
+   * Pure helpers extracted to ./slot-assistant-helpers.ts
    */
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showErrorAlert } from '$lib/stores/toast';
 
@@ -20,6 +20,8 @@
     fetchAvailableSlots,
     fetchAvailableSlotsByAsset,
     fetchScheduleProjection,
+    fetchTeamAvailability,
+    fetchPlanAssignments,
     logApiError,
   } from '../../../_lib/api';
   import {
@@ -29,13 +31,27 @@
   } from '../../../_lib/constants';
   import {
     timestampToISO,
-    getISOWeek,
     weekOfMonth,
     NINETY_DAYS_MS,
     MAX_RANGE_MS,
     MAX_RANGE_365_MS,
   } from '../../../_lib/date-helpers';
 
+  import AssignmentModal from './AssignmentModal.svelte';
+  import {
+    WEEKDAY_HEADERS,
+    type CalendarRow,
+    buildLookupMap,
+    isoWeekday,
+    formatDayMonth,
+    getConflictLabel,
+    getConflictIcon,
+    hasTpmScheduleConflict,
+    buildDayTooltip,
+    computeCalendarRows,
+    mergeCalendarDays,
+    computePreviewData,
+  } from './slot-assistant-helpers';
   import SlotDayContent from './SlotDayContent.svelte';
   import SlotPreviewBadge from './SlotPreviewBadge.svelte';
   import TimelineDayView from './TimelineDayView.svelte';
@@ -47,6 +63,9 @@
     DayAvailability,
     IntervalType,
     IntervalColorConfigEntry,
+    AssetTeamAvailabilityResult,
+    TeamMemberStatus,
+    TpmPlanAssignment,
   } from '../../../_lib/types';
 
   interface Props {
@@ -57,6 +76,10 @@
     intervalColors?: IntervalColorConfigEntry[];
     previewWeekday?: number;
     previewRepeatEvery?: number;
+    ondataload?: (
+      slots: ProjectedSlot[],
+      planAssignments: TpmPlanAssignment[],
+    ) => void;
   }
 
   const {
@@ -67,6 +90,7 @@
     intervalColors = [],
     previewWeekday,
     previewRepeatEvery,
+    ondataload,
   }: Props = $props();
 
   // Build color lookup: custom API colors override hardcoded defaults
@@ -84,12 +108,6 @@
   );
 
   // =========================================================================
-  // CONSTANTS
-  // =========================================================================
-
-  const WEEKDAY_HEADERS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-  // =========================================================================
   // STATE
   // =========================================================================
 
@@ -101,6 +119,16 @@
   let showOnlyScheduled = $state(false);
   /** Saved endDate before switching to scheduled-only mode */
   let savedEndDate = $state('');
+
+  // Assignment state (edit mode only)
+  let teamMembers = $state<TeamMemberStatus[]>([]);
+  let assignments = $state<TpmPlanAssignment[]>([]);
+  let assignmentModalDate = $state<string | null>(null);
+
+  /** Assignments grouped by date for quick lookup */
+  const assignmentsByDate = $derived.by(() =>
+    buildLookupMap(assignments, (a: TpmPlanAssignment) => a.scheduledDate),
+  );
 
   // Date range: default next 90 days (pure timestamp math, no mutable Date)
   const nowMs = Date.now();
@@ -124,55 +152,20 @@
   const rangeExceedsSlotLimit = $derived(endDate !== slotEndDate);
 
   // Build projection lookup: date → ProjectedSlot[]
-  const projectionByDate = $derived.by(() => {
-    const map = new SvelteMap<string, ProjectedSlot[]>();
-    if (projectionData === null) return map;
-    for (const slot of projectionData.slots) {
-      const existing = map.get(slot.date);
-      if (existing !== undefined) {
-        existing.push(slot);
-      } else {
-        map.set(slot.date, [slot]);
-      }
-    }
-    return map;
-  });
+  const projectionByDate = $derived.by(() =>
+    buildLookupMap(projectionData?.slots ?? [], (s: ProjectedSlot) => s.date),
+  );
 
   // Merged calendar days: slot data + projection-only days beyond 90d
-  const calendarDays = $derived.by((): DayAvailability[] => {
-    const slotDays = slotData?.days ?? [];
-    if (!rangeExceedsSlotLimit) return slotDays;
-
-    // All dates covered by slot data
-    const coveredDates = new Set(slotDays.map((d: DayAvailability) => d.date));
-
-    // Generate days beyond slot range from projection data
-    const extraDays: DayAvailability[] = [];
-    const endMs = new Date(endDate).getTime();
-    let curMs = new Date(slotEndDate).getTime() + 24 * 60 * 60 * 1000;
-
-    while (curMs <= endMs) {
-      const dateStr = timestampToISO(curMs);
-      if (!coveredDates.has(dateStr)) {
-        const projSlots = projectionByDate.get(dateStr);
-        const hasSchedule = projSlots !== undefined && projSlots.length > 0;
-        extraDays.push({
-          date: dateStr,
-          isAvailable: !hasSchedule,
-          conflicts:
-            hasSchedule ?
-              projSlots.map((s: ProjectedSlot) => ({
-                type: 'tpm_schedule' as const,
-                description: formatProjectionDescription(s),
-              }))
-            : [],
-        });
-      }
-      curMs += 24 * 60 * 60 * 1000;
-    }
-
-    return [...slotDays, ...extraDays];
-  });
+  const calendarDays = $derived.by((): DayAvailability[] =>
+    mergeCalendarDays(
+      slotData?.days ?? [],
+      rangeExceedsSlotLimit,
+      endDate,
+      slotEndDate,
+      projectionByDate,
+    ),
+  );
 
   // Visible headers and days (filtered by weekend toggle)
   const visibleHeaders = $derived(
@@ -184,77 +177,18 @@
     ),
   );
 
-  /** Month period for multi-month intervals (absent = fires every month) */
-  const INTERVAL_MONTH_PERIOD: Partial<Record<IntervalType, number>> = {
-    quarterly: 3,
-    semi_annual: 6,
-    annual: 12,
-  };
-
-  /** Extract interval reference months from projection data for the current plan */
-  function extractIntervalRefs(
-    proj: ScheduleProjectionResult,
-    uuid: string,
-  ): SvelteMap<IntervalType, number> {
-    const refs = new SvelteMap<IntervalType, number>();
-    for (const slot of proj.slots) {
-      if (slot.planUuid !== uuid) continue;
-      const m = new Date(slot.date).getMonth();
-      for (const t of slot.intervalTypes) {
-        if (!refs.has(t)) refs.set(t, m);
-      }
-    }
-    return refs;
-  }
-
-  /** Compute which intervals fire for a given month based on reference months */
-  function computeIntervalsForMonth(
-    month: number,
-    refs: SvelteMap<IntervalType, number>,
-  ): IntervalType[] {
-    const result: IntervalType[] = [];
-    for (const [interval, refMonth] of refs) {
-      const period = INTERVAL_MONTH_PERIOD[interval] ?? 1;
-      if ((((month - refMonth) % period) + period) % period === 0) {
-        result.push(interval);
-      }
-    }
-    return result;
-  }
-
   /** Preview: matching dates + their interval badges */
-  const previewData = $derived.by(() => {
-    const dates = new SvelteSet<string>();
-    const intervals = new SvelteMap<string, IntervalType[]>();
-
-    if (previewWeekday === undefined || previewRepeatEvery === undefined) {
-      return { dates, intervals };
-    }
-
-    const refs =
-      projectionData !== null && planUuid !== undefined ?
-        extractIntervalRefs(projectionData, planUuid)
-      : new SvelteMap<IntervalType, number>();
-
-    for (const day of visibleCalendarDays) {
-      if (
-        isoWeekday(day.date) !== previewWeekday ||
-        weekOfMonth(day.date) !== previewRepeatEvery
-      ) {
-        continue;
-      }
-      dates.add(day.date);
-      if (refs.size > 0) {
-        const month = new Date(day.date).getMonth();
-        intervals.set(day.date, computeIntervalsForMonth(month, refs));
-      }
-    }
-
-    return { dates, intervals };
-  });
-
-  const previewDates = $derived(previewData.dates);
-  const previewIntervals = $derived(previewData.intervals);
+  const previewResult = $derived.by(() =>
+    computePreviewData(
+      previewWeekday,
+      previewRepeatEvery,
+      visibleCalendarDays,
+      projectionData,
+      planUuid,
+    ),
+  );
+  const previewDates = $derived(previewResult.dates);
+  const previewIntervals = $derived(previewResult.intervals);
 
   // Compact view: only scheduled days + preview days (no grid gaps)
   const scheduledDays = $derived(
@@ -272,199 +206,89 @@
     visibleCalendarDays.filter((d: DayAvailability) => d.isAvailable).length,
   );
 
-  // =========================================================================
-  // CALENDAR ROWS (grouped by ISO week, with month separators)
-  // =========================================================================
-
-  interface CalendarRow {
-    kw: number;
-    monthLabel: string;
-    cells: (DayAvailability | null)[];
-  }
-
-  function buildCalendarRow(
-    days: DayAvailability[],
-    kw: number,
-    cols: number,
-  ): CalendarRow {
-    const wd = isoWeekday(days[0].date);
-    const cells: (DayAvailability | null)[] = [
-      ...(Array(wd).fill(null) as null[]),
-      ...days,
-    ];
-    while (cells.length < cols) cells.push(null);
-    return { kw, monthLabel: '', cells };
-  }
-
-  function applyMonthLabels(rows: CalendarRow[]): void {
-    let lastMonthKey = -1;
-    for (const row of rows) {
-      const firstDay = row.cells.find((c): c is DayAvailability => c !== null);
-      if (firstDay === undefined) continue;
-      const d = new Date(firstDay.date);
-      const monthKey = d.getFullYear() * 12 + d.getMonth();
-      if (monthKey !== lastMonthKey) {
-        row.monthLabel = d.toLocaleDateString('de-DE', {
-          month: 'long',
-          year: 'numeric',
-        });
-        lastMonthKey = monthKey;
-      }
-    }
-  }
-
-  const calendarRows = $derived.by((): CalendarRow[] => {
-    const days = visibleCalendarDays;
-    if (days.length === 0) return [];
-    const cols = visibleHeaders.length;
-    const rows: CalendarRow[] = [];
-    let batch: DayAvailability[] = [];
-    let batchKw = getISOWeek(days[0].date);
-    let batchMonth = new Date(days[0].date).getMonth();
-
-    for (const day of days) {
-      const kw = getISOWeek(day.date);
-      const month = new Date(day.date).getMonth();
-      if ((kw !== batchKw || month !== batchMonth) && batch.length > 0) {
-        rows.push(buildCalendarRow(batch, batchKw, cols));
-        batch = [];
-      }
-      batchKw = kw;
-      batchMonth = month;
-      batch.push(day);
-    }
-    if (batch.length > 0) {
-      rows.push(buildCalendarRow(batch, batchKw, cols));
-    }
-
-    applyMonthLabels(rows);
-    return rows;
-  });
+  const calendarRows = $derived.by((): CalendarRow[] =>
+    computeCalendarRows(visibleCalendarDays, visibleHeaders.length),
+  );
 
   // =========================================================================
-  // HELPERS
+  // REACTIVE STATE ACCESSORS
   // =========================================================================
 
-  /** Convert JS getDay() (Sun=0) to ISO weekday index (Mon=0, Sun=6) */
-  function isoWeekday(dateStr: string): number {
-    const jsDay = new Date(dateStr).getDay();
-    return jsDay === 0 ? 6 : jsDay - 1;
-  }
-
-  function formatDayMonth(dateStr: string, withYear: boolean): string {
-    const opts: Intl.DateTimeFormatOptions = {
-      day: '2-digit',
-      month: '2-digit',
-    };
-    if (withYear) opts.year = '2-digit';
-    return new Date(dateStr).toLocaleDateString('de-DE', opts);
-  }
-
-  function getConflictLabel(type: string): string {
-    if (type === 'no_shift_plan') return MESSAGES.SLOT_NO_SHIFT;
-    if (type === 'existing_tpm') return MESSAGES.SLOT_TPM_EXISTING;
-    if (type === 'tpm_schedule') return MESSAGES.SLOT_TPM_SCHEDULE;
-    return type;
-  }
-
-  function getConflictIcon(type: string): string {
-    if (type === 'no_shift_plan') return 'fa-calendar-xmark';
-    if (type === 'existing_tpm') return 'fa-clipboard-check';
-    if (type === 'tpm_schedule') return 'fa-clock';
-    return 'fa-exclamation';
-  }
-
-  /** Format a projected slot for display */
-  function formatProjectionDescription(slot: ProjectedSlot): string {
-    const intervals = slot.intervalTypes
-      .map((t: IntervalType) => INTERVAL_LABELS[t])
-      .join(', ');
-    const time =
-      slot.isFullDay ? 'Ganztägig' : (
-        `${slot.startTime ?? '?'} – ${slot.endTime ?? '?'}`
-      );
-    return `${slot.planName} (${slot.assetName}) — ${intervals} — ${time}`;
-  }
-
-  /** Format projection lines for tooltip display */
-  function formatProjectionLines(slots: ProjectedSlot[]): string[] {
-    return slots.map((s: ProjectedSlot) => formatProjectionDescription(s));
-  }
-
-  /** Collect conflict descriptions for an unavailable day */
-  function collectConflictParts(day: DayAvailability): string[] {
-    return day.conflicts.map((c) =>
-      c.type === 'tpm_schedule' ?
-        c.description
-      : `${getConflictLabel(c.type)}: ${c.description}`,
-    );
-  }
-
-  /** Append projection details not already present in conflict descriptions */
-  function appendUniqueProjections(
-    parts: string[],
-    projSlots: ProjectedSlot[],
-    conflictDescs: Set<string>,
-  ): void {
-    for (const s of projSlots) {
-      const desc = formatProjectionDescription(s);
-      if (!conflictDescs.has(desc)) {
-        parts.push(desc);
-      }
-    }
-  }
-
-  /** Build tooltip from slot data + projection enrichment */
-  function buildDayTooltip(day: DayAvailability): string {
-    const projSlots = projectionByDate.get(day.date) ?? [];
-
-    if (day.isAvailable) {
-      if (projSlots.length === 0) return 'Verfügbar';
-      const lines = formatProjectionLines(projSlots);
-      return `Verfügbar\n\nGeplante Termine:\n${lines.join('\n')}`;
-    }
-
-    const parts = collectConflictParts(day);
-    const conflictDescs = new Set(day.conflicts.map((c) => c.description));
-    appendUniqueProjections(parts, projSlots, conflictDescs);
-    return parts.join('\n');
-  }
-
-  /** Check if a day has a tpm_schedule conflict */
-  function hasTpmScheduleConflict(day: DayAvailability): boolean {
-    return day.conflicts.some((c) => c.type === 'tpm_schedule');
-  }
-
-  /** Get projection slots for a specific date */
   function getSlotsForDate(dateStr: string): ProjectedSlot[] {
     return projectionByDate.get(dateStr) ?? [];
   }
 
-  /** Toggle timeline view for a day (click same day to close) */
+  function isCurrentPlanDate(dateStr: string): boolean {
+    if (planUuid === undefined) return false;
+    const slots = projectionByDate.get(dateStr) ?? [];
+    return slots.some((s: ProjectedSlot) => s.planUuid === planUuid);
+  }
+
+  function getAssignmentsForDate(dateStr: string): TpmPlanAssignment[] {
+    return assignmentsByDate.get(dateStr) ?? [];
+  }
+
   function handleDayClick(day: DayAvailability): void {
-    selectedDay = selectedDay === day.date ? null : day.date;
+    if (isEditMode && isCurrentPlanDate(day.date)) {
+      assignmentModalDate = day.date;
+    } else {
+      selectedDay = selectedDay === day.date ? null : day.date;
+    }
+  }
+
+  function handleAssignmentsSaved(saved: TpmPlanAssignment[]): void {
+    if (assignmentModalDate === null) return;
+    const otherAssignments = assignments.filter(
+      (a: TpmPlanAssignment) => a.scheduledDate !== assignmentModalDate,
+    );
+    assignments = [...otherAssignments, ...saved];
   }
 
   // =========================================================================
   // LOAD SLOTS + PROJECTION
   // =========================================================================
 
+  function buildEditModePromises(): [
+    Promise<AssetTeamAvailabilityResult | null>,
+    Promise<TpmPlanAssignment[]>,
+  ] {
+    if (!isEditMode || planUuid === undefined) {
+      return [Promise.resolve(null), Promise.resolve([])];
+    }
+    return [
+      fetchTeamAvailability(planUuid),
+      fetchPlanAssignments(planUuid, startDate, endDate),
+    ];
+  }
+
+  function applyLoadedData(
+    slotResult: SlotAvailabilityResult | null,
+    projResult: ScheduleProjectionResult | null,
+    teamResult: AssetTeamAvailabilityResult | null,
+    assignResult: TpmPlanAssignment[],
+  ): void {
+    slotData = slotResult;
+    projectionData = projResult;
+    teamMembers = teamResult?.members ?? [];
+    assignments = assignResult;
+    ondataload?.(projResult?.slots ?? [], assignResult);
+  }
+
   async function loadData(): Promise<void> {
     if (!canFetch || startDate.length === 0 || endDate.length === 0) return;
     selectedDay = null;
     loading = true;
     try {
-      // Fetch slot data (max 90d) + projection (up to 365d) in parallel
-      const slotPromise = loadSlotData();
-      const projPromise = fetchScheduleProjection(startDate, endDate);
+      const [teamPromise, assignPromise] = buildEditModePromises();
+      const [slotResult, projResult, teamResult, assignResult] =
+        await Promise.all([
+          loadSlotData(),
+          fetchScheduleProjection(startDate, endDate),
+          teamPromise,
+          assignPromise,
+        ]);
 
-      const [slotResult, projResult] = await Promise.all([
-        slotPromise,
-        projPromise,
-      ]);
-
-      slotData = slotResult;
-      projectionData = projResult;
+      applyLoadedData(slotResult, projResult, teamResult, assignResult);
     } catch (err: unknown) {
       logApiError('loadData', err);
       showErrorAlert(err instanceof Error ? err.message : 'Fehler beim Laden');
@@ -636,6 +460,14 @@
             {INTERVAL_LABELS[key as IntervalType]}
           </span>
         {/each}
+        {#if isEditMode}
+          <span
+            class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
+          >
+            <span class="slot-dot slot-dot--other-plan"></span>
+            Anderer Plan
+          </span>
+        {/if}
         {#if previewDates.size > 0}
           <span
             class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
@@ -667,12 +499,18 @@
             {@const isPreview = previewDates.has(day.date)}
             {@const isScheduled =
               hasTpmScheduleConflict(day) || projSlots.length > 0}
+            {@const isCurrentPlan = isCurrentPlanDate(day.date)}
             <div
               class="slot-day"
-              class:slot-day--scheduled={isScheduled && !isPreview}
+              class:slot-day--scheduled={isScheduled &&
+                !isPreview &&
+                isCurrentPlan}
+              class:slot-day--other-plan={isScheduled &&
+                !isPreview &&
+                !isCurrentPlan}
               class:slot-day--preview={isPreview}
               class:slot-day--selected={selectedDay === day.date}
-              title={buildDayTooltip(day)}
+              title={buildDayTooltip(day, projSlots)}
               role="button"
               tabindex="0"
               onclick={() => {
@@ -705,6 +543,15 @@
                   {colorMap}
                 />
               {/if}
+              {#if getAssignmentsForDate(day.date).length > 0}
+                <div class="slot-day__assignments">
+                  {#each getAssignmentsForDate(day.date) as a (a.uuid)}
+                    <span class="badge badge--sm badge--info"
+                      >{a.lastName}, {a.firstName}</span
+                    >
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -735,12 +582,13 @@
                 <div class="slot-empty"></div>
               {:else}
                 {@const day = cell}
+                {@const dayProjSlots = getSlotsForDate(day.date)}
                 {@const available = day.isAvailable}
                 {@const isWeekend = isoWeekday(day.date) >= 5}
                 {@const isScheduled =
-                  hasTpmScheduleConflict(day) ||
-                  getSlotsForDate(day.date).length > 0}
+                  hasTpmScheduleConflict(day) || dayProjSlots.length > 0}
                 {@const isPreview = previewDates.has(day.date)}
+                {@const isCurrentPlan = isCurrentPlanDate(day.date)}
                 <div
                   class="slot-day"
                   class:slot-day--available={available &&
@@ -749,14 +597,19 @@
                   class:slot-day--unavailable={!available &&
                     !isScheduled &&
                     !isPreview}
-                  class:slot-day--scheduled={isScheduled && !isPreview}
+                  class:slot-day--scheduled={isScheduled &&
+                    !isPreview &&
+                    isCurrentPlan}
+                  class:slot-day--other-plan={isScheduled &&
+                    !isPreview &&
+                    !isCurrentPlan}
                   class:slot-day--preview={isPreview}
                   class:slot-day--hidden={showOnlyScheduled &&
                     !isScheduled &&
                     !isPreview}
                   class:slot-day--weekend={isWeekend}
                   class:slot-day--selected={selectedDay === day.date}
-                  title={buildDayTooltip(day)}
+                  title={buildDayTooltip(day, dayProjSlots)}
                   role="button"
                   tabindex="0"
                   onclick={() => {
@@ -774,9 +627,8 @@
                     {formatDayMonth(day.date, showOnlyScheduled)}
                   </span>
                   {#if isScheduled}
-                    {@const projSlots = getSlotsForDate(day.date)}
                     <SlotDayContent
-                      slots={projSlots}
+                      slots={dayProjSlots}
                       {colorMap}
                     />
                     {#if isPreview}
@@ -803,6 +655,15 @@
                       {getConflictLabel(day.conflicts[0]?.type ?? '')}
                     </span>
                   {/if}
+                  {#if getAssignmentsForDate(day.date).length > 0}
+                    <div class="slot-day__assignments">
+                      {#each getAssignmentsForDate(day.date) as a (a.uuid)}
+                        <span class="badge badge--sm badge--info"
+                          >{a.lastName}, {a.firstName}</span
+                        >
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
               {/if}
             {/each}
@@ -821,6 +682,20 @@
         />
       {/if}
     {/if}
+
+    <!-- Assignment Modal -->
+    {#if assignmentModalDate !== null && planUuid !== undefined}
+      <AssignmentModal
+        {planUuid}
+        scheduledDate={assignmentModalDate}
+        members={teamMembers}
+        currentAssignments={getAssignmentsForDate(assignmentModalDate)}
+        onclose={() => {
+          assignmentModalDate = null;
+        }}
+        onsaved={handleAssignmentsSaved}
+      />
+    {/if}
   </div>
 </div>
 
@@ -838,6 +713,18 @@
 
   .slot-dot--unavailable {
     background: var(--color-danger);
+  }
+
+  .slot-dot--other-plan {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 2px,
+      color-mix(in srgb, var(--color-text-muted) 40%, transparent) 2px,
+      color-mix(in srgb, var(--color-text-muted) 40%, transparent) 4px
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--color-text-muted) 30%, transparent);
   }
 
   /* ---- Calendar Grid ---- */
@@ -957,6 +844,19 @@
       color-mix(in srgb, var(--color-info, #3b82f6) 30%, transparent);
   }
 
+  .slot-day--other-plan {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 4px,
+      color-mix(in srgb, var(--color-text-muted) 8%, transparent) 4px,
+      color-mix(in srgb, var(--color-text-muted) 8%, transparent) 8px
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--color-text-muted) 20%, transparent);
+    opacity: 70%;
+  }
+
   .slot-day--preview {
     background: color-mix(in srgb, var(--color-violet-600) 12%, transparent);
     border: 1px solid
@@ -998,5 +898,12 @@
     color: var(--color-danger);
     text-align: center;
     line-height: 1.2;
+  }
+
+  .slot-day__assignments {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 </style>

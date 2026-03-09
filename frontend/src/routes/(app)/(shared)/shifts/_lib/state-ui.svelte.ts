@@ -8,7 +8,6 @@ let isDragging = $state(false);
 let isEditMode = $state(false);
 let isPlanLocked = $state(false);
 let showPlanningUI = $state(false);
-let showTpmEvents = $state(false);
 let currentWeek = $state<Date>(new Date());
 
 /** Reset all UI flags to their default values */
@@ -18,7 +17,6 @@ function resetUiDefaults(): void {
   isEditMode = false;
   isPlanLocked = false;
   showPlanningUI = false;
-  showTpmEvents = false;
   currentWeek = new Date();
 }
 
@@ -39,9 +37,6 @@ function createUiState() {
     get showPlanningUI() {
       return showPlanningUI;
     },
-    get showTpmEvents() {
-      return showTpmEvents;
-    },
     get currentWeek() {
       return currentWeek;
     },
@@ -59,9 +54,6 @@ function createUiState() {
     },
     setShowPlanningUI: (v: boolean) => {
       showPlanningUI = v;
-    },
-    setShowTpmEvents: (v: boolean) => {
-      showTpmEvents = v;
     },
     setCurrentWeek: (v: Date) => {
       currentWeek = v;
