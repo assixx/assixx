@@ -597,6 +597,52 @@ describe('SECURITY: UserPermissionsService', () => {
         // 1 capturePermissionState, no UPSERT calls
         expect(mockClient.query).toHaveBeenCalledTimes(1);
       });
+
+      it('should capture existing permission state before upserting', async () => {
+        mockDb.queryOne.mockResolvedValue({ id: 42 });
+        mockRegistry.isValidModule.mockReturnValue(true);
+        mockRegistry.getAllowedPermissions.mockReturnValue([
+          'canRead',
+          'canWrite',
+          'canDelete',
+        ]);
+
+        // capturePermissionState returns existing rows
+        mockClient.query.mockResolvedValueOnce({
+          rows: [
+            {
+              feature_code: 'blackboard',
+              module_code: 'blackboard-posts',
+              can_read: true,
+              can_write: false,
+              can_delete: false,
+            },
+          ],
+        });
+        // UPSERT call
+        mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+        await service.upsertPermissions(
+          1,
+          'user-uuid-1',
+          [
+            {
+              featureCode: 'blackboard',
+              moduleCode: 'blackboard-posts',
+              canRead: true,
+              canWrite: true,
+              canDelete: false,
+            },
+          ],
+          99,
+        );
+
+        // capturePermissionState queried user_feature_permissions
+        const captureCall = mockClient.query.mock.calls[0];
+        const captureSql = captureCall?.[0] as string;
+        expect(captureSql).toContain('user_feature_permissions');
+        expect(captureCall?.[1]).toContain(42);
+      });
     });
 
     describe('allowedPermissions Enforcement', () => {
