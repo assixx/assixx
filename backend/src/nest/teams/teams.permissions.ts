@@ -9,12 +9,12 @@ import type { PermissionCategoryDef } from '../common/permission-registry/permis
 export const TEAMS_PERMISSIONS: PermissionCategoryDef = {
   code: 'teams',
   label: 'Teams',
-  icon: 'fa-people-group',
+  icon: 'fa-users',
   modules: [
     {
       code: 'teams-manage',
       label: 'Teams verwalten',
-      icon: 'fa-people-group',
+      icon: 'fa-users',
       allowedPermissions: ['canWrite', 'canDelete'],
     },
   ],
