@@ -190,5 +190,5 @@
 
 /* Dark mode overrides for opaque dropdown */
 html.dark .dropdown__menu {
-  background: oklch(16.842% 0.00002 271.152);
+  background: oklch(16.842% 0 271.152);
 }
