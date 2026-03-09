@@ -275,6 +275,10 @@
   {#if shiftsState.isAdmin}
     <ShiftAssignmentCounts counts={assignmentCounts} />
   {/if}
+  <WeekNavigation
+    {weekRangeText}
+    onnavigateWeek={navigateWeek}
+  />
 {/snippet}
 
 <svelte:head>
@@ -396,12 +400,6 @@
 
       <!-- Main Planning UI -->
       {#if shiftsState.showPlanningUI}
-        <!-- Week Navigation -->
-        <WeekNavigation
-          {weekRangeText}
-          onnavigateWeek={navigateWeek}
-        />
-
         <!-- Shift Control Toggles (Admin Only) -->
         {#if shiftsState.isAdmin}
           <ShiftControls
