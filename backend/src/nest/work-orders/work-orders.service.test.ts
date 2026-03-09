@@ -115,6 +115,7 @@ describe('createWorkOrder', () => {
 
     const result = await service.createWorkOrder(1, 5, {
       title: 'Ölwechsel durchführen',
+      dueDate: '2026-04-01',
     });
 
     expect(result.uuid).toBe('019c9547-9fc0-771a-b022-3767e233d6f3');
@@ -133,6 +134,7 @@ describe('createWorkOrder', () => {
 
     const result = await service.createWorkOrder(1, 5, {
       title: 'Ölwechsel durchführen',
+      dueDate: '2026-04-01',
       assigneeUuids: ['user-uuid-1'],
     });
 
@@ -144,7 +146,7 @@ describe('createWorkOrder', () => {
     mockClient.query.mockResolvedValueOnce({ rows: [] });
 
     await expect(
-      service.createWorkOrder(1, 5, { title: 'Test' }),
+      service.createWorkOrder(1, 5, { title: 'Test', dueDate: '2026-04-01' }),
     ).rejects.toThrow('Arbeitsauftrag konnte nicht erstellt werden');
   });
 
@@ -152,7 +154,10 @@ describe('createWorkOrder', () => {
     const row = createWorkOrderRow();
     mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-    await service.createWorkOrder(1, 5, { title: 'Test' });
+    await service.createWorkOrder(1, 5, {
+      title: 'Test',
+      dueDate: '2026-04-01',
+    });
 
     const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
     // params[4] = priority (default 'medium')
@@ -163,15 +168,18 @@ describe('createWorkOrder', () => {
     expect(params[3]).toBeNull();
     // params[6] = sourceUuid (default null)
     expect(params[6]).toBeNull();
-    // params[7] = dueDate (default null)
-    expect(params[7]).toBeNull();
+    // params[7] = dueDate (now required)
+    expect(params[7]).toBe('2026-04-01');
   });
 
   it('should log activity after creation', async () => {
     const row = createWorkOrderRow();
     mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-    await service.createWorkOrder(1, 5, { title: 'Test' });
+    await service.createWorkOrder(1, 5, {
+      title: 'Test',
+      dueDate: '2026-04-01',
+    });
 
     expect(mockActivityLogger.logCreate).toHaveBeenCalledExactlyOnceWith(
       1,
@@ -194,6 +202,7 @@ describe('createWorkOrder', () => {
         title: 'KVP: Doppelt',
         sourceType: 'kvp_proposal',
         sourceUuid: 'kvp-uuid-123',
+        dueDate: '2026-04-01',
       }),
     ).rejects.toThrow('Es existiert bereits ein aktiver Arbeitsauftrag');
   });
@@ -212,6 +221,7 @@ describe('createWorkOrder', () => {
       title: 'KVP: Neu',
       sourceType: 'kvp_proposal',
       sourceUuid: 'kvp-uuid-123',
+      dueDate: '2026-04-01',
     });
 
     expect(result.uuid).toBeDefined();
@@ -221,7 +231,10 @@ describe('createWorkOrder', () => {
     const row = createWorkOrderRow();
     mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-    await service.createWorkOrder(1, 5, { title: 'Manuell' });
+    await service.createWorkOrder(1, 5, {
+      title: 'Manuell',
+      dueDate: '2026-04-01',
+    });
 
     // queryOne should NOT have been called (no ensureNoActiveLinkedWorkOrder)
     expect(mockDb.queryOne).not.toHaveBeenCalled();

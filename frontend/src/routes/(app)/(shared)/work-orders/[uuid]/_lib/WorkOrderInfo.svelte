@@ -83,13 +83,8 @@
   <!-- Fälligkeitsdatum -->
   <div class="data-list__item">
     <span class="data-list__label">{MESSAGES.DETAIL_DUE_DATE}</span>
-    <span
-      class="data-list__value"
-      class:data-list__value--empty={workOrder.dueDate === null}
-    >
-      {workOrder.dueDate !== null ?
-        formatDate(workOrder.dueDate)
-      : MESSAGES.DETAIL_NO_DUE_DATE}
+    <span class="data-list__value">
+      {formatDate(workOrder.dueDate)}
     </span>
   </div>
 

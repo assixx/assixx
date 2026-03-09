@@ -426,7 +426,7 @@
                           }}
                           title="Mangel bearbeiten"
                         >
-                          <i class="fas fa-pen"></i>
+                          <i class="fas fa-edit"></i>
                         </button>
                         {#if defect.workOrderUuid !== null && defect.workOrderStatus !== null}
                           <div class="wo-info">
@@ -617,7 +617,7 @@
           class="ds-modal__title"
           id="edit-defect-modal-title"
         >
-          <i class="fas fa-pen mr-2"></i>
+          <i class="fas fa-edit mr-2"></i>
           Mangel bearbeiten
         </h3>
         <button

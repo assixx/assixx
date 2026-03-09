@@ -40,14 +40,11 @@
   const sourceLabel = $derived(SOURCE_TYPE_LABELS[workOrder.sourceType]);
 
   const dueDateFormatted = $derived(
-    workOrder.dueDate !== null ?
-      new Date(workOrder.dueDate).toLocaleDateString('de-DE')
-    : null,
+    new Date(workOrder.dueDate).toLocaleDateString('de-DE'),
   );
 
   const isOverdue = $derived(
-    workOrder.dueDate !== null &&
-      workOrder.status !== 'completed' &&
+    workOrder.status !== 'completed' &&
       workOrder.status !== 'verified' &&
       new Date(workOrder.dueDate) < new Date(),
   );
@@ -91,7 +88,7 @@
       title={MESSAGES.LIST_COL_DUE_DATE}
     >
       <i class="fas fa-calendar-alt"></i>
-      {dueDateFormatted ?? MESSAGES.DETAIL_NO_DUE_DATE}
+      {dueDateFormatted}
     </span>
 
     <span

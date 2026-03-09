@@ -29,7 +29,13 @@ export const SHIFTS_PERMISSIONS: PermissionCategoryDef = {
       code: 'shift-rotation',
       label: 'Rotation',
       icon: 'fa-sync-alt',
-      allowedPermissions: ['canRead'],
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+    },
+    {
+      code: 'shift-times',
+      label: 'Schichtzeiten',
+      icon: 'fa-clock',
+      allowedPermissions: ['canRead', 'canWrite'],
     },
   ],
 };

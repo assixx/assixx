@@ -14,6 +14,7 @@ import { UserPermissionsModule } from '../user-permissions/user-permissions.modu
 import { NotificationFeatureService } from './notification-feature.service.js';
 import { NotificationPreferencesService } from './notification-preferences.service.js';
 import { NotificationStatisticsService } from './notification-statistics.service.js';
+import { NotificationsPermissionRegistrar } from './notifications-permission.registrar.js';
 import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
 
@@ -25,6 +26,7 @@ import { NotificationsService } from './notifications.service.js';
     NotificationPreferencesService,
     NotificationStatisticsService,
     NotificationFeatureService,
+    NotificationsPermissionRegistrar,
   ],
   exports: [NotificationsService],
 })

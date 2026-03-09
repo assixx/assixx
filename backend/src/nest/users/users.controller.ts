@@ -49,6 +49,7 @@ import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -120,6 +121,11 @@ interface MessageResponse {
   message: string;
 }
 
+/** Permission constants */
+const FEAT = 'employees';
+const MOD_MANAGE = 'employees-manage';
+const MOD_AVAIL = 'employees-availability';
+
 @Controller('users')
 export class UsersController {
   constructor(
@@ -131,6 +137,7 @@ export class UsersController {
   /** GET /users - List all users with pagination and filters (admin only) */
   @Get()
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async listUsers(
     @Query() query: ListUsersQueryDto,
     @TenantId() tenantId: number,
@@ -149,6 +156,7 @@ export class UsersController {
   /** GET /users/uuid/:uuid - Get user by UUID (admin only, preferred) */
   @Get('uuid/:uuid')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getUserByUuid(
     @Param('uuid') uuid: string,
     @TenantId() tenantId: number,
@@ -163,6 +171,7 @@ export class UsersController {
    */
   @Get(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getUserById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -173,6 +182,7 @@ export class UsersController {
   /** POST /users - Create new user (admin only) */
   @Post()
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createUser(
     @Body() dto: CreateUserDto,
@@ -185,6 +195,7 @@ export class UsersController {
   /** PUT /users/uuid/:uuid - Update user by UUID (admin only, preferred) */
   @Put('uuid/:uuid')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async updateUserByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateUserDto,
@@ -207,6 +218,7 @@ export class UsersController {
    */
   @Put(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserDto,
@@ -252,6 +264,7 @@ export class UsersController {
   /** DELETE /users/uuid/:uuid - Delete user by UUID (soft delete, admin only, preferred) */
   @Delete('uuid/:uuid')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
   async deleteUserByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -267,6 +280,7 @@ export class UsersController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
   async deleteUser(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -278,6 +292,7 @@ export class UsersController {
   /** POST /users/uuid/:uuid/archive - Archive user by UUID (admin only, preferred) */
   @Post('uuid/:uuid/archive')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async archiveUserByUuid(
     @Param('uuid') uuid: string,
     @TenantId() tenantId: number,
@@ -292,6 +307,7 @@ export class UsersController {
    */
   @Post(':id/archive')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async archiveUser(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -302,6 +318,7 @@ export class UsersController {
   /** POST /users/uuid/:uuid/unarchive - Unarchive user by UUID (admin only, preferred) */
   @Post('uuid/:uuid/unarchive')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async unarchiveUserByUuid(
     @Param('uuid') uuid: string,
     @TenantId() tenantId: number,
@@ -316,6 +333,7 @@ export class UsersController {
    */
   @Post(':id/unarchive')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async unarchiveUser(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -326,6 +344,7 @@ export class UsersController {
   /** PUT /users/uuid/:uuid/availability - Update user availability by UUID (admin only, preferred) */
   @Put('uuid/:uuid/availability')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canWrite')
   async updateAvailabilityByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateAvailabilityDto,
@@ -347,6 +366,7 @@ export class UsersController {
    */
   @Put(':id/availability')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canWrite')
   async updateAvailability(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAvailabilityDto,
@@ -368,6 +388,7 @@ export class UsersController {
    */
   @Get('uuid/:uuid/availability/history')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canRead')
   async getAvailabilityHistory(
     @Param('uuid') uuid: string,
     @Query() query: AvailabilityHistoryQueryDto,
@@ -392,6 +413,7 @@ export class UsersController {
    */
   @Put('availability/:id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canWrite')
   async updateAvailabilityEntry(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAvailabilityEntryDto,
@@ -409,6 +431,7 @@ export class UsersController {
   /** DELETE /users/availability/:id - Delete a specific availability history entry (admin only) */
   @Delete('availability/:id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canDelete')
   async deleteAvailabilityEntry(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,

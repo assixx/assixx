@@ -10,6 +10,8 @@ import {
   toIsoStringOrNull,
 } from '../../utils/db-helpers.js';
 import type {
+  CalendarWorkOrder,
+  CalendarWorkOrderRow,
   SourcePhoto,
   WorkOrder,
   WorkOrderAssignee,
@@ -154,6 +156,20 @@ export function mapSourcePhotoRowToApi(row: SourcePhotoRow): SourcePhoto {
     fileSize: row.file_size,
     mimeType: row.mime_type,
     createdAt: toIsoString(row.created_at),
+  };
+}
+
+/** Map lightweight calendar row to API response */
+export function mapCalendarWorkOrderRow(
+  row: CalendarWorkOrderRow,
+): CalendarWorkOrder {
+  return {
+    uuid: row.uuid.trim(),
+    title: row.title,
+    dueDate: row.due_date,
+    status: row.status,
+    priority: row.priority,
+    sourceType: row.source_type,
   };
 }
 

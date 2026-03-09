@@ -13,6 +13,7 @@
 import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import {
@@ -26,12 +27,18 @@ import {
 } from './dto/index.js';
 import { ReportsService } from './reports.service.js';
 
+/** Permission constants */
+const FEAT = 'reports';
+const MOD_VIEW = 'reports-view';
+const MOD_EXPORT = 'reports-export';
+
 @Roles('admin', 'root')
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('overview')
+  @RequirePermission(FEAT, MOD_VIEW, 'canRead')
   async getOverviewReport(
     @TenantId() tenantId: number,
     @Query() query: DateRangeQueryDto,
@@ -44,6 +51,7 @@ export class ReportsController {
   }
 
   @Get('employees')
+  @RequirePermission(FEAT, MOD_VIEW, 'canRead')
   async getEmployeeReport(
     @TenantId() tenantId: number,
     @Query() query: EmployeeReportQueryDto,
@@ -58,6 +66,7 @@ export class ReportsController {
   }
 
   @Get('departments')
+  @RequirePermission(FEAT, MOD_VIEW, 'canRead')
   async getDepartmentReport(
     @TenantId() tenantId: number,
     @Query() query: DateRangeQueryDto,
@@ -70,6 +79,7 @@ export class ReportsController {
   }
 
   @Get('shifts')
+  @RequirePermission(FEAT, MOD_VIEW, 'canRead')
   async getShiftReport(
     @TenantId() tenantId: number,
     @Query() query: ShiftReportQueryDto,
@@ -84,6 +94,7 @@ export class ReportsController {
   }
 
   @Get('kvp')
+  @RequirePermission(FEAT, MOD_VIEW, 'canRead')
   async getKvpReport(
     @TenantId() tenantId: number,
     @Query() query: KvpReportQueryDto,
@@ -97,6 +108,7 @@ export class ReportsController {
   }
 
   @Post('custom')
+  @RequirePermission(FEAT, MOD_EXPORT, 'canWrite')
   async generateCustomReport(
     @TenantId() tenantId: number,
     @Body() dto: CustomReportDto,
@@ -114,6 +126,7 @@ export class ReportsController {
   }
 
   @Get('export/:type')
+  @RequirePermission(FEAT, MOD_EXPORT, 'canRead')
   async exportReport(
     @TenantId() tenantId: number,
     @Param() params: ReportTypeParamDto,

@@ -13,6 +13,7 @@ import { Module } from '@nestjs/common';
 import { AssetAvailabilityService } from './asset-availability.service.js';
 import { AssetMaintenanceService } from './asset-maintenance.service.js';
 import { AssetTeamService } from './asset-team.service.js';
+import { AssetsPermissionRegistrar } from './assets-permission.registrar.js';
 import { AssetsController } from './assets.controller.js';
 import { AssetsService } from './assets.service.js';
 
@@ -23,6 +24,7 @@ import { AssetsService } from './assets.service.js';
     AssetAvailabilityService,
     AssetMaintenanceService,
     AssetTeamService,
+    AssetsPermissionRegistrar,
   ],
   exports: [AssetsService, AssetAvailabilityService],
 })

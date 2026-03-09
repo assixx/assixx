@@ -38,7 +38,6 @@
   }
 
   function isOverdue(item: WorkOrderListItem): boolean {
-    if (item.dueDate === null) return false;
     if (item.status === 'completed' || item.status === 'verified') return false;
     return new Date(item.dueDate) < new Date();
   }
@@ -99,13 +98,9 @@
             {/if}
           </td>
           <td>
-            {#if item.dueDate !== null}
-              <span class:text-danger={isOverdue(item)}>
-                {formatDate(item.dueDate)}
-              </span>
-            {:else}
-              <span class="text-muted">&mdash;</span>
-            {/if}
+            <span class:text-danger={isOverdue(item)}>
+              {formatDate(item.dueDate)}
+            </span>
           </td>
           <td>{SOURCE_TYPE_LABELS[item.sourceType]}</td>
           <td>{formatDate(item.createdAt)}</td>

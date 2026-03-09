@@ -6,12 +6,13 @@
  */
 import { Module } from '@nestjs/common';
 
+import { DummyUsersPermissionRegistrar } from './dummy-users-permission.registrar.js';
 import { DummyUsersController } from './dummy-users.controller.js';
 import { DummyUsersService } from './dummy-users.service.js';
 
 @Module({
   controllers: [DummyUsersController],
-  providers: [DummyUsersService],
+  providers: [DummyUsersService, DummyUsersPermissionRegistrar],
   exports: [DummyUsersService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured, empty class body is standard pattern

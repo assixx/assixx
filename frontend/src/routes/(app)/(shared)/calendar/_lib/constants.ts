@@ -117,6 +117,27 @@ export const ORG_LEVEL_OPTIONS = [
 ] as const;
 
 /**
+ * Work order calendar event color — uses design-system token --color-slate (oklch)
+ * Einheitlich grau für alle Aufträge, unabhängig vom Status.
+ */
+export const WORK_ORDER_EVENT_COLOR = 'var(--color-slate)';
+
+/** German status labels for work order tooltips */
+export const WORK_ORDER_STATUS_LABELS: Record<string, string> = {
+  open: 'Offen',
+  in_progress: 'In Bearbeitung',
+  completed: 'Abgeschlossen',
+  verified: 'Verifiziert',
+};
+
+/** German priority labels for work order tooltips */
+export const WORK_ORDER_PRIORITY_LABELS: Record<string, string> = {
+  low: 'Niedrig',
+  medium: 'Mittel',
+  high: 'Hoch',
+};
+
+/**
  * Recurrence dropdown options
  */
 export const RECURRENCE_OPTIONS = [

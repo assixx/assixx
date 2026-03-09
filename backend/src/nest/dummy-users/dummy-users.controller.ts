@@ -20,6 +20,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -30,6 +31,10 @@ import { UpdateDummyUserDto } from './dto/update-dummy-user.dto.js';
 import { DummyUsersService } from './dummy-users.service.js';
 import type { DummyUser, PaginatedDummyUsers } from './dummy-users.types.js';
 
+/** Permission constants */
+const FEAT = 'dummy_users';
+const MOD_MANAGE = 'dummy-users-manage';
+
 @Controller('dummy-users')
 @UseGuards(RolesGuard)
 @Roles('admin', 'root')
@@ -38,6 +43,7 @@ export class DummyUsersController {
 
   /** GET /dummy-users — Paginated list */
   @Get()
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async list(
     @Query() query: ListDummyUsersQueryDto,
     @TenantId() tenantId: number,
@@ -48,6 +54,7 @@ export class DummyUsersController {
   /** POST /dummy-users — Create a new dummy user */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async create(
     @Body() dto: CreateDummyUserDto,
     @CurrentUser() user: NestAuthUser,
@@ -58,6 +65,7 @@ export class DummyUsersController {
 
   /** GET /dummy-users/:uuid — Get single dummy user */
   @Get(':uuid')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getOne(
     @Param('uuid') uuid: string,
     @TenantId() tenantId: number,
@@ -67,6 +75,7 @@ export class DummyUsersController {
 
   /** PUT /dummy-users/:uuid — Update dummy user */
   @Put(':uuid')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async update(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateDummyUserDto,
@@ -79,6 +88,7 @@ export class DummyUsersController {
   /** DELETE /dummy-users/:uuid — Soft-delete dummy user */
   @Delete(':uuid')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
   async remove(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,

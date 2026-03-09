@@ -92,7 +92,7 @@ export interface WorkOrderRow {
   priority: WorkOrderPriority;
   source_type: WorkOrderSourceType;
   source_uuid: string | null;
-  due_date: string | null;
+  due_date: string;
   created_by: number;
   completed_at: string | null;
   verified_at: string | null;
@@ -147,6 +147,16 @@ export interface WorkOrderPhotoWithNameRow extends WorkOrderPhotoRow {
   last_name: string;
 }
 
+/** Lightweight row for calendar display (SELECT only needed columns) */
+export interface CalendarWorkOrderRow {
+  uuid: string;
+  title: string;
+  due_date: string;
+  status: WorkOrderStatus;
+  priority: WorkOrderPriority;
+  source_type: WorkOrderSourceType;
+}
+
 // ============================================================================
 // API Types (camelCase — response shapes)
 // ============================================================================
@@ -198,7 +208,7 @@ export interface WorkOrder {
   sourceUuid: string | null;
   sourceTitle: string | null;
   sourceExpectedBenefit: string | null;
-  dueDate: string | null;
+  dueDate: string;
   createdBy: number;
   createdByName: string;
   assignees: WorkOrderAssignee[];
@@ -220,7 +230,7 @@ export interface WorkOrderListItem {
   status: WorkOrderStatus;
   priority: WorkOrderPriority;
   sourceType: WorkOrderSourceType;
-  dueDate: string | null;
+  dueDate: string;
   createdByName: string;
   assigneeCount: number;
   assigneeNames: string;
@@ -250,6 +260,16 @@ export interface SourcePhoto {
   fileSize: number;
   mimeType: string;
   createdAt: string;
+}
+
+/** Lightweight work order for calendar view (no nested arrays, no counts) */
+export interface CalendarWorkOrder {
+  uuid: string;
+  title: string;
+  dueDate: string;
+  status: WorkOrderStatus;
+  priority: WorkOrderPriority;
+  sourceType: WorkOrderSourceType;
 }
 
 /** Stats per status for dashboard counters */

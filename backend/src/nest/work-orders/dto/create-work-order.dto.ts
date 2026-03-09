@@ -26,7 +26,7 @@ const BaseSchema = z.object({
   priority: WorkOrderPrioritySchema.default('medium'),
   sourceType: WorkOrderSourceTypeSchema.default('manual'),
   sourceUuid: z.uuid().nullish(),
-  dueDate: z.iso.date().nullish(),
+  dueDate: z.iso.date(),
   assigneeUuids: z
     .array(z.uuid())
     .max(10, 'Maximal 10 Zuweisungen pro Auftrag')

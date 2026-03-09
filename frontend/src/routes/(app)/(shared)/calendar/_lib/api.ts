@@ -7,10 +7,17 @@ import { createLogger } from '$lib/utils/logger';
 import { checkSessionExpired } from '$lib/utils/session-expired.js';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
 
-import { API_ENDPOINTS, ORG_LEVEL_COLORS } from './constants';
+import {
+  API_ENDPOINTS,
+  ORG_LEVEL_COLORS,
+  WORK_ORDER_EVENT_COLOR,
+  WORK_ORDER_PRIORITY_LABELS,
+  WORK_ORDER_STATUS_LABELS,
+} from './constants';
 
 import type {
   CalendarEvent,
+  CalendarWorkOrder,
   EventInput,
   EventFormData,
   Department,
@@ -288,6 +295,58 @@ export async function deleteEvent(
 
     const message = err instanceof Error ? err.message : 'Fehler beim Löschen';
     return { success: false, error: message };
+  }
+}
+
+// =============================================================================
+// WORK ORDERS (Calendar Integration — proper EventCalendar events)
+// =============================================================================
+
+/** Convert a CalendarWorkOrder to an EventCalendar EventInput */
+function formatWorkOrderForCalendar(wo: CalendarWorkOrder): EventInput {
+  const statusLabel = WORK_ORDER_STATUS_LABELS[wo.status] ?? wo.status;
+  const priorityLabel = WORK_ORDER_PRIORITY_LABELS[wo.priority] ?? wo.priority;
+
+  return {
+    id: `wo:${wo.uuid}`,
+    title: wo.title,
+    start: wo.dueDate,
+    allDay: true,
+    backgroundColor: WORK_ORDER_EVENT_COLOR,
+    borderColor: WORK_ORDER_EVENT_COLOR,
+    textColor: '#ffffff',
+    classNames: ['ec-event-work-order'],
+    extendedProps: {
+      description: `${statusLabel} · ${priorityLabel}`,
+      isWorkOrder: true,
+      workOrderUuid: wo.uuid,
+    },
+  };
+}
+
+/**
+ * Load work orders for calendar display
+ * API: GET /api/v2/work-orders/calendar
+ */
+export async function loadWorkOrdersForCalendar(
+  startDate: string,
+  endDate: string,
+): Promise<EventInput[]> {
+  try {
+    const params = new URLSearchParams({
+      startDate: startDate.slice(0, 10),
+      endDate: endDate.slice(0, 10),
+    });
+
+    const response = await apiClient.get<CalendarWorkOrder[]>(
+      `/work-orders/calendar?${params}`,
+    );
+
+    const items: CalendarWorkOrder[] = Array.isArray(response) ? response : [];
+    return items.map(formatWorkOrderForCalendar);
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading work orders for calendar');
+    return [];
   }
 }
 

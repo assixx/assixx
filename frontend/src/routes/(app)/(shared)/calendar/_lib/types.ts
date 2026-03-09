@@ -190,6 +190,18 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * Work order for calendar display (from GET /work-orders/calendar)
+ */
+export interface CalendarWorkOrder {
+  uuid: string;
+  title: string;
+  dueDate: string;
+  status: 'open' | 'in_progress' | 'completed' | 'verified';
+  priority: 'low' | 'medium' | 'high';
+  sourceType: string;
+}
+
+/**
  * Event hover info for tooltip handlers
  */
 export interface EventHoverInfo {

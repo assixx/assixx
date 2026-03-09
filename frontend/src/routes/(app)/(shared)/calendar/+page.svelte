@@ -8,7 +8,7 @@
   import { onDestroy } from 'svelte';
 
   import { browser } from '$app/environment';
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
 
   import '@event-calendar/core/index.css';
 
@@ -60,6 +60,19 @@
   // ==========================================================================
 
   let isFullscreen = $state(false);
+  let showWorkOrders = $state(
+    browser ?
+      localStorage.getItem('showWorkOrdersInCalendar') === 'true'
+    : false,
+  );
+
+  function toggleWorkOrders(): boolean {
+    showWorkOrders = !showWorkOrders;
+    if (browser) {
+      localStorage.setItem('showWorkOrdersInCalendar', String(showWorkOrders));
+    }
+    return showWorkOrders;
+  }
 
   interface CalendarViewRef {
     refetchEvents(): void;
@@ -206,12 +219,20 @@
         );
       }
 
-      return await api.loadCalendarEvents(
-        fetchInfo.startStr,
-        fetchInfo.endStr,
-        calendarState.currentFilter,
-        calendarState.currentSearch,
-      );
+      // Fetch calendar events + work orders in parallel
+      const [calendarEvents, workOrderEvents] = await Promise.all([
+        api.loadCalendarEvents(
+          fetchInfo.startStr,
+          fetchInfo.endStr,
+          calendarState.currentFilter,
+          calendarState.currentSearch,
+        ),
+        showWorkOrders ?
+          api.loadWorkOrdersForCalendar(fetchInfo.startStr, fetchInfo.endStr)
+        : Promise.resolve([]),
+      ]);
+
+      return [...calendarEvents, ...workOrderEvents];
     } catch (err: unknown) {
       log.error({ err }, 'Error loading events');
       return [];
@@ -223,6 +244,14 @@
     jsEvent: MouseEvent;
   }): void {
     info.jsEvent.preventDefault();
+
+    // Work order events: navigate to detail page
+    if (info.event.id.startsWith('wo:')) {
+      const uuid = info.event.id.slice(3);
+      void goto(`/work-orders/${uuid}`);
+      return;
+    }
+
     void handleEventClick(Number.parseInt(info.event.id, 10));
   }
 
@@ -473,6 +502,22 @@
               <i class="fas fa-umbrella-beach"></i>
               Urlaub
             </button>
+            <!-- Arbeitsaufträge Toggle -->
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={showWorkOrders}
+              id="showWorkOrdersToggle"
+              title="Arbeitsaufträge anzeigen/ausblenden"
+              data-action="toggle-work-orders"
+              onclick={() => {
+                toggleWorkOrders();
+                refetchCalendarEvents();
+              }}
+            >
+              <i class="fas fa-wrench"></i>
+              Aufträge
+            </button>
           </div>
         </div>
 
@@ -503,6 +548,10 @@
             <div class="legend-item">
               <span class="legend-color legend-vacation"></span>
               <span class="legend-label">Urlaub</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color legend-work-order"></span>
+              <span class="legend-label">Aufträge</span>
             </div>
           </div>
         </div>
@@ -631,5 +680,9 @@
 
   .legend-vacation {
     background-color: var(--color-teal-400);
+  }
+
+  .legend-work-order {
+    background-color: var(--color-slate);
   }
 </style>

@@ -18,10 +18,13 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import {
   mapAssigneeRowToApi,
+  mapCalendarWorkOrderRow,
   mapWorkOrderRowToApi,
   mapWorkOrderRowToListItem,
 } from './work-orders.helpers.js';
 import type {
+  CalendarWorkOrder,
+  CalendarWorkOrderRow,
   WorkOrder,
   WorkOrderAssigneeWithNameRow,
   WorkOrderListItem,
@@ -155,7 +158,7 @@ interface CreateDto {
   priority?: string | undefined;
   sourceType?: string | undefined;
   sourceUuid?: string | null | undefined;
-  dueDate?: string | null | undefined;
+  dueDate: string;
   assigneeUuids?: string[] | undefined;
 }
 
@@ -164,7 +167,7 @@ interface UpdateDto {
   title?: string | undefined;
   description?: string | null | undefined;
   priority?: string | undefined;
-  dueDate?: string | null | undefined;
+  dueDate?: string | undefined;
 }
 
 @Injectable()
@@ -405,6 +408,43 @@ export class WorkOrdersService {
     );
   }
 
+  /** Get work orders with due dates for calendar display */
+  async getCalendarWorkOrders(
+    tenantId: number,
+    userId: number,
+    isAdmin: boolean,
+    startDate: string,
+    endDate: string,
+  ): Promise<CalendarWorkOrder[]> {
+    const conditions = [
+      'wo.tenant_id = $1',
+      `wo.is_active = ${IS_ACTIVE.ACTIVE}`,
+      'wo.due_date IS NOT NULL',
+      'wo.due_date >= $2::date',
+      'wo.due_date <= $3::date',
+      `EXISTS (SELECT 1 FROM work_order_assignees woa WHERE woa.work_order_id = wo.id)`,
+    ];
+    const params: (string | number)[] = [tenantId, startDate, endDate];
+
+    if (!isAdmin) {
+      conditions.push(
+        `EXISTS (SELECT 1 FROM work_order_assignees woa2
+                 WHERE woa2.work_order_id = wo.id AND woa2.user_id = $4)`,
+      );
+      params.push(userId);
+    }
+
+    const rows = await this.db.query<CalendarWorkOrderRow>(
+      `SELECT wo.uuid, wo.title, wo.due_date, wo.status, wo.priority, wo.source_type
+       FROM work_orders wo
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY wo.due_date`,
+      params,
+    );
+
+    return rows.map(mapCalendarWorkOrderRow);
+  }
+
   /** Get stats filtered to work orders assigned to a specific user */
   async getMyStats(tenantId: number, userId: number): Promise<WorkOrderStats> {
     return await this.queryStats(
@@ -478,7 +518,7 @@ export class WorkOrdersService {
         dto.priority ?? 'medium',
         dto.sourceType ?? 'manual',
         dto.sourceUuid ?? null,
-        dto.dueDate ?? null,
+        dto.dueDate,
         userId,
       ],
     );

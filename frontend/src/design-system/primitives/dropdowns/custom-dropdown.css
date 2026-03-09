@@ -80,7 +80,7 @@
 
     border: var(--glass-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--color-white) 95%, transparent);
+    background-color: var(--color-white);
   }
 
   .dropdown__menu.active {
@@ -190,5 +190,5 @@
 
 /* Dark mode overrides for opaque dropdown */
 html.dark .dropdown__menu {
-  background: oklch(16.62% 0 0 / 95%);
+  background: oklch(16.842% 0.00002 271.152);
 }

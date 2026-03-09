@@ -25,6 +25,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -47,6 +48,10 @@ import {
 interface MessageResponse {
   message: string;
 }
+
+/** Permission constants */
+const FEAT = 'departments';
+const MOD = 'departments-manage';
 
 @Controller('departments')
 export class DepartmentsController {
@@ -109,6 +114,7 @@ export class DepartmentsController {
    */
   @Post()
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createDepartment(
     @Body() dto: CreateDepartmentDto,
@@ -128,6 +134,7 @@ export class DepartmentsController {
    */
   @Put(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   async updateDepartment(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateDepartmentDto,
@@ -149,6 +156,7 @@ export class DepartmentsController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canDelete')
   async deleteDepartment(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteDepartmentQueryDto,
