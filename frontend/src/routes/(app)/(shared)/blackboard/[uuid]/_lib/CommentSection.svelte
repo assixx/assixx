@@ -434,7 +434,7 @@
   }
 
   .thread-item--internal {
-    background: rgb(255 182 107 / 5%);
+    background: oklch(83.02% 0.1249 65.34 / 5%);
     padding-left: var(--spacing-3);
     padding-right: var(--spacing-3);
     margin-left: calc(var(--spacing-3) * -1);
@@ -574,8 +574,8 @@
     border-radius: 10px;
     font-size: 0.65rem;
     font-weight: 600;
-    color: #ff6b6b;
-    background: rgb(255 182 107 / 20%);
+    color: var(--color-salmon);
+    background: oklch(83.02% 0.1249 65.34 / 20%);
   }
 
   /* ─── Load More ──────── */

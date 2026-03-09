@@ -387,12 +387,12 @@
 
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
-      0 4px 16px rgb(0 0 0 / 20%),
-      inset 0 1px 0 rgb(255 255 255 / 5%);
-    border: 1px solid rgb(255 255 255 / 10%);
+      0 4px 16px color-mix(in oklch, var(--color-black) 20%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 5%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: 12px;
 
-    background: rgb(255 255 255 / 2%);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
 
     padding: 10px 20px;
     color: var(--text-secondary);
@@ -405,12 +405,12 @@
   .back-button:hover {
     transform: translateX(-5px);
     box-shadow:
-      0 6px 24px rgb(0 0 0 / 30%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
+      0 6px 24px color-mix(in oklch, var(--color-black) 30%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
 
-    border-color: rgb(255 255 255 / 15%);
+    border-color: color-mix(in oklch, var(--color-white) 15%, transparent);
 
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
 
     color: var(--text-primary);
   }
@@ -459,10 +459,10 @@
   }
 
   .login-card {
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
 
-    background: rgb(255 255 255 / 2%);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: var(--spacing-8);
     width: 100%;
     max-width: 450px;
@@ -508,12 +508,12 @@
     backdrop-filter: blur(10px);
     cursor: pointer;
     box-shadow:
-      0 4px 12px rgb(0 0 0 / 20%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+      0 4px 12px color-mix(in oklch, var(--color-black) 20%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: 50%;
 
-    background: rgb(255 255 255 / 8%);
+    background: color-mix(in oklch, var(--color-white) 8%, transparent);
 
     width: 36px;
     height: 36px;
@@ -525,12 +525,12 @@
   .help-button:hover {
     transform: scale(1.1);
     box-shadow:
-      0 6px 16px rgb(33 150 243 / 30%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
+      0 6px 16px color-mix(in oklch, var(--color-primary) 30%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
 
     border-color: var(--primary-color);
 
-    background: rgb(33 150 243 / 15%);
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
 
     color: var(--primary-color);
   }

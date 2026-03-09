@@ -10,7 +10,7 @@
 .btn-secondary {
   border: 1px solid var(--color-glass-border-hover);
   border-radius: var(--radius-xl);
-  background: #ffffff1a;
+  background: oklch(100% 0 0 / 10%);
   padding: var(--spacing-2) var(--spacing-4);
 }
 
@@ -83,8 +83,17 @@
 
   /* Light mode: bright bg with red gradient border */
   background:
-    linear-gradient(rgb(255 255 255 / 95%), rgb(245 242 242)) padding-box,
-    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+    linear-gradient(
+        color-mix(in oklch, var(--color-white) 95%, transparent),
+        oklch(96.43% 0.0017 17.18)
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(49.42% 0.2339 28.18),
+        oklch(51.41% 0.2162 27.69)
+      )
+      border-box;
 
   /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
@@ -95,22 +104,43 @@
 /* Dark mode: dark bg with same red gradient border */
 html.dark .btn-cancel {
   background:
-    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
-    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+    linear-gradient(
+        color-mix(in oklch, var(--color-black) 90%, transparent),
+        oklch(22.58% 0 0)
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(49.42% 0.2339 28.18),
+        oklch(51.41% 0.2162 27.69)
+      )
+      border-box;
   color: var(--color-white);
 }
 
 /* Hover state - Strengthen glass and border */
 .btn-cancel:hover:not(:disabled) {
   background:
-    linear-gradient(rgb(248 238 238), rgb(240 228 228)) padding-box,
-    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+    linear-gradient(oklch(95.85% 0.0039 17.18), oklch(93.04% 0.0068 17.18))
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(49.42% 0.2339 28.18),
+        oklch(51.41% 0.2162 27.69)
+      )
+      border-box;
 }
 
 html.dark .btn-cancel:hover:not(:disabled) {
   background:
-    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
-    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
+    linear-gradient(oklch(10.59% 0 0 / 88%), oklch(19.81% 0 0 / 93%))
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(49.42% 0.2339 28.18),
+        oklch(51.41% 0.2162 27.69)
+      )
+      border-box;
 }
 
 /* Focus state */

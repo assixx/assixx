@@ -7,6 +7,8 @@
    * with their availability status. Informational only.
    * Uses GET /tpm/plans/:uuid/team-availability endpoint.
    */
+  import { showErrorAlert } from '$lib/stores/toast';
+
   import { fetchTeamAvailability, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
@@ -44,6 +46,7 @@
       teamData = await fetchTeamAvailability(planUuid);
     } catch (err: unknown) {
       logApiError('loadTeam', err);
+      showErrorAlert(err instanceof Error ? err.message : 'Fehler beim Laden');
       teamData = null;
     } finally {
       loading = false;

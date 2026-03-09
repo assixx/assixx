@@ -170,11 +170,16 @@
       emailError = true;
       return false;
     }
-    const needsPasswordValidation = !isEditMode || formPassword !== '';
-    if (
-      needsPasswordValidation &&
-      !validatePasswordMatch(formPassword, formPasswordConfirm)
-    ) {
+    // New: both password fields required and must match
+    // Edit: if either field is filled, both must be filled and match
+    const eitherFilled = formPassword !== '' || formPasswordConfirm !== '';
+    const passwordInvalid =
+      !isEditMode ?
+        formPassword === '' ||
+        formPasswordConfirm === '' ||
+        formPassword !== formPasswordConfirm
+      : eitherFilled && formPassword !== formPasswordConfirm;
+    if (passwordInvalid) {
       passwordError = true;
       return false;
     }
@@ -412,7 +417,11 @@
   }
 
   function validatePasswords(): void {
-    passwordError = !validatePasswordMatch(formPassword, formPasswordConfirm);
+    // Only show error if user has typed in the confirm field
+    passwordError =
+      formPasswordConfirm !== '' ?
+        !validatePasswordMatch(formPassword, formPasswordConfirm)
+      : false;
   }
 
   // Outside click for search

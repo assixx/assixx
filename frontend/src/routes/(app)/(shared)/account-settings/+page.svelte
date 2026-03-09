@@ -548,11 +548,11 @@
 <style>
   /* Danger Border Variant */
   .card--danger-border {
-    border-color: rgb(244 67 54 / 30%);
+    border-color: color-mix(in oklch, var(--color-danger) 30%, transparent);
   }
 
   .card--danger-border:hover {
-    border-color: rgb(244 67 54 / 50%);
+    border-color: color-mix(in oklch, var(--color-danger) 50%, transparent);
   }
 
   /* Shift Times — Compact Grid */
@@ -586,7 +586,7 @@
   }
 
   .st-row:hover {
-    background: rgb(255 255 255 / 3%);
+    background: color-mix(in oklch, var(--color-white) 3%, transparent);
   }
 
   .st-icon {
@@ -596,27 +596,31 @@
 
   /* Color accents */
   .st-row.shift-early {
-    border-left-color: rgb(255 193 7 / 70%);
+    border-left-color: oklch(84.42% 0.1721 84.94 / 70%);
   }
 
   .st-row.shift-early .st-icon {
-    color: rgb(255 193 7);
+    color: oklch(84.42% 0.1721 84.94);
   }
 
   .st-row.shift-late {
-    border-left-color: rgb(33 150 243 / 70%);
+    border-left-color: color-mix(
+      in oklch,
+      var(--color-primary) 70%,
+      transparent
+    );
   }
 
   .st-row.shift-late .st-icon {
-    color: rgb(33 150 243);
+    color: var(--color-primary);
   }
 
   .st-row.shift-night {
-    border-left-color: rgb(156 39 176 / 70%);
+    border-left-color: oklch(51.68% 0.2151 321.23 / 70%);
   }
 
   .st-row.shift-night .st-icon {
-    color: rgb(156 39 176);
+    color: oklch(51.68% 0.2151 321.23);
   }
 
   @media (width <= 640px) {

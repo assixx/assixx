@@ -384,7 +384,8 @@
     min-height: 0;
     overflow: hidden auto;
     scrollbar-width: thin;
-    scrollbar-color: rgb(0 0 0 / 25%) transparent;
+    scrollbar-color: color-mix(in oklch, var(--color-black) 25%, transparent)
+      transparent;
   }
 
   :global(html.dark) .sidebar-nav {
@@ -436,7 +437,11 @@
     z-index: -1;
     inset: -0.55rem;
     border-radius: var(--glass-card-radius);
-    background: linear-gradient(135deg, #e9f1f7 0%, #75bffc 100%);
+    background: linear-gradient(
+      135deg,
+      oklch(95.55% 0.0129 240.14) 0%,
+      oklch(76.44% 0.1084 243.55) 100%
+    );
     content: '';
   }
 
@@ -658,11 +663,11 @@
     border-radius: 50px;
     background: linear-gradient(
       0deg,
-      rgb(243 33 33 / 71%),
-      rgb(243 33 33 / 76%)
+      oklch(61.6% 0.2378 27.96 / 71%),
+      oklch(61.6% 0.2378 27.96 / 76%)
     );
     min-width: 24px;
-    color: #fff;
+    color: var(--color-white);
     font-weight: 700;
     font-size: 0.7rem;
     text-align: center;
@@ -671,36 +676,36 @@
   .sidebar :global(.nav-badge-kvp) {
     background: linear-gradient(
       0deg,
-      rgb(76 175 80 / 71%),
-      rgb(76 175 80 / 76%)
+      color-mix(in oklch, var(--color-success) 71%, transparent),
+      color-mix(in oklch, var(--color-success) 76%, transparent)
     );
   }
 
   .sidebar :global(.nav-badge-surveys) {
     right: 15px;
     backdrop-filter: blur(10px);
-    border: 1px solid rgb(255 152 0 / 30%);
+    border: 1px solid color-mix(in oklch, var(--color-warning) 30%, transparent);
     border-radius: 12px;
-    background: rgb(255 152 0 / 15%);
+    background: color-mix(in oklch, var(--color-warning) 15%, transparent);
     padding: 3px 8px;
     min-width: 20px;
-    color: #ff9800;
+    color: var(--color-warning);
     font-weight: 600;
     font-size: 0.75rem;
   }
 
   .sidebar :global(.nav-badge-documents) {
     border-radius: 10px;
-    background: #2196f3;
+    background: var(--color-primary);
     min-width: 18px;
-    color: #fff;
+    color: var(--color-white);
   }
 
   .sidebar :global(.nav-badge-lean-parent) {
     right: 40px;
     backdrop-filter: blur(10px);
-    background: rgb(255 153 0 / 70%);
-    color: #fff;
+    background: oklch(77.2% 0.1738 64.55 / 70%);
+    color: var(--color-white);
     font-weight: 600;
   }
 
@@ -711,9 +716,9 @@
 
   .sidebar :global(.nav-badge-child-default) {
     border-radius: 10px;
-    background: #ff5722;
+    background: var(--color-deep-orange);
     min-width: 18px;
-    color: #fff;
+    color: var(--color-white);
   }
 
   /* Collapsed sidebar — badges as dots */
@@ -818,7 +823,11 @@
       z-index: -1;
       inset: -0.55rem;
       border-radius: var(--glass-card-radius);
-      background: linear-gradient(135deg, #e9f1f7 0%, #75bffc 100%);
+      background: linear-gradient(
+        135deg,
+        oklch(95.55% 0.0129 240.14) 0%,
+        oklch(76.44% 0.1084 243.55) 100%
+      );
       content: '';
     }
 

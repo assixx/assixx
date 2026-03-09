@@ -114,11 +114,11 @@
   transition:
     transform var(--duration-normal) var(--ease-standard),
     background-color var(--duration-normal) var(--ease-standard);
-  border: 1px solid rgb(33 150 243 / 20%);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 20%, transparent);
   border-radius: 50%;
 
   /* Glass circle background */
-  background: rgb(33 150 243 / 10%);
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
 
   width: 64px;
   height: 64px;
@@ -161,17 +161,17 @@
 .file-upload-zone:hover {
   box-shadow:
     var(--shadow-glass),
-    0 0 12px rgb(33 150 243 / 20%);
+    0 0 12px color-mix(in oklch, var(--color-primary) 20%, transparent);
 
   /* Highlight on hover */
-  border-color: rgb(33 150 243 / 40%);
+  border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
   background: var(--glass-bg-hover);
 }
 
 .file-upload-zone:hover .file-upload-zone__icon {
   /* Scale icon on hover */
   transform: scale(1.1);
-  background: rgb(33 150 243 / 15%);
+  background: color-mix(in oklch, var(--color-primary) 15%, transparent);
 }
 
 /* ============================================================
@@ -181,11 +181,11 @@
 .file-upload-zone--dragover {
   box-shadow:
     var(--shadow-glass),
-    0 0 20px rgb(33 150 243 / 30%);
+    0 0 20px color-mix(in oklch, var(--color-primary) 30%, transparent);
 
   /* Active drag state */
   border-color: var(--color-primary);
-  background: rgb(33 150 243 / 10%);
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
 }
 
 .file-upload-zone--dragover .file-upload-zone__icon {
@@ -221,16 +221,16 @@
 .file-upload-zone--success {
   box-shadow:
     var(--shadow-glass),
-    0 0 12px rgb(76 175 80 / 20%);
+    0 0 12px color-mix(in oklch, var(--color-success) 20%, transparent);
 
   /* Success feedback */
   border-color: var(--color-success);
-  background: rgb(76 175 80 / 5%);
+  background: color-mix(in oklch, var(--color-success) 5%, transparent);
 }
 
 .file-upload-zone--success .file-upload-zone__icon {
-  border-color: rgb(76 175 80 / 20%);
-  background: rgb(76 175 80 / 10%);
+  border-color: color-mix(in oklch, var(--color-success) 20%, transparent);
+  background: color-mix(in oklch, var(--color-success) 10%, transparent);
 
   /* Success icon */
   color: var(--color-success);
@@ -243,16 +243,16 @@
 .file-upload-zone--error {
   box-shadow:
     var(--shadow-glass),
-    0 0 12px rgb(244 67 54 / 20%);
+    0 0 12px color-mix(in oklch, var(--color-danger) 20%, transparent);
 
   /* Error feedback */
   border-color: var(--color-danger);
-  background: rgb(244 67 54 / 5%);
+  background: color-mix(in oklch, var(--color-danger) 5%, transparent);
 }
 
 .file-upload-zone--error .file-upload-zone__icon {
-  border-color: rgb(244 67 54 / 20%);
-  background: rgb(244 67 54 / 10%);
+  border-color: color-mix(in oklch, var(--color-danger) 20%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 10%, transparent);
 
   /* Error icon */
   color: var(--color-danger);

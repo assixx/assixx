@@ -412,29 +412,29 @@ Beispiele:
   .shift-type-early {
     background: linear-gradient(
       135deg,
-      rgb(255 193 7 / 15%) 0%,
-      rgb(255 152 0 / 10%) 100%
+      oklch(84.42% 0.1721 84.94 / 15%) 0%,
+      color-mix(in oklch, var(--color-warning) 10%, transparent) 100%
     );
   }
 
   .shift-type-late {
     background: linear-gradient(
       135deg,
-      rgb(33 150 243 / 15%) 0%,
-      rgb(3 169 244 / 10%) 100%
+      color-mix(in oklch, var(--color-primary) 15%, transparent) 0%,
+      oklch(69.91% 0.1571 239.01 / 10%) 100%
     );
   }
 
   .shift-type-night {
     background: linear-gradient(
       135deg,
-      rgb(156 39 176 / 15%) 0%,
-      rgb(103 58 183 / 10%) 100%
+      oklch(51.68% 0.2151 321.23 / 15%) 0%,
+      oklch(47.42% 0.1862 294.78 / 10%) 100%
     );
   }
 
   .shift-label-night {
-    background: #b3b8bc4a;
+    background: oklch(76.22% 0.0057 249.02 / 29%);
   }
 
   .shift-cell {
@@ -457,18 +457,19 @@ Beispiele:
 
   .shift-cell:hover {
     border-color: var(--primary-color);
-    background: rgb(33 150 243 / 10%);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
 
   .shift-cell.assigned {
     border-color: var(--success-color);
-    background: rgb(76 175 80 / 15%);
+    background: color-mix(in oklch, var(--color-success) 15%, transparent);
   }
 
   .shift-cell.drag-over {
-    box-shadow: 0 0 0 2px rgb(76 175 80 / 30%);
+    box-shadow: 0 0 0 2px
+      color-mix(in oklch, var(--color-success) 30%, transparent);
     border-color: var(--success-color);
-    background: rgb(76 175 80 / 20%);
+    background: color-mix(in oklch, var(--color-success) 20%, transparent);
   }
 
   .shift-cell.locked {
@@ -498,23 +499,23 @@ Beispiele:
   }
 
   .shift-cell.asset-avail-maintenance {
-    border-top: 3px solid #ffc107;
+    border-top: 3px solid var(--color-amber);
   }
 
   .shift-cell.asset-avail-repair {
-    border-top: 3px solid #dc3545;
+    border-top: 3px solid var(--color-crimson);
   }
 
   .shift-cell.asset-avail-standby {
-    border-top: 3px solid #3498db;
+    border-top: 3px solid var(--color-sky);
   }
 
   .shift-cell.asset-avail-cleaning {
-    border-top: 3px solid #20c997;
+    border-top: 3px solid var(--color-seafoam);
   }
 
   .shift-cell.asset-avail-other {
-    border-top: 3px solid #6f42c1;
+    border-top: 3px solid var(--color-violet);
   }
 
   .asset-avail-dot {
@@ -545,7 +546,7 @@ Beispiele:
     border-radius: 2px;
 
     min-width: 14px;
-    color: #000;
+    color: var(--color-black);
     font-weight: 700;
     font-size: 0.65rem;
     line-height: 1;
@@ -624,7 +625,8 @@ Beispiele:
 
   .shift-info-textarea:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--primary-color);
   }
 
@@ -639,16 +641,16 @@ Beispiele:
     gap: 2px;
 
     margin: 1px 0;
-    border: 1px solid rgb(33 150 243 / 30%);
+    border: 1px solid color-mix(in oklch, var(--color-primary) 30%, transparent);
     border-radius: var(--radius-lg);
 
-    background: rgb(33 150 243 / 15%);
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
     padding: 3px 6px;
   }
 
   .employee-card:hover {
-    border-color: rgb(33 150 243 / 50%);
-    background: rgb(33 150 243 / 25%);
+    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 25%, transparent);
   }
 
   .employee-card .employee-name {
@@ -676,16 +678,16 @@ Beispiele:
 
     opacity: 0%;
     cursor: pointer;
-    border: 1.5px solid rgb(244 67 54);
+    border: 1.5px solid var(--color-danger);
     border-radius: 50%;
-    background: rgb(244 67 54 / 10%);
+    background: color-mix(in oklch, var(--color-danger) 10%, transparent);
     padding: 0;
     pointer-events: auto;
 
     width: 14px;
     height: 14px;
 
-    color: rgb(244 67 54);
+    color: var(--color-danger);
   }
 
   .employee-card:hover .remove-btn {
@@ -694,8 +696,8 @@ Beispiele:
 
   .employee-card .remove-btn:hover {
     transform: scale(1.2);
-    border-color: rgb(244 67 54);
-    background: rgb(244 67 54 / 37%);
+    border-color: var(--color-danger);
+    background: color-mix(in oklch, var(--color-danger) 37%, transparent);
   }
 
   .employee-card .remove-btn i {

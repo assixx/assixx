@@ -217,7 +217,8 @@
   #eventDetailContent h3 {
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid rgb(255 255 255 / 10%);
+    border-bottom: 2px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--primary-color);
@@ -316,12 +317,12 @@
     padding: 10px 15px;
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 3%);
+    background: color-mix(in oklch, var(--color-white) 3%, transparent);
   }
 
   .attendee-item:hover {
-    border-color: rgb(255 255 255 / 12%);
-    background: rgb(255 255 255 / 5%);
+    border-color: color-mix(in oklch, var(--color-white) 12%, transparent);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
   }
 
   /* ─── Past Event Notice ──────── */
@@ -333,8 +334,8 @@
     padding: 12px 16px;
     margin-top: 20px;
     border-radius: var(--radius-lg);
-    background: rgb(255 193 7 / 10%);
-    border: 1px solid rgb(255 193 7 / 25%);
+    background: oklch(84.42% 0.1721 84.94 / 10%);
+    border: 1px solid oklch(84.42% 0.1721 84.94 / 25%);
     color: var(--color-amber-400, #fbbf24);
     font-size: 0.875rem;
   }
@@ -347,7 +348,8 @@
     justify-content: flex-end;
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
   }
 
   .modal-actions :global(.btn) {

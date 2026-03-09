@@ -148,11 +148,11 @@
   }
 
   .text-danger {
-    color: var(--color-danger, #dc3545);
+    color: var(--color-danger, var(--color-crimson));
     font-weight: 600;
   }
 
   .row--overdue {
-    border-left: 3px solid var(--color-danger, #dc3545);
+    border-left: 3px solid var(--color-danger, var(--color-crimson));
   }
 </style>

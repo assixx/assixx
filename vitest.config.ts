@@ -192,6 +192,19 @@ export default defineConfig({
               './frontend/test/mocks/app-environment.ts',
             ),
             $lib: resolve(rootDir, './frontend/src/lib'),
+            '@assixx/shared/constants': resolve(
+              rootDir,
+              './shared/src/constants/index.ts',
+            ),
+            '@assixx/shared/helpers': resolve(
+              rootDir,
+              './shared/src/helpers/index.ts',
+            ),
+            '@assixx/shared/types': resolve(
+              rootDir,
+              './shared/src/types/index.ts',
+            ),
+            '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
         test: {

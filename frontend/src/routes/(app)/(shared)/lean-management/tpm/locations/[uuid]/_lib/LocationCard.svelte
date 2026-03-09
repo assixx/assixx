@@ -41,9 +41,11 @@
   <div class="card__body">
     <!-- Header row: position badge + title + actions -->
     <div class="loc-card__header">
-      <div class="loc-card__badge">
+      <span
+        class="badge--count badge--count-xl badge--count-soft loc-card__position"
+      >
         {location.positionNumber}
-      </div>
+      </span>
       <div class="loc-card__info">
         <h4 class="loc-card__title">{location.title}</h4>
         {#if location.description !== null}
@@ -144,18 +146,8 @@
     gap: 0.75rem;
   }
 
-  .loc-card__badge {
+  .loc-card__position {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-primary);
-    color: #fff;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 700;
   }
 
   .loc-card__info {

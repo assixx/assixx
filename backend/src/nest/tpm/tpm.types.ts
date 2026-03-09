@@ -484,10 +484,21 @@ export interface TpmCategoryColorConfigEntry {
   updatedAt: string;
 }
 
-/** Card code prefixes per role */
-export const CARD_CODE_PREFIX: Record<TpmCardRole, string> = {
-  operator: 'BT',
-  maintenance: 'IV',
+/** Card code role prefix: B = Bediener (operator), I = Instandhaltung (maintenance) */
+export const ROLE_CODE_PREFIX: Record<TpmCardRole, string> = {
+  operator: 'B',
+  maintenance: 'I',
+} as const;
+
+/** Card code interval prefix: T/W/M/V/H/J/C */
+export const INTERVAL_CODE_PREFIX: Record<TpmIntervalType, string> = {
+  daily: 'T',
+  weekly: 'W',
+  monthly: 'M',
+  quarterly: 'V',
+  semi_annual: 'H',
+  annual: 'J',
+  custom: 'C',
 } as const;
 
 /** Default color configuration per card status */

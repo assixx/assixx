@@ -191,7 +191,7 @@
   }
 
   .nav-links a:hover {
-    color: #fff;
+    color: var(--color-white);
   }
 
   /* Hero Section */
@@ -223,9 +223,9 @@
     z-index: 0;
     background: linear-gradient(
       to bottom,
-      rgb(0 10 20 / 16%) 0%,
-      rgb(0 10 20 / 12.6%) 50%,
-      rgb(0 10 20 / 83.6%) 100%
+      oklch(13.78% 0.0312 239.33 / 16%) 0%,
+      oklch(13.78% 0.0312 239.33 / 12.6%) 50%,
+      oklch(13.78% 0.0312 239.33 / 83.6%) 100%
     );
   }
 
@@ -237,26 +237,30 @@
 
   .hero h1 {
     margin-bottom: var(--spacing-6);
-    color: #fff;
+    color: var(--color-white);
     font-weight: 700;
     font-size: 3rem;
-    text-shadow: 0 2px 4px rgb(0 0 0 / 30%);
+    text-shadow: 0 2px 4px
+      color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   .hero p {
     margin-bottom: var(--spacing-6);
-    color: rgb(255 255 255 / 85%);
+    color: color-mix(in oklch, var(--color-white) 85%, transparent);
     font-size: 1.25rem;
     line-height: 1.6;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+    text-shadow: 0 1px 2px
+      color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
   /* Footer */
   .footer {
     backdrop-filter: blur(20px);
-    box-shadow: 0 -8px 32px rgb(0 0 0 / 40%);
-    border-top: 1px solid rgb(255 255 255 / 15%);
-    background: rgb(255 255 255 / 2%);
+    box-shadow: 0 -8px 32px
+      color-mix(in oklch, var(--color-black) 40%, transparent);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 15%, transparent);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: var(--spacing-6) 5%;
     color: var(--text-secondary);
     text-align: center;
@@ -272,15 +276,15 @@
     align-items: center;
     z-index: 2000;
     backdrop-filter: blur(10px);
-    background: rgb(0 0 0 / 80%);
+    background: color-mix(in oklch, var(--color-black) 80%, transparent);
     width: 100%;
     height: 100%;
   }
 
   .modal-content {
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 2%);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: var(--spacing-6);
     width: 90%;
     max-width: 500px;

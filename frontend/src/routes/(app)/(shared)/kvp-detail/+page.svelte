@@ -822,7 +822,7 @@
 
   .share-info > :global(i.fa-share-alt) {
     font-size: 0.875rem;
-    color: #666 !important;
+    color: oklch(49.26% 0 0) !important;
   }
 
   /* ─── Content Sections ──────── */

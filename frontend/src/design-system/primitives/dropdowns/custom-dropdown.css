@@ -80,7 +80,7 @@
 
     border: var(--glass-border);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 95%);
+    background: color-mix(in oklch, var(--color-white) 95%, transparent);
   }
 
   .dropdown__menu.active {
@@ -113,13 +113,13 @@
 
   .dropdown__option:hover {
     border-radius: var(--radius-lg);
-    background: rgb(33 150 243 / 20%);
+    background: color-mix(in oklch, var(--color-primary) 20%, transparent);
     padding-left: 20px;
     color: var(--color-text-primary);
   }
 
   .dropdown__option:active {
-    background: rgb(33 150 243 / 30%);
+    background: color-mix(in oklch, var(--color-primary) 30%, transparent);
   }
 
   /* Option with Icon */
@@ -190,5 +190,5 @@
 
 /* Dark mode overrides for opaque dropdown */
 html.dark .dropdown__menu {
-  background: rgb(30 30 30 / 95%);
+  background: oklch(16.62% 0 0 / 95%);
 }

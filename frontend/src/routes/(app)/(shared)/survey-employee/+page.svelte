@@ -673,7 +673,7 @@
 
     width: 30px;
     height: 30px;
-    color: #fff;
+    color: var(--color-white);
 
     font-weight: 600;
   }
@@ -686,7 +686,7 @@
 
   .required-indicator {
     margin-left: 4px;
-    color: #f44336;
+    color: var(--color-danger);
   }
 
   .answer-container {
@@ -706,7 +706,7 @@
 
     background: var(--glass-bg-active);
 
-    color: #d1d5db;
+    color: oklch(87.58% 0.0034 264.53);
     font-size: 1rem;
     font-weight: 500;
 
@@ -715,25 +715,26 @@
 
   .rating-button:hover {
     transform: scale(1.1);
-    border-color: rgb(96 165 250 / 50%);
+    border-color: oklch(71.37% 0.1435 254.63 / 50%);
 
-    background: rgb(59 130 246 / 10%);
-    box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+    background: oklch(62.31% 0.1881 259.82 / 10%);
+    box-shadow: 0 0 20px
+      color-mix(in oklch, var(--color-primary) 15%, transparent);
 
-    color: #60a5fa;
+    color: oklch(68.86% 0.1408 254.62);
   }
 
   .rating-button:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgb(59 130 246 / 50%);
+    box-shadow: 0 0 0 2px oklch(62.31% 0.1881 259.82 / 50%);
   }
 
   .rating-button--selected {
     transform: scale(1.1);
-    border-color: #3b82f6 !important;
+    border-color: var(--color-info) !important;
 
-    background: rgb(59 130 246 / 20%) !important;
+    background: oklch(62.31% 0.1881 259.82 / 20%) !important;
 
-    color: #60a5fa !important;
+    color: oklch(68.86% 0.1408 254.62) !important;
   }
 </style>

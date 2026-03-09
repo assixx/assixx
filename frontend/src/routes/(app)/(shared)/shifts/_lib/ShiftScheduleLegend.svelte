@@ -124,27 +124,27 @@
     width: 14px;
     height: 14px;
 
-    box-shadow: 0 0 4px rgb(0 0 0 / 20%);
+    box-shadow: 0 0 4px color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
   .legend-swatch.legend-maintenance {
-    background: #ffc107;
+    background: var(--color-amber);
   }
 
   .legend-swatch.legend-repair {
-    background: #dc3545;
+    background: var(--color-crimson);
   }
 
   .legend-swatch.legend-standby {
-    background: #3498db;
+    background: var(--color-sky);
   }
 
   .legend-swatch.legend-cleaning {
-    background: #20c997;
+    background: var(--color-seafoam);
   }
 
   .legend-swatch.legend-other {
-    background: #6f42c1;
+    background: var(--color-violet);
   }
 
   .legend-label {

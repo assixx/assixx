@@ -3,6 +3,7 @@
  *
  * Purpose: Maps Material Design colors to semantic meanings
  * Philosophy: Best Practice 2025 - Semantic naming over presentational
+ * Color Format: oklch() for perceptual uniformity and wide-gamut support
  *
  * Reference:
  * - Microsoft Fluent: Semantic color system
@@ -24,13 +25,21 @@
   --color-primary-dark: var(--color-blue-800); /* #1565c0 - Darker variant */
 
   /* Alpha variants for overlays and highlights */
-  --color-primary-alpha-5: #2196f30d; /* 5% - Subtle hover (tables, cards) */
-  --color-primary-alpha-10: rgb(33 150 243 / 10%); /* 10% - Subtle highlights */
-  --color-primary-alpha-15: rgb(
-    33 150 243 / 15%
-  ); /* 15% - Active backgrounds */
+  --color-primary-alpha-5: oklch(
+    65.82% 0.169 248.81 / 5%
+  ); /* #2196f3 5% - Subtle hover (tables, cards) */
 
-  --color-primary-alpha-30: rgb(33 150 243 / 30%); /* 30% - Active borders */
+  --color-primary-alpha-10: oklch(
+    65.82% 0.169 248.81 / 10%
+  ); /* #2196f3 10% - Subtle highlights */
+
+  --color-primary-alpha-15: oklch(
+    65.82% 0.169 248.81 / 15%
+  ); /* #2196f3 15% - Active backgrounds */
+
+  --color-primary-alpha-30: oklch(
+    65.82% 0.169 248.81 / 30%
+  ); /* #2196f3 30% - Active borders */
 
   /* ========== DANGER (Destructive Actions) ========== */
   --color-danger: var(--color-red-500); /* #f44336 - Delete, Remove */
@@ -46,12 +55,305 @@
 
   /* ========== STATUS TOGGLES (Custom) ========== */
   /* Active → Deactivate (Deep Red) */
-  --color-status-active: #c62828; /* Deep Red - Show when active */
-  --color-status-active-hover: #b71c1c; /* Darker red on hover */
+  --color-status-active: oklch(
+    53.86% 0.1937 26.72
+  ); /* #c62828 - Deep Red - Show when active */
+
+  --color-status-active-hover: oklch(
+    50.16% 0.1887 27.48
+  ); /* #b71c1c - Darker red on hover */
 
   /* Inactive → Activate (Green) */
-  --color-status-inactive: #28a745; /* Green - Show when inactive */
-  --color-status-inactive-hover: #218838; /* Darker green on hover */
+  --color-status-inactive: oklch(
+    64.01% 0.1751 146.74
+  ); /* #28a745 - Green - Show when inactive */
+
+  --color-status-inactive-hover: oklch(
+    55.15% 0.1489 146.79
+  ); /* #218838 - Darker green on hover */
+
+  /* ========== INFO (Interactive/Action Blue) ========== */
+  --color-info: oklch(
+    62.31% 0.188 259.81
+  ); /* #3b82f6 - Action icons, cards, interactive elements */
+
+  --color-info-hover: oklch(54.61% 0.2152 262.88); /* #2563eb - Hover state */
+
+  /* ========== EXTENDED PALETTE ========== */
+  --color-amber: oklch(
+    84.42% 0.1722 84.93
+  ); /* #ffc107 - Yellow/Amber badges, caution indicators */
+
+  --color-amber-light: oklch(
+    83.69% 0.1644 84.43
+  ); /* #fbbf24 - Highlights, edit actions */
+
+  --color-amber-hover: oklch(
+    76.86% 0.1647 70.08
+  ); /* #f59e0b - Amber hover/active state */
+
+  --color-amber-dark: oklch(
+    66.58% 0.1574 58.32
+  ); /* #d97706 - Amber 700 - dark variant */
+
+  --color-amber-pale: oklch(
+    96.19% 0.058 95.62
+  ); /* #fef3c7 - Amber 100 - very light background */
+
+  --color-purple: oklch(
+    57.72% 0.1525 315.32
+  ); /* #9b59b6 - Special/custom categories */
+
+  --color-teal: oklch(
+    65.52% 0.1105 212.17
+  ); /* #17a2b8 - Cyan/teal info elements */
+
+  --color-emerald: oklch(
+    74.59% 0.1812 152.33
+  ); /* #2ecc71 - Calendar success, positive events */
+
+  --color-sky: oklch(
+    65.31% 0.1347 242.69
+  ); /* #3498db - Informational blue, morning shift */
+
+  --color-carrot: oklch(
+    69.58% 0.1596 55.54
+  ); /* #e67e22 - Calendar/event orange */
+
+  --color-crimson: oklch(
+    59.15% 0.202 21.24
+  ); /* #dc3545 - Error/unavailable states */
+
+  --color-coral: oklch(
+    63.68% 0.2078 25.33
+  ); /* #ef4444 - Destructive action red */
+
+  --color-coral-hover: oklch(
+    57.71% 0.2152 27.33
+  ); /* #dc2626 - Coral hover state */
+
+  --color-mint: oklch(
+    72.27% 0.192 149.58
+  ); /* #22c55e - Confirm/success green */
+
+  /* ========== ACTION ICON COLORS ========== */
+  --color-action-cyan: oklch(
+    71.48% 0.1257 215.22
+  ); /* #06b6d4 - Cyan action icon */
+
+  --color-action-cyan-hover: oklch(
+    60.89% 0.1109 221.72
+  ); /* #0891b2 - Cyan action hover */
+
+  --color-action-orange: oklch(
+    70.49% 0.1867 47.6
+  ); /* #f97316 - Orange action icon */
+
+  --color-action-orange-hover: oklch(
+    64.61% 0.1943 41.12
+  ); /* #ea580c - Orange action hover */
+
+  --color-action-emerald: oklch(
+    69.59% 0.1491 162.48
+  ); /* #10b981 - Emerald action icon */
+
+  --color-action-emerald-hover: oklch(
+    59.6% 0.1274 163.23
+  ); /* #059669 - Emerald action hover */
+
+  --color-action-green: oklch(
+    62.71% 0.1699 149.21
+  ); /* #16a34a - Green action accent */
+
+  /* ========== MATERIAL DESIGN EXTENDED ========== */
+  --color-deep-purple: oklch(
+    47.42% 0.1862 294.78
+  ); /* #673ab7 - Material Deep Purple 500 */
+
+  --color-deep-orange: oklch(
+    67.92% 0.2128 36.53
+  ); /* #ff5722 - Material Deep Orange 500 */
+
+  --color-cyan: oklch(72.91% 0.1265 210.82); /* #00bcd4 - Material Cyan 500 */
+  --color-cyan-dark: oklch(
+    61.87% 0.1063 207.97
+  ); /* #0097a7 - Material Cyan 700 */
+
+  --color-cyan-pale: oklch(
+    90.35% 0.0585 205.57
+  ); /* #b2ebf2 - Material Cyan 100 */
+
+  --color-light-blue: oklch(
+    69.91% 0.157 238.99
+  ); /* #03a9f4 - Material Light Blue 500 */
+
+  --color-indigo: oklch(
+    47.82% 0.1589 271.4
+  ); /* #3f51b5 - Material Indigo 500 */
+
+  --color-blue-grey: oklch(
+    57.24% 0.0397 229.02
+  ); /* #607d8b - Material Blue Grey 500 */
+
+  --color-blue-grey-dark: oklch(
+    52.21% 0.0359 227.88
+  ); /* #546e7a - Material Blue Grey 600 */
+
+  --color-teal-md: oklch(
+    60.45% 0.1074 183.38
+  ); /* #009688 - Material Teal 500 */
+
+  --color-teal-400: oklch(
+    65.63% 0.1071 185.34
+  ); /* #26a69a - Material Teal 400 */
+
+  --color-magenta: oklch(
+    51.68% 0.2151 321.24
+  ); /* #9c27b0 - Material Purple 500 */
+
+  --color-red-700: oklch(56.8% 0.2002 26.41); /* #d32f2f - Material Red 700 */
+  --color-red-800: oklch(50.54% 0.1905 27.52); /* #b91c1c - Material Red 800 */
+  --color-green-800: oklch(
+    52.34% 0.1347 144.17
+  ); /* #2e7d32 - Material Green 800 */
+
+  --color-green-700: oklch(
+    57.52% 0.1446 144.18
+  ); /* #388e3c - Material Green 700 */
+
+  --color-orange-700: oklch(
+    71.2% 0.1795 53.54
+  ); /* #f57c00 - Material Orange 700 */
+
+  --color-orange-300: oklch(
+    82.87% 0.1452 73.54
+  ); /* #ffb74d - Material Orange 300 */
+
+  --color-yellow-600: oklch(
+    83.91% 0.1615 84.38
+  ); /* #fbc02d - Material Yellow 600 */
+
+  --color-yellow-500: oklch(
+    88.83% 0.1697 95.26
+  ); /* #fdd835 - Material Yellow 500 */
+
+  --color-light-green-700: oklch(
+    64.23% 0.1467 133.01
+  ); /* #689f38 - Material Light Green 700 */
+
+  --color-light-green-600: oklch(
+    70.49% 0.1553 131.38
+  ); /* #7cb342 - Material Light Green 600 */
+
+  /* ========== BADGE/STATUS SPECIFIC ========== */
+  --color-neon-green: oklch(
+    66.2% 0.2233 142.66
+  ); /* #03b209 - Bright green - active badge */
+
+  --color-charcoal: oklch(
+    34.51% 0.0133 248.21
+  ); /* #343a40 - Dark gray - neutral badge */
+
+  --color-seafoam: oklch(
+    74.41% 0.148 166.36
+  ); /* #20c997 - Teal/mint - special badge */
+
+  --color-violet: oklch(
+    50.15% 0.1883 294.99
+  ); /* #6f42c1 - Violet - special category */
+
+  --color-electric-blue: oklch(
+    62.99% 0.2029 254.36
+  ); /* #0087ff - Vivid blue - multi-select */
+
+  --color-salmon: oklch(
+    71.16% 0.1812 22.84
+  ); /* #ff6b6b - Salmon red - delete hint */
+
+  --color-red-accent: oklch(
+    67.86% 0.2095 24.66
+  ); /* #ff5252 - Material Red A200 - accent */
+
+  --color-slate: oklch(
+    55.75% 0.0165 244.89
+  ); /* #6c757d - Slate gray - secondary */
+
+  --color-alizarin: oklch(
+    63.07% 0.194 29.44
+  ); /* #e74c3c - Alizarin red - warning */
+
+  --color-alizarin-hover: oklch(
+    54.33% 0.174 29.7
+  ); /* #c0392b - Pomegranate - hover */
+
+  --color-concrete: oklch(
+    70.97% 0.0181 201.31
+  ); /* #95a5a6 - Concrete gray - muted */
+
+  --color-bronze: oklch(
+    62.49% 0.1281 84.81
+  ); /* #ab8000 - Bronze - caution text */
+
+  --color-brick: oklch(44.17% 0.1551 28.98); /* #962018 - Brick red - severe */
+  --color-rust: oklch(59.76% 0.1422 51.08); /* #c0621e - Rust orange - accent */
+
+  /* ========== UI ACCENT COLORS ========== */
+  --color-pink: oklch(65.59% 0.2118 354.31); /* #ec4899 - Pink accent */
+  --color-pink-hover: oklch(59.16% 0.218 0.58); /* #db2777 - Pink hover */
+  --color-violet-600: oklch(
+    55.75% 0.2525 302.32
+  ); /* #9333ea - Purple 600 - special */
+
+  --color-orange-accent: oklch(
+    75.76% 0.159 55.93
+  ); /* #fb923c - Orange 400 - soft accent */
+
+  --color-charcoal-dark: oklch(
+    37.15% 0 0
+  ); /* #404040 - Dark charcoal - borders */
+
+  /* ========== GRADIENT TOKENS ========== */
+  --color-gradient-danger-start: oklch(44.98% 0.1586 21.89); /* #9a1e2a */
+  --color-gradient-danger-mid: oklch(54.01% 0.1978 22.84); /* #c82333 */
+  --color-gradient-danger-end: oklch(51.82% 0.1893 22.81); /* #bd2130 */
+  --color-gradient-danger-btn: oklch(54.22% 0.2148 29.84); /* #cf1406 */
+
+  /* ========== CONFIRM MODAL VARIANTS ========== */
+  --color-modal-warning-bg: oklch(26.89% 0.0561 77.81); /* #352200 */
+  --color-modal-warning-text: oklch(58.26% 0.156 47.47); /* #c2570b */
+  --color-modal-warning-text-dark: oklch(75.76% 0.159 55.93); /* #fb923c */
+  --color-modal-danger-bg: oklch(28% 0.1149 29.23); /* #540000 */
+  --color-modal-danger-text: oklch(50.54% 0.1905 27.52); /* #b91c1c */
+  --color-modal-info-bg: oklch(20.14% 0.0699 256.43); /* #001535 */
+  --color-modal-info-text: oklch(48.82% 0.2172 264.38); /* #1d4ed8 */
+  --color-modal-success-bg: oklch(28.78% 0.0775 150.95); /* #003515 */
+  --color-modal-success-text: oklch(52.73% 0.1371 150.07); /* #15803d */
+
+  /* ========== STICKY NOTE VARIANTS ========== */
+  --color-note-yellow-start: oklch(96.21% 0.1014 102.68); /* #fff6a5 */
+  --color-note-yellow-end: oklch(88.01% 0.1443 90.3); /* #fcd35a */
+  --color-note-blue-start: oklch(88.48% 0.0546 243.39); /* #bbdefb */
+  --color-note-blue-end: oklch(81.63% 0.0896 243.62); /* #90caf9 */
+  --color-note-green-start: oklch(89.18% 0.073 146.12); /* #bde9bf */
+  --color-note-green-end: oklch(82.59% 0.1339 145.07); /* #8cdd8f */
+  --color-note-red-start: oklch(89.31% 0.0569 11.54); /* #ffcdd2 */
+  --color-note-red-end: oklch(77.16% 0.1024 19.67); /* #ef9a9a */
+  --color-note-orange-start: oklch(88.74% 0.0886 77.33); /* #fbd397 */
+  --color-note-orange-end: oklch(80.27% 0.1618 70.76); /* #ffaa2b */
+  --color-note-pink-start: oklch(94.05% 0.0282 355.44); /* #fce4ec */
+  --color-note-pink-end: oklch(78.01% 0.1263 358); /* #f894b7 */
+  --color-note-tag-green-bg: oklch(96.24% 0.0434 156.74); /* #dcfce7 */
+  --color-note-tag-green-text: oklch(44.79% 0.1083 151.33); /* #166534 */
+  --color-note-tag-blue-bg: oklch(93.19% 0.0316 255.59); /* #dbeafe */
+  --color-note-tag-blue-text: oklch(42.44% 0.1809 265.64); /* #1e40af */
+  --color-note-tag-orange-bg: oklch(95.42% 0.0372 75.16); /* #ffedd5 */
+  --color-note-tag-orange-text: oklch(46.98% 0.143 37.3); /* #9a3412 */
+  --color-note-tag-red-bg: oklch(93.56% 0.0309 17.72); /* #fee2e2 */
+  --color-note-tag-red-text: oklch(44.37% 0.1613 26.9); /* #991b1b */
+  --color-note-tag-purple-bg: oklch(94.64% 0.0327 307.17); /* #f3e8ff */
+  --color-note-tag-purple-text: oklch(43.83% 0.1983 303.72); /* #6b21a8 */
+  --color-note-tag-amber-bg: oklch(96.19% 0.058 95.62); /* #fef3c7 */
+  --color-note-tag-amber-text: oklch(47.32% 0.1247 46.2); /* #92400e */
 
   /* ========== NEUTRALS (Grayscale Semantics) ========== */
   /* NOTE: --color-text-primary/secondary are defined in variables-light/dark.css */

@@ -12,8 +12,6 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
-import { showErrorAlert } from '$lib/stores/toast';
-
 import { ApiCache } from './api-cache';
 import {
   ApiError,
@@ -422,7 +420,7 @@ export class ApiClient {
   /**
    * Handle 403 Forbidden responses:
    * - Feature not enabled → redirect to /feature-unavailable
-   * - Permission denied → humanize message + show toast
+   * - Permission denied → humanize message + throw ApiError
    */
   private handleForbidden(data: Record<string, unknown>): void {
     const { message } = extractErrorMessage(data);
@@ -436,9 +434,6 @@ export class ApiClient {
 
     const humanMessage = humanizePermissionError(message);
     if (humanMessage !== null) {
-      if (browser) {
-        showErrorAlert(humanMessage, 6000);
-      }
       throw new ApiError(humanMessage, 'PERMISSION_DENIED', 403);
     }
   }

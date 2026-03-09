@@ -58,9 +58,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: var(--color-white);
     border-radius: 9999px;
-    box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+    box-shadow: 0 2px 4px
+      color-mix(in oklch, var(--color-black) 20%, transparent);
     z-index: 10;
   }
 
@@ -96,13 +97,14 @@
   @keyframes badge-pulse {
     0%,
     100% {
-      box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+      box-shadow: 0 2px 4px
+        color-mix(in oklch, var(--color-black) 20%, transparent);
     }
 
     50% {
       box-shadow:
-        0 2px 8px rgb(0 0 0 / 30%),
-        0 0 0 3px rgb(239 68 68 / 20%);
+        0 2px 8px color-mix(in oklch, var(--color-black) 30%, transparent),
+        0 0 0 3px color-mix(in oklch, var(--color-coral) 20%, transparent);
     }
   }
 </style>

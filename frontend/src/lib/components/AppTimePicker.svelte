@@ -310,7 +310,8 @@
 
   .app-time-picker__field:focus-within {
     outline: none;
-    box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--color-primary);
     background: var(--glass-bg-active);
   }
@@ -362,7 +363,7 @@
 
   .app-time-picker__segment--focused {
     background: var(--color-primary);
-    color: var(--color-text-on-primary, #fff);
+    color: var(--color-text-on-primary, var(--color-white));
   }
 
   /* Separator colon */
@@ -422,11 +423,12 @@
 
   .app-time-picker--error .app-time-picker__field {
     border-color: var(--color-danger);
-    background: rgb(244 67 54 / 5%);
+    background: color-mix(in oklch, var(--color-danger) 5%, transparent);
   }
 
   .app-time-picker--error .app-time-picker__field:focus-within {
-    box-shadow: 0 0 0 3px rgb(244 67 54 / 10%);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--color-danger) 10%, transparent);
     border-color: var(--color-danger);
   }
 
@@ -436,11 +438,12 @@
 
   .app-time-picker--success .app-time-picker__field {
     border-color: var(--color-success);
-    background: rgb(76 175 80 / 5%);
+    background: color-mix(in oklch, var(--color-success) 5%, transparent);
   }
 
   .app-time-picker--success .app-time-picker__field:focus-within {
-    box-shadow: 0 0 0 3px rgb(76 175 80 / 10%);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--color-success) 10%, transparent);
     border-color: var(--color-success);
   }
 
@@ -450,11 +453,12 @@
 
   .app-time-picker--warning .app-time-picker__field {
     border-color: var(--color-warning);
-    background: rgb(255 152 0 / 5%);
+    background: color-mix(in oklch, var(--color-warning) 5%, transparent);
   }
 
   .app-time-picker--warning .app-time-picker__field:focus-within {
-    box-shadow: 0 0 0 3px rgb(255 152 0 / 10%);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklch, var(--color-warning) 10%, transparent);
     border-color: var(--color-warning);
   }
 

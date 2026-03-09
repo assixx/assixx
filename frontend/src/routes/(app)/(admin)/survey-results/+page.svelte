@@ -576,7 +576,7 @@
 
   .rating-stars {
     margin: var(--spacing-4) 0;
-    color: #ffc107;
+    color: var(--color-amber);
     font-size: 2rem;
   }
 

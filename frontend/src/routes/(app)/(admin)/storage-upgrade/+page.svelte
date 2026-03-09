@@ -431,13 +431,13 @@
     transform: translateY(-4px);
     border-color: var(--primary-color);
     box-shadow:
-      0 10px 40px rgb(33 150 243 / 30%),
+      0 10px 40px color-mix(in oklch, var(--color-primary) 30%, transparent),
       inset 0 1px 0 var(--color-glass-border);
   }
 
   .storage-plan-card.current {
-    border-color: rgb(33 150 243 / 50%);
-    background: rgb(33 150 243 / 5%);
+    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 5%, transparent);
   }
 
   .storage-size {
@@ -446,7 +446,8 @@
     font-size: 3rem;
     font-weight: 700;
     color: var(--primary-color);
-    text-shadow: 0 0 10px rgb(33 150 243 / 50%);
+    text-shadow: 0 0 10px
+      color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 
   .storage-price {
@@ -524,7 +525,8 @@
     border-radius: 10px;
 
     background: var(--accent-color);
-    box-shadow: inset 0 1px 3px rgb(0 0 0 / 30%);
+    box-shadow: inset 0 1px 3px
+      color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   .usage-progress-bar {
@@ -551,12 +553,12 @@
     background: linear-gradient(
       45deg,
       transparent 25%,
-      rgb(255 255 255 / 20%) 25%,
-      rgb(255 255 255 / 20%) 50%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 25%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 50%,
       transparent 50%,
       transparent 75%,
-      rgb(255 255 255 / 20%) 75%,
-      rgb(255 255 255 / 20%)
+      color-mix(in oklch, var(--color-white) 20%, transparent) 75%,
+      color-mix(in oklch, var(--color-white) 20%, transparent)
     );
     background-size: 20px 20px;
   }
@@ -575,7 +577,7 @@
     background: var(--glass-bg);
 
     box-shadow:
-      0 4px 16px rgb(0 0 0 / 30%),
+      0 4px 16px color-mix(in oklch, var(--color-black) 30%, transparent),
       inset 0 1px 0 var(--color-glass-border);
   }
 

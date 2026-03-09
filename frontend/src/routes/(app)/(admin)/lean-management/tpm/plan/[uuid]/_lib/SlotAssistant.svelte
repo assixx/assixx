@@ -14,6 +14,7 @@
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import { showErrorAlert } from '$lib/stores/toast';
 
   import {
     fetchAvailableSlots,
@@ -466,6 +467,7 @@
       projectionData = projResult;
     } catch (err: unknown) {
       logApiError('loadData', err);
+      showErrorAlert(err instanceof Error ? err.message : 'Fehler beim Laden');
       slotData = null;
       projectionData = null;
     } finally {
@@ -956,8 +958,9 @@
   }
 
   .slot-day--preview {
-    background: color-mix(in srgb, #9333ea 12%, transparent);
-    border: 1px solid color-mix(in srgb, #9333ea 35%, transparent);
+    background: color-mix(in srgb, var(--color-violet-600) 12%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--color-violet-600) 35%, transparent);
   }
 
   .slot-day--weekend.slot-day--available {

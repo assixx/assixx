@@ -610,26 +610,26 @@
   }
 
   .legend-company {
-    background-color: #3498db;
+    background-color: var(--color-sky);
   }
 
   .legend-department {
-    background-color: #e67e22;
+    background-color: var(--color-carrot);
   }
 
   .legend-team {
-    background-color: #2ecc71;
+    background-color: var(--color-emerald);
   }
 
   .legend-area {
-    background-color: #e53935;
+    background-color: var(--color-danger-hover);
   }
 
   .legend-personal {
-    background-color: #9b59b6;
+    background-color: var(--color-purple);
   }
 
   .legend-vacation {
-    background-color: #26a69a;
+    background-color: var(--color-teal-400);
   }
 </style>

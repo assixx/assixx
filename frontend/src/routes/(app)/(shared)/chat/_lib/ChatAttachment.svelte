@@ -170,11 +170,11 @@
     transition: opacity 0.2s ease;
     inset: 0;
     border-radius: var(--radius-xl);
-    background: rgb(0 0 0 / 50%);
+    background: color-mix(in oklch, var(--color-black) 50%, transparent);
   }
 
   .attachment-overlay i {
-    color: rgb(255 255 255);
+    color: var(--color-white);
     font-size: 2rem;
   }
 
@@ -239,7 +239,7 @@
     align-items: center;
     gap: var(--spacing-2, 0.5rem);
     padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
-    background: rgb(0 0 0 / 5%);
+    background: color-mix(in oklch, var(--color-black) 5%, transparent);
     border-radius: var(--radius-md, 8px);
     cursor: pointer;
     font: inherit;
@@ -249,17 +249,17 @@
   }
 
   button.file-attachment:hover {
-    background: rgb(0 0 0 / 10%);
+    background: color-mix(in oklch, var(--color-black) 10%, transparent);
   }
 
   /* Own message file attachment variant */
   button.file-attachment.own {
-    background: rgb(255 255 255 / 10%);
-    border-color: rgb(255 255 255 / 15%);
+    background: color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-color: color-mix(in oklch, var(--color-white) 15%, transparent);
   }
 
   button.file-attachment.own:hover {
-    background: rgb(255 255 255 / 20%);
+    background: color-mix(in oklch, var(--color-white) 20%, transparent);
   }
 
   /* Scheduled attachment styles */
@@ -281,9 +281,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgb(0 0 0 / 30%);
+    background: color-mix(in oklch, var(--color-black) 30%, transparent);
     border-radius: var(--radius-md, 8px);
-    color: #fff;
+    color: var(--color-white);
     font-size: 1.5rem;
     opacity: 100%;
   }
@@ -293,9 +293,9 @@
     align-items: center;
     gap: var(--spacing-2, 0.5rem);
     padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
-    background: rgb(255 255 255 / 10%);
+    background: color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-md, 8px);
-    border: 1px dashed rgb(255 255 255 / 30%);
+    border: 1px dashed color-mix(in oklch, var(--color-white) 30%, transparent);
   }
 
   .scheduled-attachment.file-attachment .file-info {

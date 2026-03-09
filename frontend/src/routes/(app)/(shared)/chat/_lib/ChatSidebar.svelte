@@ -220,7 +220,7 @@
   .chat-sidebar-header {
     display: flex;
     align-items: center;
-    background: rgb(0 98 183 / 32%);
+    background: oklch(49.75% 0.1548 253.28 / 32%);
     padding: 15px 10px 12px;
   }
 
@@ -265,14 +265,15 @@
   }
 
   .conversation-item:hover {
-    border-color: rgb(33 150 243 / 20%);
-    background: rgb(33 150 243 / 10%);
+    border-color: color-mix(in oklch, var(--color-primary) 20%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
 
   .conversation-item.active {
-    box-shadow: 0 2px 10px rgb(33 150 243 / 20%);
-    border-color: rgb(33 150 243 / 30%);
-    background: rgb(33 150 243 / 15%);
+    box-shadow: 0 2px 10px
+      color-mix(in oklch, var(--color-primary) 20%, transparent);
+    border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
   }
 
   .conversation-item .avatar {
@@ -322,15 +323,15 @@
   /* Unread conversation styling */
   .conversation-item.unread {
     border-left: 3px solid var(--primary-color);
-    background: #00f3ff0d;
+    background: oklch(88.19% 0.1302 206.42 / 5%);
     padding-left: 7px;
   }
 
   .conversation-item.unread:hover {
     background: linear-gradient(
       90deg,
-      rgb(33 150 243 / 15%) 0%,
-      rgb(33 150 243 / 8%) 100%
+      color-mix(in oklch, var(--color-primary) 15%, transparent) 0%,
+      color-mix(in oklch, var(--color-primary) 8%, transparent) 100%
     );
   }
 
@@ -340,7 +341,7 @@
     justify-content: center;
     padding: var(--spacing-8, 2rem);
     font-size: 2rem;
-    color: var(--primary-color, #2196f3);
+    color: var(--primary-color, var(--color-primary));
   }
 
   .conversations-empty {

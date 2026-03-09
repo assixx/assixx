@@ -83,7 +83,7 @@ function createOverdueCandidate(
     id: 100,
     uuid: 'card-uuid-overdue-001',
     tenant_id: 10,
-    card_code: 'BT5',
+    card_code: 'BW5',
     title: 'Ölstand prüfen',
     asset_id: 42,
     asset_name: 'Presse P17',
@@ -278,7 +278,7 @@ describe('TpmEscalationService', () => {
     it('should escalate each candidate card', async () => {
       const candidates = [
         createOverdueCandidate({ id: 100 }),
-        createOverdueCandidate({ id: 200, card_code: 'IV3' }),
+        createOverdueCandidate({ id: 200, card_code: 'BW3' }),
       ];
       mockDb.query.mockResolvedValueOnce(candidates);
 
@@ -340,7 +340,7 @@ describe('TpmEscalationService', () => {
         10,
         expect.objectContaining({
           uuid: 'card-uuid-overdue-001',
-          cardCode: 'BT5',
+          cardCode: 'BW5',
           status: 'overdue',
         }),
         5,

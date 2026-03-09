@@ -39,7 +39,7 @@
     box-shadow 0.2s ease;
   cursor: pointer;
 
-  box-shadow: 0 1px 8px rgb(0 0 0 / 10%);
+  box-shadow: 0 1px 8px color-mix(in oklch, var(--color-black) 10%, transparent);
   border-radius: 8px;
   padding: 1rem;
 
@@ -51,7 +51,8 @@
 
 .sticky-note:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  box-shadow: 0 4px 12px
+    color-mix(in oklch, var(--color-black) 15%, transparent);
 }
 
 /* ========================================
@@ -78,27 +79,51 @@
    ======================================== */
 
 .sticky-note--yellow {
-  background: linear-gradient(135deg, #fff6a5, #fcd35a);
+  background: linear-gradient(
+    135deg,
+    var(--color-note-yellow-start),
+    var(--color-note-yellow-end)
+  );
 }
 
 .sticky-note--blue {
-  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-note-blue-start) 0%,
+    var(--color-note-blue-end) 100%
+  );
 }
 
 .sticky-note--green {
-  background: linear-gradient(135deg, #bde9bf 0%, #8cdd8f 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-note-green-start) 0%,
+    var(--color-note-green-end) 100%
+  );
 }
 
 .sticky-note--red {
-  background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-note-red-start) 0%,
+    var(--color-note-red-end) 100%
+  );
 }
 
 .sticky-note--orange {
-  background: linear-gradient(135deg, #fbd397 0%, #ffaa2b 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-note-orange-start) 0%,
+    var(--color-note-orange-end) 100%
+  );
 }
 
 .sticky-note--pink {
-  background: linear-gradient(135deg, #fce4ec 0%, #f894b7 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-note-pink-start) 0%,
+    var(--color-note-pink-end) 100%
+  );
 }
 
 /* ========================================
@@ -110,10 +135,15 @@
   top: -5px;
   right: 15px;
   transform: rotate(-45deg);
-  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
+  box-shadow: 2px 2px 4px
+    color-mix(in oklch, var(--color-black) 30%, transparent);
   border-radius: 50% 50% 50% 0;
 
-  background: radial-gradient(circle at 30% 30%, #f44, #c00);
+  background: radial-gradient(
+    circle at 30% 30%,
+    oklch(61.42% 0.2355 24.59),
+    oklch(44.33% 0.1978 26.21)
+  );
 
   width: 15px;
   height: 15px;
@@ -250,50 +280,50 @@
 
 /* Priority badges */
 .sticky-note__badge--priority-low {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-note-tag-green-bg);
+  color: var(--color-note-tag-green-text);
 }
 
 .sticky-note__badge--priority-medium {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-note-tag-blue-bg);
+  color: var(--color-note-tag-blue-text);
 }
 
 .sticky-note__badge--priority-high {
-  background: #ffedd5;
-  color: #9a3412;
+  background: var(--color-note-tag-orange-bg);
+  color: var(--color-note-tag-orange-text);
 }
 
 .sticky-note__badge--priority-urgent {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-note-tag-red-bg);
+  color: var(--color-note-tag-red-text);
 }
 
 /* Org Level badges */
 .sticky-note__badge--org-company {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-note-tag-blue-bg);
+  color: var(--color-note-tag-blue-text);
 }
 
 .sticky-note__badge--org-department {
-  background: #ffedd5;
-  color: #9a3412;
+  background: var(--color-note-tag-orange-bg);
+  color: var(--color-note-tag-orange-text);
 }
 
 .sticky-note__badge--org-team {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-note-tag-green-bg);
+  color: var(--color-note-tag-green-text);
 }
 
 .sticky-note__badge--org-area {
-  background: #f3e8ff;
-  color: #6b21a8;
+  background: var(--color-note-tag-purple-bg);
+  color: var(--color-note-tag-purple-text);
 }
 
 /* Unread indicator badge */
 .sticky-note__badge--unread {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-note-tag-amber-bg);
+  color: var(--color-note-tag-amber-text);
 }
 
 /* ========================================
@@ -322,7 +352,7 @@
 
 .sticky-note__attachments i,
 .sticky-note__comments i {
-  color: var(--color-black, #000);
+  color: var(--color-black);
   font-size: 0.8rem;
 }
 
@@ -344,7 +374,7 @@
 }
 
 .sticky-note__read-status--read i {
-  color: var(--color-success, #4caf50);
+  color: var(--color-success);
 }
 
 .sticky-note__read-status--unread {
@@ -352,7 +382,7 @@
 }
 
 .sticky-note__read-status--unread i {
-  color: var(--color-warning, #ff9800);
+  color: var(--color-warning);
 }
 
 /* ========================================
@@ -382,11 +412,14 @@
 
   transition: all 0.2s ease;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+  box-shadow: 0 1px 3px color-mix(in oklch, var(--color-black) 15%, transparent);
   border: none;
   border-radius: 50%;
 
-  background: var(--color-white, rgb(255 255 255 / 70%));
+  background: var(
+    --color-white,
+    color-mix(in oklch, var(--color-white) 70%, transparent)
+  );
   padding: 0;
 
   width: 28px;
@@ -398,7 +431,10 @@
 
 .sticky-note__action:hover {
   transform: scale(1.1);
-  background: var(--color-white, rgb(255 255 255 / 90%));
+  background: var(
+    --color-white,
+    color-mix(in oklch, var(--color-white) 90%, transparent)
+  );
 }
 
 .sticky-note__action--edit {

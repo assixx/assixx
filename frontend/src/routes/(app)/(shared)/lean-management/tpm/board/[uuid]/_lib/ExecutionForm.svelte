@@ -678,8 +678,8 @@
     justify-content: center;
     border: none;
     border-radius: var(--radius-full, 9999px);
-    background: rgb(0 0 0 / 60%);
-    color: #fff;
+    background: color-mix(in oklch, var(--color-black) 60%, transparent);
+    color: var(--color-white);
     font-size: 0.625rem;
     cursor: pointer;
     transition: background 0.15s ease;

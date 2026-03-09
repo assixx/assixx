@@ -734,8 +734,9 @@
     display: flex;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
-    background: var(--color-glass-bg, rgb(59 130 246 / 8%));
-    border: 1px solid var(--color-info-border, rgb(59 130 246 / 25%));
+    background: var(--color-glass-bg, oklch(62.31% 0.1881 259.82 / 8%));
+    border: 1px solid
+      var(--color-info-border, oklch(62.31% 0.1881 259.82 / 25%));
     border-radius: 0.5rem;
   }
 

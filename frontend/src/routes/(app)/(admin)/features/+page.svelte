@@ -12,6 +12,8 @@
 
   const log = createLogger('FeaturesPage');
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import AddonResources from './_lib/AddonResources.svelte';
   import {
     applyTenantFeaturesToCategories,
@@ -517,42 +519,22 @@
 </div>
 
 <!-- Plan Change Confirmation Modal -->
-{#if showPlanChangeModal}
+<ConfirmModal
+  show={showPlanChangeModal}
+  id="plan-change-modal"
+  title="Plan wechseln"
+  icon="fa-exchange-alt"
+  confirmLabel="Plan wechseln"
+  centered
+  onconfirm={() => void confirmPlanChange()}
+  oncancel={() => {
+    showPlanChangeModal = false;
+  }}
+>
   {@const pendingPlan = plans[pendingPlanCode]}
-  <div
-    id="plan-change-modal"
-    class="modal-overlay modal-overlay--active"
-  >
-    <div class="confirm-modal confirm-modal--danger">
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exchange-alt"></i>
-      </div>
-      <h3 class="confirm-modal__title">Plan wechseln</h3>
-      <p class="confirm-modal__message">
-        Möchten Sie wirklich zum
-        <strong>{pendingPlan?.name ?? pendingPlanCode}</strong> Plan wechseln?
-      </p>
-      <div class="confirm-modal__actions confirm-modal__actions--centered">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
-          onclick={() => {
-            showPlanChangeModal = false;
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger confirm-modal__btn--wide"
-          onclick={() => void confirmPlanChange()}
-        >
-          Plan wechseln
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+  Möchten Sie wirklich zum
+  <strong>{pendingPlan?.name ?? pendingPlanCode}</strong> Plan wechseln?
+</ConfirmModal>
 
 <style>
   /* ==========================================================

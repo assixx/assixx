@@ -9,148 +9,148 @@
 
 /* Todo - Blue */
 .badge--todo {
-  border-color: rgb(33 150 243 / 30%);
-  background: rgb(33 150 243 / 20%);
-  color: #2196f3;
+  border-color: var(--color-primary-alpha-30);
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
 }
 
 /* In Progress - Orange */
 .badge--in-progress {
-  border-color: rgb(255 152 0 / 30%);
-  background: rgb(255 152 0 / 20%);
-  color: #ff9800;
+  border-color: color-mix(in oklch, var(--color-warning) 30%, transparent);
+  background: color-mix(in oklch, var(--color-warning) 20%, transparent);
+  color: var(--color-warning);
 }
 
 /* Done - Green */
 .badge--done {
-  border-color: rgb(76 175 80 / 30%);
-  background: rgb(76 175 80 / 20%);
-  color: #4caf50;
+  border-color: color-mix(in oklch, var(--color-success) 30%, transparent);
+  background: color-mix(in oklch, var(--color-success) 20%, transparent);
+  color: var(--color-success);
 }
 
 /* Blocked - Red */
 .badge--blocked {
-  border-color: rgb(244 67 54 / 30%);
-  background: rgb(244 67 54 / 20%);
-  color: #f44336;
+  border-color: color-mix(in oklch, var(--color-danger) 30%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 20%, transparent);
+  color: var(--color-danger);
 }
 
 /* On Hold - Gray */
 .badge--on-hold {
-  border-color: rgb(158 158 158 / 30%);
-  background: rgb(158 158 158 / 20%);
-  color: #9e9e9e;
+  border-color: color-mix(in oklch, var(--color-gray-500) 30%, transparent);
+  background: color-mix(in oklch, var(--color-gray-500) 20%, transparent);
+  color: var(--color-gray-500);
 }
 
 /* ========== DOCUMENT STATUS ========== */
 
 /* Draft - Gray */
 .badge--draft {
-  border-color: rgb(158 158 158 / 30%);
-  background: rgb(158 158 158 / 20%);
-  color: #9e9e9e;
+  border-color: color-mix(in oklch, var(--color-gray-500) 30%, transparent);
+  background: color-mix(in oklch, var(--color-gray-500) 20%, transparent);
+  color: var(--color-gray-500);
 }
 
 /* Published - Green */
 .badge--published {
-  border-color: rgb(76 175 80 / 30%);
-  background: rgb(76 175 80 / 20%);
-  color: #4caf50;
+  border-color: color-mix(in oklch, var(--color-success) 30%, transparent);
+  background: color-mix(in oklch, var(--color-success) 20%, transparent);
+  color: var(--color-success);
 }
 
 /* Expired - Red */
 .badge--expired {
-  border-color: rgb(244 67 54 / 30%);
-  background: rgb(244 67 54 / 20%);
-  color: #f44336;
+  border-color: color-mix(in oklch, var(--color-danger) 30%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 20%, transparent);
+  color: var(--color-danger);
 }
 
 /* Under Review - Yellow */
 .badge--under-review {
-  border-color: rgb(255 193 7 / 30%);
-  background: rgb(255 193 7 / 20%);
-  color: #ffc107;
+  border-color: color-mix(in oklch, var(--color-amber) 30%, transparent);
+  background: color-mix(in oklch, var(--color-amber) 20%, transparent);
+  color: var(--color-amber);
 }
 
 /* ========== SEVERITY LEVELS ========== */
 
 /* Critical - Deep Red */
 .badge--critical {
-  border-color: rgb(183 28 28 / 40%);
-  background: rgb(183 28 28 / 25%);
-  color: #b71c1c;
+  border-color: oklch(44.38% 0.1729 23.98 / 40%);
+  background: oklch(44.38% 0.1729 23.98 / 25%);
+  color: var(--color-status-active-hover);
 }
 
 /* Major - Orange */
 .badge--major {
-  border-color: rgb(255 152 0 / 30%);
-  background: rgb(255 152 0 / 20%);
-  color: #ff9800;
+  border-color: color-mix(in oklch, var(--color-warning) 30%, transparent);
+  background: color-mix(in oklch, var(--color-warning) 20%, transparent);
+  color: var(--color-warning);
 }
 
 /* Minor - Yellow */
 .badge--minor {
-  border-color: rgb(255 193 7 / 30%);
-  background: rgb(255 193 7 / 20%);
-  color: #ffc107;
+  border-color: color-mix(in oklch, var(--color-amber) 30%, transparent);
+  background: color-mix(in oklch, var(--color-amber) 20%, transparent);
+  color: var(--color-amber);
 }
 
 /* ========== HEALTH STATUS ========== */
 
 /* Online - Green */
 .badge--online {
-  border-color: rgb(76 175 80 / 30%);
-  background: rgb(76 175 80 / 20%);
-  color: #4caf50;
+  border-color: color-mix(in oklch, var(--color-success) 30%, transparent);
+  background: color-mix(in oklch, var(--color-success) 20%, transparent);
+  color: var(--color-success);
 }
 
 /* Offline - Gray */
 .badge--offline {
-  border-color: rgb(158 158 158 / 30%);
-  background: rgb(158 158 158 / 20%);
-  color: #9e9e9e;
+  border-color: color-mix(in oklch, var(--color-gray-500) 30%, transparent);
+  background: color-mix(in oklch, var(--color-gray-500) 20%, transparent);
+  color: var(--color-gray-500);
 }
 
 /* Degraded - Orange */
 .badge--degraded {
-  border-color: rgb(255 152 0 / 30%);
-  background: rgb(255 152 0 / 20%);
-  color: #ff9800;
+  border-color: color-mix(in oklch, var(--color-warning) 30%, transparent);
+  background: color-mix(in oklch, var(--color-warning) 20%, transparent);
+  color: var(--color-warning);
 }
 
 /* Maintenance - Blue */
 .badge--maintenance {
-  border-color: rgb(33 150 243 / 30%);
-  background: rgb(33 150 243 / 20%);
-  color: #2196f3;
+  border-color: var(--color-primary-alpha-30);
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
 }
 
 /* ========== OTHER STATES ========== */
 
 /* Verified - Green with checkmark */
 .badge--verified {
-  border-color: rgb(76 175 80 / 30%);
-  background: rgb(76 175 80 / 20%);
-  color: #4caf50;
+  border-color: color-mix(in oklch, var(--color-success) 30%, transparent);
+  background: color-mix(in oklch, var(--color-success) 20%, transparent);
+  color: var(--color-success);
 }
 
 /* Unread - Blue */
 .badge--unread {
-  border-color: rgb(33 150 243 / 30%);
-  background: rgb(33 150 243 / 20%);
-  color: #2196f3;
+  border-color: var(--color-primary-alpha-30);
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
 }
 
 /* Beta - Purple */
 .badge--beta {
-  border-color: rgb(103 58 183 / 30%);
-  background: rgb(103 58 183 / 20%);
-  color: #673ab7;
+  border-color: oklch(42.54% 0.1686 296.74 / 30%);
+  background: oklch(42.54% 0.1686 296.74 / 20%);
+  color: var(--color-deep-purple);
 }
 
 /* Premium - Gold */
 .badge--premium {
-  border-color: rgb(255 193 7 / 40%);
-  background: rgb(255 193 7 / 25%);
-  color: #ffc107;
+  border-color: color-mix(in oklch, var(--color-amber) 40%, transparent);
+  background: color-mix(in oklch, var(--color-amber) 25%, transparent);
+  color: var(--color-amber);
 }

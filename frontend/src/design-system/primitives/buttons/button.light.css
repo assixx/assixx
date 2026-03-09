@@ -16,13 +16,16 @@
   transition: var(--transition-all);
 
   /* Shadow - subtle */
-  box-shadow: var(--shadow-btn-light, 0 1px 3px rgb(0 0 0 / 8%));
-  border: 1px solid rgb(189 189 189);
+  box-shadow: var(
+    --shadow-btn-light,
+    0 1px 3px color-mix(in oklch, var(--color-black) 8%, transparent)
+  );
+  border: 1px solid oklch(79.84% 0 0);
 
   background: linear-gradient(
     145deg,
-    rgb(224 224 224 / 11%),
-    rgb(158 158 158 / 15%)
+    oklch(90.61% 0 0 / 11%),
+    color-mix(in oklch, var(--color-gray-500) 15%, transparent)
   );
 
   /* Padding - matches other variants */
@@ -34,18 +37,24 @@
 
 /* Hover State */
 .btn-light:hover:not(:disabled) {
-  box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
+  box-shadow: var(
+    --shadow-btn-light-hover,
+    0 2px 6px color-mix(in oklch, var(--color-black) 12%, transparent)
+  );
   background: linear-gradient(
     145deg,
-    rgb(224 224 224 / 18%),
-    rgb(158 158 158 / 25%)
+    oklch(90.61% 0 0 / 18%),
+    color-mix(in oklch, var(--color-gray-500) 25%, transparent)
   );
 }
 
 /* Active/Pressed State */
 .btn-light:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: var(--shadow-btn-light-active, inset 0 1px 2px rgb(0 0 0 / 10%));
+  box-shadow: var(
+    --shadow-btn-light-active,
+    inset 0 1px 2px color-mix(in oklch, var(--color-black) 10%, transparent)
+  );
   border-color: var(--color-gray-500);
   background: var(--color-gray-600);
 }
@@ -55,7 +64,7 @@
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow:
-    0 0 0 3px rgb(158 158 158 / 20%),
+    0 0 0 3px color-mix(in oklch, var(--color-gray-500) 20%, transparent),
     var(--shadow-btn-light);
 }
 

@@ -189,7 +189,7 @@
     width: 48px;
     height: 48px;
     border-radius: var(--radius-lg);
-    background: rgb(33 150 243 / 10%);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
     color: var(--color-primary);
     font-size: 20px;
   }
@@ -242,7 +242,7 @@
 
   .addon-card__btn:hover {
     border-color: var(--color-primary);
-    background: rgb(33 150 243 / 10%);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
 
   .addon-card__value {
@@ -255,7 +255,7 @@
 
   /* Light mode */
   :global(html:not(.dark)) .addon-card__icon {
-    background: rgb(33 150 243 / 8%);
+    background: color-mix(in oklch, var(--color-primary) 8%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

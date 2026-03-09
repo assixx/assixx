@@ -593,7 +593,7 @@
   .color-option.active {
     box-shadow:
       var(--shadow-md),
-      0 0 0 4px rgb(var(--color-primary-rgb) / 10%);
+      0 0 0 4px color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--color-primary);
   }
 
@@ -601,7 +601,8 @@
     position: absolute;
     top: 6px;
     right: 6px;
-    box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+    box-shadow: 0 2px 4px
+      color-mix(in oklch, var(--color-black) 20%, transparent);
     border-radius: 50%;
     background: var(--color-primary);
     width: 18px;
@@ -615,15 +616,16 @@
     right: 10px;
     z-index: 1;
     content: '\2713';
-    color: #fff;
+    color: var(--color-white);
     font-weight: 700;
     font-size: 12px;
   }
 
   .color-option__swatch {
     display: block;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
-    border: 2px solid rgb(255 255 255 / 30%);
+    box-shadow: 0 2px 8px
+      color-mix(in oklch, var(--color-black) 15%, transparent);
+    border: 2px solid color-mix(in oklch, var(--color-white) 30%, transparent);
     border-radius: 50%;
     width: 32px;
     height: 32px;
@@ -638,22 +640,42 @@
   /* Color Swatch Variants */
 
   .color-option[data-color='yellow'] .color-option__swatch {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-amber-light) 0%,
+      var(--color-amber-hover) 100%
+    );
   }
 
   .color-option[data-color='pink'] .color-option__swatch {
-    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-pink) 0%,
+      var(--color-pink-hover) 100%
+    );
   }
 
   .color-option[data-color='blue'] .color-option__swatch {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-info) 0%,
+      oklch(54.61% 0.2152 262.88) 100%
+    );
   }
 
   .color-option[data-color='green'] .color-option__swatch {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-action-emerald) 0%,
+      var(--color-action-emerald-hover) 100%
+    );
   }
 
   .color-option[data-color='orange'] .color-option__swatch {
-    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-action-orange) 0%,
+      var(--color-action-orange-hover) 100%
+    );
   }
 </style>

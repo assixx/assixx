@@ -140,7 +140,8 @@
 
   .work-order-card:hover {
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+    box-shadow: 0 2px 8px
+      color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   .work-order-card--overdue {

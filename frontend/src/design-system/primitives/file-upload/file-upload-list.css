@@ -143,7 +143,7 @@
 }
 
 .file-upload-item__preview--image {
-  color: var(--color-info, #3b82f6);
+  color: var(--color-info);
 }
 
 /* ============================================================
@@ -245,7 +245,7 @@
 }
 
 .file-upload-item__remove:hover {
-  background: rgb(244 67 54 / 10%);
+  background: color-mix(in oklch, var(--color-danger) 10%, transparent);
   color: var(--color-danger);
 }
 
@@ -273,7 +273,7 @@
 
 .file-upload-item--uploading {
   /* Currently uploading */
-  border-color: rgb(33 150 243 / 30%);
+  border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
 }
 
 .file-upload-item--uploading .file-upload-item__preview {
@@ -284,11 +284,11 @@
 @keyframes pulse-border {
   0%,
   100% {
-    border-color: rgb(33 150 243 / 20%);
+    border-color: color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
 
   50% {
-    border-color: rgb(33 150 243 / 50%);
+    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 }
 
@@ -298,7 +298,7 @@
 
 .file-upload-item--success {
   /* Upload complete */
-  border-color: rgb(76 175 80 / 30%);
+  border-color: color-mix(in oklch, var(--color-success) 30%, transparent);
 }
 
 .file-upload-item--success .file-upload-item__meta::after {
@@ -312,8 +312,8 @@
 
 .file-upload-item--error {
   /* Upload failed */
-  border-color: rgb(244 67 54 / 30%);
-  background: rgb(244 67 54 / 2%);
+  border-color: color-mix(in oklch, var(--color-danger) 30%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 2%, transparent);
 }
 
 .file-upload-item--error .file-upload-item__meta::after {

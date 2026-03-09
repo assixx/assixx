@@ -257,6 +257,7 @@
             <input
               type={showPassword ? 'text' : 'password'}
               id="root-password"
+              autocomplete="new-password"
               class="form-field__control"
               class:is-error={passwordError}
               required={!isEditMode}
@@ -296,6 +297,7 @@
             <input
               type={showPasswordConfirm ? 'text' : 'password'}
               id="root-password-confirm"
+              autocomplete="new-password"
               class="form-field__control"
               class:is-error={passwordError}
               class:is-success={passwordConfirm !== '' && passwordMatch}

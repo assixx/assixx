@@ -116,7 +116,7 @@
   }
 
   .event-item:hover {
-    background-color: rgb(var(--primary-rgb), 0.05);
+    background-color: color-mix(in oklch, var(--color-primary) 5%, transparent);
   }
 
   .event-date {
@@ -179,27 +179,27 @@
     padding: 2px 8px;
     border-radius: var(--radius-xl);
     font-size: 0.7rem;
-    color: #fff;
+    color: var(--color-white);
   }
 
   .event-level-company {
-    background-color: #3498db;
+    background-color: var(--color-sky);
   }
 
   .event-level-department {
-    background-color: #e67e22;
+    background-color: var(--color-carrot);
   }
 
   .event-level-team {
-    background-color: #2ecc71;
+    background-color: var(--color-emerald);
   }
 
   .event-level-area {
-    background-color: #e53935;
+    background-color: var(--color-danger-hover);
   }
 
   .event-level-personal {
-    background-color: #9b59b6;
+    background-color: var(--color-purple);
   }
 
   .event-badges {

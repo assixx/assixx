@@ -89,10 +89,10 @@
     align-items: center;
     backdrop-filter: blur(5px);
     transition: all 0.2s ease;
-    border: 1px solid rgb(255 255 255 / 12%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 12%, transparent);
     border-left: none;
     border-radius: 0 var(--form-field-radius) var(--form-field-radius) 0;
-    background: rgb(255 255 255 / 8%);
+    background: color-mix(in oklch, var(--color-white) 8%, transparent);
     padding: 0 16px;
     color: var(--text-secondary);
     font-size: 14px;
@@ -101,6 +101,6 @@
 
   .subdomain-input:focus + .subdomain-suffix {
     border-color: var(--primary-color);
-    background: rgb(255 255 255 / 12%);
+    background: color-mix(in oklch, var(--color-white) 12%, transparent);
   }
 </style>

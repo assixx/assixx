@@ -454,7 +454,7 @@
   }
 
   .perm-row--module:hover {
-    background: rgb(255 255 255 / 3%);
+    background: color-mix(in oklch, var(--color-white) 3%, transparent);
   }
 
   /* ================================================================
@@ -569,7 +569,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    background: rgb(255 255 255 / 3%);
+    background: color-mix(in oklch, var(--color-white) 3%, transparent);
   }
 
   .perm-check__icon {
@@ -584,7 +584,8 @@
   .perm-check input:checked + .perm-check__box {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgb(33 150 243 / 30%);
+    box-shadow: 0 2px 8px
+      color-mix(in oklch, var(--color-primary) 30%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -596,7 +597,7 @@
   /* Hover state */
   .perm-check:hover .perm-check__box {
     border-color: var(--color-primary);
-    background: rgb(33 150 243 / 8%);
+    background: color-mix(in oklch, var(--color-primary) 8%, transparent);
   }
 
   /* Focus state (keyboard navigation) */

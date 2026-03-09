@@ -658,13 +658,13 @@
     border-radius: 12px;
     background-image: radial-gradient(
       circle,
-      rgb(255 255 255 / 45%) 1.5px,
+      color-mix(in oklch, var(--color-white) 45%, transparent) 1.5px,
       transparent 1.5px
     );
     background-size: 20px 20px;
     mask-image: radial-gradient(
       ellipse 80% 80% at 50% 50%,
-      rgb(0 0 0) 10%,
+      var(--color-black) 10%,
       transparent 75%
     );
     pointer-events: none;
@@ -675,7 +675,7 @@
   :global(html:not(.dark)) .blackboard-container::after {
     background-image: radial-gradient(
       circle,
-      rgb(0 0 0 / 60%) 1.5px,
+      color-mix(in oklch, var(--color-black) 60%, transparent) 1.5px,
       transparent 1.5px
     );
   }

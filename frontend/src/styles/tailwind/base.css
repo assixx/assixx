@@ -201,7 +201,7 @@
   /* Selection */
   ::selection {
     background-color: var(--color-primary);
-    color: #fff;
+    color: var(--color-white);
   }
 
   /* Scrollbar - Light mode */
@@ -211,29 +211,29 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgb(0 0 0 / 5%);
+    background: oklch(0% 0 0 / 5%);
   }
 
   ::-webkit-scrollbar-thumb {
     border-radius: 4px;
-    background: rgb(0 0 0 / 15%);
+    background: oklch(0% 0 0 / 15%);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgb(0 0 0 / 25%);
+    background: oklch(0% 0 0 / 25%);
   }
 
   /* Scrollbar - Dark mode */
   html.dark ::-webkit-scrollbar-track {
-    background: rgb(255 255 255 / 5%);
+    background: oklch(100% 0 0 / 5%);
   }
 
   html.dark ::-webkit-scrollbar-thumb {
-    background: rgb(255 255 255 / 20%);
+    background: oklch(100% 0 0 / 20%);
   }
 
   html.dark ::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 30%);
+    background: oklch(100% 0 0 / 30%);
   }
 
   /* NOTE: .overflow-x-visible was REMOVED (2025-11)

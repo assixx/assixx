@@ -57,24 +57,24 @@
     background-image:
       radial-gradient(
         circle at 20% 80%,
-        rgb(255 255 255 / 10%) 0%,
+        color-mix(in oklch, var(--color-white) 10%, transparent) 0%,
         transparent 50%
       ),
       radial-gradient(
         circle at 80% 20%,
-        rgb(39 72 89) 0%,
-        rgb(35 84 114 / 63%) 50%
+        oklch(38.4% 0.0484 232.42) 0%,
+        oklch(42.65% 0.0725 238.66 / 63%) 50%
       );
   }
 
   .employee-name-hero {
     background: linear-gradient(
       135deg,
-      #000 0%,
-      #000 33%,
-      #0070f3 66%,
-      #38bdf8 83%,
-      #ff0080 100%
+      var(--color-black) 0%,
+      var(--color-black) 33%,
+      oklch(55.31% 0.1943 255.69) 66%,
+      oklch(77.78% 0.1186 233.08) 83%,
+      oklch(59.25% 0.2653 356.48) 100%
     );
     background-size: 300% 300%;
     background-clip: text;
@@ -110,14 +110,14 @@
     position: absolute;
     animation: float 15s infinite ease-in-out;
     box-shadow:
-      0 0 4px rgb(255 182 193 / 40%),
-      inset 0 0 2px rgb(255 255 255 / 60%);
+      0 0 4px oklch(84.74% 0.0858 9.04 / 40%),
+      inset 0 0 2px color-mix(in oklch, var(--color-white) 60%, transparent);
     border-radius: 80% 0 55% 50% / 55% 0 80% 50%;
     background: linear-gradient(
       to top right,
-      #ff85a2 0%,
-      #ffb7c5 45%,
-      #fff0f3 100%
+      oklch(72.3% 0.1286 10.28) 0%,
+      oklch(83.15% 0.0716 10.66) 45%,
+      oklch(96.51% 0.0142 10.08) 100%
     );
     width: 12px;
     height: 8px;

@@ -536,10 +536,10 @@
     position: relative;
 
     margin-bottom: var(--spacing-4);
-    border: 1px solid rgb(255 255 255 / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
 
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
     padding: var(--spacing-6);
   }
 
@@ -560,7 +560,7 @@
 
     width: 30px;
     height: 30px;
-    color: #fff;
+    color: var(--color-white);
     font-weight: 600;
 
     font-size: 14px;
@@ -582,7 +582,7 @@
     border: none;
     border-radius: 50%;
 
-    background: rgb(255 255 255 / 10%);
+    background: color-mix(in oklch, var(--color-white) 10%, transparent);
     padding: var(--spacing-1);
 
     width: 32px;
@@ -594,13 +594,13 @@
   :global(.question-action:hover),
   :global(.remove-question:hover) {
     transform: scale(1.1);
-    background: rgb(244 67 54 / 30%);
-    color: #ff5252;
+    background: color-mix(in oklch, var(--color-danger) 30%, transparent);
+    color: var(--color-red-accent);
   }
 
   :global(.question-action.delete:hover) {
-    background: rgb(244 67 54 / 20%);
-    color: #f44336;
+    background: color-mix(in oklch, var(--color-danger) 20%, transparent);
+    color: var(--color-danger);
   }
 
   :global(.remove-question svg) {
@@ -618,10 +618,10 @@
 
   :global(.option-input) {
     flex: 1;
-    border: 1px solid rgb(255 255 255 / 20%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 20%, transparent);
     border-radius: var(--radius-xl);
 
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
 
     padding: var(--spacing-3);
 
@@ -638,17 +638,17 @@
     border: none;
     border-radius: 50%;
 
-    background: rgb(244 67 54 / 20%);
+    background: color-mix(in oklch, var(--color-danger) 20%, transparent);
     padding: var(--spacing-1);
 
     width: 28px;
     height: 28px;
 
-    color: #f44336;
+    color: var(--color-danger);
   }
 
   :global(.remove-option:hover) {
-    background: rgb(244 67 54 / 30%);
+    background: color-mix(in oklch, var(--color-danger) 30%, transparent);
   }
 
   :global(.add-option-btn) {
@@ -663,15 +663,15 @@
     border: none;
     border-radius: var(--radius-xl);
 
-    background: rgb(76 175 80 / 20%);
+    background: color-mix(in oklch, var(--color-success) 20%, transparent);
     padding: var(--spacing-3);
-    color: #4caf50;
+    color: var(--color-success);
 
     font-size: 0.9rem;
   }
 
   :global(.add-option-btn:hover) {
-    background: rgb(76 175 80 / 30%);
+    background: color-mix(in oklch, var(--color-success) 30%, transparent);
   }
 
   /* Sections — directly in this template */
@@ -679,7 +679,8 @@
   .drafts-section,
   .templates-section {
     margin-top: var(--spacing-8);
-    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
     padding-top: var(--spacing-8);
   }
 

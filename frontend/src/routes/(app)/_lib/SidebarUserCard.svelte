@@ -152,7 +152,10 @@
   }
 
   .footer-trigger:hover {
-    background: var(--glass-bg-hover, rgb(255 255 255 / 5%));
+    background: var(
+      --glass-bg-hover,
+      color-mix(in oklch, var(--color-white) 5%, transparent)
+    );
   }
 
   .sidebar-footer.collapsed .footer-trigger {
@@ -220,7 +223,11 @@
 
   .detail-divider {
     margin-bottom: 4px;
-    border-bottom: 1px solid var(--glass-border, rgb(255 255 255 / 10%));
+    border-bottom: 1px solid
+      var(
+        --glass-border,
+        color-mix(in oklch, var(--color-white) 10%, transparent)
+      );
   }
 
   .detail-company {

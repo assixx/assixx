@@ -204,6 +204,6 @@
   }
 
   .cursor-pointer:hover {
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
   }
 </style>

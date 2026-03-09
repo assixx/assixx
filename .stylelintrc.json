@@ -50,7 +50,7 @@
     "font-weight-notation": "numeric",
     "function-name-case": "lower",
     "function-url-quotes": "always",
-    "hue-degree-notation": "angle",
+    "hue-degree-notation": "number",
     "import-notation": "string",
     "keyframe-selector-notation": "percentage-unless-within-keyword-only-block",
     "length-zero-no-unit": true,
@@ -61,7 +61,7 @@
     "no-duplicate-selectors": null,
     "no-invalid-double-slash-comments": true,
     "no-unknown-animations": true,
-    "number-max-precision": 3,
+    "number-max-precision": 4,
     "property-no-vendor-prefix": true,
     "rule-empty-line-before": [
       "always-multi-line",
