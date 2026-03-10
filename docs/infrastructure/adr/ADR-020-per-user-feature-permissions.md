@@ -278,7 +278,7 @@ Store permission categories and modules in DB tables (`permission_categories`, `
 
 **Rejected:**
 
-- Over-engineering for current scope (7 features, 18 modules)
+- Over-engineering for current scope (originally 7 features / 18 modules at decision time; now 19 categories / 42 modules — code-driven approach still holds)
 - Permission structure rarely changes — code-defined is sufficient
 - Adds migration complexity for definition changes
 - No compile-time type safety for permission codes
@@ -301,7 +301,7 @@ Create many roles (e.g., "blackboard-reader", "kvp-writer", "document-admin") an
 
 **Rejected:**
 
-- Role explosion: 18 modules x 3 actions = 54 potential roles
+- Role explosion: 42 modules x 3 actions = 126 potential roles (grown from 18 at decision time)
 - Hard for IT admins to understand and manage
 - Not intuitive for industrial companies (checkbox UI is clearer than role assignment)
 - Microsoft Entra moved away from pure role-based toward direct permission assignment for this reason
@@ -355,14 +355,14 @@ Evaluate permissions based on attributes (user department, time of day, location
 
 This ADR establishes the **atomic foundation** for a comprehensive access control system, analogous to Microsoft Entra ID scoped to application features:
 
-| Phase                  | Capability                                                    | Status  |
-| ---------------------- | ------------------------------------------------------------- | ------- |
-| **Phase 1** (this ADR) | Per-user, per-module, per-action permissions                  | Current |
-| Phase 2                | Permission templates ("Standard Employee", "Quality Manager") | Future  |
-| Phase 3                | Group-based assignment (department/team → template)           | Future  |
-| Phase 4                | `valid_from` / `valid_until` for time-limited access          | Future  |
-| Phase 5                | Self-service access requests with admin approval workflow     | Future  |
-| Phase 6                | Compliance dashboard ("Who has delete access to Documents?")  | Future  |
+| Phase                  | Capability                                                    | Status                                                                |
+| ---------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Phase 1** (this ADR) | Per-user, per-module, per-action permissions                  | **Done** — 19 categories, 42 modules, 26 guarded controllers (v1.4.0) |
+| Phase 2                | Permission templates ("Standard Employee", "Quality Manager") | Future                                                                |
+| Phase 3                | Group-based assignment (department/team → template)           | Future                                                                |
+| Phase 4                | `valid_from` / `valid_until` for time-limited access          | Future                                                                |
+| Phase 5                | Self-service access requests with admin approval workflow     | Future                                                                |
+| Phase 6                | Compliance dashboard ("Who has delete access to Documents?")  | Future                                                                |
 
 Each future phase builds on the `user_feature_permissions` table without schema redesign. The decentralized registry pattern scales with new features. The RLS isolation protects all phases equally.
 

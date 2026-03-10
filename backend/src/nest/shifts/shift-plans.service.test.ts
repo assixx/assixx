@@ -140,44 +140,6 @@ describe('ShiftPlansService', () => {
       expect(result.message).toBe('Shift plan created successfully');
     });
 
-    it('should pass isTpmMode to INSERT query', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
-
-      await service.createShiftPlan(
-        {
-          departmentId: 5,
-          startDate: '2025-06-01',
-          endDate: '2025-06-07',
-          isTpmMode: true,
-          shifts: [],
-        } as never,
-        10,
-        1,
-      );
-
-      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      // is_tpm_mode is the 11th param (index 10) in the INSERT
-      expect(insertParams?.[10]).toBe(true);
-    });
-
-    it('should default isTpmMode to false when not provided', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
-
-      await service.createShiftPlan(
-        {
-          departmentId: 5,
-          startDate: '2025-06-01',
-          endDate: '2025-06-07',
-          shifts: [],
-        } as never,
-        10,
-        1,
-      );
-
-      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(insertParams?.[10]).toBe(false);
-    });
-
     it('should create plan with shifts', async () => {
       // INSERT plan RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
@@ -228,22 +190,6 @@ describe('ShiftPlansService', () => {
       await expect(
         service.updateShiftPlan(999, { shifts: [] } as never, 10, 1),
       ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should include is_tpm_mode in UPDATE when provided', async () => {
-      // find plan
-      mockDb.query.mockResolvedValueOnce([makePlanRow()]);
-      // applyShiftPlanUpdates → UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
-      // deleteOrphanedPlanShifts skipped (no shifts)
-
-      await service.updateShiftPlan(1, { isTpmMode: true } as never, 10, 1);
-
-      // Second call is the UPDATE query
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
-      const updateParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
-      expect(updateSql).toContain('is_tpm_mode');
-      expect(updateParams?.[0]).toBe(true);
     });
 
     it('should update plan metadata and upsert shifts', async () => {

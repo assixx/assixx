@@ -89,7 +89,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--color-white);
     border: 1px solid var(--color-glass-border);
   }
 </style>

@@ -188,7 +188,7 @@
       einen Moment, bevor Sie es erneut versuchen.
     </p>
     <div
-      class="mb-8 rounded-(--radius-xl) border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/10%)] p-6"
+      class="mb-8 rounded-(--radius-xl) border border-[oklch(63.24%_0.1562_249.76/20%)] bg-[oklch(63.24%_0.1562_249.76/10%)] p-6"
     >
       <div class="mb-4 text-sm text-(--color-text-secondary)">
         Versuchen Sie es wieder in:

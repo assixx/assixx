@@ -47,7 +47,7 @@ const { memoryStorage } = multer;
 
 /** Permission constants */
 const FEAT = 'tpm';
-const MOD_PLANS = 'tpm-plans';
+const MOD_LOCATIONS = 'tpm-locations';
 
 /** Multer options for location photos (max 5MB, single file) */
 const locationPhotoOptions = {
@@ -69,7 +69,7 @@ export class TpmLocationsController {
 
   /** GET /tpm/locations?planUuid=xxx — List all active locations for a plan */
   @Get()
-  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canRead')
   async listLocations(
     @Query('planUuid') planUuid: string | undefined,
     @TenantId() tenantId: number,
@@ -85,7 +85,7 @@ export class TpmLocationsController {
   /** POST /tpm/locations — Create a new location */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canWrite')
   async createLocation(
     @Body() dto: CreateLocationDto,
     @CurrentUser() user: NestAuthUser,
@@ -96,7 +96,7 @@ export class TpmLocationsController {
 
   /** GET /tpm/locations/:uuid — Get a single location */
   @Get(':uuid')
-  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canRead')
   async getLocation(
     @Param('uuid') uuid: string,
     @TenantId() tenantId: number,
@@ -106,7 +106,7 @@ export class TpmLocationsController {
 
   /** PATCH /tpm/locations/:uuid — Update a location */
   @Patch(':uuid')
-  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canWrite')
   async updateLocation(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateLocationDto,
@@ -123,7 +123,7 @@ export class TpmLocationsController {
 
   /** DELETE /tpm/locations/:uuid — Soft-delete a location */
   @Delete(':uuid')
-  @RequirePermission(FEAT, MOD_PLANS, 'canDelete')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canDelete')
   async deleteLocation(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -141,7 +141,7 @@ export class TpmLocationsController {
   @Post(':uuid/photo')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('file', locationPhotoOptions))
-  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canWrite')
   async uploadPhoto(
     @Param('uuid') locationUuid: string,
     @UploadedFile() file: MulterFile | undefined,
@@ -173,7 +173,7 @@ export class TpmLocationsController {
 
   /** DELETE /tpm/locations/:uuid/photo — Remove a location photo */
   @Delete(':uuid/photo')
-  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  @RequirePermission(FEAT, MOD_LOCATIONS, 'canWrite')
   async removePhoto(
     @Param('uuid') locationUuid: string,
     @CurrentUser() user: NestAuthUser,

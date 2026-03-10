@@ -12,6 +12,8 @@
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     updateColor as apiUpdateColor,
     resetColors as apiResetColors,
@@ -249,60 +251,21 @@
 </div>
 
 <!-- Reset Confirmation -->
-{#if showResetConfirm}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    id="tpm-color-reset-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={() => {
-      showResetConfirm = false;
-    }}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') showResetConfirm = false;
-    }}
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
-      class="confirm-modal"
-      role="alertdialog"
-      aria-modal="true"
-      tabindex="-1"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-undo"></i>
-      </div>
-      <h3 class="confirm-modal__title">{MESSAGES.COLOR_RESET}</h3>
-      <p class="confirm-modal__message">{MESSAGES.COLOR_RESET_CONFIRM}</p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => {
-            showResetConfirm = false;
-          }}
-        >
-          {MESSAGES.BTN_CANCEL}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          disabled={resetting}
-          onclick={() => {
-            void handleResetColors();
-          }}
-        >
-          {#if resetting}
-            <i class="fas fa-spinner fa-spin"></i>
-          {/if}
-          {MESSAGES.COLOR_RESET}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={showResetConfirm}
+  id="tpm-color-reset-modal"
+  title={MESSAGES.COLOR_RESET}
+  variant="info"
+  icon="fa-undo"
+  confirmLabel={MESSAGES.COLOR_RESET}
+  submitting={resetting}
+  onconfirm={() => void handleResetColors()}
+  oncancel={() => {
+    showResetConfirm = false;
+  }}
+>
+  {MESSAGES.COLOR_RESET_CONFIRM}
+</ConfirmModal>
 
 <style>
   .color-grid {

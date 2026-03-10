@@ -85,12 +85,12 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    color: #ff9800;
+    color: var(--color-warning);
     font-size: 14px;
   }
 
   .role-switch-banner-content strong {
-    color: #ffb74d;
+    color: var(--color-orange-300);
     font-weight: 600;
   }
 
@@ -107,12 +107,12 @@
     border-radius: 300px;
     background: none;
     padding: 4px;
-    color: #ff9800;
+    color: var(--color-warning);
   }
 
   .role-switch-banner-close:hover {
-    background: rgb(255 193 7 / 20%);
-    color: #ffb74d;
+    background: oklch(84.42% 0.1721 84.94 / 20%);
+    color: var(--color-orange-300);
   }
 
   @media (width < 768px) {

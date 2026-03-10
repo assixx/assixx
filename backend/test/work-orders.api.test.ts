@@ -38,6 +38,7 @@ describe('Work Orders: Create', () => {
         description: 'Automatischer Test-Arbeitsauftrag',
         priority: 'high',
         sourceType: 'manual',
+        dueDate: '2099-12-31',
       }),
     });
     const body = (await res.json()) as JsonBody;
@@ -178,6 +179,7 @@ describe('Work Orders: Photo Test Setup', () => {
       body: JSON.stringify({
         title: `Photo-Test WO ${Date.now()}`,
         sourceType: 'manual',
+        dueDate: '2099-12-31',
       }),
     });
     const body = (await res.json()) as JsonBody;
@@ -512,7 +514,47 @@ describe('Work Orders: My Work Orders', () => {
 });
 
 // ============================================================================
-// seq: 10 -- Archive Work Order (last — cleans up test data)
+// seq: 10 -- Calendar Endpoint
+// ============================================================================
+
+describe('Work Orders: Calendar', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(
+      `${BASE_URL}/work-orders/calendar?startDate=2000-01-01&endDate=2099-12-31`,
+      { headers: authOnly(auth.authToken) },
+    );
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return an array in data', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+
+  it('should reject missing query params (400)', async () => {
+    const badRes = await fetch(`${BASE_URL}/work-orders/calendar`, {
+      headers: authOnly(auth.authToken),
+    });
+    expect(badRes.status).toBe(400);
+  });
+
+  it('should reject invalid date format (400)', async () => {
+    const badRes = await fetch(
+      `${BASE_URL}/work-orders/calendar?startDate=invalid&endDate=2026-03-31`,
+      { headers: authOnly(auth.authToken) },
+    );
+    expect(badRes.status).toBe(400);
+  });
+});
+
+// ============================================================================
+// seq: 11 -- Archive Work Order (last — cleans up test data)
 // ============================================================================
 
 describe('Work Orders: Archive', () => {

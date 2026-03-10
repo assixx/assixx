@@ -388,9 +388,10 @@
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
-    color: #fff;
+    color: var(--color-white);
     cursor: default;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+    box-shadow: 0 1px 2px
+      color-mix(in oklch, var(--color-black) 10%, transparent);
   }
 
   .tl-block__name {

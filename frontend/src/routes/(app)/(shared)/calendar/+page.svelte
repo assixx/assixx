@@ -8,7 +8,7 @@
   import { onDestroy } from 'svelte';
 
   import { browser } from '$app/environment';
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
 
   import '@event-calendar/core/index.css';
 
@@ -60,6 +60,31 @@
   // ==========================================================================
 
   let isFullscreen = $state(false);
+  let showWorkOrders = $state(
+    browser ?
+      localStorage.getItem('showWorkOrdersInCalendar') === 'true'
+    : false,
+  );
+
+  function toggleWorkOrders(): boolean {
+    showWorkOrders = !showWorkOrders;
+    if (browser) {
+      localStorage.setItem('showWorkOrdersInCalendar', String(showWorkOrders));
+    }
+    return showWorkOrders;
+  }
+
+  let showTpmAssignments = $state(
+    browser ? localStorage.getItem('showTpmInCalendar') === 'true' : false,
+  );
+
+  function toggleTpmAssignments(): boolean {
+    showTpmAssignments = !showTpmAssignments;
+    if (browser) {
+      localStorage.setItem('showTpmInCalendar', String(showTpmAssignments));
+    }
+    return showTpmAssignments;
+  }
 
   interface CalendarViewRef {
     refetchEvents(): void;
@@ -206,12 +231,26 @@
         );
       }
 
-      return await api.loadCalendarEvents(
-        fetchInfo.startStr,
-        fetchInfo.endStr,
-        calendarState.currentFilter,
-        calendarState.currentSearch,
-      );
+      // Fetch calendar events + work orders + TPM assignments in parallel
+      const [calendarEvents, workOrderEvents, tpmEvents] = await Promise.all([
+        api.loadCalendarEvents(
+          fetchInfo.startStr,
+          fetchInfo.endStr,
+          calendarState.currentFilter,
+          calendarState.currentSearch,
+        ),
+        showWorkOrders ?
+          api.loadWorkOrdersForCalendar(fetchInfo.startStr, fetchInfo.endStr)
+        : Promise.resolve([]),
+        showTpmAssignments ?
+          api.loadTpmAssignmentsForCalendar(
+            fetchInfo.startStr,
+            fetchInfo.endStr,
+          )
+        : Promise.resolve([]),
+      ]);
+
+      return [...calendarEvents, ...workOrderEvents, ...tpmEvents];
     } catch (err: unknown) {
       log.error({ err }, 'Error loading events');
       return [];
@@ -223,6 +262,21 @@
     jsEvent: MouseEvent;
   }): void {
     info.jsEvent.preventDefault();
+
+    // Work order events: navigate to detail page
+    if (info.event.id.startsWith('wo:')) {
+      const uuid = info.event.id.slice(3);
+      void goto(`/work-orders/${uuid}`);
+      return;
+    }
+
+    // TPM assignment events: navigate to TPM board
+    if (info.event.id.startsWith('tpm:')) {
+      const planUuid = info.event.id.split(':')[1];
+      void goto(`/lean-management/tpm/board/${planUuid}`);
+      return;
+    }
+
     void handleEventClick(Number.parseInt(info.event.id, 10));
   }
 
@@ -473,6 +527,38 @@
               <i class="fas fa-umbrella-beach"></i>
               Urlaub
             </button>
+            <!-- Arbeitsaufträge Toggle -->
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={showWorkOrders}
+              id="showWorkOrdersToggle"
+              title="Arbeitsaufträge anzeigen/ausblenden"
+              data-action="toggle-work-orders"
+              onclick={() => {
+                toggleWorkOrders();
+                refetchCalendarEvents();
+              }}
+            >
+              <i class="fas fa-wrench"></i>
+              Aufträge
+            </button>
+            <!-- TPM Toggle -->
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={showTpmAssignments}
+              id="showTpmToggle"
+              title="TPM-Wartungstermine anzeigen/ausblenden"
+              data-action="toggle-tpm"
+              onclick={() => {
+                toggleTpmAssignments();
+                refetchCalendarEvents();
+              }}
+            >
+              <i class="fas fa-tools"></i>
+              TPM
+            </button>
           </div>
         </div>
 
@@ -503,6 +589,14 @@
             <div class="legend-item">
               <span class="legend-color legend-vacation"></span>
               <span class="legend-label">Urlaub</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color legend-work-order"></span>
+              <span class="legend-label">Aufträge</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color legend-tpm"></span>
+              <span class="legend-label">TPM</span>
             </div>
           </div>
         </div>
@@ -610,26 +704,34 @@
   }
 
   .legend-company {
-    background-color: #3498db;
+    background-color: var(--color-sky);
   }
 
   .legend-department {
-    background-color: #e67e22;
+    background-color: var(--color-carrot);
   }
 
   .legend-team {
-    background-color: #2ecc71;
+    background-color: var(--color-emerald);
   }
 
   .legend-area {
-    background-color: #e53935;
+    background-color: var(--color-danger-hover);
   }
 
   .legend-personal {
-    background-color: #9b59b6;
+    background-color: var(--color-purple);
   }
 
   .legend-vacation {
-    background-color: #26a69a;
+    background-color: var(--color-teal-400);
+  }
+
+  .legend-work-order {
+    background-color: var(--color-slate);
+  }
+
+  .legend-tpm {
+    background-color: #5bb5f5;
   }
 </style>

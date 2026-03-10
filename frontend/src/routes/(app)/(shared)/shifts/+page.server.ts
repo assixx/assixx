@@ -22,7 +22,6 @@ import type {
   ShiftFavorite,
   ShiftTimeApiResponse,
   AvailabilityStatus,
-  IntervalColorEntry,
 } from './_lib/types';
 
 const log = createLogger('Shifts');
@@ -70,7 +69,6 @@ interface StaffingRuleRaw {
 interface FetchResults {
   areas: Area[];
   shiftTimes: ShiftTimeApiResponse[];
-  intervalColors: IntervalColorEntry[];
   teams: Team[];
   teamMembers: TeamMember[];
   favorites: ShiftFavorite[];
@@ -196,9 +194,6 @@ function processFetchResults(
   const shiftTimes = asArray<ShiftTimeApiResponse>(
     resultByLabel.get('shiftTimes'),
   );
-  const intervalColors = asArray<IntervalColorEntry>(
-    resultByLabel.get('intervalColors'),
-  );
   const teams = asArray<Team>(resultByLabel.get('teams'));
   const teamMembers = processRawTeamMembers(resultByLabel.get('teamMembers'));
   const favorites = asArray<ShiftFavorite>(resultByLabel.get('favorites'));
@@ -210,7 +205,6 @@ function processFetchResults(
   return {
     areas,
     shiftTimes,
-    intervalColors,
     teams,
     teamMembers,
     favorites,
@@ -291,21 +285,13 @@ function prepareFetchPromises(
   const promises: Promise<unknown>[] = [];
   const labels: string[] = [];
 
-  // Always load areas, shift times, and TPM interval colors
+  // Always load areas and shift times
   promises.push(apiFetch<Area[]>('/areas', token, fetchFn));
   labels.push('areas');
   promises.push(
     apiFetch<ShiftTimeApiResponse[]>('/shift-times', token, fetchFn),
   );
   labels.push('shiftTimes');
-  promises.push(
-    apiFetch<IntervalColorEntry[]>(
-      '/tpm/config/interval-colors',
-      token,
-      fetchFn,
-    ),
-  );
-  labels.push('intervalColors');
 
   if (hasTeam && primaryTeamId !== null) {
     const departmentId = userData.teamDepartmentId;
@@ -381,7 +367,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const {
     areas,
     shiftTimes,
-    intervalColors,
     teams,
     teamMembers,
     favorites,
@@ -400,7 +385,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     user: buildUserResponse(userData, primaryTeamId),
     areas,
     shiftTimes,
-    intervalColors,
     teams,
     teamMembers,
     favorites,

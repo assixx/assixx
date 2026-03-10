@@ -35,6 +35,7 @@ import { Observable, Subject, interval, map, merge, takeUntil } from 'rxjs';
 
 import { eventBus } from '../../utils/event-bus.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
@@ -478,6 +479,10 @@ function cleanupSSEHandlers(handlers: EventHandler[]): void {
   });
 }
 
+/** Permission constants */
+const FEAT = 'notifications';
+const MOD_MANAGE = 'notifications-manage';
+
 @Controller('notifications')
 export class NotificationsController {
   constructor(
@@ -516,6 +521,7 @@ export class NotificationsController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async createNotification(
     @Body() dto: CreateNotificationDto,
     @CurrentUser() user: NestAuthUser,
@@ -577,6 +583,7 @@ export class NotificationsController {
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getStatistics(@TenantId() tenantId: number): Promise<unknown> {
     return await this.notificationsService.getStatistics(tenantId);
   }
@@ -850,6 +857,7 @@ export class NotificationsController {
   @Get('stream/stats')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   getStreamStats(): {
     activeEvents: string[];
     listenerCounts: Record<string, number>;

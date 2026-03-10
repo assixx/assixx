@@ -49,7 +49,7 @@ function createCardRow(overrides?: Partial<TpmCardJoinRow>): TpmCardJoinRow {
     tenant_id: 10,
     plan_id: 100,
     asset_id: 42,
-    card_code: 'BT1',
+    card_code: 'BW1',
     card_role: 'operator',
     interval_type: 'weekly',
     interval_order: 2,
@@ -122,7 +122,7 @@ describe('TpmCardsService', () => {
 
       expect(result.uuid).toBe('card-uuid-001');
       expect(result.assetId).toBe(42);
-      expect(result.cardCode).toBe('BT1');
+      expect(result.cardCode).toBe('BW1');
       expect(result.cardRole).toBe('operator');
       expect(result.intervalType).toBe('weekly');
       expect(result.intervalOrder).toBe(2);
@@ -312,7 +312,7 @@ describe('TpmCardsService', () => {
         5,
       );
 
-      expect(result.cardCode).toBe('BT1');
+      expect(result.cardCode).toBe('BW1');
       expect(result.assetId).toBe(42);
       expect(result.intervalOrder).toBe(2);
     });
@@ -347,7 +347,7 @@ describe('TpmCardsService', () => {
       expect(result.assetId).toBe(99);
     });
 
-    it('should generate BT prefix for operator role', async () => {
+    it('should generate BW prefix for operator+weekly', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
@@ -358,7 +358,7 @@ describe('TpmCardsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '4' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '3' }] });
       mockClient.query.mockResolvedValueOnce({
-        rows: [createCardRow({ card_code: 'BT5' })],
+        rows: [createCardRow({ card_code: 'BW5' })],
       });
 
       await service.createCard(
@@ -375,10 +375,10 @@ describe('TpmCardsService', () => {
 
       // card_code is at index 4 in INSERT params
       const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
-      expect(insertParams?.[4]).toBe('BT5');
+      expect(insertParams?.[4]).toBe('BW5');
     });
 
-    it('should generate IV prefix for maintenance role', async () => {
+    it('should generate IM prefix for maintenance+monthly', async () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
           { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
@@ -389,7 +389,7 @@ describe('TpmCardsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '2' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
-        rows: [createCardRow({ card_code: 'IV3', card_role: 'maintenance' })],
+        rows: [createCardRow({ card_code: 'IM3', card_role: 'maintenance' })],
       });
 
       await service.createCard(
@@ -405,7 +405,7 @@ describe('TpmCardsService', () => {
       );
 
       const insertParams = mockClient.query.mock.calls[4]?.[1] as unknown[];
-      expect(insertParams?.[4]).toBe('IV3');
+      expect(insertParams?.[4]).toBe('IM3');
     });
 
     it('should auto-set interval_order from INTERVAL_ORDER_MAP', async () => {
@@ -623,7 +623,7 @@ describe('TpmCardsService', () => {
         5,
         'tpm_card',
         42,
-        expect.stringContaining('BT1'),
+        expect.stringContaining('BW1'),
         expect.objectContaining({ cardUuid: 'card-uuid-001' }),
       );
     });
@@ -778,7 +778,7 @@ describe('TpmCardsService', () => {
         5,
         'tpm_card',
         42,
-        expect.stringContaining('BT1'),
+        expect.stringContaining('BW1'),
         expect.objectContaining({ cardUuid: 'card-uuid-001' }),
       );
     });

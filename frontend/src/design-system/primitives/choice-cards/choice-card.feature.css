@@ -48,11 +48,11 @@
 
 /* Active state */
 .feature-card.active {
-  border-color: rgb(76 175 80 / 25%);
+  border-color: color-mix(in oklch, var(--color-success) 25%, transparent);
 }
 
 .feature-card.active:hover {
-  border-color: rgb(76 175 80 / 45%);
+  border-color: color-mix(in oklch, var(--color-success) 45%, transparent);
 }
 
 /* Inactive state */
@@ -99,7 +99,7 @@
 }
 
 .feature-card__icon--active {
-  background: rgb(76 175 80 / 12%);
+  background: color-mix(in oklch, var(--color-success) 12%, transparent);
   color: var(--color-success);
 }
 
@@ -158,15 +158,15 @@
   padding: 2px 8px;
   border-radius: var(--radius-md);
 
-  background: rgb(33 150 243 / 8%);
+  background: color-mix(in oklch, var(--color-primary) 8%, transparent);
   color: var(--color-primary);
   font-weight: 500;
   font-size: 11px;
 }
 
 .feature-card--premium .feature-plan-badge {
-  background: rgb(255 193 7 / 10%);
-  color: rgb(255 193 7);
+  background: color-mix(in oklch, var(--color-amber) 10%, transparent);
+  color: oklch(84.53% 0.1674 88.42);
 }
 
 /* ============================================================
@@ -190,20 +190,20 @@
    ============================================================ */
 
 html:not(.dark) .feature-card__icon {
-  background: rgb(0 0 0 / 5%);
+  background: color-mix(in oklch, var(--color-black) 5%, transparent);
 }
 
 html:not(.dark) .feature-card__icon--active {
-  background: rgb(76 175 80 / 8%);
+  background: color-mix(in oklch, var(--color-success) 8%, transparent);
 }
 
 html:not(.dark) .feature-plan-badge {
-  background: rgb(33 150 243 / 6%);
+  background: color-mix(in oklch, var(--color-primary) 6%, transparent);
 }
 
 html:not(.dark) .feature-card--premium .feature-plan-badge {
-  background: rgb(230 126 34 / 12%);
-  color: #c0621e;
+  background: oklch(67.35% 0.1525 55.89 / 12%);
+  color: var(--color-rust);
 }
 
 /* ============================================================

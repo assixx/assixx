@@ -318,9 +318,9 @@ describe('TPM: Create Card', () => {
     expect(typeof body.data.uuid).toBe('string');
   });
 
-  it('should auto-generate cardCode with BT prefix (operator)', () => {
+  it('should auto-generate cardCode with BW prefix (operator+weekly)', () => {
     expect(body.data.cardCode).toBeDefined();
-    expect(body.data.cardCode).toMatch(/^BT\d+$/);
+    expect(body.data.cardCode).toMatch(/^BW\d+$/);
   });
 
   it('should set intervalOrder automatically', () => {
@@ -563,9 +563,9 @@ describe('TPM: Create Maintenance Card', () => {
     expect(res.status).toBe(201);
   });
 
-  it('should auto-generate cardCode with IV prefix (maintenance)', () => {
+  it('should auto-generate cardCode with IM prefix (maintenance+monthly)', () => {
     expect(body.data.cardCode).toBeDefined();
-    expect(body.data.cardCode).toMatch(/^IV\d+$/);
+    expect(body.data.cardCode).toMatch(/^IM\d+$/);
   });
 
   it('should set requiresApproval to true', () => {

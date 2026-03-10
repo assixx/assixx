@@ -262,6 +262,7 @@
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
+              autocomplete="new-password"
               class="form-field__control"
               class:is-error={errors.password !== undefined}
               placeholder={MESSAGES.FORM_PASSWORD_PH}
@@ -311,6 +312,7 @@
             <input
               id="passwordConfirm"
               type={showPassword ? 'text' : 'password'}
+              autocomplete="new-password"
               class="form-field__control"
               class:is-error={errors.passwordConfirm !== undefined}
               class:is-success={formData.passwordConfirm !== '' &&

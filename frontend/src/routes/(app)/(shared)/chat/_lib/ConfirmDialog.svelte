@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import { MESSAGES } from './constants';
 
   interface Props {
@@ -11,33 +13,14 @@
   const { show, message, onclose, onconfirm }: Props = $props();
 </script>
 
-{#if show}
-  <div
-    id="chat-confirm-dialog"
-    class="modal-overlay modal-overlay--active"
-  >
-    <div class="confirm-modal confirm-modal--danger">
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3 class="confirm-modal__title">{MESSAGES.labelConfirmDelete}</h3>
-      <p class="confirm-modal__message">{message}</p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={onclose}
-        >
-          {MESSAGES.labelCancel}
-        </button>
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={onconfirm}
-        >
-          {MESSAGES.labelDelete}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  {show}
+  id="chat-confirm-dialog"
+  title={MESSAGES.labelConfirmDelete}
+  confirmLabel={MESSAGES.labelDelete}
+  cancelLabel={MESSAGES.labelCancel}
+  {onconfirm}
+  oncancel={onclose}
+>
+  {message}
+</ConfirmModal>

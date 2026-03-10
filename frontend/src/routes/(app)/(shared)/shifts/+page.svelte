@@ -51,16 +51,11 @@
     formatDate,
     addWeeks,
     buildShiftTimesMap,
-    computeShiftMinutes,
   } from './_lib/utils';
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    AssignmentCount,
-    ShiftTimesMap,
-    IntervalColorEntry,
-  } from './_lib/types';
+  import type { AssignmentCount, ShiftTimesMap } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -71,17 +66,11 @@
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
   const ssrStaffingRules = $derived(data.staffingRules);
-  const ssrIntervalColors: IntervalColorEntry[] = $derived(data.intervalColors);
   const ssrIsEmployee = $derived(data.isEmployee);
 
   // Build shift times map from SSR API data (tenant-configurable)
   const shiftTimesMap: ShiftTimesMap = $derived(
     data.shiftTimes.length > 0 ? buildShiftTimesMap(data.shiftTimes) : {},
-  );
-  const shiftMinutes = $derived(
-    computeShiftMinutes(
-      Object.keys(shiftTimesMap).length > 0 ? shiftTimesMap : undefined,
-    ),
   );
   let ssrInitialized = $state(false);
   let baseAssignmentCounts = $state<AssignmentCount[]>([]);
@@ -250,7 +239,7 @@
   async function navigateWeek(direction: number) {
     const newWeek = addWeeks(shiftsState.currentWeek, direction);
     shiftsState.setCurrentWeek(newWeek);
-    await loadShiftPlan(shiftsState.showTpmEvents);
+    await loadShiftPlan();
   }
 
   // --- DERIVED VALUES ---
@@ -275,6 +264,10 @@
   {#if shiftsState.isAdmin}
     <ShiftAssignmentCounts counts={assignmentCounts} />
   {/if}
+  <WeekNavigation
+    {weekRangeText}
+    onnavigateWeek={navigateWeek}
+  />
 {/snippet}
 
 <svelte:head>
@@ -396,19 +389,12 @@
 
       <!-- Main Planning UI -->
       {#if shiftsState.showPlanningUI}
-        <!-- Week Navigation -->
-        <WeekNavigation
-          {weekRangeText}
-          onnavigateWeek={navigateWeek}
-        />
-
         <!-- Shift Control Toggles (Admin Only) -->
         {#if shiftsState.isAdmin}
           <ShiftControls
             autofillConfig={shiftsState.autofillConfig}
             standardRotationEnabled={shiftsState.standardRotationEnabled}
             customRotationEnabled={shiftsState.customRotationEnabled}
-            tpmModeEnabled={shiftsState.showTpmEvents}
             isPlanLocked={shiftsState.isPlanLocked}
             onautofillChange={(enabled: boolean) => {
               shiftsState.setAutofillConfig({ enabled });
@@ -419,23 +405,7 @@
             oncustomRotationChange={(enabled: boolean) => {
               shiftsState.setCustomRotationEnabled(enabled);
             }}
-            ontpmModeChange={(enabled: boolean) => {
-              shiftsState.setShowTpmEvents(enabled);
-              void loadShiftPlan(true);
-            }}
           />
-
-          {#if shiftsState.showTpmEvents}
-            <div
-              class="alert alert--warning alert--sm mb-6"
-              role="alert"
-            >
-              <i class="fas fa-triangle-exclamation"></i>
-              <strong>TPM-Modus aktiv:</strong> Mitarbeiterzuweisungen hier erstellen
-              keine Schichtplanung — sie werden ausschließlich als Wartungstermine
-              für die TPM-Instandhaltung übernommen.
-            </div>
-          {/if}
         {/if}
 
         <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
@@ -445,15 +415,11 @@
             afterLegend={assignmentCountsSnippet}
             {weekDates}
             {shiftTimesMap}
-            {shiftMinutes}
             weeklyNotes={shiftsState.weeklyNotes}
             canEditShifts={shiftsState.canEditShifts}
             isEditMode={shiftsState.isEditMode}
             currentPlanId={shiftsState.currentPlanId}
             assetAvailabilityMap={shiftsState.assetAvailabilityMap}
-            tpmEventsMap={shiftsState.tpmEventsMap}
-            intervalColors={ssrIntervalColors}
-            showTpmEvents={shiftsState.showTpmEvents}
             {getShiftEmployees}
             getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
             getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}

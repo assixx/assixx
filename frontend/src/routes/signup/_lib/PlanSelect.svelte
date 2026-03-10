@@ -134,9 +134,9 @@
     opacity: 0%;
     z-index: 1000;
 
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(18 18 18 / 100%);
+    background: oklch(18.22% 0 263.28 / 100%);
   }
 
   .plan-dropdown.active {
@@ -150,7 +150,8 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    border-bottom: 1px solid rgb(255 255 255 / 5%);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-white) 5%, transparent);
     padding: 10px 16px;
     color: var(--text-primary);
     font-size: 14px;
@@ -161,13 +162,13 @@
   }
 
   .plan-option:hover {
-    background: rgb(33 150 243 / 20%);
+    background: color-mix(in oklch, var(--color-primary) 20%, transparent);
     padding-left: 20px;
-    color: #fff;
+    color: var(--color-white);
   }
 
   .plan-option:active {
-    background: rgb(33 150 243 / 30%);
+    background: color-mix(in oklch, var(--color-primary) 30%, transparent);
   }
 
   .plan-price {
@@ -177,6 +178,6 @@
   }
 
   .plan-option:hover .plan-price {
-    color: #fff;
+    color: var(--color-white);
   }
 </style>

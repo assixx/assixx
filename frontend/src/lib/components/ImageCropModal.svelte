@@ -287,8 +287,9 @@
     align-items: center;
     gap: var(--spacing-3, 12px);
     padding: var(--spacing-4, 16px) var(--spacing-6, 24px);
-    background: rgb(0 0 0 / 20%);
-    border-top: 1px solid rgb(255 255 255 / 8%);
+    background: color-mix(in oklch, var(--color-black) 20%, transparent);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 8%, transparent);
   }
 
   .zoom-label {
@@ -300,7 +301,7 @@
     flex: 1;
     height: 6px;
     appearance: none;
-    background: rgb(255 255 255 / 10%);
+    background: color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-sm, 4px);
     cursor: pointer;
   }
@@ -334,7 +335,7 @@
     color: var(--color-text-secondary, #9ca3af);
     font-size: 0.813rem;
     text-align: center;
-    background: rgb(0 0 0 / 10%);
+    background: color-mix(in oklch, var(--color-black) 10%, transparent);
   }
 
   /* Responsive */

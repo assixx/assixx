@@ -167,7 +167,8 @@
   }
 
   .message-input-wrapper:focus-within {
-    box-shadow: 0 0 0 2px rgb(33 150 243 / 10%);
+    box-shadow: 0 0 0 2px
+      color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--primary-color);
   }
 
@@ -207,7 +208,7 @@
     gap: 6px;
     border: 1px solid var(--color-primary);
     border-radius: var(--radius-xl);
-    background: rgb(33 150 243 / 15%);
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
     padding: 4px 10px;
     color: var(--color-primary);
     font-size: 0.75rem;
@@ -239,7 +240,7 @@
   }
 
   .schedule-badge__clear:hover {
-    background: rgb(244 67 54 / 20%);
+    background: color-mix(in oklch, var(--color-danger) 20%, transparent);
     color: var(--color-danger);
   }
 
@@ -327,7 +328,7 @@
   }
 
   .remove-file:hover {
-    background: rgb(244 67 54 / 15%);
+    background: color-mix(in oklch, var(--color-danger) 15%, transparent);
     color: var(--color-danger);
   }
 

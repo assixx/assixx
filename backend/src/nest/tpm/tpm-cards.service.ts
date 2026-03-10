@@ -39,9 +39,10 @@ import type {
   TpmIntervalType,
 } from './tpm.types.js';
 import {
-  CARD_CODE_PREFIX,
+  INTERVAL_CODE_PREFIX,
   INTERVAL_ORDER_MAP,
   MAX_CARDS_PER_PLAN_INTERVAL,
+  ROLE_CODE_PREFIX,
 } from './tpm.types.js';
 
 /** Filters for card list queries */
@@ -307,6 +308,7 @@ export class TpmCardsService {
       tenantId,
       planCtx.planId,
       dto.cardRole,
+      dto.intervalType,
     );
     const sortOrder = await this.getNextSortOrder(
       client,
@@ -379,18 +381,19 @@ export class TpmCardsService {
     };
   }
 
-  /** Generate the next card code (e.g., "BT3", "IV7") — counts ALL cards including deleted */
+  /** Generate the next card code (e.g., "BT3", "IV2") — counts ALL cards including deleted */
   private async generateCardCode(
     client: PoolClient,
     tenantId: number,
     planId: number,
     cardRole: TpmCardRole,
+    intervalType: TpmIntervalType,
   ): Promise<string> {
-    const prefix = CARD_CODE_PREFIX[cardRole];
+    const prefix = `${ROLE_CODE_PREFIX[cardRole]}${INTERVAL_CODE_PREFIX[intervalType]}`;
     const result = await client.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM tpm_cards
-       WHERE plan_id = $1 AND card_role = $2 AND tenant_id = $3`,
-      [planId, cardRole, tenantId],
+       WHERE plan_id = $1 AND card_role = $2 AND interval_type = $3 AND tenant_id = $4`,
+      [planId, cardRole, intervalType, tenantId],
     );
     const count = Number.parseInt(result.rows[0]?.count ?? '0', 10);
     return `${prefix}${count + 1}`;

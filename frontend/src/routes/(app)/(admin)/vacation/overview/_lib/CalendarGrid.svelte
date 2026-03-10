@@ -289,8 +289,9 @@
   .calendar-cell__half-indicator {
     font-size: 0.625rem;
     font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 30%);
+    color: var(--color-white);
+    text-shadow: 0 1px 2px
+      color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   /* ─── Calendar Legend ──────── */
@@ -332,7 +333,7 @@
     justify-content: center;
     font-size: 0.5rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--color-white);
   }
 
   .calendar-legend__label {
@@ -347,8 +348,8 @@
       -45deg,
       transparent,
       transparent 3px,
-      rgb(239 68 68 / 12%) 3px,
-      rgb(239 68 68 / 12%) 6px
+      color-mix(in oklch, var(--color-coral) 12%, transparent) 3px,
+      color-mix(in oklch, var(--color-coral) 12%, transparent) 6px
     );
     color: var(--color-danger-600);
     position: relative;
@@ -368,8 +369,8 @@
       -45deg,
       transparent,
       transparent 3px,
-      rgb(239 68 68 / 8%) 3px,
-      rgb(239 68 68 / 8%) 6px
+      color-mix(in oklch, var(--color-coral) 8%, transparent) 3px,
+      color-mix(in oklch, var(--color-coral) 8%, transparent) 6px
     );
   }
 
@@ -378,8 +379,8 @@
       -45deg,
       var(--glass-bg),
       var(--glass-bg) 3px,
-      rgb(239 68 68 / 10%) 3px,
-      rgb(239 68 68 / 10%) 6px
+      color-mix(in oklch, var(--color-coral) 10%, transparent) 3px,
+      color-mix(in oklch, var(--color-coral) 10%, transparent) 6px
     );
   }
 
@@ -388,8 +389,8 @@
       -45deg,
       transparent,
       transparent 2px,
-      rgb(239 68 68 / 25%) 2px,
-      rgb(239 68 68 / 25%) 4px
+      color-mix(in oklch, var(--color-coral) 25%, transparent) 2px,
+      color-mix(in oklch, var(--color-coral) 25%, transparent) 4px
     );
     border: 1px solid var(--color-danger-400);
   }

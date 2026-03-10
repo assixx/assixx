@@ -22,7 +22,7 @@
 
   min-width: 22px;
   height: 22px;
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
 
   font-size: 12px;
@@ -41,7 +41,7 @@
 
   min-width: 36px;
   height: 24px;
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
 
   font-size: 13px;
@@ -52,31 +52,31 @@
 /* Success count (green) */
 .badge--count-success,
 .badge--count.badge--success {
-  background: #4caf50;
+  background: var(--color-success);
 }
 
 /* Warning count (orange) */
 .badge--count-warning,
 .badge--count.badge--warning {
-  background: #ff9800;
+  background: var(--color-warning);
 }
 
 /* Danger count (red) */
 .badge--count-danger,
 .badge--count.badge--danger {
-  background: #f44336;
+  background: var(--color-danger);
 }
 
 /* Info count (cyan) */
 .badge--count-info,
 .badge--count.badge--info {
-  background: #17a2b8;
+  background: var(--color-teal);
 }
 
 /* Secondary count (gray) */
 .badge--count-secondary,
 .badge--count.badge--secondary {
-  background: #9e9e9e;
+  background: var(--color-gray-500);
 }
 
 /* ========== POSITIONED VARIANTS ========== */
@@ -105,6 +105,23 @@
   font-size: 13px;
 }
 
+/* Extra large count (e.g., position indicators on cards) */
+.badge--count-xl {
+  min-width: 36px;
+  height: 36px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+/* ========== SOFT VARIANT ========== */
+
+/* Subtle tint for non-notification use (e.g., position indicators) */
+.badge--count-soft {
+  background: color-mix(in oklch, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 25%, transparent);
+}
+
 /* ========== SPECIAL STATES ========== */
 
 /* Pulsing animation for new notifications */
@@ -115,11 +132,13 @@
 @keyframes badge-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(33 150 243 / 70%);
+    box-shadow: 0 0 0 0
+      color-mix(in oklch, var(--color-primary) 70%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 0 4px rgb(33 150 243 / 0%);
+    box-shadow: 0 0 0 4px
+      color-mix(in oklch, var(--color-primary) 0%, transparent);
   }
 }
 

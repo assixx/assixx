@@ -89,9 +89,11 @@
 <style>
   .features {
     backdrop-filter: blur(10px);
-    border-top: 1px solid rgb(255 255 255 / 10%);
-    border-bottom: 1px solid rgb(255 255 255 / 10%);
-    background: rgb(255 255 255 / 1%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
+    background: color-mix(in oklch, var(--color-white) 1%, transparent);
     padding: var(--spacing-8) 5%;
   }
 
@@ -104,19 +106,19 @@
   }
 
   .feature-card {
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 2%);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: var(--spacing-6);
   }
 
   .feature-card:hover {
     transform: translateY(-4px);
     box-shadow:
-      0 10px 40px rgb(33 150 243 / 30%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
+      0 10px 40px color-mix(in oklch, var(--color-primary) 30%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
     border-color: var(--primary-color);
-    background: rgb(255 255 255 / 4%);
+    background: color-mix(in oklch, var(--color-white) 4%, transparent);
   }
 
   .feature-card h3 {

@@ -150,21 +150,28 @@
 
   .form-field__label--required::after {
     content: ' *';
-    color: var(--color-danger, #f44336);
+    color: var(--color-danger);
   }
 
   .form-field__control {
     padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
-    border: 1px solid var(--border-color, rgb(255 255 255 / 20%));
+    border: 1px solid
+      var(
+        --border-color,
+        color-mix(in oklch, var(--color-white) 20%, transparent)
+      );
     border-radius: var(--radius-md, 8px);
-    background: var(--background-secondary, rgb(255 255 255 / 5%));
+    background: var(
+      --background-secondary,
+      color-mix(in oklch, var(--color-white) 5%, transparent)
+    );
     color: var(--text-primary);
     font-size: 0.9rem;
   }
 
   .form-field__control:focus {
     outline: none;
-    border-color: var(--primary-color, #2196f3);
+    border-color: var(--primary-color, var(--color-primary));
   }
 
   .form-field__message {

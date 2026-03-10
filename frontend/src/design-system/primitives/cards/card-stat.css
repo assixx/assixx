@@ -72,7 +72,7 @@
 }
 
 .card-stat--success:hover {
-  border-color: rgb(76 175 80 / 50%);
+  border-color: color-mix(in oklch, var(--color-success) 50%, transparent);
 }
 
 .card-stat--warning .card-stat__value {
@@ -80,7 +80,7 @@
 }
 
 .card-stat--warning:hover {
-  border-color: rgb(255 152 0 / 50%);
+  border-color: color-mix(in oklch, var(--color-warning) 50%, transparent);
 }
 
 .card-stat--danger .card-stat__value {
@@ -88,5 +88,5 @@
 }
 
 .card-stat--danger:hover {
-  border-color: rgb(244 67 54 / 50%);
+  border-color: color-mix(in oklch, var(--color-danger) 50%, transparent);
 }

@@ -20,6 +20,8 @@
   const log = createLogger('ManageEmployeesPage');
 
   // Local modules
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     saveEmployee as apiSaveEmployee,
     deleteEmployee as apiDeleteEmployee,
@@ -466,7 +468,11 @@
   }
 
   function validatePasswords(): void {
-    passwordError = !validatePasswordMatch(formPassword, formPasswordConfirm);
+    // Only show error if user has typed in the confirm field
+    passwordError =
+      formPasswordConfirm !== '' ?
+        !validatePasswordMatch(formPassword, formPasswordConfirm)
+      : false;
   }
 
   function handleFormSubmit(e: Event): void {
@@ -753,60 +759,17 @@
   onmanage={navigateToAvailabilityPage}
 />
 
-<!-- Upgrade Confirm Modal (confirm-modal--warning) -->
-{#if showUpgradeConfirmModal}
-  <div
-    id="upgrade-confirm-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="upgrade-confirm-title"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) closeUpgradeConfirmModal();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closeUpgradeConfirmModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--warning"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-arrow-up"></i>
-      </div>
-      <h3
-        class="confirm-modal__title"
-        id="upgrade-confirm-title"
-      >
-        {MESSAGES.UPGRADE_TITLE}
-      </h3>
-      <p class="confirm-modal__message">
-        <strong>{MESSAGES.UPGRADE_CONFIRM_MESSAGE}</strong>
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          disabled={upgradeLoading}
-          onclick={closeUpgradeConfirmModal}>Abbrechen</button
-        >
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--warning"
-          disabled={upgradeLoading}
-          onclick={() => void confirmUpgradeEmployee()}
-        >
-          {#if upgradeLoading}
-            <span class="spinner-ring spinner-ring--sm mr-2"></span>
-          {/if}
-          {MESSAGES.UPGRADE_CONFIRM_BUTTON}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<!-- Upgrade Confirm Modal -->
+<ConfirmModal
+  show={showUpgradeConfirmModal}
+  id="upgrade-confirm-modal"
+  title={MESSAGES.UPGRADE_TITLE}
+  variant="warning"
+  icon="fa-arrow-up"
+  confirmLabel={MESSAGES.UPGRADE_CONFIRM_BUTTON}
+  submitting={upgradeLoading}
+  onconfirm={() => void confirmUpgradeEmployee()}
+  oncancel={closeUpgradeConfirmModal}
+>
+  <strong>{MESSAGES.UPGRADE_CONFIRM_MESSAGE}</strong>
+</ConfirmModal>

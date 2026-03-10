@@ -92,7 +92,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     SentryModule.forRoot(),
 
     // Schedule Module for Cron Jobs
-    // Used for: PartitionManagerService, LogRetentionService
+    // Used for: LogRetentionService
     // @see ADR-009 Central Audit Logging
     ScheduleModule.forRoot(),
 

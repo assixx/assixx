@@ -16,7 +16,6 @@ import type {
   ShiftType,
   ShiftTimeApiResponse,
   ShiftTimesMap,
-  TpmMaintenanceEvent,
 } from './types';
 
 // =============================================================================
@@ -447,87 +446,4 @@ export function capitalize(str: string): string {
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 3) + '...';
-}
-
-// =============================================================================
-// TPM SHIFT VISIBILITY
-// =============================================================================
-
-/** Convert HH:MM to minutes from midnight */
-function timeToMinutes(time: string): number {
-  const parts = time.split(':');
-  return Number(parts[0]) * 60 + Number(parts[1]);
-}
-
-/** Compute shift minute ranges from a ShiftTimesMap. Night shift wraps past midnight → two ranges. */
-export function computeShiftMinutes(
-  shiftTimesMap?: ShiftTimesMap,
-): Record<string, [number, number][]> {
-  const map: Partial<ShiftTimesMap> = shiftTimesMap ?? DEFAULT_SHIFT_TIMES;
-  const result: Record<string, [number, number][]> = {};
-
-  for (const key of ['early', 'late', 'night'] as const) {
-    const info = map[key];
-    if (info === undefined) continue;
-    const startMin = timeToMinutes(info.start);
-    const endMin = timeToMinutes(info.end);
-    if (endMin > startMin) {
-      result[key] = [[startMin, endMin]];
-    } else {
-      // Wraps past midnight (e.g. night: 22:00→06:00)
-      result[key] = [
-        [startMin, 1440],
-        [0, endMin],
-      ];
-    }
-  }
-
-  return result;
-}
-
-/** Check if a maintenance time window overlaps a shift */
-function maintenanceOverlapsShift(
-  baseTime: string,
-  bufferHours: number,
-  shiftType: string,
-  shiftMinutes: Record<string, [number, number][]>,
-): boolean {
-  const start = timeToMinutes(baseTime);
-  const end = start + bufferHours * 60;
-  const windows: [number, number][] =
-    end > 1440 ?
-      [
-        [start, 1440],
-        [0, end - 1440],
-      ]
-    : [[start, end]];
-  const ranges = shiftMinutes[shiftType] ?? [];
-  return windows.some(([ws, we]: [number, number]) =>
-    ranges.some(([rs, re]: [number, number]) => ws < re && rs < we),
-  );
-}
-
-/**
- * Get visible TPM intervals for a specific shift cell.
- * - daily/weekly: only in early shift
- * - monthly+: all-day (baseTime null) → every shift; timed → only overlapping shift
- */
-export function getVisibleTpmIntervals(
-  event: TpmMaintenanceEvent,
-  shiftType: string,
-  shiftMinutes?: Record<string, [number, number][]>,
-): TpmMaintenanceEvent['intervalTypes'] {
-  const minutes = shiftMinutes ?? computeShiftMinutes();
-  return event.intervalTypes.filter((interval) => {
-    if (interval === 'daily' || interval === 'weekly') {
-      return shiftType === 'early';
-    }
-    if (event.baseTime === null) return true;
-    return maintenanceOverlapsShift(
-      event.baseTime,
-      event.bufferHours,
-      shiftType,
-      minutes,
-    );
-  });
 }

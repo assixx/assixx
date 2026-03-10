@@ -186,7 +186,6 @@ export interface ProcessedShiftData {
   planId: number | null;
   shiftNotes: string;
   isPlanLocked: boolean;
-  isTpmMode: boolean;
 }
 
 export interface ProcessedRotationData {
@@ -199,7 +198,6 @@ export interface ShiftPlanResponse {
   plan?: {
     id: number;
     shiftNotes?: string;
-    isTpmMode?: boolean;
   };
   shifts: {
     date: string;
@@ -230,21 +228,18 @@ function extractPlanMetadata(plan: ShiftPlanResponse['plan']): {
   planId: number | null;
   shiftNotes: string;
   isPlanLocked: boolean;
-  isTpmMode: boolean;
 } {
   if (plan === undefined) {
     return {
       planId: null,
       shiftNotes: '',
       isPlanLocked: false,
-      isTpmMode: false,
     };
   }
   return {
     planId: plan.id,
     shiftNotes: plan.shiftNotes ?? '',
     isPlanLocked: true,
-    isTpmMode: plan.isTpmMode ?? false,
   };
 }
 

@@ -6,6 +6,8 @@
    * Shown when the duplicate check finds similar cards.
    * User can choose to create anyway or cancel.
    */
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     INTERVAL_LABELS,
     CARD_ROLE_LABELS,
@@ -21,45 +23,20 @@
   }
 
   const { existingCards, oncontinue, oncancel }: Props = $props();
-
-  function handleBackdrop(e: MouseEvent): void {
-    if (e.target === e.currentTarget) oncancel();
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') oncancel();
-  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
+<ConfirmModal
+  show={true}
   id="tpm-card-duplicate-warning-modal"
-  class="modal-overlay modal-overlay--active"
-  onclick={handleBackdrop}
-  onkeydown={handleKeydown}
+  title={MESSAGES.DUPLICATE_TITLE}
+  variant="warning"
+  confirmLabel={MESSAGES.DUPLICATE_CONTINUE}
+  cancelLabel={MESSAGES.DUPLICATE_CANCEL}
+  onconfirm={oncontinue}
+  {oncancel}
 >
-  <div
-    class="confirm-modal confirm-modal--warning"
-    role="alertdialog"
-    aria-modal="true"
-    aria-labelledby="dup-title"
-    tabindex="-1"
-  >
-    <div class="confirm-modal__icon">
-      <i class="fas fa-exclamation-triangle"></i>
-    </div>
-
-    <h3
-      class="confirm-modal__title"
-      id="dup-title"
-    >
-      {MESSAGES.DUPLICATE_TITLE}
-    </h3>
-
-    <p class="confirm-modal__message">{MESSAGES.DUPLICATE_MESSAGE}</p>
-
+  {MESSAGES.DUPLICATE_MESSAGE}
+  {#snippet extra()}
     <ul class="dup-list">
       {#each existingCards as card (card.uuid)}
         <li class="dup-item">
@@ -73,26 +50,8 @@
         </li>
       {/each}
     </ul>
-
-    <div class="confirm-modal__actions">
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--cancel"
-        onclick={oncancel}
-      >
-        {MESSAGES.DUPLICATE_CANCEL}
-      </button>
-      <button
-        type="button"
-        class="confirm-modal__btn confirm-modal__btn--warning"
-        onclick={oncontinue}
-      >
-        <i class="fas fa-exclamation-circle"></i>
-        {MESSAGES.DUPLICATE_CONTINUE}
-      </button>
-    </div>
-  </div>
-</div>
+  {/snippet}
+</ConfirmModal>
 
 <style>
   .dup-list {
@@ -109,7 +68,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.625rem 0.75rem;
-    background: var(--color-amber-50, rgb(255 251 235));
+    background: var(--color-amber-50, oklch(98.69% 0.0213 95.33));
     border-radius: var(--radius-md, 8px);
     border-left: 3px solid var(--color-amber-400, #fbbf24);
   }

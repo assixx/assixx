@@ -8,6 +8,7 @@ import { createLogger } from '$lib/utils/logger';
 import type {
   TpmPlan,
   TpmCard,
+  TpmPlanAssignment,
   PaginatedResponse,
   TpmColorConfigEntry,
   TpmEscalationConfig,
@@ -260,6 +261,41 @@ export async function fetchTeamAvailability(
     log.error({ err }, 'Error loading team availability');
     return null;
   }
+}
+
+// =============================================================================
+// PLAN ASSIGNMENTS
+// =============================================================================
+
+/** Fetch assignments for a plan in a date range */
+export async function fetchPlanAssignments(
+  planUuid: string,
+  startDate: string,
+  endDate: string,
+): Promise<TpmPlanAssignment[]> {
+  try {
+    const params = new URLSearchParams({ startDate, endDate });
+    const result: unknown = await apiClient.get(
+      `/tpm/plans/${planUuid}/assignments?${params.toString()}`,
+    );
+    return extractArray<TpmPlanAssignment>(result);
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading plan assignments');
+    return [];
+  }
+}
+
+/** Set (replace) assignments for a plan on a specific date */
+export async function setPlanAssignments(
+  planUuid: string,
+  userIds: number[],
+  scheduledDate: string,
+): Promise<TpmPlanAssignment[]> {
+  const result: unknown = await apiClient.post(
+    `/tpm/plans/${planUuid}/assignments`,
+    { userIds, scheduledDate },
+  );
+  return extractArray<TpmPlanAssignment>(result);
 }
 
 // =============================================================================

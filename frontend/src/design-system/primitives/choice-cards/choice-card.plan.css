@@ -55,7 +55,8 @@
 /* Hover state - lift and glow */
 .plan-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 40%);
+  box-shadow: 0 12px 40px
+    color-mix(in oklch, var(--color-black) 40%, transparent);
   border-color: var(--color-glass-border-hover);
   background: var(--glass-bg-active);
 }
@@ -63,10 +64,10 @@
 /* Selected state - strong primary glow */
 .plan-card:has(.choice-card__input:checked) {
   box-shadow:
-    0 0 30px rgb(33 150 243 / 30%),
+    0 0 30px color-mix(in oklch, var(--color-primary) 30%, transparent),
     inset 0 1px 0 var(--color-glass-border);
-  border-color: rgb(33 150 243 / 60%);
-  background: rgb(33 150 243 / 12%);
+  border-color: color-mix(in oklch, var(--color-primary) 60%, transparent);
+  background: color-mix(in oklch, var(--color-primary) 12%, transparent);
 }
 
 /* ============================================================
@@ -75,30 +76,34 @@
 
 /* Recommended variant (golden highlight) */
 .plan-card.plan-card--recommended {
-  border-color: rgb(255 215 0 / 50%);
+  border-color: oklch(89.61% 0.2096 109.77 / 50%);
 }
 
 .plan-card.plan-card--recommended:hover {
   box-shadow:
-    0 12px 40px rgb(0 0 0 / 40%),
-    0 0 20px rgb(255 215 0 / 20%);
-  border-color: rgb(255 215 0 / 70%);
+    0 12px 40px color-mix(in oklch, var(--color-black) 40%, transparent),
+    0 0 20px oklch(89.61% 0.2096 109.77 / 20%);
+  border-color: oklch(89.61% 0.2096 109.77 / 70%);
 }
 
 .plan-card.plan-card--recommended::before {
   position: absolute;
   top: -10px;
   right: 24px;
-  box-shadow: 0 4px 12px rgb(255 215 0 / 30%);
+  box-shadow: 0 4px 12px oklch(89.61% 0.2096 109.77 / 30%);
   border-radius: var(--radius-full);
 
-  background: linear-gradient(135deg, rgb(255 215 0) 0%, rgb(255 193 7) 100%);
+  background: linear-gradient(
+    135deg,
+    oklch(88.98% 0.1708 95.05) 0%,
+    oklch(84.53% 0.1674 88.42) 100%
+  );
 
   padding: 4px 12px;
 
   /* "Empfohlen" badge */
   content: 'Empfohlen';
-  color: #000;
+  color: var(--color-black);
   font-weight: 600;
 
   font-size: 11px;

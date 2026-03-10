@@ -530,7 +530,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    border-bottom: 1px solid rgb(255 255 255 / 10%);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
     padding-bottom: 20px;
   }
 
@@ -560,7 +561,8 @@
     align-items: center;
     gap: 24px;
     margin-top: 20px;
-    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
     padding-top: 20px;
   }
 

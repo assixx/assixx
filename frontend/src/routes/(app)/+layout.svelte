@@ -555,7 +555,7 @@
     z-index: 199;
     cursor: default;
     border: none;
-    background: rgb(0 0 0 / 50%);
+    background: color-mix(in oklch, var(--color-black) 50%, transparent);
     backdrop-filter: blur(4px);
     padding: 0;
     width: 100%;

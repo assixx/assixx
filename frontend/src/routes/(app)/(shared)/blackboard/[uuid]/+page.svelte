@@ -722,7 +722,7 @@
 
   .attachment-meta {
     font-size: 0.8rem;
-    color: rgb(255 255 255 / 60%);
+    color: var(--color-text-muted);
   }
 
   .action-buttons {
@@ -780,8 +780,8 @@
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #fff;
-    background: rgb(0 0 0 / 70%);
+    color: var(--color-white);
+    background: color-mix(in oklch, var(--color-black) 70%, transparent);
   }
 
   /* ─── Responsive ──────── */

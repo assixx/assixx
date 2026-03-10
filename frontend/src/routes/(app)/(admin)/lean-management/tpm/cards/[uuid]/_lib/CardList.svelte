@@ -414,7 +414,7 @@
                     onedit(card);
                   }}
                 >
-                  <i class="fas fa-pen"></i>
+                  <i class="fas fa-edit"></i>
                 </button>
                 <button
                   type="button"

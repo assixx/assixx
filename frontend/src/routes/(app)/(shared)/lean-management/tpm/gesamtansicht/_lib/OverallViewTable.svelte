@@ -6,6 +6,7 @@
    * Single table: colored interval headers → schedule rows → estimate rows.
    * Estimate sub-columns span to fit under the same interval groups.
    */
+  import { showErrorAlert } from '$lib/stores/toast';
   import { logger } from '$lib/utils/logger';
 
   import {
@@ -136,6 +137,7 @@
       await loadEstimates(activePlans);
     } catch (err: unknown) {
       logApiError('GesamtansichtTable.loadData', err);
+      showErrorAlert(err instanceof Error ? err.message : 'Fehler beim Laden');
     } finally {
       loading = false;
     }
@@ -512,7 +514,7 @@
     font-weight: 700;
     font-size: 0.85rem;
     letter-spacing: 0.025em;
-    border: 1px solid rgb(255 255 255 / 30%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 30%, transparent);
   }
 
   .gv-th--sub {

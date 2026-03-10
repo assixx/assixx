@@ -32,7 +32,7 @@
   justify-content: center;
   align-items: center;
 
-  background: rgb(0 0 0 / 70%);
+  background: oklch(0% 0 0 / 70%);
 
   width: 100%;
   height: 100%;

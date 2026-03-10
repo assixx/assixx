@@ -13,6 +13,7 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
   label: 'KVP',
   icon: 'fa-lightbulb',
   modules: [
+    // TODO: 'kvp-reviews' existiert bereits in DB (user_feature_permissions) — Modul hier hinzufügen sobald KVP-Bewertungen implementiert werden
     {
       code: 'kvp-suggestions',
       label: 'Vorschläge',
@@ -23,7 +24,7 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
       code: 'kvp-comments',
       label: 'Kommentare',
       icon: 'fa-comments',
-      allowedPermissions: ['canRead', 'canWrite'],
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
     },
   ],
 };

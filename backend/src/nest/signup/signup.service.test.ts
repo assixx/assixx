@@ -379,7 +379,7 @@ describe('SignupService – registration', () => {
       );
     });
 
-    it('should handle missing basic plan gracefully', async () => {
+    it('should throw when basic plan is missing', async () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.transaction.mockImplementation(
         async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
@@ -389,14 +389,10 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // assignBasicPlan SELECT → no plan found
       mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // activateTrialFeatures SELECT → no features
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.registerTenant(createValidDto());
-
-      expect(result.tenantId).toBe(10);
-      expect(result.userId).toBe(1);
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should succeed even when audit log fails', async () => {
@@ -404,11 +400,21 @@ describe('SignupService – registration', () => {
       mockDb.transaction.mockImplementation(
         async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
       );
+      // createTenant INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      // createRootUser INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      // createRootUser UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // assignBasicPlan SELECT plans
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
+      // assignBasicPlan INSERT tenant_plans
       mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // assignBasicPlan UPDATE tenants
       mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // activateTrialFeatures SELECT → no features
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // createAuditLog → fails
       mockDb.query.mockRejectedValueOnce(new Error('Audit log failed'));
 
       const result = await service.registerTenant(createValidDto());

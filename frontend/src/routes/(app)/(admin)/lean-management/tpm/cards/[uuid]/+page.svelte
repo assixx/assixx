@@ -12,6 +12,8 @@
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     createCard as apiCreateCard,
     updateCard as apiUpdateCard,
@@ -356,60 +358,21 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-{#if showDeleteModal && deleteTarget !== null}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    id="tpm-card-delete-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={cancelDelete}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') cancelDelete();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--danger"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e: KeyboardEvent) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3 class="confirm-modal__title">{MESSAGES.CARD_DELETE_TITLE}</h3>
-      <p class="confirm-modal__message">
-        {MESSAGES.CARD_DELETE_MESSAGE}
-      </p>
-      <p class="confirm-modal__message">
-        <strong>{deleteTarget.cardCode}</strong> — {deleteTarget.title}
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={cancelDelete}
-          disabled={submitting}
-        >
-          {MESSAGES.BTN_CANCEL}
-        </button>
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={confirmDelete}
-          disabled={submitting}
-        >
-          {#if submitting}
-            <i class="fas fa-spinner fa-spin"></i>
-          {/if}
-          {MESSAGES.BTN_DELETE}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={showDeleteModal && deleteTarget !== null}
+  id="tpm-card-delete-modal"
+  title={MESSAGES.CARD_DELETE_TITLE}
+  confirmLabel={MESSAGES.BTN_DELETE}
+  {submitting}
+  onconfirm={confirmDelete}
+  oncancel={cancelDelete}
+>
+  {MESSAGES.CARD_DELETE_MESSAGE}
+  {#if deleteTarget !== null}
+    <br /><br />
+    <strong>{deleteTarget.cardCode}</strong> — {deleteTarget.title}
+  {/if}
+</ConfirmModal>
 
 <!-- Duplicate Warning Modal -->
 {#if showDuplicateWarning}

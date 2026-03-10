@@ -38,6 +38,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -85,6 +86,11 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
 interface MessageResponse {
   message: string;
 }
+
+/** Permission constants */
+const FEAT = 'assets';
+const MOD_MANAGE = 'assets-manage';
+const MOD_AVAIL = 'assets-availability';
 
 @Controller('assets')
 export class AssetsController {
@@ -156,6 +162,7 @@ export class AssetsController {
 
   @Post('maintenance')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async addMaintenanceRecord(
     @Body() dto: AddMaintenanceRecordDto,
     @CurrentUser() user: JwtPayload,
@@ -204,6 +211,7 @@ export class AssetsController {
    */
   @Put('uuid/:uuid/availability')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canWrite')
   async updateAssetAvailabilityByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateAssetAvailabilityDto,
@@ -246,6 +254,7 @@ export class AssetsController {
    */
   @Put('availability/:id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canWrite')
   async updateAssetAvailabilityEntry(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAssetAvailabilityEntryDto,
@@ -266,6 +275,7 @@ export class AssetsController {
    */
   @Delete('availability/:id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_AVAIL, 'canDelete')
   async deleteAssetAvailabilityEntry(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -343,6 +353,7 @@ export class AssetsController {
 
   @Put(':id/teams')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async setAssetTeams(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SetAssetTeamsDto,
@@ -359,6 +370,7 @@ export class AssetsController {
 
   @Post()
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async createAsset(
     @Body() dto: CreateAssetDto,
     @CurrentUser() user: JwtPayload,
@@ -406,6 +418,7 @@ export class AssetsController {
    */
   @Put('uuid/:uuid')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async updateAssetByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateAssetDto,
@@ -450,6 +463,7 @@ export class AssetsController {
    */
   @Put(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async updateAsset(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAssetDto,
@@ -498,6 +512,7 @@ export class AssetsController {
    */
   @Delete('uuid/:uuid')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
   async deleteAssetByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -513,6 +528,7 @@ export class AssetsController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canDelete')
   async deleteAsset(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -526,6 +542,7 @@ export class AssetsController {
 
   @Put(':id/deactivate')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async deactivateAsset(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -545,6 +562,7 @@ export class AssetsController {
 
   @Put(':id/activate')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_MANAGE, 'canWrite')
   async activateAsset(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,

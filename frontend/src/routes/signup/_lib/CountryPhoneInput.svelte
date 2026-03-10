@@ -192,9 +192,9 @@
     opacity: 0%;
     z-index: 1000;
 
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(18 18 18 / 100%);
+    background: oklch(18.22% 0 263.28 / 100%);
     max-height: 200px;
     overflow-y: auto;
   }
@@ -207,7 +207,8 @@
 
   .country-option {
     cursor: pointer;
-    border-bottom: 1px solid rgb(255 255 255 / 5%);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-white) 5%, transparent);
     padding: 10px 12px;
     color: var(--text-primary);
     font-size: 13px;
@@ -218,13 +219,13 @@
   }
 
   .country-option:hover {
-    background: rgb(33 150 243 / 20%);
+    background: color-mix(in oklch, var(--color-primary) 20%, transparent);
     padding-left: 16px;
-    color: #fff;
+    color: var(--color-white);
   }
 
   .country-option:active {
-    background: rgb(33 150 243 / 30%);
+    background: color-mix(in oklch, var(--color-primary) 30%, transparent);
   }
 
   .country-dropdown::-webkit-scrollbar {
@@ -232,16 +233,16 @@
   }
 
   .country-dropdown::-webkit-scrollbar-track {
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
   }
 
   .country-dropdown::-webkit-scrollbar-thumb {
     border-radius: 2px;
-    background: rgb(255 255 255 / 20%);
+    background: color-mix(in oklch, var(--color-white) 20%, transparent);
   }
 
   .country-dropdown::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 30%);
+    background: color-mix(in oklch, var(--color-white) 30%, transparent);
   }
 
   .phone-input-group .phone-number {

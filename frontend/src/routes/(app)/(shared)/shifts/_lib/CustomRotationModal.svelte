@@ -658,15 +658,15 @@
   }
 
   .column-header-F {
-    color: rgb(255 193 7);
+    color: oklch(84.42% 0.1721 84.94);
   }
 
   .column-header-S {
-    color: rgb(33 150 243);
+    color: var(--color-primary);
   }
 
   .column-header-N {
-    color: rgb(156 39 176);
+    color: oklch(51.68% 0.2151 321.23);
   }
 
   .drop-zone {
@@ -684,7 +684,7 @@
 
   .drop-zone.drag-over {
     border-color: var(--primary);
-    background: rgb(76 175 80 / 10%);
+    background: color-mix(in oklch, var(--color-success) 10%, transparent);
   }
 
   .drop-zone .employee-item {
@@ -711,19 +711,19 @@
     border: none;
     border-radius: 50%;
 
-    background: rgb(255 0 0 / 30%);
+    background: oklch(62.8% 0.2576 29.23 / 30%);
     padding: 0;
 
     width: 20px;
     height: 20px;
-    color: rgb(255 255 255 / 70%);
+    color: color-mix(in oklch, var(--color-white) 70%, transparent);
 
     font-size: 12px;
   }
 
   .btn-remove-rotation:hover {
-    background: rgb(255 0 0 / 60%);
-    color: #fff;
+    background: oklch(62.8% 0.2576 29.23 / 60%);
+    color: var(--color-white);
   }
 
   .drop-zone .employee-item.in-drop-zone {

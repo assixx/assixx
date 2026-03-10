@@ -6,7 +6,7 @@
 @layer components {
   /* Glass Card */
   .glass-card {
-    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
+    box-shadow: 0 8px 32px 0 oklch(0% 0 0 / 37%);
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
 
@@ -33,7 +33,7 @@
 
   .btn-glass:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px 0 rgb(0 0 0 / 45%);
+    box-shadow: 0 12px 40px 0 oklch(0% 0 0 / 45%);
     background: var(--glass-bg-hover);
   }
 
@@ -59,7 +59,7 @@
 
   .input-glass:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+    box-shadow: 0 0 0 3px oklch(65.82% 0.169 248.81 / 10%);
     border-color: var(--color-primary);
   }
 
@@ -86,13 +86,13 @@
     backdrop-filter: blur(5px);
     inset: 0;
 
-    background: rgb(0 0 0 / 80%);
+    background: oklch(0% 0 0 / 80%);
 
     padding: 1rem;
   }
 
   .modal-content-glass {
-    box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
+    box-shadow: 0 8px 32px 0 oklch(0% 0 0 / 37%);
     border: 1px solid var(--glass-border);
     border-radius: 0.5rem;
 
@@ -178,17 +178,17 @@
 
   .alert-glass.alert-success {
     border-color: var(--color-success);
-    background: rgb(76 175 80 / 10%);
+    background: oklch(67.31% 0.1624 144.21 / 10%);
   }
 
   .alert-glass.alert-error {
     border-color: var(--color-error);
-    background: rgb(244 67 54 / 10%);
+    background: oklch(64.27% 0.2153 28.81 / 10%);
   }
 
   .alert-glass.alert-warning {
     border-color: var(--color-warning);
-    background: rgb(255 152 0 / 10%);
+    background: oklch(77.03% 0.1741 64.05 / 10%);
   }
 
   @media (width >= 640px) {

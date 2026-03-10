@@ -9,34 +9,34 @@
  */
 
 .btn-manage {
-  background: rgb(33 150 243 / 28%);
+  background: color-mix(in oklch, var(--color-primary) 28%, transparent);
   padding: var(--spacing-2) var(--spacing-4);
   color: var(--color-text-primary);
 }
 
 html.dark .btn-manage {
-  background: rgb(169 217 255 / 17%);
+  background: oklch(87.27% 0.0604 236.52 / 17%);
 }
 
 /* Hover State - Increase blue opacity */
 .btn-manage:hover:not(:disabled) {
-  background: rgb(33 150 243 / 38%);
+  background: color-mix(in oklch, var(--color-primary) 38%, transparent);
   color: var(--color-text-primary);
 }
 
 html.dark .btn-manage:hover:not(:disabled) {
-  background: rgb(33 150 243 / 19%);
+  background: color-mix(in oklch, var(--color-primary) 19%, transparent);
 }
 
 /* Active/Pressed State */
 .btn-manage:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 40%);
-  background: rgb(33 150 243 / 45%);
+  box-shadow: 0 1px 4px color-mix(in oklch, var(--color-black) 40%, transparent);
+  background: color-mix(in oklch, var(--color-primary) 45%, transparent);
 }
 
 html.dark .btn-manage:active:not(:disabled) {
-  background: rgb(33 150 243 / 25%);
+  background: color-mix(in oklch, var(--color-primary) 25%, transparent);
 }
 
 /* Focus State */
@@ -44,8 +44,8 @@ html.dark .btn-manage:active:not(:disabled) {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow:
-    0 0 0 3px rgb(33 150 243 / 30%),
-    0 4px 12px rgb(33 150 243 / 20%);
+    0 0 0 3px color-mix(in oklch, var(--color-primary) 30%, transparent),
+    0 4px 12px color-mix(in oklch, var(--color-primary) 20%, transparent);
 }
 
 /* Disabled State */

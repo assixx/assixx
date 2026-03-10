@@ -62,45 +62,45 @@
 /* ========== EDIT VARIANT (Yellow) ========== */
 
 .action-icon--edit:hover {
-  background: rgb(251 191 36 / 10%);
-  color: #fbbf24; /* Tailwind yellow-400 */
+  background: oklch(84.25% 0.1599 85.75 / 10%);
+  color: var(--color-amber-light); /* Tailwind yellow-400 */
 }
 
 .action-icon--edit:active {
-  color: #f59e0b; /* Tailwind yellow-500 */
+  color: var(--color-amber-hover); /* Tailwind yellow-500 */
 }
 
 /* ========== DELETE VARIANT (Red) ========== */
 
 .action-icon--delete:hover {
-  background: rgb(239 68 68 / 10%);
-  color: #ef4444; /* Tailwind red-500 */
+  background: oklch(62.77% 0.2092 22.18 / 10%);
+  color: var(--color-coral); /* Tailwind red-500 */
 }
 
 .action-icon--delete:active {
-  color: #dc2626; /* Tailwind red-600 */
+  color: var(--color-coral-hover); /* Tailwind red-600 */
 }
 
 /* ========== VIEW VARIANT (Blue) ========== */
 
 .action-icon--view:hover {
-  background: rgb(59 130 246 / 10%);
-  color: #3b82f6; /* Tailwind blue-500 */
+  background: oklch(62.31% 0.1626 259.57 / 10%);
+  color: var(--color-info); /* Tailwind blue-500 */
 }
 
 .action-icon--view:active {
-  color: #2563eb; /* Tailwind blue-600 */
+  color: var(--color-info-hover); /* Tailwind blue-600 */
 }
 
 /* ========== INFO VARIANT (Cyan/Teal) ========== */
 
 .action-icon--info:hover {
-  background: rgb(6 182 212 / 10%);
-  color: #06b6d4; /* Tailwind cyan-500 */
+  background: oklch(71.53% 0.1078 209.42 / 10%);
+  color: var(--color-action-cyan); /* Tailwind cyan-500 */
 }
 
 .action-icon--info:active {
-  color: #0891b2; /* Tailwind cyan-600 */
+  color: var(--color-action-cyan-hover); /* Tailwind cyan-600 */
 }
 
 /* ========== MORE VARIANT (Neutral) ========== */
@@ -113,22 +113,22 @@
 /* ========== TOGGLE VARIANT (Orange/Green) ========== */
 
 .action-icon--toggle:hover {
-  background: rgb(249 115 22 / 10%);
-  color: #f97316; /* Tailwind orange-500 */
+  background: oklch(71.98% 0.1714 45.77 / 10%);
+  color: var(--color-action-orange); /* Tailwind orange-500 */
 }
 
 .action-icon--toggle:active {
-  color: #ea580c; /* Tailwind orange-600 */
+  color: var(--color-action-orange-hover); /* Tailwind orange-600 */
 }
 
 /* Success state for active items */
 .action-icon--toggle[data-status='inactive']:hover {
-  background: rgb(16 185 129 / 10%);
-  color: #10b981; /* Tailwind green-500 */
+  background: oklch(70.48% 0.1263 168.2 / 10%);
+  color: var(--color-action-emerald); /* Tailwind green-500 */
 }
 
 .action-icon--toggle[data-status='inactive']:active {
-  color: #059669; /* Tailwind green-600 */
+  color: var(--color-action-emerald-hover); /* Tailwind green-600 */
 }
 
 /* ========== FOCUS STATE ========== */
@@ -165,7 +165,7 @@
 
   transition: opacity 0.2s ease;
   border-radius: var(--radius-sm);
-  background: rgb(0 0 0 / 90%);
+  background: color-mix(in oklch, var(--color-black) 90%, transparent);
 
   padding: 0.25rem 0.5rem;
   pointer-events: none;

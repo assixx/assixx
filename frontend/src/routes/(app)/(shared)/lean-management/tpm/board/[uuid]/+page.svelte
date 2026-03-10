@@ -307,7 +307,8 @@
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+    box-shadow: 0 1px 2px
+      color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
   .board-legend__divider {

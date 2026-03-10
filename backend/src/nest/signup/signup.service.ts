@@ -169,8 +169,8 @@ export class SignupService {
 
       const tenantId = await this.createTenant(client, dto, trialEndsAt);
       const userId = await this.createRootUser(client, tenantId, dto);
-      await this.assignBasicPlan(client, tenantId);
-      await this.activateTrialFeatures(client, tenantId);
+      const planId = await this.assignBasicPlan(client, tenantId);
+      await this.activateTrialFeatures(client, tenantId, planId);
 
       return { tenantId, userId, trialEndsAt };
     });
@@ -330,44 +330,54 @@ export class SignupService {
   }
 
   /**
-   * Assign basic plan to new tenant
+   * Assign basic plan to new tenant.
+   * Returns the assigned plan ID (needed by activateTrialFeatures).
    */
   private async assignBasicPlan(
     client: PoolClient,
     tenantId: number,
-  ): Promise<void> {
+  ): Promise<number> {
     const planRows = await client.query<DbPlanResult>(
       `SELECT id FROM plans WHERE code = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       ['basic'],
     );
 
-    if (planRows.rows.length > 0) {
-      const basicPlanId = planRows.rows[0]?.id;
-      if (basicPlanId !== undefined) {
-        await client.query(
-          `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
-           VALUES ($1, $2, 'trial', NOW())`,
-          [tenantId, basicPlanId],
-        );
-
-        await client.query(
-          'UPDATE tenants SET current_plan_id = $1 WHERE id = $2',
-          [basicPlanId, tenantId],
-        );
-      }
+    const basicPlanId = planRows.rows[0]?.id;
+    if (basicPlanId === undefined) {
+      throw new Error('Basic plan not found — seeds missing?');
     }
+
+    await client.query(
+      `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
+       VALUES ($1, $2, 'trial', NOW())`,
+      [tenantId, basicPlanId],
+    );
+
+    await client.query(
+      'UPDATE tenants SET current_plan_id = $1 WHERE id = $2',
+      [basicPlanId, tenantId],
+    );
+
+    return basicPlanId;
   }
 
   /**
-   * Activate trial features for new tenant
+   * Activate trial features for new tenant.
+   * Only activates features included in the tenant's plan (ADR-032).
    */
   private async activateTrialFeatures(
     client: PoolClient,
     tenantId: number,
+    planId: number,
   ): Promise<void> {
-    // TEMPORARY: Activate ALL features for beta test
     const featureRows = await client.query<DbFeatureResult>(
-      'SELECT id FROM features',
+      `SELECT f.id
+       FROM plan_features pf
+       JOIN features f ON pf.feature_id = f.id
+       WHERE pf.plan_id = $1
+         AND pf.is_included = true
+         AND f.is_active = ${IS_ACTIVE.ACTIVE}`,
+      [planId],
     );
 
     for (const feature of featureRows.rows) {

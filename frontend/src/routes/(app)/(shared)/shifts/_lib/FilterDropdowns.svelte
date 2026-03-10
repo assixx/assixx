@@ -499,29 +499,30 @@
 
     transition: all 0.3s ease;
     cursor: pointer;
-    border: 1px solid rgb(76 175 80 / 40%);
+    border: 1px solid color-mix(in oklch, var(--color-success) 40%, transparent);
     border-radius: var(--radius-xl);
 
     background: linear-gradient(
       135deg,
-      rgb(76 175 80 / 20%),
-      rgb(76 175 80 / 10%)
+      color-mix(in oklch, var(--color-success) 20%, transparent),
+      color-mix(in oklch, var(--color-success) 10%, transparent)
     );
 
     padding: 8px 16px;
-    color: #4caf50;
+    color: var(--color-success);
     font-weight: 600;
 
     font-size: 13px;
   }
 
   .favorite-btn:hover {
-    box-shadow: 0 4px 12px rgb(76 175 80 / 20%);
-    border-color: rgb(76 175 80 / 60%);
+    box-shadow: 0 4px 12px
+      color-mix(in oklch, var(--color-success) 20%, transparent);
+    border-color: color-mix(in oklch, var(--color-success) 60%, transparent);
     background: linear-gradient(
       135deg,
-      rgb(76 175 80 / 30%),
-      rgb(76 175 80 / 20%)
+      color-mix(in oklch, var(--color-success) 30%, transparent),
+      color-mix(in oklch, var(--color-success) 20%, transparent)
     );
   }
 
@@ -555,13 +556,13 @@
 
     transition: all 0.2s ease;
     cursor: pointer;
-    border: 2px solid rgb(244 67 54);
+    border: 2px solid var(--color-danger);
     border-radius: 50%;
-    background: rgb(244 67 54 / 10%);
+    background: color-mix(in oklch, var(--color-danger) 10%, transparent);
 
     width: 20px;
     height: 20px;
-    color: rgb(244 67 54);
+    color: var(--color-danger);
 
     font-size: 11px;
   }
@@ -573,8 +574,8 @@
 
   .remove-favorite:hover {
     transform: scale(1.2);
-    border-color: rgb(244 67 54);
-    background: rgb(244 67 54 / 37%);
+    border-color: var(--color-danger);
+    background: color-mix(in oklch, var(--color-danger) 37%, transparent);
   }
 
   .favorites-empty {
@@ -592,16 +593,16 @@
     margin-top: var(--spacing-4);
     margin-bottom: var(--spacing-4);
 
-    border: 1px solid rgb(76 175 80 / 40%);
+    border: 1px solid color-mix(in oklch, var(--color-success) 40%, transparent);
     border-radius: var(--radius-xl);
 
     background: linear-gradient(
       135deg,
-      rgb(76 175 80 / 20%),
-      rgb(76 175 80 / 10%)
+      color-mix(in oklch, var(--color-success) 20%, transparent),
+      color-mix(in oklch, var(--color-success) 10%, transparent)
     );
     padding: 10px 20px;
-    color: #4caf50;
+    color: var(--color-success);
     font-weight: 700;
 
     font-size: 14px;
@@ -609,12 +610,13 @@
 
   .add-favorite-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
-    border-color: rgb(76 175 80 / 60%);
+    box-shadow: 0 4px 16px
+      color-mix(in oklch, var(--color-success) 30%, transparent);
+    border-color: color-mix(in oklch, var(--color-success) 60%, transparent);
     background: linear-gradient(
       135deg,
-      rgb(76 175 80 / 30%),
-      rgb(76 175 80 / 20%)
+      color-mix(in oklch, var(--color-success) 30%, transparent),
+      color-mix(in oklch, var(--color-success) 20%, transparent)
     );
   }
 

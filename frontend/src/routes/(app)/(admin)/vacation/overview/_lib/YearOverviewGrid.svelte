@@ -306,8 +306,9 @@
     z-index: 1;
     font-size: 0.75rem;
     font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 3px rgb(0 0 0 / 50%);
+    color: var(--color-white);
+    text-shadow: 0 1px 3px
+      color-mix(in oklch, var(--color-black) 50%, transparent);
   }
 
   .year-total {
@@ -330,8 +331,8 @@
       -45deg,
       transparent,
       transparent 3px,
-      rgb(239 68 68 / 12%) 3px,
-      rgb(239 68 68 / 12%) 6px
+      color-mix(in oklch, var(--color-coral) 12%, transparent) 3px,
+      color-mix(in oklch, var(--color-coral) 12%, transparent) 6px
     );
     color: var(--color-danger-600);
   }
@@ -350,8 +351,8 @@
       -45deg,
       transparent,
       transparent 3px,
-      rgb(239 68 68 / 6%) 3px,
-      rgb(239 68 68 / 6%) 6px
+      color-mix(in oklch, var(--color-coral) 6%, transparent) 3px,
+      color-mix(in oklch, var(--color-coral) 6%, transparent) 6px
     );
   }
 
@@ -384,8 +385,8 @@
       -45deg,
       transparent,
       transparent 2px,
-      rgb(239 68 68 / 25%) 2px,
-      rgb(239 68 68 / 25%) 4px
+      color-mix(in oklch, var(--color-coral) 25%, transparent) 2px,
+      color-mix(in oklch, var(--color-coral) 25%, transparent) 4px
     );
     border: 1px solid var(--color-danger-400);
   }

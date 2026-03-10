@@ -94,9 +94,9 @@
 <style>
   .approval-section {
     margin-bottom: var(--spacing-8);
-    border: 1px solid rgb(255 193 7 / 20%);
+    border: 1px solid oklch(84.42% 0.1721 84.94 / 20%);
     border-radius: var(--radius-xl);
-    background: rgb(255 193 7 / 5%);
+    background: oklch(84.42% 0.1721 84.94 / 5%);
     padding: var(--spacing-6);
   }
 
@@ -157,7 +157,7 @@
   }
 
   .approval-status.pending {
-    background: rgb(255 193 7 / 20%);
+    background: oklch(84.42% 0.1721 84.94 / 20%);
     color: var(--color-warning);
   }
 
@@ -166,14 +166,14 @@
     align-items: center;
     gap: var(--spacing-2);
     margin-top: var(--spacing-2);
-    border: 1px solid rgb(255 152 0 / 30%);
+    border: 1px solid color-mix(in oklch, var(--color-warning) 30%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(255 152 0 / 10%);
+    background: color-mix(in oklch, var(--color-warning) 10%, transparent);
     padding: var(--spacing-3);
     font-size: 13px;
   }
 
   .cooling-off-warning i {
-    color: #ff9800;
+    color: var(--color-warning);
   }
 </style>

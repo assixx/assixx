@@ -276,7 +276,8 @@
     color: var(--primary-color);
     font-weight: 700;
     font-size: 2.5rem;
-    text-shadow: 0 0 10px rgb(33 150 243 / 50%);
+    text-shadow: 0 0 10px
+      color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 
   /* Stat Label - Description text

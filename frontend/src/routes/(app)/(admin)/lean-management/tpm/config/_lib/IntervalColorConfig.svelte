@@ -12,6 +12,8 @@
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     updateIntervalColor as apiUpdateIntervalColor,
     resetIntervalColors as apiResetIntervalColors,
@@ -380,62 +382,21 @@
 </div>
 
 <!-- Reset Confirmation -->
-{#if showResetConfirm}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    id="tpm-interval-color-reset-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={() => {
-      showResetConfirm = false;
-    }}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') showResetConfirm = false;
-    }}
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
-      class="confirm-modal"
-      role="alertdialog"
-      aria-modal="true"
-      tabindex="-1"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-undo"></i>
-      </div>
-      <h3 class="confirm-modal__title">{MESSAGES.INTERVAL_COLOR_RESET}</h3>
-      <p class="confirm-modal__message">
-        {MESSAGES.INTERVAL_COLOR_RESET_CONFIRM}
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => {
-            showResetConfirm = false;
-          }}
-        >
-          {MESSAGES.BTN_CANCEL}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          disabled={resetting}
-          onclick={() => {
-            void handleResetColors();
-          }}
-        >
-          {#if resetting}
-            <i class="fas fa-spinner fa-spin"></i>
-          {/if}
-          {MESSAGES.INTERVAL_COLOR_RESET}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={showResetConfirm}
+  id="tpm-interval-color-reset-modal"
+  title={MESSAGES.INTERVAL_COLOR_RESET}
+  variant="info"
+  icon="fa-undo"
+  confirmLabel={MESSAGES.INTERVAL_COLOR_RESET}
+  submitting={resetting}
+  onconfirm={() => void handleResetColors()}
+  oncancel={() => {
+    showResetConfirm = false;
+  }}
+>
+  {MESSAGES.INTERVAL_COLOR_RESET_CONFIRM}
+</ConfirmModal>
 
 <style>
   .color-grid {
@@ -525,8 +486,9 @@
     display: flex;
     flex-direction: column;
     padding: 0.625rem;
-    color: #fff;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+    color: var(--color-white);
+    box-shadow: 0 2px 8px
+      color-mix(in oklch, var(--color-black) 20%, transparent);
     flex-shrink: 0;
   }
 
@@ -535,7 +497,8 @@
     align-items: center;
     gap: 0.375rem;
     padding-bottom: 0.375rem;
-    border-bottom: 1px solid rgb(0 0 0 / 15%);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .card-preview__code {
@@ -549,7 +512,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    border: 1.5px solid rgb(255 255 255 / 60%);
+    border: 1.5px solid color-mix(in oklch, var(--color-white) 60%, transparent);
     flex-shrink: 0;
   }
 
@@ -577,7 +540,8 @@
     justify-content: flex-end;
     gap: 0.25rem;
     padding-top: 0.375rem;
-    border-top: 1px solid rgb(0 0 0 / 15%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .card-preview__status {

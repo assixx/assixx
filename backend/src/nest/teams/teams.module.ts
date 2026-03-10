@@ -6,12 +6,13 @@
  */
 import { Module } from '@nestjs/common';
 
+import { TeamsPermissionRegistrar } from './teams-permission.registrar.js';
 import { TeamsController } from './teams.controller.js';
 import { TeamsService } from './teams.service.js';
 
 @Module({
   controllers: [TeamsController],
-  providers: [TeamsService],
+  providers: [TeamsService, TeamsPermissionRegistrar],
   exports: [TeamsService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured, empty class body is standard pattern

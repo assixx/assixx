@@ -39,6 +39,7 @@ describe('Create Work Order for Read-Tracking', () => {
         title: `Read-Track Test ${Date.now()}`,
         description: 'Created for read-tracking integration test',
         priority: 'medium',
+        dueDate: '2099-12-31',
       }),
     });
     body = (await res.json()) as JsonBody;

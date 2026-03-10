@@ -7,7 +7,8 @@
  * - GET    /tpm/plans/interval-matrix       — Card counts per plan × interval
  * - GET    /tpm/plans/available-slots       — Slot availability by asset UUID
  * - GET    /tpm/plans/schedule-projection  — Projected schedules for all plans
- * - GET    /tpm/plans/shift-assignments    — Employees assigned to TPM shifts
+ * - GET    /tpm/plans/shift-assignments           — Employees assigned to TPM shifts
+ * - GET    /tpm/plans/shift-assignments/calendar — Lightweight calendar view of TPM assignments
  * - GET    /tpm/plans/:uuid                 — Get single plan
  * - PATCH  /tpm/plans/:uuid                 — Update plan
  * - DELETE /tpm/plans/:uuid                 — Soft-delete plan
@@ -15,6 +16,8 @@
  * - POST   /tpm/plans/:uuid/time-estimates  — Set time estimate
  * - GET    /tpm/plans/:uuid/available-slots     — Slot availability assistant
  * - GET    /tpm/plans/:uuid/team-availability  — Asset team member availability
+ * - POST   /tpm/plans/:uuid/assignments         — Set assignments for a date
+ * - GET    /tpm/plans/:uuid/assignments         — Get assignments for date range
  * - GET    /tpm/plans/:uuid/board               — Board data (cards for plan)
  */
 import {
@@ -42,6 +45,7 @@ import { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
 import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
 import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
 import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
+import { SetPlanAssignmentsDto } from './dto/set-plan-assignments.dto.js';
 import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
@@ -52,7 +56,11 @@ import type {
 } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
-import type { TpmShiftAssignment } from './tpm-shift-assignments.service.js';
+import type {
+  CalendarTpmAssignment,
+  TpmPlanAssignment,
+  TpmShiftAssignment,
+} from './tpm-shift-assignments.service.js';
 import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import type {
   AssetTeamAvailabilityResult,
@@ -164,6 +172,24 @@ export class TpmPlansController {
   ): Promise<TpmShiftAssignment[]> {
     return await this.shiftAssignmentsService.getShiftAssignments(
       tenantId,
+      query.startDate,
+      query.endDate,
+    );
+  }
+
+  /** GET /tpm/plans/shift-assignments/calendar — Lightweight calendar view of TPM assignments */
+  @Get('shift-assignments/calendar')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getCalendarAssignments(
+    @Query() query: ShiftAssignmentsQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarTpmAssignment[]> {
+    const isAdmin = user.role === 'admin' || user.role === 'root';
+    return await this.shiftAssignmentsService.getCalendarAssignments(
+      tenantId,
+      user.id,
+      isAdmin,
       query.startDate,
       query.endDate,
     );
@@ -297,6 +323,45 @@ export class TpmPlansController {
       tenantId,
       plan.assetId,
       today,
+    );
+  }
+
+  // ============================================================================
+  // PLAN ASSIGNMENTS (direct employee-to-date)
+  // ============================================================================
+
+  /** POST /tpm/plans/:uuid/assignments — Set assignments for a specific date */
+  @Post(':uuid/assignments')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  async setAssignments(
+    @Param('uuid') planUuid: string,
+    @Body() dto: SetPlanAssignmentsDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmPlanAssignment[]> {
+    return await this.shiftAssignmentsService.setAssignments(
+      tenantId,
+      user.id,
+      planUuid,
+      dto.userIds,
+      dto.scheduledDate,
+    );
+  }
+
+  /** GET /tpm/plans/:uuid/assignments — Get assignments for a date range */
+  @Get(':uuid/assignments')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getAssignmentsForPlan(
+    @Param('uuid') planUuid: string,
+    @Query() query: ShiftAssignmentsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<TpmPlanAssignment[]> {
+    return await this.shiftAssignmentsService.getAssignmentsForPlan(
+      tenantId,
+      planUuid,
+      query.startDate,
+      query.endDate,
     );
   }
 

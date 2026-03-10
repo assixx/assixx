@@ -593,6 +593,31 @@ describe('TpmSlotAssistantService', () => {
       expect(result.totalCount).toBe(2);
     });
 
+    it('should fall back to username when first_name or last_name is null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 1,
+          username: 'alice42',
+          first_name: null,
+          last_name: null,
+          profile_picture: null,
+        },
+        {
+          user_id: 2,
+          username: 'bob99',
+          first_name: 'Bob',
+          last_name: null,
+          profile_picture: null,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getTeamAvailability(10, 5, '2026-03-01');
+
+      expect(result.members[0]?.userName).toBe('alice42');
+      expect(result.members[1]?.userName).toBe('bob99');
+    });
+
     it('should call generateInPlaceholders for user IDs', async () => {
       mockDb.query.mockResolvedValueOnce([
         { user_id: 1, username: 'Alice' },
@@ -629,6 +654,158 @@ describe('TpmSlotAssistantService', () => {
       await expect(
         service.resolveAssetIdByUuid(10, 'missing-uuid'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // =============================================================
+  // getAssetTeamAvailability
+  // =============================================================
+
+  describe('getAssetTeamAvailability()', () => {
+    it('should return empty result when asset has no teams', async () => {
+      // fetchAssetTeams → empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAssetTeamAvailability(
+        10,
+        42,
+        '2026-03-01',
+      );
+
+      expect(result.assetId).toBe(42);
+      expect(result.date).toBe('2026-03-01');
+      expect(result.teams).toHaveLength(0);
+      expect(result.members).toHaveLength(0);
+      expect(result.availableCount).toBe(0);
+      expect(result.totalCount).toBe(0);
+    });
+
+    it('should merge members from multiple teams', async () => {
+      // fetchAssetTeams → 2 teams
+      mockDb.query.mockResolvedValueOnce([
+        { team_id: 1, team_name: 'Team Alpha' },
+        { team_id: 2, team_name: 'Team Beta' },
+      ]);
+      // Promise.all interleaving: BOTH fetchTeamMembers fire before either fetchUserUnavailability
+      // team 1: fetchTeamMembers
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 10,
+          username: 'Alice',
+          first_name: 'Alice',
+          last_name: 'A',
+          profile_picture: null,
+        },
+      ]);
+      // team 2: fetchTeamMembers
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 20,
+          username: 'Bob',
+          first_name: 'Bob',
+          last_name: 'B',
+          profile_picture: null,
+        },
+      ]);
+      // team 1: fetchUserUnavailability
+      mockDb.query.mockResolvedValueOnce([]);
+      // team 2: fetchUserUnavailability
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAssetTeamAvailability(
+        10,
+        42,
+        '2026-03-01',
+      );
+
+      expect(result.teams).toHaveLength(2);
+      expect(result.teams[0]?.teamName).toBe('Team Alpha');
+      expect(result.teams[1]?.teamName).toBe('Team Beta');
+      expect(result.members).toHaveLength(2);
+      expect(result.availableCount).toBe(2);
+      expect(result.totalCount).toBe(2);
+    });
+
+    it('should deduplicate members shared across teams', async () => {
+      // fetchAssetTeams → 2 teams
+      mockDb.query.mockResolvedValueOnce([
+        { team_id: 1, team_name: 'Team A' },
+        { team_id: 2, team_name: 'Team B' },
+      ]);
+      // Promise.all interleaving: both fetchTeamMembers before either fetchUserUnavailability
+      // team 1: fetchTeamMembers (same user_id=10)
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 10,
+          username: 'Alice',
+          first_name: 'Alice',
+          last_name: 'A',
+          profile_picture: null,
+        },
+      ]);
+      // team 2: fetchTeamMembers (same user_id=10)
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 10,
+          username: 'Alice',
+          first_name: 'Alice',
+          last_name: 'A',
+          profile_picture: null,
+        },
+      ]);
+      // team 1: fetchUserUnavailability
+      mockDb.query.mockResolvedValueOnce([]);
+      // team 2: fetchUserUnavailability
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAssetTeamAvailability(
+        10,
+        42,
+        '2026-03-01',
+      );
+
+      expect(result.members).toHaveLength(1);
+      expect(result.totalCount).toBe(1);
+    });
+
+    it('should count unavailable members correctly', async () => {
+      // fetchAssetTeams → 1 team
+      mockDb.query.mockResolvedValueOnce([{ team_id: 1, team_name: 'Team A' }]);
+      // fetchTeamMembers
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 10,
+          username: 'Alice',
+          first_name: 'Alice',
+          last_name: 'A',
+          profile_picture: null,
+        },
+        {
+          user_id: 20,
+          username: 'Bob',
+          first_name: 'Bob',
+          last_name: 'B',
+          profile_picture: null,
+        },
+      ]);
+      // fetchUserUnavailability → Bob on vacation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 20,
+          status: 'vacation',
+          start_date: '2026-03-01',
+          end_date: '2026-03-07',
+        },
+      ]);
+
+      const result = await service.getAssetTeamAvailability(
+        10,
+        42,
+        '2026-03-01',
+      );
+
+      expect(result.availableCount).toBe(1);
+      expect(result.totalCount).toBe(2);
     });
   });
 

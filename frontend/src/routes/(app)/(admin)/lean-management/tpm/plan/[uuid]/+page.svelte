@@ -30,6 +30,8 @@
     CreatePlanPayload,
     UpdatePlanPayload,
     CreateTimeEstimatePayload,
+    ProjectedSlot,
+    TpmPlanAssignment,
   } from '../../_lib/types';
 
   // =============================================================================
@@ -62,6 +64,10 @@
   // Schedule preview: track weekday + repeat for SlotAssistant grid preview
   let previewWeekday = $state<number | undefined>(undefined);
   let previewRepeatEvery = $state<number | undefined>(undefined);
+
+  // SlotAssistant data for EmployeeAssignment counts
+  let projectionSlots = $state<ProjectedSlot[]>([]);
+  let planAssignments = $state<TpmPlanAssignment[]>([]);
 
   // =============================================================================
   // HANDLERS
@@ -188,6 +194,10 @@
         intervalColors={data.intervalColors}
         {previewWeekday}
         {previewRepeatEvery}
+        ondataload={(slots: ProjectedSlot[], assigns: TpmPlanAssignment[]) => {
+          projectionSlots = slots;
+          planAssignments = assigns;
+        }}
       />
     </div>
   {:else if isCreateMode && createAssetUuid.length > 0}
@@ -202,7 +212,18 @@
     </div>
   {/if}
 
-  <!-- Content grid -->
+  <!-- Team-Verfügbarkeit: full width directly below SlotAssistant (edit mode, not archived) -->
+  {#if !isCreateMode && data.plan !== null && !isArchived}
+    <div class="mb-6">
+      <EmployeeAssignment
+        planUuid={data.plan.uuid}
+        {projectionSlots}
+        {planAssignments}
+      />
+    </div>
+  {/if}
+
+  <!-- Content grid: Plan form + Actions -->
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px]">
     <!-- Main: Plan form -->
     <div class="min-w-0">
@@ -243,13 +264,9 @@
       </div>
     </div>
 
-    <!-- Sidebar: Employee Assignment + Actions (edit mode only) -->
+    <!-- Sidebar: Actions (edit mode only) -->
     {#if !isCreateMode && data.plan !== null}
       <div class="flex flex-col gap-6">
-        {#if !isArchived}
-          <EmployeeAssignment planUuid={data.plan.uuid} />
-        {/if}
-
         <!-- Archive / Restore Actions -->
         {#if isArchived}
           <div class="card">

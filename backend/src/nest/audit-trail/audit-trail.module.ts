@@ -10,6 +10,7 @@ import { AuditLoggingService } from '../common/audit/audit-logging.service.js';
 import { AuditMetadataService } from '../common/audit/audit-metadata.service.js';
 import { AuditRequestFilterService } from '../common/audit/audit-request-filter.service.js';
 import { DatabaseModule } from '../database/index.js';
+import { AuditTrailPermissionRegistrar } from './audit-trail-permission.registrar.js';
 import { AuditTrailController } from './audit-trail.controller.js';
 import { AuditTrailService } from './audit-trail.service.js';
 
@@ -22,6 +23,7 @@ import { AuditTrailService } from './audit-trail.service.js';
     AuditLoggingService,
     AuditMetadataService,
     AuditRequestFilterService,
+    AuditTrailPermissionRegistrar,
   ],
   exports: [
     AuditTrailService,

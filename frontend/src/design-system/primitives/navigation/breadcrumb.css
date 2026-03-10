@@ -56,15 +56,18 @@
 
 .breadcrumb .breadcrumb__item:hover,
 .breadcrumb a.breadcrumb__item:hover {
-  background: rgb(33 150 243 / 10%);
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
 
   /* Lighter blue on hover */
-  color: var(--color-primary-hover, #42a5f5) !important;
+  color: var(--color-primary-hover, var(--color-primary-light)) !important;
 }
 
 .breadcrumb .breadcrumb__item--active {
   pointer-events: none;
-  color: var(--text-primary, var(--color-text-primary, #fff)) !important;
+  color: var(
+    --text-primary,
+    var(--color-text-primary, var(--color-white))
+  ) !important;
   font-weight: 600;
 }
 

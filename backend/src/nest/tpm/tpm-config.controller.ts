@@ -54,8 +54,7 @@ import type {
 
 /** Permission constants */
 const FEAT = 'tpm';
-const MOD_PLANS = 'tpm-plans';
-const MOD_CARDS = 'tpm-cards';
+const MOD_CONFIG = 'tpm-config';
 
 @Controller('tpm/config')
 @TenantFeature('tpm')
@@ -71,7 +70,7 @@ export class TpmConfigController {
 
   /** GET /tpm/config/escalation — Get escalation config */
   @Get('escalation')
-  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
   async getEscalationConfig(
     @TenantId() tenantId: number,
   ): Promise<TpmEscalationConfig> {
@@ -80,7 +79,7 @@ export class TpmConfigController {
 
   /** PATCH /tpm/config/escalation — Update escalation config */
   @Patch('escalation')
-  @RequirePermission(FEAT, MOD_PLANS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async updateEscalationConfig(
     @Body() dto: UpdateEscalationConfigDto,
     @CurrentUser() user: NestAuthUser,
@@ -95,7 +94,7 @@ export class TpmConfigController {
 
   /** GET /tpm/config/colors — Get all status colors */
   @Get('colors')
-  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
   async getColors(
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry[]> {
@@ -104,7 +103,7 @@ export class TpmConfigController {
 
   /** PATCH /tpm/config/colors — Update a single status color */
   @Patch('colors')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async updateColor(
     @Body() dto: UpdateColorConfigDto,
     @CurrentUser() user: NestAuthUser,
@@ -116,7 +115,7 @@ export class TpmConfigController {
   /** POST /tpm/config/colors/reset — Reset card status colors to defaults */
   @Post('colors/reset')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async resetColors(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -126,7 +125,7 @@ export class TpmConfigController {
 
   /** DELETE /tpm/config/colors/:statusKey — Reset single status color to default */
   @Delete('colors/:statusKey')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async resetSingleColor(
     @Param('statusKey') statusKey: string,
     @CurrentUser() user: NestAuthUser,
@@ -149,7 +148,7 @@ export class TpmConfigController {
 
   /** GET /tpm/config/interval-colors — Get all interval type colors */
   @Get('interval-colors')
-  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
   async getIntervalColors(
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry[]> {
@@ -158,7 +157,7 @@ export class TpmConfigController {
 
   /** PATCH /tpm/config/interval-colors — Update a single interval color */
   @Patch('interval-colors')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async updateIntervalColor(
     @Body() dto: UpdateIntervalColorConfigDto,
     @CurrentUser() user: NestAuthUser,
@@ -174,7 +173,7 @@ export class TpmConfigController {
   /** POST /tpm/config/interval-colors/reset — Reset interval colors to defaults */
   @Post('interval-colors/reset')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async resetIntervalColors(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -187,7 +186,7 @@ export class TpmConfigController {
 
   /** DELETE /tpm/config/interval-colors/:intervalKey — Reset single interval color */
   @Delete('interval-colors/:intervalKey')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async resetSingleIntervalColor(
     @Param('intervalKey') intervalKey: string,
     @CurrentUser() user: NestAuthUser,
@@ -210,7 +209,7 @@ export class TpmConfigController {
 
   /** GET /tpm/config/category-colors — Get all category colors */
   @Get('category-colors')
-  @RequirePermission(FEAT, MOD_CARDS, 'canRead')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
   async getCategoryColors(
     @TenantId() tenantId: number,
   ): Promise<TpmCategoryColorConfigEntry[]> {
@@ -219,7 +218,7 @@ export class TpmConfigController {
 
   /** PATCH /tpm/config/category-colors — Update a single category color */
   @Patch('category-colors')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async updateCategoryColor(
     @Body() dto: UpdateCategoryColorConfigDto,
     @CurrentUser() user: NestAuthUser,
@@ -235,7 +234,7 @@ export class TpmConfigController {
   /** POST /tpm/config/category-colors/reset — Remove all custom category colors */
   @Post('category-colors/reset')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async resetCategoryColors(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -245,7 +244,7 @@ export class TpmConfigController {
 
   /** DELETE /tpm/config/category-colors/:categoryKey — Reset single category color */
   @Delete('category-colors/:categoryKey')
-  @RequirePermission(FEAT, MOD_CARDS, 'canWrite')
+  @RequirePermission(FEAT, MOD_CONFIG, 'canWrite')
   async resetSingleCategoryColor(
     @Param('categoryKey') categoryKey: string,
     @CurrentUser() user: NestAuthUser,
