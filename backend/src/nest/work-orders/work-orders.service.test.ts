@@ -409,6 +409,28 @@ describe('listWorkOrders', () => {
     const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
     expect(params).toContain('kvp-uuid-456');
   });
+
+  it('should apply isActive=archived filter', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.listWorkOrders(1, 5, { isActive: 'archived' });
+
+    const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+    expect(countSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
+  });
+
+  it('should apply isActive=all filter (active + archived)', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.listWorkOrders(1, 5, { isActive: 'all' });
+
+    const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+    expect(countSql).toContain(
+      `is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
+    );
+  });
 });
 
 // ============================================================================

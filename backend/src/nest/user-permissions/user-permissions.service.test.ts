@@ -643,6 +643,48 @@ describe('SECURITY: UserPermissionsService', () => {
         expect(captureSql).toContain('user_feature_permissions');
         expect(captureCall?.[1]).toContain(42);
       });
+
+      it('should not log when upserted permissions are identical to existing state', async () => {
+        mockDb.queryOne.mockResolvedValue({ id: 42 });
+        mockRegistry.isValidModule.mockReturnValue(true);
+        mockRegistry.getAllowedPermissions.mockReturnValue([
+          'canRead',
+          'canWrite',
+          'canDelete',
+        ]);
+
+        // Old state matches new values exactly → no diff
+        mockClient.query.mockResolvedValueOnce({
+          rows: [
+            {
+              feature_code: 'blackboard',
+              module_code: 'blackboard-posts',
+              can_read: true,
+              can_write: false,
+              can_delete: false,
+            },
+          ],
+        });
+        // UPSERT call
+        mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+        await service.upsertPermissions(
+          1,
+          'user-uuid-1',
+          [
+            {
+              featureCode: 'blackboard',
+              moduleCode: 'blackboard-posts',
+              canRead: true,
+              canWrite: false,
+              canDelete: false,
+            },
+          ],
+          99,
+        );
+
+        expect(mockActivityLogger.logUpdate).not.toHaveBeenCalled();
+      });
     });
 
     describe('allowedPermissions Enforcement', () => {
