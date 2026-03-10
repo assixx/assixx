@@ -18,13 +18,13 @@
 
 Das Script ruft `POST /api/v2/signup` auf. Die Signup API erstellt automatisch:
 
-| Was | Wert |
-|-----|------|
-| Tenant | API Test GmbH (subdomain: `apitest`) |
-| Root-User | admin@apitest.de mit `has_full_access = true` |
-| Passwort | `ApiTest12345!` (bcrypt-gehasht durch die API) |
-| Features | Alle 20 Features aktiviert (14 Tage Trial) |
-| Plan | Basic (Trial-Status) |
+| Was       | Wert                                            |
+| --------- | ----------------------------------------------- |
+| Tenant    | API Test GmbH (subdomain: `apitest`)            |
+| Root-User | admin@apitest.de mit `has_full_access = true`   |
+| Passwort  | `ApiTest12345!` (bcrypt-gehasht durch die API)  |
+| Features  | Alle 20 Features aktiviert (14 Tage Trial)      |
+| Plan      | Basic (Trial-Status)                            |
 | Audit-Log | Registrierung wird in `root_logs` protokolliert |
 
 ---
