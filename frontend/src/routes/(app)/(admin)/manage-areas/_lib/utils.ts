@@ -15,6 +15,7 @@ import type {
   Area,
   AdminUser,
   Department,
+  Hall,
   IsActiveStatus,
   AreaType,
   FormIsActiveStatus,
@@ -82,6 +83,15 @@ export function getDepartmentCountText(count: number): string {
 }
 
 // =============================================================================
+// HALL HELPERS
+// =============================================================================
+
+/** Get hall IDs assigned to an area */
+export function getHallIdsForArea(areaId: number, halls: Hall[]): number[] {
+  return halls.filter((h) => h.areaId === areaId).map((h) => h.id);
+}
+
+// =============================================================================
 // FORM HELPERS
 // =============================================================================
 
@@ -89,6 +99,7 @@ export function getDepartmentCountText(count: number): string {
 export function populateFormFromArea(
   area: Area,
   departments: Department[],
+  halls: Hall[] = [],
 ): {
   name: string;
   description: string;
@@ -97,6 +108,7 @@ export function populateFormFromArea(
   capacity: number | null;
   address: string;
   departmentIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 } {
   return {
@@ -107,6 +119,7 @@ export function populateFormFromArea(
     capacity: area.capacity ?? null,
     address: area.address ?? '',
     departmentIds: getDepartmentIdsForArea(area.id, departments),
+    hallIds: getHallIdsForArea(area.id, halls),
     isActive: (area.isActive === IS_ACTIVE.DELETED ?
       IS_ACTIVE.INACTIVE
     : area.isActive) as FormIsActiveStatus,

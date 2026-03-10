@@ -1,16 +1,12 @@
 /** Die 4 festen Entity-Ebenen im Organigramm */
 export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 
-export interface HierarchyLabel {
-  singular: string;
-  plural: string;
-}
-
+/** Label pro Ebene — ein einziger String (Plural-Form als Standard) */
 export interface HierarchyLabels {
-  area: HierarchyLabel;
-  department: HierarchyLabel;
-  team: HierarchyLabel;
-  asset: HierarchyLabel;
+  area: string;
+  department: string;
+  team: string;
+  asset: string;
 }
 
 export interface OrgChartPosition {
@@ -69,8 +65,8 @@ export interface OrgChartPositionRow {
 
 /** Default-Labels wenn tenants.settings.orgHierarchy nicht gesetzt */
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
-  area: { singular: 'Bereich', plural: 'Bereiche' },
-  department: { singular: 'Abteilung', plural: 'Abteilungen' },
-  team: { singular: 'Team', plural: 'Teams' },
-  asset: { singular: 'Anlage', plural: 'Anlagen' },
+  area: 'Bereiche',
+  department: 'Abteilungen',
+  team: 'Teams',
+  asset: 'Anlagen',
 };

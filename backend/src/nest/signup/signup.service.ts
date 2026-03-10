@@ -186,15 +186,19 @@ export class SignupService {
   ): Promise<number> {
     const tenantUuid = uuidv7();
     const tenantRows = await client.query<DbTenantResult>(
-      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email, status, uuid, uuid_created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'trial', $8, NOW())
+      `INSERT INTO tenants (company_name, subdomain, email, phone, street, house_number, postal_code, city, country_code, trial_ends_at, billing_email, status, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'trial', $12, NOW())
        RETURNING id`,
       [
         dto.companyName,
         dto.subdomain,
         dto.email,
         dto.phone,
-        dto.address ?? null,
+        dto.street,
+        dto.houseNumber,
+        dto.postalCode,
+        dto.city,
+        dto.countryCode,
         trialEndsAt,
         dto.adminEmail,
         tenantUuid,
@@ -450,7 +454,11 @@ export class SignupService {
             admin_first_name: dto.adminFirstName,
             admin_last_name: dto.adminLastName,
             phone: dto.phone,
-            address: dto.address,
+            street: dto.street,
+            house_number: dto.houseNumber,
+            postal_code: dto.postalCode,
+            city: dto.city,
+            country_code: dto.countryCode,
             plan: dto.plan ?? 'trial',
           }),
           ipAddress ?? null,

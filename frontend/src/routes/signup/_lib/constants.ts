@@ -2,7 +2,7 @@
 // SIGNUP PAGE - CONSTANTS
 // =============================================================================
 
-import type { Country, Plan } from './types';
+import type { AddressCountry, Country, Plan } from './types';
 
 /**
  * Available country codes for phone number prefix
@@ -35,9 +35,34 @@ export const PLANS: readonly Plan[] = [
 ] as const;
 
 /**
+ * Available countries for address selection (ISO 3166-1 alpha-2)
+ * Same set as phone countries, with ISO codes and localized names
+ */
+export const ADDRESS_COUNTRIES: readonly AddressCountry[] = [
+  { flag: '🇩🇪', iso: 'DE', name: 'Deutschland' },
+  { flag: '🇦🇹', iso: 'AT', name: 'Österreich' },
+  { flag: '🇨🇭', iso: 'CH', name: 'Schweiz' },
+  { flag: '🇫🇷', iso: 'FR', name: 'Frankreich' },
+  { flag: '🇮🇹', iso: 'IT', name: 'Italien' },
+  { flag: '🇪🇸', iso: 'ES', name: 'Spanien' },
+  { flag: '🇳🇱', iso: 'NL', name: 'Niederlande' },
+  { flag: '🇧🇪', iso: 'BE', name: 'Belgien' },
+  { flag: '🇱🇺', iso: 'LU', name: 'Luxemburg' },
+  { flag: '🇵🇱', iso: 'PL', name: 'Polen' },
+  { flag: '🇨🇿', iso: 'CZ', name: 'Tschechien' },
+  { flag: '🇺🇸', iso: 'US', name: 'USA' },
+  { flag: '🇬🇧', iso: 'GB', name: 'Großbritannien' },
+] as const;
+
+/**
  * Default country selection (Germany)
  */
 export const DEFAULT_COUNTRY: Country = COUNTRIES[0];
+
+/**
+ * Default address country (Germany)
+ */
+export const DEFAULT_ADDRESS_COUNTRY: AddressCountry = ADDRESS_COUNTRIES[0];
 
 /**
  * Default plan selection (Enterprise)

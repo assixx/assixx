@@ -17,10 +17,10 @@ const EMPTY_TREE: OrgChartTree = {
   companyName: '',
   address: null,
   hierarchyLabels: {
-    area: { singular: 'Bereich', plural: 'Bereiche' },
-    department: { singular: 'Abteilung', plural: 'Abteilungen' },
-    team: { singular: 'Team', plural: 'Teams' },
-    asset: { singular: 'Anlage', plural: 'Anlagen' },
+    area: 'Bereiche',
+    department: 'Abteilungen',
+    team: 'Teams',
+    asset: 'Anlagen',
   },
   nodes: [],
 };

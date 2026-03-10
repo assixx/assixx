@@ -78,17 +78,59 @@ const NameSchema = z
   .transform((val: string) => val.trim());
 
 /**
- * Address validation (optional)
+ * Street name validation
  */
-const AddressSchema = z
+const StreetSchema = z
   .string()
-  .max(255, 'Address cannot exceed 255 characters')
+  .min(1, 'Street is required')
+  .max(255, 'Street cannot exceed 255 characters')
   .regex(
-    /^[a-zA-Z0-9\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df\s\-,./]+$/,
-    'Address contains invalid characters',
+    /^[a-zA-Z0-9\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df\s\-.,/()]+$/,
+    'Street contains invalid characters',
   )
-  .transform((val: string) => val.trim())
-  .optional();
+  .transform((val: string) => val.trim());
+
+/**
+ * House number validation (e.g. "42", "12a", "5/3")
+ */
+const HouseNumberSchema = z
+  .string()
+  .min(1, 'House number is required')
+  .max(20, 'House number cannot exceed 20 characters')
+  .regex(/^[a-zA-Z0-9\s\-/]+$/, 'House number contains invalid characters')
+  .transform((val: string) => val.trim());
+
+/**
+ * Postal code validation (international: 3-20 chars)
+ */
+const PostalCodeSchema = z
+  .string()
+  .min(3, 'Postal code must be at least 3 characters')
+  .max(20, 'Postal code cannot exceed 20 characters')
+  .regex(/^[a-zA-Z0-9\s-]+$/, 'Postal code contains invalid characters')
+  .transform((val: string) => val.trim());
+
+/**
+ * City name validation
+ */
+const CitySchema = z
+  .string()
+  .min(1, 'City is required')
+  .max(100, 'City cannot exceed 100 characters')
+  .regex(
+    /^[a-zA-Z\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df\s\-.,()'/]+$/,
+    'City contains invalid characters',
+  )
+  .transform((val: string) => val.trim());
+
+/**
+ * ISO 3166-1 alpha-2 country code validation (e.g. "DE", "AT", "US")
+ */
+const CountryCodeSchema = z
+  .string()
+  .length(2, 'Country code must be exactly 2 characters')
+  .regex(/^[A-Z]{2}$/, 'Country code must be two uppercase letters')
+  .transform((val: string) => val.toUpperCase());
 
 /**
  * Plan validation
@@ -112,7 +154,13 @@ export const SignupSchema = z.object({
   subdomain: SubdomainSchema,
   email: EmailSchema,
   phone: PhoneSchema,
-  address: AddressSchema,
+
+  // Structured address (international)
+  street: StreetSchema,
+  houseNumber: HouseNumberSchema,
+  postalCode: PostalCodeSchema,
+  city: CitySchema,
+  countryCode: CountryCodeSchema,
 
   // Admin user information
   adminEmail: EmailSchema,

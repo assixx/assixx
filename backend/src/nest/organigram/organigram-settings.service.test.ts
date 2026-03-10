@@ -91,7 +91,7 @@ describe('OrganigramSettingsService', () => {
           settings: {
             orgHierarchy: {
               levels: {
-                area: { singular: 'Werk', plural: 'Werke' },
+                area: 'Werke',
               },
             },
           },
@@ -100,18 +100,18 @@ describe('OrganigramSettingsService', () => {
 
       const result = await service.getHierarchyLabels(1);
 
-      expect(result.area).toEqual({ singular: 'Werk', plural: 'Werke' });
-      expect(result.department).toEqual(DEFAULT_HIERARCHY_LABELS.department);
-      expect(result.team).toEqual(DEFAULT_HIERARCHY_LABELS.team);
-      expect(result.asset).toEqual(DEFAULT_HIERARCHY_LABELS.asset);
+      expect(result.area).toBe('Werke');
+      expect(result.department).toBe(DEFAULT_HIERARCHY_LABELS.department);
+      expect(result.team).toBe(DEFAULT_HIERARCHY_LABELS.team);
+      expect(result.asset).toBe(DEFAULT_HIERARCHY_LABELS.asset);
     });
 
     it('should return fully overridden labels', async () => {
       const custom = {
-        area: { singular: 'Werk', plural: 'Werke' },
-        department: { singular: 'Einheit', plural: 'Einheiten' },
-        team: { singular: 'Gruppe', plural: 'Gruppen' },
-        asset: { singular: 'Maschine', plural: 'Maschinen' },
+        area: 'Werke',
+        department: 'Einheiten',
+        team: 'Gruppen',
+        asset: 'Maschinen',
       };
       mockDb.query.mockResolvedValueOnce([
         {
@@ -158,21 +158,21 @@ describe('OrganigramSettingsService', () => {
       mockDb.query.mockResolvedValueOnce([{ settings: null }]);
 
       const result = await service.updateHierarchyLabels(1, {
-        levels: { area: { singular: 'Werk', plural: 'Werke' } },
+        levels: { area: 'Werke' },
       });
 
-      expect(result.area).toEqual({ singular: 'Werk', plural: 'Werke' });
-      expect(result.department).toEqual(DEFAULT_HIERARCHY_LABELS.department);
-      expect(result.team).toEqual(DEFAULT_HIERARCHY_LABELS.team);
-      expect(result.asset).toEqual(DEFAULT_HIERARCHY_LABELS.asset);
+      expect(result.area).toBe('Werke');
+      expect(result.department).toBe(DEFAULT_HIERARCHY_LABELS.department);
+      expect(result.team).toBe(DEFAULT_HIERARCHY_LABELS.team);
+      expect(result.asset).toBe(DEFAULT_HIERARCHY_LABELS.asset);
     });
 
     it('should merge partial update with existing labels', async () => {
       const existingSettings = {
         orgHierarchy: {
           levels: {
-            area: { singular: 'Alt', plural: 'Alte' },
-            department: { singular: 'Sektor', plural: 'Sektoren' },
+            area: 'Alte',
+            department: 'Sektoren',
           },
         },
       };
@@ -180,16 +180,13 @@ describe('OrganigramSettingsService', () => {
       mockDb.query.mockResolvedValueOnce([{ settings: existingSettings }]);
 
       const result = await service.updateHierarchyLabels(1, {
-        levels: { area: { singular: 'Neu', plural: 'Neue' } },
+        levels: { area: 'Neue' },
       });
 
       // area overridden by dto
-      expect(result.area).toEqual({ singular: 'Neu', plural: 'Neue' });
+      expect(result.area).toBe('Neue');
       // department preserved from existing
-      expect(result.department).toEqual({
-        singular: 'Sektor',
-        plural: 'Sektoren',
-      });
+      expect(result.department).toBe('Sektoren');
     });
 
     it('should preserve other settings keys during write', async () => {
@@ -201,7 +198,7 @@ describe('OrganigramSettingsService', () => {
       mockDb.query.mockResolvedValueOnce([{ settings: existingSettings }]);
 
       await service.updateHierarchyLabels(1, {
-        levels: { team: { singular: 'Crew', plural: 'Crews' } },
+        levels: { team: 'Crews' },
       });
 
       const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
@@ -217,7 +214,7 @@ describe('OrganigramSettingsService', () => {
       mockDb.query.mockResolvedValueOnce([{ settings: null }]);
 
       await service.updateHierarchyLabels(1, {
-        levels: { asset: { singular: 'Gerät', plural: 'Geräte' } },
+        levels: { asset: 'Geräte' },
       });
 
       expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
@@ -231,18 +228,18 @@ describe('OrganigramSettingsService', () => {
 
       const result = await service.updateHierarchyLabels(1, {
         levels: {
-          area: { singular: 'A', plural: 'As' },
-          department: { singular: 'B', plural: 'Bs' },
-          team: { singular: 'C', plural: 'Cs' },
-          asset: { singular: 'D', plural: 'Ds' },
+          area: 'As',
+          department: 'Bs',
+          team: 'Cs',
+          asset: 'Ds',
         },
       });
 
       expect(result).toEqual({
-        area: { singular: 'A', plural: 'As' },
-        department: { singular: 'B', plural: 'Bs' },
-        team: { singular: 'C', plural: 'Cs' },
-        asset: { singular: 'D', plural: 'Ds' },
+        area: 'As',
+        department: 'Bs',
+        team: 'Cs',
+        asset: 'Ds',
       });
     });
   });

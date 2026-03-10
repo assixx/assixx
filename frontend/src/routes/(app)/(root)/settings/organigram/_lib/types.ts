@@ -5,16 +5,12 @@
 
 export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 
-export interface HierarchyLabel {
-  singular: string;
-  plural: string;
-}
-
+/** Label pro Ebene — ein einziger String (Plural-Form als Standard) */
 export interface HierarchyLabels {
-  area: HierarchyLabel;
-  department: HierarchyLabel;
-  team: HierarchyLabel;
-  asset: HierarchyLabel;
+  area: string;
+  department: string;
+  team: string;
+  asset: string;
 }
 
 export interface OrgChartPosition {
@@ -79,4 +75,15 @@ export interface Connection {
   y1: number;
   x2: number;
   y2: number;
+}
+
+/** Bounding box for an area container ("Halle") */
+export interface AreaBounds {
+  areaUuid: string;
+  areaName: string;
+  leadName?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }

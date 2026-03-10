@@ -5,10 +5,11 @@
   Zoom: Mausrad
 -->
 <script lang="ts">
-  import { LAYOUT } from './constants.js';
+  import { ENTITY_COLORS, LAYOUT } from './constants.js';
   import OrgNode from './OrgNode.svelte';
   import {
     adjustZoom,
+    getAreaBounds,
     getConnections,
     getHoveredNodeKey,
     getPanX,
@@ -26,6 +27,7 @@
   const renderNodes = $derived(getRenderNodes());
   const connections = $derived(getConnections());
   const hoveredKey = $derived(getHoveredNodeKey());
+  const areaBounds = $derived(getAreaBounds());
 
   let svgElement = $state<SVGSVGElement>(undefined as unknown as SVGSVGElement);
   let isPanning = $state(false);
@@ -106,6 +108,42 @@
 
   <!-- Transformierter Content-Layer -->
   <g transform="translate({panX}, {panY}) scale({zoom})">
+    <!-- Bereichs-Container ("Hallen") — hinterste Ebene -->
+    {#each areaBounds as area (area.areaUuid)}
+      <g
+        class="area-container"
+        pointer-events="none"
+      >
+        <rect
+          x={area.x}
+          y={area.y}
+          width={area.width}
+          height={area.height}
+          rx="12"
+          ry="12"
+          fill={ENTITY_COLORS.area.bg}
+          stroke={ENTITY_COLORS.area.border}
+          stroke-width="1"
+          stroke-dasharray="6 3"
+          opacity="0.6"
+        />
+        <text
+          x={area.x + 12}
+          y={area.y + 20}
+          class="area-label"
+          fill={ENTITY_COLORS.area.border}
+        >
+          <tspan font-weight="600">{area.areaName}</tspan>
+          {#if area.leadName !== undefined}
+            <tspan
+              dx="8"
+              opacity="0.7">{area.leadName}</tspan
+            >
+          {/if}
+        </text>
+      </g>
+    {/each}
+
     <!-- Verbindungslinien (hinter Knoten) -->
     {#each connections as conn (`${conn.parentKey}-${conn.childKey}`)}
       {@const highlighted = isConnectionHighlighted(conn)}
@@ -171,6 +209,12 @@
       stroke 0.15s ease,
       opacity 0.15s ease;
     pointer-events: none;
+  }
+
+  .area-label {
+    font-size: 12px;
+    pointer-events: none;
+    user-select: none;
   }
 
   .empty-text {

@@ -5,6 +5,7 @@
 import { LAYOUT } from './constants.js';
 
 import type {
+  AreaBounds,
   Connection,
   HierarchyLabels,
   OrgChartNode,
@@ -34,10 +35,10 @@ let tree = $state<OrgChartTree>({
   companyName: '',
   address: null,
   hierarchyLabels: {
-    area: { singular: 'Bereich', plural: 'Bereiche' },
-    department: { singular: 'Abteilung', plural: 'Abteilungen' },
-    team: { singular: 'Team', plural: 'Teams' },
-    asset: { singular: 'Anlage', plural: 'Anlagen' },
+    area: 'Bereiche',
+    department: 'Abteilungen',
+    team: 'Teams',
+    asset: 'Anlagen',
   },
   nodes: [],
 });
@@ -130,13 +131,18 @@ function computeAutoLayout(
   nodes: OrgChartNode[],
 ): Record<string, NodePosition> {
   const result: Record<string, NodePosition> = {};
-  let nextLeafX = 0;
+  const pad = LAYOUT.CANVAS_PADDING;
+  let nextLeafX = pad;
 
   function layoutNode(
     node: OrgChartNode,
     depth: number,
   ): { left: number; right: number } {
-    const y = depth * (LAYOUT.NODE_HEIGHT + LAYOUT.VERTICAL_GAP);
+    // Areas (depth 0) get extra offset for the container header
+    const headerOffset =
+      node.entityType === 'area' ? LAYOUT.AREA_HEADER_HEIGHT : 0;
+    const y =
+      pad + headerOffset + depth * (LAYOUT.NODE_HEIGHT + LAYOUT.VERTICAL_GAP);
     const allChildren = [...node.children, ...node.assets];
 
     if (allChildren.length === 0) {
@@ -159,7 +165,6 @@ function computeAutoLayout(
       groupRight = Math.max(groupRight, bounds.right);
     }
 
-    // Center parent over children
     const x = (groupLeft + groupRight) / 2 - LAYOUT.NODE_WIDTH / 2;
     result[makeKey(node.entityType, node.entityUuid)] = {
       x,
@@ -176,6 +181,8 @@ function computeAutoLayout(
 
   for (const node of nodes) {
     layoutNode(node, 0);
+    // Extra Lücke zwischen Area-Gruppen
+    nextLeafX += LAYOUT.HORIZONTAL_GAP;
   }
 
   return result;
@@ -379,4 +386,60 @@ export function getConnections(): Connection[] {
 
   walk(tree.nodes);
   return connections;
+}
+
+/** Compute bounding boxes for area containers ("Hallen") */
+export function getAreaBounds(): AreaBounds[] {
+  const PADDING = 24;
+  const HEADER_HEIGHT = 32;
+  const bounds: AreaBounds[] = [];
+
+  for (const node of tree.nodes) {
+    if (node.entityType !== 'area') continue;
+
+    const areaKey = makeKey('area', node.entityUuid);
+    const areaPos = nodePositions[areaKey];
+    const rects = collectDescendantRects(node);
+    rects.push(areaPos);
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const r of rects) {
+      minX = Math.min(minX, r.x);
+      minY = Math.min(minY, r.y);
+      maxX = Math.max(maxX, r.x + r.width);
+      maxY = Math.max(maxY, r.y + r.height);
+    }
+
+    bounds.push({
+      areaUuid: node.entityUuid,
+      areaName: node.name,
+      leadName: node.leadName,
+      x: minX - PADDING,
+      y: minY - PADDING - HEADER_HEIGHT,
+      width: maxX - minX + PADDING * 2,
+      height: maxY - minY + PADDING * 2 + HEADER_HEIGHT,
+    });
+  }
+
+  return bounds;
+}
+
+function collectDescendantRects(node: OrgChartNode): NodePosition[] {
+  const rects: NodePosition[] = [];
+
+  function walk(children: OrgChartNode[]): void {
+    for (const child of children) {
+      const key = makeKey(child.entityType, child.entityUuid);
+      rects.push(nodePositions[key]);
+      walk(child.children);
+      walk(child.assets);
+    }
+  }
+
+  walk(node.children);
+  walk(node.assets);
+  return rects;
 }

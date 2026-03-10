@@ -13,6 +13,11 @@ describe('SignupSchema', () => {
     subdomain: 'acme',
     email: 'info@acme.de',
     phone: '+49 123 456789',
+    street: 'Musterstraße',
+    houseNumber: '42',
+    postalCode: '10115',
+    city: 'Berlin',
+    countryCode: 'DE',
     adminEmail: 'admin@acme.de',
     adminPassword: 'Strong1Pass!',
     adminFirstName: 'Max',
@@ -164,15 +169,329 @@ describe('SignupSchema', () => {
     });
   });
 
-  it('should accept optional address', () => {
-    expect(
-      SignupSchema.safeParse({ ...valid, address: 'Hauptstr. 1, 12345 Berlin' })
-        .success,
-    ).toBe(true);
-  });
-
   it('should reject missing required fields', () => {
     expect(SignupSchema.safeParse({}).success).toBe(false);
+  });
+
+  // ===========================================================
+  // Street Validation
+  // ===========================================================
+
+  describe('street validation', () => {
+    it('should accept German street with umlauts', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, street: 'Königstraße' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept street with numbers', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, street: 'Straße des 17. Juni' })
+          .success,
+      ).toBe(true);
+    });
+
+    it('should accept street with slash', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, street: 'Haupt-/Nebenstraße' })
+          .success,
+      ).toBe(true);
+    });
+
+    it('should reject empty street', () => {
+      expect(SignupSchema.safeParse({ ...valid, street: '' }).success).toBe(
+        false,
+      );
+    });
+
+    it('should reject missing street', () => {
+      const { street: _, ...noStreet } = valid;
+
+      expect(SignupSchema.safeParse(noStreet).success).toBe(false);
+    });
+
+    it('should trim whitespace', () => {
+      const data = SignupSchema.parse({
+        ...valid,
+        street: '  Musterstraße  ',
+      });
+
+      expect(data.street).toBe('Musterstraße');
+    });
+  });
+
+  // ===========================================================
+  // House Number Validation
+  // ===========================================================
+
+  describe('houseNumber validation', () => {
+    it('should accept numeric house number', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, houseNumber: '42' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept alphanumeric (e.g. "12a")', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, houseNumber: '12a' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept slash notation (e.g. "5/3")', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, houseNumber: '5/3' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept range (e.g. "10-12")', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, houseNumber: '10-12' }).success,
+      ).toBe(true);
+    });
+
+    it('should reject empty', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, houseNumber: '' }).success,
+      ).toBe(false);
+    });
+
+    it('should reject special characters', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, houseNumber: '42!' }).success,
+      ).toBe(false);
+    });
+  });
+
+  // ===========================================================
+  // Postal Code Validation (International)
+  // ===========================================================
+
+  describe('postalCode validation', () => {
+    it('should accept German PLZ (5 digits)', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: '10115' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept Austrian PLZ (4 digits)', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: '1010' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept UK postcode with space', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: 'SW1A 1AA' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept US ZIP+4 with hyphen', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: '10001-1234' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept Canadian postal code', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: 'K1A 0B1' }).success,
+      ).toBe(true);
+    });
+
+    it('should reject too short (< 3 chars)', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: '12' }).success,
+      ).toBe(false);
+    });
+
+    it('should reject special characters', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, postalCode: '101!5' }).success,
+      ).toBe(false);
+    });
+
+    it('should trim whitespace', () => {
+      const data = SignupSchema.parse({
+        ...valid,
+        postalCode: '  10115  ',
+      });
+
+      expect(data.postalCode).toBe('10115');
+    });
+  });
+
+  // ===========================================================
+  // City Validation
+  // ===========================================================
+
+  describe('city validation', () => {
+    it('should accept standard city', () => {
+      expect(SignupSchema.safeParse({ ...valid, city: 'Berlin' }).success).toBe(
+        true,
+      );
+    });
+
+    it('should accept city with umlauts', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, city: 'München' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept compound city name', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, city: 'Frankfurt am Main' }).success,
+      ).toBe(true);
+    });
+
+    it('should accept city with apostrophe', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, city: "L'Aquila" }).success,
+      ).toBe(true);
+    });
+
+    it('should accept city with parentheses', () => {
+      expect(
+        SignupSchema.safeParse({
+          ...valid,
+          city: 'Neustadt (Weinstraße)',
+        }).success,
+      ).toBe(true);
+    });
+
+    it('should reject empty city', () => {
+      expect(SignupSchema.safeParse({ ...valid, city: '' }).success).toBe(
+        false,
+      );
+    });
+
+    it('should trim whitespace', () => {
+      const data = SignupSchema.parse({ ...valid, city: '  Berlin  ' });
+
+      expect(data.city).toBe('Berlin');
+    });
+  });
+
+  // ===========================================================
+  // Country Code Validation (ISO 3166-1 alpha-2)
+  // ===========================================================
+
+  describe('countryCode validation', () => {
+    for (const code of ['DE', 'AT', 'CH', 'US', 'GB', 'FR', 'NL']) {
+      it(`should accept ${code}`, () => {
+        expect(
+          SignupSchema.safeParse({ ...valid, countryCode: code }).success,
+        ).toBe(true);
+      });
+    }
+
+    it('should reject lowercase', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, countryCode: 'de' }).success,
+      ).toBe(false);
+    });
+
+    it('should reject single character', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, countryCode: 'D' }).success,
+      ).toBe(false);
+    });
+
+    it('should reject three characters', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, countryCode: 'DEU' }).success,
+      ).toBe(false);
+    });
+
+    it('should reject numbers', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, countryCode: '49' }).success,
+      ).toBe(false);
+    });
+
+    it('should reject empty', () => {
+      expect(
+        SignupSchema.safeParse({ ...valid, countryCode: '' }).success,
+      ).toBe(false);
+    });
+  });
+
+  // ===========================================================
+  // International Address Combinations
+  // ===========================================================
+
+  describe('international addresses', () => {
+    it('should accept Austrian address', () => {
+      expect(
+        SignupSchema.safeParse({
+          ...valid,
+          street: 'Kärntner Straße',
+          houseNumber: '1',
+          postalCode: '1010',
+          city: 'Wien',
+          countryCode: 'AT',
+        }).success,
+      ).toBe(true);
+    });
+
+    it('should accept Swiss address', () => {
+      expect(
+        SignupSchema.safeParse({
+          ...valid,
+          street: 'Bahnhofstrasse',
+          houseNumber: '10',
+          postalCode: '8001',
+          city: 'Zürich',
+          countryCode: 'CH',
+        }).success,
+      ).toBe(true);
+    });
+
+    it('should accept US address', () => {
+      expect(
+        SignupSchema.safeParse({
+          ...valid,
+          street: 'Broadway',
+          houseNumber: '1600',
+          postalCode: '10019',
+          city: 'New York',
+          countryCode: 'US',
+        }).success,
+      ).toBe(true);
+    });
+
+    it('should accept UK address', () => {
+      expect(
+        SignupSchema.safeParse({
+          ...valid,
+          street: 'Baker Street',
+          houseNumber: '221B',
+          postalCode: 'NW1 6XE',
+          city: 'London',
+          countryCode: 'GB',
+        }).success,
+      ).toBe(true);
+    });
+  });
+
+  // ===========================================================
+  // Missing Address Fields (Regression)
+  // ===========================================================
+
+  describe('missing address fields', () => {
+    const addressFields = [
+      'street',
+      'houseNumber',
+      'postalCode',
+      'city',
+      'countryCode',
+    ] as const;
+
+    for (const field of addressFields) {
+      it(`should reject missing ${field}`, () => {
+        const { [field]: _, ...payload } = valid;
+
+        expect(SignupSchema.safeParse(payload).success).toBe(false);
+      });
+    }
   });
 });
 

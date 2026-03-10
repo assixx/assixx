@@ -43,6 +43,11 @@ export function createRegisterPayload(formData: {
   lastName: string;
   phone: string;
   countryCode: string;
+  street: string;
+  houseNumber: string;
+  postalCode: string;
+  city: string;
+  addressCountryCode: string;
   password: string;
   selectedPlan: string;
 }): RegisterPayload {
@@ -54,11 +59,18 @@ export function createRegisterPayload(formData: {
     // Company information
     companyName: formData.companyName,
     subdomain: formData.subdomain,
-    email: formData.email, // Company contact email (same as admin for now)
+    email: formData.email,
     phone: fullPhone,
 
+    // Structured address
+    street: formData.street,
+    houseNumber: formData.houseNumber,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    countryCode: formData.addressCountryCode,
+
     // Admin user information
-    adminEmail: formData.email, // Admin uses same email as company contact
+    adminEmail: formData.email,
     adminPassword: formData.password,
     adminFirstName: formData.firstName,
     adminLastName: formData.lastName,

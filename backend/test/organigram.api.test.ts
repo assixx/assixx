@@ -86,17 +86,14 @@ describe('Organigram: Get Hierarchy Labels', () => {
     expect(body.data).toHaveProperty('asset');
   });
 
-  it('should return singular and plural for each level', async () => {
+  it('should return a string for each level', async () => {
     const res = await fetch(`${BASE_URL}/organigram/hierarchy-labels`, {
       headers: authOnly(auth.authToken),
     });
     const body = (await res.json()) as JsonBody;
 
     for (const level of ['area', 'department', 'team', 'asset']) {
-      expect(body.data[level]).toHaveProperty('singular');
-      expect(body.data[level]).toHaveProperty('plural');
-      expect(body.data[level].singular).toBeTypeOf('string');
-      expect(body.data[level].plural).toBeTypeOf('string');
+      expect(body.data[level]).toBeTypeOf('string');
     }
   });
 });
@@ -110,7 +107,7 @@ describe('Organigram: Update Hierarchy Labels', () => {
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         levels: {
-          area: { singular: 'Werk', plural: 'Werke' },
+          area: 'Werke',
         },
       }),
     });
@@ -118,10 +115,9 @@ describe('Organigram: Update Hierarchy Labels', () => {
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(body.data.area.singular).toBe('Werk');
-    expect(body.data.area.plural).toBe('Werke');
+    expect(body.data.area).toBe('Werke');
     // Other levels should still have values
-    expect(body.data.department.singular).toBeTypeOf('string');
+    expect(body.data.department).toBeTypeOf('string');
   });
 
   it('should persist updated labels across requests', async () => {
@@ -131,7 +127,7 @@ describe('Organigram: Update Hierarchy Labels', () => {
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         levels: {
-          team: { singular: 'Crew', plural: 'Crews' },
+          team: 'Crews',
         },
       }),
     });
@@ -142,8 +138,7 @@ describe('Organigram: Update Hierarchy Labels', () => {
     });
     const body = (await res.json()) as JsonBody;
 
-    expect(body.data.team.singular).toBe('Crew');
-    expect(body.data.team.plural).toBe('Crews');
+    expect(body.data.team).toBe('Crews');
   });
 });
 

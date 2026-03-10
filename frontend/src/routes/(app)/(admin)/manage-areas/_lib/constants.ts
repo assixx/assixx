@@ -74,6 +74,7 @@ export const MESSAGES = {
   LABEL_CAPACITY: 'Kapazität',
   LABEL_ADDRESS: 'Adresse',
   LABEL_DEPARTMENTS: 'Abteilungen zuweisen',
+  LABEL_HALLS: 'Hallen zuweisen',
   LABEL_STATUS: 'Status',
 
   // Placeholders
@@ -93,6 +94,13 @@ export const MESSAGES = {
   NO_DEPARTMENTS: 'Keine',
   ONE_DEPARTMENT: '1 Abteilung',
   multipleDepartments: (count: number) => `${count} Abteilungen`,
+
+  // Halls
+  HALLS_HINT:
+    'Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte Hallen werden diesem Bereich zugeordnet.',
+  NO_HALLS: 'Keine',
+  ONE_HALL: '1 Halle',
+  multipleHalls: (count: number) => `${count} Hallen`,
 
   // Status
   STATUS_HINT: 'Inaktive/Archivierte Bereiche werden nicht angezeigt',
@@ -116,7 +124,7 @@ export const MESSAGES = {
   TH_AREA_LEAD: 'Bereichsleiter',
   TH_TYPE: 'Typ',
   TH_CAPACITY: 'Kapazität',
-  TH_ADDRESS: 'Adresse',
+  TH_HALLS: 'Hallen',
   TH_DEPARTMENTS: 'Abteilungen',
   TH_STATUS: 'Status',
   TH_ACTIONS: 'Aktionen',
@@ -142,6 +150,9 @@ export const API_ENDPOINTS = {
   USERS_ADMIN: '/users?role=admin',
   USERS_ROOT: '/users?role=root',
   DEPARTMENTS: '/departments',
+  HALLS: '/halls',
+  areaHalls: (id: number) => `/areas/${id}/halls`,
+  areaDepartments: (id: number) => `/areas/${id}/departments`,
 } as const;
 
 /**
@@ -155,6 +166,7 @@ export const FORM_DEFAULTS: {
   capacity: number | null;
   address: string;
   departmentIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 } = {
   name: '',
@@ -164,5 +176,6 @@ export const FORM_DEFAULTS: {
   capacity: null,
   address: '',
   departmentIds: [],
+  hallIds: [],
   isActive: 1,
 };

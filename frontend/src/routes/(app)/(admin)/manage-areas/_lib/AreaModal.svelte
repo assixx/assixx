@@ -12,6 +12,7 @@
     AreaType,
     AdminUser,
     Department,
+    Hall,
   } from './types';
 
   // Props with bindable for two-way binding
@@ -24,11 +25,12 @@
     formAreaLeadId: number | null;
     formType: AreaType;
     formCapacity: number | null;
-    formAddress: string;
     formDepartmentIds: number[];
+    formHallIds: number[];
     formIsActive: FormIsActiveStatus;
     areaLeads: AdminUser[];
     allDepartments: Department[];
+    allHalls: Hall[];
     submitting: boolean;
     onclose: () => void;
     onsubmit: (e: Event) => void;
@@ -36,7 +38,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formAddress = $bindable(), formDepartmentIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
@@ -323,22 +325,6 @@
           />
         </div>
 
-        <!-- Address -->
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="area-address">{MESSAGES.LABEL_ADDRESS}</label
-          >
-          <input
-            type="text"
-            id="area-address"
-            name="address"
-            class="form-field__control"
-            bind:value={formAddress}
-            placeholder={MESSAGES.PLACEHOLDER_ADDRESS}
-          />
-        </div>
-
         <!-- Department Multi-Select -->
         <div class="form-field">
           <label
@@ -362,6 +348,32 @@
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
             {MESSAGES.DEPARTMENTS_HINT}
+          </span>
+        </div>
+
+        <!-- Hall Multi-Select -->
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="area-halls"
+          >
+            <i class="fas fa-warehouse mr-1"></i>
+            {MESSAGES.LABEL_HALLS}
+          </label>
+          <select
+            id="area-halls"
+            name="hallIds"
+            multiple
+            class="multi-select"
+            bind:value={formHallIds}
+          >
+            {#each allHalls as hall (hall.id)}
+              <option value={hall.id}>{hall.name}</option>
+            {/each}
+          </select>
+          <span class="form-field__message text-(--color-text-secondary)">
+            <i class="fas fa-info-circle mr-1"></i>
+            {MESSAGES.HALLS_HINT}
           </span>
         </div>
 

@@ -45,6 +45,7 @@ import { E2eKeysModule } from './e2e-keys/e2e-keys.module.js';
 import { FeatureCheckModule } from './feature-check/feature-check.module.js';
 import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { FeaturesModule } from './features/features.module.js';
+import { HallsModule } from './halls/halls.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
@@ -163,6 +164,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     FeatureCheckModule,
     FeatureVisitsModule,
     FeaturesModule,
+    HallsModule,
     KvpModule,
     LogsModule,
     AssetsModule,

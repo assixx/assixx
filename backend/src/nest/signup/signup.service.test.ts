@@ -243,6 +243,11 @@ describe('SignupService – registration', () => {
       subdomain: 'test-gmbh',
       email: 'info@test-gmbh.de',
       phone: '+49123456789',
+      street: 'Musterstraße',
+      houseNumber: '42',
+      postalCode: '10115',
+      city: 'Berlin',
+      countryCode: 'DE',
       adminEmail: 'admin@test-gmbh.de',
       adminPassword: 'SecurePass123!',
       adminFirstName: 'Max',
@@ -308,21 +313,24 @@ describe('SignupService – registration', () => {
     it('should pass address and plan to audit log when provided', async () => {
       setupFullHappyPath();
       const dto = createValidDto();
-      dto.address = 'Musterstraße 1';
       dto.plan = 'basic';
 
       const result = await service.registerTenant(dto, '127.0.0.1', 'Agent');
 
       expect(result.tenantId).toBe(10);
 
-      // Verify audit log contains address and plan
+      // Verify audit log contains structured address and plan
       const auditCall = mockDb.query.mock.calls[1] as unknown[];
       const auditParams = auditCall[1] as unknown[];
       const newValues = JSON.parse(auditParams[6] as string) as Record<
         string,
         unknown
       >;
-      expect(newValues.address).toBe('Musterstraße 1');
+      expect(newValues.street).toBe('Musterstraße');
+      expect(newValues.house_number).toBe('42');
+      expect(newValues.postal_code).toBe('10115');
+      expect(newValues.city).toBe('Berlin');
+      expect(newValues.country_code).toBe('DE');
       expect(newValues.plan).toBe('basic');
     });
 

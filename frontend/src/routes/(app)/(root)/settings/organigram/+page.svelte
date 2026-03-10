@@ -109,28 +109,28 @@
         class="legend-dot"
         style="background: #3b82f6"
       ></span>
-      {currentTree.hierarchyLabels.area.singular}
+      {currentTree.hierarchyLabels.area}
     </span>
     <span class="legend-item">
       <span
         class="legend-dot"
         style="background: #22c55e"
       ></span>
-      {currentTree.hierarchyLabels.department.singular}
+      {currentTree.hierarchyLabels.department}
     </span>
     <span class="legend-item">
       <span
         class="legend-dot"
         style="background: #f59e0b"
       ></span>
-      {currentTree.hierarchyLabels.team.singular}
+      {currentTree.hierarchyLabels.team}
     </span>
     <span class="legend-item">
       <span
         class="legend-dot"
         style="background: #06b6d4"
       ></span>
-      {currentTree.hierarchyLabels.asset.singular}
+      {currentTree.hierarchyLabels.asset}
     </span>
     <span class="legend-hint">
       Mausrad: Zoom &middot; Shift+Klick: Verschieben

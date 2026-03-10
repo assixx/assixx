@@ -78,6 +78,9 @@ const TRANSIENT_TABLES = [
   // Organigram: layout positions (no FK to org entities, safe to delete first)
   'org_chart_positions',
 
+  // Halls: created by halls API tests, no FK children
+  'halls',
+
   // Org structure: departments, teams, assets accumulate ~2-3 rows/run.
   // Order: assets first (tpm_cards already cleaned above), then teams
   // (FK CASCADE handles user_teams, asset_teams, etc.), then departments last.

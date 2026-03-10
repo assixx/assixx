@@ -9,7 +9,7 @@ import { redirect } from '@sveltejs/kit';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { Area, Department, AdminUser } from './_lib/types';
+import type { Area, Department, Hall, AdminUser } from './_lib/types';
 
 const log = createLogger('ManageAreas');
 
@@ -58,18 +58,19 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: areas + departments + admins (for leads) + roots (for leads)
-  const [areasData, departmentsData, adminsData, rootsData] = await Promise.all(
-    [
+  // Parallel fetch: areas + departments + halls + admins + roots
+  const [areasData, departmentsData, hallsData, adminsData, rootsData] =
+    await Promise.all([
       apiFetch<Area[]>('/areas', token, fetch),
       apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Hall[]>('/halls', token, fetch),
       apiFetch<AdminUser[]>('/users?role=admin', token, fetch),
       apiFetch<AdminUser[]>('/users?role=root', token, fetch),
-    ],
-  );
+    ]);
 
   const areas = Array.isArray(areasData) ? areasData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];
+  const halls = Array.isArray(hallsData) ? hallsData : [];
   const admins = Array.isArray(adminsData) ? adminsData : [];
   const roots = Array.isArray(rootsData) ? rootsData : [];
   const areaLeads = [...admins, ...roots];
@@ -77,6 +78,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   return {
     areas,
     departments,
+    halls,
     areaLeads,
   };
 };

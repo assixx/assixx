@@ -6,6 +6,7 @@ export {
   AssignDepartmentsDto,
   AssignDepartmentsSchema,
 } from './assign-departments.dto.js';
+export { AssignHallsDto, AssignHallsSchema } from './assign-halls.dto.js';
 export {
   AreaTypeSchema,
   CreateAreaDto,

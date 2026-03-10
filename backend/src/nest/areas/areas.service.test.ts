@@ -84,7 +84,7 @@ describe('AreasService', () => {
 
   /** Mock 5 dependency checks all returning empty */
   function mockNoDependencies(): void {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       mockDb.query.mockResolvedValueOnce([]);
     }
   }
@@ -326,8 +326,8 @@ describe('AreasService', () => {
     it('should throw BadRequestException when has dependencies and force=false', async () => {
       // getAreaById
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
-      // checkAreaDependencies -> 5 table checks (1 has data)
-      for (let i = 0; i < 5; i++) {
+      // checkAreaDependencies -> 6 table checks (1 has data)
+      for (let i = 0; i < 6; i++) {
         mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
 
@@ -353,12 +353,13 @@ describe('AreasService', () => {
     it('should force-delete area removing dependencies first', async () => {
       // getAreaById
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
-      // checkAreaDependencies -> departments=2, assets=1, rest empty
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
-      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      // checkAreaDependencies -> departments=2, halls=0, assets=1, rest empty
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]); // departments
+      mockDb.query.mockResolvedValueOnce([]); // halls
+      mockDb.query.mockResolvedValueOnce([{ id: 3 }]); // assets
+      mockDb.query.mockResolvedValueOnce([]); // shifts
+      mockDb.query.mockResolvedValueOnce([]); // shift_plans
+      mockDb.query.mockResolvedValueOnce([]); // shift_favorites
       // removeAreaDependencies -> UPDATE departments, UPDATE assets (2 calls)
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
@@ -376,6 +377,7 @@ describe('AreasService', () => {
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
       // checkAreaDependencies -> only shiftFavorites=1
       mockDb.query.mockResolvedValueOnce([]); // departments
+      mockDb.query.mockResolvedValueOnce([]); // halls
       mockDb.query.mockResolvedValueOnce([]); // assets
       mockDb.query.mockResolvedValueOnce([]); // shifts
       mockDb.query.mockResolvedValueOnce([]); // shift_plans

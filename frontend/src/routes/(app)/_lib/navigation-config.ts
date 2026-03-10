@@ -57,6 +57,7 @@ export const ICONS: Record<string, string> = {
   feature: '<i class="fas fa-puzzle-piece"></i>',
   logs: '<i class="fas fa-list-alt"></i>',
   desktop: '<i class="fas fa-desktop"></i>',
+  warehouse: '<i class="fas fa-warehouse"></i>',
 };
 
 /** Shared blackboard submenu (root + admin) */
@@ -250,6 +251,12 @@ export const rootMenuItems: NavItem[] = [
     url: '/manage-departments',
   },
   {
+    id: 'halls',
+    icon: ICONS.warehouse,
+    label: 'Hallen',
+    url: '/manage-halls',
+  },
+  {
     id: 'calendar',
     icon: ICONS.calendar,
     label: 'Kalender',
@@ -357,6 +364,12 @@ export const adminMenuItems: NavItem[] = [
     ],
   },
   { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
+  {
+    id: 'halls',
+    icon: ICONS.warehouse,
+    label: 'Hallen',
+    url: '/manage-halls',
+  },
   {
     id: 'assets',
     icon: ICONS.generator,

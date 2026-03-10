@@ -1,6 +1,6 @@
 <!--
   HierarchyLabelsModal — Anpassung der Hierarchie-Ebenen-Namen
-  4 Zeilen (Bereich, Abteilung, Team, Anlage) mit Singular + Plural
+  4 Zeilen (Bereich, Abteilung, Team, Anlage) mit je einem Label
 -->
 <script lang="ts">
   import { DEFAULT_HIERARCHY_LABELS, ENTITY_COLORS } from './constants.js';
@@ -22,33 +22,29 @@
   );
 
   const LEVELS: { key: OrgEntityType; icon: string; defaultLabel: string }[] = [
-    { key: 'area', icon: ENTITY_COLORS.area.icon, defaultLabel: 'Bereich' },
+    { key: 'area', icon: ENTITY_COLORS.area.icon, defaultLabel: 'Bereiche' },
     {
       key: 'department',
       icon: ENTITY_COLORS.department.icon,
-      defaultLabel: 'Abteilung',
+      defaultLabel: 'Abteilungen',
     },
-    { key: 'team', icon: ENTITY_COLORS.team.icon, defaultLabel: 'Team' },
-    { key: 'asset', icon: ENTITY_COLORS.asset.icon, defaultLabel: 'Anlage' },
+    { key: 'team', icon: ENTITY_COLORS.team.icon, defaultLabel: 'Teams' },
+    { key: 'asset', icon: ENTITY_COLORS.asset.icon, defaultLabel: 'Anlagen' },
   ];
 
   const isValid = $derived(validateLabels());
 
   $effect(() => {
     if (show) {
-      editLabels = structuredClone(labels);
+      editLabels = $state.snapshot(labels);
     }
   });
 
   function validateLabels(): boolean {
     for (const level of LEVELS) {
       const label = editLabels[level.key];
-      if (label.singular.trim() === '' || label.plural.trim() === '') {
-        return false;
-      }
-      if (label.singular.length > 50 || label.plural.length > 50) {
-        return false;
-      }
+      if (label.trim() === '') return false;
+      if (label.length > 50) return false;
     }
     return true;
   }
@@ -85,6 +81,7 @@
   >
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
+      id="hierarchy-labels-form"
       class="ds-modal ds-modal--sm"
       onclick={(e) => {
         e.stopPropagation();
@@ -115,13 +112,7 @@
           Struktur bleibt identisch — nur die Anzeige-Labels ändern sich.
         </p>
 
-        <div class="labels-grid">
-          <div class="grid-header">
-            <span></span>
-            <span class="col-label">Singular</span>
-            <span class="col-label">Plural</span>
-          </div>
-
+        <div class="labels-list">
           {#each LEVELS as level (level.key)}
             {@const color = ENTITY_COLORS[level.key].border}
             <div class="level-row">
@@ -135,18 +126,10 @@
               <input
                 type="text"
                 class="form-field__control level-input"
-                placeholder="Singular"
+                placeholder={level.defaultLabel}
                 maxlength="50"
                 required
-                bind:value={editLabels[level.key].singular}
-              />
-              <input
-                type="text"
-                class="form-field__control level-input"
-                placeholder="Plural"
-                maxlength="50"
-                required
-                bind:value={editLabels[level.key].plural}
+                bind:value={editLabels[level.key]}
               />
             </div>
           {/each}
@@ -199,31 +182,15 @@
     margin-bottom: 0.5rem;
   }
 
-  .labels-grid {
+  .labels-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .grid-header {
-    display: grid;
-    grid-template-columns: 100px 1fr 1fr;
-    gap: 0.75rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid var(--glass-border, rgb(255 255 255 / 8%));
-  }
-
-  .col-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
   .level-row {
     display: grid;
-    grid-template-columns: 100px 1fr 1fr;
+    grid-template-columns: 120px 1fr;
     gap: 0.75rem;
     align-items: center;
   }

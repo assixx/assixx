@@ -11,6 +11,15 @@ export interface Country {
 }
 
 /**
+ * Country option for address (ISO 3166-1 alpha-2)
+ */
+export interface AddressCountry {
+  flag: string; // Emoji flag (e.g., "🇩🇪")
+  iso: string; // ISO 3166-1 alpha-2 code (e.g., "DE")
+  name: string; // Display name (e.g., "Deutschland")
+}
+
+/**
  * Subscription plan option
  */
 export interface Plan {
@@ -31,6 +40,11 @@ export interface SignupFormData {
   lastName: string;
   phone: string;
   countryCode: string;
+  street: string;
+  houseNumber: string;
+  postalCode: string;
+  city: string;
+  addressCountryCode: string;
   password: string;
   passwordConfirm: string;
   selectedPlan: string;
@@ -47,7 +61,13 @@ export interface RegisterPayload {
   subdomain: string;
   email: string; // Company contact email
   phone: string;
-  address?: string;
+
+  // Structured address (international)
+  street: string;
+  houseNumber: string;
+  postalCode: string;
+  city: string;
+  countryCode: string; // ISO 3166-1 alpha-2
 
   // Admin user information
   adminEmail: string;

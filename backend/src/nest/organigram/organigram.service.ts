@@ -75,7 +75,9 @@ export class OrganigramService {
 
   private async fetchTenantInfo(tenantId: number): Promise<TenantInfoRow> {
     const rows = await this.db.query<TenantInfoRow>(
-      'SELECT company_name, address FROM tenants WHERE id = $1',
+      `SELECT company_name,
+              NULLIF(TRIM(CONCAT_WS(' ', street, house_number, postal_code, city)), '') AS address
+       FROM tenants WHERE id = $1`,
       [tenantId],
     );
 

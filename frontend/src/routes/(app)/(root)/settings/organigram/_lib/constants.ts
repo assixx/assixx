@@ -5,10 +5,10 @@
 import type { HierarchyLabels, OrgEntityType } from './types.js';
 
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
-  area: { singular: 'Bereich', plural: 'Bereiche' },
-  department: { singular: 'Abteilung', plural: 'Abteilungen' },
-  team: { singular: 'Team', plural: 'Teams' },
-  asset: { singular: 'Anlage', plural: 'Anlagen' },
+  area: 'Bereiche',
+  department: 'Abteilungen',
+  team: 'Teams',
+  asset: 'Anlagen',
 };
 
 interface EntityColor {
@@ -50,6 +50,10 @@ export const LAYOUT = {
   NODE_HEIGHT: 80,
   HORIZONTAL_GAP: 40,
   VERTICAL_GAP: 100,
+  /** Abstand vom Canvas-Rand zur ersten Node */
+  CANVAS_PADDING: 60,
+  /** Höhe des Hallen-Headers über dem Area-Node */
+  AREA_HEADER_HEIGHT: 40,
   MIN_ZOOM: 0.3,
   MAX_ZOOM: 3,
   ZOOM_STEP: 0.1,

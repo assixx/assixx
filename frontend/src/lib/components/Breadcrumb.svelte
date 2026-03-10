@@ -61,6 +61,7 @@
         icon: 'fa-sitemap',
       },
       '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-building' },
+      '/manage-halls': { label: 'Hallen verwalten', icon: 'fa-warehouse' },
       '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
       '/manage-assets': { label: 'Anlagen verwalten', icon: 'fa-cogs' },
       '/manage-root': { label: 'Root User Verwaltung', icon: 'fa-shield-alt' },

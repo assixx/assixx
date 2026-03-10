@@ -20,10 +20,12 @@
   import { registerUser, createRegisterPayload } from './_lib/api';
   import {
     DEFAULT_COUNTRY,
+    DEFAULT_ADDRESS_COUNTRY,
     DEFAULT_PLAN,
     SUCCESS_REDIRECT_DELAY,
     ERROR_MESSAGES,
   } from './_lib/constants';
+  import CountryAddressSelect from './_lib/CountryAddressSelect.svelte';
   import CountryPhoneInput from './_lib/CountryPhoneInput.svelte';
   import PlanSelect from './_lib/PlanSelect.svelte';
   import SignupNav from './_lib/SignupNav.svelte';
@@ -59,6 +61,13 @@
   let lastName = $state('');
   let phone = $state('');
   let countryCode = $state(DEFAULT_COUNTRY.code);
+
+  // Address
+  let street = $state('');
+  let houseNumber = $state('');
+  let postalCode = $state('');
+  let city = $state('');
+  let addressCountryCode = $state(DEFAULT_ADDRESS_COUNTRY.iso);
 
   // Password
   let password = $state('');
@@ -104,6 +113,10 @@
       lastName !== '' &&
       phone !== '' &&
       phoneValid &&
+      street !== '' &&
+      houseNumber !== '' &&
+      postalCode !== '' &&
+      city !== '' &&
       isPasswordValid(password) &&
       passwordConfirm !== '' &&
       passwordMatch &&
@@ -191,6 +204,11 @@
         lastName,
         phone,
         countryCode,
+        street,
+        houseNumber,
+        postalCode,
+        city,
+        addressCountryCode,
         password,
         selectedPlan,
       });
@@ -372,7 +390,85 @@
         disabled={loading}
       />
 
-      <!-- Dritte Zeile -->
+      <!-- Adresse -->
+      <div class="form-field">
+        <label
+          class="form-field__label form-field__label--required"
+          for="street">Straße</label
+        >
+        <input
+          type="text"
+          id="street"
+          name="street"
+          class="form-field__control"
+          required
+          placeholder="Musterstraße"
+          autocomplete="address-line1"
+          bind:value={street}
+          disabled={loading}
+        />
+      </div>
+
+      <div class="form-field">
+        <label
+          class="form-field__label form-field__label--required"
+          for="house_number">Hausnummer</label
+        >
+        <input
+          type="text"
+          id="house_number"
+          name="house_number"
+          class="form-field__control"
+          required
+          placeholder="42"
+          autocomplete="address-line2"
+          bind:value={houseNumber}
+          disabled={loading}
+        />
+      </div>
+
+      <div class="form-field">
+        <label
+          class="form-field__label form-field__label--required"
+          for="postal_code">PLZ</label
+        >
+        <input
+          type="text"
+          id="postal_code"
+          name="postal_code"
+          class="form-field__control"
+          required
+          placeholder="10115"
+          autocomplete="postal-code"
+          bind:value={postalCode}
+          disabled={loading}
+        />
+      </div>
+
+      <div class="form-field">
+        <label
+          class="form-field__label form-field__label--required"
+          for="city">Stadt</label
+        >
+        <input
+          type="text"
+          id="city"
+          name="city"
+          class="form-field__control"
+          required
+          placeholder="Berlin"
+          autocomplete="address-level2"
+          bind:value={city}
+          disabled={loading}
+        />
+      </div>
+
+      <CountryAddressSelect
+        bind:countryCode={addressCountryCode}
+        disabled={loading}
+      />
+
+      <!-- Passwort -->
       <div class="form-field">
         <label
           class="form-field__label form-field__label--required"

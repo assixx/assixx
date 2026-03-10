@@ -88,6 +88,7 @@ export interface AreaStatsResponse {
  */
 interface AreaDependencies {
   departments: number;
+  halls: number;
   assets: number;
   shifts: number;
   shiftPlans: number;
@@ -427,6 +428,7 @@ export class AreasService {
   ): Promise<AreaDependencies> {
     const tables = [
       'departments',
+      'halls',
       'assets',
       'shifts',
       'shift_plans',
@@ -445,10 +447,11 @@ export class AreasService {
 
     return {
       departments: counts[0] ?? 0,
-      assets: counts[1] ?? 0,
-      shifts: counts[2] ?? 0,
-      shiftPlans: counts[3] ?? 0,
-      shiftFavorites: counts[4] ?? 0,
+      halls: counts[1] ?? 0,
+      assets: counts[2] ?? 0,
+      shifts: counts[3] ?? 0,
+      shiftPlans: counts[4] ?? 0,
+      shiftFavorites: counts[5] ?? 0,
       total: counts.reduce((sum: number, c: number) => sum + c, 0),
     };
   }
@@ -467,6 +470,7 @@ export class AreasService {
       count: number;
     }[] = [
       { table: 'departments', operation: 'UPDATE', count: deps.departments },
+      { table: 'halls', operation: 'UPDATE', count: deps.halls },
       { table: 'assets', operation: 'UPDATE', count: deps.assets },
       { table: 'shifts', operation: 'UPDATE', count: deps.shifts },
       { table: 'shift_plans', operation: 'UPDATE', count: deps.shiftPlans },
@@ -525,6 +529,7 @@ export class AreasService {
           details: {
             totalDependencies: deps.total,
             ...(deps.departments > 0 && { departments: deps.departments }),
+            ...(deps.halls > 0 && { halls: deps.halls }),
             ...(deps.assets > 0 && { assets: deps.assets }),
             ...(deps.shifts > 0 && { shifts: deps.shifts }),
             ...(deps.shiftPlans > 0 && { shiftPlans: deps.shiftPlans }),
@@ -594,6 +599,36 @@ export class AreasService {
     }
 
     return { message: 'Departments assigned successfully' };
+  }
+
+  /**
+   * Assign halls to an area (clear-then-reassign)
+   */
+  async assignHallsToArea(
+    areaId: number,
+    hallIds: number[],
+    tenantId: number,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Assigning ${hallIds.length} halls to area ${areaId}`);
+
+    await this.getAreaById(areaId, tenantId);
+
+    await this.db.query(
+      `UPDATE halls SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`,
+      [tenantId, areaId],
+    );
+
+    if (hallIds.length > 0) {
+      const placeholders = hallIds
+        .map((_: number, i: number) => `$${i + 3}`)
+        .join(', ');
+      await this.db.query(
+        `UPDATE halls SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
+        [areaId, tenantId, ...hallIds],
+      );
+    }
+
+    return { message: 'Halls assigned successfully' };
   }
 
   /**

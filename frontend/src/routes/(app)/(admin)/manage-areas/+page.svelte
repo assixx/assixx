@@ -17,6 +17,8 @@
   import {
     buildAreaPayload,
     saveArea,
+    assignDepartmentsToArea,
+    assignHallsToArea,
     deleteArea as apiDeleteArea,
     forceDeleteArea as apiForceDeleteArea,
   } from './_lib/api';
@@ -28,6 +30,7 @@
     getStatusBadgeClass,
     getStatusLabel,
     getTypeLabel,
+    getHallIdsForArea,
     populateFormFromArea,
     getDefaultFormValues,
   } from './_lib/utils';
@@ -37,6 +40,7 @@
     Area,
     AdminUser,
     Department,
+    Hall,
     StatusFilter,
     AreaType,
     FormIsActiveStatus,
@@ -52,6 +56,7 @@
   const areas = $derived<Area[]>(data.areas);
   const areaLeads = $derived<AdminUser[]>(data.areaLeads);
   const allDepartments = $derived<Department[]>(data.departments);
+  const allHalls = $derived<Hall[]>(data.halls);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -82,6 +87,7 @@
   let formCapacity: number | null = $state(null);
   let formAddress = $state('');
   let formDepartmentIds: number[] = $state([]);
+  let formHallIds: number[] = $state([]);
   let formIsActive: FormIsActiveStatus = $state(1);
 
   // =============================================================================
@@ -121,7 +127,7 @@
     if (!area) return;
 
     editingAreaId = id;
-    const formData = populateFormFromArea(area, allDepartments);
+    const formData = populateFormFromArea(area, allDepartments, allHalls);
     formName = formData.name;
     formDescription = formData.description;
     formAreaLeadId = formData.areaLeadId;
@@ -129,6 +135,7 @@
     formCapacity = formData.capacity;
     formAddress = formData.address;
     formDepartmentIds = formData.departmentIds;
+    formHallIds = formData.hallIds;
     formIsActive = formData.isActive;
 
     showAreaModal = true;
@@ -148,6 +155,7 @@
     formCapacity = defaults.capacity;
     formAddress = defaults.address;
     formDepartmentIds = defaults.departmentIds;
+    formHallIds = defaults.hallIds;
     formIsActive = defaults.isActive;
     editingAreaId = null;
   }
@@ -187,17 +195,30 @@
         capacity: formCapacity,
         address: formAddress,
         departmentIds: formDepartmentIds,
+        hallIds: formHallIds,
         isActive: formIsActive,
       });
 
       const result = await saveArea(payload, editingAreaId);
 
-      if (result.success) {
+      if (result.success && result.areaId !== null) {
+        // Assign departments + halls via dedicated endpoints
+        await Promise.all([
+          assignDepartmentsToArea(result.areaId, formDepartmentIds),
+          assignHallsToArea(result.areaId, formHallIds),
+        ]);
+
         showSuccessAlert(
           isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
         );
         closeAreaModal();
-        // Level 3: Trigger SSR refetch
+        await invalidateAll();
+      } else if (result.success) {
+        // Fallback: area saved but no ID returned (shouldn't happen)
+        showSuccessAlert(
+          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+        );
+        closeAreaModal();
         await invalidateAll();
       } else if (result.error !== null) {
         showErrorAlert(result.error);
@@ -415,7 +436,6 @@
                       </div>
                       <div class="search-result-item__email">
                         {getTypeLabel(area.type)}
-                        {#if area.address}· {area.address}{/if}
                       </div>
                       <div class="search-result-item__meta">
                         <span class="badge {getStatusBadgeClass(area.isActive)}"
@@ -467,7 +487,7 @@
                 <th>{MESSAGES.TH_AREA_LEAD}</th>
                 <th>{MESSAGES.TH_TYPE}</th>
                 <th class="text-center">{MESSAGES.TH_CAPACITY}</th>
-                <th>{MESSAGES.TH_ADDRESS}</th>
+                <th>{MESSAGES.TH_HALLS}</th>
                 <th>{MESSAGES.TH_DEPARTMENTS}</th>
                 <th>{MESSAGES.TH_STATUS}</th>
                 <th>{MESSAGES.TH_ACTIONS}</th>
@@ -499,7 +519,21 @@
                   </td>
                   <td class="text-center">{area.capacity ?? '-'}</td>
                   <td>
-                    <div class="text-sm">{area.address ?? '-'}</div>
+                    {#if getHallIdsForArea(area.id, allHalls).length === 0}
+                      <span
+                        class="badge badge--secondary"
+                        title="Keine Hallen zugeordnet"
+                        >{MESSAGES.NO_HALLS}</span
+                      >
+                    {:else}
+                      <span class="badge badge--info">
+                        {getHallIdsForArea(area.id, allHalls).length === 1 ?
+                          MESSAGES.ONE_HALL
+                        : MESSAGES.multipleHalls(
+                            getHallIdsForArea(area.id, allHalls).length,
+                          )}
+                      </span>
+                    {/if}
                   </td>
                   <td>
                     {#if Number(area.departmentCount ?? 0) === 0}
@@ -582,11 +616,12 @@
   bind:formAreaLeadId
   bind:formType
   bind:formCapacity
-  bind:formAddress
   bind:formDepartmentIds
+  bind:formHallIds
   bind:formIsActive
   {areaLeads}
   {allDepartments}
+  {allHalls}
   {submitting}
   onclose={closeAreaModal}
   onsubmit={handleFormSubmit}

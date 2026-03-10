@@ -62,6 +62,15 @@ export interface Department {
 }
 
 /**
+ * Hall for area assignment
+ */
+export interface Hall {
+  id: number;
+  name: string;
+  areaId?: number | null;
+}
+
+/**
  * Payload for creating/updating an area
  */
 export interface AreaPayload {
@@ -73,6 +82,7 @@ export interface AreaPayload {
   address?: string | null;
   isActive: FormIsActiveStatus;
   departmentIds: number[];
+  hallIds: number[];
 }
 
 /**
@@ -96,6 +106,14 @@ export interface AreasApiResponse {
  */
 export interface DepartmentsApiResponse {
   data?: Department[];
+  success?: boolean;
+}
+
+/**
+ * API response for halls list
+ */
+export interface HallsApiResponse {
+  data?: Hall[];
   success?: boolean;
 }
 
