@@ -222,6 +222,37 @@ describe('OrganigramSettingsService', () => {
       expect(sql).toContain('UPDATE tenants SET settings');
     });
 
+    it('should handle empty settingsRows when tenant has no row', async () => {
+      // Call 1: getHierarchyLabels → no settings
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+      // Call 2: settingsRows SELECT → empty (tenant row missing during write)
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.updateHierarchyLabels(1, {
+        levels: { area: 'Werke' },
+      });
+
+      expect(result.area).toBe('Werke');
+      expect(result.department).toBe(DEFAULT_HIERARCHY_LABELS.department);
+
+      // Should write with empty base settings (no prior keys to preserve)
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const writtenSettings = JSON.parse(writtenJson) as Record<
+        string,
+        unknown
+      >;
+      expect(writtenSettings).toEqual({
+        orgHierarchy: {
+          levels: {
+            area: 'Werke',
+            department: DEFAULT_HIERARCHY_LABELS.department,
+            team: DEFAULT_HIERARCHY_LABELS.team,
+            asset: DEFAULT_HIERARCHY_LABELS.asset,
+          },
+        },
+      });
+    });
+
     it('should return the merged result', async () => {
       mockDb.query.mockResolvedValueOnce([{ settings: null }]);
       mockDb.query.mockResolvedValueOnce([{ settings: null }]);

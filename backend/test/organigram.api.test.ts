@@ -24,8 +24,14 @@ beforeAll(async () => {
 // ─── seq: 1 -- Auth Guard ───────────────────────────────────────────────────
 
 describe('Organigram: Auth', () => {
-  it('should return 401 without token', async () => {
+  it('should return 401 without token on /tree', async () => {
     const res = await fetch(`${BASE_URL}/organigram/tree`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('should return 401 without token on /hierarchy-labels', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/hierarchy-labels`);
 
     expect(res.status).toBe(401);
   });

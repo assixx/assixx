@@ -4,7 +4,7 @@
  * Phase 11: Service tests -- mocked dependencies.
  * Phase 14 B5: Deepened from 11 -> 28 tests.
  * Focus: CRUD operations, dependency checking, force delete,
- *        stats aggregation, department assignment, private helpers.
+ *        stats aggregation, department/hall assignment, private helpers.
  *
  * Uses DatabaseService mock (migrated from legacy execute pattern).
  */
@@ -82,7 +82,7 @@ describe('AreasService', () => {
   let mockDb: MockDb;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
 
-  /** Mock 5 dependency checks all returning empty */
+  /** Mock 6 dependency checks all returning empty */
   function mockNoDependencies(): void {
     for (let i = 0; i < 6; i++) {
       mockDb.query.mockResolvedValueOnce([]);
@@ -429,6 +429,47 @@ describe('AreasService', () => {
       const result = await service.assignDepartmentsToArea(1, [], 10);
 
       expect(result.message).toBe('Departments assigned successfully');
+      // Only 2 calls: getAreaById + clear (no assign)
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // =============================================================
+  // assignHallsToArea
+  // =============================================================
+
+  describe('assignHallsToArea', () => {
+    it('should throw NotFoundException for unknown area', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.assignHallsToArea(999, [1, 2], 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should assign halls to area', async () => {
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // Clear existing assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // Assign new halls
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.assignHallsToArea(1, [10, 20], 10);
+
+      expect(result.message).toBe('Halls assigned successfully');
+      expect(mockDb.query).toHaveBeenCalledTimes(3);
+    });
+
+    it('should only clear assignments when hallIds is empty', async () => {
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // Clear existing assignments
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.assignHallsToArea(1, [], 10);
+
+      expect(result.message).toBe('Halls assigned successfully');
       // Only 2 calls: getAreaById + clear (no assign)
       expect(mockDb.query).toHaveBeenCalledTimes(2);
     });

@@ -8,16 +8,20 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
+
 import {
   type NavItem,
-  adminMenuItems,
-  dummyMenuItems,
-  employeeMenuItems,
   filterMenuByAccess,
   filterMenuByFeatures,
   getMenuItemsForRole,
-  rootMenuItems,
 } from './navigation-config.js';
+
+/** Convenience: build real menus with default labels for tests */
+const rootMenuItems = getMenuItemsForRole('root', DEFAULT_HIERARCHY_LABELS);
+const adminMenuItems = getMenuItemsForRole('admin', DEFAULT_HIERARCHY_LABELS);
+const employeeMenuItems = getMenuItemsForRole('employee');
+const dummyMenuItems = getMenuItemsForRole('dummy');
 
 // =============================================================================
 // TEST HELPERS + CONSTANTS
@@ -427,12 +431,20 @@ describe('filterMenuByFeatures: edge cases', () => {
 // =============================================================================
 
 describe('getMenuItemsForRole', () => {
-  it('should return rootMenuItems for root', () => {
-    expect(getMenuItemsForRole('root')).toBe(rootMenuItems);
+  it('should return items with areas/departments for root', () => {
+    const items = getMenuItemsForRole('root');
+    const ids = collectIds(items);
+
+    expect(ids).toContain('areas');
+    expect(ids).toContain('departments');
   });
 
-  it('should return adminMenuItems for admin', () => {
-    expect(getMenuItemsForRole('admin')).toBe(adminMenuItems);
+  it('should return items with teams/assets for admin', () => {
+    const items = getMenuItemsForRole('admin');
+    const ids = collectIds(items);
+
+    expect(ids).toContain('teams');
+    expect(ids).toContain('assets');
   });
 
   it('should return employeeMenuItems for employee', () => {
@@ -441,6 +453,21 @@ describe('getMenuItemsForRole', () => {
 
   it('should return dummyMenuItems for dummy', () => {
     expect(getMenuItemsForRole('dummy')).toBe(dummyMenuItems);
+  });
+
+  it('should use custom labels when provided', () => {
+    const customLabels = {
+      area: 'Werke',
+      department: 'Segmente',
+      team: 'Crews',
+      asset: 'Maschinen',
+    };
+    const items = getMenuItemsForRole('root', customLabels);
+    const areasItem = items.find((item) => item.id === 'areas');
+    const deptsItem = items.find((item) => item.id === 'departments');
+
+    expect(areasItem?.label).toBe('Werke');
+    expect(deptsItem?.label).toBe('Segmente');
   });
 });
 
