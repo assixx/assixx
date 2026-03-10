@@ -23,7 +23,7 @@ export const UpdateWorkOrderSchema = z.object({
     .nullable()
     .optional(),
   priority: WorkOrderPrioritySchema.optional(),
-  dueDate: z.iso.date().nullable().optional(),
+  dueDate: z.iso.date().optional(),
 });
 
 export class UpdateWorkOrderDto extends createZodDto(UpdateWorkOrderSchema) {}

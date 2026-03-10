@@ -13,9 +13,9 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
   modules: [
     {
       code: 'vacation-requests',
-      label: 'UrlaubsAnträge',
+      label: 'Urlaubsanträge',
       icon: 'fa-file-alt',
-      allowedPermissions: ['canRead', 'canWrite'],
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
     },
     {
       code: 'vacation-rules',
@@ -27,7 +27,7 @@ export const VACATION_PERMISSIONS: PermissionCategoryDef = {
       code: 'vacation-entitlements',
       label: 'Urlaubsansprüche',
       icon: 'fa-calculator',
-      allowedPermissions: ['canRead', 'canWrite'],
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
     },
     {
       code: 'vacation-holidays',

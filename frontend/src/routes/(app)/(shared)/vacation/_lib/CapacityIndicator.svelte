@@ -113,8 +113,15 @@
     gap: 0.5rem;
     padding: 0.75rem;
     border-radius: var(--radius-md, 0.5rem);
-    background: var(--glass-bg, hsl(0deg 0% 100% / 5%));
-    border: 1px solid var(--glass-border, hsl(0deg 0% 100% / 10%));
+    background: var(
+      --glass-bg,
+      color-mix(in oklch, var(--color-white) 5%, transparent)
+    );
+    border: 1px solid
+      var(
+        --glass-border,
+        color-mix(in oklch, var(--color-white) 10%, transparent)
+      );
   }
 
   .capacity-indicator--loading {

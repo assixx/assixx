@@ -57,7 +57,7 @@ function createTestCard(
 ): TpmNotificationCard {
   return {
     uuid: 'card-uuid-001',
-    cardCode: 'BT1',
+    cardCode: 'BW1',
     title: 'Sichtprüfung',
     assetId: 42,
     assetName: 'Presse P17',
@@ -95,7 +95,7 @@ describe('TpmNotificationService', () => {
         10,
         expect.objectContaining({
           uuid: 'card-uuid-001',
-          cardCode: 'BT1',
+          cardCode: 'BW1',
           title: 'Sichtprüfung',
           assetId: 42,
           assetName: 'Presse P17',
@@ -234,12 +234,12 @@ describe('TpmNotificationService', () => {
     });
 
     it('should include "Freigabe erforderlich" in notification title', () => {
-      const card = createTestCard({ cardCode: 'BT3' });
+      const card = createTestCard({ cardCode: 'BW3' });
 
       service.notifyApprovalRequired(10, card, 'exec-uuid-001', [5]);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[1]).toBe('Freigabe erforderlich: BT3');
+      expect(params?.[1]).toBe('Freigabe erforderlich: BW3');
     });
   });
 
@@ -280,7 +280,7 @@ describe('TpmNotificationService', () => {
       service.notifyApprovalResult(10, card, 'exec-uuid-001', 7, true);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[1]).toBe('Wartung freigegeben: BT1');
+      expect(params?.[1]).toBe('Wartung freigegeben: BW1');
       const message = params?.[2] as string;
       expect(message).toContain('freigegeben');
     });
@@ -291,7 +291,7 @@ describe('TpmNotificationService', () => {
       service.notifyApprovalResult(10, card, 'exec-uuid-001', 7, false);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[1]).toBe('Wartung abgelehnt: BT1');
+      expect(params?.[1]).toBe('Wartung abgelehnt: BW1');
       const message = params?.[2] as string;
       expect(message).toContain('abgelehnt');
     });

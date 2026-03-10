@@ -591,7 +591,10 @@
         </div>
 
         <!-- Confirm Password -->
-        <div class="form-field">
+        <div
+          class="form-field"
+          class:is-success={confirmPassword !== '' && passwordsMatch}
+        >
           <label
             class="form-field__label"
             for="confirm_password">Neues Passwort bestätigen</label
@@ -603,6 +606,7 @@
               name="confirm_password"
               class="form-field__control"
               class:is-error={passwordMismatchError}
+              class:is-success={confirmPassword !== '' && passwordsMatch}
               autocomplete="new-password"
               minlength="12"
               maxlength="72"
@@ -625,6 +629,10 @@
           {#if passwordMismatchError}
             <span class="form-field__message form-field__message--error">
               {MESSAGES.passwordMismatch}
+            </span>
+          {:else if confirmPassword !== '' && passwordsMatch}
+            <span class="form-field__message form-field__message--success">
+              <i class="fas fa-check"></i> Passwörter stimmen überein
             </span>
           {/if}
         </div>
@@ -669,7 +677,7 @@
 
   /* Blue border ring around avatar (page-specific decoration) */
   .profile-picture-container {
-    border: 3px solid rgb(0 142 255 / 30%);
+    border: 3px solid oklch(64.49% 0.1953 252.39 / 30%);
     border-radius: 50%;
     background: transparent;
     padding: 3px;
@@ -693,12 +701,12 @@
   /* Non-editable fields styling */
   .non-editable {
     cursor: default;
-    background: rgb(255 255 255 / 1%);
+    background: color-mix(in oklch, var(--color-white) 1%, transparent);
   }
 
   .non-editable:focus {
     box-shadow: none;
-    border-color: rgb(255 255 255 / 10%);
+    border-color: color-mix(in oklch, var(--color-white) 10%, transparent);
   }
 
   /* ===== RESPONSIVE ===== */

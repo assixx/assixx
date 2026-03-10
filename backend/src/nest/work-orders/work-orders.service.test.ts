@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatabaseService } from '../database/database.service.js';
 import { WorkOrdersService } from './work-orders.service.js';
 import type {
+  CalendarWorkOrderRow,
   WorkOrderAssigneeWithNameRow,
   WorkOrderWithCountsRow,
 } from './work-orders.types.js';
@@ -115,6 +116,7 @@ describe('createWorkOrder', () => {
 
     const result = await service.createWorkOrder(1, 5, {
       title: 'Ölwechsel durchführen',
+      dueDate: '2026-04-01',
     });
 
     expect(result.uuid).toBe('019c9547-9fc0-771a-b022-3767e233d6f3');
@@ -133,6 +135,7 @@ describe('createWorkOrder', () => {
 
     const result = await service.createWorkOrder(1, 5, {
       title: 'Ölwechsel durchführen',
+      dueDate: '2026-04-01',
       assigneeUuids: ['user-uuid-1'],
     });
 
@@ -144,7 +147,7 @@ describe('createWorkOrder', () => {
     mockClient.query.mockResolvedValueOnce({ rows: [] });
 
     await expect(
-      service.createWorkOrder(1, 5, { title: 'Test' }),
+      service.createWorkOrder(1, 5, { title: 'Test', dueDate: '2026-04-01' }),
     ).rejects.toThrow('Arbeitsauftrag konnte nicht erstellt werden');
   });
 
@@ -152,7 +155,10 @@ describe('createWorkOrder', () => {
     const row = createWorkOrderRow();
     mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-    await service.createWorkOrder(1, 5, { title: 'Test' });
+    await service.createWorkOrder(1, 5, {
+      title: 'Test',
+      dueDate: '2026-04-01',
+    });
 
     const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
     // params[4] = priority (default 'medium')
@@ -163,15 +169,18 @@ describe('createWorkOrder', () => {
     expect(params[3]).toBeNull();
     // params[6] = sourceUuid (default null)
     expect(params[6]).toBeNull();
-    // params[7] = dueDate (default null)
-    expect(params[7]).toBeNull();
+    // params[7] = dueDate (now required)
+    expect(params[7]).toBe('2026-04-01');
   });
 
   it('should log activity after creation', async () => {
     const row = createWorkOrderRow();
     mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-    await service.createWorkOrder(1, 5, { title: 'Test' });
+    await service.createWorkOrder(1, 5, {
+      title: 'Test',
+      dueDate: '2026-04-01',
+    });
 
     expect(mockActivityLogger.logCreate).toHaveBeenCalledExactlyOnceWith(
       1,
@@ -194,6 +203,7 @@ describe('createWorkOrder', () => {
         title: 'KVP: Doppelt',
         sourceType: 'kvp_proposal',
         sourceUuid: 'kvp-uuid-123',
+        dueDate: '2026-04-01',
       }),
     ).rejects.toThrow('Es existiert bereits ein aktiver Arbeitsauftrag');
   });
@@ -212,6 +222,7 @@ describe('createWorkOrder', () => {
       title: 'KVP: Neu',
       sourceType: 'kvp_proposal',
       sourceUuid: 'kvp-uuid-123',
+      dueDate: '2026-04-01',
     });
 
     expect(result.uuid).toBeDefined();
@@ -221,7 +232,10 @@ describe('createWorkOrder', () => {
     const row = createWorkOrderRow();
     mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-    await service.createWorkOrder(1, 5, { title: 'Manuell' });
+    await service.createWorkOrder(1, 5, {
+      title: 'Manuell',
+      dueDate: '2026-04-01',
+    });
 
     // queryOne should NOT have been called (no ensureNoActiveLinkedWorkOrder)
     expect(mockDb.queryOne).not.toHaveBeenCalled();
@@ -395,6 +409,28 @@ describe('listWorkOrders', () => {
     const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
     expect(params).toContain('kvp-uuid-456');
   });
+
+  it('should apply isActive=archived filter', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.listWorkOrders(1, 5, { isActive: 'archived' });
+
+    const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+    expect(countSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
+  });
+
+  it('should apply isActive=all filter (active + archived)', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.listWorkOrders(1, 5, { isActive: 'all' });
+
+    const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+    expect(countSql).toContain(
+      `is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
+    );
+  });
 });
 
 // ============================================================================
@@ -492,6 +528,25 @@ describe('updateWorkOrder', () => {
     expect(updateSql).toContain('title =');
     expect(updateSql).toContain('priority =');
     expect(updateSql).toContain('description =');
+  });
+
+  it('should update dueDate', async () => {
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 1, title: 'Test', priority: 'medium' }],
+    });
+    mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
+    mockDb.queryOne.mockResolvedValueOnce(
+      createWorkOrderRow({ due_date: '2026-06-01' }),
+    );
+    mockDb.query.mockResolvedValueOnce([]);
+
+    const result = await service.updateWorkOrder(1, 5, 'test-uuid', {
+      dueDate: '2026-06-01',
+    });
+
+    const updateSql = mockClient.query.mock.calls[1]?.[0] as string;
+    expect(updateSql).toContain('due_date =');
+    expect(result.dueDate).toBe('2026-06-01');
   });
 
   it('should log activity after update', async () => {
@@ -626,5 +681,137 @@ describe('getStats', () => {
 
     const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
     expect(params[0]).toBe(42);
+  });
+});
+
+// ============================================================================
+// getCalendarWorkOrders
+// ============================================================================
+
+function createCalendarRow(
+  overrides: Partial<CalendarWorkOrderRow> = {},
+): CalendarWorkOrderRow {
+  return {
+    uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
+    title: 'Wartung Anlage 3',
+    due_date: '2026-03-15',
+    status: 'open',
+    priority: 'medium',
+    source_type: 'manual',
+    ...overrides,
+  };
+}
+
+describe('getCalendarWorkOrders', () => {
+  it('should return mapped calendar work orders for admin', async () => {
+    mockDb.query.mockResolvedValueOnce([createCalendarRow()]);
+
+    const result = await service.getCalendarWorkOrders(
+      1,
+      5,
+      true,
+      '2026-03-01',
+      '2026-03-31',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.uuid).toBe('019c9547-9fc0-771a-b022-3767e233d6f3');
+    expect(result[0]?.dueDate).toBe('2026-03-15');
+    expect(result[0]?.status).toBe('open');
+  });
+
+  it('should add user filter for non-admin', async () => {
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.getCalendarWorkOrders(
+      1,
+      42,
+      false,
+      '2026-03-01',
+      '2026-03-31',
+    );
+
+    const sql = mockDb.query.mock.calls[0]?.[0] as string;
+    expect(sql).toContain('woa2.user_id = $4');
+    const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+    expect(params).toContain(42);
+  });
+
+  it('should not add user filter for admin', async () => {
+    mockDb.query.mockResolvedValueOnce([]);
+
+    await service.getCalendarWorkOrders(1, 5, true, '2026-03-01', '2026-03-31');
+
+    const sql = mockDb.query.mock.calls[0]?.[0] as string;
+    expect(sql).not.toContain('woa2.user_id');
+  });
+
+  it('should return empty array when no results', async () => {
+    mockDb.query.mockResolvedValueOnce([]);
+
+    const result = await service.getCalendarWorkOrders(
+      1,
+      5,
+      true,
+      '2026-03-01',
+      '2026-03-31',
+    );
+
+    expect(result).toEqual([]);
+  });
+});
+
+// ============================================================================
+// getMyStats
+// ============================================================================
+
+describe('getMyStats', () => {
+  it('should return stats for a specific user', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({
+      open: '2',
+      in_progress: '1',
+      completed: '4',
+      verified: '3',
+      total: '10',
+      overdue: '0',
+    });
+
+    const stats = await service.getMyStats(1, 42);
+
+    expect(stats.open).toBe(2);
+    expect(stats.total).toBe(10);
+  });
+
+  it('should include userId in query params', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({
+      open: '0',
+      in_progress: '0',
+      completed: '0',
+      verified: '0',
+      total: '0',
+      overdue: '0',
+    });
+
+    await service.getMyStats(1, 42);
+
+    const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+    expect(params).toContain(1);
+    expect(params).toContain(42);
+  });
+
+  it('should use JOIN on work_order_assignees', async () => {
+    mockDb.queryOne.mockResolvedValueOnce({
+      open: '0',
+      in_progress: '0',
+      completed: '0',
+      verified: '0',
+      total: '0',
+      overdue: '0',
+    });
+
+    await service.getMyStats(1, 42);
+
+    const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+    expect(sql).toContain('work_order_assignees');
   });
 });

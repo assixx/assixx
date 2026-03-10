@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { AssignUsersSchema } from './assign-users.dto.js';
+import { CalendarWorkOrdersQuerySchema } from './calendar-work-orders-query.dto.js';
 import {
   LimitSchema,
   PageSchema,
@@ -223,6 +224,7 @@ describe('CreateWorkOrderSchema', () => {
     title: 'TPM Mangel: Ölstand zu niedrig',
     sourceType: 'tpm_defect' as const,
     sourceUuid: VALID_UUID,
+    dueDate: '2026-04-01',
   };
 
   // -----------------------------------------------------------
@@ -237,9 +239,13 @@ describe('CreateWorkOrderSchema', () => {
     expect(CreateWorkOrderSchema.safeParse(validTpmDefect).success).toBe(true);
   });
 
-  it('should accept minimal payload (title only)', () => {
-    const result = CreateWorkOrderSchema.parse({ title: 'Reparatur' });
+  it('should accept minimal payload (title + dueDate)', () => {
+    const result = CreateWorkOrderSchema.parse({
+      title: 'Reparatur',
+      dueDate: '2026-04-01',
+    });
     expect(result.title).toBe('Reparatur');
+    expect(result.dueDate).toBe('2026-04-01');
     expect(result.priority).toBe('medium');
     expect(result.sourceType).toBe('manual');
     expect(result.assigneeUuids).toEqual([]);
@@ -302,6 +308,7 @@ describe('CreateWorkOrderSchema', () => {
   it('should accept undefined description', () => {
     const result = CreateWorkOrderSchema.parse({
       title: 'Test',
+      dueDate: '2026-04-01',
     });
     expect(result.description).toBeUndefined();
   });
@@ -328,7 +335,10 @@ describe('CreateWorkOrderSchema', () => {
   // -----------------------------------------------------------
 
   it('should default priority to medium', () => {
-    const result = CreateWorkOrderSchema.parse({ title: 'Test' });
+    const result = CreateWorkOrderSchema.parse({
+      title: 'Test',
+      dueDate: '2026-04-01',
+    });
     expect(result.priority).toBe('medium');
   });
 
@@ -350,6 +360,7 @@ describe('CreateWorkOrderSchema', () => {
       CreateWorkOrderSchema.safeParse({
         title: 'Test',
         sourceType: 'tpm_defect',
+        dueDate: '2026-04-01',
       }).success,
     ).toBe(false);
   });
@@ -360,6 +371,7 @@ describe('CreateWorkOrderSchema', () => {
         title: 'Test',
         sourceType: 'manual',
         sourceUuid: VALID_UUID,
+        dueDate: '2026-04-01',
       }).success,
     ).toBe(false);
   });
@@ -370,6 +382,7 @@ describe('CreateWorkOrderSchema', () => {
         title: 'Test',
         sourceType: 'tpm_defect',
         sourceUuid: VALID_UUID,
+        dueDate: '2026-04-01',
       }).success,
     ).toBe(true);
   });
@@ -379,6 +392,7 @@ describe('CreateWorkOrderSchema', () => {
       CreateWorkOrderSchema.safeParse({
         title: 'Test',
         sourceType: 'manual',
+        dueDate: '2026-04-01',
       }).success,
     ).toBe(true);
   });
@@ -389,6 +403,7 @@ describe('CreateWorkOrderSchema', () => {
         title: 'KVP: Verbesserung Linie 4',
         sourceType: 'kvp_proposal',
         sourceUuid: VALID_UUID,
+        dueDate: '2026-04-01',
       }).success,
     ).toBe(true);
   });
@@ -398,6 +413,7 @@ describe('CreateWorkOrderSchema', () => {
       CreateWorkOrderSchema.safeParse({
         title: 'KVP: Verbesserung Linie 4',
         sourceType: 'kvp_proposal',
+        dueDate: '2026-04-01',
       }).success,
     ).toBe(false);
   });
@@ -407,7 +423,10 @@ describe('CreateWorkOrderSchema', () => {
   // -----------------------------------------------------------
 
   it('should default assigneeUuids to empty array', () => {
-    const result = CreateWorkOrderSchema.parse({ title: 'Test' });
+    const result = CreateWorkOrderSchema.parse({
+      title: 'Test',
+      dueDate: '2026-04-01',
+    });
     expect(result.assigneeUuids).toEqual([]);
   });
 
@@ -452,17 +471,17 @@ describe('CreateWorkOrderSchema', () => {
     expect(result.dueDate).toBe('2026-12-31');
   });
 
-  it('should accept null dueDate', () => {
-    const result = CreateWorkOrderSchema.parse({
-      ...validManual,
-      dueDate: null,
-    });
-    expect(result.dueDate).toBeNull();
+  it('should reject null dueDate', () => {
+    expect(
+      CreateWorkOrderSchema.safeParse({ ...validManual, dueDate: null })
+        .success,
+    ).toBe(false);
   });
 
-  it('should accept undefined dueDate', () => {
-    const result = CreateWorkOrderSchema.parse({ title: 'Test' });
-    expect(result.dueDate).toBeUndefined();
+  it('should reject missing dueDate', () => {
+    expect(CreateWorkOrderSchema.safeParse({ title: 'Test' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject invalid date format', () => {
@@ -569,9 +588,15 @@ describe('UpdateWorkOrderSchema', () => {
   // dueDate validation
   // -----------------------------------------------------------
 
-  it('should accept null dueDate (clear)', () => {
-    const result = UpdateWorkOrderSchema.parse({ dueDate: null });
-    expect(result.dueDate).toBeNull();
+  it('should reject null dueDate', () => {
+    expect(UpdateWorkOrderSchema.safeParse({ dueDate: null }).success).toBe(
+      false,
+    );
+  });
+
+  it('should accept valid dueDate', () => {
+    const result = UpdateWorkOrderSchema.parse({ dueDate: '2026-06-15' });
+    expect(result.dueDate).toBe('2026-06-15');
   });
 
   it('should reject invalid date format', () => {
@@ -899,5 +924,57 @@ describe('ListWorkOrdersQuerySchema', () => {
     expect(ListWorkOrdersQuerySchema.safeParse({ limit: '501' }).success).toBe(
       false,
     );
+  });
+});
+
+// =============================================================
+// CalendarWorkOrdersQuerySchema
+// =============================================================
+
+describe('CalendarWorkOrdersQuerySchema', () => {
+  it('should accept valid date range', () => {
+    const result = CalendarWorkOrdersQuerySchema.safeParse({
+      startDate: '2026-03-01',
+      endDate: '2026-03-31',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject missing startDate', () => {
+    const result = CalendarWorkOrdersQuerySchema.safeParse({
+      endDate: '2026-03-31',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing endDate', () => {
+    const result = CalendarWorkOrdersQuerySchema.safeParse({
+      startDate: '2026-03-01',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject ISO datetime (not date-only)', () => {
+    const result = CalendarWorkOrdersQuerySchema.safeParse({
+      startDate: '2026-03-01T00:00:00Z',
+      endDate: '2026-03-31',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid date format', () => {
+    const result = CalendarWorkOrdersQuerySchema.safeParse({
+      startDate: '01.03.2026',
+      endDate: '31.03.2026',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject empty strings', () => {
+    const result = CalendarWorkOrdersQuerySchema.safeParse({
+      startDate: '',
+      endDate: '',
+    });
+    expect(result.success).toBe(false);
   });
 });

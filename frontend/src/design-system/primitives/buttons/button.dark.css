@@ -9,23 +9,26 @@
  */
 
 .btn-dark {
-  border: 1px solid #404040;
-  background: linear-gradient(145deg, rgb(34 34 34), rgb(0 0 0));
+  border: 1px solid var(--color-charcoal-dark);
+  background: linear-gradient(145deg, oklch(24.29% 0 0), oklch(0% 0 0));
   padding: var(--spacing-2) var(--spacing-4);
   color: var(--color-white);
 }
 
 /* Hover State - Brighten the gradient */
 .btn-dark:hover:not(:disabled) {
-  border: 1px solid #404040;
-  background: linear-gradient(145deg, rgb(53 53 53), rgb(0 0 0));
+  border: 1px solid var(--color-charcoal-dark);
+  background: linear-gradient(145deg, oklch(31.46% 0 0), oklch(0% 0 0));
   color: var(--color-white);
 }
 
 /* Active/Pressed State */
 .btn-dark:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: var(--shadow-btn-dark-active, 0 1px 4px rgb(0 0 0 / 40%));
+  box-shadow: var(
+    --shadow-btn-dark-active,
+    0 1px 4px color-mix(in oklch, var(--color-black) 40%, transparent)
+  );
   background: var(--color-gray-950);
 }
 
@@ -34,7 +37,7 @@
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow:
-    0 0 0 3px rgb(66 66 66 / 30%),
+    0 0 0 3px oklch(36.05% 0 0 / 30%),
     var(--shadow-btn-dark);
 }
 

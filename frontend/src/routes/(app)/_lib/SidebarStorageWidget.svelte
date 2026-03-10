@@ -57,7 +57,8 @@
 
   .storage-progress {
     margin-bottom: var(--spacing-1);
-    box-shadow: inset 0 1px 3px rgb(0 0 0 / 30%);
+    box-shadow: inset 0 1px 3px
+      color-mix(in oklch, var(--color-black) 30%, transparent);
     border-radius: 4px;
     background: var(--accent-color);
     width: 100%;
@@ -79,12 +80,12 @@
     background: linear-gradient(
       45deg,
       transparent 25%,
-      rgb(255 255 255 / 20%) 25%,
-      rgb(255 255 255 / 20%) 50%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 25%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 50%,
       transparent 50%,
       transparent 75%,
-      rgb(255 255 255 / 20%) 75%,
-      rgb(255 255 255 / 20%)
+      color-mix(in oklch, var(--color-white) 20%, transparent) 75%,
+      color-mix(in oklch, var(--color-white) 20%, transparent)
     );
     background-size: 20px 20px;
     content: '';

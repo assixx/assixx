@@ -191,7 +191,8 @@
   }
 
   :global(html:not(.dark)) .header {
-    box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+    box-shadow: 0 1px 2px
+      color-mix(in oklch, var(--color-black) 18%, transparent);
   }
 
   .header-content {
@@ -292,12 +293,12 @@
 
   .token-timer--warning {
     animation: -global-pulse-warning 2s ease-in-out infinite;
-    color: #fbbf24;
+    color: var(--color-amber-light);
     font-weight: 600;
   }
 
   .token-timer--expired {
-    color: #ef4444;
+    color: var(--color-coral);
     font-weight: 700;
   }
 

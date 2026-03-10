@@ -131,22 +131,38 @@
 
 /* Info card (blue accent) */
 .card--info .card__title::before {
-  background: linear-gradient(180deg, #3b82f6, #2563eb);
+  background: linear-gradient(
+    180deg,
+    var(--color-info),
+    var(--color-info-hover)
+  );
 }
 
 /* Success card (green accent) */
 .card--success .card__title::before {
-  background: linear-gradient(180deg, #22c55e, #16a34a);
+  background: linear-gradient(
+    180deg,
+    var(--color-mint),
+    var(--color-action-green)
+  );
 }
 
 /* Warning card (orange accent) */
 .card--warning .card__title::before {
-  background: linear-gradient(180deg, #fb923c, #f97316);
+  background: linear-gradient(
+    180deg,
+    var(--color-orange-accent),
+    var(--color-action-orange)
+  );
 }
 
 /* Danger card (red accent) */
 .card--danger .card__title::before {
-  background: linear-gradient(180deg, #ef4444, #dc2626);
+  background: linear-gradient(
+    180deg,
+    var(--color-coral),
+    var(--color-coral-hover)
+  );
 }
 
 /* ========================================

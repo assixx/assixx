@@ -139,13 +139,13 @@
 @keyframes glow {
   from {
     box-shadow:
-      0 4px 12px rgb(251 191 36 / 25%),
-      inset 0 1px 0 rgb(255 255 255 / 20%);
+      0 4px 12px oklch(83.69% 0.1644 84.43 / 25%),
+      inset 0 1px 0 oklch(100% 0 0 / 20%);
   }
 
   to {
     box-shadow:
-      0 4px 20px rgb(251 191 36 / 40%),
-      inset 0 1px 0 rgb(255 255 255 / 20%);
+      0 4px 20px oklch(83.69% 0.1644 84.43 / 40%),
+      inset 0 1px 0 oklch(100% 0 0 / 20%);
   }
 }

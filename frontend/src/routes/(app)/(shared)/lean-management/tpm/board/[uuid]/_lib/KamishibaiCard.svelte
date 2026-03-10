@@ -275,11 +275,11 @@
 
     /* 5-layer realistic shadow: contact → near → medium → ambient → far */
     box-shadow:
-      0 1px 1px rgb(0 0 0 / 35%),
-      0 2px 4px rgb(0 0 0 / 25%),
-      0 4px 8px rgb(0 0 0 / 18%),
-      0 8px 16px rgb(0 0 0 / 12%),
-      0 16px 32px rgb(0 0 0 / 6%);
+      0 1px 1px color-mix(in oklch, var(--color-black) 35%, transparent),
+      0 2px 4px color-mix(in oklch, var(--color-black) 25%, transparent),
+      0 4px 8px color-mix(in oklch, var(--color-black) 18%, transparent),
+      0 8px 16px color-mix(in oklch, var(--color-black) 12%, transparent),
+      0 16px 32px color-mix(in oklch, var(--color-black) 6%, transparent);
     transition:
       transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1),
       box-shadow 350ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -287,20 +287,20 @@
 
   .kamishibai-card:hover {
     box-shadow:
-      0 4px 4px rgb(0 0 0 / 20%),
-      0 8px 12px rgb(0 0 0 / 16%),
-      0 16px 24px rgb(0 0 0 / 12%),
-      0 24px 48px rgb(0 0 0 / 8%),
-      0 36px 64px rgb(0 0 0 / 5%);
+      0 4px 4px color-mix(in oklch, var(--color-black) 20%, transparent),
+      0 8px 12px color-mix(in oklch, var(--color-black) 16%, transparent),
+      0 16px 24px color-mix(in oklch, var(--color-black) 12%, transparent),
+      0 24px 48px color-mix(in oklch, var(--color-black) 8%, transparent),
+      0 36px 64px color-mix(in oklch, var(--color-black) 5%, transparent);
   }
 
   /* Lifted shadow when card is flipped */
   .kamishibai-card--flipped {
     box-shadow:
-      0 4px 4px rgb(0 0 0 / 18%),
-      0 8px 16px rgb(0 0 0 / 14%),
-      0 16px 32px rgb(0 0 0 / 10%),
-      0 24px 48px rgb(0 0 0 / 6%);
+      0 4px 4px color-mix(in oklch, var(--color-black) 18%, transparent),
+      0 8px 16px color-mix(in oklch, var(--color-black) 14%, transparent),
+      0 16px 32px color-mix(in oklch, var(--color-black) 10%, transparent),
+      0 24px 48px color-mix(in oklch, var(--color-black) 6%, transparent);
   }
 
   /* Locate pulse — draws the eye to the clicked card after section expansion */
@@ -370,8 +370,8 @@
   .kamishibai-card:focus-visible {
     box-shadow:
       0 0 0 3px var(--color-primary),
-      0 4px 8px rgb(0 0 0 / 18%),
-      0 8px 16px rgb(0 0 0 / 12%);
+      0 4px 8px color-mix(in oklch, var(--color-black) 18%, transparent),
+      0 8px 16px color-mix(in oklch, var(--color-black) 12%, transparent);
   }
 
   /* Front face — 3-zone layout: header | body | footer */
@@ -381,21 +381,25 @@
     flex-direction: column;
     height: 100%;
     padding: 0.625rem;
-    color: #fff;
+    color: var(--color-white);
     border-radius: var(--card-radius);
 
     /* Simulated card edges — light top/left, dark bottom/right */
-    border-top: 1px solid rgb(255 255 255 / 22%);
-    border-left: 1px solid rgb(255 255 255 / 10%);
-    border-right: 1px solid rgb(0 0 0 / 10%);
-    border-bottom: var(--card-edge) solid rgb(0 0 0 / 30%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 22%, transparent);
+    border-left: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-right: 1px solid
+      color-mix(in oklch, var(--color-black) 10%, transparent);
+    border-bottom: var(--card-edge) solid
+      color-mix(in oklch, var(--color-black) 30%, transparent);
 
     /* Embossed inner edges for thickness illusion */
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 25%),
-      inset 0 -1px 0 rgb(0 0 0 / 15%),
-      inset 1px 0 0 rgb(255 255 255 / 6%),
-      inset -1px 0 0 rgb(0 0 0 / 6%);
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 25%, transparent),
+      inset 0 -1px 0 color-mix(in oklch, var(--color-black) 15%, transparent),
+      inset 1px 0 0 color-mix(in oklch, var(--color-white) 6%, transparent),
+      inset -1px 0 0 color-mix(in oklch, var(--color-black) 6%, transparent);
   }
 
   /* Glossy lamination — specular hotspot + reflection line + ambient light */
@@ -408,15 +412,15 @@
       /* Soft specular hotspot — gentle top-left light reflection */
       radial-gradient(
         ellipse 80% 60% at 30% 25%,
-        rgb(255 255 255 / 8%) 0%,
+        color-mix(in oklch, var(--color-white) 8%, transparent) 0%,
         transparent 60%
       ),
       /* Directional overhead ambient light */
       linear-gradient(
           155deg,
-          rgb(255 255 255 / 6%) 0%,
+          color-mix(in oklch, var(--color-white) 6%, transparent) 0%,
           transparent 45%,
-          rgb(0 0 0 / 8%) 100%
+          color-mix(in oklch, var(--color-black) 8%, transparent) 100%
         );
     pointer-events: none;
     z-index: 1;
@@ -428,7 +432,8 @@
     align-items: center;
     gap: 0.375rem;
     padding-bottom: 0.375rem;
-    border-bottom: 1px solid rgb(0 0 0 / 15%);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .kamishibai-card__code {
@@ -442,7 +447,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    border: 1.5px solid rgb(255 255 255 / 60%);
+    border: 1.5px solid color-mix(in oklch, var(--color-white) 60%, transparent);
     flex-shrink: 0;
   }
 
@@ -478,7 +483,8 @@
     justify-content: space-between;
     gap: 0.25rem;
     padding-top: 0.375rem;
-    border-top: 1px solid rgb(0 0 0 / 15%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .kamishibai-card__time {
@@ -498,7 +504,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    background: rgb(0 0 0 / 25%);
+    background: color-mix(in oklch, var(--color-black) 25%, transparent);
     padding: 0.1rem 0.35rem;
     border-radius: var(--radius-xs, 4px);
   }
@@ -507,7 +513,7 @@
     font-size: 0.625rem;
     font-weight: 600;
     margin-left: auto;
-    background: rgb(0 0 0 / 20%);
+    background: color-mix(in oklch, var(--color-black) 20%, transparent);
     padding: 0.075rem 0.3rem;
     border-radius: var(--radius-xs, 4px);
     white-space: nowrap;
@@ -522,13 +528,17 @@
     padding: 0.75rem;
     background: var(--color-gray-800, #1f2937);
     border-radius: var(--card-radius);
-    border-top: 1px solid rgb(255 255 255 / 10%);
-    border-left: 1px solid rgb(255 255 255 / 5%);
-    border-right: 1px solid rgb(0 0 0 / 10%);
-    border-bottom: var(--card-edge) solid rgb(0 0 0 / 35%);
+    border-top: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-left: 1px solid
+      color-mix(in oklch, var(--color-white) 5%, transparent);
+    border-right: 1px solid
+      color-mix(in oklch, var(--color-black) 10%, transparent);
+    border-bottom: var(--card-edge) solid
+      color-mix(in oklch, var(--color-black) 35%, transparent);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 10%),
-      inset 0 -1px 0 rgb(0 0 0 / 20%);
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent),
+      inset 0 -1px 0 color-mix(in oklch, var(--color-black) 20%, transparent);
     color: var(--color-gray-100, #f3f4f6);
     font-size: 0.75rem;
     overflow: hidden;
@@ -594,7 +604,7 @@
 
   .kamishibai-card__detail-btn:hover {
     background: var(--color-gray-700, #374151);
-    color: #fff;
+    color: var(--color-white);
   }
 
   .kamishibai-card__detail-btn:focus-visible {

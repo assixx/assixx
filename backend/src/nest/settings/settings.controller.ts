@@ -46,6 +46,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -100,6 +101,10 @@ interface CategoriesResponse {
 interface BulkUpdateResponse {
   results: BulkUpdateResult[];
 }
+
+/** Permission constants */
+const FEAT = 'settings';
+const MOD_TENANT = 'settings-tenant';
 
 @Controller('settings')
 export class SettingsController {
@@ -262,6 +267,7 @@ export class SettingsController {
    */
   @Post('tenant')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_TENANT, 'canWrite')
   async createTenantSetting(
     @Body() dto: CreateTenantSettingDto,
     @CurrentUser() user: JwtPayload,
@@ -291,6 +297,7 @@ export class SettingsController {
    */
   @Put('tenant/:key')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_TENANT, 'canWrite')
   async updateTenantSetting(
     @Param('key') key: string,
     @Body() dto: UpdateTenantSettingDto,
@@ -321,6 +328,7 @@ export class SettingsController {
    */
   @Delete('tenant/:key')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_TENANT, 'canDelete')
   async deleteTenantSetting(
     @Param('key') key: string,
     @CurrentUser() user: JwtPayload,

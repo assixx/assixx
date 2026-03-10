@@ -307,9 +307,9 @@
     position: relative;
     flex-direction: column;
 
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 2%);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: var(--spacing-8);
     min-height: 600px;
     overflow: hidden;
@@ -319,23 +319,23 @@
   .pricing-card:hover {
     transform: translateY(-5px);
     box-shadow:
-      0 12px 40px rgb(33 150 243 / 40%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
+      0 12px 40px color-mix(in oklch, var(--color-primary) 40%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
     border-color: var(--primary-color);
-    background: rgb(255 255 255 / 4%);
+    background: color-mix(in oklch, var(--color-white) 4%, transparent);
   }
 
   .pricing-card.featured {
-    border-color: rgb(33 150 243 / 30%);
-    background: rgb(33 150 243 / 5%);
+    border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 5%, transparent);
     overflow: visible;
   }
 
   .pricing-card.featured:hover {
     transform: translateY(-6px);
     box-shadow:
-      0 14px 45px rgb(33 150 243 / 50%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
+      0 14px 45px color-mix(in oklch, var(--color-primary) 50%, transparent),
+      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
   }
 
   .pricing-card h3 {
@@ -352,7 +352,8 @@
     font-weight: 700;
     font-size: 3.5rem;
     line-height: 1;
-    text-shadow: 0 0 10px rgb(33 150 243 / 20%);
+    text-shadow: 0 0 10px
+      color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
 
   .price span {
@@ -392,8 +393,8 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    background: #002033;
-    color: #fff;
+    background: oklch(17.92% 0.0441 230.72);
+    color: var(--color-white);
   }
 
   .pricing-card__footer {
@@ -425,9 +426,9 @@
   .comparison-table-wrapper {
     margin-top: 2rem;
 
-    border: 1px solid hsl(0deg 0% 100% / 10%);
+    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(255 255 255 / 2%);
+    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     overflow-x: auto;
   }
 
@@ -440,7 +441,8 @@
 
   .comparison-table th,
   .comparison-table td {
-    border-bottom: 1px solid rgb(255 255 255 / 10%);
+    border-bottom: 1px solid
+      color-mix(in oklch, var(--color-white) 10%, transparent);
     padding: var(--spacing-3);
     text-align: left;
   }
@@ -450,7 +452,7 @@
     top: 0;
     z-index: 10;
     backdrop-filter: blur(10px);
-    background: rgb(255 255 255 / 4%);
+    background: color-mix(in oklch, var(--color-white) 4%, transparent);
     color: var(--primary-color);
     font-weight: 600;
     font-size: 13px;
@@ -459,22 +461,27 @@
   }
 
   .comparison-table thead tr:first-child th {
-    border-bottom: 2px solid rgb(33 150 243 / 30%);
+    border-bottom: 2px solid
+      color-mix(in oklch, var(--color-primary) 30%, transparent);
   }
 
   .comparison-table tbody tr:hover {
     transition: background 0.3s ease;
-    background: rgb(255 255 255 / 3%);
+    background: color-mix(in oklch, var(--color-white) 3%, transparent);
   }
 
   .comparison-table .highlighted {
     border-right: 2px solid var(--primary-color);
     border-left: 2px solid var(--primary-color);
-    background: rgb(33 150 243 / 10%) !important;
+    background: color-mix(
+      in oklch,
+      var(--color-primary) 10%,
+      transparent
+    ) !important;
   }
 
   .comparison-table .category-header td {
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
     padding-top: var(--spacing-6);
     padding-bottom: var(--spacing-2);
     color: var(--primary-color);
@@ -499,16 +506,16 @@
 
   .comparison-table-wrapper::-webkit-scrollbar-track {
     border-radius: 4px;
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
   }
 
   .comparison-table-wrapper::-webkit-scrollbar-thumb {
     border-radius: 4px;
-    background: rgb(255 255 255 / 20%);
+    background: color-mix(in oklch, var(--color-white) 20%, transparent);
   }
 
   .comparison-table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 30%);
+    background: color-mix(in oklch, var(--color-white) 30%, transparent);
   }
 
   @media (width < 768px) {

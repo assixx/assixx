@@ -18,35 +18,35 @@
 
   /* Glass Card - Light mode: softer shadows */
   --shadow-glass:
-    0 8px 32px rgb(0 0 0 / 8%), inset 0 1px 0 rgb(255 255 255 / 50%);
+    0 8px 32px oklch(0% 0 0 / 8%), inset 0 1px 0 oklch(100% 0 0 / 50%);
   --shadow-glass-hover:
-    0 12px 40px rgb(0 0 0 / 12%), inset 0 1px 0 rgb(255 255 255 / 60%);
+    0 12px 40px oklch(0% 0 0 / 12%), inset 0 1px 0 oklch(100% 0 0 / 60%);
 
   /* Modal Shadow */
   --shadow-modal:
-    0 8px 32px rgb(0 0 0 / 12%), inset 0 1px 0 rgb(255 255 255 / 50%);
+    0 8px 32px oklch(0% 0 0 / 12%), inset 0 1px 0 oklch(100% 0 0 / 50%);
 
   /* ========== FOCUS SHADOWS ========== */
 
   /* Focus ring for accessibility */
-  --shadow-focus-primary: 0 0 0 3px rgb(33 150 243 / 20%);
-  --shadow-focus-danger: 0 0 0 3px rgb(220 53 69 / 20%);
+  --shadow-focus-primary: 0 0 0 3px oklch(65.82% 0.169 248.81 / 20%);
+  --shadow-focus-danger: 0 0 0 3px oklch(59.15% 0.202 21.24 / 20%);
 
   /* ========== DROPDOWN/POPOVER SHADOWS ========== */
 
   --shadow-dropdown:
-    0 8px 32px rgb(0 0 0 / 12%), inset 0 1px 0 rgb(255 255 255 / 50%);
+    0 8px 32px oklch(0% 0 0 / 12%), inset 0 1px 0 oklch(100% 0 0 / 50%);
 }
 
 /* ========== DARK MODE SHADOW OVERRIDES ========== */
 html.dark {
   /* Stronger shadows on dark backgrounds */
   --shadow-glass:
-    0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 8px 32px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-glass-hover:
-    0 12px 40px rgb(0 0 0 / 50%), inset 0 1px 0 rgb(255 255 255 / 15%);
+    0 12px 40px oklch(0% 0 0 / 50%), inset 0 1px 0 oklch(100% 0 0 / 15%);
   --shadow-modal:
-    0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 8px 32px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-dropdown:
-    0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 8px 32px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
 }

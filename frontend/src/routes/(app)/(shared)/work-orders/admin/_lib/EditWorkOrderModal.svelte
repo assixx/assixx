@@ -67,11 +67,14 @@
   let formDueDate = $state('');
   let selectedUserUuids = $state<string[]>([]);
   let assigneeTouched = $state(false);
+  let dueDateTouched = $state(false);
   let priorityDropdownOpen = $state(false);
 
   const priorityLabel = $derived(PRIORITY_LABELS[formPriority]);
   const hasAssignees = $derived(selectedUserUuids.length > 0);
+  const hasDueDate = $derived(formDueDate !== '');
   const showAssigneeError = $derived(assigneeTouched && !hasAssignees);
+  const showDueDateError = $derived(dueDateTouched && !hasDueDate);
 
   // ---------------------------------------------------------------------------
   // LIFECYCLE
@@ -84,8 +87,7 @@
         formTitle = workOrder.title;
         formDescription = '';
         formPriority = workOrder.priority;
-        formDueDate =
-          workOrder.dueDate !== null ? workOrder.dueDate.substring(0, 10) : '';
+        formDueDate = workOrder.dueDate.substring(0, 10);
       } else {
         formTitle = '';
         formDescription = '';
@@ -93,6 +95,7 @@
         formDueDate = '';
         selectedUserUuids = [];
         assigneeTouched = false;
+        dueDateTouched = false;
       }
       priorityDropdownOpen = false;
     }
@@ -158,12 +161,15 @@
     const trimmedTitle = formTitle.trim();
     if (trimmedTitle === '') return;
 
+    dueDateTouched = true;
+    if (!hasDueDate) return;
+
     if (isEditMode) {
       const payload: UpdateWorkOrderPayload = {
         title: trimmedTitle,
         description: formDescription.trim() || undefined,
         priority: formPriority,
-        dueDate: formDueDate !== '' ? formDueDate : null,
+        dueDate: formDueDate,
       };
       onsave(payload);
     } else {
@@ -174,7 +180,7 @@
         title: trimmedTitle,
         description: formDescription.trim() || undefined,
         priority: formPriority,
-        dueDate: formDueDate !== '' ? formDueDate : null,
+        dueDate: formDueDate,
         assigneeUuids: selectedUserUuids,
       };
       onsave(payload);
@@ -303,15 +309,23 @@
           </div>
         </div>
 
-        <!-- Due Date (AppDatePicker) -->
+        <!-- Due Date (AppDatePicker) — Pflichtfeld -->
         <div class="form-field">
           <AppDatePicker
             label={MESSAGES.MODAL_FIELD_DUE_DATE}
             value={formDueDate}
+            required={true}
+            variant={showDueDateError ? 'error' : undefined}
             onchange={(v: string) => {
               formDueDate = v;
+              dueDateTouched = true;
             }}
           />
+          {#if showDueDateError}
+            <span class="form-field__message form-field__message--error">
+              Fälligkeitsdatum ist erforderlich
+            </span>
+          {/if}
         </div>
 
         <!-- Attachments (optional) -->

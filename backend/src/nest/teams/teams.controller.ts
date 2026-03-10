@@ -29,6 +29,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -58,6 +59,10 @@ interface AddAssetResponse {
   id: number;
   message: string;
 }
+
+/** Permission constants */
+const FEAT = 'teams';
+const MOD = 'teams-manage';
 
 @Controller('teams')
 export class TeamsController {
@@ -97,6 +102,7 @@ export class TeamsController {
    */
   @Post()
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createTeam(
     @Body() dto: CreateTeamDto,
@@ -112,6 +118,7 @@ export class TeamsController {
    */
   @Put(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   async updateTeam(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTeamDto,
@@ -128,6 +135,7 @@ export class TeamsController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canDelete')
   async deleteTeam(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteTeamQueryDto,
@@ -167,6 +175,7 @@ export class TeamsController {
    */
   @Post(':id/members')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addTeamMember(
     @Param('id', ParseIntPipe) id: number,
@@ -182,6 +191,7 @@ export class TeamsController {
    */
   @Delete(':id/members/:userId')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canDelete')
   async removeTeamMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -208,6 +218,7 @@ export class TeamsController {
    */
   @Post(':id/assets')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addTeamAsset(
     @Param('id', ParseIntPipe) id: number,
@@ -229,6 +240,7 @@ export class TeamsController {
    */
   @Delete(':id/assets/:assetId')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canDelete')
   async removeTeamAsset(
     @Param('id', ParseIntPipe) id: number,
     @Param('assetId', ParseIntPipe) assetId: number,

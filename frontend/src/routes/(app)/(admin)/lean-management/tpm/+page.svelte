@@ -10,6 +10,8 @@
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import { deletePlan as apiDeletePlan, logApiError } from './_lib/api';
   import { MESSAGES } from './_lib/constants';
   import PlanOverview from './_lib/PlanOverview.svelte';
@@ -172,65 +174,20 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-{#if tpmState.showDeleteModal}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    id="tpm-plan-delete-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={() => {
-      tpmState.closeDeleteModal();
-    }}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') tpmState.closeDeleteModal();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--danger"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e: KeyboardEvent) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3 class="confirm-modal__title">
-        {MESSAGES.DELETE_CONFIRM_TITLE}
-      </h3>
-      <p class="confirm-modal__message">
-        {MESSAGES.DELETE_CONFIRM_MESSAGE}
-      </p>
-      {#if tpmState.deletePlanName.length > 0}
-        <p class="confirm-modal__message">
-          <strong>{tpmState.deletePlanName}</strong>
-        </p>
-      {/if}
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => {
-            tpmState.closeDeleteModal();
-          }}
-          disabled={tpmState.submitting}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--danger"
-          onclick={confirmDelete}
-          disabled={tpmState.submitting}
-        >
-          {#if tpmState.submitting}
-            <i class="fas fa-spinner fa-spin"></i>
-          {/if}
-          {MESSAGES.BTN_DELETE}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={tpmState.showDeleteModal}
+  id="tpm-plan-delete-modal"
+  title={MESSAGES.DELETE_CONFIRM_TITLE}
+  confirmLabel={MESSAGES.BTN_DELETE}
+  submitting={tpmState.submitting}
+  onconfirm={confirmDelete}
+  oncancel={() => {
+    tpmState.closeDeleteModal();
+  }}
+>
+  {MESSAGES.DELETE_CONFIRM_MESSAGE}
+  {#if tpmState.deletePlanName.length > 0}
+    <br /><br />
+    <strong>{tpmState.deletePlanName}</strong>
+  {/if}
+</ConfirmModal>

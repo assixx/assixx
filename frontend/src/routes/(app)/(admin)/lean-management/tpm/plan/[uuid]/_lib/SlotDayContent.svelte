@@ -65,7 +65,7 @@
     justify-content: center;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #000;
+    color: var(--color-black);
     padding: 2px 4px;
     border-radius: 2px;
     line-height: 1;

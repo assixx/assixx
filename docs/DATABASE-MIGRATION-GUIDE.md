@@ -271,8 +271,8 @@ Seeds are **global configuration data** without tenant_id:
 | Table              | Rows | Description                                          |
 | ------------------ | ---- | ---------------------------------------------------- |
 | `plans`            | 3    | Subscription plans (Basic, Professional, Enterprise) |
-| `features`         | 12   | Available features                                   |
-| `plan_features`    | 36   | Plan-to-feature mapping                              |
+| `features`         | 20   | Available features                                   |
+| `plan_features`    | 60   | Plan-to-feature mapping                              |
 | `kvp_categories`   | 6    | KVP proposal categories                              |
 | `asset_categories` | 11   | Asset categories (Anlagen)                           |
 

@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { CurrentUser, Roles } from '../common/index.js';
 import type { NestAuthUser } from '../common/index.js';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
@@ -99,6 +100,12 @@ interface DeleteOldEntriesApiResponse {
  * - DELETE /api/v2/audit-trail/retention - Delete old entries (root)
  * - GET /api/v2/audit-trail/:id - Get specific entry (all users)
  */
+/** Permission constants */
+const FEAT = 'audit_trail';
+const MOD_VIEW = 'audit-view';
+const MOD_EXPORT = 'audit-export';
+const MOD_RETENTION = 'audit-retention';
+
 @Controller('audit-trail')
 export class AuditTrailController {
   private readonly logger = new Logger(AuditTrailController.name);
@@ -130,6 +137,7 @@ export class AuditTrailController {
    */
   @Get('stats')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_VIEW, 'canRead')
   async getStats(
     @CurrentUser() currentUser: NestAuthUser,
     @Query(new ZodValidationPipe(GetStatsQuerySchema)) dto: GetStatsQueryDto,
@@ -150,6 +158,7 @@ export class AuditTrailController {
    */
   @Post('reports')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_EXPORT, 'canWrite')
   async generateReport(
     @CurrentUser() currentUser: NestAuthUser,
     @Body(new ZodValidationPipe(GenerateReportBodySchema))
@@ -176,6 +185,7 @@ export class AuditTrailController {
    */
   @Get('export')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD_EXPORT, 'canRead')
   async exportEntries(
     @CurrentUser() currentUser: NestAuthUser,
     @Query(new ZodValidationPipe(ExportEntriesQuerySchema))
@@ -217,6 +227,7 @@ export class AuditTrailController {
    */
   @Delete('retention')
   @Roles('root')
+  @RequirePermission(FEAT, MOD_RETENTION, 'canDelete')
   async deleteOldEntries(
     @CurrentUser() currentUser: NestAuthUser,
     @Body(new ZodValidationPipe(DeleteOldEntriesBodySchema))

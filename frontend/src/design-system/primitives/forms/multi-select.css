@@ -41,7 +41,9 @@
 /* Focus State */
 .multi-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 20%); /* Primary blue focus ring */
+  box-shadow: 0 0 0 3px
+    color-mix(in oklch, var(--color-primary) 20%, transparent); /* Primary blue focus ring */
+
   border-color: var(--color-primary);
 }
 
@@ -74,22 +76,30 @@
 /* Selected Option */
 .multi-select option:checked {
   /* Browser workaround: linear-gradient overrides browser !important defaults */
-  background: rgb(0 221 255 / 10%)
-    linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
-  color: #0087ff; /* Cyan blue */
+  background: oklch(83.08% 0.1241 213.72 / 10%)
+    linear-gradient(
+      0deg,
+      oklch(83.08% 0.1241 213.72 / 10%) 0%,
+      oklch(83.08% 0.1241 213.72 / 10%) 100%
+    );
+  color: var(--color-electric-blue); /* Cyan blue */
   font-weight: 500;
 }
 
 /* Selected Option (when select has focus) - Important for browser override */
 .multi-select:focus option:checked {
-  background: rgb(0 221 255 / 10%)
-    linear-gradient(0deg, rgb(0 221 255 / 10%) 0%, rgb(0 221 255 / 10%) 100%);
-  color: #0087ff;
+  background: oklch(83.08% 0.1241 213.72 / 10%)
+    linear-gradient(
+      0deg,
+      oklch(83.08% 0.1241 213.72 / 10%) 0%,
+      oklch(83.08% 0.1241 213.72 / 10%) 100%
+    );
+  color: var(--color-electric-blue);
 }
 
 /* Hover on option (Firefox/Chrome) */
 .multi-select option:hover {
-  background: rgb(0 221 255 / 10%); /* Cyan hover */
+  background: oklch(83.08% 0.1241 213.72 / 10%); /* Cyan hover */
 }
 
 /* Compact Variant - Smaller min-height */
@@ -110,7 +120,8 @@
 
 .multi-select.error:focus,
 .multi-select[aria-invalid='true']:focus {
-  box-shadow: 0 0 0 3px rgb(244 67 54 / 20%); /* Danger red focus ring */
+  box-shadow: 0 0 0 3px
+    color-mix(in oklch, var(--color-danger) 20%, transparent); /* Danger red focus ring */
 }
 
 /* Custom Scrollbar for Webkit browsers */

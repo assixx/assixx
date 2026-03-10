@@ -232,6 +232,9 @@ export interface SlotAvailabilityResult {
 export interface TeamMemberStatus {
   userId: number;
   userName: string;
+  firstName: string | null;
+  lastName: string | null;
+  profilePicture: string | null;
   isAvailable: boolean;
   unavailabilityReason: string | null;
 }
@@ -419,6 +422,20 @@ export interface IntervalMatrixEntry {
   redCount: number;
   yellowCount: number;
   overdueCount: number;
+}
+
+// =============================================================================
+// PLAN ASSIGNMENTS
+// =============================================================================
+
+/** A single TPM plan assignment (employee to plan on specific date) */
+export interface TpmPlanAssignment {
+  uuid: string;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  userName: string;
+  scheduledDate: string;
 }
 
 // =============================================================================

@@ -14,6 +14,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ActivityLoggerService } from '../activity-logger/activity-logger.service.js';
 import type { PermissionRegistryService } from '../common/permission-registry/permission-registry.service.js';
 import type { PermissionCategoryDef } from '../common/permission-registry/permission.types.js';
 import type { DatabaseService } from '../database/database.service.js';
@@ -41,6 +42,15 @@ function createMockRegistry() {
   };
 }
 type MockRegistry = ReturnType<typeof createMockRegistry>;
+
+function createMockActivityLogger(): ActivityLoggerService {
+  return {
+    log: vi.fn(),
+    logCreate: vi.fn(),
+    logUpdate: vi.fn(),
+    logDelete: vi.fn(),
+  } as unknown as ActivityLoggerService;
+}
 
 function createCategory(
   overrides?: Partial<PermissionCategoryDef>,
@@ -70,11 +80,13 @@ describe('SECURITY: UserPermissionsService', () => {
   let mockDb: MockDb;
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockRegistry: MockRegistry;
+  let mockActivityLogger: ActivityLoggerService;
 
   beforeEach(() => {
     mockDb = createMockDb();
     mockClient = { query: vi.fn() };
     mockRegistry = createMockRegistry();
+    mockActivityLogger = createMockActivityLogger();
 
     // tenantTransaction executes callback with mockClient
     mockDb.tenantTransaction.mockImplementation(
@@ -86,6 +98,7 @@ describe('SECURITY: UserPermissionsService', () => {
     service = new UserPermissionsService(
       mockDb as unknown as DatabaseService,
       mockRegistry as unknown as PermissionRegistryService,
+      mockActivityLogger,
     );
   });
 
@@ -460,7 +473,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        const sql = mockClient.query.mock.calls[0]?.[0] as string;
+        // calls[0] = capturePermissionState, calls[1] = UPSERT
+        const sql = mockClient.query.mock.calls[1]?.[0] as string;
         expect(sql).toContain('INSERT INTO user_feature_permissions');
         expect(sql).toContain('ON CONFLICT');
       });
@@ -490,7 +504,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+        // calls[0] = capturePermissionState, calls[1] = UPSERT
+        const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
         expect(params).toContain(1); // tenantId
         expect(params).toContain(42); // userId
         expect(params).toContain('blackboard'); // featureCode
@@ -524,7 +539,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+        // calls[0] = capturePermissionState, calls[1] = UPSERT
+        const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
         // assignedBy is the last parameter
         expect(params?.[7]).toBe(99);
       });
@@ -568,8 +584,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        // One INSERT per entry
-        expect(mockClient.query).toHaveBeenCalledTimes(3);
+        // 1 capturePermissionState + 3 UPSERTs
+        expect(mockClient.query).toHaveBeenCalledTimes(4);
       });
 
       it('should handle empty permissions array', async () => {
@@ -578,8 +594,96 @@ describe('SECURITY: UserPermissionsService', () => {
 
         await service.upsertPermissions(1, 'user-uuid-1', [], 99);
 
-        // No INSERT calls (only resolveUserIdFromUuid via queryOne)
-        expect(mockClient.query).not.toHaveBeenCalled();
+        // 1 capturePermissionState, no UPSERT calls
+        expect(mockClient.query).toHaveBeenCalledTimes(1);
+      });
+
+      it('should capture existing permission state before upserting', async () => {
+        mockDb.queryOne.mockResolvedValue({ id: 42 });
+        mockRegistry.isValidModule.mockReturnValue(true);
+        mockRegistry.getAllowedPermissions.mockReturnValue([
+          'canRead',
+          'canWrite',
+          'canDelete',
+        ]);
+
+        // capturePermissionState returns existing rows
+        mockClient.query.mockResolvedValueOnce({
+          rows: [
+            {
+              feature_code: 'blackboard',
+              module_code: 'blackboard-posts',
+              can_read: true,
+              can_write: false,
+              can_delete: false,
+            },
+          ],
+        });
+        // UPSERT call
+        mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+        await service.upsertPermissions(
+          1,
+          'user-uuid-1',
+          [
+            {
+              featureCode: 'blackboard',
+              moduleCode: 'blackboard-posts',
+              canRead: true,
+              canWrite: true,
+              canDelete: false,
+            },
+          ],
+          99,
+        );
+
+        // capturePermissionState queried user_feature_permissions
+        const captureCall = mockClient.query.mock.calls[0];
+        const captureSql = captureCall?.[0] as string;
+        expect(captureSql).toContain('user_feature_permissions');
+        expect(captureCall?.[1]).toContain(42);
+      });
+
+      it('should not log when upserted permissions are identical to existing state', async () => {
+        mockDb.queryOne.mockResolvedValue({ id: 42 });
+        mockRegistry.isValidModule.mockReturnValue(true);
+        mockRegistry.getAllowedPermissions.mockReturnValue([
+          'canRead',
+          'canWrite',
+          'canDelete',
+        ]);
+
+        // Old state matches new values exactly → no diff
+        mockClient.query.mockResolvedValueOnce({
+          rows: [
+            {
+              feature_code: 'blackboard',
+              module_code: 'blackboard-posts',
+              can_read: true,
+              can_write: false,
+              can_delete: false,
+            },
+          ],
+        });
+        // UPSERT call
+        mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+        await service.upsertPermissions(
+          1,
+          'user-uuid-1',
+          [
+            {
+              featureCode: 'blackboard',
+              moduleCode: 'blackboard-posts',
+              canRead: true,
+              canWrite: false,
+              canDelete: false,
+            },
+          ],
+          99,
+        );
+
+        expect(mockActivityLogger.logUpdate).not.toHaveBeenCalled();
       });
     });
 
@@ -606,7 +710,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+        // calls[0] = capturePermissionState, calls[1] = UPSERT
+        const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
         // params: [tenantId, userId, featureCode, moduleCode, canRead, canWrite, canDelete, assignedBy]
         expect(params?.[4]).toBe(true); // canRead allowed
         expect(params?.[5]).toBe(false); // canWrite forced to false
@@ -636,7 +741,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+        // calls[0] = capturePermissionState, calls[1] = UPSERT
+        const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
         expect(params?.[4]).toBe(true); // canRead
         expect(params?.[5]).toBe(true); // canWrite
         expect(params?.[6]).toBe(false); // canDelete forced to false
@@ -667,7 +773,8 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
+        // calls[0] = capturePermissionState, calls[1] = UPSERT
+        const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
         expect(params?.[4]).toBe(true);
         expect(params?.[5]).toBe(true);
         expect(params?.[6]).toBe(true);
@@ -678,6 +785,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should throw BadRequestException for unknown featureCode', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(false);
+        mockClient.query.mockResolvedValue({ rows: [] });
 
         await expect(
           service.upsertPermissions(
@@ -700,6 +808,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should throw BadRequestException for unknown moduleCode', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(false);
+        mockClient.query.mockResolvedValue({ rows: [] });
 
         await expect(
           service.upsertPermissions(
@@ -764,9 +873,9 @@ describe('SECURITY: UserPermissionsService', () => {
           ),
         ).rejects.toThrow(BadRequestException);
 
-        // First valid entry's INSERT was executed before error
+        // 1 capturePermissionState + 1 UPSERT for valid entry before error
         // Atomicity is guaranteed by DB transaction rollback
-        expect(mockClient.query).toHaveBeenCalledTimes(1);
+        expect(mockClient.query).toHaveBeenCalledTimes(2);
       });
     });
 

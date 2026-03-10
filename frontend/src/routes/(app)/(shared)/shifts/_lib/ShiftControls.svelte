@@ -10,26 +10,22 @@
     autofillConfig: ShiftAutofillConfig;
     standardRotationEnabled: boolean;
     customRotationEnabled: boolean;
-    tpmModeEnabled: boolean;
     isPlanLocked?: boolean; // Rotation toggles disabled when plan is locked
 
     // Event handlers
     onautofillChange: (enabled: boolean) => void;
     onstandardRotationChange: (enabled: boolean) => void;
     oncustomRotationChange: (enabled: boolean) => void;
-    ontpmModeChange: (enabled: boolean) => void;
   }
 
   const {
     autofillConfig,
     standardRotationEnabled,
     customRotationEnabled,
-    tpmModeEnabled,
     isPlanLocked = false,
     onautofillChange,
     onstandardRotationChange,
     oncustomRotationChange,
-    ontpmModeChange,
   }: Props = $props();
 </script>
 
@@ -97,25 +93,6 @@
         <small class="toggle-hint">Automatische Mustererkennung</small>
       </span>
     </label>
-
-    <div class="divider"></div>
-
-    <!-- TPM Mode Toggle -->
-    <label class="toggle-switch">
-      <input
-        type="checkbox"
-        class="toggle-switch__input"
-        checked={tpmModeEnabled}
-        onchange={(e) => {
-          ontpmModeChange((e.target as HTMLInputElement).checked);
-        }}
-      />
-      <span class="toggle-switch__slider"></span>
-      <span class="toggle-switch__label">
-        TPM-Modus
-        <small class="toggle-hint">Wartungstermine einplanen</small>
-      </span>
-    </label>
   </div>
 </div>
 
@@ -149,7 +126,10 @@
 
   .toggle-hint {
     display: block;
-    color: var(--color-text-muted, rgb(255 255 255 / 50%));
+    color: var(
+      --color-text-muted,
+      color-mix(in oklch, var(--color-white) 50%, transparent)
+    );
     font-weight: 400;
     font-size: 11px;
   }

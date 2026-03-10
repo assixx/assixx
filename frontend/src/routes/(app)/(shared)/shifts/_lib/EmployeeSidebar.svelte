@@ -180,18 +180,18 @@
   }
 
   .employee-item.status-vacation {
-    border-left: 3px solid #ffc107;
-    background: rgb(255 193 7 / 10%);
+    border-left: 3px solid var(--color-amber);
+    background: oklch(84.42% 0.1721 84.94 / 10%);
   }
 
   .employee-item.status-sick {
-    border-left: 3px solid #dc3545;
-    background: rgb(220 53 69 / 10%);
+    border-left: 3px solid var(--color-crimson);
+    background: oklch(59.16% 0.202 21.23 / 10%);
   }
 
   .employee-item.status-unavailable {
-    border-left: 3px solid #6c757d;
-    background: rgb(108 117 125 / 10%);
+    border-left: 3px solid var(--color-slate);
+    background: oklch(55.75% 0.0165 244.95 / 10%);
   }
 
   .employee-item[draggable='false'] {
@@ -247,27 +247,27 @@
   }
 
   .employee-info .badge-success {
-    border: 1px solid rgb(76 175 80 / 30%);
-    background: rgb(76 175 80 / 15%);
-    color: rgb(76 175 80 / 95%);
+    border: 1px solid color-mix(in oklch, var(--color-success) 30%, transparent);
+    background: color-mix(in oklch, var(--color-success) 15%, transparent);
+    color: color-mix(in oklch, var(--color-success) 95%, transparent);
   }
 
   .employee-info .badge-warning {
-    border: 1px solid rgb(255 193 7 / 30%);
-    background: rgb(255 193 7 / 15%);
-    color: rgb(255 193 7 / 95%);
+    border: 1px solid oklch(84.42% 0.1721 84.94 / 30%);
+    background: oklch(84.42% 0.1721 84.94 / 15%);
+    color: oklch(84.42% 0.1721 84.94 / 95%);
   }
 
   .employee-info .badge-danger {
-    border: 1px solid rgb(220 53 69 / 30%);
-    background: rgb(220 53 69 / 15%);
-    color: rgb(220 53 69 / 95%);
+    border: 1px solid oklch(59.16% 0.202 21.23 / 30%);
+    background: oklch(59.16% 0.202 21.23 / 15%);
+    color: oklch(59.16% 0.202 21.23 / 95%);
   }
 
   .employee-info .badge-secondary {
-    border: 1px solid rgb(108 117 125 / 30%);
-    background: rgb(108 117 125 / 15%);
-    color: rgb(108 117 125 / 95%);
+    border: 1px solid oklch(55.75% 0.0165 244.95 / 30%);
+    background: oklch(55.75% 0.0165 244.95 / 15%);
+    color: oklch(55.75% 0.0165 244.95 / 95%);
   }
 
   .status-icon {
@@ -281,15 +281,15 @@
   }
 
   .status-icon.vacation {
-    color: #ffc107;
+    color: var(--color-amber);
   }
 
   .status-icon.sick {
-    color: #dc3545;
+    color: var(--color-crimson);
   }
 
   .status-icon.unavailable {
-    color: #6c757d;
+    color: var(--color-slate);
   }
 
   .availability-badge {
@@ -303,28 +303,28 @@
   }
 
   .availability-badge.badge--warning {
-    background: rgb(255 193 7 / 20%);
-    color: #ffc107;
+    background: oklch(84.42% 0.1721 84.94 / 20%);
+    color: var(--color-amber);
   }
 
   .availability-badge.badge--danger {
-    background: rgb(231 76 60 / 20%);
-    color: #e74c3c;
+    background: oklch(63.07% 0.194 29.43 / 20%);
+    color: var(--color-alizarin);
   }
 
   .availability-badge.badge--error {
-    background: rgb(192 57 43 / 20%);
-    color: #c0392b;
+    background: oklch(54.34% 0.174 29.69 / 20%);
+    color: var(--color-alizarin-hover);
   }
 
   .availability-badge.badge--info {
-    background: rgb(52 152 219 / 20%);
-    color: #3498db;
+    background: oklch(65.31% 0.1348 242.7 / 20%);
+    color: var(--color-sky);
   }
 
   .availability-badge.badge--dark {
-    background: rgb(149 165 166 / 20%);
-    color: #95a5a6;
+    background: oklch(70.97% 0.0181 201.48 / 20%);
+    color: var(--color-concrete);
   }
 
   .availability-period {
@@ -335,23 +335,23 @@
   }
 
   :global(html:not(.dark)) .availability-badge.badge--warning {
-    color: #ab8000;
+    color: var(--color-bronze);
   }
 
   :global(html:not(.dark)) .availability-badge.badge--danger {
-    color: #c62828;
+    color: var(--color-status-active);
   }
 
   :global(html:not(.dark)) .availability-badge.badge--error {
-    color: #962018;
+    color: var(--color-brick);
   }
 
   :global(html:not(.dark)) .availability-badge.badge--info {
-    color: #1565c0;
+    color: var(--color-primary-dark);
   }
 
   :global(html:not(.dark)) .availability-badge.badge--dark {
-    color: #546e7a;
+    color: var(--color-blue-grey-dark);
   }
 
   @media (width < 1024px) {

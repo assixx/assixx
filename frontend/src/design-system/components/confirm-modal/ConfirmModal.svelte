@@ -6,6 +6,16 @@
     <ConfirmModal show={...} title="..." onconfirm={...} oncancel={...}>
       <strong>ACHTUNG:</strong> Diese Aktion ist unwiderruflich.
     </ConfirmModal>
+
+  With extra content (e.g. textarea, list) between message and buttons:
+    <ConfirmModal show={...} title="..." onconfirm={...} oncancel={...}>
+      Bitte geben Sie einen Grund an:
+      {#snippet extra()}
+        <div class="confirm-modal__input-group">
+          <textarea class="confirm-modal__input" ...></textarea>
+        </div>
+      {/snippet}
+    </ConfirmModal>
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -16,12 +26,18 @@
     show: boolean;
     title: string;
     children: Snippet;
+    /** Optional content rendered between message and buttons (e.g. textarea, list) */
+    extra?: Snippet;
     confirmLabel?: string;
     cancelLabel?: string;
     variant?: Variant;
     /** Font Awesome icon class, e.g. 'fa-exclamation-triangle' */
     icon?: string;
     submitting?: boolean;
+    /** Additional disable condition for the confirm button (independent of submitting) */
+    confirmDisabled?: boolean;
+    /** Center-align action buttons with min-width */
+    centered?: boolean;
     id?: string;
     onconfirm: () => void;
     oncancel: () => void;
@@ -31,11 +47,14 @@
     show,
     title,
     children,
+    extra,
     confirmLabel = 'Endgültig löschen',
     cancelLabel = 'Abbrechen',
     variant = 'danger',
     icon = 'fa-exclamation-triangle',
     submitting = false,
+    confirmDisabled = false,
+    centered = false,
     id = 'confirm-modal',
     onconfirm,
     oncancel,
@@ -85,16 +104,28 @@
       <p class="confirm-modal__message">
         {@render children()}
       </p>
-      <div class="confirm-modal__actions">
+      {#if extra}
+        {@render extra()}
+      {/if}
+      <div
+        class="confirm-modal__actions{centered ?
+          ' confirm-modal__actions--centered'
+        : ''}"
+      >
         <button
           type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
+          class="confirm-modal__btn confirm-modal__btn--cancel{centered ?
+            ' confirm-modal__btn--wide'
+          : ''}"
+          disabled={submitting}
           onclick={oncancel}>{cancelLabel}</button
         >
         <button
           type="button"
-          class="confirm-modal__btn {btnVariantClass}"
-          disabled={submitting}
+          class="confirm-modal__btn {btnVariantClass}{centered ?
+            ' confirm-modal__btn--wide'
+          : ''}"
+          disabled={submitting || confirmDisabled}
           onclick={onconfirm}
         >
           {#if submitting}

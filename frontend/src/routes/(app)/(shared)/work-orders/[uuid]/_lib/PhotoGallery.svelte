@@ -423,7 +423,7 @@
 
   .pdf-thumbnail :global(i) {
     font-size: 2.5rem;
-    color: #ef4444;
+    color: oklch(62.94% 0.218 25.71);
   }
 
   .pdf-thumbnail__name {
@@ -448,8 +448,8 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: rgb(239 68 68 / 85%);
-    color: #fff;
+    background: color-mix(in oklch, var(--color-coral) 85%, transparent);
+    color: var(--color-white);
     font-size: 0.7rem;
     cursor: pointer;
     opacity: 0%;
@@ -463,7 +463,7 @@
   }
 
   .photo-delete-btn:hover {
-    background: rgb(220 38 38);
+    background: oklch(57.71% 0.2151 27.32);
   }
 
   .photo-delete-btn:disabled {

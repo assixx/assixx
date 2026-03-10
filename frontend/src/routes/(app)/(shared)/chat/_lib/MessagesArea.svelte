@@ -435,8 +435,8 @@
   }
 
   .message.own .message-content {
-    border-color: hsl(188.6deg 100% 23.3% / 50%);
-    background: hsl(188.6deg 100% 23.3% / 36%);
+    border-color: oklch(46.93% 0.0827 214.34 / 50%);
+    background: oklch(46.93% 0.0827 214.34 / 36%);
   }
 
   /* Links injected via {@html linkify()} — no Svelte scoping hash on child elements */
@@ -461,7 +461,7 @@
   .message-text :global(mark),
   .message-text :global(.search-highlight) {
     border-radius: 2px;
-    background: #b4fe8a66;
+    background: oklch(91.45% 0.1679 133.87 / 40%);
     padding: 1px 2px;
     color: var(--text-primary);
   }
@@ -549,13 +549,13 @@
     justify-content: center;
     padding: var(--spacing-8, 2rem);
     font-size: 2rem;
-    color: var(--primary-color, #2196f3);
+    color: var(--primary-color, var(--color-primary));
   }
 
   /* Scheduled message styling */
   .message--scheduled .message-content {
-    border-color: hsl(40deg 100% 40% / 50%);
-    background: hsl(40deg 100% 30% / 25%);
+    border-color: oklch(67.92% 0.144 73.83 / 50%);
+    background: oklch(55.1% 0.1163 74.75 / 25%);
   }
 
   .message--scheduled-info {
@@ -565,7 +565,7 @@
     margin-top: 8px;
     border-top: 1px solid var(--color-glass-border);
     padding-top: 8px;
-    color: hsl(40deg 100% 70%);
+    color: oklch(87.07% 0.1325 82.74);
     font-size: 0.7rem;
   }
 
@@ -595,19 +595,19 @@
   }
 
   .message--scheduled-cancel:hover {
-    background: rgb(244 67 54 / 20%);
+    background: color-mix(in oklch, var(--color-danger) 20%, transparent);
     color: var(--color-danger);
   }
 
   /* E2E encryption indicators */
   .e2e-indicator {
-    color: var(--success-color, #4caf50);
+    color: var(--success-color, var(--color-success));
     font-size: 0.65em;
     margin-right: 2px;
   }
 
   .e2e-decrypt-failed {
-    color: var(--error-color, #f44336);
+    color: var(--error-color, var(--color-danger));
     font-style: italic;
     opacity: 80%;
   }

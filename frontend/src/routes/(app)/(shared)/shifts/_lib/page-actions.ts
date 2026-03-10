@@ -74,7 +74,6 @@ export async function handleSaveSchedule(
       selectedContext: shiftsState.selectedContext,
       teams: shiftsState.teams,
       shiftTimesMap,
-      isTpmMode: shiftsState.showTpmEvents,
     });
     if (shiftsState.currentPlanId === null && result.planId !== undefined)
       shiftsState.setCurrentPlanId(result.planId);

@@ -26,25 +26,30 @@
 
 .confirm-modal {
   position: relative;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 20px 60px rgb(0 100 130 / 30%);
-  border: 1px solid rgb(0 0 0 / 18%);
+  box-shadow: 0 20px 60px oklch(43.95% 0.0716 219.89 / 30%);
+  border: 1px solid color-mix(in oklch, var(--color-black) 18%, transparent);
   border-radius: var(--glass-card-radius);
 
   background: linear-gradient(
     -106deg,
-    rgb(60 195 222) 0%,
-    rgb(218 248 255) 100%
+    oklch(74.4% 0.0946 214.56) 0%,
+    oklch(95.82% 0.0291 217.39) 100%
   );
+  background-origin: border-box;
   padding: 30px;
 
   max-width: 550px;
 }
 
 html.dark .confirm-modal {
-  box-shadow: 0 20px 60px rgb(0 0 0);
-  border-color: rgb(255 255 255 / 5%);
-  background: linear-gradient(-106deg, rgb(0 39 53) 0%, rgb(0 0 0 / 60%) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 60px oklch(0% 0 0);
+  border-color: color-mix(in oklch, var(--color-white) 5%, transparent);
+  background-image: linear-gradient(
+    -106deg,
+    oklch(22.76% 0.0359 230.43) 0%,
+    color-mix(in oklch, var(--color-black) 60%, transparent) 100%
+  );
 }
 
 /* Variant border overrides for dark mode (restore subtle border) */
@@ -52,7 +57,7 @@ html.dark .confirm-modal--warning,
 html.dark .confirm-modal--danger,
 html.dark .confirm-modal--info,
 html.dark .confirm-modal--success {
-  border-color: rgb(255 255 255 / 5%);
+  border-color: color-mix(in oklch, var(--color-white) 5%, transparent);
 }
 
 /* ========== ICON ========== */
@@ -131,13 +136,13 @@ html.dark .confirm-modal--success {
 /* ========== CANCEL BUTTON ========== */
 
 .confirm-modal__btn--cancel {
-  border: 1px solid rgb(0 0 0 / 22%);
+  border: 1px solid color-mix(in oklch, var(--color-black) 22%, transparent);
   background: var(--glass-bg-active);
   color: var(--text-primary);
 }
 
 .confirm-modal__btn--cancel:hover:not(:disabled) {
-  border-color: rgb(0 0 0 / 38%);
+  border-color: color-mix(in oklch, var(--color-black) 38%, transparent);
 }
 
 html.dark .confirm-modal__btn--cancel {
@@ -151,241 +156,265 @@ html.dark .confirm-modal__btn--cancel:hover:not(:disabled) {
 /* ========== CONFIRM BUTTON (Default Cyan/Teal) ========== */
 
 .confirm-modal__btn--confirm {
-  border: 1px solid rgb(0 180 215 / 65%);
+  border: 1px solid oklch(70.42% 0.1082 214.22 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(0 212 255 / 20%),
-    rgb(0 153 204 / 20%)
+    oklch(80.13% 0.1206 215.31 / 20%),
+    oklch(63.12% 0.1106 225.1 / 20%)
   );
   color: var(--text-primary);
 }
 
 .confirm-modal__btn--confirm:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(0 212 255 / 20%);
+  box-shadow: 0 5px 15px oklch(80.13% 0.1206 215.31 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(0 212 255 / 30%),
-    rgb(0 153 204 / 30%)
+    oklch(80.13% 0.1206 215.31 / 30%),
+    oklch(63.12% 0.1106 225.1 / 30%)
   );
 }
 
 /* ========== VARIANT: WARNING (Orange/Yellow) ========== */
 
 .confirm-modal--warning {
-  box-shadow: 0 20px 60px rgb(160 80 0 / 30%);
-  border-color: rgb(160 80 0 / 22%);
-  background: linear-gradient(
+  box-shadow: 0 20px 60px oklch(50.61% 0.1248 49.18 / 30%);
+  border-color: oklch(50.61% 0.1248 49.18 / 22%);
+  background-image: linear-gradient(
     -106deg,
-    rgb(245 165 45) 0%,
-    rgb(255 248 225) 100%
+    oklch(77.61% 0.1401 67.37) 0%,
+    oklch(97.61% 0.0346 96.41) 100%
   );
 }
 
 html.dark .confirm-modal--warning {
-  background: linear-gradient(-106deg, #352200 0%, rgb(0 0 0 / 60%) 100%);
+  background-image: linear-gradient(
+    -106deg,
+    var(--color-modal-warning-bg) 0%,
+    color-mix(in oklch, var(--color-black) 60%, transparent) 100%
+  );
 }
 
 .confirm-modal--warning .confirm-modal__icon {
   background: linear-gradient(
     135deg,
-    rgb(251 146 60 / 20%),
-    rgb(249 115 22 / 20%)
+    oklch(76.73% 0.1516 55.43 / 20%),
+    oklch(71.98% 0.1714 45.77 / 20%)
   );
-  color: #c2570b; /* orange-700 — mehr Kontrast auf hellem Bg */
+  color: var(
+    --color-modal-warning-text
+  ); /* orange-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--warning .confirm-modal__title {
-  color: #c2570b;
+  color: var(--color-modal-warning-text);
 }
 
 html.dark .confirm-modal--warning .confirm-modal__icon {
-  color: #fb923c;
+  color: var(--color-modal-warning-text-dark);
 }
 
 html.dark .confirm-modal--warning .confirm-modal__title {
-  color: #fb923c;
+  color: var(--color-modal-warning-text-dark);
 }
 
 .confirm-modal--warning .confirm-modal__btn--confirm {
-  border: 1px solid rgb(220 110 20 / 65%);
+  border: 1px solid oklch(63.56% 0.1501 47.67 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(251 146 60 / 20%),
-    rgb(249 115 22 / 20%)
+    oklch(76.73% 0.1516 55.43 / 20%),
+    oklch(71.98% 0.1714 45.77 / 20%)
   );
 }
 
 .confirm-modal--warning .confirm-modal__btn--confirm:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(251 146 60 / 20%);
+  box-shadow: 0 5px 15px oklch(76.73% 0.1516 55.43 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(251 146 60 / 30%),
-    rgb(249 115 22 / 30%)
+    oklch(76.73% 0.1516 55.43 / 30%),
+    oklch(71.98% 0.1714 45.77 / 30%)
   );
 }
 
 /* ========== VARIANT: DANGER (Red) ========== */
 
 .confirm-modal--danger {
-  box-shadow: 0 20px 60px rgb(160 0 0 / 30%);
-  border-color: rgb(160 0 0 / 22%);
-  background: linear-gradient(
+  box-shadow: 0 20px 60px oklch(38.79% 0.1482 21.87 / 30%);
+  border-color: oklch(38.79% 0.1482 21.87 / 22%);
+  background-image: linear-gradient(
     -106deg,
-    rgb(235 70 70) 0%,
-    rgb(255 232 232) 100%
+    oklch(58.86% 0.1864 24.32) 0%,
+    oklch(94.49% 0.0197 17.18) 100%
   );
 }
 
 html.dark .confirm-modal--danger {
-  background: linear-gradient(-106deg, #540000 0%, rgb(0 0 0 / 60%) 100%);
+  background-image: linear-gradient(
+    -106deg,
+    var(--color-modal-danger-bg) 0%,
+    color-mix(in oklch, var(--color-black) 60%, transparent) 100%
+  );
 }
 
 .confirm-modal--danger .confirm-modal__icon {
   background: linear-gradient(
     135deg,
-    rgb(239 68 68 / 20%),
-    rgb(220 38 38 / 20%)
+    oklch(62.77% 0.2092 22.18 / 20%),
+    oklch(55.58% 0.2019 21.59 / 20%)
   );
-  color: #b91c1c; /* red-700 — mehr Kontrast auf hellem Bg */
+  color: var(
+    --color-modal-danger-text
+  ); /* red-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--danger .confirm-modal__title {
-  color: #b91c1c;
+  color: var(--color-modal-danger-text);
 }
 
 html.dark .confirm-modal--danger .confirm-modal__icon {
-  color: #ef4444;
+  color: var(--color-coral);
 }
 
 html.dark .confirm-modal--danger .confirm-modal__title {
-  color: #ef4444;
+  color: var(--color-coral);
 }
 
 .confirm-modal--danger .confirm-modal__btn--confirm {
-  border: 1px solid rgb(210 40 40 / 65%);
+  border: 1px solid oklch(52.32% 0.1862 21.73 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(239 68 68 / 20%),
-    rgb(220 38 38 / 20%)
+    oklch(62.77% 0.2092 22.18 / 20%),
+    oklch(55.58% 0.2019 21.59 / 20%)
   );
 }
 
 .confirm-modal--danger .confirm-modal__btn--confirm:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(239 68 68 / 20%);
+  box-shadow: 0 5px 15px oklch(62.77% 0.2092 22.18 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(239 68 68 / 30%),
-    rgb(220 38 38 / 30%)
+    oklch(62.77% 0.2092 22.18 / 30%),
+    oklch(55.58% 0.2019 21.59 / 30%)
   );
 }
 
 /* ========== VARIANT: INFO (Blue) ========== */
 
 .confirm-modal--info {
-  box-shadow: 0 20px 60px rgb(0 60 190 / 30%);
-  border-color: rgb(0 60 190 / 22%);
-  background: linear-gradient(
+  box-shadow: 0 20px 60px oklch(38.71% 0.1721 267.58 / 30%);
+  border-color: oklch(38.71% 0.1721 267.58 / 22%);
+  background-image: linear-gradient(
     -106deg,
-    rgb(65 130 245) 0%,
-    rgb(222 235 255) 100%
+    oklch(60.43% 0.1745 263.69) 0%,
+    oklch(93.73% 0.0297 253.27) 100%
   );
 }
 
 html.dark .confirm-modal--info {
-  background: linear-gradient(-106deg, #001535 0%, rgb(0 0 0 / 60%) 100%);
+  background-image: linear-gradient(
+    -106deg,
+    var(--color-modal-info-bg) 0%,
+    color-mix(in oklch, var(--color-black) 60%, transparent) 100%
+  );
 }
 
 .confirm-modal--info .confirm-modal__icon {
   background: linear-gradient(
     135deg,
-    rgb(59 130 246 / 20%),
-    rgb(37 99 235 / 20%)
+    oklch(62.31% 0.1626 259.57 / 20%),
+    oklch(54.61% 0.1854 264.05 / 20%)
   );
-  color: #1d4ed8; /* blue-700 — mehr Kontrast auf hellem Bg */
+  color: var(
+    --color-modal-info-text
+  ); /* blue-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--info .confirm-modal__title {
-  color: #1d4ed8;
+  color: var(--color-modal-info-text);
 }
 
 html.dark .confirm-modal--info .confirm-modal__icon {
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 html.dark .confirm-modal--info .confirm-modal__title {
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .confirm-modal--info .confirm-modal__btn--confirm {
-  border: 1px solid rgb(40 110 230 / 65%);
+  border: 1px solid oklch(55.24% 0.1674 259.96 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(59 130 246 / 20%),
-    rgb(37 99 235 / 20%)
+    oklch(62.31% 0.1626 259.57 / 20%),
+    oklch(54.61% 0.1854 264.05 / 20%)
   );
 }
 
 .confirm-modal--info .confirm-modal__btn--confirm:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(59 130 246 / 20%);
+  box-shadow: 0 5px 15px oklch(62.31% 0.1626 259.57 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(59 130 246 / 30%),
-    rgb(37 99 235 / 30%)
+    oklch(62.31% 0.1626 259.57 / 30%),
+    oklch(54.61% 0.1854 264.05 / 30%)
   );
 }
 
 /* ========== VARIANT: SUCCESS (Green) ========== */
 
 .confirm-modal--success {
-  box-shadow: 0 20px 60px rgb(0 130 60 / 30%);
-  border-color: rgb(0 130 60 / 22%);
-  background: linear-gradient(
+  box-shadow: 0 20px 60px oklch(51.29% 0.1307 157.18 / 30%);
+  border-color: oklch(51.29% 0.1307 157.18 / 22%);
+  background-image: linear-gradient(
     -106deg,
-    rgb(35 195 105) 0%,
-    rgb(218 255 238) 100%
+    oklch(70.53% 0.1565 161.55) 0%,
+    oklch(96.04% 0.0427 161.37) 100%
   );
 }
 
 html.dark .confirm-modal--success {
-  background: linear-gradient(-106deg, #003515 0%, rgb(0 0 0 / 60%) 100%);
+  background-image: linear-gradient(
+    -106deg,
+    var(--color-modal-success-bg) 0%,
+    color-mix(in oklch, var(--color-black) 60%, transparent) 100%
+  );
 }
 
 .confirm-modal--success .confirm-modal__icon {
   background: linear-gradient(
     135deg,
-    rgb(34 197 94 / 20%),
-    rgb(22 163 74 / 20%)
+    oklch(72.27% 0.1715 149.58 / 20%),
+    oklch(62.72% 0.1598 148.43 / 20%)
   );
-  color: #15803d; /* green-700 — mehr Kontrast auf hellem Bg */
+  color: var(
+    --color-modal-success-text
+  ); /* green-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--success .confirm-modal__title {
-  color: #15803d;
+  color: var(--color-modal-success-text);
 }
 
 html.dark .confirm-modal--success .confirm-modal__icon {
-  color: #22c55e;
+  color: var(--color-mint);
 }
 
 html.dark .confirm-modal--success .confirm-modal__title {
-  color: #22c55e;
+  color: var(--color-mint);
 }
 
 .confirm-modal--success .confirm-modal__btn--confirm {
-  border: 1px solid rgb(20 170 70 / 65%);
+  border: 1px solid oklch(63.83% 0.1577 150.93 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(34 197 94 / 20%),
-    rgb(22 163 74 / 20%)
+    oklch(72.27% 0.1715 149.58 / 20%),
+    oklch(62.72% 0.1598 148.43 / 20%)
   );
 }
 
 .confirm-modal--success .confirm-modal__btn--confirm:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(34 197 94 / 20%);
+  box-shadow: 0 5px 15px oklch(72.27% 0.1715 149.58 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(34 197 94 / 30%),
-    rgb(22 163 74 / 30%)
+    oklch(72.27% 0.1715 149.58 / 30%),
+    oklch(62.72% 0.1598 148.43 / 30%)
   );
 }
 
@@ -414,8 +443,8 @@ html.dark .confirm-modal--success .confirm-modal__title {
 }
 
 .confirm-modal__input:focus {
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 15%);
-  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px oklch(62.31% 0.1626 259.57 / 15%);
+  border-color: var(--color-info);
   background: var(--glass-bg-active);
 }
 
@@ -426,84 +455,84 @@ html.dark .confirm-modal--success .confirm-modal__title {
 /* ========== DANGER BUTTON (for destructive actions) ========== */
 
 .confirm-modal__btn--danger {
-  border: 1px solid rgb(210 40 40 / 65%);
+  border: 1px solid oklch(52.32% 0.1862 21.73 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(239 68 68 / 20%),
-    rgb(220 38 38 / 20%)
+    oklch(62.77% 0.2092 22.18 / 20%),
+    oklch(55.58% 0.2019 21.59 / 20%)
   );
   color: var(--text-primary);
 }
 
 .confirm-modal__btn--danger:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(239 68 68 / 20%);
+  box-shadow: 0 5px 15px oklch(62.77% 0.2092 22.18 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(239 68 68 / 30%),
-    rgb(220 38 38 / 30%)
+    oklch(62.77% 0.2092 22.18 / 30%),
+    oklch(55.58% 0.2019 21.59 / 30%)
   );
 }
 
 /* ========== WARNING BUTTON (standalone) ========== */
 
 .confirm-modal__btn--warning {
-  border: 1px solid rgb(220 110 20 / 65%);
+  border: 1px solid oklch(63.56% 0.1501 47.67 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(251 146 60 / 20%),
-    rgb(249 115 22 / 20%)
+    oklch(76.73% 0.1516 55.43 / 20%),
+    oklch(71.98% 0.1714 45.77 / 20%)
   );
   color: var(--text-primary);
 }
 
 .confirm-modal__btn--warning:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(251 146 60 / 20%);
+  box-shadow: 0 5px 15px oklch(76.73% 0.1516 55.43 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(251 146 60 / 30%),
-    rgb(249 115 22 / 30%)
+    oklch(76.73% 0.1516 55.43 / 30%),
+    oklch(71.98% 0.1714 45.77 / 30%)
   );
 }
 
 /* ========== INFO BUTTON (standalone) ========== */
 
 .confirm-modal__btn--info {
-  border: 1px solid rgb(40 110 230 / 65%);
+  border: 1px solid oklch(55.24% 0.1674 259.96 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(59 130 246 / 20%),
-    rgb(37 99 235 / 20%)
+    oklch(62.31% 0.1626 259.57 / 20%),
+    oklch(54.61% 0.1854 264.05 / 20%)
   );
   color: var(--text-primary);
 }
 
 .confirm-modal__btn--info:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(59 130 246 / 20%);
+  box-shadow: 0 5px 15px oklch(62.31% 0.1626 259.57 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(59 130 246 / 30%),
-    rgb(37 99 235 / 30%)
+    oklch(62.31% 0.1626 259.57 / 30%),
+    oklch(54.61% 0.1854 264.05 / 30%)
   );
 }
 
 /* ========== SUCCESS BUTTON (standalone) ========== */
 
 .confirm-modal__btn--success {
-  border: 1px solid rgb(20 170 70 / 65%);
+  border: 1px solid oklch(63.83% 0.1577 150.93 / 65%);
   background: linear-gradient(
     135deg,
-    rgb(34 197 94 / 20%),
-    rgb(22 163 74 / 20%)
+    oklch(72.27% 0.1715 149.58 / 20%),
+    oklch(62.72% 0.1598 148.43 / 20%)
   );
   color: var(--text-primary);
 }
 
 .confirm-modal__btn--success:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgb(34 197 94 / 20%);
+  box-shadow: 0 5px 15px oklch(72.27% 0.1715 149.58 / 20%);
   background: linear-gradient(
     135deg,
-    rgb(34 197 94 / 30%),
-    rgb(22 163 74 / 30%)
+    oklch(72.27% 0.1715 149.58 / 30%),
+    oklch(62.72% 0.1598 148.43 / 30%)
   );
 }
 

@@ -343,6 +343,7 @@
               type={showPassword ? 'text' : 'password'}
               id="employee-password"
               name="password"
+              autocomplete="new-password"
               class="form-field__control"
               class:is-error={passwordError}
               required={!isEditMode}
@@ -385,6 +386,7 @@
               type={showPasswordConfirm ? 'text' : 'password'}
               id="employee-password-confirm"
               name="passwordConfirm"
+              autocomplete="new-password"
               class="form-field__control"
               class:is-error={passwordError}
               class:is-success={formPasswordConfirm !== '' && passwordMatch}

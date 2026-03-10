@@ -147,18 +147,27 @@
   // VALIDATION HELPERS
   // =============================================================================
 
+  /** Check password fields: required for new, optional for edit (both-or-none + must match) */
+  function hasPasswordError(): boolean {
+    if (!isEditMode) {
+      return (
+        formPassword === '' ||
+        formPasswordConfirm === '' ||
+        formPassword !== formPasswordConfirm
+      );
+    }
+    // Edit mode: if either field is filled, both must be filled and match
+    const eitherFilled = formPassword !== '' || formPasswordConfirm !== '';
+    return eitherFilled && formPassword !== formPasswordConfirm;
+  }
+
   /** Validates admin form fields */
   function validateAdminForm(): string | null {
     if (formEmail !== formEmailConfirm) {
       return MESSAGES.ERROR_EMAIL_MISMATCH;
     }
 
-    const passwordMismatch = formPassword !== formPasswordConfirm;
-    if (!isEditMode && passwordMismatch) {
-      return MESSAGES.ERROR_PASSWORD_MISMATCH;
-    }
-
-    if (isEditMode && formPassword && passwordMismatch) {
+    if (hasPasswordError()) {
       return MESSAGES.ERROR_PASSWORD_MISMATCH;
     }
 

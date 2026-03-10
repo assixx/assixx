@@ -23,10 +23,18 @@
   /* Outputs: linear-gradient(135deg, #2196f3, #1976d2) */
 
   /* Danger - Red gradient */
-  --gradient-danger: linear-gradient(135deg, #9a1e2a 0%, #c82333 100%);
+  --gradient-danger: linear-gradient(
+    135deg,
+    var(--color-gradient-danger-start) 0%,
+    var(--color-gradient-danger-mid) 100%
+  );
 
   /* Danger Hover - Reversed for subtle effect */
-  --gradient-danger-hover: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  --gradient-danger-hover: linear-gradient(
+    135deg,
+    var(--color-gradient-danger-mid) 0%,
+    var(--color-gradient-danger-end) 100%
+  );
 
   /* Success - Green gradient */
   --gradient-success: linear-gradient(
@@ -50,7 +58,7 @@
   --gradient-shine: linear-gradient(
     90deg,
     transparent,
-    rgb(255 255 255 / 20%),
+    oklch(100% 0 0 / 20%),
     transparent
   );
 }

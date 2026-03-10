@@ -333,9 +333,9 @@
 .skeleton--light {
   background: linear-gradient(
     90deg,
-    rgb(255 255 255 / 10%) 0%,
-    rgb(255 255 255 / 20%) 50%,
-    rgb(255 255 255 / 10%) 100%
+    color-mix(in oklch, var(--color-white) 10%, transparent) 0%,
+    color-mix(in oklch, var(--color-white) 20%, transparent) 50%,
+    color-mix(in oklch, var(--color-white) 10%, transparent) 100%
   );
   background-size: 200% 100%;
 }
@@ -344,9 +344,9 @@
 .skeleton--dark {
   background: linear-gradient(
     90deg,
-    rgb(0 0 0 / 5%) 0%,
-    rgb(0 0 0 / 10%) 50%,
-    rgb(0 0 0 / 5%) 100%
+    color-mix(in oklch, var(--color-black) 5%, transparent) 0%,
+    color-mix(in oklch, var(--color-black) 10%, transparent) 50%,
+    color-mix(in oklch, var(--color-black) 5%, transparent) 100%
   );
   background-size: 200% 100%;
 }

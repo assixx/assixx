@@ -67,6 +67,9 @@ export interface SlotCheckResult {
 export interface TeamMemberStatus {
   userId: number;
   userName: string;
+  firstName: string | null;
+  lastName: string | null;
+  profilePicture: string | null;
   isAvailable: boolean;
   unavailabilityReason: string | null;
 }
@@ -113,6 +116,9 @@ interface TpmDueDateRow {
 interface TeamMemberRow {
   user_id: number;
   username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture: string | null;
 }
 
 interface UserAvailabilityRow {
@@ -283,9 +289,16 @@ export class TpmSlotAssistantService {
     const members: TeamMemberStatus[] = teamMembers.map(
       (member: TeamMemberRow) => {
         const unavailability = unavailabilityMap.get(member.user_id);
+        const fullName =
+          member.first_name !== null && member.last_name !== null ?
+            `${member.first_name} ${member.last_name}`
+          : member.username;
         return {
           userId: member.user_id,
-          userName: member.username,
+          userName: fullName,
+          firstName: member.first_name,
+          lastName: member.last_name,
+          profilePicture: member.profile_picture,
           isAvailable: unavailability === undefined,
           unavailabilityReason: unavailability?.status ?? null,
         };
@@ -503,13 +516,13 @@ export class TpmSlotAssistantService {
     teamId: number,
   ): Promise<TeamMemberRow[]> {
     return await this.db.query<TeamMemberRow>(
-      `SELECT ut.user_id, u.username
+      `SELECT ut.user_id, u.username, u.first_name, u.last_name, u.profile_picture
        FROM user_teams ut
        JOIN users u ON ut.user_id = u.id AND u.tenant_id = ut.tenant_id
        WHERE ut.team_id = $1
          AND ut.tenant_id = $2
          AND u.is_active = ${IS_ACTIVE.ACTIVE}
-       ORDER BY u.username ASC`,
+       ORDER BY u.last_name ASC, u.first_name ASC`,
       [teamId, tenantId],
     );
   }

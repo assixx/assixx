@@ -69,7 +69,7 @@
 
 .card--clickable:hover {
   /* Exakt wie admin-dashboard .compact-card:hover */
-  border-color: rgb(0 142 255 / 50%);
+  border-color: oklch(62.43% 0.1587 252.2 / 50%);
   background: var(--glass-bg-hover);
 }
 

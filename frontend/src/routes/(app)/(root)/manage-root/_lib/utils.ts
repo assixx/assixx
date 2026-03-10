@@ -141,12 +141,11 @@ export function validateEmailMatch(
   return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
-/** Validate password match (returns true if confirm is empty) */
+/** Validate password match (both must be filled and equal) */
 export function validatePasswordMatch(
   password: string,
   passwordConfirm: string,
 ): boolean {
-  if (passwordConfirm === '') return true;
   return password === passwordConfirm;
 }
 

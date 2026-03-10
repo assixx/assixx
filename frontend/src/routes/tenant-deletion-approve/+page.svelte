@@ -118,7 +118,7 @@
       <!-- Error State (no data loaded) -->
       <div
         class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
-          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-(--color-danger)"
+          rounded-full bg-[oklch(57.88%_0.2115_28.45/15%)] text-[40px] text-(--color-danger)"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
@@ -142,7 +142,7 @@
       <!-- Success State -->
       <div
         class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
-          rounded-full bg-[rgb(76_175_80/15%)] text-[40px] text-(--color-success)"
+          rounded-full bg-[oklch(64.28%_0.1297_143.14/15%)] text-[40px] text-(--color-success)"
       >
         <i class="fas fa-check-circle"></i>
       </div>
@@ -165,7 +165,7 @@
       <!-- Warning Icon -->
       <div
         class="mx-auto mb-6 flex h-20 w-20 items-center justify-center
-          rounded-full bg-[rgb(244_67_54/15%)] text-[40px] text-(--color-danger)"
+          rounded-full bg-[oklch(57.88%_0.2115_28.45/15%)] text-[40px] text-(--color-danger)"
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
@@ -182,10 +182,10 @@
 
       <!-- Queue Info -->
       <div
-        class="mb-6 rounded-(--radius-lg) border border-[rgb(33_150_243/20%)] bg-[rgb(33_150_243/5%)] p-4"
+        class="mb-6 rounded-(--radius-lg) border border-[oklch(63.24%_0.1562_249.76/20%)] bg-[oklch(63.24%_0.1562_249.76/5%)] p-4"
       >
         <div
-          class="flex justify-between border-b border-[rgb(255_255_255/5%)] py-2"
+          class="flex justify-between border-b border-[oklch(100%_0_0/5%)] py-2"
         >
           <span class="text-sm text-(--color-text-secondary)">Queue ID:</span>
           <span class="text-sm font-semibold text-(--color-text-primary)">
@@ -193,7 +193,7 @@
           </span>
         </div>
         <div
-          class="flex justify-between border-b border-[rgb(255_255_255/5%)] py-2"
+          class="flex justify-between border-b border-[oklch(100%_0_0/5%)] py-2"
         >
           <span class="text-sm text-(--color-text-secondary)">Tenant ID:</span>
           <span class="text-sm font-semibold text-(--color-text-primary)">

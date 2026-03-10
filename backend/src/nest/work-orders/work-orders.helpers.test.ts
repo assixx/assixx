@@ -12,6 +12,7 @@ import {
   type SourcePhotoRow,
   isValidStatusTransition,
   mapAssigneeRowToApi,
+  mapCalendarWorkOrderRow,
   mapCommentRowToApi,
   mapPhotoRowToApi,
   mapSourcePhotoRowToApi,
@@ -19,6 +20,7 @@ import {
   mapWorkOrderRowToListItem,
 } from './work-orders.helpers.js';
 import type {
+  CalendarWorkOrderRow,
   WorkOrderAssigneeWithNameRow,
   WorkOrderCommentWithNameRow,
   WorkOrderPhotoRow,
@@ -497,6 +499,74 @@ describe('normalizeFilePath (via mapSourcePhotoRowToApi)', () => {
       file_path: '/some/other/path/photo.jpg',
     });
     expect(result.filePath).toBe('/some/other/path/photo.jpg');
+  });
+});
+
+// ============================================================================
+// mapCalendarWorkOrderRow
+// ============================================================================
+
+function createCalendarWorkOrderRow(
+  overrides: Partial<CalendarWorkOrderRow> = {},
+): CalendarWorkOrderRow {
+  return {
+    uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
+    title: 'Ölwechsel durchführen',
+    due_date: '2026-03-10',
+    status: 'open',
+    priority: 'medium',
+    source_type: 'tpm_defect',
+    ...overrides,
+  };
+}
+
+describe('mapCalendarWorkOrderRow', () => {
+  it('should map all fields correctly', () => {
+    const row = createCalendarWorkOrderRow();
+    const result = mapCalendarWorkOrderRow(row);
+
+    expect(result.uuid).toBe('019c9547-9fc0-771a-b022-3767e233d6f3');
+    expect(result.title).toBe('Ölwechsel durchführen');
+    expect(result.dueDate).toBe('2026-03-10');
+    expect(result.status).toBe('open');
+    expect(result.priority).toBe('medium');
+    expect(result.sourceType).toBe('tpm_defect');
+  });
+
+  it('should trim uuid whitespace', () => {
+    const row = createCalendarWorkOrderRow({ uuid: '  abc-123  ' });
+    const result = mapCalendarWorkOrderRow(row);
+    expect(result.uuid).toBe('abc-123');
+  });
+
+  it('should pass through all status values', () => {
+    for (const status of [
+      'open',
+      'in_progress',
+      'completed',
+      'verified',
+    ] as const) {
+      const result = mapCalendarWorkOrderRow(
+        createCalendarWorkOrderRow({ status }),
+      );
+      expect(result.status).toBe(status);
+    }
+  });
+
+  it('should pass through all priority values', () => {
+    for (const priority of ['low', 'medium', 'high'] as const) {
+      const result = mapCalendarWorkOrderRow(
+        createCalendarWorkOrderRow({ priority }),
+      );
+      expect(result.priority).toBe(priority);
+    }
+  });
+
+  it('should handle manual source type', () => {
+    const result = mapCalendarWorkOrderRow(
+      createCalendarWorkOrderRow({ source_type: 'manual' }),
+    );
+    expect(result.sourceType).toBe('manual');
   });
 });
 

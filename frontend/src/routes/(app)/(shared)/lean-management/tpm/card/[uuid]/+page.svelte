@@ -323,12 +323,7 @@
                 </div>
               {/if}
             </div>
-          </div>
-        </div>
 
-        <!-- Time Estimate -->
-        <div class="card">
-          <div class="card__body">
             <TimeEstimateForm
               estimates={timeEstimates}
               intervalType={card.intervalType}

@@ -29,8 +29,17 @@
   /* GRADIENT BORDER - This is the signature */
   /* Light mode: bright bg with blue gradient border */
   background:
-    linear-gradient(rgb(255 255 255 / 95%), rgb(240 242 245)) padding-box,
-    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
+    linear-gradient(
+        color-mix(in oklch, var(--color-white) 95%, transparent),
+        oklch(96.26% 0.0039 255.68)
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(59.47% 0.1723 249.12),
+        oklch(45.59% 0.2423 268.96)
+      )
+      border-box;
 
   /* Spacing - Standard */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
@@ -42,42 +51,74 @@
 /* Dark mode: dark bg with same gradient border */
 html.dark .btn-modal {
   background:
-    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
-    linear-gradient(135deg, rgb(0 136 244), rgb(33 66 243)) border-box;
+    linear-gradient(
+        color-mix(in oklch, var(--color-black) 90%, transparent),
+        oklch(22.58% 0 0)
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(59.47% 0.1723 249.12),
+        oklch(45.59% 0.2423 268.96)
+      )
+      border-box;
   color: var(--color-white);
 }
 
 /* Hover State - Intensify Gradient */
 .btn-modal:hover {
   background:
-    linear-gradient(rgb(240 242 248), rgb(230 235 242)) padding-box,
-    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+    linear-gradient(oklch(96.35% 0.0057 268.97), oklch(94.13% 0.0073 255.05))
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(63.39% 0.1673 248.54),
+        oklch(50.64% 0.2304 270.08)
+      )
+      border-box;
 }
 
 html.dark .btn-modal:hover {
   background:
-    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
-    linear-gradient(135deg, rgb(0 150 255), rgb(50 90 255)) border-box;
+    linear-gradient(oklch(10.59% 0 0 / 88%), oklch(19.81% 0 0 / 93%))
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(63.39% 0.1673 248.54),
+        oklch(50.64% 0.2304 270.08)
+      )
+      border-box;
 }
 
 /* Active State - Pressed Effect */
 .btn-modal:active {
-  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+  box-shadow: 0 0 16px oklch(60.97% 0.1538 249.29 / 25%);
   background:
-    linear-gradient(rgb(232 236 245), rgb(220 225 235)) padding-box,
-    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+    linear-gradient(oklch(94.29% 0.0075 262.24), oklch(91.28% 0.0101 259.59))
+      padding-box,
+    linear-gradient(
+        135deg,
+        oklch(65.2% 0.1642 247.63),
+        oklch(52.37% 0.2233 270.17)
+      )
+      border-box;
 }
 
 html.dark .btn-modal:active {
-  box-shadow: 0 0 16px rgb(0 136 244 / 25%);
+  box-shadow: 0 0 16px oklch(60.97% 0.1538 249.29 / 25%);
   background:
-    linear-gradient(rgb(5 5 5 / 98%), rgb(25 25 25)) padding-box,
-    linear-gradient(135deg, rgb(0 160 255), rgb(60 100 255)) border-box;
+    linear-gradient(oklch(7.42% 0 0 / 98%), oklch(20.69% 0 0)) padding-box,
+    linear-gradient(
+        135deg,
+        oklch(65.2% 0.1642 247.63),
+        oklch(52.37% 0.2233 270.17)
+      )
+      border-box;
 }
 
 /* Focus State - Accessibility */
 .btn-modal:focus-visible {
-  outline: 2px solid rgb(33 150 243 / 50%);
+  outline: 2px solid color-mix(in oklch, var(--color-primary) 50%, transparent);
   outline-offset: 2px;
 }
 

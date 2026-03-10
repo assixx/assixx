@@ -5,8 +5,9 @@
  * - LogsService: Query and manage root_logs table
  * - UnifiedLogsService: Cursor-based streaming export with RLS
  * - LogFormattersService: TXT/CSV/JSON formatting
- * - PartitionManagerService: Auto-create monthly partitions
  * - LogRetentionService: Auto-cleanup old logs based on retention policy
+ *
+ * Partition management: pg_partman (DB-level, ADR-029)
  *
  * @see ADR-009 Central Audit Logging
  */
@@ -16,7 +17,6 @@ import { LogFormattersService } from './log-formatters.service.js';
 import { LogRetentionService } from './log-retention.service.js';
 import { LogsController } from './logs.controller.js';
 import { LogsService } from './logs.service.js';
-import { PartitionManagerService } from './partition-manager.service.js';
 import { UnifiedLogsService } from './unified-logs.service.js';
 
 @Module({
@@ -25,10 +25,9 @@ import { UnifiedLogsService } from './unified-logs.service.js';
     LogsService,
     UnifiedLogsService,
     LogFormattersService,
-    PartitionManagerService,
     LogRetentionService,
   ],
-  exports: [LogsService, UnifiedLogsService, PartitionManagerService, LogRetentionService],
+  exports: [LogsService, UnifiedLogsService, LogRetentionService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are empty by design
 export class LogsModule {}

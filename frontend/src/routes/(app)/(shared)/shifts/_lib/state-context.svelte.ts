@@ -5,7 +5,6 @@
 
 import type {
   AssetAvailabilityEntry,
-  TpmMaintenanceEvent,
   SelectedContext,
   RotationPatternType,
 } from './types';
@@ -67,26 +66,6 @@ function createAssetAvailabilityState() {
   };
 }
 
-/** TPM events sub-state (date→events map for shift cell overlay) */
-function createTpmEventsState() {
-  let tpmEventsMap = $state<Map<string, TpmMaintenanceEvent[]>>(new Map());
-
-  return {
-    get tpmEventsMap() {
-      return tpmEventsMap;
-    },
-    setTpmEvents: (events: Map<string, TpmMaintenanceEvent[]>) => {
-      tpmEventsMap = events;
-    },
-    clearTpmEvents: () => {
-      tpmEventsMap = new Map();
-    },
-    reset: () => {
-      tpmEventsMap = new Map();
-    },
-  };
-}
-
 /** Plan data sub-state (planId, patternId, patternType) */
 function createPlanState() {
   let currentPlanId = $state<number | null>(null);
@@ -124,7 +103,6 @@ function createContextState() {
   let selectedContext = $state<SelectedContext>({ ...DEFAULT_CONTEXT });
   const plan = createPlanState();
   const assetAvail = createAssetAvailabilityState();
-  const tpmEvents = createTpmEventsState();
 
   const setSelectedContext = (context: Partial<SelectedContext>) => {
     selectedContext = { ...selectedContext, ...context };
@@ -157,9 +135,6 @@ function createContextState() {
     get assetAvailabilityMap() {
       return assetAvail.assetAvailabilityMap;
     },
-    get tpmEventsMap() {
-      return tpmEvents.tpmEventsMap;
-    },
     setSelectedContext,
     resetSelectedContext: () => {
       selectedContext = { ...DEFAULT_CONTEXT };
@@ -169,15 +144,12 @@ function createContextState() {
     setCurrentPatternType: plan.setCurrentPatternType,
     setAssetAvailability: assetAvail.setAssetAvailability,
     clearAssetAvailability: assetAvail.clearAssetAvailability,
-    setTpmEvents: tpmEvents.setTpmEvents,
-    clearTpmEvents: tpmEvents.clearTpmEvents,
     isHierarchyValid,
     clearPlanData: plan.clear,
     reset: () => {
       selectedContext = { ...DEFAULT_CONTEXT };
       plan.clear();
       assetAvail.reset();
-      tpmEvents.reset();
     },
   };
 }

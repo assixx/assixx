@@ -11,6 +11,8 @@
   } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     upsertOverride,
     deleteOverride,
@@ -652,86 +654,49 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-{#if showDeleteModal && deleteTarget !== null}
-  <div
-    id="kvp-category-delete-modal"
-    class="modal-overlay modal-overlay--active"
-  >
-    <div class="confirm-modal confirm-modal--danger">
-      <div class="confirm-modal__icon">
-        <i class="fas fa-trash-alt"></i>
-      </div>
-      <h3 class="confirm-modal__title">Kategorie löschen</h3>
-      <p class="confirm-modal__message">
-        {#if deleteTarget.suggestionCount > 0}
-          {deleteConfirmWithRefs(deleteTarget.suggestionCount)}<br />
-        {:else}
-          {MESSAGES.DELETE_CONFIRM}<br />
-        {/if}
-        <strong>"{deleteTarget.name}"</strong>
-      </p>
-      <div class="confirm-modal__actions confirm-modal__actions--centered">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
-          onclick={() => {
-            showDeleteModal = false;
-            deleteTarget = null;
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger confirm-modal__btn--wide"
-          onclick={() => void confirmDeleteCustom()}
-        >
-          <i class="fas fa-trash"></i>
-          Löschen
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={showDeleteModal && deleteTarget !== null}
+  id="kvp-category-delete-modal"
+  title="Kategorie löschen"
+  icon="fa-trash-alt"
+  confirmLabel="Löschen"
+  centered
+  onconfirm={() => void confirmDeleteCustom()}
+  oncancel={() => {
+    showDeleteModal = false;
+    deleteTarget = null;
+  }}
+>
+  {#if deleteTarget !== null}
+    {#if deleteTarget.suggestionCount > 0}
+      {deleteConfirmWithRefs(deleteTarget.suggestionCount)}<br />
+    {:else}
+      {MESSAGES.DELETE_CONFIRM}<br />
+    {/if}
+    <strong>"{deleteTarget.name}"</strong>
+  {/if}
+</ConfirmModal>
 
 <!-- Reset Override Confirmation Modal -->
-{#if showResetModal && resetTarget !== null}
-  <div
-    id="kvp-category-reset-modal"
-    class="modal-overlay modal-overlay--active"
-  >
-    <div class="confirm-modal confirm-modal--warning">
-      <div class="confirm-modal__icon">
-        <i class="fas fa-undo"></i>
-      </div>
-      <h3 class="confirm-modal__title">Bezeichnung zurücksetzen</h3>
-      <p class="confirm-modal__message">
-        Die eigene Bezeichnung für <strong>"{resetTarget.name}"</strong> wird entfernt
-        und der Standard-Name wiederhergestellt.
-      </p>
-      <div class="confirm-modal__actions confirm-modal__actions--centered">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel confirm-modal__btn--wide"
-          onclick={() => {
-            showResetModal = false;
-            resetTarget = null;
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          class="btn btn-warning confirm-modal__btn--wide"
-          onclick={() => void confirmResetOverride()}
-        >
-          <i class="fas fa-undo"></i>
-          Zurücksetzen
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={showResetModal && resetTarget !== null}
+  id="kvp-category-reset-modal"
+  title="Bezeichnung zurücksetzen"
+  variant="warning"
+  icon="fa-undo"
+  confirmLabel="Zurücksetzen"
+  centered
+  onconfirm={() => void confirmResetOverride()}
+  oncancel={() => {
+    showResetModal = false;
+    resetTarget = null;
+  }}
+>
+  {#if resetTarget !== null}
+    Die eigene Bezeichnung für <strong>"{resetTarget.name}"</strong> wird entfernt
+    und der Standard-Name wiederhergestellt.
+  {/if}
+</ConfirmModal>
 
 <!-- Edit Category Modal -->
 {#if showEditModal && editTarget !== null}

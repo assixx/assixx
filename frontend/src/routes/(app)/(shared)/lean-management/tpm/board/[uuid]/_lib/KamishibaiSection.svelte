@@ -404,7 +404,8 @@
   .kamishibai-section__cards--stacked :global(.kamishibai-card:hover) {
     transform: translateY(-20px) scale(1.08);
     z-index: 50;
-    box-shadow: 0 12px 32px rgb(0 0 0 / 50%);
+    box-shadow: 0 12px 32px
+      color-mix(in oklch, var(--color-black) 50%, transparent);
   }
 
   .kamishibai-section__empty {

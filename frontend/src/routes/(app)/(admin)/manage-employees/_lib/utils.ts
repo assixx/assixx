@@ -372,12 +372,11 @@ export function validateEmailMatch(
   return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
-/** Validate password match (true if passwords match or confirmation is empty) */
+/** Validate password match (both must be filled and equal) */
 export function validatePasswordMatch(
   password: string,
   passwordConfirm: string,
 ): boolean {
-  if (passwordConfirm === '') return true;
   return password === passwordConfirm;
 }
 
@@ -385,6 +384,22 @@ export function validatePasswordMatch(
  * Validation error types for save employee form
  */
 export type SaveEmployeeValidationError = 'email' | 'password' | null;
+
+/** Check password fields: required for new, both-or-none + must match for edit */
+function hasPasswordError(
+  password: string,
+  passwordConfirm: string,
+  isEditMode: boolean,
+): boolean {
+  if (!isEditMode) {
+    return (
+      password === '' || passwordConfirm === '' || password !== passwordConfirm
+    );
+  }
+  // Edit mode: if either field is filled, both must be filled and match
+  const eitherFilled = password !== '' || passwordConfirm !== '';
+  return eitherFilled && password !== passwordConfirm;
+}
 
 /** Validate save employee form - combines email and password validation */
 export function validateSaveEmployeeForm(
@@ -398,12 +413,7 @@ export function validateSaveEmployeeForm(
     return 'email';
   }
 
-  // Password validation: required for new employees, optional for edit (only if provided)
-  const needsPasswordValidation = !isEditMode || password !== '';
-  if (
-    needsPasswordValidation &&
-    !validatePasswordMatch(password, passwordConfirm)
-  ) {
+  if (hasPasswordError(password, passwordConfirm, isEditMode)) {
     return 'password';
   }
 

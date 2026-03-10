@@ -39,15 +39,16 @@
   /* Reset button styles */
   cursor: pointer;
   outline: none;
-  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+  box-shadow: 0 4px 16px
+    color-mix(in oklch, var(--color-primary) 30%, transparent);
   border: none;
 
   /* Appearance */
-  border: 1px solid rgb(33 150 243 / 30%);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 30%, transparent);
   border-radius: 50%;
 
   /* Glassmorphism with primary color */
-  background: rgb(33 150 243 / 20%);
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
 
   /* Size */
   width: 60px;
@@ -62,8 +63,9 @@
 
 .btn-float:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
-  background: rgb(33 150 243 / 30%);
+  box-shadow: 0 6px 24px
+    color-mix(in oklch, var(--color-primary) 40%, transparent);
+  background: color-mix(in oklch, var(--color-primary) 30%, transparent);
 }
 
 /* ========== ACTIVE STATE ========== */
@@ -89,8 +91,9 @@
 
 .btn-float:disabled:hover {
   transform: none;
-  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
-  background: rgb(33 150 243 / 20%);
+  box-shadow: 0 4px 16px
+    color-mix(in oklch, var(--color-primary) 30%, transparent);
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
 }
 
 /* ========== SIZE VARIANTS ========== */
@@ -117,41 +120,47 @@
 
 /* Success variant (green) */
 .btn-float--success {
-  box-shadow: 0 4px 16px rgb(76 175 80 / 30%);
-  border-color: rgb(76 175 80 / 30%);
-  background: rgb(76 175 80 / 20%);
+  box-shadow: 0 4px 16px
+    color-mix(in oklch, var(--color-success) 30%, transparent);
+  border-color: color-mix(in oklch, var(--color-success) 30%, transparent);
+  background: color-mix(in oklch, var(--color-success) 20%, transparent);
   color: var(--color-success);
 }
 
 .btn-float--success:hover {
-  box-shadow: 0 6px 24px rgb(76 175 80 / 40%);
-  background: rgb(76 175 80 / 30%);
+  box-shadow: 0 6px 24px
+    color-mix(in oklch, var(--color-success) 40%, transparent);
+  background: color-mix(in oklch, var(--color-success) 30%, transparent);
 }
 
 /* Danger variant (red) */
 .btn-float--danger {
-  box-shadow: 0 4px 16px rgb(244 67 54 / 30%);
-  border-color: rgb(244 67 54 / 30%);
-  background: rgb(244 67 54 / 20%);
+  box-shadow: 0 4px 16px
+    color-mix(in oklch, var(--color-danger) 30%, transparent);
+  border-color: color-mix(in oklch, var(--color-danger) 30%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 20%, transparent);
   color: var(--color-danger);
 }
 
 .btn-float--danger:hover {
-  box-shadow: 0 6px 24px rgb(244 67 54 / 40%);
-  background: rgb(244 67 54 / 30%);
+  box-shadow: 0 6px 24px
+    color-mix(in oklch, var(--color-danger) 40%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 30%, transparent);
 }
 
 /* Warning variant (orange) */
 .btn-float--warning {
-  box-shadow: 0 4px 16px rgb(255 152 0 / 30%);
-  border-color: rgb(255 152 0 / 30%);
-  background: rgb(255 152 0 / 20%);
+  box-shadow: 0 4px 16px
+    color-mix(in oklch, var(--color-warning) 30%, transparent);
+  border-color: color-mix(in oklch, var(--color-warning) 30%, transparent);
+  background: color-mix(in oklch, var(--color-warning) 20%, transparent);
   color: var(--color-warning);
 }
 
 .btn-float--warning:hover {
-  box-shadow: 0 6px 24px rgb(255 152 0 / 40%);
-  background: rgb(255 152 0 / 30%);
+  box-shadow: 0 6px 24px
+    color-mix(in oklch, var(--color-warning) 40%, transparent);
+  background: color-mix(in oklch, var(--color-warning) 30%, transparent);
 }
 
 /* ========== POSITION VARIANTS ========== */
@@ -205,7 +214,7 @@
   right: -4px;
   justify-content: center;
   align-items: center;
-  border: 2px solid #000;
+  border: 2px solid var(--color-black);
   border-radius: 10px;
 
   background: var(--color-danger);
@@ -213,7 +222,7 @@
 
   min-width: 20px;
   height: 20px;
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
 
   font-size: 11px;

@@ -89,9 +89,9 @@
 <style>
   .response-info {
     margin-bottom: var(--spacing-6);
-    border: 1px solid rgb(33 150 243 / 30%);
+    border: 1px solid color-mix(in oklch, var(--color-primary) 30%, transparent);
     border-radius: var(--radius-xl);
-    background: rgb(33 150 243 / 10%);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
     padding: var(--spacing-3);
   }
 

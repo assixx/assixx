@@ -117,6 +117,52 @@ export const ORG_LEVEL_OPTIONS = [
 ] as const;
 
 /**
+ * Work order calendar event color — uses design-system token --color-slate (oklch)
+ * Einheitlich grau für alle Aufträge, unabhängig vom Status.
+ */
+export const WORK_ORDER_EVENT_COLOR = 'var(--color-slate)';
+
+/** German status labels for work order tooltips */
+export const WORK_ORDER_STATUS_LABELS: Record<string, string> = {
+  open: 'Offen',
+  in_progress: 'In Bearbeitung',
+  completed: 'Abgeschlossen',
+  verified: 'Verifiziert',
+};
+
+/** German priority labels for work order tooltips */
+export const WORK_ORDER_PRIORITY_LABELS: Record<string, string> = {
+  low: 'Niedrig',
+  medium: 'Mittel',
+  high: 'Hoch',
+};
+
+/**
+ * TPM calendar event color — uses design-system token --color-amber (oklch)
+ * Amber/orange-gelb für TPM-Wartungstermine, gut unterscheidbar von anderen Event-Typen.
+ */
+export const TPM_EVENT_COLOR = 'var(--color-amber)';
+
+/** German shift type labels for TPM tooltips */
+export const TPM_SHIFT_TYPE_LABELS: Record<string, string> = {
+  F: 'Frühschicht',
+  S: 'Spätschicht',
+  N: 'Nachtschicht',
+};
+
+/** German interval type labels for TPM tooltips */
+export const TPM_INTERVAL_TYPE_LABELS: Record<string, string> = {
+  daily: 'Täglich',
+  weekly: 'Wöchentlich',
+  monthly: 'Monatlich',
+  quarterly: 'Quartalsweise',
+  semi_annual: 'Halbjährlich',
+  annual: 'Jährlich',
+  long_runner: 'Langläufer',
+  custom: 'Individuell',
+};
+
+/**
  * Recurrence dropdown options
  */
 export const RECURRENCE_OPTIONS = [

@@ -324,7 +324,7 @@
           <div class="card">
             <div class="card__body">
               <h3 class="loc-section-title mb-3">
-                <i class="fas fa-pen"></i>
+                <i class="fas fa-edit"></i>
                 {isEditing ? MESSAGES.LOCATIONS_EDIT : MESSAGES.LOCATIONS_ADD}
               </h3>
               <LocationForm

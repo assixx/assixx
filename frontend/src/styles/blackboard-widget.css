@@ -23,7 +23,7 @@
 .card--blackboard {
 
   padding: var(--spacing-6);
-  border: 1px solid rgb(255 255 255 / 10.2%);
+  border: 1px solid oklch(100% 0 0 / 10.2%);
   border-radius: var(--radius-xl);
 
   text-align: center;
@@ -147,14 +147,14 @@
 
 .sticky-notes-container::-webkit-scrollbar-track {
   border-radius: 3px;
-  background: rgb(255 255 255 / 5%);
+  background: oklch(100% 0 0 / 5%);
 }
 
 .sticky-notes-container::-webkit-scrollbar-thumb {
   border-radius: 3px;
-  background: rgb(255 255 255 / 20%);
+  background: oklch(100% 0 0 / 20%);
 }
 
 .sticky-notes-container::-webkit-scrollbar-thumb:hover {
-  background: rgb(255 255 255 / 30%);
+  background: oklch(100% 0 0 / 30%);
 }

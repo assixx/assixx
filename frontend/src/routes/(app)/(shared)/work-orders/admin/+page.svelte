@@ -8,6 +8,8 @@
    */
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     fetchWorkOrders,
     createWorkOrder,
@@ -527,71 +529,25 @@
 />
 
 <!-- Archive Confirmation -->
-{#if showArchiveConfirm && archivingItem !== null}
-  <div
-    id="work-order-archive-confirm-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={() => {
-      showArchiveConfirm = false;
-      archivingItem = null;
-    }}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        showArchiveConfirm = false;
-        archivingItem = null;
-      }
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--warning"
-      role="document"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e: KeyboardEvent) => {
-        e.stopPropagation();
-      }}
-    >
-      <div class="confirm-modal__icon">
-        <i class="fas fa-archive"></i>
-      </div>
-      <h3 class="confirm-modal__title">{MESSAGES.ARCHIVE_CONFIRM_TITLE}</h3>
-      <p class="confirm-modal__message">
-        <strong>{archivingItem.title}</strong><br />
-        {MESSAGES.ARCHIVE_CONFIRM_TEXT}
-      </p>
-      <div class="confirm-modal__actions">
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--cancel"
-          onclick={() => {
-            showArchiveConfirm = false;
-            archivingItem = null;
-          }}
-        >
-          {MESSAGES.BTN_CANCEL}
-        </button>
-        <button
-          type="button"
-          class="confirm-modal__btn confirm-modal__btn--warning"
-          disabled={submitting}
-          onclick={() => {
-            void handleArchive();
-          }}
-        >
-          {#if submitting}
-            <span class="spinner-ring spinner-ring--sm mr-2"></span>
-          {/if}
-          {MESSAGES.BTN_ARCHIVE}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  show={showArchiveConfirm && archivingItem !== null}
+  id="work-order-archive-confirm-modal"
+  title={MESSAGES.ARCHIVE_CONFIRM_TITLE}
+  variant="warning"
+  icon="fa-archive"
+  confirmLabel={MESSAGES.BTN_ARCHIVE}
+  {submitting}
+  onconfirm={() => void handleArchive()}
+  oncancel={() => {
+    showArchiveConfirm = false;
+    archivingItem = null;
+  }}
+>
+  {#if archivingItem !== null}
+    <strong>{archivingItem.title}</strong><br />
+  {/if}
+  {MESSAGES.ARCHIVE_CONFIRM_TEXT}
+</ConfirmModal>
 
 <style>
   .stats-grid {

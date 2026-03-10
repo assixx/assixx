@@ -30,14 +30,14 @@
 .btn-status-active:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-status-active-hover);
   border-color: var(--color-status-active-hover);
-  background: rgb(198 40 40 / 10%); /* Subtle red tint */
+  background: oklch(47.45% 0.1737 22.45 / 10%); /* Subtle red tint */
   color: var(--color-status-active-hover);
 }
 
 .btn-status-active:focus-visible {
   box-shadow:
     var(--shadow-btn-status-active),
-    0 0 0 3px rgb(198 40 40 / 20%);
+    0 0 0 3px oklch(47.45% 0.1737 22.45 / 20%);
 }
 
 /* ========== INACTIVE STATE (Shows "Aktivieren") ========== */
@@ -59,14 +59,14 @@
 .btn-status-inactive:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-status-inactive-hover);
   border-color: var(--color-status-inactive-hover);
-  background: rgb(40 167 69 / 10%); /* Subtle green tint */
+  background: oklch(63.13% 0.1415 147.5 / 10%); /* Subtle green tint */
   color: var(--color-status-inactive-hover);
 }
 
 .btn-status-inactive:focus-visible {
   box-shadow:
     var(--shadow-btn-status-inactive),
-    0 0 0 3px rgb(40 167 69 / 20%);
+    0 0 0 3px oklch(63.13% 0.1415 147.5 / 20%);
 }
 
 /**

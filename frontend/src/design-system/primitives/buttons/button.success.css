@@ -9,13 +9,13 @@
 
 .btn-success {
   box-shadow: var(--shadow-btn-success);
-  border: 1px solid rgb(56 142 60); /* Solid green border - avatar style */
+  border: 1px solid oklch(55.27% 0.1273 143.29); /* Solid green border - avatar style */
 
   /* ========== VISUAL ========== */
   background: linear-gradient(
     145deg,
-    rgb(139 170 140 / 11%),
-    rgb(29 221 39 / 15%)
+    oklch(71.12% 0.0356 144.06 / 11%),
+    oklch(78.69% 0.2282 142.89 / 15%)
   ); /* Subtle green gradient */
 
   /* Padding - Standard size */
@@ -29,8 +29,8 @@
   box-shadow: var(--shadow-btn-success-hover);
   background: linear-gradient(
     145deg,
-    rgb(139 170 140 / 18%),
-    rgb(29 221 39 / 25%)
+    oklch(71.12% 0.0356 144.06 / 18%),
+    oklch(78.69% 0.2282 142.89 / 25%)
   ); /* Intensiver */
 }
 
@@ -38,7 +38,7 @@
 .btn-success:focus-visible {
   box-shadow:
     var(--shadow-btn-success),
-    0 0 0 3px rgb(76 175 80 / 20%); /* Green focus ring */
+    0 0 0 3px color-mix(in oklch, var(--color-success) 20%, transparent); /* Green focus ring */
 }
 
 /**

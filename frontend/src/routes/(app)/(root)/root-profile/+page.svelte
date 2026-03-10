@@ -593,7 +593,10 @@
         </div>
 
         <!-- Confirm Password -->
-        <div class="form-field">
+        <div
+          class="form-field"
+          class:is-success={confirmPassword !== '' && passwordsMatch}
+        >
           <label
             class="form-field__label"
             for="confirm_password">Neues Passwort bestätigen</label
@@ -605,6 +608,7 @@
               name="confirm_password"
               class="form-field__control"
               class:is-error={passwordMismatchError}
+              class:is-success={confirmPassword !== '' && passwordsMatch}
               autocomplete="new-password"
               minlength="12"
               maxlength="72"
@@ -628,6 +632,10 @@
             <span class="form-field__message form-field__message--error"
               >{MESSAGES.passwordMismatch}</span
             >
+          {:else if confirmPassword !== '' && passwordsMatch}
+            <span class="form-field__message form-field__message--success">
+              <i class="fas fa-check"></i> Passwörter stimmen überein
+            </span>
           {/if}
         </div>
 

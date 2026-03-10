@@ -10,13 +10,16 @@
 
 .btn-info {
   /* Shadow */
-  box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
-  border: 1px solid rgb(0 172 193); /* Solid cyan border - avatar style */
+  box-shadow: var(
+    --shadow-btn-info,
+    0 2px 8px oklch(72.32% 0.1106 207.83 / 30%)
+  );
+  border: 1px solid oklch(66.02% 0.1059 210.36); /* Solid cyan border - avatar style */
 
   background: linear-gradient(
     145deg,
-    rgb(129 212 250 / 11%),
-    rgb(0 176 255 / 15%)
+    oklch(83.14% 0.0793 228.67 / 11%),
+    oklch(72.07% 0.133 233.53 / 15%)
   ); /* Subtle cyan gradient */
 
   /* Padding - matches other variants */
@@ -28,19 +31,25 @@
 
 /* Hover State - Brighten the gradient */
 .btn-info:hover:not(:disabled) {
-  box-shadow: var(--shadow-btn-info-hover, 0 4px 12px rgb(0 188 212 / 40%));
+  box-shadow: var(
+    --shadow-btn-info-hover,
+    0 4px 12px oklch(72.32% 0.1106 207.83 / 40%)
+  );
   background: linear-gradient(
     145deg,
-    rgb(129 212 250 / 18%),
-    rgb(0 176 255 / 25%)
+    oklch(83.14% 0.0793 228.67 / 18%),
+    oklch(72.07% 0.133 233.53 / 25%)
   ); /* Intensiver */
 }
 
 /* Active/Pressed State */
 .btn-info:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: var(--shadow-btn-info-active, 0 1px 4px rgb(0 188 212 / 30%));
-  background: #0097a7; /* Cyan 700 */
+  box-shadow: var(
+    --shadow-btn-info-active,
+    0 1px 4px oklch(72.32% 0.1106 207.83 / 30%)
+  );
+  background: var(--color-cyan-dark); /* Cyan 700 */
 }
 
 /* Focus State */
@@ -48,7 +57,7 @@
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow:
-    0 0 0 3px rgb(0 188 212 / 20%),
+    0 0 0 3px oklch(72.32% 0.1106 207.83 / 20%),
     var(--shadow-btn-info);
 }
 
@@ -58,9 +67,9 @@
   opacity: 60%;
   cursor: not-allowed;
   box-shadow: none;
-  background: #b2ebf2; /* Cyan 100 */
+  background: var(--color-cyan-pale); /* Cyan 100 */
 
-  color: rgb(255 255 255 / 50%);
+  color: color-mix(in oklch, var(--color-white) 50%, transparent);
 }
 
 /* Loading State */

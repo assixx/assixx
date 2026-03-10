@@ -24,6 +24,7 @@ import type {
   PermissionModuleDef,
   PermissionType,
 } from '../common/permission-registry/permission.types.js';
+import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { PermissionEntry } from './dto/index.js';
 
@@ -44,6 +45,15 @@ interface DbTenantFeatureRow {
 /** DB row shape for UUID to id resolution */
 interface DbUserIdRow {
   id: number;
+}
+
+/** Shape for a single applied permission after registry validation */
+interface AppliedPermission {
+  featureCode: string;
+  moduleCode: string;
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
 }
 
 /** Response shape: category with current permission values */
@@ -72,6 +82,7 @@ export class UserPermissionsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly registry: PermissionRegistryService,
+    private readonly activityLogger: ActivityLoggerService,
   ) {}
 
   /**
@@ -133,54 +144,24 @@ export class UserPermissionsService {
     permissions: PermissionEntry[],
     assignedByUserId: number,
   ): Promise<void> {
+    let userId = 0;
+    let oldState = new Map<string, DbPermissionRow>();
+    const applied: AppliedPermission[] = [];
+
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
-        const userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
+        userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
+        oldState = await this.capturePermissionState(client, userId);
 
         for (const entry of permissions) {
-          // Validate against registry
-          if (
-            !this.registry.isValidModule(entry.featureCode, entry.moduleCode)
-          ) {
-            throw new BadRequestException(
-              `Unknown feature/module: ${entry.featureCode}/${entry.moduleCode}`,
-            );
-          }
-
-          // Force non-allowed permissions to false
-          const allowed = this.registry.getAllowedPermissions(
-            entry.featureCode,
-            entry.moduleCode,
+          const result = await this.upsertSingleEntry(
+            client,
+            tenantId,
+            userId,
+            entry,
+            assignedByUserId,
           );
-          const canRead = allowed.includes('canRead') ? entry.canRead : false;
-          const canWrite =
-            allowed.includes('canWrite') ? entry.canWrite : false;
-          const canDelete =
-            allowed.includes('canDelete') ? entry.canDelete : false;
-
-          // UPSERT: INSERT ON CONFLICT DO UPDATE
-          await client.query(
-            `INSERT INTO user_feature_permissions
-               (tenant_id, user_id, feature_code, module_code, can_read, can_write, can_delete, assigned_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (tenant_id, user_id, feature_code, module_code)
-             DO UPDATE SET
-               can_read = EXCLUDED.can_read,
-               can_write = EXCLUDED.can_write,
-               can_delete = EXCLUDED.can_delete,
-               assigned_by = EXCLUDED.assigned_by,
-               updated_at = NOW()`,
-            [
-              tenantId,
-              userId,
-              entry.featureCode,
-              entry.moduleCode,
-              canRead,
-              canWrite,
-              canDelete,
-              assignedByUserId,
-            ],
-          );
+          applied.push(result);
         }
 
         this.logger.log(
@@ -188,6 +169,155 @@ export class UserPermissionsService {
         );
       },
     );
+
+    this.auditPermissionChanges(
+      tenantId,
+      userUuid,
+      userId,
+      assignedByUserId,
+      oldState,
+      applied,
+    );
+  }
+
+  /** Validate a single entry against registry, upsert to DB, return applied values. */
+  private async upsertSingleEntry(
+    client: PoolClient,
+    tenantId: number,
+    userId: number,
+    entry: PermissionEntry,
+    assignedByUserId: number,
+  ): Promise<AppliedPermission> {
+    if (!this.registry.isValidModule(entry.featureCode, entry.moduleCode)) {
+      throw new BadRequestException(
+        `Unknown feature/module: ${entry.featureCode}/${entry.moduleCode}`,
+      );
+    }
+
+    const allowed = this.registry.getAllowedPermissions(
+      entry.featureCode,
+      entry.moduleCode,
+    );
+    const canRead = allowed.includes('canRead') ? entry.canRead : false;
+    const canWrite = allowed.includes('canWrite') ? entry.canWrite : false;
+    const canDelete = allowed.includes('canDelete') ? entry.canDelete : false;
+
+    await client.query(
+      `INSERT INTO user_feature_permissions
+         (tenant_id, user_id, feature_code, module_code, can_read, can_write, can_delete, assigned_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (tenant_id, user_id, feature_code, module_code)
+       DO UPDATE SET
+         can_read = EXCLUDED.can_read,
+         can_write = EXCLUDED.can_write,
+         can_delete = EXCLUDED.can_delete,
+         assigned_by = EXCLUDED.assigned_by,
+         updated_at = NOW()`,
+      [
+        tenantId,
+        userId,
+        entry.featureCode,
+        entry.moduleCode,
+        canRead,
+        canWrite,
+        canDelete,
+        assignedByUserId,
+      ],
+    );
+
+    return {
+      featureCode: entry.featureCode,
+      moduleCode: entry.moduleCode,
+      canRead,
+      canWrite,
+      canDelete,
+    };
+  }
+
+  /** Fire-and-forget audit log for permission changes. */
+  private auditPermissionChanges(
+    tenantId: number,
+    userUuid: string,
+    userId: number,
+    assignedByUserId: number,
+    oldState: Map<string, DbPermissionRow>,
+    applied: AppliedPermission[],
+  ): void {
+    const diff = this.buildPermissionDiff(oldState, applied);
+    if (diff.changes.length > 0) {
+      void this.activityLogger.logUpdate(
+        tenantId,
+        assignedByUserId,
+        'user_feature_permission',
+        userId,
+        `Berechtigungen aktualisiert für User ${userUuid}: ${diff.summary}`,
+        diff.oldValues,
+        diff.newValues,
+      );
+    }
+  }
+
+  /** Capture current permission state for a user before upsert. */
+  private async capturePermissionState(
+    client: PoolClient,
+    userId: number,
+  ): Promise<Map<string, DbPermissionRow>> {
+    const result = await client.query<DbPermissionRow>(
+      `SELECT feature_code, module_code, can_read, can_write, can_delete
+       FROM user_feature_permissions
+       WHERE user_id = $1`,
+      [userId],
+    );
+
+    const stateMap = new Map<string, DbPermissionRow>();
+    for (const row of result.rows) {
+      stateMap.set(`${row.feature_code}:${row.module_code}`, row);
+    }
+    return stateMap;
+  }
+
+  /** Build old/new diff for audit logging — only includes actual changes. */
+  private buildPermissionDiff(
+    oldState: Map<string, DbPermissionRow>,
+    applied: AppliedPermission[],
+  ): {
+    changes: string[];
+    summary: string;
+    oldValues: Record<string, unknown>;
+    newValues: Record<string, unknown>;
+  } {
+    const changes: string[] = [];
+    const oldValues: Record<string, unknown> = {};
+    const newValues: Record<string, unknown> = {};
+
+    for (const entry of applied) {
+      const key = `${entry.featureCode}:${entry.moduleCode}`;
+      const old = oldState.get(key);
+      const oldR = old?.can_read ?? false;
+      const oldW = old?.can_write ?? false;
+      const oldD = old?.can_delete ?? false;
+
+      if (
+        oldR !== entry.canRead ||
+        oldW !== entry.canWrite ||
+        oldD !== entry.canDelete
+      ) {
+        changes.push(entry.moduleCode);
+        oldValues[key] = { canRead: oldR, canWrite: oldW, canDelete: oldD };
+        newValues[key] = {
+          canRead: entry.canRead,
+          canWrite: entry.canWrite,
+          canDelete: entry.canDelete,
+        };
+      }
+    }
+
+    const summary =
+      changes.length > 0 ?
+        `${changes.length} Modul(e) geändert: ${changes.join(', ')}`
+      : 'Keine Änderungen';
+
+    return { changes, summary, oldValues, newValues };
   }
 
   /**

@@ -86,7 +86,7 @@ export interface WorkOrder {
   sourceUuid: string | null;
   sourceTitle: string | null;
   sourceExpectedBenefit: string | null;
-  dueDate: string | null;
+  dueDate: string;
   createdBy: number;
   createdByName: string;
   assignees: WorkOrderAssignee[];
@@ -108,7 +108,7 @@ export interface WorkOrderListItem {
   status: WorkOrderStatus;
   priority: WorkOrderPriority;
   sourceType: WorkOrderSourceType;
-  dueDate: string | null;
+  dueDate: string;
   createdByName: string;
   assigneeCount: number;
   assigneeNames: string;
@@ -151,7 +151,7 @@ export interface CreateWorkOrderPayload {
   priority?: WorkOrderPriority;
   sourceType?: WorkOrderSourceType;
   sourceUuid?: string | null;
-  dueDate?: string | null;
+  dueDate: string;
   assigneeUuids?: string[];
 }
 
@@ -160,7 +160,7 @@ export interface UpdateWorkOrderPayload {
   title?: string;
   description?: string | null;
   priority?: WorkOrderPriority;
-  dueDate?: string | null;
+  dueDate?: string;
 }
 
 /** Payload for PATCH /work-orders/:uuid/status */

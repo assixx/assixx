@@ -49,7 +49,7 @@
     justify-content: center;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #000;
+    color: var(--color-black);
     padding: 2px 4px;
     border-radius: 2px;
     line-height: 1;
@@ -57,7 +57,7 @@
   }
 
   .slot-preview__badge--fallback {
-    color: #fff;
-    background: #9333ea;
+    color: var(--color-white);
+    background: var(--color-violet-600);
   }
 </style>

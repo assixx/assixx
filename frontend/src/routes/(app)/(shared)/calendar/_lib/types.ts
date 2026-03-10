@@ -190,6 +190,31 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * Work order for calendar display (from GET /work-orders/calendar)
+ */
+export interface CalendarWorkOrder {
+  uuid: string;
+  title: string;
+  dueDate: string;
+  status: 'open' | 'in_progress' | 'completed' | 'verified';
+  priority: 'low' | 'medium' | 'high';
+  sourceType: string;
+}
+
+/**
+ * TPM shift assignment for calendar display (from GET /tpm/plans/shift-assignments/calendar)
+ */
+export interface CalendarTpmAssignment {
+  planUuid: string;
+  shiftDate: string;
+  assetName: string;
+  planName: string;
+  intervalTypes: string[];
+  shiftType: string;
+  colorHex: string;
+}
+
+/**
  * Event hover info for tooltip handlers
  */
 export interface EventHoverInfo {

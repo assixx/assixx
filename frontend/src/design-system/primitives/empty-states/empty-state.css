@@ -152,46 +152,46 @@
 
 /* Info state - for informational empty states */
 .empty-state--info .empty-state__icon {
-  border-color: rgb(33 150 243 / 15%);
-  background: rgb(33 150 243 / 5%);
+  border-color: color-mix(in oklch, var(--color-primary) 15%, transparent);
+  background: color-mix(in oklch, var(--color-primary) 5%, transparent);
 }
 
 .empty-state--info .empty-state__icon i {
   opacity: 100%;
-  color: rgb(33 150 243 / 80%);
+  color: color-mix(in oklch, var(--color-primary) 80%, transparent);
 }
 
 /* Warning state - for caution/attention needed */
 .empty-state--warning .empty-state__icon {
-  border-color: rgb(255 152 0 / 15%);
-  background: rgb(255 152 0 / 5%);
+  border-color: color-mix(in oklch, var(--color-warning) 15%, transparent);
+  background: color-mix(in oklch, var(--color-warning) 5%, transparent);
 }
 
 .empty-state--warning .empty-state__icon i {
   opacity: 100%;
-  color: rgb(255 152 0 / 80%);
+  color: color-mix(in oklch, var(--color-warning) 80%, transparent);
 }
 
 /* Error state - for errors/failures */
 .empty-state--error .empty-state__icon {
-  border-color: rgb(244 67 54 / 15%);
-  background: rgb(244 67 54 / 5%);
+  border-color: color-mix(in oklch, var(--color-danger) 15%, transparent);
+  background: color-mix(in oklch, var(--color-danger) 5%, transparent);
 }
 
 .empty-state--error .empty-state__icon i {
   opacity: 100%;
-  color: rgb(244 67 54 / 80%);
+  color: color-mix(in oklch, var(--color-danger) 80%, transparent);
 }
 
 /* Success state - for completed/success states */
 .empty-state--success .empty-state__icon {
-  border-color: rgb(76 175 80 / 15%);
-  background: rgb(76 175 80 / 5%);
+  border-color: color-mix(in oklch, var(--color-success) 15%, transparent);
+  background: color-mix(in oklch, var(--color-success) 5%, transparent);
 }
 
 .empty-state--success .empty-state__icon i {
   opacity: 100%;
-  color: rgb(76 175 80 / 80%);
+  color: color-mix(in oklch, var(--color-success) 80%, transparent);
 }
 
 /* ========================================

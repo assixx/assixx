@@ -234,7 +234,7 @@
   /* Selection */
   .select-primary::selection {
     background-color: var(--color-primary);
-    color: #fff;
+    color: var(--color-white);
   }
 
   /* Container Utilities */

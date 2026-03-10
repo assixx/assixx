@@ -97,7 +97,7 @@
   .password-strength-meter {
     margin-bottom: var(--spacing-2);
     border-radius: 3px;
-    background: rgb(255 255 255 / 10%);
+    background: color-mix(in oklch, var(--color-white) 10%, transparent);
     height: 6px;
     overflow: hidden;
   }
@@ -117,33 +117,53 @@
   }
 
   .password-strength-bar[data-score='0'] {
-    box-shadow: 0 0 10px rgb(211 47 47 / 40%);
-    background: linear-gradient(90deg, #d32f2f, #e53935);
+    box-shadow: 0 0 10px oklch(56.8% 0.2001 26.4 / 40%);
+    background: linear-gradient(
+      90deg,
+      var(--color-red-700),
+      oklch(56.43% 0.1893 26.98)
+    );
     width: 20%;
   }
 
   .password-strength-bar[data-score='1'] {
-    box-shadow: 0 0 10px rgb(245 124 0 / 40%);
-    background: linear-gradient(90deg, #f57c00, #ff9800);
+    box-shadow: 0 0 10px oklch(71.2% 0.1794 53.54 / 40%);
+    background: linear-gradient(
+      90deg,
+      var(--color-orange-700),
+      oklch(77.01% 0.1645 63.16)
+    );
     width: 40%;
   }
 
   .password-strength-bar[data-score='2'] {
-    box-shadow: 0 0 10px rgb(251 192 45 / 40%);
-    background: linear-gradient(90deg, #fbc02d, #fdd835);
+    box-shadow: 0 0 10px oklch(83.92% 0.1614 84.38 / 40%);
+    background: linear-gradient(
+      90deg,
+      var(--color-yellow-600),
+      var(--color-yellow-500)
+    );
     width: 60%;
   }
 
   .password-strength-bar[data-score='3'] {
-    box-shadow: 0 0 10px rgb(104 159 56 / 40%);
-    background: linear-gradient(90deg, #689f38, #7cb342);
+    box-shadow: 0 0 10px oklch(64.23% 0.1466 133.03 / 40%);
+    background: linear-gradient(
+      90deg,
+      var(--color-light-green-700),
+      var(--color-light-green-600)
+    );
     width: 80%;
   }
 
   .password-strength-bar[data-score='4'] {
     animation: pulse-success 2s ease-in-out;
-    box-shadow: 0 0 10px rgb(56 142 60 / 40%);
-    background: linear-gradient(90deg, #388e3c, #4caf50);
+    box-shadow: 0 0 10px oklch(57.52% 0.1446 144.2 / 40%);
+    background: linear-gradient(
+      90deg,
+      var(--color-green-700),
+      var(--color-success)
+    );
     width: 100%;
   }
 
@@ -164,27 +184,27 @@
   /* Label colors matching score */
   .password-strength-container:has(.password-strength-bar[data-score='0'])
     .password-strength-label {
-    color: #d32f2f;
+    color: var(--color-red-700);
   }
 
   .password-strength-container:has(.password-strength-bar[data-score='1'])
     .password-strength-label {
-    color: #f57c00;
+    color: var(--color-orange-700);
   }
 
   .password-strength-container:has(.password-strength-bar[data-score='2'])
     .password-strength-label {
-    color: #fbc02d;
+    color: var(--color-yellow-600);
   }
 
   .password-strength-container:has(.password-strength-bar[data-score='3'])
     .password-strength-label {
-    color: #689f38;
+    color: var(--color-light-green-700);
   }
 
   .password-strength-container:has(.password-strength-bar[data-score='4'])
     .password-strength-label {
-    color: #388e3c;
+    color: var(--color-green-700);
   }
 
   .password-strength-time {
@@ -198,7 +218,7 @@
     margin-top: var(--spacing-3);
     border-left: 3px solid var(--color-warning);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    background: rgb(255 193 7 / 5%);
+    background: oklch(84.42% 0.1721 84.94 / 5%);
     padding: var(--spacing-3);
     font-size: 0.875rem;
   }
@@ -233,7 +253,7 @@
   /* Loading State */
   .password-strength-container.is-loading .password-strength-meter {
     animation: pulse-loading 1.5s ease-in-out infinite;
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
   }
 
   @keyframes pulse-loading {
@@ -285,7 +305,7 @@
     }
 
     .password-feedback {
-      background: rgb(255 193 7 / 10%);
+      background: oklch(84.42% 0.1721 84.94 / 10%);
     }
   }
 </style>

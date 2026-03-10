@@ -221,12 +221,6 @@ export const shiftsState = {
   get assetAvailabilityMap() {
     return contextState.assetAvailabilityMap;
   },
-  get tpmEventsMap() {
-    return contextState.tpmEventsMap;
-  },
-  get showTpmEvents() {
-    return uiState.showTpmEvents;
-  },
   setSelectedContext: contextState.setSelectedContext,
   resetSelectedContext: contextState.resetSelectedContext,
   setCurrentPlanId: contextState.setCurrentPlanId,
@@ -235,10 +229,6 @@ export const shiftsState = {
   isHierarchyValid: contextState.isHierarchyValid,
   setAssetAvailability: contextState.setAssetAvailability,
   clearAssetAvailability: contextState.clearAssetAvailability,
-  setTpmEvents: contextState.setTpmEvents,
-  clearTpmEvents: contextState.clearTpmEvents,
-  setShowTpmEvents: uiState.setShowTpmEvents,
-
   // Rotation state
   get autofillConfig() {
     return rotationState.autofillConfig;

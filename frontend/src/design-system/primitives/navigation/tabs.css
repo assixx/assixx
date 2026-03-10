@@ -125,9 +125,10 @@
 }
 
 .tabs--glass .tabs__tab--active {
-  box-shadow: 0 1px 8px rgb(33 150 243 / 20%);
+  box-shadow: 0 1px 8px
+    color-mix(in oklch, var(--color-primary) 20%, transparent);
   border-color: transparent;
-  background: rgb(33 150 243 / 20%);
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
   color: var(--color-primary);
 }
 

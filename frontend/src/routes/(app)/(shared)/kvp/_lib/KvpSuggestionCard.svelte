@@ -127,7 +127,7 @@
 
   .kvp-card:hover {
     transform: translateY(-4px);
-    border-color: rgb(0 142 255 / 50%);
+    border-color: oklch(64.49% 0.1953 252.39 / 50%);
   }
 
   .kvp-status-container {
@@ -154,13 +154,13 @@
   }
 
   .kvp-read-status--read {
-    background: rgb(16 185 129 / 20%);
-    color: rgb(16 185 129);
+    background: oklch(69.59% 0.1491 162.51 / 20%);
+    color: oklch(69.59% 0.1491 162.51);
   }
 
   .kvp-read-status--unread {
-    background: rgb(245 158 11 / 20%);
-    color: rgb(245 158 11);
+    background: oklch(76.86% 0.1646 70.08 / 20%);
+    color: oklch(76.86% 0.1646 70.08);
   }
 
   .kvp-read-status:hover {
@@ -245,7 +245,7 @@
   }
 
   .share-info > i {
-    color: #666;
+    color: oklch(49.26% 0 0);
     font-size: 0.875rem;
   }
 </style>

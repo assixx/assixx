@@ -8,116 +8,132 @@
  */
 
 html.dark {
-  /* Main Background - ORIGINAL dark theme values (do NOT change!) #030303 */
-  --main-bg: #000;
+  /* Main Background - ORIGINAL dark theme values (do NOT change!) #030303 → oklch(10.84% 0 0) */
+  --main-bg: oklch(0% 0 0);
   --main-bg-gradient: radial-gradient(
     circle,
-    rgb(0 67 130 / 18%) 0%,
+    oklch(38.49% 0.1146 252.29 / 18%) 0%,
     transparent 70%
   );
 
   /* Backgrounds */
   --color-surface: var(--color-gray-900);
-  --header-bg: linear-gradient(90deg, #00060b 0%, #070707 90%, #050710 100%);
+  --header-bg: linear-gradient(
+    90deg,
+    oklch(11.43% 0.0227 229.57) 0%,
+    oklch(12.86% 0 0) 90%,
+    oklch(13.11% 0.0214 270.88) 100%
+  );
 
   /* Text */
   --color-text-primary: var(--color-white);
   --color-text-secondary: var(--color-gray-300);
   --color-text-tertiary: var(--color-gray-500);
-  --color-text-muted: rgb(255 255 255 / 50%);
+  --color-text-muted: oklch(100% 0 0 / 50%);
   --color-text-disabled: var(--color-gray-500);
-  --color-text-placeholder: rgb(255 255 255 / 50%);
-  --color-icon-primary: #a9d9ff;
-  --color-accent-bg: #a9d9ff;
+  --color-text-placeholder: oklch(100% 0 0 / 50%);
+  --color-icon-primary: oklch(86.46% 0.0729 242.52);
+  --color-accent-bg: oklch(86.46% 0.0729 242.52);
 
   /* Stacked section background (Kamishibai board collapsed sections) */
-  --color-section-stacked-bg: #020202f6;
-  --color-section-header-bg: #0d0d0d;
-  --color-section-header-bg-hover: #141414;
+  --color-section-stacked-bg: oklch(6.77% 0 0 / 96%);
+  --color-section-header-bg: oklch(15.91% 0 0);
+  --color-section-header-bg-hover: oklch(19.13% 0 0);
   --section-dim-filter: brightness(0.5) saturate(0.2);
 
   /* Borders (theme-dependent — from colors.css refactor) */
   --color-border: var(--color-gray-800);
-  --color-border-hover: #a9d9ff54;
-  --color-glass-border: rgb(255 255 255 / 10%);
-  --color-glass-border-hover: rgb(255 255 255 / 20%);
+  --color-border-hover: oklch(86.39% 0.0576 237.64 / 33%);
+  --color-glass-border: oklch(100% 0 0 / 10%);
+  --color-glass-border-hover: oklch(100% 0 0 / 20%);
 
   /* Glass Backgrounds (white overlays on dark surfaces) */
-  --glass-bg: rgb(255 255 255 / 2.5%);
-  --glass-bg-hover: rgb(255 255 255 / 3%);
-  --glass-bg-active: rgb(255 255 255 / 5%);
-  --glass-border: 1px solid rgb(255 255 255 / 10%);
-  --glass-border-sidebar-tree: 1px solid rgb(255 255 255 / 26.7%);
+  --glass-bg: oklch(100% 0 0 / 2.5%);
+  --glass-bg-hover: oklch(100% 0 0 / 3%);
+  --glass-bg-active: oklch(100% 0 0 / 5%);
+  --glass-border: 1px solid oklch(100% 0 0 / 10%);
+  --glass-border-sidebar-tree: 1px solid oklch(100% 0 0 / 26.7%);
 
   /* Glass Form (dark mode) */
-  --glass-form-bg: rgb(255 255 255 / 4%);
-  --glass-form-bg-hover: rgb(255 255 255 / 6%);
-  --glass-form-bg-focus: rgb(255 255 255 / 8%);
-  --glass-form-border: 1px solid hsl(0deg 0% 100% / 20%);
+  --glass-form-bg: oklch(100% 0 0 / 4%);
+  --glass-form-bg-hover: oklch(100% 0 0 / 6%);
+  --glass-form-bg-focus: oklch(100% 0 0 / 8%);
+  --glass-form-border: 1px solid oklch(100% 0 0 / 20%);
 
   /* Legacy Tokens (dark mode values) */
-  --text-primary: var(--color-text-primary, #fff);
-  --text-secondary: var(--color-text-secondary, #e0e0e0);
-  --background-dark: #121212;
-  --background-light: #1e1e1e;
-  --border-color: hsl(0deg 0% 23.9%);
-  --accent-color: rgb(255 255 255 / 10%);
-  --text-muted: #b0b0b0;
+  --text-primary: var(--color-text-primary, oklch(100% 0 0));
+  --text-secondary: var(--color-text-secondary, oklch(90.67% 0 0));
+  --background-dark: oklch(18.22% 0 0);
+  --background-light: oklch(23.5% 0 0);
+  --border-color: oklch(32.01% 0 0);
+  --accent-color: oklch(100% 0 0 / 10%);
+  --text-muted: oklch(75.72% 0 0);
 
   /* ========== BUTTON SHADOWS (dark mode) ========== */
 
   /* Primary Button - Blue glow (stronger on dark surfaces + glass inset) */
   --shadow-btn-primary:
-    0 1px 4px rgb(33 150 243 / 30%), inset 0 1px 0 rgb(255 255 255 / 20%);
+    0 1px 4px oklch(65.82% 0.169 248.81 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 20%);
   --shadow-btn-primary-hover:
-    0 6px 20px rgb(33 150 243 / 40%), inset 0 1px 0 rgb(255 255 255 / 20%);
+    0 6px 20px oklch(65.82% 0.169 248.81 / 40%),
+    inset 0 1px 0 oklch(100% 0 0 / 20%);
 
   /* Danger Button - Red glow */
   --shadow-btn-danger:
-    0 2px 4px rgb(220 53 69 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 2px 4px oklch(57.71% 0.2152 27.33 / 20%),
+    inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-danger-hover:
-    0 4px 12px rgb(220 53 69 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+    0 4px 12px oklch(57.71% 0.2152 27.33 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Success Button - Green glow */
   --shadow-btn-success:
-    0 2px 4px rgb(76 175 80 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 2px 4px oklch(67.31% 0.1624 144.21 / 20%),
+    inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-success-hover:
-    0 4px 12px rgb(76 175 80 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+    0 4px 12px oklch(67.31% 0.1624 144.21 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Status Active - Orange glow */
-  --shadow-btn-status-active: 0 2px 4px rgb(255 107 53 / 15%);
-  --shadow-btn-status-active-hover: 0 4px 12px rgb(255 107 53 / 20%);
+  --shadow-btn-status-active: 0 2px 4px oklch(70.49% 0.1867 47.6 / 15%);
+  --shadow-btn-status-active-hover: 0 4px 12px oklch(70.49% 0.1867 47.6 / 20%);
 
   /* Status Inactive - Green glow */
-  --shadow-btn-status-inactive: 0 2px 4px rgb(40 167 69 / 15%);
-  --shadow-btn-status-inactive-hover: 0 4px 12px rgb(40 167 69 / 15%);
+  --shadow-btn-status-inactive: 0 2px 4px oklch(64.01% 0.1751 146.74 / 15%);
+  --shadow-btn-status-inactive-hover: 0 4px 12px
+    oklch(64.01% 0.1751 146.74 / 15%);
 
   /* Warning Button - Orange glow */
   --shadow-btn-warning:
-    0 2px 4px rgb(255 152 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 2px 4px oklch(77.03% 0.1741 64.05 / 20%),
+    inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-warning-hover:
-    0 4px 12px rgb(255 152 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+    0 4px 12px oklch(77.03% 0.1741 64.05 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Info Button - Cyan glow */
   --shadow-btn-info:
-    0 2px 4px rgb(0 188 212 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 2px 4px oklch(72.91% 0.1265 210.82 / 20%),
+    inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-info-hover:
-    0 4px 12px rgb(0 188 212 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
+    0 4px 12px oklch(72.91% 0.1265 210.82 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Light Button - Subtle shadow */
-  --shadow-btn-light: 0 1px 3px rgb(0 0 0 / 8%);
-  --shadow-btn-light-hover: 0 2px 6px rgb(0 0 0 / 12%);
+  --shadow-btn-light: 0 1px 3px oklch(0% 0 0 / 8%);
+  --shadow-btn-light-hover: 0 2px 6px oklch(0% 0 0 / 12%);
 
   /* Dark Button - Strong shadow */
   --shadow-btn-dark:
-    0 2px 4px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 5%);
+    0 2px 4px oklch(0% 0 0 / 30%), inset 0 1px 0 oklch(100% 0 0 / 5%);
   --shadow-btn-dark-hover:
-    0 4px 12px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    0 4px 12px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
 
   /* Navigation-specific (dark mode) */
-  --nav-hover-bg: #a9d9ff47;
-  --nav-active-submenu-bg: rgb(139 139 139 / 12%);
-  --scrollbar-thumb-hover: rgb(255 255 255 / 30%);
-  --sidebar-fold-edge: #fff;
-  --sidebar-fold-bg: #00060a;
+  --nav-hover-bg: oklch(86.39% 0.0576 237.64 / 28%);
+  --nav-active-submenu-bg: oklch(63.24% 0 0 / 12%);
+  --scrollbar-thumb-hover: oklch(100% 0 0 / 30%);
+  --sidebar-fold-edge: oklch(100% 0 0);
+  --sidebar-fold-bg: oklch(11.35% 0.0214 224.61);
 }

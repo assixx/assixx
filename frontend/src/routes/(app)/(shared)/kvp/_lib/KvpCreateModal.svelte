@@ -714,15 +714,15 @@
     cursor: pointer;
     border: none;
     border-radius: 50%;
-    background: rgb(244 67 54 / 90%);
+    background: color-mix(in oklch, var(--color-danger) 90%, transparent);
     width: 24px;
     height: 24px;
-    color: #fff;
+    color: var(--color-white);
     font-size: 0.9rem;
   }
 
   .photo-preview-item .remove-photo:hover {
     transform: scale(1.1);
-    background: #f44336;
+    background: var(--color-danger);
   }
 </style>

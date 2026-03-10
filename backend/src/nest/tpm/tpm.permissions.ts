@@ -11,6 +11,7 @@ export const TPM_PERMISSIONS: PermissionCategoryDef = {
   label: 'TPM / Wartung',
   icon: 'fa-tools',
   modules: [
+    // TODO: 'tpm-reports' existiert bereits in DB (user_feature_permissions) — Modul hier hinzufügen sobald TPM-Reports implementiert werden
     {
       code: 'tpm-plans',
       label: 'Wartungspläne',
@@ -28,6 +29,18 @@ export const TPM_PERMISSIONS: PermissionCategoryDef = {
       label: 'Durchführungen',
       icon: 'fa-check-circle',
       allowedPermissions: ['canRead', 'canWrite'],
+    },
+    {
+      code: 'tpm-config',
+      label: 'Konfiguration',
+      icon: 'fa-cogs',
+      allowedPermissions: ['canRead', 'canWrite'],
+    },
+    {
+      code: 'tpm-locations',
+      label: 'Standorte',
+      icon: 'fa-map-marker-alt',
+      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
     },
   ],
 };

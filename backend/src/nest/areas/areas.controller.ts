@@ -25,6 +25,7 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -44,6 +45,10 @@ import {
 interface MessageResponse {
   message: string;
 }
+
+/** Permission constants — areas use departments feature code */
+const FEAT = 'departments';
+const MOD = 'areas-manage';
 
 @Controller('areas')
 export class AreasController {
@@ -88,6 +93,7 @@ export class AreasController {
    */
   @Post()
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createArea(
     @Body() dto: CreateAreaDto,
@@ -103,6 +109,7 @@ export class AreasController {
    */
   @Put(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   async updateArea(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAreaDto,
@@ -119,6 +126,7 @@ export class AreasController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canDelete')
   async deleteArea(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteAreaQueryDto,
@@ -139,6 +147,7 @@ export class AreasController {
    */
   @Post(':id/departments')
   @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
   async assignDepartments(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignDepartmentsDto,

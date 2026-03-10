@@ -121,7 +121,7 @@
 .stepper__step--completed .stepper__indicator {
   border-color: var(--color-success);
   background: var(--color-success);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .stepper__step--completed .stepper__number {
@@ -130,7 +130,7 @@
 
 .stepper__step--completed .stepper__check {
   display: block;
-  color: #fff;
+  color: var(--color-white);
 }
 
 .stepper__step--completed .stepper__label {
@@ -139,9 +139,10 @@
 
 /* Active (current) step */
 .stepper__step--active .stepper__indicator {
-  box-shadow: 0 0 0 4px rgb(33 150 243 / 10%);
+  box-shadow: 0 0 0 4px
+    color-mix(in oklch, var(--color-primary) 10%, transparent);
   border-color: var(--color-primary);
-  background: rgb(33 150 243 / 10%);
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
   color: var(--color-primary);
 }
 
@@ -162,7 +163,7 @@
 /* Error step */
 .stepper__step--error .stepper__indicator {
   border-color: var(--color-danger);
-  background: rgb(244 67 54 / 10%);
+  background: color-mix(in oklch, var(--color-danger) 10%, transparent);
   color: var(--color-danger);
 }
 

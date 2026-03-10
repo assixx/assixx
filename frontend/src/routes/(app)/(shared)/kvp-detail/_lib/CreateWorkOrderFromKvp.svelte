@@ -45,8 +45,11 @@
   let formDueDate = $state('');
   let selectedUserUuids = $state<string[]>([]);
   let assigneeTouched = $state(false);
+  let dueDateTouched = $state(false);
   const hasAssignees = $derived(selectedUserUuids.length > 0);
+  const hasDueDate = $derived(formDueDate !== '');
   const showAssigneeError = $derived(assigneeTouched && !hasAssignees);
+  const showDueDateError = $derived(dueDateTouched && !hasDueDate);
 
   // ---------------------------------------------------------------------------
   // ASYNC STATE
@@ -72,6 +75,7 @@
       formDueDate = '';
       selectedUserUuids = [];
       assigneeTouched = false;
+      dueDateTouched = false;
       errorMessage = null;
       void loadUsers();
     }
@@ -121,8 +125,15 @@
   async function handleSubmit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     assigneeTouched = true;
+    dueDateTouched = true;
     const trimmedTitle = formTitle.trim();
-    if (trimmedTitle === '' || suggestion === null || !hasAssignees) return;
+    if (
+      trimmedTitle === '' ||
+      suggestion === null ||
+      !hasAssignees ||
+      !hasDueDate
+    )
+      return;
 
     submitting = true;
     errorMessage = null;
@@ -134,7 +145,7 @@
         priority: formPriority,
         sourceType: 'kvp_proposal',
         sourceUuid: suggestion.uuid,
-        dueDate: formDueDate !== '' ? formDueDate : null,
+        dueDate: formDueDate,
         assigneeUuids: selectedUserUuids,
       };
       await createWorkOrder(payload);
@@ -287,15 +298,23 @@
           </div>
         </div>
 
-        <!-- Due Date -->
+        <!-- Due Date — Pflichtfeld -->
         <div class="form-field">
           <AppDatePicker
             label="Fälligkeitsdatum"
             value={formDueDate}
+            required={true}
+            variant={showDueDateError ? 'error' : undefined}
             onchange={(v: string) => {
               formDueDate = v;
+              dueDateTouched = true;
             }}
           />
+          {#if showDueDateError}
+            <span class="form-field__message form-field__message--error">
+              Fälligkeitsdatum ist erforderlich
+            </span>
+          {/if}
         </div>
 
         <!-- Assignees -->

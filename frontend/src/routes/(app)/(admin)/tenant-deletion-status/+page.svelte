@@ -9,6 +9,8 @@
   const log = createLogger('TenantDeletionStatusPage');
 
   // Local modules
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import {
     rejectDeletion as apiRejectDeletion,
     cancelDeletion as apiCancelDeletion,
@@ -152,22 +154,6 @@
         err instanceof Error ? err.message : MESSAGES.genericError;
       showToast(errorMessage, 'error');
       resetLoading();
-    }
-  }
-
-  // =============================================================================
-  // EVENT HANDLERS
-  // =============================================================================
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && showConfirmModal) {
-      closeConfirmModal();
-    }
-  }
-
-  function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget && showConfirmModal) {
-      closeConfirmModal();
     }
   }
 </script>
@@ -414,128 +400,64 @@
   </div>
 </div>
 
-<svelte:window on:keydown={handleKeydown} />
+<!-- Cancel Confirmation Modal -->
+<ConfirmModal
+  show={showConfirmModal && confirmModalType === 'cancel'}
+  id="tenant-deletion-cancel-modal"
+  title="Bestätigung"
+  variant="info"
+  icon="fa-question-circle"
+  confirmLabel="Ja"
+  cancelLabel="Nein"
+  submitting={confirmModalLoading}
+  onconfirm={() => void handleConfirmModalAction()}
+  oncancel={closeConfirmModal}
+>
+  Möchten Sie Ihre Löschanfrage wirklich abbrechen?
+</ConfirmModal>
 
-<!-- Confirm Modal -->
-{#if showConfirmModal}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    id="tenant-deletion-confirm-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={handleBackdropClick}
-    onkeydown={handleKeydown}
-  >
-    {#if confirmModalType === 'cancel'}
-      <!-- Cancel Confirmation Modal -->
-      <div class="confirm-modal">
-        <div class="confirm-modal__icon">
-          <i class="fas fa-question-circle"></i>
-        </div>
-        <h3 class="confirm-modal__title">Bestätigung</h3>
-        <p class="confirm-modal__message">
-          Möchten Sie Ihre Löschanfrage wirklich abbrechen?
-        </p>
-        <div class="confirm-modal__actions">
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--cancel"
-            onclick={closeConfirmModal}
-            disabled={confirmModalLoading}
-          >
-            Nein
-          </button>
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--confirm"
-            onclick={handleConfirmModalAction}
-            disabled={confirmModalLoading}
-          >
-            {#if confirmModalLoading}
-              <span class="spinner-ring spinner-ring--sm mr-2"></span>
-            {/if}
-            Ja
-          </button>
-        </div>
-      </div>
-    {:else if confirmModalType === 'emergency-stop'}
-      <!-- Emergency Stop Modal -->
-      <div class="confirm-modal confirm-modal--warning">
-        <div class="confirm-modal__icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <h3 class="confirm-modal__title">EMERGENCY STOP</h3>
-        <p class="confirm-modal__message">
-          Dies stoppt die Tenant-Löschung <strong>SOFORT</strong>!
-          <br /><br />
-          Der Tenant wird reaktiviert und die Löschung abgebrochen.
-          <br /><br />
-          Sind Sie sicher?
-        </p>
-        <div class="confirm-modal__actions">
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--cancel"
-            onclick={closeConfirmModal}
-            disabled={confirmModalLoading}
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--warning"
-            onclick={handleConfirmModalAction}
-            disabled={confirmModalLoading}
-          >
-            {#if confirmModalLoading}
-              <span class="spinner-ring spinner-ring--sm mr-2"></span>
-            {/if}
-            Emergency Stop aktivieren
-          </button>
-        </div>
-      </div>
-    {:else if confirmModalType === 'reject'}
-      <!-- Reject Modal with Reason Input -->
-      <div class="confirm-modal confirm-modal--danger">
-        <div class="confirm-modal__icon">
-          <i class="fas fa-times-circle"></i>
-        </div>
-        <h3 class="confirm-modal__title">Löschanfrage ablehnen</h3>
-        <p class="confirm-modal__message">
-          Bitte geben Sie einen Grund für die Ablehnung an:
-        </p>
-        <div class="confirm-modal__input-group">
-          <textarea
-            class="confirm-modal__input"
-            rows="3"
-            placeholder="Grund für die Ablehnung (min. 3 Zeichen)..."
-            bind:value={rejectReason}
-          ></textarea>
-        </div>
-        <div class="confirm-modal__actions">
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--cancel"
-            onclick={closeConfirmModal}
-            disabled={confirmModalLoading}
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            class="confirm-modal__btn confirm-modal__btn--danger"
-            onclick={handleConfirmModalAction}
-            disabled={confirmModalLoading || !isRejectReasonValid}
-          >
-            {#if confirmModalLoading}
-              <span class="spinner-ring spinner-ring--sm mr-2"></span>
-            {/if}
-            Ablehnen
-          </button>
-        </div>
-      </div>
-    {/if}
-  </div>
-{/if}
+<!-- Emergency Stop Modal -->
+<ConfirmModal
+  show={showConfirmModal && confirmModalType === 'emergency-stop'}
+  id="tenant-deletion-emergency-modal"
+  title="EMERGENCY STOP"
+  variant="warning"
+  confirmLabel="Emergency Stop aktivieren"
+  submitting={confirmModalLoading}
+  onconfirm={() => void handleConfirmModalAction()}
+  oncancel={closeConfirmModal}
+>
+  Dies stoppt die Tenant-Löschung <strong>SOFORT</strong>!
+  <br /><br />
+  Der Tenant wird reaktiviert und die Löschung abgebrochen.
+  <br /><br />
+  Sind Sie sicher?
+</ConfirmModal>
+
+<!-- Reject Modal with Reason Input -->
+<ConfirmModal
+  show={showConfirmModal && confirmModalType === 'reject'}
+  id="tenant-deletion-reject-modal"
+  title="Löschanfrage ablehnen"
+  icon="fa-times-circle"
+  confirmLabel="Ablehnen"
+  submitting={confirmModalLoading}
+  confirmDisabled={!isRejectReasonValid}
+  onconfirm={() => void handleConfirmModalAction()}
+  oncancel={closeConfirmModal}
+>
+  Bitte geben Sie einen Grund für die Ablehnung an:
+  {#snippet extra()}
+    <div class="confirm-modal__input-group">
+      <textarea
+        class="confirm-modal__input"
+        rows="3"
+        placeholder="Grund für die Ablehnung (min. 3 Zeichen)..."
+        bind:value={rejectReason}
+      ></textarea>
+    </div>
+  {/snippet}
+</ConfirmModal>
 
 <style>
   /* Page Layout */
@@ -583,9 +505,9 @@
   /* Process Info Section */
   .process-info {
     margin-bottom: var(--spacing-6);
-    border: 1px solid rgb(33 150 243 / 20%);
+    border: 1px solid color-mix(in oklch, var(--color-primary) 20%, transparent);
     border-radius: var(--radius-lg);
-    background: rgb(33 150 243 / 5%);
+    background: color-mix(in oklch, var(--color-primary) 5%, transparent);
     padding: var(--spacing-4);
   }
 
@@ -624,9 +546,9 @@
     align-items: center;
     gap: var(--spacing-3);
     margin-top: var(--spacing-4);
-    border: 1px solid rgb(255 152 0 / 30%);
+    border: 1px solid color-mix(in oklch, var(--color-warning) 30%, transparent);
     border-radius: var(--radius-lg);
-    background: rgb(255 152 0 / 10%);
+    background: color-mix(in oklch, var(--color-warning) 10%, transparent);
     padding: var(--spacing-4);
   }
 
@@ -667,18 +589,18 @@
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-    background: rgb(255 255 255 / 5%);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
     width: 40px;
     height: 40px;
   }
 
   .timeline-icon--completed {
-    background: rgb(76 175 80 / 20%);
+    background: color-mix(in oklch, var(--color-success) 20%, transparent);
     color: var(--color-success);
   }
 
   .timeline-icon--pending {
-    background: rgb(255 193 7 / 20%);
+    background: oklch(84.42% 0.1721 84.94 / 20%);
     color: var(--color-warning);
   }
 

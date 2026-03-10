@@ -452,12 +452,12 @@
     margin-bottom: 4px;
     border-radius: 6px;
 
-    background: rgb(139 139 139 / 12%);
+    background: oklch(63.68% 0.0001 263.28 / 12%);
   }
 
   :global(.folder-item:hover) {
     transform: translateX(2px);
-    background: rgb(139 139 139 / 30%) !important;
+    background: oklch(63.68% 0.0001 263.28 / 30%) !important;
   }
 
   /* User Info in Tables */

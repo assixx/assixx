@@ -39,6 +39,7 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import type { ReadTrackingConfig } from '../common/services/read-tracking.service.js';
 import { ReadTrackingService } from '../common/services/read-tracking.service.js';
 import { AssignUsersDto } from './dto/assign-users.dto.js';
+import { CalendarWorkOrdersQueryDto } from './dto/calendar-work-orders-query.dto.js';
 import { CreateCommentDto } from './dto/create-comment.dto.js';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto.js';
 import { ListWorkOrdersQueryDto } from './dto/list-work-orders-query.dto.js';
@@ -51,6 +52,7 @@ import { WorkOrderPhotosService } from './work-orders-photos.service.js';
 import { WorkOrderStatusService } from './work-orders-status.service.js';
 import { WorkOrdersService } from './work-orders.service.js';
 import type {
+  CalendarWorkOrder,
   EligibleUser,
   SourcePhoto,
   WorkOrder,
@@ -143,6 +145,23 @@ export class WorkOrdersController {
   @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getStats(@TenantId() tenantId: number): Promise<WorkOrderStats> {
     return await this.service.getStats(tenantId);
+  }
+
+  @Get('calendar')
+  @RequirePermission(FEAT, MOD_EXEC, 'canRead')
+  async getCalendarWorkOrders(
+    @Query() query: CalendarWorkOrdersQueryDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<CalendarWorkOrder[]> {
+    const isAdmin = user.role === 'admin' || user.role === 'root';
+    return await this.service.getCalendarWorkOrders(
+      tenantId,
+      user.id,
+      isAdmin,
+      query.startDate,
+      query.endDate,
+    );
   }
 
   @Post()

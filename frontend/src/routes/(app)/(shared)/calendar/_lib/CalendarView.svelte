@@ -94,7 +94,7 @@
   :global {
     /* EventCalendar CSS Variables */
     :root {
-      --ec-border-color: hsl(0deg 0% 83.5% / 35%);
+      --ec-border-color: oklch(87.3% 0.0001 263.28 / 35%);
     }
 
     /* @EVENT-CALENDAR BUTTON OVERRIDES */
@@ -167,7 +167,7 @@
     .ec-day-grid .ec-days,
     .ec-day-grid .ec-day,
     .ec-day-grid .ec-day-head {
-      border-color: hsl(0deg 0% 83.5% / 35%);
+      border-color: oklch(87.3% 0.0001 263.28 / 35%);
     }
 
     html:not(.dark) .ec-day-grid .ec-header,
@@ -176,7 +176,7 @@
     html:not(.dark) .ec-day-grid .ec-days,
     html:not(.dark) .ec-day-grid .ec-day,
     html:not(.dark) .ec-day-grid .ec-day-head {
-      border-color: hsl(0deg 0% 0% / 40.9%);
+      border-color: color-mix(in oklch, var(--color-black) 40.9%, transparent);
     }
 
     .ec-day {
@@ -199,11 +199,15 @@
     }
 
     .ec-day:hover {
-      background-color: rgb(var(--primary-rgb), 0.05) !important;
+      background-color: color-mix(
+        in oklch,
+        var(--color-primary) 5%,
+        transparent
+      ) !important;
     }
 
     .ec-today {
-      background-color: rgb(92 185 247 / 12%) !important;
+      background-color: oklch(75.44% 0.1259 240.49 / 12%) !important;
     }
 
     .ec-other-month {
@@ -237,53 +241,65 @@
 
     /* Event colors by organization level */
     .ec-event-company {
-      border-color: #3498db !important;
-      background-color: #3498db !important;
+      border-color: var(--color-sky) !important;
+      background-color: var(--color-sky) !important;
     }
 
     .ec-event-department {
-      border-color: #e67e22 !important;
-      background-color: #e67e22 !important;
+      border-color: var(--color-carrot) !important;
+      background-color: var(--color-carrot) !important;
     }
 
     .ec-event-team {
-      border-color: #2ecc71 !important;
-      background-color: #2ecc71 !important;
+      border-color: var(--color-emerald) !important;
+      background-color: var(--color-emerald) !important;
     }
 
     .ec-event-area {
-      border-color: #e53935 !important;
-      background-color: #e53935 !important;
+      border-color: var(--color-danger-hover) !important;
+      background-color: var(--color-danger-hover) !important;
     }
 
     .ec-event-personal {
-      border-color: #9b59b6 !important;
-      background-color: #9b59b6 !important;
+      border-color: var(--color-purple) !important;
+      background-color: var(--color-purple) !important;
     }
 
     /* Multi-assignment gradient colors */
     .ec-event-area-department {
-      border-color: #e53935 !important;
-      background: linear-gradient(135deg, #e53935 0%, #e67e22 100%) !important;
+      border-color: var(--color-danger-hover) !important;
+      background: linear-gradient(
+        135deg,
+        var(--color-danger-hover) 0%,
+        var(--color-carrot) 100%
+      ) !important;
     }
 
     .ec-event-area-team {
-      border-color: #e53935 !important;
-      background: linear-gradient(135deg, #e53935 0%, #2ecc71 100%) !important;
+      border-color: var(--color-danger-hover) !important;
+      background: linear-gradient(
+        135deg,
+        var(--color-danger-hover) 0%,
+        var(--color-emerald) 100%
+      ) !important;
     }
 
     .ec-event-department-team {
-      border-color: #e67e22 !important;
-      background: linear-gradient(135deg, #e67e22 0%, #2ecc71 100%) !important;
+      border-color: var(--color-carrot) !important;
+      background: linear-gradient(
+        135deg,
+        var(--color-carrot) 0%,
+        var(--color-emerald) 100%
+      ) !important;
     }
 
     .ec-event-area-department-team {
-      border-color: #e53935 !important;
+      border-color: var(--color-danger-hover) !important;
       background: linear-gradient(
         135deg,
-        #e53935 0%,
-        #e67e22 50%,
-        #2ecc71 100%
+        var(--color-danger-hover) 0%,
+        var(--color-carrot) 50%,
+        var(--color-emerald) 100%
       ) !important;
     }
 
@@ -299,7 +315,8 @@
       font-size: 12px;
       font-weight: 700;
       background: var(--glass-bg-active);
-      box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+      box-shadow: 0 1px 3px
+        color-mix(in oklch, var(--color-black) 30%, transparent);
     }
 
     .shift-indicator.shift-F {
@@ -325,9 +342,10 @@
       margin-top: 3px;
       font-size: 12px;
       font-weight: 700;
-      color: #26a69a;
+      color: var(--color-teal-400);
       background: var(--glass-bg-active);
-      box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+      box-shadow: 0 1px 3px
+        color-mix(in oklch, var(--color-black) 30%, transparent);
     }
 
     /* FULLSCREEN MODE */
@@ -366,12 +384,12 @@
     }
 
     .calendar-fullscreen-mode #calendarContainer .card__header .btn {
-      border: 1px solid rgb(255 255 255 / 10%);
+      border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
       backdrop-filter: blur(10px);
     }
 
     .calendar-fullscreen-mode #calendarContainer .card__header .btn:hover {
-      border-color: rgb(255 255 255 / 20%);
+      border-color: color-mix(in oklch, var(--color-white) 20%, transparent);
     }
 
     .calendar-fullscreen-mode #calendarContainer .card__body {

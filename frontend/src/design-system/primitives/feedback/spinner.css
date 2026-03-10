@@ -74,28 +74,48 @@
 /* ========== COLOR VARIANTS ========== */
 
 .spinner--primary {
-  border-color: rgb(33 150 243 / 20%) !important;
+  border-color: color-mix(
+    in oklch,
+    var(--color-primary) 20%,
+    transparent
+  ) !important;
   border-top-color: var(--color-primary) !important;
 }
 
 .spinner--success {
-  border-color: rgb(76 175 80 / 20%) !important;
+  border-color: color-mix(
+    in oklch,
+    var(--color-success) 20%,
+    transparent
+  ) !important;
   border-top-color: var(--color-success) !important;
 }
 
 .spinner--warning {
-  border-color: rgb(255 152 0 / 20%) !important;
+  border-color: color-mix(
+    in oklch,
+    var(--color-warning) 20%,
+    transparent
+  ) !important;
   border-top-color: var(--color-warning) !important;
 }
 
 .spinner--danger {
-  border-color: rgb(244 67 54 / 20%) !important;
+  border-color: color-mix(
+    in oklch,
+    var(--color-danger) 20%,
+    transparent
+  ) !important;
   border-top-color: var(--color-danger) !important;
 }
 
 .spinner--white {
-  border-color: rgb(255 255 255 / 20%) !important;
-  border-top-color: #fff !important;
+  border-color: color-mix(
+    in oklch,
+    var(--color-white) 20%,
+    transparent
+  ) !important;
+  border-top-color: var(--color-white) !important;
 }
 
 /* ========== DOTS SPINNER ========== */
@@ -173,7 +193,7 @@
 }
 
 .spinner-dots--white .spinner-dots__dot {
-  background: #fff;
+  background: var(--color-white);
 }
 
 /* ========== PULSE SPINNER ========== */
@@ -309,8 +329,8 @@
 }
 
 .spinner-ring--white {
-  border-top-color: #fff !important;
-  border-right-color: #fff !important;
+  border-top-color: var(--color-white) !important;
+  border-right-color: var(--color-white) !important;
 }
 
 /* ========== OVERLAY SPINNER (FULLSCREEN) ========== */
@@ -329,7 +349,7 @@
   backdrop-filter: blur(4px);
 
   /* Appearance */
-  background: rgb(0 0 0 / 60%);
+  background: color-mix(in oklch, var(--color-black) 60%, transparent);
 
   /* Size */
   width: 100%;
@@ -344,7 +364,7 @@
 }
 
 .spinner-overlay__text {
-  color: #fff;
+  color: var(--color-white);
   font-weight: 500;
   font-size: 14px;
 }

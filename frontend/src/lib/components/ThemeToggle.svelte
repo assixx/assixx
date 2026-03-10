@@ -78,11 +78,11 @@
     padding: 0 10px;
     border-radius: 14px;
     border: none;
-    background: rgb(0 0 0);
+    background: var(--color-black);
     box-shadow:
-      inset 0 1px 0 rgb(145 145 145 / 26%),
-      inset 0 1px 1px rgb(79 79 79 / 53%),
-      0 1px 0 rgb(0 0 0 / 8%);
+      inset 0 1px 0 oklch(65.67% 0.0001 263.28 / 26%),
+      inset 0 1px 1px oklch(42.76% 0 263.28 / 53%),
+      0 1px 0 color-mix(in oklch, var(--color-black) 8%, transparent);
     transition:
       background 400ms ease,
       box-shadow 400ms ease;
@@ -124,12 +124,12 @@
   }
 
   .theme-toggle__sun {
-    color: rgb(255 255 255 / 35%);
+    color: color-mix(in oklch, var(--color-white) 35%, transparent);
     opacity: 0%;
   }
 
   .theme-toggle__moon {
-    color: rgb(210 225 255 / 90%);
+    color: oklch(90.79% 0.0443 264.33 / 90%);
     opacity: 100%;
   }
 
@@ -141,12 +141,16 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: linear-gradient(145deg, #f0f0f0 0%, #a0a0a0 100%);
+    background: linear-gradient(
+      145deg,
+      oklch(95.66% 0 0) 0%,
+      oklch(69.93% 0 0) 100%
+    );
     box-shadow:
-      0 3px 7px rgb(0 0 0 / 55%),
-      0 1px 3px rgb(0 0 0 / 30%),
-      inset 0 2px 4px rgb(255 255 255 / 70%),
-      inset 0 -2px 3px rgb(0 0 0 / 20%);
+      0 3px 7px color-mix(in oklch, var(--color-black) 55%, transparent),
+      0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent),
+      inset 0 2px 4px color-mix(in oklch, var(--color-white) 70%, transparent),
+      inset 0 -2px 3px color-mix(in oklch, var(--color-black) 20%, transparent);
     transition:
       transform 400ms cubic-bezier(0.68, -0.15, 0.32, 1.15),
       background 400ms ease,
@@ -157,9 +161,9 @@
   .theme-toggle.is-light .theme-toggle__track {
     background: var(--color-icon-primary);
     box-shadow:
-      inset 2px 1px 2px rgb(0 0 0 / 40%),
-      inset 0 1px 2px rgb(0 0 0 / 30%),
-      inset 0 -1px 1px rgb(255 255 255 / 10%);
+      inset 2px 1px 2px color-mix(in oklch, var(--color-black) 40%, transparent),
+      inset 0 1px 2px color-mix(in oklch, var(--color-black) 30%, transparent),
+      inset 0 -1px 1px color-mix(in oklch, var(--color-white) 10%, transparent);
   }
 
   .theme-toggle.is-light .theme-toggle__track::before,
@@ -168,7 +172,7 @@
   }
 
   .theme-toggle.is-light .theme-toggle__sun {
-    color: #000;
+    color: var(--color-black);
     opacity: 100%;
   }
 
