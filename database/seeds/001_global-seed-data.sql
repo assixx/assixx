@@ -54,30 +54,63 @@ INSERT INTO public.plans VALUES (2, 'professional', 'Professional', 'Für wachse
 INSERT INTO public.plans VALUES (3, 'enterprise', 'Enterprise', 'Für große Organisationen', 299.00, NULL, NULL, 1000, 1, 3, '2025-06-02 19:21:07+02', '2026-01-14 15:31:35.081322+01') ON CONFLICT (id) DO NOTHING;
 
 -- Plan Features (60 associations: 20 features × 3 plans)
+-- ADR-032: features.category bestimmt Plan-Zuordnung deterministisch:
+--   basic/core → Basic(✓) Professional(✓) Enterprise(✓)
+--   premium    → Basic(✗) Professional(✓) Enterprise(✓)
+--   enterprise → Basic(✗) Professional(✗) Enterprise(✓)
+--
+-- === Basic Plan (plan_id=1) ===
+-- basic features: dashboard(1), calendar(6), blackboard(7), settings(12), vacation(13), notifications(19)
 INSERT INTO public.plan_features VALUES (1, 1, 1, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (2, 1, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (3, 1, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (4, 1, 4, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (5, 1, 5, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (6, 1, 6, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (7, 1, 7, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (8, 1, 8, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (9, 1, 9, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (10, 1, 10, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (11, 1, 11, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (12, 1, 12, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (37, 1, 13, true, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (52, 1, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+-- core features: employees(2), departments(3), teams(4), documents(9), dummy_users(20)
+INSERT INTO public.plan_features VALUES (2, 1, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (3, 1, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (4, 1, 4, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (9, 1, 9, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (55, 1, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+-- premium features: NOT in Basic
+INSERT INTO public.plan_features VALUES (5, 1, 5, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (8, 1, 8, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (10, 1, 10, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (58, 1, 15, false, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (43, 1, 16, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (46, 1, 17, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+-- enterprise features: NOT in Basic
+INSERT INTO public.plan_features VALUES (11, 1, 11, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (40, 1, 14, false, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (49, 1, 18, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+--
+-- === Professional Plan (plan_id=2) ===
+-- basic + core features: all true
 INSERT INTO public.plan_features VALUES (13, 2, 1, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (14, 2, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (15, 2, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (16, 2, 4, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (17, 2, 5, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (18, 2, 6, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (19, 2, 7, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (20, 2, 8, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (21, 2, 9, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (22, 2, 10, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (23, 2, 11, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (24, 2, 12, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (38, 2, 13, true, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (53, 2, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (56, 2, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+-- premium features: included in Professional
+INSERT INTO public.plan_features VALUES (17, 2, 5, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (20, 2, 8, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (22, 2, 10, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (59, 2, 15, true, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (44, 2, 16, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (47, 2, 17, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+-- enterprise features: NOT in Professional
+INSERT INTO public.plan_features VALUES (23, 2, 11, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (41, 2, 14, false, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.plan_features VALUES (50, 2, 18, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+--
+-- === Enterprise Plan (plan_id=3) — all features included ===
 INSERT INTO public.plan_features VALUES (25, 3, 1, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (26, 3, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (27, 3, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
@@ -90,37 +123,13 @@ INSERT INTO public.plan_features VALUES (33, 3, 9, true, '2025-07-23 09:56:05+02
 INSERT INTO public.plan_features VALUES (34, 3, 10, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (35, 3, 11, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (36, 3, 12, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
--- vacation (feature 13): Enterprise only
-INSERT INTO public.plan_features VALUES (37, 1, 13, false, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (38, 2, 13, false, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (39, 3, 13, true, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
--- tpm (feature 14): Enterprise only
-INSERT INTO public.plan_features VALUES (40, 1, 14, false, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (41, 2, 14, false, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (42, 3, 14, true, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
--- work_orders (feature 15): all plans
-INSERT INTO public.plan_features VALUES (58, 1, 15, true, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (59, 2, 15, true, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (60, 3, 15, true, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
--- assets (feature 16): all plans
-INSERT INTO public.plan_features VALUES (43, 1, 16, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (44, 2, 16, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (45, 3, 16, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- reports (feature 17): all plans
-INSERT INTO public.plan_features VALUES (46, 1, 17, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (47, 2, 17, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (48, 3, 17, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- audit_trail (feature 18): all plans
-INSERT INTO public.plan_features VALUES (49, 1, 18, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (50, 2, 18, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (51, 3, 18, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- notifications (feature 19): all plans
-INSERT INTO public.plan_features VALUES (52, 1, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (53, 2, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (54, 3, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- dummy_users (feature 20): all plans
-INSERT INTO public.plan_features VALUES (55, 1, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (56, 2, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.plan_features VALUES (57, 3, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
 
 -- Sync sequences to max values
