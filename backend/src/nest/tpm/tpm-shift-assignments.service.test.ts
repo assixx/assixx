@@ -2,7 +2,8 @@
  * Unit tests for TpmShiftAssignmentsService
  *
  * Mocked dependencies: DatabaseService (query).
- * Tests: getShiftAssignments, setAssignments, getAssignmentsForPlan.
+ * Tests: getShiftAssignments, setAssignments, getAssignmentsForPlan,
+ *        getCalendarAssignments (admin/non-admin, color resolution).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { NotFoundException } from '@nestjs/common';
@@ -47,6 +48,18 @@ function makePlanAssignmentRow(overrides: Record<string, unknown> = {}) {
 
 function makePlanIdRow(overrides: Record<string, unknown> = {}) {
   return { id: 42, asset_id: 10, ...overrides };
+}
+
+function makeCalendarRow(overrides: Record<string, unknown> = {}) {
+  return {
+    plan_uuid: 'plan-uuid-001                           ',
+    shift_date: '2026-03-15',
+    asset_name: 'Anlage A',
+    plan_name: 'Wartungsplan 1',
+    interval_types: ['monthly'],
+    shift_type: 'assigned',
+    ...overrides,
+  };
 }
 
 // =============================================================
@@ -396,6 +409,223 @@ describe('TpmShiftAssignmentsService', () => {
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('JOIN users u');
+    });
+  });
+
+  // =============================================================
+  // getCalendarAssignments
+  // =============================================================
+
+  describe('getCalendarAssignments', () => {
+    it('should return empty array when no assignments exist', async () => {
+      // calendar query → empty
+      mockDb.query.mockResolvedValueOnce([]);
+      // loadIntervalColors → empty
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('should pass tenantId, startDate, endDate as parameters', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      const params = mockDb.query.mock.calls[0]?.[1] as (number | string)[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toBe('2026-03-01');
+      expect(params[2]).toBe('2026-03-31');
+    });
+
+    it('should NOT add user filter for admin users', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain('pa.user_id = $4');
+      const params = mockDb.query.mock.calls[0]?.[1] as (number | string)[];
+      expect(params).toHaveLength(3);
+    });
+
+    it('should add user filter for non-admin users', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getCalendarAssignments(
+        10,
+        5,
+        false,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('pa.user_id = $4');
+      const params = mockDb.query.mock.calls[0]?.[1] as (number | string)[];
+      expect(params).toHaveLength(4);
+      expect(params[3]).toBe(5);
+    });
+
+    it('should map DB rows to API response with colorHex', async () => {
+      mockDb.query.mockResolvedValueOnce([makeCalendarRow()]);
+      // loadIntervalColors → no tenant overrides
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        planUuid: 'plan-uuid-001',
+        shiftDate: '2026-03-15',
+        assetName: 'Anlage A',
+        planName: 'Wartungsplan 1',
+        intervalTypes: ['monthly'],
+        shiftType: 'assigned',
+        colorHex: '#5bb5f5',
+      });
+    });
+
+    it('should use tenant-specific color when available', async () => {
+      mockDb.query.mockResolvedValueOnce([makeCalendarRow()]);
+      // loadIntervalColors → tenant overrides monthly color
+      mockDb.query.mockResolvedValueOnce([
+        { status_key: 'monthly', color_hex: '#FF0000' },
+      ]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result[0]?.colorHex).toBe('#FF0000');
+    });
+
+    it('should pick the most significant interval for color', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeCalendarRow({ interval_types: ['monthly', 'annual', 'quarterly'] }),
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      // annual (significance 1) should be picked → default color #c8b88a
+      expect(result[0]?.colorHex).toBe('#c8b88a');
+    });
+
+    it('should fall back to #FF9800 for unknown interval types', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeCalendarRow({ interval_types: ['unknown_type'] }),
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result[0]?.colorHex).toBe('#FF9800');
+    });
+
+    it('should trim plan_uuid from calendar rows', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeCalendarRow({ plan_uuid: 'uuid-padded   ' }),
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result[0]?.planUuid).toBe('uuid-padded');
+    });
+
+    it('should query tpm_color_config for tenant colors', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      const colorSQL = mockDb.query.mock.calls[1]?.[0] as string;
+      expect(colorSQL).toContain('tpm_color_config');
+      expect(mockDb.query.mock.calls[1]?.[1]).toEqual([10]);
+    });
+
+    it('should handle multiple calendar rows', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        makeCalendarRow(),
+        makeCalendarRow({
+          plan_uuid: 'plan-uuid-002                           ',
+          shift_date: '2026-03-20',
+          asset_name: 'Anlage B',
+          plan_name: 'Wartungsplan 2',
+          interval_types: ['quarterly'],
+        }),
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCalendarAssignments(
+        10,
+        5,
+        true,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.planName).toBe('Wartungsplan 1');
+      expect(result[1]?.planName).toBe('Wartungsplan 2');
+      expect(result[1]?.colorHex).toBe('#b0b0b0');
     });
   });
 });
