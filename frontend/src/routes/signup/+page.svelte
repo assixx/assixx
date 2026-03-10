@@ -558,7 +558,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 75px 270px;
+    padding: 75px 200px;
     overflow-y: auto;
   }
 
@@ -566,7 +566,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 420px;
+    max-width: 520px;
   }
 
   .signup-title {

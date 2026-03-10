@@ -3,6 +3,11 @@
  * Configuration, labels, and dropdown options
  */
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { DropdownOption } from './types';
 
 // ============================================================================
@@ -41,23 +46,29 @@ export const ACTION_OPTIONS: DropdownOption[] = [
 // Entity Type Dropdown Options
 // ============================================================================
 
-export const ENTITY_OPTIONS: DropdownOption[] = [
-  { value: 'all', text: 'Alle Typen' },
-  { value: 'user', text: 'Benutzer' },
-  { value: 'admin', text: 'Administrator' },
-  { value: 'department', text: 'Abteilung' },
-  { value: 'document', text: 'Dokument' },
-  { value: 'blackboard', text: 'Schwarzes Brett' },
-  { value: 'calendar', text: 'Kalender' },
-  { value: 'asset', text: 'Anlage' },
-  { value: 'shift', text: 'Schicht' },
-  { value: 'logs', text: 'Logs' },
-  { value: 'tenant', text: 'Tenant' },
-  { value: 'survey', text: 'Umfrage' },
-  { value: 'team', text: 'Team' },
-  { value: 'task', text: 'Aufgabe' },
-  { value: 'kvp_suggestion', text: 'KVP-Vorschlag' },
-];
+/** Factory: entity type options with dynamic hierarchy labels */
+export function createEntityOptions(labels: HierarchyLabels): DropdownOption[] {
+  return [
+    { value: 'all', text: 'Alle Typen' },
+    { value: 'user', text: 'Benutzer' },
+    { value: 'admin', text: 'Administrator' },
+    { value: 'department', text: labels.department },
+    { value: 'document', text: 'Dokument' },
+    { value: 'blackboard', text: 'Schwarzes Brett' },
+    { value: 'calendar', text: 'Kalender' },
+    { value: 'asset', text: labels.asset },
+    { value: 'shift', text: 'Schicht' },
+    { value: 'logs', text: 'Logs' },
+    { value: 'tenant', text: 'Tenant' },
+    { value: 'survey', text: 'Umfrage' },
+    { value: 'team', text: labels.team },
+    { value: 'task', text: 'Aufgabe' },
+    { value: 'kvp_suggestion', text: 'KVP-Vorschlag' },
+  ];
+}
+
+/** Backward-compatible static export */
+export const ENTITY_OPTIONS = createEntityOptions(DEFAULT_HIERARCHY_LABELS);
 
 // ============================================================================
 // Timerange Dropdown Options

@@ -2,6 +2,11 @@
 // TPM (Total Productive Maintenance) - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { CardCategory, CardStatus, IntervalType } from './types';
 
 /** Interval type display labels (German) */
@@ -112,8 +117,8 @@ export const ZOOM_CONFIG = {
   STEP: 1,
 } as const;
 
-/** UI Messages (German) */
-export const MESSAGES = {
+/** UI Messages (German) — base messages, use createTpmMessages() for dynamic labels */
+const BASE_MESSAGES = {
   // Page titles
   PAGE_TITLE: 'TPM Wartung - Assixx',
   PAGE_HEADING: 'TPM Wartung',
@@ -474,3 +479,29 @@ export const MESSAGES = {
   ZOOM_OUT: 'Verkleinern',
   ZOOM_FULLSCREEN: 'Vollbild',
 } as const;
+
+/** Factory: TPM messages with dynamic hierarchy labels */
+export function createTpmMessages(labels: HierarchyLabels) {
+  return {
+    ...BASE_MESSAGES,
+    TH_MACHINE: labels.asset,
+    SEARCH_PLACEHOLDER: `${labels.asset}, Planname...`,
+    LABEL_AREA: labels.area,
+    LABEL_DEPARTMENT: labels.department,
+    PH_AREA: `${labels.area} auswählen...`,
+    PH_DEPARTMENT: `${labels.department} auswählen...`,
+    PH_SELECT_AREA_FIRST: `Bitte zuerst ${labels.area} wählen`,
+    PH_SELECT_DEPT_FIRST: `Bitte zuerst ${labels.department} wählen`,
+    LABEL_MACHINE: labels.asset,
+    PH_MACHINE: `${labels.asset} auswählen...`,
+    ERROR_MACHINE_HAS_PLAN: 'Aktiver Wartungsplan existiert bereits',
+    ERROR_MACHINES_LOAD: `Fehler beim Laden der ${labels.asset}`,
+    SLOT_DESCRIPTION: `Zeigt freie und belegte Tage (bis 365 Tage)`,
+    DUPLICATE_MESSAGE: `Ähnliche Karten für ${labels.asset} gefunden:`,
+    ESCALATION_NOTIFY_DEPT: 'Leiter benachrichtigen',
+    GESAMTANSICHT_TH_MACHINE: labels.asset,
+  };
+}
+
+/** Backward-compatible static export — uses default hierarchy labels */
+export const MESSAGES = createTpmMessages(DEFAULT_HIERARCHY_LABELS);

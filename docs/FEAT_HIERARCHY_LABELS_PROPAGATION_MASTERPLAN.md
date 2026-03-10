@@ -1,13 +1,13 @@
 # FEAT: Hierarchy Labels Propagation — Execution Masterplan
 
 > **Created:** 2026-03-10
-> **Version:** 0.7.0
-> **Status:** IN PROGRESS — Phase 4 Steps 4.1–4.5 complete, Step 4.6 next
+> **Version:** 0.8.0
+> **Status:** IN PROGRESS — Phase 4 Steps 4.1–4.8 complete (factories + backward-compat), Page wiring pending
 > **Branch:** `feat/organigramm`
 > **Spec:** [FEAT_ORGANIGRAM_MASTERPLAN.md](./FEAT_ORGANIGRAM_MASTERPLAN.md) (Known Limitation #5 → V2)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 8
-> **Actual Sessions:** 5 / 8 (Session 5 partial — Steps 4.4+4.5 done, 4.6 pending)
+> **Actual Sessions:** 6 / 8 (Session 6 — Steps 4.6–4.8 done)
 
 ---
 
@@ -22,6 +22,7 @@
 | 0.5.0   | 2026-03-10 | Session 3 done: Phase 3 Steps 3.3 + 3.4 (manage-teams + manage-assets)                  |
 | 0.6.0   | 2026-03-10 | Session 4 done: Phase 4 Steps 4.1–4.3 (manage-halls + manage-admins + manage-employees) |
 | 0.7.0   | 2026-03-10 | Session 5 partial: Phase 4 Steps 4.4–4.5 (admin-dashboard + survey-admin + survey-employee) |
+| 0.8.0   | 2026-03-10 | Session 6: Phase 4 Steps 4.6–4.8 (vacation/rules + TPM factories + scattered refs)           |
 
 ---
 
@@ -453,35 +454,40 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 - `survey-admin/+page.svelte` → `labels`, `surveyMessages`, `badgeMap` derived, durchgereicht
 - `survey-employee/constants.ts` → `createAssignmentBadgeMap(labels)` Factory (Bonus-Fix, selbes Pattern)
 
-### Step 4.6: vacation/rules [PENDING] _(NEU — fehlte im Original)_
+### Step 4.6: vacation/rules [DONE ✓]
 
-- `BlackoutsTab.svelte` (5×) → "Bereich" → `labels.area`
-- `StaffingRulesTab.svelte` (3× "Bereich", 9× "Anlage") → `labels.area`, `labels.asset`
-- 17 Stellen betroffen
+- `BlackoutsTab.svelte` — labels prop, 8 dynamic strings (area, department, team in scope selectors + hints)
+- `StaffingRulesTab.svelte` — labels prop, 18 dynamic strings (cascade labels, placeholders, empty states)
+- `+page.svelte` — derives labels from layout data, passes to both tab components
 
-### Step 4.7: lean-management/tpm [PENDING] _(NEU — fehlte im Original)_
+### Step 4.7: lean-management/tpm [DONE ✓] _(Factory + backward-compat export)_
 
-- `constants.ts` (5× "Bereich", 10× "Anlage") → `labels.area`, `labels.asset`
-- `types.ts` (1× "Bereich") → `labels.area`
-- 16 Stellen betroffen
+- `(admin)/tpm/_lib/constants.ts` — `createTpmMessages(labels)` factory, 16 dynamic overrides (area, department, asset labels + placeholders + messages)
+- `(shared)/tpm/_lib/constants.ts` — `createTpmMessages(labels)` factory, 7 dynamic overrides (asset-related stats, columns, descriptions)
+- `types.ts` — JSDoc comments only, no runtime change needed
+- **Note:** 22 consumer pages still import static `MESSAGES` (backward-compatible). Page wiring deferred to Phase 5 or incremental migration.
 
-### Step 4.8: Verstreute Referenzen [PENDING]
+### Step 4.8: Verstreute Referenzen [DONE ✓] _(Factory + backward-compat export)_
 
-- `logs/_lib/constants.ts` → "Abteilung", "Anlage", "Team"
-- `employee-profile/_lib/constants.ts` → "Bereichsleiter"
-- `admin-profile/_lib/constants.ts` (1×) → "Bereich"
-- `manage-root/_lib/constants.ts` (2×) → "Bereiche"
-- `manage-dummies/_lib/constants.ts` (1×) → "Bereich"
-- `api-client.utils.ts` → "Anlagenstatus"
-- `shifts/+page.server.ts` → Default-Labels
+- `logs/_lib/constants.ts` — `createEntityOptions(labels)` factory (department, asset, team in entity filter)
+- `manage-dummies/_lib/constants.ts` — `createDummyMessages(labels)` factory (COL_TEAMS, COL_AREAS, COL_DEPARTMENTS)
+- `manage-root/_lib/constants.ts` — `createRootMessages(labels)` factory (FULL_ACCESS_TITLE, FULL_ACCESS_MESSAGE)
+- **Skipped (Known Limitations):**
+  - `employee-profile` + `admin-profile` — "Bereichsleiter" is a position title, compound word with plural-only label (KL#2)
+  - `api-client.utils.ts` — "Anlagenstatus" is a compound word in utility context (KL#2)
+  - `shifts/+page.server.ts` — Server-side fallbacks would require `await parent()` (violates A6)
 
 ### Phase 4 — Definition of Done
 
-- [ ] Alle 40+ betroffenen Dateien aktualisiert
-- [ ] Keine hardcoded "Bereich/Abteilung/Team/Anlage" mehr (außer Defaults)
-- [ ] svelte-check 0 Errors
-- [ ] ESLint 0 Errors
-- [ ] Type-Check Backend 0 Errors
+- [x] Alle Factory-Funktionen erstellt (vacation/rules, TPM admin+shared, logs, dummies, root)
+- [x] Vacation/rules: Labels als Props durchgereicht, alle Strings dynamisch
+- [x] TPM: Factory + backward-kompatibles `MESSAGES` Export (22 Consumer unverändert)
+- [x] Scattered refs: Factory + backward-kompatibles Export (logs, dummies, root)
+- [ ] TPM Consumer-Pages auf `createTpmMessages(labels)` umgestellt (Session 7)
+- [ ] Remaining Consumer-Pages auf Factories umgestellt (Session 7)
+- [x] svelte-check 0 Errors
+- [x] ESLint 0 Errors
+- [ ] Type-Check Backend 0 Errors (unchanged, N/A for frontend-only changes)
 
 ---
 
@@ -541,9 +547,9 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 | 2       | 3     | manage-areas + manage-departments                          | DONE    | 2026-03-10 |
 | 3       | 3     | manage-teams + manage-assets                               | DONE    | 2026-03-10 |
 | 4       | 4     | manage-halls + manage-admins + manage-employees            | DONE    | 2026-03-10 |
-| 5       | 4     | admin-dashboard + survey-admin + survey-employee + vacation/rules | IN PROGRESS | 2026-03-10 |
-| 6       | 4     | TPM + manage-dummies + admin-profile + verstreute Refs     | PENDING |            |
-| 7       | 4     | logs + shifts + remaining + Vollständigkeits-Check         | PENDING |            |
+| 5       | 4     | admin-dashboard + survey-admin + survey-employee           | DONE    | 2026-03-10 |
+| 6       | 4     | vacation/rules + TPM factories + scattered refs            | DONE    | 2026-03-10 |
+| 7       | 4+5   | TPM page wiring + remaining page wiring + Vollständigkeits-Check | PENDING |            |
 | 8       | 5     | Tests + Smoke Test + Polish + Docs + Labels konsolidieren  | PENDING |            |
 
 ---
@@ -586,15 +592,16 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 | admin-dashboard    | constants.ts, utils.ts, +page.svelte                | ~12     |
 | survey-admin       | constants.ts, handlers.ts, SurveyFormModal, +page   | ~10     |
 | survey-employee    | constants.ts                                        | ~3      |
-| vacation/rules     | BlackoutsTab.svelte, StaffingRulesTab.svelte        | ~17     |
-| lean-mgmt/tpm      | constants.ts, types.ts                              | ~16     |
-| manage-dummies     | constants.ts                                        | ~1      |
-| admin-profile      | constants.ts                                        | ~1      |
-| logs               | constants.ts                                        | ~3      |
-| shifts             | +page.server.ts                                     | ~3      |
-| employee-profile   | constants.ts                                        | ~1      |
-| manage-root        | constants.ts                                        | ~2      |
-| api-client.utils   | api-client.utils.ts                                 | ~1      |
+| vacation/rules     | BlackoutsTab, StaffingRulesTab, +page.svelte        | ~26     |
+| lean-mgmt/tpm (a)  | constants.ts (factory + backward-compat)             | ~16     |
+| lean-mgmt/tpm (s)  | constants.ts (factory + backward-compat)             | ~7      |
+| manage-dummies     | constants.ts (factory + backward-compat)             | ~3      |
+| manage-root        | constants.ts (factory + backward-compat)             | ~2      |
+| logs               | constants.ts (factory + backward-compat)             | ~3      |
+| admin-profile      | SKIPPED (KL#2 — position compound word)             | —       |
+| employee-profile   | SKIPPED (KL#2 — position compound word)             | —       |
+| shifts             | SKIPPED (A6 — server-side, no await parent)         | —       |
+| api-client.utils   | SKIPPED (KL#2 — compound word in utility)           | —       |
 | organigram         | state.svelte.ts (Label-Source konsolidieren)        | ~2      |
 
 **Verifiziert: ~250+ String-Ersetzungen in ~40+ Dateien.**
