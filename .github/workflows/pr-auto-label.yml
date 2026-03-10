@@ -30,7 +30,7 @@ jobs:
             };
 
             for (const [prefix, label] of Object.entries(prefixMap)) {
-              if (title.startsWith(`${prefix}:`) || title.startsWith(`${prefix}(`)) {
+              if (title.startsWith(`${prefix}:`) || title.startsWith(`${prefix}(`) || title.startsWith(`${prefix}/`)) {
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
