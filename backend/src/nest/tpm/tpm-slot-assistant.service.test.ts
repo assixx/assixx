@@ -593,6 +593,31 @@ describe('TpmSlotAssistantService', () => {
       expect(result.totalCount).toBe(2);
     });
 
+    it('should fall back to username when first_name or last_name is null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 1,
+          username: 'alice42',
+          first_name: null,
+          last_name: null,
+          profile_picture: null,
+        },
+        {
+          user_id: 2,
+          username: 'bob99',
+          first_name: 'Bob',
+          last_name: null,
+          profile_picture: null,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getTeamAvailability(10, 5, '2026-03-01');
+
+      expect(result.members[0]?.userName).toBe('alice42');
+      expect(result.members[1]?.userName).toBe('bob99');
+    });
+
     it('should call generateInPlaceholders for user IDs', async () => {
       mockDb.query.mockResolvedValueOnce([
         { user_id: 1, username: 'Alice' },
