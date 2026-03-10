@@ -9,6 +9,9 @@
  * across test runs. Seed/config data (tenant_features, vacation_settings,
  * vacation_entitlements, etc.) is deliberately preserved.
  *
+ * Dummy users (role='dummy') are hard-deleted after the table cleanup.
+ * CASCADE FKs auto-clean user_feature_permissions, feature_visits, etc.
+ *
  * Runs via `docker exec` against the real PostgreSQL container.
  */
 import { execSync } from 'node:child_process';
@@ -105,8 +108,14 @@ BEGIN
     _total := _total + _deleted;
   END LOOP;
 
-  RAISE NOTICE 'apitest tenant (id=%): cleaned % rows from % tables',
-    _tenant_id, _total, array_length(_tables, 1);
+  -- Dummy users: soft-deleted by tests but rows stay forever.
+  -- CASCADE FKs auto-clean user_feature_permissions, feature_visits, etc.
+  DELETE FROM users WHERE tenant_id = _tenant_id AND role = 'dummy';
+  GET DIAGNOSTICS _deleted = ROW_COUNT;
+  _total := _total + _deleted;
+
+  RAISE NOTICE 'apitest tenant (id=%): cleaned % rows (% from % tables + % dummy users)',
+    _tenant_id, _total, _total - _deleted, array_length(_tables, 1), _deleted;
 END $$;
 `;
 
