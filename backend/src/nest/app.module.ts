@@ -49,6 +49,7 @@ import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { OrganigramModule } from './organigram/organigram.module.js';
 import { PlansModule } from './plans/plans.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { RoleSwitchModule } from './role-switch/role-switch.module.js';
@@ -167,6 +168,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     AssetsModule,
     SurveysModule,
     NotificationsModule,
+    OrganigramModule,
     PlansModule,
     ReportsModule,
     RolesModule,

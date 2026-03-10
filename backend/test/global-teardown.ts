@@ -75,6 +75,9 @@ const TRANSIENT_TABLES = [
   'work_order_assignees',
   'work_orders',
 
+  // Organigram: layout positions (no FK to org entities, safe to delete first)
+  'org_chart_positions',
+
   // Org structure: departments, teams, assets accumulate ~2-3 rows/run.
   // Order: assets first (tpm_cards already cleaned above), then teams
   // (FK CASCADE handles user_teams, asset_teams, etc.), then departments last.

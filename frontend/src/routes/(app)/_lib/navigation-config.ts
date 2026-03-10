@@ -311,6 +311,11 @@ export const rootMenuItems: NavItem[] = [
         url: '/settings/design',
       },
       {
+        id: 'organigram',
+        label: 'Organigramm',
+        url: '/settings/organigram',
+      },
+      {
         id: 'account-settings',
         label: 'Kontoeinstellungen',
         url: '/account-settings',

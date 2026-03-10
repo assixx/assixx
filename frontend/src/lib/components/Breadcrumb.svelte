@@ -127,6 +127,10 @@
         label: 'Dummy-Benutzer verwalten',
         icon: 'fa-desktop',
       },
+      '/settings/organigram': {
+        label: 'Organigramm',
+        icon: 'fa-sitemap',
+      },
     };
 
   /**
@@ -234,6 +238,11 @@
     '/settings/design': {
       label: 'Einstellungen',
       href: '/settings/design',
+      icon: 'fa-cog',
+    },
+    '/settings/organigram': {
+      label: 'System',
+      href: '/root-dashboard',
       icon: 'fa-cog',
     },
     '/blackboard-detail': {
