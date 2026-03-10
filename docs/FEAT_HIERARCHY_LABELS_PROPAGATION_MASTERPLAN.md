@@ -1,22 +1,27 @@
 # FEAT: Hierarchy Labels Propagation — Execution Masterplan
 
 > **Created:** 2026-03-10
-> **Version:** 0.2.0 (Code-Validiert)
-> **Status:** DRAFT — Phase 0 (Planung)
+> **Version:** 0.7.0
+> **Status:** IN PROGRESS — Phase 4 Steps 4.1–4.5 complete, Step 4.6 next
 > **Branch:** `feat/organigramm`
 > **Spec:** [FEAT_ORGANIGRAM_MASTERPLAN.md](./FEAT_ORGANIGRAM_MASTERPLAN.md) (Known Limitation #5 → V2)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 8
-> **Actual Sessions:** 0 / 8
+> **Actual Sessions:** 5 / 8 (Session 5 partial — Steps 4.4+4.5 done, 4.6 pending)
 
 ---
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                 |
-| ------- | ---------- | ------------------------------------------------------------------------ |
-| 0.1.0   | 2026-03-10 | Initial Draft — Phasen 1-5 geplant                                       |
-| 0.2.0   | 2026-03-10 | Code-Validierung: Scope korrigiert, fehlende Module ergänzt, A6/A7 hinzu |
+| Version | Datum      | Änderung                                                                                |
+| ------- | ---------- | --------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-03-10 | Initial Draft — Phasen 1-5 geplant                                                      |
+| 0.2.0   | 2026-03-10 | Code-Validierung: Scope korrigiert, fehlende Module ergänzt, A6/A7 hinzu                |
+| 0.3.0   | 2026-03-10 | Session 1 done: Phase 1 (Backend) + Phase 2 (Frontend Infrastructure)                   |
+| 0.4.0   | 2026-03-10 | Session 2 done: Phase 3 Steps 3.1 + 3.2 (manage-areas + manage-departments)             |
+| 0.5.0   | 2026-03-10 | Session 3 done: Phase 3 Steps 3.3 + 3.4 (manage-teams + manage-assets)                  |
+| 0.6.0   | 2026-03-10 | Session 4 done: Phase 4 Steps 4.1–4.3 (manage-halls + manage-admins + manage-employees) |
+| 0.7.0   | 2026-03-10 | Session 5 partial: Phase 4 Steps 4.4–4.5 (admin-dashboard + survey-admin + survey-employee) |
 
 ---
 
@@ -162,7 +167,7 @@ Vorher:  "Abteilungsverwaltung" → Nachher: "${label} — Verwaltung"
 > **Abhängigkeit:** Keine
 > **Dateien:** 2 geändert, 1 Test geändert
 
-### Step 1.1: Controller umbauen — GET Labels für alle Rollen [PENDING]
+### Step 1.1: Controller umbauen — GET Labels für alle Rollen [DONE]
 
 **Datei:** `backend/src/nest/organigram/organigram.controller.ts`
 
@@ -176,7 +181,7 @@ Vorher:  "Abteilungsverwaltung" → Nachher: "${label} — Verwaltung"
 3. `getHierarchyLabels()` bleibt OHNE `@Roles` → alle authentifizierten User
 4. JwtAuthGuard schützt weiterhin (alle Endpoints brauchen gültigen Token)
 
-### Step 1.2: API-Test erweitern [PENDING]
+### Step 1.2: API-Test erweitern [DONE]
 
 **Datei:** `backend/test/organigram.api.test.ts`
 
@@ -185,11 +190,11 @@ Vorher:  "Abteilungsverwaltung" → Nachher: "${label} — Verwaltung"
 
 ### Phase 1 — Definition of Done
 
-- [ ] `GET /organigram/hierarchy-labels` ohne `@Roles` Restriction
-- [ ] `PATCH`, `GET /tree`, `PUT /positions` weiterhin `@Roles('root')`
-- [ ] Unauthenticated → 401 (JwtAuthGuard greift weiter)
-- [ ] Type-Check passed
-- [ ] Bestehende API-Tests grün
+- [x] `GET /organigram/hierarchy-labels` ohne `@Roles` Restriction
+- [x] `PATCH`, `GET /tree`, `PUT /positions` weiterhin `@Roles('root')`
+- [x] Unauthenticated → 401 (JwtAuthGuard greift weiter)
+- [x] Type-Check passed
+- [x] Bestehende API-Tests grün
 
 ---
 
@@ -198,7 +203,7 @@ Vorher:  "Abteilungsverwaltung" → Nachher: "${label} — Verwaltung"
 > **Abhängigkeit:** Phase 1 complete
 > **Dateien:** 1 neu, 4 geändert
 
-### Step 2.1: Shared Type erstellen [PENDING]
+### Step 2.1: Shared Type erstellen [DONE]
 
 **Neue Datei:** `frontend/src/lib/types/hierarchy-labels.ts`
 
@@ -220,7 +225,7 @@ export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
 };
 ```
 
-### Step 2.2: Layout Server — Labels parallel laden [PENDING]
+### Step 2.2: Layout Server — Labels parallel laden [DONE]
 
 **Datei:** `frontend/src/routes/(app)/+layout.server.ts`
 
@@ -232,7 +237,7 @@ export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
 
 **Kritisch:** Fehler beim Fetch darf NICHT die ganze Seite kaputt machen → Graceful Fallback.
 
-### Step 2.3: Layout Client — Labels an Navigation weiterreichen [PENDING]
+### Step 2.3: Layout Client — Labels an Navigation weiterreichen [DONE]
 
 **Datei:** `frontend/src/routes/(app)/+layout.svelte`
 
@@ -242,7 +247,7 @@ export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
 2. An `getMenuItemsForRole()` als zweiten Parameter übergeben
 3. An `<Breadcrumb>` als neue Prop übergeben
 
-### Step 2.4: Navigation Config — Labels-Parameter [PENDING]
+### Step 2.4: Navigation Config — Labels-Parameter [DONE]
 
 **Datei:** `frontend/src/routes/(app)/_lib/navigation-config.ts`
 
@@ -264,7 +269,7 @@ export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
 | Admin | teams       | "Teams"       | `labels.team`       |
 | Admin | assets      | "Anlagen"     | `labels.asset`      |
 
-### Step 2.5: Breadcrumb — Labels-Prop [PENDING]
+### Step 2.5: Breadcrumb — Labels-Prop [DONE]
 
 **Datei:** `frontend/src/lib/components/Breadcrumb.svelte`
 
@@ -281,14 +286,14 @@ export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
 
 ### Phase 2 — Definition of Done
 
-- [ ] `HierarchyLabels` Type in `$lib/types/` erstellt
-- [ ] Layout Server lädt Labels parallel (kein Performance-Impact)
-- [ ] Layout Client reicht Labels an Navigation + Breadcrumb
-- [ ] Sidebar zeigt custom Labels (nach DB-Änderung + Reload)
-- [ ] Breadcrumb zeigt custom Labels
-- [ ] svelte-check 0 Errors
-- [ ] ESLint 0 Errors
-- [ ] Bestehende Tests grün
+- [x] `HierarchyLabels` Type in `$lib/types/` erstellt
+- [x] Layout Server lädt Labels parallel (kein Performance-Impact)
+- [x] Layout Client reicht Labels an Navigation + Breadcrumb
+- [x] Sidebar zeigt custom Labels (nach DB-Änderung + Reload)
+- [x] Breadcrumb zeigt custom Labels
+- [x] svelte-check 0 Errors
+- [x] ESLint 0 Errors
+- [x] Bestehende Tests grün (33/33 navigation-config tests pass)
 
 ---
 
@@ -308,7 +313,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 5. **`api.ts`** → Wenn Labels in Error-Messages verwendet → Parameter ergänzen
 6. **Modals** → Labels als Prop oder aus Parent-Component durchreichen
 
-### Step 3.1: manage-areas [PENDING]
+### Step 3.1: manage-areas [DONE]
 
 **Dateien (5 betroffen):**
 
@@ -336,7 +341,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 **Gesamt: ~33 Ersetzungen**
 
-### Step 3.2: manage-departments [PENDING]
+### Step 3.2: manage-departments [DONE]
 
 **Dateien (4 betroffen):**
 
@@ -359,7 +364,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 **Gesamt: ~30 Ersetzungen**
 
-### Step 3.3: manage-teams [PENDING]
+### Step 3.3: manage-teams [DONE]
 
 **Dateien (4 betroffen):**
 
@@ -379,7 +384,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 **Kritisch:** Teams referenzieren Department-Labels UND Asset-Labels. Factory bekommt volles `HierarchyLabels`-Objekt.
 
-### Step 3.4: manage-assets [PENDING]
+### Step 3.4: manage-assets [DONE]
 
 **Dateien:** `constants.ts`, `utils.ts`, `+page.svelte`
 
@@ -395,13 +400,13 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 ### Phase 3 — Definition of Done
 
-- [ ] manage-areas: Alle hardcoded Labels durch dynamische ersetzt
-- [ ] manage-departments: Alle Labels + FK-Referenzen (Area) dynamisch
-- [ ] manage-teams: Alle Labels + FK-Referenzen (Department, Asset) dynamisch
-- [ ] manage-assets: Alle Labels + FK-Referenzen (Area, Department, Team) dynamisch
-- [ ] Jede `constants.ts` < 800 Zeilen
-- [ ] svelte-check 0 Errors
-- [ ] ESLint 0 Errors
+- [x] manage-areas: Alle hardcoded Labels durch dynamische ersetzt
+- [x] manage-departments: Alle Labels + FK-Referenzen (Area) dynamisch
+- [x] manage-teams: Alle Labels + FK-Referenzen (Department, Asset) dynamisch
+- [x] manage-assets: Alle Labels + FK-Referenzen (Area, Department, Team) dynamisch
+- [x] Jede `constants.ts` < 800 Zeilen
+- [x] svelte-check 0 Errors
+- [x] ESLint 0 Errors
 - [ ] Labels korrekt nach DB-Änderung + Reload
 
 ---
@@ -411,32 +416,42 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 > **Abhängigkeit:** Phase 3 complete
 > **Dateien:** ~20 geändert
 
-### Step 4.1: manage-halls [PENDING]
+### Step 4.1: manage-halls [DONE ✓]
 
-- `constants.ts` (3×), `utils.ts` (3×), `+page.svelte` (1×) → "Bereich" → `labels.area`
-- 7 Stellen betroffen
+- `constants.ts` → factory pattern, `LABEL_AREA`, `NO_AREA`, `TH_AREA` dynamic
+- `utils.ts` → 3× "Kein Bereich" → "Nicht zugewiesen"
+- `+page.svelte` → labels/messages derived, dynamic table header
 
-### Step 4.2: manage-admins [PENDING]
+### Step 4.2: manage-admins [DONE ✓]
 
-- `constants.ts` (10×) → "Bereiche", "Abteilungen", "Teams" → dynamisch
-- `utils.ts` (5×) → Singular/Plural-Logik anpassen
-- 15+ Stellen betroffen
+- `constants.ts` → factory pattern, 14 dynamic strings (labels, hints, badges, table headers)
+- `utils.ts` → labels param to getAreasBadge/getDepartmentsBadge/getTeamsBadge/buildTeamsInheritanceTitle
+- `AdminTableRow.svelte` → labels prop, passed to badge functions
+- `AdminOrganizationSection.svelte` → messages prop (aliased msg)
+- `AdminFormModal.svelte` → messages prop, threads to AdminOrganizationSection
+- `+page.svelte` → labels/messages derived, passes to child components
 
-### Step 4.3: manage-employees [PENDING]
+### Step 4.3: manage-employees [DONE ✓]
 
-- `constants.ts` (1×), `utils.ts` (2×) → "Abteilung", "Team", "Bereich" → dynamisch
-- 3 Stellen betroffen
+- `constants.ts` → factory pattern, TEAM_ASSIGNMENT_TITLE + TH_AREAS/TH_DEPARTMENTS/TH_TEAMS dynamic
+- `utils.ts` → labels param to getTeamsBadge/getAreasBadge/getDepartmentsBadge/buildDirectAreasBadge/buildDirectDeptsBadge
+- `EmployeeTableRow.svelte` → labels prop, passed to badge functions
+- `EmployeeFormModal.svelte` → messages prop (aliased msg), dynamic team section heading/label
+- `+page.svelte` → labels/messages derived, dynamic table headers, passes labels/messages to children
 
-### Step 4.4: admin-dashboard [PENDING]
+### Step 4.4: admin-dashboard [DONE ✓]
 
-- `constants.ts` (2×), `+page.svelte` (2×) → "Abteilungen", "Teams" → dynamisch
-- 4 Stellen betroffen
+- `constants.ts` → factory pattern: `createMessages(labels)` mit `STAT_DEPARTMENTS`, `STAT_TEAMS`, `CARD_DEPARTMENTS`, `CARD_TEAMS`, `BTN_MANAGE_DEPARTMENTS`, `BTN_MANAGE_TEAMS`, `orgLevelLabels`, `blackboardOrgLabels`, `EVENT_AREA/DEPARTMENT/TEAM`
+- `utils.ts` → `getOrgLevelText()` + `getBlackboardOrgLabel()` nehmen Messages-Sub-Objekte statt statische Imports
+- `+page.svelte` → `labels` + `messages` derived, alle Referenzen dynamisch
 
-### Step 4.5: survey-admin [PENDING] _(NEU — fehlte im Original)_
+### Step 4.5: survey-admin + survey-employee [DONE ✓]
 
-- `SurveyFormModal.svelte` (5×) → "Bereich" → `labels.area`
-- `constants.ts` (2×) → "Bereich" → `labels.area`
-- 7 Stellen betroffen
+- `survey-admin/constants.ts` → `createAssignmentBadgeMap(labels)` + `createSurveyMessages(labels)` Factories
+- `survey-admin/handlers.ts` → `getAssignmentBadges()` + `buildBadgeFromAssignment()` nehmen optionalen `badgeMap` Parameter; `resolveAssignmentText()` Helper extrahiert (Complexity ≤10)
+- `survey-admin/SurveyFormModal.svelte` → neue `messages: SurveyMessages` Prop, 7 hardcoded Strings ersetzt
+- `survey-admin/+page.svelte` → `labels`, `surveyMessages`, `badgeMap` derived, durchgereicht
+- `survey-employee/constants.ts` → `createAssignmentBadgeMap(labels)` Factory (Bonus-Fix, selbes Pattern)
 
 ### Step 4.6: vacation/rules [PENDING] _(NEU — fehlte im Original)_
 
@@ -520,16 +535,16 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                               | Status  | Datum |
-| ------- | ----- | ---------------------------------------------------------- | ------- | ----- |
-| 1       | 1+2   | Backend Public Endpoint + Layout + Navigation + Breadcrumb | PENDING |       |
-| 2       | 3     | manage-areas + manage-departments                          | PENDING |       |
-| 3       | 3     | manage-teams + manage-assets                               | PENDING |       |
-| 4       | 4     | manage-halls + manage-admins + manage-employees            | PENDING |       |
-| 5       | 4     | admin-dashboard + survey-admin + vacation/rules            | PENDING |       |
-| 6       | 4     | TPM + manage-dummies + admin-profile + verstreute Refs     | PENDING |       |
-| 7       | 4     | logs + shifts + remaining + Vollständigkeits-Check         | PENDING |       |
-| 8       | 5     | Tests + Smoke Test + Polish + Docs + Labels konsolidieren  | PENDING |       |
+| Session | Phase | Beschreibung                                               | Status  | Datum      |
+| ------- | ----- | ---------------------------------------------------------- | ------- | ---------- |
+| 1       | 1+2   | Backend Public Endpoint + Layout + Navigation + Breadcrumb | DONE    | 2026-03-10 |
+| 2       | 3     | manage-areas + manage-departments                          | DONE    | 2026-03-10 |
+| 3       | 3     | manage-teams + manage-assets                               | DONE    | 2026-03-10 |
+| 4       | 4     | manage-halls + manage-admins + manage-employees            | DONE    | 2026-03-10 |
+| 5       | 4     | admin-dashboard + survey-admin + survey-employee + vacation/rules | IN PROGRESS | 2026-03-10 |
+| 6       | 4     | TPM + manage-dummies + admin-profile + verstreute Refs     | PENDING |            |
+| 7       | 4     | logs + shifts + remaining + Vollständigkeits-Check         | PENDING |            |
+| 8       | 5     | Tests + Smoke Test + Polish + Docs + Labels konsolidieren  | PENDING |            |
 
 ---
 
@@ -568,8 +583,9 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 | manage-halls       | constants.ts, +page.svelte, utils.ts                | ~7      |
 | manage-admins      | constants.ts, utils.ts                              | ~15     |
 | manage-employees   | constants.ts, utils.ts                              | ~3      |
-| admin-dashboard    | constants.ts, +page.svelte                          | ~4      |
-| survey-admin       | SurveyFormModal.svelte, constants.ts                | ~7      |
+| admin-dashboard    | constants.ts, utils.ts, +page.svelte                | ~12     |
+| survey-admin       | constants.ts, handlers.ts, SurveyFormModal, +page   | ~10     |
+| survey-employee    | constants.ts                                        | ~3      |
 | vacation/rules     | BlackoutsTab.svelte, StaffingRulesTab.svelte        | ~17     |
 | lean-mgmt/tpm      | constants.ts, types.ts                              | ~16     |
 | manage-dummies     | constants.ts                                        | ~1      |

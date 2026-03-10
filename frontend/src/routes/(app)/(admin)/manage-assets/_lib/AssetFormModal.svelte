@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
 
-  import { MESSAGES, MACHINE_TYPE_OPTIONS } from './constants';
+  import { createMessages, MACHINE_TYPE_OPTIONS } from './constants';
   import { assetState } from './state.svelte';
+
+  const messages = $derived(createMessages(assetState.labels));
 
   interface Props {
     onsubmit: (e: Event) => void;
@@ -130,7 +132,7 @@
             class="form-field__label"
             for="asset-name"
           >
-            {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
+            {messages.LABEL_NAME} <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -148,7 +150,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="asset-model">{MESSAGES.LABEL_MODEL}</label
+            for="asset-model">{messages.LABEL_MODEL}</label
           >
           <input
             type="text"
@@ -167,7 +169,7 @@
             class="form-field__label"
             for="asset-manufacturer"
           >
-            {MESSAGES.LABEL_MANUFACTURER}
+            {messages.LABEL_MANUFACTURER}
           </label>
           <input
             type="text"
@@ -186,7 +188,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="asset-serial">{MESSAGES.LABEL_SERIAL}</label
+            for="asset-serial">{messages.LABEL_SERIAL}</label
           >
           <input
             type="text"
@@ -206,7 +208,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="asset-area">{MESSAGES.LABEL_AREA}</label
+            for="asset-area">{messages.LABEL_AREA}</label
           >
           <input
             type="hidden"
@@ -240,7 +242,7 @@
                   selectArea(null);
                 }}
               >
-                {MESSAGES.PLACEHOLDER_AREA}
+                {messages.PLACEHOLDER_AREA}
               </div>
               {#each assetState.allAreas as area (area.id)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -262,7 +264,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="asset-department">{MESSAGES.LABEL_DEPARTMENT}</label
+            for="asset-department">{messages.LABEL_DEPARTMENT}</label
           >
           <input
             type="hidden"
@@ -289,7 +291,7 @@
             >
               <span>
                 {#if assetState.isDepartmentDisabled}
-                  {MESSAGES.PLACEHOLDER_SELECT_AREA_FIRST}
+                  {messages.PLACEHOLDER_SELECT_AREA_FIRST}
                 {:else}
                   {assetState.selectedDepartmentName}
                 {/if}
@@ -309,7 +311,7 @@
                     selectDepartment(null);
                   }}
                 >
-                  {MESSAGES.PLACEHOLDER_DEPARTMENT}
+                  {messages.PLACEHOLDER_DEPARTMENT}
                 </div>
                 {#each assetState.filteredDepartments as dept (dept.id)}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -332,7 +334,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="asset-teams">{MESSAGES.LABEL_TEAMS}</label
+            for="asset-teams">{messages.LABEL_TEAMS}</label
           >
           <div
             class="dropdown"
@@ -357,7 +359,7 @@
               >
                 {#if assetState.filteredTeams.length === 0}
                   <div class="dropdown__option dropdown__option--disabled">
-                    {MESSAGES.PLACEHOLDER_NO_TEAMS_AVAILABLE}
+                    {messages.PLACEHOLDER_NO_TEAMS_AVAILABLE}
                   </div>
                 {:else}
                   {#each assetState.filteredTeams as team (team.id)}
@@ -392,7 +394,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="asset-type">{MESSAGES.LABEL_TYPE}</label
+            for="asset-type">{messages.LABEL_TYPE}</label
           >
           <input
             type="hidden"
@@ -441,7 +443,7 @@
           class="btn btn-cancel"
           onclick={onclose}
         >
-          {MESSAGES.BTN_CANCEL}
+          {messages.BTN_CANCEL}
         </button>
         <button
           type="submit"
@@ -451,7 +453,7 @@
           {#if assetState.submitting}<span
               class="spinner-ring spinner-ring--sm mr-2"
             ></span>{/if}
-          {MESSAGES.BTN_SAVE}
+          {messages.BTN_SAVE}
         </button>
       </div>
     </form>

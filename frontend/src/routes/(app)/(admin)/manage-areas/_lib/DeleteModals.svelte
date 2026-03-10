@@ -1,12 +1,13 @@
 <script lang="ts">
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
-  import { MESSAGES } from './constants';
+  import type { AreaMessages } from './constants';
 
   interface Props {
     show: boolean;
     showForceDeleteModal: boolean;
     forceDeleteMessage: string;
+    messages: AreaMessages;
     oncancel: () => void;
     onconfirm: () => void;
     onCloseForceDelete: () => void;
@@ -17,6 +18,7 @@
     show,
     showForceDeleteModal,
     forceDeleteMessage,
+    messages,
     oncancel,
     onconfirm,
     onCloseForceDelete,
@@ -27,22 +29,22 @@
 <ConfirmModal
   {show}
   id="delete-area-confirm-modal"
-  title={MESSAGES.DELETE_CONFIRM_TITLE}
+  title={messages.DELETE_CONFIRM_TITLE}
   {onconfirm}
   {oncancel}
 >
   <strong>ACHTUNG:</strong>
-  {MESSAGES.DELETE_CONFIRM_WARNING}
+  {messages.DELETE_CONFIRM_WARNING}
   <br /><br />
-  {MESSAGES.DELETE_CONFIRM_MESSAGE}
+  {messages.DELETE_CONFIRM_MESSAGE}
 </ConfirmModal>
 
 <ConfirmModal
   show={showForceDeleteModal}
   id="force-delete-area-modal"
-  title={MESSAGES.FORCE_DELETE_TITLE}
+  title={messages.FORCE_DELETE_TITLE}
   variant="warning"
-  confirmLabel={MESSAGES.DELETE_TITLE}
+  confirmLabel={messages.DELETE_TITLE}
   onconfirm={onForceDelete}
   oncancel={onCloseForceDelete}
 >

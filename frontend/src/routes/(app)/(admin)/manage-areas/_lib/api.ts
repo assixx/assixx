@@ -104,8 +104,7 @@ export async function loadAreas(): Promise<{
 
     return {
       areas: [],
-      error:
-        err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -137,10 +136,7 @@ export async function loadAreaLeads(): Promise<{
     log.error({ err }, 'Error loading area leads');
     return {
       users: [],
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Laden der Bereichsleiter',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -163,10 +159,7 @@ export async function loadDepartments(): Promise<{
     log.error({ err }, 'Error loading departments');
     return {
       departments: [],
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Laden der Abteilungen',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -189,8 +182,7 @@ export async function loadHalls(): Promise<{
     log.error({ err }, 'Error loading halls');
     return {
       halls: [],
-      error:
-        err instanceof Error ? err.message : 'Fehler beim Laden der Hallen',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }

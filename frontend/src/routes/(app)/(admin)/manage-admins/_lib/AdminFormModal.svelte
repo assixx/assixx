@@ -2,7 +2,7 @@
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
 
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
-  import { POSITION_OPTIONS, MESSAGES } from './constants';
+  import { POSITION_OPTIONS, MESSAGES, type AdminMessages } from './constants';
   import { calculatePasswordStrength } from './utils';
 
   import type { Area, Department, FormIsActiveStatus } from './types';
@@ -18,6 +18,7 @@
     allAreas: Area[];
     allDepartments: Department[];
     submitting: boolean;
+    messages?: AdminMessages;
     // Form fields (bindable)
     formFirstName: string;
     formLastName: string;
@@ -41,7 +42,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -450,6 +451,7 @@
           {show}
           {allAreas}
           {allDepartments}
+          messages={msg}
           bind:formHasFullAccess
           bind:formAreaIds
           bind:formDepartmentIds

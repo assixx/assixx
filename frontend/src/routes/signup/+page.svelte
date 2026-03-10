@@ -1,33 +1,21 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
-  import {
-    isDark,
-    forceDark,
-    restoreUserTheme,
-  } from '$lib/stores/theme.svelte';
   import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import {
     analyzePassword,
     type PasswordStrengthResult,
   } from '$lib/utils/password-strength';
 
-  // Local modules
   import { registerUser, createRegisterPayload } from './_lib/api';
   import {
     DEFAULT_COUNTRY,
-    DEFAULT_ADDRESS_COUNTRY,
-    DEFAULT_PLAN,
     SUCCESS_REDIRECT_DELAY,
     ERROR_MESSAGES,
   } from './_lib/constants';
-  import CountryAddressSelect from './_lib/CountryAddressSelect.svelte';
   import CountryPhoneInput from './_lib/CountryPhoneInput.svelte';
-  import PlanSelect from './_lib/PlanSelect.svelte';
   import SignupNav from './_lib/SignupNav.svelte';
   import SubdomainInput from './_lib/SubdomainInput.svelte';
   import {
@@ -39,61 +27,37 @@
     isPasswordValid,
   } from './_lib/validators';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
   }
 
-  // =============================================================================
-  // SVELTE 5 RUNES - Form State
-  // =============================================================================
+  // =========================================================================
+  // FORM STATE
+  // =========================================================================
 
-  // Company & Subdomain
   let companyName = $state('');
   let subdomain = $state('');
-
-  // Email
   let email = $state('');
   let emailConfirm = $state('');
-
-  // Personal Info
   let firstName = $state('');
   let lastName = $state('');
   let phone = $state('');
   let countryCode = $state(DEFAULT_COUNTRY.code);
-
-  // Address
-  let street = $state('');
-  let houseNumber = $state('');
-  let postalCode = $state('');
-  let city = $state('');
-  let addressCountryCode = $state(DEFAULT_ADDRESS_COUNTRY.iso);
-
-  // Password
   let password = $state('');
   let passwordConfirm = $state('');
   let showPassword = $state(false);
   let showPasswordConfirm = $state(false);
-
-  // Password Strength
   let passwordStrength = $state<PasswordStrengthResult | null>(null);
   let strengthLoading = $state(false);
-
-  // Plan
-  let selectedPlan = $state(DEFAULT_PLAN.value);
-
-  // UI State
   let termsAccepted = $state(false);
   let loading = $state(false);
   let showSuccess = $state(false);
-
-  // Error messages
   let emailMatchError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
 
-  // =============================================================================
-  // SVELTE 5 RUNES - Derived Values
-  // =============================================================================
+  // =========================================================================
+  // DERIVED
+  // =========================================================================
 
   const subdomainValid = $derived(isSubdomainValid(subdomain));
   const emailValid = $derived(isEmailValid(email));
@@ -113,44 +77,26 @@
       lastName !== '' &&
       phone !== '' &&
       phoneValid &&
-      street !== '' &&
-      houseNumber !== '' &&
-      postalCode !== '' &&
-      city !== '' &&
       isPasswordValid(password) &&
       passwordConfirm !== '' &&
       passwordMatch &&
       termsAccepted,
   );
 
-  const buttonText = $derived(
-    loading ? '⏳ Wird erstellt...' : 'Jetzt registrieren →',
-  );
+  const buttonText = $derived(loading ? 'Wird erstellt...' : 'Konto erstellen');
 
-  // =============================================================================
-  // LIFECYCLE - Always-dark page
-  // =============================================================================
-
-  onMount(() => {
-    forceDark();
-    return () => {
-      restoreUserTheme();
-    };
-  });
-
-  // =============================================================================
+  // =========================================================================
   // EVENT HANDLERS
-  // =============================================================================
+  // =========================================================================
 
   function handleEmailConfirmInput(): void {
     emailMatchError =
       emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
   }
 
-  /** Minimum characters before running zxcvbn analysis */
   const MIN_STRENGTH_CHECK = 4;
 
-  async function checkPassword(): Promise<void> {
+  async function handlePasswordInput(): Promise<void> {
     if (password.length < MIN_STRENGTH_CHECK) {
       passwordStrength = null;
       return;
@@ -167,10 +113,6 @@
     } finally {
       strengthLoading = false;
     }
-  }
-
-  async function handlePasswordInput(): Promise<void> {
-    await checkPassword();
   }
 
   function handlePasswordConfirmInput(): void {
@@ -204,13 +146,7 @@
         lastName,
         phone,
         countryCode,
-        street,
-        houseNumber,
-        postalCode,
-        city,
-        addressCountryCode,
         password,
-        selectedPlan,
       });
 
       await registerUser(payload);
@@ -236,346 +172,279 @@
 
 <SignupNav />
 
-<div class="page-container page-container--centered">
-  <!-- Header -->
-  <div class="signup-header">
-    <div class="header-left">
+<div class="signup-page">
+  <!-- Left: Hero image + branding -->
+  <div class="signup-hero">
+    <div class="signup-hero__overlay"></div>
+    <div class="signup-hero__content">
       <img
-        src={isDark() ?
-          '/images/logo_darkmode.png'
-        : '/images/logo_lightmode.png'}
+        src="/images/logo_darkmode.png"
         alt="Assixx Logo"
-        class="signup-logo"
+        class="signup-hero__logo"
       />
+      <h1 class="signup-hero__title">Enterprise 2.0 für Industriefirmen</h1>
+      <p class="signup-hero__subtitle">
+        Wissensmanagement, Kommunikation und Kollaboration — von der Produktion
+        bis zur Verwaltung.
+      </p>
     </div>
   </div>
 
-  <!-- Success Message -->
-  {#if showSuccess}
-    <div
-      class="toast toast--success"
-      role="alert"
-    >
-      <div class="toast__icon">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <div class="toast__content">
-        <div class="toast__title">Erfolgreich registriert!</div>
-        <div class="toast__message">
-          Sie werden in 5 Sekunden zur Anmeldung weitergeleitet...
-        </div>
-      </div>
-      <div class="toast__progress">
+  <!-- Right: Form -->
+  <div class="signup-form-side">
+    <div class="signup-card">
+      <h2 class="signup-title">Konto erstellen</h2>
+      <p class="signup-subtitle">
+        14 Tage kostenlos testen — keine Kreditkarte nötig
+      </p>
+
+      <!-- Success Message -->
+      {#if showSuccess}
         <div
-          class="toast__progress-bar"
-          style="animation-duration: 5s"
-        ></div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Signup Form -->
-  <form
-    id="signupForm"
-    onsubmit={handleSubmit}
-  >
-    <div class="form-grid">
-      <!-- Erste Zeile -->
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="company_name">Firmenname</label
+          class="toast toast--success"
+          role="alert"
         >
-        <input
-          type="text"
-          id="company_name"
-          name="company_name"
-          class="form-field__control"
-          required
-          placeholder="Ihre Firma GmbH"
-          autocomplete="organization"
-          bind:value={companyName}
-          disabled={loading}
-        />
-      </div>
-
-      <SubdomainInput
-        bind:subdomain
-        disabled={loading}
-      />
-
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="email">E-Mail</label
-        >
-        <input
-          type="email"
-          id="email"
-          name="email"
-          class="form-field__control"
-          required
-          placeholder="email@firma.de"
-          autocomplete="email"
-          bind:value={email}
-          oninput={handleEmailConfirmInput}
-          disabled={loading}
-        />
-      </div>
-
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="email_confirm">E-Mail bestätigen</label
-        >
-        <input
-          type="email"
-          id="email_confirm"
-          name="email_confirm"
-          class="form-field__control"
-          class:is-error={emailMatchError}
-          required
-          placeholder="email@firma.de"
-          bind:value={emailConfirm}
-          oninput={handleEmailConfirmInput}
-          disabled={loading}
-        />
-        {#if emailMatchError}
-          <p class="form-field__message form-field__message--error">
-            {emailMatchError}
-          </p>
-        {/if}
-      </div>
-
-      <!-- Zweite Zeile -->
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="first_name">Vorname</label
-        >
-        <input
-          type="text"
-          id="first_name"
-          name="first_name"
-          class="form-field__control"
-          required
-          placeholder=""
-          autocomplete="given-name"
-          bind:value={firstName}
-          disabled={loading}
-        />
-      </div>
-
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="last_name">Nachname</label
-        >
-        <input
-          type="text"
-          id="last_name"
-          name="last_name"
-          class="form-field__control"
-          required
-          placeholder=""
-          autocomplete="family-name"
-          bind:value={lastName}
-          disabled={loading}
-        />
-      </div>
-
-      <CountryPhoneInput
-        bind:phone
-        bind:countryCode
-        disabled={loading}
-      />
-
-      <!-- Adresse -->
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="street">Straße</label
-        >
-        <input
-          type="text"
-          id="street"
-          name="street"
-          class="form-field__control"
-          required
-          placeholder="Musterstraße"
-          autocomplete="address-line1"
-          bind:value={street}
-          disabled={loading}
-        />
-      </div>
-
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="house_number">Hausnummer</label
-        >
-        <input
-          type="text"
-          id="house_number"
-          name="house_number"
-          class="form-field__control"
-          required
-          placeholder="42"
-          autocomplete="address-line2"
-          bind:value={houseNumber}
-          disabled={loading}
-        />
-      </div>
-
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="postal_code">PLZ</label
-        >
-        <input
-          type="text"
-          id="postal_code"
-          name="postal_code"
-          class="form-field__control"
-          required
-          placeholder="10115"
-          autocomplete="postal-code"
-          bind:value={postalCode}
-          disabled={loading}
-        />
-      </div>
-
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="city">Stadt</label
-        >
-        <input
-          type="text"
-          id="city"
-          name="city"
-          class="form-field__control"
-          required
-          placeholder="Berlin"
-          autocomplete="address-level2"
-          bind:value={city}
-          disabled={loading}
-        />
-      </div>
-
-      <CountryAddressSelect
-        bind:countryCode={addressCountryCode}
-        disabled={loading}
-      />
-
-      <!-- Passwort -->
-      <div class="form-field">
-        <label
-          class="form-field__label form-field__label--required"
-          for="password"
-        >
-          Passwort
-          <span class="tooltip ml-1">
-            <i class="fas fa-info-circle"></i>
-            <span
-              class="tooltip__content tooltip__content--info tooltip__content--right"
-              role="tooltip"
-            >
-              Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
-              Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
-            </span>
-          </span>
-        </label>
-        <div class="form-field__password-wrapper">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            id="password"
-            name="password"
-            class="form-field__control"
-            required
-            minlength="12"
-            maxlength="72"
-            placeholder="Min. 12 Zeichen"
-            autocomplete="new-password"
-            bind:value={password}
-            oninput={handlePasswordInput}
-            disabled={loading}
-          />
-          <button
-            type="button"
-            class="form-field__password-toggle"
-            aria-label="Passwort anzeigen"
-            onclick={() => {
-              togglePasswordVisibility('password');
-            }}
-          >
-            <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-          </button>
+          <div class="toast__icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="toast__content">
+            <div class="toast__title">Erfolgreich registriert!</div>
+            <div class="toast__message">
+              Sie werden in 5 Sekunden zur Anmeldung weitergeleitet...
+            </div>
+          </div>
+          <div class="toast__progress">
+            <div
+              class="toast__progress-bar"
+              style="animation-duration: 5s"
+            ></div>
+          </div>
         </div>
-      </div>
-
-      <!-- Password Strength Indicator -->
-      {#if passwordStrength !== null || strengthLoading}
-        <PasswordStrengthIndicator
-          score={passwordStrength?.score ?? -1}
-          label={passwordStrength?.label ?? ''}
-          crackTime={passwordStrength?.crackTime ?? ''}
-          loading={strengthLoading}
-          feedback={passwordStrength?.feedback ?? null}
-        />
       {/if}
 
-      <div
-        class="form-field"
-        class:is-error={passwordMatchError}
-        class:is-success={passwordConfirm !== '' && passwordMatch}
+      <!-- Signup Form -->
+      <form
+        id="signupForm"
+        onsubmit={handleSubmit}
       >
-        <label
-          class="form-field__label form-field__label--required"
-          for="password_confirm">Passwort bestätigen</label
-        >
-        <div class="form-field__password-wrapper">
+        <!-- Company -->
+        <div class="form-field">
+          <label
+            class="form-field__label form-field__label--required"
+            for="company_name">Firmenname</label
+          >
           <input
-            type={showPasswordConfirm ? 'text' : 'password'}
-            id="password_confirm"
-            name="password_confirm"
+            type="text"
+            id="company_name"
+            name="company_name"
             class="form-field__control"
-            class:is-error={passwordMatchError}
-            class:is-success={passwordConfirm !== '' && passwordMatch}
             required
-            placeholder=""
-            autocomplete="new-password"
-            bind:value={passwordConfirm}
-            oninput={handlePasswordConfirmInput}
+            placeholder="Ihre Firma GmbH"
+            autocomplete="organization"
+            bind:value={companyName}
             disabled={loading}
           />
-          <button
-            type="button"
-            class="form-field__password-toggle"
-            aria-label="Passwort anzeigen"
-            onclick={() => {
-              togglePasswordVisibility('confirm');
-            }}
-          >
-            <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"
-            ></i>
-          </button>
         </div>
-        {#if passwordMatchError}
-          <p class="form-field__message form-field__message--error">
-            {passwordMatchError}
-          </p>
-        {:else if passwordConfirm !== '' && passwordMatch}
-          <p class="form-field__message form-field__message--success">
-            <i class="fas fa-check"></i> Passwörter stimmen überein
-          </p>
+
+        <SubdomainInput
+          bind:subdomain
+          disabled={loading}
+        />
+
+        <div class="section-divider"></div>
+
+        <!-- Personal Info -->
+        <div class="name-row">
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="first_name">Vorname</label
+            >
+            <input
+              type="text"
+              id="first_name"
+              name="first_name"
+              class="form-field__control"
+              required
+              autocomplete="given-name"
+              bind:value={firstName}
+              disabled={loading}
+            />
+          </div>
+
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="last_name">Nachname</label
+            >
+            <input
+              type="text"
+              id="last_name"
+              name="last_name"
+              class="form-field__control"
+              required
+              autocomplete="family-name"
+              bind:value={lastName}
+              disabled={loading}
+            />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label
+            class="form-field__label form-field__label--required"
+            for="email">E-Mail</label
+          >
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-field__control"
+            required
+            placeholder="email@firma.de"
+            autocomplete="email"
+            bind:value={email}
+            oninput={handleEmailConfirmInput}
+            disabled={loading}
+          />
+        </div>
+
+        <div class="form-field">
+          <label
+            class="form-field__label form-field__label--required"
+            for="email_confirm">E-Mail bestätigen</label
+          >
+          <input
+            type="email"
+            id="email_confirm"
+            name="email_confirm"
+            class="form-field__control"
+            class:is-error={emailMatchError}
+            required
+            placeholder="email@firma.de"
+            bind:value={emailConfirm}
+            oninput={handleEmailConfirmInput}
+            disabled={loading}
+          />
+          {#if emailMatchError}
+            <p class="form-field__message form-field__message--error">
+              {emailMatchError}
+            </p>
+          {/if}
+        </div>
+
+        <CountryPhoneInput
+          bind:phone
+          bind:countryCode
+          disabled={loading}
+        />
+
+        <div class="section-divider"></div>
+
+        <!-- Password -->
+        <div class="form-field">
+          <label
+            class="form-field__label form-field__label--required"
+            for="password"
+          >
+            Passwort
+            <span class="tooltip ml-1">
+              <i class="fas fa-info-circle"></i>
+              <span
+                class="tooltip__content tooltip__content--info tooltip__content--right"
+                role="tooltip"
+              >
+                Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4:
+                Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen
+                (!@#$%^&*)
+              </span>
+            </span>
+          </label>
+          <div class="form-field__password-wrapper">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              name="password"
+              class="form-field__control"
+              required
+              minlength="12"
+              maxlength="72"
+              placeholder="Min. 12 Zeichen"
+              autocomplete="new-password"
+              bind:value={password}
+              oninput={handlePasswordInput}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              class="form-field__password-toggle"
+              aria-label="Passwort anzeigen"
+              onclick={() => {
+                togglePasswordVisibility('password');
+              }}
+            >
+              <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+            </button>
+          </div>
+        </div>
+
+        {#if passwordStrength !== null || strengthLoading}
+          <PasswordStrengthIndicator
+            score={passwordStrength?.score ?? -1}
+            label={passwordStrength?.label ?? ''}
+            crackTime={passwordStrength?.crackTime ?? ''}
+            loading={strengthLoading}
+            feedback={passwordStrength?.feedback ?? null}
+          />
         {/if}
-      </div>
 
-      <PlanSelect bind:selectedPlan />
+        <div
+          class="form-field"
+          class:is-error={passwordMatchError}
+          class:is-success={passwordConfirm !== '' && passwordMatch}
+        >
+          <label
+            class="form-field__label form-field__label--required"
+            for="password_confirm">Passwort bestätigen</label
+          >
+          <div class="form-field__password-wrapper">
+            <input
+              type={showPasswordConfirm ? 'text' : 'password'}
+              id="password_confirm"
+              name="password_confirm"
+              class="form-field__control"
+              class:is-error={passwordMatchError}
+              class:is-success={passwordConfirm !== '' && passwordMatch}
+              required
+              autocomplete="new-password"
+              bind:value={passwordConfirm}
+              oninput={handlePasswordConfirmInput}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              class="form-field__password-toggle"
+              aria-label="Passwort anzeigen"
+              onclick={() => {
+                togglePasswordVisibility('confirm');
+              }}
+            >
+              <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"
+              ></i>
+            </button>
+          </div>
+          {#if passwordMatchError}
+            <p class="form-field__message form-field__message--error">
+              {passwordMatchError}
+            </p>
+          {:else if passwordConfirm !== '' && passwordMatch}
+            <p class="form-field__message form-field__message--success">
+              <i class="fas fa-check"></i> Passwörter stimmen überein
+            </p>
+          {/if}
+        </div>
 
-      <!-- Terms und Submit -->
-      <div class="bottom-section">
+        <!-- Terms & Submit -->
         <label class="terms-checkbox">
           <input
             type="checkbox"
@@ -595,78 +464,167 @@
             >
           </span>
         </label>
+
         <button
           type="submit"
-          class="btn btn-index"
+          class="btn btn-index signup-submit"
           disabled={loading || !isFormValid}
         >
           {buttonText}
         </button>
-        <a
-          href={resolvePath('/login')}
-          class="login-link">Bereits registriert?</a
-        >
-      </div>
+
+        <p class="login-link-text">
+          Bereits registriert?
+          <a
+            href={resolvePath('/login')}
+            class="login-link">Anmelden</a
+          >
+        </p>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 
 <style>
-  /* Scoped to signup page only */
-  :global(body:has(#signupForm)) {
+  /* =========================================================================
+   * SPLIT LAYOUT — GitHub-style: hero left, form right
+   * ========================================================================= */
+
+  .signup-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+  }
+
+  /* --- Left: Hero with background image --- */
+  .signup-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('/images/background_index_1920.jpg');
+    background-image: image-set(
+      url('/images/background_index.webp') type('image/webp'),
+      url('/images/background_index_1920.jpg') type('image/jpeg')
+    );
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+  }
+
+  .signup-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--color-black) 60%, transparent) 0%,
+      color-mix(in oklch, var(--color-black) 40%, transparent) 100%
+    );
+  }
+
+  .signup-hero__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 48px;
+    max-width: 480px;
+  }
+
+  .signup-hero__logo {
+    height: 130px;
+    margin-bottom: 32px;
+  }
+
+  .signup-hero__title {
+    color: var(--color-white);
+    font-weight: 700;
+    font-size: 2.25rem;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    text-shadow: 0 2px 8px
+      color-mix(in oklch, var(--color-black) 30%, transparent);
+  }
+
+  .signup-hero__subtitle {
+    color: color-mix(in oklch, var(--color-white) 80%, transparent);
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+
+  /* --- Right: Form side --- */
+  .signup-form-side {
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 10px;
+    align-items: flex-start;
+    padding: 75px 270px;
+    overflow-y: auto;
   }
 
-  /* Header */
-  .signup-header {
+  .signup-card {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    border-bottom: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    padding-bottom: 20px;
+    flex-direction: column;
+    width: 100%;
+    max-width: 420px;
   }
 
-  .header-left {
+  .signup-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .signup-subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* --- Form compact layout --- */
+  form {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
   }
 
-  .signup-logo {
-    height: 48px;
+  /* Override design-system spacing for compact signup */
+  form :global(.form-field) {
+    margin-bottom: 0;
   }
 
-  /* Form Grid - 3 columns */
-  .form-grid {
+  form :global(.form-field__label) {
+    margin-bottom: 0;
+    font-size: 13px;
+  }
+
+  form :global(.form-field__control),
+  form :global(.subdomain-input),
+  form :global(.country-display) {
+    min-height: 38px;
+    padding: 6px 12px;
+  }
+
+  .name-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px 20px;
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
-  /* Bottom Section */
-  .bottom-section {
-    display: flex;
-    grid-column: 1 / -1;
-    justify-content: space-between;
-    align-items: center;
-    gap: 24px;
-    margin-top: 20px;
+  .section-divider {
+    margin: 0;
     border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    padding-top: 20px;
+      color-mix(in oklch, var(--color-white) 8%, transparent);
   }
 
+  /* --- Terms, submit, login link --- */
   .terms-checkbox {
     display: flex;
-    flex: 1;
     align-items: center;
     gap: 8px;
+    margin-top: 2px;
     color: var(--text-secondary);
     font-size: 13px;
   }
@@ -686,40 +644,84 @@
     text-decoration: underline;
   }
 
+  .signup-submit {
+    margin-top: 4px;
+    width: 100%;
+  }
+
+  .login-link-text {
+    margin-top: 2px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-align: center;
+  }
+
   .login-link {
     color: var(--primary-color);
-    font-size: 13px;
     text-decoration: none;
-    white-space: nowrap;
   }
 
   .login-link:hover {
     text-decoration: underline;
   }
 
-  /* Responsive */
-  @media (width >= 768px) and (width < 1024px) {
-    .form-grid {
-      grid-template-columns: repeat(2, 1fr);
+  /* --- Body override --- */
+  :global(body:has(#signupForm)) {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* --- Light mode overrides --- */
+  :global(html:not(.dark)) .signup-hero__overlay {
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--color-black) 40%, transparent) 0%,
+      color-mix(in oklch, var(--color-black) 20%, transparent) 100%
+    );
+  }
+
+  :global(html:not(.dark)) .section-divider {
+    border-color: color-mix(in oklch, var(--color-black) 10%, transparent);
+  }
+
+  /* --- Responsive: stack on narrow screens --- */
+  @media (width < 900px) {
+    .signup-page {
+      grid-template-columns: 1fr;
+    }
+
+    .signup-hero {
+      min-height: 200px;
+    }
+
+    .signup-hero__content {
+      padding: 32px 24px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .signup-hero__title {
+      font-size: 1.5rem;
+    }
+
+    .signup-hero__subtitle {
+      font-size: 0.95rem;
+    }
+
+    .signup-form-side {
+      padding: 24px 16px 16px;
+      max-height: none;
     }
   }
 
-  @media (width < 768px) {
-    .signup-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .form-grid {
+  @media (width < 480px) {
+    .name-row {
       grid-template-columns: 1fr;
-      gap: 10px;
     }
 
-    .bottom-section {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
+    .signup-card {
+      max-width: 100%;
     }
   }
 </style>

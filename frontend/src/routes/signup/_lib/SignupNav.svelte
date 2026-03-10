@@ -1,6 +1,7 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
 
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { showInfoAlert } from '$lib/stores/toast';
 
   import { HELP_MESSAGE } from './constants';
@@ -22,24 +23,34 @@
   <span>Zurück zur Hauptseite</span>
 </a>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="help-button"
-  onclick={showHelp}
->
-  ?
+<!-- Top Right Actions -->
+<div class="top-actions">
+  <ThemeToggle />
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="help-button"
+    onclick={showHelp}
+  >
+    ?
+  </div>
 </div>
 
 <style>
-  .help-button {
+  .top-actions {
     display: flex;
     position: fixed;
     top: 20px;
     right: 20px;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .help-button {
+    display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
     backdrop-filter: blur(10px);
     cursor: pointer;
     box-shadow:

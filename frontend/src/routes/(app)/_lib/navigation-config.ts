@@ -3,6 +3,10 @@
  * Extracted from +layout.svelte for maintainability
  * @module (app)/_lib/navigation-config
  */
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
 
 // Shared labels to avoid duplication
 const LABELS = {
@@ -205,7 +209,31 @@ const VACATION_ROOT_SUBMENU: NavItem[] = [
   },
 ];
 
-export const rootMenuItems: NavItem[] = [
+/** Admins submenu (root view) */
+const ADMINS_SUBMENU: NavItem[] = [
+  { id: 'admins-list', label: 'Administratoren', url: '/manage-admins' },
+  {
+    id: 'dummy-users',
+    icon: ICONS.desktop,
+    label: 'Dummy-Benutzer',
+    url: '/manage-dummies',
+  },
+];
+
+/** System settings submenu (root only) */
+const SYSTEM_SUBMENU: NavItem[] = [
+  { id: 'company', label: 'Firmendaten', url: '/settings/company' },
+  { id: 'design', label: 'Design', url: '/settings/design' },
+  { id: 'organigram', label: 'Organigramm', url: '/settings/organigram' },
+  {
+    id: 'account-settings',
+    label: 'Kontoeinstellungen',
+    url: '/account-settings',
+  },
+];
+
+/** Static root menu items that don't depend on hierarchy labels */
+const ROOT_STATIC_ITEMS: NavItem[] = [
   {
     id: 'dashboard',
     icon: ICONS.home,
@@ -229,33 +257,13 @@ export const rootMenuItems: NavItem[] = [
     id: 'admins',
     icon: ICONS.admin,
     label: 'Administratoren',
-    submenu: [
-      {
-        id: 'admins-list',
-        label: 'Administratoren',
-        url: '/manage-admins',
-      },
-      {
-        id: 'dummy-users',
-        icon: ICONS.desktop,
-        label: 'Dummy-Benutzer',
-        url: '/manage-dummies',
-      },
-    ],
+    submenu: ADMINS_SUBMENU,
   },
-  { id: 'areas', icon: ICONS.sitemap, label: 'Bereiche', url: '/manage-areas' },
-  {
-    id: 'departments',
-    icon: ICONS.building,
-    label: 'Abteilungen',
-    url: '/manage-departments',
-  },
-  {
-    id: 'halls',
-    icon: ICONS.warehouse,
-    label: 'Hallen',
-    url: '/manage-halls',
-  },
+];
+
+/** Static root menu items after dynamic labels */
+const ROOT_STATIC_BOTTOM: NavItem[] = [
+  { id: 'halls', icon: ICONS.warehouse, label: 'Hallen', url: '/manage-halls' },
   {
     id: 'calendar',
     icon: ICONS.calendar,
@@ -311,27 +319,47 @@ export const rootMenuItems: NavItem[] = [
     id: 'system',
     icon: ICONS.settings,
     label: 'System',
-    submenu: [
-      {
-        id: 'design',
-        label: 'Design',
-        url: '/settings/design',
-      },
-      {
-        id: 'organigram',
-        label: 'Organigramm',
-        url: '/settings/organigram',
-      },
-      {
-        id: 'account-settings',
-        label: 'Kontoeinstellungen',
-        url: '/account-settings',
-      },
-    ],
+    submenu: SYSTEM_SUBMENU,
   },
 ];
 
-export const adminMenuItems: NavItem[] = [
+function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
+  return [
+    ...ROOT_STATIC_ITEMS,
+    {
+      id: 'areas',
+      icon: ICONS.sitemap,
+      label: labels.area,
+      url: '/manage-areas',
+    },
+    {
+      id: 'departments',
+      icon: ICONS.building,
+      label: labels.department,
+      url: '/manage-departments',
+    },
+    ...ROOT_STATIC_BOTTOM,
+  ];
+}
+
+/** Employees submenu (admin view) */
+const EMPLOYEES_SUBMENU: NavItem[] = [
+  { id: 'employees-list', label: 'Mitarbeiter', url: '/manage-employees' },
+  {
+    id: 'dummy-users',
+    icon: ICONS.desktop,
+    label: 'Dummy-Benutzer',
+    url: '/manage-dummies',
+  },
+];
+
+/** Admin settings submenu */
+const ADMIN_SETTINGS_SUBMENU: NavItem[] = [
+  { id: 'design', label: 'Design', url: '/settings/design' },
+];
+
+/** Static admin menu items that don't depend on hierarchy labels */
+const ADMIN_STATIC_ITEMS: NavItem[] = [
   {
     id: 'dashboard',
     icon: ICONS.home,
@@ -349,33 +377,13 @@ export const adminMenuItems: NavItem[] = [
     id: 'employees',
     icon: ICONS.users,
     label: 'Mitarbeiter',
-    submenu: [
-      {
-        id: 'employees-list',
-        label: 'Mitarbeiter',
-        url: '/manage-employees',
-      },
-      {
-        id: 'dummy-users',
-        icon: ICONS.desktop,
-        label: 'Dummy-Benutzer',
-        url: '/manage-dummies',
-      },
-    ],
+    submenu: EMPLOYEES_SUBMENU,
   },
-  { id: 'teams', icon: ICONS.team, label: 'Teams', url: '/manage-teams' },
-  {
-    id: 'halls',
-    icon: ICONS.warehouse,
-    label: 'Hallen',
-    url: '/manage-halls',
-  },
-  {
-    id: 'assets',
-    icon: ICONS.generator,
-    label: 'Anlagen',
-    url: '/manage-assets',
-  },
+];
+
+/** Static admin menu items after dynamic labels */
+const ADMIN_STATIC_BOTTOM: NavItem[] = [
+  { id: 'halls', icon: ICONS.warehouse, label: 'Hallen', url: '/manage-halls' },
   {
     id: 'documents',
     icon: ICONS.document,
@@ -430,13 +438,7 @@ export const adminMenuItems: NavItem[] = [
     id: 'settings',
     icon: ICONS.settings,
     label: 'Einstellungen',
-    submenu: [
-      {
-        id: 'design',
-        label: 'Design',
-        url: '/settings/design',
-      },
-    ],
+    submenu: ADMIN_SETTINGS_SUBMENU,
   },
   {
     id: 'profile',
@@ -446,7 +448,21 @@ export const adminMenuItems: NavItem[] = [
   },
 ];
 
-export const employeeMenuItems: NavItem[] = [
+function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
+  return [
+    ...ADMIN_STATIC_ITEMS,
+    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
+    {
+      id: 'assets',
+      icon: ICONS.generator,
+      label: labels.asset,
+      url: '/manage-assets',
+    },
+    ...ADMIN_STATIC_BOTTOM,
+  ];
+}
+
+const employeeMenuItems: NavItem[] = [
   {
     id: 'dashboard',
     icon: ICONS.home,
@@ -555,7 +571,7 @@ export const employeeMenuItems: NavItem[] = [
   },
 ];
 
-export const dummyMenuItems: NavItem[] = [
+const dummyMenuItems: NavItem[] = [
   {
     id: 'blackboard',
     icon: ICONS.pin,
@@ -586,16 +602,18 @@ export const dummyMenuItems: NavItem[] = [
 ];
 
 /**
- * Get menu items for a specific role
+ * Get menu items for a specific role with tenant-specific hierarchy labels.
+ * Labels are used for dynamic sidebar entries (areas, departments, teams, assets).
  */
 export function getMenuItemsForRole(
   role: 'root' | 'admin' | 'employee' | 'dummy',
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): NavItem[] {
   switch (role) {
     case 'root':
-      return rootMenuItems;
+      return buildRootMenuItems(labels);
     case 'admin':
-      return adminMenuItems;
+      return buildAdminMenuItems(labels);
     case 'employee':
       return employeeMenuItems;
     case 'dummy':

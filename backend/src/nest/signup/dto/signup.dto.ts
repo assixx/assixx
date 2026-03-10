@@ -155,12 +155,12 @@ export const SignupSchema = z.object({
   email: EmailSchema,
   phone: PhoneSchema,
 
-  // Structured address (international)
-  street: StreetSchema,
-  houseNumber: HouseNumberSchema,
-  postalCode: PostalCodeSchema,
-  city: CitySchema,
-  countryCode: CountryCodeSchema,
+  // Structured address (international) — optional at signup, completed in /settings/company
+  street: StreetSchema.optional(),
+  houseNumber: HouseNumberSchema.optional(),
+  postalCode: PostalCodeSchema.optional(),
+  city: CitySchema.optional(),
+  countryCode: CountryCodeSchema.optional(),
 
   // Admin user information
   adminEmail: EmailSchema,

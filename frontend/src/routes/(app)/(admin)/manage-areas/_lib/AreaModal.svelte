@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TYPE_OPTIONS, MESSAGES } from './constants';
+  import { TYPE_OPTIONS } from './constants';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -7,6 +7,7 @@
     getAreaLeadDisplayName,
   } from './utils';
 
+  import type { AreaMessages } from './constants';
   import type {
     FormIsActiveStatus,
     AreaType,
@@ -20,6 +21,7 @@
     show: boolean;
     isEditMode: boolean;
     modalTitle: string;
+    messages: AreaMessages;
     formName: string;
     formDescription: string;
     formAreaLeadId: number | null;
@@ -38,7 +40,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
@@ -173,7 +175,7 @@
             class="form-field__label"
             for="area-name"
           >
-            {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
+            {messages.LABEL_NAME} <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -182,7 +184,7 @@
             class="form-field__control"
             required
             bind:value={formName}
-            placeholder={MESSAGES.PLACEHOLDER_NAME}
+            placeholder={messages.PLACEHOLDER_NAME}
           />
         </div>
 
@@ -190,7 +192,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="area-description">{MESSAGES.LABEL_DESCRIPTION}</label
+            for="area-description">{messages.LABEL_DESCRIPTION}</label
           >
           <textarea
             id="area-description"
@@ -198,7 +200,7 @@
             class="form-field__control"
             rows="3"
             bind:value={formDescription}
-            placeholder={MESSAGES.PLACEHOLDER_DESCRIPTION}
+            placeholder={messages.PLACEHOLDER_DESCRIPTION}
           ></textarea>
         </div>
 
@@ -209,7 +211,7 @@
             for="area-lead-hidden"
           >
             <i class="fas fa-user-tie mr-1"></i>
-            {MESSAGES.LABEL_AREA_LEAD}
+            {messages.LABEL_AREA_LEAD}
           </label>
           <input
             type="hidden"
@@ -240,7 +242,7 @@
                   selectAreaLead(null);
                 }}
               >
-                {MESSAGES.NO_AREA_LEAD}
+                {messages.NO_AREA_LEAD}
               </button>
               {#each areaLeads as user (user.id)}
                 <button
@@ -259,7 +261,7 @@
           </div>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {MESSAGES.AREA_LEAD_HINT}
+            {messages.AREA_LEAD_HINT}
           </span>
         </div>
 
@@ -269,7 +271,7 @@
             class="form-field__label"
             for="area-type-hidden"
           >
-            {MESSAGES.LABEL_TYPE} <span class="text-red-500">*</span>
+            {messages.LABEL_TYPE} <span class="text-red-500">*</span>
           </label>
           <input
             type="hidden"
@@ -312,7 +314,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="area-capacity">{MESSAGES.LABEL_CAPACITY}</label
+            for="area-capacity">{messages.LABEL_CAPACITY}</label
           >
           <input
             type="number"
@@ -321,7 +323,7 @@
             class="form-field__control"
             min="0"
             bind:value={formCapacity}
-            placeholder={MESSAGES.PLACEHOLDER_CAPACITY}
+            placeholder={messages.PLACEHOLDER_CAPACITY}
           />
         </div>
 
@@ -332,7 +334,7 @@
             for="area-departments"
           >
             <i class="fas fa-sitemap mr-1"></i>
-            {MESSAGES.LABEL_DEPARTMENTS}
+            {messages.LABEL_DEPARTMENTS}
           </label>
           <select
             id="area-departments"
@@ -347,7 +349,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {MESSAGES.DEPARTMENTS_HINT}
+            {messages.DEPARTMENTS_HINT}
           </span>
         </div>
 
@@ -358,7 +360,7 @@
             for="area-halls"
           >
             <i class="fas fa-warehouse mr-1"></i>
-            {MESSAGES.LABEL_HALLS}
+            {messages.LABEL_HALLS}
           </label>
           <select
             id="area-halls"
@@ -373,7 +375,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {MESSAGES.HALLS_HINT}
+            {messages.HALLS_HINT}
           </span>
         </div>
 
@@ -384,7 +386,7 @@
               class="form-field__label"
               for="area-status-hidden"
             >
-              {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
+              {messages.LABEL_STATUS} <span class="text-red-500">*</span>
             </label>
             <input
               type="hidden"
@@ -442,7 +444,7 @@
             <span
               class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
-              {MESSAGES.STATUS_HINT}
+              {messages.STATUS_HINT}
             </span>
           </div>
         {/if}
@@ -452,7 +454,7 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
+          onclick={onclose}>{messages.BTN_CANCEL}</button
         >
         <button
           type="submit"
@@ -461,7 +463,7 @@
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
             ></span>{/if}
-          {MESSAGES.BTN_SAVE}
+          {messages.BTN_SAVE}
         </button>
       </div>
     </form>

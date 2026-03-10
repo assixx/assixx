@@ -19,16 +19,16 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 }
 
 export function getAreaDisplay(areaName: string | null | undefined): string {
-  return areaName ?? 'Kein Bereich';
+  return areaName ?? 'Nicht zugewiesen';
 }
 
 export function getSelectedAreaName(
   areaId: number | null,
   areas: Area[],
 ): string {
-  if (areaId === null) return 'Kein Bereich';
+  if (areaId === null) return 'Nicht zugewiesen';
   const area = areas.find((a) => a.id === areaId);
-  return area?.name ?? 'Kein Bereich';
+  return area?.name ?? 'Nicht zugewiesen';
 }
 
 export function populateFormFromHall(hall: Hall): {

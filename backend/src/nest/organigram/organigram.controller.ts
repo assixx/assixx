@@ -17,7 +17,6 @@ import { OrganigramService } from './organigram.service.js';
 import type { HierarchyLabels, OrgChartTree } from './organigram.types.js';
 
 @Controller('organigram')
-@Roles('root')
 export class OrganigramController {
   constructor(
     private readonly organigramService: OrganigramService,
@@ -26,6 +25,7 @@ export class OrganigramController {
   ) {}
 
   @Get('tree')
+  @Roles('root')
   async getOrgChartTree(@TenantId() tenantId: number): Promise<OrgChartTree> {
     return await this.organigramService.getOrgChartTree(tenantId);
   }
@@ -38,6 +38,7 @@ export class OrganigramController {
   }
 
   @Patch('hierarchy-labels')
+  @Roles('root')
   async updateHierarchyLabels(
     @TenantId() tenantId: number,
     @Body() dto: UpdateHierarchyLabelsDto,
@@ -46,6 +47,7 @@ export class OrganigramController {
   }
 
   @Put('positions')
+  @Roles('root')
   @HttpCode(HttpStatus.OK)
   async upsertPositions(
     @TenantId() tenantId: number,

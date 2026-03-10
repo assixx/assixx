@@ -2,115 +2,119 @@
 // MANAGE DEPARTMENTS - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { FormIsActiveStatus } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 /**
- * Dependency labels for force delete message
+ * Dependency labels for force delete message.
+ * Teams and assets use dynamic hierarchy labels.
  */
-export const DEPENDENCY_LABELS: Record<string, string> = {
-  users: 'Benutzer',
-  teams: 'Teams',
-  assets: 'Anlagen',
-  shifts: 'Schichten',
-  shiftPlans: 'Schichtpläne',
-  kvpSuggestions: 'KVP-Vorschläge',
-  documents: 'Dokumente',
-  calendarEvents: 'Kalendereinträge',
-  surveyAssignments: 'Umfragen',
-  adminPermissions: 'Admin-Berechtigungen',
-};
+export function createDependencyLabels(
+  labels: HierarchyLabels,
+): Record<string, string> {
+  return {
+    users: 'Benutzer',
+    teams: labels.team,
+    assets: labels.asset,
+    shifts: 'Schichten',
+    shiftPlans: 'Schichtpläne',
+    kvpSuggestions: 'KVP-Vorschläge',
+    documents: 'Dokumente',
+    calendarEvents: 'Kalendereinträge',
+    surveyAssignments: 'Umfragen',
+    adminPermissions: 'Admin-Berechtigungen',
+  };
+}
 
-/**
- * UI Messages for i18n preparation
- */
-export const MESSAGES = {
-  // Page
-  PAGE_TITLE: 'Abteilungsverwaltung - Assixx',
-  PAGE_HEADING: 'Abteilungsübersicht',
-  PAGE_DESCRIPTION: 'Abteilungen erstellen und verwalten',
+/** Default dependency labels for non-Svelte contexts */
+export const DEPENDENCY_LABELS = createDependencyLabels(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
-  // Loading
-  LOADING: 'Abteilungen werden geladen...',
-
-  // Empty states
-  NO_DEPARTMENTS_FOUND: 'Keine Abteilungen gefunden',
-  CREATE_FIRST_DEPARTMENT: 'Erstellen Sie Ihre erste Abteilung',
-
-  // Modal titles
-  MODAL_TITLE_ADD: 'Neue Abteilung',
-  MODAL_TITLE_EDIT: 'Abteilung bearbeiten',
-
-  // Delete
-  DELETE_TITLE: 'Abteilung löschen',
-  DELETE_QUESTION: 'Möchten Sie diese Abteilung wirklich löschen?',
+/** Static messages that don't depend on hierarchy labels */
+const STATIC_MESSAGES = {
+  CREATE_FIRST_DEPARTMENT: 'Erstellen Sie den ersten Eintrag',
+  MODAL_TITLE_ADD: 'Hinzufügen',
+  MODAL_TITLE_EDIT: 'Bearbeiten',
+  DELETE_TITLE: 'Löschen',
+  DELETE_QUESTION: 'Möchten Sie diesen Eintrag wirklich löschen?',
   DELETE_CONFIRM_TITLE: 'Endgültig löschen?',
   DELETE_CONFIRM_WARNING: 'Diese Aktion kann nicht rückgängig gemacht werden!',
   DELETE_CONFIRM_MESSAGE:
-    'Die Abteilung wird unwiderruflich entfernt. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.',
-
-  // Force delete
-  FORCE_DELETE_TITLE: 'Abteilung hat Abhängigkeiten',
+    'Der Eintrag wird unwiderruflich entfernt. Alle Zuordnungen werden automatisch aktualisiert.',
+  FORCE_DELETE_TITLE: 'Abhängigkeiten vorhanden',
   forceDeleteMessage(totalDeps: number, depList: string): string {
     const element = totalDeps === 1 ? 'Element' : 'Elementen';
-    return `Diese Abteilung wird von ${totalDeps} ${element} verwendet (${depList}). Möchten Sie die Abteilung trotzdem löschen? Alle Zuordnungen werden automatisch entfernt.`;
+    return `Dieser Eintrag wird von ${totalDeps} ${element} verwendet (${depList}). Möchten Sie ihn trotzdem löschen? Alle Zuordnungen werden automatisch entfernt.`;
   },
-
-  // Search
-  SEARCH_PLACEHOLDER: 'Abteilungen suchen...',
-  SEARCH_NO_RESULTS: 'Keine Abteilungen gefunden für',
   moreResults(count: number): string {
     return `${count} weitere Ergebnisse in Tabelle`;
   },
-
-  // Form labels
   LABEL_NAME: 'Name',
   LABEL_DESCRIPTION: 'Beschreibung',
-  LABEL_AREA: 'Bereich (Area)',
-  LABEL_DEPARTMENT_LEAD: 'Abteilungsleiter',
+  LABEL_DEPARTMENT_LEAD: 'Leiter',
   LABEL_STATUS: 'Status',
-
-  // Form placeholders
-  NO_AREA: 'Kein Bereich',
-  NO_DEPARTMENT_LEAD: 'Kein Abteilungsleiter',
-
-  // Form hints
+  NO_AREA: 'Keine Zuordnung',
+  NO_DEPARTMENT_LEAD: 'Kein Leiter',
   DEPARTMENT_LEAD_HINT:
-    'Nur Administratoren können als Abteilungsleiter zugewiesen werden.',
-  STATUS_HINT: 'Inaktive/Archivierte Abteilungen werden nicht angezeigt',
-
-  // Table headers
+    'Nur Administratoren können als Leiter zugewiesen werden.',
   TH_NAME: 'Name',
   TH_DESCRIPTION: 'Beschreibung',
   TH_STATUS: 'Status',
-  TH_AREA: 'Bereich',
-  TH_DEPARTMENT_LEAD: 'Abteilungsleiter',
-  TH_TEAMS: 'Teams',
+  TH_DEPARTMENT_LEAD: 'Leiter',
   TH_ACTIONS: 'Aktionen',
-
-  // Filter labels
   FILTER_ACTIVE: 'Aktive',
   FILTER_INACTIVE: 'Inaktive',
   FILTER_ARCHIVED: 'Archiviert',
   FILTER_ALL: 'Alle',
-
-  // Buttons
-  BTN_ADD_DEPARTMENT: 'Abteilung hinzufügen',
+  BTN_ADD_DEPARTMENT: 'Hinzufügen',
   BTN_SAVE: 'Speichern',
   BTN_CANCEL: 'Abbrechen',
   BTN_DELETE: 'Löschen',
   BTN_DELETE_FINAL: 'Endgültig löschen',
   BTN_RETRY: 'Erneut versuchen',
-
-  // Validation
   VALIDATION_NAME_REQUIRED: 'Bitte geben Sie einen Namen ein',
-
-  // API errors
   ERROR_LOADING: 'Ein Fehler ist aufgetreten',
   ERROR_SAVING: 'Fehler beim Speichern',
   ERROR_DELETING: 'Fehler beim Löschen',
-} as const;
+};
+
+/**
+ * UI Messages — factory with dynamic hierarchy labels.
+ * Entity-specific strings use labels, compound words are neutralized (A4).
+ */
+export function createMessages(labels: HierarchyLabels) {
+  return {
+    ...STATIC_MESSAGES,
+    PAGE_TITLE: `${labels.department} — Verwaltung`,
+    PAGE_HEADING: `${labels.department} — Übersicht`,
+    PAGE_DESCRIPTION: `${labels.department} erstellen und verwalten`,
+    LOADING: `${labels.department} werden geladen...`,
+    NO_DEPARTMENTS_FOUND: `Keine ${labels.department} gefunden`,
+    SEARCH_PLACEHOLDER: `${labels.department} suchen...`,
+    SEARCH_NO_RESULTS: `Keine ${labels.department} gefunden für`,
+    LABEL_AREA: labels.area,
+    STATUS_HINT: `Inaktive/Archivierte ${labels.department} werden nicht angezeigt`,
+    TH_AREA: labels.area,
+    TH_TEAMS: labels.team,
+    FILTER_ACTIVE_TITLE: `Aktive ${labels.department}`,
+    FILTER_INACTIVE_TITLE: `Inaktive ${labels.department}`,
+    FILTER_ARCHIVED_TITLE: `Archivierte ${labels.department}`,
+    FILTER_ALL_TITLE: `Alle ${labels.department}`,
+  };
+}
+
+/** Message type for component props */
+export type DepartmentMessages = ReturnType<typeof createMessages>;
+
+/** Default messages (used in non-Svelte contexts) */
+export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * API Endpoints

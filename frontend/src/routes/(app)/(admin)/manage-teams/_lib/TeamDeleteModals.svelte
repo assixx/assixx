@@ -40,7 +40,7 @@
   id="team-force-delete-modal"
   title={MESSAGES.FORCE_DELETE_TITLE}
   variant="warning"
-  confirmLabel="Team löschen"
+  confirmLabel={MESSAGES.DELETE_TITLE}
   onconfirm={onforceDelete}
   oncancel={oncloseForceDelete}
 >

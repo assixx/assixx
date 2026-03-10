@@ -34,6 +34,7 @@ import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interce
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { LoggerModule } from './common/logger/logger.module.js';
 import { PermissionRegistryModule } from './common/permission-registry/permission-registry.module.js';
+import { CompanyModule } from './company/company.module.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DatabaseModule } from './database/database.module.js';
@@ -183,6 +184,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     WorkOrdersModule,
     TpmModule,
     ChatModule,
+    CompanyModule,
     UserPermissionsModule,
   ],
   providers: [

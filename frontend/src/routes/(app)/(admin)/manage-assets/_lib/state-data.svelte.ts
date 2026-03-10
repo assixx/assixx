@@ -2,10 +2,15 @@
 // MANAGE MACHINES - DATA STATE MODULE
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { Asset, Department, Area, Team } from './types';
 
 /**
- * Creates data-related state (assets, departments, areas, teams)
+ * Creates data-related state (assets, departments, areas, teams, labels)
  */
 export function createDataState() {
   let allAssets = $state<Asset[]>([]);
@@ -13,6 +18,7 @@ export function createDataState() {
   let allDepartments = $state<Department[]>([]);
   let allAreas = $state<Area[]>([]);
   let allTeams = $state<Team[]>([]);
+  let labels = $state<HierarchyLabels>(DEFAULT_HIERARCHY_LABELS);
 
   return {
     get allAssets() {
@@ -30,6 +36,9 @@ export function createDataState() {
     get allTeams() {
       return allTeams;
     },
+    get labels() {
+      return labels;
+    },
     setAssets: (v: Asset[]) => {
       allAssets = v;
     },
@@ -44,6 +53,9 @@ export function createDataState() {
     },
     setTeams: (v: Team[]) => {
       allTeams = v;
+    },
+    setLabels: (v: HierarchyLabels) => {
+      labels = v;
     },
   };
 }

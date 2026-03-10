@@ -19,7 +19,7 @@
     saveHall as apiSaveHall,
     deleteHall as apiDeleteHall,
   } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
   import HallModal from './_lib/HallModal.svelte';
@@ -47,6 +47,10 @@
 
   const allHalls = $derived<Hall[]>(data.halls);
   const allAreas = $derived<Area[]>(data.areas);
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
 
   // =============================================================================
   // UI STATE
@@ -78,7 +82,7 @@
 
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
   );
 
   const filteredHalls = $derived(
@@ -92,7 +96,7 @@
   async function saveHall(): Promise<void> {
     submitting = true;
     if (!formName.trim()) {
-      showWarningAlert(MESSAGES.VALIDATION_NAME_REQUIRED);
+      showWarningAlert(messages.VALIDATION_NAME_REQUIRED);
       submitting = false;
       return;
     }
@@ -235,7 +239,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -245,10 +249,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-warehouse mr-2"></i>
-        {MESSAGES.PAGE_HEADING}
+        {messages.PAGE_HEADING}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <div class="mt-6 flex items-center justify-between gap-4">
@@ -267,7 +271,7 @@
             }}
           >
             <i class="fas fa-check"></i>
-            {MESSAGES.FILTER_ACTIVE}
+            {messages.FILTER_ACTIVE}
           </button>
           <button
             type="button"
@@ -279,7 +283,7 @@
             }}
           >
             <i class="fas fa-times"></i>
-            {MESSAGES.FILTER_INACTIVE}
+            {messages.FILTER_INACTIVE}
           </button>
           <button
             type="button"
@@ -291,7 +295,7 @@
             }}
           >
             <i class="fas fa-archive"></i>
-            {MESSAGES.FILTER_ARCHIVED}
+            {messages.FILTER_ARCHIVED}
           </button>
           <button
             type="button"
@@ -303,7 +307,7 @@
             }}
           >
             <i class="fas fa-warehouse"></i>
-            {MESSAGES.FILTER_ALL}
+            {messages.FILTER_ALL}
           </button>
         </div>
 
@@ -321,7 +325,7 @@
               type="search"
               id="hall-search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
               oninput={handleSearchInput}
@@ -342,7 +346,7 @@
           >
             {#if currentSearchQuery && filteredHalls.length === 0}
               <div class="search-input__no-results">
-                {MESSAGES.SEARCH_NO_RESULTS} "{currentSearchQuery}"
+                {messages.SEARCH_NO_RESULTS} "{currentSearchQuery}"
               </div>
             {:else if currentSearchQuery}
               {#each filteredHalls.slice(0, 5) as hall (hall.id)}
@@ -368,7 +372,7 @@
               {/each}
               {#if filteredHalls.length > 5}
                 <div class="search-result-item__more py-2">
-                  {MESSAGES.moreResults(filteredHalls.length - 5)}
+                  {messages.moreResults(filteredHalls.length - 5)}
                 </div>
               {/if}
             {/if}
@@ -387,7 +391,7 @@
           <button
             type="button"
             class="btn btn-primary mt-4"
-            onclick={() => invalidateAll()}>{MESSAGES.BTN_RETRY}</button
+            onclick={() => invalidateAll()}>{messages.BTN_RETRY}</button
           >
         </div>
       {:else if filteredHalls.length === 0}
@@ -396,9 +400,9 @@
           class="empty-state"
         >
           <div class="empty-state__icon"><i class="fas fa-warehouse"></i></div>
-          <h3 class="empty-state__title">{MESSAGES.NO_HALLS_FOUND}</h3>
+          <h3 class="empty-state__title">{messages.NO_HALLS_FOUND}</h3>
           <p class="empty-state__description">
-            {MESSAGES.CREATE_FIRST_HALL}
+            {messages.CREATE_FIRST_HALL}
           </p>
           <button
             type="button"
@@ -406,7 +410,7 @@
             onclick={openAddModal}
           >
             <i class="fas fa-plus"></i>
-            {MESSAGES.BTN_ADD_HALL}
+            {messages.BTN_ADD_HALL}
           </button>
         </div>
       {:else}
@@ -419,11 +423,11 @@
               <thead>
                 <tr>
                   <th scope="col">ID</th>
-                  <th scope="col">{MESSAGES.TH_NAME}</th>
-                  <th scope="col">{MESSAGES.TH_DESCRIPTION}</th>
-                  <th scope="col">{MESSAGES.TH_STATUS}</th>
-                  <th scope="col">{MESSAGES.TH_AREA}</th>
-                  <th scope="col">{MESSAGES.TH_ACTIONS}</th>
+                  <th scope="col">{messages.TH_NAME}</th>
+                  <th scope="col">{messages.TH_DESCRIPTION}</th>
+                  <th scope="col">{messages.TH_STATUS}</th>
+                  <th scope="col">{messages.TH_AREA}</th>
+                  <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>
               <tbody>
@@ -454,7 +458,7 @@
                         ) ?
                           'badge--info'
                         : 'badge--secondary'}"
-                        title={hall.areaName ?? 'Kein Bereich zugewiesen'}
+                        title={hall.areaName ?? messages.NO_AREA}
                       >
                         {getAreaDisplay(hall.areaName)}
                       </span>

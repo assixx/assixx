@@ -3,19 +3,20 @@
 // =============================================================================
 
 import {
-  BADGE_CLASS,
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
-  POSITION_DISPLAY_MAP,
-  PASSWORD_STRENGTH_LABELS,
-  PASSWORD_CRACK_TIMES,
-  MESSAGES,
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
   AVAILABILITY_STATUS_LABELS,
+  BADGE_CLASS,
+  MESSAGES,
+  PASSWORD_CRACK_TIMES,
+  PASSWORD_STRENGTH_LABELS,
+  POSITION_DISPLAY_MAP,
+  STATUS_BADGE_CLASSES,
+  STATUS_LABELS,
 } from './constants';
 
+import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 import type {
   Admin,
   AdminFormData,
@@ -79,12 +80,15 @@ export function hasFullAccess(admin: Admin): boolean {
 /**
  * Get badge info for areas column
  */
-export function getAreasBadge(admin: Admin): BadgeInfo {
+export function getAreasBadge(
+  admin: Admin,
+  labels: HierarchyLabels,
+): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
       text: MESSAGES.BADGE_ALL,
-      title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} Bereiche`,
+      title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} ${labels.area}`,
       icon: 'fa-globe',
     };
   }
@@ -92,15 +96,14 @@ export function getAreasBadge(admin: Admin): BadgeInfo {
     return {
       class: BADGE_CLASS.SECONDARY,
       text: MESSAGES.BADGE_NONE,
-      title: MESSAGES.BADGE_NO_AREAS,
+      title: `Keine ${labels.area} zugewiesen`,
     };
   }
   const count = admin.areas.length;
-  const label = count === 1 ? 'Bereich' : 'Bereiche';
   const names = admin.areas.map((a) => a.name).join(', ');
   return {
     class: BADGE_CLASS.INFO,
-    text: `${count} ${label}`,
+    text: `${count} ${labels.area}`,
     title: names,
   };
 }
@@ -134,21 +137,17 @@ function getAreaNames(admin: Admin): string {
 }
 
 /**
- * Get singular/plural label for departments
- */
-function getDepartmentLabel(count: number): string {
-  return count === 1 ? 'Abteilung' : 'Abteilungen';
-}
-
-/**
  * Get badge info for departments column
  */
-export function getDepartmentsBadge(admin: Admin): BadgeInfo {
+export function getDepartmentsBadge(
+  admin: Admin,
+  labels: HierarchyLabels,
+): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
       text: MESSAGES.BADGE_ALL,
-      title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} Abteilungen`,
+      title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} ${labels.department}`,
       icon: 'fa-globe',
     };
   }
@@ -159,15 +158,15 @@ export function getDepartmentsBadge(admin: Admin): BadgeInfo {
   if (deptCount > 0 && areaCount > 0) {
     return {
       class: BADGE_CLASS.INFO,
-      text: `${deptCount} Abtlg. + ${MESSAGES.BADGE_INHERITED}`,
-      title: `Direkt: ${getDepartmentNames(admin)} + Vererbt von ${areaCount} Bereichen`,
+      text: `${deptCount} + ${MESSAGES.BADGE_INHERITED}`,
+      title: `Direkt: ${getDepartmentNames(admin)} + Vererbt von ${areaCount} ${labels.area}`,
     };
   }
 
   if (deptCount > 0) {
     return {
       class: BADGE_CLASS.INFO,
-      text: `${deptCount} ${getDepartmentLabel(deptCount)}`,
+      text: `${deptCount} ${labels.department}`,
       title: getDepartmentNames(admin),
     };
   }
@@ -184,37 +183,43 @@ export function getDepartmentsBadge(admin: Admin): BadgeInfo {
   return {
     class: BADGE_CLASS.SECONDARY,
     text: MESSAGES.BADGE_NONE,
-    title: MESSAGES.BADGE_NO_DEPARTMENTS,
+    title: `Keine ${labels.department} zugewiesen`,
   };
 }
 
 /**
  * Build inheritance description for teams badge
  */
-function buildTeamsInheritanceTitle(admin: Admin): string {
+function buildTeamsInheritanceTitle(
+  admin: Admin,
+  labels: HierarchyLabels,
+): string {
   const parts: string[] = [];
   const areaNames = getAreaNames(admin);
   const deptNames = getDepartmentNames(admin);
 
   if (areaNames !== '') {
-    parts.push(`Bereiche: ${areaNames}`);
+    parts.push(`${labels.area}: ${areaNames}`);
   }
   if (deptNames !== '') {
-    parts.push(`Abteilungen: ${deptNames}`);
+    parts.push(`${labels.department}: ${deptNames}`);
   }
 
-  return `Teams vererbt von: ${parts.join(' | ')}`;
+  return `${labels.team} vererbt von: ${parts.join(' | ')}`;
 }
 
 /**
  * Get badge info for teams column (inherited via Area/Department)
  */
-export function getTeamsBadge(admin: Admin): BadgeInfo {
+export function getTeamsBadge(
+  admin: Admin,
+  labels: HierarchyLabels,
+): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
       text: MESSAGES.BADGE_ALL,
-      title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} Teams`,
+      title: `${MESSAGES.BADGE_FULL_ACCESS_TITLE} ${labels.team}`,
       icon: 'fa-globe',
     };
   }
@@ -226,7 +231,7 @@ export function getTeamsBadge(admin: Admin): BadgeInfo {
     return {
       class: BADGE_CLASS.INFO,
       text: MESSAGES.BADGE_INHERITED,
-      title: buildTeamsInheritanceTitle(admin),
+      title: buildTeamsInheritanceTitle(admin, labels),
       icon: 'fa-sitemap',
     };
   }
@@ -234,7 +239,7 @@ export function getTeamsBadge(admin: Admin): BadgeInfo {
   return {
     class: BADGE_CLASS.SECONDARY,
     text: MESSAGES.BADGE_NONE,
-    title: MESSAGES.BADGE_NO_TEAMS,
+    title: `Keine ${labels.team} zugewiesen`,
   };
 }
 

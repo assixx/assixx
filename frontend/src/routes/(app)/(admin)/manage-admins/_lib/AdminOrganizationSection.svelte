@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
 
-  import { MESSAGES, STATUS_OPTIONS } from './constants';
+  import { MESSAGES, STATUS_OPTIONS, type AdminMessages } from './constants';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -23,6 +23,7 @@
     formAreaIds: number[];
     formDepartmentIds: number[];
     formIsActive: FormIsActiveStatus;
+    messages?: AdminMessages;
     onupgrade?: () => void;
     ondowngrade?: () => void;
   }
@@ -37,6 +38,7 @@
     formAreaIds = $bindable(),
     formDepartmentIds = $bindable(),
     formIsActive = $bindable(),
+    messages: msg = MESSAGES,
     onupgrade,
     ondowngrade,
   }: Props = $props();
@@ -142,12 +144,12 @@
       <span class="toggle-switch__slider"></span>
       <span class="toggle-switch__label">
         <i class="fas fa-building mr-2"></i>
-        {MESSAGES.FULL_ACCESS_LABEL}
+        {msg.FULL_ACCESS_LABEL}
       </span>
     </label>
     <span class="form-field__message mt-2 block text-(--color-danger)">
       <i class="fas fa-exclamation-triangle mr-1"></i>
-      {MESSAGES.FULL_ACCESS_WARNING}
+      {msg.FULL_ACCESS_WARNING}
     </span>
   </div>
 
@@ -161,7 +163,7 @@
       for="admin-areas"
     >
       <i class="fas fa-layer-group mr-1"></i>
-      {MESSAGES.LABEL_AREAS}
+      {msg.LABEL_AREAS}
     </label>
     <select
       id="admin-areas"
@@ -186,8 +188,8 @@
     </select>
     <span class="form-field__message text-(--color-text-secondary)">
       <i class="fas fa-info-circle mr-1"></i>
-      {MESSAGES.HINT_MULTISELECT}
-      {MESSAGES.HINT_AREAS}
+      {msg.HINT_MULTISELECT}
+      {msg.HINT_AREAS}
     </span>
   </div>
 
@@ -201,7 +203,7 @@
       for="admin-departments"
     >
       <i class="fas fa-sitemap mr-1"></i>
-      {MESSAGES.LABEL_DEPARTMENTS}
+      {msg.LABEL_DEPARTMENTS}
     </label>
     <select
       id="admin-departments"
@@ -224,8 +226,8 @@
     </select>
     <span class="form-field__message text-(--color-text-secondary)">
       <i class="fas fa-info-circle mr-1"></i>
-      {MESSAGES.HINT_MULTISELECT}
-      {MESSAGES.HINT_DEPARTMENTS}
+      {msg.HINT_MULTISELECT}
+      {msg.HINT_DEPARTMENTS}
     </span>
   </div>
 
@@ -236,14 +238,14 @@
   >
     <label class="form-field__label">
       <i class="fas fa-users mr-1"></i>
-      {MESSAGES.LABEL_TEAMS}
+      {msg.LABEL_TEAMS}
     </label>
     <div class="alert alert--info">
       <div class="alert__icon">
         <i class="fas fa-info-circle"></i>
       </div>
       <div class="alert__content">
-        <div class="alert__message">{MESSAGES.HINT_TEAMS}</div>
+        <div class="alert__message">{msg.HINT_TEAMS}</div>
       </div>
     </div>
   </div>
@@ -258,7 +260,7 @@
       class="form-field__label"
       for="admin-status"
     >
-      {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
+      {msg.LABEL_STATUS} <span class="text-red-500">*</span>
     </label>
     <div
       class="dropdown"
@@ -295,7 +297,7 @@
       </div>
     </div>
     <span class="form-field__message mt-1 block text-(--color-text-secondary)">
-      {MESSAGES.HINT_STATUS}
+      {msg.HINT_STATUS}
     </span>
   </div>
 
@@ -307,13 +309,13 @@
     >
       <h4 class="mb-2 font-medium text-(--color-danger)">
         <i class="fas fa-exclamation-triangle mr-2"></i>
-        {MESSAGES.UPGRADE_TITLE}
+        {msg.UPGRADE_TITLE}
       </h4>
 
       <!-- Upgrade: Admin -> Root -->
       {#if onupgrade}
         <p class="mb-4 text-sm text-(--color-text-secondary)">
-          {MESSAGES.UPGRADE_DESCRIPTION}
+          {msg.UPGRADE_DESCRIPTION}
         </p>
         {#if !upgradeConfirmActive}
           <button
@@ -330,7 +332,7 @@
             }}
           >
             <i class="fas fa-arrow-up mr-1"></i>
-            {MESSAGES.UPGRADE_BUTTON}
+            {msg.UPGRADE_BUTTON}
           </button>
         {:else}
           <div class="alert alert--danger mb-4">
@@ -339,7 +341,7 @@
             </div>
             <div class="alert__content">
               <p class="alert__message">
-                {MESSAGES.UPGRADE_CONFIRM_MESSAGE}
+                {msg.UPGRADE_CONFIRM_MESSAGE}
               </p>
             </div>
           </div>
@@ -351,7 +353,7 @@
                 upgradeConfirmActive = false;
               }}
             >
-              {MESSAGES.BTN_CANCEL}
+              {msg.BTN_CANCEL}
             </button>
             <button
               type="button"
@@ -359,7 +361,7 @@
               onclick={onupgrade}
             >
               <i class="fas fa-check mr-1"></i>
-              {MESSAGES.UPGRADE_CONFIRM_BUTTON}
+              {msg.UPGRADE_CONFIRM_BUTTON}
             </button>
           </div>
         {/if}
@@ -369,7 +371,7 @@
       {#if ondowngrade}
         <div class="mt-4 border-t border-(--color-border) pt-4">
           <p class="mb-4 text-sm text-(--color-text-secondary)">
-            {MESSAGES.DOWNGRADE_DESCRIPTION}
+            {msg.DOWNGRADE_DESCRIPTION}
           </p>
           {#if !downgradeConfirmActive}
             <button
@@ -386,7 +388,7 @@
               }}
             >
               <i class="fas fa-arrow-down mr-1"></i>
-              {MESSAGES.DOWNGRADE_BUTTON}
+              {msg.DOWNGRADE_BUTTON}
             </button>
           {:else}
             <div class="alert alert--danger mb-4">
@@ -395,7 +397,7 @@
               </div>
               <div class="alert__content">
                 <p class="alert__message">
-                  {MESSAGES.DOWNGRADE_CONFIRM_MESSAGE}
+                  {msg.DOWNGRADE_CONFIRM_MESSAGE}
                 </p>
               </div>
             </div>
@@ -407,7 +409,7 @@
                   downgradeConfirmActive = false;
                 }}
               >
-                {MESSAGES.BTN_CANCEL}
+                {msg.BTN_CANCEL}
               </button>
               <button
                 type="button"
@@ -415,7 +417,7 @@
                 onclick={ondowngrade}
               >
                 <i class="fas fa-check mr-1"></i>
-                {MESSAGES.DOWNGRADE_CONFIRM_BUTTON}
+                {msg.DOWNGRADE_CONFIRM_BUTTON}
               </button>
             </div>
           {/if}

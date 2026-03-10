@@ -2,6 +2,11 @@
 // MANAGE EMPLOYEES - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { AvailabilityOption } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
@@ -72,56 +77,31 @@ export const PASSWORD_CRACK_TIMES: readonly string[] = [
   'Jahre',
 ] as const;
 
-/**
- * UI Messages
- */
-export const MESSAGES = {
-  // Loading
+/** Static messages that don't depend on hierarchy labels */
+const STATIC_MESSAGES = {
   LOADING_EMPLOYEES: 'Mitarbeiter werden geladen...',
-
-  // Empty states
   NO_EMPLOYEES_FOUND: 'Keine Mitarbeiter gefunden',
   CREATE_FIRST_EMPLOYEE: 'Erstellen Sie Ihren ersten Mitarbeiter',
-
-  // Modal titles
   MODAL_TITLE_ADD: 'Neuer Mitarbeiter',
   MODAL_TITLE_EDIT: 'Mitarbeiter bearbeiten',
-
-  // Validation errors
   EMAIL_MISMATCH: 'E-Mail-Adressen stimmen nicht überein',
   PASSWORD_MISMATCH: 'Passwörter stimmen nicht überein',
-
-  // API errors
   ERROR_LOADING: 'Ein Fehler ist aufgetreten',
   ERROR_SAVING: 'Fehler beim Speichern',
   ERROR_DELETING: 'Fehler beim Löschen',
-
-  // Delete confirmation
   DELETE_TITLE: 'Mitarbeiter löschen',
   DELETE_CONFIRM_TITLE: 'Endgültig löschen?',
   DELETE_CONFIRM_MESSAGE:
     'Diese Aktion kann nicht rückgängig gemacht werden! Der Mitarbeiter wird unwiderruflich aus dem System entfernt.',
-
-  // Badge defaults
-  NO_TEAM: 'Kein Team',
-  NO_TEAM_TITLE: 'Keinem Team zugewiesen',
-
-  // Search
   SEARCH_PLACEHOLDER: 'Mitarbeiter suchen...',
   SEARCH_NO_RESULTS: 'Keine Mitarbeiter gefunden für',
   SEARCH_MORE_RESULTS: 'weitere Ergebnisse in Tabelle',
-
-  // Form hints
   EMAIL_HINT: 'Wird auch als Benutzername verwendet',
   PASSWORD_HINT:
     'Min. 8 Zeichen. Enthält Großbuchstaben, Kleinbuchstaben und Zahlen.',
   EMPLOYEE_NUMBER_HINT: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   TEAM_MULTISELECT_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl',
   STATUS_HINT: 'Inaktive/Archivierte Mitarbeiter können sich nicht anmelden',
-  TEAM_INFO:
-    'Mitarbeiter werden Teams zugewiesen. Abteilung und Bereich werden automatisch vom Team vererbt.',
-
-  // Danger zone - Role upgrade
   UPGRADE_TITLE: 'Gefahrenzone',
   UPGRADE_DESCRIPTION:
     'Stuft diesen Mitarbeiter dauerhaft zum Administrator hoch. Der Mitarbeiter erhält Zugriff auf Admin-Funktionen und verschwindet aus der Mitarbeiterliste.',
@@ -133,7 +113,30 @@ export const MESSAGES = {
   UPGRADE_ERROR: 'Fehler beim Hochstufen',
   UPGRADE_UNAUTHORIZED:
     'Sie sind nicht berechtigt, Rollen zu ändern. Nur Root oder Admin mit Vollzugriff.',
-} as const;
+};
+
+/**
+ * UI Messages — factory with dynamic hierarchy labels.
+ * Entity-specific strings use labels, compound words are neutralized (A4).
+ */
+export function createMessages(labels: HierarchyLabels) {
+  return {
+    ...STATIC_MESSAGES,
+    NO_TEAM: 'Nicht zugewiesen',
+    NO_TEAM_TITLE: 'Nicht zugewiesen',
+    TEAM_INFO: `Mitarbeiter werden ${labels.team} zugewiesen. ${labels.department} und ${labels.area} werden automatisch vererbt.`,
+    TEAM_ASSIGNMENT_TITLE: `${labels.team} — Zuweisung`,
+    TH_AREAS: labels.area,
+    TH_DEPARTMENTS: labels.department,
+    TH_TEAMS: labels.team,
+  };
+}
+
+/** Message type for component props */
+export type EmployeeMessages = ReturnType<typeof createMessages>;
+
+/** Default messages (used in non-Svelte contexts) */
+export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * API Endpoints (relative to /api/v2 base)

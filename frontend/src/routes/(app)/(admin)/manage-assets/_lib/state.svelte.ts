@@ -60,6 +60,10 @@ function createAssetState() {
     setDepartments: data.setDepartments,
     setAreas: data.setAreas,
     setTeams: data.setTeams,
+    get labels() {
+      return data.labels;
+    },
+    setLabels: data.setLabels,
     // UI (pass through getters and setters)
     get loading() {
       return ui.loading;

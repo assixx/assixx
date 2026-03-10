@@ -5,12 +5,9 @@
   import { goto, replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { setLoginPassword } from '$lib/crypto/login-password-bridge';
-  import {
-    isDark,
-    forceDark,
-    restoreUserTheme,
-  } from '$lib/stores/theme.svelte';
+  import { isDark } from '$lib/stores/theme.svelte';
   import { showInfoAlert } from '$lib/stores/toast';
   import { getTokenManager } from '$lib/utils/token-manager';
 
@@ -68,15 +65,11 @@
     }
   }
 
-  // Always-dark page + URL parameter check after hydration
+  // URL parameter check after hydration
   onMount(() => {
-    forceDark();
     setTimeout(() => {
       checkForMessages();
     }, 0);
-    return () => {
-      restoreUserTheme();
-    };
   });
 
   // =============================================================================
@@ -194,12 +187,15 @@
   <span>Zurück zur Hauptseite</span>
 </a>
 
-<!-- Help Button -->
-<div class="help-button">?</div>
+<!-- Top Right Actions -->
+<div class="top-actions">
+  <ThemeToggle />
+  <div class="help-button">?</div>
+</div>
 
 <div class="login-container">
   <!-- Login Form -->
-  <div class="login-card">
+  <div class="card login-card">
     <!-- Logo inside card -->
     <div class="login-card-logo">
       <button
@@ -459,10 +455,6 @@
   }
 
   .login-card {
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-radius: var(--radius-xl);
-
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: var(--spacing-8);
     width: 100%;
     max-width: 450px;
@@ -495,16 +487,22 @@
     text-decoration: underline;
   }
 
-  /* Help Button */
-  .help-button {
+  /* Top Right Actions (ThemeToggle + Help) */
+  .top-actions {
     display: flex;
-
     position: fixed;
     top: 20px;
     right: 20px;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  /* Help Button */
+  .help-button {
+    display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
     backdrop-filter: blur(10px);
     cursor: pointer;
     box-shadow:
@@ -533,6 +531,26 @@
     background: color-mix(in oklch, var(--color-primary) 15%, transparent);
 
     color: var(--primary-color);
+  }
+
+  /* Light mode overrides */
+  :global(html:not(.dark)) .back-button {
+    border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
+    background: color-mix(in oklch, var(--color-white) 85%, transparent);
+    box-shadow: 0 4px 16px
+      color-mix(in oklch, var(--color-black) 8%, transparent);
+  }
+
+  :global(html:not(.dark)) .back-button:hover {
+    border-color: color-mix(in oklch, var(--color-black) 20%, transparent);
+    background: color-mix(in oklch, var(--color-white) 95%, transparent);
+  }
+
+  :global(html:not(.dark)) .help-button {
+    border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
+    background: color-mix(in oklch, var(--color-white) 85%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   @media (width < 768px) {

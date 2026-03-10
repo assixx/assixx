@@ -2,7 +2,7 @@
 // MANAGE MACHINES - DERIVED STATE MODULE
 // =============================================================================
 
-import { MESSAGES } from './constants';
+import { createMessages } from './constants';
 import { getAssetTypeLabel } from './utils';
 
 import type { DataState } from './state-data.svelte';
@@ -18,31 +18,33 @@ export function createDerivedState(
   ui: UIState,
   form: FormState,
 ) {
+  const messages = $derived(createMessages(data.labels));
+
   const isEditMode = $derived(ui.currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_ADD_TITLE,
+    isEditMode ? messages.MODAL_EDIT_TITLE : messages.MODAL_ADD_TITLE,
   );
 
   const selectedDepartmentName = $derived.by(() => {
-    if (form.formDepartmentId === null) return MESSAGES.PLACEHOLDER_DEPARTMENT;
+    if (form.formDepartmentId === null) return messages.PLACEHOLDER_DEPARTMENT;
     return (
       data.allDepartments.find((d) => d.id === form.formDepartmentId)?.name ??
-      MESSAGES.PLACEHOLDER_DEPARTMENT
+      messages.PLACEHOLDER_DEPARTMENT
     );
   });
 
   const selectedAreaName = $derived.by(() => {
-    if (form.formAreaId === null) return MESSAGES.PLACEHOLDER_AREA;
+    if (form.formAreaId === null) return messages.PLACEHOLDER_AREA;
     return (
       data.allAreas.find((a) => a.id === form.formAreaId)?.name ??
-      MESSAGES.PLACEHOLDER_AREA
+      messages.PLACEHOLDER_AREA
     );
   });
 
   const selectedTypeLabel = $derived.by(() => {
     return form.formAssetType !== '' ?
         getAssetTypeLabel(form.formAssetType)
-      : MESSAGES.PLACEHOLDER_TYPE;
+      : messages.PLACEHOLDER_TYPE;
   });
 
   const filteredDepartments = $derived.by(() => {
@@ -59,15 +61,15 @@ export function createDerivedState(
 
   const teamsDisplayText = $derived.by(() => {
     if (form.formDepartmentId === null)
-      return MESSAGES.PLACEHOLDER_SELECT_DEPT_FIRST;
-    if (form.formTeamIds.length === 0) return MESSAGES.PLACEHOLDER_TEAMS;
+      return messages.PLACEHOLDER_SELECT_DEPT_FIRST;
+    if (form.formTeamIds.length === 0) return messages.PLACEHOLDER_TEAMS;
     if (form.formTeamIds.length <= 2) {
       return data.allTeams
         .filter((t) => form.formTeamIds.includes(t.id))
         .map((t) => t.name)
         .join(', ');
     }
-    return `${form.formTeamIds.length} Teams ausgewählt`;
+    return messages.teamsSelected(form.formTeamIds.length);
   });
 
   const isDepartmentDisabled = $derived(form.formAreaId === null);

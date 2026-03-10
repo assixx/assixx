@@ -2,6 +2,11 @@
 // SURVEY-EMPLOYEE - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { AssignmentType } from './types';
 
 /**
@@ -49,30 +54,40 @@ export const QUESTION_TYPE_LABELS: Record<string, string> = {
   date: 'Datum',
 };
 
-/**
- * Assignment type → visibility badge (reuses KVP design system classes)
- */
-export const ASSIGNMENT_BADGE_MAP: Partial<
+/** Build assignment badge map with dynamic hierarchy labels */
+export function createAssignmentBadgeMap(
+  labels: HierarchyLabels,
+): Partial<
   Record<AssignmentType, { badgeClass: string; icon: string; label: string }>
-> = {
-  all_users: {
-    badgeClass: 'badge--visibility-company',
-    icon: 'fa-globe',
-    label: 'Firmenweit',
-  },
-  area: {
-    badgeClass: 'badge--visibility-area',
-    icon: 'fa-sitemap',
-    label: 'Bereich',
-  },
-  department: {
-    badgeClass: 'badge--visibility-department',
-    icon: 'fa-building',
-    label: 'Abteilung',
-  },
-  team: {
-    badgeClass: 'badge--visibility-team',
-    icon: 'fa-users',
-    label: 'Team',
-  },
-};
+> {
+  return {
+    all_users: {
+      badgeClass: 'badge--visibility-company',
+      icon: 'fa-globe',
+      label: 'Firmenweit',
+    },
+    area: {
+      badgeClass: 'badge--visibility-area',
+      icon: 'fa-sitemap',
+      label: labels.area,
+    },
+    department: {
+      badgeClass: 'badge--visibility-department',
+      icon: 'fa-building',
+      label: labels.department,
+    },
+    team: {
+      badgeClass: 'badge--visibility-team',
+      icon: 'fa-users',
+      label: labels.team,
+    },
+  };
+}
+
+/** Badge map type for parameter passing */
+export type EmployeeBadgeMap = ReturnType<typeof createAssignmentBadgeMap>;
+
+/** Default badge map (used in non-Svelte contexts) */
+export const ASSIGNMENT_BADGE_MAP = createAssignmentBadgeMap(
+  DEFAULT_HIERARCHY_LABELS,
+);

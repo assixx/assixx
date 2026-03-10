@@ -204,10 +204,10 @@ describe('SignupSchema', () => {
       );
     });
 
-    it('should reject missing street', () => {
+    it('should accept omitted street (optional since move to /settings/company)', () => {
       const { street: _, ...noStreet } = valid;
 
-      expect(SignupSchema.safeParse(noStreet).success).toBe(false);
+      expect(SignupSchema.safeParse(noStreet).success).toBe(true);
     });
 
     it('should trim whitespace', () => {
@@ -476,7 +476,7 @@ describe('SignupSchema', () => {
   // Missing Address Fields (Regression)
   // ===========================================================
 
-  describe('missing address fields', () => {
+  describe('optional address fields (completed in /settings/company)', () => {
     const addressFields = [
       'street',
       'houseNumber',
@@ -486,10 +486,10 @@ describe('SignupSchema', () => {
     ] as const;
 
     for (const field of addressFields) {
-      it(`should reject missing ${field}`, () => {
+      it(`should accept missing ${field}`, () => {
         const { [field]: _, ...payload } = valid;
 
-        expect(SignupSchema.safeParse(payload).success).toBe(false);
+        expect(SignupSchema.safeParse(payload).success).toBe(true);
       });
     }
   });

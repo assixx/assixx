@@ -28,7 +28,7 @@
     downgradeToEmployee as apiDowngradeToEmployee,
     updateAdminAvailability as apiUpdateAvailability,
   } from './_lib/api';
-  import { MESSAGES, FORM_DEFAULTS } from './_lib/constants';
+  import { createMessages, FORM_DEFAULTS } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
   import RoleChangeModals from './_lib/RoleChangeModals.svelte';
@@ -60,6 +60,10 @@
   const allAdmins = $derived<Admin[]>(data.admins);
   const allAreas = $derived<Area[]>(data.areas);
   const allDepartments = $derived<Department[]>(data.departments);
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
 
   // Permission: Only root may upgrade admin → root
   const canUpgrade = $derived(data.user !== null && data.user.role === 'root');
@@ -128,7 +132,7 @@
 
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_ADD_TITLE,
+    isEditMode ? messages.MODAL_EDIT_TITLE : messages.MODAL_ADD_TITLE,
   );
 
   // Derived: Filtered admins based on current filter/search state
@@ -164,19 +168,19 @@
   /** Validates admin form fields */
   function validateAdminForm(): string | null {
     if (formEmail !== formEmailConfirm) {
-      return MESSAGES.ERROR_EMAIL_MISMATCH;
+      return messages.ERROR_EMAIL_MISMATCH;
     }
 
     if (hasPasswordError()) {
-      return MESSAGES.ERROR_PASSWORD_MISMATCH;
+      return messages.ERROR_PASSWORD_MISMATCH;
     }
 
     if (!formPosition) {
-      return MESSAGES.ERROR_POSITION_REQUIRED;
+      return messages.ERROR_POSITION_REQUIRED;
     }
 
     if (!formEmployeeNumber) {
-      return MESSAGES.ERROR_EMPLOYEE_NUMBER_REQUIRED;
+      return messages.ERROR_EMPLOYEE_NUMBER_REQUIRED;
     }
 
     return null;
@@ -233,13 +237,13 @@
         });
       } else {
         showSuccessAlert(
-          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
         );
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error saving admin');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED,
+        err instanceof Error ? err.message : messages.ERROR_SAVE_FAILED,
       );
     } finally {
       submitting = false;
@@ -250,7 +254,7 @@
   function upgradeAdmin(): void {
     if (currentEditId === null) return;
     if (!canUpgrade) {
-      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      showWarningAlert(messages.UPGRADE_UNAUTHORIZED);
       return;
     }
     upgradeAdminId = currentEditId;
@@ -262,7 +266,7 @@
   async function confirmUpgradeAdmin(): Promise<void> {
     if (upgradeAdminId === null) return;
     if (!canUpgrade) {
-      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      showWarningAlert(messages.UPGRADE_UNAUTHORIZED);
       return;
     }
     const adminId = upgradeAdminId;
@@ -273,11 +277,11 @@
     try {
       await apiUpgradeToRoot(adminId);
       await invalidateAll();
-      showSuccessAlert(MESSAGES.UPGRADE_SUCCESS);
+      showSuccessAlert(messages.UPGRADE_SUCCESS);
     } catch (err: unknown) {
       log.error({ err }, 'Error upgrading admin to root');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.UPGRADE_ERROR,
+        err instanceof Error ? err.message : messages.UPGRADE_ERROR,
       );
     } finally {
       upgradeLoading = false;
@@ -293,7 +297,7 @@
   function downgradeAdmin(): void {
     if (currentEditId === null) return;
     if (!canUpgrade) {
-      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      showWarningAlert(messages.UPGRADE_UNAUTHORIZED);
       return;
     }
     downgradeAdminId = currentEditId;
@@ -305,7 +309,7 @@
   async function confirmDowngradeAdmin(): Promise<void> {
     if (downgradeAdminId === null) return;
     if (!canUpgrade) {
-      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      showWarningAlert(messages.UPGRADE_UNAUTHORIZED);
       return;
     }
     const adminId = downgradeAdminId;
@@ -316,11 +320,11 @@
     try {
       await apiDowngradeToEmployee(adminId);
       await invalidateAll();
-      showSuccessAlert(MESSAGES.DOWNGRADE_SUCCESS);
+      showSuccessAlert(messages.DOWNGRADE_SUCCESS);
     } catch (err: unknown) {
       log.error({ err }, 'Error downgrading admin to employee');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.DOWNGRADE_ERROR,
+        err instanceof Error ? err.message : messages.DOWNGRADE_ERROR,
       );
     } finally {
       downgradeLoading = false;
@@ -342,12 +346,12 @@
 
     try {
       await apiDeleteAdmin(adminId);
-      showSuccessAlert(MESSAGES.SUCCESS_DELETED);
+      showSuccessAlert(messages.SUCCESS_DELETED);
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting admin');
-      showErrorAlert(MESSAGES.ERROR_DELETE_FAILED);
+      showErrorAlert(messages.ERROR_DELETE_FAILED);
     }
   }
 
@@ -567,7 +571,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -577,10 +581,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-users mr-2"></i>
-        {MESSAGES.PAGE_HEADING}
+        {messages.PAGE_HEADING}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <div class="mt-6 flex items-center justify-between gap-4">
@@ -599,7 +603,7 @@
             }}
           >
             <i class="fas fa-user-check"></i>
-            {MESSAGES.FILTER_ACTIVE}
+            {messages.FILTER_ACTIVE}
           </button>
           <button
             type="button"
@@ -611,7 +615,7 @@
             }}
           >
             <i class="fas fa-user-times"></i>
-            {MESSAGES.FILTER_INACTIVE}
+            {messages.FILTER_INACTIVE}
           </button>
           <button
             type="button"
@@ -623,7 +627,7 @@
             }}
           >
             <i class="fas fa-archive"></i>
-            {MESSAGES.FILTER_ARCHIVED}
+            {messages.FILTER_ARCHIVED}
           </button>
           <button
             type="button"
@@ -635,7 +639,7 @@
             }}
           >
             <i class="fas fa-users"></i>
-            {MESSAGES.FILTER_ALL}
+            {messages.FILTER_ALL}
           </button>
         </div>
 
@@ -653,7 +657,7 @@
               type="search"
               id="admin-search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
               oninput={handleSearchInput}
@@ -692,7 +696,7 @@
           <button
             type="button"
             class="btn btn-primary mt-4"
-            onclick={() => invalidateAll()}>{MESSAGES.BTN_RETRY}</button
+            onclick={() => invalidateAll()}>{messages.BTN_RETRY}</button
           >
         </div>
       {:else if filteredAdmins.length === 0}
@@ -703,15 +707,15 @@
           <div class="empty-state__icon">
             <i class="fas fa-users"></i>
           </div>
-          <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
-          <p class="empty-state__description">{MESSAGES.EMPTY_DESCRIPTION}</p>
+          <h3 class="empty-state__title">{messages.EMPTY_TITLE}</h3>
+          <p class="empty-state__description">{messages.EMPTY_DESCRIPTION}</p>
           <button
             type="button"
             class="btn btn-primary"
             onclick={openAddModal}
           >
             <i class="fas fa-plus"></i>
-            {MESSAGES.BTN_ADD_ADMIN}
+            {messages.BTN_ADD_ADMIN}
           </button>
         </div>
       {:else}
@@ -723,25 +727,26 @@
             >
               <thead>
                 <tr>
-                  <th scope="col">{MESSAGES.TH_ID}</th>
-                  <th scope="col">{MESSAGES.TH_NAME}</th>
-                  <th scope="col">{MESSAGES.TH_EMAIL}</th>
-                  <th scope="col">{MESSAGES.TH_EMPLOYEE_NUMBER}</th>
-                  <th scope="col">{MESSAGES.TH_POSITION}</th>
-                  <th scope="col">{MESSAGES.TH_STATUS}</th>
-                  <th scope="col">{MESSAGES.TH_AREAS}</th>
-                  <th scope="col">{MESSAGES.TH_DEPARTMENTS}</th>
-                  <th scope="col">{MESSAGES.TH_TEAMS}</th>
-                  <th scope="col">{MESSAGES.TH_AVAILABILITY}</th>
-                  <th scope="col">{MESSAGES.TH_PLANNED}</th>
-                  <th scope="col">{MESSAGES.TH_NOTES}</th>
-                  <th scope="col">{MESSAGES.TH_ACTIONS}</th>
+                  <th scope="col">{messages.TH_ID}</th>
+                  <th scope="col">{messages.TH_NAME}</th>
+                  <th scope="col">{messages.TH_EMAIL}</th>
+                  <th scope="col">{messages.TH_EMPLOYEE_NUMBER}</th>
+                  <th scope="col">{messages.TH_POSITION}</th>
+                  <th scope="col">{messages.TH_STATUS}</th>
+                  <th scope="col">{messages.TH_AREAS}</th>
+                  <th scope="col">{messages.TH_DEPARTMENTS}</th>
+                  <th scope="col">{messages.TH_TEAMS}</th>
+                  <th scope="col">{messages.TH_AVAILABILITY}</th>
+                  <th scope="col">{messages.TH_PLANNED}</th>
+                  <th scope="col">{messages.TH_NOTES}</th>
+                  <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>
               <tbody>
                 {#each filteredAdmins as admin (admin.id)}
                   <AdminTableRow
                     {admin}
+                    {labels}
                     onedit={openEditModal}
                     onavailability={openAvailabilityModal}
                     onpermission={navigateToPermissionPage}
@@ -775,6 +780,7 @@
   {allAreas}
   {allDepartments}
   {submitting}
+  {messages}
   bind:formFirstName
   bind:formLastName
   bind:formEmail

@@ -23,7 +23,7 @@
     fetchTeamMembers,
     fetchTeamAssets,
   } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages } from './_lib/constants';
   import { applyAllFilters } from './_lib/filters';
   import TeamDeleteModals from './_lib/TeamDeleteModals.svelte';
   import TeamFormModal from './_lib/TeamFormModal.svelte';
@@ -60,6 +60,10 @@
   const allAdmins = $derived<Admin[]>(data.admins);
   const allEmployees = $derived<TeamMember[]>(data.employees);
   const allAssets = $derived<Asset[]>(data.assets);
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -103,7 +107,7 @@
 
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
   );
 
   // Derived: Filtered teams based on current filter/search state
@@ -149,11 +153,13 @@
       closeTeamModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(isEditMode ? 'Team aktualisiert' : 'Team erstellt');
+      showSuccessAlert(
+        isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
+      );
     } catch (err: unknown) {
       log.error({ err }, 'Error saving team');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.ERROR_SAVING,
+        err instanceof Error ? err.message : messages.ERROR_SAVING,
       );
     } finally {
       submitting = false;
@@ -173,7 +179,7 @@
         if (deleteTeamId === teamId) deleteTeamId = null;
         // Level 3: Trigger SSR refetch
         await invalidateAll();
-        showSuccessAlert('Team gelöscht');
+        showSuccessAlert(messages.SUCCESS_DELETED);
       } else if (result.hasMembers) {
         forceDeleteMemberCount = result.memberCount;
         showDeleteModal = false;
@@ -181,7 +187,7 @@
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting team');
-      showErrorAlert(MESSAGES.ERROR_DELETING);
+      showErrorAlert(messages.ERROR_DELETING);
     }
   }
 
@@ -196,10 +202,10 @@
       if (deleteTeamId === teamId) deleteTeamId = null;
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert('Team gelöscht');
+      showSuccessAlert(messages.SUCCESS_DELETED);
     } catch (err: unknown) {
       log.error({ err }, 'Error force deleting team');
-      showErrorAlert(MESSAGES.ERROR_DELETING);
+      showErrorAlert(messages.ERROR_DELETING);
     }
   }
 
@@ -346,7 +352,7 @@
 </script>
 
 <svelte:head>
-  <title>Teamverwaltung - Assixx</title>
+  <title>{messages.PAGE_TITLE} - Assixx</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -356,10 +362,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-users-cog mr-2"></i>
-        Teamübersicht
+        {messages.PAGE_TITLE}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        Alle Teams verwalten und bearbeiten
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <div class="mt-6 flex items-center justify-between gap-4">
@@ -372,7 +378,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
-            title="Aktive Teams"
+            title={messages.FILTER_ACTIVE_TITLE}
             onclick={() => {
               handleStatusToggle('active');
             }}
@@ -384,7 +390,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
-            title="Inaktive Teams"
+            title={messages.FILTER_INACTIVE_TITLE}
             onclick={() => {
               handleStatusToggle('inactive');
             }}
@@ -396,7 +402,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
-            title="Archivierte Teams"
+            title={messages.FILTER_ARCHIVED_TITLE}
             onclick={() => {
               handleStatusToggle('archived');
             }}
@@ -408,7 +414,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
-            title="Alle Teams"
+            title={messages.FILTER_ALL_TITLE}
             onclick={() => {
               handleStatusToggle('all');
             }}
@@ -432,7 +438,7 @@
               type="search"
               id="team-search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
               oninput={handleSearchInput}
@@ -453,7 +459,7 @@
           >
             {#if currentSearchQuery && filteredTeams.length === 0}
               <div class="search-input__no-results">
-                {MESSAGES.SEARCH_NO_RESULTS} "{currentSearchQuery}"
+                {messages.SEARCH_NO_RESULTS} "{currentSearchQuery}"
               </div>
             {:else if currentSearchQuery}
               {#each filteredTeams.slice(0, 5) as team (team.id)}
@@ -505,15 +511,15 @@
           <div class="empty-state__icon">
             <i class="fas fa-users-cog"></i>
           </div>
-          <h3 class="empty-state__title">{MESSAGES.NO_TEAMS_FOUND}</h3>
-          <p class="empty-state__description">{MESSAGES.CREATE_FIRST_TEAM}</p>
+          <h3 class="empty-state__title">{messages.NO_TEAMS_FOUND}</h3>
+          <p class="empty-state__description">{messages.CREATE_FIRST_TEAM}</p>
           <button
             type="button"
             class="btn btn-primary"
             onclick={openAddModal}
           >
             <i class="fas fa-plus"></i>
-            Team hinzufügen
+            {messages.BTN_ADD}
           </button>
         </div>
       {:else}
@@ -527,10 +533,10 @@
                 <tr>
                   <th scope="col">ID</th>
                   <th scope="col">Name</th>
-                  <th scope="col">Abteilung</th>
-                  <th scope="col">Team-Lead</th>
+                  <th scope="col">{messages.TH_DEPARTMENT}</th>
+                  <th scope="col">Leiter</th>
                   <th scope="col">Mitglieder</th>
-                  <th scope="col">Anlagen</th>
+                  <th scope="col">{messages.TH_ASSETS}</th>
                   <th scope="col">Status</th>
                   <th scope="col">Erstellt am</th>
                   <th scope="col">Aktionen</th>
@@ -538,9 +544,13 @@
               </thead>
               <tbody>
                 {#each filteredTeams as team (team.id)}
-                  {@const deptBadge = getDepartmentBadge(team, allDepartments)}
+                  {@const deptBadge = getDepartmentBadge(
+                    team,
+                    allDepartments,
+                    labels,
+                  )}
                   {@const membersBadge = getMembersBadge(team)}
-                  {@const assetsBadge = getAssetsBadge(team)}
+                  {@const assetsBadge = getAssetsBadge(team, labels)}
                   <tr>
                     <td><code class="text-muted">{team.id}</code></td>
                     <td>
@@ -589,7 +599,7 @@
                           type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
-                          aria-label="Team bearbeiten"
+                          aria-label="Bearbeiten"
                           onclick={() => void openEditModal(team.id)}
                         >
                           <i class="fas fa-edit"></i>
@@ -598,7 +608,7 @@
                           type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
-                          aria-label="Team löschen"
+                          aria-label="Löschen"
                           onclick={() => {
                             openDeleteModal(team.id);
                           }}
@@ -623,7 +633,7 @@
   type="button"
   class="btn-float"
   onclick={openAddModal}
-  aria-label="Team hinzufügen"
+  aria-label="Hinzufügen"
 >
   <i class="fas fa-plus"></i>
 </button>
@@ -633,6 +643,7 @@
   <TeamFormModal
     {isEditMode}
     {modalTitle}
+    {labels}
     {formName}
     {formDescription}
     {formDepartmentId}

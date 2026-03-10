@@ -43,39 +43,20 @@ export function createRegisterPayload(formData: {
   lastName: string;
   phone: string;
   countryCode: string;
-  street: string;
-  houseNumber: string;
-  postalCode: string;
-  city: string;
-  addressCountryCode: string;
   password: string;
-  selectedPlan: string;
 }): RegisterPayload {
   // Format phone: combine country code + digits only
   const phoneDigits = formData.phone.replace(/\s/g, '');
   const fullPhone = `${formData.countryCode}${phoneDigits}`;
 
   return {
-    // Company information
     companyName: formData.companyName,
     subdomain: formData.subdomain,
     email: formData.email,
     phone: fullPhone,
-
-    // Structured address
-    street: formData.street,
-    houseNumber: formData.houseNumber,
-    postalCode: formData.postalCode,
-    city: formData.city,
-    countryCode: formData.addressCountryCode,
-
-    // Admin user information
     adminEmail: formData.email,
     adminPassword: formData.password,
     adminFirstName: formData.firstName,
     adminLastName: formData.lastName,
-
-    // Subscription plan
-    plan: formData.selectedPlan as RegisterPayload['plan'],
   };
 }

@@ -12,7 +12,7 @@ import {
   isSessionExpiredError,
 } from '$lib/utils/session-expired.js';
 
-import { API_ENDPOINTS, DEPENDENCY_LABELS } from './constants';
+import { API_ENDPOINTS } from './constants';
 
 import type {
   Department,
@@ -104,12 +104,15 @@ function extractArray<T>(response: unknown): T[] {
 }
 
 /**
- * Build dependency message from details
+ * Build dependency message from details using dynamic labels
  */
-export function buildDependencyMessage(details: DependencyDetails): string {
-  const deps = Object.entries(DEPENDENCY_LABELS);
+export function buildDependencyMessage(
+  details: DependencyDetails,
+  dependencyLabels: Record<string, string>,
+): string {
+  const deps = Object.entries(dependencyLabels);
 
-  const messages = deps
+  const parts = deps
     .map(([key, label]) => {
       const count = details[key as keyof DependencyDetails];
       return typeof count === 'number' && count > 0 ?
@@ -118,7 +121,7 @@ export function buildDependencyMessage(details: DependencyDetails): string {
     })
     .filter((msg): msg is string => msg !== null);
 
-  return messages.join(', ');
+  return parts.join(', ');
 }
 
 // =============================================================================
@@ -166,8 +169,7 @@ export async function loadAreas(): Promise<{
     log.error({ err }, 'Error loading areas');
     return {
       areas: [],
-      error:
-        err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -200,10 +202,7 @@ export async function loadDepartmentLeads(): Promise<{
     log.error({ err }, 'Error loading department leads');
     return {
       users: [],
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Laden der Abteilungsleiter',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }

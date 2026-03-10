@@ -2,6 +2,10 @@
 // MANAGE TEAMS - UTILITY FUNCTIONS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
 import { escapeHtml } from '$lib/utils/sanitize-html';
 
 import {
@@ -52,12 +56,13 @@ const BADGE_CLASS_SECONDARY = 'badge--secondary';
 export function getDepartmentBadge(
   team: Team,
   allDepartments: Department[],
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): BadgeInfo {
   if (team.departmentId === undefined) {
     return {
       class: BADGE_CLASS_SECONDARY,
-      text: 'Keine Abteilung',
-      title: 'Keine Abteilung zugewiesen',
+      text: `Keine ${labels.department}`,
+      title: `Keine ${labels.department} zugewiesen`,
     };
   }
 
@@ -68,7 +73,6 @@ export function getDepartmentBadge(
   const safeDeptName = escapeHtml(deptName);
 
   if (areaName !== undefined && areaName !== '') {
-    // Show hierarchy: Team → Abteilung → Bereich
     const safeAreaName = escapeHtml(areaName);
     const tooltip = `${safeDeptName} (gehört zu: ${safeAreaName})`;
     return {
@@ -107,7 +111,10 @@ export function getMembersBadge(team: Team): BadgeInfo {
 }
 
 /** Get assets badge info for team table (count with tooltip listing names) */
-export function getAssetsBadge(team: Team): BadgeInfo {
+export function getAssetsBadge(
+  team: Team,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): BadgeInfo {
   const count = Number(team.assetCount ?? 0);
   const names = team.assetNames ?? '';
 
@@ -115,13 +122,13 @@ export function getAssetsBadge(team: Team): BadgeInfo {
     return {
       class: BADGE_CLASS_SECONDARY,
       text: 'Keine',
-      title: 'Keine Anlagen zugewiesen',
+      title: `Keine ${labels.asset} zugewiesen`,
     };
   }
 
   // SECURITY FIX: Escape user-provided names to prevent XSS
   const safeNames = escapeHtml(names);
-  const label = count === 1 ? 'Anlage' : 'Anlagen';
+  const label = labels.asset;
 
   // Show names directly for 1-2 assets, count for 3+
   if (count <= 2) {
@@ -179,8 +186,9 @@ export function getMembersDisplayText(
 export function getAssetsDisplayText(
   assetIds: number[],
   allAssets: Asset[],
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): string {
-  if (assetIds.length === 0) return MESSAGES.NO_MACHINES;
+  if (assetIds.length === 0) return `Keine ${labels.asset} zugewiesen`;
 
   const names = assetIds
     .map((id) => {
@@ -190,17 +198,19 @@ export function getAssetsDisplayText(
     .filter(Boolean);
 
   if (names.length <= 2) return names.join(', ');
-  return `${names.length} Anlagen ausgewählt`;
+  return `${names.length} ${labels.asset} ausgewählt`;
 }
 
 /** Get department display text */
 export function getDepartmentDisplayText(
   departmentId: number | null,
   allDepartments: Department[],
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): string {
-  if (departmentId === null) return MESSAGES.NO_DEPARTMENT;
+  const fallback = `Keine ${labels.department}`;
+  if (departmentId === null) return fallback;
   const dept = allDepartments.find((d) => d.id === departmentId);
-  return dept?.name ?? MESSAGES.NO_DEPARTMENT;
+  return dept?.name ?? fallback;
 }
 
 /** Get leader display text */

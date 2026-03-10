@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { MESSAGES } from './constants';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -7,6 +6,7 @@
     getSelectedLeadName,
   } from './utils';
 
+  import type { DepartmentMessages } from './constants';
   import type { FormIsActiveStatus, Area, AdminUser } from './types';
 
   // Props with bindable for two-way binding
@@ -14,6 +14,7 @@
     show: boolean;
     isEditMode: boolean;
     modalTitle: string;
+    messages: DepartmentMessages;
     formName: string;
     formDescription: string;
     formAreaId: number | null;
@@ -28,7 +29,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formIsActive = $bindable(), allAreas, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formIsActive = $bindable(), allAreas, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
@@ -179,7 +180,7 @@
             class="form-field__label"
             for="department-name"
           >
-            {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
+            {messages.LABEL_NAME} <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -194,7 +195,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="department-description">{MESSAGES.LABEL_DESCRIPTION}</label
+            for="department-description">{messages.LABEL_DESCRIPTION}</label
           >
           <textarea
             id="department-description"
@@ -208,7 +209,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="area-hidden">{MESSAGES.LABEL_AREA}</label
+            for="area-hidden">{messages.LABEL_AREA}</label
           >
           <input
             type="hidden"
@@ -239,7 +240,7 @@
                   selectArea(null);
                 }}
               >
-                {MESSAGES.NO_AREA}
+                {messages.NO_AREA}
               </button>
               {#each allAreas as area (area.id)}
                 <button
@@ -262,7 +263,7 @@
             for="lead-hidden"
           >
             <i class="fas fa-user-tie mr-1"></i>
-            {MESSAGES.LABEL_DEPARTMENT_LEAD}
+            {messages.LABEL_DEPARTMENT_LEAD}
           </label>
           <input
             type="hidden"
@@ -293,7 +294,7 @@
                   selectLead(null);
                 }}
               >
-                {MESSAGES.NO_DEPARTMENT_LEAD}
+                {messages.NO_DEPARTMENT_LEAD}
               </button>
               {#each allDepartmentLeads as lead (lead.id)}
                 <button
@@ -311,7 +312,7 @@
           </div>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {MESSAGES.DEPARTMENT_LEAD_HINT}
+            {messages.DEPARTMENT_LEAD_HINT}
           </span>
         </div>
 
@@ -324,7 +325,7 @@
               class="form-field__label"
               for="status-hidden"
             >
-              {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
+              {messages.LABEL_STATUS} <span class="text-red-500">*</span>
             </label>
             <input
               type="hidden"
@@ -382,7 +383,7 @@
             <span
               class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
-              {MESSAGES.STATUS_HINT}
+              {messages.STATUS_HINT}
             </span>
           </div>
         {/if}
@@ -392,7 +393,7 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
+          onclick={onclose}>{messages.BTN_CANCEL}</button
         >
         <button
           type="submit"
@@ -401,7 +402,7 @@
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
             ></span>{/if}
-          {MESSAGES.BTN_SAVE}
+          {messages.BTN_SAVE}
         </button>
       </div>
     </form>

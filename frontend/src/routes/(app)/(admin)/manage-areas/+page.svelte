@@ -23,7 +23,7 @@
     forceDeleteArea as apiForceDeleteArea,
   } from './_lib/api';
   import AreaModal from './_lib/AreaModal.svelte';
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { filterByStatus, filterBySearch } from './_lib/filters';
   import {
@@ -57,6 +57,10 @@
   const areaLeads = $derived<AdminUser[]>(data.areaLeads);
   const allDepartments = $derived<Department[]>(data.departments);
   const allHalls = $derived<Hall[]>(data.halls);
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -96,7 +100,7 @@
 
   const isEditMode = $derived(editingAreaId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
   );
   // Filter areas by status
   const statusFilteredAreas = $derived.by(() =>
@@ -209,14 +213,14 @@
         ]);
 
         showSuccessAlert(
-          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
         );
         closeAreaModal();
         await invalidateAll();
       } else if (result.success) {
         // Fallback: area saved but no ID returned (shouldn't happen)
         showSuccessAlert(
-          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
         );
         closeAreaModal();
         await invalidateAll();
@@ -235,13 +239,13 @@
     const result = await apiDeleteArea(deletingAreaId);
 
     if (result.success) {
-      showSuccessAlert(MESSAGES.SUCCESS_DELETED);
+      showSuccessAlert(messages.SUCCESS_DELETED);
       closeDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } else if (result.hasDependencies === true) {
       forceDeleteMessage =
-        result.dependencyMessage ?? MESSAGES.FORCE_DELETE_DEFAULT_MESSAGE;
+        result.dependencyMessage ?? messages.FORCE_DELETE_DEFAULT_MESSAGE;
       showDeleteModal = false;
       showForceDeleteModal = true;
     } else if (result.error !== null) {
@@ -256,7 +260,7 @@
     const result = await apiForceDeleteArea(deletingAreaId);
 
     if (result.success) {
-      showSuccessAlert(MESSAGES.SUCCESS_DELETED);
+      showSuccessAlert(messages.SUCCESS_DELETED);
       closeForceDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
@@ -323,10 +327,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-map-marked-alt mr-2"></i>
-        {MESSAGES.PAGE_TITLE}
+        {messages.PAGE_TITLE}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <!-- Controls Section -->
@@ -340,10 +344,10 @@
             onclick={() => {
               setStatusFilter('active');
             }}
-            title="Aktive Bereiche"
+            title={messages.FILTER_ACTIVE_TITLE}
           >
             <i class="fas fa-check"></i>
-            {MESSAGES.FILTER_ACTIVE}
+            {messages.FILTER_ACTIVE}
           </button>
           <button
             type="button"
@@ -352,10 +356,10 @@
             onclick={() => {
               setStatusFilter('inactive');
             }}
-            title="Inaktive Bereiche"
+            title={messages.FILTER_INACTIVE_TITLE}
           >
             <i class="fas fa-times"></i>
-            {MESSAGES.FILTER_INACTIVE}
+            {messages.FILTER_INACTIVE}
           </button>
           <button
             type="button"
@@ -364,10 +368,10 @@
             onclick={() => {
               setStatusFilter('archived');
             }}
-            title="Archivierte Bereiche"
+            title={messages.FILTER_ARCHIVED_TITLE}
           >
             <i class="fas fa-archive"></i>
-            {MESSAGES.FILTER_ARCHIVED}
+            {messages.FILTER_ARCHIVED}
           </button>
           <button
             type="button"
@@ -376,10 +380,10 @@
             onclick={() => {
               setStatusFilter('all');
             }}
-            title="Alle Bereiche"
+            title={messages.FILTER_ALL_TITLE}
           >
             <i class="fas fa-map-marked-alt"></i>
-            {MESSAGES.FILTER_ALL}
+            {messages.FILTER_ALL}
           </button>
         </div>
 
@@ -393,7 +397,7 @@
             <input
               type="search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               bind:value={searchQuery}
               onfocus={handleSearchFocus}
@@ -416,7 +420,7 @@
             <div class="search-input__results">
               {#if searchResults.length === 0}
                 <div class="search-input__no-results">
-                  {MESSAGES.SEARCH_NO_RESULTS} "{searchQuery}"
+                  {messages.SEARCH_NO_RESULTS} "{searchQuery}"
                 </div>
               {:else}
                 {#each searchResults as area (area.id)}
@@ -447,7 +451,7 @@
                 {/each}
                 {#if hasMoreResults}
                   <div class="search-result-item__more py-2">
-                    {MESSAGES.moreResults(filteredAreas.length - 5)}
+                    {messages.moreResults(filteredAreas.length - 5)}
                   </div>
                 {/if}
               {/if}
@@ -464,15 +468,15 @@
           <div class="empty-state__icon">
             <i class="fas fa-map-marked-alt"></i>
           </div>
-          <h3 class="empty-state__title">{MESSAGES.NO_AREAS_FOUND}</h3>
-          <p class="empty-state__description">{MESSAGES.CREATE_FIRST_AREA}</p>
+          <h3 class="empty-state__title">{messages.NO_AREAS_FOUND}</h3>
+          <p class="empty-state__description">{messages.CREATE_FIRST_AREA}</p>
           <button
             type="button"
             class="btn btn-primary"
             onclick={openAddModal}
           >
             <i class="fas fa-plus"></i>
-            {MESSAGES.BTN_ADD_AREA}
+            {messages.BTN_ADD_AREA}
           </button>
         </div>
       {:else}
@@ -482,15 +486,15 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>{MESSAGES.TH_NAME}</th>
-                <th>{MESSAGES.TH_DESCRIPTION}</th>
-                <th>{MESSAGES.TH_AREA_LEAD}</th>
-                <th>{MESSAGES.TH_TYPE}</th>
-                <th class="text-center">{MESSAGES.TH_CAPACITY}</th>
-                <th>{MESSAGES.TH_HALLS}</th>
-                <th>{MESSAGES.TH_DEPARTMENTS}</th>
-                <th>{MESSAGES.TH_STATUS}</th>
-                <th>{MESSAGES.TH_ACTIONS}</th>
+                <th>{messages.TH_NAME}</th>
+                <th>{messages.TH_DESCRIPTION}</th>
+                <th>{messages.TH_AREA_LEAD}</th>
+                <th>{messages.TH_TYPE}</th>
+                <th class="text-center">{messages.TH_CAPACITY}</th>
+                <th>{messages.TH_HALLS}</th>
+                <th>{messages.TH_DEPARTMENTS}</th>
+                <th>{messages.TH_STATUS}</th>
+                <th>{messages.TH_ACTIONS}</th>
               </tr>
             </thead>
             <tbody>
@@ -522,14 +526,13 @@
                     {#if getHallIdsForArea(area.id, allHalls).length === 0}
                       <span
                         class="badge badge--secondary"
-                        title="Keine Hallen zugeordnet"
-                        >{MESSAGES.NO_HALLS}</span
+                        title="Keine zugeordnet">{messages.NO_HALLS}</span
                       >
                     {:else}
                       <span class="badge badge--info">
                         {getHallIdsForArea(area.id, allHalls).length === 1 ?
-                          MESSAGES.ONE_HALL
-                        : MESSAGES.multipleHalls(
+                          messages.ONE_HALL
+                        : messages.multipleHalls(
                             getHallIdsForArea(area.id, allHalls).length,
                           )}
                       </span>
@@ -539,19 +542,16 @@
                     {#if Number(area.departmentCount ?? 0) === 0}
                       <span
                         class="badge badge--secondary"
-                        title="Keine Abteilungen zugeordnet"
-                        >{MESSAGES.NO_DEPARTMENTS}</span
+                        title="Keine zugeordnet">{messages.NO_DEPARTMENTS}</span
                       >
                     {:else}
                       <span
                         class="badge badge--info"
                         title={area.departmentNames ?? ''}
                       >
-                        {Number(area.departmentCount) === 1 ?
-                          MESSAGES.ONE_DEPARTMENT
-                        : MESSAGES.multipleDepartments(
-                            Number(area.departmentCount ?? 0),
-                          )}
+                        {messages.multipleDepartments(
+                          Number(area.departmentCount ?? 0),
+                        )}
                       </span>
                     {/if}
                   </td>
@@ -566,7 +566,7 @@
                         type="button"
                         class="action-icon action-icon--edit"
                         title="Bearbeiten"
-                        aria-label="Bereich bearbeiten"
+                        aria-label="Bearbeiten"
                         onclick={() => {
                           openEditModal(area.id);
                         }}
@@ -577,7 +577,7 @@
                         type="button"
                         class="action-icon action-icon--delete"
                         title="Löschen"
-                        aria-label="Bereich löschen"
+                        aria-label="Löschen"
                         onclick={() => {
                           openDeleteModal(area.id);
                         }}
@@ -601,7 +601,7 @@
   type="button"
   class="btn-float"
   onclick={openAddModal}
-  aria-label="Bereich hinzufügen"
+  aria-label="Hinzufügen"
 >
   <i class="fas fa-plus"></i>
 </button>
@@ -611,6 +611,7 @@
   show={showAreaModal}
   {isEditMode}
   {modalTitle}
+  {messages}
   bind:formName
   bind:formDescription
   bind:formAreaLeadId
@@ -632,6 +633,7 @@
   show={showDeleteModal}
   {showForceDeleteModal}
   {forceDeleteMessage}
+  {messages}
   oncancel={closeDeleteModal}
   onconfirm={deleteArea}
   onCloseForceDelete={closeForceDeleteModal}

@@ -3,11 +3,8 @@
 
   import { resolve } from '$app/paths';
 
-  import {
-    isDark,
-    forceDark,
-    restoreUserTheme,
-  } from '$lib/stores/theme.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+  import { isDark } from '$lib/stores/theme.svelte';
 
   import FeaturesGrid from './_lib/FeaturesGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
@@ -16,13 +13,11 @@
   // Modal state
   let showSignupModal: boolean = $state(false);
 
-  // Always-dark page + body class for landing page (disables global gradient)
+  // Body class for landing page (disables global gradient)
   onMount(() => {
-    forceDark();
     document.body.classList.add('landing-page-active');
     return () => {
       document.body.classList.remove('landing-page-active');
-      restoreUserTheme();
     };
   });
 
@@ -72,8 +67,9 @@
         <a href={resolve('/login', {})}>Anmelden</a>
         <a
           href={resolve('/signup', {})}
-          class="btn btn-primary-first">Registrieren</a
+          class="btn btn-index">Registrieren</a
         >
+        <ThemeToggle />
       </div>
     </nav>
   </header>
@@ -87,7 +83,7 @@
     </p>
     <a
       href={resolve('/signup', {})}
-      class="btn btn-primary-first">Jetzt registrieren</a
+      class="btn btn-index">Jetzt registrieren</a
     >
   </section>
 
@@ -253,6 +249,11 @@
       color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
+  /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
+  .hero :global(.btn) {
+    color: var(--color-white);
+  }
+
   /* Footer */
   .footer {
     backdrop-filter: blur(20px);
@@ -307,6 +308,23 @@
   .btn-cancel--full {
     margin-top: 1rem;
     width: 100%;
+  }
+
+  /* Light mode overrides */
+  :global(html:not(.dark)) .nav-links a:hover {
+    color: var(--color-primary);
+  }
+
+  :global(html:not(.dark)) .footer {
+    border-color: color-mix(in oklch, var(--color-black) 10%, transparent);
+    background: color-mix(in oklch, var(--color-white) 80%, transparent);
+    box-shadow: 0 -8px 32px
+      color-mix(in oklch, var(--color-black) 8%, transparent);
+  }
+
+  :global(html:not(.dark)) .modal-content {
+    border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
+    background: color-mix(in oklch, var(--color-white) 90%, transparent);
   }
 
   /* Responsive */

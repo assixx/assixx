@@ -11,8 +11,10 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { createLogger } from '$lib/utils/logger';
 
+import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 import type { LayoutServerLoad } from './$types';
 
 const log = createLogger('AppLayout');
@@ -163,6 +165,29 @@ async function parseActiveFeatures(
   }
 }
 
+/** Parse hierarchy labels from response (graceful fallback to defaults) */
+async function parseHierarchyLabels(
+  response: Response | null,
+): Promise<HierarchyLabels> {
+  if (response?.ok !== true) return DEFAULT_HIERARCHY_LABELS;
+  try {
+    const json = (await response.json()) as ApiResponse<HierarchyLabels>;
+    const data = json.data;
+    if (
+      data !== undefined &&
+      typeof data.area === 'string' &&
+      typeof data.department === 'string' &&
+      typeof data.team === 'string' &&
+      typeof data.asset === 'string'
+    ) {
+      return data;
+    }
+    return DEFAULT_HIERARCHY_LABELS;
+  } catch {
+    return DEFAULT_HIERARCHY_LABELS;
+  }
+}
+
 /** Clear auth cookies and redirect to login */
 function clearAuthAndRedirect(
   cookies: Parameters<LayoutServerLoad>[0]['cookies'],
@@ -180,14 +205,16 @@ const UNAUTHENTICATED_RESPONSE = {
   dashboardCounts: null,
   theme: null,
   activeFeatures: [] as string[],
+  hierarchyLabels: DEFAULT_HIERARCHY_LABELS,
 } as const;
 
-/** Build authenticated response from user data, counts, theme, and features */
+/** Build authenticated response from user data, counts, theme, features, and labels */
 async function buildAuthenticatedResponse(
   userData: UserData,
   countsResponse: Response | null,
   themeResponse: Response | null,
   featuresResponse: Response | null,
+  labelsResponse: Response | null,
 ) {
   return {
     user: mapUserData(userData),
@@ -196,28 +223,36 @@ async function buildAuthenticatedResponse(
     dashboardCounts: await parseDashboardCounts(countsResponse),
     theme: await parseThemeSetting(themeResponse),
     activeFeatures: await parseActiveFeatures(featuresResponse),
+    hierarchyLabels: await parseHierarchyLabels(labelsResponse),
   };
 }
 
-/** Fetch dashboard counts, theme, and active features in parallel (when RBAC user is available) */
-async function fetchCountsThemeAndFeatures(
+/** Fetch dashboard counts, theme, active features, and hierarchy labels in parallel (when RBAC user is available) */
+async function fetchCountsThemeFeaturesAndLabels(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<{
   countsResponse: Response | null;
   themeResponse: Response | null;
   featuresResponse: Response | null;
+  labelsResponse: Response | null;
 }> {
-  const [countsResponse, themeResponse, featuresResponse] = await Promise.all([
-    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(() => null),
-  ]);
-  return { countsResponse, themeResponse, featuresResponse };
+  const [countsResponse, themeResponse, featuresResponse, labelsResponse] =
+    await Promise.all([
+      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(
+        () => null,
+      ),
+      fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
+        () => null,
+      ),
+    ]);
+  return { countsResponse, themeResponse, featuresResponse, labelsResponse };
 }
 
-/** Fetch user data, dashboard counts, theme, and active features in parallel */
-async function fetchUserCountsThemeAndFeatures(
+/** Fetch user data, dashboard counts, theme, active features, and hierarchy labels in parallel */
+async function fetchUserCountsThemeFeaturesAndLabels(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<{
@@ -225,17 +260,30 @@ async function fetchUserCountsThemeAndFeatures(
   countsResponse: Response | null;
   themeResponse: Response | null;
   featuresResponse: Response | null;
+  labelsResponse: Response | null;
 }> {
-  const [userResponse, countsResponse, themeResponse, featuresResponse] =
-    await Promise.all([
-      fetchFn(`${API_BASE}/users/me`, { headers }),
-      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(
-        () => null,
-      ),
-    ]);
-  return { userResponse, countsResponse, themeResponse, featuresResponse };
+  const [
+    userResponse,
+    countsResponse,
+    themeResponse,
+    featuresResponse,
+    labelsResponse,
+  ] = await Promise.all([
+    fetchFn(`${API_BASE}/users/me`, { headers }),
+    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
+      () => null,
+    ),
+  ]);
+  return {
+    userResponse,
+    countsResponse,
+    themeResponse,
+    featuresResponse,
+    labelsResponse,
+  };
 }
 
 /**
@@ -277,16 +325,16 @@ export const load: LayoutServerLoad = async ({
   const rbacUser = locals.user as UserData | undefined;
 
   if (rbacUser !== undefined) {
-    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme + features in parallel
+    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, features + labels in parallel
     const fetchStart = performance.now();
-    const { countsResponse, themeResponse, featuresResponse } =
-      await fetchCountsThemeAndFeatures(fetch, headers);
+    const { countsResponse, themeResponse, featuresResponse, labelsResponse } =
+      await fetchCountsThemeFeaturesAndLabels(fetch, headers);
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
     log.debug(
       { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /features fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
+      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /features + /labels fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
     );
 
     return await buildAuthenticatedResponse(
@@ -294,6 +342,7 @@ export const load: LayoutServerLoad = async ({
       countsResponse,
       themeResponse,
       featuresResponse,
+      labelsResponse,
     );
   }
 
@@ -320,8 +369,13 @@ async function loadUserWithFetch(
   pathname: string,
 ) {
   const fetchStart = performance.now();
-  const { userResponse, countsResponse, themeResponse, featuresResponse } =
-    await fetchUserCountsThemeAndFeatures(fetchFn, headers);
+  const {
+    userResponse,
+    countsResponse,
+    themeResponse,
+    featuresResponse,
+    labelsResponse,
+  } = await fetchUserCountsThemeFeaturesAndLabels(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
   if (!userResponse.ok) {
@@ -340,7 +394,7 @@ async function loadUserWithFetch(
   const totalTime = Math.round(performance.now() - startTime);
   log.debug(
     { fetchTime, totalTime, path: pathname },
-    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /features fetched (${fetchTime}ms, total: ${totalTime}ms)`,
+    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /features + /labels fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 
   return await buildAuthenticatedResponse(
@@ -348,5 +402,6 @@ async function loadUserWithFetch(
     countsResponse,
     themeResponse,
     featuresResponse,
+    labelsResponse,
   );
 }

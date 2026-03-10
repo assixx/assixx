@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
-  import { MESSAGES } from './constants';
+  import { createMessages } from './constants';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -23,6 +27,7 @@
   interface Props {
     isEditMode: boolean;
     modalTitle: string;
+    labels?: HierarchyLabels;
     formName: string;
     formDescription: string;
     formDepartmentId: number | null;
@@ -51,6 +56,7 @@
   const {
     isEditMode,
     modalTitle,
+    labels = DEFAULT_HIERARCHY_LABELS,
     formName,
     formDescription,
     formDepartmentId,
@@ -66,6 +72,8 @@
     onclose,
     onsubmit,
   }: Props = $props();
+
+  const messages = $derived(createMessages(labels));
 
   // Local form state - initialize with defaults, sync via $effect
   let localName = $state('');
@@ -258,7 +266,7 @@
       <div class="form-field">
         <label
           class="form-field__label"
-          for="team-department">Abteilung</label
+          for="team-department">{messages.LABEL_DEPARTMENT}</label
         >
         <div
           class="dropdown"
@@ -274,6 +282,7 @@
               >{getDepartmentDisplayText(
                 localDepartmentId,
                 allDepartments,
+                labels,
               )}</span
             >
             <i class="fas fa-chevron-down"></i>
@@ -289,7 +298,7 @@
                 selectDepartment(null);
               }}
             >
-              {MESSAGES.NO_DEPARTMENT}
+              {messages.NO_DEPARTMENT}
             </button>
             {#each allDepartments as dept (dept.id)}
               <button
@@ -309,7 +318,7 @@
       <div class="form-field">
         <label
           class="form-field__label"
-          for="team-lead">Team-Leiter</label
+          for="team-lead">Leiter</label
         >
         <div
           class="dropdown"
@@ -335,7 +344,7 @@
                 selectLeader(null);
               }}
             >
-              {MESSAGES.NO_LEADER}
+              {messages.NO_LEADER}
             </button>
             {#each allAdmins as admin (admin.id)}
               <button
@@ -356,7 +365,7 @@
       <div class="form-field">
         <label
           class="form-field__label"
-          for="team-members">Team-Mitglieder</label
+          for="team-members">Mitglieder</label
         >
         <div
           class="dropdown"
@@ -400,7 +409,7 @@
             {/each}
             {#if allEmployees.length === 0}
               <div class="dropdown__option dropdown__option--disabled">
-                {MESSAGES.NO_EMPLOYEES_AVAILABLE}
+                {messages.NO_EMPLOYEES_AVAILABLE}
               </div>
             {/if}
           </div>
@@ -410,7 +419,7 @@
       <div class="form-field">
         <label
           class="form-field__label"
-          for="team-assets">Zugewiesene Anlagen</label
+          for="team-assets">{messages.LABEL_ASSETS}</label
         >
         <div
           class="dropdown"
@@ -422,7 +431,8 @@
             class:active={assetsDropdownOpen}
             onclick={toggleAssetsDropdown}
           >
-            <span>{getAssetsDisplayText(localAssetIds, allAssets)}</span>
+            <span>{getAssetsDisplayText(localAssetIds, allAssets, labels)}</span
+            >
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -453,7 +463,7 @@
             {/each}
             {#if allAssets.length === 0}
               <div class="dropdown__option dropdown__option--disabled">
-                {MESSAGES.NO_MACHINES_AVAILABLE}
+                {messages.NO_MACHINES_AVAILABLE}
               </div>
             {/if}
           </div>
@@ -517,7 +527,7 @@
             </div>
           </div>
           <span class="form-field__hint mt-1 block">
-            {MESSAGES.STATUS_HINT}
+            {messages.STATUS_HINT}
           </span>
         </div>
       {/if}

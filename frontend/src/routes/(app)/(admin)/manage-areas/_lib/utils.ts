@@ -56,9 +56,9 @@ export function getAreaLeadDisplayName(
   areaLeadId: number | null,
   areaLeads: AdminUser[],
 ): string {
-  if (areaLeadId === null) return 'Kein Bereichsleiter';
+  if (areaLeadId === null) return 'Kein Leiter';
   const lead = areaLeads.find((u) => u.id === areaLeadId);
-  if (!lead) return 'Kein Bereichsleiter';
+  if (!lead) return 'Kein Leiter';
   const roleLabel = lead.role === 'root' ? '(Root)' : '(Admin)';
   return `${lead.firstName} ${lead.lastName} ${roleLabel}`;
 }
@@ -76,10 +76,12 @@ export function getDepartmentIdsForArea(
 }
 
 /** Get department count display text */
-export function getDepartmentCountText(count: number): string {
+export function getDepartmentCountText(
+  count: number,
+  departmentLabel: string,
+): string {
   if (count === 0) return 'Keine';
-  if (count === 1) return '1 Abteilung';
-  return `${count} Abteilungen`;
+  return `${count} ${departmentLabel}`;
 }
 
 // =============================================================================

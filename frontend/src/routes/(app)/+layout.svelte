@@ -222,6 +222,9 @@
     document.title = count > 0 ? `(${count}) ${base}` : base;
   });
 
+  // Hierarchy labels from SSR (tenant-specific names for areas, departments, etc.)
+  const hierarchyLabels = $derived(data.hierarchyLabels);
+
   // Navigation menu items - filtered by access level and tenant feature activation
   const hasFullAccess = $derived(
     data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
@@ -229,7 +232,10 @@
   const activeFeaturesSet = $derived(new Set(data.activeFeatures));
   const menuItems = $derived<NavItem[]>(
     filterMenuByFeatures(
-      filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
+      filterMenuByAccess(
+        getMenuItemsForRole(currentRole, hierarchyLabels),
+        hasFullAccess,
+      ),
       activeFeaturesSet,
     ),
   );
@@ -523,7 +529,10 @@
       class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-2 md:p-3 lg:p-4"
     >
       <div id="breadcrumb-container">
-        <Breadcrumb userRole={currentRole} />
+        <Breadcrumb
+          userRole={currentRole}
+          {hierarchyLabels}
+        />
       </div>
       {@render children()}
     </main>
