@@ -108,7 +108,7 @@
 - 8 Core-Addons (immer aktiv) + 12 kaufbare Addons (je €10/Monat, 30 Tage Trial)
 - Backend: `TenantAddonGuard` (APP_GUARD) on all Addon-Controllers
 - Frontend: Sidebar-Filterung (SSR, kein Flash), Page-Level Guards, api-client 403-Handling
-- Admin-Seite `/features` für Addon-Verwaltung (Aktivieren/Deaktivieren/Trial)
+- Admin-Seite `/addons` für Addon-Verwaltung (Aktivieren/Deaktivieren/Trial)
 - Separate `/addon-unavailable` Fehlerseite (vs. `/permission-denied` für Rollen)
 - Rekursive Submenu-Filterung (leere Container werden entfernt)
 - Deaktivierung erhält User-Permissions (sofortige Reaktivierung möglich)

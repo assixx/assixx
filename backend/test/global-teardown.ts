@@ -6,11 +6,11 @@
  * (e.g. chat messages, E2E keys, conversations piling up).
  *
  * WHITELIST approach: Only cleans tables that actually accumulate
- * across test runs. Seed/config data (tenant_features, vacation_settings,
+ * across test runs. Seed/config data (tenant_addons, vacation_settings,
  * vacation_entitlements, etc.) is deliberately preserved.
  *
  * Dummy users (role='dummy') are hard-deleted after the table cleanup.
- * CASCADE FKs auto-clean user_feature_permissions, feature_visits, etc.
+ * CASCADE FKs auto-clean user_addon_permissions, addon_visits, etc.
  *
  * Runs via `docker exec` against the real PostgreSQL container.
  */
@@ -115,7 +115,7 @@ BEGIN
   END LOOP;
 
   -- Dummy users: soft-deleted by tests but rows stay forever.
-  -- CASCADE FKs auto-clean user_feature_permissions, feature_visits, etc.
+  -- CASCADE FKs auto-clean user_addon_permissions, addon_visits, etc.
   DELETE FROM users WHERE tenant_id = _tenant_id AND role = 'dummy';
   GET DIAGNOSTICS _deleted = ROW_COUNT;
   _total := _total + _deleted;
