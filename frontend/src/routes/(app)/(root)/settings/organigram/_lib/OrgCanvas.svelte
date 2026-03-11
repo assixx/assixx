@@ -9,6 +9,7 @@
   import OrgNode from './OrgNode.svelte';
   import {
     getConnections,
+    getFontSize,
     getHallBounds,
     getHoveredNodeKey,
     getIsLocked,
@@ -34,6 +35,8 @@
   const hoveredKey = $derived(getHoveredNodeKey());
   const hallBounds = $derived(getHallBounds());
   const isLocked = $derived(getIsLocked());
+  const hallFontSize = $derived(getFontSize());
+  const hallSubFontSize = $derived(Math.max(8, hallFontSize - 2));
 
   let svgElement = $state<SVGSVGElement>(undefined as unknown as SVGSVGElement);
   let isPanning = $state(false);
@@ -269,11 +272,15 @@
           class="hall-label"
           fill={HALL_COLOR.border}
         >
-          <tspan font-weight="600">{hall.hallName}</tspan>
+          <tspan
+            font-weight="600"
+            font-size="{hallFontSize}px">{hall.hallName}</tspan
+          >
           {#if hall.leadName !== undefined}
             <tspan
               dx="8"
-              opacity="0.7">{hall.leadName}</tspan
+              opacity="0.7"
+              font-size="{hallSubFontSize}px">{hall.leadName}</tspan
             >
           {/if}
         </text>
@@ -448,7 +455,6 @@
   }
 
   .hall-label {
-    font-size: 12px;
     pointer-events: none;
     user-select: none;
   }
