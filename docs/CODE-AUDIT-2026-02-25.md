@@ -254,7 +254,7 @@ Limit: 800 Code-Zeilen für `.ts`.
 | `tenant-deletion-analyzer.service.ts`    | 1      |
 | `tpm-notification.service.ts`            | 1      |
 | `vacation-notification.service.ts`       | 1      |
-| `notification-feature.service.ts`        | 1      |
+| `notification-addon.service.ts`          | 1      |
 | `blackboard-archive.service.ts`          | 1      |
 | `rotation-history.service.ts`            | 1      |
 

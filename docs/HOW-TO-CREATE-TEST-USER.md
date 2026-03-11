@@ -58,8 +58,7 @@ Die Signup API übernimmt automatisch:
 - **Passwort-Hashing** (bcrypt, salt 12) — kein Platzhalter-Hash
 - **`has_full_access = true`** für Root — kein vergessenes Pflichtfeld
 - **`employee_number`** + **`employee_id`** — automatisch generiert
-- **`tenant_features`** — alle Features aktiviert mit Ablaufdatum
-- **`tenant_plans`** — Plan-Zuordnung
+- **`tenant_addons`** — alle Addons aktiviert mit Ablaufdatum
 - **Audit-Log** — Registrierung protokolliert
 - **UUID** — UUIDv7 automatisch vergeben
 

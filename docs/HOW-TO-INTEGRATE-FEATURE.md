@@ -15,10 +15,10 @@ Aber: **Nichts vergessen ist besser als nachträglich flicken.**
 
 ## 1. DATABASE
 
-### 1.1 Feature Flag
+### 1.1 Addon Registration
 
-- [ ] Migration: `INSERT INTO features (code, name, description, category, base_price, sort_order)`
-- [ ] Kategorie wählen: `basic` (inklusive), `professional`, `enterprise`
+- [ ] Migration: `INSERT INTO addons (code, name, description, is_core, base_price, sort_order)`
+- [ ] Core oder kaufbar? `is_core = true` (immer aktiv) oder `is_core = false` (à la carte)
 
 > **Ref:** `database/migrations/20260212000027_vacation-feature-flag.ts`
 
@@ -113,13 +113,13 @@ export class FeatureModule {}
 - [ ] Class-Level Guards: `@UseGuards(JwtAuthGuard, RolesGuard)`
 - [ ] Pro Endpoint: `@RequirePermission(FEAT, MODULE, 'canRead' | 'canWrite' | 'canDelete')`
 - [ ] Rolleneinschränkung wo nötig: `@Roles('admin', 'root')`
-- [ ] Feature-Gate in **jedem** Endpoint:
+- [ ] Addon-Gate in **jedem** Endpoint:
 
 ```typescript
-private async ensureFeatureEnabled(tenantId: number): Promise<void> {
-  const isEnabled = await this.featureCheck.checkTenantAccess(tenantId, FEAT);
+private async ensureAddonEnabled(tenantId: number): Promise<void> {
+  const isEnabled = await this.addonCheck.checkTenantAccess(tenantId, ADDON_CODE);
   if (!isEnabled) {
-    throw new ForbiddenException('Feature is not enabled for this tenant');
+    throw new ForbiddenException('Addon is not enabled for this tenant');
   }
 }
 ```
@@ -157,7 +157,7 @@ private async ensureFeatureEnabled(tenantId: number): Promise<void> {
 
 ```typescript
 export const FEATURE_PERMISSIONS: PermissionCategoryDef = {
-  code: 'feature-code', // MUSS features.code in DB matchen
+  code: 'feature-code', // MUSS addons.code in DB matchen
   label: 'Feature Name',
   icon: 'fa-icon-name',
   modules: [
@@ -215,7 +215,7 @@ emitFeatureEvent(tenantId: number, payload: FeaturePayload): void {
 }
 ```
 
-- [ ] **Persistent (Badge Counts):** Via `NotificationsService.createFeatureNotification()`
+- [ ] **Persistent (Badge Counts):** Via `NotificationsService.createAddonNotification()`
 - [ ] Frontend Notification Store: SSE Event Mapping in `notification.store.svelte.ts`:
 
 ```typescript
@@ -436,8 +436,8 @@ HTTP Request
   │
   ├─ 1. JwtAuthGuard (global)         → Authentifiziert? Token gültig? User aktiv?
   ├─ 2. RolesGuard (global)           → @Roles() Decorator → Rolle erlaubt?
-  ├─ 3. PermissionGuard (global)      → @RequirePermission() → DB-Check user_feature_permissions
-  ├─ 4. ensureFeatureEnabled() (manuell) → tenant_features → Feature für Tenant aktiv?
+  ├─ 3. PermissionGuard (global)      → @RequirePermission() → DB-Check user_addon_permissions
+  ├─ 4. ensureAddonEnabled() (manuell) → tenant_addons → Feature für Tenant aktiv?
   │
   └─ Controller Method ausgeführt
        │
@@ -449,16 +449,16 @@ HTTP Request
 
 ## 7. VERGESSENE INTEGRATION = TECH DEBT
 
-| Vergessen              | Konsequenz                                             |
-| ---------------------- | ------------------------------------------------------ |
-| RLS Policy             | **Datenleck zwischen Tenants**                         |
-| GRANT für app_user     | Feature funktioniert in Prod nicht (Permission Denied) |
-| Feature Flag           | Feature ist für niemanden sichtbar                     |
-| Sidebar Entry          | User findet das Feature nicht                          |
-| Breadcrumb             | Verwirrende Navigation                                 |
-| Permission Registrar   | Admin kann keine User-Permissions vergeben             |
-| Activity Logging       | Root Dashboard zeigt keine Aktivität                   |
-| ensureFeatureEnabled() | Feature ist für alle Tenants offen (Bypass!)           |
-| API Test               | Regression bleibt unbemerkt                            |
-| Notification Badge     | User sieht keine neuen Einträge                        |
-| Route Group            | Falsche Rolle hat Zugriff                              |
+| Vergessen            | Konsequenz                                             |
+| -------------------- | ------------------------------------------------------ |
+| RLS Policy           | **Datenleck zwischen Tenants**                         |
+| GRANT für app_user   | Feature funktioniert in Prod nicht (Permission Denied) |
+| Addon Registration   | Addon ist für niemanden sichtbar                       |
+| Sidebar Entry        | User findet das Feature nicht                          |
+| Breadcrumb           | Verwirrende Navigation                                 |
+| Permission Registrar | Admin kann keine User-Permissions vergeben             |
+| Activity Logging     | Root Dashboard zeigt keine Aktivität                   |
+| ensureAddonEnabled() | Addon ist für alle Tenants offen (Bypass!)             |
+| API Test             | Regression bleibt unbemerkt                            |
+| Notification Badge   | User sieht keine neuen Einträge                        |
+| Route Group          | Falsche Rolle hat Zugriff                              |

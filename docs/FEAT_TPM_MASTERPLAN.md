@@ -73,7 +73,7 @@ pnpm test                # unit + api tests
 | 1.22.0  | 2026-02-19 | Step 5.5 DONE: Kamishibai Board (Employee View) — 7 neue Dateien. board/[uuid]/+page.server.ts (SSR: Plan+Cards+Colors parallel), board/[uuid]/+page.svelte (Page Orchestration: Header + Filter + KamishibaiBoard), \_lib/CardFlip.svelte (CSS 3D perspective, will-change GPU, reduced-motion), \_lib/KamishibaiCard.svelte (Status-Color Front, Description/Location/Due-Date Back, pulse animation für urgent), \_lib/KamishibaiSection.svelte (Interval-Group: Operator + Instandhaltung Rows, open-badge), \_lib/KamishibaiBoard.svelte (SvelteMap grouping, INTERVAL_ORDER sort, empty-state), \_lib/BoardFilter.svelte (4 Filter: Alle/Bediener/Instandhaltung/Nur Offene, $bindable). svelte-check 0 Errors 0 Warnings, ESLint 0, 3808 Unit-Tests ✅                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 1.21.0  | 2026-02-19 | Step 5.4 DONE: Shared Employee Overview — 7 neue Dateien, 2 modifiziert. Route-Conflict gelöst: Employee-Page unter `overview/` Subdirectory (URL: `/lean-management/tpm/overview`). overview/+page.server.ts (SSR: Plans+Colors parallel, Board-Data per Plan, countStatuses), overview/+page.svelte (4 Stat-Cards + MachineList), \_lib/types.ts (TpmPlan, TpmCard, TpmColorConfigEntry, StatusCounts, MachineWithTpmStatus), \_lib/constants.ts (INTERVAL_LABELS, CARD_STATUS_LABELS, DEFAULT_COLORS, WEEKDAY_LABELS, MESSAGES), \_lib/api.ts (Employee API Client), \_lib/MachineList.svelte (Sortierte Anlagenliste mit Urgency-Indicator, Schedule, Status-Badges, Board-Link), \_lib/MaintenanceStatus.svelte (Color-coded Status-Badges mit Tenant-Config). navigation-config.ts (Employee TPM URL aktualisiert), Breadcrumb.svelte (overview + board URL-Mappings). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                                                |
 | 1.23.0  | 2026-02-19 | Step 5.6 DONE: Card Detail + Execution + Approval UI — 5 neue Dateien, 4 modifiziert. CardDetail.svelte (Slide-Over Panel: Info-Grid, Beschreibung, Location, TimeEstimate, ExecutionForm/ApprovalPanel je nach Status), ExecutionForm.svelte (Durchführung melden: Dokumentation Textarea, Post-Submit PhotoUpload), ApprovalPanel.svelte (Freigabe/Ablehnung: Pending-Execution laden, Note-Pflicht bei Reject), PhotoUpload.svelte (Max 5×5MB, JPG/PNG/WebP, Thumbnail-Grid), TimeEstimateForm.svelte (Read-Only SOLL-Zeit Anzeige). KamishibaiCard.svelte (+onCardSelect Prop, Details-Button auf Rückseite), KamishibaiSection.svelte (+onCardSelect Durchreichung), KamishibaiBoard.svelte (+onCardSelect Durchreichung), +page.svelte (+selectedCard State, CardDetail Overlay, invalidateAll nach Aktion). api.ts (+7 Funktionen), types.ts (+6 Interfaces), constants.ts (+50 Messages). svelte-check 0, ESLint 0                                                                                                                                                                                                                                                                           |
-| 1.24.0  | 2026-02-19 | Step 5.7 DONE: Config UI + Integration — 5 neue Dateien, 3 modifiziert. config/+page.server.ts (SSR: Escalation+Colors+Templates parallel, requireFeature), config/+page.svelte (Tab-Layout: 3 Tabs Farben/Eskalation/Vorlagen), config/\_lib/ColorConfig.svelte (SvelteMap $derived, Hex-Picker+Text-Input, per-Color Save, Reset-All mit Confirmation), config/\_lib/EscalationConfig.svelte (Hours 1-720, TeamLead/DeptLead Toggles, Form mit Validation), config/\_lib/TemplateManager.svelte (CRUD: Inline Create/Edit, Delete-Confirmation, isDefault Badge, Empty-State). api.ts (+7 Mutation-Funktionen: updateColor, resetColors, updateEscalation, createTemplate, updateTemplate, deleteTemplate), types.ts (+5 Payload-Interfaces), constants.ts (+60 Messages). Breadcrumb.svelte (config URL-Mapping). svelte-check 0 Errors 0 Warnings, ESLint 0, 4764 Tests ✅                                                                                                                                                                                                                                                                                                                       |
+| 1.24.0  | 2026-02-19 | Step 5.7 DONE: Config UI + Integration — 5 neue Dateien, 3 modifiziert. config/+page.server.ts (SSR: Escalation+Colors+Templates parallel, requireAddon), config/+page.svelte (Tab-Layout: 3 Tabs Farben/Eskalation/Vorlagen), config/\_lib/ColorConfig.svelte (SvelteMap $derived, Hex-Picker+Text-Input, per-Color Save, Reset-All mit Confirmation), config/\_lib/EscalationConfig.svelte (Hours 1-720, TeamLead/DeptLead Toggles, Form mit Validation), config/\_lib/TemplateManager.svelte (CRUD: Inline Create/Edit, Delete-Confirmation, isDefault Badge, Empty-State). api.ts (+7 Mutation-Funktionen: updateColor, resetColors, updateEscalation, createTemplate, updateTemplate, deleteTemplate), types.ts (+5 Payload-Interfaces), constants.ts (+60 Messages). Breadcrumb.svelte (config URL-Mapping). svelte-check 0 Errors 0 Warnings, ESLint 0, 4764 Tests ✅                                                                                                                                                                                                                                                                                                                         |
 | 1.25.0  | 2026-02-19 | Step 5.8 DONE / PHASE 5 COMPLETE: Shift-Grid TPM Wartungstermine Toggle (E17) — 0 neue Dateien, 7 modifiziert. types.ts (+TpmMaintenanceEvent Interface), state-ui.svelte.ts (+showTpmEvents Toggle, Getter/Setter komprimiert auf 37 Zeilen), api.ts (+fetchTpmMaintenanceDates mit isMaintenanceDate Zyklusberechnung, planToEvent, addEventToMap Helpers), state-context.svelte.ts (+createTpmEventsState Map<string, TpmMaintenanceEvent[]>, tpmEventsMap Getter/Setter/Clear), state.svelte.ts (+tpmEventsMap, showTpmEvents, setTpmEvents, clearTpmEvents, setShowTpmEvents Durchreichung), plan-loader.ts (TPM parallel zu machineAvailability laden via Promise.all, showTpmEvents Guard), ShiftScheduleGrid.svelte (+3 Props tpmEventsMap/showTpmEvents/ontoggleTpmEvents, Toggle-Checkbox in Legend, TPM-Blöcke in Grid-Cells mit Icon+Label+Machine+Time, 60 Zeilen CSS), +page.svelte (+3 Props + ontoggleTpmEvents mit loadShiftPlan Reload). D14: Masterplan sagte WeekGrid.svelte — tatsächlich ShiftScheduleGrid.svelte (Shared statt Admin). D15: Masterplan sagte 3 Dateien — tatsächlich 7+1 (State-Architektur erfordert Durchreichung). svelte-check 0, ESLint 0, 4764 Tests ✅ |
 | 1.26.0  | 2026-02-19 | Step 6.1 DONE / PHASE 6 COMPLETE / TPM FEATURE COMPLETE: E2E Verification (8/8 Integrationen geprüft, 4 nachverdrahtet). Fixes: DashboardCounts-Typ (+tpm +vacation in +layout.server.ts), TpmExecutionsService (+TpmNotificationService Injection, notifyAfterExecution mit notifyApprovalRequired/notifyMaintenanceCompleted, resolveApproverIds), TpmApprovalService (Refactored: resolveCardInfo statt resolveCardMachineId, fireApprovalEffects + fireRejectionEffects extrahiert, notifyApprovalResult wired, bridgeToMaintenanceHistory D11-Pattern direkte DB-Query), Tests aktualisiert (4. Constructor-Param TpmNotificationService in beide Tests). Dokumentation: ADR-026-tpm-architecture.md (Interval Cascade, Card Status Machine, Slot Assistant, Module Architecture, 6 Sections), FEATURES.md (Feature #11 TPM Wartung, Status Matrix, Planned Features). D16: Machine Availability Auto-Status V2 deferred (Infrastructure exists, trigger timing komplex). svelte-check 0, ESLint 0, tsc 0, 231 files 4764 Tests ✅                                                                                                                                                              |
 
@@ -123,9 +123,9 @@ pnpm test                # unit + api tests
 | `UserAvailabilityService`       | Slot-Assistant prüft Urlaub/Krank                 | 2     | 2026-02-19 ✅  |
 | `EventBus`                      | 5 neue typed Emit-Methoden für TPM-Events         | 2     | 2026-02-19 ✅  |
 | `NotificationsController` (SSE) | TPM Event-Handler registrieren                    | 2     | 2026-02-19 ✅  |
-| `NotificationFeatureService`    | Persistent Notifications für TPM                  | 2     | 2026-02-19 ✅  |
+| `NotificationAddonService`      | Persistent Notifications für TPM                  | 2     | 2026-02-19 ✅  |
 | `PermissionRegistryService`     | TPM-Permission-Registrierung (ADR-020)            | 2     | 2026-02-19 ✅  |
-| `TenantFeatureGuard`            | `@TenantFeature('tpm')` auf allen Controllern     | 2     | 2026-02-19 ✅  |
+| `TenantAddonGuard`              | `@RequireAddon('tpm')` auf allen Controllern      | 2     | 2026-02-19 ✅  |
 | `navigation-config.ts`          | Lean Management → TPM Sidebar-Eintrag             | 5     | 2026-02-19 ✅  |
 | `Breadcrumb.svelte`             | TPM URL-Mappings + Intermediate + Dynamic Routes  | 5     | 2026-02-19 ✅  |
 | `notification.store.svelte.ts`  | `tpm: number` Counter + SSE Mapping               | 5     | 2026-02-19 ✅  |
@@ -487,10 +487,10 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d tpm_card_templa
    - `created_at`, `updated_at`
    - UNIQUE: `(tenant_id, status_key)`
 
-5. Feature Flag:
+5. Addon Registration:
    ```sql
-   INSERT INTO features (code, name, description, category, base_price, is_active)
-   VALUES ('tpm', 'TPM / Wartung', 'Total Productive Maintenance — Kamishibai Board, Wartungspläne, Intervall-Karten', 'enterprise', 0, 1)
+   INSERT INTO addons (code, name, description, is_core, base_price, is_active)
+   VALUES ('tpm', 'TPM / Wartung', 'Total Productive Maintenance — Kamishibai Board, Wartungspläne, Intervall-Karten', false, 0, 1)
    ON CONFLICT (code) DO NOTHING;
    ```
 
@@ -857,14 +857,14 @@ pnpm run validate:all
 | DELETE | `/tpm/cards/:uuid`           | canDelete(tpm-cards) | Karte soft-deleten                                      |
 | POST   | `/tpm/cards/check-duplicate` | canRead(tpm-cards)   | Duplikat-Prüfung (D12: body statt :uuid)                |
 
-Alle Controller: `@TenantFeature('tpm')` + `@RequirePermission(FEAT, MOD, ACTION)` pro Endpoint
+Alle Controller: `@RequireAddon('tpm')` + `@RequirePermission(FEAT, MOD, ACTION)` pro Endpoint
 
 **Ergebnis:** 4 Dateien erstellt (2 Controller + 5 Query-DTOs á 1 Klasse/Datei), 2 modifiziert (tpm.module.ts, dto/index.ts). Type-Check 0, ESLint 0, 4400 Tests bestanden.
 
 **Architektur-Entscheidungen:**
 
 - Separate Controller-Klassen `TpmPlansController` + `TpmCardsController` (je ein Base-Path: `tpm/plans`, `tpm/cards`)
-- `@TenantFeature('tpm')` auf Klasse, `@RequirePermission()` pro Endpoint (KVP-Pattern, kein class-level UseGuards)
+- `@RequireAddon('tpm')` auf Klasse, `@RequirePermission()` pro Endpoint (KVP-Pattern, kein class-level UseGuards)
 - 5 Query-DTOs in Einzeldateien (max-classes-per-file: 1 ESLint-Regel)
 - D12: `check-duplicate` Route auf `POST /tpm/cards/check-duplicate` (body: `{ planUuid, title, intervalType }`) statt `POST /tpm/cards/:uuid/check-duplicate` — vermeidet UUID-Ambiguität, Plan-UUID im Body statt Path
 - `buildFilters()` als Module-Level Pure Function — `exactOptionalPropertyTypes`-konform via `| undefined` in Parameter-Typ
@@ -940,7 +940,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - [x] 15 Services implementiert und injiziert (15/15 — Plans, PlanInterval, TimeEstimates, Templates, ColorConfig, PermissionRegistrar, Cards, CardStatus, CardCascade, CardDuplicate, SlotAssistant, Executions, Approval, Notification, Escalation)
 - [x] 4 Controller mit 30 Endpoints total (4/4 — Plans 9, Cards 6, Executions 6, Config 9) ✅ (Session 13+14)
 - [x] Permission Registrar registriert bei Module Init ✅ (Session 4)
-- [x] `@TenantFeature('tpm')` auf allen Controllern ✅ (Session 13+14)
+- [x] `@RequireAddon('tpm')` auf allen Controllern ✅ (Session 13+14)
 - [x] `db.tenantTransaction()` für alle tenant-scoped Mutations ✅ (Session 6-7, RLS-Audit-Fix in 1.7.1: 4 Methoden korrigiert)
 - [x] KEIN Double-Wrapping (ADR-007) ✅
 - [x] EventBus: 5 neue TPM Emit-Methoden ✅ (Session 12)
@@ -1081,7 +1081,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - [x] > = 40 API Integration Tests (86 Tests: 50 Plans+Cards + 36 Executions+Config = 215%)
 - [x] Alle Tests grün (86/86)
 - [x] Tenant-Isolation verifiziert (apitest tenant_id=6, separate Anlagen)
-- [x] Feature-Flag-Gating verifiziert (TenantFeature('tpm') auf allen Controllern)
+- [x] Addon-Flag-Gating verifiziert (RequireAddon('tpm') auf allen Controllern)
 - [x] Pagination verifiziert auf List-Endpoints (Plans, Cards, Pending Approvals)
 - [x] `pnpm run validate:all` ✅
 - [x] `pnpm test` ✅ (4764 Tests gesamt)
@@ -1098,7 +1098,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 **Neue Dateien:**
 
-- `(admin)/lean-management/tpm/+page.server.ts` — Auth + requireFeature + Data Loading
+- `(admin)/lean-management/tpm/+page.server.ts` — Auth + requireAddon + Data Loading
 - `(admin)/lean-management/tpm/+page.svelte` — Admin Dashboard
 - `(admin)/lean-management/tpm/_lib/api.ts` — apiClient Wrapper
 - `(admin)/lean-management/tpm/_lib/types.ts` — TypeScript Interfaces
@@ -1114,7 +1114,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 - `navigation-config.ts`:
   - `badgeType` Union erweitern um `'tpm'` (Zeile 24-31)
   - Neues `TPM_SUBMENU: NavItem[]` Array (Admin: Übersicht + Karten + Konfiguration)
-  - `LEAN_ADMIN_SUBMENU` erweitern: TPM-Eintrag mit `featureCode: 'tpm'` + `submenu: TPM_SUBMENU`
+  - `LEAN_ADMIN_SUBMENU` erweitern: TPM-Eintrag mit `addonCode: 'tpm'` + `submenu: TPM_SUBMENU`
   - `employeeMenuItems` → LEAN-Management Submenu: TPM-Eintrag mit `url: '/lean-management/tpm'` + `badgeType: 'tpm'`
 - `Breadcrumb.svelte`:
   - `urlMappings` erweitern: `/lean-management/tpm` ('TPM Wartung', 'fa-tools'), `/lean-management/tpm/config` ('TPM Konfiguration', 'fa-cog')
@@ -1170,7 +1170,7 @@ curl -s http://localhost:3000/api/v2/tpm/plans | jq '.'
 
 **Neue Dateien:**
 
-- `(shared)/lean-management/tpm/overview/+page.server.ts` — Auth + requireFeature + SSR (Plans+Colors+Board parallel)
+- `(shared)/lean-management/tpm/overview/+page.server.ts` — Auth + requireAddon + SSR (Plans+Colors+Board parallel)
 - `(shared)/lean-management/tpm/overview/+page.svelte` — Employee Anlagen-Übersicht (4 Stat-Cards + MachineList)
 - `(shared)/lean-management/tpm/_lib/api.ts` — Employee API Client
 - `(shared)/lean-management/tpm/_lib/types.ts` — TpmPlan, TpmCard, StatusCounts, MachineWithTpmStatus

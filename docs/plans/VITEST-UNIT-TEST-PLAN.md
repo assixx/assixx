@@ -154,7 +154,7 @@ pnpm test:ui         # vitest --ui --watch → Browser-UI auf http://localhost:5
  ✓  unit  backend/src/nest/blackboard/blackboard-attachments.service.test.ts         ( 6 tests)
  ✓  unit  backend/src/nest/root/root-tenant.service.test.ts                          ( 5 tests)
  ✓  unit  backend/src/nest/kvp/kvp-confirmations.service.test.ts                     ( 6 tests)
- ✓  unit  backend/src/nest/notifications/notification-feature.service.test.ts        ( 4 tests)
+ ✓  unit  backend/src/nest/notifications/notification-addon.service.test.ts        ( 4 tests)
  ✓  unit  backend/src/nest/kvp/kvp-attachments.service.test.ts                       ( 6 tests)
  ✓  unit  backend/src/nest/notifications/notification-preferences.service.test.ts    ( 6 tests)
  ✓  unit  backend/src/nest/common/audit/audit-request-filter.service.test.ts         (12 tests)
@@ -560,7 +560,7 @@ function createMockDb() {
 
 // 2. Instantiate service with mock (DI bypass)
 const mockDb = createMockDb();
-const service = new FeaturesService(mockDb as unknown as DatabaseService);
+const service = new AddonsService(mockDb as unknown as DatabaseService);
 
 // 3. Configure mock per test
 mockDb.query.mockResolvedValueOnce([{ id: 1, name: 'Test' }]);
@@ -858,7 +858,7 @@ mockDb.queryOne.mockResolvedValueOnce({
 | 34  | `blackboard-attachments.service.ts`      | 6     | Delegation to DocumentsService         | ✅     |
 | 35  | `root-tenant.service.ts`                 | 5     | DB-mocked, storage breakdown           | ✅     |
 | 36  | `kvp-confirmations.service.ts`           | 6     | DB-mocked, UPSERT, visibility          | ✅     |
-| 37  | `notification-feature.service.ts`        | 4     | Fire-and-forget, never throws          | ✅     |
+| 37  | `notification-addon.service.ts`          | 4     | Fire-and-forget, never throws          | ✅     |
 | 38  | `kvp-attachments.service.ts`             | 6     | DB-mocked, UUID, null uploaded_at      | ✅     |
 | 39  | `notification-preferences.service.ts`    | 6     | DB-mocked, JSON parse, UPSERT          | ✅     |
 | 40  | `audit-request-filter.service.ts`        | 12    | Pure logic, fake timers, throttle      | ✅     |
@@ -919,7 +919,7 @@ vi.advanceTimersByTime(6000); // Advance past throttle window
 - **Pool vs DatabaseService:** Pool-based services (partition-manager, unified-logs) return `{ rows: [...] }`, not `T[]` directly. Different mock shape required.
 - **Concurrency guards:** `ScheduledMessageProcessorService.processAtMinute()` uses `isProcessing` boolean — second concurrent call skips entirely (0 additional queries, not reduced queries).
 - **Pure switch testing:** `mapAccessScopeToRecipient()` — test ALL switch branches including default `null` return. Edge cases: missing `ownerUserId` → `null` despite `personal` scope.
-- **Fire-and-forget services:** ActivityLoggerService and NotificationFeatureService catch errors internally via try/catch — verify they don't throw on DB failure.
+- **Fire-and-forget services:** ActivityLoggerService and NotificationAddonService catch errors internally via try/catch — verify they don't throw on DB failure.
 
 ### Phase 11: Definition of Done
 
@@ -1484,7 +1484,7 @@ Phase 13: Foundation Broadening — +857 Tests                     ✅ DONE
 | B2  | `audit/audit.constants.ts`          | 286   | 17      | Constants              | HOCH   | SENSITIVE_FIELDS, EXCLUDED_PATHS, ACTION_MAP, SQL_REGEX |
 | B3  | `root/root.helpers.ts`              | 208   | 7       | Helper (pure)          | HOCH   | Tenant-Verwaltungs-Logik, Mapper                        |
 | B4  | `logger/logger.constants.ts`        | 163   | 7       | Constants              | MITTEL | Log-Level-Mappings, Format-Configs                      |
-| B5  | `utils/featureCheck.ts`             | 103   | 2       | Utility                | MITTEL | Feature-Flag-Prüfung                                    |
+| B5  | `utils/featureCheck.ts`             | 103   | 2       | Utility                | MITTEL | Addon-Flag-Prüfung                                      |
 | B6  | `utils/pathSecurity.ts`             | 101   | 3       | Utility (security!)    | HOCH   | Path-Traversal-Schutz — sicherheitskritisch!            |
 | B7  | `utils/eventBus.ts`                 | 99    | 1       | Singleton/EventEmitter | MITTEL | EventBus-Klasse, emit/on/off                            |
 | B8  | `calendar/calendar-export.utils.ts` | 88    | 3       | Utility (pure)         | MITTEL | iCal-/CSV-Export-Formatierung                           |

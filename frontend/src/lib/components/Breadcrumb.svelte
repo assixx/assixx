@@ -319,7 +319,7 @@
     },
     {
       pattern: /^\/manage-root\/availability\/[^/]+$/,
-      label: 'Root User Verwaltung',
+      label: 'Root Benutzer Verwaltung',
       href: '/manage-root',
       icon: 'fa-shield-alt',
     },

@@ -587,11 +587,11 @@ tpm.permissions.ts → {
 ```
 routes/(app)/
 ├── (admin)/lean-management/tpm/           ← Admin: Pläne erstellen, Karten verwalten
-│   ├── +page.server.ts                    ← requireFeature(activeFeatures, 'tpm')
+│   ├── +page.server.ts                    ← requireAddon(activeAddons, 'tpm')
 │   ├── plan/[uuid]/+page.server.ts
 │   └── ...
 └── (shared)/lean-management/tpm/          ← Employee: Board ansehen, Karten erledigen
-    ├── +page.server.ts                    ← requireFeature(activeFeatures, 'tpm')
+    ├── +page.server.ts                    ← requireAddon(activeAddons, 'tpm')
     └── board/[uuid]/+page.server.ts
 ```
 
@@ -631,7 +631,7 @@ routes/(app)/
 - [x] `areas` (mit area_lead_id) — **VERIFIZIERT**
 - [x] Notification-System (SSE + persistent + Badge + Feature-Notifications ADR-004) — **VERIFIZIERT**
 - [x] Permission-System (ADR-010 RBAC + ADR-020 Feature Permissions + ADR-024 Frontend Guards) — **VERIFIZIERT**
-- [x] Feature-Flag-System (tenant_features + TenantFeatureGuard) — **VERIFIZIERT**
+- [x] Addon-Flag-System (tenant_addons + TenantAddonGuard) — **VERIFIZIERT**
 - [x] Shift Planning mit Machine-ID FK (shifts.asset_id, shift_plans.asset_id) — **VERIFIZIERT**
 - [x] User Availability (vacation/sick/training/other) — **VERIFIZIERT**
 - [x] Deputy Lead auf Teams (teams.deputy_lead_id) — **VERIFIZIERT**

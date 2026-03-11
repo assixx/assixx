@@ -339,7 +339,7 @@ backend/src/nest/{feature}/
 - [ ] > = 20 API Integration Tests
 - [ ] Alle Tests grün
 - [ ] Tenant-Isolation verifiziert
-- [ ] Feature-Flag-Gating verifiziert
+- [ ] Addon-Flag-Gating verifiziert
 - [ ] Pagination verifiziert auf List-Endpoints
 
 ---

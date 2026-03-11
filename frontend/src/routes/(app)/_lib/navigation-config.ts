@@ -264,7 +264,7 @@ const ROOT_STATIC_ITEMS: NavItem[] = [
   {
     id: 'root-users',
     icon: ICONS['user-shield'],
-    label: 'Root User',
+    label: 'Root Benutzer',
     url: '/manage-root',
   },
   {

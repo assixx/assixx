@@ -19,7 +19,7 @@ Assixx is a Multi-Tenant SaaS for industrial companies (50-500 employees). Tenan
 
 Currently, access control operates at two levels:
 
-1. **Tenant-Feature level** — a tenant subscribes to features (Blackboard, Chat, KVP, etc.) via the `tenant_features` table
+1. **Tenant-Feature level** — a tenant subscribes to features (Blackboard, Chat, KVP, etc.) via the `tenant_addons` table
 2. **Role level** — users have one of three roles: `root`, `admin`, `employee`
 
 This is insufficient for real-world industrial operations:
@@ -47,7 +47,7 @@ This is insufficient for real-world industrial operations:
 
 ## Decision
 
-**Decentralized Registry Pattern** with a single `user_feature_permissions` table, protected by RLS (ADR-019).
+**Decentralized Registry Pattern** with a single `user_addon_permissions` table, protected by RLS (ADR-019).
 
 Each feature module **owns** its permission definitions. A global singleton registry collects them at application startup via NestJS `OnModuleInit`. The permission service and controller are generic — they have no knowledge of specific features.
 
@@ -86,7 +86,7 @@ Each feature module **owns** its permission definitions. A global singleton regi
 │  │   ├─ Resolve UUID → user_id                                  │
 │  │   ├─ Get tenant's active features                            │
 │  │   ├─ Filter registry categories by active features           │
-│  │   ├─ SELECT from user_feature_permissions (RLS filters)      │
+│  │   ├─ SELECT from user_addon_permissions (RLS filters)      │
 │  │   └─ Merge DB rows with category tree                        │
 │  │                                                               │
 │  └─ upsertPermissions() → tenantTransaction()                   │
@@ -96,9 +96,9 @@ Each feature module **owns** its permission definitions. A global singleton regi
 │      └─ INSERT ... ON CONFLICT DO UPDATE (RLS protects)         │
 │                                                                  │
 │      ▼                                                           │
-│  PostgreSQL (user_feature_permissions)                           │
+│  PostgreSQL (user_addon_permissions)                           │
 │  ├─ RLS: tenant_isolation policy (ADR-019)                      │
-│  ├─ UNIQUE(tenant_id, user_id, feature_code, module_code)       │
+│  ├─ UNIQUE(tenant_id, user_id, addon_code, module_code)       │
 │  └─ Columns: can_read, can_write, can_delete                    │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -123,7 +123,7 @@ UserPermissionsService.upsertPermissions()
   │  2. Resolve UUID → integer user_id (within same transaction, RLS-safe)
   │  3. Validate each {featureCode, moduleCode} against PermissionRegistryService
   │  4. Force non-allowed permissions to false (safety net)
-  │  5. INSERT ... ON CONFLICT (tenant_id, user_id, feature_code, module_code)
+  │  5. INSERT ... ON CONFLICT (tenant_id, user_id, addon_code, module_code)
   │     DO UPDATE SET can_read=$X, can_write=$Y, can_delete=$Z, assigned_by=$W
   │
   ▼
@@ -144,11 +144,11 @@ Response: 200 OK (ResponseInterceptor wraps — ADR-007)
 ### 1. Database Schema
 
 ```sql
-CREATE TABLE user_feature_permissions (
+CREATE TABLE user_addon_permissions (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    feature_code VARCHAR(50) NOT NULL,
+    addon_code VARCHAR(50) NOT NULL,
     module_code VARCHAR(50) NOT NULL,
     can_read BOOLEAN NOT NULL DEFAULT FALSE,
     can_write BOOLEAN NOT NULL DEFAULT FALSE,
@@ -156,16 +156,16 @@ CREATE TABLE user_feature_permissions (
     assigned_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uq_user_feature_module
-        UNIQUE (tenant_id, user_id, feature_code, module_code)
+    CONSTRAINT uq_user_addon_module
+        UNIQUE (tenant_id, user_id, addon_code, module_code)
 );
 ```
 
 **Design choices:**
 
-- `feature_code` / `module_code` are VARCHAR strings — no FK to a permission definition table. New codes = new rows, no schema changes.
+- `addon_code` / `module_code` are VARCHAR strings — no FK to a permission definition table. New codes = new rows, no schema changes.
 - `assigned_by ON DELETE RESTRICT` — safe because Assixx uses soft-delete (`is_active = 4`), never hard-delete for users. Only fires on tenant deletion, which cascades via `tenant_id ON DELETE CASCADE` first.
-- `UNIQUE(tenant_id, user_id, feature_code, module_code)` — enables `INSERT ... ON CONFLICT DO UPDATE` (UPSERT) pattern.
+- `UNIQUE(tenant_id, user_id, addon_code, module_code)` — enables `INSERT ... ON CONFLICT DO UPDATE` (UPSERT) pattern.
 - RLS policy: standard `tenant_isolation` pattern (ADR-019).
 
 ### 2. Permission Registry Pattern
@@ -176,7 +176,7 @@ Each feature module owns two files:
 
 ```typescript
 export const BLACKBOARD_PERMISSIONS: PermissionCategoryDef = {
-  code: 'blackboard', // Must match features.code in DB
+  code: 'blackboard', // Must match addons.code in DB
   label: 'Schwarzes Brett',
   icon: 'fa-clipboard',
   modules: [
@@ -222,7 +222,7 @@ Tenant subscribed: [blackboard, calendar, documents]
 → Response contains: [blackboard, calendar, documents] only
 ```
 
-Query: `SELECT feature_code FROM tenant_features WHERE is_active = 1` (RLS filters by tenant automatically).
+Query: `SELECT addon_code FROM tenant_addons WHERE is_active = 1` (RLS filters by tenant automatically).
 
 Unsubscribed features produce **no UI** — the admin cannot even see permission toggles for features they haven't purchased.
 
@@ -336,7 +336,7 @@ Evaluate permissions based on attributes (user department, time of day, location
 
 1. **No bulk assignment** — admins must configure permissions per user (mitigated by future permission templates)
 2. **No permission inheritance** — department permissions don't cascade to team members (explicit assignment per user)
-3. **VARCHAR codes instead of FK** — `feature_code` and `module_code` are not foreign-keyed to a definition table. Invalid codes are caught by the registry validation, not by the DB
+3. **VARCHAR codes instead of FK** — `addon_code` and `module_code` are not foreign-keyed to a definition table. Invalid codes are caught by the registry validation, not by the DB
 4. **Full state replacement on PUT** — the API sends all permissions for a user, not a diff. At current scale (max ~20 modules per user) this is negligible
 
 ### Risks & Mitigations
@@ -345,9 +345,9 @@ Evaluate permissions based on attributes (user department, time of day, location
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | Feature module forgets to register permissions | App startup fails (no silent degradation) — `register()` is in `OnModuleInit`                            |
 | Duplicate feature code registration            | `register()` throws immediately on duplicate (fail-fast)                                                 |
-| Permission codes drift from `features.code`    | Code review + integration tests validate `feature_code` against `features` table                         |
+| Permission codes drift from `addons.code`      | Code review + integration tests validate `addon_code` against `addons` table                             |
 | Admin locks themselves out                     | Admin role check is at controller level (`@Roles('admin')`) — permissions apply to employees, not admins |
-| Cross-tenant permission visibility             | RLS `tenant_isolation` policy on `user_feature_permissions` (ADR-019)                                    |
+| Cross-tenant permission visibility             | RLS `tenant_isolation` policy on `user_addon_permissions` (ADR-019)                                      |
 
 ---
 
@@ -364,7 +364,7 @@ This ADR establishes the **atomic foundation** for a comprehensive access contro
 | Phase 5                | Self-service access requests with admin approval workflow     | Future                                                                |
 | Phase 6                | Compliance dashboard ("Who has delete access to Documents?")  | Future                                                                |
 
-Each future phase builds on the `user_feature_permissions` table without schema redesign. The decentralized registry pattern scales with new features. The RLS isolation protects all phases equally.
+Each future phase builds on the `user_addon_permissions` table without schema redesign. The decentralized registry pattern scales with new features. The RLS isolation protects all phases equally.
 
 ---
 

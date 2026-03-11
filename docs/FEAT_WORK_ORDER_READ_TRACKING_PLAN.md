@@ -135,7 +135,7 @@ interface ReadTrackingConfig {
 
 ### 0.4 HOW-TO-INTEGRATE-FEATURE Checkliste (Subset)
 
-> Nicht alle Punkte relevant — kein neues Feature-Flag, kein neues NestJS-Modul, keine Sidebar-Änderung.
+> Nicht alle Punkte relevant — kein neues Addon-Flag, kein neues NestJS-Modul, keine Sidebar-Änderung.
 > Relevante Punkte aus der Checkliste:
 
 - [x] **1.2 Core Tables:** RLS + GRANTs + Indexes + `down()` Migration

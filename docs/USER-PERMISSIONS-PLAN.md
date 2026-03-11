@@ -1,9 +1,9 @@
-# User Feature Permissions — Implementation Plan
+# User Addon Permissions — Implementation Plan
 
 ## Overview
 
 Bottom-Up implementation: **DB → Backend → Enforcement → Frontend**
-Per-user, per-feature/module permission control (canRead, canWrite, canDelete).
+Per-user, per-addon/module permission control (canRead, canWrite, canDelete).
 
 ### Zwei Säulen: Management + Enforcement
 
@@ -22,16 +22,16 @@ aber niemand prüft sie. Phase 5b schließt diese Lücke.
 Request → JwtAuthGuard → RolesGuard → PermissionGuard → Controller
               ↓              ↓              ↓
           ADR-005        ADR-012        ADR-020
-       Authenticate    Check Role    Check Feature
+       Authenticate    Check Role    Check Addon
                                      Permission
 ```
 
 ### Architektur-Entscheidung: Dezentrales Registry Pattern
 
-**Warum:** Jedes Feature-Modul besitzt seine eigenen Permission-Definitionen.
+**Warum:** Jedes Addon-Modul besitzt seine eigenen Permission-Definitionen.
 Kein zentrales God-Object, kein Single-Point-of-Change.
 Neue Kategorie = **2 Files im eigenen Modul**, kein zentrales File editieren.
-Feature-Modul löschen = Permissions verschwinden automatisch.
+Addon-Modul löschen = Permissions verschwinden automatisch.
 
 ```
 common/permission-registry/
@@ -102,7 +102,7 @@ user-permissions/
 
 ### Kern-Prinzip: Dezentral — Feature besitzt seine Permissions
 
-Neue Berechtigungs-Kategorie hinzufügen = **2 Files im Feature-Modul erstellen**.
+Neue Berechtigungs-Kategorie hinzufügen = **2 Files im Addon-Modul erstellen**.
 Kein zentrales File, kein Service, kein Endpoint ändern.
 
 ### Beispiel: KVP-Berechtigungen hinzufügen
@@ -174,7 +174,7 @@ createSuggestion() { ... }
 **Warum funktioniert das automatisch?**
 
 1. **Registry:** `KvpPermissionRegistrar.onModuleInit()` registriert die Permissions beim Start
-2. **DB:** `feature_code` + `module_code` sind VARCHAR-Strings — keine FK, neue Codes = neue Rows
+2. **DB:** `addon_code` + `module_code` sind VARCHAR-Strings — keine FK, neue Codes = neue Rows
 3. **GET Endpoint:** Fragt `PermissionRegistryService.getAll()` → bekommt alle registrierten Kategorien
 4. **PUT Endpoint:** Validiert gegen Registry → neue Kategorie wird akzeptiert
 5. **Frontend:** Rendert dynamisch aus SSR-Daten — keine Hardcoded UI
@@ -226,11 +226,11 @@ interface PermissionModuleDef {
 
 ### Tenant-Feature-Gating (ENTSCHIEDEN: JA)
 
-Der GET Endpoint filtert registrierte Kategorien gegen `tenant_features`:
+Der GET Endpoint filtert registrierte Kategorien gegen `tenant_addons`:
 
 - Tenant hat KVP nicht gebucht → KVP-Kategorie wird **nicht** zurückgegeben
 - Kein Feature-Zugriff = keine Permission-UI dafür
-- Query: `SELECT feature_code FROM tenant_features WHERE tenant_id = $1 AND is_active = 1`
+- Query: `SELECT addon_code FROM tenant_addons WHERE tenant_id = $1 AND is_active = 1`
 
 ---
 
@@ -241,11 +241,11 @@ Der GET Endpoint filtert registrierte Kategorien gegen `tenant_features`:
 
 ```sql
 -- Table
-CREATE TABLE user_feature_permissions (
+CREATE TABLE user_addon_permissions (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    feature_code VARCHAR(50) NOT NULL,
+    addon_code VARCHAR(50) NOT NULL,
     module_code VARCHAR(50) NOT NULL,
     can_read BOOLEAN NOT NULL DEFAULT FALSE,
     can_write BOOLEAN NOT NULL DEFAULT FALSE,
@@ -253,17 +253,17 @@ CREATE TABLE user_feature_permissions (
     assigned_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uq_user_feature_module UNIQUE (tenant_id, user_id, feature_code, module_code)
+    CONSTRAINT uq_user_addon_module UNIQUE (tenant_id, user_id, addon_code, module_code)
 );
 
 -- Index
-CREATE INDEX idx_ufp_user_tenant ON user_feature_permissions (tenant_id, user_id);
+CREATE INDEX idx_ufp_user_tenant ON user_addon_permissions (tenant_id, user_id);
 
 -- RLS (PFLICHT per ADR-019)
-ALTER TABLE user_feature_permissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_feature_permissions FORCE ROW LEVEL SECURITY;
+ALTER TABLE user_addon_permissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_addon_permissions FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation ON user_feature_permissions
+CREATE POLICY tenant_isolation ON user_addon_permissions
     FOR ALL
     USING (
         NULLIF(current_setting('app.tenant_id', true), '') IS NULL
@@ -271,20 +271,20 @@ CREATE POLICY tenant_isolation ON user_feature_permissions
     );
 
 -- GRANTs for app_user (PFLICHT per ADR-019)
-GRANT SELECT, INSERT, UPDATE, DELETE ON user_feature_permissions TO app_user;
-GRANT USAGE, SELECT ON SEQUENCE user_feature_permissions_id_seq TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_addon_permissions TO app_user;
+GRANT USAGE, SELECT ON SEQUENCE user_addon_permissions_id_seq TO app_user;
 
-COMMENT ON TABLE user_feature_permissions IS 'Per-user, per-feature/module permission control (canRead, canWrite, canDelete)';
+COMMENT ON TABLE user_addon_permissions IS 'Per-user, per-addon/module permission control (canRead, canWrite, canDelete)';
 ```
 
 **Definition of Done:**
 
 - [x] Migration runs without errors (`up` + `down`) ✅ 2026-02-07
-- [x] RLS policy `tenant_isolation` existiert auf `user_feature_permissions` ✅ verified
+- [x] RLS policy `tenant_isolation` existiert auf `user_addon_permissions` ✅ verified
 - [x] `FORCE ROW LEVEL SECURITY` aktiv (auch Table Owner gefiltert) ✅ verified
 - [x] GRANTs für `app_user` gesetzt (SELECT, INSERT, UPDATE, DELETE + Sequence) ✅ verified
 - [x] Table visible in `\dt` ✅ verified
-- [x] Unique constraint prevents duplicate (tenant_id, user_id, feature_code, module_code) ✅ `uq_user_feature_module`
+- [x] Unique constraint prevents duplicate (tenant_id, user_id, addon_code, module_code) ✅ `uq_user_addon_module`
 - [ ] Cross-Tenant-Test: `SET app.tenant_id = '1'; SELECT ... WHERE tenant_id = 2;` → 0 Rows
 
 ---
@@ -380,9 +380,9 @@ export class PermissionRegistryModule {}
 
 **Quellen:** `backend/docs/ZOD-INTEGRATION-GUIDE.md`, `docs/TYPESCRIPT-STANDARDS.md`
 
-### Feature Permission Files (pro Feature-Modul)
+### Feature Permission Files (pro Addon-Modul)
 
-Jedes Feature-Modul bekommt 2 Files:
+Jedes Addon-Modul bekommt 2 Files:
 
 **Beispiel Blackboard:**
 
@@ -426,15 +426,15 @@ export class BlackboardPermissionRegistrar implements OnModuleInit {
 
 **Dann in `blackboard.module.ts`:** `BlackboardPermissionRegistrar` zu `providers` hinzufügen.
 
-### Initiale Feature-Module mit Permissions (Phase 3 Scope)
+### Initiale Addon-Module mit Permissions (Phase 3 Scope)
 
 Nur Features die **jetzt schon** Backend-Module haben:
 
-| Feature-Modul | Permissions-File            | Registrar-File                       |
-| ------------- | --------------------------- | ------------------------------------ |
-| blackboard    | `blackboard.permissions.ts` | `blackboard-permission.registrar.ts` |
+| Addon-Modul | Permissions-File            | Registrar-File                       |
+| ----------- | --------------------------- | ------------------------------------ |
+| blackboard  | `blackboard.permissions.ts` | `blackboard-permission.registrar.ts` |
 
-Weitere Feature-Module (calendar, documents, etc.) bekommen ihre Permissions erst wenn sie implementiert werden. **YAGNI** — keine leeren Hüllen.
+Weitere Addon-Module (calendar, documents, etc.) bekommen ihre Permissions erst wenn sie implementiert werden. **YAGNI** — keine leeren Hüllen.
 
 ### DTOs (Zod)
 
@@ -480,7 +480,7 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
   return this.db.tenantTransaction(async (client) => {
     // RLS filtert automatisch via set_config('app.tenant_id', ...)
     const rows = await client.query(
-      'SELECT ... FROM user_feature_permissions WHERE user_id = $1',
+      'SELECT ... FROM user_addon_permissions WHERE user_id = $1',
       [userId]
     );
     // ...
@@ -490,7 +490,7 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
 // ❌ NICHT SO: db.query() ohne GUC — RLS Policy fällt auf "allow all" (Root-Modus)
 async getPermissions(tenantId: number, userUuid: string): Promise<...> {
   const rows = await this.db.query(
-    'SELECT ... FROM user_feature_permissions WHERE tenant_id = $1 AND user_id = $2',
+    'SELECT ... FROM user_addon_permissions WHERE tenant_id = $1 AND user_id = $2',
     [tenantId, userId]
   );
 }
@@ -500,10 +500,10 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
 
 1. **`getPermissions(tenantId, userUuid)`** — via `tenantTransaction()`
    - Resolve UUID → user_id
-   - Query `tenant_features` to get active feature codes for this tenant
+   - Query `tenant_addons` to get active feature codes for this tenant
    - Get all categories from `PermissionRegistryService.getAll()`
    - Filter categories to only include tenant-active features
-   - SELECT all permission rows for user from `user_feature_permissions` (RLS filtert tenant)
+   - SELECT all permission rows for user from `user_addon_permissions` (RLS filtert tenant)
    - Merge DB rows with filtered categories → full category tree with current boolean values
    - Modules with `allowedPermissions` set: only include those permission types
 
@@ -516,18 +516,18 @@ async getPermissions(tenantId: number, userUuid: string): Promise<...> {
 3. **`hasPermission(userId, featureCode, moduleCode, action)`** — via `tenantTransaction()` _(Phase 5b)_
    - Used by `PermissionGuard` for endpoint enforcement
    - Takes numeric userId (already resolved by JwtAuthGuard, no UUID resolution needed)
-   - SELECT single row from `user_feature_permissions` (RLS filtert tenant via CLS)
+   - SELECT single row from `user_addon_permissions` (RLS filtert tenant via CLS)
    - Returns `boolean`: `true` if permission granted, `false` if denied or no row exists
    - **Fail-closed:** No row in DB = `false` (denied). Explicit grant required.
    - No `tenantId` param — CLS already set by JwtAuthGuard before guard executes
 
-4. **`getActiveFeaturesForTenant(tenantId)`** — (private helper, innerhalb der Transaction)
-   - `SELECT feature_code FROM tenant_features WHERE is_active = 1` (RLS filtert tenant)
+4. **`getActiveAddonsForTenant(tenantId)`** — (private helper, innerhalb der Transaction)
+   - `SELECT addon_code FROM tenant_addons WHERE is_active = 1` (RLS filtert tenant)
    - Returns `Set<string>` for O(1) lookup
 
 5. **`getReadableFeatureCodes(userId)`** — via `tenantTransaction()` _(Phase 9)_
    - Used by `DashboardService` and `NotificationsController` to filter counts/events
-   - `SELECT DISTINCT feature_code FROM user_feature_permissions WHERE user_id = $1 AND can_read = true`
+   - `SELECT DISTINCT addon_code FROM user_addon_permissions WHERE user_id = $1 AND can_read = true`
    - Returns `Set<string>` of feature codes the user can read
    - No permission row = not in Set → feature counts/events suppressed
 
@@ -537,8 +537,8 @@ Uses: `DatabaseService.tenantTransaction()`, `PermissionRegistryService`, `Logge
 
 - [x] Alle DB-Zugriffe via `tenantTransaction()` (NICHT `db.query()`) ✅ both methods use tenantTransaction
 - [x] RLS GUC wird gesetzt via `set_config('app.tenant_id', ...)` (automatisch durch `tenantTransaction`) ✅
-- [x] getPermissions returns full category tree filtered by tenant's active features ✅ JOINs tenant_features + features
-- [x] upsertPermissions uses UPSERT (INSERT ON CONFLICT UPDATE) ✅ ON CONFLICT (tenant_id, user_id, feature_code, module_code)
+- [x] getPermissions returns full category tree filtered by tenant's active features ✅ JOINs tenant_addons + features
+- [x] upsertPermissions uses UPSERT (INSERT ON CONFLICT UPDATE) ✅ ON CONFLICT (tenant_id, user_id, addon_code, module_code)
 - [x] Validierung gegen PermissionRegistryService (nicht gegen hardcoded Constants) ✅ isValidModule() + getAllowedPermissions()
 - [x] Non-allowed permission types forced to `false` on save ✅ checked per entry
 - [x] NotFoundException if UUID doesn't resolve ✅ resolveUserIdFromUuid()
@@ -620,7 +620,7 @@ Exakt gleiches Pattern wie `@Roles()` — nur mit 3 statt 1 Parameter.
 async hasPermission(userId: number, featureCode: string, moduleCode: string, action: PermissionType): Promise<boolean> {
   return this.db.tenantTransaction(async (client) => {
     const result = await client.query(
-      'SELECT can_read, can_write, can_delete FROM user_feature_permissions WHERE user_id = $1 AND feature_code = $2 AND module_code = $3',
+      'SELECT can_read, can_write, can_delete FROM user_addon_permissions WHERE user_id = $1 AND addon_code = $2 AND module_code = $3',
       [userId, featureCode, moduleCode]
     );
     const row = result.rows[0];
@@ -861,7 +861,7 @@ Each `+page.svelte` passes its origin-specific `backUrl` + `backLabel` to `Permi
 10. `backend/src/nest/notifications/notifications.controller.ts` — permission-filtered SSE _(Phase 9)_
 11. `backend/src/nest/notifications/notifications.module.ts` — import UserPermissionsModule _(Phase 9)_
 
-### Modified Files (Feature-Module, nur Provider hinzufügen)
+### Modified Files (Addon-Module, nur Provider hinzufügen)
 
 1. `backend/src/nest/blackboard/blackboard.module.ts` — add BlackboardPermissionRegistrar to providers
 
@@ -906,7 +906,7 @@ Each phase is self-contained and testable before moving to the next.
 - [x] Permissions überleben Page-Reload ✅
 - [x] Shared Component Pattern: 3 Routen teilen `PermissionSettings.svelte` + `load-permission-data.ts` ✅
 - [x] Empty-State Design System Pattern korrekt verwendet ✅
-- [x] Erweiterbarkeit: neue Kategorie = 2 Files im Feature-Modul, kein zentrales File ✅
+- [x] Erweiterbarkeit: neue Kategorie = 2 Files im Addon-Modul, kein zentrales File ✅
 - [x] `validate:all` passes clean: 0 Errors, 0 Warnings (TypeScript + Svelte + Stylelint) ✅
 - [x] Svelte `$state` Warning resolved (svelte-ignore, intentional one-time clone) ✅
 - [x] Backend routes mapped: `GET /api/v2/user-permissions/:uuid` + `PUT /api/v2/user-permissions/:uuid` ✅
@@ -945,13 +945,13 @@ Each phase is self-contained and testable before moving to the next.
 
 ### Bugfixes während Implementation (2026-02-07)
 
-| Bug                                | Root Cause                                                                                                                                                                                                                                                                            | Fix                                                                                                                                                                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 403 für root User                  | `@Roles('admin')` schloss root aus                                                                                                                                                                                                                                                    | `@Roles('admin', 'root')`                                                                                                                                                        |
-| Admin ohne `has_full_access` Check | `hasFullAccess` fehlte in `NestAuthUser` + JWT Guard                                                                                                                                                                                                                                  | `has_full_access` zu Guard-Query + `NestAuthUser` hinzugefügt, `assertFullAccess()` im Controller                                                                                |
-| Leere Permissions-Liste            | Tenant 2 hatte keine `tenant_features` Einträge                                                                                                                                                                                                                                       | `INSERT INTO tenant_features` für Tenant 2 (12 Features)                                                                                                                         |
-| Toast-Spam bei Checkbox-Toggle     | `showSuccessAlert`/`showWarningAlert` bei jedem Toggle                                                                                                                                                                                                                                | Handler entleert, Feedback nur noch beim Speichern                                                                                                                               |
-| **Permissions wirken nicht**       | **KEIN Enforcement-Layer vorhanden** — Permissions wurden gespeichert aber nie geprüft. Kein Guard, kein Interceptor, kein Middleware las `user_feature_permissions` bei Feature-Requests. Alle Feature-Controller (Blackboard etc.) prüften nur `@Roles()`, nie Feature-Permissions. | **Phase 5b:** `@RequirePermission()` Decorator + `PermissionGuard` (globaler APP_GUARD) + `hasPermission()` Service-Methode. Blackboard als erstes Feature vollständig enforced. |
+| Bug                                | Root Cause                                                                                                                                                                                                                                                                          | Fix                                                                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 403 für root User                  | `@Roles('admin')` schloss root aus                                                                                                                                                                                                                                                  | `@Roles('admin', 'root')`                                                                                                                                                        |
+| Admin ohne `has_full_access` Check | `hasFullAccess` fehlte in `NestAuthUser` + JWT Guard                                                                                                                                                                                                                                | `has_full_access` zu Guard-Query + `NestAuthUser` hinzugefügt, `assertFullAccess()` im Controller                                                                                |
+| Leere Permissions-Liste            | Tenant 2 hatte keine `tenant_addons` Einträge                                                                                                                                                                                                                                       | `INSERT INTO tenant_addons` für Tenant 2 (12 Features)                                                                                                                           |
+| Toast-Spam bei Checkbox-Toggle     | `showSuccessAlert`/`showWarningAlert` bei jedem Toggle                                                                                                                                                                                                                              | Handler entleert, Feedback nur noch beim Speichern                                                                                                                               |
+| **Permissions wirken nicht**       | **KEIN Enforcement-Layer vorhanden** — Permissions wurden gespeichert aber nie geprüft. Kein Guard, kein Interceptor, kein Middleware las `user_addon_permissions` bei Feature-Requests. Alle Feature-Controller (Blackboard etc.) prüften nur `@Roles()`, nie Feature-Permissions. | **Phase 5b:** `@RequirePermission()` Decorator + `PermissionGuard` (globaler APP_GUARD) + `hasPermission()` Service-Methode. Blackboard als erstes Feature vollständig enforced. |
 
 ### Zusätzlich modifizierte Files (Bugfixes)
 
@@ -1063,11 +1063,11 @@ if (canAccess('calendar')) registerCalendarHandler(...);
 
 ---
 
-# Plan Teil 2: Vollständige Permission-Definitionen aller Feature-Module
+# Plan Teil 2: Vollständige Permission-Definitionen aller Addon-Module
 
 > **Voraussetzung:** Plan Teil 1 Infrastruktur (Phasen 1–5, 7) ist umgesetzt. ✅
 > **Status:** ✅ KOMPLETT — 7 Features, 17 Module registriert + enforced (2026-02-07).
-> **Zweck:** Alle Feature-Module erhalten ihre Permission-Definitionen (`.permissions.ts` + `.registrar.ts`).
+> **Zweck:** Alle Addon-Module erhalten ihre Permission-Definitionen (`.permissions.ts` + `.registrar.ts`).
 > **Prinzip:** Dezentrales Registry Pattern — jedes Feature besitzt seine Permissions, kein zentrales File.
 > **Aufwand:** Pro Feature: 2 neue Files + 1 Zeile in `.module.ts`. Kein Frontend-Change nötig.
 
@@ -1319,7 +1319,7 @@ Plan 2 erweitert auf **7 Features** mit insgesamt **17 Modulen**.
 
 - [x] GET `/user-permissions/:uuid` zeigt alle 17 Module in der UI (gefiltert nach Tenant-Features) ✅
 - [ ] Jedes Modul zeigt NUR seine `allowedPermissions`-Checkboxes (z.B. Rotation nur canRead)
-- [x] `feature_code` matcht exakt mit `features.code` aus Seed-Daten ✅
+- [x] `addon_code` matcht exakt mit `features.code` aus Seed-Daten ✅
 - [x] Alle 7 `.module.ts` Files enthalten den Registrar als Provider ✅
 - [x] Backend startet fehlerfrei (kein doppelter `register()` Call) ✅
 - [x] ESLint 0 Errors, Type-Check 0 Errors ✅

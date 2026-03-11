@@ -9,6 +9,8 @@ Use max 10 agents at once.
 
 Permission denied for any git or rm commands. Tell user to do it!
 
+**Terminology:** Use "Addon" (not "Feature") for the modular SaaS system (ADR-033). "Feature" is deprecated — the system uses Addons (DB: `addons`, `tenant_addons`, `user_addon_permissions`). User-facing: "Modul".
+
 ---
 
 ## Required Reading
