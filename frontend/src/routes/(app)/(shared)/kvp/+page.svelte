@@ -22,6 +22,7 @@
   import KvpSuggestionCard from './_lib/KvpSuggestionCard.svelte';
   import { kvpState } from './_lib/state.svelte';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { PageData } from './$types';
   import type {
     KvpCategory,
@@ -40,6 +41,9 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance
+  const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
 
   // SSR data via $derived - updates when invalidateAll() is called
   // PageData is always defined from $props(), and server guarantees array values
@@ -220,6 +224,7 @@
       <!-- Filter Bar -->
       <KvpFilterBar
         userOrganizations={ssrUserOrganizations}
+        {labels}
         onfilterchange={() => {
           void loadSuggestionsData();
         }}
@@ -243,6 +248,7 @@
           {#each kvpState.suggestions as suggestion (suggestion.id)}
             <KvpSuggestionCard
               {suggestion}
+              {labels}
               onclick={() => {
                 viewSuggestion(
                   suggestion.uuid,
@@ -271,6 +277,7 @@
 {#if kvpState.showCreateModal}
   <KvpCreateModal
     userOrganizations={ssrUserOrganizations}
+    {labels}
     onclose={handleCloseCreateModal}
     onsuccess={handleModalSuccess}
   />

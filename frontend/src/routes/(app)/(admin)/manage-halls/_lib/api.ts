@@ -2,6 +2,10 @@
 // MANAGE HALLS - API FUNCTIONS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 import {
@@ -55,7 +59,9 @@ export async function loadHalls(): Promise<{
   }
 }
 
-export async function loadAreas(): Promise<{
+export async function loadAreas(
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): Promise<{
   areas: Area[];
   error: string | null;
 }> {
@@ -68,7 +74,9 @@ export async function loadAreas(): Promise<{
     return {
       areas: [],
       error:
-        err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
+        err instanceof Error ?
+          err.message
+        : `Fehler beim Laden der ${labels.area}`,
     };
   }
 }

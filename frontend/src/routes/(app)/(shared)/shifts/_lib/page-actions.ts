@@ -7,6 +7,10 @@
 import { invalidateAll } from '$app/navigation';
 
 import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+import {
   showSuccessAlert,
   showErrorAlert,
   showWarningAlert,
@@ -219,11 +223,13 @@ export async function handleDeleteFavorite(
 }
 
 /** Add current context to favorites */
-export async function handleAddToFavorites(): Promise<void> {
+export async function handleAddToFavorites(
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): Promise<void> {
   const { areaId, departmentId, teamId } = shiftsState.selectedContext;
   if (areaId === null || departmentId === null || teamId === null) {
     showWarningAlert(
-      'Bitte wählen Sie zuerst einen Bereich, eine Abteilung und ein Team aus.',
+      `Bitte wählen Sie zuerst ${labels.area}, ${labels.department} und ${labels.team} aus.`,
     );
     return;
   }

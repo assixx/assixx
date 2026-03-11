@@ -11,6 +11,10 @@
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+  import {
     sanitizeWithLineBreaks,
     showConfirm,
     showErrorAlert,
@@ -59,6 +63,13 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout (SSR)
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
 
   // Derived from SSR data
   const entry = $derived(data.entry);
@@ -330,7 +341,7 @@
           <div class="data-list__item">
             <span class="data-list__label">Sichtbarkeit</span>
             <span class="badge {getVisibilityBadgeClass(entry.orgLevel)}"
-              >{getOrgLevelText(entry.orgLevel, entry)}</span
+              >{getOrgLevelText(entry.orgLevel, entry, labels)}</span
             >
           </div>
           {#if entry.tags && entry.tags.length > 0}

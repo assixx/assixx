@@ -5,9 +5,10 @@
   Extracted from +page.svelte for maintainability
 -->
 <script lang="ts">
-  import { DROPDOWN_PLACEHOLDERS } from './constants';
+  import { createDropdownPlaceholders } from './constants';
   import { shouldShowAddFavoriteButton } from './favorites';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type {
     Area,
     Department,
@@ -21,6 +22,9 @@
    * Props interface for FilterDropdowns
    */
   interface Props {
+    /** Dynamic hierarchy labels from layout */
+    labels: HierarchyLabels;
+
     // Data
     areas: Area[];
     departments: Department[];
@@ -55,6 +59,7 @@
   }
 
   const {
+    labels,
     areas,
     departments,
     assets,
@@ -79,43 +84,42 @@
     onaddToFavorites,
   }: Props = $props();
 
+  const placeholders = $derived(createDropdownPlaceholders(labels));
+
   // Helper to get selected name
   function getSelectedAreaName(): string {
-    if (selectedContext.areaId === null) return DROPDOWN_PLACEHOLDERS.AREA;
+    if (selectedContext.areaId === null) return placeholders.AREA;
     return (
       areas.find((a) => a.id === selectedContext.areaId)?.name ??
-      DROPDOWN_PLACEHOLDERS.AREA
+      placeholders.AREA
     );
   }
 
   function getSelectedDepartmentName(): string {
-    if (selectedContext.areaId === null)
-      return DROPDOWN_PLACEHOLDERS.AWAIT_AREA;
-    if (selectedContext.departmentId === null)
-      return DROPDOWN_PLACEHOLDERS.DEPARTMENT;
+    if (selectedContext.areaId === null) return placeholders.AWAIT_AREA;
+    if (selectedContext.departmentId === null) return placeholders.DEPARTMENT;
     return (
       departments.find((d) => d.id === selectedContext.departmentId)?.name ??
-      DROPDOWN_PLACEHOLDERS.DEPARTMENT
+      placeholders.DEPARTMENT
     );
   }
 
   function getSelectedTeamName(): string {
     if (selectedContext.departmentId === null)
-      return DROPDOWN_PLACEHOLDERS.AWAIT_DEPARTMENT;
-    if (selectedContext.teamId === null) return DROPDOWN_PLACEHOLDERS.TEAM;
+      return placeholders.AWAIT_DEPARTMENT;
+    if (selectedContext.teamId === null) return placeholders.TEAM;
     return (
       teams.find((t) => t.id === selectedContext.teamId)?.name ??
-      DROPDOWN_PLACEHOLDERS.TEAM
+      placeholders.TEAM
     );
   }
 
   function getSelectedAssetName(): string {
-    if (selectedContext.teamId === null)
-      return DROPDOWN_PLACEHOLDERS.AWAIT_TEAM;
-    if (selectedContext.assetId === null) return DROPDOWN_PLACEHOLDERS.MACHINE;
+    if (selectedContext.teamId === null) return placeholders.AWAIT_TEAM;
+    if (selectedContext.assetId === null) return placeholders.MACHINE;
     return (
       assets.find((m) => m.id === selectedContext.assetId)?.name ??
-      DROPDOWN_PLACEHOLDERS.MACHINE
+      placeholders.MACHINE
     );
   }
 </script>
@@ -175,7 +179,7 @@
 
   <!-- Department Dropdown -->
   <div class="info-item">
-    <div class="info-label">Abteilung</div>
+    <div class="info-label">{labels.department}</div>
     <div
       class="dropdown"
       class:dropdown--disabled={selectedContext.areaId === null}
@@ -281,7 +285,7 @@
 
   <!-- Asset Dropdown (requires Team) -->
   <div class="info-item">
-    <div class="info-label">Anlage</div>
+    <div class="info-label">{labels.asset}</div>
     <div
       class="dropdown"
       class:dropdown--disabled={selectedContext.teamId === null}

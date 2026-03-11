@@ -3,6 +3,11 @@
  * Helper functions for the detail view
  */
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { DetailEntry, Attachment } from './types';
 
 // Re-export shared utilities from parent
@@ -88,13 +93,21 @@ export function getPriorityBadgeClass(priority: string): string {
 // Org Level Helpers
 // ============================================================================
 
-/** Fallback names for org levels */
-const ORG_LEVEL_FALLBACKS: Partial<Record<string, string>> = {
-  company: 'Firmenweit',
-  department: 'Abteilung',
-  team: 'Team',
-  area: 'Bereich',
-};
+/** Factory: fallback names for org levels from dynamic hierarchy labels */
+export function createOrgLevelFallbacks(
+  labels: HierarchyLabels,
+): Partial<Record<string, string>> {
+  return {
+    company: 'Firmenweit',
+    department: labels.department,
+    team: labels.team,
+    area: labels.area,
+  };
+}
+
+/** Default fallback names (backward-compatible) */
+const ORG_LEVEL_FALLBACKS: Partial<Record<string, string>> =
+  createOrgLevelFallbacks(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Get org level text with entry context
@@ -102,6 +115,7 @@ const ORG_LEVEL_FALLBACKS: Partial<Record<string, string>> = {
 export function getOrgLevelText(
   orgLevel: string,
   entry: DetailEntry | null,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): string {
   if (orgLevel === 'company') return 'Firmenweit';
 
@@ -111,7 +125,12 @@ export function getOrgLevelText(
     area: entry?.areaName,
   };
 
-  return dynamicNames[orgLevel] ?? ORG_LEVEL_FALLBACKS[orgLevel] ?? orgLevel;
+  const fallbacks =
+    labels === DEFAULT_HIERARCHY_LABELS ? ORG_LEVEL_FALLBACKS : (
+      createOrgLevelFallbacks(labels)
+    );
+
+  return dynamicNames[orgLevel] ?? fallbacks[orgLevel] ?? orgLevel;
 }
 
 /**

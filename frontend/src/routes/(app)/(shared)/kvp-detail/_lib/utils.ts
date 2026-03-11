@@ -3,12 +3,17 @@
 // =============================================================================
 
 import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
+import {
   STATUS_BADGE_CLASSES,
   STATUS_TEXT,
   PRIORITY_BADGE_CLASSES,
   PRIORITY_TEXT,
   VISIBILITY_BADGE_CLASSES,
-  VISIBILITY_INFO,
+  createVisibilityInfo,
   IMAGE_FILE_TYPES,
 } from './constants';
 
@@ -59,7 +64,10 @@ export function getVisibilityBadgeClass(orgLevel: OrgLevel): string {
  * Get visibility info (icon + text) for suggestion
  * Shows org names from junction table when available, falls back to orgLevel
  */
-export function getVisibilityInfo(suggestion: KvpSuggestion): {
+export function getVisibilityInfo(
+  suggestion: KvpSuggestion,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): {
   icon: string;
   text: string;
 } {
@@ -68,15 +76,18 @@ export function getVisibilityInfo(suggestion: KvpSuggestion): {
     suggestion.organizations !== undefined &&
     suggestion.organizations.length > 0
   ) {
-    return getOrganizationsVisibility(suggestion);
+    return getOrganizationsVisibility(suggestion, labels);
   }
 
   // Legacy fallback: single orgLevel/orgId
-  return getLegacyVisibility(suggestion);
+  return getLegacyVisibility(suggestion, labels);
 }
 
 /** Visibility from junction table organizations */
-function getOrganizationsVisibility(suggestion: KvpSuggestion): {
+function getOrganizationsVisibility(
+  suggestion: KvpSuggestion,
+  labels: HierarchyLabels,
+): {
   icon: string;
   text: string;
 } {
@@ -89,7 +100,7 @@ function getOrganizationsVisibility(suggestion: KvpSuggestion): {
     parts.push(t.orgName ?? `Team ${t.orgId}`);
   }
   for (const m of assets) {
-    parts.push(m.orgName ?? `Anlage ${m.orgId}`);
+    parts.push(m.orgName ?? `${labels.asset} ${m.orgId}`);
   }
 
   if (parts.length > 0) {
@@ -102,7 +113,10 @@ function getOrganizationsVisibility(suggestion: KvpSuggestion): {
 }
 
 /** Legacy visibility from single orgLevel field */
-function getLegacyVisibility(suggestion: KvpSuggestion): {
+function getLegacyVisibility(
+  suggestion: KvpSuggestion,
+  labels: HierarchyLabels,
+): {
   icon: string;
   text: string;
 } {
@@ -110,7 +124,8 @@ function getLegacyVisibility(suggestion: KvpSuggestion): {
     return { icon: 'fa-lock', text: 'Nur Team' };
   }
 
-  const info = VISIBILITY_INFO[suggestion.orgLevel];
+  const visibilityInfo = createVisibilityInfo(labels);
+  const info = visibilityInfo[suggestion.orgLevel];
   let text = info.text;
 
   if (

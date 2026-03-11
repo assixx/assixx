@@ -3,17 +3,35 @@
 // Based on: frontend/src/scripts/shifts/constants.ts
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 /**
- * Error messages (German)
+ * Static error messages (label-independent)
  */
-export const ERROR_MESSAGES = {
+const STATIC_ERROR_MESSAGES = {
   SHIFT_ASSIGNMENT_FAILED: 'Fehler beim Zuweisen der Schicht',
-  NO_DEPARTMENT_SELECTED: 'Bitte wählen Sie zuerst eine Abteilung aus',
   NO_TEAM_SELECTED: 'Bitte wählen Sie zuerst ein Team aus',
   INVALID_HIERARCHY: 'Ungültige Auswahl-Hierarchie',
   LOAD_FAILED: 'Fehler beim Laden der Daten',
   SAVE_FAILED: 'Fehler beim Speichern',
 } as const;
+
+/** Error messages factory with dynamic hierarchy labels */
+export function createErrorMessages(labels: HierarchyLabels) {
+  return {
+    ...STATIC_ERROR_MESSAGES,
+    NO_DEPARTMENT_SELECTED: `Bitte wählen Sie zuerst eine ${labels.department} aus`,
+  };
+}
+
+/** Error messages type for component props */
+export type ShiftErrorMessages = ReturnType<typeof createErrorMessages>;
+
+/** Default error messages (backward-compatible static export) */
+export const ERROR_MESSAGES = createErrorMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Success messages (German)
@@ -81,17 +99,34 @@ export const FULL_DAY_NAMES = [
 export const ADMIN_ROLES = ['admin', 'root', 'manager', 'team_lead'] as const;
 
 /**
- * Dropdown placeholder texts (German)
+ * Static dropdown placeholder texts (label-independent)
  */
-export const DROPDOWN_PLACEHOLDERS = {
+const STATIC_DROPDOWN_PLACEHOLDERS = {
   AREA: 'Bereich wählen...',
-  DEPARTMENT: 'Abteilung wählen...',
-  MACHINE: 'Anlage wählen...',
   TEAM: 'Team wählen...',
   AWAIT_AREA: 'Erst Bereich wählen...',
-  AWAIT_DEPARTMENT: 'Erst Abteilung wählen...',
   AWAIT_TEAM: 'Erst Team wählen...',
 } as const;
+
+/** Dropdown placeholders factory with dynamic hierarchy labels */
+export function createDropdownPlaceholders(labels: HierarchyLabels) {
+  return {
+    ...STATIC_DROPDOWN_PLACEHOLDERS,
+    DEPARTMENT: `${labels.department} wählen...`,
+    MACHINE: `${labels.asset} wählen...`,
+    AWAIT_DEPARTMENT: `Erst ${labels.department} wählen...`,
+  };
+}
+
+/** Dropdown placeholders type for component props */
+export type ShiftDropdownPlaceholders = ReturnType<
+  typeof createDropdownPlaceholders
+>;
+
+/** Default dropdown placeholders (backward-compatible static export) */
+export const DROPDOWN_PLACEHOLDERS = createDropdownPlaceholders(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 /**
  * Shift types array (for iteration)

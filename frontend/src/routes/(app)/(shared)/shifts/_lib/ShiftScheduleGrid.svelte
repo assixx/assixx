@@ -17,6 +17,7 @@
     getShiftTimeInfo,
   } from './utils';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Employee, ShiftDetailData, ShiftTimesMap } from './types';
   import type { Snippet } from 'svelte';
 
@@ -24,6 +25,8 @@
    * Props interface for ShiftScheduleGrid
    */
   interface Props {
+    /** Dynamic hierarchy labels from layout */
+    labels: HierarchyLabels;
     /** Optional snippet rendered directly after the legend bar */
     afterLegend?: Snippet | undefined;
     weekDates: Date[];
@@ -58,6 +61,7 @@
   }
 
   const {
+    labels,
     afterLegend,
     weekDates,
     weeklyNotes,
@@ -126,7 +130,7 @@
 
 <div class="week-schedule">
   <!-- Asset Availability Legend -->
-  <ShiftScheduleLegend />
+  <ShiftScheduleLegend {labels} />
 
   {#if afterLegend}
     {@render afterLegend()}
@@ -257,13 +261,13 @@
       </div>
       <textarea
         class="shift-info-textarea"
-        placeholder="Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...
+        placeholder={`Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...
 
 Beispiele:
-• Wartung Anlage 01 am Mittwoch geplant
+• Wartung ${labels.asset} 01 am Mittwoch geplant
 • Neue Sicherheitsbestimmungen beachten
 • Team-Meeting Freitag 14:00 Uhr
-• Überstunden-Genehmigung für Donnerstag"
+• Überstunden-Genehmigung für Donnerstag`}
         value={weeklyNotes}
         oninput={(e) => {
           onnotesChange((e.target as HTMLTextAreaElement).value);

@@ -10,10 +10,16 @@
   import { page } from '$app/stores';
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
   // Local modules
   import {
+    createBlackboardOrgLabels,
+    createOrgLevelText,
     MESSAGES,
     PLACEHOLDER_TEXT,
     QUICK_ACCESS_ROUTES,
@@ -21,11 +27,9 @@
   import {
     formatBlackboardDate,
     formatEventDate,
-    getBlackboardOrgLabel,
     getDisplayName,
     getDisplayValue,
     getOrgLevelClass,
-    getOrgLevelText,
     getPriorityLabel,
     goToCalendar,
     isAllDay,
@@ -64,6 +68,15 @@
 
   /** Props from server load function */
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout (SSR)
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
+  const orgLevelText = $derived(createOrgLevelText(labels));
+  const blackboardOrgLabels = $derived(createBlackboardOrgLabels(labels));
 
   // Destructure SSR data (guaranteed by +page.server.ts)
   const recentDocuments = $derived(data.recentDocuments);
@@ -104,14 +117,14 @@
         <i class="fas fa-map-marker-alt"></i>
       </div>
       <div class="card-stat__value">{employeeArea}</div>
-      <div class="card-stat__label">Bereich</div>
+      <div class="card-stat__label">{labels.area}</div>
     </div>
     <div class="card-stat">
       <div class="card-stat__icon">
         <i class="fas fa-building"></i>
       </div>
       <div class="card-stat__value">{employeeDepartment}</div>
-      <div class="card-stat__label">Abteilung</div>
+      <div class="card-stat__label">{labels.department}</div>
     </div>
     <div class="card-stat">
       <div class="card-stat__icon">
@@ -127,7 +140,7 @@
         {/if}
       </div>
       <div class="card-stat__label">
-        {employeeTeams !== null && employeeTeams.length > 1 ? 'Teams' : 'Team'}
+        {labels.team}
       </div>
     </div>
     <div class="card-stat">
@@ -249,7 +262,8 @@
                     <span
                       class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}"
                     >
-                      {getBlackboardOrgLabel(entry.orgLevel)}
+                      {blackboardOrgLabels[entry.orgLevel] ??
+                        blackboardOrgLabels.company}
                     </span>
                   </div>
                   <div class="sticky-note__footer-row">
@@ -391,16 +405,19 @@
                     {/if}
                     <div class="event-badges">
                       {#if hasArea}
-                        <span class="event-level event-level-area">Bereich</span
+                        <span class="event-level event-level-area"
+                          >{labels.area}</span
                         >
                       {/if}
                       {#if hasDept}
                         <span class="event-level event-level-department"
-                          >Abteilung</span
+                          >{labels.department}</span
                         >
                       {/if}
                       {#if hasTeam}
-                        <span class="event-level event-level-team">Team</span>
+                        <span class="event-level event-level-team"
+                          >{labels.team}</span
+                        >
                       {/if}
                       {#if !hasArea && !hasDept && !hasTeam}
                         <span
@@ -408,7 +425,8 @@
                             event.orgLevel ?? 'personal',
                           )}"
                         >
-                          {getOrgLevelText(event.orgLevel ?? 'personal')}
+                          {orgLevelText[event.orgLevel ?? 'personal'] ??
+                            orgLevelText.personal}
                         </span>
                       {/if}
                     </div>

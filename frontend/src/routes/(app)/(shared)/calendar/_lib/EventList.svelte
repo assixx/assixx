@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+
   import { getUpcomingEventTimeStr, getEventLevelInfo } from './utils';
 
   import type { CalendarEvent } from './types';
@@ -9,6 +14,7 @@
     subtitle?: string;
     emptyStateMessage: string;
     events: CalendarEvent[];
+    labels?: HierarchyLabels;
     onEventClick: (eventId: number) => void;
   }
 
@@ -18,6 +24,7 @@
     subtitle,
     emptyStateMessage,
     events,
+    labels = DEFAULT_HIERARCHY_LABELS,
     onEventClick,
   }: Props = $props();
 </script>
@@ -75,15 +82,17 @@
               {/if}
               <div class="event-badges">
                 {#if hasArea}
-                  <span class="event-level event-level-area">Bereich</span>
+                  <span class="event-level event-level-area">{labels.area}</span
+                  >
                 {/if}
                 {#if hasDept}
                   <span class="event-level event-level-department"
-                    >Abteilung</span
+                    >{labels.department}</span
                   >
                 {/if}
                 {#if hasTeam}
-                  <span class="event-level event-level-team">Team</span>
+                  <span class="event-level event-level-team">{labels.team}</span
+                  >
                 {/if}
                 {#if !hasArea && !hasDept && !hasTeam}
                   <span class="event-level {levelInfo.class}"

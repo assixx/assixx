@@ -4,6 +4,10 @@
 // Adapted for Svelte 5 (no DOM manipulation)
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
 import { createLogger } from '$lib/utils/logger';
 
 import {
@@ -138,12 +142,12 @@ function validateAddToFavorites(
   departments: Department[],
   assets: Asset[],
   teams: Team[],
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): AddFavoriteValidation {
   if (!isContextCompleteForFavorite(context)) {
     return {
       valid: false,
-      error:
-        'Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Team und Anlage)',
+      error: `Bitte wählen Sie alle Filter aus (${labels.area}, ${labels.department}, ${labels.team} und ${labels.asset})`,
     };
   }
 
@@ -176,6 +180,39 @@ interface AddFavoriteResult {
   favorite?: ShiftFavorite;
 }
 
+/** Persist favorite via API, returning success/failure result */
+async function persistFavorite(
+  context: SelectedContext,
+  names: { area: Area; department: Department; asset: Asset; team: Team },
+  favorites: ShiftFavorite[],
+): Promise<AddFavoriteResult> {
+  const savedFavorite = await apiSaveFavorite({
+    name: `${names.team.name} – ${names.asset.name}`,
+    areaId: context.areaId ?? 0,
+    areaName: names.area.name,
+    departmentId: context.departmentId ?? 0,
+    departmentName: names.department.name,
+    assetId: context.assetId ?? 0,
+    assetName: names.asset.name,
+    teamId: context.teamId ?? 0,
+    teamName: names.team.name,
+  });
+
+  if (savedFavorite === null) {
+    return {
+      success: false,
+      favorites,
+      error: 'Fehler beim Speichern des Favoriten',
+    };
+  }
+
+  return {
+    success: true,
+    favorites: [...favorites, savedFavorite],
+    favorite: savedFavorite,
+  };
+}
+
 /**
  * Add current context to favorites
  */
@@ -186,6 +223,7 @@ export async function addToFavorites(
   departments: Department[],
   assets: Asset[],
   teams: Team[],
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
 ): Promise<AddFavoriteResult> {
   const validation = validateAddToFavorites(
     context,
@@ -194,41 +232,14 @@ export async function addToFavorites(
     departments,
     assets,
     teams,
+    labels,
   );
   if (!validation.valid || validation.names === undefined) {
     return { success: false, favorites, error: validation.error };
   }
 
-  const { names } = validation;
-
   try {
-    const favoriteName = `${names.team.name} – ${names.asset.name}`;
-
-    const savedFavorite = await apiSaveFavorite({
-      name: favoriteName,
-      areaId: context.areaId ?? 0,
-      areaName: names.area.name,
-      departmentId: context.departmentId ?? 0,
-      departmentName: names.department.name,
-      assetId: context.assetId ?? 0,
-      assetName: names.asset.name,
-      teamId: context.teamId ?? 0,
-      teamName: names.team.name,
-    });
-
-    if (savedFavorite === null) {
-      return {
-        success: false,
-        favorites,
-        error: 'Fehler beim Speichern des Favoriten',
-      };
-    }
-
-    return {
-      success: true,
-      favorites: [...favorites, savedFavorite],
-      favorite: savedFavorite,
-    };
+    return await persistFavorite(context, validation.names, favorites);
   } catch (err: unknown) {
     log.error({ err }, 'Error saving favorite');
     return {

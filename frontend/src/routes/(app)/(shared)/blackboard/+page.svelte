@@ -20,6 +20,10 @@
   // API Client (for mutations only)
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -47,6 +51,13 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout (SSR)
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
 
   // SSR data as derived - updates automatically when data changes
   const entries = $derived(data.entries);
@@ -467,6 +478,7 @@
     {sortDir}
     {sortLabel}
     expanded={filterExpanded}
+    {labels}
     onsearchchange={handleSearch}
     onlevelchange={setLevelFilter}
     onsortchange={setSort}
@@ -609,6 +621,7 @@
     {departments}
     {teams}
     {areas}
+    {labels}
     onclose={closeEntryModal}
     onsubmit={handleEntrySubmit}
     ontitlechange={(v: string) => (formTitle = v)}

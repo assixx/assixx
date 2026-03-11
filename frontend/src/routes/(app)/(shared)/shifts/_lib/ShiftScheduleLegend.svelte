@@ -9,6 +9,15 @@
     type AssetAvailabilityStatus,
   } from '$lib/asset-availability/constants';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+
+  interface Props {
+    /** Dynamic hierarchy labels from layout */
+    labels: HierarchyLabels;
+  }
+
+  const { labels }: Props = $props();
+
   /** Asset availability statuses shown in the legend */
   const LEGEND_STATUSES: AssetAvailabilityStatus[] = [
     'maintenance',
@@ -20,10 +29,10 @@
 </script>
 
 <div class="legend-bar">
-  <!-- Row 1: Anlagenverfügbarkeit -->
+  <!-- Row 1: Asset availability -->
   <div class="legend-row">
     <span class="legend-row__title">
-      <i class="fas fa-cogs"></i> Anlagenverfügbarkeit
+      <i class="fas fa-cogs"></i> Verfügbarkeit {labels.asset}
     </span>
     {#each LEGEND_STATUSES as status (status)}
       <div class="legend-item">

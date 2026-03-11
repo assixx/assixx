@@ -10,6 +10,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { requireFeature } from '$lib/utils/feature-guard';
 import { createLogger } from '$lib/utils/logger';
 
@@ -239,7 +240,9 @@ function buildEmployeeTeamInfo(
     teamName:
       userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
     departmentId: userData.teamDepartmentId ?? 0,
-    departmentName: userData.teamDepartmentName ?? 'Unbekannte Abteilung',
+    departmentName:
+      userData.teamDepartmentName ??
+      `Unbekannte ${DEFAULT_HIERARCHY_LABELS.department}`,
     areaId: userData.teamAreaId ?? 0,
     areaName: userData.teamAreaName ?? 'Unbekannter Bereich',
     teamLeaderId,

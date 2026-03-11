@@ -5,7 +5,7 @@
 | **Status**              | Accepted                                                                                                       |
 | **Date**                | 2026-03-11                                                                                                     |
 | **Decision Makers**     | SCS-Technik Team                                                                                               |
-| **Affected Components** | Backend (1 endpoint update), Frontend (40+ files: layout, navigation, breadcrumb, 15+ page modules)            |
+| **Affected Components** | Backend (1 endpoint update), Frontend (50+ files: layout, navigation, breadcrumb, 22+ page modules)            |
 | **Supersedes**          | ---                                                                                                            |
 | **Related ADRs**        | ADR-012 (Route Security Groups), ADR-020 (Per-User Permissions), ADR-024 (Feature Guards), ADR-026 (TPM Arch.) |
 
@@ -226,14 +226,14 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 - **Type-Safe**: `ReturnType<typeof createMessages>` gibt exakten Typ, keine `any` oder `Record<string, string>`
 - **SSR-kompatibel**: Labels sind beim First Paint bereits korrekt (kein Flash of Default Labels)
 - **Testbar**: Factory-Funktionen sind pure Functions, Props sind direkt injizierbar
-- **~250 String-Ersetzungen** in ~40+ Dateien — vollständig per Factory-Pattern abgedeckt
+- **~360 String-Ersetzungen** in ~50+ Dateien — vollständig per Factory-Pattern abgedeckt (V2: ~250, V2.1: ~110)
 
 ### Negative
 
 - **Prop Threading Boilerplate**: Jede Child-Component braucht `messages` Prop + Type-Import (3-5 Zeilen pro Component)
 - **Plural-Only Limitation**: "Bereichsleiter" kann nicht dynamisch zu "Hallenleiter" werden — nutzt stattdessen "Leiter" oder wird übersprungen (KL#2)
 - **Kein Live-Update**: Label-Änderungen werden erst nach Navigation/Reload sichtbar, nicht in Echtzeit
-- **7 Module nicht propagiert (V3-Scope)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — ~36 verbleibende Stellen
+- **~~7 Module nicht propagiert~~ (V2.1 RESOLVED)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — alle ~110 Stellen in V2.1 nachpropagiert
 - **Keine E-Mail/PDF-Propagation**: Backend-generierte Texte (Notifications, Exports) nutzen weiterhin Default-Labels
 - **`hall` ist kein OrgEntityType**: Hall hat keine eigene Org-Chart-Farbe in `ENTITY_COLORS`, sondern eine separate `HALL_COLOR`-Konstante im Organigram-Modal
 
@@ -248,8 +248,9 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 | 3     | Management-Seiten (areas, depts, teams, assets)      | 2           | ~20     |
 | 4     | Remaining Pages (halls, admins, dashboard, TPM, ...) | 4           | ~25     |
 | 5     | Smoke Test + Docs + Polish                           | 1 (pending) | ~3      |
+| V2.1  | Nachpropagation: 7 zurückgestellte Module            | 1           | ~35     |
 
-**Total:** 7 Sessions (von 8 geplant), ~250 String-Ersetzungen, 0 Breaking Changes.
+**Total:** 9 Sessions, ~360 String-Ersetzungen, 0 Breaking Changes.
 
 ---
 

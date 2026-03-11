@@ -7,7 +7,7 @@
 > **Spec:** [FEAT_ORGANIGRAM_MASTERPLAN.md](./FEAT_ORGANIGRAM_MASTERPLAN.md) (Known Limitation #5 → V2)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 8
-> **Actual Sessions:** 8 / 8 (Session 8 — Tests + Polish + Docs + Consolidation)
+> **Actual Sessions:** 9 / 9 (Session 9 — V2.1 Nachpropagation aller 7 zurückgestellten Module)
 
 ---
 
@@ -25,6 +25,7 @@
 | 0.8.0   | 2026-03-10 | Session 6: Phase 4 Steps 4.6–4.8 (vacation/rules + TPM factories + scattered refs)          |
 | 0.9.0   | 2026-03-11 | Session 7: Page wiring — TPM (7 pages + 6 children), logs, dummies, root                    |
 | 1.0.0   | 2026-03-11 | Session 8: Phase 5 — API-Tests, Labels-Source konsolidiert, Docs aktualisiert               |
+| 1.1.0   | 2026-03-11 | Session 9: V2.1 — Alle 7 zurückgestellten Module nachpropagiert (~110 Stellen, ~35 Dateien) |
 
 ---
 
@@ -558,6 +559,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 | 6       | 4     | vacation/rules + TPM factories + scattered refs                  | DONE   | 2026-03-10 |
 | 7       | 4+5   | TPM page wiring + remaining page wiring + Vollständigkeits-Check | DONE   | 2026-03-11 |
 | 8       | 5     | API-Tests + Labels-Source konsolidiert + Docs aktualisiert       | DONE   | 2026-03-11 |
+| 9       | V2.1  | Nachpropagation: 7 zurückgestellte Module (~110 Stellen)         | DONE   | 2026-03-11 |
 
 ---
 
@@ -611,7 +613,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 | api-client.utils   | SKIPPED (KL#2 — compound word in utility)                                  | —       |
 | organigram         | state.svelte.ts (Label-Source konsolidieren)                               | ~2      |
 
-**Verifiziert: ~250+ String-Ersetzungen in ~40+ Dateien.**
+**Verifiziert: ~360+ String-Ersetzungen in ~50+ Dateien (V2: ~250, V2.1: ~110).**
 
 ---
 
@@ -631,9 +633,9 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 3. **Keine Live-Updates** — Labels aktualisieren sich erst nach Navigation/Reload, nicht in Echtzeit.
 4. **Keine Label-Propagation in E-Mails/PDFs** — Nur Frontend. Backend-generierte Texte (Notifications, Exports) nutzen weiterhin Default-Labels.
 5. **Keine Pluralisierungs-Engine** — Wenn jemand "Halle" als Plural eingibt, wird überall "Halle" stehen. Der User ist verantwortlich für korrekte Plural-Formen.
-6. **Nicht propagierte Module (V3-Scope)** — 7 Module haben noch hardcoded Hierarchy-Strings, die bewusst nicht in V2 aufgenommen wurden:
-   - `employee-dashboard` (4 Stellen), `documents-explorer` (4), `calendar` (8), `shifts` (5), `kvp` (4), `kvp-detail` (4), `blackboard` (7)
-   - Insgesamt ~36 Stellen — gleiches Factory-Pattern anwendbar, separater Feature-Branch empfohlen.
+6. **~~Nicht propagierte Module~~ (V2.1 RESOLVED)** — Alle 7 Module nachpropagiert (Session 9, 2026-03-11):
+   - `employee-dashboard`, `documents-explorer`, `calendar`, `shifts`, `kvp`, `kvp-detail`, `blackboard`
+   - ~110 String-Ersetzungen in ~35 Dateien, gleiches Factory-Pattern wie V2.
 
 ---
 
@@ -646,7 +648,7 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 | Phase 3 (Management) | manage-areas, -departments, -teams, -assets                                                       | Factory + Page Wiring    |
 | Phase 4 (Remaining)  | manage-halls, -admins, -employees, admin-dashboard, survey-\*, vacation, TPM, dummies, root, logs | Factory + Page Wiring    |
 | KL#2 (Compound)      | manage-admins, admin-profile, employee-profile                                                    | SKIPPED (Bereichsleiter) |
-| V3-Scope             | employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard             | NOT IN SCOPE             |
+| V2.1 (Session 9)     | employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard             | Factory + Page Wiring    |
 
 ---
 

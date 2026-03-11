@@ -1,5 +1,10 @@
 <script lang="ts">
   import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+
+  import {
     getEventLevelText,
     formatDateTime,
     getResponseText,
@@ -13,6 +18,7 @@
     canEdit: boolean;
     canDelete: boolean;
     isPast: boolean;
+    labels?: HierarchyLabels;
     areas?: Area[];
     departments?: Department[];
     teams?: Team[];
@@ -26,6 +32,7 @@
     canEdit,
     canDelete,
     isPast,
+    labels = DEFAULT_HIERARCHY_LABELS,
     areas = [],
     departments = [],
     teams = [],
@@ -34,7 +41,7 @@
     ondelete,
   }: Props = $props();
 
-  const levelText = $derived(getEventLevelText(event));
+  const levelText = $derived(getEventLevelText(event, labels));
 
   // Lookup names for assignments
   const areaName = $derived(areas.find((a) => a.id === event.areaId)?.name);
@@ -119,19 +126,20 @@
           {#if areaName}
             <div class="detail-item">
               <i class="fas fa-map-marked-alt"></i>
-              <span><strong>Bereich:</strong> {areaName}</span>
+              <span><strong>{labels.area}:</strong> {areaName}</span>
             </div>
           {/if}
           {#if departmentName}
             <div class="detail-item">
               <i class="fas fa-sitemap"></i>
-              <span><strong>Abteilung:</strong> {departmentName}</span>
+              <span><strong>{labels.department}:</strong> {departmentName}</span
+              >
             </div>
           {/if}
           {#if teamName}
             <div class="detail-item">
               <i class="fas fa-users"></i>
-              <span><strong>Team:</strong> {teamName}</span>
+              <span><strong>{labels.team}:</strong> {teamName}</span>
             </div>
           {/if}
 

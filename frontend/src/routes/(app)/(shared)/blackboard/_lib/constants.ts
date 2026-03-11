@@ -3,6 +3,11 @@
  * Labels, Options, and Configuration values
  */
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { Priority, OrgLevel, EntryColor } from './types';
 
 // ============================================================================
@@ -56,12 +61,22 @@ export const PRIORITY_OPTIONS: PriorityOption[] = [
 // Org Level Labels & Classes
 // ============================================================================
 
-export const ORG_LEVEL_LABELS: Record<OrgLevel, string> = {
-  company: 'Firma',
-  department: 'Abteilung',
-  team: 'Team',
-  area: 'Bereich',
-};
+/** Factory: org level labels from dynamic hierarchy labels */
+export function createOrgLevelLabels(
+  labels: HierarchyLabels,
+): Record<OrgLevel, string> {
+  return {
+    company: 'Firma',
+    department: labels.department,
+    team: labels.team,
+    area: labels.area,
+  };
+}
+
+/** Default org level labels (backward-compatible) */
+export const ORG_LEVEL_LABELS: Record<OrgLevel, string> = createOrgLevelLabels(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 export const ORG_LEVEL_BADGE_CLASSES: Record<OrgLevel, string> = {
   company: 'sticky-note__badge--org-company',
@@ -112,13 +127,22 @@ export interface LevelFilterOption {
   icon: string;
 }
 
-export const LEVEL_FILTER_OPTIONS: LevelFilterOption[] = [
-  { value: 'all', label: 'Alle', icon: 'fa-globe' },
-  { value: 'company', label: 'Firma', icon: 'fa-building' },
-  { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' },
-  { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' },
-  { value: 'team', label: 'Team', icon: 'fa-users' },
-];
+/** Factory: level filter options from dynamic hierarchy labels */
+export function createLevelFilterOptions(
+  labels: HierarchyLabels,
+): LevelFilterOption[] {
+  return [
+    { value: 'all', label: 'Alle', icon: 'fa-globe' },
+    { value: 'company', label: 'Firma', icon: 'fa-building' },
+    { value: 'area', label: labels.area, icon: 'fa-map-marked-alt' },
+    { value: 'department', label: labels.department, icon: 'fa-sitemap' },
+    { value: 'team', label: labels.team, icon: 'fa-users' },
+  ];
+}
+
+/** Default level filter options (backward-compatible) */
+export const LEVEL_FILTER_OPTIONS: LevelFilterOption[] =
+  createLevelFilterOptions(DEFAULT_HIERARCHY_LABELS);
 
 // ============================================================================
 // Form Defaults
