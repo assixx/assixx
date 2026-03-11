@@ -1,6 +1,6 @@
 /**
  * Addon Management Page — Client-Side API Functions
- * @module features/_lib/api
+ * @module addons/_lib/api
  *
  * Mutations only — SSR load happens in +page.server.ts.
  */

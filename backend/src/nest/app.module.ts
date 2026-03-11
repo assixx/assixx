@@ -16,6 +16,7 @@ import { ClsModule, ClsService } from 'nestjs-cls';
 import { randomUUID } from 'node:crypto';
 
 import { AddonCheckModule } from './addon-check/addon-check.module.js';
+import { AddonVisitsModule } from './addon-visits/addon-visits.module.js';
 import { AddonsModule } from './addons/addons.module.js';
 import { AdminPermissionsModule } from './admin-permissions/admin-permissions.module.js';
 import { AreasModule } from './areas/areas.module.js';
@@ -45,7 +46,6 @@ import { DocumentsModule } from './documents/documents.module.js';
 import { DummyUsersModule } from './dummy-users/dummy-users.module.js';
 import { E2eEscrowModule } from './e2e-escrow/e2e-escrow.module.js';
 import { E2eKeysModule } from './e2e-keys/e2e-keys.module.js';
-import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
 import { HallsModule } from './halls/halls.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
@@ -162,7 +162,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     E2eKeysModule,
     BlackboardModule,
     AddonCheckModule,
-    FeatureVisitsModule,
+    AddonVisitsModule,
     AddonsModule,
     HallsModule,
     KvpModule,

@@ -1,6 +1,6 @@
 /**
  * Addon Management Page — Utility Functions
- * @module features/_lib/utils
+ * @module addons/_lib/utils
  */
 import type { AddonWithTenantStatus } from './types';
 

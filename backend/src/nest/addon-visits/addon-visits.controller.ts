@@ -1,26 +1,26 @@
 /**
- * Feature Visits Controller
+ * Addon Visits Controller
  *
- * HTTP endpoints for tracking user visits to features:
- * - POST /feature-visits/mark - Mark a feature as visited
+ * HTTP endpoints for tracking user visits to addons:
+ * - POST /addon-visits/mark - Mark an addon as visited
  */
 import { Body, Controller, Post } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import { AddonVisitsService } from './addon-visits.service.js';
 import { MarkVisitedDto } from './dto/mark-visited.dto.js';
-import { FeatureVisitsService } from './feature-visits.service.js';
 
-@Controller('feature-visits')
-export class FeatureVisitsController {
-  constructor(private readonly featureVisitsService: FeatureVisitsService) {}
+@Controller('addon-visits')
+export class AddonVisitsController {
+  constructor(private readonly addonVisitsService: AddonVisitsService) {}
 
   /**
-   * Mark a feature as visited
-   * Updates last_visited_at to NOW() for the current user and feature
+   * Mark an addon as visited
+   * Updates last_visited_at to NOW() for the current user and addon
    *
-   * POST /api/v2/feature-visits/mark
+   * POST /api/v2/addon-visits/mark
    */
   @Post('mark')
   async markVisited(
@@ -28,7 +28,7 @@ export class FeatureVisitsController {
     @CurrentUser() user: NestAuthUser,
     @Body() dto: MarkVisitedDto,
   ): Promise<{ success: true }> {
-    await this.featureVisitsService.markVisited(tenantId, user.id, dto.feature);
+    await this.addonVisitsService.markVisited(tenantId, user.id, dto.addon);
     return { success: true };
   }
 }

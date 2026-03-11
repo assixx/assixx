@@ -1,14 +1,14 @@
 /**
- * Unit tests for FeatureVisitsService
+ * Unit tests for AddonVisitsService
  *
- * Phase 11: Service tests — mocked dependencies.
+ * Service tests — mocked dependencies.
  * Focus: UPSERT markVisited, queryOne getLastVisited (null path),
  *        getAllVisits Map construction.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import { FeatureVisitsService } from './feature-visits.service.js';
+import { AddonVisitsService } from './addon-visits.service.js';
 
 // =============================================================
 // Mock factories
@@ -19,17 +19,17 @@ function createMockDb() {
 }
 
 // =============================================================
-// FeatureVisitsService
+// AddonVisitsService
 // =============================================================
 
-describe('FeatureVisitsService', () => {
-  let service: FeatureVisitsService;
+describe('AddonVisitsService', () => {
+  let service: AddonVisitsService;
   let mockDb: ReturnType<typeof createMockDb>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new FeatureVisitsService(mockDb as unknown as DatabaseService);
+    service = new AddonVisitsService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -77,7 +77,7 @@ describe('FeatureVisitsService', () => {
   // =============================================================
 
   describe('getAllVisits', () => {
-    it('should return Map of feature visits', async () => {
+    it('should return Map of addon visits', async () => {
       const calDate = new Date('2025-06-01T10:00:00Z');
       const kvpDate = new Date('2025-06-02T14:00:00Z');
       mockDb.query.mockResolvedValueOnce([

@@ -7,8 +7,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AddonVisitsService } from '../addon-visits/addon-visits.service.js';
 import type { DatabaseService } from '../database/database.service.js';
-import type { FeatureVisitsService } from '../feature-visits/feature-visits.service.js';
 import { CalendarOverviewService } from './calendar-overview.service.js';
 import type { CalendarPermissionService } from './calendar-permission.service.js';
 
@@ -34,7 +34,7 @@ function createMockDb() {
   return { query: vi.fn() };
 }
 
-function createMockFeatureVisits() {
+function createMockAddonVisits() {
   return { getLastVisited: vi.fn() };
 }
 
@@ -54,17 +54,17 @@ function createMockPermissionService() {
 describe('CalendarOverviewService', () => {
   let service: CalendarOverviewService;
   let mockDb: ReturnType<typeof createMockDb>;
-  let mockFeatureVisits: ReturnType<typeof createMockFeatureVisits>;
+  let mockAddonVisits: ReturnType<typeof createMockAddonVisits>;
   let mockPermission: ReturnType<typeof createMockPermissionService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    mockFeatureVisits = createMockFeatureVisits();
+    mockAddonVisits = createMockAddonVisits();
     mockPermission = createMockPermissionService();
     service = new CalendarOverviewService(
       mockDb as unknown as DatabaseService,
-      mockFeatureVisits as unknown as FeatureVisitsService,
+      mockAddonVisits as unknown as AddonVisitsService,
       mockPermission as unknown as CalendarPermissionService,
     );
   });
@@ -139,7 +139,7 @@ describe('CalendarOverviewService', () => {
         role: 'root',
         has_full_access: false,
       });
-      mockFeatureVisits.getLastVisited.mockResolvedValueOnce(null);
+      mockAddonVisits.getLastVisited.mockResolvedValueOnce(null);
       mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
 
       const result = await service.getUpcomingCount(10, 1, null, null);
@@ -148,7 +148,7 @@ describe('CalendarOverviewService', () => {
     });
 
     it('should use permission-based path for employee', async () => {
-      mockFeatureVisits.getLastVisited.mockResolvedValueOnce(
+      mockAddonVisits.getLastVisited.mockResolvedValueOnce(
         new Date('2025-06-01'),
       );
       mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
@@ -159,7 +159,7 @@ describe('CalendarOverviewService', () => {
     });
 
     it('should default to epoch when no last visit', async () => {
-      mockFeatureVisits.getLastVisited.mockResolvedValueOnce(null);
+      mockAddonVisits.getLastVisited.mockResolvedValueOnce(null);
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
 
       const result = await service.getUpcomingCount(10, 5, null, null);

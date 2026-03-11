@@ -320,7 +320,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     badgeType: 'chat',
     addonCode: 'chat',
   },
-  { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
+  { id: 'addons', icon: ICONS.feature, label: 'Module', url: '/addons' },
   { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
   {
     id: 'profile',

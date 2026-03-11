@@ -1,8 +1,8 @@
 # FEAT: Addon System Refactor — Execution Masterplan
 
 > **Created:** 2026-03-10
-> **Version:** 2.1.0 (DoD verifiziert, Cosmetic-Bugs dokumentiert)
-> **Status:** NEAR-COMPLETE — Phase 1-6 Done, Phase 7 (Cosmetic Cleanup) offen
+> **Version:** 2.2.0 (Phase 7 Cosmetic Cleanup implementiert)
+> **Status:** COMPLETE — Phase 1-7 Done (User muss alte Verzeichnisse löschen)
 > **Branch:** `feat/organigramm` (working branch)
 > **Spec:** [ADR-033](./infrastructure/adr/ADR-033-addon-based-saas-model.md)
 > **Context:** [ADR-032 (Superseded)](./infrastructure/adr/ADR-032-feature-catalog-and-plan-tiers.md)
@@ -26,6 +26,7 @@
 | 1.5.0   | 2026-03-11 | Phase 5 COMPLETE. Session 9: PermissionSettings featureCode→addonCode. (admin)/features Page komplett umgeschrieben als Addon-Verwaltung (Kern-Module + Zusatz-Module mit Trial/Activate/Deactivate). 7 Dateien: types.ts, constants.ts, api.ts, utils.ts, +page.server.ts, +page.svelte (alles neu), AddonResources.svelte (deprecated-stub). Phase 5 DoD: grep 0 Treffer für alte Referenzen, svelte-check 0 Errors, ESLint 0 Errors.                                                          |
 | 2.0.0   | 2026-03-11 | **REFACTOR COMPLETE.** Phase 6: Session 10. Step 6.1: Seeds neu (addons statt features/plans/plan_features). Step 6.2: ADR-032 Superseded, ADR-033 Accepted, FEATURES.md→Addon-Matrix, DB-Migration-Guide Seeds+Protected-Tables aktualisiert. Step 6.3: 2 Runtime-Bugs gefixt (feature_visits→addon_visits SQL, current_plan→tenant_storage), root.types Plan-Konstanten entfernt. 7 orphaned old files zur Löschung markiert. Type-check 0, ESLint 0, Tests grün.                              |
 | 2.1.0   | 2026-03-11 | **DoD-Verifikation.** Alle unchecked DoD-Checkboxen verifiziert und abgehakt. DB-Zustand per SQL bestätigt. Tests: 5497/5497 passed (0 Failures). Phase 7 hinzugefügt: Frontend-Route `/features`→`/addons` + Navigation-Label + Breadcrumb noch nicht umbenannt. `feature-visits` Cosmetic-Rename weiterhin deferred. |
+| 2.2.0   | 2026-03-11 | **Phase 7 COMPLETE.** Step 7.1: Route `(admin)/features/`→`(admin)/addons/` (7 Dateien neu erstellt). Step 7.2: Navigation "Features"→"Module", Breadcrumb aktualisiert. Step 7.3: Backend `feature-visits/`→`addon-visits/` (6 Dateien, alle Imports: app.module, calendar-module, calendar-overview-service+test, Frontend calendar/api.ts). DTO: `feature`→`addon` Body-Field, `FeatureSchema`→`VisitableAddonSchema`. API-Route: `/feature-visits/mark`→`/addon-visits/mark`. Type-Check 0, ESLint 0, Tests 5533/5533. **USER ACTION:** Alte Verzeichnisse löschen. |
 
 > **Versionierungsregel:**
 >
@@ -502,7 +503,7 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 > **Abhängigkeit:** Phase 6 complete
 > **Status:** ⏳ PENDING
 
-### Step 7.1: Frontend-Route `/features` → `/addons` ⏳ PENDING
+### Step 7.1: Frontend-Route `/features` → `/addons` ✅ DONE
 
 **Problem:** Das Route-Verzeichnis heißt noch `(admin)/features/`. Die URL ist `localhost:5173/features` statt `/addons`.
 
@@ -511,14 +512,14 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 - `frontend/src/routes/(app)/(admin)/features/` → `frontend/src/routes/(app)/(admin)/addons/` (ganzes Verzeichnis umbenennen)
 - Alle internen Imports/Pfade in den 7 Dateien anpassen (`$types`, relative Imports)
 
-### Step 7.2: Navigation + Breadcrumb Rename ⏳ PENDING
+### Step 7.2: Navigation + Breadcrumb Rename ✅ DONE
 
 **Betroffene Stellen:**
 
 - `frontend/src/routes/(app)/_lib/navigation-config.ts:323` — `id: 'features'` → `'addons'`, `label: 'Features'` → `'Module'`, `url: '/features'` → `'/addons'`
 - `frontend/src/lib/components/Breadcrumb.svelte:115` — `'/features': { label: 'Features' }` → `'/addons': { label: 'Module' }`
 
-### Step 7.3: feature-visits Cosmetic Rename ⏳ PENDING (deferred seit Phase 6)
+### Step 7.3: feature-visits Cosmetic Rename ✅ DONE
 
 **Problem:** Backend-Modul heißt noch `feature-visits` statt `addon-visits` (Dateinamen + Modulname). SQL-Queries sind bereits korrekt.
 
@@ -531,12 +532,12 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
 ### Phase 7 — Definition of Done
 
-- [ ] URL `/addons` statt `/features` im Browser
-- [ ] Navigation-Label zeigt "Module" statt "Features"
-- [ ] Breadcrumb zeigt "Module" statt "Features"
-- [ ] `feature-visits` Modul → `addon-visits` umbenannt
-- [ ] Type-Check + ESLint + Tests alle grün
-- [ ] `grep -r "feature" frontend/src/routes/(app)/(admin)/features` → 0 Treffer (Verzeichnis existiert nicht mehr)
+- [x] URL `/addons` statt `/features` im Browser — neue Route erstellt
+- [x] Navigation-Label zeigt "Module" statt "Features" — navigation-config.ts aktualisiert
+- [x] Breadcrumb zeigt "Module" statt "Features" — Breadcrumb.svelte aktualisiert
+- [x] `feature-visits` Modul → `addon-visits` umbenannt — 6 neue Dateien, alle Imports aktualisiert
+- [x] Type-Check + ESLint + Tests alle grün — 5533/5533 passed, verifiziert 2026-03-11
+- [ ] **USER ACTION:** Alte Verzeichnisse löschen: `rm -rf frontend/src/routes/(app)/(admin)/features/ backend/src/nest/feature-visits/`
 
 ---
 

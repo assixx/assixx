@@ -1,6 +1,6 @@
 /**
  * Addon Management Page — Type Definitions
- * @module features/_lib/types
+ * @module addons/_lib/types
  *
  * Types match backend AddonsService response shapes (ADR-033).
  */

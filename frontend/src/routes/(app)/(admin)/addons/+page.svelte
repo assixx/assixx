@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Addon Management Page
-   * @module features/+page
+   * @module addons/+page
    *
    * Shows all addons with tenant status. Core addons are always active.
    * Purchasable addons can be activated (trial) or deactivated.

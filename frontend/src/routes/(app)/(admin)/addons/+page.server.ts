@@ -1,6 +1,6 @@
 /**
  * Addon Management Page — Server-Side Data Loading
- * @module features/+page.server
+ * @module addons/+page.server
  *
  * SSR: Loads all addons with tenant status + summary.
  * Access restricted to root users.

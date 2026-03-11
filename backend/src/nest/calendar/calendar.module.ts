@@ -11,7 +11,7 @@
  */
 import { Module } from '@nestjs/common';
 
-import { FeatureVisitsModule } from '../feature-visits/feature-visits.module.js';
+import { AddonVisitsModule } from '../addon-visits/addon-visits.module.js';
 import { CalendarCreationService } from './calendar-creation.service.js';
 import { CalendarOverviewService } from './calendar-overview.service.js';
 import { CalendarPermissionRegistrar } from './calendar-permission.registrar.js';
@@ -20,7 +20,7 @@ import { CalendarController } from './calendar.controller.js';
 import { CalendarService } from './calendar.service.js';
 
 @Module({
-  imports: [FeatureVisitsModule],
+  imports: [AddonVisitsModule],
   controllers: [CalendarController],
   providers: [
     CalendarService,

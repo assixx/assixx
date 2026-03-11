@@ -1,6 +1,6 @@
 /**
  * Addon Management Page — Constants
- * @module features/_lib/constants
+ * @module addons/_lib/constants
  */
 
 /** FontAwesome icon class per addon code */
