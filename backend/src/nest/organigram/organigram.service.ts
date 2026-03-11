@@ -60,6 +60,8 @@ export class OrganigramService {
     const [
       tenant,
       labels,
+      viewport,
+      hallOverrides,
       areas,
       departments,
       teams,
@@ -69,6 +71,8 @@ export class OrganigramService {
     ] = await Promise.all([
       this.fetchTenantInfo(tenantId),
       this.settings.getHierarchyLabels(tenantId),
+      this.settings.getViewport(tenantId),
+      this.settings.getHallOverrides(tenantId),
       this.fetchAreas(tenantId),
       this.fetchDepartments(tenantId),
       this.fetchTeams(tenantId),
@@ -90,6 +94,8 @@ export class OrganigramService {
       companyName: tenant.company_name,
       address: tenant.address,
       hierarchyLabels: labels,
+      viewport,
+      hallOverrides,
       nodes,
     };
   }

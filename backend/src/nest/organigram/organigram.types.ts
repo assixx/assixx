@@ -42,10 +42,35 @@ export interface OrgChartNode {
   hallName?: string;
 }
 
+/** Gespeicherter Viewport-Zustand (Zoom + Pan + Font-Größe) */
+export interface OrgViewport {
+  zoom: number;
+  panX: number;
+  panY: number;
+  fontSize: number;
+}
+
+export const DEFAULT_VIEWPORT: OrgViewport = {
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  fontSize: 13,
+};
+
+/** Manuelle Hallen-Bounds (Override über Auto-Compute) */
+export interface HallOverride {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface OrgChartTree {
   companyName: string;
   address: string | null;
   hierarchyLabels: HierarchyLabels;
+  viewport: OrgViewport;
+  hallOverrides: Record<string, HallOverride>;
   nodes: OrgChartNode[];
 }
 

@@ -1,10 +1,10 @@
 <!--
-  Feature Unavailable Page
+  Addon Unavailable Page
 
-  Shown when a user navigates to a feature that is not activated for their tenant.
+  Shown when a user navigates to an addon that is not activated for their tenant.
   Semantically different from /permission-denied (role/permission issue):
   - Permission → "Ask your administrator"
-  - Feature → "Contact sales / upgrade your plan"
+  - Addon → "Contact admin to activate / start 30-day trial"
 
   Design System Components Used:
   - empty-state (with --warning, --bordered, --full-height variants)
@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-  <title>Feature nicht verfügbar | Assixx</title>
+  <title>Modul nicht verfügbar | Assixx</title>
 </svelte:head>
 
 <!--
@@ -54,22 +54,30 @@
 >
   <!-- Icon Container -->
   <div class="empty-state__icon">
-    <i class="fas fa-lock"></i>
+    <i class="fas fa-puzzle-piece"></i>
   </div>
 
   <!-- Title -->
-  <h1 class="empty-state__title">Feature nicht verfügbar</h1>
+  <h1 class="empty-state__title">
+    {#if data.addonCode}
+      {data.addonCode.charAt(0).toUpperCase() +
+        data.addonCode.slice(1).replaceAll('_', ' ')} — Modul nicht aktiviert
+    {:else}
+      Modul nicht verfügbar
+    {/if}
+  </h1>
 
   <!-- Description -->
   <p class="empty-state__description">
-    Dieses Feature ist für Ihren Tenant nicht aktiviert. Bitte kontaktieren Sie
-    Ihren Administrator oder wechseln Sie zu einem höheren Plan.
+    Dieses Modul ist für Ihren Mandanten nicht aktiviert. Jedes Modul kann 30
+    Tage kostenlos getestet werden — wenden Sie sich an Ihren Administrator, um
+    die Testphase zu starten.
   </p>
 
   <!-- Error Code Badge -->
   <div class="error-code-badge">
     <span class="badge badge--warning badge--lg badge--uppercase">
-      423 Feature nicht verfügbar
+      Modul nicht aktiviert
     </span>
   </div>
 
@@ -96,7 +104,8 @@
 
   <!-- Screen reader announcement -->
   <span class="empty-state__sr-only">
-    Fehler 423: Dieses Feature ist nicht für Ihren Tenant aktiviert.
+    Dieses Modul ist nicht für Ihren Mandanten aktiviert. Kontaktieren Sie Ihren
+    Administrator für eine 30-tägige Testphase.
   </span>
 </div>
 

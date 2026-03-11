@@ -260,6 +260,94 @@ describe('AreasService', () => {
         'Failed to create area',
       );
     });
+
+    it('should create area with admin leader', async () => {
+      const dto = {
+        name: 'Led Area',
+        type: 'production',
+        areaLeadId: 42,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow({ id: 8, name: 'Led Area', area_lead_id: 42 }),
+      ]);
+
+      const result = await service.createArea(dto, 10, 1);
+
+      expect(result.id).toBe(8);
+      expect(result.areaLeadId).toBe(42);
+    });
+
+    it('should create area with root leader', async () => {
+      const dto = {
+        name: 'Root Led',
+        type: 'building',
+        areaLeadId: 1,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: root found
+      mockDb.query.mockResolvedValueOnce([{ id: 1, role: 'root' }]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 9 }]);
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow({ id: 9, area_lead_id: 1 }),
+      ]);
+
+      const result = await service.createArea(dto, 10, 1);
+
+      expect(result.areaLeadId).toBe(1);
+    });
+
+    it('should reject employee as area leader', async () => {
+      const dto = {
+        name: 'Bad Lead',
+        type: 'office',
+        areaLeadId: 99,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: employee found — not admin/root
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject inactive user as area leader', async () => {
+      const dto = {
+        name: 'Inactive Lead',
+        type: 'warehouse',
+        areaLeadId: 50,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: no active user found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject non-existent user as area leader', async () => {
+      const dto = {
+        name: 'Ghost Lead',
+        type: 'other',
+        areaLeadId: 9999,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: no user found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   // =============================================================
@@ -307,6 +395,54 @@ describe('AreasService', () => {
       await expect(service.updateArea(999, dto, 1, 10)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should validate leader on update with admin', async () => {
+      const dto = { areaLeadId: 42 } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing check)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
+      // UPDATE areas
+      mockDb.query.mockResolvedValueOnce([]);
+      // getAreaById (return updated)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: 42 })]);
+
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.areaLeadId).toBe(42);
+    });
+
+    it('should reject employee leader on update', async () => {
+      const dto = { areaLeadId: 99 } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing check)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // validateLeader: employee found
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
+
+      await expect(service.updateArea(1, dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow removing leader (null)', async () => {
+      const dto = { areaLeadId: null } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing with leader)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: 42 })]);
+      // validateLeader: null → skip
+      // UPDATE areas
+      mockDb.query.mockResolvedValueOnce([]);
+      // cascadeVacationApprover: old=42, new=null
+      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      // getAreaById (return updated)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: null })]);
+
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.areaLeadId).toBeUndefined();
     });
   });
 

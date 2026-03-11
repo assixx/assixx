@@ -17,11 +17,29 @@ const PositionItemSchema = z.object({
   height: z.number().positive('Höhe muss positiv sein').max(2000),
 });
 
+const ViewportSchema = z
+  .object({
+    zoom: z.number().min(0.1).max(5),
+    panX: z.number(),
+    panY: z.number(),
+    fontSize: z.number().int().min(8).max(24).optional(),
+  })
+  .optional();
+
+const HallOverrideSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number().positive().max(10000),
+  height: z.number().positive().max(10000),
+});
+
 export const UpsertPositionsSchema = z.object({
   positions: z
     .array(PositionItemSchema)
     .min(1, 'Mindestens eine Position erforderlich')
     .max(500, 'Maximal 500 Positionen pro Request'),
+  viewport: ViewportSchema,
+  hallOverrides: z.record(z.string(), HallOverrideSchema).optional(),
 });
 
 export class UpsertPositionsDto extends createZodDto(UpsertPositionsSchema) {}

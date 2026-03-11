@@ -213,6 +213,19 @@
             <i class="fas fa-user-tie mr-1"></i>
             {messages.LABEL_AREA_LEAD}
           </label>
+          <div
+            class="alert alert--info alert--sm"
+            style="margin-bottom: var(--spacing-3);"
+          >
+            <span class="alert__icon">
+              <i class="fas fa-info-circle"></i>
+            </span>
+            <div class="alert__content">
+              <p class="alert__message">
+                Nur Admin- und Root-Benutzer stehen als Leiter zur Auswahl.
+              </p>
+            </div>
+          </div>
           <input
             type="hidden"
             id="area-lead-hidden"
@@ -259,10 +272,6 @@
               {/each}
             </div>
           </div>
-          <span class="form-field__message text-(--color-text-secondary)">
-            <i class="fas fa-info-circle mr-1"></i>
-            {messages.AREA_LEAD_HINT}
-          </span>
         </div>
 
         <!-- Type Dropdown -->

@@ -154,6 +154,10 @@
       label: 'Organigramm',
       icon: 'fa-sitemap',
     },
+    '/settings/organigram/positions': {
+      label: 'Positionen',
+      icon: 'fa-id-badge',
+    },
     '/settings/company': {
       label: 'Firmendaten',
       icon: 'fa-building',
@@ -271,6 +275,11 @@
       label: 'System',
       href: '/root-dashboard',
       icon: 'fa-cog',
+    },
+    '/settings/organigram/positions': {
+      label: 'Organigramm',
+      href: '/settings/organigram',
+      icon: 'fa-sitemap',
     },
     '/settings/company': {
       label: 'System',

@@ -132,7 +132,6 @@ export const CountrySelector = {
   args: {
     label: 'Land',
     defaultCountry: 'de',
-    scrollable: true,
   },
   argTypes: {
     label: {
@@ -156,10 +155,6 @@ export const CountrySelector = {
       ],
       description: 'Default selected country',
     },
-    scrollable: {
-      control: 'boolean',
-      description: 'Make dropdown scrollable',
-    },
   },
   render: (args) => {
     const container = document.createElement('div');
@@ -179,8 +174,6 @@ export const CountrySelector = {
       gb: '🇬🇧 UK (+44)',
     };
 
-    const scrollableClass = args.scrollable ? 'dropdown__menu--scrollable' : '';
-
     container.innerHTML = `
       <div class="form-field">
         <label class="form-field__label" for="country">${args.label}</label>
@@ -191,7 +184,7 @@ export const CountrySelector = {
               <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
           </div>
-          <div class="dropdown__menu ${scrollableClass}" id="countryMenu">
+          <div class="dropdown__menu" id="countryMenu">
             ${Object.entries(countries)
               .map(
                 ([code, name]) =>
@@ -481,6 +474,154 @@ export const NativeVsCustom = {
     document.addEventListener('click', () => {
       trigger.classList.remove('active');
       menu.classList.remove('active');
+    });
+
+    return container;
+  },
+};
+
+/**
+ * Searchable Dropdown
+ *
+ * Use case: Long option lists where users need to filter by typing.
+ * Pattern: Trigger → Menu with search input → filtered options
+ */
+export const SearchableDropdown = {
+  args: {
+    label: 'Mitarbeiter',
+    placeholder: 'Suchen...',
+  },
+  argTypes: {
+    label: {
+      control: 'text',
+      description: 'Dropdown label',
+    },
+    placeholder: {
+      control: 'text',
+      description: 'Search input placeholder',
+    },
+  },
+  render: (args) => {
+    const container = document.createElement('div');
+    container.style.maxWidth = '350px';
+
+    const items = [
+      'Max Mustermann',
+      'Erika Musterfrau',
+      'Hans Meier',
+      'Anna Schmidt',
+      'Peter Wagner',
+      'Julia Fischer',
+      'Thomas Becker',
+      'Sarah Weber',
+      'Michael Hoffmann',
+      'Laura Richter',
+      'Stefan Braun',
+      'Claudia Zimmermann',
+    ];
+
+    const triggerRef = { el: null };
+    const menuRef = { el: null };
+    let searchInput = null;
+
+    function renderOptions(query) {
+      const filtered = items.filter((item) =>
+        item.toLowerCase().includes(query.toLowerCase()),
+      );
+
+      const optionsContainer = container.querySelector('.dropdown__options');
+      const emptyEl = container.querySelector('.dropdown__empty');
+
+      if (filtered.length === 0) {
+        optionsContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        emptyEl.textContent = `Keine Ergebnisse für "${query}"`;
+        return;
+      }
+
+      optionsContainer.style.display = 'block';
+      emptyEl.style.display = 'none';
+
+      optionsContainer.textContent = '';
+      filtered.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dropdown__option';
+
+        if (query) {
+          const lower = item.toLowerCase();
+          const idx = lower.indexOf(query.toLowerCase());
+          const before = item.slice(0, idx);
+          const match = item.slice(idx, idx + query.length);
+          const after = item.slice(idx + query.length);
+
+          btn.appendChild(document.createTextNode(before));
+          const strong = document.createElement('strong');
+          strong.textContent = match;
+          btn.appendChild(strong);
+          btn.appendChild(document.createTextNode(after));
+        } else {
+          btn.textContent = item;
+        }
+
+        btn.addEventListener('click', () => {
+          triggerRef.el.querySelector('span').textContent = item;
+          triggerRef.el.classList.remove('active');
+          menuRef.el.classList.remove('active');
+          searchInput.value = '';
+          renderOptions('');
+        });
+
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    container.innerHTML = `
+      <div class="form-field">
+        <label class="form-field__label">${args.label}</label>
+        <div class="dropdown">
+          <div class="dropdown__trigger" id="searchableTrigger">
+            <span>Auswählen...</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="dropdown__menu" id="searchableMenu">
+            <div class="dropdown__search">
+              <i class="dropdown__search-icon fas fa-search"></i>
+              <input type="text" class="dropdown__search-input" placeholder="${args.placeholder}" />
+            </div>
+            <div class="dropdown__options"></div>
+            <div class="dropdown__empty" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    triggerRef.el = container.querySelector('#searchableTrigger');
+    menuRef.el = container.querySelector('#searchableMenu');
+    searchInput = container.querySelector('.dropdown__search-input');
+
+    renderOptions('');
+
+    triggerRef.el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerRef.el.classList.toggle('active');
+      menuRef.el.classList.toggle('active');
+      if (menuRef.el.classList.contains('active')) {
+        searchInput.focus();
+      }
+    });
+
+    searchInput.addEventListener('input', () => {
+      renderOptions(searchInput.value);
+    });
+
+    menuRef.el.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    document.addEventListener('click', () => {
+      triggerRef.el.classList.remove('active');
+      menuRef.el.classList.remove('active');
     });
 
     return container;

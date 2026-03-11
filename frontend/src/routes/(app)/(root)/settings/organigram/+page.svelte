@@ -13,15 +13,19 @@
   import OrgToolbar from './_lib/OrgToolbar.svelte';
   import {
     adjustZoom,
+    getFontSize,
     getIsDirty,
     getIsLocked,
     getIsSaving,
+    getHallOverridesForSave,
     getPositionsForSave,
+    getViewportForSave,
     getZoom,
     initFromTree,
     markSaved,
     recomputeAutoLayout,
     resetView,
+    setFontSize,
     setSaving,
     toggleLock,
     updateTreeLabels,
@@ -38,9 +42,10 @@
   const isLocked = $derived(getIsLocked());
   const isSaving = $derived(getIsSaving());
   const currentZoom = $derived(getZoom());
+  const currentFontSize = $derived(getFontSize());
 
   /** Single Source of Truth: Layout-Data (A7) */
-  const labels = $derived(data.hierarchyLabels);
+  const labels = $derived(data.tree.hierarchyLabels);
 
   let showLabelsModal = $state(false);
   let isLabelsSaving = $state(false);
@@ -69,7 +74,9 @@
     setSaving(true);
     try {
       const positions = getPositionsForSave();
-      await savePositions(positions);
+      const viewport = getViewportForSave();
+      const overrides = getHallOverridesForSave();
+      await savePositions(positions, viewport, overrides);
       markSaved();
     } catch (err: unknown) {
       log.error({ err }, 'Positionen speichern fehlgeschlagen');
@@ -98,68 +105,60 @@
 
 <svelte:document onfullscreenchange={handleFullscreenChange} />
 
-<div class="organigramm-page">
-  <!-- Header -->
-  <div class="card">
+<div class="organigramm-page container">
+  <!-- Header (card pattern — konsistent mit anderen Seiten) -->
+  <div class="card organigramm-header">
     <div class="card__header">
-      <div class="header-row">
-        <div class="header-info">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
           <h2 class="card__title">
-            <i class="fas fa-sitemap"></i>
+            <i class="fas fa-sitemap mr-2"></i>
             Organigramm
           </h2>
-          {#if data.tree.companyName !== ''}
-            <p class="company-name">{data.tree.companyName}</p>
-          {/if}
-          {#if data.tree.address !== null && data.tree.address !== ''}
-            <p class="company-address">
-              <i class="fas fa-map-marker-alt"></i>
-              {data.tree.address}
-            </p>
-          {:else}
-            <p class="company-address muted">
-              <i class="fas fa-map-marker-alt"></i>
-              Kein Standort hinterlegt
+          {#if data.tree.companyName !== '' || (data.tree.address !== null && data.tree.address !== '')}
+            <p class="mt-1 text-sm text-(--color-text-secondary)">
+              {#if data.tree.companyName !== ''}
+                {data.tree.companyName}
+              {/if}
+              {#if data.tree.address !== null && data.tree.address !== ''}
+                <i class="fas fa-map-marker-alt ml-2"></i>
+                {data.tree.address}
+              {/if}
             </p>
           {/if}
         </div>
+        <div class="flex items-center gap-4">
+          <span class="legend-item">
+            <span
+              class="legend-dot"
+              style="background: #3b82f6"
+            ></span>
+            {labels.area}
+          </span>
+          <span class="legend-item">
+            <span
+              class="legend-dot"
+              style="background: #22c55e"
+            ></span>
+            {labels.department}
+          </span>
+          <span class="legend-item">
+            <span
+              class="legend-dot"
+              style="background: #f59e0b"
+            ></span>
+            {labels.team}
+          </span>
+          <span class="legend-item">
+            <span
+              class="legend-dot"
+              style="background: #06b6d4"
+            ></span>
+            {labels.asset}
+          </span>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- Legend -->
-  <div class="legend">
-    <span class="legend-item">
-      <span
-        class="legend-dot"
-        style="background: #3b82f6"
-      ></span>
-      {labels.area}
-    </span>
-    <span class="legend-item">
-      <span
-        class="legend-dot"
-        style="background: #22c55e"
-      ></span>
-      {labels.department}
-    </span>
-    <span class="legend-item">
-      <span
-        class="legend-dot"
-        style="background: #f59e0b"
-      ></span>
-      {labels.team}
-    </span>
-    <span class="legend-item">
-      <span
-        class="legend-dot"
-        style="background: #06b6d4"
-      ></span>
-      {labels.asset}
-    </span>
-    <span class="legend-hint">
-      Mausrad: Zoom &middot; Fläche ziehen: Verschieben
-    </span>
   </div>
 
   <!-- Fullscreen-fähiger Container (Toolbar + Canvas) -->
@@ -170,6 +169,7 @@
     <!-- Toolbar -->
     <OrgToolbar
       zoom={currentZoom}
+      fontSize={currentFontSize}
       {isDirty}
       {isSaving}
       {isLocked}
@@ -180,6 +180,12 @@
         adjustZoom(-0.1);
       }}
       onzoomreset={resetView}
+      onfontinc={() => {
+        setFontSize(currentFontSize + 1);
+      }}
+      onfontdec={() => {
+        setFontSize(currentFontSize - 1);
+      }}
       onautolayout={recomputeAutoLayout}
       onsave={handleSavePositions}
       onopenlabels={() => {
@@ -238,58 +244,35 @@
   .organigramm-page {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    height: calc(100vh - 80px);
-    padding: 1rem;
+    gap: var(--spacing-6, 1.5rem);
+
+    /* 60px Header + ~2.5rem Breadcrumb + Main-Padding (responsive) */
+    height: calc(100dvh - 60px - 2.5rem - 1rem);
   }
 
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
+  @media (width >= 768px) {
+    .organigramm-page {
+      height: calc(100dvh - 60px - 2.5rem - 1.5rem);
+    }
   }
 
-  .header-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+  @media (width >= 1024px) {
+    .organigramm-page {
+      height: calc(100dvh - 60px - 2.5rem - 2rem);
+    }
   }
 
-  .company-name {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-  }
-
-  .company-address {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-  }
-
-  .company-address.muted {
-    opacity: 50%;
-    font-style: italic;
-  }
-
-  /* Legend */
-  .legend {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
+  .organigramm-header {
+    flex-shrink: 0;
   }
 
   .legend-item {
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
   }
 
   .legend-dot {
@@ -297,12 +280,6 @@
     height: 10px;
     border-radius: 2px;
     flex-shrink: 0;
-  }
-
-  .legend-hint {
-    margin-left: auto;
-    opacity: 60%;
-    font-size: 0.75rem;
   }
 
   /* Canvas Section (Toolbar + Canvas) */
@@ -317,8 +294,8 @@
   /* Canvas */
   .canvas-wrapper {
     position: relative;
-    flex: 1;
-    min-height: 400px;
+    flex: 1 1 0;
+    min-height: 700px;
     border-radius: var(--radius-xl, 12px);
     overflow: hidden;
     border: var(--glass-border);
@@ -372,8 +349,7 @@
   :global(body.fullscreen-mode .sidebar),
   :global(body.fullscreen-mode .header),
   :global(body.fullscreen-mode #breadcrumb-container),
-  :global(body.fullscreen-mode .organigramm-page > .card),
-  :global(body.fullscreen-mode .organigramm-page > .legend) {
+  :global(body.fullscreen-mode .organigramm-page > .organigramm-header) {
     display: none !important;
   }
 </style>

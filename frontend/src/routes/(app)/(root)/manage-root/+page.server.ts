@@ -61,12 +61,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
   // Get current user ID from locals (set by RBAC hook)
   const currentUserId = locals.user?.id ?? null;
 
-  // Fetch root users
-  const rootUsersData = await apiFetch<RootUser[]>(
-    '/users?role=root',
-    token,
-    fetch,
-  );
+  // Parallel fetch: root users + position options
+  const [rootUsersData, posOptData] = await Promise.all([
+    apiFetch<RootUser[]>('/users?role=root', token, fetch),
+    apiFetch<{ root: string[] }>('/organigram/position-options', token, fetch),
+  ]);
   const allRootUsers = Array.isArray(rootUsersData) ? rootUsersData : [];
 
   // Exclude current user - they edit themselves on /root-profile
@@ -87,5 +86,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
 
   return {
     rootUsers,
+    positionOptions: posOptData?.root ?? [],
   };
 };

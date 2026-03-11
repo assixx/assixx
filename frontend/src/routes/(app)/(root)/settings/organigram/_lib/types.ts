@@ -37,10 +37,29 @@ export interface OrgChartNode {
   hallName?: string;
 }
 
+export interface OrgViewport {
+  zoom: number;
+  panX: number;
+  panY: number;
+  fontSize: number;
+}
+
+/** Manuelle Hallen-Bounds (Override über Auto-Compute) */
+export interface HallOverride {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type ResizeEdge = 'top' | 'bottom' | 'left' | 'right';
+
 export interface OrgChartTree {
   companyName: string;
   address: string | null;
   hierarchyLabels: HierarchyLabels;
+  viewport: OrgViewport;
+  hallOverrides: Record<string, HallOverride>;
   nodes: OrgChartNode[];
 }
 

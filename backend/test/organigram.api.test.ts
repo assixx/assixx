@@ -283,3 +283,127 @@ describe('Organigram: Employee denied on root-only endpoints', () => {
     expect(res.status).toBe(403);
   });
 });
+
+// ─── seq: 7 -- GET /organigram/position-options ──────────────────────────────
+
+describe('Organigram: Get Position Options', () => {
+  it('should return 200 OK with category structure', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('employee');
+    expect(body.data).toHaveProperty('admin');
+    expect(body.data).toHaveProperty('root');
+  });
+
+  it('should return arrays for each category', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(Array.isArray(body.data.employee)).toBe(true);
+    expect(Array.isArray(body.data.admin)).toBe(true);
+    expect(Array.isArray(body.data.root)).toBe(true);
+  });
+});
+
+// ─── seq: 8 -- PUT /organigram/position-options ──────────────────────────────
+
+describe('Organigram: Update Position Options', () => {
+  it('should update partial category and return 200', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        employee: ['Testposition A', 'Testposition B'],
+      }),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.employee).toEqual(['Testposition A', 'Testposition B']);
+    // Other categories should still have values
+    expect(Array.isArray(body.data.admin)).toBe(true);
+    expect(Array.isArray(body.data.root)).toBe(true);
+  });
+
+  it('should persist updated options across requests', async () => {
+    // Update
+    await fetch(`${BASE_URL}/organigram/position-options`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        root: ['TestRoot1', 'TestRoot2'],
+      }),
+    });
+
+    // Re-read
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(body.data.root).toEqual(['TestRoot1', 'TestRoot2']);
+  });
+
+  it('should reject empty string in position array (400)', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        admin: ['Valid', ''],
+      }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('should reject position name exceeding 100 characters (400)', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        employee: ['A'.repeat(101)],
+      }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+// ─── seq: 9 -- Position Options RBAC ─────────────────────────────────────────
+
+describe('Organigram: Employee can read position-options', () => {
+  it('should return 200 for employee on GET /position-options', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      headers: authOnly(employeeToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('employee');
+    expect(body.data).toHaveProperty('admin');
+    expect(body.data).toHaveProperty('root');
+  });
+});
+
+describe('Organigram: Employee denied on PUT /position-options', () => {
+  it('should deny employee PUT /position-options (403)', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/position-options`, {
+      method: 'PUT',
+      headers: authHeaders(employeeToken),
+      body: JSON.stringify({
+        employee: ['Forbidden'],
+      }),
+    });
+
+    expect(res.status).toBe(403);
+  });
+});

@@ -10,7 +10,10 @@ import type {
 import {
   DEFAULT_HIERARCHY_LABELS,
   DEFAULT_POSITION_OPTIONS,
+  DEFAULT_VIEWPORT,
+  type HallOverride,
   type HierarchyLabels,
+  type OrgViewport,
   type PositionOptions,
 } from './organigram.types.js';
 
@@ -28,6 +31,8 @@ interface PositionOptionsSettings {
   root?: string[];
 }
 
+const SELECT_SETTINGS = 'SELECT settings FROM tenants WHERE id = $1';
+
 @Injectable()
 export class OrganigramSettingsService {
   private readonly logger = new Logger(OrganigramSettingsService.name);
@@ -37,11 +42,104 @@ export class OrganigramSettingsService {
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
-  async getHierarchyLabels(tenantId: number): Promise<HierarchyLabels> {
-    const rows = await this.db.query<TenantSettingsRow>(
-      'SELECT settings FROM tenants WHERE id = $1',
+  async getViewport(tenantId: number): Promise<OrgViewport> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
+      tenantId,
+    ]);
+
+    if (rows.length === 0 || rows[0] === undefined) {
+      return { ...DEFAULT_VIEWPORT };
+    }
+
+    const settings = rows[0].settings;
+    if (settings === null) {
+      return { ...DEFAULT_VIEWPORT };
+    }
+
+    const stored = settings['orgViewport'] as Partial<OrgViewport> | undefined;
+    if (stored === undefined) {
+      return { ...DEFAULT_VIEWPORT };
+    }
+
+    return {
+      zoom: stored.zoom ?? DEFAULT_VIEWPORT.zoom,
+      panX: stored.panX ?? DEFAULT_VIEWPORT.panX,
+      panY: stored.panY ?? DEFAULT_VIEWPORT.panY,
+      fontSize: stored.fontSize ?? DEFAULT_VIEWPORT.fontSize,
+    };
+  }
+
+  async getHallOverrides(
+    tenantId: number,
+  ): Promise<Record<string, HallOverride>> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
+      tenantId,
+    ]);
+
+    const settings = rows[0]?.settings;
+    if (settings === null || settings === undefined) return {};
+
+    const stored = settings['orgHallOverrides'] as
+      | Record<string, HallOverride>
+      | undefined;
+    return stored ?? {};
+  }
+
+  async saveHallOverrides(
+    tenantId: number,
+    overrides: Record<string, HallOverride>,
+  ): Promise<void> {
+    const settingsRows = await this.db.query<TenantSettingsRow>(
+      SELECT_SETTINGS,
       [tenantId],
     );
+
+    const currentSettings =
+      settingsRows.length > 0 && settingsRows[0] !== undefined ?
+        (settingsRows[0].settings ?? {})
+      : {};
+
+    const mergedSettings = {
+      ...currentSettings,
+      orgHallOverrides: overrides,
+    };
+
+    await this.db.tenantTransaction(async (client: PoolClient) => {
+      await client.query(
+        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
+        [JSON.stringify(mergedSettings), tenantId],
+      );
+    });
+  }
+
+  async saveViewport(tenantId: number, viewport: OrgViewport): Promise<void> {
+    const settingsRows = await this.db.query<TenantSettingsRow>(
+      SELECT_SETTINGS,
+      [tenantId],
+    );
+
+    const currentSettings =
+      settingsRows.length > 0 && settingsRows[0] !== undefined ?
+        (settingsRows[0].settings ?? {})
+      : {};
+
+    const mergedSettings = {
+      ...currentSettings,
+      orgViewport: viewport,
+    };
+
+    await this.db.tenantTransaction(async (client: PoolClient) => {
+      await client.query(
+        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
+        [JSON.stringify(mergedSettings), tenantId],
+      );
+    });
+  }
+
+  async getHierarchyLabels(tenantId: number): Promise<HierarchyLabels> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
+      tenantId,
+    ]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_HIERARCHY_LABELS };
@@ -85,7 +183,7 @@ export class OrganigramSettingsService {
 
     // Read-Merge-Write: read current settings, deep merge, write back
     const settingsRows = await this.db.query<TenantSettingsRow>(
-      'SELECT settings FROM tenants WHERE id = $1',
+      SELECT_SETTINGS,
       [tenantId],
     );
 
@@ -123,10 +221,9 @@ export class OrganigramSettingsService {
   }
 
   async getPositionOptions(tenantId: number): Promise<PositionOptions> {
-    const rows = await this.db.query<TenantSettingsRow>(
-      'SELECT settings FROM tenants WHERE id = $1',
-      [tenantId],
-    );
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
+      tenantId,
+    ]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_POSITION_OPTIONS };
@@ -164,7 +261,7 @@ export class OrganigramSettingsService {
     };
 
     const settingsRows = await this.db.query<TenantSettingsRow>(
-      'SELECT settings FROM tenants WHERE id = $1',
+      SELECT_SETTINGS,
       [tenantId],
     );
 

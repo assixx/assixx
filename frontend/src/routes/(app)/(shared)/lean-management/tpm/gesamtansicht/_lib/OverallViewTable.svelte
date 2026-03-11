@@ -580,8 +580,10 @@
   .zoom-controls {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 10px;
     margin-left: auto;
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
   }
 
   .zoom-level {

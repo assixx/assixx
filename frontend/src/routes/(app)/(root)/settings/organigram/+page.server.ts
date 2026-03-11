@@ -23,6 +23,8 @@ const EMPTY_TREE: OrgChartTree = {
     team: 'Teams',
     asset: 'Anlagen',
   },
+  viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },
+  hallOverrides: {},
   nodes: [],
 };
 

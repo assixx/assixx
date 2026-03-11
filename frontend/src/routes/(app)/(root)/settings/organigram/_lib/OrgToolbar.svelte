@@ -5,12 +5,15 @@
 <script lang="ts">
   interface Props {
     zoom: number;
+    fontSize: number;
     isDirty: boolean;
     isSaving: boolean;
     isLocked: boolean;
     onzoomin: () => void;
     onzoomout: () => void;
     onzoomreset: () => void;
+    onfontinc: () => void;
+    onfontdec: () => void;
     onautolayout: () => void;
     onsave: () => void;
     onopenlabels: () => void;
@@ -20,12 +23,15 @@
 
   const {
     zoom,
+    fontSize,
     isDirty,
     isSaving,
     isLocked,
     onzoomin,
     onzoomout,
     onzoomreset,
+    onfontinc,
+    onfontdec,
     onautolayout,
     onsave,
     onopenlabels,
@@ -70,6 +76,30 @@
       onclick={onfullscreen}
     >
       <i class="fas fa-expand"></i>
+    </button>
+  </div>
+
+  <div class="toolbar-divider"></div>
+
+  <div class="font-controls">
+    <button
+      type="button"
+      class="btn btn-icon btn-secondary"
+      title="Schrift verkleinern"
+      disabled={fontSize <= 8}
+      onclick={onfontdec}
+    >
+      <i class="fas fa-font font-icon--sm"></i>
+    </button>
+    <span class="font-level">{fontSize}px</span>
+    <button
+      type="button"
+      class="btn btn-icon btn-secondary"
+      title="Schrift vergrößern"
+      disabled={fontSize >= 24}
+      onclick={onfontinc}
+    >
+      <i class="fas fa-font font-icon--lg"></i>
     </button>
   </div>
 
@@ -147,9 +177,6 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--glass-border, rgb(255 255 255 / 8%));
-    border-radius: var(--radius-lg, 8px);
   }
 
   .toolbar-group {
@@ -173,12 +200,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    backdrop-filter: blur(10px);
     border: var(--glass-border);
     border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    padding: 10px;
-    width: fit-content;
   }
 
   .zoom-level {
@@ -189,6 +212,29 @@
     font-size: 14px;
     text-align: center;
     font-variant-numeric: tabular-nums;
+  }
+
+  .font-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .font-level {
+    opacity: 80%;
+    min-width: 38px;
+    font-weight: 500;
+    font-size: 14px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-icon--sm {
+    font-size: 0.65rem;
+  }
+
+  .font-icon--lg {
+    font-size: 1rem;
   }
 
   .toolbar-label {

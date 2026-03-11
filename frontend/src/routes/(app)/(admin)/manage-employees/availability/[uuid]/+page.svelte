@@ -285,7 +285,7 @@
               <i class="fas fa-chevron-down"></i>
             </div>
             {#if yearDropdownOpen}
-              <div class="dropdown__menu dropdown__menu--scrollable active">
+              <div class="dropdown__menu active">
                 {#each yearOptions as opt (opt.value)}
                   <div
                     class="dropdown__option"
@@ -332,7 +332,7 @@
               <i class="fas fa-chevron-down"></i>
             </div>
             {#if monthDropdownOpen}
-              <div class="dropdown__menu dropdown__menu--scrollable active">
+              <div class="dropdown__menu active">
                 {#each monthOptions as opt (opt.value)}
                   <div
                     class="dropdown__option"

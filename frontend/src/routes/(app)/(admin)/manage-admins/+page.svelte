@@ -60,6 +60,7 @@
   const allAdmins = $derived<Admin[]>(data.admins);
   const allAreas = $derived<Area[]>(data.areas);
   const allDepartments = $derived<Department[]>(data.departments);
+  const positionOptions = $derived<string[]>(data.positionOptions);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -781,6 +782,7 @@
   {allDepartments}
   {submitting}
   {messages}
+  {positionOptions}
   bind:formFirstName
   bind:formLastName
   bind:formEmail

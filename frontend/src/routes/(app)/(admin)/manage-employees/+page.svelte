@@ -66,6 +66,7 @@
   // SSR data via $derived - updates when invalidateAll() is called
   const allEmployees = $derived<Employee[]>(data.employees);
   const allTeams = $derived<Team[]>(data.teams);
+  const positionOptions = $derived<string[]>(data.positionOptions);
 
   // Hierarchy labels (propagated from layout)
   const labels = $derived(data.hierarchyLabels);
@@ -722,6 +723,7 @@
   {allTeams}
   {submitting}
   {messages}
+  {positionOptions}
   bind:formFirstName
   bind:formLastName
   bind:formEmail

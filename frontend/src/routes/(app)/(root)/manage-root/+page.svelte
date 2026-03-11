@@ -71,6 +71,7 @@
 
   // SSR data via $derived - updates when invalidateAll() is called
   const allRootUsers = $derived<RootUser[]>(data.rootUsers);
+  const positionOptions = $derived<string[]>(data.positionOptions);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -722,6 +723,7 @@
   show={showRootModal}
   {isEditMode}
   {modalTitle}
+  {positionOptions}
   bind:firstName={formFirstName}
   bind:lastName={formLastName}
   bind:email={formEmail}

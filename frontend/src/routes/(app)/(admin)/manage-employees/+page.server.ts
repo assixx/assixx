@@ -58,10 +58,15 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: employees + teams
-  const [employeesData, teamsData] = await Promise.all([
+  // Parallel fetch: employees + teams + position options
+  const [employeesData, teamsData, posOptData] = await Promise.all([
     apiFetch<Employee[]>('/users?role=employee', token, fetch),
     apiFetch<Team[]>('/teams', token, fetch),
+    apiFetch<{ employee: string[] }>(
+      '/organigram/position-options',
+      token,
+      fetch,
+    ),
   ]);
 
   const employees =
@@ -73,5 +78,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   return {
     employees,
     teams,
+    positionOptions: posOptData?.employee ?? [],
   };
 };

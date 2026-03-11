@@ -5,8 +5,10 @@
 import { getApiClient } from '$lib/utils/api-client.js';
 
 import type {
+  HallOverride,
   HierarchyLabels,
   OrgChartTree,
+  OrgViewport,
   PositionPayload,
   UpdateHierarchyLabelsPayload,
 } from './types.js';
@@ -33,7 +35,13 @@ export async function updateHierarchyLabels(
 
 export async function savePositions(
   positions: PositionPayload[],
+  viewport: OrgViewport,
+  hallOverrides: Record<string, HallOverride>,
 ): Promise<void> {
   const api = getApiClient();
-  await api.put('/organigram/positions', { positions });
+  await api.put('/organigram/positions', {
+    positions,
+    viewport,
+    hallOverrides,
+  });
 }

@@ -183,6 +183,12 @@ export function buildUserListWhereClause(
     conditions.push(`is_active != ${IS_ACTIVE.DELETED}`);
   }
 
+  if (query.position !== undefined && query.position !== '') {
+    conditions.push(`position = $${paramIndex}`);
+    params.push(query.position);
+    paramIndex++;
+  }
+
   if (query.search !== undefined && query.search !== '') {
     conditions.push(
       `(first_name ILIKE $${paramIndex} OR last_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`,

@@ -332,9 +332,9 @@ export class TeamsService {
   }
 
   /**
-   * Validate leader exists and is an active user in the same tenant.
-   * Any role (root, admin, employee) can be a team leader —
-   * leadership is an organizational function, not a system role.
+   * Validate leader exists, is active, and has position "Teamleiter".
+   * Safety gate: only users explicitly designated as team leaders
+   * in manage-employees can be assigned — prevents accidental privilege escalation.
    */
   private async validateLeader(
     leaderId: number | null | undefined,
@@ -342,13 +342,20 @@ export class TeamsService {
   ): Promise<void> {
     if (leaderId === null || leaderId === undefined) return;
 
-    const rows = await this.db.query<{ id: number }>(
-      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    const rows = await this.db.query<{ id: number; position: string | null }>(
+      `SELECT id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [leaderId, tenantId],
     );
 
     if (rows.length === 0) {
       throw new BadRequestException('Invalid leader ID or user inactive');
+    }
+
+    const user = rows[0];
+    if (user?.position !== 'Teamleiter') {
+      throw new BadRequestException(
+        'User must have position "Teamleiter" — assign it first in employee management',
+      );
     }
   }
 

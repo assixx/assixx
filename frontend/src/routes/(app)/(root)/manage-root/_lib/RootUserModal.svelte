@@ -32,13 +32,20 @@
     onclose: () => void;
     onsubmit: (e: Event) => void;
     onValidateEmails: () => void;
+    positionOptions?: string[];
     onValidatePasswords: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { messages, show, isEditMode, modalTitle, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  let { messages, show, isEditMode, modalTitle, positionOptions, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
+
+  const effectivePositions = $derived(
+    positionOptions !== undefined && positionOptions.length > 0 ?
+      positionOptions
+    : POSITION_OPTIONS,
+  );
 
   // Local dropdown and visibility state
   let positionDropdownOpen = $state(false);
@@ -380,7 +387,7 @@
               class="dropdown__menu"
               class:active={positionDropdownOpen}
             >
-              {#each POSITION_OPTIONS as pos (pos)}
+              {#each effectivePositions as pos (pos)}
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
                   class="dropdown__option"

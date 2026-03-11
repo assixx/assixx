@@ -81,7 +81,7 @@ export const API_ENDPOINTS = {
   teamAsset: (teamId: number, assetId: number) =>
     `/teams/${teamId}/assets/${assetId}`,
   DEPARTMENTS: '/departments',
-  LEADER_CANDIDATES: '/users?isActive=1',
+  LEADER_CANDIDATES: '/users?isActive=1&position=Teamleiter',
   EMPLOYEES: '/users?role=employee',
   MACHINES: '/assets',
 } as const;

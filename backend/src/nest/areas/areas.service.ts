@@ -265,6 +265,33 @@ export class AreasService {
   }
 
   /**
+   * Validate leader exists, is active, and has admin/root role.
+   * Safety gate: only admin/root users can lead areas.
+   */
+  private async validateLeader(
+    leaderId: number | null | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (leaderId === null || leaderId === undefined) return;
+
+    const rows = await this.db.query<{ id: number; role: string }>(
+      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+      [leaderId, tenantId],
+    );
+
+    if (rows.length === 0) {
+      throw new BadRequestException('Invalid leader ID or user inactive');
+    }
+
+    const user = rows[0];
+    if (user?.role !== 'admin' && user?.role !== 'root') {
+      throw new BadRequestException(
+        'Area leader must have role "admin" or "root"',
+      );
+    }
+  }
+
+  /**
    * Create a new area
    */
   async createArea(
@@ -277,6 +304,8 @@ export class AreasService {
     if (dto.name.trim() === '') {
       throw new BadRequestException('Area name is required');
     }
+
+    await this.validateLeader(dto.areaLeadId, tenantId);
 
     const areaUuid = uuidv7();
     const rows = await this.db.query<{ id: number }>(
@@ -377,6 +406,8 @@ export class AreasService {
       address: existingArea.address,
       isActive: existingArea.isActive,
     };
+
+    await this.validateLeader(dto.areaLeadId, tenantId);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {

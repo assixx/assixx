@@ -59,13 +59,44 @@ JavaScript-driven dropdown for complex layouts (icons, prices, flags, two-column
 </div>
 ```
 
-### With Scroll (Many Options)
+### Auto-Scroll (6+ Options)
+
+Scrolling activates automatically via CSS `:has()` when a dropdown contains 6 or more `.dropdown__option` children. No manual class needed.
 
 ```html
-<div class="dropdown__menu dropdown__menu--scrollable">
-  <!-- Options here -->
+<!-- Scrolls automatically when 6+ options exist -->
+<div class="dropdown__menu">
+  <div class="dropdown__option">Option 1</div>
+  <div class="dropdown__option">Option 2</div>
+  <!-- ... 6+ options = auto scroll -->
 </div>
 ```
+
+### With Search (Searchable Dropdown)
+
+For long lists where users need to find entries quickly. Search stays fixed at top, options scroll below.
+
+```html
+<div class="dropdown">
+  <button class="dropdown__trigger">
+    <span>Auswählen...</span>
+    <i class="fas fa-chevron-down"></i>
+  </button>
+  <div class="dropdown__menu active">
+    <div class="dropdown__search">
+      <i class="dropdown__search-icon fas fa-search"></i>
+      <input class="dropdown__search-input" placeholder="Suchen..." />
+    </div>
+    <div class="dropdown__options">
+      <button class="dropdown__option">Max Mustermann</button>
+      <button class="dropdown__option">Anna Schmidt</button>
+    </div>
+    <div class="dropdown__empty">Keine Ergebnisse</div>
+  </div>
+</div>
+```
+
+**Highlight matching text:** Wrap matches in `<strong>` — styled automatically via `.dropdown__option strong`.
 
 ## JavaScript Example
 
@@ -100,14 +131,19 @@ document.addEventListener('click', () => {
 
 ## Classes
 
-| Class                         | Description                   |
-| ----------------------------- | ----------------------------- |
-| `.dropdown`                   | Container wrapper             |
-| `.dropdown__trigger`          | Clickable trigger button      |
-| `.dropdown__menu`             | Options container (menu)      |
-| `.dropdown__menu--scrollable` | Menu with max-height + scroll |
-| `.dropdown__option`           | Individual menu option        |
-| `.dropdown__option-secondary` | Secondary text (e.g., price)  |
+| Class                         | Description                                 |
+| ----------------------------- | ------------------------------------------- |
+| `.dropdown`                   | Container wrapper                           |
+| `.dropdown__trigger`          | Clickable trigger button                    |
+| `.dropdown__menu`             | Options container (menu)                    |
+| _(auto-scroll)_               | Auto-enabled at 6+ options via CSS `:has()` |
+| `.dropdown__option`           | Individual menu option                      |
+| `.dropdown__option-secondary` | Secondary text (e.g., price)                |
+| `.dropdown__search`           | Search bar container (in menu)              |
+| `.dropdown__search-icon`      | Search icon (leading)                       |
+| `.dropdown__search-input`     | Text input for filtering                    |
+| `.dropdown__options`          | Scrollable options wrapper                  |
+| `.dropdown__empty`            | "No results" message                        |
 
 ## States
 

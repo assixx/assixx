@@ -259,7 +259,6 @@
             options={ACTION_OPTIONS}
             selectedValue={filterAction}
             displayText={actionDisplayText}
-            scrollable
             onselect={(value: string) => {
               filterAction = value;
             }}
@@ -272,7 +271,6 @@
             options={entityOptions}
             selectedValue={filterEntity}
             displayText={entityDisplayText}
-            scrollable
             onselect={(value: string) => {
               filterEntity = value;
             }}
@@ -285,7 +283,6 @@
             options={TIMERANGE_OPTIONS}
             selectedValue={filterTimerange}
             displayText={timerangeDisplayText}
-            scrollable
             onselect={(value: string) => {
               filterTimerange = value;
             }}

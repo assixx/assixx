@@ -1,0 +1,100 @@
+/**
+ * Searchable Dropdown Extension
+ *
+ * Extends .dropdown with an inline search input and scrollable options.
+ * Use when the option list is long and users need to find entries quickly.
+ *
+ * USAGE:
+ *   <div class="dropdown">
+ *     <button class="dropdown__trigger">
+ *       <span>Auswählen...</span>
+ *       <i class="fas fa-chevron-down"></i>
+ *     </button>
+ *     <div class="dropdown__menu active">
+ *       <div class="dropdown__search">
+ *         <i class="dropdown__search-icon fas fa-search"></i>
+ *         <input class="dropdown__search-input" placeholder="Suchen..." />
+ *       </div>
+ *       <div class="dropdown__options">
+ *         <button class="dropdown__option">Option A</button>
+ *         <button class="dropdown__option">Option B</button>
+ *       </div>
+ *       <div class="dropdown__empty">Keine Ergebnisse</div>
+ *     </div>
+ *   </div>
+ */
+
+@layer components {
+  /* Search bar — sticky at top of menu */
+  .dropdown__search {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    border-bottom: 1px solid var(--color-glass-border);
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+
+  .dropdown__search-icon {
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+  }
+
+  .dropdown__search:focus-within .dropdown__search-icon {
+    color: var(--color-primary);
+  }
+
+  .dropdown__search-input {
+    flex: 1;
+    outline: none;
+    border: none;
+    background: transparent;
+    min-width: 0;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .dropdown__search-input::placeholder {
+    opacity: 100%;
+    color: var(--color-text-placeholder);
+  }
+
+  /* Scrollable options container below search */
+  .dropdown__options {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .dropdown__options::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .dropdown__options::-webkit-scrollbar-track {
+    background: var(--glass-bg);
+  }
+
+  .dropdown__options::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    background: var(--color-glass-border);
+  }
+
+  .dropdown__options::-webkit-scrollbar-thumb:hover {
+    background: var(--color-glass-border-hover);
+  }
+
+  /* Empty state when search has no matches */
+  .dropdown__empty {
+    padding: var(--spacing-4);
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  /* Highlight matching text in options */
+  .dropdown__option strong {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+}

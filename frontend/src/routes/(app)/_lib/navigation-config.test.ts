@@ -329,7 +329,6 @@ describe('filterMenuByAddons: real adminMenuItems', () => {
 
     expect(ids).toContain('dashboard');
     expect(ids).toContain('employees');
-    expect(ids).toContain('teams');
     expect(ids).toContain('assets');
     expect(ids).toContain('settings');
     expect(ids).toContain('profile');
@@ -428,20 +427,21 @@ describe('filterMenuByAddons: edge cases', () => {
 // =============================================================================
 
 describe('getMenuItemsForRole', () => {
-  it('should return items with areas/departments for root', () => {
+  it('should return items with areas/departments/teams for root', () => {
     const items = getMenuItemsForRole('root');
     const ids = collectIds(items);
 
     expect(ids).toContain('areas');
     expect(ids).toContain('departments');
+    expect(ids).toContain('teams');
   });
 
-  it('should return items with teams/assets for admin', () => {
+  it('should return items with assets/halls for admin', () => {
     const items = getMenuItemsForRole('admin');
     const ids = collectIds(items);
 
-    expect(ids).toContain('teams');
     expect(ids).toContain('assets');
+    expect(ids).toContain('halls');
   });
 
   it('should return employeeMenuItems for employee', () => {

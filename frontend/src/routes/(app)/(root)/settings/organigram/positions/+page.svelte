@@ -29,10 +29,12 @@
 
   const apiClient = getApiClient();
 
-  let positions = $state<PositionOptions>({
-    employee: [...data.positions.employee],
-    admin: [...data.positions.admin],
-    root: [...data.positions.root],
+  const serverPositions = $derived(data.positions);
+
+  const positions = $derived<PositionOptions>({
+    employee: [...serverPositions.employee],
+    admin: [...serverPositions.admin],
+    root: [...serverPositions.root],
   });
 
   let activeTab = $state<Category>('employee');
@@ -43,7 +45,7 @@
 
   const currentList = $derived(positions[activeTab]);
   const hasChanges = $derived(
-    JSON.stringify(positions) !== JSON.stringify(data.positions),
+    JSON.stringify(positions) !== JSON.stringify(serverPositions),
   );
 
   function addPosition(): void {
@@ -142,13 +144,7 @@
         },
       );
 
-      positions = {
-        employee: [...result.employee],
-        admin: [...result.admin],
-        root: [...result.root],
-      };
       data.positions = { ...result };
-
       showSuccessAlert('Positionen gespeichert');
     } catch {
       showErrorAlert('Fehler beim Speichern der Positionen');
@@ -175,23 +171,22 @@
   <title>Positionen | Organigramm | Assixx</title>
 </svelte:head>
 
-<div class="positions-page">
-  <!-- Header -->
+<div class="container">
   <div class="card">
     <div class="card__header">
-      <div class="header-row">
-        <div class="header-info">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
           <h2 class="card__title">
-            <i class="fas fa-id-badge"></i>
+            <i class="fas fa-id-badge mr-2"></i>
             Positionen verwalten
           </h2>
-          <p class="header-description">
+          <p class="mt-2 text-(--color-text-secondary)">
             Definiere die verfügbaren Positionen pro Benutzerrolle. Diese
             erscheinen in den Dropdown-Menüs beim Erstellen und Bearbeiten von
             Benutzern.
           </p>
         </div>
-        <div class="header-actions">
+        <div class="flex shrink-0 items-center gap-2">
           <a
             href="/settings/organigram"
             class="btn btn--secondary btn--sm"
@@ -201,12 +196,12 @@
           </a>
           <button
             type="button"
-            class="btn btn--primary btn--sm"
+            class="btn btn-primary"
             disabled={!hasChanges || saving}
             onclick={saveAll}
           >
             {#if saving}
-              <i class="fas fa-spinner fa-spin"></i>
+              <span class="spinner-ring spinner-ring--sm"></span>
               Speichern...
             {:else}
               <i class="fas fa-save"></i>
@@ -215,30 +210,27 @@
           </button>
         </div>
       </div>
+
+      <!-- Tabs -->
+      <div class="tabs mt-6">
+        {#each CATEGORIES as category (category)}
+          <button
+            type="button"
+            class="tab"
+            class:active={activeTab === category}
+            onclick={() => {
+              activeTab = category;
+              cancelEdit();
+              newPosition = '';
+            }}
+          >
+            {CATEGORY_LABELS[category]}
+            <span class="tab-count">{positions[category].length}</span>
+          </button>
+        {/each}
+      </div>
     </div>
-  </div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    {#each CATEGORIES as category (category)}
-      <button
-        type="button"
-        class="tab"
-        class:active={activeTab === category}
-        onclick={() => {
-          activeTab = category;
-          cancelEdit();
-          newPosition = '';
-        }}
-      >
-        {CATEGORY_LABELS[category]}
-        <span class="tab-count">{positions[category].length}</span>
-      </button>
-    {/each}
-  </div>
-
-  <!-- Position List -->
-  <div class="card">
     <div class="card__body">
       <!-- Add new -->
       <div class="add-row">
@@ -361,41 +353,6 @@
 </div>
 
 <style>
-  .positions-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    max-width: 800px;
-  }
-
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .header-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .header-description {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    max-width: 500px;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-shrink: 0;
-  }
-
   /* Tabs */
   .tabs {
     display: flex;

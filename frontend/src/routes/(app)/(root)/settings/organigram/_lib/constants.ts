@@ -65,6 +65,6 @@ export const LAYOUT = {
   AREA_HEADER_HEIGHT: 40,
   MIN_ZOOM: 0.3,
   MAX_ZOOM: 3,
-  ZOOM_STEP: 0.1,
+  ZOOM_STEP: 0.05,
   GRID_SIZE: 20,
 } as const;

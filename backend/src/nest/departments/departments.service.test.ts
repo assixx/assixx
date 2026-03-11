@@ -240,6 +240,8 @@ describe('DepartmentsService', () => {
     });
 
     it('should call ensureLeaderInDepartment when lead provided', async () => {
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT
       // ensureLeaderInDepartment: check existing
       mockDb.query.mockResolvedValueOnce([]); // not assigned yet
@@ -260,7 +262,7 @@ describe('DepartmentsService', () => {
 
       expect(result.id).toBe(5);
       // Verify user_departments INSERT was called
-      const insertCall = mockDb.query.mock.calls[2]?.[0] as string;
+      const insertCall = mockDb.query.mock.calls[3]?.[0] as string;
       expect(insertCall).toContain('INSERT INTO user_departments');
     });
 
@@ -276,6 +278,80 @@ describe('DepartmentsService', () => {
 
       await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
         'Failed to create department',
+      );
+    });
+
+    it('should create department with root leader', async () => {
+      const dto = {
+        name: 'Root Led',
+        description: null,
+        departmentLeadId: 1,
+        areaId: null,
+      } as unknown as CreateDepartmentDto;
+
+      // validateLeader: root found
+      mockDb.query.mockResolvedValueOnce([{ id: 1, role: 'root' }]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+      // ensureLeaderInDepartment: check existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // ensureLeaderInDepartment: INSERT
+      mockDb.query.mockResolvedValueOnce([]);
+      // getDepartmentById
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow({ id: 8, department_lead_id: 1 }),
+      ]);
+
+      const result = await service.createDepartment(dto, 1, 10);
+
+      expect(result.departmentLeadId).toBe(1);
+    });
+
+    it('should reject employee as department leader', async () => {
+      const dto = {
+        name: 'Bad Lead',
+        description: null,
+        departmentLeadId: 99,
+        areaId: null,
+      } as unknown as CreateDepartmentDto;
+
+      // validateLeader: employee found — not admin/root
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
+
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject inactive user as department leader', async () => {
+      const dto = {
+        name: 'Inactive Lead',
+        description: null,
+        departmentLeadId: 50,
+        areaId: null,
+      } as unknown as CreateDepartmentDto;
+
+      // validateLeader: no active user found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject non-existent user as department leader', async () => {
+      const dto = {
+        name: 'Ghost Lead',
+        description: null,
+        departmentLeadId: 9999,
+        areaId: null,
+      } as unknown as CreateDepartmentDto;
+
+      // validateLeader: no user found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -324,6 +400,8 @@ describe('DepartmentsService', () => {
 
     it('should call ensureLeaderInDepartment when lead provided', async () => {
       mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // find existing
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
       mockDb.query.mockResolvedValueOnce([]); // UPDATE
       // ensureLeaderInDepartment
       mockDb.query.mockResolvedValueOnce([]); // check existing → not found
@@ -338,8 +416,43 @@ describe('DepartmentsService', () => {
 
       await service.updateDepartment(1, dto, 1, 10);
 
-      const insertCall = mockDb.query.mock.calls[3]?.[0] as string;
+      const insertCall = mockDb.query.mock.calls[4]?.[0] as string;
       expect(insertCall).toContain('INSERT INTO user_departments');
+    });
+
+    it('should reject employee leader on update', async () => {
+      const dto = {
+        departmentLeadId: 99,
+      } as unknown as UpdateDepartmentDto;
+
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // find existing
+      // validateLeader: employee found
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
+
+      await expect(service.updateDepartment(1, dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow removing leader (null) on update', async () => {
+      const dto = {
+        departmentLeadId: null,
+      } as unknown as UpdateDepartmentDto;
+
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow({ department_lead_id: 42 }),
+      ]); // find existing
+      // validateLeader: null → skip
+      // UPDATE departments
+      mockDb.query.mockResolvedValueOnce([]);
+      // getDepartmentById (return updated)
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow({ department_lead_id: null }),
+      ]);
+
+      const result = await service.updateDepartment(1, dto, 1, 10);
+
+      expect(result.departmentLeadId).toBeUndefined();
     });
   });
 

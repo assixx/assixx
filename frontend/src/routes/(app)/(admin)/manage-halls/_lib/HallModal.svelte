@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { tick } from 'svelte';
-
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -35,48 +33,10 @@
 
   const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
 
-  async function scrollDropdownIntoView(dropdownId: string): Promise<void> {
-    await tick();
-    const menu = document.querySelector<HTMLElement>(
-      `#${dropdownId} .dropdown__menu`,
-    );
-    const modalBody = menu?.closest<HTMLElement>('.ds-modal__body');
-    if (!menu || !modalBody) return;
-
-    const menuRect = menu.getBoundingClientRect();
-    const bodyRect = modalBody.getBoundingClientRect();
-    const overflow = menuRect.bottom - bodyRect.bottom;
-
-    if (overflow <= 0) return;
-
-    const extraSpace = overflow + 16;
-
-    // Lock modal height so vertical centering doesn't shift
-    const modal = modalBody.closest<HTMLElement>('.ds-modal');
-    if (modal) modal.style.height = `${modal.offsetHeight}px`;
-
-    // Extend scroll area by exact overflow
-    const currentPadding =
-      parseFloat(getComputedStyle(modalBody).paddingBottom) || 0;
-    modalBody.style.paddingBottom = `${currentPadding + extraSpace}px`;
-
-    requestAnimationFrame(() => {
-      modalBody.scrollBy({ top: extraSpace, behavior: 'smooth' });
-    });
-  }
-
-  function resetModalScroll(): void {
-    const modal = document.querySelector<HTMLElement>('#hall-form');
-    const body = modal?.querySelector<HTMLElement>('.ds-modal__body');
-    if (body) body.style.paddingBottom = '';
-    if (modal) modal.style.height = '';
-  }
-
   function toggleAreaDropdown(e: MouseEvent): void {
     e.stopPropagation();
     statusDropdownOpen = false;
     areaDropdownOpen = !areaDropdownOpen;
-    if (areaDropdownOpen) void scrollDropdownIntoView('hall-area-dropdown');
   }
 
   function selectArea(areaId: number | null): void {
@@ -88,7 +48,6 @@
     e.stopPropagation();
     areaDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
-    if (statusDropdownOpen) void scrollDropdownIntoView('hall-status-dropdown');
   }
 
   function selectStatus(status: FormIsActiveStatus): void {
@@ -112,14 +71,6 @@
     if (show) {
       areaDropdownOpen = false;
       statusDropdownOpen = false;
-    } else {
-      resetModalScroll();
-    }
-  });
-
-  $effect(() => {
-    if (!areaDropdownOpen && !statusDropdownOpen) {
-      resetModalScroll();
     }
   });
 

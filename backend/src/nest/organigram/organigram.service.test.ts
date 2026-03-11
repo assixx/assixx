@@ -7,6 +7,7 @@ import type { OrganigramSettingsService } from './organigram-settings.service.js
 import { OrganigramService } from './organigram.service.js';
 import {
   DEFAULT_HIERARCHY_LABELS,
+  DEFAULT_VIEWPORT,
   type OrgChartPosition,
 } from './organigram.types.js';
 
@@ -19,7 +20,11 @@ function createMockDb() {
 }
 
 function createMockSettings() {
-  return { getHierarchyLabels: vi.fn() };
+  return {
+    getHierarchyLabels: vi.fn(),
+    getViewport: vi.fn(),
+    getHallOverrides: vi.fn(),
+  };
 }
 
 function createMockLayout() {
@@ -43,7 +48,7 @@ const ASSET_2 = 's0000000-0000-0000-0000-000000000002';
 // Helpers
 // =============================================================
 
-/** Set up mockDb.query for a standard tree test (5 sequential calls). */
+/** Set up mockDb.query for a standard tree test (6 sequential calls). */
 function setupTreeQueries(
   mockDb: MockDb,
   data: {
@@ -52,6 +57,7 @@ function setupTreeQueries(
     departments?: Record<string, unknown>[];
     teams?: Record<string, unknown>[];
     assets?: Record<string, unknown>[];
+    halls?: Record<string, unknown>[];
   },
 ): void {
   mockDb.query.mockResolvedValueOnce(
@@ -63,6 +69,7 @@ function setupTreeQueries(
   mockDb.query.mockResolvedValueOnce(data.departments ?? []);
   mockDb.query.mockResolvedValueOnce(data.teams ?? []);
   mockDb.query.mockResolvedValueOnce(data.assets ?? []);
+  mockDb.query.mockResolvedValueOnce(data.halls ?? []);
 }
 
 // =============================================================
@@ -90,6 +97,8 @@ describe('OrganigramService', () => {
     mockSettings.getHierarchyLabels.mockResolvedValue({
       ...DEFAULT_HIERARCHY_LABELS,
     });
+    mockSettings.getViewport.mockResolvedValue({ ...DEFAULT_VIEWPORT });
+    mockSettings.getHallOverrides.mockResolvedValue({});
     mockLayout.getPositions.mockResolvedValue([]);
   });
 
@@ -108,6 +117,7 @@ describe('OrganigramService', () => {
       mockDb.query.mockResolvedValueOnce([]); // departments
       mockDb.query.mockResolvedValueOnce([]); // teams
       mockDb.query.mockResolvedValueOnce([]); // assets
+      mockDb.query.mockResolvedValueOnce([]); // halls
 
       await expect(service.getOrgChartTree(999)).rejects.toThrow(
         NotFoundException,
@@ -400,14 +410,16 @@ describe('OrganigramService', () => {
       expect(verwaltung?.assets[0]?.name).toBe('Drucker');
     });
 
-    it('should call all 7 data sources in parallel', async () => {
+    it('should call all 10 data sources in parallel', async () => {
       setupTreeQueries(mockDb, {});
 
       await service.getOrgChartTree(1);
 
-      // 5 DB queries + 1 settings + 1 layout = 7 parallel calls
-      expect(mockDb.query).toHaveBeenCalledTimes(5);
+      // 6 DB queries + 3 settings + 1 layout = 10 parallel calls
+      expect(mockDb.query).toHaveBeenCalledTimes(6);
       expect(mockSettings.getHierarchyLabels).toHaveBeenCalledOnce();
+      expect(mockSettings.getViewport).toHaveBeenCalledOnce();
+      expect(mockSettings.getHallOverrides).toHaveBeenCalledOnce();
       expect(mockLayout.getPositions).toHaveBeenCalledOnce();
     });
 

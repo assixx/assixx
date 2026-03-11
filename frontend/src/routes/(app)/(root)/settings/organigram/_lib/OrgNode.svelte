@@ -1,15 +1,17 @@
 <!--
   OrgNode — Einzelner verschiebbarer Organigramm-Block
-  Drag & Drop mit Auto-Follow (Kinder bewegen sich mit)
+  Drag & Drop bewegt nur diesen Node (Kinder bleiben stehen).
+  Für Gruppen-Verschiebung → Hall-Drag im OrgCanvas.
 -->
 <script lang="ts">
   import { ENTITY_COLORS } from './constants.js';
   import {
+    getFontSize,
     getIsLocked,
     getPanX,
     getPanY,
     getZoom,
-    moveNodeWithChildren,
+    moveNodeOnly,
     setHoveredNodeKey,
   } from './state.svelte.js';
 
@@ -25,6 +27,8 @@
   const colors = $derived(ENTITY_COLORS[node.entityType]);
   const sub = $derived(buildSubtitle());
   const isLocked = $derived(getIsLocked());
+  const nodeFontSize = $derived(getFontSize());
+  const subtitleFontSize = $derived(Math.max(8, nodeFontSize - 2));
 
   let isDragging = $state(false);
   let dragOffsetX = $state(0);
@@ -86,7 +90,7 @@
     const svgX = (event.clientX - rect.left - px) / z;
     const svgY = (event.clientY - rect.top - py) / z;
 
-    moveNodeWithChildren(
+    moveNodeOnly(
       node.entityType,
       node.entityUuid,
       svgX - dragOffsetX,
@@ -164,6 +168,7 @@
     dominant-baseline="central"
     class="node-name"
     fill="var(--color-text-primary)"
+    font-size="{nodeFontSize}px"
   >
     {truncate(node.name, 22)}
   </text>
@@ -172,11 +177,12 @@
   {#if sub !== ''}
     <text
       x={node.width / 2}
-      y={node.height / 2 + 14}
+      y={node.height / 2 + 19}
       text-anchor="middle"
       dominant-baseline="central"
       class="node-subtitle"
       fill="var(--color-text-secondary)"
+      font-size="{subtitleFontSize}px"
     >
       {truncate(sub, 28)}
     </text>
@@ -207,14 +213,12 @@
   }
 
   .node-name {
-    font-size: 13px;
     font-weight: 600;
     pointer-events: none;
     user-select: none;
   }
 
   .node-subtitle {
-    font-size: 11px;
     font-weight: 400;
     pointer-events: none;
     user-select: none;

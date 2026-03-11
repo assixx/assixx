@@ -48,17 +48,24 @@
     onsubmit: (e: Event) => void;
     onvalidateemails: () => void;
     onvalidatepasswords: () => void;
+    positionOptions?: string[];
     onupgrade?: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
   // LOCAL STATE
   // =============================================================================
+
+  const effectivePositions = $derived(
+    positionOptions !== undefined && positionOptions.length > 0 ?
+      positionOptions
+    : POSITION_OPTIONS,
+  );
 
   // Dropdown States
   let positionDropdownOpen = $state(false);
@@ -470,7 +477,7 @@
               class="dropdown__menu"
               class:active={positionDropdownOpen}
             >
-              {#each POSITION_OPTIONS as position (position)}
+              {#each effectivePositions as position (position)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div

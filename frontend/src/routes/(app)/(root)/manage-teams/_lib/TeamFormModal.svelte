@@ -321,45 +321,62 @@
           for="team-lead">Leiter</label
         >
         <div
-          class="dropdown"
-          id="team-lead-dropdown"
+          class="alert alert--info alert--sm"
+          style="margin-bottom: var(--spacing-3);"
         >
-          <button
-            type="button"
-            class="dropdown__trigger"
-            class:active={leaderDropdownOpen}
-            onclick={toggleLeaderDropdown}
-          >
-            <span>{getLeaderDisplayText(localLeaderId, allLeaders)}</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
+          <span class="alert__icon">
+            <i class="fas fa-info-circle"></i>
+          </span>
+          <div class="alert__content">
+            <p class="alert__message">
+              Nur Mitarbeiter mit der Position &laquo;Teamleiter&raquo; stehen
+              zur Auswahl. Zuweisung über die
+              <a href="/manage-employees">Mitarbeiterverwaltung</a>.
+            </p>
+          </div>
+        </div>
+        {#if allLeaders.length > 0}
           <div
-            class="dropdown__menu"
-            class:active={leaderDropdownOpen}
+            class="dropdown"
+            id="team-lead-dropdown"
           >
             <button
               type="button"
-              class="dropdown__option"
-              onclick={() => {
-                selectLeader(null);
-              }}
+              class="dropdown__trigger"
+              class:active={leaderDropdownOpen}
+              onclick={toggleLeaderDropdown}
             >
-              {messages.NO_LEADER}
+              <span>{getLeaderDisplayText(localLeaderId, allLeaders)}</span>
+              <i class="fas fa-chevron-down"></i>
             </button>
-            {#each allLeaders as leader (leader.id)}
+            <div
+              class="dropdown__menu"
+              class:active={leaderDropdownOpen}
+            >
               <button
                 type="button"
                 class="dropdown__option"
                 onclick={() => {
-                  selectLeader(leader.id);
+                  selectLeader(null);
                 }}
               >
-                {leader.firstName}
-                {leader.lastName}
+                {messages.NO_LEADER}
               </button>
-            {/each}
+              {#each allLeaders as leader (leader.id)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectLeader(leader.id);
+                  }}
+                >
+                  {leader.firstName}
+                  {leader.lastName}
+                </button>
+              {/each}
+            </div>
           </div>
-        </div>
+        {/if}
       </div>
 
       <div class="form-field">
@@ -381,7 +398,7 @@
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
-            class="dropdown__menu dropdown__menu--scrollable"
+            class="dropdown__menu"
             class:active={membersDropdownOpen}
           >
             {#each allEmployees as employee (employee.id)}
@@ -436,7 +453,7 @@
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
-            class="dropdown__menu dropdown__menu--scrollable"
+            class="dropdown__menu"
             class:active={assetsDropdownOpen}
           >
             {#each allAssets as asset (asset.id)}

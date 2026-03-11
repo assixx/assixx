@@ -18,10 +18,11 @@ import {
 import { OrganigramLayoutService } from './organigram-layout.service.js';
 import { OrganigramSettingsService } from './organigram-settings.service.js';
 import { OrganigramService } from './organigram.service.js';
-import type {
-  HierarchyLabels,
-  OrgChartTree,
-  PositionOptions,
+import {
+  DEFAULT_VIEWPORT,
+  type HierarchyLabels,
+  type OrgChartTree,
+  type PositionOptions,
 } from './organigram.types.js';
 
 @Controller('organigram')
@@ -62,6 +63,15 @@ export class OrganigramController {
     @Body() dto: UpsertPositionsDto,
   ): Promise<{ message: string }> {
     await this.layoutService.upsertPositions(tenantId, dto);
+    if (dto.viewport !== undefined) {
+      await this.settingsService.saveViewport(tenantId, {
+        ...dto.viewport,
+        fontSize: dto.viewport.fontSize ?? DEFAULT_VIEWPORT.fontSize,
+      });
+    }
+    if (dto.hallOverrides !== undefined) {
+      await this.settingsService.saveHallOverrides(tenantId, dto.hallOverrides);
+    }
     return { message: 'Positionen gespeichert' };
   }
 

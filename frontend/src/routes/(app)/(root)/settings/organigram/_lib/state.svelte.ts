@@ -7,6 +7,7 @@ import { LAYOUT } from './constants.js';
 import type {
   Connection,
   HallBounds,
+  HallOverride,
   HierarchyLabels,
   OrgChartNode,
   OrgChartTree,
@@ -41,16 +42,20 @@ let tree = $state<OrgChartTree>({
     team: 'Teams',
     asset: 'Anlagen',
   },
+  viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },
+  hallOverrides: {},
   nodes: [],
 });
 let nodePositions = $state<Record<PositionKey, NodePosition>>({});
 let zoom = $state(1);
 let panX = $state(0);
 let panY = $state(0);
+let fontSize = $state(13);
 let dirty = $state(false);
 let saving = $state(false);
 let hoveredNodeKey = $state('');
 let locked = $state(true);
+let hallOverrides = $state<Record<string, HallOverride>>({});
 
 // --- Getters ---
 
@@ -68,6 +73,15 @@ export function getPanX(): number {
 
 export function getPanY(): number {
   return panY;
+}
+
+export function getFontSize(): number {
+  return fontSize;
+}
+
+export function setFontSize(value: number): void {
+  fontSize = Math.max(8, Math.min(24, value));
+  dirty = true;
 }
 
 export function getIsDirty(): boolean {
@@ -110,10 +124,14 @@ export function initFromTree(data: OrgChartTree): void {
 
   nodePositions = autoPositions;
 
-  // 3. Reset viewport
-  zoom = 1;
-  panX = 0;
-  panY = 0;
+  // 3. Restore saved viewport or reset
+  zoom = data.viewport.zoom;
+  panX = data.viewport.panX;
+  panY = data.viewport.panY;
+  fontSize = data.viewport.fontSize;
+
+  // 4. Restore hall overrides
+  hallOverrides = data.hallOverrides;
 }
 
 function overlaySavedPositions(
@@ -207,6 +225,24 @@ export function getNodePosition(
 
 // --- Node Position Updates (Drag + Auto-Follow) ---
 
+/** Move only this single node — children stay in place */
+export function moveNodeOnly(
+  entityType: OrgEntityType,
+  entityUuid: string,
+  newX: number,
+  newY: number,
+): void {
+  const key = makeKey(entityType, entityUuid);
+  const oldPos = nodePositions[key];
+  nodePositions[key] = {
+    x: newX,
+    y: newY,
+    width: oldPos.width,
+    height: oldPos.height,
+  };
+  dirty = true;
+}
+
 /** Move a node and all its descendants by the same delta */
 export function moveNodeWithChildren(
   entityType: OrgEntityType,
@@ -276,31 +312,65 @@ function findDescendantKeys(
 
 // --- Canvas Controls ---
 
-export function setZoom(value: number): void {
-  zoom = Math.max(LAYOUT.MIN_ZOOM, Math.min(LAYOUT.MAX_ZOOM, value));
+/** Viewport-Größe (wird von OrgCanvas aktualisiert) */
+let viewportWidth = 0;
+let viewportHeight = 0;
+
+export function setViewportSize(w: number, h: number): void {
+  viewportWidth = w;
+  viewportHeight = h;
 }
 
+export function setZoom(value: number): void {
+  zoom = Math.max(LAYOUT.MIN_ZOOM, Math.min(LAYOUT.MAX_ZOOM, value));
+  dirty = true;
+}
+
+/**
+ * Zoom mit Fokuspunkt — der Punkt unter (focalX, focalY)
+ * bleibt visuell an derselben Stelle.
+ * Koordinaten relativ zum SVG-Element (screen-space).
+ */
+export function zoomAt(delta: number, focalX: number, focalY: number): void {
+  const oldZoom = zoom;
+  const newZoom = Math.max(
+    LAYOUT.MIN_ZOOM,
+    Math.min(LAYOUT.MAX_ZOOM, zoom + delta),
+  );
+  if (newZoom === oldZoom) return;
+
+  const ratio = newZoom / oldZoom;
+  panX = focalX - (focalX - panX) * ratio;
+  panY = focalY - (focalY - panY) * ratio;
+  zoom = newZoom;
+  dirty = true;
+}
+
+/** Zoom Richtung Viewport-Mitte (für Toolbar-Buttons) */
 export function adjustZoom(delta: number): void {
-  setZoom(zoom + delta);
+  zoomAt(delta, viewportWidth / 2, viewportHeight / 2);
 }
 
 export function setPan(x: number, y: number): void {
   panX = x;
   panY = y;
+  dirty = true;
 }
 
 export function resetView(): void {
   zoom = 1;
   panX = 0;
   panY = 0;
+  dirty = true;
 }
 
 // --- Auto-Layout (Re-Trigger) ---
 
-/** Recompute auto-layout for all nodes, discard manual positions */
+/** Recompute auto-layout for all nodes, discard manual positions + overrides */
 export function recomputeAutoLayout(): void {
   const autoPositions = computeAutoLayout(tree.nodes);
   nodePositions = autoPositions;
+  hallOverrides = {};
   dirty = true;
 }
 
@@ -319,6 +389,24 @@ export function setSaving(value: boolean): void {
 export function markSaved(): void {
   dirty = false;
   saving = false;
+}
+
+export function setHallOverride(areaUuid: string, bounds: HallOverride): void {
+  hallOverrides[areaUuid] = bounds;
+  dirty = true;
+}
+
+export function getHallOverridesForSave(): Record<string, HallOverride> {
+  return { ...hallOverrides };
+}
+
+export function getViewportForSave(): {
+  zoom: number;
+  panX: number;
+  panY: number;
+  fontSize: number;
+} {
+  return { zoom, panX, panY, fontSize };
 }
 
 export function getPositionsForSave(): {
@@ -405,41 +493,61 @@ export function getConnections(): Connection[] {
   return connections;
 }
 
-/** Compute bounding boxes für Hallen-Container (nur Areas mit zugewiesener Halle) */
-export function getHallBounds(): HallBounds[] {
+/** Auto-computed content bounds für eine Halle (Minimum-Größe) */
+function computeAutoHallBounds(node: OrgChartNode): HallBounds {
   const PADDING = 24;
   const HEADER_HEIGHT = 32;
+
+  const areaKey = makeKey('area', node.entityUuid);
+  const areaPos = nodePositions[areaKey];
+  const rects = collectDescendantRects(node);
+  rects.push(areaPos);
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const r of rects) {
+    minX = Math.min(minX, r.x);
+    minY = Math.min(minY, r.y);
+    maxX = Math.max(maxX, r.x + r.width);
+    maxY = Math.max(maxY, r.y + r.height);
+  }
+
+  return {
+    areaUuid: node.entityUuid,
+    hallName: node.hallName ?? '',
+    leadName: node.leadName,
+    x: minX - PADDING,
+    y: minY - PADDING - HEADER_HEIGHT,
+    width: maxX - minX + PADDING * 2,
+    height: maxY - minY + PADDING * 1.6 + HEADER_HEIGHT * 2,
+  };
+}
+
+/** Merge auto-bounds mit manuellem Override (Override gewinnt wenn größer) */
+function mergeWithOverride(auto: HallBounds): HallBounds {
+  if (!(auto.areaUuid in hallOverrides)) return auto;
+  const override = hallOverrides[auto.areaUuid];
+
+  const x = Math.min(auto.x, override.x);
+  const y = Math.min(auto.y, override.y);
+  const maxX = Math.max(auto.x + auto.width, override.x + override.width);
+  const maxY = Math.max(auto.y + auto.height, override.y + override.height);
+
+  return { ...auto, x, y, width: maxX - x, height: maxY - y };
+}
+
+/** Compute bounding boxes für Hallen-Container (nur Areas mit zugewiesener Halle) */
+export function getHallBounds(): HallBounds[] {
   const bounds: HallBounds[] = [];
 
   for (const node of tree.nodes) {
     if (node.entityType !== 'area') continue;
     if (node.hallName === undefined) continue;
 
-    const areaKey = makeKey('area', node.entityUuid);
-    const areaPos = nodePositions[areaKey];
-    const rects = collectDescendantRects(node);
-    rects.push(areaPos);
-
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const r of rects) {
-      minX = Math.min(minX, r.x);
-      minY = Math.min(minY, r.y);
-      maxX = Math.max(maxX, r.x + r.width);
-      maxY = Math.max(maxY, r.y + r.height);
-    }
-
-    bounds.push({
-      areaUuid: node.entityUuid,
-      hallName: node.hallName,
-      leadName: node.leadName,
-      x: minX - PADDING,
-      y: minY - PADDING - HEADER_HEIGHT,
-      width: maxX - minX + PADDING * 2,
-      height: maxY - minY + PADDING * 1.6 + HEADER_HEIGHT * 2,
-    });
+    const auto = computeAutoHallBounds(node);
+    bounds.push(mergeWithOverride(auto));
   }
 
   return bounds;

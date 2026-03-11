@@ -429,11 +429,13 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
 - blackboard, calendar, chat, documents, kvp, shift_planning, surveys, vacation, tpm, work_orders
 
-### Step 5.3: Feature-Unavailable Page [PENDING]
+### Step 5.3: Feature-Unavailable Page ✅ DONE
 
-- `/feature-unavailable` → `/addon-unavailable`
-- Texte aktualisieren: "Feature" → "Modul" (user-facing)
-- CTA: "Modul 30 Tage kostenlos testen" statt "Plan upgraden"
+- `/feature-unavailable` → `/addon-unavailable` ✅
+- Texte aktualisieren: "Feature" → "Modul" (user-facing) ✅
+- CTA: "Modul 30 Tage kostenlos testen" statt "Plan upgraden" ✅
+- `api-client.ts`: `handleForbidden()` auf "addon is not enabled" + `/addon-unavailable` aktualisiert ✅
+- Icon: `fa-lock` → `fa-puzzle-piece` (Modul-Semantik) ✅
 
 ### Phase 5 — Definition of Done
 
@@ -486,18 +488,18 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                            | Status         | Datum      |
-| ------- | ----- | ------------------------------------------------------- | -------------- | ---------- |
-| 1       | 1     | Migration 1: Drops + Renames (features→addons)          | ✅ DONE        | 2026-03-11 |
-| 2       | 1     | Migration 2+3: tenant_addons + Cleanup + tenant_storage | ✅ DONE        | 2026-03-11 |
-| 3       | 2     | AddonCheckService + Guard + Decorator                   | ✅ DONE        | 2026-03-11 |
-| 4       | 2     | AddonsModule + PlansModule löschen                      | ✅ DONE        | 2026-03-11 |
-| 5       | 2     | Permission Renames + Controller Decorators + app.module | ✅ DONE        | 2026-03-11 |
-| 6       | 3     | Unit Tests (24 neue) + Phase-2-Fix (3 Module-Imports)   | ✅ DONE        | 2026-03-11 |
-| 7       | 4     | API Integration Tests (29 Tests) + Addon-Rename-Fixes   | ✅ DONE        | 2026-03-11 |
-| 8       | 5     | Frontend Guards + Navigation + Layout                   | 🔄 IN PROGRESS | 2026-03-11 |
-| 9       | 5     | Frontend Pages + Addon-Unavailable                      | PENDING        |            |
-| 10      | 6     | Seeds + Docs + Cleanup + Final Verification             | PENDING        |            |
+| Session | Phase | Beschreibung                                              | Status  | Datum      |
+| ------- | ----- | --------------------------------------------------------- | ------- | ---------- |
+| 1       | 1     | Migration 1: Drops + Renames (features→addons)            | ✅ DONE | 2026-03-11 |
+| 2       | 1     | Migration 2+3: tenant_addons + Cleanup + tenant_storage   | ✅ DONE | 2026-03-11 |
+| 3       | 2     | AddonCheckService + Guard + Decorator                     | ✅ DONE | 2026-03-11 |
+| 4       | 2     | AddonsModule + PlansModule löschen                        | ✅ DONE | 2026-03-11 |
+| 5       | 2     | Permission Renames + Controller Decorators + app.module   | ✅ DONE | 2026-03-11 |
+| 6       | 3     | Unit Tests (24 neue) + Phase-2-Fix (3 Module-Imports)     | ✅ DONE | 2026-03-11 |
+| 7       | 4     | API Integration Tests (29 Tests) + Addon-Rename-Fixes     | ✅ DONE | 2026-03-11 |
+| 8       | 5     | Frontend Guards + Navigation + Layout + Addon-Unavailable | ✅ DONE | 2026-03-11 |
+| 9       | 5     | Frontend Cleanup: PermissionSettings + (admin)/features   | PENDING |            |
+| 10      | 6     | Seeds + Docs + Cleanup + Final Verification               | PENDING |            |
 
 ---
 
