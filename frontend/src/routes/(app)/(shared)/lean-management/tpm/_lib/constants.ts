@@ -336,5 +336,8 @@ export function createTpmMessages(labels: HierarchyLabels) {
   };
 }
 
+/** Messages type for child components */
+export type TpmMessages = ReturnType<typeof createTpmMessages>;
+
 /** Backward-compatible static export — uses default hierarchy labels */
 export const MESSAGES = createTpmMessages(DEFAULT_HIERARCHY_LABELS);

@@ -5,6 +5,7 @@
 <script lang="ts">
   import { ENTITY_COLORS } from './constants.js';
   import {
+    getIsLocked,
     getPanX,
     getPanY,
     getZoom,
@@ -23,6 +24,7 @@
 
   const colors = $derived(ENTITY_COLORS[node.entityType]);
   const sub = $derived(buildSubtitle());
+  const isLocked = $derived(getIsLocked());
 
   let isDragging = $state(false);
   let dragOffsetX = $state(0);
@@ -49,6 +51,7 @@
   }
 
   function handlePointerDown(event: PointerEvent): void {
+    if (isLocked) return;
     // Only left-click without Shift (Shift = canvas pan)
     if (event.button !== 0 || event.shiftKey) return;
     event.stopPropagation();
@@ -109,6 +112,7 @@
 <g
   class="org-node"
   class:org-node--dragging={isDragging}
+  class:org-node--locked={isLocked}
   transform="translate({node.x}, {node.y})"
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
@@ -181,6 +185,10 @@
   .org-node {
     cursor: grab;
     touch-action: none;
+  }
+
+  .org-node--locked {
+    cursor: default;
   }
 
   .org-node:hover .node-bg {

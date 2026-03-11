@@ -6,10 +6,10 @@
   import { resolve } from '$app/paths';
 
   import {
-    MESSAGES,
     INTERVAL_LABELS,
     CARD_STATUS_LABELS,
     CARD_STATUS_BADGE_CLASSES,
+    type TpmMessages,
   } from './constants';
 
   import type {
@@ -24,10 +24,11 @@
   }
 
   interface Props {
+    messages: TpmMessages;
     assets: AssetWithTpmStatus[];
   }
 
-  const { assets }: Props = $props();
+  const { messages, assets }: Props = $props();
 
   /** Sort: assets with open tasks first, then by name */
   const sortedAssets = $derived(
@@ -124,16 +125,16 @@
     <div class="empty-state__icon">
       <i class="fas fa-tools"></i>
     </div>
-    <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
-    <p class="empty-state__description">{MESSAGES.EMPTY_DESCRIPTION}</p>
+    <h3 class="empty-state__title">{messages.EMPTY_TITLE}</h3>
+    <p class="empty-state__description">{messages.EMPTY_DESCRIPTION}</p>
   </div>
 {:else}
   <div class="table-responsive">
     <table class="data-table data-table--hover data-table--striped">
       <thead>
         <tr>
-          <th scope="col">{MESSAGES.MACHINE_COL_NAME}</th>
-          <th scope="col">{MESSAGES.MACHINE_COL_PLAN}</th>
+          <th scope="col">{messages.MACHINE_COL_NAME}</th>
+          <th scope="col">{messages.MACHINE_COL_PLAN}</th>
           {#each intervalColumns as col (col)}
             <th
               scope="col"
@@ -144,7 +145,7 @@
               {shortLabels[col] ?? col}
             </th>
           {/each}
-          <th scope="col">{MESSAGES.MACHINE_COL_ACTIONS}</th>
+          <th scope="col">{messages.MACHINE_COL_ACTIONS}</th>
         </tr>
       </thead>
       <tbody>
@@ -185,8 +186,8 @@
                     `/lean-management/tpm/board/${asset.plan.uuid}`,
                   )}
                   class="action-icon action-icon--primary"
-                  title={MESSAGES.BTN_VIEW_BOARD}
-                  aria-label={MESSAGES.BTN_VIEW_BOARD}
+                  title={messages.BTN_VIEW_BOARD}
+                  aria-label={messages.BTN_VIEW_BOARD}
                 >
                   <i class="fas fa-th-large"></i>
                 </a>

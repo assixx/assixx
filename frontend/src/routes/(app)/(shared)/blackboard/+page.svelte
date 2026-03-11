@@ -534,19 +534,13 @@
         >
       </div>
     {:else if entries.length === 0}
-      <div class="p-5 text-center">
+      <div class="flex flex-col items-center justify-center py-16 text-center">
         <i
-          class="fas fa-clipboard-list mb-4 text-4xl text-(--color-text-secondary) opacity-50"
+          class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
         ></i>
-        <p class="text-(--color-text-secondary)">{MESSAGES.NO_ENTRIES}</p>
-        {#if isAdmin}
-          <button
-            type="button"
-            class="btn btn-primary mt-4"
-            onclick={openCreateModal}
-            ><i class="fas fa-plus mr-2"></i>{MESSAGES.CREATE_FIRST}</button
-          >
-        {/if}
+        <p class="text-xl text-(--color-text-secondary)">
+          {MESSAGES.NO_ENTRIES}
+        </p>
       </div>
     {:else}
       <div

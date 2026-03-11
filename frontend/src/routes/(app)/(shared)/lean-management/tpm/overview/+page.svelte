@@ -13,7 +13,7 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import AssetList from '../_lib/AssetList.svelte';
-  import { MESSAGES, DEFAULT_COLORS } from '../_lib/constants';
+  import { createTpmMessages, DEFAULT_COLORS } from '../_lib/constants';
 
   import type { PageData } from './$types';
   import type {
@@ -35,6 +35,10 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createTpmMessages(labels));
 
   const assets = $derived(data.assets);
   const colors = $derived(data.colors);
@@ -85,7 +89,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <div class="container">
@@ -95,18 +99,18 @@
       <div class="flex items-center justify-between gap-4">
         <h2 class="card__title">
           <i class="fas fa-tools mr-2"></i>
-          {MESSAGES.PAGE_HEADING}
+          {messages.PAGE_HEADING}
         </h2>
         <a
           href={resolvePath('/lean-management/tpm/gesamtansicht')}
           class="btn btn-info"
         >
           <i class="fas fa-table"></i>
-          {MESSAGES.BTN_GESAMTANSICHT}
+          {messages.BTN_GESAMTANSICHT}
         </a>
       </div>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
     </div>
   </div>
@@ -119,7 +123,7 @@
       </div>
       <div class="card-stat__content">
         <div class="card-stat__value">{totalAssets}</div>
-        <div class="card-stat__label">{MESSAGES.STAT_MACHINES}</div>
+        <div class="card-stat__label">{messages.STAT_MACHINES}</div>
       </div>
     </div>
 
@@ -132,7 +136,7 @@
       </div>
       <div class="card-stat__content">
         <div class="card-stat__value">{totalOpenCards}</div>
-        <div class="card-stat__label">{MESSAGES.STAT_OPEN_CARDS}</div>
+        <div class="card-stat__label">{messages.STAT_OPEN_CARDS}</div>
       </div>
     </div>
 
@@ -145,7 +149,7 @@
       </div>
       <div class="card-stat__content">
         <div class="card-stat__value">{totalOverdue}</div>
-        <div class="card-stat__label">{MESSAGES.STAT_OVERDUE}</div>
+        <div class="card-stat__label">{messages.STAT_OVERDUE}</div>
       </div>
     </div>
 
@@ -158,7 +162,7 @@
       </div>
       <div class="card-stat__content">
         <div class="card-stat__value">{totalGreenToday}</div>
-        <div class="card-stat__label">{MESSAGES.STAT_COMPLETED_TODAY}</div>
+        <div class="card-stat__label">{messages.STAT_COMPLETED_TODAY}</div>
       </div>
     </div>
   </div>
@@ -169,11 +173,14 @@
       <div class="card__header">
         <h2 class="card__title">
           <i class="fas fa-list mr-2"></i>
-          {MESSAGES.MACHINE_LIST_TITLE}
+          {messages.MACHINE_LIST_TITLE}
         </h2>
       </div>
       <div class="card__body">
-        <AssetList {assets} />
+        <AssetList
+          {messages}
+          {assets}
+        />
       </div>
     </div>
   </div>

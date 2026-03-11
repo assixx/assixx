@@ -19,7 +19,7 @@
     unarchivePlan as apiUnarchivePlan,
     logApiError,
   } from '../../_lib/api';
-  import { MESSAGES } from '../../_lib/constants';
+  import { createTpmMessages } from '../../_lib/constants';
 
   import EmployeeAssignment from './_lib/EmployeeAssignment.svelte';
   import PlanForm from './_lib/PlanForm.svelte';
@@ -40,14 +40,18 @@
 
   const { data }: { data: PageData } = $props();
 
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createTpmMessages(labels));
+
   const isCreateMode = $derived(data.isCreateMode);
   const pageTitle = $derived(
     isCreateMode ?
-      MESSAGES.PLAN_CREATE_PAGE_TITLE
-    : MESSAGES.PLAN_EDIT_PAGE_TITLE,
+      messages.PLAN_CREATE_PAGE_TITLE
+    : messages.PLAN_EDIT_PAGE_TITLE,
   );
   const heading = $derived(
-    isCreateMode ? MESSAGES.PLAN_CREATE_TITLE : MESSAGES.PLAN_EDIT_TITLE,
+    isCreateMode ? messages.PLAN_CREATE_TITLE : messages.PLAN_EDIT_TITLE,
   );
 
   // =============================================================================
@@ -81,12 +85,12 @@
     submitting = true;
     try {
       const plan = await apiCreatePlan(payload);
-      showSuccessAlert(MESSAGES.SUCCESS_PLAN_CREATED);
+      showSuccessAlert(messages.SUCCESS_PLAN_CREATED);
       await goto(resolvePath(`/lean-management/tpm/plan/${plan.uuid}`));
     } catch (err: unknown) {
       logApiError('handleCreate', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_PLAN_CREATE;
+        err instanceof Error ? err.message : messages.ERROR_PLAN_CREATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -111,12 +115,12 @@
         }
       }
 
-      showSuccessAlert(MESSAGES.SUCCESS_PLAN_UPDATED);
+      showSuccessAlert(messages.SUCCESS_PLAN_UPDATED);
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('handleUpdate', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_PLAN_UPDATE;
+        err instanceof Error ? err.message : messages.ERROR_PLAN_UPDATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -125,27 +129,27 @@
 
   async function handleArchive(): Promise<void> {
     if (data.plan === null) return;
-    const confirmed = await showConfirm(MESSAGES.ARCHIVE_CONFIRM);
+    const confirmed = await showConfirm(messages.ARCHIVE_CONFIRM);
     if (!confirmed) return;
     const success = await apiArchivePlan(data.plan.uuid);
     if (success) {
-      showSuccessAlert(MESSAGES.SUCCESS_ARCHIVED);
+      showSuccessAlert(messages.SUCCESS_ARCHIVED);
       await goto(resolvePath('/lean-management/tpm'));
     } else {
-      showErrorAlert(MESSAGES.ERROR_ARCHIVE);
+      showErrorAlert(messages.ERROR_ARCHIVE);
     }
   }
 
   async function handleRestore(): Promise<void> {
     if (data.plan === null) return;
-    const confirmed = await showConfirm(MESSAGES.RESTORE_CONFIRM);
+    const confirmed = await showConfirm(messages.RESTORE_CONFIRM);
     if (!confirmed) return;
     const success = await apiUnarchivePlan(data.plan.uuid);
     if (success) {
-      showSuccessAlert(MESSAGES.SUCCESS_RESTORED);
+      showSuccessAlert(messages.SUCCESS_RESTORED);
       await invalidateAll();
     } else {
-      showErrorAlert(MESSAGES.ERROR_RESTORE);
+      showErrorAlert(messages.ERROR_RESTORE);
     }
   }
 
@@ -169,7 +173,7 @@
           void goto(resolvePath('/lean-management/tpm'));
         }}
       >
-        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.BTN_BACK_TO_OVERVIEW}
+        <i class="fas fa-arrow-left mr-2"></i>{messages.BTN_BACK_TO_OVERVIEW}
       </button>
     </div>
     <h1
@@ -235,6 +239,7 @@
         </div>
         <div class="card__body">
           <PlanForm
+            {messages}
             plan={data.plan}
             assets={data.assets}
             areas={data.areas}
@@ -274,14 +279,14 @@
               <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"
               ></i>
               <p class="mb-4 text-(--color-text-secondary)">
-                {MESSAGES.ARCHIVED_NOTICE}
+                {messages.ARCHIVED_NOTICE}
               </p>
               <button
                 type="button"
                 class="btn btn-light"
                 onclick={handleRestore}
               >
-                <i class="fas fa-undo mr-2"></i>{MESSAGES.BTN_RESTORE}
+                <i class="fas fa-undo mr-2"></i>{messages.BTN_RESTORE}
               </button>
             </div>
           </div>
@@ -298,7 +303,7 @@
                 class="btn btn-light w-full"
                 onclick={handleArchive}
               >
-                <i class="fas fa-archive mr-2"></i>{MESSAGES.BTN_ARCHIVE}
+                <i class="fas fa-archive mr-2"></i>{messages.BTN_ARCHIVE}
               </button>
             </div>
           </div>

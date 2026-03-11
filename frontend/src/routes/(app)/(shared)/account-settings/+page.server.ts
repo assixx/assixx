@@ -90,14 +90,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/dashboard');
   }
 
-  // Load pending deletion status and shift times in parallel
+  const activeFeatures: string[] =
+    (parentData as { activeFeatures?: string[] }).activeFeatures ?? [];
+  const shiftPlanningEnabled = activeFeatures.includes('shift_planning');
+
+  // Only fetch shift times if the feature is enabled — avoids 403
   const [deletionStatus, shiftTimes] = await Promise.all([
     apiFetch<DeletionStatusData>('/root/tenant/deletion-status', token, fetch),
-    apiFetch<ShiftTimeData[]>('/shift-times', token, fetch),
+    shiftPlanningEnabled ?
+      apiFetch<ShiftTimeData[]>('/shift-times', token, fetch)
+    : Promise.resolve(null),
   ]);
 
   return {
     pendingDeletion: deletionStatus,
     shiftTimes: shiftTimes ?? [],
+    shiftPlanningEnabled,
   };
 };

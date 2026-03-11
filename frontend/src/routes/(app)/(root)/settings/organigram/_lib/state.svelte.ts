@@ -35,6 +35,7 @@ let tree = $state<OrgChartTree>({
   companyName: '',
   address: null,
   hierarchyLabels: {
+    hall: 'Hallen',
     area: 'Bereiche',
     department: 'Abteilungen',
     team: 'Teams',
@@ -49,6 +50,7 @@ let panY = $state(0);
 let dirty = $state(false);
 let saving = $state(false);
 let hoveredNodeKey = $state('');
+let locked = $state(true);
 
 // --- Getters ---
 
@@ -82,6 +84,14 @@ export function getHoveredNodeKey(): string {
 
 export function setHoveredNodeKey(key: string): void {
   hoveredNodeKey = key;
+}
+
+export function getIsLocked(): boolean {
+  return locked;
+}
+
+export function toggleLock(): void {
+  locked = !locked;
 }
 
 // --- Init ---

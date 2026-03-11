@@ -100,6 +100,7 @@ describe('OrganigramSettingsService', () => {
 
       const result = await service.getHierarchyLabels(1);
 
+      expect(result.hall).toBe(DEFAULT_HIERARCHY_LABELS.hall);
       expect(result.area).toBe('Werke');
       expect(result.department).toBe(DEFAULT_HIERARCHY_LABELS.department);
       expect(result.team).toBe(DEFAULT_HIERARCHY_LABELS.team);
@@ -108,6 +109,7 @@ describe('OrganigramSettingsService', () => {
 
     it('should return fully overridden labels', async () => {
       const custom = {
+        hall: 'Gebäude',
         area: 'Werke',
         department: 'Einheiten',
         team: 'Gruppen',
@@ -161,6 +163,7 @@ describe('OrganigramSettingsService', () => {
         levels: { area: 'Werke' },
       });
 
+      expect(result.hall).toBe(DEFAULT_HIERARCHY_LABELS.hall);
       expect(result.area).toBe('Werke');
       expect(result.department).toBe(DEFAULT_HIERARCHY_LABELS.department);
       expect(result.team).toBe(DEFAULT_HIERARCHY_LABELS.team);
@@ -244,6 +247,7 @@ describe('OrganigramSettingsService', () => {
       expect(writtenSettings).toEqual({
         orgHierarchy: {
           levels: {
+            hall: DEFAULT_HIERARCHY_LABELS.hall,
             area: 'Werke',
             department: DEFAULT_HIERARCHY_LABELS.department,
             team: DEFAULT_HIERARCHY_LABELS.team,
@@ -267,6 +271,7 @@ describe('OrganigramSettingsService', () => {
       });
 
       expect(result).toEqual({
+        hall: DEFAULT_HIERARCHY_LABELS.hall,
         area: 'As',
         department: 'Bs',
         team: 'Cs',

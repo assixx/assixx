@@ -74,7 +74,10 @@
       label: `${hierarchyLabels.area} verwalten`,
       icon: 'fa-building',
     },
-    '/manage-halls': { label: 'Hallen verwalten', icon: 'fa-warehouse' },
+    '/manage-halls': {
+      label: `${hierarchyLabels.hall} verwalten`,
+      icon: 'fa-warehouse',
+    },
     '/manage-teams': {
       label: `${hierarchyLabels.team} verwalten`,
       icon: 'fa-users',

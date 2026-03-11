@@ -13,7 +13,7 @@
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
   import { deletePlan as apiDeletePlan, logApiError } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createTpmMessages } from './_lib/constants';
   import PlanOverview from './_lib/PlanOverview.svelte';
   import { tpmState } from './_lib/state.svelte';
 
@@ -29,6 +29,10 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createTpmMessages(labels));
 
   const allPlans = $derived(data.plans);
   const totalPlans = $derived(data.totalPlans);
@@ -80,13 +84,13 @@
     tpmState.setSubmitting(true);
     try {
       await apiDeletePlan(uuid);
-      showSuccessAlert(MESSAGES.SUCCESS_DELETED);
+      showSuccessAlert(messages.SUCCESS_DELETED);
       tpmState.closeDeleteModal();
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('confirmDelete', err);
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.ERROR_DELETE_FAILED,
+        err instanceof Error ? err.message : messages.ERROR_DELETE_FAILED,
       );
     } finally {
       tpmState.setSubmitting(false);
@@ -101,7 +105,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -115,7 +119,7 @@
       </div>
       <div class="card-stat__content">
         <div class="card-stat__value">{totalPlans}</div>
-        <div class="card-stat__label">{MESSAGES.STAT_TOTAL_PLANS}</div>
+        <div class="card-stat__label">{messages.STAT_TOTAL_PLANS}</div>
       </div>
     </div>
 
@@ -125,7 +129,7 @@
       </div>
       <div class="card-stat__content">
         <div class="card-stat__value">{activePlanCount}</div>
-        <div class="card-stat__label">{MESSAGES.STAT_ACTIVE_PLANS}</div>
+        <div class="card-stat__label">{messages.STAT_ACTIVE_PLANS}</div>
       </div>
     </div>
   </div>
@@ -135,27 +139,28 @@
     <div class="card">
       <div class="card__header">
         <div class="flex items-center justify-between gap-4">
-          <h2 class="card__title">{MESSAGES.STAT_TOTAL_PLANS}</h2>
+          <h2 class="card__title">{messages.STAT_TOTAL_PLANS}</h2>
           <div class="flex gap-2">
             <a
               href={resolvePath('/lean-management/tpm/gesamtansicht')}
               class="btn btn-info"
             >
               <i class="fas fa-table"></i>
-              {MESSAGES.BTN_GESAMTANSICHT}
+              {messages.BTN_GESAMTANSICHT}
             </a>
             <a
               href={resolvePath('/lean-management/tpm/plan/new')}
               class="btn btn-primary"
             >
               <i class="fas fa-plus"></i>
-              {MESSAGES.BTN_NEW_PLAN}
+              {messages.BTN_NEW_PLAN}
             </a>
           </div>
         </div>
       </div>
       <div class="card__body">
         <PlanOverview
+          {messages}
           plans={allPlans}
           {totalPlans}
           currentPage={tpmState.currentPage}
@@ -177,15 +182,15 @@
 <ConfirmModal
   show={tpmState.showDeleteModal}
   id="tpm-plan-delete-modal"
-  title={MESSAGES.DELETE_CONFIRM_TITLE}
-  confirmLabel={MESSAGES.BTN_DELETE}
+  title={messages.DELETE_CONFIRM_TITLE}
+  confirmLabel={messages.BTN_DELETE}
   submitting={tpmState.submitting}
   onconfirm={confirmDelete}
   oncancel={() => {
     tpmState.closeDeleteModal();
   }}
 >
-  {MESSAGES.DELETE_CONFIRM_MESSAGE}
+  {messages.DELETE_CONFIRM_MESSAGE}
   {#if tpmState.deletePlanName.length > 0}
     <br /><br />
     <strong>{tpmState.deletePlanName}</strong>

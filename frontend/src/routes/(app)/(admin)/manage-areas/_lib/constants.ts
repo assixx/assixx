@@ -55,7 +55,7 @@ const STATIC_MESSAGES = {
   LABEL_TYPE: 'Typ',
   LABEL_CAPACITY: 'Kapazität',
   LABEL_ADDRESS: 'Adresse',
-  LABEL_HALLS: 'Hallen zuweisen',
+  LABEL_HALLS: 'Hallen zuweisen', // overridden by factory
   LABEL_STATUS: 'Status',
   PLACEHOLDER_NAME: 'Name eingeben',
   PLACEHOLDER_DESCRIPTION: 'Optionale Beschreibung',
@@ -63,12 +63,11 @@ const STATIC_MESSAGES = {
   PLACEHOLDER_ADDRESS: 'Straße, PLZ, Ort',
   NO_AREA_LEAD: 'Kein Leiter',
   AREA_LEAD_HINT: 'Nur Administratoren können als Leiter zugewiesen werden.',
-  HALLS_HINT:
-    'Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte Hallen werden zugeordnet.',
+  HALLS_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl.', // overridden by factory
   NO_DEPARTMENTS: 'Keine',
   NO_HALLS: 'Keine',
-  ONE_HALL: '1 Halle',
-  multipleHalls: (count: number) => `${count} Hallen`,
+  ONE_HALL: '1', // overridden by factory
+  multipleHalls: (count: number) => `${count}`, // overridden by factory
   BTN_ADD_AREA: 'Hinzufügen',
   BTN_SAVE: 'Speichern',
   BTN_CANCEL: 'Abbrechen',
@@ -83,7 +82,7 @@ const STATIC_MESSAGES = {
   TH_AREA_LEAD: 'Leiter',
   TH_TYPE: 'Typ',
   TH_CAPACITY: 'Kapazität',
-  TH_HALLS: 'Hallen',
+  TH_HALLS: 'Hallen', // overridden by factory
   TH_STATUS: 'Status',
   TH_ACTIONS: 'Aktionen',
   ERROR_LOADING: 'Fehler beim Laden',
@@ -116,6 +115,11 @@ export function createMessages(labels: HierarchyLabels) {
     FILTER_ARCHIVED_TITLE: `Archivierte ${labels.area}`,
     FILTER_ALL_TITLE: `Alle ${labels.area}`,
     TH_DEPARTMENTS: labels.department,
+    LABEL_HALLS: `${labels.hall} zuweisen`,
+    HALLS_HINT: `Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte ${labels.hall} werden zugeordnet.`,
+    ONE_HALL: `1 ${labels.hall}`,
+    multipleHalls: (count: number) => `${count} ${labels.hall}`,
+    TH_HALLS: labels.hall,
   };
 }
 

@@ -1,11 +1,15 @@
 <!--
   HierarchyLabelsModal — Anpassung der Hierarchie-Ebenen-Namen
-  4 Zeilen (Bereich, Abteilung, Team, Anlage) mit je einem Label
+  5 Zeilen (Halle, Bereich, Abteilung, Team, Anlage) mit je einem Label
 -->
 <script lang="ts">
-  import { DEFAULT_HIERARCHY_LABELS, ENTITY_COLORS } from './constants.js';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    ENTITY_COLORS,
+    HALL_COLOR,
+  } from './constants.js';
 
-  import type { HierarchyLabels, OrgEntityType } from './types.js';
+  import type { HierarchyLabels } from './types.js';
 
   interface Props {
     show: boolean;
@@ -21,15 +25,44 @@
     structuredClone(DEFAULT_HIERARCHY_LABELS),
   );
 
-  const LEVELS: { key: OrgEntityType; icon: string; defaultLabel: string }[] = [
-    { key: 'area', icon: ENTITY_COLORS.area.icon, defaultLabel: 'Bereiche' },
+  interface LabelLevel {
+    key: keyof HierarchyLabels;
+    icon: string;
+    color: string;
+    defaultLabel: string;
+  }
+
+  const LEVELS: LabelLevel[] = [
+    {
+      key: 'hall',
+      icon: HALL_COLOR.icon,
+      color: HALL_COLOR.border,
+      defaultLabel: 'Hallen',
+    },
+    {
+      key: 'area',
+      icon: ENTITY_COLORS.area.icon,
+      color: ENTITY_COLORS.area.border,
+      defaultLabel: 'Bereiche',
+    },
     {
       key: 'department',
       icon: ENTITY_COLORS.department.icon,
+      color: ENTITY_COLORS.department.border,
       defaultLabel: 'Abteilungen',
     },
-    { key: 'team', icon: ENTITY_COLORS.team.icon, defaultLabel: 'Teams' },
-    { key: 'asset', icon: ENTITY_COLORS.asset.icon, defaultLabel: 'Anlagen' },
+    {
+      key: 'team',
+      icon: ENTITY_COLORS.team.icon,
+      color: ENTITY_COLORS.team.border,
+      defaultLabel: 'Teams',
+    },
+    {
+      key: 'asset',
+      icon: ENTITY_COLORS.asset.icon,
+      color: ENTITY_COLORS.asset.border,
+      defaultLabel: 'Anlagen',
+    },
   ];
 
   const isValid = $derived(validateLabels());
@@ -112,25 +145,41 @@
           Struktur bleibt identisch — nur die Anzeige-Labels ändern sich.
         </p>
 
-        <div class="labels-list">
-          {#each LEVELS as level (level.key)}
-            {@const color = ENTITY_COLORS[level.key].border}
-            <div class="level-row">
-              <span
-                class="level-label"
-                style="color: {color}"
-              >
-                <i class={level.icon}></i>
-                {level.defaultLabel}
-              </span>
-              <input
-                type="text"
-                class="form-field__control level-input"
-                placeholder={level.defaultLabel}
-                maxlength="50"
-                required
-                bind:value={editLabels[level.key]}
-              />
+        <div class="hierarchy-stepper">
+          {#each LEVELS as level, idx (level.key)}
+            {@const color = level.color}
+            <div class="step">
+              <div class="step__indicator">
+                <span
+                  class="step__number"
+                  style="background: {color}">{idx + 1}</span
+                >
+                {#if idx < LEVELS.length - 1}
+                  <div class="step__connector"></div>
+                {/if}
+              </div>
+              <div class="step__content">
+                <span
+                  class="step__label"
+                  style="color: {color}"
+                >
+                  <i class={level.icon}></i>
+                  {level.defaultLabel}
+                  {#if idx === 0}
+                    <span class="step__hint">Höchste Ebene</span>
+                  {:else if idx === LEVELS.length - 1}
+                    <span class="step__hint">Niedrigste Ebene</span>
+                  {/if}
+                </span>
+                <input
+                  type="text"
+                  class="form-field__control"
+                  placeholder={level.defaultLabel}
+                  maxlength="50"
+                  required
+                  bind:value={editLabels[level.key]}
+                />
+              </div>
             </div>
           {/each}
         </div>
@@ -139,7 +188,7 @@
       <div class="ds-modal__footer ds-modal__footer--spaced">
         <button
           type="button"
-          class="btn btn-cancel"
+          class="btn btn-danger"
           onclick={restoreDefaults}
           disabled={isSaving}
         >
@@ -182,20 +231,52 @@
     margin-bottom: 0.5rem;
   }
 
-  .labels-list {
+  .hierarchy-stepper {
     display: flex;
     flex-direction: column;
+  }
+
+  .step {
+    display: flex;
     gap: 0.75rem;
   }
 
-  .level-row {
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 0.75rem;
+  .step__indicator {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    flex-shrink: 0;
   }
 
-  .level-label {
+  .step__number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-white, #fff);
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .step__connector {
+    width: 2px;
+    flex: 1;
+    min-height: 8px;
+    background: var(--glass-border, rgb(255 255 255 / 12%));
+  }
+
+  .step__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .step__label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -203,9 +284,11 @@
     font-weight: 600;
   }
 
-  .level-input {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
+  .step__hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 60%;
+    margin-left: auto;
   }
 
   .footer-actions {

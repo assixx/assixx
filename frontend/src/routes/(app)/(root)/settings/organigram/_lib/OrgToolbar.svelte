@@ -7,24 +7,30 @@
     zoom: number;
     isDirty: boolean;
     isSaving: boolean;
+    isLocked: boolean;
     onzoomin: () => void;
     onzoomout: () => void;
     onzoomreset: () => void;
     onautolayout: () => void;
     onsave: () => void;
     onopenlabels: () => void;
+    ontogglelock: () => void;
+    onfullscreen: () => void;
   }
 
   const {
     zoom,
     isDirty,
     isSaving,
+    isLocked,
     onzoomin,
     onzoomout,
     onzoomreset,
     onautolayout,
     onsave,
     onopenlabels,
+    ontogglelock,
+    onfullscreen,
   }: Props = $props();
 
   const zoomPercent = $derived(Math.round(zoom * 100));
@@ -34,7 +40,7 @@
   <div class="toolbar-group">
     <button
       type="button"
-      class="toolbar-btn"
+      class="btn btn-icon btn-secondary"
       title="Herauszoomen"
       onclick={onzoomout}
     >
@@ -43,7 +49,7 @@
     <span class="zoom-display">{zoomPercent}%</span>
     <button
       type="button"
-      class="toolbar-btn"
+      class="btn btn-icon btn-secondary"
       title="Hineinzoomen"
       onclick={onzoomin}
     >
@@ -51,9 +57,17 @@
     </button>
     <button
       type="button"
-      class="toolbar-btn"
+      class="btn btn-icon btn-secondary"
       title="Zoom zurücksetzen"
       onclick={onzoomreset}
+    >
+      <i class="fas fa-compress-arrows-alt"></i>
+    </button>
+    <button
+      type="button"
+      class="btn btn-icon btn-secondary"
+      title="Vollbild"
+      onclick={onfullscreen}
     >
       <i class="fas fa-expand"></i>
     </button>
@@ -61,11 +75,29 @@
 
   <div class="toolbar-divider"></div>
 
+  <button
+    type="button"
+    class="btn btn-icon"
+    class:btn-secondary={!isLocked}
+    class:lock-active={isLocked}
+    title={isLocked ? 'Bearbeitung entsperren' : 'Bearbeitung sperren'}
+    onclick={ontogglelock}
+  >
+    <i
+      class="fas"
+      class:fa-lock={isLocked}
+      class:fa-lock-open={!isLocked}
+    ></i>
+  </button>
+
+  <div class="toolbar-divider"></div>
+
   <div class="toolbar-group">
     <button
       type="button"
-      class="toolbar-btn"
+      class="btn btn-secondary"
       title="Auto-Layout: Positionen neu berechnen"
+      disabled={isLocked}
       onclick={onautolayout}
     >
       <i class="fas fa-th-large"></i>
@@ -74,7 +106,7 @@
 
     <button
       type="button"
-      class="toolbar-btn"
+      class="btn btn-secondary"
       title="Hierarchie-Ebenen anpassen"
       onclick={onopenlabels}
     >
@@ -95,7 +127,7 @@
 
     <button
       type="button"
-      class="toolbar-btn toolbar-btn--primary"
+      class="btn btn-primary"
       title="Positionen speichern"
       disabled={!isDirty || isSaving}
       onclick={onsave}
@@ -116,7 +148,6 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: var(--glass-bg, rgb(255 255 255 / 5%));
     border: 1px solid var(--glass-border, rgb(255 255 255 / 8%));
     border-radius: var(--radius-lg, 8px);
   }
@@ -136,51 +167,6 @@
 
   .toolbar-spacer {
     flex: 1;
-  }
-
-  .toolbar-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.625rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md, 6px);
-    background: transparent;
-    color: var(--color-text-secondary);
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-  }
-
-  .toolbar-btn:hover:not(:disabled) {
-    background: var(--glass-bg-hover, rgb(255 255 255 / 8%));
-    color: var(--color-text-primary);
-  }
-
-  .toolbar-btn:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  .toolbar-btn:disabled {
-    opacity: 40%;
-    cursor: not-allowed;
-  }
-
-  .toolbar-btn--primary {
-    background: var(--color-primary, #3b82f6);
-    color: var(--color-white, oklch(100% 0 0));
-    border-color: transparent;
-  }
-
-  .toolbar-btn--primary:hover:not(:disabled) {
-    background: var(--color-primary-600, #2563eb);
-    color: var(--color-white, oklch(100% 0 0));
-  }
-
-  .toolbar-btn--primary:disabled {
-    background: var(--glass-bg, rgb(255 255 255 / 5%));
-    color: var(--color-text-secondary);
   }
 
   .zoom-display {
@@ -207,6 +193,16 @@
 
   .dirty-indicator i {
     font-size: 0.4rem;
+  }
+
+  .lock-active {
+    background: var(--color-warning, #f59e0b) !important;
+    color: var(--color-white, #fff) !important;
+    border-color: transparent !important;
+  }
+
+  .lock-active:hover {
+    background: var(--color-warning-600, #d97706) !important;
   }
 
   @media (width <= 768px) {

@@ -18,6 +18,7 @@ import { randomBytes } from 'crypto';
 import type { PoolClient, QueryResultRow } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { AppConfigService } from '../config/config.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   SignupDto,
@@ -80,7 +81,10 @@ interface DbPlanResult extends QueryResultRow {
 export class SignupService {
   private readonly logger = new Logger(SignupService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly config: AppConfigService,
+  ) {}
 
   /**
    * Register a new tenant with admin user
@@ -367,22 +371,32 @@ export class SignupService {
 
   /**
    * Activate trial features for new tenant.
-   * Only activates features included in the tenant's plan (ADR-032).
+   * Production: only features included in the tenant's plan (ADR-032).
+   * Development: ALL active features — removes friction during dev/testing.
    */
   private async activateTrialFeatures(
     client: PoolClient,
     tenantId: number,
     planId: number,
   ): Promise<void> {
-    const featureRows = await client.query<DbFeatureResult>(
-      `SELECT f.id
-       FROM plan_features pf
-       JOIN features f ON pf.feature_id = f.id
-       WHERE pf.plan_id = $1
-         AND pf.is_included = true
-         AND f.is_active = ${IS_ACTIVE.ACTIVE}`,
-      [planId],
-    );
+    const query =
+      this.config.isDevelopment ?
+        `SELECT id FROM features WHERE is_active = ${IS_ACTIVE.ACTIVE}`
+      : `SELECT f.id
+         FROM plan_features pf
+         JOIN features f ON pf.feature_id = f.id
+         WHERE pf.plan_id = $1
+           AND pf.is_included = true
+           AND f.is_active = ${IS_ACTIVE.ACTIVE}`;
+
+    const params = this.config.isDevelopment ? [] : [planId];
+    const featureRows = await client.query<DbFeatureResult>(query, params);
+
+    if (this.config.isDevelopment) {
+      this.logger.log(
+        `DEV MODE: Activating ALL ${featureRows.rows.length} features for tenant ${tenantId}`,
+      );
+    }
 
     for (const feature of featureRows.rows) {
       await client.query(

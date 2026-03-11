@@ -229,6 +229,7 @@ describe('UpsertPositionsSchema', () => {
 describe('UpdateHierarchyLabelsSchema', () => {
   const valid = {
     levels: {
+      hall: 'Gebäude',
       area: 'Hallen',
       department: 'Segmente',
       team: 'Teilbereiche',
@@ -301,7 +302,7 @@ describe('UpdateHierarchyLabelsSchema', () => {
     expect(result.levels.area).toBe('Hallen');
   });
 
-  it.each(['area', 'department', 'team', 'asset'] as const)(
+  it.each(['hall', 'area', 'department', 'team', 'asset'] as const)(
     'should accept updating only %s',
     (key: string) => {
       const data = { levels: { [key]: 'Custom Label' } };

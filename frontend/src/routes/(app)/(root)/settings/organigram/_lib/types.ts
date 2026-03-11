@@ -7,6 +7,7 @@ export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 
 /** Label pro Ebene — ein einziger String (Plural-Form als Standard) */
 export interface HierarchyLabels {
+  hall: string;
   area: string;
   department: string;
   team: string;

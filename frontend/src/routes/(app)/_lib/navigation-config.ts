@@ -263,7 +263,6 @@ const ROOT_STATIC_ITEMS: NavItem[] = [
 
 /** Static root menu items after dynamic labels */
 const ROOT_STATIC_BOTTOM: NavItem[] = [
-  { id: 'halls', icon: ICONS.warehouse, label: 'Hallen', url: '/manage-halls' },
   {
     id: 'calendar',
     icon: ICONS.calendar,
@@ -338,6 +337,12 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
       label: labels.department,
       url: '/manage-departments',
     },
+    {
+      id: 'halls',
+      icon: ICONS.warehouse,
+      label: labels.hall,
+      url: '/manage-halls',
+    },
     ...ROOT_STATIC_BOTTOM,
   ];
 }
@@ -383,7 +388,6 @@ const ADMIN_STATIC_ITEMS: NavItem[] = [
 
 /** Static admin menu items after dynamic labels */
 const ADMIN_STATIC_BOTTOM: NavItem[] = [
-  { id: 'halls', icon: ICONS.warehouse, label: 'Hallen', url: '/manage-halls' },
   {
     id: 'documents',
     icon: ICONS.document,
@@ -457,6 +461,12 @@ function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
       icon: ICONS.generator,
       label: labels.asset,
       url: '/manage-assets',
+    },
+    {
+      id: 'halls',
+      icon: ICONS.warehouse,
+      label: labels.hall,
+      url: '/manage-halls',
     },
     ...ADMIN_STATIC_BOTTOM,
   ];

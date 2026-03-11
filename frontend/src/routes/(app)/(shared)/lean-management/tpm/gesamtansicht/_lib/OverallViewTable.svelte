@@ -21,7 +21,7 @@
     INTERVAL_LABELS,
     INTERVAL_COLORS,
     ZOOM_CONFIG,
-    MESSAGES,
+    type TpmMessages,
   } from '../../_lib/constants';
 
   import {
@@ -44,6 +44,12 @@
     ProjectedSlot,
     IntervalColorConfigEntry,
   } from '../../_lib/types';
+
+  interface Props {
+    messages: TpmMessages;
+  }
+
+  const { messages }: Props = $props();
 
   // =========================================================================
   // STATE
@@ -220,7 +226,7 @@
       class="gv-slider"
       for="gv-max-dates"
     >
-      <span class="gv-slider__label">{MESSAGES.GESAMTANSICHT_SLIDER_LABEL}</span
+      <span class="gv-slider__label">{messages.GESAMTANSICHT_SLIDER_LABEL}</span
       >
       <input
         id="gv-max-dates"
@@ -241,7 +247,7 @@
         bind:checked={groupedView}
       />
       <span class="choice-card__text"
-        >{MESSAGES.GESAMTANSICHT_TOGGLE_GROUPED}</span
+        >{messages.GESAMTANSICHT_TOGGLE_GROUPED}</span
       >
     </label>
 
@@ -249,7 +255,7 @@
       <button
         type="button"
         class="btn btn-icon btn-secondary"
-        title={MESSAGES.ZOOM_IN}
+        title={messages.ZOOM_IN}
         disabled={zoomLevel >= ZOOM_CONFIG.MAX}
         onclick={zoomIn}><i class="fas fa-plus"></i></button
       >
@@ -257,14 +263,14 @@
       <button
         type="button"
         class="btn btn-icon btn-secondary"
-        title={MESSAGES.ZOOM_OUT}
+        title={messages.ZOOM_OUT}
         disabled={zoomLevel <= ZOOM_CONFIG.MIN}
         onclick={zoomOut}><i class="fas fa-minus"></i></button
       >
       <button
         type="button"
         class="btn btn-icon btn-secondary ml-2"
-        title={MESSAGES.ZOOM_FULLSCREEN}
+        title={messages.ZOOM_FULLSCREEN}
         onclick={() => {
           void toggleFullscreen();
         }}><i class="fas fa-expand"></i></button
@@ -275,14 +281,14 @@
   {#if loading}
     <div class="gv-loading">
       <i class="fas fa-spinner fa-spin"></i>
-      {MESSAGES.GESAMTANSICHT_LOADING}
+      {messages.GESAMTANSICHT_LOADING}
     </div>
   {:else if matrixRows.length === 0}
     <div class="empty-state">
       <div class="empty-state__icon">
         <i class="fas fa-clipboard-list"></i>
       </div>
-      <h3 class="empty-state__title">{MESSAGES.GESAMTANSICHT_EMPTY}</h3>
+      <h3 class="empty-state__title">{messages.GESAMTANSICHT_EMPTY}</h3>
     </div>
   {:else}
     <div class="table-responsive">
@@ -294,10 +300,10 @@
         <thead>
           <tr>
             <th class="gv-th gv-th--sticky">
-              {MESSAGES.GESAMTANSICHT_TH_MACHINE}
+              {messages.GESAMTANSICHT_TH_MACHINE}
             </th>
             <th class="gv-th gv-th--sticky gv-th--col2"
-              >{MESSAGES.GESAMTANSICHT_TH_TIME}</th
+              >{messages.GESAMTANSICHT_TH_TIME}</th
             >
             {#each INTERVAL_COLUMNS as col (col)}
               <th
@@ -338,32 +344,32 @@
                   class="gv-th gv-th--sticky"
                   colspan={2}
                 >
-                  {MESSAGES.GESAMTANSICHT_TH_MACHINE}
+                  {messages.GESAMTANSICHT_TH_MACHINE}
                 </th>
                 {#each INTERVAL_COLUMNS as _ (_)}
                   <th
                     class="gv-th gv-th--sub"
                     colspan={estColSpans[0]}
                   >
-                    {MESSAGES.GESAMTANSICHT_TH_STAFF}
+                    {messages.GESAMTANSICHT_TH_STAFF}
                   </th>
                   <th
                     class="gv-th gv-th--sub"
                     colspan={estColSpans[1]}
                   >
-                    {MESSAGES.GESAMTANSICHT_TH_PREP}
+                    {messages.GESAMTANSICHT_TH_PREP}
                   </th>
                   <th
                     class="gv-th gv-th--sub"
                     colspan={estColSpans[2]}
                   >
-                    {MESSAGES.GESAMTANSICHT_TH_EXEC}
+                    {messages.GESAMTANSICHT_TH_EXEC}
                   </th>
                   <th
                     class="gv-th gv-th--sub"
                     colspan={estColSpans[3]}
                   >
-                    {MESSAGES.GESAMTANSICHT_TH_FOLLOW}
+                    {messages.GESAMTANSICHT_TH_FOLLOW}
                   </th>
                 {/each}
               </tr>

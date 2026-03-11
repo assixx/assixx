@@ -640,11 +640,9 @@ function moveNodeWithChildren(nodeUuid: string, dx: number, dy: number): void {
 - [x] Breadcrumb: "System > Organigramm"
 - [ ] Info-Tooltip: Erklärung was Hierarchie-Labels bewirken (V2 — kein Blocker)
 
-### Labels-Propagation (V1-Scope: nur Organigramm-Seite)
+### Labels-Propagation — **V2 DONE**
 
-V1 zeigt angepasste Labels **nur auf der Organigramm-Seite selbst**. Systemweite Propagation (Sidebar, Formulare, Breadcrumbs) ist V2 — siehe Known Limitations #4.
-
-**V2-Vorbereitung (nicht implementieren, nur dokumentieren):** Frontend lädt Labels einmalig im Root-Layout und stellt sie via Svelte Context bereit. Alle Komponenten lesen aus dem Context statt Hardcoded.
+~~V1 zeigt angepasste Labels nur auf der Organigramm-Seite selbst.~~ **V2 implementiert:** Systemweite Propagation (Sidebar, Breadcrumbs, alle Management-Seiten) via Layout-Data + Factory-Funktionen. Siehe [FEAT_HIERARCHY_LABELS_PROPAGATION_MASTERPLAN.md](./FEAT_HIERARCHY_LABELS_PROPAGATION_MASTERPLAN.md) — ~250+ String-Ersetzungen in ~40+ Dateien.
 
 ### Phase 6 — Definition of Done
 
@@ -719,7 +717,7 @@ V1 zeigt angepasste Labels **nur auf der Organigramm-Seite selbst**. Systemweite
 2. **Kein Real-Time-Collaboration** — Nur ein Root gleichzeitig editiert. Kein WebSocket/SSE für Live-Sync.
 3. **Kein Resize von Blöcken in V1** — Nur Verschieben. Alle Blöcke haben fixe Default-Größe. Resize kommt in V2.
 4. **Keine neuen Entities aus dem Organigramm erstellen** — V1 zeigt nur bestehende Areas/Depts/Teams. Erstellen über bestehende Management-Seiten. V2 kann "Block erstellen" → direkt Area/Dept anlegen.
-5. **Labels-Propagation nur auf Organigramm-Seite** — Systemweite Propagation (Sidebar, alle Seiten) ist V2. V1 zeigt die angepassten Labels nur im Organigramm.
+5. ~~Labels-Propagation nur auf Organigramm-Seite~~ — **RESOLVED (V2).** Systemweite Propagation implementiert. Siehe [FEAT_HIERARCHY_LABELS_PROPAGATION_MASTERPLAN.md](./FEAT_HIERARCHY_LABELS_PROPAGATION_MASTERPLAN.md).
 6. **Kein Export (PDF/PNG)** — V2.
 7. **Kein Minimap** — V2 bei Bedarf.
 8. **Keine Touch-Gesten** — Desktop-first. Touch-Support in V2.

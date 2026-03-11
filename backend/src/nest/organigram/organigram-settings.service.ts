@@ -49,6 +49,7 @@ export class OrganigramSettingsService {
     }
 
     return {
+      hall: orgHierarchy.levels.hall ?? DEFAULT_HIERARCHY_LABELS.hall,
       area: orgHierarchy.levels.area ?? DEFAULT_HIERARCHY_LABELS.area,
       department:
         orgHierarchy.levels.department ?? DEFAULT_HIERARCHY_LABELS.department,
@@ -64,6 +65,7 @@ export class OrganigramSettingsService {
     const currentLabels = await this.getHierarchyLabels(tenantId);
 
     const mergedLabels: HierarchyLabels = {
+      hall: dto.levels.hall ?? currentLabels.hall,
       area: dto.levels.area ?? currentLabels.area,
       department: dto.levels.department ?? currentLabels.department,
       team: dto.levels.team ?? currentLabels.team,

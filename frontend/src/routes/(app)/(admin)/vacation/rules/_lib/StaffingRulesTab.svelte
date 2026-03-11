@@ -405,9 +405,7 @@
               {rulesState.editingStaffingRule.assetName ??
                 `#${rulesState.editingStaffingRule.assetId}`}
             </p>
-            <span class="form-field__hint">
-              Kann nicht geändert werden
-            </span>
+            <span class="form-field__hint"> Kann nicht geändert werden </span>
           </div>
         {:else}
           <!-- Create mode: Cascade Area -> Department -> Asset -->

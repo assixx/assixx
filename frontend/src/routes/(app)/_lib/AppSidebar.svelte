@@ -13,7 +13,6 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import { type NavItem } from './navigation-config';
-  import SidebarStorageWidget from './SidebarStorageWidget.svelte';
   import SidebarUserCard from './SidebarUserCard.svelte';
 
   /**
@@ -337,9 +336,6 @@
 
   <!-- Sidebar Footer Area — pinned to bottom via flex -->
   <div class="sidebar-footer-area">
-    {#if currentRole === 'root'}
-      <SidebarStorageWidget />
-    {/if}
     <SidebarUserCard
       {user}
       {tenant}
@@ -455,10 +451,6 @@
     border-radius: var(--glass-card-radius);
     background: var(--nav-hover-bg);
     content: '';
-  }
-
-  .sidebar.collapsed :global(.storage-widget) {
-    display: none;
   }
 
   /* Sidebar menu */
@@ -771,14 +763,6 @@
     .sidebar.mobile-open .submenu-arrow {
       display: flex;
     }
-
-    .sidebar :global(.storage-widget) {
-      position: relative;
-      right: auto;
-      bottom: auto;
-      left: auto;
-      margin-top: var(--spacing-6);
-    }
   }
 
   /* Tablet: 768px – 1023px */
@@ -798,10 +782,6 @@
 
     .sidebar .submenu-wrapper {
       display: none !important;
-    }
-
-    .sidebar :global(.storage-widget) {
-      display: none;
     }
 
     .sidebar .sidebar-link {

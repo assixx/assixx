@@ -7,18 +7,34 @@
  * @see vitest.config.ts (project: api)
  */
 import {
+  APITEST_PASSWORD,
   type AuthState,
   BASE_URL,
   type JsonBody,
   authHeaders,
   authOnly,
+  ensureTestEmployee,
   loginApitest,
 } from './helpers.js';
 
 let auth: AuthState;
+let employeeToken: string;
 
 beforeAll(async () => {
   auth = await loginApitest();
+
+  // Create employee + login for role-based access tests
+  await ensureTestEmployee(auth.authToken);
+  const loginRes = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'employee@apitest.de',
+      password: APITEST_PASSWORD,
+    }),
+  });
+  const loginBody = (await loginRes.json()) as JsonBody;
+  employeeToken = loginBody.data.accessToken as string;
 });
 
 // ─── seq: 1 -- Auth Guard ───────────────────────────────────────────────────
@@ -59,6 +75,7 @@ describe('Organigram: Tree', () => {
     expect(body.data).toHaveProperty('companyName');
     expect(body.data.companyName).toBeTypeOf('string');
     expect(body.data).toHaveProperty('hierarchyLabels');
+    expect(body.data.hierarchyLabels).toHaveProperty('hall');
     expect(body.data.hierarchyLabels).toHaveProperty('area');
     expect(body.data.hierarchyLabels).toHaveProperty('department');
     expect(body.data.hierarchyLabels).toHaveProperty('team');
@@ -86,6 +103,7 @@ describe('Organigram: Get Hierarchy Labels', () => {
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('hall');
     expect(body.data).toHaveProperty('area');
     expect(body.data).toHaveProperty('department');
     expect(body.data).toHaveProperty('team');
@@ -98,7 +116,7 @@ describe('Organigram: Get Hierarchy Labels', () => {
     });
     const body = (await res.json()) as JsonBody;
 
-    for (const level of ['area', 'department', 'team', 'asset']) {
+    for (const level of ['hall', 'area', 'department', 'team', 'asset']) {
       expect(body.data[level]).toBeTypeOf('string');
     }
   });
@@ -203,5 +221,65 @@ describe('Organigram: Upsert Positions', () => {
     });
 
     expect(res.status).toBe(400);
+  });
+});
+
+// ─── seq: 6 -- Role-based Access (Employee) ──────────────────────────────────
+
+describe('Organigram: Employee can read hierarchy-labels', () => {
+  it('should return 200 for employee on GET /hierarchy-labels', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/hierarchy-labels`, {
+      headers: authOnly(employeeToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('hall');
+    expect(body.data).toHaveProperty('area');
+    expect(body.data).toHaveProperty('department');
+    expect(body.data).toHaveProperty('team');
+    expect(body.data).toHaveProperty('asset');
+  });
+});
+
+describe('Organigram: Employee denied on root-only endpoints', () => {
+  it('should deny employee GET /tree (403)', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/tree`, {
+      headers: authOnly(employeeToken),
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('should deny employee PATCH /hierarchy-labels (403)', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/hierarchy-labels`, {
+      method: 'PATCH',
+      headers: authHeaders(employeeToken),
+      body: JSON.stringify({ levels: { area: 'Forbidden' } }),
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('should deny employee PUT /positions (403)', async () => {
+    const res = await fetch(`${BASE_URL}/organigram/positions`, {
+      method: 'PUT',
+      headers: authHeaders(employeeToken),
+      body: JSON.stringify({
+        positions: [
+          {
+            entityType: 'area',
+            entityUuid: 'a0000000-0000-0000-0000-000000test01',
+            positionX: 0,
+            positionY: 0,
+            width: 200,
+            height: 80,
+          },
+        ],
+      }),
+    });
+
+    expect(res.status).toBe(403);
   });
 });

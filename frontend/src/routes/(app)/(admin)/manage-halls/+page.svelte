@@ -110,7 +110,7 @@
     if (result.success) {
       closeHallModal();
       await invalidateAll();
-      showSuccessAlert(isEditMode ? 'Halle aktualisiert' : 'Halle erstellt');
+      showSuccessAlert(isEditMode ? 'Aktualisiert' : 'Erstellt');
     } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
@@ -126,7 +126,7 @@
     const result = await apiDeleteHall(idToDelete);
     if (result.success) {
       await invalidateAll();
-      showSuccessAlert('Halle wurde gelöscht');
+      showSuccessAlert('Erfolgreich gelöscht');
     } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
@@ -265,7 +265,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
-            title="Aktive Hallen"
+            title={`Aktive ${messages.PAGE_HEADING}`}
             onclick={() => {
               handleStatusToggle('active');
             }}
@@ -277,7 +277,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
-            title="Inaktive Hallen"
+            title={`Inaktive ${messages.PAGE_HEADING}`}
             onclick={() => {
               handleStatusToggle('inactive');
             }}
@@ -289,7 +289,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
-            title="Archivierte Hallen"
+            title={`Archivierte ${messages.PAGE_HEADING}`}
             onclick={() => {
               handleStatusToggle('archived');
             }}
@@ -301,7 +301,7 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
-            title="Alle Hallen"
+            title={`Alle ${messages.PAGE_HEADING}`}
             onclick={() => {
               handleStatusToggle('all');
             }}
@@ -469,7 +469,7 @@
                           type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
-                          aria-label="Halle bearbeiten"
+                          aria-label="Bearbeiten"
                           onclick={() => {
                             openEditModal(hall.id);
                           }}
@@ -480,7 +480,7 @@
                           type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
-                          aria-label="Halle löschen"
+                          aria-label="Löschen"
                           onclick={() => {
                             openDeleteModal(hall.id);
                           }}
@@ -505,7 +505,7 @@
   type="button"
   class="btn-float"
   onclick={openAddModal}
-  aria-label="Halle hinzufügen"
+  aria-label={messages.BTN_ADD_HALL}
 >
   <i class="fas fa-plus"></i>
 </button>

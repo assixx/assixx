@@ -53,6 +53,10 @@ ADRs document important architectural decisions:
 | [ADR-028](./ADR-028-work-orders-architecture.md)            | Work Orders Architecture             | Accepted | 2026-03-03 |
 | [ADR-029](./ADR-029-pg-partman-partition-management.md)     | pg_partman Partition Management      | Accepted | 2026-03-06 |
 | [ADR-030](./ADR-030-zod-validation-architecture.md)         | Zod Validation Architecture          | Accepted | 2026-03-07 |
+| [ADR-031](./ADR-031-centralized-read-tracking.md)           | Centralized Read-Tracking            | Accepted | 2026-03-07 |
+| [ADR-032](./ADR-032-feature-catalog-and-plan-tiers.md)      | Feature-Katalog und Plan-Tiers       | Superseded | 2026-03-10 |
+| [ADR-033](./ADR-033-addon-based-saas-model.md)              | Addon-basiertes SaaS-Modell          | Accepted | 2026-03-10 |
+| [ADR-034](./ADR-034-hierarchy-labels-propagation.md)        | Hierarchy Labels Propagation         | Accepted | 2026-03-11 |
 
 ## Template
 

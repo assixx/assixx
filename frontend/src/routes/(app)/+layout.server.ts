@@ -175,6 +175,7 @@ async function parseHierarchyLabels(
     const data = json.data;
     if (
       data !== undefined &&
+      typeof data.hall === 'string' &&
       typeof data.area === 'string' &&
       typeof data.department === 'string' &&
       typeof data.team === 'string' &&

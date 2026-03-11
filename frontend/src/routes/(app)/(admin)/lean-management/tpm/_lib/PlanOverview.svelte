@@ -8,8 +8,8 @@
     WEEKDAY_LABELS,
     CARD_STATUS_LABELS,
     CARD_STATUS_BADGE_CLASSES,
-    MESSAGES,
     DEFAULT_PAGE_SIZE,
+    type TpmMessages,
   } from './constants';
 
   import type {
@@ -25,6 +25,7 @@
   }
 
   interface Props {
+    messages: TpmMessages;
     plans: TpmPlan[];
     totalPlans: number;
     currentPage: number;
@@ -39,6 +40,7 @@
   }
 
   const {
+    messages,
     plans,
     totalPlans,
     currentPage,
@@ -175,7 +177,7 @@
         onfilterchange('all');
       }}
     >
-      {MESSAGES.FILTER_ALL}
+      {messages.FILTER_ALL}
     </button>
     <button
       type="button"
@@ -185,7 +187,7 @@
         onfilterchange('active');
       }}
     >
-      {MESSAGES.FILTER_ACTIVE}
+      {messages.FILTER_ACTIVE}
     </button>
     <button
       type="button"
@@ -195,7 +197,7 @@
         onfilterchange('archived');
       }}
     >
-      {MESSAGES.FILTER_ARCHIVED}
+      {messages.FILTER_ARCHIVED}
     </button>
   </div>
 
@@ -203,7 +205,7 @@
     <input
       type="text"
       class="form-field__control"
-      placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+      placeholder={messages.SEARCH_PLACEHOLDER}
       value={searchQuery}
       oninput={handleSearchInput}
     />
@@ -216,18 +218,18 @@
     class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)"
   >
     <i class="fas fa-spinner fa-spin"></i>
-    {MESSAGES.LOADING}
+    {messages.LOADING}
   </div>
 {:else if filteredPlans.length === 0}
   <div class="empty-state">
     <div class="empty-state__icon">
       <i class="fas fa-clipboard-list"></i>
     </div>
-    <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
+    <h3 class="empty-state__title">{messages.EMPTY_TITLE}</h3>
     <p class="empty-state__description">
       {statusFilter === 'all' ?
-        MESSAGES.EMPTY_DESCRIPTION
-      : MESSAGES.EMPTY_FILTER_DESC}
+        messages.EMPTY_DESCRIPTION
+      : messages.EMPTY_FILTER_DESC}
     </p>
   </div>
 {:else}
@@ -235,10 +237,10 @@
     <table class="data-table data-table--hover data-table--striped">
       <thead>
         <tr>
-          <th scope="col">{MESSAGES.TH_MACHINE}</th>
-          <th scope="col">{MESSAGES.TH_PLAN_NAME}</th>
-          <th scope="col">{MESSAGES.TH_WEEKDAY}</th>
-          <th scope="col">{MESSAGES.TH_STATUS}</th>
+          <th scope="col">{messages.TH_MACHINE}</th>
+          <th scope="col">{messages.TH_PLAN_NAME}</th>
+          <th scope="col">{messages.TH_WEEKDAY}</th>
+          <th scope="col">{messages.TH_STATUS}</th>
           {#each intervalColumns as col (col)}
             <th
               scope="col"
@@ -249,7 +251,7 @@
               {shortLabels[col] ?? col}
             </th>
           {/each}
-          <th scope="col">{MESSAGES.TH_ACTIONS}</th>
+          <th scope="col">{messages.TH_ACTIONS}</th>
         </tr>
       </thead>
       <tbody>
@@ -296,8 +298,8 @@
                 <a
                   href={resolvePath(`/lean-management/tpm/board/${plan.uuid}`)}
                   class="action-icon action-icon--primary"
-                  title={MESSAGES.BTN_VIEW_BOARD}
-                  aria-label={MESSAGES.BTN_VIEW_BOARD}
+                  title={messages.BTN_VIEW_BOARD}
+                  aria-label={messages.BTN_VIEW_BOARD}
                 >
                   <i class="fas fa-th-large"></i>
                 </a>
@@ -322,7 +324,7 @@
                 <a
                   href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
                   class="action-icon action-icon--edit"
-                  title={MESSAGES.BTN_EDIT}
+                  title={messages.BTN_EDIT}
                   aria-label="Plan bearbeiten"
                 >
                   <i class="fas fa-edit"></i>
@@ -330,7 +332,7 @@
                 <button
                   type="button"
                   class="action-icon action-icon--delete"
-                  title={MESSAGES.BTN_DELETE}
+                  title={messages.BTN_DELETE}
                   aria-label="Plan löschen"
                   onclick={() => {
                     ondelete(plan);

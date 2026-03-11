@@ -7,9 +7,17 @@
    */
   import { resolve } from '$app/paths';
 
-  import { MESSAGES } from '../_lib/constants';
+  import { createTpmMessages } from '../_lib/constants';
 
   import OverallViewTable from './_lib/OverallViewTable.svelte';
+
+  import type { PageData } from './$types';
+
+  const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createTpmMessages(labels));
 
   function resolvePath(path: string): string {
     return (resolve as (p: string) => string)(path);
@@ -17,7 +25,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.GESAMTANSICHT_PAGE_TITLE}</title>
+  <title>{messages.GESAMTANSICHT_PAGE_TITLE}</title>
 </svelte:head>
 
 <div class="container">
@@ -25,16 +33,16 @@
     <a
       href={resolvePath('/lean-management/tpm/overview')}
       class="btn btn-info btn-icon"
-      title={MESSAGES.BTN_BACK_TO_OVERVIEW}
+      title={messages.BTN_BACK_TO_OVERVIEW}
     >
       <i class="fas fa-arrow-left"></i>
     </a>
-    <h1 class="gv-header__title">{MESSAGES.GESAMTANSICHT_TITLE}</h1>
+    <h1 class="gv-header__title">{messages.GESAMTANSICHT_TITLE}</h1>
   </div>
 
   <div class="card">
     <div class="card__body">
-      <OverallViewTable />
+      <OverallViewTable {messages} />
     </div>
   </div>
 </div>

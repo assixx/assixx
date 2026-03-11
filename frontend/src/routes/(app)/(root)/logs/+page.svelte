@@ -14,7 +14,7 @@
   import { deleteLogs, fetchLogs } from './_lib/api';
   import {
     ACTION_OPTIONS,
-    ENTITY_OPTIONS,
+    createEntityOptions,
     LOGS_PER_PAGE,
     MESSAGES,
     TIMERANGE_OPTIONS,
@@ -40,6 +40,9 @@
 
   // SSR Data
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const entityOptions = $derived(createEntityOptions(data.hierarchyLabels));
 
   // =============================================================================
   // SSR DATA (initial values from server)
@@ -96,7 +99,7 @@
     getDropdownDisplayText(ACTION_OPTIONS, filterAction, 'Alle Aktionen'),
   );
   const entityDisplayText = $derived(
-    getDropdownDisplayText(ENTITY_OPTIONS, filterEntity, 'Alle Typen'),
+    getDropdownDisplayText(entityOptions, filterEntity, 'Alle Typen'),
   );
   const timerangeDisplayText = $derived(
     getDropdownDisplayText(TIMERANGE_OPTIONS, filterTimerange, 'Alle Zeit'),
@@ -266,7 +269,7 @@
           <FilterDropdown
             label="Entitätstyp"
             labelId="entity-label"
-            options={ENTITY_OPTIONS}
+            options={entityOptions}
             selectedValue={filterEntity}
             displayText={entityDisplayText}
             scrollable

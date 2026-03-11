@@ -5,6 +5,7 @@
 import type { HierarchyLabels, OrgEntityType } from './types.js';
 
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
+  hall: 'Hallen',
   area: 'Bereiche',
   department: 'Abteilungen',
   team: 'Teams',
@@ -17,6 +18,14 @@ interface EntityColor {
   text: string;
   icon: string;
 }
+
+/** Hall color — not an OrgEntityType, used only in hierarchy labels modal */
+export const HALL_COLOR: EntityColor = {
+  bg: 'rgba(139, 92, 246, 0.12)',
+  border: '#8b5cf6',
+  text: '#8b5cf6',
+  icon: 'fas fa-warehouse',
+};
 
 export const ENTITY_COLORS: Record<OrgEntityType, EntityColor> = {
   area: {

@@ -535,7 +535,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. {labels.area} vererben Zugriff auf zugehörige
+            Strg/Cmd + Klick fuer Mehrfachauswahl. {labels.area} vererben Zugriff
+            auf zugehörige
             {labels.department}.
           </span>
         </div>
@@ -575,8 +576,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur {labels.department} die nicht bereits
-            durch {labels.area} abgedeckt sind.
+            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur {labels.department} die nicht
+            bereits durch {labels.area} abgedeckt sind.
           </span>
         </div>
 

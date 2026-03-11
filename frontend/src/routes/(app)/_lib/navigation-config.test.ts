@@ -457,6 +457,7 @@ describe('getMenuItemsForRole', () => {
 
   it('should use custom labels when provided', () => {
     const customLabels = {
+      hall: 'Gebäude',
       area: 'Werke',
       department: 'Segmente',
       team: 'Crews',

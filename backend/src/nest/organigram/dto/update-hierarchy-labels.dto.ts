@@ -9,6 +9,7 @@ const LabelSchema = z
 
 export const UpdateHierarchyLabelsSchema = z.object({
   levels: z.object({
+    hall: LabelSchema.optional(),
     area: LabelSchema.optional(),
     department: LabelSchema.optional(),
     team: LabelSchema.optional(),

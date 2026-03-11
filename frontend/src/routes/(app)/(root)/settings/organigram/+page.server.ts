@@ -17,6 +17,7 @@ const EMPTY_TREE: OrgChartTree = {
   companyName: '',
   address: null,
   hierarchyLabels: {
+    hall: 'Hallen',
     area: 'Bereiche',
     department: 'Abteilungen',
     team: 'Teams',

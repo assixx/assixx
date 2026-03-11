@@ -3,6 +3,7 @@ export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 
 /** Label pro Ebene — ein einziger String (Plural-Form als Standard) */
 export interface HierarchyLabels {
+  hall: string;
   area: string;
   department: string;
   team: string;
@@ -65,6 +66,7 @@ export interface OrgChartPositionRow {
 
 /** Default-Labels wenn tenants.settings.orgHierarchy nicht gesetzt */
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
+  hall: 'Hallen',
   area: 'Bereiche',
   department: 'Abteilungen',
   team: 'Teams',

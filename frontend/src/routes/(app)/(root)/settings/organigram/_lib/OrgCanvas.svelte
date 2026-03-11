@@ -82,30 +82,6 @@
   role="img"
   aria-label="Organigramm"
 >
-  <!-- Grid-Hintergrund -->
-  <defs>
-    <pattern
-      id="org-grid"
-      width={LAYOUT.GRID_SIZE}
-      height={LAYOUT.GRID_SIZE}
-      patternUnits="userSpaceOnUse"
-    >
-      <circle
-        cx="1"
-        cy="1"
-        r="0.5"
-        fill="currentColor"
-        opacity="0.15"
-      />
-    </pattern>
-  </defs>
-  <rect
-    width="100%"
-    height="100%"
-    fill="url(#org-grid)"
-    class="grid-bg"
-  />
-
   <!-- Transformierter Content-Layer -->
   <g transform="translate({panX}, {panY}) scale({zoom})">
     <!-- Bereichs-Container ("Hallen") — hinterste Ebene -->
@@ -168,40 +144,22 @@
       />
     {/each}
   </g>
-
-  <!-- Leerer Zustand -->
-  {#if renderNodes.length === 0}
-    <text
-      x="50%"
-      y="50%"
-      text-anchor="middle"
-      dominant-baseline="central"
-      class="empty-text"
-      fill="var(--color-text-secondary)"
-    >
-      Keine Organisationseinheiten vorhanden
-    </text>
-  {/if}
 </svg>
 
 <style>
   .org-canvas {
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 100%;
     display: block;
     cursor: grab;
     user-select: none;
-    background: var(--glass-bg, rgb(255 255 255 / 3%));
     border-radius: var(--radius-xl, 12px);
-    border: 1px solid var(--glass-border, rgb(255 255 255 / 8%));
   }
 
   .org-canvas:active {
     cursor: grabbing;
-  }
-
-  .grid-bg {
-    pointer-events: none;
   }
 
   .connection {
@@ -215,10 +173,5 @@
     font-size: 12px;
     pointer-events: none;
     user-select: none;
-  }
-
-  .empty-text {
-    font-size: 16px;
-    font-weight: 500;
   }
 </style>
