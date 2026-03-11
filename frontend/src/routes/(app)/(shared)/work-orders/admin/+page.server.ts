@@ -3,7 +3,7 @@
  * @module shared/work-orders/admin/+page.server
  *
  * SSR: Loads all work orders, stats, and eligible users in parallel.
- * Feature guard: requires 'work_orders' feature active for tenant.
+ * Addon guard: requires 'work_orders' addon active for tenant.
  * Role guard: explicit check (not under (admin) layout group due to route conflict).
  */
 import { redirect } from '@sveltejs/kit';

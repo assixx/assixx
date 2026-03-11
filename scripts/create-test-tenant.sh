@@ -112,8 +112,8 @@ UNION ALL
 SELECT 'User', u.id::text, u.email || ' (' || u.role || ', full_access=' || u.has_full_access || ')' FROM users u
     JOIN tenants t ON u.tenant_id = t.id WHERE t.subdomain = 'apitest'
 UNION ALL
-SELECT 'Features', COUNT(*)::text, 'aktiviert' FROM tenant_features tf
-    JOIN tenants t ON tf.tenant_id = t.id WHERE t.subdomain = 'apitest' AND tf.is_active = 1;
+SELECT 'Addons', COUNT(*)::text, 'aktiviert' FROM tenant_addons ta
+    JOIN tenants t ON ta.tenant_id = t.id WHERE t.subdomain = 'apitest' AND ta.is_active = 1;
 "
 
 echo ""

@@ -439,13 +439,13 @@ The audit trail logged API calls, not USER ACTIONS.
 
 **Solution:** Multi-layer noise reduction:
 
-| Layer                        | What              | Example                              |
-| ---------------------------- | ----------------- | ------------------------------------ |
-| `EXCLUDED_PATHS`             | Never log         | `/health`, `/metrics`                |
-| `SKIPPED_GET_SUFFIXES`       | Skip stats/counts | `/stats`, `/count`, `-count`         |
-| `REFERENCE_DATA_ENDPOINTS`   | Skip dropdowns    | `/departments`, `/teams`, `/users`   |
-| `PAGE_INIT_ENDPOINTS`        | Skip page init    | `/users/me`, `/addons/my-addons`     |
-| `shouldThrottleListAction()` | Throttle 30s      | Same user + endpoint = 1 log         |
+| Layer                        | What              | Example                            |
+| ---------------------------- | ----------------- | ---------------------------------- |
+| `EXCLUDED_PATHS`             | Never log         | `/health`, `/metrics`              |
+| `SKIPPED_GET_SUFFIXES`       | Skip stats/counts | `/stats`, `/count`, `-count`       |
+| `REFERENCE_DATA_ENDPOINTS`   | Skip dropdowns    | `/departments`, `/teams`, `/users` |
+| `PAGE_INIT_ENDPOINTS`        | Skip page init    | `/users/me`, `/addons/my-addons`   |
+| `shouldThrottleListAction()` | Throttle 30s      | Same user + endpoint = 1 log       |
 
 **Result:** "User visited Blackboard" = 1 log entry (not 6-7).
 

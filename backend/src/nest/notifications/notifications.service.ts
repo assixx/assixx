@@ -4,7 +4,7 @@
  * Orchestrates notification operations and delegates to sub-services:
  * - NotificationPreferencesService - user preference CRUD
  * - NotificationStatisticsService - analytics and stats
- * - NotificationFeatureService - feature-specific notifications (ADR-004)
+ * - NotificationAddonService - addon-specific notifications (ADR-004)
  *
  * Pure helper functions are in notifications.helpers.ts
  * Types are in notifications.types.ts
@@ -22,7 +22,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateNotificationDto } from './dto/create-notification.dto.js';
 import type { UpdatePreferencesDto } from './dto/update-preferences.dto.js';
-import { NotificationFeatureService } from './notification-feature.service.js';
+import { NotificationAddonService } from './notification-addon.service.js';
 import { NotificationPreferencesService } from './notification-preferences.service.js';
 import { NotificationStatisticsService } from './notification-statistics.service.js';
 import {
@@ -49,7 +49,7 @@ export class NotificationsService {
     private readonly db: DatabaseService,
     private readonly preferences: NotificationPreferencesService,
     private readonly statistics: NotificationStatisticsService,
-    private readonly feature: NotificationFeatureService,
+    private readonly addon: NotificationAddonService,
   ) {}
 
   // ==========================================================================
@@ -392,10 +392,10 @@ export class NotificationsService {
     return await this.statistics.getPersonalStats(userId, tenantId);
   }
 
-  /** Create feature notification (delegates to feature sub-service) */
-  async createFeatureNotification(
+  /** Create addon notification (delegates to addon sub-service) */
+  async createAddonNotification(
     type: 'survey' | 'document' | 'kvp' | 'vacation',
-    featureId: number,
+    addonEntityId: number,
     title: string,
     message: string,
     recipientType: 'user' | 'department' | 'team' | 'all',
@@ -403,9 +403,9 @@ export class NotificationsService {
     tenantId: number,
     createdBy: number,
   ): Promise<void> {
-    await this.feature.createFeatureNotification(
+    await this.addon.createAddonNotification(
       type,
-      featureId,
+      addonEntityId,
       title,
       message,
       recipientType,
@@ -415,23 +415,23 @@ export class NotificationsService {
     );
   }
 
-  /** Mark feature type as read (delegates to feature sub-service) */
-  async markFeatureTypeAsRead(
+  /** Mark addon type as read (delegates to addon sub-service) */
+  async markAddonTypeAsRead(
     type: 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm' | 'work_orders',
     userId: number,
     tenantId: number,
   ): Promise<number> {
-    return await this.feature.markFeatureTypeAsRead(type, userId, tenantId);
+    return await this.addon.markAddonTypeAsRead(type, userId, tenantId);
   }
 
   /** Mark notifications for a specific entity as read (e.g., one work order) */
-  async markFeatureEntityAsRead(
+  async markAddonEntityAsRead(
     type: 'work_orders',
     entityUuid: string,
     userId: number,
     tenantId: number,
   ): Promise<number> {
-    return await this.feature.markFeatureEntityAsRead(
+    return await this.addon.markAddonEntityAsRead(
       type,
       entityUuid,
       userId,

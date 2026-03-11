@@ -602,13 +602,13 @@ export class NotificationsController {
 
   /**
    * POST /notifications/mark-read/:type
-   * Mark all notifications of a feature type as read (ADR-004)
+   * Mark all notifications of an addon type as read (ADR-004)
    *
    * @param type - 'survey' | 'document' | 'kvp' | 'vacation'
    */
   @Post('mark-read/:type')
   @HttpCode(HttpStatus.OK)
-  async markFeatureTypeAsRead(
+  async markAddonTypeAsRead(
     @Param('type') type: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -628,7 +628,7 @@ export class NotificationsController {
       );
     }
 
-    const marked = await this.notificationsService.markFeatureTypeAsRead(
+    const marked = await this.notificationsService.markAddonTypeAsRead(
       type as
         | 'survey'
         | 'document'
@@ -652,7 +652,7 @@ export class NotificationsController {
    */
   @Post('mark-read/:type/:entityUuid')
   @HttpCode(HttpStatus.OK)
-  async markFeatureEntityAsRead(
+  async markAddonEntityAsRead(
     @Param('type') type: string,
     @Param('entityUuid') entityUuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -665,7 +665,7 @@ export class NotificationsController {
       );
     }
 
-    const marked = await this.notificationsService.markFeatureEntityAsRead(
+    const marked = await this.notificationsService.markAddonEntityAsRead(
       type as 'work_orders',
       entityUuid,
       user.id,

@@ -1,14 +1,14 @@
 /**
- * Unit tests for NotificationFeatureService
+ * Unit tests for NotificationAddonService
  *
  * Phase 11: Service tests — mocked dependencies.
- * Focus: Feature notification creation (fire-and-forget),
- *        markFeatureTypeAsRead (batch), ON CONFLICT DO NOTHING.
+ * Focus: Addon notification creation (fire-and-forget),
+ *        markAddonTypeAsRead (batch), ON CONFLICT DO NOTHING.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import { NotificationFeatureService } from './notification-feature.service.js';
+import { NotificationAddonService } from './notification-addon.service.js';
 
 // =============================================================
 // Module mocks
@@ -27,30 +27,30 @@ function createMockDb() {
 }
 
 // =============================================================
-// NotificationFeatureService
+// NotificationAddonService
 // =============================================================
 
-describe('NotificationFeatureService', () => {
-  let service: NotificationFeatureService;
+describe('NotificationAddonService', () => {
+  let service: NotificationAddonService;
   let mockDb: ReturnType<typeof createMockDb>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new NotificationFeatureService(
+    service = new NotificationAddonService(
       mockDb as unknown as DatabaseService,
     );
   });
 
   // =============================================================
-  // createFeatureNotification
+  // createAddonNotification
   // =============================================================
 
-  describe('createFeatureNotification', () => {
+  describe('createAddonNotification', () => {
     it('should insert notification', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.createFeatureNotification(
+      await service.createAddonNotification(
         'survey',
         42,
         'New Survey',
@@ -72,7 +72,7 @@ describe('NotificationFeatureService', () => {
       mockDb.query.mockRejectedValueOnce(new Error('DB down'));
 
       await expect(
-        service.createFeatureNotification(
+        service.createAddonNotification(
           'document',
           1,
           'New Doc',
@@ -87,14 +87,14 @@ describe('NotificationFeatureService', () => {
   });
 
   // =============================================================
-  // markFeatureEntityAsRead
+  // markAddonEntityAsRead
   // =============================================================
 
-  describe('markFeatureEntityAsRead', () => {
+  describe('markAddonEntityAsRead', () => {
     it('should return count of marked notifications', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
 
-      const result = await service.markFeatureEntityAsRead(
+      const result = await service.markAddonEntityAsRead(
         'work_orders',
         '019cb994-aaaa-bbbb-cccc-dddddddddddd',
         5,
@@ -108,7 +108,7 @@ describe('NotificationFeatureService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       const entityUuid = '019cb994-aaaa-bbbb-cccc-dddddddddddd';
 
-      await service.markFeatureEntityAsRead('work_orders', entityUuid, 5, 10);
+      await service.markAddonEntityAsRead('work_orders', entityUuid, 5, 10);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
       expect(params).toContain(entityUuid);
@@ -117,7 +117,7 @@ describe('NotificationFeatureService', () => {
     it('should filter by metadata entityUuid in SQL', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.markFeatureEntityAsRead(
+      await service.markAddonEntityAsRead(
         'work_orders',
         '019cb994-aaaa-bbbb-cccc-dddddddddddd',
         5,
@@ -131,7 +131,7 @@ describe('NotificationFeatureService', () => {
     it('should return 0 when nothing to mark', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.markFeatureEntityAsRead(
+      const result = await service.markAddonEntityAsRead(
         'work_orders',
         '019cb994-aaaa-bbbb-cccc-dddddddddddd',
         5,
@@ -143,14 +143,14 @@ describe('NotificationFeatureService', () => {
   });
 
   // =============================================================
-  // markFeatureTypeAsRead
+  // markAddonTypeAsRead
   // =============================================================
 
-  describe('markFeatureTypeAsRead', () => {
+  describe('markAddonTypeAsRead', () => {
     it('should return count of marked notifications', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }, { id: 3 }]);
 
-      const result = await service.markFeatureTypeAsRead('survey', 5, 10);
+      const result = await service.markAddonTypeAsRead('survey', 5, 10);
 
       expect(result).toBe(3);
     });
@@ -158,7 +158,7 @@ describe('NotificationFeatureService', () => {
     it('should return 0 when nothing to mark', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.markFeatureTypeAsRead('kvp', 5, 10);
+      const result = await service.markAddonTypeAsRead('kvp', 5, 10);
 
       expect(result).toBe(0);
     });

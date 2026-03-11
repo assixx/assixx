@@ -195,7 +195,7 @@
     <div class="signup-card">
       <h2 class="signup-title">Konto erstellen</h2>
       <p class="signup-subtitle">
-        14 Tage kostenlos testen — keine Kreditkarte nötig
+        30 Tage kostenlos testen — keine Kreditkarte nötig
       </p>
 
       <!-- Success Message -->
@@ -493,6 +493,7 @@
   .signup-page {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    width: 100%;
     height: 100vh;
     overflow: hidden;
   }
@@ -560,7 +561,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 75px 255px;
+    padding: 75px 120px;
     overflow-y: auto;
   }
 
@@ -568,7 +569,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 520px;
+    max-width: 680px;
   }
 
   .signup-title {

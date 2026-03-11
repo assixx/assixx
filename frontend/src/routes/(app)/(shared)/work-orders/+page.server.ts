@@ -3,7 +3,7 @@
  * @module shared/work-orders/+page.server
  *
  * SSR: Loads employee's assigned work orders (first page) + stats.
- * Feature guard: requires 'work_orders' feature active for tenant.
+ * Addon guard: requires 'work_orders' addon active for tenant.
  */
 import { redirect } from '@sveltejs/kit';
 

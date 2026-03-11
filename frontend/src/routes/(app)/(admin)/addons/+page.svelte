@@ -304,7 +304,7 @@
 
               <!-- Footer: Price + Action -->
               <div class="addon-card__footer">
-                <span class="addon-card__price">
+                <span class="badge badge--secondary">
                   {addon.priceMonthly !== undefined ?
                     `${addon.priceMonthly.toFixed(0)}€/Monat`
                   : 'Kostenlos'}
@@ -312,7 +312,7 @@
                 {#if canActivate(addon)}
                   <button
                     type="button"
-                    class="btn btn-primary btn--sm"
+                    class="btn btn-status-inactive btn--sm"
                     disabled={isProcessing}
                     onclick={() => void handleActivate(addon.code)}
                   >
@@ -326,7 +326,7 @@
                 {:else if canDeactivate(addon)}
                   <button
                     type="button"
-                    class="btn btn-danger btn--sm"
+                    class="btn btn-status-active btn--sm"
                     disabled={isProcessing}
                     onclick={() => {
                       requestDeactivate(addon);
@@ -372,32 +372,38 @@
 
 <style>
   /* ==========================================================
-     SUMMARY STATS
+     SUMMARY STATS — minimal glass chips
      ========================================================== */
   .summary-stats {
     display: flex;
-    gap: var(--spacing-8);
+    gap: var(--spacing-6);
     flex-wrap: wrap;
   }
 
   .stat-item {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--spacing-1);
+    padding: var(--spacing-4) var(--spacing-5);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    min-width: 120px;
   }
 
   .stat-item__value {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
     color: var(--color-text-primary);
+    line-height: 1;
   }
 
   .stat-item__label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     color: var(--color-text-tertiary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
   }
 
   /* ==========================================================
@@ -405,7 +411,7 @@
      ========================================================== */
   .core-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--spacing-4);
   }
 
@@ -413,11 +419,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-4);
+    gap: var(--spacing-3);
+    padding: var(--spacing-5) var(--spacing-4);
     border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     background: var(--glass-bg);
+    transition: border-color var(--duration-normal) var(--ease-out);
+  }
+
+  .core-card:hover {
+    border-color: var(--color-glass-border-hover);
   }
 
   .core-card__icon {
@@ -427,25 +438,25 @@
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-md);
-    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
-    font-size: 18px;
+    background: var(--glass-bg-hover);
+    color: var(--color-text-secondary);
+    font-size: 17px;
   }
 
   .core-card__name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-text-primary);
     text-align: center;
   }
 
   /* ==========================================================
-     PURCHASABLE ADDONS GRID
+     PURCHASABLE ADDONS GRID — shadcn-minimal
      ========================================================== */
   .addon-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-6);
+    gap: var(--spacing-5);
   }
 
   .addon-card {
@@ -453,26 +464,15 @@
     flex-direction: column;
     gap: var(--spacing-3);
     padding: var(--spacing-5);
-    border: 1px solid var(--color-glass-border);
+    border: var(--glass-border);
     border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
     transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
+      border-color var(--duration-normal) var(--ease-out),
+      background var(--duration-normal) var(--ease-out);
   }
 
   .addon-card:hover {
     border-color: var(--color-glass-border-hover);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .addon-card--active {
-    border-color: color-mix(
-      in oklch,
-      var(--color-success) 30%,
-      var(--color-glass-border)
-    );
   }
 
   .addon-card__header {
@@ -482,52 +482,48 @@
   }
 
   .addon-card__icon {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-lg);
-    background: color-mix(
-      in oklch,
-      var(--color-text-secondary) 8%,
-      transparent
-    );
-    color: var(--color-text-secondary);
-    font-size: 20px;
+    background: var(--glass-bg-hover);
+    color: var(--color-text-tertiary);
+    font-size: 18px;
     transition:
-      background 0.2s ease,
-      color 0.2s ease;
+      color var(--duration-normal) var(--ease-out),
+      background var(--duration-normal) var(--ease-out);
   }
 
   .addon-card__icon--active {
-    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
+    background: var(--glass-bg-active);
+    color: var(--color-text-primary);
   }
 
   .addon-card__name {
     margin: 0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--color-text-primary);
   }
 
   .addon-card__description {
     margin: 0;
-    font-size: 14px;
-    color: var(--color-text-secondary);
-    line-height: 1.4;
+    font-size: 13px;
+    color: var(--color-text-tertiary);
+    line-height: 1.5;
   }
 
   .addon-card__trial {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: var(--spacing-2);
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--spacing-1) var(--spacing-3);
     border-radius: var(--radius-md);
-    background: color-mix(in oklch, var(--color-warning) 10%, transparent);
-    color: var(--color-warning);
-    font-size: 13px;
+    background: var(--glass-bg-hover);
+    color: var(--color-text-secondary);
+    font-size: 12px;
     font-weight: 500;
   }
 
@@ -540,22 +536,26 @@
     border-top: 1px solid var(--color-glass-border);
   }
 
-  .addon-card__price {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-  }
-
   /* ==========================================================
      RESPONSIVE
      ========================================================== */
   @media (width < 768px) {
     .summary-stats {
-      gap: var(--spacing-4);
+      gap: var(--spacing-3);
+    }
+
+    .stat-item {
+      min-width: 0;
+      flex: 1;
+      padding: var(--spacing-3) var(--spacing-4);
+    }
+
+    .stat-item__value {
+      font-size: 22px;
     }
 
     .core-grid {
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     }
 
     .addon-grid {
@@ -565,7 +565,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .addon-card,
-    .addon-card__icon {
+    .addon-card__icon,
+    .core-card {
       transition: none;
     }
   }

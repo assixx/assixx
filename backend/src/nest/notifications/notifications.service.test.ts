@@ -8,7 +8,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import type { NotificationFeatureService } from './notification-feature.service.js';
+import type { NotificationAddonService } from './notification-addon.service.js';
 import type { NotificationPreferencesService } from './notification-preferences.service.js';
 import type { NotificationStatisticsService } from './notification-statistics.service.js';
 import { NotificationsService } from './notifications.service.js';
@@ -22,7 +22,7 @@ function createServiceWithMock(): {
   mockDb: { query: ReturnType<typeof vi.fn> };
   mockPreferences: Record<string, ReturnType<typeof vi.fn>>;
   mockStatistics: Record<string, ReturnType<typeof vi.fn>>;
-  mockFeature: Record<string, ReturnType<typeof vi.fn>>;
+  mockAddon: Record<string, ReturnType<typeof vi.fn>>;
 } {
   const mockDb = { query: vi.fn() };
   const mockPreferences = {
@@ -33,20 +33,20 @@ function createServiceWithMock(): {
     getStatistics: vi.fn(),
     getPersonalStats: vi.fn(),
   };
-  const mockFeature = {
-    createFeatureNotification: vi.fn(),
-    markFeatureTypeAsRead: vi.fn(),
-    markFeatureEntityAsRead: vi.fn(),
+  const mockAddon = {
+    createAddonNotification: vi.fn(),
+    markAddonTypeAsRead: vi.fn(),
+    markAddonEntityAsRead: vi.fn(),
   };
 
   const service = new NotificationsService(
     mockDb as unknown as DatabaseService,
     mockPreferences as unknown as NotificationPreferencesService,
     mockStatistics as unknown as NotificationStatisticsService,
-    mockFeature as unknown as NotificationFeatureService,
+    mockAddon as unknown as NotificationAddonService,
   );
 
-  return { service, mockDb, mockPreferences, mockStatistics, mockFeature };
+  return { service, mockDb, mockPreferences, mockStatistics, mockAddon };
 }
 
 // ============================================================
@@ -58,7 +58,7 @@ describe('NotificationsService – DB-mocked methods', () => {
   let mockDb: { query: ReturnType<typeof vi.fn> };
   let mockPreferences: Record<string, ReturnType<typeof vi.fn>>;
   let mockStatistics: Record<string, ReturnType<typeof vi.fn>>;
-  let mockFeature: Record<string, ReturnType<typeof vi.fn>>;
+  let mockAddon: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     const result = createServiceWithMock();
@@ -66,7 +66,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     mockDb = result.mockDb;
     mockPreferences = result.mockPreferences;
     mockStatistics = result.mockStatistics;
-    mockFeature = result.mockFeature;
+    mockAddon = result.mockAddon;
   });
 
   describe('markAsRead', () => {
@@ -247,13 +247,13 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
   });
 
-  describe('markFeatureTypeAsRead – delegation', () => {
+  describe('markAddonTypeAsRead – delegation', () => {
     it('delegates to feature sub-service', async () => {
-      mockFeature.markFeatureTypeAsRead.mockResolvedValueOnce(5);
+      mockAddon.markAddonTypeAsRead.mockResolvedValueOnce(5);
 
-      const result = await service.markFeatureTypeAsRead('survey', 1, 1);
+      const result = await service.markAddonTypeAsRead('survey', 1, 1);
 
-      expect(mockFeature.markFeatureTypeAsRead).toHaveBeenCalledWith(
+      expect(mockAddon.markAddonTypeAsRead).toHaveBeenCalledWith(
         'survey',
         1,
         1,
@@ -262,18 +262,18 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
   });
 
-  describe('markFeatureEntityAsRead – delegation', () => {
+  describe('markAddonEntityAsRead – delegation', () => {
     it('delegates to feature sub-service', async () => {
-      mockFeature.markFeatureEntityAsRead.mockResolvedValueOnce(2);
+      mockAddon.markAddonEntityAsRead.mockResolvedValueOnce(2);
 
-      const result = await service.markFeatureEntityAsRead(
+      const result = await service.markAddonEntityAsRead(
         'work_orders',
         '019cb994-aaaa-bbbb-cccc-dddddddddddd',
         5,
         10,
       );
 
-      expect(mockFeature.markFeatureEntityAsRead).toHaveBeenCalledWith(
+      expect(mockAddon.markAddonEntityAsRead).toHaveBeenCalledWith(
         'work_orders',
         '019cb994-aaaa-bbbb-cccc-dddddddddddd',
         5,

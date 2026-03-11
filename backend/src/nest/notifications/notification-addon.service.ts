@@ -1,9 +1,9 @@
 /**
- * Notification Feature Service
+ * Notification Addon Service
  *
- * Sub-service handling feature-specific notifications (ADR-004):
+ * Sub-service handling addon-specific notifications (ADR-004):
  * - Create notifications when surveys/documents/KVP items are created
- * - Batch mark-as-read when user visits a feature page
+ * - Batch mark-as-read when user visits an addon page
  *
  * Called by NotificationsService facade.
  * Consumers: SurveysService, DocumentsService, KvpService (via facade).
@@ -14,18 +14,18 @@ import { v7 as uuidv7 } from 'uuid';
 import { DatabaseService } from '../database/database.service.js';
 
 @Injectable()
-export class NotificationFeatureService {
-  private readonly logger = new Logger(NotificationFeatureService.name);
+export class NotificationAddonService {
+  private readonly logger = new Logger(NotificationAddonService.name);
 
   constructor(private readonly db: DatabaseService) {}
 
   /**
-   * Create notification for a feature event (survey, document, kvp).
+   * Create notification for an addon event (survey, document, kvp).
    * Uses ON CONFLICT DO NOTHING to prevent duplicates.
    */
-  async createFeatureNotification(
+  async createAddonNotification(
     type: 'survey' | 'document' | 'kvp' | 'vacation',
-    featureId: number,
+    addonEntityId: number,
     title: string,
     message: string,
     recipientType: 'user' | 'department' | 'team' | 'all',
@@ -51,14 +51,16 @@ export class NotificationFeatureService {
           message,
           recipientType,
           recipientId,
-          featureId,
+          addonEntityId,
           createdBy,
           notificationUuid,
         ],
       );
-      this.logger.log(`Created ${type} notification for feature ${featureId}`);
+      this.logger.log(
+        `Created ${type} notification for entity ${addonEntityId}`,
+      );
     } catch (error: unknown) {
-      // Log but don't fail - notification is secondary to feature creation
+      // Log but don't fail - notification is secondary to addon action
       this.logger.error(
         `Failed to create ${type} notification: ${String(error)}`,
       );
@@ -66,11 +68,11 @@ export class NotificationFeatureService {
   }
 
   /**
-   * Mark notifications of a feature type for a specific entity as read.
+   * Mark notifications of an addon type for a specific entity as read.
    * Called when user visits a detail page (e.g., /work-orders/:uuid).
    * Filters by metadata->>'entityUuid' to target only that entity's notifications.
    */
-  async markFeatureEntityAsRead(
+  async markAddonEntityAsRead(
     type: 'work_orders',
     entityUuid: string,
     userId: number,
@@ -106,10 +108,10 @@ export class NotificationFeatureService {
   }
 
   /**
-   * Mark all notifications of a feature type as read for a user.
-   * Called when user visits the feature page (e.g., /surveys).
+   * Mark all notifications of an addon type as read for a user.
+   * Called when user visits the addon page (e.g., /surveys).
    */
-  async markFeatureTypeAsRead(
+  async markAddonTypeAsRead(
     type: 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm' | 'work_orders',
     userId: number,
     tenantId: number,

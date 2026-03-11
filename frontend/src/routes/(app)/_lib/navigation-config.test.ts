@@ -290,7 +290,7 @@ describe('filterMenuByAddons: real rootMenuItems', () => {
     expect(ids).toContain('admins');
     expect(ids).toContain('areas');
     expect(ids).toContain('departments');
-    expect(ids).toContain('features');
+    expect(ids).toContain('addons');
     expect(ids).toContain('logs');
     expect(ids).toContain('profile');
     expect(ids).toContain('system');

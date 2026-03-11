@@ -35,7 +35,7 @@ export interface NavItem {
     | 'vacation'
     | 'tpm'
     | 'workOrders';
-  /** Tenant feature code — items with this field are hidden when feature is not active */
+  /** Tenant addon code — items with this field are hidden when addon is not active */
   addonCode?: string;
 }
 
@@ -58,7 +58,7 @@ export const ICONS: Record<string, string> = {
   admin: '<i class="fas fa-user-tie"></i>',
   sitemap: '<i class="fas fa-sitemap"></i>',
   building: '<i class="fas fa-building"></i>',
-  feature: '<i class="fas fa-puzzle-piece"></i>',
+  addon: '<i class="fas fa-puzzle-piece"></i>',
   logs: '<i class="fas fa-list-alt"></i>',
   desktop: '<i class="fas fa-desktop"></i>',
   warehouse: '<i class="fas fa-warehouse"></i>',
@@ -320,7 +320,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     badgeType: 'chat',
     addonCode: 'chat',
   },
-  { id: 'addons', icon: ICONS.feature, label: 'Module', url: '/addons' },
+  { id: 'addons', icon: ICONS.addon, label: 'Module', url: '/addons' },
   { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
   {
     id: 'profile',
