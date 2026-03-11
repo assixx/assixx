@@ -493,7 +493,8 @@
   .signup-page {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   /* --- Left: Hero with background image --- */
@@ -527,29 +528,30 @@
     z-index: 1;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     padding: 48px;
     max-width: 480px;
   }
 
   .signup-hero__logo {
-    height: 130px;
-    margin-bottom: 32px;
+    height: 160px;
+    margin-bottom: 36px;
   }
 
   .signup-hero__title {
     color: var(--color-white);
     font-weight: 700;
-    font-size: 2.25rem;
+    font-size: 2.75rem;
     line-height: 1.2;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     text-shadow: 0 2px 8px
       color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   .signup-hero__subtitle {
     color: color-mix(in oklch, var(--color-white) 80%, transparent);
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     line-height: 1.5;
   }
 
@@ -558,7 +560,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 75px 200px;
+    padding: 75px 255px;
     overflow-y: auto;
   }
 

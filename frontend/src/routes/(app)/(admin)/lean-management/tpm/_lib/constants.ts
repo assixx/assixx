@@ -477,6 +477,7 @@ const BASE_MESSAGES = {
   // Zoom controls
   ZOOM_IN: 'Vergrößern',
   ZOOM_OUT: 'Verkleinern',
+  ZOOM_RESET: 'Zoom zurücksetzen',
   ZOOM_FULLSCREEN: 'Vollbild',
 } as const;
 

@@ -51,10 +51,12 @@
   }
 
   function handlePointerDown(event: PointerEvent): void {
+    // Linksklick auf Node darf nie Canvas-Pan auslösen
+    if (event.button === 0 && !event.shiftKey) {
+      event.stopPropagation();
+    }
     if (isLocked) return;
-    // Only left-click without Shift (Shift = canvas pan)
     if (event.button !== 0 || event.shiftKey) return;
-    event.stopPropagation();
     event.preventDefault();
 
     const rect = svgElement.getBoundingClientRect();

@@ -87,8 +87,7 @@ export const RESOURCE_TABLE_MAP: Record<
   notification: { table: 'notifications', nameField: 'title' },
   shift: { table: 'shifts', nameField: 'date' },
   'shift-plan': { table: 'shift_plans', nameField: 'name' },
-  feature: { table: 'tenant_features', nameField: 'feature_key' },
-  plan: { table: 'plans', nameField: 'name' },
+  addon: { table: 'tenant_addons', nameField: 'addon_id' },
   setting: { table: 'tenant_settings', nameField: 'setting_key' },
   role: { table: 'roles', nameField: 'name' },
   // Admin management resources
@@ -233,11 +232,9 @@ export const PAGE_INIT_ENDPOINTS: readonly string[] = [
   '/notifications/stats/me',
   '/api/v2/notifications/stats',
   '/notifications/stats',
-  // Feature/Plan checks (for UI state)
-  '/api/v2/features/my-features',
-  '/features/my-features',
-  '/api/v2/plans/current',
-  '/plans/current',
+  // Addon checks (for UI state)
+  '/api/v2/addons/my-addons',
+  '/addons/my-addons',
   // E2E encryption key checks (loaded on every page for message decryption)
   '/api/v2/e2e/keys/me',
   '/e2e/keys/me',

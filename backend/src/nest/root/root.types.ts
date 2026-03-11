@@ -65,7 +65,7 @@ export interface DbStorageTotalRow {
   total: string | number;
 }
 
-export interface DbFeatureCodeRow {
+export interface DbAddonCodeRow {
   code: string;
 }
 
@@ -186,7 +186,7 @@ export interface DashboardStats {
   employeeCount: number;
   totalUsers: number;
   tenantCount?: number;
-  activeFeatures?: string[];
+  activeAddons?: string[];
   systemHealth?: {
     database: 'healthy' | 'degraded' | 'down';
     storage: 'healthy' | 'degraded' | 'down';

@@ -73,8 +73,7 @@ describe('RESOURCE_TABLE_MAP', () => {
       'notification',
       'shift',
       'shift-plan',
-      'feature',
-      'plan',
+      'addon',
       'setting',
       'role',
       'admin-permission',
@@ -179,9 +178,9 @@ describe('PAGE_INIT_ENDPOINTS', () => {
     expect(PAGE_INIT_ENDPOINTS).toContain('/notifications/stats/me');
   });
 
-  it('should contain feature/plan check endpoints', () => {
-    expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/features/my-features');
-    expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/plans/current');
+  it('should contain addon check endpoints', () => {
+    expect(PAGE_INIT_ENDPOINTS).toContain('/api/v2/addons/my-addons');
+    expect(PAGE_INIT_ENDPOINTS).toContain('/addons/my-addons');
   });
 
   it('should contain E2E encryption key init endpoints', () => {

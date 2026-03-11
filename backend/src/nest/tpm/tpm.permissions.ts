@@ -1,7 +1,7 @@
 /**
  * TPM Permission Definition (ADR-020)
  *
- * Defines the permission category and modules for the TPM feature.
+ * Defines the permission category and modules for the TPM addon.
  * Registered automatically via TpmPermissionRegistrar on module init.
  */
 import type { PermissionCategoryDef } from '../common/permission-registry/permission.types.js';
@@ -11,7 +11,7 @@ export const TPM_PERMISSIONS: PermissionCategoryDef = {
   label: 'TPM / Wartung',
   icon: 'fa-tools',
   modules: [
-    // TODO: 'tpm-reports' existiert bereits in DB (user_feature_permissions) — Modul hier hinzufügen sobald TPM-Reports implementiert werden
+    // TODO: 'tpm-reports' existiert bereits in DB (user_addon_permissions) — Modul hier hinzufügen sobald TPM-Reports implementiert werden
     {
       code: 'tpm-plans',
       label: 'Wartungspläne',

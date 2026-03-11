@@ -1,7 +1,7 @@
 /**
  * Surveys Permission Definitions
  *
- * Defines which permission modules the surveys feature exposes.
+ * Defines which permission modules the surveys addon exposes.
  * Registered via SurveysPermissionRegistrar (OnModuleInit).
  *
  * @see docs/USER-PERMISSIONS-PLAN.md

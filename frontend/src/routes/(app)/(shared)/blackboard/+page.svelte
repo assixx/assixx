@@ -320,6 +320,10 @@
     if (zoomLevel > ZOOM_CONFIG.MIN) zoomLevel -= ZOOM_CONFIG.STEP;
   }
 
+  function zoomReset(): void {
+    zoomLevel = ZOOM_CONFIG.DEFAULT;
+  }
+
   async function toggleFullscreen(): Promise<void> {
     try {
       document.body.classList.add('fullscreen-mode');
@@ -501,6 +505,12 @@
           class="btn btn-icon btn-secondary"
           title="Verkleinern"
           onclick={zoomOut}><i class="fas fa-minus"></i></button
+        >
+        <button
+          type="button"
+          class="btn btn-icon btn-secondary"
+          title="Zoom zurücksetzen"
+          onclick={zoomReset}><i class="fas fa-compress-arrows-alt"></i></button
         >
         <button
           type="button"

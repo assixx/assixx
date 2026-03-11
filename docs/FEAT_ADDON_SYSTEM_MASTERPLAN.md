@@ -1,23 +1,25 @@
 # FEAT: Addon System Refactor — Execution Masterplan
 
 > **Created:** 2026-03-10
-> **Version:** 0.1.0 (Draft)
-> **Status:** DRAFT — Phase 0 (Planung)
-> **Branch:** `refactor/addon-system`
+> **Version:** 1.1.0 (Phase 1 Complete)
+> **Status:** IN PROGRESS — Phase 2 (Backend Refactor)
+> **Branch:** `feat/organigramm` (working branch)
 > **Spec:** [ADR-033](./infrastructure/adr/ADR-033-addon-based-saas-model.md)
 > **Context:** [ADR-032 (Superseded)](./infrastructure/adr/ADR-032-feature-catalog-and-plan-tiers.md)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 10
-> **Actual Sessions:** 0 / 10
+> **Actual Sessions:** 1 / 10
 
 ---
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                                                                                                                                                              |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-03-10 | Initial Draft — Phasen 1-6 geplant                                                                                                                                                                                                    |
-| 0.2.0   | 2026-03-10 | DB-IST-Zustand verifiziert, 4 kritische Korrekturen: (K1) tenants FK vor plans DROP, (K2) tenant_addons_status ENUM fehlt, (K3) Spaltennamen in Step 1.3 korrigiert, (K4) Trigger-Funktionen + Legacy-Indexnamen, +4 Risiken (R8-R11) |
+| Version | Datum      | Änderung                                                                                                                                                                                                                                |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-03-10 | Initial Draft — Phasen 1-6 geplant                                                                                                                                                                                                      |
+| 0.2.0   | 2026-03-10 | DB-IST-Zustand verifiziert, 4 kritische Korrekturen: (K1) tenants FK vor plans DROP, (K2) tenant_addons_status ENUM fehlt, (K3) Spaltennamen in Step 1.3 korrigiert, (K4) Trigger-Funktionen + Legacy-Indexnamen, +4 Risiken (R8-R11)   |
+| 0.3.0   | 2026-03-11 | Session 1 Start. Verifizierte Daten korrigiert: tenant_features=40 (2 Tenants: apitest+testfirma), tenant_plans=2, user_feature_permissions=3. Backup erstellt. Phase 1 gestartet.                                                      |
+| 1.1.0   | 2026-03-11 | Phase 1 COMPLETE. Alle 3 Migrationen erfolgreich: Step 1.1 (Drops+Renames), Step 1.2 (tenant_addons+Datenmigration 24 Rows), Step 1.3 (Tracking-Renames+tenant_storage). Spec Deviation D1: gen_random_uuid() statt uuid_generate_v7(). |
 
 > **Versionierungsregel:**
 >
@@ -79,7 +81,7 @@
 > **Abhängigkeit:** Keine (erste Phase)
 > **Dateien:** 3 neue Migrationsdateien
 
-### Step 1.1: Tabellen vorbereiten — Drops + Renames [PENDING]
+### Step 1.1: Tabellen vorbereiten — Drops + Renames ✅ DONE
 
 **Neue Datei:** `database/migrations/{timestamp}_addon-system-rename-tables.ts`
 
@@ -142,7 +144,7 @@
 - [ ] Kein `IF NOT EXISTS` in `up()` (DB-Migration-Guide: FAIL LOUD)
 - [ ] RAISE EXCEPTION Pre-Check: Tabellen existieren, Daten wie erwartet
 
-### Step 1.2: Neue tenant_addons Tabelle + Datenmigration [PENDING]
+### Step 1.2: Neue tenant_addons Tabelle + Datenmigration ✅ DONE
 
 **Neue Datei:** `database/migrations/{timestamp}_addon-system-tenant-addons.ts`
 
@@ -150,7 +152,7 @@
 
 > **VERIFIZIERT 2026-03-10:** `tenant_addons_status` ENUM (alt, 2 Werte) muss vor `tenant_addon_status`
 > (neu, 4 Werte) gedroppt werden — verschiedene Namen aber verwirrend ähnlich.
-> `tenant_features` hat 20 Rows (Tenant 1, alle Features aktiv). Nur non-core Addons migrieren.
+> **KORRIGIERT 2026-03-11:** `tenant_features` hat **40 Rows** (Tenant 1 apitest + Tenant 3 testfirma, je 20 Features aktiv). Nur non-core Addons migrieren (12 pro Tenant = 24 total).
 
 1. DROP TYPE `tenant_addons_status` (alt — nur active/cancelled, gehörte zur gedropten tenant_addons Tabelle aus Step 1.1)
 2. CREATE TYPE `tenant_addon_status` AS ENUM ('trial', 'active', 'expired', 'cancelled')
@@ -176,7 +178,7 @@
 - [ ] `is_active SMALLINT NOT NULL DEFAULT 1`
 - [ ] `up()` UND `down()` implementiert
 
-### Step 1.3: Tracking-Tabellen + tenants + Storage [PENDING]
+### Step 1.3: Tracking-Tabellen + tenants + Storage ✅ DONE
 
 **Neue Datei:** `database/migrations/{timestamp}_addon-system-cleanup.ts`
 
@@ -223,7 +225,7 @@
 > **Abhängigkeit:** Phase 1 complete
 > **Umfang:** ~25 Dateien umbenennen/ändern, ~5 Dateien löschen
 
-### Step 2.1: AddonCheckService + Guard + Decorator [PENDING]
+### Step 2.1: AddonCheckService + Guard + Decorator ✅ DONE
 
 **Renames:**
 
@@ -240,7 +242,7 @@
 
 **Abhängigkeiten:** Wird von ALLEN Feature-Modulen importiert
 
-### Step 2.2: AddonsModule (ersetzt FeaturesModule) [PENDING]
+### Step 2.2: AddonsModule (ersetzt FeaturesModule) ✅ DONE
 
 **Renames:**
 
@@ -258,7 +260,7 @@
 - `getAddonStatus()` — Trial/Active/Expired/Cancelled + Ablaufdatum
 - `getAvailableAddons()` — Alle Addons mit Status pro Tenant (für "Addon-Store" UI)
 
-### Step 2.3: PlansModule löschen [PENDING]
+### Step 2.3: PlansModule löschen ✅ DONE
 
 **Löschen:**
 
@@ -280,7 +282,7 @@
 - Neu: `AddonsService.deactivateAddon()` setzt NUR Status, Permissions ÜBERLEBEN
 - Muss explizit getestet werden (Phase 3 + 4)
 
-### Step 2.4: Permission System Rename [PENDING]
+### Step 2.4: Permission System Rename ✅ DONE
 
 **21 Permission Registrars aktualisieren:**
 
@@ -291,7 +293,7 @@
 - `permission.guard.ts`: Metadata-Key
 - `require-permission.decorator.ts`: Parameter-Name
 
-### Step 2.5: Alle Controller Decorators [PENDING]
+### Step 2.5: Alle Controller Decorators ✅ DONE
 
 **10+ Controller aktualisieren:**
 
@@ -456,18 +458,18 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                            | Status  | Datum |
-| ------- | ----- | ------------------------------------------------------- | ------- | ----- |
-| 1       | 1     | Migration 1: Drops + Renames (features→addons)          | PENDING |       |
-| 2       | 1     | Migration 2+3: tenant_addons + Cleanup + tenant_storage | PENDING |       |
-| 3       | 2     | AddonCheckService + Guard + Decorator                   | PENDING |       |
-| 4       | 2     | AddonsModule + PlansModule löschen                      | PENDING |       |
-| 5       | 2     | Permission Renames + Controller Decorators + app.module | PENDING |       |
-| 6       | 3     | Unit Tests aktualisieren + neue Tests                   | PENDING |       |
-| 7       | 4     | API Integration Tests                                   | PENDING |       |
-| 8       | 5     | Frontend Guards + Navigation + Layout                   | PENDING |       |
-| 9       | 5     | Frontend Pages + Addon-Unavailable                      | PENDING |       |
-| 10      | 6     | Seeds + Docs + Cleanup + Final Verification             | PENDING |       |
+| Session | Phase | Beschreibung                                            | Status      | Datum      |
+| ------- | ----- | ------------------------------------------------------- | ----------- | ---------- |
+| 1       | 1     | Migration 1: Drops + Renames (features→addons)          | ✅ DONE     | 2026-03-11 |
+| 2       | 1     | Migration 2+3: tenant_addons + Cleanup + tenant_storage | ✅ DONE     | 2026-03-11 |
+| 3       | 2     | AddonCheckService + Guard + Decorator                   | ✅ DONE     | 2026-03-11 |
+| 4       | 2     | AddonsModule + PlansModule löschen                      | ✅ DONE     | 2026-03-11 |
+| 5       | 2     | Permission Renames + Controller Decorators + app.module | IN PROGRESS | 2026-03-11 |
+| 6       | 3     | Unit Tests aktualisieren + neue Tests                   | PENDING     |            |
+| 7       | 4     | API Integration Tests                                   | PENDING     |            |
+| 8       | 5     | Frontend Guards + Navigation + Layout                   | PENDING     |            |
+| 9       | 5     | Frontend Pages + Addon-Unavailable                      | PENDING     |            |
+| 10      | 6     | Seeds + Docs + Cleanup + Final Verification             | PENDING     |            |
 
 ---
 
@@ -523,9 +525,9 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
 ## Spec Deviations
 
-| #   | Spec sagt                                      | Tatsächlicher Code | Entscheidung |
-| --- | ---------------------------------------------- | ------------------ | ------------ |
-| D1  | (wird im Laufe der Implementierung ausgefüllt) |                    |              |
+| #   | Spec sagt                                            | Tatsächlicher Code                                               | Entscheidung                                                                    |
+| --- | ---------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| D1  | `uuid_generate_v7()` als PK-Default (ADR-033 Schema) | `gen_random_uuid()` (v4) — pg_uuidv7 Extension nicht installiert | App-Layer generiert UUIDv7 via npm uuid v13. Migrationsdaten bekommen v4 UUIDs. |
 
 ---
 

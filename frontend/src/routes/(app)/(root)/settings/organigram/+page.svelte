@@ -158,7 +158,7 @@
       {labels.asset}
     </span>
     <span class="legend-hint">
-      Mausrad: Zoom &middot; Shift+Klick: Verschieben
+      Mausrad: Zoom &middot; Fläche ziehen: Verschieben
     </span>
   </div>
 
@@ -321,7 +321,7 @@
     min-height: 400px;
     border-radius: var(--radius-xl, 12px);
     overflow: hidden;
-    border: 1px solid var(--glass-border, rgb(255 255 255 / 8%));
+    border: var(--glass-border);
   }
 
   /* Dot pattern — dark mode: white dots, thick center → thin edges */

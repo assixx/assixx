@@ -182,6 +182,10 @@
     if (zoomLevel > ZOOM_CONFIG.MIN) zoomLevel -= ZOOM_CONFIG.STEP;
   }
 
+  function zoomReset(): void {
+    zoomLevel = ZOOM_CONFIG.DEFAULT;
+  }
+
   async function toggleFullscreen(): Promise<void> {
     try {
       if (document.fullscreenElement !== null) {
@@ -266,6 +270,12 @@
         title={messages.ZOOM_OUT}
         disabled={zoomLevel <= ZOOM_CONFIG.MIN}
         onclick={zoomOut}><i class="fas fa-minus"></i></button
+      >
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title={messages.ZOOM_RESET}
+        onclick={zoomReset}><i class="fas fa-compress-arrows-alt"></i></button
       >
       <button
         type="button"

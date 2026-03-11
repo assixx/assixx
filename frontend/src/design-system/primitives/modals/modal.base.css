@@ -193,6 +193,12 @@
   background: var(--color-glass-border);
 }
 
+/* Cap dropdown menus inside modals so they don't grow endlessly */
+.ds-modal__body .dropdown__menu {
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
 /* ========================================
    MODAL FOOTER
    ======================================== */

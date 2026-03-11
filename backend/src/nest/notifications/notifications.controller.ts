@@ -802,28 +802,26 @@ export class NotificationsController {
       })),
     );
 
-    // Resolve readable features for permission filtering (ADR-020)
-    // Root and admin with fullAccess: null = all features
-    const readableFeaturesPromise = this.resolveReadableFeatures(user);
+    // Resolve readable addons for permission filtering (ADR-020)
+    // Root and admin with fullAccess: null = all addons
+    const readableAddonsPromise = this.resolveReadableAddons(user);
 
     // Register handlers asynchronously after permission check
-    void readableFeaturesPromise.then(
-      (readableFeatures: Set<string> | null) => {
-        const handlers = registerSSEHandlers(
-          role,
-          tenantId,
-          userId,
-          eventSubject,
-          readableFeatures,
-        );
-        eventSubject.pipe(takeUntil(destroy$)).subscribe({
-          complete: (): void => {
-            cleanupSSEHandlers(handlers);
-          },
-        });
-        return undefined;
-      },
-    );
+    void readableAddonsPromise.then((readableAddons: Set<string> | null) => {
+      const handlers = registerSSEHandlers(
+        role,
+        tenantId,
+        userId,
+        eventSubject,
+        readableAddons,
+      );
+      eventSubject.pipe(takeUntil(destroy$)).subscribe({
+        complete: (): void => {
+          cleanupSSEHandlers(handlers);
+        },
+      });
+      return undefined;
+    });
 
     // Merge streams
     type SSESubscriber = import('rxjs').Subscriber<{ data: SSEMessageData }>;
@@ -838,16 +836,16 @@ export class NotificationsController {
   }
 
   /**
-   * Resolve readable feature codes for SSE permission filtering.
-   * Root and admin with fullAccess: null (all features accessible).
-   * Others: Set of feature codes with can_read = true.
+   * Resolve readable addon codes for SSE permission filtering.
+   * Root and admin with fullAccess: null (all addons accessible).
+   * Others: Set of addon codes with can_read = true.
    */
-  private async resolveReadableFeatures(
+  private async resolveReadableAddons(
     user: NestAuthUser,
   ): Promise<Set<string> | null> {
     if (user.activeRole === 'root') return null;
     if (user.activeRole === 'admin' && user.hasFullAccess) return null;
-    return await this.permissionsService.getReadableFeatureCodes(user.id);
+    return await this.permissionsService.getReadableAddonCodes(user.id);
   }
 
   /**

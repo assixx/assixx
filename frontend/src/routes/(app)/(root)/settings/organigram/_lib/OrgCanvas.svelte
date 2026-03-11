@@ -5,13 +5,14 @@
   Zoom: Mausrad
 -->
 <script lang="ts">
-  import { ENTITY_COLORS, LAYOUT } from './constants.js';
+  import { HALL_COLOR, LAYOUT } from './constants.js';
   import OrgNode from './OrgNode.svelte';
   import {
     adjustZoom,
-    getAreaBounds,
     getConnections,
+    getHallBounds,
     getHoveredNodeKey,
+    getIsLocked,
     getPanX,
     getPanY,
     getRenderNodes,
@@ -27,7 +28,8 @@
   const renderNodes = $derived(getRenderNodes());
   const connections = $derived(getConnections());
   const hoveredKey = $derived(getHoveredNodeKey());
-  const areaBounds = $derived(getAreaBounds());
+  const hallBounds = $derived(getHallBounds());
+  const isLocked = $derived(getIsLocked());
 
   let svgElement = $state<SVGSVGElement>(undefined as unknown as SVGSVGElement);
   let isPanning = $state(false);
@@ -41,8 +43,8 @@
   }
 
   function handlePointerDown(event: PointerEvent): void {
-    const isPanTrigger =
-      event.button === 1 || (event.button === 0 && event.shiftKey);
+    if (isLocked) return;
+    const isPanTrigger = event.button === 0 || event.button === 1;
     if (!isPanTrigger) return;
 
     event.preventDefault();
@@ -84,36 +86,36 @@
 >
   <!-- Transformierter Content-Layer -->
   <g transform="translate({panX}, {panY}) scale({zoom})">
-    <!-- Bereichs-Container ("Hallen") — hinterste Ebene -->
-    {#each areaBounds as area (area.areaUuid)}
+    <!-- Hallen-Container — nur für Areas mit zugewiesener Halle -->
+    {#each hallBounds as hall (hall.areaUuid)}
       <g
-        class="area-container"
+        class="hall-container"
         pointer-events="none"
       >
         <rect
-          x={area.x}
-          y={area.y}
-          width={area.width}
-          height={area.height}
+          x={hall.x}
+          y={hall.y}
+          width={hall.width}
+          height={hall.height}
           rx="12"
           ry="12"
-          fill={ENTITY_COLORS.area.bg}
-          stroke={ENTITY_COLORS.area.border}
+          fill="none"
+          stroke={HALL_COLOR.border}
           stroke-width="1"
           stroke-dasharray="6 3"
-          opacity="0.6"
+          opacity="0.8"
         />
         <text
-          x={area.x + 12}
-          y={area.y + 20}
-          class="area-label"
-          fill={ENTITY_COLORS.area.border}
+          x={hall.x + 12}
+          y={hall.y + 20}
+          class="hall-label"
+          fill={HALL_COLOR.border}
         >
-          <tspan font-weight="600">{area.areaName}</tspan>
-          {#if area.leadName !== undefined}
+          <tspan font-weight="600">{hall.hallName}</tspan>
+          {#if hall.leadName !== undefined}
             <tspan
               dx="8"
-              opacity="0.7">{area.leadName}</tspan
+              opacity="0.7">{hall.leadName}</tspan
             >
           {/if}
         </text>
@@ -169,7 +171,7 @@
     pointer-events: none;
   }
 
-  .area-label {
+  .hall-label {
     font-size: 12px;
     pointer-events: none;
     user-select: none;

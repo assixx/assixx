@@ -163,17 +163,17 @@ describe('SECURITY: PermissionRegistryService', () => {
       service.register(createCategory());
     });
 
-    it('should return true for valid feature+module combination', () => {
+    it('should return true for valid addon+module combination', () => {
       expect(service.isValidModule('blackboard', 'blackboard-posts')).toBe(
         true,
       );
     });
 
-    it('should return false for unknown featureCode', () => {
+    it('should return false for unknown addonCode', () => {
       expect(service.isValidModule('unknown', 'blackboard-posts')).toBe(false);
     });
 
-    it('should return false for unknown moduleCode within known feature', () => {
+    it('should return false for unknown moduleCode within known addon', () => {
       expect(service.isValidModule('blackboard', 'unknown-module')).toBe(false);
     });
 
@@ -198,7 +198,7 @@ describe('SECURITY: PermissionRegistryService', () => {
     it('should return limited permissions for read-only module', () => {
       service.register(
         createCategory({
-          code: 'readonly-feature',
+          code: 'readonly-addon',
           modules: [
             {
               code: 'readonly-mod',
@@ -211,11 +211,11 @@ describe('SECURITY: PermissionRegistryService', () => {
       );
 
       expect(
-        service.getAllowedPermissions('readonly-feature', 'readonly-mod'),
+        service.getAllowedPermissions('readonly-addon', 'readonly-mod'),
       ).toEqual(['canRead']);
     });
 
-    it('should return empty array for unknown featureCode', () => {
+    it('should return empty array for unknown addonCode', () => {
       service.register(createCategory());
 
       expect(service.getAllowedPermissions('unknown', 'x')).toEqual([]);

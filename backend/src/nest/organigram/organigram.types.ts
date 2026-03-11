@@ -38,6 +38,8 @@ export interface OrgChartNode {
   assets: OrgChartNode[];
   leadName?: string;
   memberCount?: number;
+  /** Hallen-Name — nur bei Areas gesetzt, wenn eine Halle zugewiesen ist */
+  hallName?: string;
 }
 
 export interface OrgChartTree {

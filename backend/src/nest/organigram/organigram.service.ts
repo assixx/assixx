@@ -43,6 +43,11 @@ interface AssetRow {
   department_uuid: string | null;
 }
 
+interface HallRow {
+  name: string;
+  area_uuid: string;
+}
+
 @Injectable()
 export class OrganigramService {
   constructor(
@@ -52,18 +57,34 @@ export class OrganigramService {
   ) {}
 
   async getOrgChartTree(tenantId: number): Promise<OrgChartTree> {
-    const [tenant, labels, areas, departments, teams, assets, positions] =
-      await Promise.all([
-        this.fetchTenantInfo(tenantId),
-        this.settings.getHierarchyLabels(tenantId),
-        this.fetchAreas(tenantId),
-        this.fetchDepartments(tenantId),
-        this.fetchTeams(tenantId),
-        this.fetchAssets(tenantId),
-        this.layout.getPositions(tenantId),
-      ]);
+    const [
+      tenant,
+      labels,
+      areas,
+      departments,
+      teams,
+      assets,
+      halls,
+      positions,
+    ] = await Promise.all([
+      this.fetchTenantInfo(tenantId),
+      this.settings.getHierarchyLabels(tenantId),
+      this.fetchAreas(tenantId),
+      this.fetchDepartments(tenantId),
+      this.fetchTeams(tenantId),
+      this.fetchAssets(tenantId),
+      this.fetchHalls(tenantId),
+      this.layout.getPositions(tenantId),
+    ]);
 
-    const nodes = this.buildTree(areas, departments, teams, assets, positions);
+    const nodes = this.buildTree(
+      areas,
+      departments,
+      teams,
+      assets,
+      halls,
+      positions,
+    );
 
     return {
       companyName: tenant.company_name,
@@ -148,19 +169,45 @@ export class OrganigramService {
     );
   }
 
+  private async fetchHalls(tenantId: number): Promise<HallRow[]> {
+    return await this.db.query<HallRow>(
+      `SELECT h.name, a.uuid AS area_uuid
+       FROM halls h
+       JOIN areas a ON h.area_id = a.id
+       WHERE h.tenant_id = $1 AND h.is_active = 1
+       ORDER BY h.name`,
+      [tenantId],
+    );
+  }
+
   private buildTree(
     areas: AreaRow[],
     departments: DepartmentRow[],
     teams: TeamRow[],
     assets: AssetRow[],
+    halls: HallRow[],
     positions: OrgChartPosition[],
   ): OrgChartNode[] {
     const posMap = this.buildPositionMap(positions);
     const topLevel: OrgChartNode[] = [];
 
-    const areaNodes = areas.map((a: AreaRow) =>
-      this.toNode('area', a.uuid, a.name, posMap, a.lead_name),
-    );
+    // Hall-Lookup: area_uuid → hall name (erste Halle gewinnt)
+    const hallByAreaUuid = new Map<string, string>();
+    for (const h of halls) {
+      const areaUuid = h.area_uuid.trim();
+      if (!hallByAreaUuid.has(areaUuid)) {
+        hallByAreaUuid.set(areaUuid, h.name);
+      }
+    }
+
+    const areaNodes = areas.map((a: AreaRow) => {
+      const node = this.toNode('area', a.uuid, a.name, posMap, a.lead_name);
+      const hallName = hallByAreaUuid.get(a.uuid.trim());
+      if (hallName !== undefined) {
+        node.hallName = hallName;
+      }
+      return node;
+    });
     const areaMap = new Map(
       areaNodes.map((n: OrgChartNode) => [n.entityUuid, n]),
     );

@@ -1,9 +1,9 @@
 /**
- * User Feature Permissions Service
+ * User Addon Permissions Service
  *
- * Manages per-user, per-feature/module permission control.
+ * Manages per-user, per-addon/module permission control.
  * Uses tenantTransaction() for all DB access (ADR-019 RLS conformant).
- * Validates against PermissionRegistryService — no hardcoded feature knowledge.
+ * Validates against PermissionRegistryService — no hardcoded addon knowledge.
  *
  * @see docs/USER-PERMISSIONS-PLAN.md
  * @see docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md
@@ -28,17 +28,17 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { PermissionEntry } from './dto/index.js';
 
-/** DB row shape for user_feature_permissions SELECT */
+/** DB row shape for user_addon_permissions SELECT */
 interface DbPermissionRow {
-  feature_code: string;
+  addon_code: string;
   module_code: string;
   can_read: boolean;
   can_write: boolean;
   can_delete: boolean;
 }
 
-/** DB row shape for active tenant feature codes */
-interface DbTenantFeatureRow {
+/** DB row shape for active tenant addon codes */
+interface DbTenantAddonRow {
   code: string;
 }
 
@@ -49,7 +49,7 @@ interface DbUserIdRow {
 
 /** Shape for a single applied permission after registry validation */
 interface AppliedPermission {
-  featureCode: string;
+  addonCode: string;
   moduleCode: string;
   canRead: boolean;
   canWrite: boolean;
@@ -86,7 +86,7 @@ export class UserPermissionsService {
   ) {}
 
   /**
-   * Get permission tree for a user, filtered by tenant's active features.
+   * Get permission tree for a user, filtered by tenant's active addons.
    * Returns all registered categories with current boolean values.
    *
    * @throws NotFoundException if user UUID not found
@@ -99,27 +99,27 @@ export class UserPermissionsService {
       async (client: PoolClient): Promise<PermissionCategoryResponse[]> => {
         const userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
 
-        // Get tenant's active feature codes
-        const activeFeatures = await this.getActiveFeaturesForTenant(client);
+        // Get tenant's active addon codes
+        const activeAddons = await this.getActiveAddonsForTenant(client);
 
-        // Get all registered categories, filtered by tenant features
+        // Get all registered categories, filtered by tenant addons
         const allCategories = this.registry.getAll();
         const filteredCategories = allCategories.filter(
-          (cat: PermissionCategoryDef) => activeFeatures.has(cat.code),
+          (cat: PermissionCategoryDef) => activeAddons.has(cat.code),
         );
 
         // Get existing permission rows for this user (RLS filters by tenant)
         const rows = await client.query<DbPermissionRow>(
-          `SELECT feature_code, module_code, can_read, can_write, can_delete
-           FROM user_feature_permissions
+          `SELECT addon_code, module_code, can_read, can_write, can_delete
+           FROM user_addon_permissions
            WHERE user_id = $1`,
           [userId],
         );
 
-        // Build lookup map: "featureCode:moduleCode" -> permission row
+        // Build lookup map: "addonCode:moduleCode" -> permission row
         const permMap = new Map<string, DbPermissionRow>();
         for (const row of rows.rows) {
-          permMap.set(`${row.feature_code}:${row.module_code}`, row);
+          permMap.set(`${row.addon_code}:${row.module_code}`, row);
         }
 
         // Merge DB rows with registry definitions
@@ -136,7 +136,7 @@ export class UserPermissionsService {
    * Forces non-allowed permission types to false.
    *
    * @throws NotFoundException if user UUID not found
-   * @throws BadRequestException if featureCode/moduleCode unknown
+   * @throws BadRequestException if addonCode/moduleCode unknown
    */
   async upsertPermissions(
     tenantId: number,
@@ -188,14 +188,14 @@ export class UserPermissionsService {
     entry: PermissionEntry,
     assignedByUserId: number,
   ): Promise<AppliedPermission> {
-    if (!this.registry.isValidModule(entry.featureCode, entry.moduleCode)) {
+    if (!this.registry.isValidModule(entry.addonCode, entry.moduleCode)) {
       throw new BadRequestException(
-        `Unknown feature/module: ${entry.featureCode}/${entry.moduleCode}`,
+        `Unknown addon/module: ${entry.addonCode}/${entry.moduleCode}`,
       );
     }
 
     const allowed = this.registry.getAllowedPermissions(
-      entry.featureCode,
+      entry.addonCode,
       entry.moduleCode,
     );
     const canRead = allowed.includes('canRead') ? entry.canRead : false;
@@ -203,10 +203,10 @@ export class UserPermissionsService {
     const canDelete = allowed.includes('canDelete') ? entry.canDelete : false;
 
     await client.query(
-      `INSERT INTO user_feature_permissions
-         (tenant_id, user_id, feature_code, module_code, can_read, can_write, can_delete, assigned_by)
+      `INSERT INTO user_addon_permissions
+         (tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete, assigned_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (tenant_id, user_id, feature_code, module_code)
+       ON CONFLICT (tenant_id, user_id, addon_code, module_code)
        DO UPDATE SET
          can_read = EXCLUDED.can_read,
          can_write = EXCLUDED.can_write,
@@ -216,7 +216,7 @@ export class UserPermissionsService {
       [
         tenantId,
         userId,
-        entry.featureCode,
+        entry.addonCode,
         entry.moduleCode,
         canRead,
         canWrite,
@@ -226,7 +226,7 @@ export class UserPermissionsService {
     );
 
     return {
-      featureCode: entry.featureCode,
+      addonCode: entry.addonCode,
       moduleCode: entry.moduleCode,
       canRead,
       canWrite,
@@ -248,7 +248,7 @@ export class UserPermissionsService {
       void this.activityLogger.logUpdate(
         tenantId,
         assignedByUserId,
-        'user_feature_permission',
+        'user_addon_permission',
         userId,
         `Berechtigungen aktualisiert für User ${userUuid}: ${diff.summary}`,
         diff.oldValues,
@@ -263,15 +263,15 @@ export class UserPermissionsService {
     userId: number,
   ): Promise<Map<string, DbPermissionRow>> {
     const result = await client.query<DbPermissionRow>(
-      `SELECT feature_code, module_code, can_read, can_write, can_delete
-       FROM user_feature_permissions
+      `SELECT addon_code, module_code, can_read, can_write, can_delete
+       FROM user_addon_permissions
        WHERE user_id = $1`,
       [userId],
     );
 
     const stateMap = new Map<string, DbPermissionRow>();
     for (const row of result.rows) {
-      stateMap.set(`${row.feature_code}:${row.module_code}`, row);
+      stateMap.set(`${row.addon_code}:${row.module_code}`, row);
     }
     return stateMap;
   }
@@ -291,7 +291,7 @@ export class UserPermissionsService {
     const newValues: Record<string, unknown> = {};
 
     for (const entry of applied) {
-      const key = `${entry.featureCode}:${entry.moduleCode}`;
+      const key = `${entry.addonCode}:${entry.moduleCode}`;
       const old = oldState.get(key);
       const oldR = old?.can_read ?? false;
       const oldW = old?.can_write ?? false;
@@ -321,35 +321,35 @@ export class UserPermissionsService {
   }
 
   /**
-   * Get all feature codes where the user has at least one module with can_read = true.
+   * Get all addon codes where the user has at least one module with can_read = true.
    * Used by DashboardService and NotificationsController to filter counts/events
    * based on user permissions — no permission = no notification.
    */
-  async getReadableFeatureCodes(userId: number): Promise<Set<string>> {
+  async getReadableAddonCodes(userId: number): Promise<Set<string>> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<Set<string>> => {
-        const result = await client.query<{ feature_code: string }>(
-          `SELECT DISTINCT feature_code
-           FROM user_feature_permissions
+        const result = await client.query<{ addon_code: string }>(
+          `SELECT DISTINCT addon_code
+           FROM user_addon_permissions
            WHERE user_id = $1 AND can_read = true`,
           [userId],
         );
 
         return new Set(
-          result.rows.map((row: { feature_code: string }) => row.feature_code),
+          result.rows.map((row: { addon_code: string }) => row.addon_code),
         );
       },
     );
   }
 
   /**
-   * Check if a user has a specific permission for a feature module.
+   * Check if a user has a specific permission for an addon module.
    * Used by PermissionGuard for endpoint enforcement.
    * Fail-closed: no row in DB = denied.
    */
   async hasPermission(
     userId: number,
-    featureCode: string,
+    addonCode: string,
     moduleCode: string,
     action: PermissionType,
   ): Promise<boolean> {
@@ -357,11 +357,11 @@ export class UserPermissionsService {
       async (client: PoolClient): Promise<boolean> => {
         const result = await client.query<DbPermissionRow>(
           `SELECT can_read, can_write, can_delete
-           FROM user_feature_permissions
+           FROM user_addon_permissions
            WHERE user_id = $1
-             AND feature_code = $2
+             AND addon_code = $2
              AND module_code = $3`,
-          [userId, featureCode, moduleCode],
+          [userId, addonCode, moduleCode],
         );
 
         const row = result.rows[0];
@@ -403,18 +403,26 @@ export class UserPermissionsService {
     return result.id;
   }
 
-  /** Get active feature codes for the current tenant (RLS filters by tenant). */
-  private async getActiveFeaturesForTenant(
+  /** Get active addon codes for the current tenant (RLS filters by tenant). */
+  private async getActiveAddonsForTenant(
     client: PoolClient,
   ): Promise<Set<string>> {
-    const result = await client.query<DbTenantFeatureRow>(
-      `SELECT f.code
-       FROM tenant_features tf
-       JOIN features f ON f.id = tf.feature_id
-       WHERE tf.is_active = ${IS_ACTIVE.ACTIVE}`,
+    const result = await client.query<DbTenantAddonRow>(
+      `SELECT a.code
+       FROM addons a
+       WHERE a.is_active = ${IS_ACTIVE.ACTIVE}
+         AND (
+           a.is_core = true
+           OR EXISTS (
+             SELECT 1 FROM tenant_addons ta
+             WHERE ta.addon_id = a.id
+               AND ta.is_active = ${IS_ACTIVE.ACTIVE}
+               AND ta.status IN ('active', 'trial')
+           )
+         )`,
     );
 
-    return new Set(result.rows.map((row: DbTenantFeatureRow) => row.code));
+    return new Set(result.rows.map((row: DbTenantAddonRow) => row.code));
   }
 
   /**

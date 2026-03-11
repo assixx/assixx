@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { MESSAGES } from './constants';
+  import { tick } from 'svelte';
+
   import {
     getStatusBadgeClass,
     getStatusLabel,
     getSelectedAreaName,
   } from './utils';
 
+  import type { HallMessages } from './constants';
   import type { FormIsActiveStatus, Area } from './types';
 
   interface Props {
@@ -18,13 +20,14 @@
     formIsActive: FormIsActiveStatus;
     allAreas: Area[];
     submitting: boolean;
+    messages: HallMessages;
     onclose: () => void;
     onsubmit: (e: Event) => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formIsActive = $bindable(), allAreas, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formIsActive = $bindable(), allAreas, submitting, messages, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   let areaDropdownOpen = $state(false);
@@ -32,10 +35,48 @@
 
   const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
 
+  async function scrollDropdownIntoView(dropdownId: string): Promise<void> {
+    await tick();
+    const menu = document.querySelector<HTMLElement>(
+      `#${dropdownId} .dropdown__menu`,
+    );
+    const modalBody = menu?.closest<HTMLElement>('.ds-modal__body');
+    if (!menu || !modalBody) return;
+
+    const menuRect = menu.getBoundingClientRect();
+    const bodyRect = modalBody.getBoundingClientRect();
+    const overflow = menuRect.bottom - bodyRect.bottom;
+
+    if (overflow <= 0) return;
+
+    const extraSpace = overflow + 16;
+
+    // Lock modal height so vertical centering doesn't shift
+    const modal = modalBody.closest<HTMLElement>('.ds-modal');
+    if (modal) modal.style.height = `${modal.offsetHeight}px`;
+
+    // Extend scroll area by exact overflow
+    const currentPadding =
+      parseFloat(getComputedStyle(modalBody).paddingBottom) || 0;
+    modalBody.style.paddingBottom = `${currentPadding + extraSpace}px`;
+
+    requestAnimationFrame(() => {
+      modalBody.scrollBy({ top: extraSpace, behavior: 'smooth' });
+    });
+  }
+
+  function resetModalScroll(): void {
+    const modal = document.querySelector<HTMLElement>('#hall-form');
+    const body = modal?.querySelector<HTMLElement>('.ds-modal__body');
+    if (body) body.style.paddingBottom = '';
+    if (modal) modal.style.height = '';
+  }
+
   function toggleAreaDropdown(e: MouseEvent): void {
     e.stopPropagation();
     statusDropdownOpen = false;
     areaDropdownOpen = !areaDropdownOpen;
+    if (areaDropdownOpen) void scrollDropdownIntoView('hall-area-dropdown');
   }
 
   function selectArea(areaId: number | null): void {
@@ -47,6 +88,7 @@
     e.stopPropagation();
     areaDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
+    if (statusDropdownOpen) void scrollDropdownIntoView('hall-status-dropdown');
   }
 
   function selectStatus(status: FormIsActiveStatus): void {
@@ -70,6 +112,14 @@
     if (show) {
       areaDropdownOpen = false;
       statusDropdownOpen = false;
+    } else {
+      resetModalScroll();
+    }
+  });
+
+  $effect(() => {
+    if (!areaDropdownOpen && !statusDropdownOpen) {
+      resetModalScroll();
     }
   });
 
@@ -144,7 +194,7 @@
             class="form-field__label"
             for="hall-name"
           >
-            {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
+            {messages.LABEL_NAME} <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -159,7 +209,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="hall-description">{MESSAGES.LABEL_DESCRIPTION}</label
+            for="hall-description">{messages.LABEL_DESCRIPTION}</label
           >
           <textarea
             id="hall-description"
@@ -173,7 +223,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="hall-area-hidden">{MESSAGES.LABEL_AREA}</label
+            for="hall-area-hidden">{messages.LABEL_AREA}</label
           >
           <input
             type="hidden"
@@ -204,7 +254,7 @@
                   selectArea(null);
                 }}
               >
-                {MESSAGES.NO_AREA}
+                {messages.NO_AREA}
               </button>
               {#each allAreas as area (area.id)}
                 <button
@@ -230,7 +280,7 @@
               class="form-field__label"
               for="hall-status-hidden"
             >
-              {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
+              {messages.LABEL_STATUS} <span class="text-red-500">*</span>
             </label>
             <input
               type="hidden"
@@ -288,7 +338,7 @@
             <span
               class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
-              {MESSAGES.STATUS_HINT}
+              {messages.STATUS_HINT}
             </span>
           </div>
         {/if}
@@ -298,7 +348,7 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
+          onclick={onclose}>{messages.BTN_CANCEL}</button
         >
         <button
           type="submit"
@@ -307,7 +357,7 @@
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
             ></span>{/if}
-          {MESSAGES.BTN_SAVE}
+          {messages.BTN_SAVE}
         </button>
       </div>
     </form>

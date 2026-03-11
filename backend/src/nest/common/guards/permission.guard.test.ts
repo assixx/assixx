@@ -117,7 +117,7 @@ describe('SECURITY: PermissionGuard', () => {
   describe('Authentication Check', () => {
     it('should throw ForbiddenException when user is undefined', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -144,7 +144,7 @@ describe('SECURITY: PermissionGuard', () => {
   describe('hasFullAccess Bypass', () => {
     it('should pass for root user (hasFullAccess=true by DB design)', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -161,7 +161,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should pass for admin with hasFullAccess=true', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -178,7 +178,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should pass for role-switched root viewing as employee', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -197,7 +197,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should pass for role-switched admin viewing as employee with hasFullAccess', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -216,7 +216,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should check DB for admin with hasFullAccess=false', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -234,7 +234,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should deny admin without hasFullAccess when permission=false', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -251,7 +251,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should check DB for user with hasFullAccess=false even if role is root', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -274,7 +274,7 @@ describe('SECURITY: PermissionGuard', () => {
   describe('Employee DB Check', () => {
     it('should pass for employee when permission granted', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -290,7 +290,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should deny employee when permission not granted', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -306,7 +306,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should call hasPermission with correct params', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'posts',
         action: 'canWrite',
       });
@@ -334,7 +334,7 @@ describe('SECURITY: PermissionGuard', () => {
   describe('Role-Switching', () => {
     it('should deny role-switched admin without hasFullAccess when DB denies', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -353,7 +353,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should pass for role-switched admin without hasFullAccess when DB grants', async () => {
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -379,7 +379,7 @@ describe('SECURITY: PermissionGuard', () => {
     it('should log warning with user details on permission denied', async () => {
       const warnSpy = vi.spyOn(Logger.prototype, 'warn');
       mockReflector.getAllAndOverride.mockReturnValue({
-        featureCode: 'blackboard',
+        addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
         action: 'canRead',
       });
@@ -420,7 +420,7 @@ describe('SECURITY: PermissionGuard', () => {
 
     it('should pass RequiredPermission interface shape to hasPermission', async () => {
       const metadata = {
-        featureCode: 'bb',
+        addonCode: 'bb',
         moduleCode: 'posts',
         action: 'canRead' as const,
       };

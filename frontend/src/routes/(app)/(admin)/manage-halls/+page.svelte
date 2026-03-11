@@ -521,6 +521,7 @@
   bind:formIsActive
   {allAreas}
   {submitting}
+  {messages}
   onclose={closeHallModal}
   onsubmit={handleFormSubmit}
 />

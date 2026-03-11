@@ -1,10 +1,10 @@
 /**
- * Get All Plans Query DTO
+ * Get All Addons Query DTO
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-export const GetAllPlansQuerySchema = z.object({
+export const GetAllAddonsQuerySchema = z.object({
   includeInactive: z
     .string()
     .transform((val: string) => val === 'true')
@@ -12,4 +12,6 @@ export const GetAllPlansQuerySchema = z.object({
     .default(false),
 });
 
-export class GetAllPlansQueryDto extends createZodDto(GetAllPlansQuerySchema) {}
+export class GetAllAddonsQueryDto extends createZodDto(
+  GetAllAddonsQuerySchema,
+) {}

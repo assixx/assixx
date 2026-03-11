@@ -277,16 +277,7 @@ describe('SignupService – registration', () => {
     mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
     // createRootUser UPDATE employee_id
     mockClient.query.mockResolvedValueOnce({ rows: [] });
-    // assignBasicPlan SELECT
-    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
-    // assignBasicPlan INSERT tenant_plans
-    mockClient.query.mockResolvedValueOnce({ rows: [] });
-    // assignBasicPlan UPDATE tenants
-    mockClient.query.mockResolvedValueOnce({ rows: [] });
-    // activateTrialFeatures SELECT
-    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
-    // activateTrialFeatures INSERT feature 1
-    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // activateTrialAddons: production mode → returns early (no queries)
     // 3. createAuditLog INSERT
     mockDb.query.mockResolvedValueOnce([]);
   }
@@ -318,16 +309,15 @@ describe('SignupService – registration', () => {
       expect(result.trialEndsAt).toBeDefined();
     });
 
-    it('should pass address and plan to audit log when provided', async () => {
+    it('should pass address to audit log when provided', async () => {
       setupFullHappyPath();
       const dto = createValidDto();
-      dto.plan = 'basic';
 
       const result = await service.registerTenant(dto, '127.0.0.1', 'Agent');
 
       expect(result.tenantId).toBe(10);
 
-      // Verify audit log contains structured address and plan
+      // Verify audit log contains structured address
       const auditCall = mockDb.query.mock.calls[1] as unknown[];
       const auditParams = auditCall[1] as unknown[];
       const newValues = JSON.parse(auditParams[6] as string) as Record<
@@ -339,7 +329,6 @@ describe('SignupService – registration', () => {
       expect(newValues.postal_code).toBe('10115');
       expect(newValues.city).toBe('Berlin');
       expect(newValues.country_code).toBe('DE');
-      expect(newValues.plan).toBe('basic');
     });
 
     it('should throw BadRequestException for invalid subdomain', async () => {
@@ -395,23 +384,7 @@ describe('SignupService – registration', () => {
       );
     });
 
-    it('should throw when basic plan is missing', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
-      );
-      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
-      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan SELECT → no plan found
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-
-      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should activate ALL features in development mode', async () => {
+    it('should activate ALL purchasable addons in development mode', async () => {
       const devConfig = {
         isDevelopment: true,
       } as unknown as AppConfigService;
@@ -436,17 +409,15 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       // createRootUser UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan SELECT plans
-      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
-      // assignBasicPlan INSERT tenant_plans
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan UPDATE tenants
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // activateTrialFeatures SELECT — dev mode: ALL features
+      // activateTrialAddons SELECT purchasable addons
       mockClient.query.mockResolvedValueOnce({
-        rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
+        rows: [
+          { id: 1, trial_days: 30 },
+          { id: 2, trial_days: 30 },
+          { id: 3, trial_days: 30 },
+        ],
       });
-      // activateTrialFeatures INSERT feature 1, 2, 3
+      // activateTrialAddons INSERT addon 1, 2, 3
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -457,13 +428,12 @@ describe('SignupService – registration', () => {
 
       expect(result.tenantId).toBe(10);
 
-      // Dev-mode query has no params (no planId filter)
-      const featureSelectCall = mockClient.query.mock.calls[6] as unknown[];
-      expect(featureSelectCall[0]).toContain('SELECT id FROM features');
-      expect(featureSelectCall[1]).toEqual([]);
+      // Dev-mode query selects purchasable addons (is_core = false)
+      const addonSelectCall = mockClient.query.mock.calls[3] as unknown[];
+      expect(addonSelectCall[0]).toContain('is_core = false');
 
-      // 7 setup queries + 3 feature INSERTs = 10
-      expect(mockClient.query).toHaveBeenCalledTimes(10);
+      // 3 setup queries + 1 addon SELECT + 3 addon INSERTs = 7
+      expect(mockClient.query).toHaveBeenCalledTimes(7);
     });
 
     it('should succeed even when audit log fails', async () => {
@@ -477,14 +447,7 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       // createRootUser UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan SELECT plans
-      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
-      // assignBasicPlan INSERT tenant_plans
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan UPDATE tenants
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // activateTrialFeatures SELECT → no features
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // activateTrialAddons: production mode → returns early
       // createAuditLog → fails
       mockDb.query.mockRejectedValueOnce(new Error('Audit log failed'));
 

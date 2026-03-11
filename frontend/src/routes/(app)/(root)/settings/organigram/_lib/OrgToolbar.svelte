@@ -37,23 +37,23 @@
 </script>
 
 <div class="org-toolbar">
-  <div class="toolbar-group">
+  <div class="zoom-controls">
     <button
       type="button"
       class="btn btn-icon btn-secondary"
-      title="Herauszoomen"
-      onclick={onzoomout}
-    >
-      <i class="fas fa-minus"></i>
-    </button>
-    <span class="zoom-display">{zoomPercent}%</span>
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Hineinzoomen"
+      title="Vergrößern"
       onclick={onzoomin}
     >
       <i class="fas fa-plus"></i>
+    </button>
+    <span class="zoom-level">{zoomPercent}%</span>
+    <button
+      type="button"
+      class="btn btn-icon btn-secondary"
+      title="Verkleinern"
+      onclick={onzoomout}
+    >
+      <i class="fas fa-minus"></i>
     </button>
     <button
       type="button"
@@ -65,7 +65,7 @@
     </button>
     <button
       type="button"
-      class="btn btn-icon btn-secondary"
+      class="btn btn-icon btn-secondary ml-2"
       title="Vollbild"
       onclick={onfullscreen}
     >
@@ -155,7 +155,7 @@
   .toolbar-group {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 1.25rem;
   }
 
   .toolbar-divider {
@@ -169,12 +169,25 @@
     flex: 1;
   }
 
-  .zoom-display {
-    min-width: 3rem;
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    padding: 10px;
+    width: fit-content;
+  }
+
+  .zoom-level {
+    opacity: 80%;
+    min-width: 45px;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 14px;
     text-align: center;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
   }
 

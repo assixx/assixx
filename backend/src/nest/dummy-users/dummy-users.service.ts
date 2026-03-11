@@ -402,13 +402,13 @@ export class DummyUsersService {
   ): Promise<void> {
     for (const perm of DUMMY_PERMISSIONS) {
       await this.db.query(
-        `INSERT INTO user_feature_permissions
-          (tenant_id, user_id, feature_code, module_code,
+        `INSERT INTO user_addon_permissions
+          (tenant_id, user_id, addon_code, module_code,
            can_read, can_write, can_delete, assigned_by)
          VALUES ($1, $2, $3, $4, true, false, false, $5)
-         ON CONFLICT (tenant_id, user_id, feature_code, module_code)
+         ON CONFLICT (tenant_id, user_id, addon_code, module_code)
          DO NOTHING`,
-        [tenantId, userId, perm.featureCode, perm.moduleCode, assignedBy],
+        [tenantId, userId, perm.addonCode, perm.moduleCode, assignedBy],
       );
     }
 

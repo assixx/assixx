@@ -132,15 +132,6 @@ const CountryCodeSchema = z
   .regex(/^[A-Z]{2}$/, 'Country code must be two uppercase letters')
   .transform((val: string) => val.toUpperCase());
 
-/**
- * Plan validation
- */
-const PlanSchema = z
-  .enum(['free', 'basic', 'professional', 'enterprise', 'trial'], {
-    message: 'Invalid subscription plan',
-  })
-  .default('trial');
-
 // ========================================
 // REQUEST SCHEMA
 // ========================================
@@ -167,9 +158,6 @@ export const SignupSchema = z.object({
   adminPassword: PasswordSchema,
   adminFirstName: NameSchema,
   adminLastName: NameSchema,
-
-  // Subscription
-  plan: PlanSchema.optional(),
 });
 
 // ========================================

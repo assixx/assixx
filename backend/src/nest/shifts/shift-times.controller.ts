@@ -15,9 +15,9 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
 import { ShiftKeyParamDto } from './dto/shift-key-param.dto.js';
 import type { ShiftTimeResponse } from './dto/shift-time-response.dto.js';
@@ -30,7 +30,7 @@ const FEAT = 'shift_planning';
 const MOD = 'shift-times';
 
 @Controller('shift-times')
-@TenantFeature('shift_planning')
+@RequireAddon('shift_planning')
 export class ShiftTimesController {
   private readonly logger = new Logger(ShiftTimesController.name);
 

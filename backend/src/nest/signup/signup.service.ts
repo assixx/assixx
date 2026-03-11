@@ -65,12 +65,9 @@ interface DbUserResult extends QueryResultRow {
   id: number;
 }
 
-interface DbFeatureResult extends QueryResultRow {
+interface DbAddonResult extends QueryResultRow {
   id: number;
-}
-
-interface DbPlanResult extends QueryResultRow {
-  id: number;
+  trial_days: number;
 }
 
 // ============================================================================
@@ -158,7 +155,7 @@ export class SignupService {
   }
 
   /**
-   * Execute the registration transaction (create tenant, user, plan, features)
+   * Execute the registration transaction (create tenant, user, activate trial addons)
    */
   private async executeRegistrationTransaction(
     dto: SignupDto,
@@ -173,8 +170,7 @@ export class SignupService {
 
       const tenantId = await this.createTenant(client, dto, trialEndsAt);
       const userId = await this.createRootUser(client, tenantId, dto);
-      const planId = await this.assignBasicPlan(client, tenantId);
-      await this.activateTrialFeatures(client, tenantId, planId);
+      await this.activateTrialAddons(client, tenantId);
 
       return { tenantId, userId, trialEndsAt };
     });
@@ -338,73 +334,40 @@ export class SignupService {
   }
 
   /**
-   * Assign basic plan to new tenant.
-   * Returns the assigned plan ID (needed by activateTrialFeatures).
+   * Activate purchasable addons as trial for new tenant (ADR-033).
+   * Core addons are always accessible without tenant_addons entries.
+   * Dev mode: activate ALL purchasable addons for convenience.
+   * Production: no auto-activation — admin activates via addon store.
    */
-  private async assignBasicPlan(
+  private async activateTrialAddons(
     client: PoolClient,
     tenantId: number,
-  ): Promise<number> {
-    const planRows = await client.query<DbPlanResult>(
-      `SELECT id FROM plans WHERE code = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-      ['basic'],
-    );
-
-    const basicPlanId = planRows.rows[0]?.id;
-    if (basicPlanId === undefined) {
-      throw new Error('Basic plan not found — seeds missing?');
-    }
-
-    await client.query(
-      `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
-       VALUES ($1, $2, 'trial', NOW())`,
-      [tenantId, basicPlanId],
-    );
-
-    await client.query(
-      'UPDATE tenants SET current_plan_id = $1 WHERE id = $2',
-      [basicPlanId, tenantId],
-    );
-
-    return basicPlanId;
-  }
-
-  /**
-   * Activate trial features for new tenant.
-   * Production: only features included in the tenant's plan (ADR-032).
-   * Development: ALL active features — removes friction during dev/testing.
-   */
-  private async activateTrialFeatures(
-    client: PoolClient,
-    tenantId: number,
-    planId: number,
   ): Promise<void> {
-    const query =
-      this.config.isDevelopment ?
-        `SELECT id FROM features WHERE is_active = ${IS_ACTIVE.ACTIVE}`
-      : `SELECT f.id
-         FROM plan_features pf
-         JOIN features f ON pf.feature_id = f.id
-         WHERE pf.plan_id = $1
-           AND pf.is_included = true
-           AND f.is_active = ${IS_ACTIVE.ACTIVE}`;
-
-    const params = this.config.isDevelopment ? [] : [planId];
-    const featureRows = await client.query<DbFeatureResult>(query, params);
-
-    if (this.config.isDevelopment) {
-      this.logger.log(
-        `DEV MODE: Activating ALL ${featureRows.rows.length} features for tenant ${tenantId}`,
-      );
+    if (!this.config.isDevelopment) {
+      return;
     }
 
-    for (const feature of featureRows.rows) {
+    const addonRows = await client.query<DbAddonResult>(
+      `SELECT id, COALESCE(trial_days, 30) AS trial_days
+       FROM addons
+       WHERE is_core = false AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    );
+
+    for (const addon of addonRows.rows) {
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + addon.trial_days);
+
       await client.query(
-        `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at)
-         VALUES ($1, $2, 1, NOW() + INTERVAL '${TRIAL_DAYS} days')`,
-        [tenantId, feature.id],
+        `INSERT INTO tenant_addons
+           (tenant_id, addon_id, status, trial_started_at, trial_ends_at, activated_at, is_active, created_at, updated_at)
+         VALUES ($1, $2, 'trial', NOW(), $3, NOW(), ${IS_ACTIVE.ACTIVE}, NOW(), NOW())`,
+        [tenantId, addon.id, trialEndsAt],
       );
     }
+
+    this.logger.log(
+      `DEV MODE: Activated ${addonRows.rows.length} purchasable addons as trial for tenant ${tenantId}`,
+    );
   }
 
   /**
@@ -468,7 +431,6 @@ export class SignupService {
             admin_first_name: dto.adminFirstName,
             admin_last_name: dto.adminLastName,
             phone: dto.phone,
-            plan: dto.plan ?? 'trial',
             ...(dto.street !== undefined && { street: dto.street }),
             ...(dto.houseNumber !== undefined && {
               house_number: dto.houseNumber,

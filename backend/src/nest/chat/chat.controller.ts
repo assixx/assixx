@@ -34,8 +34,8 @@ import {
   validatePath,
 } from '../../utils/path-security.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -140,7 +140,7 @@ const CHAT_MSG = 'chat-messages';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
-@TenantFeature('chat')
+@RequireAddon('chat')
 export class ChatController {
   constructor(
     private readonly chatService: ChatService,

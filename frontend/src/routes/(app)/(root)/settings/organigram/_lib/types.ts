@@ -33,6 +33,8 @@ export interface OrgChartNode {
   assets: OrgChartNode[];
   leadName?: string;
   memberCount?: number;
+  /** Hallen-Name — nur bei Areas, wenn eine Halle zugewiesen ist */
+  hallName?: string;
 }
 
 export interface OrgChartTree {
@@ -78,10 +80,10 @@ export interface Connection {
   y2: number;
 }
 
-/** Bounding box for an area container ("Halle") */
-export interface AreaBounds {
+/** Bounding box für Hallen-Container (nur Areas mit zugewiesener Halle) */
+export interface HallBounds {
   areaUuid: string;
-  areaName: string;
+  hallName: string;
   leadName?: string;
   x: number;
   y: number;

@@ -5,8 +5,8 @@
 import { LAYOUT } from './constants.js';
 
 import type {
-  AreaBounds,
   Connection,
+  HallBounds,
   HierarchyLabels,
   OrgChartNode,
   OrgChartTree,
@@ -398,14 +398,15 @@ export function getConnections(): Connection[] {
   return connections;
 }
 
-/** Compute bounding boxes for area containers ("Hallen") */
-export function getAreaBounds(): AreaBounds[] {
+/** Compute bounding boxes für Hallen-Container (nur Areas mit zugewiesener Halle) */
+export function getHallBounds(): HallBounds[] {
   const PADDING = 24;
   const HEADER_HEIGHT = 32;
-  const bounds: AreaBounds[] = [];
+  const bounds: HallBounds[] = [];
 
   for (const node of tree.nodes) {
     if (node.entityType !== 'area') continue;
+    if (node.hallName === undefined) continue;
 
     const areaKey = makeKey('area', node.entityUuid);
     const areaPos = nodePositions[areaKey];
@@ -425,12 +426,12 @@ export function getAreaBounds(): AreaBounds[] {
 
     bounds.push({
       areaUuid: node.entityUuid,
-      areaName: node.name,
+      hallName: node.hallName,
       leadName: node.leadName,
       x: minX - PADDING,
       y: minY - PADDING - HEADER_HEIGHT,
       width: maxX - minX + PADDING * 2,
-      height: maxY - minY + PADDING * 2 + HEADER_HEIGHT,
+      height: maxY - minY + PADDING * 1.6 + HEADER_HEIGHT * 2,
     });
   }
 
