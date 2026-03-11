@@ -61,7 +61,7 @@
         </button>
       </div>
       <div class="nav-links">
-        <a href="#features">Features</a>
+        <a href="#module">Module</a>
         <a href="#security">Sicherheit</a>
         <a href="#pricing">Preise</a>
         <a href={resolve('/login', {})}>Anmelden</a>
@@ -114,7 +114,7 @@
   >
     <div class="modal-content">
       <h2>Jetzt kostenlos testen</h2>
-      <p>14 Tage kostenlos - keine Kreditkarte erforderlich</p>
+      <p>30 Tage kostenlos testen - keine Kreditkarte erforderlich</p>
       <p class="u-mb-md">
         Bitte nutzen Sie unser vollständiges Registrierungsformular:
       </p>
@@ -258,12 +258,11 @@
   .footer {
     backdrop-filter: blur(20px);
     box-shadow: 0 -8px 32px
-      color-mix(in oklch, var(--color-black) 40%, transparent);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 15%, transparent);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+      color-mix(in oklch, var(--color-black) 20%, transparent);
+    border-top: 1px solid var(--color-glass-border);
+    background: var(--glass-bg);
     padding: var(--spacing-6) 5%;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     text-align: center;
   }
 
@@ -283,9 +282,9 @@
   }
 
   .modal-content {
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+    background: var(--glass-bg);
     padding: var(--spacing-6);
     width: 90%;
     max-width: 500px;
@@ -313,18 +312,6 @@
   /* Light mode overrides */
   :global(html:not(.dark)) .nav-links a:hover {
     color: var(--color-primary);
-  }
-
-  :global(html:not(.dark)) .footer {
-    border-color: color-mix(in oklch, var(--color-black) 10%, transparent);
-    background: color-mix(in oklch, var(--color-white) 80%, transparent);
-    box-shadow: 0 -8px 32px
-      color-mix(in oklch, var(--color-black) 8%, transparent);
-  }
-
-  :global(html:not(.dark)) .modal-content {
-    border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
-    background: color-mix(in oklch, var(--color-white) 90%, transparent);
   }
 
   /* Responsive */

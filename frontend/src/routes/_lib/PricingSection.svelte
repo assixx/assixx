@@ -1,7 +1,7 @@
 <!--
   PricingSection.svelte
-  Landing page pricing section — 3 pricing cards + feature comparison table
-  Extracted from routes/+page.svelte for max-lines compliance
+  Landing page pricing section — addon-based SaaS model (ADR-033)
+  Replaces legacy 3-tier plan pricing with Core + à-la-carte addons.
 -->
 <script lang="ts">
   import { resolve } from '$app/paths';
@@ -11,261 +11,267 @@
   class="pricing"
   id="pricing"
 >
-  <h2>Einfache, transparente Preise</h2>
+  <h2>Einfach. Transparent. Modular.</h2>
   <p class="pricing-subtitle">
-    Alle Pläne beinhalten 14 Tage kostenlose Testphase
+    Core-Paket + nur die Module die Sie brauchen — 30 Tage kostenlos testen
   </p>
 
   <div class="pricing-grid">
-    <!-- Basic Plan -->
+    <!-- Core Package -->
     <div class="pricing-card">
-      <h3>Basic</h3>
+      <h3>Core-Paket</h3>
       <div class="price">
-        €49
+        €39
         <span>/Monat</span>
       </div>
+      <div class="unlimited-badge">
+        <i class="fas fa-infinity"></i>
+        Unbegrenzte Lizenzen inklusive
+      </div>
       <ul class="feature-list">
-        <li>✅ Bis zu 10 Mitarbeiter</li>
-        <li>✅ Dokumenten-Upload</li>
-        <li>✅ Lohnabrechnungen</li>
-        <li>✅ Schwarzes Brett</li>
-        <li>✅ Basis-Support</li>
+        <li>
+          <strong>Unbegrenzt</strong> Mitarbeiter
+        </li>
+        <li>
+          <strong>Unbegrenzt</strong> Abteilungsleiter (Admins)
+        </li>
+        <li>
+          <strong>Unbegrenzt</strong> Geschäftsführer (Root-User)
+        </li>
+        <li>100 GB Speicher</li>
+        <li>8 Core-Module inklusive</li>
+        <li>Dashboard & Kalender</li>
+        <li>Schwarzes Brett</li>
+        <li>Benachrichtigungen</li>
+        <li>Mitarbeiter & Teams</li>
       </ul>
       <div class="pricing-card__footer">
-        <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
-          href={`${resolve('/signup', {})}?plan=basic`}
+          href={resolve('/signup', {})}
           class="btn btn-secondary pricing-card__button">Jetzt starten</a
         >
-        <!-- eslint-enable svelte/no-navigation-without-resolve -->
       </div>
     </div>
 
-    <!-- Professional Plan (Featured) -->
+    <!-- Addon Store (Featured) -->
     <div class="pricing-card featured u-relative">
       <span
         class="badge badge--primary badge--lg badge--uppercase pricing-card__badge"
-        >Beliebt</span
+        >Flexibel</span
       >
-      <h3>Professional</h3>
+      <h3>Modul-Baukasten</h3>
       <div class="price">
-        €99
-        <span>/Monat</span>
+        €10
+        <span>/Modul/Monat</span>
       </div>
       <ul class="feature-list">
-        <li>✅ Bis zu 50 Mitarbeiter</li>
-        <li>✅ Alle Basic Features</li>
-        <li>✅ Kalender & Events</li>
-        <li>✅ Schichtplanung</li>
-        <li>✅ KVP-System</li>
-        <li>✅ Chat-System</li>
-        <li>✅ Priority Support</li>
+        <li>12 Zusatz-Module verfügbar</li>
+        <li>30 Tage kostenlos testen</li>
+        <li>Jederzeit aktivieren/deaktivieren</li>
+        <li>Berechtigungen bleiben erhalten</li>
+        <li>Dokumente & Chat</li>
+        <li>Schichtplanung & Urlaub</li>
+        <li>TPM & Arbeitsaufträge</li>
+        <li>Umfragen & KVP</li>
       </ul>
       <div class="pricing-card__footer">
-        <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
-          href={`${resolve('/signup', {})}?plan=professional`}
+          href={resolve('/signup', {})}
           class="btn btn-index pricing-card__button pricing-card__button--transparent"
         >
           Kostenlos testen
         </a>
-        <!-- eslint-enable svelte/no-navigation-without-resolve -->
       </div>
     </div>
 
-    <!-- Enterprise Plan -->
+    <!-- Enterprise -->
     <div class="pricing-card">
       <h3>Enterprise</h3>
       <div class="price">
-        €149
-        <span>/Monat</span>
+        Individuell
+        <span>auf Anfrage</span>
       </div>
       <ul class="feature-list">
-        <li>✅ Unbegrenzte Mitarbeiter</li>
-        <li>✅ Alle Professional Features</li>
-        <li>✅ Umfrage-System</li>
-        <li>✅ API-Zugang</li>
-        <li>✅ Custom Branding</li>
-        <li>✅ Automatisierung</li>
-        <li>✅ 24/7 Support</li>
-        <li>✅ SLA-Garantie</li>
+        <li>On-Premise Installation</li>
+        <li>Eigene Server-Infrastruktur</li>
+        <li>Dedizierter Support</li>
+        <li>SLA-Garantie 99.9%</li>
+        <li>Custom Branding</li>
+        <li>API-Zugang</li>
+        <li>Persönliches Onboarding</li>
+        <li>Compliance & Audit</li>
       </ul>
       <div class="pricing-card__footer">
         <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
           href={`${resolve('/signup', {})}?plan=enterprise`}
-          class="btn btn-secondary pricing-card__button">Kontakt aufnehmen</a
+          class="btn btn-secondary pricing-card__button">Beratung anfragen</a
         >
         <!-- eslint-enable svelte/no-navigation-without-resolve -->
       </div>
     </div>
   </div>
 
-  <!-- Feature Comparison Table -->
-  <div class="feature-comparison">
-    <h3 class="feature-comparison__title">Detaillierter Feature-Vergleich</h3>
-    <div class="comparison-table-wrapper">
-      <table class="comparison-table">
-        <thead>
-          <tr>
-            <th>Features</th>
-            <th>Basic</th>
-            <th class="highlighted">Professional</th>
-            <th>Enterprise</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Mitarbeiter-Management -->
-          <tr class="category-header">
-            <td colspan="4"><strong>Mitarbeiter-Management</strong></td>
-          </tr>
-          <tr>
-            <td>Maximale Mitarbeiteranzahl</td>
-            <td>10</td>
-            <td class="highlighted">50</td>
-            <td>Unbegrenzt</td>
-          </tr>
-          <tr>
-            <td>Dokumenten-Upload</td>
-            <td>✅</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Lohnabrechnungen</td>
-            <td>✅</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Mitarbeiter-Profile</td>
-            <td>✅</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
+  <!-- Module Catalog -->
+  <div class="module-catalog">
+    <h3 class="module-catalog__title">Alle 20 Module im Überblick</h3>
+    <div class="catalog-columns">
+      <!-- Core Modules -->
+      <div class="catalog-group">
+        <h4 class="catalog-group__heading">
+          <i class="fas fa-shield-alt"></i>
+          Core-Module
+          <span class="catalog-group__badge catalog-group__badge--core"
+            >Inklusive</span
+          >
+        </h4>
+        <ul class="catalog-list">
+          <li>
+            <i class="fas fa-tachometer-alt"></i>
+            <span class="catalog-list__name">Dashboard</span>
+            <span class="catalog-list__desc"
+              >Zentrale Übersicht mit Kennzahlen</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-calendar-alt"></i>
+            <span class="catalog-list__name">Kalender</span>
+            <span class="catalog-list__desc"
+              >Gemeinsamer Unternehmenskalender</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-chalkboard"></i>
+            <span class="catalog-list__name">Schwarzes Brett</span>
+            <span class="catalog-list__desc"
+              >Digitales schwarzes Brett für Ankündigungen</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-cog"></i>
+            <span class="catalog-list__name">Einstellungen</span>
+            <span class="catalog-list__desc">Mandanten-Konfiguration</span>
+          </li>
+          <li>
+            <i class="fas fa-bell"></i>
+            <span class="catalog-list__name">Benachrichtigungen</span>
+            <span class="catalog-list__desc">Push & SSE-Streaming</span>
+          </li>
+          <li>
+            <i class="fas fa-users"></i>
+            <span class="catalog-list__name">Mitarbeiterverwaltung</span>
+            <span class="catalog-list__desc"
+              >Benutzer anlegen und verwalten</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-sitemap"></i>
+            <span class="catalog-list__name">Abteilungen</span>
+            <span class="catalog-list__desc">Organisationsstruktur</span>
+          </li>
+          <li>
+            <i class="fas fa-user-friends"></i>
+            <span class="catalog-list__name">Teams</span>
+            <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span
+            >
+          </li>
+        </ul>
+      </div>
 
-          <!-- Kommunikation -->
-          <tr class="category-header">
-            <td colspan="4"><strong>Kommunikation</strong></td>
-          </tr>
-          <tr>
-            <td>Schwarzes Brett</td>
-            <td>✅</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Chat-System</td>
-            <td>❌</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>E-Mail-Benachrichtigungen</td>
-            <td>Basis</td>
-            <td class="highlighted">Erweitert</td>
-            <td>Vollständig</td>
-          </tr>
-
-          <!-- Planung & Organisation -->
-          <tr class="category-header">
-            <td colspan="4"><strong>Planung & Organisation</strong></td>
-          </tr>
-          <tr>
-            <td>Kalender & Events</td>
-            <td>❌</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Schichtplanung</td>
-            <td>❌</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Urlaubsverwaltung</td>
-            <td>❌</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-
-          <!-- Qualität & Verbesserung -->
-          <tr class="category-header">
-            <td colspan="4"><strong>Qualität & Verbesserung</strong></td>
-          </tr>
-          <tr>
-            <td>KVP-System</td>
-            <td>❌</td>
-            <td class="highlighted">✅</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Umfrage-System</td>
-            <td>❌</td>
-            <td class="highlighted">❌</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>TPM-System</td>
-            <td>❌</td>
-            <td class="highlighted">❌</td>
-            <td>✅</td>
-          </tr>
-
-          <!-- Erweiterte Funktionen -->
-          <tr class="category-header">
-            <td colspan="4"><strong>Erweiterte Funktionen</strong></td>
-          </tr>
-          <tr>
-            <td>API-Zugang</td>
-            <td>❌</td>
-            <td class="highlighted">❌</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Custom Branding</td>
-            <td>❌</td>
-            <td class="highlighted">❌</td>
-            <td>✅</td>
-          </tr>
-          <tr>
-            <td>Automatisierung</td>
-            <td>❌</td>
-            <td class="highlighted">Basis</td>
-            <td>Vollständig</td>
-          </tr>
-          <tr>
-            <td>Berichte & Analytics</td>
-            <td>Basis</td>
-            <td class="highlighted">Erweitert</td>
-            <td>Premium</td>
-          </tr>
-
-          <!-- Support & Service -->
-          <tr class="category-header">
-            <td colspan="4"><strong>Support & Service</strong></td>
-          </tr>
-          <tr>
-            <td>Support</td>
-            <td>E-Mail</td>
-            <td class="highlighted">E-Mail & Telefon</td>
-            <td>24/7 Priority</td>
-          </tr>
-          <tr>
-            <td>Onboarding</td>
-            <td>Selbstservice</td>
-            <td class="highlighted">Geführt</td>
-            <td>Persönlich</td>
-          </tr>
-          <tr>
-            <td>SLA-Garantie</td>
-            <td>❌</td>
-            <td class="highlighted">❌</td>
-            <td>✅ 99.9%</td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- Purchasable Addons -->
+      <div class="catalog-group">
+        <h4 class="catalog-group__heading">
+          <i class="fas fa-cubes"></i>
+          Zusatz-Module
+          <span class="catalog-group__badge catalog-group__badge--addon"
+            >€10/Monat</span
+          >
+        </h4>
+        <ul class="catalog-list">
+          <li>
+            <i class="fas fa-folder-open"></i>
+            <span class="catalog-list__name">Dokumente</span>
+            <span class="catalog-list__desc"
+              >Dokumentenverwaltung mit Upload und Archiv</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-user-secret"></i>
+            <span class="catalog-list__name">Platzhalter-Benutzer</span>
+            <span class="catalog-list__desc"
+              >Anonyme Accounts für Fabrik-Bildschirme</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-umbrella-beach"></i>
+            <span class="catalog-list__name">Urlaubsverwaltung</span>
+            <span class="catalog-list__desc"
+              >Anträge, Genehmigung, Kapazitätsprüfung</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-clock"></i>
+            <span class="catalog-list__name">Schichtplanung</span>
+            <span class="catalog-list__desc"
+              >Schichtpläne, Tauschbörse, Rotation</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-comments"></i>
+            <span class="catalog-list__name">Chat</span>
+            <span class="catalog-list__desc"
+              >Team-Chat mit Gesprächen und Nachrichten</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-poll"></i>
+            <span class="catalog-list__name">Umfragen</span>
+            <span class="catalog-list__desc"
+              >Erstellen, durchführen und auswerten</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-clipboard-list"></i>
+            <span class="catalog-list__name">Arbeitsaufträge</span>
+            <span class="catalog-list__desc"
+              >Mängelbeseitigung und Aufgabenverwaltung</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-cogs"></i>
+            <span class="catalog-list__name">Anlagen & Maschinen</span>
+            <span class="catalog-list__desc"
+              >Verwaltung und Verfügbarkeitstracking</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-chart-bar"></i>
+            <span class="catalog-list__name">Berichte</span>
+            <span class="catalog-list__desc">Analytics und Datenexporte</span>
+          </li>
+          <li>
+            <i class="fas fa-lightbulb"></i>
+            <span class="catalog-list__name">KVP</span>
+            <span class="catalog-list__desc"
+              >Kontinuierlicher Verbesserungsprozess</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-tools"></i>
+            <span class="catalog-list__name">TPM / Wartung</span>
+            <span class="catalog-list__desc"
+              >Kamishibai Board und Wartungspläne</span
+            >
+          </li>
+          <li>
+            <i class="fas fa-file-signature"></i>
+            <span class="catalog-list__name">Protokoll & Audit</span>
+            <span class="catalog-list__desc"
+              >Audit-Protokollierung, Compliance-Berichte</span
+            >
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>
@@ -289,14 +295,14 @@
   .pricing-subtitle {
     opacity: 80%;
     margin-bottom: calc(var(--spacing-8) * 1.5);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 1.1rem;
     text-align: center;
   }
 
   .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--spacing-8);
     margin: 0 auto;
     max-width: 1200px;
@@ -306,14 +312,18 @@
     display: flex;
     position: relative;
     flex-direction: column;
-
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+    background: var(--glass-bg);
     padding: var(--spacing-8);
-    min-height: 600px;
+    min-height: 550px;
     overflow: hidden;
     text-align: center;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      border-color 0.3s ease,
+      background 0.3s ease;
   }
 
   .pricing-card:hover {
@@ -322,7 +332,7 @@
       0 12px 40px color-mix(in oklch, var(--color-primary) 40%, transparent),
       inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
     border-color: var(--primary-color);
-    background: color-mix(in oklch, var(--color-white) 4%, transparent);
+    background: var(--glass-bg-hover);
   }
 
   .pricing-card.featured {
@@ -356,10 +366,27 @@
       color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
 
+  .unlimited-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-4);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-full);
+    background: color-mix(in oklch, var(--success-color) 15%, transparent);
+    color: var(--success-color);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+
   .price span {
-    color: var(--text-secondary);
+    display: block;
+    margin-top: var(--spacing-2);
+    color: var(--color-text-secondary);
     font-weight: 400;
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .feature-list {
@@ -374,7 +401,7 @@
     position: relative;
     padding: var(--spacing-2) 0;
     padding-left: var(--spacing-8);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 15px;
     line-height: 1.6;
   }
@@ -382,7 +409,7 @@
   .feature-list li::before {
     position: absolute;
     left: 0;
-    content: '✓';
+    content: '\2713';
     color: var(--success-color);
     font-weight: 700;
   }
@@ -413,110 +440,110 @@
     background: none;
   }
 
-  /* Feature Comparison Table */
-  .feature-comparison {
+  /* =========================================================
+     MODULE CATALOG
+     ========================================================= */
+
+  .module-catalog {
     margin-top: 4rem;
   }
 
-  .feature-comparison__title {
+  .module-catalog__title {
     margin-bottom: 2rem;
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.75rem;
     text-align: center;
   }
 
-  .comparison-table-wrapper {
-    margin-top: 2rem;
+  .catalog-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-8);
+  }
 
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+  .catalog-group {
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
-    overflow-x: auto;
+    background: var(--glass-bg);
+    padding: var(--spacing-6);
   }
 
-  .comparison-table {
-    border-collapse: collapse;
-    width: 100%;
-    color: var(--text-primary);
+  .catalog-group__heading {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--color-glass-border);
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .catalog-group__badge {
+    margin-left: auto;
+    border-radius: var(--radius-full);
+    padding: var(--spacing-1) var(--spacing-3);
     font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 
-  .comparison-table th,
-  .comparison-table td {
+  .catalog-group__badge--core {
+    background: color-mix(in oklch, var(--success-color) 15%, transparent);
+    color: var(--success-color);
+  }
+
+  .catalog-group__badge--addon {
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+    color: var(--primary-color);
+  }
+
+  .catalog-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .catalog-list li {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    grid-template-rows: auto auto;
+    gap: 0 var(--spacing-3);
+    padding: var(--spacing-3) 0;
     border-bottom: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    padding: var(--spacing-3);
-    text-align: left;
+      color-mix(in oklch, var(--color-glass-border) 50%, transparent);
   }
 
-  .comparison-table th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    backdrop-filter: blur(10px);
-    background: color-mix(in oklch, var(--color-white) 4%, transparent);
+  .catalog-list li:last-child {
+    border-bottom: none;
+  }
+
+  .catalog-list li > i {
+    grid-row: 1 / -1;
+    align-self: center;
     color: var(--primary-color);
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .comparison-table thead tr:first-child th {
-    border-bottom: 2px solid
-      color-mix(in oklch, var(--color-primary) 30%, transparent);
-  }
-
-  .comparison-table tbody tr:hover {
-    transition: background 0.3s ease;
-    background: color-mix(in oklch, var(--color-white) 3%, transparent);
-  }
-
-  .comparison-table .highlighted {
-    border-right: 2px solid var(--primary-color);
-    border-left: 2px solid var(--primary-color);
-    background: color-mix(
-      in oklch,
-      var(--color-primary) 10%,
-      transparent
-    ) !important;
-  }
-
-  .comparison-table .category-header td {
-    background: color-mix(in oklch, var(--color-white) 5%, transparent);
-    padding-top: var(--spacing-6);
-    padding-bottom: var(--spacing-2);
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .comparison-table th:nth-child(2),
-  .comparison-table td:nth-child(2),
-  .comparison-table th:nth-child(3),
-  .comparison-table td:nth-child(3),
-  .comparison-table th:nth-child(4),
-  .comparison-table td:nth-child(4) {
+    font-size: 14px;
     text-align: center;
   }
 
-  .comparison-table-wrapper::-webkit-scrollbar {
-    height: 8px;
+  .catalog-list__name {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 14px;
   }
 
-  .comparison-table-wrapper::-webkit-scrollbar-track {
-    border-radius: 4px;
-    background: color-mix(in oklch, var(--color-white) 5%, transparent);
+  .catalog-list__desc {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+    line-height: 1.4;
   }
 
-  .comparison-table-wrapper::-webkit-scrollbar-thumb {
-    border-radius: 4px;
-    background: color-mix(in oklch, var(--color-white) 20%, transparent);
-  }
-
-  .comparison-table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklch, var(--color-white) 30%, transparent);
-  }
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
 
   @media (width < 768px) {
     .pricing h2 {
@@ -527,17 +554,8 @@
       grid-template-columns: 1fr;
     }
 
-    .comparison-table {
-      font-size: 12px;
-    }
-
-    .comparison-table th,
-    .comparison-table td {
-      padding: var(--spacing-3);
-    }
-
-    .feature-comparison h3 {
-      font-size: 1.5rem;
+    .catalog-columns {
+      grid-template-columns: 1fr;
     }
   }
 </style>
