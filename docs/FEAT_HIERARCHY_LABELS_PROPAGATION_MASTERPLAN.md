@@ -24,7 +24,7 @@
 | 0.7.0   | 2026-03-10 | Session 5 partial: Phase 4 Steps 4.4–4.5 (admin-dashboard + survey-admin + survey-employee) |
 | 0.8.0   | 2026-03-10 | Session 6: Phase 4 Steps 4.6–4.8 (vacation/rules + TPM factories + scattered refs)          |
 | 0.9.0   | 2026-03-11 | Session 7: Page wiring — TPM (7 pages + 6 children), logs, dummies, root                    |
-| 1.0.0   | 2026-03-11 | Session 8: Phase 5 — API-Tests, Labels-Source konsolidiert, Docs aktualisiert                |
+| 1.0.0   | 2026-03-11 | Session 8: Phase 5 — API-Tests, Labels-Source konsolidiert, Docs aktualisiert               |
 
 ---
 
@@ -548,16 +548,16 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                                     | Status  | Datum      |
-| ------- | ----- | ---------------------------------------------------------------- | ------- | ---------- |
-| 1       | 1+2   | Backend Public Endpoint + Layout + Navigation + Breadcrumb       | DONE    | 2026-03-10 |
-| 2       | 3     | manage-areas + manage-departments                                | DONE    | 2026-03-10 |
-| 3       | 3     | manage-teams + manage-assets                                     | DONE    | 2026-03-10 |
-| 4       | 4     | manage-halls + manage-admins + manage-employees                  | DONE    | 2026-03-10 |
-| 5       | 4     | admin-dashboard + survey-admin + survey-employee                 | DONE    | 2026-03-10 |
-| 6       | 4     | vacation/rules + TPM factories + scattered refs                  | DONE    | 2026-03-10 |
-| 7       | 4+5   | TPM page wiring + remaining page wiring + Vollständigkeits-Check | DONE    | 2026-03-11 |
-| 8       | 5     | API-Tests + Labels-Source konsolidiert + Docs aktualisiert       | DONE    | 2026-03-11 |
+| Session | Phase | Beschreibung                                                     | Status | Datum      |
+| ------- | ----- | ---------------------------------------------------------------- | ------ | ---------- |
+| 1       | 1+2   | Backend Public Endpoint + Layout + Navigation + Breadcrumb       | DONE   | 2026-03-10 |
+| 2       | 3     | manage-areas + manage-departments                                | DONE   | 2026-03-10 |
+| 3       | 3     | manage-teams + manage-assets                                     | DONE   | 2026-03-10 |
+| 4       | 4     | manage-halls + manage-admins + manage-employees                  | DONE   | 2026-03-10 |
+| 5       | 4     | admin-dashboard + survey-admin + survey-employee                 | DONE   | 2026-03-10 |
+| 6       | 4     | vacation/rules + TPM factories + scattered refs                  | DONE   | 2026-03-10 |
+| 7       | 4+5   | TPM page wiring + remaining page wiring + Vollständigkeits-Check | DONE   | 2026-03-11 |
+| 8       | 5     | API-Tests + Labels-Source konsolidiert + Docs aktualisiert       | DONE   | 2026-03-11 |
 
 ---
 
@@ -587,29 +587,29 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 ### Frontend (geändert — Management-Seiten)
 
-| Modul              | Dateien                                             | Stellen |
-| ------------------ | --------------------------------------------------- | ------- |
-| manage-areas       | constants.ts, +page.svelte, utils.ts, api.ts, Modal | ~33     |
-| manage-departments | constants.ts, +page.svelte, utils.ts                | ~30     |
-| manage-teams       | constants.ts, +page.svelte, TeamFormModal, utils.ts | ~15     |
-| manage-assets      | constants.ts, +page.svelte, utils.ts                | ~30     |
-| manage-halls       | constants.ts, +page.svelte, utils.ts                | ~7      |
-| manage-admins      | constants.ts, utils.ts                              | ~15     |
-| manage-employees   | constants.ts, utils.ts                              | ~3      |
-| admin-dashboard    | constants.ts, utils.ts, +page.svelte                | ~12     |
-| survey-admin       | constants.ts, handlers.ts, SurveyFormModal, +page   | ~10     |
-| survey-employee    | constants.ts                                        | ~3      |
-| vacation/rules     | BlackoutsTab, StaffingRulesTab, +page.svelte        | ~26     |
-| lean-mgmt/tpm (a)  | constants.ts, +page×3, PlanOverview, PlanForm, AssetCascade, DuplicateWarn | ~16+9 |
-| lean-mgmt/tpm (s)  | constants.ts, +page×2, AssetList, OverallViewTable  | ~7+5    |
-| manage-dummies     | constants.ts, +page.svelte, DummyTable              | ~3+3    |
-| manage-root        | constants.ts, +page.svelte, RootUserModal           | ~2+2    |
-| logs               | constants.ts, +page.svelte                          | ~3+1    |
-| admin-profile      | SKIPPED (KL#2 — position compound word)             | —       |
-| employee-profile   | SKIPPED (KL#2 — position compound word)             | —       |
-| shifts             | SKIPPED (A6 — server-side, no await parent)         | —       |
-| api-client.utils   | SKIPPED (KL#2 — compound word in utility)           | —       |
-| organigram         | state.svelte.ts (Label-Source konsolidieren)        | ~2      |
+| Modul              | Dateien                                                                    | Stellen |
+| ------------------ | -------------------------------------------------------------------------- | ------- |
+| manage-areas       | constants.ts, +page.svelte, utils.ts, api.ts, Modal                        | ~33     |
+| manage-departments | constants.ts, +page.svelte, utils.ts                                       | ~30     |
+| manage-teams       | constants.ts, +page.svelte, TeamFormModal, utils.ts                        | ~15     |
+| manage-assets      | constants.ts, +page.svelte, utils.ts                                       | ~30     |
+| manage-halls       | constants.ts, +page.svelte, utils.ts                                       | ~7      |
+| manage-admins      | constants.ts, utils.ts                                                     | ~15     |
+| manage-employees   | constants.ts, utils.ts                                                     | ~3      |
+| admin-dashboard    | constants.ts, utils.ts, +page.svelte                                       | ~12     |
+| survey-admin       | constants.ts, handlers.ts, SurveyFormModal, +page                          | ~10     |
+| survey-employee    | constants.ts                                                               | ~3      |
+| vacation/rules     | BlackoutsTab, StaffingRulesTab, +page.svelte                               | ~26     |
+| lean-mgmt/tpm (a)  | constants.ts, +page×3, PlanOverview, PlanForm, AssetCascade, DuplicateWarn | ~16+9   |
+| lean-mgmt/tpm (s)  | constants.ts, +page×2, AssetList, OverallViewTable                         | ~7+5    |
+| manage-dummies     | constants.ts, +page.svelte, DummyTable                                     | ~3+3    |
+| manage-root        | constants.ts, +page.svelte, RootUserModal                                  | ~2+2    |
+| logs               | constants.ts, +page.svelte                                                 | ~3+1    |
+| admin-profile      | SKIPPED (KL#2 — position compound word)                                    | —       |
+| employee-profile   | SKIPPED (KL#2 — position compound word)                                    | —       |
+| shifts             | SKIPPED (A6 — server-side, no await parent)                                | —       |
+| api-client.utils   | SKIPPED (KL#2 — compound word in utility)                                  | —       |
+| organigram         | state.svelte.ts (Label-Source konsolidieren)                               | ~2      |
 
 **Verifiziert: ~250+ String-Ersetzungen in ~40+ Dateien.**
 
@@ -641,12 +641,12 @@ Jedes manage-\* Modul hat `constants.ts` mit 15-30 hardcoded Strings. Das Patter
 
 **Ergebnis:** Alle in-scope Module korrekt konvertiert. Keine Regressionen.
 
-| Kategorie | Module | Status |
-|-----------|--------|--------|
-| Phase 3 (Management) | manage-areas, -departments, -teams, -assets | Factory + Page Wiring |
-| Phase 4 (Remaining) | manage-halls, -admins, -employees, admin-dashboard, survey-*, vacation, TPM, dummies, root, logs | Factory + Page Wiring |
-| KL#2 (Compound) | manage-admins, admin-profile, employee-profile | SKIPPED (Bereichsleiter) |
-| V3-Scope | employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard | NOT IN SCOPE |
+| Kategorie            | Module                                                                                            | Status                   |
+| -------------------- | ------------------------------------------------------------------------------------------------- | ------------------------ |
+| Phase 3 (Management) | manage-areas, -departments, -teams, -assets                                                       | Factory + Page Wiring    |
+| Phase 4 (Remaining)  | manage-halls, -admins, -employees, admin-dashboard, survey-\*, vacation, TPM, dummies, root, logs | Factory + Page Wiring    |
+| KL#2 (Compound)      | manage-admins, admin-profile, employee-profile                                                    | SKIPPED (Bereichsleiter) |
+| V3-Scope             | employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard             | NOT IN SCOPE             |
 
 ---
 

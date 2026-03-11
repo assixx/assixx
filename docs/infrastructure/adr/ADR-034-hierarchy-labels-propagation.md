@@ -15,24 +15,24 @@
 
 Assixx unterstützt seit dem Organigramm-Feature (V1) tenant-spezifische Hierarchy Labels — jeder Tenant kann seine Organisationsebenen umbenennen (z.B. "Bereiche" → "Hallen", "Abteilungen" → "Segmente"). **Problem:** V1 zeigte diese Labels ausschließlich auf der Organigramm-Seite. Alle anderen ~40 Seiten verwendeten weiterhin hardcoded deutsche Strings.
 
-| Problem                                   | Impact                                                       |
-| ----------------------------------------- | ------------------------------------------------------------ |
-| Inkonsistente Terminologie                 | User sieht "Hallen" im Organigramm, aber "Bereiche" überall sonst |
-| Keine zentrale Label-Quelle               | Jedes Modul hat eigene `constants.ts` mit statischen Strings |
-| Label-Änderung ohne Wirkung               | Tenant ändert Labels, aber 90% der UI ignoriert die Änderung |
-| Skalierbarkeit bei neuen Modulen          | Jedes neue Modul kopiert hardcoded Strings statt Labels zu nutzen |
+| Problem                          | Impact                                                            |
+| -------------------------------- | ----------------------------------------------------------------- |
+| Inkonsistente Terminologie       | User sieht "Hallen" im Organigramm, aber "Bereiche" überall sonst |
+| Keine zentrale Label-Quelle      | Jedes Modul hat eigene `constants.ts` mit statischen Strings      |
+| Label-Änderung ohne Wirkung      | Tenant ändert Labels, aber 90% der UI ignoriert die Änderung      |
+| Skalierbarkeit bei neuen Modulen | Jedes neue Modul kopiert hardcoded Strings statt Labels zu nutzen |
 
 ### Scope
 
 5 Hierarchie-Ebenen, nur Plural-Form:
 
-| Ebene        | Default (DE)   | Beispiel (Custom) |
-| ------------ | -------------- | ----------------- |
-| `hall`       | "Hallen"       | "Gebäude"         |
-| `area`       | "Bereiche"     | "Hallen"          |
-| `department` | "Abteilungen"  | "Segmente"        |
-| `team`       | "Teams"        | "Teilbereiche"    |
-| `asset`      | "Anlagen"      | "Maschinen"       |
+| Ebene        | Default (DE)  | Beispiel (Custom) |
+| ------------ | ------------- | ----------------- |
+| `hall`       | "Hallen"      | "Gebäude"         |
+| `area`       | "Bereiche"    | "Hallen"          |
+| `department` | "Abteilungen" | "Segmente"        |
+| `team`       | "Teams"       | "Teilbereiche"    |
+| `asset`      | "Anlagen"     | "Maschinen"       |
 
 ---
 
@@ -50,11 +50,11 @@ Assixx unterstützt seit dem Organigramm-Feature (V1) tenant-spezifische Hierarc
 
 ```typescript
 export interface HierarchyLabels {
-  hall: string;       // z.B. "Gebäude"
-  area: string;       // z.B. "Hallen"
+  hall: string; // z.B. "Gebäude"
+  area: string; // z.B. "Hallen"
   department: string; // z.B. "Segmente"
-  team: string;       // z.B. "Teilbereiche"
-  asset: string;      // z.B. "Maschinen"
+  team: string; // z.B. "Teilbereiche"
+  asset: string; // z.B. "Maschinen"
 }
 ```
 
@@ -241,13 +241,13 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 
 ## Implementation Summary
 
-| Phase | Scope                              | Sessions | Dateien |
-| ----- | ---------------------------------- | -------- | ------- |
-| 1     | Backend: Public Endpoint           | 1        | 2       |
-| 2     | Frontend: Layout + Nav + Breadcrumb | 1        | 5       |
-| 3     | Management-Seiten (areas, depts, teams, assets) | 2  | ~20     |
-| 4     | Remaining Pages (halls, admins, dashboard, TPM, ...) | 4 | ~25  |
-| 5     | Smoke Test + Docs + Polish         | 1 (pending) | ~3   |
+| Phase | Scope                                                | Sessions    | Dateien |
+| ----- | ---------------------------------------------------- | ----------- | ------- |
+| 1     | Backend: Public Endpoint                             | 1           | 2       |
+| 2     | Frontend: Layout + Nav + Breadcrumb                  | 1           | 5       |
+| 3     | Management-Seiten (areas, depts, teams, assets)      | 2           | ~20     |
+| 4     | Remaining Pages (halls, admins, dashboard, TPM, ...) | 4           | ~25     |
+| 5     | Smoke Test + Docs + Polish                           | 1 (pending) | ~3      |
 
 **Total:** 7 Sessions (von 8 geplant), ~250 String-Ersetzungen, 0 Breaking Changes.
 

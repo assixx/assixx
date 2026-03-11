@@ -7,6 +7,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppConfigService } from '../config/config.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { SignupDto } from './dto/index.js';
 import { SignupService } from './signup.service.js';
@@ -27,6 +28,10 @@ vi.mock('uuid', () => ({ v7: mockUuidV7 }));
 // Setup
 // ============================================================
 
+const mockConfig = {
+  isDevelopment: false,
+} as unknown as AppConfigService;
+
 function createServiceWithMock(): {
   service: SignupService;
   mockDb: {
@@ -38,7 +43,10 @@ function createServiceWithMock(): {
     query: vi.fn(),
     transaction: vi.fn(),
   };
-  const service = new SignupService(mockDb as unknown as DatabaseService);
+  const service = new SignupService(
+    mockDb as unknown as DatabaseService,
+    mockConfig,
+  );
   return { service, mockDb };
 }
 
