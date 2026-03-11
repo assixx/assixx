@@ -13,10 +13,12 @@
     getHallBounds,
     getHoveredNodeKey,
     getIsLocked,
+    getNodePosition,
     getPanX,
     getPanY,
     getRenderNodes,
     getZoom,
+    moveNodeWithChildren,
     setPan,
   } from './state.svelte.js';
 
@@ -36,10 +38,51 @@
   let panStartX = $state(0);
   let panStartY = $state(0);
 
+  // Hall-Drag State
+  let draggedHallUuid = $state('');
+  let hallDragOffsetX = $state(0);
+  let hallDragOffsetY = $state(0);
+
+  function clientToSvg(
+    clientX: number,
+    clientY: number,
+  ): { x: number; y: number } {
+    const rect = svgElement.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - panX) / zoom,
+      y: (clientY - rect.top - panY) / zoom,
+    };
+  }
+
   function handleWheel(event: WheelEvent): void {
     event.preventDefault();
     const delta = event.deltaY > 0 ? -LAYOUT.ZOOM_STEP : LAYOUT.ZOOM_STEP;
     adjustZoom(delta);
+  }
+
+  /** Prüft ob SVG-Koordinaten innerhalb einer Halle liegen */
+  function findHallAtPoint(svgX: number, svgY: number): string | undefined {
+    for (const hall of hallBounds) {
+      const inside =
+        svgX >= hall.x &&
+        svgX <= hall.x + hall.width &&
+        svgY >= hall.y &&
+        svgY <= hall.y + hall.height;
+      if (inside) return hall.areaUuid;
+    }
+    return undefined;
+  }
+
+  function startHallDrag(event: PointerEvent, areaUuid: string): void {
+    const svg = clientToSvg(event.clientX, event.clientY);
+    const areaPos = getNodePosition('area', areaUuid);
+    if (areaPos === undefined) return;
+
+    event.preventDefault();
+    draggedHallUuid = areaUuid;
+    hallDragOffsetX = svg.x - areaPos.x;
+    hallDragOffsetY = svg.y - areaPos.y;
+    (event.currentTarget as Element).setPointerCapture(event.pointerId);
   }
 
   function handlePointerDown(event: PointerEvent): void {
@@ -47,6 +90,17 @@
     const isPanTrigger = event.button === 0 || event.button === 1;
     if (!isPanTrigger) return;
 
+    // Linksklick innerhalb einer Halle → Halle ziehen statt Pan
+    if (event.button === 0) {
+      const svg = clientToSvg(event.clientX, event.clientY);
+      const hitHall = findHallAtPoint(svg.x, svg.y);
+      if (hitHall !== undefined) {
+        startHallDrag(event, hitHall);
+        return;
+      }
+    }
+
+    // Sonst: Canvas-Pan
     event.preventDefault();
     isPanning = true;
     panStartX = event.clientX - panX;
@@ -55,11 +109,23 @@
   }
 
   function handlePointerMove(event: PointerEvent): void {
+    if (draggedHallUuid !== '') {
+      event.preventDefault();
+      const svg = clientToSvg(event.clientX, event.clientY);
+      moveNodeWithChildren(
+        'area',
+        draggedHallUuid,
+        svg.x - hallDragOffsetX,
+        svg.y - hallDragOffsetY,
+      );
+      return;
+    }
     if (!isPanning) return;
     setPan(event.clientX - panStartX, event.clientY - panStartY);
   }
 
   function handlePointerUp(): void {
+    draggedHallUuid = '';
     isPanning = false;
   }
 

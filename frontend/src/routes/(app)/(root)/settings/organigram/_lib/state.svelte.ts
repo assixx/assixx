@@ -198,6 +198,13 @@ function computeAutoLayout(
   return result;
 }
 
+export function getNodePosition(
+  entityType: OrgEntityType,
+  entityUuid: string,
+): NodePosition | undefined {
+  return nodePositions[makeKey(entityType, entityUuid)];
+}
+
 // --- Node Position Updates (Drag + Auto-Follow) ---
 
 /** Move a node and all its descendants by the same delta */
