@@ -48,7 +48,7 @@
   import LogoutModal from './_lib/LogoutModal.svelte';
   import {
     filterMenuByAccess,
-    filterMenuByFeatures,
+    filterMenuByAddons,
     getMenuItemsForRole,
     type NavItem,
   } from './_lib/navigation-config';
@@ -225,18 +225,18 @@
   // Hierarchy labels from SSR (tenant-specific names for areas, departments, etc.)
   const hierarchyLabels = $derived(data.hierarchyLabels);
 
-  // Navigation menu items - filtered by access level and tenant feature activation
+  // Navigation menu items - filtered by access level and tenant addon activation
   const hasFullAccess = $derived(
     data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
   );
-  const activeFeaturesSet = $derived(new Set(data.activeFeatures));
+  const activeAddonsSet = $derived(new Set(data.activeAddons));
   const menuItems = $derived<NavItem[]>(
-    filterMenuByFeatures(
+    filterMenuByAddons(
       filterMenuByAccess(
         getMenuItemsForRole(currentRole, hierarchyLabels),
         hasFullAccess,
       ),
-      activeFeaturesSet,
+      activeAddonsSet,
     ),
   );
 

@@ -332,7 +332,9 @@ export class TeamsService {
   }
 
   /**
-   * Validate leader exists and has appropriate role
+   * Validate leader exists and is an active user in the same tenant.
+   * Any role (root, admin, employee) can be a team leader —
+   * leadership is an organizational function, not a system role.
    */
   private async validateLeader(
     leaderId: number | null | undefined,
@@ -340,23 +342,13 @@ export class TeamsService {
   ): Promise<void> {
     if (leaderId === null || leaderId === undefined) return;
 
-    interface UserRow {
-      role: string;
-    }
-
-    // SECURITY: Only allow ACTIVE users (is_active = 1) as team leaders
-    const rows = await this.db.query<UserRow>(
-      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    const rows = await this.db.query<{ id: number }>(
+      `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [leaderId, tenantId],
     );
 
     if (rows.length === 0) {
       throw new BadRequestException('Invalid leader ID or user inactive');
-    }
-
-    const user = rows[0];
-    if (user !== undefined && user.role !== 'root' && user.role !== 'admin') {
-      throw new BadRequestException('Team leader must be a root user or admin');
     }
   }
 

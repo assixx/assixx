@@ -1,14 +1,14 @@
 /**
- * Unit tests for feature-guard.ts
+ * Unit tests for addon-guard.ts
  *
- * Tests requireFeature() — the page-level feature guard utility.
+ * Tests requireAddon() — the page-level addon guard utility.
  * Mocks @sveltejs/kit redirect since it throws a special Redirect object.
  *
  * @see FEAT_FRONTEND_FEATURE_GUARDS_MASTERPLAN.md Phase 3
  */
 import { describe, expect, it, vi } from 'vitest';
 
-import { requireFeature } from './feature-guard.js';
+import { requireAddon } from './addon-guard.js';
 
 // Mock @sveltejs/kit redirect — vi.mock is hoisted by Vitest automatically
 const mockRedirect = vi.fn();
@@ -19,8 +19,8 @@ vi.mock('@sveltejs/kit', () => ({
   },
 }));
 
-/** All 8 feature codes used across the app */
-const FEATURE_CODES = [
+/** All purchasable addon codes used across the app */
+const ADDON_CODES = [
   'blackboard',
   'calendar',
   'chat',
@@ -32,61 +32,61 @@ const FEATURE_CODES = [
 ] as const;
 
 // =============================================================================
-// HAPPY PATH — feature is active → no redirect
+// HAPPY PATH — addon is active → no redirect
 // =============================================================================
 
-describe('requireFeature: feature active (no redirect)', () => {
-  it('should not throw when feature is in activeFeatures', () => {
+describe('requireAddon: addon active (no redirect)', () => {
+  it('should not throw when addon is in activeAddons', () => {
     expect(() => {
-      requireFeature(['blackboard', 'calendar'], 'blackboard');
+      requireAddon(['blackboard', 'calendar'], 'blackboard');
     }).not.toThrow();
   });
 
-  it('should not call redirect when feature is present', () => {
+  it('should not call redirect when addon is present', () => {
     mockRedirect.mockClear();
-    requireFeature(['blackboard'], 'blackboard');
+    requireAddon(['blackboard'], 'blackboard');
 
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
-  it('should not throw when all features are active', () => {
-    const allFeatures = [...FEATURE_CODES];
-    for (const code of FEATURE_CODES) {
+  it('should not throw when all addons are active', () => {
+    const allAddons = [...ADDON_CODES];
+    for (const code of ADDON_CODES) {
       expect(() => {
-        requireFeature(allFeatures, code);
+        requireAddon(allAddons, code);
       }).not.toThrow();
     }
   });
 });
 
 // =============================================================================
-// REDIRECT — feature is NOT active
+// REDIRECT — addon is NOT active
 // =============================================================================
 
-describe('requireFeature: feature missing (redirect)', () => {
-  it('should throw when feature is missing', () => {
+describe('requireAddon: addon missing (redirect)', () => {
+  it('should throw when addon is missing', () => {
     mockRedirect.mockClear();
 
     expect(() => {
-      requireFeature(['calendar'], 'blackboard');
+      requireAddon(['calendar'], 'blackboard');
     }).toThrow();
 
     expect(mockRedirect).toHaveBeenCalledWith(
       302,
-      '/feature-unavailable?feature=blackboard',
+      '/addon-unavailable?addon=blackboard',
     );
   });
 
-  it('should redirect with correct feature code in query param', () => {
+  it('should redirect with correct addon code in query param', () => {
     mockRedirect.mockClear();
 
     expect(() => {
-      requireFeature([], 'vacation');
+      requireAddon([], 'vacation');
     }).toThrow();
 
     expect(mockRedirect).toHaveBeenCalledWith(
       302,
-      '/feature-unavailable?feature=vacation',
+      '/addon-unavailable?addon=vacation',
     );
   });
 
@@ -94,7 +94,7 @@ describe('requireFeature: feature missing (redirect)', () => {
     mockRedirect.mockClear();
 
     expect(() => {
-      requireFeature([], 'chat');
+      requireAddon([], 'chat');
     }).toThrow();
 
     expect(mockRedirect).toHaveBeenCalledWith(302, expect.any(String));
@@ -102,52 +102,49 @@ describe('requireFeature: feature missing (redirect)', () => {
 });
 
 // =============================================================================
-// EMPTY ARRAY — no features active → always redirect
+// EMPTY ARRAY — no addons active → always redirect
 // =============================================================================
 
-describe('requireFeature: empty activeFeatures', () => {
-  it('should redirect for any feature code', () => {
-    for (const code of FEATURE_CODES) {
+describe('requireAddon: empty activeAddons', () => {
+  it('should redirect for any addon code', () => {
+    for (const code of ADDON_CODES) {
       mockRedirect.mockClear();
 
       expect(() => {
-        requireFeature([], code);
+        requireAddon([], code);
       }).toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith(
         302,
-        `/feature-unavailable?feature=${code}`,
+        `/addon-unavailable?addon=${code}`,
       );
     }
   });
 });
 
 // =============================================================================
-// ALL 8 FEATURE CODES — parametrized
+// ALL 8 ADDON CODES — parametrized
 // =============================================================================
 
-describe('requireFeature: all 8 feature codes', () => {
-  it.each(FEATURE_CODES)(
-    'should pass when "%s" is in activeFeatures',
-    (code) => {
-      expect(() => {
-        requireFeature([code], code);
-      }).not.toThrow();
-    },
-  );
+describe('requireAddon: all 8 addon codes', () => {
+  it.each(ADDON_CODES)('should pass when "%s" is in activeAddons', (code) => {
+    expect(() => {
+      requireAddon([code], code);
+    }).not.toThrow();
+  });
 
-  it.each(FEATURE_CODES)(
-    'should redirect when "%s" is NOT in activeFeatures',
+  it.each(ADDON_CODES)(
+    'should redirect when "%s" is NOT in activeAddons',
     (code) => {
       mockRedirect.mockClear();
 
       expect(() => {
-        requireFeature([], code);
+        requireAddon([], code);
       }).toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith(
         302,
-        `/feature-unavailable?feature=${code}`,
+        `/addon-unavailable?addon=${code}`,
       );
     },
   );
@@ -157,22 +154,22 @@ describe('requireFeature: all 8 feature codes', () => {
 // EDGE CASES
 // =============================================================================
 
-describe('requireFeature: edge cases', () => {
+describe('requireAddon: edge cases', () => {
   it('should be case-sensitive', () => {
     expect(() => {
-      requireFeature(['Blackboard'], 'blackboard');
+      requireAddon(['Blackboard'], 'blackboard');
     }).toThrow();
   });
 
   it('should not match partial strings', () => {
     expect(() => {
-      requireFeature(['black'], 'blackboard');
+      requireAddon(['black'], 'blackboard');
     }).toThrow();
   });
 
   it('should handle single-element array correctly', () => {
     expect(() => {
-      requireFeature(['vacation'], 'vacation');
+      requireAddon(['vacation'], 'vacation');
     }).not.toThrow();
   });
 });

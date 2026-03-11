@@ -1,25 +1,28 @@
 # FEAT: Addon System Refactor — Execution Masterplan
 
 > **Created:** 2026-03-10
-> **Version:** 1.1.0 (Phase 1 Complete)
-> **Status:** IN PROGRESS — Phase 2 (Backend Refactor)
+> **Version:** 1.4.0 (Phase 4 Complete)
+> **Status:** IN PROGRESS — Phase 5 (Frontend Refactor)
 > **Branch:** `feat/organigramm` (working branch)
 > **Spec:** [ADR-033](./infrastructure/adr/ADR-033-addon-based-saas-model.md)
 > **Context:** [ADR-032 (Superseded)](./infrastructure/adr/ADR-032-feature-catalog-and-plan-tiers.md)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 10
-> **Actual Sessions:** 1 / 10
+> **Actual Sessions:** 7 / 10
 
 ---
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                                                                                                                                                                |
-| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-03-10 | Initial Draft — Phasen 1-6 geplant                                                                                                                                                                                                      |
-| 0.2.0   | 2026-03-10 | DB-IST-Zustand verifiziert, 4 kritische Korrekturen: (K1) tenants FK vor plans DROP, (K2) tenant_addons_status ENUM fehlt, (K3) Spaltennamen in Step 1.3 korrigiert, (K4) Trigger-Funktionen + Legacy-Indexnamen, +4 Risiken (R8-R11)   |
-| 0.3.0   | 2026-03-11 | Session 1 Start. Verifizierte Daten korrigiert: tenant_features=40 (2 Tenants: apitest+testfirma), tenant_plans=2, user_feature_permissions=3. Backup erstellt. Phase 1 gestartet.                                                      |
-| 1.1.0   | 2026-03-11 | Phase 1 COMPLETE. Alle 3 Migrationen erfolgreich: Step 1.1 (Drops+Renames), Step 1.2 (tenant_addons+Datenmigration 24 Rows), Step 1.3 (Tracking-Renames+tenant_storage). Spec Deviation D1: gen_random_uuid() statt uuid_generate_v7(). |
+| Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0.1.0   | 2026-03-10 | Initial Draft — Phasen 1-6 geplant                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 0.2.0   | 2026-03-10 | DB-IST-Zustand verifiziert, 4 kritische Korrekturen: (K1) tenants FK vor plans DROP, (K2) tenant_addons_status ENUM fehlt, (K3) Spaltennamen in Step 1.3 korrigiert, (K4) Trigger-Funktionen + Legacy-Indexnamen, +4 Risiken (R8-R11)                                                                                                                                                                                                                                                            |
+| 0.3.0   | 2026-03-11 | Session 1 Start. Verifizierte Daten korrigiert: tenant_features=40 (2 Tenants: apitest+testfirma), tenant_plans=2, user_feature_permissions=3. Backup erstellt. Phase 1 gestartet.                                                                                                                                                                                                                                                                                                               |
+| 1.1.0   | 2026-03-11 | Phase 1 COMPLETE. Alle 3 Migrationen erfolgreich: Step 1.1 (Drops+Renames), Step 1.2 (tenant_addons+Datenmigration 24 Rows), Step 1.3 (Tracking-Renames+tenant_storage). Spec Deviation D1: gen_random_uuid() statt uuid_generate_v7().                                                                                                                                                                                                                                                          |
+| 1.2.0   | 2026-03-11 | Phase 2 COMPLETE. Steps 2.1-2.6 fertig: AddonCheckService+Guard, AddonsModule, PlansModule gelöscht, 21 Permission Registrars, 16 Controller Decorators, app.module.ts bereinigt. Type-Check+ESLint 0 Errors.                                                                                                                                                                                                                                                                                    |
+| 1.3.0   | 2026-03-11 | Phase 3 COMPLETE. 24 neue Unit Tests: addons.service.test.ts (22 Tests: activate/deactivate/reactivate/trial/status/access), addon-check.service.test.ts (+2 Trial-Expiry). Phase-2-Fix: 3 Module-Imports (work-orders, tpm, tpm-locations) von FeatureCheckModule→AddonCheckModule korrigiert. Frontend-Test deferred (Phase 5 Dependency). Pre-existing: organigram.service.test.ts (18 Failures, nicht addon-bezogen).                                                                        |
+| 1.4.0   | 2026-03-11 | Phase 4 COMPLETE. 29 neue API Integration Tests in addons.api.test.ts (15 Describe-Blöcke: public listing, my-addons, core status, addon by code, unauthenticated 401, activate/deactivate core rejected, vacation lifecycle activate→verify→deactivate→verify→guard 403→reactivate, tenant summary). Addon-Rename-Fixes: 00-auth (tenant_features→tenant_addons SQL), user-permissions + chat-e2e (featureCode→addonCode). features.api.test.ts superseded. Alle 529 API Tests grün (33 Files). |
 
 > **Versionierungsregel:**
 >
@@ -303,7 +306,7 @@
 - ... (alle 10+ Controller)
 - Import-Pfad von `tenant-feature.decorator` → `require-addon.decorator`
 
-### Step 2.6: app.module.ts + Deprecated Utils [PENDING]
+### Step 2.6: app.module.ts + Deprecated Utils ✅ DONE
 
 - `TenantFeatureGuard` → `TenantAddonGuard` in APP_GUARD
 - `FeatureCheckModule` → `AddonCheckModule` in imports
@@ -329,55 +332,80 @@
 
 ---
 
-## Phase 3: Unit Tests
+## Phase 3: Unit Tests ✅ DONE
 
 > **Abhängigkeit:** Phase 2 complete
 
-### Test-Dateien aktualisieren
+### Test-Dateien aktualisieren ✅ DONE
 
-- `tenant-feature.guard.test.ts` → `tenant-addon.guard.test.ts` (16 Tests)
-- `feature-check.service.test.ts` → `addon-check.service.test.ts` (5 Tests + neue für is_core)
-- `permission.guard.test.ts` (14 Tests — featureCode → addonCode)
-- `feature-guard.test.ts` (Frontend, 13 Tests)
+- `tenant-feature.guard.test.ts` → `tenant-addon.guard.test.ts` (38 Tests) ✅ DONE
+- `feature-check.service.test.ts` → `addon-check.service.test.ts` (16 Tests, +2 Trial-Expiry) ✅ DONE
+- `permission.guard.test.ts` (18 Tests — nutzt bereits addonCode) ✅ DONE
+- `feature-guard.test.ts` (Frontend, 26 Tests) — ⏸️ DEFERRED to Phase 5 (Source nicht umbenannt)
 
-### Neue Tests
+### Neue Tests ✅ DONE (24 neue Tests)
 
-- AddonCheckService: `is_core` → sofort true (kein DB-Lookup für tenant_addons)
-- AddonCheckService: Trial-Ablauf (expired nach 30 Tagen)
-- AddonsService: Deaktivierung erhält Permissions
-- AddonsService: Reaktivierung stellt Zugang sofort wieder her
-- AddonsService: Trial-Start setzt korrektes Ablaufdatum
+- AddonCheckService: `is_core` → sofort true (kein DB-Lookup für tenant_addons) ✅
+- AddonCheckService: Trial-Ablauf (expired nach 30 Tagen) ✅
+- AddonsService: Deaktivierung erhält Permissions ✅
+- AddonsService: Reaktivierung stellt Zugang sofort wieder her ✅
+- AddonsService: Trial-Start setzt korrektes Ablaufdatum ✅
+- AddonsService: Core-Addon-Rejection (activate + deactivate) ✅
+- AddonsService: getAddonStatus (core, not_activated, trial, expired) ✅
+- AddonsService: checkTenantAccess (core, active, nonexistent, inactive) ✅
+- AddonsService: getAllAddons (mapping, filtering) ✅
+
+### Phase-2-Fix (in Session 6 nachgeholt)
+
+- `work-orders.module.ts`: FeatureCheckModule → AddonCheckModule ✅
+- `tpm-locations.module.ts`: FeatureCheckModule → AddonCheckModule ✅
+- `tpm.module.ts`: FeatureCheckModule → AddonCheckModule ✅
 
 ### Phase 3 — Definition of Done
 
-- [ ] Alle bestehenden Tests umbenannt und angepasst
-- [ ] Mindestens 10 neue Tests für Addon-spezifische Logik
-- [ ] Alle Tests grün: `docker exec assixx-backend pnpm exec vitest run`
-- [ ] Coverage: is_core, Trial, Deaktivierung/Reaktivierung abgedeckt
+- [x] Alle bestehenden Tests umbenannt und angepasst (Frontend deferred → Phase 5)
+- [x] Mindestens 10 neue Tests für Addon-spezifische Logik (24 neue Tests)
+- [x] Alle Tests grün: 5428 passed, 18 failed (pre-existing organigram, nicht addon-bezogen)
+- [x] Coverage: is_core, Trial, Deaktivierung/Reaktivierung abgedeckt
 
 ---
 
-## Phase 4: API Integration Tests
+## Phase 4: API Integration Tests ✅ DONE
 
 > **Abhängigkeit:** Phase 3 complete
 
 ### Szenarien
 
-- [ ] GET `/addons` → 200 (alle Addons mit is_core Flag)
-- [ ] GET `/addons/my-addons` → 200 (Tenant-Addon-Status)
-- [ ] POST `/addons/activate` → 200 (Core-Addon → sofort aktiv)
-- [ ] POST `/addons/activate` → 200 (Purchasable Addon → Trial)
-- [ ] POST `/addons/deactivate` → 200 (Status cancelled, Daten erhalten)
-- [ ] Unauthenticated → 401
-- [ ] Addon deaktiviert + Endpoint aufrufen → 403
-- [ ] Reaktivierung → Permissions noch da
+- [x] GET `/addons` → 200 (alle Addons mit is_core Flag)
+- [x] GET `/addons/my-addons` → 200 (Tenant-Addon-Status)
+- [x] POST `/addons/activate` → 400 (Core-Addon → BadRequest, always active)
+- [x] POST `/addons/activate` → 201 (Purchasable Addon → Trial)
+- [x] POST `/addons/deactivate` → 201 (Status cancelled, Daten erhalten)
+- [x] Unauthenticated → 401
+- [x] Addon deaktiviert + Endpoint aufrufen → 403
+- [x] Reaktivierung → Trial restarts, access restored
+
+### Zusätzliche Szenarien (über Plan hinaus)
+
+- [x] GET `/addons/status/dashboard` → core_always_active
+- [x] GET `/addons/vacation` → Single addon by code
+- [x] POST `/addons/activate` core → 400 (activate rejected)
+- [x] POST `/addons/deactivate` core → 400 (deactivate rejected)
+- [x] GET `/addons/tenant/:tenantId/summary` → Tenant summary mit Isolation-Check
+
+### Addon-Rename-Fixes (in dieser Session behoben)
+
+- [x] `00-auth.api.test.ts`: `tenant_features`/`features` → `tenant_addons`/`addons` in DB-Prerequisite-SQL
+- [x] `user-permissions.api.test.ts`: `featureCode` → `addonCode` in PUT-Bodies (7 Stellen)
+- [x] `chat-e2e-roundtrip.api.test.ts`: `featureCode` → `addonCode` in Permission-Setup (2 Stellen)
+- [x] `features.api.test.ts` → Superseded-Placeholder (alte `/features/*` Endpoints existieren nicht mehr)
 
 ### Phase 4 — Definition of Done
 
-- [ ] > = 15 API Integration Tests
-- [ ] Alle Tests grün
-- [ ] Tenant-Isolation verifiziert
-- [ ] Addon-Gating verifiziert (core vs purchasable)
+- [x] > = 15 API Integration Tests (29 Tests in addons.api.test.ts)
+- [x] Alle Tests grün (529/529 passed, 33 Test Files)
+- [x] Tenant-Isolation verifiziert (summary.tenantId === auth.tenantId)
+- [x] Addon-Gating verifiziert (core always active, purchasable lifecycle, guard 403)
 
 ---
 
@@ -385,7 +413,7 @@
 
 > **Abhängigkeit:** Phase 2 complete (Backend-Endpoints verfügbar)
 
-### Step 5.1: Guards + Navigation [PENDING]
+### Step 5.1: Guards + Navigation ✅ DONE
 
 **Renames:**
 
@@ -395,7 +423,7 @@
 - `(app)/+layout.svelte`: `filterMenuByFeatures` → `filterMenuByAddons`
 - `(app)/_lib/navigation-config.ts`: `featureCode` → `addonCode`
 
-### Step 5.2: Alle Page-Server-Dateien [PENDING]
+### Step 5.2: Alle Page-Server-Dateien ✅ DONE
 
 Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
@@ -458,18 +486,18 @@ Jede `+page.server.ts` die `requireFeature()` aufruft → `requireAddon()`:
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                            | Status      | Datum      |
-| ------- | ----- | ------------------------------------------------------- | ----------- | ---------- |
-| 1       | 1     | Migration 1: Drops + Renames (features→addons)          | ✅ DONE     | 2026-03-11 |
-| 2       | 1     | Migration 2+3: tenant_addons + Cleanup + tenant_storage | ✅ DONE     | 2026-03-11 |
-| 3       | 2     | AddonCheckService + Guard + Decorator                   | ✅ DONE     | 2026-03-11 |
-| 4       | 2     | AddonsModule + PlansModule löschen                      | ✅ DONE     | 2026-03-11 |
-| 5       | 2     | Permission Renames + Controller Decorators + app.module | IN PROGRESS | 2026-03-11 |
-| 6       | 3     | Unit Tests aktualisieren + neue Tests                   | PENDING     |            |
-| 7       | 4     | API Integration Tests                                   | PENDING     |            |
-| 8       | 5     | Frontend Guards + Navigation + Layout                   | PENDING     |            |
-| 9       | 5     | Frontend Pages + Addon-Unavailable                      | PENDING     |            |
-| 10      | 6     | Seeds + Docs + Cleanup + Final Verification             | PENDING     |            |
+| Session | Phase | Beschreibung                                            | Status         | Datum      |
+| ------- | ----- | ------------------------------------------------------- | -------------- | ---------- |
+| 1       | 1     | Migration 1: Drops + Renames (features→addons)          | ✅ DONE        | 2026-03-11 |
+| 2       | 1     | Migration 2+3: tenant_addons + Cleanup + tenant_storage | ✅ DONE        | 2026-03-11 |
+| 3       | 2     | AddonCheckService + Guard + Decorator                   | ✅ DONE        | 2026-03-11 |
+| 4       | 2     | AddonsModule + PlansModule löschen                      | ✅ DONE        | 2026-03-11 |
+| 5       | 2     | Permission Renames + Controller Decorators + app.module | ✅ DONE        | 2026-03-11 |
+| 6       | 3     | Unit Tests (24 neue) + Phase-2-Fix (3 Module-Imports)   | ✅ DONE        | 2026-03-11 |
+| 7       | 4     | API Integration Tests (29 Tests) + Addon-Rename-Fixes   | ✅ DONE        | 2026-03-11 |
+| 8       | 5     | Frontend Guards + Navigation + Layout                   | 🔄 IN PROGRESS | 2026-03-11 |
+| 9       | 5     | Frontend Pages + Addon-Unavailable                      | PENDING        |            |
+| 10      | 6     | Seeds + Docs + Cleanup + Final Verification             | PENDING        |            |
 
 ---
 

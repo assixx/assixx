@@ -11,7 +11,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -337,7 +337,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   const parentData = await parent();
-  requireFeature(parentData.activeFeatures, 'shift_planning');
+  requireAddon(parentData.activeAddons, 'shift_planning');
   if (!parentData.user) {
     redirect(302, '/login');
   }

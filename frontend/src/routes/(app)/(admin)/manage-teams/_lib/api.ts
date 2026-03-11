@@ -97,19 +97,17 @@ export async function loadDepartments(): Promise<Department[]> {
 }
 
 /**
- * Load admins and root users for team lead dropdown
+ * Load all active users as leader candidates.
+ * Any role (root, admin, employee) can be a team leader.
  */
-export async function loadAdmins(): Promise<Admin[]> {
+export async function loadLeaderCandidates(): Promise<Admin[]> {
   try {
-    const [adminsResult, rootsResult] = await Promise.all([
-      apiClient.get(API_ENDPOINTS.ADMINS),
-      apiClient.get(API_ENDPOINTS.ROOT_USERS),
-    ]);
-    const admins = extractArrayFromResponse<Admin>(adminsResult);
-    const roots = extractArrayFromResponse<Admin>(rootsResult);
-    return [...admins, ...roots];
+    const result: unknown = await apiClient.get(
+      API_ENDPOINTS.LEADER_CANDIDATES,
+    );
+    return extractArrayFromResponse<Admin>(result);
   } catch (err: unknown) {
-    log.error({ err }, 'Error loading team leaders');
+    log.error({ err }, 'Error loading leader candidates');
     return [];
   }
 }

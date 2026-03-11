@@ -137,29 +137,26 @@ async function parseThemeSetting(
   return null;
 }
 
-/** Feature data from /features/my-features endpoint */
-interface FeatureWithTenantInfo {
+/** Addon data from /addons/my-addons endpoint */
+interface AddonWithTenantInfo {
   code: string;
-  tenantFeature?: { isActive: boolean };
+  tenantStatus?: { isActive: boolean };
 }
 
 /**
- * Parse active feature codes from /features/my-features response.
- * Returns string[] of active feature codes (e.g., ['blackboard', 'calendar', 'chat']).
+ * Parse active addon codes from /addons/my-addons response.
+ * Returns string[] of active addon codes (e.g., ['blackboard', 'calendar', 'chat']).
+ * Core addons always have tenantStatus.isActive === true.
  * Graceful fallback to empty array on error.
  */
-async function parseActiveFeatures(
-  response: Response | null,
-): Promise<string[]> {
+async function parseActiveAddons(response: Response | null): Promise<string[]> {
   if (response?.ok !== true) return [];
   try {
-    const json = (await response.json()) as ApiResponse<
-      FeatureWithTenantInfo[]
-    >;
-    const features = json.data ?? [];
-    return features
-      .filter((f) => f.tenantFeature?.isActive === true)
-      .map((f) => f.code);
+    const json = (await response.json()) as ApiResponse<AddonWithTenantInfo[]>;
+    const addons = json.data ?? [];
+    return addons
+      .filter((a) => a.tenantStatus?.isActive === true)
+      .map((a) => a.code);
   } catch {
     return [];
   }
@@ -205,16 +202,16 @@ const UNAUTHENTICATED_RESPONSE = {
   isAuthenticated: false,
   dashboardCounts: null,
   theme: null,
-  activeFeatures: [] as string[],
+  activeAddons: [] as string[],
   hierarchyLabels: DEFAULT_HIERARCHY_LABELS,
 } as const;
 
-/** Build authenticated response from user data, counts, theme, features, and labels */
+/** Build authenticated response from user data, counts, theme, addons, and labels */
 async function buildAuthenticatedResponse(
   userData: UserData,
   countsResponse: Response | null,
   themeResponse: Response | null,
-  featuresResponse: Response | null,
+  addonsResponse: Response | null,
   labelsResponse: Response | null,
 ) {
   return {
@@ -223,57 +220,55 @@ async function buildAuthenticatedResponse(
     isAuthenticated: true,
     dashboardCounts: await parseDashboardCounts(countsResponse),
     theme: await parseThemeSetting(themeResponse),
-    activeFeatures: await parseActiveFeatures(featuresResponse),
+    activeAddons: await parseActiveAddons(addonsResponse),
     hierarchyLabels: await parseHierarchyLabels(labelsResponse),
   };
 }
 
-/** Fetch dashboard counts, theme, active features, and hierarchy labels in parallel (when RBAC user is available) */
-async function fetchCountsThemeFeaturesAndLabels(
+/** Fetch dashboard counts, theme, active addons, and hierarchy labels in parallel (when RBAC user is available) */
+async function fetchCountsThemeAddonsAndLabels(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<{
   countsResponse: Response | null;
   themeResponse: Response | null;
-  featuresResponse: Response | null;
+  addonsResponse: Response | null;
   labelsResponse: Response | null;
 }> {
-  const [countsResponse, themeResponse, featuresResponse, labelsResponse] =
+  const [countsResponse, themeResponse, addonsResponse, labelsResponse] =
     await Promise.all([
       fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
       fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(
-        () => null,
-      ),
+      fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
       fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
         () => null,
       ),
     ]);
-  return { countsResponse, themeResponse, featuresResponse, labelsResponse };
+  return { countsResponse, themeResponse, addonsResponse, labelsResponse };
 }
 
-/** Fetch user data, dashboard counts, theme, active features, and hierarchy labels in parallel */
-async function fetchUserCountsThemeFeaturesAndLabels(
+/** Fetch user data, dashboard counts, theme, active addons, and hierarchy labels in parallel */
+async function fetchUserCountsThemeAddonsAndLabels(
   fetchFn: typeof fetch,
   headers: Record<string, string>,
 ): Promise<{
   userResponse: Response;
   countsResponse: Response | null;
   themeResponse: Response | null;
-  featuresResponse: Response | null;
+  addonsResponse: Response | null;
   labelsResponse: Response | null;
 }> {
   const [
     userResponse,
     countsResponse,
     themeResponse,
-    featuresResponse,
+    addonsResponse,
     labelsResponse,
   ] = await Promise.all([
     fetchFn(`${API_BASE}/users/me`, { headers }),
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/features/my-features`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
       () => null,
     ),
@@ -282,7 +277,7 @@ async function fetchUserCountsThemeFeaturesAndLabels(
     userResponse,
     countsResponse,
     themeResponse,
-    featuresResponse,
+    addonsResponse,
     labelsResponse,
   };
 }
@@ -326,23 +321,23 @@ export const load: LayoutServerLoad = async ({
   const rbacUser = locals.user as UserData | undefined;
 
   if (rbacUser !== undefined) {
-    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, features + labels in parallel
+    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels in parallel
     const fetchStart = performance.now();
-    const { countsResponse, themeResponse, featuresResponse, labelsResponse } =
-      await fetchCountsThemeFeaturesAndLabels(fetch, headers);
+    const { countsResponse, themeResponse, addonsResponse, labelsResponse } =
+      await fetchCountsThemeAddonsAndLabels(fetch, headers);
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
     log.debug(
       { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /features + /labels fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
+      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
     );
 
     return await buildAuthenticatedResponse(
       rbacUser,
       countsResponse,
       themeResponse,
-      featuresResponse,
+      addonsResponse,
       labelsResponse,
     );
   }
@@ -374,9 +369,9 @@ async function loadUserWithFetch(
     userResponse,
     countsResponse,
     themeResponse,
-    featuresResponse,
+    addonsResponse,
     labelsResponse,
-  } = await fetchUserCountsThemeFeaturesAndLabels(fetchFn, headers);
+  } = await fetchUserCountsThemeAddonsAndLabels(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
   if (!userResponse.ok) {
@@ -395,14 +390,14 @@ async function loadUserWithFetch(
   const totalTime = Math.round(performance.now() - startTime);
   log.debug(
     { fetchTime, totalTime, path: pathname },
-    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /features + /labels fetched (${fetchTime}ms, total: ${totalTime}ms)`,
+    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /addons + /labels fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 
   return await buildAuthenticatedResponse(
     userData,
     countsResponse,
     themeResponse,
-    featuresResponse,
+    addonsResponse,
     labelsResponse,
   );
 }

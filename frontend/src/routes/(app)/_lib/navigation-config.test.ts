@@ -1,7 +1,8 @@
 /**
  * Unit tests for navigation-config.ts
  *
- * Tests filterMenuByFeatures(), filterMenuByAccess(), and getMenuItemsForRole().
+ * Tests filterMenuByAddons(), filterMenuByAccess(), and getMenuItemsForRole().
+ * Renamed from feature-based to addon-based naming (Phase 5 of addon system refactor).
  * Pure functions — no mocks needed.
  *
  * @see FEAT_FRONTEND_FEATURE_GUARDS_MASTERPLAN.md Phase 3
@@ -13,7 +14,7 @@ import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import {
   type NavItem,
   filterMenuByAccess,
-  filterMenuByFeatures,
+  filterMenuByAddons,
   getMenuItemsForRole,
 } from './navigation-config.js';
 
@@ -27,8 +28,8 @@ const dummyMenuItems = getMenuItemsForRole('dummy');
 // TEST HELPERS + CONSTANTS
 // =============================================================================
 
-/** All 8 feature codes used in the codebase */
-const ALL_FEATURE_CODES = new Set([
+/** All purchasable addon codes used in the codebase */
+const ALL_ADDON_CODES = new Set([
   'blackboard',
   'calendar',
   'chat',
@@ -39,8 +40,8 @@ const ALL_FEATURE_CODES = new Set([
   'vacation',
 ]);
 
-/** No features active */
-const NO_FEATURES = new Set<string>();
+/** No addons active */
+const NO_ADDONS = new Set<string>();
 
 /** Commonly referenced IDs — extracted to satisfy sonarjs/no-duplicate-string */
 const ID_LEAN = 'lean-management';
@@ -76,7 +77,7 @@ function createTestMenu(): NavItem[] {
     {
       id: 'blackboard',
       label: 'Schwarzes Brett',
-      featureCode: 'blackboard',
+      addonCode: 'blackboard',
       submenu: [
         { id: 'bb-main', label: 'Main', url: '/blackboard' },
         { id: 'bb-archive', label: 'Archiv', url: '/blackboard/archived' },
@@ -86,7 +87,7 @@ function createTestMenu(): NavItem[] {
       id: 'calendar',
       label: 'Kalender',
       url: '/calendar',
-      featureCode: 'calendar',
+      addonCode: 'calendar',
     },
     {
       id: ID_LEAN,
@@ -95,7 +96,7 @@ function createTestMenu(): NavItem[] {
         {
           id: 'kvp',
           label: 'KVP',
-          featureCode: 'kvp',
+          addonCode: 'kvp',
           submenu: [
             { id: 'kvp-main', label: 'Vorschläge', url: '/kvp' },
             {
@@ -109,7 +110,7 @@ function createTestMenu(): NavItem[] {
           id: 'surveys',
           label: 'Umfragen',
           url: '/survey-admin',
-          featureCode: 'surveys',
+          addonCode: 'surveys',
         },
       ],
     },
@@ -118,12 +119,12 @@ function createTestMenu(): NavItem[] {
 }
 
 // =============================================================================
-// filterMenuByFeatures — HAPPY PATH
+// filterMenuByAddons — HAPPY PATH
 // =============================================================================
 
-describe('filterMenuByFeatures: all features active', () => {
+describe('filterMenuByAddons: all addons active', () => {
   it('should return all items unchanged', () => {
-    const result = filterMenuByFeatures(createTestMenu(), ALL_FEATURE_CODES);
+    const result = filterMenuByAddons(createTestMenu(), ALL_ADDON_CODES);
     const ids = collectIds(result);
 
     expect(ids).toContain('dashboard');
@@ -136,7 +137,7 @@ describe('filterMenuByFeatures: all features active', () => {
   });
 
   it('should preserve submenu structure', () => {
-    const result = filterMenuByFeatures(createTestMenu(), ALL_FEATURE_CODES);
+    const result = filterMenuByAddons(createTestMenu(), ALL_ADDON_CODES);
     const bb = findById(result, 'blackboard');
 
     expect(bb?.submenu).toHaveLength(2);
@@ -147,21 +148,21 @@ describe('filterMenuByFeatures: all features active', () => {
   it('should not mutate the original array', () => {
     const menu = createTestMenu();
     const originalLength = menu.length;
-    filterMenuByFeatures(menu, ALL_FEATURE_CODES);
+    filterMenuByAddons(menu, ALL_ADDON_CODES);
 
     expect(menu).toHaveLength(originalLength);
   });
 });
 
 // =============================================================================
-// filterMenuByFeatures — SINGLE FEATURE DISABLED
+// filterMenuByAddons — SINGLE FEATURE DISABLED
 // =============================================================================
 
-describe('filterMenuByFeatures: single feature disabled', () => {
+describe('filterMenuByAddons: single addon disabled', () => {
   it('should remove blackboard and its children when disabled', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('blackboard');
-    const result = filterMenuByFeatures(createTestMenu(), features);
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('blackboard');
+    const result = filterMenuByAddons(createTestMenu(), addons);
 
     expect(collectIds(result)).not.toContain('blackboard');
     expect(collectIds(result)).not.toContain('bb-main');
@@ -169,17 +170,17 @@ describe('filterMenuByFeatures: single feature disabled', () => {
   });
 
   it('should remove calendar when disabled', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('calendar');
-    const result = filterMenuByFeatures(createTestMenu(), features);
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('calendar');
+    const result = filterMenuByAddons(createTestMenu(), addons);
 
     expect(collectIds(result)).not.toContain('calendar');
   });
 
   it('should remove kvp but keep surveys under lean-management', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('kvp');
-    const ids = collectIds(filterMenuByFeatures(createTestMenu(), features));
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('kvp');
+    const ids = collectIds(filterMenuByAddons(createTestMenu(), addons));
 
     expect(ids).not.toContain('kvp');
     expect(ids).not.toContain('kvp-main');
@@ -189,9 +190,9 @@ describe('filterMenuByFeatures: single feature disabled', () => {
   });
 
   it('should remove surveys but keep kvp under lean-management', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('surveys');
-    const ids = collectIds(filterMenuByFeatures(createTestMenu(), features));
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('surveys');
+    const ids = collectIds(filterMenuByAddons(createTestMenu(), addons));
 
     expect(ids).not.toContain('surveys');
     expect(ids).toContain('kvp');
@@ -200,15 +201,15 @@ describe('filterMenuByFeatures: single feature disabled', () => {
 });
 
 // =============================================================================
-// filterMenuByFeatures — RECURSION + EMPTY PARENT
+// filterMenuByAddons — RECURSION + EMPTY PARENT
 // =============================================================================
 
-describe('filterMenuByFeatures: empty parent containers', () => {
+describe('filterMenuByAddons: empty parent containers', () => {
   it('should remove lean-management when both kvp AND surveys are disabled', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('kvp');
-    features.delete('surveys');
-    const ids = collectIds(filterMenuByFeatures(createTestMenu(), features));
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('kvp');
+    addons.delete('surveys');
+    const ids = collectIds(filterMenuByAddons(createTestMenu(), addons));
 
     expect(ids).not.toContain(ID_LEAN);
     expect(ids).not.toContain('kvp');
@@ -222,11 +223,11 @@ describe('filterMenuByFeatures: empty parent containers', () => {
         label: 'Parent',
         url: '/parent',
         submenu: [
-          { id: 'child', label: 'Child', url: '/c', featureCode: 'blackboard' },
+          { id: 'child', label: 'Child', url: '/c', addonCode: 'blackboard' },
         ],
       },
     ];
-    const result = filterMenuByFeatures(menu, NO_FEATURES);
+    const result = filterMenuByAddons(menu, NO_ADDONS);
 
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('parent-with-url');
@@ -239,29 +240,29 @@ describe('filterMenuByFeatures: empty parent containers', () => {
         id: 'parent-no-url',
         label: 'Parent',
         submenu: [
-          { id: 'child', label: 'Child', url: '/c', featureCode: 'blackboard' },
+          { id: 'child', label: 'Child', url: '/c', addonCode: 'blackboard' },
         ],
       },
     ];
 
-    expect(filterMenuByFeatures(menu, NO_FEATURES)).toHaveLength(0);
+    expect(filterMenuByAddons(menu, NO_ADDONS)).toHaveLength(0);
   });
 });
 
 // =============================================================================
-// filterMenuByFeatures — CORE ITEMS SAFETY
+// filterMenuByAddons — CORE ITEMS SAFETY
 // =============================================================================
 
-describe('filterMenuByFeatures: no features active (core safety)', () => {
-  it('should always keep items WITHOUT featureCode', () => {
-    const ids = collectIds(filterMenuByFeatures(createTestMenu(), NO_FEATURES));
+describe('filterMenuByAddons: no addons active (core safety)', () => {
+  it('should always keep items WITHOUT addonCode', () => {
+    const ids = collectIds(filterMenuByAddons(createTestMenu(), NO_ADDONS));
 
     expect(ids).toContain('dashboard');
     expect(ids).toContain('profile');
   });
 
-  it('should remove ALL feature-gated items', () => {
-    const ids = collectIds(filterMenuByFeatures(createTestMenu(), NO_FEATURES));
+  it('should remove ALL addon-gated items', () => {
+    const ids = collectIds(filterMenuByAddons(createTestMenu(), NO_ADDONS));
 
     expect(ids).not.toContain('blackboard');
     expect(ids).not.toContain('calendar');
@@ -270,19 +271,19 @@ describe('filterMenuByFeatures: no features active (core safety)', () => {
   });
 
   it('should remove lean-management (empty container)', () => {
-    const ids = collectIds(filterMenuByFeatures(createTestMenu(), NO_FEATURES));
+    const ids = collectIds(filterMenuByAddons(createTestMenu(), NO_ADDONS));
 
     expect(ids).not.toContain(ID_LEAN);
   });
 });
 
 // =============================================================================
-// filterMenuByFeatures — REAL MENUS
+// filterMenuByAddons — REAL MENUS
 // =============================================================================
 
-describe('filterMenuByFeatures: real rootMenuItems', () => {
-  it('should keep core items when no features are active', () => {
-    const ids = collectIds(filterMenuByFeatures(rootMenuItems, NO_FEATURES));
+describe('filterMenuByAddons: real rootMenuItems', () => {
+  it('should keep core items when no addons are active', () => {
+    const ids = collectIds(filterMenuByAddons(rootMenuItems, NO_ADDONS));
 
     expect(ids).toContain('dashboard');
     expect(ids).toContain('root-users');
@@ -295,8 +296,8 @@ describe('filterMenuByFeatures: real rootMenuItems', () => {
     expect(ids).toContain('system');
   });
 
-  it('should remove all feature-gated items when no features active', () => {
-    const ids = collectIds(filterMenuByFeatures(rootMenuItems, NO_FEATURES));
+  it('should remove all addon-gated items when no addons active', () => {
+    const ids = collectIds(filterMenuByAddons(rootMenuItems, NO_ADDONS));
 
     expect(ids).not.toContain('blackboard');
     expect(ids).not.toContain('calendar');
@@ -308,10 +309,8 @@ describe('filterMenuByFeatures: real rootMenuItems', () => {
     expect(ids).not.toContain(ID_LEAN);
   });
 
-  it('should keep all items when all features are active', () => {
-    const ids = collectIds(
-      filterMenuByFeatures(rootMenuItems, ALL_FEATURE_CODES),
-    );
+  it('should keep all items when all addons are active', () => {
+    const ids = collectIds(filterMenuByAddons(rootMenuItems, ALL_ADDON_CODES));
 
     expect(ids).toContain('blackboard');
     expect(ids).toContain('calendar');
@@ -324,9 +323,9 @@ describe('filterMenuByFeatures: real rootMenuItems', () => {
   });
 });
 
-describe('filterMenuByFeatures: real adminMenuItems', () => {
-  it('should keep core items when no features are active', () => {
-    const ids = collectIds(filterMenuByFeatures(adminMenuItems, NO_FEATURES));
+describe('filterMenuByAddons: real adminMenuItems', () => {
+  it('should keep core items when no addons are active', () => {
+    const ids = collectIds(filterMenuByAddons(adminMenuItems, NO_ADDONS));
 
     expect(ids).toContain('dashboard');
     expect(ids).toContain('employees');
@@ -337,20 +336,18 @@ describe('filterMenuByFeatures: real adminMenuItems', () => {
   });
 
   it('should remove shifts when shift_planning is disabled', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('shift_planning');
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('shift_planning');
 
     expect(
-      collectIds(filterMenuByFeatures(adminMenuItems, features)),
+      collectIds(filterMenuByAddons(adminMenuItems, addons)),
     ).not.toContain('shifts');
   });
 });
 
-describe('filterMenuByFeatures: real employeeMenuItems', () => {
-  it('should keep core items when no features are active', () => {
-    const ids = collectIds(
-      filterMenuByFeatures(employeeMenuItems, NO_FEATURES),
-    );
+describe('filterMenuByAddons: real employeeMenuItems', () => {
+  it('should keep core items when no addons are active', () => {
+    const ids = collectIds(filterMenuByAddons(employeeMenuItems, NO_ADDONS));
 
     expect(ids).toContain('dashboard');
     expect(ids).toContain('settings');
@@ -358,18 +355,18 @@ describe('filterMenuByFeatures: real employeeMenuItems', () => {
   });
 
   it('should remove lean-management when kvp+surveys disabled', () => {
-    const features = new Set(ALL_FEATURE_CODES);
-    features.delete('kvp');
-    features.delete('surveys');
+    const addons = new Set(ALL_ADDON_CODES);
+    addons.delete('kvp');
+    addons.delete('surveys');
 
     expect(
-      collectIds(filterMenuByFeatures(employeeMenuItems, features)),
+      collectIds(filterMenuByAddons(employeeMenuItems, addons)),
     ).not.toContain(ID_LEAN);
   });
 
   it('should keep lean-management when only kvp is active', () => {
     const ids = collectIds(
-      filterMenuByFeatures(employeeMenuItems, new Set(['kvp'])),
+      filterMenuByAddons(employeeMenuItems, new Set(['kvp'])),
     );
 
     expect(ids).toContain(ID_LEAN);
@@ -379,12 +376,12 @@ describe('filterMenuByFeatures: real employeeMenuItems', () => {
 });
 
 // =============================================================================
-// filterMenuByFeatures — EDGE CASES
+// filterMenuByAddons — EDGE CASES
 // =============================================================================
 
-describe('filterMenuByFeatures: edge cases', () => {
+describe('filterMenuByAddons: edge cases', () => {
   it('should handle empty menu array', () => {
-    expect(filterMenuByFeatures([], ALL_FEATURE_CODES)).toHaveLength(0);
+    expect(filterMenuByAddons([], ALL_ADDON_CODES)).toHaveLength(0);
   });
 
   it('should handle deeply nested submenus (3 levels)', () => {
@@ -397,32 +394,32 @@ describe('filterMenuByFeatures: edge cases', () => {
             id: 'l2',
             label: 'L2',
             submenu: [
-              { id: 'l3', label: 'L3', url: '/deep', featureCode: 'kvp' },
+              { id: 'l3', label: 'L3', url: '/deep', addonCode: 'kvp' },
             ],
           },
         ],
       },
     ];
 
-    expect(collectIds(filterMenuByFeatures(menu, new Set(['kvp'])))).toEqual([
+    expect(collectIds(filterMenuByAddons(menu, new Set(['kvp'])))).toEqual([
       'l1',
       'l2',
       'l3',
     ]);
-    expect(filterMenuByFeatures(menu, NO_FEATURES)).toHaveLength(0);
+    expect(filterMenuByAddons(menu, NO_ADDONS)).toHaveLength(0);
   });
 
-  it('should handle unknown feature codes gracefully', () => {
+  it('should handle unknown addon codes gracefully', () => {
     const menu: NavItem[] = [
-      { id: 'x', label: 'X', url: '/x', featureCode: 'nonexistent' },
+      { id: 'x', label: 'X', url: '/x', addonCode: 'nonexistent' },
     ];
 
-    expect(filterMenuByFeatures(menu, ALL_FEATURE_CODES)).toHaveLength(0);
+    expect(filterMenuByAddons(menu, ALL_ADDON_CODES)).toHaveLength(0);
   });
 
   it('should return new array references (immutable)', () => {
     const menu = createTestMenu();
-    expect(filterMenuByFeatures(menu, ALL_FEATURE_CODES)).not.toBe(menu);
+    expect(filterMenuByAddons(menu, ALL_ADDON_CODES)).not.toBe(menu);
   });
 });
 

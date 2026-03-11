@@ -36,7 +36,7 @@ export interface NavItem {
     | 'tpm'
     | 'workOrders';
   /** Tenant feature code — items with this field are hidden when feature is not active */
-  featureCode?: string;
+  addonCode?: string;
 }
 
 export const ICONS: Record<string, string> = {
@@ -124,7 +124,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'kvp',
     label: LABELS.KVP_SYSTEM,
-    featureCode: 'kvp',
+    addonCode: 'kvp',
     submenu: [
       {
         id: 'kvp-main',
@@ -144,12 +144,12 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
     label: LABELS.SURVEYS,
     url: '/survey-admin',
     badgeType: 'surveys',
-    featureCode: 'surveys',
+    addonCode: 'surveys',
   },
   {
     id: 'tpm',
     label: 'TPM Wartung',
-    featureCode: 'tpm',
+    addonCode: 'tpm',
     submenu: TPM_ADMIN_SUBMENU,
   },
 ];
@@ -220,11 +220,25 @@ const ADMINS_SUBMENU: NavItem[] = [
   },
 ];
 
+/** Organigram submenu (root only) */
+const ORGANIGRAM_SUBMENU: NavItem[] = [
+  { id: 'organigram-chart', label: 'Übersicht', url: '/settings/organigram' },
+  {
+    id: 'organigram-positions',
+    label: 'Positionen',
+    url: '/settings/organigram/positions',
+  },
+];
+
 /** System settings submenu (root only) */
 const SYSTEM_SUBMENU: NavItem[] = [
   { id: 'company', label: 'Firmendaten', url: '/settings/company' },
   { id: 'design', label: 'Design', url: '/settings/design' },
-  { id: 'organigram', label: 'Organigramm', url: '/settings/organigram' },
+  {
+    id: 'organigram',
+    label: 'Organigramm',
+    submenu: ORGANIGRAM_SUBMENU,
+  },
   {
     id: 'account-settings',
     label: 'Kontoeinstellungen',
@@ -244,7 +258,7 @@ const ROOT_STATIC_ITEMS: NavItem[] = [
     id: 'blackboard',
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
-    featureCode: 'blackboard',
+    addonCode: 'blackboard',
     submenu: BLACKBOARD_SUBMENU,
   },
   {
@@ -269,20 +283,20 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
-    featureCode: 'calendar',
+    addonCode: 'calendar',
   },
   {
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
-    featureCode: 'vacation',
+    addonCode: 'vacation',
     submenu: VACATION_ROOT_SUBMENU,
   },
   {
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
-    featureCode: 'documents',
+    addonCode: 'documents',
     submenu: DOCUMENTS_SUBMENU,
   },
   {
@@ -295,7 +309,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     id: 'work-orders',
     icon: ICONS['clipboard-check'],
     label: 'Arbeitsaufträge',
-    featureCode: 'work_orders',
+    addonCode: 'work_orders',
     submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
@@ -304,7 +318,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     label: 'Chat',
     url: '/chat',
     badgeType: 'chat',
-    featureCode: 'chat',
+    addonCode: 'chat',
   },
   { id: 'features', icon: ICONS.feature, label: 'Features', url: '/features' },
   { id: 'logs', icon: ICONS.logs, label: 'System-Logs', url: '/logs' },
@@ -337,6 +351,7 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
       label: labels.department,
       url: '/manage-departments',
     },
+    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
     {
       id: 'halls',
       icon: ICONS.warehouse,
@@ -375,7 +390,7 @@ const ADMIN_STATIC_ITEMS: NavItem[] = [
     id: 'blackboard',
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
-    featureCode: 'blackboard',
+    addonCode: 'blackboard',
     submenu: BLACKBOARD_SUBMENU,
   },
   {
@@ -392,7 +407,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
-    featureCode: 'documents',
+    addonCode: 'documents',
     submenu: DOCUMENTS_SUBMENU,
   },
   {
@@ -401,13 +416,13 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
-    featureCode: 'calendar',
+    addonCode: 'calendar',
   },
   {
     id: 'vacation',
     icon: ICONS.vacation,
     label: 'Urlaub',
-    featureCode: 'vacation',
+    addonCode: 'vacation',
     submenu: VACATION_ADMIN_SUBMENU,
   },
   {
@@ -420,7 +435,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     id: 'work-orders',
     icon: ICONS['clipboard-check'],
     label: 'Arbeitsaufträge',
-    featureCode: 'work_orders',
+    addonCode: 'work_orders',
     submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
@@ -428,7 +443,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     icon: ICONS.clock,
     label: 'Schichtplanung',
     url: '/shifts',
-    featureCode: 'shift_planning',
+    addonCode: 'shift_planning',
   },
   {
     id: 'chat',
@@ -436,7 +451,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     label: 'Chat',
     url: '/chat',
     badgeType: 'chat',
-    featureCode: 'chat',
+    addonCode: 'chat',
   },
   {
     id: 'settings',
@@ -455,7 +470,6 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
 function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
   return [
     ...ADMIN_STATIC_ITEMS,
-    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
     {
       id: 'assets',
       icon: ICONS.generator,
@@ -485,13 +499,13 @@ const employeeMenuItems: NavItem[] = [
     label: LABELS.BLACKBOARD,
     url: '/blackboard',
     badgeType: 'blackboard',
-    featureCode: 'blackboard',
+    addonCode: 'blackboard',
   },
   {
     id: 'documents',
     icon: ICONS.document,
     label: 'Dokumente',
-    featureCode: 'documents',
+    addonCode: 'documents',
     submenu: DOCUMENTS_SUBMENU,
   },
   {
@@ -500,7 +514,7 @@ const employeeMenuItems: NavItem[] = [
     label: 'Kalender',
     url: '/calendar',
     badgeType: 'calendar',
-    featureCode: 'calendar',
+    addonCode: 'calendar',
   },
   {
     id: 'vacation',
@@ -508,7 +522,7 @@ const employeeMenuItems: NavItem[] = [
     label: 'Urlaub',
     url: '/vacation',
     badgeType: 'vacation',
-    featureCode: 'vacation',
+    addonCode: 'vacation',
   },
   {
     id: 'lean-management',
@@ -520,21 +534,21 @@ const employeeMenuItems: NavItem[] = [
         label: LABELS.KVP_SYSTEM,
         url: '/kvp',
         badgeType: 'kvp',
-        featureCode: 'kvp',
+        addonCode: 'kvp',
       },
       {
         id: 'surveys',
         label: LABELS.SURVEYS,
         url: '/survey-employee',
         badgeType: 'surveys',
-        featureCode: 'surveys',
+        addonCode: 'surveys',
       },
       {
         id: 'tpm',
         label: 'TPM Wartung',
         url: '/lean-management/tpm/overview',
         badgeType: 'tpm',
-        featureCode: 'tpm',
+        addonCode: 'tpm',
       },
     ],
   },
@@ -544,7 +558,7 @@ const employeeMenuItems: NavItem[] = [
     label: 'Arbeitsaufträge',
     url: '/work-orders',
     badgeType: 'workOrders',
-    featureCode: 'work_orders',
+    addonCode: 'work_orders',
   },
   {
     id: 'chat',
@@ -552,14 +566,14 @@ const employeeMenuItems: NavItem[] = [
     label: 'Chat',
     url: '/chat',
     badgeType: 'chat',
-    featureCode: 'chat',
+    addonCode: 'chat',
   },
   {
     id: 'shifts',
     icon: ICONS.clock,
     label: 'Schichtplanung',
     url: '/shifts',
-    featureCode: 'shift_planning',
+    addonCode: 'shift_planning',
   },
   {
     id: 'settings',
@@ -587,14 +601,14 @@ const dummyMenuItems: NavItem[] = [
     icon: ICONS.pin,
     label: LABELS.BLACKBOARD,
     url: '/blackboard',
-    featureCode: 'blackboard',
+    addonCode: 'blackboard',
   },
   {
     id: 'calendar',
     icon: ICONS.calendar,
     label: 'Kalender',
     url: '/calendar',
-    featureCode: 'calendar',
+    addonCode: 'calendar',
   },
   {
     id: 'lean-management',
@@ -605,7 +619,7 @@ const dummyMenuItems: NavItem[] = [
         id: 'tpm',
         label: 'TPM Wartung',
         url: '/lean-management/tpm/overview',
-        featureCode: 'tpm',
+        addonCode: 'tpm',
       },
     ],
   },
@@ -659,27 +673,24 @@ export function filterMenuByAccess(
 }
 
 /**
- * Filter menu items based on tenant feature activation.
- * Items without featureCode always pass through (core features like dashboard, profile, settings).
+ * Filter menu items based on tenant addon activation.
+ * Items without addonCode always pass through (core addons like dashboard, profile, settings).
  * Recursive for nested submenus — removes empty parent containers (e.g., LEAN-Management
  * disappears when both kvp and surveys are disabled).
  */
-export function filterMenuByFeatures(
+export function filterMenuByAddons(
   items: NavItem[],
-  activeFeatures: ReadonlySet<string>,
+  activeAddons: ReadonlySet<string>,
 ): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
-    // Item has featureCode and feature is NOT active → skip entirely
-    if (
-      item.featureCode !== undefined &&
-      !activeFeatures.has(item.featureCode)
-    ) {
+    // Item has addonCode and addon is NOT active → skip entirely
+    if (item.addonCode !== undefined && !activeAddons.has(item.addonCode)) {
       return acc;
     }
 
     // Recurse into submenus
     if (item.submenu !== undefined) {
-      const filtered = filterMenuByFeatures(item.submenu, activeFeatures);
+      const filtered = filterMenuByAddons(item.submenu, activeAddons);
       // Keep parent only if it has remaining children OR its own URL
       if (filtered.length > 0 || item.url !== undefined) {
         acc.push({ ...item, submenu: filtered });

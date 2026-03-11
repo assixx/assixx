@@ -36,7 +36,7 @@
     formAssetIds: number[];
     formIsActive: FormIsActiveStatus;
     allDepartments: Department[];
-    allAdmins: Admin[];
+    allLeaders: Admin[];
     allEmployees: TeamMember[];
     allAssets: Asset[];
     submitting: boolean;
@@ -65,7 +65,7 @@
     formAssetIds,
     formIsActive,
     allDepartments,
-    allAdmins,
+    allLeaders,
     allEmployees,
     allAssets,
     submitting,
@@ -330,7 +330,7 @@
             class:active={leaderDropdownOpen}
             onclick={toggleLeaderDropdown}
           >
-            <span>{getLeaderDisplayText(localLeaderId, allAdmins)}</span>
+            <span>{getLeaderDisplayText(localLeaderId, allLeaders)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -346,16 +346,16 @@
             >
               {messages.NO_LEADER}
             </button>
-            {#each allAdmins as admin (admin.id)}
+            {#each allLeaders as leader (leader.id)}
               <button
                 type="button"
                 class="dropdown__option"
                 onclick={() => {
-                  selectLeader(admin.id);
+                  selectLeader(leader.id);
                 }}
               >
-                {admin.firstName}
-                {admin.lastName}
+                {leader.firstName}
+                {leader.lastName}
               </button>
             {/each}
           </div>

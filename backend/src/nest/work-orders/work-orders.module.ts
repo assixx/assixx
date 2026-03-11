@@ -6,7 +6,7 @@
  */
 import { Module } from '@nestjs/common';
 
-import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
+import { AddonCheckModule } from '../addon-check/addon-check.module.js';
 import { WorkOrderAssigneesService } from './work-orders-assignees.service.js';
 import { WorkOrderCommentsService } from './work-orders-comments.service.js';
 import { WorkOrderDueCronService } from './work-orders-due-cron.service.js';
@@ -18,7 +18,7 @@ import { WorkOrdersController } from './work-orders.controller.js';
 import { WorkOrdersService } from './work-orders.service.js';
 
 @Module({
-  imports: [FeatureCheckModule],
+  imports: [AddonCheckModule],
   controllers: [WorkOrdersController],
   providers: [
     // Permission registration (ADR-020)

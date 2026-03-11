@@ -28,32 +28,6 @@ describe('SignupSchema', () => {
     expect(SignupSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('should default plan to trial', () => {
-    const result = SignupSchema.safeParse(valid);
-    expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
-    expect(data.plan).toBe('trial');
-  });
-
-  it('should accept explicit plan', () => {
-    for (const plan of [
-      'free',
-      'basic',
-      'professional',
-      'enterprise',
-      'trial',
-    ]) {
-      expect(SignupSchema.safeParse({ ...valid, plan }).success).toBe(true);
-    }
-  });
-
-  it('should reject invalid plan', () => {
-    expect(SignupSchema.safeParse({ ...valid, plan: 'premium' }).success).toBe(
-      false,
-    );
-  });
-
   describe('subdomain validation', () => {
     it('should reject subdomain under 3 chars', () => {
       expect(

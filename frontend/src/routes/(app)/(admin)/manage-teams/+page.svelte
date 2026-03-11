@@ -57,7 +57,7 @@
   // SSR data via $derived - updates when invalidateAll() is called
   const allTeams = $derived<Team[]>(data.teams);
   const allDepartments = $derived<Department[]>(data.departments);
-  const allAdmins = $derived<Admin[]>(data.admins);
+  const allLeaders = $derived<Admin[]>(data.leaders);
   const allEmployees = $derived<TeamMember[]>(data.employees);
   const allAssets = $derived<Asset[]>(data.assets);
 
@@ -652,7 +652,7 @@
     {formAssetIds}
     {formIsActive}
     {allDepartments}
-    {allAdmins}
+    {allLeaders}
     {allEmployees}
     {allAssets}
     {submitting}

@@ -74,3 +74,46 @@ export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
   team: 'Teams',
   asset: 'Anlagen',
 };
+
+/** Kategorien für Position-Optionen — mapped auf users_role (ohne dummy) */
+export type PositionCategory = 'employee' | 'admin' | 'root';
+
+/** Position-Optionen pro Kategorie */
+export interface PositionOptions {
+  employee: string[];
+  admin: string[];
+  root: string[];
+}
+
+/** Default-Positionen wenn tenants.settings.positionOptions nicht gesetzt */
+export const DEFAULT_POSITION_OPTIONS: PositionOptions = {
+  employee: [
+    'Produktionsmitarbeiter',
+    'Anlagenbediener',
+    'Lagerarbeiter',
+    'Qualitätsprüfer',
+    'Schichtleiter',
+    'Teamleiter',
+    'Wartungstechniker',
+    'Sonstiges',
+  ],
+  admin: [
+    'Bereichsleiter',
+    'Personalleiter',
+    'Geschäftsführer',
+    'Werksleiter',
+    'Produktionsleiter',
+    'Qualitätsleiter',
+    'IT-Leiter',
+    'Vertriebsleiter',
+    'Mitarbeiter',
+  ],
+  root: [
+    'CEO',
+    'CTO',
+    'CFO',
+    'Geschäftsführer',
+    'IT-Administrator',
+    'Systemadministrator',
+  ],
+};

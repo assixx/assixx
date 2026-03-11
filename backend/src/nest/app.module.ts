@@ -15,6 +15,8 @@ import type { FastifyRequest } from 'fastify';
 import { ClsModule, ClsService } from 'nestjs-cls';
 import { randomUUID } from 'node:crypto';
 
+import { AddonCheckModule } from './addon-check/addon-check.module.js';
+import { AddonsModule } from './addons/addons.module.js';
 import { AdminPermissionsModule } from './admin-permissions/admin-permissions.module.js';
 import { AreasModule } from './areas/areas.module.js';
 import { AssetsModule } from './assets/assets.module.js';
@@ -27,7 +29,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionGuard } from './common/guards/permission.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
-import { TenantFeatureGuard } from './common/guards/tenant-feature.guard.js';
+import { TenantAddonGuard } from './common/guards/tenant-addon.guard.js';
 // CustomThrottlerGuard is NOT global - applied selectively via @AuthThrottle(), @UploadThrottle()
 // Reason: SSR makes many parallel requests from same IP, global rate limit breaks UI/UX
 import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interceptor.js';
@@ -43,9 +45,7 @@ import { DocumentsModule } from './documents/documents.module.js';
 import { DummyUsersModule } from './dummy-users/dummy-users.module.js';
 import { E2eEscrowModule } from './e2e-escrow/e2e-escrow.module.js';
 import { E2eKeysModule } from './e2e-keys/e2e-keys.module.js';
-import { FeatureCheckModule } from './feature-check/feature-check.module.js';
 import { FeatureVisitsModule } from './feature-visits/feature-visits.module.js';
-import { FeaturesModule } from './features/features.module.js';
 import { HallsModule } from './halls/halls.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
 import { LogsModule } from './logs/logs.module.js';
@@ -161,9 +161,9 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     E2eEscrowModule,
     E2eKeysModule,
     BlackboardModule,
-    FeatureCheckModule,
+    AddonCheckModule,
     FeatureVisitsModule,
-    FeaturesModule,
+    AddonsModule,
     HallsModule,
     KvpModule,
     LogsModule,
@@ -200,15 +200,15 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-    // Global Tenant Feature Guard (runs after Roles guard)
-    // Checks @TenantFeature() decorator against tenant_features table
-    // No root/admin bypass — feature activation is a billing decision
+    // Global Tenant Addon Guard (runs after Roles guard)
+    // Checks @RequireAddon() decorator against addons/tenant_addons tables
+    // No root/admin bypass — addon activation is a billing decision
     {
       provide: APP_GUARD,
-      useClass: TenantFeatureGuard,
+      useClass: TenantAddonGuard,
     },
-    // Global Permission Guard (runs after Tenant Feature guard, ADR-020)
-    // Checks @RequirePermission() decorator against user_feature_permissions table
+    // Global Permission Guard (runs after Tenant Addon guard, ADR-020)
+    // Checks @RequirePermission() decorator against user_addon_permissions table
     // Root + admin-with-full-access bypass; all others: fail-closed DB check
     {
       provide: APP_GUARD,

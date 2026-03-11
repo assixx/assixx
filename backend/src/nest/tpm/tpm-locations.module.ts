@@ -6,12 +6,12 @@
  */
 import { Module } from '@nestjs/common';
 
-import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
+import { AddonCheckModule } from '../addon-check/addon-check.module.js';
 import { TpmLocationsController } from './tpm-locations.controller.js';
 import { TpmLocationsService } from './tpm-locations.service.js';
 
 @Module({
-  imports: [FeatureCheckModule],
+  imports: [AddonCheckModule],
   controllers: [TpmLocationsController],
   providers: [TpmLocationsService],
   exports: [TpmLocationsService],

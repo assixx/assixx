@@ -135,6 +135,29 @@ describe('AddonCheckService', () => {
 
       expect(result).toBe(false);
     });
+
+    // --- Trial expiry ---
+
+    it('should return false when purchasable addon trial has expired', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
+      // No matching rows — trial_ends_at < NOW() filtered out by SQL
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.checkTenantAccess(10, 'vacation');
+
+      expect(result).toBe(false);
+    });
+
+    it('should filter by trial_ends_at > NOW() to exclude expired trials', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.checkTenantAccess(10, 'tpm');
+
+      const query = mockDb.query.mock.calls[1]?.[0] as string;
+      expect(query).toContain('trial_ends_at IS NULL OR');
+      expect(query).toContain('trial_ends_at > NOW()');
+    });
   });
 
   // =============================================================

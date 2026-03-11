@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -79,7 +79,7 @@ export const load: PageServerLoad = async ({
   if (token === undefined || token === '') redirect(302, '/login');
 
   const parentData = await parent();
-  requireFeature(parentData.activeFeatures, 'tpm');
+  requireAddon(parentData.activeAddons, 'tpm');
 
   const { uuid: cardUuid } = params;
 

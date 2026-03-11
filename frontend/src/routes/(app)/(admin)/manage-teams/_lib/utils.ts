@@ -216,11 +216,11 @@ export function getDepartmentDisplayText(
 /** Get leader display text */
 export function getLeaderDisplayText(
   leaderId: number | null,
-  allAdmins: Admin[],
+  allLeaders: Admin[],
 ): string {
   if (leaderId === null) return MESSAGES.NO_LEADER;
-  const admin = allAdmins.find((a) => a.id === leaderId);
-  return admin ? `${admin.firstName} ${admin.lastName}` : MESSAGES.NO_LEADER;
+  const leader = allLeaders.find((u) => u.id === leaderId);
+  return leader ? `${leader.firstName} ${leader.lastName}` : MESSAGES.NO_LEADER;
 }
 
 // =============================================================================

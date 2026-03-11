@@ -10,11 +10,19 @@ import {
 
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
-import { UpdateHierarchyLabelsDto, UpsertPositionsDto } from './dto/index.js';
+import {
+  UpdateHierarchyLabelsDto,
+  UpdatePositionOptionsDto,
+  UpsertPositionsDto,
+} from './dto/index.js';
 import { OrganigramLayoutService } from './organigram-layout.service.js';
 import { OrganigramSettingsService } from './organigram-settings.service.js';
 import { OrganigramService } from './organigram.service.js';
-import type { HierarchyLabels, OrgChartTree } from './organigram.types.js';
+import type {
+  HierarchyLabels,
+  OrgChartTree,
+  PositionOptions,
+} from './organigram.types.js';
 
 @Controller('organigram')
 export class OrganigramController {
@@ -55,5 +63,22 @@ export class OrganigramController {
   ): Promise<{ message: string }> {
     await this.layoutService.upsertPositions(tenantId, dto);
     return { message: 'Positionen gespeichert' };
+  }
+
+  @Get('position-options')
+  async getPositionOptions(
+    @TenantId() tenantId: number,
+  ): Promise<PositionOptions> {
+    return await this.settingsService.getPositionOptions(tenantId);
+  }
+
+  @Put('position-options')
+  @Roles('root')
+  @HttpCode(HttpStatus.OK)
+  async updatePositionOptions(
+    @TenantId() tenantId: number,
+    @Body() dto: UpdatePositionOptionsDto,
+  ): Promise<PositionOptions> {
+    return await this.settingsService.updatePositionOptions(tenantId, dto);
   }
 }

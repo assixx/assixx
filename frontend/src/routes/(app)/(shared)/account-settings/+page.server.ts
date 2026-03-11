@@ -90,11 +90,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/dashboard');
   }
 
-  const activeFeatures: string[] =
-    (parentData as { activeFeatures?: string[] }).activeFeatures ?? [];
-  const shiftPlanningEnabled = activeFeatures.includes('shift_planning');
+  const activeAddons: string[] =
+    (parentData as { activeAddons?: string[] }).activeAddons ?? [];
+  const shiftPlanningEnabled = activeAddons.includes('shift_planning');
 
-  // Only fetch shift times if the feature is enabled — avoids 403
+  // Only fetch shift times if the addon is enabled — avoids 403
   const [deletionStatus, shiftTimes] = await Promise.all([
     apiFetch<DeletionStatusData>('/root/tenant/deletion-status', token, fetch),
     shiftPlanningEnabled ?

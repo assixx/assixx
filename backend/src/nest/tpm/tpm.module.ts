@@ -11,7 +11,7 @@
  */
 import { Module } from '@nestjs/common';
 
-import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
+import { AddonCheckModule } from '../addon-check/addon-check.module.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
@@ -37,7 +37,7 @@ import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 
 @Module({
-  imports: [FeatureCheckModule, TpmLocationsModule, TpmConfigServicesModule],
+  imports: [AddonCheckModule, TpmLocationsModule, TpmConfigServicesModule],
   controllers: [
     TpmPlansController,
     TpmCardsController,
