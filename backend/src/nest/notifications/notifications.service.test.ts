@@ -247,8 +247,36 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
   });
 
+  describe('createAddonNotification – delegation', () => {
+    it('delegates to addon sub-service', async () => {
+      mockAddon.createAddonNotification.mockResolvedValueOnce(undefined);
+
+      await service.createAddonNotification(
+        'survey',
+        42,
+        'New Survey',
+        'Please complete',
+        'all',
+        null,
+        1,
+        5,
+      );
+
+      expect(mockAddon.createAddonNotification).toHaveBeenCalledWith(
+        'survey',
+        42,
+        'New Survey',
+        'Please complete',
+        'all',
+        null,
+        1,
+        5,
+      );
+    });
+  });
+
   describe('markAddonTypeAsRead – delegation', () => {
-    it('delegates to feature sub-service', async () => {
+    it('delegates to addon sub-service', async () => {
       mockAddon.markAddonTypeAsRead.mockResolvedValueOnce(5);
 
       const result = await service.markAddonTypeAsRead('survey', 1, 1);
@@ -263,7 +291,7 @@ describe('NotificationsService – DB-mocked methods', () => {
   });
 
   describe('markAddonEntityAsRead – delegation', () => {
-    it('delegates to feature sub-service', async () => {
+    it('delegates to addon sub-service', async () => {
       mockAddon.markAddonEntityAsRead.mockResolvedValueOnce(2);
 
       const result = await service.markAddonEntityAsRead(
