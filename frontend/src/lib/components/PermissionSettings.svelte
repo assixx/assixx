@@ -174,10 +174,6 @@
   // HELPERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   /** Set a single module's permissions to the given value (respecting allowedPermissions) */
   function setModulePermissions(mod: ModulePermission, value: boolean): void {
     mod.canRead = value && mod.allowedPermissions.includes('canRead');
@@ -204,7 +200,7 @@
   }
 
   function goBack(): void {
-    void goto(resolvePath(backUrl));
+    void goto(resolve(backUrl));
   }
 </script>
 

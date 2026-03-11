@@ -27,10 +27,6 @@
     isPasswordValid,
   } from './_lib/validators';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // =========================================================================
   // FORM STATE
   // =========================================================================
@@ -154,7 +150,7 @@
       showSuccess = true;
 
       setTimeout(() => {
-        void goto(resolvePath('/login'));
+        void goto(resolve('/login'));
       }, SUCCESS_REDIRECT_DELAY);
     } catch (err: unknown) {
       const message =
@@ -457,7 +453,7 @@
           <span>
             Ich akzeptiere die&nbsp;
             <a
-              href={resolvePath('/TERMS-OF-USE.md')}
+              href={resolve('/TERMS-OF-USE.md')}
               target="_blank"
               rel="noopener noreferrer"
               class="terms-link">Nutzungsbedingungen</a
@@ -476,7 +472,7 @@
         <p class="login-link-text">
           Bereits registriert?
           <a
-            href={resolvePath('/login')}
+            href={resolve('/login')}
             class="login-link">Anmelden</a
           >
         </p>

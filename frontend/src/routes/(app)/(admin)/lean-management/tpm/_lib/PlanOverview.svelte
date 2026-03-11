@@ -20,10 +20,6 @@
     CardStatus,
   } from './types';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   interface Props {
     messages: TpmMessages;
     plans: TpmPlan[];
@@ -260,7 +256,7 @@
           <tr>
             <td>
               <a
-                href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
+                href={resolve(`/lean-management/tpm/plan/${plan.uuid}`)}
                 class="inline-flex items-center gap-2 font-medium text-(--color-text-primary) no-underline hover:text-(--color-primary)"
               >
                 <i class="fas fa-cog"></i>
@@ -296,7 +292,7 @@
             <td>
               <div class="flex gap-2">
                 <a
-                  href={resolvePath(`/lean-management/tpm/board/${plan.uuid}`)}
+                  href={resolve(`/lean-management/tpm/board/${plan.uuid}`)}
                   class="action-icon action-icon--primary"
                   title={messages.BTN_VIEW_BOARD}
                   aria-label={messages.BTN_VIEW_BOARD}
@@ -304,9 +300,7 @@
                   <i class="fas fa-th-large"></i>
                 </a>
                 <a
-                  href={resolvePath(
-                    `/lean-management/tpm/locations/${plan.uuid}`,
-                  )}
+                  href={resolve(`/lean-management/tpm/locations/${plan.uuid}`)}
                   class="action-icon action-icon--warning"
                   title="Standorte"
                   aria-label="Standorte"
@@ -314,7 +308,7 @@
                   <i class="fas fa-map-marker-alt"></i>
                 </a>
                 <a
-                  href={resolvePath(`/lean-management/tpm/cards/${plan.uuid}`)}
+                  href={resolve(`/lean-management/tpm/cards/${plan.uuid}`)}
                   class="action-icon action-icon--info"
                   title="Karten verwalten"
                   aria-label="Karten verwalten"
@@ -322,7 +316,7 @@
                   <i class="fas fa-clone"></i>
                 </a>
                 <a
-                  href={resolvePath(`/lean-management/tpm/plan/${plan.uuid}`)}
+                  href={resolve(`/lean-management/tpm/plan/${plan.uuid}`)}
                   class="action-icon action-icon--edit"
                   title={messages.BTN_EDIT}
                   aria-label="Plan bearbeiten"

@@ -23,14 +23,6 @@
   } from '../_lib/types';
 
   // =============================================================================
-  // HELPERS
-  // =============================================================================
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
-  // =============================================================================
   // SSR DATA
   // =============================================================================
 
@@ -102,7 +94,7 @@
           {messages.PAGE_HEADING}
         </h2>
         <a
-          href={resolvePath('/lean-management/tpm/gesamtansicht')}
+          href={resolve('/lean-management/tpm/gesamtansicht')}
           class="btn btn-info"
         >
           <i class="fas fa-table"></i>

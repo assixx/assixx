@@ -37,10 +37,6 @@
   // HELPERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   function formatDate(dateStr: string | null): string {
     if (dateStr === null || dateStr === '') return '-';
     const date = new Date(dateStr);
@@ -89,11 +85,11 @@
   // =============================================================================
 
   function navigateToEntry(uuid: string): void {
-    void goto(resolvePath(`/blackboard/${uuid}`));
+    void goto(resolve(`/blackboard/${uuid}`));
   }
 
   function goBack(): void {
-    void goto(resolvePath('/blackboard'));
+    void goto(resolve('/blackboard'));
   }
 </script>
 

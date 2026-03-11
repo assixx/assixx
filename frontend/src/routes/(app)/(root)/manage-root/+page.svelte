@@ -8,11 +8,6 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import {
@@ -328,7 +323,7 @@
 
   function navigateToAvailabilityPage(uuid: string): void {
     closeAvailabilityModal();
-    void goto(resolvePath(`/manage-root/availability/${uuid}`));
+    void goto(resolve(`/manage-root/availability/${uuid}`));
   }
 
   // =============================================================================
@@ -698,7 +693,7 @@
             <div class="alert__message">
               {messages.PROFILE_INFO}
               <a
-                href={resolvePath('/root-profile')}
+                href={resolve('/root-profile')}
                 class="text-blue-500 hover:underline"
                 >{messages.PROFILE_LINK_TEXT}</a
               >.

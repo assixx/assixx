@@ -77,16 +77,12 @@
   // HANDLERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   async function handleCreate(payload: CreatePlanPayload): Promise<void> {
     submitting = true;
     try {
       const plan = await apiCreatePlan(payload);
       showSuccessAlert(messages.SUCCESS_PLAN_CREATED);
-      await goto(resolvePath(`/lean-management/tpm/plan/${plan.uuid}`));
+      await goto(resolve(`/lean-management/tpm/plan/${plan.uuid}`));
     } catch (err: unknown) {
       logApiError('handleCreate', err);
       const msg =
@@ -134,7 +130,7 @@
     const success = await apiArchivePlan(data.plan.uuid);
     if (success) {
       showSuccessAlert(messages.SUCCESS_ARCHIVED);
-      await goto(resolvePath('/lean-management/tpm'));
+      await goto(resolve('/lean-management/tpm'));
     } else {
       showErrorAlert(messages.ERROR_ARCHIVE);
     }
@@ -154,7 +150,7 @@
   }
 
   function handleCancel(): void {
-    void goto(resolvePath('/lean-management/tpm'));
+    void goto(resolve('/lean-management/tpm'));
   }
 </script>
 
@@ -170,7 +166,7 @@
         type="button"
         class="btn btn-light"
         onclick={() => {
-          void goto(resolvePath('/lean-management/tpm'));
+          void goto(resolve('/lean-management/tpm'));
         }}
       >
         <i class="fas fa-arrow-left mr-2"></i>{messages.BTN_BACK_TO_OVERVIEW}
@@ -194,7 +190,7 @@
     <div class="mb-6">
       <SlotAssistant
         planUuid={data.plan.uuid}
-        cardsHref={resolvePath(`/lean-management/tpm/cards/${data.plan.uuid}`)}
+        cardsHref={resolve(`/lean-management/tpm/cards/${data.plan.uuid}`)}
         intervalColors={data.intervalColors}
         {previewWeekday}
         {previewRepeatEvery}

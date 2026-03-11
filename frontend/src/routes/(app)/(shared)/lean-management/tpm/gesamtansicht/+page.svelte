@@ -18,10 +18,6 @@
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createTpmMessages(labels));
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
 </script>
 
 <svelte:head>
@@ -31,7 +27,7 @@
 <div class="container">
   <div class="gv-header">
     <a
-      href={resolvePath('/lean-management/tpm/overview')}
+      href={resolve('/lean-management/tpm/overview')}
       class="btn btn-info btn-icon"
       title={messages.BTN_BACK_TO_OVERVIEW}
     >

@@ -32,11 +32,6 @@
   import type { PageData } from './$types';
   import type { SurveyQuestion, ResponseAnswer, Survey } from './_lib/types';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // ==========================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
   // ==========================================================================
@@ -110,7 +105,7 @@
   }
 
   function handleNavigateBack(): void {
-    void goto(resolvePath('/survey-admin'));
+    void goto(resolve('/survey-admin'));
   }
 
   function handleAccordionToggle(index: number): void {

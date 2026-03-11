@@ -25,10 +25,6 @@
 
   const { items }: Props = $props();
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString('de-DE', {
       day: '2-digit',
@@ -62,7 +58,7 @@
         <tr class:row--overdue={isOverdue(item)}>
           <td>
             <a
-              href={resolvePath(`/work-orders/${item.uuid}`)}
+              href={resolve(`/work-orders/${item.uuid}`)}
               class="table-link"
             >
               {item.title}
@@ -107,7 +103,7 @@
           <td>
             <div class="action-icons">
               <a
-                href={resolvePath(`/work-orders/${item.uuid}`)}
+                href={resolve(`/work-orders/${item.uuid}`)}
                 class="action-icon action-icon--info"
                 title={MESSAGES.BTN_VIEW_DETAIL}
               >

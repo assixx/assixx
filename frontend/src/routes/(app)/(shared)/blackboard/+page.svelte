@@ -12,11 +12,6 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // API Client (for mutations only)
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
@@ -411,7 +406,7 @@
         }
       });
     }
-    void goto(resolvePath(`/blackboard/${uuid}`));
+    void goto(resolve(`/blackboard/${uuid}`));
   }
 
   // =============================================================================

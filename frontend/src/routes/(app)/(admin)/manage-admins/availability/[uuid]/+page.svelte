@@ -117,10 +117,6 @@
   // HELPERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   /** Check if entry is editable (endDate must be today or in the future) */
   function isEditable(entry: AvailabilityEntry): boolean {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Pure comparison function, not reactive state
@@ -137,7 +133,7 @@
   // =============================================================================
 
   function goBack(): void {
-    void goto(resolvePath('/manage-admins'));
+    void goto(resolve('/manage-admins'));
   }
 
   function navigateWithFilter(year: string, month: string): void {
@@ -147,7 +143,7 @@
     const queryString = params.toString();
     const uuid = employee?.uuid ?? '';
     void goto(
-      resolvePath(
+      resolve(
         `/manage-admins/availability/${uuid}${queryString !== '' ? `?${queryString}` : ''}`,
       ),
     );
@@ -165,7 +161,7 @@
 
   function clearFilter(): void {
     const uuid = employee?.uuid ?? '';
-    void goto(resolvePath(`/manage-admins/availability/${uuid}`));
+    void goto(resolve(`/manage-admins/availability/${uuid}`));
   }
 
   // =============================================================================

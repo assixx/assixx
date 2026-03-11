@@ -19,10 +19,6 @@
     IntervalType,
   } from './types';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   interface Props {
     messages: TpmMessages;
     assets: AssetWithTpmStatus[];
@@ -182,7 +178,7 @@
             <td>
               <div class="flex gap-2">
                 <a
-                  href={resolvePath(
+                  href={resolve(
                     `/lean-management/tpm/board/${asset.plan.uuid}`,
                   )}
                   class="action-icon action-icon--primary"
@@ -192,7 +188,7 @@
                   <i class="fas fa-th-large"></i>
                 </a>
                 <a
-                  href={resolvePath(
+                  href={resolve(
                     `/lean-management/tpm/locations/${asset.plan.uuid}`,
                   )}
                   class="action-icon action-icon--warning"

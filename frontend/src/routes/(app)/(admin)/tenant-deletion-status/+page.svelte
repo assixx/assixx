@@ -35,11 +35,6 @@
   import type { PageData } from './$types';
   import type { ConfirmModalType } from './_lib/types';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // SSR Data - properly typed from PageData
   const { data }: { data: PageData } = $props();
 
@@ -352,7 +347,7 @@
                       <i class="fas fa-times mr-2"></i> Ablehnen
                     </button>
                     <a
-                      href={resolvePath(
+                      href={resolve(
                         `/tenant-deletion-approve?queueId=${item.queueId}`,
                       )}
                       class="btn btn-success"

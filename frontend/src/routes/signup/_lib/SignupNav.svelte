@@ -6,17 +6,13 @@
 
   import { HELP_MESSAGE } from './constants';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   function showHelp(): void {
     showInfoAlert(HELP_MESSAGE, 10000);
   }
 </script>
 
 <a
-  href={resolvePath('/')}
+  href={resolve('/')}
   class="back-button"
 >
   <span class="icon">←</span>

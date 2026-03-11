@@ -71,11 +71,6 @@
   // Hierarchy labels from layout data inheritance
   const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
 
-  /** Resolve path with base prefix (avoids type-safe routing issues) */
-  function resolvePath(path: string): string {
-    return resolve(path as `/${string}`, {});
-  }
-
   // Derived from SSR data (server guarantees non-null values)
   const suggestion = $derived(data.suggestion);
   const comments = $derived(data.comments);
@@ -417,7 +412,7 @@
     const result = await archiveSuggestion(suggestion.uuid);
     if (result.success) {
       showSuccessAlert('Vorschlag wurde archiviert');
-      setTimeout(() => void goto(resolvePath('/kvp')), 1500);
+      setTimeout(() => void goto(resolve('/kvp')), 1500);
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Archivieren');
     }
@@ -487,7 +482,7 @@
       class="btn btn-light"
       onclick={() => {
         filterState.reset();
-        void goto(resolvePath('/kvp'));
+        void goto(resolve('/kvp'));
       }}
     >
       <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht

@@ -10,11 +10,6 @@
 
   import type { PageData } from './$types';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // API Client (for approve action only)
   const apiClient = getApiClient();
 
@@ -95,7 +90,7 @@
 
       // Redirect after delay (full page reload to switch from standalone to app layout)
       setTimeout(() => {
-        window.location.href = resolvePath('/tenant-deletion-status');
+        window.location.href = resolve('/tenant-deletion-status');
       }, 2000);
     } catch (err: unknown) {
       log.error({ err }, 'Error approving');
@@ -131,7 +126,7 @@
         </div>
       </div>
       <a
-        href={resolvePath('/tenant-deletion-status')}
+        href={resolve('/tenant-deletion-status')}
         class="btn btn-primary"
         data-sveltekit-reload
       >
@@ -281,7 +276,7 @@
         <!-- Action Buttons -->
         <div class="flex gap-3">
           <a
-            href={resolvePath('/tenant-deletion-status')}
+            href={resolve('/tenant-deletion-status')}
             class="btn btn-cancel flex-1"
             data-sveltekit-reload
           >

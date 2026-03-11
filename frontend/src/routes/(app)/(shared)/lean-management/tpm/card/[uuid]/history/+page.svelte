@@ -183,13 +183,11 @@
   // NAVIGATION
   // ===========================================================================
 
-  const resolvePath = resolve as (p: string) => string;
-
   function goBack(): void {
     if (card !== null) {
-      void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}`));
+      void goto(resolve(`/lean-management/tpm/card/${card.uuid}`));
     } else {
-      void goto(resolvePath('/lean-management/tpm/overview'));
+      void goto(resolve('/lean-management/tpm/overview'));
     }
   }
 </script>
@@ -252,7 +250,7 @@
           class="btn btn-primary"
           onclick={() => {
             void goto(
-              resolvePath(`/lean-management/tpm/card/${card.uuid}/defects`),
+              resolve(`/lean-management/tpm/card/${card.uuid}/defects`),
             );
           }}
         >
@@ -348,7 +346,7 @@
                         onclick={(e: MouseEvent) => {
                           e.stopPropagation();
                           void goto(
-                            resolvePath(
+                            resolve(
                               `/lean-management/tpm/card/${card?.uuid ?? ''}/defects?execution=${execution.uuid}`,
                             ),
                           );

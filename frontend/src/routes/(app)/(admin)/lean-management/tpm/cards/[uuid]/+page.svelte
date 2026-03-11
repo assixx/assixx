@@ -70,14 +70,6 @@
     isCreateMode ? messages.CARD_CREATE_TITLE : messages.CARD_EDIT_TITLE,
   );
 
-  // ===========================================================================
-  // HELPERS
-  // ===========================================================================
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   function openCreateForm(): void {
     editingCard = null;
     showForm = true;
@@ -222,7 +214,7 @@
         type="button"
         class="btn btn-light"
         onclick={() => {
-          void goto(resolvePath(`/lean-management/tpm/board/${data.planUuid}`));
+          void goto(resolve(`/lean-management/tpm/board/${data.planUuid}`));
         }}
       >
         <i class="fas fa-arrow-left mr-2"></i>Zurück zum Board
@@ -245,9 +237,7 @@
           type="button"
           class="btn btn-primary"
           onclick={() => {
-            void goto(
-              resolvePath(`/lean-management/tpm/board/${data.planUuid}`),
-            );
+            void goto(resolve(`/lean-management/tpm/board/${data.planUuid}`));
           }}
         >
           <i class="fas fa-th-large mr-2"></i>{messages.BTN_VIEW_BOARD}

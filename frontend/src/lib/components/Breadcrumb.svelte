@@ -7,14 +7,6 @@
     type HierarchyLabels,
   } from '$lib/types/hierarchy-labels';
 
-  /**
-   * Resolve a dynamic path with base prefix.
-   * Casts to pathname type for dynamic runtime paths.
-   */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // =============================================================================
   // SVELTE 5 RUNES - Breadcrumb Navigation
   // 1:1 Copy from frontend/src/scripts/components/breadcrumb.js + breadcrumb-config.js
@@ -449,7 +441,7 @@
     if (baseIntermediate && !hasStaticIntermediate && !hasDynamicIntermediate) {
       items.push({
         label: baseIntermediate.label,
-        href: resolvePath(baseIntermediate.href),
+        href: resolve(baseIntermediate.href),
         icon: baseIntermediate.icon,
       });
     }
@@ -516,7 +508,7 @@
     // Always add Home first (always a link, never current)
     items.push({
       label: 'Home',
-      href: resolvePath(getHomeUrl()),
+      href: resolve(getHomeUrl()),
       icon: 'fa-home',
     });
 
@@ -525,7 +517,7 @@
     if (intermediate) {
       items.push({
         label: intermediate.label,
-        href: resolvePath(intermediate.href),
+        href: resolve(intermediate.href),
         icon: intermediate.icon,
       });
     }
@@ -537,7 +529,7 @@
     if (dynIntermediate && !intermediate) {
       items.push({
         label: dynIntermediate.label,
-        href: resolvePath(dynIntermediate.href),
+        href: resolve(dynIntermediate.href),
         icon: dynIntermediate.icon,
       });
     }

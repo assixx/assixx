@@ -23,10 +23,6 @@
   type FilterType = 'all' | 'operator' | 'maintenance' | 'open_only';
   type CategoryFilterType = 'all' | CardCategory;
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   const { data }: { data: PageData } = $props();
 
   const plan = $derived(data.plan);
@@ -113,7 +109,7 @@
       type="button"
       class="btn btn-light"
       onclick={() => {
-        void goto(resolvePath('/lean-management/tpm'));
+        void goto(resolve('/lean-management/tpm'));
       }}
     >
       <i class="fas fa-arrow-left mr-2"></i>
@@ -163,7 +159,7 @@
             class="btn btn-primary"
             onclick={() => {
               void goto(
-                resolvePath(`/lean-management/tpm/locations/${data.planUuid}`),
+                resolve(`/lean-management/tpm/locations/${data.planUuid}`),
               );
             }}
           >
@@ -175,7 +171,7 @@
               class="btn btn-primary"
               onclick={() => {
                 void goto(
-                  resolvePath(`/lean-management/tpm/cards/${data.planUuid}`),
+                  resolve(`/lean-management/tpm/cards/${data.planUuid}`),
                 );
               }}
             >

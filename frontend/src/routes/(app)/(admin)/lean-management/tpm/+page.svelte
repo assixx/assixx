@@ -17,10 +17,6 @@
   import PlanOverview from './_lib/PlanOverview.svelte';
   import { tpmState } from './_lib/state.svelte';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   import type { PageData } from './$types';
   import type { TpmPlan, PlanStatusFilter } from './_lib/types';
 
@@ -142,14 +138,14 @@
           <h2 class="card__title">{messages.STAT_TOTAL_PLANS}</h2>
           <div class="flex gap-2">
             <a
-              href={resolvePath('/lean-management/tpm/gesamtansicht')}
+              href={resolve('/lean-management/tpm/gesamtansicht')}
               class="btn btn-info"
             >
               <i class="fas fa-table"></i>
               {messages.BTN_GESAMTANSICHT}
             </a>
             <a
-              href={resolvePath('/lean-management/tpm/plan/new')}
+              href={resolve('/lean-management/tpm/plan/new')}
               class="btn btn-primary"
             >
               <i class="fas fa-plus"></i>

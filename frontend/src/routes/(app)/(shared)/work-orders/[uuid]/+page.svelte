@@ -30,10 +30,6 @@
   // HELPERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   function formatDateTime(iso: string): string {
     return new Date(iso).toLocaleString('de-DE', {
       day: '2-digit',
@@ -116,7 +112,7 @@
   <!-- Back button -->
   <div class="mb-4">
     <a
-      href={resolvePath('/work-orders')}
+      href={resolve('/work-orders')}
       class="btn btn-light"
     >
       <i class="fas fa-arrow-left mr-2"></i>
