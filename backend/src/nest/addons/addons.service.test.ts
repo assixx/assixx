@@ -303,6 +303,36 @@ describe('AddonsService', () => {
 
       expect(result.daysRemaining).toBe(0);
     });
+
+    it('should omit trialEndsAt when trial_ends_at is null', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
+      mockDb.queryOne.mockResolvedValueOnce({
+        status: 'active',
+        trial_ends_at: null,
+        activated_at: MOCK_NOW,
+      });
+
+      const result = await service.getAddonStatus(10, 'tpm');
+
+      expect(result.status).toBe('active');
+      expect(result.trialEndsAt).toBeUndefined();
+      expect(result.daysRemaining).toBeUndefined();
+      expect(result.activatedAt).toBe(MOCK_NOW.toISOString());
+    });
+
+    it('should omit activatedAt when activated_at is null', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
+      mockDb.queryOne.mockResolvedValueOnce({
+        status: 'cancelled',
+        trial_ends_at: null,
+        activated_at: null,
+      });
+
+      const result = await service.getAddonStatus(10, 'tpm');
+
+      expect(result.status).toBe('cancelled');
+      expect(result.activatedAt).toBeUndefined();
+    });
   });
 
   // -----------------------------------------------------------
@@ -383,6 +413,498 @@ describe('AddonsService', () => {
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).not.toContain('WHERE');
+    });
+  });
+
+  // -----------------------------------------------------------
+  // getAddonByCode
+  // -----------------------------------------------------------
+
+  describe('getAddonByCode', () => {
+    it('should return mapped addon when found', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
+
+      const result = await service.getAddonByCode('tpm');
+
+      expect(result).not.toBeNull();
+      expect(result?.code).toBe('tpm');
+      expect(result?.priceMonthly).toBe(10);
+      expect(result?.isCore).toBe(false);
+      expect(result?.trialDays).toBe(30);
+      expect(result?.icon).toBe('wrench');
+    });
+
+    it('should return null when addon not found', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      const result = await service.getAddonByCode('nonexistent');
+
+      expect(result).toBeNull();
+    });
+
+    it('should omit optional fields when null in DB', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(
+        coreAddonRow({
+          description: null,
+          price_monthly: null,
+          trial_days: null,
+          icon: null,
+        }),
+      );
+
+      const result = await service.getAddonByCode('dashboard');
+
+      expect(result).not.toBeNull();
+      expect(result?.description).toBeUndefined();
+      expect(result?.priceMonthly).toBeUndefined();
+      expect(result?.trialDays).toBeUndefined();
+      expect(result?.icon).toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------
+  // getAvailableAddons (+ mapJoinRowToAddonWithStatus + buildTenantStatus)
+  // -----------------------------------------------------------
+
+  describe('getAvailableAddons', () => {
+    function joinRow(overrides: Record<string, unknown> = {}) {
+      return {
+        addon_id: 5,
+        addon_code: 'tpm',
+        addon_name: 'TPM / Wartung',
+        is_core: false,
+        price_monthly: '10.00',
+        trial_days: 30,
+        ta_id: null,
+        tenant_id: null,
+        status: null,
+        trial_started_at: null,
+        trial_ends_at: null,
+        activated_at: null,
+        deactivated_at: null,
+        custom_price: null,
+        ta_is_active: null,
+        ...overrides,
+      };
+    }
+
+    it('should return addons with not_activated status when no tenant entry', async () => {
+      mockDb.query.mockResolvedValueOnce([joinRow()]);
+
+      const result = await service.getAvailableAddons(10);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.tenantStatus?.status).toBe('not_activated');
+      expect(result[0]?.tenantStatus?.isActive).toBe(false);
+    });
+
+    it('should return core addon with active status', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRow({ addon_id: 1, addon_code: 'dashboard', is_core: true }),
+      ]);
+
+      const result = await service.getAvailableAddons(10);
+
+      expect(result[0]?.tenantStatus?.status).toBe('active');
+      expect(result[0]?.tenantStatus?.isActive).toBe(true);
+    });
+
+    it('should return trial addon with dates', async () => {
+      const trialEnd = new Date(MOCK_NOW.getTime() + 15 * DAY_MS);
+      const activatedAt = MOCK_NOW;
+
+      mockDb.query.mockResolvedValueOnce([
+        joinRow({
+          ta_id: 'uuid-1',
+          tenant_id: 10,
+          status: 'trial',
+          trial_ends_at: trialEnd,
+          activated_at: activatedAt,
+          ta_is_active: 1,
+        }),
+      ]);
+
+      const result = await service.getAvailableAddons(10);
+
+      expect(result[0]?.tenantStatus?.status).toBe('trial');
+      expect(result[0]?.tenantStatus?.isActive).toBe(true);
+      expect(result[0]?.tenantStatus?.trialEndsAt).toBe(trialEnd.toISOString());
+      expect(result[0]?.tenantStatus?.activatedAt).toBe(
+        activatedAt.toISOString(),
+      );
+    });
+
+    it('should return cancelled addon as inactive', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRow({
+          ta_id: 'uuid-2',
+          tenant_id: 10,
+          status: 'cancelled',
+          ta_is_active: 0,
+          deactivated_at: MOCK_NOW,
+        }),
+      ]);
+
+      const result = await service.getAvailableAddons(10);
+
+      expect(result[0]?.tenantStatus?.status).toBe('cancelled');
+      expect(result[0]?.tenantStatus?.isActive).toBe(false);
+    });
+
+    it('should map priceMonthly and trialDays from join row', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRow({ price_monthly: '25.50', trial_days: 14 }),
+      ]);
+
+      const result = await service.getAvailableAddons(10);
+
+      expect(result[0]?.priceMonthly).toBe(25.5);
+      expect(result[0]?.trialDays).toBe(14);
+    });
+
+    it('should omit priceMonthly and trialDays when null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRow({ price_monthly: null, trial_days: null }),
+      ]);
+
+      const result = await service.getAvailableAddons(10);
+
+      expect(result[0]?.priceMonthly).toBeUndefined();
+      expect(result[0]?.trialDays).toBeUndefined();
+    });
+
+    it('should pass tenantId to SQL query', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getAvailableAddons(42);
+
+      const params = mockDb.query.mock.calls[0]?.[1] as number[];
+      expect(params[0]).toBe(42);
+    });
+  });
+
+  // -----------------------------------------------------------
+  // getUsageStats
+  // -----------------------------------------------------------
+
+  describe('getUsageStats', () => {
+    it('should return mapped usage statistics', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
+      mockDb.query.mockResolvedValueOnce([
+        { date: new Date('2026-03-10'), usage_count: 15, unique_users: 5 },
+        { date: new Date('2026-03-11'), usage_count: 22, unique_users: 8 },
+      ]);
+
+      const result = await service.getUsageStats(
+        10,
+        'tpm',
+        '2026-03-10',
+        '2026-03-11',
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.date).toBe('2026-03-10');
+      expect(result[0]?.addonCode).toBe('tpm');
+      expect(result[0]?.usageCount).toBe(15);
+      expect(result[0]?.uniqueUsers).toBe(5);
+      expect(result[1]?.date).toBe('2026-03-11');
+    });
+
+    it('should throw NotFoundException for unknown addon', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.getUsageStats(10, 'nonexistent', '2026-03-01', '2026-03-11'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return empty array when no usage data', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getUsageStats(
+        10,
+        'tpm',
+        '2026-03-01',
+        '2026-03-02',
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('should pass correct params to SQL', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow({ id: 7 }));
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getUsageStats(10, 'tpm', '2026-03-01', '2026-03-31');
+
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(10);
+      expect(params[1]).toBe(7);
+      expect(params[2]).toBe('2026-03-01');
+      expect(params[3]).toBe('2026-03-31');
+    });
+  });
+
+  // -----------------------------------------------------------
+  // getTenantAddonsSummary
+  // -----------------------------------------------------------
+
+  describe('getTenantAddonsSummary', () => {
+    function joinRowForSummary(overrides: Record<string, unknown> = {}) {
+      return {
+        addon_id: 5,
+        addon_code: 'tpm',
+        addon_name: 'TPM',
+        is_core: false,
+        price_monthly: '10.00',
+        trial_days: 30,
+        ta_id: null,
+        tenant_id: null,
+        status: null,
+        trial_started_at: null,
+        trial_ends_at: null,
+        activated_at: null,
+        deactivated_at: null,
+        custom_price: null,
+        ta_is_active: null,
+        ...overrides,
+      };
+    }
+
+    it('should count core, active, trial, cancelled addons correctly', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRowForSummary({
+          addon_id: 1,
+          addon_code: 'dashboard',
+          is_core: true,
+        }),
+        joinRowForSummary({
+          addon_id: 2,
+          addon_code: 'calendar',
+          is_core: true,
+        }),
+        joinRowForSummary({
+          addon_id: 5,
+          addon_code: 'tpm',
+          ta_id: 'u1',
+          tenant_id: 10,
+          status: 'active',
+          ta_is_active: 1,
+          price_monthly: '10.00',
+        }),
+        joinRowForSummary({
+          addon_id: 6,
+          addon_code: 'chat',
+          ta_id: 'u2',
+          tenant_id: 10,
+          status: 'trial',
+          ta_is_active: 1,
+        }),
+        joinRowForSummary({
+          addon_id: 7,
+          addon_code: 'kvp',
+          ta_id: 'u3',
+          tenant_id: 10,
+          status: 'cancelled',
+          ta_is_active: 0,
+        }),
+        joinRowForSummary({
+          addon_id: 8,
+          addon_code: 'documents',
+          ta_id: 'u4',
+          tenant_id: 10,
+          status: 'expired',
+          ta_is_active: 0,
+        }),
+      ]);
+
+      const result = await service.getTenantAddonsSummary(10);
+
+      expect(result.tenantId).toBe(10);
+      expect(result.coreAddons).toBe(2);
+      expect(result.activeAddons).toBe(1);
+      expect(result.trialAddons).toBe(1);
+      expect(result.cancelledAddons).toBe(2);
+      expect(result.monthlyCost).toBe(10);
+    });
+
+    it('should return zeros when only core addons exist', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRowForSummary({
+          addon_id: 1,
+          addon_code: 'dashboard',
+          is_core: true,
+        }),
+      ]);
+
+      const result = await service.getTenantAddonsSummary(10);
+
+      expect(result.coreAddons).toBe(1);
+      expect(result.activeAddons).toBe(0);
+      expect(result.trialAddons).toBe(0);
+      expect(result.cancelledAddons).toBe(0);
+      expect(result.monthlyCost).toBe(0);
+    });
+
+    it('should sum monthlyCost from multiple active addons', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRowForSummary({
+          addon_id: 5,
+          addon_code: 'tpm',
+          ta_id: 'u1',
+          tenant_id: 10,
+          status: 'active',
+          ta_is_active: 1,
+          price_monthly: '10.00',
+        }),
+        joinRowForSummary({
+          addon_id: 6,
+          addon_code: 'chat',
+          ta_id: 'u2',
+          tenant_id: 10,
+          status: 'active',
+          ta_is_active: 1,
+          price_monthly: '15.00',
+        }),
+      ]);
+
+      const result = await service.getTenantAddonsSummary(10);
+
+      expect(result.monthlyCost).toBe(25);
+      expect(result.activeAddons).toBe(2);
+    });
+
+    it('should use 0 when active addon has no priceMonthly', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRowForSummary({
+          addon_id: 5,
+          addon_code: 'tpm',
+          ta_id: 'u1',
+          tenant_id: 10,
+          status: 'active',
+          ta_is_active: 1,
+          price_monthly: null,
+        }),
+      ]);
+
+      const result = await service.getTenantAddonsSummary(10);
+
+      expect(result.activeAddons).toBe(1);
+      expect(result.monthlyCost).toBe(0);
+    });
+
+    it('should handle not_activated addons (no tenant entry)', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        joinRowForSummary({ addon_id: 5, addon_code: 'tpm' }),
+      ]);
+
+      const result = await service.getTenantAddonsSummary(10);
+
+      expect(result.activeAddons).toBe(0);
+      expect(result.trialAddons).toBe(0);
+      expect(result.cancelledAddons).toBe(0);
+    });
+  });
+
+  // -----------------------------------------------------------
+  // getAllTenantsWithAddons
+  // -----------------------------------------------------------
+
+  describe('getAllTenantsWithAddons', () => {
+    it('should return tenants with addon summaries', async () => {
+      // First query: tenants list
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          subdomain: 'apitest',
+          company_name: 'API Test GmbH',
+          status: 'active',
+        },
+        {
+          id: 3,
+          subdomain: 'testfirma',
+          company_name: 'Testfirma GmbH',
+          status: 'active',
+        },
+      ]);
+      // getAvailableAddons for tenant 1
+      mockDb.query.mockResolvedValueOnce([
+        {
+          addon_id: 1,
+          addon_code: 'dashboard',
+          addon_name: 'Dashboard',
+          is_core: true,
+          price_monthly: null,
+          trial_days: null,
+          ta_id: null,
+          tenant_id: null,
+          status: null,
+          trial_started_at: null,
+          trial_ends_at: null,
+          activated_at: null,
+          deactivated_at: null,
+          custom_price: null,
+          ta_is_active: null,
+        },
+      ]);
+      // getAvailableAddons for tenant 3
+      mockDb.query.mockResolvedValueOnce([
+        {
+          addon_id: 1,
+          addon_code: 'dashboard',
+          addon_name: 'Dashboard',
+          is_core: true,
+          price_monthly: null,
+          trial_days: null,
+          ta_id: null,
+          tenant_id: null,
+          status: null,
+          trial_started_at: null,
+          trial_ends_at: null,
+          activated_at: null,
+          deactivated_at: null,
+          custom_price: null,
+          ta_is_active: null,
+        },
+        {
+          addon_id: 5,
+          addon_code: 'tpm',
+          addon_name: 'TPM',
+          is_core: false,
+          price_monthly: '10.00',
+          trial_days: 30,
+          ta_id: 'u1',
+          tenant_id: 3,
+          status: 'active',
+          trial_started_at: null,
+          trial_ends_at: null,
+          activated_at: MOCK_NOW,
+          deactivated_at: null,
+          custom_price: null,
+          ta_is_active: 1,
+        },
+      ]);
+
+      const result = await service.getAllTenantsWithAddons();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.subdomain).toBe('apitest');
+      expect(result[0]?.addonSummary.coreAddons).toBe(1);
+      expect(result[0]?.addonSummary.monthlyCost).toBe(0);
+
+      expect(result[1]?.subdomain).toBe('testfirma');
+      expect(result[1]?.addonSummary.coreAddons).toBe(1);
+      expect(result[1]?.addonSummary.activeAddons).toBe(1);
+      expect(result[1]?.addonSummary.monthlyCost).toBe(10);
+    });
+
+    it('should return empty array when no tenants exist', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAllTenantsWithAddons();
+
+      expect(result).toEqual([]);
     });
   });
 });
