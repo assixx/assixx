@@ -39,6 +39,7 @@ interface DbTenantAddonJoinRow {
   addon_id: number;
   addon_code: string;
   addon_name: string;
+  addon_description: string | null;
   is_core: boolean;
   price_monthly: string | number | null;
   trial_days: number | null;
@@ -177,6 +178,9 @@ export class AddonsService {
       updatedAt: '',
     };
 
+    if (row.addon_description !== null) {
+      addon.description = row.addon_description;
+    }
     if (row.price_monthly !== null) {
       addon.priceMonthly = Number.parseFloat(String(row.price_monthly));
     }
@@ -247,6 +251,7 @@ export class AddonsService {
     const rows = await this.db.query<DbTenantAddonJoinRow>(
       `SELECT
          a.id AS addon_id, a.code AS addon_code, a.name AS addon_name,
+         a.description AS addon_description,
          a.is_core, a.price_monthly, a.trial_days,
          ta.id AS ta_id, ta.tenant_id, ta.status,
          ta.trial_started_at, ta.trial_ends_at, ta.activated_at,
