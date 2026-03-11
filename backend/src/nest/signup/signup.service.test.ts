@@ -411,6 +411,61 @@ describe('SignupService – registration', () => {
       );
     });
 
+    it('should activate ALL features in development mode', async () => {
+      const devConfig = {
+        isDevelopment: true,
+      } as unknown as AppConfigService;
+      const devDb = {
+        query: vi.fn(),
+        transaction: vi.fn(),
+      };
+      const devService = new SignupService(
+        devDb as unknown as DatabaseService,
+        devConfig,
+      );
+
+      // isSubdomainAvailable → available
+      devDb.query.mockResolvedValueOnce([]);
+      // transaction executes callback
+      devDb.transaction.mockImplementation(
+        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      );
+      // createTenant INSERT
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      // createRootUser INSERT
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      // createRootUser UPDATE employee_id
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // assignBasicPlan SELECT plans
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
+      // assignBasicPlan INSERT tenant_plans
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // assignBasicPlan UPDATE tenants
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // activateTrialFeatures SELECT — dev mode: ALL features
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
+      });
+      // activateTrialFeatures INSERT feature 1, 2, 3
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // createAuditLog INSERT
+      devDb.query.mockResolvedValueOnce([]);
+
+      const result = await devService.registerTenant(createValidDto());
+
+      expect(result.tenantId).toBe(10);
+
+      // Dev-mode query has no params (no planId filter)
+      const featureSelectCall = mockClient.query.mock.calls[6] as unknown[];
+      expect(featureSelectCall[0]).toContain('SELECT id FROM features');
+      expect(featureSelectCall[1]).toEqual([]);
+
+      // 7 setup queries + 3 feature INSERTs = 10
+      expect(mockClient.query).toHaveBeenCalledTimes(10);
+    });
+
     it('should succeed even when audit log fails', async () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.transaction.mockImplementation(
