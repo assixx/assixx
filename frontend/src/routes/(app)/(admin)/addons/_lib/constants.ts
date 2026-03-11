@@ -8,7 +8,7 @@ export const ADDON_ICONS: Record<string, string> = {
   dashboard: 'fas fa-tachometer-alt',
   employees: 'fas fa-users',
   departments: 'fas fa-sitemap',
-  teams: 'fas fa-people-group',
+  teams: 'fas fa-user-friends',
   settings: 'fas fa-cog',
   notifications: 'fas fa-bell',
   documents: 'fas fa-folder-open',

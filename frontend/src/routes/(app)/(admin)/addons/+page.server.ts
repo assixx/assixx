@@ -25,6 +25,11 @@ const EMPTY_SUMMARY: TenantAddonsSummary = {
   monthlyCost: 0,
 };
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -40,7 +45,8 @@ async function apiFetch<T>(
       return null;
     }
 
-    return (await response.json()) as T;
+    const json = (await response.json()) as ApiResponse<T>;
+    return json.data;
   } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
