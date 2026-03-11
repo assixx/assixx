@@ -391,6 +391,11 @@ export function markSaved(): void {
   saving = false;
 }
 
+/** Alle ungespeicherten Änderungen verwerfen — zurück zum letzten gespeicherten Zustand */
+export function resetToSaved(): void {
+  initFromTree(tree);
+}
+
 export function setHallOverride(areaUuid: string, bounds: HallOverride): void {
   hallOverrides[areaUuid] = bounds;
   dirty = true;

@@ -81,8 +81,8 @@ describe('FeatureVisitsService', () => {
       const calDate = new Date('2025-06-01T10:00:00Z');
       const kvpDate = new Date('2025-06-02T14:00:00Z');
       mockDb.query.mockResolvedValueOnce([
-        { feature: 'calendar', last_visited_at: calDate },
-        { feature: 'kvp', last_visited_at: kvpDate },
+        { addon: 'calendar', last_visited_at: calDate },
+        { addon: 'kvp', last_visited_at: kvpDate },
       ]);
 
       const result = await service.getAllVisits(10, 5);

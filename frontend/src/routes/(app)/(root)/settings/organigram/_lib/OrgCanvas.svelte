@@ -131,28 +131,44 @@
     svgElement.setPointerCapture(event.pointerId);
   }
 
+  const LEFT_EDGES: readonly ResizeEdge[] = ['left', 'top-left', 'bottom-left'];
+  const RIGHT_EDGES: readonly ResizeEdge[] = [
+    'right',
+    'top-right',
+    'bottom-right',
+  ];
+  const TOP_EDGES: readonly ResizeEdge[] = ['top', 'top-left', 'top-right'];
+  const BOTTOM_EDGES: readonly ResizeEdge[] = [
+    'bottom',
+    'bottom-left',
+    'bottom-right',
+  ];
+
   function applyResize(event: PointerEvent): void {
     const svg = clientToSvg(event.clientX, event.clientY);
     const dx = svg.x - resizeStartSvg.x;
     const dy = svg.y - resizeStartSvg.y;
     const b = resizeStartBounds;
     const MIN = 120;
+    const edge = resizeEdge;
 
-    let { x, y, width, height } = b;
+    const x = LEFT_EDGES.includes(edge) ? b.x + dx : b.x;
+    const w =
+      LEFT_EDGES.includes(edge) ? b.width - dx
+      : RIGHT_EDGES.includes(edge) ? b.width + dx
+      : b.width;
+    const y = TOP_EDGES.includes(edge) ? b.y + dy : b.y;
+    const h =
+      TOP_EDGES.includes(edge) ? b.height - dy
+      : BOTTOM_EDGES.includes(edge) ? b.height + dy
+      : b.height;
 
-    if (resizeEdge === 'left') {
-      x = b.x + dx;
-      width = Math.max(MIN, b.width - dx);
-    } else if (resizeEdge === 'right') {
-      width = Math.max(MIN, b.width + dx);
-    } else if (resizeEdge === 'top') {
-      y = b.y + dy;
-      height = Math.max(MIN, b.height - dy);
-    } else {
-      height = Math.max(MIN, b.height + dy);
-    }
-
-    setHallOverride(resizingHallUuid, { x, y, width, height });
+    setHallOverride(resizingHallUuid, {
+      x,
+      y,
+      width: Math.max(MIN, w),
+      height: Math.max(MIN, h),
+    });
   }
 
   function handlePointerDown(event: PointerEvent): void {
@@ -321,6 +337,62 @@
           pointer-events="all"
           onpointerdown={(e) => {
             startHallResize(e, hall, 'right');
+          }}
+        />
+        <!-- Corner: Top-Left -->
+        <rect
+          role="presentation"
+          x={hall.x - HANDLE_SIZE / 2}
+          y={hall.y - HANDLE_SIZE / 2}
+          width={HANDLE_SIZE}
+          height={HANDLE_SIZE}
+          fill="transparent"
+          style="cursor: nwse-resize"
+          pointer-events="all"
+          onpointerdown={(e) => {
+            startHallResize(e, hall, 'top-left');
+          }}
+        />
+        <!-- Corner: Top-Right -->
+        <rect
+          role="presentation"
+          x={hall.x + hall.width - HANDLE_SIZE / 2}
+          y={hall.y - HANDLE_SIZE / 2}
+          width={HANDLE_SIZE}
+          height={HANDLE_SIZE}
+          fill="transparent"
+          style="cursor: nesw-resize"
+          pointer-events="all"
+          onpointerdown={(e) => {
+            startHallResize(e, hall, 'top-right');
+          }}
+        />
+        <!-- Corner: Bottom-Left -->
+        <rect
+          role="presentation"
+          x={hall.x - HANDLE_SIZE / 2}
+          y={hall.y + hall.height - HANDLE_SIZE / 2}
+          width={HANDLE_SIZE}
+          height={HANDLE_SIZE}
+          fill="transparent"
+          style="cursor: nesw-resize"
+          pointer-events="all"
+          onpointerdown={(e) => {
+            startHallResize(e, hall, 'bottom-left');
+          }}
+        />
+        <!-- Corner: Bottom-Right -->
+        <rect
+          role="presentation"
+          x={hall.x + hall.width - HANDLE_SIZE / 2}
+          y={hall.y + hall.height - HANDLE_SIZE / 2}
+          width={HANDLE_SIZE}
+          height={HANDLE_SIZE}
+          fill="transparent"
+          style="cursor: nwse-resize"
+          pointer-events="all"
+          onpointerdown={(e) => {
+            startHallResize(e, hall, 'bottom-right');
           }}
         />
       {/each}

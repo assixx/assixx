@@ -9,12 +9,8 @@
 // CONSTANTS
 // ============================================================================
 
-/** Storage limits by plan (in bytes) */
-export const STORAGE_LIMITS: Record<string, number> = {
-  basic: 5 * 1024 * 1024 * 1024, // 5 GB
-  professional: 25 * 1024 * 1024 * 1024, // 25 GB
-  enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
-};
+/** Default storage limit in GB (ADR-033: no more plan-based limits) */
+export const DEFAULT_STORAGE_LIMIT_GB = 100;
 
 // ============================================================================
 // DATABASE ROW TYPES
@@ -43,10 +39,14 @@ export interface DbTenantRow {
   id: number;
   company_name: string;
   subdomain: string;
-  current_plan: string | null;
   status: string;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface DbTenantStorageRow {
+  storage_limit_gb: number;
+  storage_used_gb: number;
 }
 
 /**
@@ -160,7 +160,6 @@ export interface Tenant {
   id: number;
   companyName: string;
   subdomain: string;
-  currentPlan?: string | undefined;
   status: 'active' | 'inactive' | 'suspended' | 'deleted';
   createdAt: Date;
   updatedAt: Date;
@@ -198,7 +197,7 @@ export interface StorageInfo {
   used: number;
   total: number;
   percentage: number;
-  plan: string;
+  storageLimitGb: number;
   breakdown?: {
     documents: number;
     attachments: number;

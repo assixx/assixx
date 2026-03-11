@@ -6,6 +6,7 @@ import { OrganigramSettingsService } from './organigram-settings.service.js';
 import {
   DEFAULT_HIERARCHY_LABELS,
   DEFAULT_POSITION_OPTIONS,
+  DEFAULT_VIEWPORT,
 } from './organigram.types.js';
 
 // =============================================================
@@ -47,6 +48,219 @@ describe('OrganigramSettingsService', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  // =============================================================
+  // getViewport
+  // =============================================================
+
+  describe('getViewport', () => {
+    it('should return defaults when tenant has no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getViewport(1);
+
+      expect(result).toEqual(DEFAULT_VIEWPORT);
+    });
+
+    it('should return defaults when settings is null', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      const result = await service.getViewport(1);
+
+      expect(result).toEqual(DEFAULT_VIEWPORT);
+    });
+
+    it('should return defaults when orgViewport key is missing', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { someOtherKey: true } },
+      ]);
+
+      const result = await service.getViewport(1);
+
+      expect(result).toEqual(DEFAULT_VIEWPORT);
+    });
+
+    it('should return stored viewport when present', async () => {
+      const custom = { zoom: 1.5, panX: 100, panY: -50, fontSize: 16 };
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgViewport: custom } },
+      ]);
+
+      const result = await service.getViewport(1);
+
+      expect(result).toEqual(custom);
+    });
+
+    it('should fill missing viewport fields from defaults', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgViewport: { zoom: 2 } } },
+      ]);
+
+      const result = await service.getViewport(1);
+
+      expect(result.zoom).toBe(2);
+      expect(result.panX).toBe(DEFAULT_VIEWPORT.panX);
+      expect(result.panY).toBe(DEFAULT_VIEWPORT.panY);
+      expect(result.fontSize).toBe(DEFAULT_VIEWPORT.fontSize);
+    });
+
+    it('should return defaults when first row is undefined', async () => {
+      mockDb.query.mockResolvedValueOnce([undefined]);
+
+      const result = await service.getViewport(1);
+
+      expect(result).toEqual(DEFAULT_VIEWPORT);
+    });
+  });
+
+  // =============================================================
+  // getHallOverrides
+  // =============================================================
+
+  describe('getHallOverrides', () => {
+    it('should return empty object when no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getHallOverrides(1);
+
+      expect(result).toEqual({});
+    });
+
+    it('should return empty object when settings is null', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      const result = await service.getHallOverrides(1);
+
+      expect(result).toEqual({});
+    });
+
+    it('should return empty object when orgHallOverrides is missing', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { someOtherKey: true } },
+      ]);
+
+      const result = await service.getHallOverrides(1);
+
+      expect(result).toEqual({});
+    });
+
+    it('should return stored overrides when present', async () => {
+      const overrides = {
+        'area-uuid-1': { x: 10, y: 20, width: 300, height: 200 },
+      };
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgHallOverrides: overrides } },
+      ]);
+
+      const result = await service.getHallOverrides(1);
+
+      expect(result).toEqual(overrides);
+    });
+  });
+
+  // =============================================================
+  // saveHallOverrides
+  // =============================================================
+
+  describe('saveHallOverrides', () => {
+    let mockClient: { query: ReturnType<typeof vi.fn> };
+
+    beforeEach(() => {
+      mockClient = { query: vi.fn() };
+      mockDb.tenantTransaction.mockImplementation(
+        async (fn: (client: typeof mockClient) => Promise<void>) =>
+          fn(mockClient),
+      );
+    });
+
+    it('should merge overrides into existing settings', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgHierarchy: { levels: {} } } },
+      ]);
+
+      const overrides = {
+        'area-1': { x: 0, y: 0, width: 100, height: 100 },
+      };
+      await service.saveHallOverrides(1, overrides);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written['orgHierarchy']).toEqual({ levels: {} });
+      expect(written['orgHallOverrides']).toEqual(overrides);
+    });
+
+    it('should handle empty settings rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const overrides = {
+        'area-1': { x: 0, y: 0, width: 100, height: 100 },
+      };
+      await service.saveHallOverrides(1, overrides);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written).toEqual({ orgHallOverrides: overrides });
+    });
+
+    it('should handle null settings value', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      await service.saveHallOverrides(1, {});
+
+      expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
+    });
+  });
+
+  // =============================================================
+  // saveViewport
+  // =============================================================
+
+  describe('saveViewport', () => {
+    let mockClient: { query: ReturnType<typeof vi.fn> };
+
+    beforeEach(() => {
+      mockClient = { query: vi.fn() };
+      mockDb.tenantTransaction.mockImplementation(
+        async (fn: (client: typeof mockClient) => Promise<void>) =>
+          fn(mockClient),
+      );
+    });
+
+    it('should merge viewport into existing settings', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgHierarchy: { levels: {} } } },
+      ]);
+
+      const viewport = { zoom: 2, panX: 50, panY: -30, fontSize: 14 };
+      await service.saveViewport(1, viewport);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written['orgHierarchy']).toEqual({ levels: {} });
+      expect(written['orgViewport']).toEqual(viewport);
+    });
+
+    it('should handle empty settings rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const viewport = { zoom: 1, panX: 0, panY: 0, fontSize: 13 };
+      await service.saveViewport(1, viewport);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written).toEqual({ orgViewport: viewport });
+    });
+
+    it('should use tenantTransaction for the UPDATE', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      await service.saveViewport(1, DEFAULT_VIEWPORT);
+
+      expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('UPDATE tenants SET settings');
+    });
   });
 
   // =============================================================

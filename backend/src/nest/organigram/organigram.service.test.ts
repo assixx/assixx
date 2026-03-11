@@ -483,6 +483,49 @@ describe('OrganigramService', () => {
       expect(tree.nodes[0]?.name).toBe('Freie Anlage');
     });
 
+    it('should assign hallName to areas when halls exist', async () => {
+      setupTreeQueries(mockDb, {
+        areas: [
+          { uuid: AREA_1, name: 'Bereich A', lead_name: null },
+          { uuid: AREA_2, name: 'Bereich B', lead_name: null },
+        ],
+        halls: [
+          { name: 'Halle Nord', area_uuid: AREA_1 },
+          { name: 'Halle Süd', area_uuid: AREA_2 },
+        ],
+      });
+
+      const tree = await service.getOrgChartTree(1);
+
+      expect(tree.nodes[0]?.hallName).toBe('Halle Nord');
+      expect(tree.nodes[1]?.hallName).toBe('Halle Süd');
+    });
+
+    it('should use first hall when multiple halls share same area', async () => {
+      setupTreeQueries(mockDb, {
+        areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],
+        halls: [
+          { name: 'Halle 1', area_uuid: AREA_1 },
+          { name: 'Halle 2', area_uuid: AREA_1 },
+        ],
+      });
+
+      const tree = await service.getOrgChartTree(1);
+
+      expect(tree.nodes[0]?.hallName).toBe('Halle 1');
+    });
+
+    it('should not set hallName when no halls assigned', async () => {
+      setupTreeQueries(mockDb, {
+        areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],
+        halls: [],
+      });
+
+      const tree = await service.getOrgChartTree(1);
+
+      expect(tree.nodes[0]).not.toHaveProperty('hallName');
+    });
+
     it('should mix areas and orphaned departments at top level', async () => {
       setupTreeQueries(mockDb, {
         areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],

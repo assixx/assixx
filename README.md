@@ -95,12 +95,12 @@ Details: [FEATURES.md](./docs/FEATURES.md)
 
 ## Documentation
 
-| Document                                  | Content                  |
-| ----------------------------------------- | ------------------------ |
-| [FEATURES.md](./docs/FEATURES.md)         | Feature Overview & Plans |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technical Architecture   |
-| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup             |
-| [TODO.md](./TODO.md)                      | Current Tasks            |
+| Document                                  | Content                       |
+| ----------------------------------------- | ----------------------------- |
+| [FEATURES.md](./docs/FEATURES.md)         | Addon-Übersicht & Preismodell |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technical Architecture        |
+| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup                  |
+| [TODO.md](./TODO.md)                      | Current Tasks                 |
 
 ---
 

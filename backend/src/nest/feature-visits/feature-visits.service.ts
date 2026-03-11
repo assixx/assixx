@@ -13,7 +13,7 @@ interface FeatureVisitRow {
   id: number;
   tenant_id: number;
   user_id: number;
-  feature: string;
+  addon: string;
   last_visited_at: Date;
   created_at: Date;
   updated_at: Date;
@@ -34,9 +34,9 @@ export class FeatureVisitsService {
     this.logger.debug(`Marking ${feature} as visited for user ${userId}`);
 
     await this.db.query(
-      `INSERT INTO feature_visits (tenant_id, user_id, feature, last_visited_at)
+      `INSERT INTO addon_visits (tenant_id, user_id, addon, last_visited_at)
        VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (user_id, feature, tenant_id)
+       ON CONFLICT (user_id, addon, tenant_id)
        DO UPDATE SET last_visited_at = NOW(), updated_at = NOW()`,
       [tenantId, userId, feature],
     );
@@ -49,8 +49,8 @@ export class FeatureVisitsService {
     feature: Feature,
   ): Promise<Date | null> {
     const result = await this.db.queryOne<FeatureVisitRow>(
-      `SELECT last_visited_at FROM feature_visits
-       WHERE tenant_id = $1 AND user_id = $2 AND feature = $3`,
+      `SELECT last_visited_at FROM addon_visits
+       WHERE tenant_id = $1 AND user_id = $2 AND addon = $3`,
       [tenantId, userId, feature],
     );
 
@@ -63,14 +63,14 @@ export class FeatureVisitsService {
     userId: number,
   ): Promise<Map<Feature, Date>> {
     const rows = await this.db.query<FeatureVisitRow>(
-      `SELECT feature, last_visited_at FROM feature_visits
+      `SELECT addon, last_visited_at FROM addon_visits
        WHERE tenant_id = $1 AND user_id = $2`,
       [tenantId, userId],
     );
 
     const visits = new Map<Feature, Date>();
     for (const row of rows) {
-      visits.set(row.feature as Feature, row.last_visited_at);
+      visits.set(row.addon as Feature, row.last_visited_at);
     }
 
     return visits;

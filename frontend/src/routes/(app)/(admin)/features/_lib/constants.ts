@@ -1,16 +1,16 @@
 /**
- * Features Page - Constants
+ * Addon Management Page — Constants
  * @module features/_lib/constants
  */
 
-import type { FeatureCategory } from './types';
-
-/** Plan order for comparison (lowest to highest) */
-export const PLAN_ORDER = ['basic', 'professional', 'enterprise'] as const;
-
-/** FontAwesome icon class per feature code */
-export const FEATURE_ICONS: Record<string, string> = {
+/** FontAwesome icon class per addon code */
+export const ADDON_ICONS: Record<string, string> = {
+  dashboard: 'fas fa-tachometer-alt',
   employees: 'fas fa-users',
+  departments: 'fas fa-sitemap',
+  teams: 'fas fa-people-group',
+  settings: 'fas fa-cog',
+  notifications: 'fas fa-bell',
   documents: 'fas fa-folder-open',
   blackboard: 'fas fa-chalkboard',
   chat: 'fas fa-comments',
@@ -18,89 +18,45 @@ export const FEATURE_ICONS: Record<string, string> = {
   calendar: 'fas fa-calendar-alt',
   shift_planning: 'fas fa-clock',
   kvp: 'fas fa-lightbulb',
+  vacation: 'fas fa-umbrella-beach',
+  tpm: 'fas fa-tools',
+  work_orders: 'fas fa-clipboard-list',
+  organigram: 'fas fa-project-diagram',
 };
 
-/** Hardcoded feature categories with default inactive state */
-export const FEATURE_CATEGORIES: Record<string, FeatureCategory> = {
-  'Kern-Features': {
-    icon: '🔧',
-    features: [
-      {
-        code: 'employees',
-        name: 'Mitarbeiterverwaltung',
-        description: 'Verwalten Sie Ihre Mitarbeiter effizient',
-        minPlan: 'basic',
-        active: false,
-      },
-      {
-        code: 'documents',
-        name: 'Dokumentenverwaltung',
-        description: 'Zentrale Ablage für alle Dokumente',
-        minPlan: 'basic',
-        active: false,
-      },
-    ],
+/** Status badge configuration: label (German), CSS class, icon */
+export const STATUS_CONFIG: Record<
+  string,
+  { label: string; badgeClass: string; icon: string }
+> = {
+  core_always_active: {
+    label: 'Kern-Modul',
+    badgeClass: 'badge--primary',
+    icon: 'fas fa-shield-alt',
   },
-  Kommunikation: {
-    icon: '💬',
-    features: [
-      {
-        code: 'blackboard',
-        name: 'Schwarzes Brett',
-        description: 'Unternehmensweite Ankündigungen',
-        minPlan: 'professional',
-        active: false,
-      },
-      {
-        code: 'chat',
-        name: 'Chat System',
-        description: 'Echtzeit-Kommunikation im Team',
-        minPlan: 'professional',
-        active: false,
-      },
-      {
-        code: 'surveys',
-        name: 'Umfragen',
-        description: 'Mitarbeiterfeedback sammeln',
-        minPlan: 'enterprise',
-        active: false,
-      },
-    ],
+  active: {
+    label: 'Aktiv',
+    badgeClass: 'badge--success',
+    icon: 'fas fa-check-circle',
   },
-  Organisation: {
-    icon: '📋',
-    features: [
-      {
-        code: 'calendar',
-        name: 'Firmenkalender',
-        description: 'Termine und Events verwalten',
-        minPlan: 'professional',
-        active: false,
-      },
-      {
-        code: 'shift_planning',
-        name: 'Schichtplanung',
-        description: 'Automatisierte Schichtpläne',
-        minPlan: 'enterprise',
-        active: false,
-      },
-      {
-        code: 'kvp',
-        name: 'KVP System',
-        description: 'Kontinuierliche Verbesserung',
-        minPlan: 'enterprise',
-        active: false,
-      },
-    ],
+  trial: {
+    label: 'Testphase',
+    badgeClass: 'badge--warning',
+    icon: 'fas fa-hourglass-half',
+  },
+  expired: {
+    label: 'Abgelaufen',
+    badgeClass: 'badge--danger',
+    icon: 'fas fa-clock',
+  },
+  cancelled: {
+    label: 'Deaktiviert',
+    badgeClass: 'badge--secondary',
+    icon: 'fas fa-times-circle',
+  },
+  not_activated: {
+    label: 'Verfügbar',
+    badgeClass: 'badge--secondary',
+    icon: 'fas fa-plus-circle',
   },
 };
-
-/** Addon pricing per month */
-export const ADDON_PRICING = {
-  employees: 5,
-  admins: 10,
-  storage_per_100gb: 10,
-} as const;
-
-/** Default tenant name fallback */
-export const DEFAULT_TENANT_NAME = 'Ihre Organisation';

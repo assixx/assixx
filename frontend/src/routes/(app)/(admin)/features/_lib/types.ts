@@ -1,69 +1,59 @@
 /**
- * Features Page - Type Definitions
+ * Addon Management Page — Type Definitions
  * @module features/_lib/types
+ *
+ * Types match backend AddonsService response shapes (ADR-033).
  */
 
-/** Single feature definition */
-export interface Feature {
-  code: string;
-  name: string;
-  description: string;
-  minPlan: string;
-  active: boolean;
-  category?: string;
-}
+/** Tenant-specific addon status from backend */
+export type TenantAddonStatusValue =
+  | 'trial'
+  | 'active'
+  | 'expired'
+  | 'cancelled'
+  | 'not_activated';
 
-/** Feature category with icon and features list */
-export interface FeatureCategory {
-  icon: string;
-  features: Feature[];
-}
-
-/** Subscription plan definition */
-export interface Plan {
+/** Single addon from GET /addons/my-addons */
+export interface AddonWithTenantStatus {
   id: number;
   code: string;
   name: string;
-  basePrice: number;
-  maxEmployees: number | null;
-  maxAdmins: number | null;
-  features?: { featureCode: string }[];
+  description?: string;
+  priceMonthly?: number;
+  isActive: boolean;
+  isCore: boolean;
+  trialDays?: number;
+  icon?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  tenantStatus?: {
+    status: TenantAddonStatusValue;
+    isActive: boolean;
+    trialEndsAt?: string;
+    activatedAt?: string;
+  };
 }
 
-/** Tenant addon quantities */
-export interface TenantAddons {
-  employees?: number;
-  admins?: number;
-  storage_gb?: number;
+/** Addon status response from POST /addons/activate */
+export interface AddonStatus {
+  addonCode: string;
+  isCore: boolean;
+  status: TenantAddonStatusValue | 'core_always_active';
+  trialEndsAt?: string;
+  activatedAt?: string;
+  daysRemaining?: number;
 }
 
-/** Feature filter options */
-export type FeatureFilter = 'all' | 'active' | 'included' | 'addons';
-
-/** Addon type for adjustments */
-export type AddonType = 'employees' | 'admins' | 'storage';
-
-/** JWT payload structure */
-export interface JwtPayload {
-  tenantId?: number;
-  [key: string]: unknown;
+/** Tenant addon summary from GET /addons/tenant/:tenantId/summary */
+export interface TenantAddonsSummary {
+  tenantId: number;
+  coreAddons: number;
+  activeAddons: number;
+  trialAddons: number;
+  cancelledAddons: number;
+  monthlyCost: number;
 }
 
-/** API response wrapper */
-export interface ApiResponse<T> {
-  data?: T;
-  plan?: T;
-  addons?: AddonInfo[];
-}
-
-/** Addon info from API */
-export interface AddonInfo {
-  addonType?: string;
-  quantity: number;
-}
-
-/** Tenant feature from API */
-export interface TenantFeature {
-  code: string;
-  isAvailable?: number;
-}
+/** Addon filter options */
+export type AddonFilter = 'all' | 'active' | 'inactive';

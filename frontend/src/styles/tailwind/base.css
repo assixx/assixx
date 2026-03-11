@@ -113,15 +113,14 @@
   }
 
   /* Glassmorphism background gradient overlay
-     absolute statt fixed: fixed erzeugt eigenen Stacking Context,
-     der Fullscreen-Overlays (z.B. Blackboard) verdeckt.
-     inset: 0 spannt über gesamten Body, min-height verhindert Kollaps
-     auf kurzen Seiten. */
+     fixed: Gradient deckt immer exakt den Viewport ab, unabhängig von der
+     Seitenlänge. Verhindert sichtbare Gradient-Kanten auf langen Seiten
+     (Dark Mode radial-gradient). z-index: -100 liegt unter allen Inhalten
+     inkl. Fullscreen-Overlays (Blackboard z-index: 9999). */
   body::after {
-    position: absolute;
+    position: fixed;
     z-index: -100;
     inset: 0;
-    min-height: 100vh;
 
     background: var(--main-bg-gradient);
     pointer-events: none;

@@ -327,6 +327,27 @@ describe('buildUserListWhereClause', () => {
     expect(whereClause).not.toContain(`is_active != ${IS_ACTIVE.DELETED}`);
   });
 
+  it('should filter by position when provided', () => {
+    const query = { position: 'Schichtleiter' } as Parameters<
+      typeof buildUserListWhereClause
+    >[1];
+
+    const { whereClause, params } = buildUserListWhereClause(1, query);
+
+    expect(whereClause).toContain('position = $');
+    expect(params).toContain('Schichtleiter');
+  });
+
+  it('should ignore empty position string', () => {
+    const query = { position: '' } as Parameters<
+      typeof buildUserListWhereClause
+    >[1];
+
+    const { whereClause } = buildUserListWhereClause(1, query);
+
+    expect(whereClause).not.toContain('position');
+  });
+
   it('should add ILIKE search across name and email', () => {
     const query = { search: 'john' } as Parameters<
       typeof buildUserListWhereClause

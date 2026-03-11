@@ -124,7 +124,7 @@
           ?.split('=')[1] ?? '';
 
       const permissions: {
-        featureCode: string;
+        addonCode: string;
         moduleCode: string;
         canRead: boolean;
         canWrite: boolean;
@@ -134,7 +134,7 @@
       for (const cat of categories) {
         for (const mod of cat.modules) {
           permissions.push({
-            featureCode: cat.code,
+            addonCode: cat.code,
             moduleCode: mod.code,
             canRead: mod.canRead,
             canWrite: mod.canWrite,

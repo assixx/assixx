@@ -365,7 +365,7 @@ describe('RootService', () => {
       mockUserRepo.countAll.mockResolvedValueOnce(55);
       // tenant count
       mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
-      // features
+      // addons
       mockDb.query.mockResolvedValueOnce([
         { code: 'chat' },
         { code: 'documents' },

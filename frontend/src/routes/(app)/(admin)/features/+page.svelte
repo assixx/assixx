@@ -1,8 +1,10 @@
 <script lang="ts">
   /**
-   * Features Page - Plan & Feature Management
+   * Addon Management Page
    * @module features/+page
    *
+   * Shows all addons with tenant status. Core addons are always active.
+   * Purchasable addons can be activated (trial) or deactivated.
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { invalidateAll } from '$app/navigation';
@@ -10,319 +12,206 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
-  const log = createLogger('FeaturesPage');
-
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
-  import AddonResources from './_lib/AddonResources.svelte';
+  import { activateAddon, deactivateAddon } from './_lib/api';
+  import { ADDON_ICONS, STATUS_CONFIG } from './_lib/constants';
   import {
-    applyTenantFeaturesToCategories,
-    changePlan as apiChangePlan,
-    saveAddons as apiSaveAddons,
-    toggleFeature as apiToggleFeature,
-  } from './_lib/api';
-  import {
-    DEFAULT_TENANT_NAME,
-    FEATURE_CATEGORIES,
-    FEATURE_ICONS,
-  } from './_lib/constants';
-  import {
-    calculateTotalCost,
-    canActivateFeature,
-    cloneFeatureCategories,
-    countActiveFeatures,
-    getFeatureCardClasses,
-    getPlanBadge,
-    isFeatureIncludedInPlan,
+    canActivate,
+    canDeactivate,
+    getEffectiveStatus,
+    getTrialDaysRemaining,
   } from './_lib/utils';
 
   import type {
-    Feature,
-    FeatureCategory,
-    FeatureFilter,
-    Plan,
-    TenantAddons,
-    TenantFeature,
+    AddonFilter,
+    AddonWithTenantStatus,
+    TenantAddonsSummary,
   } from './_lib/types';
 
+  const log = createLogger('AddonManagement');
+
   // =============================================================================
-  // SSR DATA - Level 3: $derived from props (single source of truth)
+  // SSR DATA
   // =============================================================================
 
   interface PageData {
-    plans: Record<string, Plan | undefined>;
-    currentPlanCode: string;
-    addons: TenantAddons;
-    tenantFeatures: TenantFeature[];
-    tenantId: number | null;
+    addons: AddonWithTenantStatus[];
+    summary: TenantAddonsSummary;
+    tenantId: number;
   }
 
   const { data }: { data: PageData } = $props();
 
-  // SSR data via $derived - updates when invalidateAll() is called
-  const plans: Record<string, Plan | undefined> = $derived(data.plans);
-  const currentPlan: string = $derived(data.currentPlanCode);
-  const tenantFeatures: TenantFeature[] = $derived(data.tenantFeatures);
-  const currentTenantId: number | null = $derived(data.tenantId);
+  const addons = $derived(data.addons);
+  const summary = $derived(data.summary);
+  const tenantId = $derived(data.tenantId);
 
-  // Derived: Feature categories with tenant data applied
-  const featureCategories: Record<string, FeatureCategory> = $derived(
-    applyTenantFeaturesToCategories(
-      cloneFeatureCategories(FEATURE_CATEGORIES),
-      tenantFeatures,
-    ),
+  const coreAddons = $derived(addons.filter((a) => a.isCore));
+  const purchasableAddons = $derived(addons.filter((a) => !a.isCore));
+
+  // =============================================================================
+  // UI STATE
+  // =============================================================================
+
+  let processingAddon = $state<string | null>(null);
+  let showDeactivateModal = $state(false);
+  let pendingDeactivateCode = $state('');
+  let pendingDeactivateName = $state('');
+  let currentFilter = $state<AddonFilter>('all');
+
+  const filteredPurchasable = $derived(
+    purchasableAddons.filter((addon) => {
+      if (currentFilter === 'all') return true;
+      const status = getEffectiveStatus(addon);
+      if (currentFilter === 'active') {
+        return status === 'active' || status === 'trial';
+      }
+      return (
+        status === 'not_activated' ||
+        status === 'cancelled' ||
+        status === 'expired'
+      );
+    }),
   );
 
   // =============================================================================
-  // UI STATE - Local state for pending edits before save
+  // ACTIONS
   // =============================================================================
 
-  // Addons - writable $derived (Svelte 5.25+): syncs from SSR, can be locally edited
-  let pendingAddons: TenantAddons = $derived({ ...data.addons });
-
-  const tenantName = DEFAULT_TENANT_NAME;
-
-  const error: string | null = $state(null);
-
-  let currentFilter: FeatureFilter = $state('all');
-
-  // Confirm modal state for plan change
-  let showPlanChangeModal = $state(false);
-  let pendingPlanCode = $state('');
-
-  // =============================================================================
-  // DERIVED VALUES
-  // =============================================================================
-
-  const currentPlanData = $derived(plans[currentPlan]);
-  const currentPlanName = $derived(currentPlanData?.name ?? currentPlan);
-  const activeFeatureCount = $derived(
-    countActiveFeatures(featureCategories, currentPlan),
-  );
-  const totalCost = $derived(
-    calculateTotalCost(currentPlanData, pendingAddons),
-  );
-
-  // =============================================================================
-  // FILTER LOGIC
-  // =============================================================================
-
-  function isFeatureVisible(feature: Feature): boolean {
-    switch (currentFilter) {
-      case 'active':
-        return feature.active;
-      case 'included':
-        return isFeatureIncludedInPlan(feature.code, currentPlan, plans);
-      case 'addons':
-        return (
-          !isFeatureIncludedInPlan(feature.code, currentPlan, plans) &&
-          canActivateFeature(currentPlan, feature.minPlan)
-        );
-      default:
-        return true;
-    }
-  }
-
-  // =============================================================================
-  // API ACTIONS - Level 3: invalidateAll() after mutations
-  // =============================================================================
-
-  /** Request plan change - shows confirmation modal */
-  function requestPlanChange(newPlanCode: string): void {
-    if (newPlanCode === currentPlan) return;
-    if (!plans[newPlanCode]) return;
-
-    pendingPlanCode = newPlanCode;
-    showPlanChangeModal = true;
-  }
-
-  /** Execute plan change after confirmation */
-  async function confirmPlanChange(): Promise<void> {
-    showPlanChangeModal = false;
-
+  async function handleActivate(addonCode: string): Promise<void> {
+    processingAddon = addonCode;
     try {
-      await apiChangePlan(currentTenantId, pendingPlanCode);
+      const result = await activateAddon(tenantId, addonCode);
+      const days = result.daysRemaining ?? 30;
+      showSuccessAlert(
+        `Modul aktiviert — ${String(days)} Tage Testphase gestartet`,
+      );
       await invalidateAll();
     } catch (err: unknown) {
-      log.error({ err }, 'Error changing plan');
-      showErrorAlert('Fehler beim Plan-Wechsel');
+      log.error({ err }, 'Error activating addon');
+      showErrorAlert('Fehler beim Aktivieren des Moduls');
+    } finally {
+      processingAddon = null;
     }
   }
 
-  async function toggleFeature(
-    featureCode: string,
-    activate: boolean,
-  ): Promise<void> {
+  function requestDeactivate(addon: AddonWithTenantStatus): void {
+    pendingDeactivateCode = addon.code;
+    pendingDeactivateName = addon.name;
+    showDeactivateModal = true;
+  }
+
+  async function confirmDeactivate(): Promise<void> {
+    showDeactivateModal = false;
+    processingAddon = pendingDeactivateCode;
     try {
-      await apiToggleFeature(currentTenantId, featureCode, activate);
-      // Level 3: Trigger SSR refetch
+      await deactivateAddon(tenantId, pendingDeactivateCode);
+      showSuccessAlert('Modul deaktiviert — Berechtigungen bleiben erhalten');
       await invalidateAll();
     } catch (err: unknown) {
-      log.error({ err }, 'Error toggling feature');
-      showErrorAlert('Fehler beim Ändern des Features');
+      log.error({ err }, 'Error deactivating addon');
+      showErrorAlert('Fehler beim Deaktivieren des Moduls');
+    } finally {
+      processingAddon = null;
     }
   }
 
-  async function saveChanges(): Promise<void> {
-    try {
-      await apiSaveAddons(pendingAddons);
-      showSuccessAlert('Änderungen erfolgreich gespeichert!');
-      // Level 3: Trigger SSR refetch to sync saved values
-      await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Error saving changes');
-      showErrorAlert('Fehler beim Speichern der Änderungen');
-    }
+  /** Get button label depending on addon status */
+  function getActivateLabel(addon: AddonWithTenantStatus): string {
+    const status = addon.tenantStatus?.status ?? 'not_activated';
+    return status === 'not_activated' ? 'Testen' : 'Reaktivieren';
   }
-
-  // =============================================================================
-  // EVENT HANDLERS
-  // =============================================================================
-
-  function handleFilterChange(filter: FeatureFilter): void {
-    currentFilter = filter;
-  }
-
-  function handlePlanChange(e: Event): void {
-    const input = e.target as HTMLInputElement;
-    if (input.checked) requestPlanChange(input.value);
-  }
-
-  // =============================================================================
-  // LIFECYCLE - SSR: Auth handled by server, data already loaded
-  // =============================================================================
-
-  // onMount not needed for initial data - SSR provides everything
-  // Auth check is done server-side in +page.server.ts
 </script>
 
 <svelte:head>
-  <title>Plan & Feature Management - Assixx</title>
+  <title>Addon-Verwaltung - Assixx</title>
 </svelte:head>
 
 <div class="container">
-  <!-- Page Header -->
-  <div class="card mb-6">
-    <div class="card__header flex items-center justify-between">
-      <div>
-        <h1 class="card__title text-2xl">
-          <i class="fas fa-crown mr-2"></i>
-          Plan & Feature Management
-        </h1>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Verwalten Sie Ihren Plan und aktivieren Sie Features für
-          <strong>{tenantName}</strong>
-        </p>
-      </div>
-      <span
-        class="badge badge--lg"
-        class:badge--primary={currentPlan !== 'enterprise'}
-        class:badge--warning={currentPlan === 'enterprise'}
-      >
-        <i class="fas fa-crown"></i>
-        {currentPlanName} Plan
-      </span>
-    </div>
-  </div>
-
-  <!-- Verfügbare Pläne -->
+  <!-- Header + Summary -->
   <div class="card mb-6">
     <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-th-large mr-2"></i>
-        Verfügbare Pläne
-      </h2>
+      <h1 class="card__title text-2xl">
+        <i class="fas fa-puzzle-piece mr-2"></i>
+        Addon-Verwaltung
+      </h1>
       <p class="mt-2 text-(--color-text-secondary)">
-        Wählen Sie den passenden Plan für Ihr Unternehmen
+        Module für Ihre Organisation verwalten
       </p>
     </div>
     <div class="card__body">
-      <div
-        class="grid grid-cols-1 gap-6 md:grid-cols-3"
-        id="plans-container"
-      >
-        {#each ['basic', 'professional', 'enterprise'] as planCode (planCode)}
-          {@const plan = plans[planCode]}
-          {#if plan}
-            {@const isCurrent = planCode === currentPlan}
-            {@const isRecommended = planCode === 'professional'}
-            <label
-              class="choice-card plan-card"
-              class:plan-card--recommended={isRecommended}
-            >
-              <input
-                type="radio"
-                class="choice-card__input"
-                name="plan-selection"
-                value={planCode}
-                checked={isCurrent}
-                onchange={handlePlanChange}
-              />
-              <div class="plan-card__content">
-                <div class="plan-card__header">
-                  <h4 class="plan-card__title">{plan.name}</h4>
-                  <span class="plan-card__price">
-                    {plan.basePrice.toFixed(0)}€/Monat
-                  </span>
-                </div>
-                <p class="plan-card__description">
-                  {#if planCode === 'basic'}
-                    Für kleine Teams zum Einstieg
-                  {:else if planCode === 'professional'}
-                    Für wachsende Unternehmen
-                  {:else}
-                    Für große Organisationen
-                  {/if}
-                </p>
-                <ul class="plan-card__features">
-                  <li class="plan-card__feature">
-                    {plan.maxEmployees ?? 'Unbegrenzt'} Mitarbeiter
-                  </li>
-                  <li class="plan-card__feature">
-                    {plan.maxAdmins ?? 'Unbegrenzt'} Admins
-                  </li>
-                  <li class="plan-card__feature">
-                    {#if planCode === 'basic'}
-                      Kern-Features
-                    {:else if planCode === 'professional'}
-                      Alle Basic + Kommunikation
-                    {:else}
-                      Alle Features inklusive
-                    {/if}
-                  </li>
-                </ul>
-              </div>
-            </label>
-          {/if}
+      <div class="summary-stats">
+        <div class="stat-item">
+          <span class="stat-item__value">{summary.coreAddons}</span>
+          <span class="stat-item__label">Kern-Module</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-item__value"
+            >{summary.activeAddons + summary.trialAddons}</span
+          >
+          <span class="stat-item__label">Aktive Zusatz-Module</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-item__value">{summary.trialAddons}</span>
+          <span class="stat-item__label">In Testphase</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-item__value">{summary.monthlyCost.toFixed(0)}€</span
+          >
+          <span class="stat-item__label">Monatliche Kosten</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Addons -->
+  <div class="card mb-6">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-shield-alt mr-2"></i>
+        Kern-Module
+      </h2>
+      <p class="mt-2 text-(--color-text-secondary)">
+        Immer aktiv — im Basispaket enthalten
+      </p>
+    </div>
+    <div class="card__body">
+      <div class="core-grid">
+        {#each coreAddons as addon (addon.code)}
+          <div class="core-card">
+            <div class="core-card__icon">
+              <i class={ADDON_ICONS[addon.code] ?? 'fas fa-cube'}></i>
+            </div>
+            <span class="core-card__name">{addon.name}</span>
+            <span class="badge badge--primary badge--sm">
+              <i class="fas fa-check"></i> Aktiv
+            </span>
+          </div>
         {/each}
       </div>
     </div>
   </div>
 
-  <!-- Features -->
+  <!-- Purchasable Addons -->
   <div class="card mb-6">
     <div class="card__header flex flex-wrap items-center justify-between gap-4">
       <div>
         <h2 class="card__title">
-          <i class="fas fa-puzzle-piece mr-2"></i>
-          Verfügbare Features
+          <i class="fas fa-cubes mr-2"></i>
+          Zusatz-Module
         </h2>
         <p class="mt-2 text-(--color-text-secondary)">
-          Aktivieren oder deaktivieren Sie Features
+          Aktivieren Sie Module nach Bedarf — 30 Tage kostenlos testen
         </p>
       </div>
-
-      <div
-        class="toggle-group"
-        id="feature-status-toggle"
-      >
+      <div class="toggle-group">
         <button
           type="button"
           class="toggle-group__btn"
           class:active={currentFilter === 'all'}
-          title="Alle Features anzeigen"
           onclick={() => {
-            handleFilterChange('all');
+            currentFilter = 'all';
           }}
         >
           <i class="fas fa-th"></i> Alle
@@ -331,9 +220,8 @@
           type="button"
           class="toggle-group__btn"
           class:active={currentFilter === 'active'}
-          title="Nur aktive Features"
           onclick={() => {
-            handleFilterChange('active');
+            currentFilter = 'active';
           }}
         >
           <i class="fas fa-check-circle"></i> Aktiv
@@ -341,249 +229,344 @@
         <button
           type="button"
           class="toggle-group__btn"
-          class:active={currentFilter === 'included'}
-          title="Im Plan enthaltene Features"
+          class:active={currentFilter === 'inactive'}
           onclick={() => {
-            handleFilterChange('included');
+            currentFilter = 'inactive';
           }}
         >
-          <i class="fas fa-box"></i> Im Plan
+          <i class="fas fa-plus-circle"></i> Verfügbar
         </button>
-        {#if currentPlan !== 'enterprise'}
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentFilter === 'addons'}
-            title="Zusätzlich buchbare Features"
-            onclick={() => {
-              handleFilterChange('addons');
-            }}
-          >
-            <i class="fas fa-plus-circle"></i> Zusätzlich
-          </button>
-        {/if}
       </div>
     </div>
 
     <div class="card__body">
-      {#if error}
+      {#if filteredPurchasable.length === 0}
         <div class="empty-state">
           <div class="empty-state__icon">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-puzzle-piece"></i>
           </div>
-          <h3 class="empty-state__title">Fehler beim Laden</h3>
-          <p class="empty-state__description">{error}</p>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={() => {
-              window.location.reload();
-            }}
-          >
-            Erneut versuchen
-          </button>
+          <h3 class="empty-state__title">Keine Module</h3>
+          <p class="empty-state__description">
+            {#if currentFilter === 'active'}
+              Keine aktiven Zusatz-Module gefunden.
+            {:else if currentFilter === 'inactive'}
+              Alle verfügbaren Module sind bereits aktiviert.
+            {:else}
+              Keine Zusatz-Module verfügbar.
+            {/if}
+          </p>
         </div>
       {:else}
-        <div id="features-container">
-          {#each Object.entries(featureCategories) as [categoryName, categoryData] (categoryName)}
-            {@const visibleFeatures =
-              categoryData.features.filter(isFeatureVisible)}
-            {#if visibleFeatures.length > 0}
-              <div
-                class="mb-8"
-                data-category={categoryName}
-              >
-                <h3
-                  class="mb-4 flex items-center gap-2 text-lg font-semibold text-(--color-text-primary)"
+        <div class="addon-grid">
+          {#each filteredPurchasable as addon (addon.code)}
+            {@const status = getEffectiveStatus(addon)}
+            {@const statusCfg = STATUS_CONFIG[status]}
+            {@const isProcessing = processingAddon === addon.code}
+            <div
+              class="addon-card"
+              class:addon-card--active={status === 'active' ||
+                status === 'trial'}
+            >
+              <!-- Header: Icon + Status Badge -->
+              <div class="addon-card__header">
+                <div
+                  class="addon-card__icon"
+                  class:addon-card__icon--active={status === 'active' ||
+                    status === 'trial'}
                 >
-                  <span class="text-xl">{categoryData.icon}</span>
-                  {categoryName}
-                </h3>
-                <div class="features-grid">
-                  {#each visibleFeatures as feature (feature.code)}
-                    {@const canActivate = canActivateFeature(
-                      currentPlan,
-                      feature.minPlan,
-                    )}
-                    <div
-                      class={getFeatureCardClasses(feature, currentPlan)}
-                      data-feature={feature.code}
-                    >
-                      <!-- Header: Icon + Name + Status -->
-                      <div class="feature-card__header">
-                        <div
-                          class="feature-card__icon"
-                          class:feature-card__icon--active={feature.active}
-                        >
-                          <i
-                            class={FEATURE_ICONS[feature.code] ?? 'fas fa-cube'}
-                          ></i>
-                        </div>
-                        <div class="feature-card__title-group">
-                          <h4 class="feature-name">{feature.name}</h4>
-                          <span
-                            class="badge badge--sm"
-                            class:badge--success={feature.active}
-                            class:badge--secondary={!feature.active &&
-                              canActivate}
-                            class:badge--warning={!canActivate}
-                          >
-                            {#if feature.active}
-                              Aktiv
-                            {:else if !canActivate}
-                              Gesperrt
-                            {:else}
-                              Inaktiv
-                            {/if}
-                          </span>
-                        </div>
-                      </div>
-
-                      <!-- Description -->
-                      <p class="feature-description">{feature.description}</p>
-
-                      <!-- Footer: Plan Badge + Action -->
-                      <div class="feature-card__footer">
-                        <span class="feature-plan-badge">
-                          {getPlanBadge(feature.minPlan)}
-                        </span>
-                        {#if !canActivate}
-                          <a
-                            href="#plans-container"
-                            class="btn btn-primary btn--sm"
-                          >
-                            Upgraden
-                          </a>
-                        {:else if feature.active}
-                          <button
-                            type="button"
-                            class="btn btn-status-active btn--sm"
-                            onclick={() => toggleFeature(feature.code, false)}
-                          >
-                            Deaktivieren
-                          </button>
-                        {:else}
-                          <button
-                            type="button"
-                            class="btn btn-status-inactive btn--sm"
-                            onclick={() => toggleFeature(feature.code, true)}
-                          >
-                            Aktivieren
-                          </button>
-                        {/if}
-                      </div>
-                    </div>
-                  {/each}
+                  <i class={ADDON_ICONS[addon.code] ?? 'fas fa-cube'}></i>
                 </div>
+                {#if statusCfg}
+                  <span class="badge {statusCfg.badgeClass} badge--sm">
+                    <i class={statusCfg.icon}></i>
+                    {statusCfg.label}
+                  </span>
+                {/if}
               </div>
-            {/if}
+
+              <!-- Content -->
+              <h3 class="addon-card__name">{addon.name}</h3>
+              {#if addon.description}
+                <p class="addon-card__description">{addon.description}</p>
+              {/if}
+
+              <!-- Trial countdown -->
+              {#if status === 'trial' && addon.tenantStatus?.trialEndsAt}
+                {@const daysLeft = getTrialDaysRemaining(
+                  addon.tenantStatus.trialEndsAt,
+                )}
+                <div class="addon-card__trial">
+                  <i class="fas fa-hourglass-half"></i>
+                  {daysLeft}
+                  {daysLeft === 1 ? 'Tag' : 'Tage'} verbleibend
+                </div>
+              {/if}
+
+              <!-- Footer: Price + Action -->
+              <div class="addon-card__footer">
+                <span class="addon-card__price">
+                  {addon.priceMonthly !== undefined ?
+                    `${addon.priceMonthly.toFixed(0)}€/Monat`
+                  : 'Kostenlos'}
+                </span>
+                {#if canActivate(addon)}
+                  <button
+                    type="button"
+                    class="btn btn-primary btn--sm"
+                    disabled={isProcessing}
+                    onclick={() => void handleActivate(addon.code)}
+                  >
+                    {#if isProcessing}
+                      <span class="spinner-ring spinner-ring--sm mr-1"></span>
+                    {:else}
+                      <i class="fas fa-play mr-1"></i>
+                    {/if}
+                    {getActivateLabel(addon)}
+                  </button>
+                {:else if canDeactivate(addon)}
+                  <button
+                    type="button"
+                    class="btn btn-danger btn--sm"
+                    disabled={isProcessing}
+                    onclick={() => {
+                      requestDeactivate(addon);
+                    }}
+                  >
+                    {#if isProcessing}
+                      <span class="spinner-ring spinner-ring--sm mr-1"></span>
+                    {:else}
+                      <i class="fas fa-stop mr-1"></i>
+                    {/if}
+                    Deaktivieren
+                  </button>
+                {/if}
+              </div>
+            </div>
           {/each}
         </div>
       {/if}
     </div>
   </div>
-
-  <!-- Zusätzliche Ressourcen -->
-  <AddonResources bind:pendingAddons />
-  <!-- Summary -->
-  <div class="card summary-card">
-    <div class="card__body">
-      <div class="summary-card__content">
-        <div class="summary-card__items">
-          <div class="summary-card__item">
-            <span class="summary-card__label">Aktueller Plan</span>
-            <span class="summary-card__value">{currentPlanName}</span>
-          </div>
-          <div class="summary-card__item">
-            <span class="summary-card__label">Aktive Features</span>
-            <span class="summary-card__value">
-              {activeFeatureCount.active} / {activeFeatureCount.total}
-            </span>
-          </div>
-          <div class="summary-card__item">
-            <span class="summary-card__label">Monatliche Kosten</span>
-            <span class="summary-card__value">{totalCost.toFixed(2)}€</span>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={saveChanges}
-        >
-          <i class="fas fa-save mr-2"></i>
-          Änderungen speichern
-        </button>
-      </div>
-    </div>
-  </div>
 </div>
 
-<!-- Plan Change Confirmation Modal -->
+<!-- Deactivate Confirmation Modal -->
 <ConfirmModal
-  show={showPlanChangeModal}
-  id="plan-change-modal"
-  title="Plan wechseln"
-  icon="fa-exchange-alt"
-  confirmLabel="Plan wechseln"
+  show={showDeactivateModal}
+  id="deactivate-addon-modal"
+  title="Modul deaktivieren"
+  icon="fa-exclamation-triangle"
+  confirmLabel="Deaktivieren"
   centered
-  onconfirm={() => void confirmPlanChange()}
+  onconfirm={() => void confirmDeactivate()}
   oncancel={() => {
-    showPlanChangeModal = false;
+    showDeactivateModal = false;
   }}
 >
-  {@const pendingPlan = plans[pendingPlanCode]}
-  Möchten Sie wirklich zum
-  <strong>{pendingPlan?.name ?? pendingPlanCode}</strong> Plan wechseln?
+  Möchten Sie <strong>{pendingDeactivateName}</strong> wirklich deaktivieren?
+  <br /><br />
+  <small class="text-(--color-text-secondary)">
+    <i class="fas fa-info-circle mr-1"></i>
+    Berechtigungen bleiben erhalten und das Modul kann jederzeit reaktiviert werden.
+  </small>
 </ConfirmModal>
 
 <style>
   /* ==========================================================
-     SUMMARY CARD
+     SUMMARY STATS
      ========================================================== */
-
-  .summary-card__content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .summary-card__items {
+  .summary-stats {
     display: flex;
     gap: var(--spacing-8);
+    flex-wrap: wrap;
   }
 
-  .summary-card__item {
+  .stat-item {
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
 
-  .summary-card__label {
-    font-size: 11px;
+  .stat-item__value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .stat-item__label {
+    font-size: 12px;
     font-weight: 500;
     color: var(--color-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-  .summary-card__value {
-    font-size: 16px;
-    font-weight: 700;
+  /* ==========================================================
+     CORE ADDONS GRID
+     ========================================================== */
+  .core-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-4);
+  }
+
+  .core-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-4);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+  }
+
+  .core-card__icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+    font-size: 18px;
+  }
+
+  .core-card__name {
+    font-size: 14px;
+    font-weight: 500;
     color: var(--color-text-primary);
+    text-align: center;
+  }
+
+  /* ==========================================================
+     PURCHASABLE ADDONS GRID
+     ========================================================== */
+  .addon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-6);
+  }
+
+  .addon-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    padding: var(--spacing-5);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .addon-card:hover {
+    border-color: var(--color-glass-border-hover);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .addon-card--active {
+    border-color: color-mix(
+      in oklch,
+      var(--color-success) 30%,
+      var(--color-glass-border)
+    );
+  }
+
+  .addon-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .addon-card__icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: color-mix(
+      in oklch,
+      var(--color-text-secondary) 8%,
+      transparent
+    );
+    color: var(--color-text-secondary);
+    font-size: 20px;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .addon-card__icon--active {
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+  }
+
+  .addon-card__name {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .addon-card__description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+  }
+
+  .addon-card__trial {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    background: color-mix(in oklch, var(--color-warning) 10%, transparent);
+    color: var(--color-warning);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .addon-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: var(--spacing-3);
+    border-top: 1px solid var(--color-glass-border);
+  }
+
+  .addon-card__price {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
   }
 
   /* ==========================================================
      RESPONSIVE
      ========================================================== */
-
   @media (width < 768px) {
-    .summary-card__items {
+    .summary-stats {
       gap: var(--spacing-4);
     }
 
-    .summary-card__content {
-      flex-direction: column;
-      gap: var(--spacing-3);
+    .core-grid {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .addon-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .addon-card,
+    .addon-card__icon {
+      transition: none;
     }
   }
 </style>

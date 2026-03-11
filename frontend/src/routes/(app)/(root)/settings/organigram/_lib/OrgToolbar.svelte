@@ -16,6 +16,7 @@
     onfontdec: () => void;
     onautolayout: () => void;
     onsave: () => void;
+    onreset: () => void;
     onopenlabels: () => void;
     ontogglelock: () => void;
     onfullscreen: () => void;
@@ -34,6 +35,7 @@
     onfontdec,
     onautolayout,
     onsave,
+    onreset,
     onopenlabels,
     ontogglelock,
     onfullscreen,
@@ -154,6 +156,17 @@
         Ungespeichert
       </span>
     {/if}
+
+    <button
+      type="button"
+      class="btn btn-secondary"
+      title="Änderungen verwerfen"
+      disabled={!isDirty || isSaving}
+      onclick={onreset}
+    >
+      <i class="fas fa-undo"></i>
+      <span class="toolbar-label">Zurücksetzen</span>
+    </button>
 
     <button
       type="button"

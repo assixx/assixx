@@ -24,6 +24,7 @@
     initFromTree,
     markSaved,
     recomputeAutoLayout,
+    resetToSaved,
     resetView,
     setFontSize,
     setSaving,
@@ -188,6 +189,7 @@
       }}
       onautolayout={recomputeAutoLayout}
       onsave={handleSavePositions}
+      onreset={resetToSaved}
       onopenlabels={() => {
         showLabelsModal = true;
       }}
@@ -245,21 +247,10 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-6, 1.5rem);
+    padding-bottom: var(--spacing-6, 1.5rem);
 
-    /* 60px Header + ~2.5rem Breadcrumb + Main-Padding (responsive) */
-    height: calc(100dvh - 60px - 2.5rem - 1rem);
-  }
-
-  @media (width >= 768px) {
-    .organigramm-page {
-      height: calc(100dvh - 60px - 2.5rem - 1.5rem);
-    }
-  }
-
-  @media (width >= 1024px) {
-    .organigramm-page {
-      height: calc(100dvh - 60px - 2.5rem - 2rem);
-    }
+    /* Viewport-Höhe als Minimum, scrollbar wenn Canvas + Padding mehr brauchen */
+    min-height: calc(100dvh - 60px - 2.5rem - 1rem);
   }
 
   .organigramm-header {
@@ -351,5 +342,17 @@
   :global(body.fullscreen-mode #breadcrumb-container),
   :global(body.fullscreen-mode .organigramm-page > .organigramm-header) {
     display: none !important;
+  }
+
+  @media (width >= 768px) {
+    .organigramm-page {
+      min-height: calc(100dvh - 60px - 2.5rem - 1.5rem);
+    }
+  }
+
+  @media (width >= 1024px) {
+    .organigramm-page {
+      min-height: calc(100dvh - 60px - 2.5rem - 2rem);
+    }
   }
 </style>
