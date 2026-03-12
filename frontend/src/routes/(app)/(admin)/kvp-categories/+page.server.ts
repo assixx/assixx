@@ -6,6 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { API_BASE, type ServerApiResponse } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
@@ -13,13 +14,6 @@ import type { PageServerLoad } from './$types';
 import type { CustomizableCategoriesData } from './_lib/types';
 
 const log = createLogger('KvpCategoriesPage');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
 
 interface CategoryResult {
   categories: CustomizableCategoriesData | null;
@@ -45,7 +39,7 @@ async function fetchCategories(
     }
 
     const json =
-      (await response.json()) as ApiResponse<CustomizableCategoriesData>;
+      (await response.json()) as ServerApiResponse<CustomizableCategoriesData>;
     const data =
       json.success === true && json.data !== undefined ?
         json.data

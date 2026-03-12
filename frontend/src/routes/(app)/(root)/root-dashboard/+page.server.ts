@@ -11,7 +11,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { createLogger } from '$lib/utils/logger';
+import { apiFetch } from '$lib/server/api-fetch';
 
 import type { PageServerLoad } from './$types';
 import type { DashboardData, ActivityLog, LogsApiResponse } from './_lib/types';
@@ -21,57 +21,6 @@ interface RbacUser {
   id: number;
   employeeNumber?: string;
   role: 'root' | 'admin' | 'employee';
-}
-
-const log = createLogger('RootDashboard');
-
-/** API base URL for server-side fetching */
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-/** API response wrapper type */
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-  error?: { message: string };
-}
-
-/**
- * Fetch helper with auth and error handling
- */
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-
-    // Handle both wrapped and unwrapped responses
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-
-    // Direct response (no wrapper)
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
 }
 
 /**

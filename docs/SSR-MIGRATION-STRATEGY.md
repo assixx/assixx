@@ -89,46 +89,14 @@ routes/(app)/[page-name]/
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch } from '$lib/server/api-fetch';
+
 import type { PageServerLoad } from './$types';
 
-const API_BASE = process.env['API_URL'] ?? 'http://localhost:3000/api/v2';
-
-/** API response wrapper */
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { message: string };
-}
-
-/** Fetch helper with auth and error handling */
-async function apiFetch<T>(endpoint: string, token: string, fetchFn: typeof fetch): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`[SSR] API error ${response.status} for ${endpoint}`);
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    return 'success' in json && json.success ? (json.data ?? null) : (json as unknown as T);
-  } catch (error) {
-    console.error(`[SSR] Fetch error for ${endpoint}:`, error);
-    return null;
-  }
-}
-
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-  const startTime = performance.now();
-
   // 1. Auth check
   const token = cookies.get('accessToken');
-  if (!token) {
+  if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
@@ -143,11 +111,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   const items1 = Array.isArray(data1) ? data1 : [];
   const items2 = Array.isArray(data2) ? data2 : [];
 
-  // 4. Log performance
-  const duration = (performance.now() - startTime).toFixed(1);
-  console.info(`[SSR] [page-name] loaded in ${duration}ms`);
-
-  // 5. Return typed data
+  // 4. Return typed data
   return {
     items1,
     items2,
@@ -155,6 +119,8 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   };
 };
 ```
+
+> **Shared Utility:** `apiFetch` ist in `$lib/server/api-fetch.ts` definiert. Handles auth headers, API envelope unwrapping (`{success, data}`, `{data}`, raw), und error logging. **Keine lokale Kopie anlegen!**
 
 ### +page.svelte Template
 

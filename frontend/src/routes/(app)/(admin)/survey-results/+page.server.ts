@@ -6,8 +6,13 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import {
+  apiFetch,
+  API_BASE,
+  extractResponseData,
+  type ServerApiResponse,
+} from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -16,53 +21,6 @@ import type {
   SurveyStatistics,
   SurveyResponseWithUser,
 } from './_lib/types';
-
-const log = createLogger('SurveyResults');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-/** Extract typed data from the standard API response envelope */
-function parseApiResponse<T>(json: ApiResponse<T>): T | null {
-  if ('success' in json && json.success === true) {
-    return json.data ?? null;
-  }
-  if ('data' in json && json.data !== undefined) {
-    return json.data;
-  }
-  return json as unknown as T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    return parseApiResponse(json);
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 /** Fetch survey with management permission check, throws on 403/404 */
 async function fetchSurveyWithPermission(
@@ -88,8 +46,8 @@ async function fetchSurveyWithPermission(
     error(404, 'Umfrage nicht gefunden');
   }
 
-  const json = (await response.json()) as ApiResponse<Survey>;
-  const surveyData = parseApiResponse(json);
+  const json = (await response.json()) as ServerApiResponse<Survey>;
+  const surveyData = extractResponseData(json);
 
   if (surveyData === null) {
     error(404, 'Umfrage nicht gefunden');

@@ -11,6 +11,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { API_BASE } from '$lib/server/api-fetch';
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { createLogger } from '$lib/utils/logger';
 
@@ -18,9 +19,6 @@ import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 import type { LayoutServerLoad } from './$types';
 
 const log = createLogger('AppLayout');
-
-/** API base URL for server-side fetching */
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 /** User data from /users/me endpoint */
 interface UserData {

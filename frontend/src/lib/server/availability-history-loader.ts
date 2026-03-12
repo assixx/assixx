@@ -7,9 +7,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { API_BASE } from '$lib/server/api-fetch';
 import { createLogger } from '$lib/utils/logger';
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 // =============================================================================
 // TYPES
