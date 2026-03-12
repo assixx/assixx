@@ -144,6 +144,8 @@ export interface KvpStats {
   approvedSuggestions: number;
   implementedSuggestions: number;
   rejectedSuggestions: number;
+  teamTotalSuggestions: number;
+  teamImplementedSuggestions: number;
 }
 
 /**

@@ -97,6 +97,8 @@ export interface DbDashboardStats {
   implemented: string;
   rejected: string;
   approved: string;
+  team_total: string;
+  team_implemented: string;
 }
 
 /**
@@ -264,6 +266,8 @@ export interface DashboardStats {
   approvedSuggestions: number;
   implementedSuggestions: number;
   rejectedSuggestions: number;
+  teamTotalSuggestions: number;
+  teamImplementedSuggestions: number;
 }
 
 export interface PaginatedSuggestionsResult {

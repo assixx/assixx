@@ -330,10 +330,12 @@ describe('KvpService', () => {
           approved: 25,
           implemented: 15,
           rejected: 10,
+          team_total: 40,
+          team_implemented: 8,
         },
       ]);
 
-      const result = await service.getDashboardStats(42);
+      const result = await service.getDashboardStats(42, 3);
 
       expect(result).toEqual({
         totalSuggestions: 100,
@@ -342,13 +344,15 @@ describe('KvpService', () => {
         approvedSuggestions: 25,
         implementedSuggestions: 15,
         rejectedSuggestions: 10,
+        teamTotalSuggestions: 40,
+        teamImplementedSuggestions: 8,
       });
     });
 
     it('should return zeros when no stats returned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getDashboardStats(42);
+      const result = await service.getDashboardStats(42, 3);
 
       expect(result).toEqual({
         totalSuggestions: 0,
@@ -357,6 +361,8 @@ describe('KvpService', () => {
         approvedSuggestions: 0,
         implementedSuggestions: 0,
         rejectedSuggestions: 0,
+        teamTotalSuggestions: 0,
+        teamImplementedSuggestions: 0,
       });
     });
   });

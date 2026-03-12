@@ -261,24 +261,38 @@ export class KvpService {
     return await this.db.query<CategoryOption>(query, [tenantId]);
   }
 
-  /** Get dashboard statistics */
-  async getDashboardStats(tenantId: number): Promise<DashboardStats> {
+  /** Get dashboard statistics (tenant-wide + team-scoped for current user) */
+  async getDashboardStats(
+    tenantId: number,
+    userId: number,
+  ): Promise<DashboardStats> {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     const query = `
+      WITH my_team_suggestions AS (
+        SELECT DISTINCT kso.suggestion_id
+        FROM kvp_suggestion_organizations kso
+        JOIN user_teams ut ON ut.team_id = kso.org_id AND kso.org_type = 'team'
+        WHERE ut.user_id = $2 AND ut.tenant_id = $1
+      )
       SELECT
         COUNT(*) as total_suggestions,
-        COUNT(CASE WHEN status = 'new' THEN 1 END) as new_suggestions,
-        COUNT(CASE WHEN status = 'in_review' THEN 1 END) as in_progress_count,
-        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
-        COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
-        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
-      FROM kvp_suggestions
-      WHERE tenant_id = $1
-        AND status != 'archived'
+        COUNT(CASE WHEN s.status = 'new' THEN 1 END) as new_suggestions,
+        COUNT(CASE WHEN s.status = 'in_review' THEN 1 END) as in_progress_count,
+        COUNT(CASE WHEN s.status = 'approved' THEN 1 END) as approved,
+        COUNT(CASE WHEN s.status = 'implemented' THEN 1 END) as implemented,
+        COUNT(CASE WHEN s.status = 'rejected' THEN 1 END) as rejected,
+        COUNT(CASE WHEN s.id IN (SELECT suggestion_id FROM my_team_suggestions) THEN 1 END) as team_total,
+        COUNT(CASE WHEN s.status = 'implemented' AND s.id IN (SELECT suggestion_id FROM my_team_suggestions) THEN 1 END) as team_implemented
+      FROM kvp_suggestions s
+      WHERE s.tenant_id = $1
+        AND s.status != 'archived'
     `;
 
-    const rows = await this.db.query<DbDashboardStats>(query, [tenantId]);
+    const rows = await this.db.query<DbDashboardStats>(query, [
+      tenantId,
+      userId,
+    ]);
     const stats = rows[0];
 
     if (stats === undefined) {
@@ -289,6 +303,8 @@ export class KvpService {
         approvedSuggestions: 0,
         implementedSuggestions: 0,
         rejectedSuggestions: 0,
+        teamTotalSuggestions: 0,
+        teamImplementedSuggestions: 0,
       };
     }
 
@@ -300,6 +316,8 @@ export class KvpService {
       approvedSuggestions: Number(stats.approved),
       implementedSuggestions: Number(stats.implemented),
       rejectedSuggestions: Number(stats.rejected),
+      teamTotalSuggestions: Number(stats.team_total),
+      teamImplementedSuggestions: Number(stats.team_implemented),
     };
   }
 

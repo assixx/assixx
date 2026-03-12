@@ -166,7 +166,7 @@
 
   <!-- Statistics Overview (Admin only) -->
   {#if kvpState.isAdmin}
-    <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+    <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-lightbulb"></i>
@@ -185,6 +185,15 @@
           <div class="card-stat__label">In Bearbeitung</div>
         </div>
       </div>
+      <div class="card-stat card-stat--success">
+        <div class="card-stat__icon">
+          <i class="fas fa-thumbs-up"></i>
+        </div>
+        <div class="card-stat__content">
+          <div class="card-stat__value">{kvpState.formattedStats.approved}</div>
+          <div class="card-stat__label">Genehmigt</div>
+        </div>
+      </div>
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-check-circle"></i>
@@ -196,13 +205,37 @@
           <div class="card-stat__label">Umgesetzt</div>
         </div>
       </div>
-      <div class="card-stat card-stat--success">
+      <div class="card-stat">
         <div class="card-stat__icon">
-          <i class="fas fa-thumbs-up"></i>
+          <i class="fas fa-users"></i>
         </div>
         <div class="card-stat__content">
-          <div class="card-stat__value">{kvpState.formattedStats.approved}</div>
-          <div class="card-stat__label">Genehmigt</div>
+          <div class="card-stat__value">
+            {kvpState.formattedStats.teamTotal} / {kvpState.formattedStats
+              .total}
+          </div>
+          <div class="card-stat__label">Team / Gesamt</div>
+        </div>
+      </div>
+      <div
+        class="card-stat"
+        class:card-stat--success={kvpState.formattedStats.implementationRate >=
+          50}
+        class:card-stat--warning={kvpState.formattedStats.implementationRate >=
+          25 && kvpState.formattedStats.implementationRate < 50}
+        class:card-stat--danger={kvpState.formattedStats.implementationRate >
+          0 && kvpState.formattedStats.implementationRate < 25}
+      >
+        <div class="card-stat__icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="card-stat__content">
+          <div class="card-stat__value">
+            {kvpState.formattedStats.teamTotal > 0 ?
+              `${kvpState.formattedStats.implementationRate}%`
+            : '–'}
+          </div>
+          <div class="card-stat__label">Umsetzungsrate Team</div>
         </div>
       </div>
     </div>

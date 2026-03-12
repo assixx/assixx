@@ -87,9 +87,9 @@ routes/(app)/[page-name]/
  * [Page Name] - Server-Side Data Loading
  * @module [page-name]/+page.server
  */
-import { redirect } from '@sveltejs/kit';
-
 import { apiFetch } from '$lib/server/api-fetch';
+
+import { redirect } from '@sveltejs/kit';
 
 import type { PageServerLoad } from './$types';
 

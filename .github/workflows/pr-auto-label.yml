@@ -42,4 +42,16 @@ jobs:
               }
             }
 
+            // Fallback: version-style titles like "v0.4.6: ..."
+            if (/^v\d+\.\d+\.\d+/.test(title)) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: ['release'],
+              });
+              console.log('Applied label: release (version prefix detected)');
+              return;
+            }
+
             console.log('No matching prefix found');
