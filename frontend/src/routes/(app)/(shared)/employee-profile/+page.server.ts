@@ -4,11 +4,12 @@
  *
  * SSR: Loads employee user profile data.
  * Note: Employee profile is readonly except for password.
- * Access: employee role (or admin/root viewing as employee)
+ * Access: employee role only (admin/root get redirected to their profile)
  */
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { profileForRole } from '$lib/server/role-redirects';
 
 import type { PageServerLoad } from './$types';
 import type { EmployeeProfile } from './_lib/types';
@@ -19,12 +20,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout
-  // Allow: employee, admin, root (admin/root can view as employee via role switch)
+  // Guard: only employee can access their profile
   const parentData = await parent();
-  const allowedRoles = ['employee', 'admin', 'root'];
-  if (!parentData.user || !allowedRoles.includes(parentData.user.role)) {
+  if (!parentData.user) {
     redirect(302, '/login');
+  }
+  if (parentData.user.role !== 'employee') {
+    redirect(302, profileForRole(parentData.user.role));
   }
 
   // Fetch employee profile data

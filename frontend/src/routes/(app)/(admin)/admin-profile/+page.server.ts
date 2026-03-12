@@ -8,6 +8,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { profileForRole } from '$lib/server/role-redirects';
 
 import type { PageServerLoad } from './$types';
 import type { AdminProfile } from './_lib/types';
@@ -18,10 +19,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout - only admin can access
+  // Guard: only admin can access their profile
   const parentData = await parent();
-  if (parentData.user?.role !== 'admin') {
-    redirect(302, '/dashboard');
+  if (!parentData.user) {
+    redirect(302, '/login');
+  }
+  if (parentData.user.role !== 'admin') {
+    redirect(302, profileForRole(parentData.user.role));
   }
 
   // Fetch admin profile data

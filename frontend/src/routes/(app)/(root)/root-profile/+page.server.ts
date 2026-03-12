@@ -7,6 +7,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { profileForRole } from '$lib/server/role-redirects';
 
 import type { PageServerLoad } from './$types';
 import type { UserProfile, ApprovalItem } from './_lib/types';
@@ -17,11 +18,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout - only root can access
-  // OPTIMIZATION: Reuse user from layout (already fetched via RBAC hook)
+  // Guard: only root can access their profile
   const parentData = await parent();
-  if (parentData.user?.role !== 'root') {
-    redirect(302, '/dashboard');
+  if (!parentData.user) {
+    redirect(302, '/login');
+  }
+  if (parentData.user.role !== 'root') {
+    redirect(302, profileForRole(parentData.user.role));
   }
 
   // Use parent user data as profile (saves ~30ms redundant /users/me call)

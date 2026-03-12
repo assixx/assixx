@@ -11,6 +11,7 @@ import {
   extractResponseData,
   type ServerApiResponse,
 } from '$lib/server/api-fetch';
+import { dashboardForRole } from '$lib/server/role-redirects';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -72,10 +73,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout - only root can access
+  // Guard: only root can access account settings
   const parentData = await parent();
-  if (parentData.user?.role !== 'root') {
-    redirect(302, '/dashboard');
+  if (!parentData.user) {
+    redirect(302, '/login');
+  }
+  if (parentData.user.role !== 'root') {
+    redirect(302, dashboardForRole(parentData.user.role));
   }
 
   const activeAddons: string[] =
