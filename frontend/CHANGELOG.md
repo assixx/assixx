@@ -1,4 +1,4 @@
-# @assixx/shared
+# assixx-frontend
 
 ## 0.4.5
 
@@ -11,5 +11,7 @@
   style: adjust landingpage to addon modules
   chore: bump deps
   chore: stabilisation
-
-## 0.4.0
+- eaec9d5: refactor: add adress for customer in db and signup page
+- eaec9d5: feat: add organigramm
+- Updated dependencies [ffd60c9]
+  - @assixx/shared@0.4.5

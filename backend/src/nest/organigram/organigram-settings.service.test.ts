@@ -160,6 +160,118 @@ describe('OrganigramSettingsService', () => {
   });
 
   // =============================================================
+  // getCanvasBg
+  // =============================================================
+
+  describe('getCanvasBg', () => {
+    it('should return null when no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getCanvasBg(1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when settings is null', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      const result = await service.getCanvasBg(1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when orgCanvasBg key is missing', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { someOtherKey: true } },
+      ]);
+
+      const result = await service.getCanvasBg(1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return stored color when present', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgCanvasBg: '#1a2b3c' } },
+      ]);
+
+      const result = await service.getCanvasBg(1);
+
+      expect(result).toBe('#1a2b3c');
+    });
+
+    it('should query with correct tenant_id', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getCanvasBg(42);
+
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT settings FROM tenants'),
+        [42],
+      );
+    });
+  });
+
+  // =============================================================
+  // saveCanvasBg
+  // =============================================================
+
+  describe('saveCanvasBg', () => {
+    let mockClient: { query: ReturnType<typeof vi.fn> };
+
+    beforeEach(() => {
+      mockClient = { query: vi.fn() };
+      mockDb.tenantTransaction.mockImplementation(
+        async (fn: (client: typeof mockClient) => Promise<void>) =>
+          fn(mockClient),
+      );
+    });
+
+    it('should merge canvasBg into existing settings', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgHierarchy: { levels: {} } } },
+      ]);
+
+      await service.saveCanvasBg(1, '#ff0000');
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written['orgHierarchy']).toEqual({ levels: {} });
+      expect(written['orgCanvasBg']).toBe('#ff0000');
+    });
+
+    it('should handle empty settings rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.saveCanvasBg(1, '#abcdef');
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written).toEqual({ orgCanvasBg: '#abcdef' });
+    });
+
+    it('should handle null settings value', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      await service.saveCanvasBg(1, null);
+
+      expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
+    });
+
+    it('should save null to clear canvas background', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { settings: { orgCanvasBg: '#ff0000' } },
+      ]);
+
+      await service.saveCanvasBg(1, null);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written['orgCanvasBg']).toBeNull();
+    });
+  });
+
+  // =============================================================
   // saveHallOverrides
   // =============================================================
 

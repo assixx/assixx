@@ -1,5 +1,28 @@
 # assixx-backend
 
+## 0.4.5
+
+### Patch Changes
+
+- a283d00: Refactor: is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
+- ffd60c9: feat: add organigramm
+  feat: add dynamic postions
+  refactor: renaming feature to addon (module)
+  chore: docs updated
+  style: adjust landingpage to addon modules
+  chore: bump deps
+  chore: stabilisation
+- bbba1ef: Partition Health: /health/partitions Endpoint + API-Test
+  - Neuer Endpoint `/health/partitions` zur Verifizierung der pg_partman-Konfiguration (Extension, part_config, Partitionen, Defaults)
+  - HTTP 200 bei gesundem Zustand, HTTP 503 bei Problemen
+  - 9 API-Integrationstests (`partitions.api.test.ts`) verifizieren Partition-Coverage automatisch
+  - GRANT für `app_user` auf `partman`-Schema (read-only, Monitoring)
+
+- eaec9d5: refactor: add adress for customer in db and signup page
+- eaec9d5: feat: add organigramm
+- Updated dependencies [ffd60c9]
+  - @assixx/shared@0.4.5
+
 ## 0.4.0
 
 ### Minor Changes
