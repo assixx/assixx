@@ -222,7 +222,9 @@
             </span>
             <div class="alert__content">
               <p class="alert__message">
-                Nur Admin- und Root-Benutzer stehen als Leiter zur Auswahl.
+                Nur Admins/Root mit der Position &laquo;{messages.AREA_LEAD_POSITION}&raquo;
+                stehen zur Auswahl. Zuweisung über die
+                <a href="/manage-admins">Admin-Verwaltung</a>.
               </p>
             </div>
           </div>
@@ -231,47 +233,49 @@
             id="area-lead-hidden"
             value={formAreaLeadId ?? ''}
           />
-          <div
-            class="dropdown"
-            id="area-lead-dropdown"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={areaLeadDropdownOpen}
-              onclick={toggleAreaLeadDropdown}
-            >
-              <span>{areaLeadDisplayName}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
+          {#if areaLeads.length > 0}
             <div
-              class="dropdown__menu"
-              class:active={areaLeadDropdownOpen}
+              class="dropdown"
+              id="area-lead-dropdown"
             >
               <button
                 type="button"
-                class="dropdown__option"
-                onclick={() => {
-                  selectAreaLead(null);
-                }}
+                class="dropdown__trigger"
+                class:active={areaLeadDropdownOpen}
+                onclick={toggleAreaLeadDropdown}
               >
-                {messages.NO_AREA_LEAD}
+                <span>{areaLeadDisplayName}</span>
+                <i class="fas fa-chevron-down"></i>
               </button>
-              {#each areaLeads as user (user.id)}
+              <div
+                class="dropdown__menu"
+                class:active={areaLeadDropdownOpen}
+              >
                 <button
                   type="button"
                   class="dropdown__option"
                   onclick={() => {
-                    selectAreaLead(user.id);
+                    selectAreaLead(null);
                   }}
                 >
-                  {user.firstName}
-                  {user.lastName}
-                  {user.role === 'root' ? '(Root)' : '(Admin)'}
+                  {messages.NO_AREA_LEAD}
                 </button>
-              {/each}
+                {#each areaLeads as user (user.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectAreaLead(user.id);
+                    }}
+                  >
+                    {user.firstName}
+                    {user.lastName}
+                    {user.role === 'root' ? '(Root)' : '(Admin)'}
+                  </button>
+                {/each}
+              </div>
             </div>
-          </div>
+          {/if}
         </div>
 
         <!-- Type Dropdown -->

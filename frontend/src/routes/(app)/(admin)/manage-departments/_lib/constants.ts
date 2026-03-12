@@ -4,6 +4,7 @@
 
 import {
   DEFAULT_HIERARCHY_LABELS,
+  resolvePositionDisplay,
   type HierarchyLabels,
 } from '$lib/types/hierarchy-labels';
 
@@ -63,7 +64,7 @@ const STATIC_MESSAGES = {
   NO_AREA: 'Keine Zuordnung',
   NO_DEPARTMENT_LEAD: 'Kein Leiter',
   DEPARTMENT_LEAD_HINT:
-    'Nur Administratoren können als Leiter zugewiesen werden.',
+    'Nur Admins/Root mit der entsprechenden Leiter-Position stehen zur Auswahl. Zuweisung über die Admin-Verwaltung.',
   TH_NAME: 'Name',
   TH_DESCRIPTION: 'Beschreibung',
   TH_STATUS: 'Status',
@@ -92,6 +93,7 @@ const STATIC_MESSAGES = {
 export function createMessages(labels: HierarchyLabels) {
   return {
     ...STATIC_MESSAGES,
+    DEPARTMENT_LEAD_POSITION: resolvePositionDisplay('department_lead', labels),
     PAGE_TITLE: `${labels.department} — Verwaltung`,
     PAGE_HEADING: `${labels.department} — Übersicht`,
     PAGE_DESCRIPTION: `${labels.department} erstellen und verwalten`,
@@ -128,8 +130,8 @@ export const API_ENDPOINTS = {
     return `/departments/${id}?force=true`;
   },
   AREAS: '/areas',
-  USERS_ADMIN: '/users?role=admin',
-  USERS_ROOT: '/users?role=root',
+  USERS_ADMIN: '/users?role=admin&isActive=1&position=department_lead',
+  USERS_ROOT: '/users?role=root&isActive=1&position=department_lead',
 } as const;
 
 /**

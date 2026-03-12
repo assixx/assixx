@@ -5,6 +5,10 @@
 -->
 <script lang="ts">
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
+  import {
+    isLeadPosition,
+    resolvePositionDisplay,
+  } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
   import type { PageData } from './$types';
@@ -29,12 +33,25 @@
 
   const apiClient = getApiClient();
 
+  /** Hierarchy labels from parent layout (ADR-034) */
+  const labels = $derived(data.hierarchyLabels);
+
   const serverPositions = $derived(data.positions);
 
-  const positions = $derived<PositionOptions>({
-    employee: [...serverPositions.employee],
-    admin: [...serverPositions.admin],
-    root: [...serverPositions.root],
+  let positions = $state<PositionOptions>({
+    employee: [],
+    admin: [],
+    root: [],
+  });
+
+  /** Sync editable copy from server data (mount + after save via data mutation) */
+  $effect(() => {
+    const src = serverPositions;
+    positions = {
+      employee: [...src.employee],
+      admin: [...src.admin],
+      root: [...src.root],
+    };
   });
 
   let activeTab = $state<Category>('employee');
@@ -44,13 +61,26 @@
   let saving = $state(false);
 
   const currentList = $derived(positions[activeTab]);
-  const hasChanges = $derived(
-    JSON.stringify(positions) !== JSON.stringify(serverPositions),
-  );
+  const hasChanges = $derived.by(() => {
+    for (const cat of CATEGORIES) {
+      const cur = positions[cat];
+      const srv = serverPositions[cat];
+      if (cur.length !== srv.length) return true;
+      if (cur.some((p: string, i: number) => p !== srv[i])) return true;
+    }
+    return false;
+  });
 
   function addPosition(): void {
     const trimmed = newPosition.trim();
     if (trimmed === '') return;
+
+    if (isLeadPosition(trimmed)) {
+      showErrorAlert(
+        'System-Positionen können nicht manuell hinzugefügt werden.',
+      );
+      return;
+    }
 
     const list = positions[activeTab];
     const duplicate = list.some(
@@ -66,12 +96,14 @@
   }
 
   function removePosition(index: number): void {
+    if (isLeadPosition(positions[activeTab][index])) return;
     positions[activeTab] = positions[activeTab].filter(
       (_: string, i: number) => i !== index,
     );
   }
 
   function startEdit(index: number): void {
+    if (isLeadPosition(positions[activeTab][index])) return;
     editingIndex = index;
     editingValue = positions[activeTab][index] ?? '';
   }
@@ -145,6 +177,11 @@
       );
 
       data.positions = { ...result };
+      positions = {
+        employee: [...result.employee],
+        admin: [...result.admin],
+        root: [...result.root],
+      };
       showSuccessAlert('Positionen gespeichert');
     } catch {
       showErrorAlert('Fehler beim Speichern der Positionen');
@@ -262,8 +299,12 @@
       {:else}
         <ul class="position-list">
           {#each currentList as position, index (activeTab + '-' + String(index))}
-            <li class="position-item">
-              {#if editingIndex === index}
+            {@const isSystem = isLeadPosition(position)}
+            <li
+              class="position-item"
+              class:position-item--system={isSystem}
+            >
+              {#if editingIndex === index && !isSystem}
                 <input
                   type="text"
                   class="input edit-input"
@@ -290,51 +331,70 @@
                   </button>
                 </div>
               {:else}
-                <span class="position-name">{position}</span>
-                <div class="item-actions">
-                  <button
-                    type="button"
-                    class="btn-icon"
-                    title="Nach oben"
-                    disabled={index === 0}
-                    onclick={() => {
-                      moveUp(index);
-                    }}
+                <span class="position-name">
+                  {#if isSystem}
+                    <i class="fas fa-lock system-lock-icon"></i>
+                  {/if}
+                  {isSystem ?
+                    resolvePositionDisplay(position, labels)
+                  : position}
+                  {#if isSystem}
+                    <span class="badge badge--primary badge--xs system-badge"
+                      >System</span
+                    >
+                  {/if}
+                </span>
+                {#if isSystem}
+                  <span class="system-hint"
+                    >Geschützt — wird dynamisch aus Organigramm-Bezeichnungen
+                    abgeleitet</span
                   >
-                    <i class="fas fa-chevron-up"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-icon"
-                    title="Nach unten"
-                    disabled={index === currentList.length - 1}
-                    onclick={() => {
-                      moveDown(index);
-                    }}
-                  >
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-icon"
-                    title="Bearbeiten"
-                    onclick={() => {
-                      startEdit(index);
-                    }}
-                  >
-                    <i class="fas fa-pen"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-icon btn-icon--danger"
-                    title="Löschen"
-                    onclick={() => {
-                      removePosition(index);
-                    }}
-                  >
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
+                {:else}
+                  <div class="item-actions">
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Nach oben"
+                      disabled={index === 0}
+                      onclick={() => {
+                        moveUp(index);
+                      }}
+                    >
+                      <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Nach unten"
+                      disabled={index === currentList.length - 1}
+                      onclick={() => {
+                        moveDown(index);
+                      }}
+                    >
+                      <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Bearbeiten"
+                      onclick={() => {
+                        startEdit(index);
+                      }}
+                    >
+                      <i class="fas fa-pen"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon btn-icon--danger"
+                      title="Löschen"
+                      onclick={() => {
+                        removePosition(index);
+                      }}
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                {/if}
               {/if}
             </li>
           {/each}
@@ -434,6 +494,46 @@
 
   .position-item:hover {
     background: var(--color-surface-hover, rgb(255 255 255 / 6%));
+  }
+
+  .position-item--system {
+    background: color-mix(
+      in oklch,
+      var(--color-primary, #3b82f6) 8%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
+    cursor: default;
+  }
+
+  .position-item--system:hover {
+    background: color-mix(
+      in oklch,
+      var(--color-primary, #3b82f6) 12%,
+      transparent
+    );
+  }
+
+  .system-lock-icon {
+    font-size: 0.75rem;
+    color: var(--color-primary, #3b82f6);
+    margin-right: 0.375rem;
+    opacity: 70%;
+  }
+
+  .system-badge {
+    font-size: 0.625rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    padding: 0.0625rem 0.375rem;
+  }
+
+  .system-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    opacity: 70%;
+    flex-shrink: 0;
   }
 
   .position-name {

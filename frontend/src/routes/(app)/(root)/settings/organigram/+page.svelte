@@ -298,28 +298,14 @@
     z-index: 0;
     inset: 0;
     border-radius: 12px;
-    background-image: radial-gradient(
-      circle,
-      color-mix(in oklch, var(--color-white) 45%, transparent) 1.5px,
-      transparent 1.5px
-    );
     background-size: 20px 20px;
-    mask-image: radial-gradient(
-      ellipse 80% 80% at 50% 50%,
-      var(--color-black) 10%,
-      transparent 75%
-    );
     pointer-events: none;
     content: '';
   }
 
   /* Dot pattern — light mode: dark dots */
   :global(html:not(.dark)) .canvas-wrapper::after {
-    background-image: radial-gradient(
-      circle,
-      color-mix(in oklch, var(--color-black) 60%, transparent) 1.5px,
-      transparent 1.5px
-    );
+    background: var(--color-gray-300);
   }
 
   /* Fullscreen Mode — 1:1 Blackboard-Pattern */

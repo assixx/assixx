@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    resolvePositionDisplay,
+  } from '$lib/types/hierarchy-labels';
 
   import {
     getStatusBadgeClass,
@@ -63,7 +66,7 @@
     </div>
   </td>
   <td>{employee.email}</td>
-  <td>{employee.position ?? '-'}</td>
+  <td>{resolvePositionDisplay(employee.position ?? '', labels)}</td>
   <td>{employee.employeeNumber ?? '-'}</td>
   <td>
     <span class="badge {getStatusBadgeClass(employee.isActive)}"

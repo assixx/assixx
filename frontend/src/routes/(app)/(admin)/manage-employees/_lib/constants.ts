@@ -39,7 +39,7 @@ export const POSITION_OPTIONS: readonly string[] = [
   'Lagerarbeiter',
   'Qualitätsprüfer',
   'Schichtleiter',
-  'Teamleiter',
+  'team_lead',
   'Wartungstechniker',
   'Sonstiges',
 ] as const;

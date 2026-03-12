@@ -11,6 +11,8 @@ Permission denied for any git or rm commands. Tell user to do it!
 
 **Terminology:** Use "Addon" (not "Feature") for the modular SaaS system (ADR-033). "Feature" is deprecated — the system uses Addons (DB: `addons`, `tenant_addons`, `user_addon_permissions`). User-facing: "Modul".
 
+**Hierarchy Labels Warning (ADR-034):** Custom labels can rename DB entities in the UI — e.g. a tenant can rename `area` to "Abteilungen", but in the DB it remains `areas`/`area_id`, NOT `departments`/`department_id`. Always trust DB column names and URL paths (`/manage-areas`), never the UI label text.
+
 ---
 
 ## Required Reading

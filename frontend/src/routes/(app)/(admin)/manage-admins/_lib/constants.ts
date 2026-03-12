@@ -24,7 +24,8 @@ export {
  * Position options for admin selection dropdown
  */
 export const POSITION_OPTIONS = [
-  'Bereichsleiter',
+  'area_lead',
+  'department_lead',
   'Personalleiter',
   'Geschäftsführer',
   'Werksleiter',
@@ -38,8 +39,12 @@ export const POSITION_OPTIONS = [
 /**
  * Position display name mapping (lowercase key -> display value)
  */
+/**
+ * Position display name mapping (lowercase key -> display value).
+ * Lead positions (area_lead, department_lead) are NOT in this map —
+ * they are resolved dynamically via resolvePositionDisplay() using hierarchy labels.
+ */
 export const POSITION_DISPLAY_MAP: Record<string, string> = {
-  bereichsleiter: 'Bereichsleiter',
   personalleiter: 'Personalleiter',
   geschäftsführer: 'Geschäftsführer',
   werksleiter: 'Werksleiter',

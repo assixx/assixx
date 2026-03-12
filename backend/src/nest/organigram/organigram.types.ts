@@ -38,8 +38,6 @@ export interface OrgChartNode {
   assets: OrgChartNode[];
   leadName?: string;
   memberCount?: number;
-  /** Hallen-Name — nur bei Areas gesetzt, wenn eine Halle zugewiesen ist */
-  hallName?: string;
 }
 
 /** Gespeicherter Viewport-Zustand (Zoom + Pan + Font-Größe) */
@@ -65,6 +63,13 @@ export interface HallOverride {
   height: number;
 }
 
+/** Halle im Organigramm (mit oder ohne Area-Zuweisung) */
+export interface OrgTreeHall {
+  uuid: string;
+  name: string;
+  areaUuid: string | null;
+}
+
 export interface OrgChartTree {
   companyName: string;
   address: string | null;
@@ -72,6 +77,7 @@ export interface OrgChartTree {
   viewport: OrgViewport;
   hallOverrides: Record<string, HallOverride>;
   nodes: OrgChartNode[];
+  halls: OrgTreeHall[];
 }
 
 /** DB row type for org_chart_positions table */
@@ -118,12 +124,13 @@ export const DEFAULT_POSITION_OPTIONS: PositionOptions = {
     'Lagerarbeiter',
     'Qualitätsprüfer',
     'Schichtleiter',
-    'Teamleiter',
+    'team_lead',
     'Wartungstechniker',
     'Sonstiges',
   ],
   admin: [
-    'Bereichsleiter',
+    'area_lead',
+    'department_lead',
     'Personalleiter',
     'Geschäftsführer',
     'Werksleiter',

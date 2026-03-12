@@ -8,6 +8,7 @@ import type {
   OrgChartPosition,
   OrgChartTree,
   OrgEntityType,
+  OrgTreeHall,
 } from './organigram.types.js';
 
 interface TenantInfoRow {
@@ -45,7 +46,8 @@ interface AssetRow {
 
 interface HallRow {
   name: string;
-  area_uuid: string;
+  hall_uuid: string;
+  area_uuid: string | null;
 }
 
 @Injectable()
@@ -81,14 +83,13 @@ export class OrganigramService {
       this.layout.getPositions(tenantId),
     ]);
 
-    const nodes = this.buildTree(
-      areas,
-      departments,
-      teams,
-      assets,
-      halls,
-      positions,
-    );
+    const orgHalls: OrgTreeHall[] = halls.map((h: HallRow) => ({
+      uuid: h.hall_uuid.trim(),
+      name: h.name,
+      areaUuid: h.area_uuid?.trim() ?? null,
+    }));
+
+    const nodes = this.buildTree(areas, departments, teams, assets, positions);
 
     return {
       companyName: tenant.company_name,
@@ -97,6 +98,7 @@ export class OrganigramService {
       viewport,
       hallOverrides,
       nodes,
+      halls: orgHalls,
     };
   }
 
@@ -177,9 +179,9 @@ export class OrganigramService {
 
   private async fetchHalls(tenantId: number): Promise<HallRow[]> {
     return await this.db.query<HallRow>(
-      `SELECT h.name, a.uuid AS area_uuid
+      `SELECT h.name, h.uuid AS hall_uuid, a.uuid AS area_uuid
        FROM halls h
-       JOIN areas a ON h.area_id = a.id
+       LEFT JOIN areas a ON h.area_id = a.id
        WHERE h.tenant_id = $1 AND h.is_active = 1
        ORDER BY h.name`,
       [tenantId],
@@ -191,29 +193,14 @@ export class OrganigramService {
     departments: DepartmentRow[],
     teams: TeamRow[],
     assets: AssetRow[],
-    halls: HallRow[],
     positions: OrgChartPosition[],
   ): OrgChartNode[] {
     const posMap = this.buildPositionMap(positions);
     const topLevel: OrgChartNode[] = [];
 
-    // Hall-Lookup: area_uuid → hall name (erste Halle gewinnt)
-    const hallByAreaUuid = new Map<string, string>();
-    for (const h of halls) {
-      const areaUuid = h.area_uuid.trim();
-      if (!hallByAreaUuid.has(areaUuid)) {
-        hallByAreaUuid.set(areaUuid, h.name);
-      }
-    }
-
-    const areaNodes = areas.map((a: AreaRow) => {
-      const node = this.toNode('area', a.uuid, a.name, posMap, a.lead_name);
-      const hallName = hallByAreaUuid.get(a.uuid.trim());
-      if (hallName !== undefined) {
-        node.hallName = hallName;
-      }
-      return node;
-    });
+    const areaNodes = areas.map((a: AreaRow) =>
+      this.toNode('area', a.uuid, a.name, posMap, a.lead_name),
+    );
     const areaMap = new Map(
       areaNodes.map((n: OrgChartNode) => [n.entityUuid, n]),
     );

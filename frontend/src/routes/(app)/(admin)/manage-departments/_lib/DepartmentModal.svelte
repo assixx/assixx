@@ -274,7 +274,9 @@
             </span>
             <div class="alert__content">
               <p class="alert__message">
-                Nur Admin- und Root-Benutzer stehen als Leiter zur Auswahl.
+                Nur Admins/Root mit der Position &laquo;{messages.DEPARTMENT_LEAD_POSITION}&raquo;
+                stehen zur Auswahl. Zuweisung über die
+                <a href="/manage-admins">Admin-Verwaltung</a>.
               </p>
             </div>
           </div>
@@ -283,46 +285,48 @@
             id="lead-hidden"
             value={formDepartmentLeadId ?? ''}
           />
-          <div
-            class="dropdown"
-            id="lead-dropdown"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={leadDropdownOpen}
-              onclick={toggleLeadDropdown}
-            >
-              <span>{selectedLeadName}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
+          {#if allDepartmentLeads.length > 0}
             <div
-              class="dropdown__menu"
-              class:active={leadDropdownOpen}
+              class="dropdown"
+              id="lead-dropdown"
             >
               <button
                 type="button"
-                class="dropdown__option"
-                onclick={() => {
-                  selectLead(null);
-                }}
+                class="dropdown__trigger"
+                class:active={leadDropdownOpen}
+                onclick={toggleLeadDropdown}
               >
-                {messages.NO_DEPARTMENT_LEAD}
+                <span>{selectedLeadName}</span>
+                <i class="fas fa-chevron-down"></i>
               </button>
-              {#each allDepartmentLeads as lead (lead.id)}
+              <div
+                class="dropdown__menu"
+                class:active={leadDropdownOpen}
+              >
                 <button
                   type="button"
                   class="dropdown__option"
                   onclick={() => {
-                    selectLead(lead.id);
+                    selectLead(null);
                   }}
                 >
-                  {lead.firstName}
-                  {lead.lastName} ({lead.role === 'root' ? 'Root' : 'Admin'})
+                  {messages.NO_DEPARTMENT_LEAD}
                 </button>
-              {/each}
+                {#each allDepartmentLeads as lead (lead.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectLead(lead.id);
+                    }}
+                  >
+                    {lead.firstName}
+                    {lead.lastName} ({lead.role === 'root' ? 'Root' : 'Admin'})
+                  </button>
+                {/each}
+              </div>
             </div>
-          </div>
+          {/if}
         </div>
 
         {#if isEditMode}

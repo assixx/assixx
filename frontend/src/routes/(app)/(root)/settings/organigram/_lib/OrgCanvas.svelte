@@ -18,6 +18,7 @@
     getPanY,
     getRenderNodes,
     getZoom,
+    isHallPrimary,
     moveNodeWithChildren,
     setHallOverride,
     setPan,
@@ -44,7 +45,9 @@
   let panStartY = $state(0);
 
   // Hall-Drag State
-  let draggedHallUuid = $state('');
+  let draggedHallId = $state('');
+  let draggedHallAreaUuid = $state<string | null>(null);
+  let draggedHallIsPrimary = $state(false);
   let hallDragOffsetX = $state(0);
   let hallDragOffsetY = $state(0);
 
@@ -98,20 +101,35 @@
         svgX <= hall.x + hall.width &&
         svgY >= hall.y &&
         svgY <= hall.y + hall.height;
-      if (inside) return hall.areaUuid;
+      if (inside) return hall.id;
     }
     return undefined;
   }
 
-  function startHallDrag(event: PointerEvent, areaUuid: string): void {
-    const svg = clientToSvg(event.clientX, event.clientY);
-    const areaPos = getNodePosition('area', areaUuid);
-    if (areaPos === undefined) return;
+  function startHallDrag(event: PointerEvent, hallId: string): void {
+    const hall = hallBounds.find((h: HallBounds) => h.id === hallId);
+    if (hall === undefined) return;
 
+    const svg = clientToSvg(event.clientX, event.clientY);
     event.preventDefault();
-    draggedHallUuid = areaUuid;
-    hallDragOffsetX = svg.x - areaPos.x;
-    hallDragOffsetY = svg.y - areaPos.y;
+    draggedHallId = hallId;
+    draggedHallAreaUuid = hall.areaUuid;
+    draggedHallIsPrimary = isHallPrimary(hallId);
+
+    // Primäre Halle → Offset vom Area-Node (bewegt Area + Kinder mit)
+    if (hall.areaUuid !== null && draggedHallIsPrimary) {
+      const areaPos = getNodePosition('area', hall.areaUuid);
+      if (areaPos !== undefined) {
+        hallDragOffsetX = svg.x - areaPos.x;
+        hallDragOffsetY = svg.y - areaPos.y;
+        (event.currentTarget as Element).setPointerCapture(event.pointerId);
+        return;
+      }
+    }
+
+    // Sekundäre oder unzugewiesene Halle → Offset von Hallen-Bounds
+    hallDragOffsetX = svg.x - hall.x;
+    hallDragOffsetY = svg.y - hall.y;
     (event.currentTarget as Element).setPointerCapture(event.pointerId);
   }
 
@@ -122,7 +140,7 @@
   ): void {
     event.stopPropagation();
     event.preventDefault();
-    resizingHallUuid = hall.areaUuid;
+    resizingHallUuid = hall.id;
     resizeEdge = edge;
     resizeStartSvg = clientToSvg(event.clientX, event.clientY);
     resizeStartBounds = {
@@ -203,15 +221,30 @@
       applyResize(event);
       return;
     }
-    if (draggedHallUuid !== '') {
+    if (draggedHallId !== '') {
       event.preventDefault();
       const svg = clientToSvg(event.clientX, event.clientY);
-      moveNodeWithChildren(
-        'area',
-        draggedHallUuid,
-        svg.x - hallDragOffsetX,
-        svg.y - hallDragOffsetY,
-      );
+
+      if (draggedHallAreaUuid !== null && draggedHallIsPrimary) {
+        // Primäre Halle → Area-Node + Kinder mitbewegen
+        moveNodeWithChildren(
+          'area',
+          draggedHallAreaUuid,
+          svg.x - hallDragOffsetX,
+          svg.y - hallDragOffsetY,
+        );
+      } else {
+        // Sekundäre oder unzugewiesene Halle → nur Override aktualisieren
+        const hall = hallBounds.find((h: HallBounds) => h.id === draggedHallId);
+        if (hall !== undefined) {
+          setHallOverride(draggedHallId, {
+            x: svg.x - hallDragOffsetX,
+            y: svg.y - hallDragOffsetY,
+            width: hall.width,
+            height: hall.height,
+          });
+        }
+      }
       return;
     }
     if (!isPanning) return;
@@ -219,7 +252,9 @@
   }
 
   function handlePointerUp(): void {
-    draggedHallUuid = '';
+    draggedHallId = '';
+    draggedHallAreaUuid = null;
+    draggedHallIsPrimary = false;
     resizingHallUuid = '';
     isPanning = false;
   }
@@ -233,6 +268,60 @@
     if (hoveredKey === '') return false;
     return conn.parentKey === hoveredKey || conn.childKey === hoveredKey;
   }
+
+  /** Verbindungslinien zwischen Hallen derselben Area */
+  interface HallConnection {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }
+
+  /** Punkt auf dem Rechteckrand in Richtung eines Zielpunkts */
+  function rectEdgePoint(
+    cx: number,
+    cy: number,
+    width: number,
+    height: number,
+    targetX: number,
+    targetY: number,
+  ): { x: number; y: number } {
+    const dx = targetX - cx;
+    const dy = targetY - cy;
+    if (dx === 0 && dy === 0) return { x: cx, y: cy };
+
+    const hw = width / 2;
+    const hh = height / 2;
+    const tx = dx !== 0 ? hw / Math.abs(dx) : Infinity;
+    const ty = dy !== 0 ? hh / Math.abs(dy) : Infinity;
+    const t = Math.min(tx, ty);
+
+    return { x: cx + dx * t, y: cy + dy * t };
+  }
+
+  const hallConnections = $derived.by((): HallConnection[] => {
+    const byArea: Record<string, HallBounds[]> = {};
+    for (const hall of hallBounds) {
+      if (hall.areaUuid === null) continue;
+      (byArea[hall.areaUuid] ??= []).push(hall);
+    }
+
+    const lines: HallConnection[] = [];
+    for (const halls of Object.values(byArea)) {
+      for (let i = 0; i < halls.length - 1; i++) {
+        const a = halls[i];
+        const b = halls[i + 1];
+        const acx = a.x + a.width / 2;
+        const acy = a.y + a.height / 2;
+        const bcx = b.x + b.width / 2;
+        const bcy = b.y + b.height / 2;
+        const p1 = rectEdgePoint(acx, acy, a.width, a.height, bcx, bcy);
+        const p2 = rectEdgePoint(bcx, bcy, b.width, b.height, acx, acy);
+        lines.push({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+      }
+    }
+    return lines;
+  });
 </script>
 
 <svg
@@ -247,8 +336,8 @@
 >
   <!-- Transformierter Content-Layer -->
   <g transform="translate({panX}, {panY}) scale({zoom})">
-    <!-- Hallen-Container — nur für Areas mit zugewiesener Halle -->
-    {#each hallBounds as hall (hall.areaUuid)}
+    <!-- Hallen-Container (assigned + unassigned) -->
+    {#each hallBounds as hall (hall.id)}
       <g
         class="hall-container"
         pointer-events="none"
@@ -268,7 +357,7 @@
         />
         <text
           x={hall.x + 12}
-          y={hall.y + 20}
+          y={hall.y + 26}
           class="hall-label"
           fill={HALL_COLOR.border}
         >
@@ -289,7 +378,7 @@
 
     <!-- Hall-Resize Handles (nur wenn entsperrt) -->
     {#if !isLocked}
-      {#each hallBounds as hall (hall.areaUuid)}
+      {#each hallBounds as hall (hall.id)}
         <!-- Top -->
         <rect
           role="presentation"
@@ -404,6 +493,21 @@
         />
       {/each}
     {/if}
+
+    <!-- Hallen-Verbindungslinien (lila, zwischen Hallen derselben Area) -->
+    {#each hallConnections as hc, i (`hall-conn-${i}`)}
+      <line
+        x1={hc.x1}
+        y1={hc.y1}
+        x2={hc.x2}
+        y2={hc.y2}
+        stroke={HALL_COLOR.border}
+        stroke-width="2"
+        stroke-dasharray="8 4"
+        opacity="0.6"
+        class="connection"
+      />
+    {/each}
 
     <!-- Verbindungslinien (hinter Knoten) -->
     {#each connections as conn (`${conn.parentKey}-${conn.childKey}`)}

@@ -43,6 +43,8 @@ const DEPT_2 = 'd0000000-0000-0000-0000-000000000002';
 const TEAM_1 = 't0000000-0000-0000-0000-000000000001';
 const ASSET_1 = 's0000000-0000-0000-0000-000000000001';
 const ASSET_2 = 's0000000-0000-0000-0000-000000000002';
+const HALL_1 = 'h0000000-0000-0000-0000-000000000001';
+const HALL_2 = 'h0000000-0000-0000-0000-000000000002';
 
 // =============================================================
 // Helpers
@@ -483,39 +485,50 @@ describe('OrganigramService', () => {
       expect(tree.nodes[0]?.name).toBe('Freie Anlage');
     });
 
-    it('should assign hallName to areas when halls exist', async () => {
+    it('should return halls mapped to areas via areaUuid', async () => {
       setupTreeQueries(mockDb, {
         areas: [
           { uuid: AREA_1, name: 'Bereich A', lead_name: null },
           { uuid: AREA_2, name: 'Bereich B', lead_name: null },
         ],
         halls: [
-          { name: 'Halle Nord', area_uuid: AREA_1 },
-          { name: 'Halle Süd', area_uuid: AREA_2 },
+          { name: 'Halle Nord', hall_uuid: HALL_1, area_uuid: AREA_1 },
+          { name: 'Halle Süd', hall_uuid: HALL_2, area_uuid: AREA_2 },
         ],
       });
 
       const tree = await service.getOrgChartTree(1);
 
-      expect(tree.nodes[0]?.hallName).toBe('Halle Nord');
-      expect(tree.nodes[1]?.hallName).toBe('Halle Süd');
+      expect(tree.halls).toHaveLength(2);
+      expect(tree.halls[0]).toEqual({
+        uuid: HALL_1,
+        name: 'Halle Nord',
+        areaUuid: AREA_1,
+      });
+      expect(tree.halls[1]).toEqual({
+        uuid: HALL_2,
+        name: 'Halle Süd',
+        areaUuid: AREA_2,
+      });
     });
 
-    it('should use first hall when multiple halls share same area', async () => {
+    it('should return multiple halls sharing same areaUuid', async () => {
       setupTreeQueries(mockDb, {
         areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],
         halls: [
-          { name: 'Halle 1', area_uuid: AREA_1 },
-          { name: 'Halle 2', area_uuid: AREA_1 },
+          { name: 'Halle 1', hall_uuid: HALL_1, area_uuid: AREA_1 },
+          { name: 'Halle 2', hall_uuid: HALL_2, area_uuid: AREA_1 },
         ],
       });
 
       const tree = await service.getOrgChartTree(1);
 
-      expect(tree.nodes[0]?.hallName).toBe('Halle 1');
+      expect(tree.halls).toHaveLength(2);
+      expect(tree.halls[0]?.areaUuid).toBe(AREA_1);
+      expect(tree.halls[1]?.areaUuid).toBe(AREA_1);
     });
 
-    it('should not set hallName when no halls assigned', async () => {
+    it('should return empty halls array when no halls exist', async () => {
       setupTreeQueries(mockDb, {
         areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],
         halls: [],
@@ -523,7 +536,7 @@ describe('OrganigramService', () => {
 
       const tree = await service.getOrgChartTree(1);
 
-      expect(tree.nodes[0]).not.toHaveProperty('hallName');
+      expect(tree.halls).toEqual([]);
     });
 
     it('should mix areas and orphaned departments at top level', async () => {

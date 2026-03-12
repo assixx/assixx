@@ -12,6 +12,7 @@ import type {
   OrgChartNode,
   OrgChartTree,
   OrgEntityType,
+  OrgTreeHall,
   RenderNode,
 } from './types.js';
 
@@ -45,6 +46,7 @@ let tree = $state<OrgChartTree>({
   viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },
   hallOverrides: {},
   nodes: [],
+  halls: [],
 });
 let nodePositions = $state<Record<PositionKey, NodePosition>>({});
 let zoom = $state(1);
@@ -396,8 +398,8 @@ export function resetToSaved(): void {
   initFromTree(tree);
 }
 
-export function setHallOverride(areaUuid: string, bounds: HallOverride): void {
-  hallOverrides[areaUuid] = bounds;
+export function setHallOverride(hallId: string, bounds: HallOverride): void {
+  hallOverrides[hallId] = bounds;
   dirty = true;
 }
 
@@ -498,14 +500,16 @@ export function getConnections(): Connection[] {
   return connections;
 }
 
-/** Auto-computed content bounds für eine Halle (Minimum-Größe) */
-function computeAutoHallBounds(node: OrgChartNode): HallBounds {
+/** Auto-computed content bounds für eine assigned Halle */
+function computeAssignedHallBounds(
+  hall: OrgTreeHall,
+  areaNode: OrgChartNode,
+): HallBounds {
   const PADDING = 24;
   const HEADER_HEIGHT = 32;
 
-  const areaKey = makeKey('area', node.entityUuid);
-  const areaPos = nodePositions[areaKey];
-  const rects = collectDescendantRects(node);
+  const areaPos = nodePositions[makeKey('area', areaNode.entityUuid)];
+  const rects = collectDescendantRects(areaNode);
   rects.push(areaPos);
 
   let minX = Infinity;
@@ -520,9 +524,10 @@ function computeAutoHallBounds(node: OrgChartNode): HallBounds {
   }
 
   return {
-    areaUuid: node.entityUuid,
-    hallName: node.hallName ?? '',
-    leadName: node.leadName,
+    id: hall.uuid,
+    hallName: hall.name,
+    areaUuid: hall.areaUuid,
+    leadName: areaNode.leadName,
     x: minX - PADDING,
     y: minY - PADDING - HEADER_HEIGHT,
     width: maxX - minX + PADDING * 2,
@@ -532,8 +537,8 @@ function computeAutoHallBounds(node: OrgChartNode): HallBounds {
 
 /** Merge auto-bounds mit manuellem Override (Override gewinnt wenn größer) */
 function mergeWithOverride(auto: HallBounds): HallBounds {
-  if (!(auto.areaUuid in hallOverrides)) return auto;
-  const override = hallOverrides[auto.areaUuid];
+  if (!(auto.id in hallOverrides)) return auto;
+  const override = hallOverrides[auto.id];
 
   const x = Math.min(auto.x, override.x);
   const y = Math.min(auto.y, override.y);
@@ -543,19 +548,100 @@ function mergeWithOverride(auto: HallBounds): HallBounds {
   return { ...auto, x, y, width: maxX - x, height: maxY - y };
 }
 
-/** Compute bounding boxes für Hallen-Container (nur Areas mit zugewiesener Halle) */
+/** Assigned-Hall mit Offset für n-te Halle derselben Area */
+function computeOffsetHallBounds(
+  hall: OrgTreeHall,
+  areaNode: OrgChartNode,
+  hallIndex: number,
+): HallBounds {
+  const auto = computeAssignedHallBounds(hall, areaNode);
+
+  if (hallIndex === 0) {
+    return mergeWithOverride(auto);
+  }
+
+  // Sekundäre Hallen: Override ersetzt Position komplett (unabhängig verschiebbar)
+  const override = hallOverrides[hall.uuid] as HallOverride | undefined;
+  if (override !== undefined) {
+    return {
+      ...auto,
+      x: override.x,
+      y: override.y,
+      width: override.width,
+      height: override.height,
+    };
+  }
+
+  // Default: Offset rechts neben der primären Halle
+  auto.x += hallIndex * (auto.width + 40);
+  return auto;
+}
+
+/** Compute bounding boxes für Hallen-Container (assigned + unassigned) */
 export function getHallBounds(): HallBounds[] {
   const bounds: HallBounds[] = [];
-
+  const areaMap = new Map<string, OrgChartNode>();
   for (const node of tree.nodes) {
-    if (node.entityType !== 'area') continue;
-    if (node.hallName === undefined) continue;
+    if (node.entityType === 'area') {
+      areaMap.set(node.entityUuid, node);
+    }
+  }
 
-    const auto = computeAutoHallBounds(node);
-    bounds.push(mergeWithOverride(auto));
+  const areaHallCount: Record<string, number> = {};
+  let unassignedIdx = 0;
+  for (const hall of tree.halls) {
+    if (hall.areaUuid !== null) {
+      const areaNode = areaMap.get(hall.areaUuid);
+      if (areaNode !== undefined) {
+        const idx = areaHallCount[hall.areaUuid] ?? 0;
+        areaHallCount[hall.areaUuid] = idx + 1;
+        bounds.push(computeOffsetHallBounds(hall, areaNode, idx));
+        continue;
+      }
+    }
+    bounds.push(computeUnassignedBounds(hall, unassignedIdx));
+    unassignedIdx++;
   }
 
   return bounds;
+}
+
+/** Y-Position unterhalb aller Knoten (für unassigned Hallen) */
+function computeContentBottomY(): number {
+  let maxY = 0;
+  for (const pos of Object.values(nodePositions)) {
+    maxY = Math.max(maxY, pos.y + pos.height);
+  }
+  return maxY + 80;
+}
+
+/** Default-Bounds für eine Halle ohne Area-Zuweisung */
+function computeUnassignedBounds(hall: OrgTreeHall, index: number): HallBounds {
+  const DEFAULT_W = 200;
+  const DEFAULT_H = 120;
+  const GAP = 40;
+  const override = hallOverrides[hall.uuid] as HallOverride | undefined;
+
+  return {
+    id: hall.uuid,
+    hallName: hall.name,
+    areaUuid: hall.areaUuid,
+    x: override?.x ?? LAYOUT.CANVAS_PADDING + index * (DEFAULT_W + GAP),
+    y: override?.y ?? computeContentBottomY(),
+    width: override?.width ?? DEFAULT_W,
+    height: override?.height ?? DEFAULT_H,
+  };
+}
+
+/** Ist diese Halle die primäre (erste) für ihre Area? */
+export function isHallPrimary(hallId: string): boolean {
+  const hall = tree.halls.find((h: OrgTreeHall) => h.uuid === hallId);
+  return (
+    hall?.areaUuid !== undefined &&
+    hall.areaUuid !== null &&
+    tree.halls.find((h: OrgTreeHall) => h.areaUuid === hall.areaUuid)?.uuid ===
+      hallId
+  );
 }
 
 function collectDescendantRects(node: OrgChartNode): NodePosition[] {

@@ -83,7 +83,7 @@
   </td>
   <td>{admin.email}</td>
   <td>{admin.employeeNumber ?? '-'}</td>
-  <td>{getPositionDisplay(admin.position ?? '')}</td>
+  <td>{getPositionDisplay(admin.position ?? '', labels)}</td>
   <td>
     <span class="badge {getStatusBadgeClass(admin.isActive)}"
       >{getStatusLabel(admin.isActive)}</span

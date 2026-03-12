@@ -3,6 +3,12 @@
 // =============================================================================
 
 import {
+  DEFAULT_HIERARCHY_LABELS,
+  resolvePositionDisplay,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
+import {
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
@@ -16,7 +22,6 @@ import {
   STATUS_LABELS,
 } from './constants';
 
-import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 import type {
   Admin,
   AdminFormData,
@@ -49,9 +54,16 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 // =============================================================================
 
 /**
- * Get display name for position
+ * Get display name for position.
+ * Lead keys (area_lead, department_lead) are resolved dynamically via hierarchy labels.
+ * Other positions fall through to POSITION_DISPLAY_MAP or pass-through as-is.
  */
-export function getPositionDisplay(position: string): string {
+export function getPositionDisplay(
+  position: string,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): string {
+  const resolved = resolvePositionDisplay(position, labels);
+  if (resolved !== position) return resolved;
   return POSITION_DISPLAY_MAP[position.toLowerCase()] ?? position;
 }
 

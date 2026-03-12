@@ -4,6 +4,7 @@
 
 import {
   DEFAULT_HIERARCHY_LABELS,
+  resolvePositionDisplay,
   type HierarchyLabels,
 } from '$lib/types/hierarchy-labels';
 
@@ -41,6 +42,7 @@ const STATIC_MESSAGES = {
 export function createMessages(labels: HierarchyLabels) {
   return {
     ...STATIC_MESSAGES,
+    TEAM_LEAD_POSITION: resolvePositionDisplay('team_lead', labels),
     PAGE_TITLE: `${labels.team} — Übersicht`,
     PAGE_DESCRIPTION: `${labels.team} verwalten`,
     LOADING: `${labels.team} werden geladen...`,
@@ -81,7 +83,7 @@ export const API_ENDPOINTS = {
   teamAsset: (teamId: number, assetId: number) =>
     `/teams/${teamId}/assets/${assetId}`,
   DEPARTMENTS: '/departments',
-  LEADER_CANDIDATES: '/users?isActive=1&position=Teamleiter',
+  LEADER_CANDIDATES: '/users?isActive=1&position=team_lead',
   EMPLOYEES: '/users?role=employee',
   MACHINES: '/assets',
 } as const;

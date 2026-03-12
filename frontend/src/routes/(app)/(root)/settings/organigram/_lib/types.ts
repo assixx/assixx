@@ -33,8 +33,6 @@ export interface OrgChartNode {
   assets: OrgChartNode[];
   leadName?: string;
   memberCount?: number;
-  /** Hallen-Name — nur bei Areas, wenn eine Halle zugewiesen ist */
-  hallName?: string;
 }
 
 export interface OrgViewport {
@@ -62,6 +60,13 @@ export type ResizeEdge =
   | 'bottom-left'
   | 'bottom-right';
 
+/** Halle im Organigramm (mit oder ohne Area-Zuweisung) */
+export interface OrgTreeHall {
+  uuid: string;
+  name: string;
+  areaUuid: string | null;
+}
+
 export interface OrgChartTree {
   companyName: string;
   address: string | null;
@@ -69,6 +74,7 @@ export interface OrgChartTree {
   viewport: OrgViewport;
   hallOverrides: Record<string, HallOverride>;
   nodes: OrgChartNode[];
+  halls: OrgTreeHall[];
 }
 
 export interface PositionPayload {
@@ -107,10 +113,11 @@ export interface Connection {
   y2: number;
 }
 
-/** Bounding box für Hallen-Container (nur Areas mit zugewiesener Halle) */
+/** Bounding box für Hallen-Container — id ist immer hall UUID */
 export interface HallBounds {
-  areaUuid: string;
+  id: string;
   hallName: string;
+  areaUuid: string | null;
   leadName?: string;
   x: number;
   y: number;

@@ -8,7 +8,59 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { validateEmailsMatch, validatePasswordsMatch } from './utils.js';
+import {
+  getPositionDisplay,
+  validateEmailsMatch,
+  validatePasswordsMatch,
+} from './utils.js';
+
+import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+
+// =============================================================================
+// getPositionDisplay — Lead key resolution with hierarchy labels (ADR-034)
+// =============================================================================
+
+describe('getPositionDisplay', () => {
+  const customLabels: HierarchyLabels = {
+    hall: 'Gebäude',
+    area: 'Hallen',
+    department: 'Segmente',
+    team: 'Crews',
+    asset: 'Maschinen',
+  };
+
+  it('should resolve area_lead with default labels', () => {
+    expect(getPositionDisplay('area_lead')).toBe('Bereiche-Leiter');
+  });
+
+  it('should resolve department_lead with default labels', () => {
+    expect(getPositionDisplay('department_lead')).toBe('Abteilungen-Leiter');
+  });
+
+  it('should resolve team_lead with default labels', () => {
+    expect(getPositionDisplay('team_lead')).toBe('Teams-Leiter');
+  });
+
+  it('should resolve lead keys with custom labels', () => {
+    expect(getPositionDisplay('area_lead', customLabels)).toBe('Hallen-Leiter');
+    expect(getPositionDisplay('department_lead', customLabels)).toBe(
+      'Segmente-Leiter',
+    );
+  });
+
+  it('should fall through to POSITION_DISPLAY_MAP for known non-lead positions', () => {
+    // "geschäftsführer" is mapped in POSITION_DISPLAY_MAP
+    expect(getPositionDisplay('geschäftsführer')).toBe('Geschäftsführer');
+  });
+
+  it('should pass through unknown positions unchanged', () => {
+    expect(getPositionDisplay('CustomRole')).toBe('CustomRole');
+  });
+
+  it('should return empty string for empty input', () => {
+    expect(getPositionDisplay('')).toBe('');
+  });
+});
 
 // =============================================================================
 // validateEmailsMatch

@@ -724,6 +724,7 @@
   {submitting}
   {messages}
   {positionOptions}
+  {labels}
   bind:formFirstName
   bind:formLastName
   bind:formEmail

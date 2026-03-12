@@ -86,7 +86,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   ] = await Promise.all([
     apiFetch<Team[]>('/teams', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Admin[]>('/users?isActive=1&position=Teamleiter', token, fetch),
+    apiFetch<Admin[]>('/users?isActive=1&position=team_lead', token, fetch),
     apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
     apiFetch<Asset[]>('/assets', token, fetch),
   ]);

@@ -3,6 +3,11 @@
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    resolvePositionDisplay,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
   import {
     POSITION_OPTIONS,
@@ -49,12 +54,13 @@
     onvalidateemails: () => void;
     onvalidatepasswords: () => void;
     positionOptions?: string[];
+    labels?: HierarchyLabels;
     onupgrade?: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -469,7 +475,9 @@
               onclick={togglePositionDropdown}
             >
               <span
-                >{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span
+                >{formPosition !== '' ?
+                  resolvePositionDisplay(formPosition, lbl)
+                : 'Bitte wählen...'}</span
               >
               <i class="fas fa-chevron-down"></i>
             </div>
@@ -486,7 +494,7 @@
                     selectPosition(position);
                   }}
                 >
-                  {position}
+                  {resolvePositionDisplay(position, lbl)}
                 </div>
               {/each}
             </div>

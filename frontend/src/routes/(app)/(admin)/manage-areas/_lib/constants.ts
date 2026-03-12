@@ -4,6 +4,7 @@
 
 import {
   DEFAULT_HIERARCHY_LABELS,
+  resolvePositionDisplay,
   type HierarchyLabels,
 } from '$lib/types/hierarchy-labels';
 
@@ -62,7 +63,8 @@ const STATIC_MESSAGES = {
   PLACEHOLDER_CAPACITY: 'z.B. 50',
   PLACEHOLDER_ADDRESS: 'Straße, PLZ, Ort',
   NO_AREA_LEAD: 'Kein Leiter',
-  AREA_LEAD_HINT: 'Nur Administratoren können als Leiter zugewiesen werden.',
+  AREA_LEAD_HINT:
+    'Nur Admins/Root mit der entsprechenden Leiter-Position stehen zur Auswahl. Zuweisung über die Admin-Verwaltung.',
   HALLS_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl.', // overridden by factory
   NO_DEPARTMENTS: 'Keine',
   NO_HALLS: 'Keine',
@@ -100,6 +102,7 @@ const STATIC_MESSAGES = {
 export function createMessages(labels: HierarchyLabels) {
   return {
     ...STATIC_MESSAGES,
+    AREA_LEAD_POSITION: resolvePositionDisplay('area_lead', labels),
     PAGE_TITLE: `${labels.area} — Übersicht`,
     PAGE_DESCRIPTION: `${labels.area} verwalten`,
     LOADING: `${labels.area} werden geladen...`,
@@ -136,8 +139,8 @@ export const API_ENDPOINTS = {
   AREAS: '/areas',
   area: (id: number) => `/areas/${id}`,
   areaForceDelete: (id: number) => `/areas/${id}?force=true`,
-  USERS_ADMIN: '/users?role=admin',
-  USERS_ROOT: '/users?role=root',
+  USERS_ADMIN: '/users?role=admin&isActive=1&position=area_lead',
+  USERS_ROOT: '/users?role=root&isActive=1&position=area_lead',
   DEPARTMENTS: '/departments',
   HALLS: '/halls',
   areaHalls: (id: number) => `/areas/${id}/halls`,

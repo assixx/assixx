@@ -329,8 +329,8 @@
           </span>
           <div class="alert__content">
             <p class="alert__message">
-              Nur Mitarbeiter mit der Position &laquo;Teamleiter&raquo; stehen
-              zur Auswahl. Zuweisung über die
+              Nur Mitarbeiter mit der Position &laquo;{messages.TEAM_LEAD_POSITION}&raquo;
+              stehen zur Auswahl. Zuweisung über die
               <a href="/manage-employees">Mitarbeiterverwaltung</a>.
             </p>
           </div>
