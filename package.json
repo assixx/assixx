@@ -110,7 +110,7 @@
     "db:seed": "./scripts/run-seeds.sh",
     "changeset": "changeset",
     "changeset:version": "changeset version && node scripts/sync-root-version.mjs",
-    "changeset:tag": "changeset tag",
+    "changeset:tag": "VERSION=$(node -p \"require('./package.json').version\") && git tag -a \"v$VERSION\" -m \"v$VERSION\"",
     "changeset:status": "changeset status"
   },
   "keywords": [
